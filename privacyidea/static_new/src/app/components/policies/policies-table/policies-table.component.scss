@@ -14,6 +14,7 @@
 
 .policies-table-layout {
   @include styles.main-component-style;
+  @include table.page-table-state-size;
   @include table.base-table-structure(".policies-table", ".policies-table-filter", ".table-scroll-container");
 
   & {
@@ -128,21 +129,6 @@
       width: 400px;
       white-space: normal;
       word-break: break-word;
-    }
-
-    .skeleton-row {
-      .column-max-height {
-        border-radius: var(--border-radius);
-        height: calc(16px * 2);
-      }
-
-      &.col-select,
-      &.col-active {
-        .column-max-height {
-          width: 20px;
-          margin: 0 auto;
-        }
-      }
     }
   }
 

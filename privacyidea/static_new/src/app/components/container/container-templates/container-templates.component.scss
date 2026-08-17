@@ -8,6 +8,7 @@
     ".container-templates-table-filter",
     ".container-templates-scroll-container"
   );
+  @include table.page-table-state-size;
 
   & {
     display: flex;

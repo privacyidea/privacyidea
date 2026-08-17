@@ -783,6 +783,20 @@ class TestPiTokenJanitorContainer:
             container = find_container_by_serial("C1")
             assert "key1" not in container.get_container_info_dict()
 
+    def test_container_delete_info_unknown_key(self, app, containers):
+        """
+        Tests that deleting an info key the container does not have is reported as such.
+        """
+        runner = app.test_cli_runner()
+        with app.app_context():
+            container = find_container_by_serial("C1")
+            assert "no_such_key" not in container.get_container_info_dict()
+
+        result = runner.invoke(findcontainer, ["--serial", "C1", "delete_info", "no_such_key"])
+        assert result.exit_code == 0
+        assert "Container C1 has no info no_such_key" in result.output
+        assert "Deleted info" not in result.output
+
     def test_container_set_description(self, app, containers):
         """
         Tests setting the description for a container.

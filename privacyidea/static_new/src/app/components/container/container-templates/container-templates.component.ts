@@ -18,15 +18,17 @@
  **/
 
 import { CommonModule, KeyValuePipe } from "@angular/common";
-import { Component, computed, inject, linkedSignal, signal, viewChild } from "@angular/core";
+import { Component, computed, inject, signal, viewChild } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
-import { MatCheckbox, MatCheckboxChange } from "@angular/material/checkbox";
+import { MatCheckbox } from "@angular/material/checkbox";
 import { MatIconModule } from "@angular/material/icon";
 import { MatPaginatorModule, PageEvent } from "@angular/material/paginator";
 import { MatSortModule, Sort } from "@angular/material/sort";
 import { MatTableModule } from "@angular/material/table";
-import { Router } from "@angular/router";
+import { Router, RouterLink } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
+import { TableStateComponent } from "@components/shared/table-state/table-state.component";
+import { TableState } from "@core/models/table_state/table-state";
 import { FilterOption } from "@core/models/filter_value_generic/filter-option";
 import { FilterValueGeneric } from "@core/models/filter_value_generic/filter-value-generic";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
@@ -36,6 +38,7 @@ import {
 } from "@services/container-template/container-template.service";
 import { ContainerTemplate } from "@services/container/container.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { RowSelector } from "@services/table-utils/row-selector";
 import { ContainerTemplatesFilterComponent } from "./container-templates-filter/container-templates-filter.component";
 import { ContainerTemplatesTableActionsComponent } from "./container-templates-table-actions/container-templates-table-actions.component";
 import { ViewTemplateTokensComponent } from "./view-template-tokens/view-template-tokens.component";
@@ -93,7 +96,9 @@ const containerTemplateFilterOptions: FilterOption<ContainerTemplate>[] = [
     ContainerTemplatesTableActionsComponent,
     MatCheckbox,
     ViewTemplateTokensComponent,
-    MatPaginatorModule
+    MatPaginatorModule,
+    TableStateComponent,
+    RouterLink
   ],
   templateUrl: "./container-templates.component.html",
   styleUrl: "./container-templates.component.scss"
@@ -117,29 +122,24 @@ export class ContainerTemplatesComponent {
   readonly filter = signal<FilterValueGeneric<ContainerTemplate>>(
     new FilterValueGeneric({ availableFilters: containerTemplateFilterOptions })
   );
+
+  readonly ROUTE_PATHS = ROUTE_PATHS;
+  readonly tableState = new TableState({
+    resource: this.containerTemplateService.templatesResource,
+    count: () => this.containerTemplateService.templates().length,
+    allowed: () => this.authService.actionAllowed("container_template_list"),
+    resetFilter: () => this.onFilterChange(this.filter().clear())
+  });
   readonly pageIndex = signal(0);
   readonly pageSize = signal(10);
   readonly pageSizeOptions = signal([5, 10, 25, 100]);
   readonly activeSort = signal<Sort>({ active: "", direction: "" });
 
-  readonly emptyResource = linkedSignal({
-    source: this.pageSize,
-    computation: (pageSize: number) =>
-      Array.from(
-        { length: pageSize },
-        () =>
-          ({
-            name: "",
-            container_type: "",
-            default: false,
-            template_options: { tokens: [] }
-          }) as ContainerTemplate
-      )
-  });
-
   readonly filteredContainerTemplates = computed(() => {
     const templates = this.containerTemplateService.templates();
-    if (templates.length === 0) return this.emptyResource();
+    if (templates.length === 0) {
+      return [];
+    }
     return this.filter().hasActiveFilters ? this.filter().filterItems(templates) : templates;
   });
 
@@ -190,66 +190,15 @@ export class ContainerTemplatesComponent {
     return data.slice(startIndex, startIndex + this.pageSize());
   });
 
-  readonly selectedTemplateNames = linkedSignal<ContainerTemplate[], Set<string>>({
-    source: () => this.pagedContainerTemplates(),
-    computation: (paged, previous) => {
-      const selected = new Set(previous?.value ?? []);
-      if (this.containerTemplateService.templates().length === 0) {
-        return new Set();
-      }
-      const currentPagedNames = new Set(paged.map((t) => t.name));
-      for (const name of selected) {
-        if (!currentPagedNames.has(name)) {
-          selected.delete(name);
-        }
-      }
-      return selected;
-    }
-  });
-
-  readonly selectedTemplates = computed(() => {
-    const templates = this.containerTemplateService.templates();
-    if (templates.length === 0) return [];
-    const selectedNames = this.selectedTemplateNames();
-    return templates.filter((t) => selectedNames.has(t.name));
-  });
-
-  readonly isAllSelected = computed(() => {
-    const displayedRows = this.pagedContainerTemplates().filter((r) => !!r.name);
-    if (displayedRows.length === 0) return false;
-    return displayedRows.every((row) => this.selectedTemplateNames().has(row.name));
-  });
-
-  readonly isPartiallySelected = computed(() => {
-    const selectedCount = this.selectedTemplateNames().size;
-    const displayedCount = this.pagedContainerTemplates().filter((r) => !!r.name).length;
-    return selectedCount > 0 && selectedCount < displayedCount;
+  readonly selector = new RowSelector<ContainerTemplate>({
+    keyGetter: (template) => template.name,
+    visibleRows: computed(() => this.pagedContainerTemplates().filter((template) => !!template.name))
   });
 
   readonly keepOrder = () => 0;
 
   onSortChange(sort: Sort): void {
     this.activeSort.set(sort);
-  }
-
-  toggleAllRows(): void {
-    const displayedRows = this.pagedContainerTemplates().filter((r) => !!r.name);
-    if (this.isAllSelected()) {
-      this.selectedTemplateNames.set(new Set());
-    } else {
-      this.selectedTemplateNames.set(new Set(displayedRows.map((r) => r.name)));
-    }
-  }
-
-  updateSelection(event: MatCheckboxChange, template: ContainerTemplate): void {
-    if (!template.name) return;
-    const selected = new Set(this.selectedTemplateNames());
-    if (event.checked) {
-      selected.add(template.name);
-    } else {
-      selected.delete(template.name);
-    }
-    this.selectedTemplateNames.set(selected);
   }
 
   onPageEvent(event: PageEvent): void {

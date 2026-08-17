@@ -287,6 +287,7 @@ class GROUP:
     SETTING_ACTIONS = "setting actions"
     TOKENGROUP = "tokengroup"
     SERVICEID = "service ID"
+    CLIENTS = "API clients"
     CONTAINER = "container"
     REGISTRATION = "registration and synchronization"
     SMARTPHONE = "smartphone"
@@ -438,7 +439,11 @@ class PolicyClass:
             combination
         :param sort_by_priority: If true, sort the resulting list by priority, ascending
             by their policy numbers.
-        :param user_agent: The user agent of the request
+        :param user_agent: The user agent of the request. ``None`` returns the user-agent-restricted
+            policies as well, which is what a caller wants that dumps or counts the policies rather
+            than matching a request - an export, the configuration report, or the check whether a
+            scope is configured at all. Pass the empty string to match only the policies that carry
+            no user agent restriction.
         :return: list of policies
         :rtype: list of dicts
         """
@@ -2161,6 +2166,42 @@ def get_static_policy_definitions(scope=None):
                 'desc': _("The Admin is allowed delete a service ID definition."),
                 'mainmenu': [MAIN_MENU.CONFIG],
                 'group': GROUP.SERVICEID},
+            PolicyAction.API_CLIENT_LIST: {
+                'type': 'bool',
+                'desc': _("The Admin is allowed to list API clients."),
+                'mainmenu': [MAIN_MENU.CONFIG],
+                'group': GROUP.CLIENTS},
+            PolicyAction.API_CLIENT_ADD: {
+                'type': 'bool',
+                'desc': _("The Admin is allowed to create API clients."),
+                'mainmenu': [MAIN_MENU.CONFIG],
+                'group': GROUP.CLIENTS},
+            PolicyAction.API_CLIENT_EDIT: {
+                'type': 'bool',
+                'desc': _("The Admin is allowed to modify API clients (display name, status, config)."),
+                'mainmenu': [MAIN_MENU.CONFIG],
+                'group': GROUP.CLIENTS},
+            PolicyAction.API_CLIENT_ROTATE: {
+                'type': 'bool',
+                'desc': _("The Admin is allowed to rotate the API key of a client."),
+                'mainmenu': [MAIN_MENU.CONFIG],
+                'group': GROUP.CLIENTS},
+            PolicyAction.API_CLIENT_DELETE: {
+                'type': 'bool',
+                'desc': _("The Admin is allowed to delete API clients."),
+                'mainmenu': [MAIN_MENU.CONFIG],
+                'group': GROUP.CLIENTS},
+            PolicyAction.REMEMBERED_DEVICE_LIST: {
+                'type': 'bool',
+                'desc': _("The Admin is allowed to list the remembered devices of API clients."),
+                'mainmenu': [MAIN_MENU.CONFIG],
+                'group': GROUP.CLIENTS},
+            PolicyAction.REMEMBERED_DEVICE_REVOKE: {
+                'type': 'bool',
+                'desc': _("The Admin is allowed to revoke remembered devices (of a client, "
+                          "or realm-wide / per user across all clients)."),
+                'mainmenu': [MAIN_MENU.CONFIG],
+                'group': GROUP.CLIENTS},
             PolicyAction.TOKENGROUPS: {
                 'type': 'bool',
                 'desc': _("The Admin is allowed to manage the tokengroups of a token."),
@@ -2570,6 +2611,23 @@ def get_static_policy_definitions(scope=None):
             }
         },
         SCOPE.AUTH: {
+            PolicyAction.REMEMBER_DEVICE: {
+                'type': 'bool',
+                'desc': _("Allow an API client to obtain a persistent 'remember this device' "
+                          "cookie on successful authentication. Requires the request to be made "
+                          "by an identified API client (the X-API-Key header): without one, no "
+                          "cookie is issued and the recognition endpoint returns 401.")},
+            PolicyAction.REMEMBER_DEVICE_VALIDITY: {
+                'type': 'int',
+                'desc': _("How many days a 'remember this device' cookie stays valid "
+                          "(default 30 if unset). Scope it with a realm/user condition to give "
+                          "different lifetimes, e.g. a shorter one for admins than for users.")},
+            PolicyAction.REMEMBER_DEVICE_MAX_DEVICES: {
+                'type': 'int',
+                'desc': _("Maximum number of remembered devices a single user may have per API "
+                          "client. Once the user has this many live devices for the client, "
+                          "further opt-ins on that client issue no new cookie (the existing "
+                          "devices keep working). Unset or 0 means unlimited.")},
             PolicyAction.OTPPIN: {
                 'type': 'str',
                 'value': [ACTIONVALUE.TOKENPIN, ACTIONVALUE.USERSTORE,
@@ -2833,7 +2891,9 @@ def get_static_policy_definitions(scope=None):
             },
             PolicyAction.APIKEY: {
                 'type': 'bool',
-                'desc': _('The sending of an API Auth Key is required during '
+                'desc': _('DEPRECATED (planned for removal in a future release; the X-API-Key '
+                          'API clients feature is intended to replace it): '
+                          'The sending of an API Auth Key is required during '
                           'authentication. This avoids rogue authenticate '
                           'requests against the /validate/check interface.'),
                 'group': GROUP.SETTING_ACTIONS,
@@ -3331,7 +3391,8 @@ class Match:
             if "password" in request_data:
                 del request_data["password"]
         return self._g.policy_object.match_policies(audit_data=audit_data, request_headers=request_headers,
-                                                    pinode=self.pinode, request_data=request_data, **self._match_kwargs)
+                                                    pinode=self.pinode, request_data=request_data,
+                                                    **self._match_kwargs)
 
     def any(self, write_to_audit_log=True):
         """
@@ -3399,6 +3460,13 @@ class Match:
          * *either* if there are no active policies defined in the matched scope
          * *or* the action is explicitly allowed by a policy in the matched scope
 
+        Whether the scope is configured is decided by the scope alone: every
+        active policy of the scope counts, including one that is restricted to a
+        realm, a client or a user agent which does not match this request. So a
+        scope whose only policy is restricted to one user agent is a configured
+        scope, and a request from a different user agent is denied unless a
+        policy grants the action to it.
+
         This method is **fail-open**: it returns True when the whole scope is
         unconfigured. It is therefore only correct for *permission gates* -
         checks whose result is immediately used to deny an action (typically
@@ -3421,6 +3489,12 @@ class Match:
         :return: True or False
         """
         policies_defined = self.any(write_to_audit_log=write_to_audit_log)
+        # Whether the scope is configured at all is asked without any of the filters of the request:
+        # no realm, no user, no client IP and, by passing no user_agent, no user agent either. A
+        # policy that is restricted to a user agent still configures its scope, so it has to be
+        # counted here even when it does not match this request - otherwise defining nothing but
+        # user-agent-restricted policies in a scope would leave that scope wide open for every
+        # other user agent.
         policies_at_all = self._g.policy_object.list_policies(scope=self._match_kwargs["scope"], active=True)
         # The action is *allowed* if a matched policy explicitly mentions it (``policies_defined`` is non-empty)
         # or if no policies are defined in the given scope (``policies_at_all`` is empty)

@@ -27,12 +27,8 @@ import { DialogService } from "@services/dialog/dialog.service";
 import { RadiusServer, RadiusServerService } from "@services/radius-server/radius-server.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
-import {
-  MockAuthService,
-  MockDialogService,
-  MockRadiusService,
-  MockTableUtilsService
-} from "@testing/mock-services";
+import { expectsTableStateGating } from "@testing/table-state-gating";
+import { MockAuthService, MockDialogService, MockRadiusService, MockTableUtilsService } from "@testing/mock-services";
 import { Subject } from "rxjs";
 import { RadiusServersComponent } from "./radius-servers.component";
 
@@ -76,20 +72,25 @@ describe("RadiusServersComponent", () => {
     fixture.detectChanges();
   });
 
+  it("gates the table on its read right, row count and filter", () => {
+    expectsTableStateGating({
+      state: component.tableState,
+      right: "radiusserver_read"
+    });
+  });
+
   it("should create", () => {
     expect(component).toBeTruthy();
   });
 
-  it("should toggle row and all-row selection", () => {
-    const row = component.radiusDataSource().data[0];
-    component.toggleRow(row);
-    expect(component.isSelected(row)).toBe(true);
-    component.toggleRow(row);
-    expect(component.isSelected(row)).toBe(false);
-    component.toggleAllRows();
-    expect(component.isAllSelected()).toBe(true);
-    component.toggleAllRows();
-    expect(component.selection().length).toBe(0);
+  it("should only select the servers left by the filter", async () => {
+    component.onFilterInput("server1");
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    component.selector.selectAllRows();
+
+    expect(component.selector.selectedRows().map((row) => row.identifier)).toEqual(["server1"]);
   });
 
   it("should display servers from service", () => {
@@ -118,7 +119,7 @@ describe("RadiusServersComponent", () => {
   it("should delete server after confirmation", () => {
     const server = radiusServiceMock.radiusServers()[0];
 
-    component.selection.set([server]);
+    component.selector.selectRow(server);
     component.deleteSelected();
 
     expect(dialogServiceMock.openDialog).toHaveBeenCalled();

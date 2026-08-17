@@ -70,7 +70,7 @@
     @if (sessionOverOneDay()) {
       {{ sessionDaysText() }}
     } @else {
-      {{ sessionTimerService.remainingTime() | date: sessionTimeFormat() : "UTC" }}
+      {{ displayedTime() | date: sessionTimeFormat() : "UTC" }}
     }
   </div>
   <button

@@ -7,6 +7,7 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  @include table.page-table-state-size;
 
   .realm-break {
     margin-top: 3px;
@@ -26,13 +27,4 @@
   // height, which includes the hint line below the input.
   align-self: flex-start;
   margin-top: 16px;
-}
-
-.unsupported-filter-item {
-  opacity: 0.5;
-  cursor: default;
-}
-
-.mat-mdc-menu-item.unsupported-filter-item:hover {
-  background-color: transparent;
 }

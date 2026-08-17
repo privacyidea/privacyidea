@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, inject, input } from "@angular/core";
+import { Component, computed, inject, input } from "@angular/core";
 
 import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
@@ -27,7 +27,7 @@ import { CopyPolicyDialogComponent } from "@components/policies/dialogs/copy-pol
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { AuthService } from "@services/auth/auth.service";
 import { DialogService } from "@services/dialog/dialog.service";
-import { PolicyService } from "@services/policies/policies.service";
+import { PolicyDetail, PolicyService } from "@services/policies/policies.service";
 import { lastValueFrom } from "rxjs";
 import { OverflowNavDirective } from "../../../shared/directives/overflow-nav/overflow-nav.directive";
 
@@ -39,7 +39,8 @@ import { OverflowNavDirective } from "../../../shared/directives/overflow-nav/ov
   styleUrl: "./policies-table-actions.component.scss"
 })
 export class PoliciesTableActionsComponent {
-  readonly policySelection = input.required<Set<string>>();
+  readonly policySelection = input.required<PolicyDetail[]>();
+  readonly selectedPolicyNames = computed(() => this.policySelection().map((policy) => policy.name));
 
   readonly dialogService = inject(DialogService);
   readonly authService = inject(AuthService);
@@ -51,7 +52,7 @@ export class PoliciesTableActionsComponent {
   }
 
   async deleteSelectedPolicies(): Promise<void> {
-    const selection = Array.from(this.policySelection());
+    const selection = this.selectedPolicyNames();
     const confirmed = await lastValueFrom(
       this.dialogService
         .openDialog({
@@ -74,7 +75,7 @@ export class PoliciesTableActionsComponent {
   }
 
   async copySelectedPolicies(): Promise<void> {
-    for (const name of this.policySelection()) {
+    for (const name of this.selectedPolicyNames()) {
       const newName = await lastValueFrom(
         this.dialogService
           .openDialog({

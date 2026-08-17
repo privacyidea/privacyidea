@@ -188,6 +188,29 @@
                     </ul>
                 </li>
                 <li role="presentation"
+                    ng-class="{ active: $state.includes('config.clients')}"
+                    ng-show="checkRight('api_client_list')">
+                    <a ui-sref="config.clients">
+                        <span class="glyphicon glyphicon-cloud"></span>
+                        <span translate>API Clients</span>
+                    </a>
+                    <ul ng-show="$state.includes('config.clients')"
+                        class="nav nav-pills nav-stacked pi-submenu">
+                        <li role="presentation"
+                            ng-class="{ active: $state.includes('config.clients.list')}">
+                            <a ui-sref="config.clients.list"
+                               ng-click="deselectClient()"
+                               translate>List API clients</a></li>
+                        <li role="presentation"
+                            ng-class="{ active: $state.includes('config.clients.add')}"
+                            ng-show="checkRight('api_client_add')">
+                            <a ui-sref="config.clients.add"
+                               ng-click="deselectClient()"
+                               translate>
+                                New API client</a></li>
+                    </ul>
+                </li>
+                <li role="presentation"
                     ng-class="{active: $state.includes('config.caconnectors')}">
                     <a ui-sref="config.caconnectors.list">
                             <span class="glyphicon glyphicon-bookmark"

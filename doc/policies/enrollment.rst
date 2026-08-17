@@ -950,4 +950,13 @@ type: ``string``
 This policy can be used to force the privacyIDEA Authenticator App to secure the token with a pin or
 biometric. If you select any, the token can be unlocked with both.
 
+The app then requires the selected authentication method every time the token is used or its data is
+revealed, for example when an OTP value is displayed or a push request is accepted or declined. If the
+user has configured a stricter method for the whole app, that stricter method applies.
+
+The policy describes how the app gates the *use* of the token. It is not a statement about the storage of
+the key material and it does not tie the key to a particular biometric that is enrolled on the device. The
+app stores the token data in the secure storage provided by the operating system, and choosing
+``biometric`` does not make the key unusable when the user later adds or removes a fingerprint or face.
+
 .. note:: This needs the privacyIDEA Authenticator app 4.6.1 or higher.

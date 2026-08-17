@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, ElementRef, inject, signal, ViewChild, WritableSignal } from "@angular/core";
+import { Component, computed, ElementRef, inject, signal, ViewChild, viewChild, WritableSignal } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatIconModule } from "@angular/material/icon";
@@ -31,8 +31,11 @@ import { ClearableInputComponent } from "@components/shared/clearable-input/clea
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { TableStateComponent } from "@components/shared/table-state/table-state.component";
+import { TableState } from "@core/models/table_state/table-state";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { renderedRows, RowSelector } from "@services/table-utils/row-selector";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { Tokengroup, TokengroupService, TokengroupServiceInterface } from "@services/tokengroup/tokengroup.service";
 
@@ -52,7 +55,8 @@ import { Tokengroup, TokengroupService, TokengroupServiceInterface } from "@serv
     MatLabel,
     ClearableInputComponent,
     MatInput,
-    CopyableComponent
+    CopyableComponent,
+    TableStateComponent
   ],
   templateUrl: "./tokengroups.component.html",
   styleUrl: "./tokengroups.component.scss"
@@ -70,21 +74,30 @@ export class TokengroupsComponent {
   totalLength: WritableSignal<number> = computed(
     () => this.tokengroupService.tokengroups().length
   ) as WritableSignal<number>;
+  readonly tableState = new TableState({
+    resource: this.tokengroupService.tokengroupResource,
+    count: () => this.tokengroupService.tokengroups().length,
+    allowed: () => this.authService.actionAllowed("tokengroup_list"),
+    resetFilter: () => this.resetFilter()
+  });
 
-  @ViewChild(MatPaginator) paginator!: MatPaginator;
+  readonly paginator = viewChild(MatPaginator);
   @ViewChild(MatSort) sort!: MatSort;
   @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: ElementRef;
 
   displayedColumns: string[] = ["select", "id", "groupname", "description"];
 
-  selection = signal<Tokengroup[]>([]);
-
   tokengroupDataSource = computed(() => {
     const groups = this.tokengroupService.tokengroups();
     const dataSource = new MatTableDataSource(groups);
-    dataSource.paginator = this.paginator;
+    dataSource.paginator = this.paginator() ?? null;
     dataSource.sort = this.sort;
     return dataSource;
+  });
+
+  selector = new RowSelector<Tokengroup>({
+    keyGetter: (group) => group.groupname,
+    visibleRows: renderedRows(this.tokengroupDataSource)
   });
 
   onCreateNewTokengroup(): void {
@@ -95,34 +108,8 @@ export class TokengroupsComponent {
     this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_TOKENGROUPS_DETAILS + group.groupname);
   }
 
-  isAllSelected(): boolean {
-    const rows = this.tokengroupDataSource().data;
-    return rows.length > 0 && this.selection().length === rows.length;
-  }
-
-  toggleAllRows(): void {
-    if (this.isAllSelected()) {
-      this.selection.set([]);
-    } else {
-      this.selection.set([...this.tokengroupDataSource().data]);
-    }
-  }
-
-  toggleRow(row: Tokengroup): void {
-    const current = this.selection();
-    if (current.includes(row)) {
-      this.selection.set(current.filter((selected) => selected !== row));
-    } else {
-      this.selection.set([...current, row]);
-    }
-  }
-
-  isSelected(row: Tokengroup): boolean {
-    return this.selection().includes(row);
-  }
-
   deleteSelected(): void {
-    const selected = this.selection();
+    const selected = this.selector.selectedRows();
     if (selected.length === 0) {
       return;
     }
@@ -140,7 +127,7 @@ export class TokengroupsComponent {
       .subscribe((result) => {
         if (result) {
           selected.forEach((row) => void this.tokengroupService.deleteTokengroup(row.groupname).catch(() => undefined));
-          this.selection.set([]);
+          this.selector.deselectAllRows();
         }
       });
   }

@@ -39,6 +39,7 @@ import {
   FilterableTableService,
   FilterableTableServiceInterface
 } from "@services/table-utils/filterable-table-service";
+import { loadedRows, RowSelector } from "@services/table-utils/row-selector";
 import { FilterCaseNote } from "@utils/filter-hint.utils";
 import { filterParamsEqual, toBooleanParam, withDefaultRealm } from "@utils/filter.utils";
 import { StringUtils } from "@utils/string.utils";
@@ -125,16 +126,13 @@ const exactMatchKeys = new Set([
 ]);
 const booleanKeys = new Set(["active", "assigned"]);
 // `serial` is a raw LIKE (SQLite/MySQL fold case, PostgreSQL does not), the tokeninfo
-// keys are a raw equality comparison (only MySQL with a _ci collation folds case).
+// keys and `userid` are a raw comparison (only MySQL with a _ci collation folds case).
 const caseNotes: Record<string, FilterCaseNote> = {
   serial: "usually-insensitive",
+  userid: "usually-sensitive",
+  resolver: "usually-insensitive",
   "infokey & infovalue": "usually-sensitive"
 };
-// TODO: temporary. The backend accepts these keywords but never applies them, because
-// the filter clauses were removed in 78c0cc621 and not restored. Once they either work
-// again or are dropped, remove this set along with the whole "unsupported" mechanism.
-const unsupportedKeys = new Set(["userid", "resolver"]);
-
 function toParamValue(key: string, value: string): string {
   if (booleanKeys.has(key)) {
     return toBooleanParam(value) ?? value;
@@ -151,21 +149,32 @@ function toParamValue(key: string, value: string): string {
   return `*${value}*`;
 }
 
-// A single token type maps to the `type` query param, multiple to `type_list`.
-function toTypeParams(filterEntries: [string, string][]): Record<string, string> {
-  const filterValues = new Map(filterEntries);
-  const types = [
-    ...StringUtils.splitFilterList(filterValues.get("type")),
-    ...StringUtils.splitFilterList(filterValues.get("type_list"))
-  ];
-  const uniqueTypes = Array.from(new Set(types));
-  if (uniqueTypes.length === 1) {
-    return { type: `*${uniqueTypes[0]}*` };
+// A single typed token type maps to the `type` query param, multiple to `type_list`. A hidden
+// `type_list` is the set of types the route allows at all, so it is sent as its own param and
+// the backend ands both clauses. Several typed types share the param with the allowed set and
+// are therefore narrowed down to it.
+function toTypeParams(filter: FilterValue): Record<string, string> {
+  const allowedTypes = StringUtils.splitFilterList(filter.hiddenFilterMap.get("type_list"));
+  const typedTypes = Array.from(
+    new Set([
+      ...StringUtils.splitFilterList(filter.filterMap.get("type")),
+      ...StringUtils.splitFilterList(filter.filterMap.get("type_list"))
+    ])
+  );
+  const params: Record<string, string> = {};
+  if (allowedTypes.length > 0) {
+    params["type_list"] = allowedTypes.join(",");
   }
-  if (uniqueTypes.length > 1) {
-    return { type_list: uniqueTypes.join(",") };
+  if (typedTypes.length === 1) {
+    params["type"] = `*${typedTypes[0]}*`;
+  } else if (typedTypes.length > 1) {
+    const narrowedTypes =
+      allowedTypes.length > 0 ? typedTypes.filter((type) => allowedTypes.includes(type)) : typedTypes;
+    if (narrowedTypes.length > 0) {
+      params["type_list"] = narrowedTypes.join(",");
+    }
   }
-  return {};
+  return params;
 }
 
 export interface Tokens {
@@ -332,11 +341,10 @@ export interface TokenServiceInterface extends FilterableTableServiceInterface {
   defaultSizeOptions: number[];
   booleanKeys: Set<string>;
   caseNotes: Record<string, FilterCaseNote>;
-  unsupportedKeys: Set<string>;
   tokenResource: HttpResourceRef<PiResponse<Tokens> | undefined>;
   tokenSerialResource: HttpResourceRef<PiResponse<Tokens> | undefined>;
   tokenResourceValue: Signal<Tokens | null>;
-  tokenSelection: WritableSignal<TokenDetails[]>;
+  tokenSelection: RowSelector<TokenDetails>;
   selectedToken: WritableSignal<string | null>;
   tokenOptions: Signal<string[]>;
   filteredTokenOptions: Signal<string[]>;
@@ -434,7 +442,6 @@ export class TokenService extends FilterableTableService implements TokenService
   override readonly exactMatchKeys = exactMatchKeys;
   readonly booleanKeys = booleanKeys;
   readonly caseNotes = caseNotes;
-  readonly unsupportedKeys = unsupportedKeys;
 
   showOnlyTokenInContainer = linkedSignal({
     source: this.contentService.routeUrl,
@@ -497,8 +504,8 @@ export class TokenService extends FilterableTableService implements TokenService
   override readonly filterParams = computed<Record<string, string>>(
     () => {
       const allowed = [...this.allFilterKeys(), "infokey", "infovalue"];
-      const filterEntries = this.activeFilter().allEntries;
-      const entries = filterEntries
+      const activeFilter = this.activeFilter();
+      const entries = activeFilter.allEntries
         // Filter unknown keys, token types are handled by toTypeParams
         .filter(([key]) => allowed.includes(key) && key !== "type" && key !== "type_list")
         // Normalize values
@@ -507,7 +514,7 @@ export class TokenService extends FilterableTableService implements TokenService
         .filter(([key, v]) => (key === "container_serial" ? true : StringUtils.validFilterValue(v)))
         // Convert to query param values
         .map(([key, v]) => [key, toParamValue(key, v)] as const);
-      return { ...Object.fromEntries(entries), ...toTypeParams(filterEntries) };
+      return { ...Object.fromEntries(entries), ...toTypeParams(activeFilter) };
     },
     { equal: filterParamsEqual }
   );
@@ -675,6 +682,12 @@ export class TokenService extends FilterableTableService implements TokenService
   readonly defaultSizeOptions = [5, 10, 25, 50];
 
   tokenResource = httpResource<PiResponse<Tokens>>(() => {
+    // Do not load tokens if the action is not allowed. tokenlist only exists in the admin
+    // policy scope, so self-service users must not be gated on it.
+    if (this.authService.role() === "admin" && !this.authService.actionAllowed("tokenlist")) {
+      return undefined;
+    }
+
     // Only load tokens on routes with a token list or selection.
     const onAllowedRoute =
       this.contentService.onTokens() ||
@@ -704,12 +717,9 @@ export class TokenService extends FilterableTableService implements TokenService
     return this.tokenResource.value()?.result?.value || null;
   });
 
-  tokenSelection: WritableSignal<TokenDetails[]> = linkedSignal({
-    source: () => ({
-      routeUrl: this.contentService.routeUrl(),
-      tokenResource: this.tokenResourceValue()
-    }),
-    computation: () => []
+  tokenSelection = new RowSelector<TokenDetails>({
+    keyGetter: (token) => token.serial,
+    visibleRows: loadedRows(this.tokenResource, (response) => response.result?.value?.tokens)
   });
 
   selectedToken = signal<string | null>(null);

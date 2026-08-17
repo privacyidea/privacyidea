@@ -72,6 +72,7 @@ from privacyidea.api.recover import recover_blueprint
 from privacyidea.api.register import register_blueprint
 from privacyidea.api.resolver import resolver_blueprint
 from privacyidea.api.serviceid import serviceid_blueprint
+from privacyidea.api.clients import clients_blueprint
 from privacyidea.api.smsgateway import smsgateway_blueprint
 from privacyidea.api.smtpserver import smtpserver_blueprint
 from privacyidea.api.subscriptions import subscriptions_blueprint
@@ -169,6 +170,7 @@ def _register_blueprints(app):
     app.register_blueprint(monitoring_blueprint, url_prefix='/monitoring')
     app.register_blueprint(tokengroup_blueprint, url_prefix='/tokengroup')
     app.register_blueprint(serviceid_blueprint, url_prefix='/serviceid')
+    app.register_blueprint(clients_blueprint, url_prefix='/clients')
     app.register_blueprint(container_blueprint, url_prefix='/container')
     app.register_blueprint(healthz_blueprint, url_prefix='/healthz')
     app.register_blueprint(info_blueprint, url_prefix='/info')
@@ -243,6 +245,34 @@ def _warn_if_base_url_missing(app: Flask):
                     "are left blank. They are never built from the untrusted HTTP "
                     "Host header. Set PI_BASE_URL in pi.cfg to the public URL of "
                     "this privacyIDEA server.")
+
+
+def _setup_database_engine_options(app: Flask):
+    """
+    Resolve the options for the main database engine before ``db.init_app()`` creates it.
+
+    Anything the operator put into ``SQLALCHEMY_ENGINE_OPTIONS`` is kept as is, only
+    the defaults privacyIDEA wants on top of SQLAlchemy's own are filled in.
+    """
+    # The options may come from a class attribute of the configuration object, so work
+    # on a copy. Mutating it in place would leak into later create_app() calls in the
+    # same process, which mostly hits the tests and pi-manage.
+    engine_options = dict(app.config.get(ConfigKey.SQLALCHEMY_ENGINE_OPTIONS, {}))
+
+    # Pessimistic disconnect handling: validate a connection when it is checked out and
+    # transparently replace it if the server closed it in the meantime. MariaDB/MySQL
+    # drop idle connections at wait_timeout and the pool has no way to know, so without
+    # this a request is handed a dead socket ("MySQL server has gone away"). It costs
+    # one lightweight ping per checkout, which is wasted on SQLite, where a connection
+    # cannot go stale.
+    database_uri = app.config.get(ConfigKey.SQLALCHEMY_DATABASE_URI) or ""
+    if "pool_pre_ping" not in engine_options and not database_uri.startswith("sqlite"):
+        engine_options["pool_pre_ping"] = True
+
+    app.config[ConfigKey.SQLALCHEMY_ENGINE_OPTIONS] = engine_options
+    log.debug(f"Database engine options: {engine_options}")
+    if app.config.get(ConfigKey.VERBOSE):
+        sys.stderr.write(f"Database engine options: {engine_options}\n")
 
 
 def _setup_node_configuration(app: Flask):
@@ -412,6 +442,7 @@ def create_app(config_name="development",
 
 
     # Set up Plug-Ins
+    _setup_database_engine_options(app)
     db.init_app(app)
 
     # TODO: This is not necessary except for the pi-manage command line util
@@ -534,6 +565,7 @@ def create_docker_app():
     _register_blueprints(app)
 
     # Set up Plug-Ins
+    _setup_database_engine_options(app)
     db.init_app(app)
 
     Versioned(app, format='%(path)s?v=%(version)s')

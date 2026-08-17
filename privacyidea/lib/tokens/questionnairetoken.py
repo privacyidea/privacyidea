@@ -50,7 +50,6 @@ class QUESTACTION:
 
 
 class QuestionnaireTokenClass(TokenClass):
-
     """
     This is a Questionnaire Token. The token stores a list of questions and
     answers in the tokeninfo database table. The answers are encrypted.
@@ -96,7 +95,7 @@ class QuestionnaireTokenClass(TokenClass):
                                 'user.'),
                'init': {},
                'config': {},
-               'user':  ['enroll'],
+               'user': ['enroll'],
                # This tokentype is enrollable in the UI for...
                'ui_enroll': ["admin", "user"],
                'policy': {
@@ -214,7 +213,7 @@ class QuestionnaireTokenClass(TokenClass):
         questions = {}
 
         # Get an integer list of the already used questions
-        used_questions = [int(x) for x in options.get("data", "").split(",") if options.get("data")]
+        used_questions = options.get("data", {}).get("used_questions", [])
         # Fill the questions of the token
         for tinfo in self.token.info_list:
             if tinfo.Type == "password":
@@ -228,7 +227,7 @@ class QuestionnaireTokenClass(TokenClass):
         remaining_questions = {k: v for (k, v) in questions.items() if k not in used_questions}
         message_id = secrets.choice(list(remaining_questions))
         message = remaining_questions[message_id]
-        used_questions = (options.get("data", "") + f",{message_id!s}").strip(",")
+        used_questions = used_questions + [message_id]
 
         validity = int(get_from_config('DefaultChallengeValidityTime', 120))
         tokentype = self.get_tokentype().lower()
@@ -239,7 +238,7 @@ class QuestionnaireTokenClass(TokenClass):
         # Create the challenge in the database
         db_challenge = create_challenge(self.token.serial,
                                         transaction_id=transactionid,
-                                        data=used_questions,
+                                        data={"used_questions": used_questions},
                                         session=options.get("session"),
                                         challenge=message,
                                         validitytime=validity)
@@ -336,7 +335,7 @@ class QuestionnaireTokenClass(TokenClass):
             session = int(challengeobject_list[0].session or "0") + 1
             options["session"] = f"{session!s}"
             # write the used questions to the data field
-            options["data"] = challengeobject_list[0].data or ""
+            options["data"] = challengeobject_list[0].get_data()
             if session < question_number:
                 return True
         return False

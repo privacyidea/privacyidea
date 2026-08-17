@@ -3,6 +3,7 @@
 
 .clients-layout {
   @include styles.main-component-style;
+  @include table.page-table-state-size;
   @include table.base-table-structure(".clients-table", ".clients-table-filter", ".table-scroll-container");
 }
 

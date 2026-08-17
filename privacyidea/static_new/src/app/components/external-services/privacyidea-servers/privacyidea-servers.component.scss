@@ -5,6 +5,7 @@
 .privacyidea-servers-container {
   @include styles.main-component-style;
   @include table.base-table-structure(".privacyidea-servers-table", ".table-filter", ".table-scroll-container");
+  @include table.page-table-state-size;
 }
 
 .actions-container {

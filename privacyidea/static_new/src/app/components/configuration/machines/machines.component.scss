@@ -5,6 +5,7 @@
 .machines-container {
   @include styles.main-component-style;
   @include table.base-table-structure(".machines-table", ".table-filter", ".table-scroll-container");
+  @include table.page-table-state-size;
 }
 
 .header-row {

@@ -166,6 +166,25 @@ $description-width: 18rem;
   }
 }
 
+// Sizes the standalone state panel (empty, denied, error) for a table that owns its
+// page: the panel claims the footprint the table would have had, so it reads as the
+// page content rather than as a small island at the top of an empty content area.
+// Tables embedded as one section of a details page deliberately do not opt in — there
+// the compact default keeps the section proportionate to its neighbours.
+// Opted into by tables that own their page: the state panel fills the footprint
+// the table would have had, and steps up one typescale/icon size with it. A
+// panel alone on a page and a panel sitting among a page's other sections are
+// the same component at two sizes, not two different components.
+@mixin page-table-state-size {
+  // The footprint is the page container's own box: main-component-style caps it at 100cq* against
+  // the content region and pads 16px per side, so the panel takes that box less the padding.
+  --table-state-min-height: calc(100cqh - 2 * 16px);
+  --table-state-min-width: min(44rem, calc(100cqw - 2 * 16px));
+  --table-state-heading-font: var(--mat-sys-title-large);
+  --table-state-icon-frame-size: 5.5rem;
+  --table-state-icon-size: 40px;
+}
+
 @mixin base-table-structure(
   $table-class: ".table",
   $filter-class: ".table-filter",
@@ -276,6 +295,7 @@ table {
 .mat-mdc-paginator-container {
   padding: 0 0 0 16px;
   flex-wrap: nowrap !important;
+  --mat-paginator-container-size: 0px;
 }
 
 a {
@@ -454,6 +474,8 @@ th:nth-child(even) {
   width: 42px;
 }
 
+// Placeholder rows shown while a table loads for the first time: the row keeps its
+// height so the table does not jump, but no cell content is visible or interactive.
 .cdk-overlay-pane {
   position: absolute !important;
   z-index: 1;
@@ -630,6 +652,10 @@ app-details-card .details-header {
 .selfservice-paginator-label {
   flex: 1;
   margin-right: 16px;
+}
+
+.mat-mdc-autocomplete-panel.token-option-panel {
+  max-height: 400px;
 }
 
 .token-option {

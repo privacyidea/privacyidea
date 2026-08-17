@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, ElementRef, inject, signal, ViewChild, WritableSignal } from "@angular/core";
+import { Component, computed, ElementRef, inject, signal, ViewChild, viewChild, WritableSignal } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatTooltipModule } from "@angular/material/tooltip";
@@ -34,7 +34,10 @@ import { ClearableInputComponent } from "@components/shared/clearable-input/clea
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { TableStateComponent } from "@components/shared/table-state/table-state.component";
+import { TableState } from "@core/models/table_state/table-state";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { renderedRows, RowSelector } from "@services/table-utils/row-selector";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 
 @Component({
@@ -54,7 +57,8 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
     ClearableInputComponent,
     MatInput,
     CopyableComponent,
-    RouterLink
+    RouterLink,
+    TableStateComponent
   ],
   templateUrl: "./service-ids.component.html",
   styleUrl: "./service-ids.component.scss"
@@ -71,18 +75,29 @@ export class ServiceIdsComponent {
   totalLength: WritableSignal<number> = computed(
     () => this.serviceIdService.serviceIds().length
   ) as WritableSignal<number>;
-  @ViewChild(MatPaginator) paginator!: MatPaginator;
+  readonly tableState = new TableState({
+    resource: this.serviceIdService.serviceIdResource,
+    count: () => this.serviceIdService.serviceIds().length,
+    allowed: () => this.authService.actionAllowed("serviceid_list"),
+    resetFilter: () => this.resetFilter()
+  });
+  readonly paginator = viewChild(MatPaginator);
   @ViewChild(MatSort) sort!: MatSort;
   @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: ElementRef<HTMLInputElement>;
+
   displayedColumns: string[] = ["select", "id", "servicename", "description"];
 
-  selection = signal<ServiceId[]>([]);
   serviceIdDataSource = computed(() => {
     const services = this.serviceIdService.serviceIds();
     const dataSource = new MatTableDataSource(services);
-    dataSource.paginator = this.paginator;
+    dataSource.paginator = this.paginator() ?? null;
     dataSource.sort = this.sort;
     return dataSource;
+  });
+
+  selector = new RowSelector<ServiceId>({
+    keyGetter: (service) => service.servicename,
+    visibleRows: renderedRows(this.serviceIdDataSource)
   });
 
   onCreateNewServiceId(): void {
@@ -93,34 +108,8 @@ export class ServiceIdsComponent {
     this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS_DETAILS + serviceId.servicename);
   }
 
-  isAllSelected(): boolean {
-    const rows = this.serviceIdDataSource().data;
-    return rows.length > 0 && this.selection().length === rows.length;
-  }
-
-  toggleAllRows(): void {
-    if (this.isAllSelected()) {
-      this.selection.set([]);
-    } else {
-      this.selection.set([...this.serviceIdDataSource().data]);
-    }
-  }
-
-  toggleRow(row: ServiceId): void {
-    const current = this.selection();
-    if (current.includes(row)) {
-      this.selection.set(current.filter((selected) => selected !== row));
-    } else {
-      this.selection.set([...current, row]);
-    }
-  }
-
-  isSelected(row: ServiceId): boolean {
-    return this.selection().includes(row);
-  }
-
   deleteSelected(): void {
-    const selected = this.selection();
+    const selected = this.selector.selectedRows();
     if (selected.length === 0) {
       return;
     }
@@ -138,7 +127,7 @@ export class ServiceIdsComponent {
       .subscribe((result) => {
         if (result) {
           selected.forEach((row) => void this.serviceIdService.deleteServiceId(row.servicename).catch(() => undefined));
-          this.selection.set([]);
+          this.selector.deselectAllRows();
         }
       });
   }

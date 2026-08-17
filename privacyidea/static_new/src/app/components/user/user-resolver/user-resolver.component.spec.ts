@@ -27,6 +27,7 @@ import { NotificationService } from "@services/notification/notification.service
 import { Resolver, ResolverService } from "@services/resolver/resolver.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import { MockNotificationService } from "@testing/mock-services";
+import { expectsTableStateGating } from "@testing/table-state-gating";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockContentService } from "@testing/mock-services/mock-content-service";
 import { MockResolverService } from "@testing/mock-services/mock-resolver-service";
@@ -97,6 +98,13 @@ describe("UserSourcesComponent", () => {
     router = TestBed.inject(Router);
 
     fixture.detectChanges();
+  });
+
+  it("gates the table on its read right, row count and filter", () => {
+    expectsTableStateGating({
+      state: component.tableState,
+      right: "resolverread"
+    });
   });
 
   it("should create", () => {

@@ -23,10 +23,12 @@ import {
   PrivacyideaServers,
   PrivacyideaServerServiceInterface
 } from "@services/privacyidea-server/privacyidea-server.service";
-import { MockHttpResourceRef } from "./mock-utils";
+import { MockHttpResourceRef, MockPiResponse } from "./mock-utils";
 
 export class MockPrivacyideaServerService implements PrivacyideaServerServiceInterface {
-  remoteServerResource = new MockHttpResourceRef<PiResponse<PrivacyideaServers> | undefined>(undefined);
+  remoteServerResource = new MockHttpResourceRef<PiResponse<PrivacyideaServers> | undefined>(
+    MockPiResponse.fromValue<PrivacyideaServers>({})
+  );
   remoteServerOptions = signal<PrivacyideaServer[]>([]);
   postPrivacyideaServer = jest.fn(async (): Promise<void> => Promise.resolve());
   deletePrivacyideaServer = jest.fn(async (): Promise<void> => Promise.resolve());

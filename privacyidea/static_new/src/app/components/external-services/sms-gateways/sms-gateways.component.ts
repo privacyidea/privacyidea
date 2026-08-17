@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, ElementRef, inject, signal, ViewChild, WritableSignal } from "@angular/core";
+import { Component, computed, ElementRef, inject, signal, ViewChild, viewChild, WritableSignal } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatTooltipModule } from "@angular/material/tooltip";
@@ -35,7 +35,10 @@ import { ClearableInputComponent } from "@components/shared/clearable-input/clea
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { TableStateComponent } from "@components/shared/table-state/table-state.component";
+import { TableState } from "@core/models/table_state/table-state";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { renderedRows, RowSelector } from "@services/table-utils/row-selector";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 
 @Component({
@@ -54,7 +57,8 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
     MatLabel,
     ClearableInputComponent,
     MatInput,
-    CopyableComponent
+    CopyableComponent,
+    TableStateComponent
   ],
   templateUrl: "./sms-gateways.component.html",
   styleUrl: "./sms-gateways.component.scss"
@@ -72,21 +76,30 @@ export class SmsGatewaysComponent {
   totalLength: WritableSignal<number> = computed(
     () => this.smsGatewayService.smsGateways().length
   ) as WritableSignal<number>;
+  readonly tableState = new TableState({
+    resource: this.smsGatewayService.smsGatewayResource,
+    count: () => this.smsGatewayService.smsGateways().length,
+    allowed: () => this.authService.actionAllowed("smsgateway_read"),
+    resetFilter: () => this.resetFilter()
+  });
 
-  @ViewChild(MatPaginator) paginator!: MatPaginator;
+  readonly paginator = viewChild(MatPaginator);
   @ViewChild(MatSort) sort!: MatSort;
   @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: ElementRef<HTMLInputElement>;
 
   displayedColumns: string[] = ["select", "name", "description", "providermodule"];
 
-  selection = signal<SmsGateway[]>([]);
-
   smsDataSource = computed(() => {
     const gateways = this.smsGatewayService.smsGateways();
     const dataSource = new MatTableDataSource(gateways);
-    dataSource.paginator = this.paginator;
+    dataSource.paginator = this.paginator() ?? null;
     dataSource.sort = this.sort;
     return dataSource;
+  });
+
+  selector = new RowSelector<SmsGateway>({
+    keyGetter: (gateway) => gateway.name,
+    visibleRows: renderedRows(this.smsDataSource)
   });
 
   onCreateNewGateway(): void {
@@ -97,34 +110,8 @@ export class SmsGatewaysComponent {
     this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_SMS_DETAILS + gateway.name);
   }
 
-  isAllSelected(): boolean {
-    const rows = this.smsDataSource().data;
-    return rows.length > 0 && this.selection().length === rows.length;
-  }
-
-  toggleAllRows(): void {
-    if (this.isAllSelected()) {
-      this.selection.set([]);
-    } else {
-      this.selection.set([...this.smsDataSource().data]);
-    }
-  }
-
-  toggleRow(gateway: SmsGateway): void {
-    const current = this.selection();
-    if (current.includes(gateway)) {
-      this.selection.set(current.filter((row) => row !== gateway));
-    } else {
-      this.selection.set([...current, gateway]);
-    }
-  }
-
-  isSelected(gateway: SmsGateway): boolean {
-    return this.selection().includes(gateway);
-  }
-
   deleteSelected(): void {
-    const selected = this.selection();
+    const selected = this.selector.selectedRows();
     if (selected.length === 0) {
       return;
     }
@@ -144,7 +131,7 @@ export class SmsGatewaysComponent {
           selected.forEach(
             (gateway) => void this.smsGatewayService.deleteSmsGateway(gateway.name).catch(() => undefined)
           );
-          this.selection.set([]);
+          this.selector.deselectAllRows();
         }
       });
   }

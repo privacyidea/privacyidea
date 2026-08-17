@@ -18,6 +18,7 @@
  **/
 import { Component, computed, effect, inject, OnInit, signal } from "@angular/core";
 import { PiResponse } from "@app/app.component";
+import { ROUTE_PATHS } from "@app/route_paths";
 import { WidgetStateComponent } from "@components/dashboard/widgets/widget-state/widget-state.component";
 import { DashboardWidget, WidgetSize } from "@models/dashboard";
 import { Audit, AuditData, AuditService, AuditServiceInterface } from "@services/audit/audit.service";
@@ -57,6 +58,8 @@ export class AuthenticationsWidgetComponent extends DashboardWidget implements O
   static override readonly requiredAction = "auditlog";
   static override readonly title = $localize`Authentications`;
   static override readonly icon = "receipt_long";
+  static override readonly titleLink = ROUTE_PATHS.AUDIT;
+  static override readonly titleLinkAction = "auditlog";
   static override readonly defaultSize: WidgetSize = { cols: 8, rows: 6 };
   static override readonly minSize: WidgetSize = { cols: 5, rows: 5 };
   static override readonly maxSize: WidgetSize = { cols: 10, rows: 8 };

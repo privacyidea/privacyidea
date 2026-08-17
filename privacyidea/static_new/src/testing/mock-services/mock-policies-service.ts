@@ -17,6 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Signal, signal } from "@angular/core";
+import { PiResponse } from "@app/app.component";
 import {
   PolicyActionDetail,
   PolicyActionGroups,
@@ -80,6 +81,8 @@ export class MockPolicyService implements PolicyServiceInterface {
   savePolicyEdits = jest.fn().mockResolvedValue(true);
   isPolicyEdited = jest.fn().mockReturnValue(true);
   togglePolicyActive = jest.fn().mockReturnValue(undefined);
-  allPoliciesResource = new MockHttpResourceRef(undefined);
-  policyActionResource = new MockHttpResourceRef(undefined);
+  allPoliciesResource = new MockHttpResourceRef<PiResponse<PolicyDetail[]> | undefined>(
+    MockPiResponse.fromValue<PolicyDetail[]>([])
+  );
+  policyActionResource = new MockHttpResourceRef<PiResponse<ScopedPolicyActions> | undefined>(undefined);
 }

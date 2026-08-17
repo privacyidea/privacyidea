@@ -107,7 +107,7 @@ def hourly() -> Schedule:
 
 
 def daily_at(hour: int) -> Schedule:
-    return Schedule(lambda now: now.hour == hour and now.minute == 0, f"daily at {hour:02d}:00")
+    return Schedule(lambda now: now.hour == hour and now.minute == 0, f"daily at {hour:02d}:00 UTC")
 
 
 def every(interval_minutes: int) -> Schedule:
@@ -225,7 +225,11 @@ def main() -> None:
 
     last_minute = -1
     while True:
-        now = datetime.datetime.now()
+        # An hour-of-day schedule needs a clock that advances monotonically: in a timezone with
+        # daylight saving time the local 02:00 is skipped in spring and happens twice in autumn,
+        # so a daily task would be missed or run twice. The image ships no tzdata and therefore
+        # runs on UTC anyway - say so explicitly rather than depend on it.
+        now = datetime.datetime.now(datetime.timezone.utc)
         if now.minute != last_minute:
             last_minute = now.minute
             for task in TASKS:
@@ -233,7 +237,7 @@ def main() -> None:
                     run(task.build())
 
         # Sleep until just past the start of the next minute.
-        time.sleep(61 - datetime.datetime.now().second)
+        time.sleep(61 - datetime.datetime.now(datetime.timezone.utc).second)
 
 
 if __name__ == "__main__":

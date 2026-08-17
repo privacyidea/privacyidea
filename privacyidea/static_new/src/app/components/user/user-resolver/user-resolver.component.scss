@@ -10,6 +10,7 @@
   @include styles.main-component-style;
   @include table.base-table-structure(".user-sources-table", ".table-filter", ".table-scroll-container");
   min-width: calc(616px + 2 * 16px);
+  @include table.page-table-state-size;
 }
 
 .new-resolver-footer-row {

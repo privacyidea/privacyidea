@@ -62,6 +62,17 @@
   white-space: nowrap;
 }
 
+.widget-title-link {
+  color: var(--mat-sys-primary);
+  text-decoration: none;
+  cursor: pointer;
+
+  &:hover,
+  &:focus-visible {
+    text-decoration: underline;
+  }
+}
+
 .widget-actions {
   flex: none;
   display: flex;

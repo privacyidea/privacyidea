@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, ElementRef, inject, signal, ViewChild, WritableSignal } from "@angular/core";
+import { Component, computed, ElementRef, inject, signal, ViewChild, viewChild, WritableSignal } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
 import { MatPaginator, MatPaginatorModule } from "@angular/material/paginator";
@@ -32,6 +32,8 @@ import { MatInputModule } from "@angular/material/input";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { TableStateComponent } from "@components/shared/table-state/table-state.component";
+import { TableState } from "@core/models/table_state/table-state";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { Machine, MachineService, MachineServiceInterface } from "@services/machine/machine.service";
@@ -51,7 +53,8 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
     MatFormFieldModule,
     MatInputModule,
     ClearableInputComponent,
-    CopyableComponent
+    CopyableComponent,
+    TableStateComponent
   ],
   templateUrl: "./machines.component.html",
   styleUrl: "./machines.component.scss"
@@ -69,8 +72,14 @@ export class MachinesComponent {
   totalLength: WritableSignal<number> = computed(
     () => this.machineService.machines()?.length ?? 0
   ) as WritableSignal<number>;
+  readonly tableState = new TableState({
+    resource: this.machineService.machinesResource,
+    count: () => this.machineService.machines()?.length ?? 0,
+    allowed: () => this.authService.actionAllowed("machinelist"),
+    resetFilter: () => this.resetFilter()
+  });
 
-  @ViewChild(MatPaginator) paginator!: MatPaginator;
+  readonly paginator = viewChild(MatPaginator);
   @ViewChild(MatSort) sort!: MatSort;
   @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: ElementRef;
 
@@ -79,7 +88,7 @@ export class MachinesComponent {
   machineDataSource = computed(() => {
     const machines = this.machineService.machines() ?? [];
     const dataSource = new MatTableDataSource(machines);
-    dataSource.paginator = this.paginator;
+    dataSource.paginator = this.paginator() ?? null;
     dataSource.sort = this.sort;
     return dataSource;
   });
