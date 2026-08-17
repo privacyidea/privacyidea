@@ -166,6 +166,54 @@
   pass a stale or misspelled user name to `GET /container/` and relied on getting an empty result need to handle the
   error.
 
+* **HTTP API change** - the `resolver` and `userid` filters of `GET /token/` are now applied. Both parameters have
+  always been accepted and documented, but they never became a condition of the query, so a request carrying one of
+  them returned *all* tokens instead of the tokens of that resolver or of that user id. `resolver` is matched
+  case-insensitively and `*` acts as a wildcard in both, consistent with `GET /container/`. Since only a token that is
+  assigned to a user can match either filter, tokens without an owner are no longer part of such a result. Saved
+  filters, scripts and integrations that pass `resolver` or `userid` will therefore receive fewer tokens than before -
+  namely the ones they asked for.
+
+* **HTTP API change** - `GET /token/?realm=<name>` now returns an empty list if the realm does not exist, instead of
+  answering with a 404 `ResourceNotFoundError`. An unknown value matches nothing, the way every other filter of the
+  endpoint (including `tokenrealm`) already behaves. A `user` that can not be resolved to a user id is still rejected
+  with a 400, because the request would otherwise be filtered by the realm and the resolver alone and return the tokens
+  of other users.
+
+* **Policies with a User Agent condition are no longer dropped when no user agent is known.** Listing the policies
+  without a user agent - which is the case for `pi-manage config export`, for the configuration report of
+  `GET /system/documentation`, and for the internal check whether a scope contains any policy at all - previously
+  omitted every policy that carries a `User Agent` condition. Such a policy was therefore missing from a configuration
+  export (#5683), and a scope whose policies all carry a User Agent condition was treated as if it had no policies.
+  All of these now see the complete set of policies.
+
+  **This changes who is allowed what** in the `admin` and `user` scopes. Those scopes allow everything as long as they
+  contain no policy at all, and deny everything that is not explicitly granted as soon as they contain one. A scope
+  whose only policies carry a User Agent condition was therefore treated as empty and allowed everything; it now counts
+  as configured, and a request arriving with a different user agent is denied unless a policy grants the action to it.
+  For example, if your only `user` scope policy grants `enrollpin` limited to `privacyIDEA-WebUI`, users can still set
+  their PIN through the WebUI, but a request from another client is refused.
+
+  **WARNING**: in the `admin` scope this can lock you out. If **every** policy in your `admin` scope carries a User
+  Agent condition, then before the update administrators kept full rights no matter which client they used, and after
+  the update they only have the rights of the policies that match their user agent - none, if no policy names it. An
+  admin policy limited to, say, `privacyIDEA-CP` will leave you unable to administrate through the WebUI, including
+  unable to edit the very policy causing it.
+
+  **Before updating**, check your `admin` scope policies under *Config -> Policies* for a User Agent condition. If any
+  are present, make sure that at least one **active** `admin` policy grants your administrators their rights either
+  with no User Agent condition at all or with a condition that includes the client they administrate with
+  (`privacyIDEA-WebUI` for the WebUI). The same review applies to the `user` scope, where the consequence is users
+  losing self-service rights rather than a lockout.
+
+  If you are already locked out after the update, the policy can be disabled from the command line on the server, which
+  does not go through the policy check:
+
+      pi-manage config policy list
+      pi-manage config policy disable <name>
+
+  Installations that do not use the User Agent condition are unaffected.
+
 ## Update from 3.12 to 3.13
 
 * `enrollpin` right enforcement has been made stricter. If you try to enroll a token with a PIN but do not have the the

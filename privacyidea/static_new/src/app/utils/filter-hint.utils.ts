@@ -50,15 +50,11 @@ export type FilterCaseNote = "usually-insensitive" | "usually-sensitive" | "sens
 export interface FilterKeywordSemantics {
   exactMatch: boolean;
   isBoolean: boolean;
-  isUnsupported?: boolean;
   caseNote?: FilterCaseNote;
 }
 
 export function filterColumnHint(label: string, semantics: FilterKeywordSemantics): string {
   const title = $localize`Filter by ${label}`;
-  if (semantics.isUnsupported) {
-    return `${title}\n` + $localize`currently not supported`;
-  }
   if (semantics.isBoolean) {
     return `${title}\n` + $localize`true or false`;
   }

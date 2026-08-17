@@ -123,6 +123,13 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
     expect(selfFixture.componentInstance).toBeTruthy();
   });
 
+  it("keeps only single-word keywords as inline filter keywords", () => {
+    tokenService.apiFilterKeys = ["serial", "infokey & infovalue"];
+    tokenService.advancedApiFilterKeys = ["resolver", "userid"];
+    const freshTable = TestBed.createComponent(TokenTableComponent).componentInstance;
+    expect(freshTable.filterKeywords).toEqual(["serial", "resolver", "userid"]);
+  });
+
   it("exposes the selection held by the token service", () => {
     const tokens = [{ serial: "T-1" } as TokenDetails, { serial: "T-2" } as TokenDetails];
     tokenService.setTokenSelection(tokens);

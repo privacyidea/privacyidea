@@ -23,7 +23,10 @@ import pytest
 
 from .base import MyApiTestCase
 
-from privacyidea.lib.log import is_sensitive_key, log_with, redact
+from werkzeug.datastructures import (CombinedMultiDict, EnvironHeaders, Headers,
+                                     ImmutableMultiDict, ImmutableTypeConversionDict, MultiDict)
+
+from privacyidea.lib.log import HIDDEN, is_sensitive_key, log_with, redact, redacted_attributes
 
 # Values that must never reach the log. They are deliberately unusual strings so that a single
 # substring check over the captured log output is enough to detect a leak.
@@ -125,6 +128,78 @@ class TestRedact:
         redacted = redact({"obj": Unpickleable(), "pin": TEST_PIN, "serial": "OATH0001"})
         assert redacted["pin"] == "HIDDEN"
         assert redacted["serial"] == "OATH0001"
+
+
+class TestRedactMultiValueContainers:
+    """
+    Tests for the werkzeug containers that carry more than one value per key.
+
+    The request headers and parameters arrive in these, so they are the containers the redaction
+    walks most often, and a key may legitimately appear several times in them.
+    """
+
+    @pytest.mark.parametrize("container_type", [Headers, MultiDict, ImmutableMultiDict])
+    def test_every_value_of_a_repeated_key_is_kept(self, container_type):
+        container = container_type([("X-Forwarded-For", "10.0.0.1"),
+                                    ("X-Forwarded-For", "10.0.0.2"),
+                                    ("Authorization", f"Bearer {TEST_SECRET}")])
+        redacted = redact(container)
+        assert redacted["X-Forwarded-For"] == ["10.0.0.1", "10.0.0.2"]
+        assert redacted["Authorization"] == HIDDEN
+
+    def test_every_value_of_a_repeated_key_is_kept_for_combined_multi_dict(self):
+        container = CombinedMultiDict([MultiDict([("pass", TEST_PASSWORD), ("realm", "realm1")]),
+                                       MultiDict([("realm", "realm2")])])
+        redacted = redact(container)
+        assert redacted["realm"] == ["realm1", "realm2"]
+        assert redacted["pass"] == HIDDEN
+
+    def test_a_single_value_is_not_wrapped_in_a_list(self):
+        # Only a repeated key needs a list, so the common case still reads like a plain mapping.
+        assert redact(MultiDict([("serial", "OATH0001")])) == {"serial": "OATH0001"}
+
+    @pytest.mark.parametrize("container_type", [Headers, EnvironHeaders, MultiDict,
+                                               ImmutableMultiDict, ImmutableTypeConversionDict])
+    def test_a_secret_is_hidden_in_every_container_in_use(self, container_type):
+        # _is_headers_like recognises these containers by class name, so a werkzeug release that
+        # renames or replaces one of them has to fail here instead of silently logging the header.
+        if container_type is EnvironHeaders:
+            container = EnvironHeaders({"HTTP_AUTHORIZATION": f"Bearer {TEST_SECRET}"})
+        else:
+            container = container_type([("Authorization", f"Bearer {TEST_SECRET}")])
+        redacted = redact(container)
+        assert redacted["Authorization"] == HIDDEN
+        assert_not_logged(str(redacted), [TEST_SECRET])
+
+
+class TestRedactedAttributes:
+    """
+    Tests for the attribute rendering that the token repr and the token model repr share.
+    """
+
+    class Token:
+        def __init__(self):
+            self.serial = "OATH0001"
+            self.pin = TEST_PIN
+            self.using_pin = True
+            self.init_details = {"otpkey": TEST_SECRET, "googleurl": "otpauth://..."}
+
+    def test_a_sensitive_attribute_is_hidden(self):
+        attributes = redacted_attributes(self.Token())
+        assert attributes["'pin'"] == f"{HIDDEN!r}"
+        assert attributes["'serial'"] == "'OATH0001'"
+
+    def test_a_secret_nested_in_an_attribute_is_hidden(self):
+        attributes = redacted_attributes(self.Token())
+        assert TEST_SECRET not in attributes["'init_details'"]
+        assert "googleurl" in attributes["'init_details'"]
+
+    def test_a_flag_under_a_sensitive_name_stays_readable(self):
+        # Same rule as for a mapping key: a switch is never a credential.
+        assert redacted_attributes(self.Token())["'using_pin'"] == "True"
+
+    def test_nothing_secret_survives_in_the_rendered_form(self):
+        assert_not_logged(str(redacted_attributes(self.Token())))
 
 
 class TestRedactionFailsClosed:
