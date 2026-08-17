@@ -18,9 +18,9 @@
  **/
 @use "styles";
 
-// Sits on a raised page container, so the shallow recess.
+// Lifts off the page container, so the shallow raise.
 :host {
-  @include styles.card-recessed(3);
+  @include styles.card-raised(3);
   display: flex;
   flex-direction: column;
   min-width: 0;

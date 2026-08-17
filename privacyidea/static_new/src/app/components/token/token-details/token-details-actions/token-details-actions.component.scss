@@ -13,7 +13,7 @@
 }
 
 .actions-status-row {
-  @include styles.card-recessed(3);
+  @include styles.card-raised(3);
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
@@ -49,7 +49,7 @@
 .test-sync-section {
   app-resync-token-action,
   app-test-otp-pin-action {
-    @include styles.card-recessed(3);
+    @include styles.card-raised(3);
     display: flex;
     flex-direction: column;
     align-items: stretch;
@@ -79,7 +79,7 @@
 }
 
 .passkey-test-panel {
-  @include styles.card-recessed(3);
+  @include styles.card-raised(3);
   display: flex;
   flex-direction: column;
   align-items: flex-start;
