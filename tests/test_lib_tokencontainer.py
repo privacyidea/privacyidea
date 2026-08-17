@@ -380,6 +380,24 @@ class TokenContainerManagementTestCase(MyTestCase):
         container_realms = [realm.name for realm in container.realms]
         self.assertEqual(0, len(container_realms))
 
+    def test_19a_set_realms_with_no_allowed_realm(self):
+        # An empty list of allowed realms is a caller allowed no realm at all, which is not the
+        # same as None ("every realm"): no realm is attached and none of the existing ones removed.
+        self.setUp_user_realms()
+        self.setUp_user_realm2()
+        container_serial = init_container({"type": "generic"})["container_serial"]
+        container = find_container_by_serial(container_serial)
+        set_container_realms(container_serial, [self.realm1], None)
+
+        result = set_container_realms(container_serial, [self.realm2], [])
+
+        self.assertListEqual([self.realm1], result.attached)
+        self.assertListEqual([self.realm2], result.not_added)
+        self.assertListEqual([], result.removed)
+        self.assertListEqual([self.realm1], result.not_removed)
+        self.assertFalse(result.success)
+        self.assertListEqual([self.realm1], [realm.name for realm in container.realms])
+
     def test_20_add_realms(self):
         self.setUp_user_realms()
         self.setUp_user_realm2()
@@ -421,6 +439,15 @@ class TokenContainerManagementTestCase(MyTestCase):
         result = add_container_realms(container_serial, None, None)
         self.assertFalse(result['deleted'])
         container_realms = [realm.name for realm in container.realms]
+        self.assertEqual(2, len(container_realms))
+
+        # An empty list of allowed realms is a caller allowed no realm at all, which is not the
+        # same as None ("every realm"): nothing is added and the request is reported as failed.
+        self.setUp_user_realm3()
+        result = add_container_realms(container_serial, [self.realm3], [])
+        self.assertFalse(result[self.realm3])
+        container_realms = [realm.name for realm in container.realms]
+        self.assertNotIn(self.realm3, container_realms)
         self.assertEqual(2, len(container_realms))
 
     def test_21_assign_unassign_user(self):
@@ -863,6 +890,12 @@ class TokenContainerManagementTestCase(MyTestCase):
         container_data = get_all_containers(allowed_realms=["realm1"], realm="realm2", pagesize=15)
         self.assertEqual(1, len(container_data["containers"]))
         self.assertEqual(container_serials[1], container_data["containers"][0].serial)
+
+        # An empty list of allowed realms is a caller allowed no realm at all, which is not the
+        # same as None ("every realm"): it has to match nothing instead of lifting the restriction.
+        container_data = get_all_containers(allowed_realms=[], pagesize=15)
+        self.assertEqual(0, len(container_data["containers"]))
+        self.assertEqual(0, container_data["count"])
 
         # ---- user ----
         # Filter by user (same username and resolver, but different realms)

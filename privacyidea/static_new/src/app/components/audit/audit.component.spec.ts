@@ -32,6 +32,7 @@ import {
   MockNotificationService
 } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { expectsTableStateGating } from "@testing/table-state-gating";
 import { expectedLocalDateTimeFromInput } from "@testing/expected-local-date-time";
 import { MockTableUtilsService } from "@testing/mock-services/mock-table-utils-service";
 import { of } from "rxjs";
@@ -93,6 +94,13 @@ describe("AuditComponent (unit)", () => {
     jest.clearAllMocks();
   });
 
+  it("gates the table on its read right, row count and filter", () => {
+    expectsTableStateGating({
+      state: component.tableState,
+      right: "auditlog"
+    });
+  });
+
   it("creates", () => {
     expect(component).toBeTruthy();
     expect(component.columnKeys.length).toBe(component.columnKeysMap.length);
@@ -147,13 +155,6 @@ describe("AuditComponent (unit)", () => {
     // custom page size should still be included if selected pageSize changes
     mockAuditService.pageSize.set(10);
     expect(component.pageSizeOptions()).toEqual(customOptions);
-  });
-
-  it("emptyResource mirrors pageSize", () => {
-    mockAuditService.pageSize.set(3);
-    expect(component.emptyResource().length).toBe(3);
-    mockAuditService.pageSize.set(7);
-    expect(component.emptyResource().length).toBe(7);
   });
 
   it("auditDataSource updates when auditResource changes", () => {
@@ -217,6 +218,9 @@ describe("AuditComponent (template rendering)", () => {
         MockNotificationService
       ]
     }).compileComponents();
+
+    const authServiceMock = TestBed.inject(AuthService) as unknown as MockAuthService;
+    authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["auditlog"] });
 
     fixture = TestBed.createComponent(AuditComponent);
     component = fixture.componentInstance;

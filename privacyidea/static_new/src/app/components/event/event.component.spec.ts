@@ -27,6 +27,9 @@ import { MockEventService } from "@testing/mock-services/mock-event-service";
 import { EventComponent } from "./event.component";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import { MockTableUtilsService } from "@testing/mock-services";
+import { AuthService } from "@services/auth/auth.service";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { expectsTableStateGating } from "@testing/table-state-gating";
 
 describe("EventComponent", () => {
   let component: EventComponent;
@@ -37,6 +40,7 @@ describe("EventComponent", () => {
     await TestBed.configureTestingModule({
       imports: [EventComponent],
       providers: [
+        { provide: AuthService, useClass: MockAuthService },
         provideHttpClient(),
         provideRouter([]),
         { provide: EventService, useClass: MockEventService },
@@ -48,6 +52,13 @@ describe("EventComponent", () => {
     component = fixture.componentInstance;
     mockEventService = TestBed.inject(EventService) as unknown as MockEventService;
     fixture.detectChanges();
+  });
+
+  it("gates the table on its read right, row count and filter", () => {
+    expectsTableStateGating({
+      state: component.tableState,
+      right: "eventhandling_read"
+    });
   });
 
   it("should create", () => {
