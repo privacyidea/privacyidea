@@ -29,7 +29,10 @@ import { ClearableInputComponent } from "@components/shared/clearable-input/clea
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
+import { TableStateComponent } from "@components/shared/table-state/table-state.component";
+import { TableState } from "@core/models/table_state/table-state";
 import { FilterValue } from "@core/models/filter_value/filter_value";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
@@ -66,7 +69,8 @@ const columnKeysMap = [
     ScrollToTopDirective,
     ClearableInputComponent,
     ChallengesTableActionsComponent,
-    ScrollEdgesDirective
+    ScrollEdgesDirective,
+    TableStateComponent
   ],
   templateUrl: "./challenges-table.component.html",
   styleUrls: ["./challenges-table.component.scss"]
@@ -77,6 +81,7 @@ export class ChallengesTableComponent {
   protected readonly challengesService: ChallengesServiceInterface = inject(ChallengesService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
 
   columnsKeyMap = columnKeysMap;
   displayedColumns = columnKeysMap.map((c) => c.key);
@@ -88,7 +93,7 @@ export class ChallengesTableComponent {
   pageSize = this.challengesService.pageSize;
   pageIndex = this.challengesService.pageIndex;
   sort = this.challengesService.sort;
-  length = linkedSignal({
+  length: WritableSignal<number> = linkedSignal({
     source: () =>
       this.challengesService.challengesResource.hasValue()
         ? this.challengesService.challengesResource.value()
@@ -102,12 +107,19 @@ export class ChallengesTableComponent {
       this.challengesService.challengesResource.hasValue()
         ? this.challengesService.challengesResource.value()
         : undefined,
-    computation: (challengesResource, previous) => {
+    computation: (challengesResource) => {
       if (challengesResource) {
         return new MatTableDataSource(challengesResource.result?.value?.challenges);
       }
-      return previous?.value ?? new MatTableDataSource<Challenge>([]);
+      return new MatTableDataSource<Challenge>([]);
     }
+  });
+  readonly tableState = new TableState({
+    resource: this.challengesService.challengesResource,
+    count: () => this.length(),
+    filterActive: () => !this.challengesService.activeFilter().isEmpty,
+    allowed: () => this.authService.actionAllowed("getchallenges"),
+    resetFilter: () => this.challengesService.clearFilter()
   });
 
   @ViewChild("filterHTMLInputElement", { static: false })

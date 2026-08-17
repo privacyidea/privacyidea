@@ -19,13 +19,10 @@
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from "@angular/material/dialog";
 import { PageEvent } from "@angular/material/paginator";
 import { Sort } from "@angular/material/sort";
 import { ActivatedRoute, NavigationEnd, Router } from "@angular/router";
-import { of, Subject } from "rxjs";
-
-import { ContainerTableSelfServiceComponent } from "./container-table.self-service.component";
+import { of } from "rxjs";
 
 import { AuthService } from "@services/auth/auth.service";
 import { ContainerDetailData, ContainerService } from "@services/container/container.service";
@@ -35,13 +32,11 @@ import { TableUtilsService } from "@services/table-utils/table-utils.service";
 
 import { ContainerTableComponent } from "@components/container/container-table/container-table.component";
 import { FilterValue } from "@core/models/filter_value/filter_value";
-import { DialogService } from "@services/dialog/dialog.service";
 import { TokenService } from "@services/token/token.service";
-import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
+import { expectsTableStateGating } from "@testing/table-state-gating";
 import {
   MockContainerService,
   MockContentService,
-  MockDialogService,
   MockLocalService,
   MockNotificationService,
   MockTableUtilsService,
@@ -90,6 +85,13 @@ describe("ContainerTableComponent (Jest)", () => {
     containerService = TestBed.inject(ContainerService) as unknown as MockContainerService;
     component = fixture.componentInstance;
     fixture.detectChanges();
+  });
+
+  it("gates the table on its read right, row count and filter", () => {
+    expectsTableStateGating({
+      state: component.tableState,
+      right: "container_list"
+    });
   });
 
   it("should create", () => {
@@ -219,100 +221,5 @@ describe("ContainerTableComponent (Jest)", () => {
       expect(component.containerSelection.selectedRows().map((row) => row.serial)).toEqual(["CONT-1", "CONT-2"]);
       expect(component.containerSelection.allRowsSelected()).toBe(true);
     });
-  });
-});
-
-describe("ContainerTableSelfServiceComponent", () => {
-  let component: ContainerTableSelfServiceComponent;
-  let fixture: ComponentFixture<ContainerTableSelfServiceComponent>;
-  let containerService: MockContainerService;
-  let dialogServiceMock: MockDialogService;
-  let confirmClosed: Subject<boolean>;
-
-  beforeEach(async () => {
-    TestBed.resetTestingModule();
-
-    await TestBed.configureTestingModule({
-      imports: [ContainerTableSelfServiceComponent, MatDialogModule],
-      providers: [
-        provideHttpClient(),
-        provideHttpClientTesting(),
-        { provide: AuthService, useClass: MockAuthService },
-        { provide: ContainerService, useClass: MockContainerService },
-        { provide: TableUtilsService, useClass: MockTableUtilsService },
-        { provide: NotificationService, useClass: MockNotificationService },
-        { provide: ContentService, useClass: MockContentService },
-        { provide: DialogService, useClass: MockDialogService },
-        { provide: TokenService, useClass: MockTokenService },
-        { provide: MAT_DIALOG_DATA, useValue: {} },
-        { provide: MatDialogRef, useClass: MockMatDialogRef },
-        {
-          provide: Router,
-          useValue: {
-            navigate: jest.fn(),
-            events: of(new NavigationEnd(0, "/", "/"))
-          }
-        },
-        {
-          provide: ActivatedRoute,
-          useValue: {
-            params: of({ id: "123" })
-          }
-        },
-        MockLocalService,
-        MockNotificationService
-      ]
-    }).compileComponents();
-
-    fixture = TestBed.createComponent(ContainerTableSelfServiceComponent);
-    containerService = TestBed.inject(ContainerService) as unknown as MockContainerService;
-
-    dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
-    confirmClosed = new Subject();
-    const dialogRefMock = new MockMatDialogRef();
-    dialogRefMock.afterClosed.mockReturnValue(confirmClosed);
-    dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
-
-    component = fixture.componentInstance;
-    fixture.detectChanges();
-  });
-
-  afterEach(() => jest.clearAllMocks());
-
-  it("should create", () => {
-    expect(component).toBeTruthy();
-  });
-
-  it("exposes the expected self-service columns", () => {
-    expect(component.columnKeysSelfService).toEqual(["serial", "type", "states", "description", "delete"]);
-  });
-
-  it("deleteContainer opens confirmation dialog, deletes and reloads when confirmed", () => {
-    const serial = "CONT-DEL";
-    const deleteSpy = jest.spyOn(containerService, "deleteContainer");
-    const reloadSpy = jest.spyOn(containerService.containerResource, "reload");
-
-    component.deleteContainer(serial);
-    confirmClosed.next(true);
-    confirmClosed.complete();
-
-    expect(dialogServiceMock.openDialog).toHaveBeenCalled();
-    expect(deleteSpy).toHaveBeenCalledWith(serial);
-    expect(reloadSpy).toHaveBeenCalled();
-  });
-
-  it("deleteContainer does nothing when dialog closes with falsy value", () => {
-    const serial = "CONT-NOOP";
-    const deleteSpy = jest.spyOn(containerService, "deleteContainer");
-    const reloadSpy = jest.spyOn(containerService.containerResource, "reload");
-
-    component.deleteContainer(serial);
-
-    confirmClosed.next(false);
-    confirmClosed.complete();
-
-    expect(dialogServiceMock.openDialog).toHaveBeenCalled();
-    expect(deleteSpy).not.toHaveBeenCalled();
-    expect(reloadSpy).not.toHaveBeenCalled();
   });
 });

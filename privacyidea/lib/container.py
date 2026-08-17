@@ -193,7 +193,8 @@ def _create_container_query(user: User = None, serial: str = None, ctype: str = 
     :param token_serial: serial of a token which is assigned to the container (case-insensitive and allows '*' as
         wildcard), optional
     :param realm: realm name to filter by (case-insensitive and allows '*' as wildcard), optional
-    :param allowed_realms: list of realms the user is allowed to see (None if all realms are allowed), optional
+    :param allowed_realms: list of realms the user is allowed to see (None if all realms are allowed and an
+        empty list if none is), optional.
         If realms and allowed_realms are given, the intersection of both lists is used. If there is no intersection, no
         container is returned.
     :param template: The name of the template the container was created with (case-sensitive and allows '*' as
@@ -288,7 +289,9 @@ def _create_container_query(user: User = None, serial: str = None, ctype: str = 
 
     # Use separate alias for each join to avoid conflicts
     realm_alias_allowed = aliased(Realm)
-    if allowed_realms:
+    # An empty list means the caller is allowed no realm at all, which is not the same as None
+    # ("every realm"): it has to match nothing rather than lift the restriction.
+    if allowed_realms is not None:
         allowed_realms = [r.lower() for r in allowed_realms]
         stmt = stmt.join(TokenContainer.realms.of_type(realm_alias_allowed), isouter=True).where(
             func.lower(realm_alias_allowed.name).in_(allowed_realms)
@@ -419,7 +422,8 @@ def get_all_containers(user: User = None, serial: str = None, ctype: str = None,
     :param token_serial: serial of a token which is assigned to the container (case-insensitive and allows '*'
         as wildcard), optional
     :param realm: name of the realm the container is assigned to (case-insensitive and allows '*' as wildcard), optional
-    :param allowed_realms: list of realms the user is allowed to see (None if all realms are allowed), optional
+    :param allowed_realms: list of realms the user is allowed to see (None if all realms are allowed and an
+        empty list if none is), optional.
         If realms and allowed_realms are given, the intersection of both lists is used. If there is no intersection, no
         container is returned.
     :param template: The name of the template the container was created with (case-sensitive and allows '*' as wildcard)
@@ -1139,7 +1143,8 @@ def set_container_realms(serial: str, realms: list[str],
 
     :param serial: serial of the container
     :param realms: requested realms as list of str
-    :param allowed_realms: realms the caller is allowed to manage, or None if all realms are allowed
+    :param allowed_realms: realms the caller is allowed to manage, None if all realms are allowed and an empty
+        list if none is
     :return: a :class:`ContainerRealmsResult` describing which realms are attached, and which requested
         realms could not be added, were removed, or could not be removed
     """
@@ -1147,8 +1152,9 @@ def set_container_realms(serial: str, realms: list[str],
     requested = {realm for realm in realms if realm}
     old_realms = {realm.name for realm in container.realms}
 
-    if allowed_realms:
+    if allowed_realms is not None:
         # Only manage realms the caller is allowed to: keep existing realms outside their scope untouched.
+        # An empty list is a caller allowed no realm at all, so nothing is added and nothing removed.
         target = (requested & set(allowed_realms)) | (old_realms - set(allowed_realms))
     else:
         target = requested
@@ -1168,16 +1174,18 @@ def add_container_realms(serial: str, realms: list[str], allowed_realms: list[st
 
     :param serial: serial of the container
     :param realms: new realms as list of str
-    :param allowed_realms: A list of realms the admin is allowed to set, optional
+    :param allowed_realms: A list of realms the admin is allowed to set, None if all realms are allowed and an
+        empty list if none is
     :returns: Dictionary in the format {realm: success}, the entry 'deleted' indicates whether existing realms were
               deleted.
     """
     container = find_container_by_serial(serial)
 
-    # Check if admin is allowed to set the realms
+    # Check if admin is allowed to set the realms. An empty list is a caller allowed no realm at
+    # all, so no realm is added and every requested realm is reported as failed.
     matching_realms = realms
     res_failed = {}
-    if allowed_realms:
+    if allowed_realms is not None:
         matching_realms = list(set(realms).intersection(allowed_realms))
         excluded_realms = list(set(realms) - set(matching_realms))
         if len(excluded_realms) > 0:
@@ -1202,7 +1210,7 @@ def get_container_realms(serial: str) -> list[str]:
 
 
 def create_container_dict(container_list: list[TokenContainerClass], no_token: bool = False, user: User = None,
-                          logged_in_user_role: str = 'user', allowed_token_realms: list[str] | None = [],
+                          logged_in_user_role: str = 'user', allowed_token_realms: list[str] | None = None,
                           hide_token_info: list[str] = None, hide_container_info: list[str] = None) -> list[dict]:
     """
     Create a dictionary for each container in the list.
@@ -1213,7 +1221,8 @@ def create_container_dict(container_list: list[TokenContainerClass], no_token: b
     :param no_token: If True, the token information is not included
     :param user: The user object requesting the containers
     :param logged_in_user_role: The role of the logged-in user ('admin' or 'user')
-    :param allowed_token_realms: A list of realms the admin is allowed to see tokens from
+    :param allowed_token_realms: A list of realms the admin is allowed to see tokens from, None if
+        the admin is allowed to see all of them and an empty list if the admin is allowed none
     :param hide_token_info: List of token info keys to hide in the response, optional
     :param hide_container_info: List of container info keys to hide in the response, optional
     :return: List of container dictionaries
