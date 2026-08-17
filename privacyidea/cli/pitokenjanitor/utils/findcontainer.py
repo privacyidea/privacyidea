@@ -168,8 +168,11 @@ def delete_info(ctx, key):
     for clist in ctx.obj['containers']:
         for container in clist:
             try:
-                container.delete_container_info(key=key)
-                click.echo(f"Deleted info {key} for container {container.serial}")
+                deleted = container.delete_container_info(key=key)
+                if deleted.get(key):
+                    click.echo(f"Deleted info {key} for container {container.serial}")
+                else:
+                    click.echo(f"Container {container.serial} has no info {key}")
             except PolicyError as e:
                 click.echo(f"Cannot delete info {key} for container {container.serial}: {e}")
 
