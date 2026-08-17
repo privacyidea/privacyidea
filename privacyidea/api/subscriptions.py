@@ -92,15 +92,19 @@ def api_status():
 
     :status 200: list of status dictionaries in ``result.value``.
     """
-    overview = [get_server_subscription_status()] + get_plugin_subscription_status()
+    # Both status functions need the number of users with active tokens; count it once
+    # for the whole request instead of letting each of them run the same query.
+    token_users = get_users_with_active_tokens()
+    overview = ([get_server_subscription_status(token_users)]
+                + get_plugin_subscription_status(token_users))
     # Enrich each entry with the latest release from GitHub (version, date and
     # release page URL), cached server-side.
-    latest_versions = get_latest_github_versions()
+    latest_releases = get_latest_github_versions()
     for entry in overview:
-        release = latest_versions.get(entry["application"])
-        entry["current_version"] = release.get("version") if release else None
-        entry["current_version_date"] = release.get("released") if release else None
-        entry["current_version_url"] = release.get("url") if release else None
+        release = latest_releases.get(entry["application"])
+        entry["current_version"] = release.version if release else None
+        entry["current_version_date"] = release.released if release else None
+        entry["current_version_url"] = release.url if release else None
     g.audit_object.log({'success': True})
     return send_result(overview)
 

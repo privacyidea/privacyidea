@@ -22,11 +22,11 @@
 myApp.controller("dashboardController", ["ConfigFactory", "TokenFactory",
                                          "SubscriptionFactory", "AuditFactory",
                                          "$scope", "$location", "AuthFactory", "$timeout",
-                                         "InfoFactory", "inform",
+                                         "InfoFactory", "inform", "gettextCatalog",
                                          function (ConfigFactory, TokenFactory,
                                                    SubscriptionFactory, AuditFactory,
                                                    $scope, $location, AuthFactory, $timeout,
-                                                   InfoFactory, inform) {
+                                                   InfoFactory, inform, gettextCatalog) {
 
     $scope.tokens = {"total": 0, "hardware": 0};
     $scope.certificates = {"entries": [], "summary": {"ok": 0, "warning": 0,
@@ -53,14 +53,12 @@ myApp.controller("dashboardController", ["ConfigFactory", "TokenFactory",
     // value. `gettext()` is the angular-gettext no-op marker so the extractor
     // picks the strings up; the template applies the `translate` filter so the
     // rendered label reacts to language changes.
-    // Usage: is the plugin actively used / covered?
-    $scope.usageDot = {
-        "yes": "text-success",   // green
-        "no": "text-danger"      // red
+    // Usage: is the plugin actively used / covered? (backend sends a boolean)
+    $scope.usageDotClass = function (status) {
+        return status.in_use ? "text-success" : "text-danger";  // green / red
     };
-    $scope.usageText = {
-        "yes": gettext("Yes"),
-        "no": gettext("No")
+    $scope.usageText = function (status) {
+        return status.in_use ? gettext("Yes") : gettext("No");
     };
     // Subscription: state of the subscription record itself.
     $scope.subscriptionDot = {
@@ -82,7 +80,7 @@ myApp.controller("dashboardController", ["ConfigFactory", "TokenFactory",
     // activity), rather than making the admin guess. Returned strings are the
     // gettext() source; the template applies the `translate` filter.
     $scope.usageReasonText = function (status) {
-        if (status.usage === "yes") {
+        if (status.in_use) {
             return status.subscription !== "none"
                 ? gettext("In use: covered by a subscription.")
                 : gettext("In use: seen within the last 7 days.");
@@ -104,7 +102,8 @@ myApp.controller("dashboardController", ["ConfigFactory", "TokenFactory",
     $scope.pluginDisplayName = {
         "privacyidea": "privacyIDEA Server",
         "privacyidea-app": "privacyIDEA Authenticator App",
-        "privacyidea-radius": "RADIUS",
+        "privacyidea-radius": "FreeRADIUS",
+        "privacyidea-nextcloud": "Nextcloud",
         "privacyidea-cp": "Windows Credential Provider",
         "privacyidea-pam": "PAM OTP & Push",
         "pam-passkey": "PAM Passkey",
@@ -113,31 +112,34 @@ myApp.controller("dashboardController", ["ConfigFactory", "TokenFactory",
         "privacyidea-adfs": "AD FS",
         "privacyidea-shibboleth": "Shibboleth"
     };
-    // External link target per component, split by subscription state:
-    //   sub   -> shown when a subscription exists
-    //   nosub -> shown when there is no subscription
-    // TODO: replace the placeholders with the real per-component URLs. Targets
-    // must stay on a host allowed by the href sanitization list in app.js.
-    var LINK_SUB = "https://netknights.it/";
-    var LINK_NOSUB = "https://privacyidea.org/";
-    $scope.componentLinks = {
-        "privacyidea":            {sub: LINK_SUB, nosub: LINK_NOSUB},
-        "privacyidea-app":        {sub: LINK_SUB, nosub: LINK_NOSUB},
-        "privacyidea-radius":     {sub: LINK_SUB, nosub: LINK_NOSUB},
-        "privacyidea-cp":         {sub: LINK_SUB, nosub: LINK_NOSUB},
-        "privacyidea-pam":        {sub: LINK_SUB, nosub: LINK_NOSUB},
-        "pam-passkey":            {sub: LINK_SUB, nosub: LINK_NOSUB},
-        "privacyidea-keycloak":   {sub: LINK_SUB, nosub: LINK_NOSUB},
-        "entraid-via-keycloak":   {sub: LINK_SUB, nosub: LINK_NOSUB},
-        "privacyidea-adfs":       {sub: LINK_SUB, nosub: LINK_NOSUB},
-        "privacyidea-shibboleth": {sub: LINK_SUB, nosub: LINK_NOSUB}
+    // Slug of each component's product landing page. The page itself is picked
+    // by language and subscription state, see componentLinkTarget below.
+    var PTL_BASE_URL = "https://netknights.it/plugin-traffic-light";
+    $scope.componentPtlSlug = {
+        "privacyidea": "privacyidea-server",
+        "privacyidea-app": "privacyidea-authenticator-app",
+        "privacyidea-radius": "privacyidea-freeradius",
+        "privacyidea-nextcloud": "privacyidea-nextcloud",
+        "privacyidea-cp": "privacyidea-windows-credential-provider",
+        "privacyidea-pam": "privacyidea-pam-otp-push",
+        "pam-passkey": "privacyidea-pam-passkey",
+        "privacyidea-keycloak": "privacyidea-keycloak",
+        "entraid-via-keycloak": "privacyidea-entraid-integration",
+        "privacyidea-adfs": "privacyidea-adfs",
+        "privacyidea-shibboleth": "privacyidea-shibboleth"
     };
-    // Pick the link for a row based on whether it has a subscription. Returns
-    // "" when the component has no configured link (then it renders as text).
+    // Build the landing page URL for a row as
+    // <base>/<language>/<sla|non-sla>/<component slug>. Only German is served
+    // in its own language, every other locale gets the English page. A row
+    // counts as "sla" as soon as a subscription is on file — an expired one
+    // still points at the subscriber page. Returns "" for components without a
+    // slug, which the view then renders as plain text.
     $scope.componentLinkTarget = function (status) {
-        var links = $scope.componentLinks[status.application];
-        if (!links) { return ""; }
-        return status.subscription === "none" ? links.nosub : links.sub;
+        var slug = $scope.componentPtlSlug[status.application];
+        if (!slug) { return ""; }
+        var language = (gettextCatalog.getCurrentLanguage() || "").indexOf("de") === 0 ? "de" : "en";
+        var sla = status.subscription === "none" ? "non-sla" : "sla";
+        return PTL_BASE_URL + "/" + language + "/" + sla + "/" + slug;
     };
     // Subscription overview view mode. Start compact; the "Show details" button
     // switches to the detailed view (adds the Expires and Last seen columns).
@@ -290,6 +292,7 @@ myApp.controller("dashboardController", ["ConfigFactory", "TokenFactory",
          {kind: "label", label: gettext("Use Cases"), children: [
              {kind: "plugin", application: "privacyidea-app"},
              {kind: "plugin", application: "privacyidea-radius"},
+             {kind: "plugin", application: "privacyidea-nextcloud"},
              {kind: "label", label: gettext("System Login"), children: [
                  {kind: "plugin", application: "privacyidea-cp"},
                  {kind: "plugin", application: "privacyidea-pam"},
@@ -304,10 +307,9 @@ myApp.controller("dashboardController", ["ConfigFactory", "TokenFactory",
          ]}
      ];
 
-     // Default status for a section plugin the backend did not report (e.g.
-     // RADIUS, which has no subscription application yet).
+     // Default status for a section plugin the backend did not report.
      function unusedStatus(application) {
-         return {application: application, usage: "no", subscription: "none",
+         return {application: application, in_use: false, subscription: "none",
                  date_till: null, days_left: null, last_seen: null,
                  versions: [], current_version: null,
                  current_version_date: null, current_version_url: null};

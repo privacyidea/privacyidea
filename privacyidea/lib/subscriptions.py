@@ -24,7 +24,9 @@ The code is tested in tests/test_lib_subscriptions.py.
 """
 
 import concurrent.futures
+import dataclasses
 import datetime
+import enum
 import functools
 import logging
 import os
@@ -40,7 +42,7 @@ from privacyidea.lib.error import SubscriptionError
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.token import get_tokens
 from .log import log_with
-from .utils import get_plugin_info_from_useragent, get_version_number
+from .utils import get_plugin_info_from_useragent, get_version_number, is_true
 from ..models import ClientApplication, Subscription, db
 
 EXPIRE_MESSAGE = lazy_gettext("My subscription has expired.")
@@ -93,23 +95,28 @@ SUBSCRIPTIONS = {
     "privacyidea": {"free_users": 50, "user_agents": ["privacyidea-radius"]},
 }
 
+# Application and user-agent names are matched case-insensitively: clients spell their
+# user-agent however they like, so both lookups derived from SUBSCRIPTIONS are keyed and
+# valued lower-case, and every name entering them is lower-cased first.
+
 # Free-tier limit per subscription application. Derived from SUBSCRIPTIONS.
-APPLICATIONS = {application: config["free_users"]
+APPLICATIONS = {application.lower(): config["free_users"]
                 for application, config in SUBSCRIPTIONS.items()}
 
 # Maps a client user-agent name to the application whose subscription it counts
 # against, so multiple user-agents can count towards the same subscription.
-# Derived from the ``user_agents`` lists in SUBSCRIPTIONS. Keys are lower-case.
-APPLICATION_ALIASES = {user_agent.lower(): application
+# Derived from the ``user_agents`` lists in SUBSCRIPTIONS.
+APPLICATION_ALIASES = {user_agent.lower(): application.lower()
                        for application, config in SUBSCRIPTIONS.items()
                        for user_agent in config.get("user_agents", [])}
 
 
 def get_subscription_application(plugin_name: str) -> str:
     """
-    Map a plugin user-agent name to the application whose subscription it
-    counts against, following :data:`APPLICATION_ALIASES`. Names that are not
-    aliases are returned lower-cased and otherwise unchanged.
+    Map a plugin user-agent name to the application whose subscription it counts against,
+    following :data:`APPLICATION_ALIASES`. The result is always lower-case: an alias
+    resolves to its owning application, any other name is returned unchanged apart from
+    the case.
 
     :param plugin_name: the plugin name parsed from a request's user-agent
     :return: the canonical application name for subscription counting
@@ -129,6 +136,7 @@ def get_subscription_application(plugin_name: str) -> str:
 DASHBOARD_PLUGINS = [
     "privacyidea-app",
     "privacyidea-radius",
+    "privacyidea-nextcloud",
     "privacyidea-cp",
     "privacyidea-pam",
     "pam-passkey",
@@ -158,6 +166,7 @@ GITHUB_REPOS = {
     "privacyidea-adfs": "privacyidea/adfs-provider",
     "privacyidea-shibboleth": "privacyidea/shibboleth-plugin",
     "privacyidea-radius": "privacyidea/FreeRADIUS",
+    "privacyidea-nextcloud": "privacyidea/privacyidea-nextcloud-app",
 }
 # These clients are distributed via OS packages / app stores rather than a
 # downloadable GitHub release, so report their latest version + date but no
@@ -166,17 +175,48 @@ RELEASE_LINK_SUPPRESSED = {"privacyidea", "privacyidea-app"}
 # How long to cache the latest-release lookups, and the per-request timeout.
 GITHUB_VERSION_TTL = datetime.timedelta(hours=6)
 GITHUB_FETCH_TIMEOUT = 3
-_github_version_cache = {"fetched_at": None, "versions": {}}
 
 log = logging.getLogger(__name__)
 
 
-def _fetch_latest_release(repo: str) -> dict | None:
+@dataclasses.dataclass(frozen=True)
+class GithubRelease:
+    """The latest release of a client as published on GitHub."""
+    # Release tag with any leading "v" stripped, e.g. "3.13.1".
+    version: str
+    # Release date as YYYY-MM-DD, None if GitHub did not report one.
+    released: str | None = None
+    # Release page, None for clients that are not downloaded from GitHub.
+    url: str | None = None
+
+
+@dataclasses.dataclass
+class _GithubVersionCache:
+    """Process-local cache of the latest-release lookups, valid for :data:`GITHUB_VERSION_TTL`."""
+    fetched_at: datetime.datetime | None = None
+    releases: dict[str, GithubRelease | None] = dataclasses.field(default_factory=dict)
+
+    def is_valid(self, now: datetime.datetime) -> bool:
+        return self.fetched_at is not None and now - self.fetched_at < GITHUB_VERSION_TTL
+
+
+_github_version_cache = _GithubVersionCache()
+
+
+def version_check_enabled() -> bool:
     """
-    Return ``{"version": ..., "released": ..., "url": ...}`` for the latest
-    release of a GitHub ``owner/repo`` — the release tag with any leading ``v``
-    stripped, the release date (``YYYY-MM-DD``) and the release page URL — or
-    None if it can't be determined.
+    Whether the latest released versions of the clients may be looked up on GitHub. Set
+    ``PI_SUBSCRIPTION_VERSION_CHECK = False`` in pi.cfg to switch the lookup off, e.g. in
+    air-gapped installations where it can never succeed and would only cost the timeout.
+    """
+    return is_true(get_app_config_value("PI_SUBSCRIPTION_VERSION_CHECK", True))
+
+
+def _fetch_latest_release(repo: str) -> GithubRelease | None:
+    """
+    Return the latest :class:`GithubRelease` of a GitHub ``owner/repo``, or None if it
+    can't be determined. Failures are logged at debug level only: not reaching GitHub is
+    an expected state in installations without internet access.
     """
     url = f"https://api.github.com/repos/{repo}/releases/latest"
     try:
@@ -187,45 +227,49 @@ def _fetch_latest_release(repo: str) -> dict | None:
             version = (data.get("tag_name") or "").lstrip("v")
             if not version:
                 return None
-            return {"version": version,
-                    "released": (data.get("published_at") or "")[:10] or None,
-                    "url": data.get("html_url")}
-        log.info(f"GitHub returned {response.status_code} for the latest release of {repo}")
+            return GithubRelease(version=version,
+                                 released=(data.get("published_at") or "")[:10] or None,
+                                 url=data.get("html_url"))
+        log.debug(f"GitHub returned {response.status_code} for the latest release of {repo}")
     except (requests.RequestException, ValueError) as error:
-        log.info(f"Could not fetch the latest release for {repo}: {error}")
+        log.debug(f"Could not fetch the latest release for {repo}: {error}")
     return None
 
 
-def get_latest_github_versions() -> dict[str, dict | None]:
+def get_latest_github_versions() -> dict[str, GithubRelease | None]:
     """
-    Return ``{application: {"version": ..., "released": ...} or None}`` for the
-    clients in :data:`GITHUB_REPOS`. Results are fetched from GitHub
-    concurrently and cached for :data:`GITHUB_VERSION_TTL`; this is best-effort,
-    so unreachable or unknown repositories map to None.
+    Return ``{application: GithubRelease or None}`` for the clients in
+    :data:`GITHUB_REPOS`. Results are fetched from GitHub concurrently and cached for
+    :data:`GITHUB_VERSION_TTL`; this is best-effort, so unreachable or unknown
+    repositories map to None. A failed lookup is cached like a successful one, so a
+    server that cannot reach GitHub does not retry on every dashboard load — see
+    :func:`version_check_enabled` to switch the lookup off entirely.
     """
+    if not version_check_enabled():
+        return {application: None for application in GITHUB_REPOS}
+
     now = datetime.datetime.now()
-    if (_github_version_cache["fetched_at"]
-            and now - _github_version_cache["fetched_at"] < GITHUB_VERSION_TTL):
-        return _github_version_cache["versions"]
+    if _github_version_cache.is_valid(now):
+        return _github_version_cache.releases
 
     unique_repos = set(GITHUB_REPOS.values())
-    version_by_repo = {}
+    release_by_repo = {}
     with concurrent.futures.ThreadPoolExecutor(max_workers=len(unique_repos) or 1) as executor:
         future_to_repo = {executor.submit(_fetch_latest_release, repo): repo
                           for repo in unique_repos}
         for future in concurrent.futures.as_completed(future_to_repo):
-            version_by_repo[future_to_repo[future]] = future.result()
+            release_by_repo[future_to_repo[future]] = future.result()
 
-    versions = {application: version_by_repo.get(repo)
+    releases = {application: release_by_repo.get(repo)
                 for application, repo in GITHUB_REPOS.items()}
     # Drop the release link for clients that are not downloaded from GitHub.
     for application in RELEASE_LINK_SUPPRESSED:
-        release = versions.get(application)
+        release = releases.get(application)
         if release:
-            versions[application] = {**release, "url": None}
-    _github_version_cache["versions"] = versions
-    _github_version_cache["fetched_at"] = now
-    return versions
+            releases[application] = dataclasses.replace(release, url=None)
+    _github_version_cache.releases = releases
+    _github_version_cache.fetched_at = now
+    return releases
 
 
 def get_users_with_active_tokens():
@@ -248,66 +292,78 @@ def get_users_with_active_tokens():
     return len(rows)
 
 
-def _subscription_state(subscription: dict | None, now: datetime.datetime,
-                        token_users: int) -> tuple[str, datetime.datetime | None, int | None]:
+class SubscriptionState(str, enum.Enum):
     """
-    Classify a subscription record into a dashboard subscription state. This is
-    about the subscription itself, independent of how recently the plugin was
-    used (see :func:`_usage_state`).
+    State of a subscription record, with the colour the dashboard maps it to. This is
+    about the subscription itself, independent of how recently the client was used.
+    Inherits from str so the members serialize as their value in an API response.
+    """
+    # No subscription on file.
+    NONE = "none"                # grey
+    # Subscription valid, not near expiry, within the token limit.
+    VALID = "valid"              # green
+    # Valid but ends within EXPIRING_THRESHOLD_DAYS days.
+    EXPIRING = "expiring"        # yellow
+    # Valid but more users with active tokens than the subscription allows.
+    EXCEEDED = "exceeded"        # yellow
+    # The subscription's date_till is in the past.
+    EXPIRED = "expired"          # red
 
-    Possible values, with the colour the frontend maps them to:
 
-    * ``none`` (grey) — no subscription on file.
-    * ``valid`` (green) — subscription valid, not near expiry, within token limit.
-    * ``expiring`` (yellow) — subscription valid but ends within
-      :data:`EXPIRING_THRESHOLD_DAYS` days.
-    * ``exceeded`` (yellow) — subscription valid but more users with active
-      tokens than the subscription allows (``num_tokens``).
-    * ``expired`` (red) — subscription ``date_till`` is in the past.
+@dataclasses.dataclass(frozen=True)
+class SubscriptionStateInfo:
+    """How a subscription record was classified, plus the dates the dashboard shows."""
+    # The classification, see SubscriptionState.
+    state: SubscriptionState
+    # End date of the subscription, None if none is on file.
+    date_till: datetime.datetime | None = None
+    # Days until date_till, negative once it has passed; None if none is on file.
+    days_left: int | None = None
+
+
+def _subscription_state(subscription: dict | None, now: datetime.datetime,
+                        token_users: int) -> SubscriptionStateInfo:
+    """
+    Classify a subscription record into a dashboard :class:`SubscriptionState`.
 
     :param subscription: the subscription dict, or None if none is on file
     :param now: the reference "now" timestamp
     :param token_users: number of users with active tokens (for the token check)
-    :return: ``(state, date_till, days_left)`` — ``date_till``/``days_left`` are
-        None when no subscription is on file.
+    :return: the classification and the dates belonging to it
     """
     if not subscription:
-        return "none", None, None
+        return SubscriptionStateInfo(SubscriptionState.NONE)
     date_till = subscription.get("date_till")
     days_left = (date_till - now).days if date_till else None
     if date_till and date_till < now:
-        return "expired", date_till, days_left
+        return SubscriptionStateInfo(SubscriptionState.EXPIRED, date_till, days_left)
     allowed_tokens = subscription.get("num_tokens")
     if allowed_tokens is not None and token_users > allowed_tokens:
-        return "exceeded", date_till, days_left
+        return SubscriptionStateInfo(SubscriptionState.EXCEEDED, date_till, days_left)
     if days_left is not None and days_left < EXPIRING_THRESHOLD_DAYS:
-        return "expiring", date_till, days_left
-    return "valid", date_till, days_left
+        return SubscriptionStateInfo(SubscriptionState.EXPIRING, date_till, days_left)
+    return SubscriptionStateInfo(SubscriptionState.VALID, date_till, days_left)
 
 
-def _usage_state(has_subscription: bool, last_seen: datetime.datetime | None,
-                 now: datetime.datetime) -> str:
+def _is_in_use(has_subscription: bool, last_seen: datetime.datetime | None,
+               now: datetime.datetime) -> bool:
     """
-    Classify whether a plugin is actively used: ``"yes"`` (green) if it has a
-    subscription on file or was seen within :data:`USAGE_RECENT_DAYS` days,
-    otherwise ``"no"`` (blue).
+    Whether a client counts as actively used: it has a subscription on file or was seen
+    within :data:`USAGE_RECENT_DAYS` days.
     """
     if has_subscription:
-        return "yes"
-    if last_seen is not None and (now - last_seen).days < USAGE_RECENT_DAYS:
-        return "yes"
-    return "no"
+        return True
+    return last_seen is not None and (now - last_seen).days < USAGE_RECENT_DAYS
 
 
-def get_plugin_subscription_status() -> list[dict]:
+def get_plugin_subscription_status(token_users: int | None = None) -> list[dict]:
     """
     Return a dashboard status entry for each plugin in :data:`DASHBOARD_PLUGINS`.
 
     Each entry carries two independent axes:
 
-    * ``usage`` — ``"yes"``/``"no"``; see :func:`_usage_state`.
-    * ``subscription`` — one of ``none``/``valid``/``expiring``/``exceeded``/
-      ``expired``; see :func:`_subscription_state`.
+    * ``in_use`` — whether the plugin is actively used; see :func:`_is_in_use`.
+    * ``subscription`` — the :class:`SubscriptionState` of its subscription record.
 
     Aliased user-agents (e.g. pam-passkey) keep their own row and their own
     ``last_seen`` but resolve their subscription through their owning
@@ -315,8 +371,12 @@ def get_plugin_subscription_status() -> list[dict]:
     parsing each stored user-agent with
     :func:`~privacyidea.lib.utils.get_plugin_info_from_useragent`.
 
+    :param token_users: number of users with active tokens, needed to decide whether a
+        subscription is exceeded. Pass it when the caller already knows the count — a
+        request rendering both this and :func:`get_server_subscription_status` should
+        count once and hand the result to both. Counted here if not given.
     :return: list of dicts in the order of :data:`DASHBOARD_PLUGINS`. Each dict
-        has the keys ``application``, ``usage``, ``subscription``, ``last_seen``,
+        has the keys ``application``, ``in_use``, ``subscription``, ``last_seen``,
         ``date_till``, ``days_left`` and ``versions`` (the distinct client
         versions seen in the user-agents, newest first).
     """
@@ -356,7 +416,8 @@ def get_plugin_subscription_status() -> list[dict]:
                             for sub in all_subscriptions
                             if sub.get("application")}
 
-    token_users = get_users_with_active_tokens()
+    if token_users is None:
+        token_users = get_users_with_active_tokens()
     now = datetime.datetime.now()
     overview = []
     for plugin in DASHBOARD_PLUGINS:
@@ -365,25 +426,28 @@ def get_plugin_subscription_status() -> list[dict]:
         # owning application's subscription.
         owning_application = get_subscription_application(plugin)
         subscription = subscriptions_by_app.get(owning_application)
-        state, date_till, days_left = _subscription_state(subscription, now, token_users)
+        state_info = _subscription_state(subscription, now, token_users)
         overview.append({"application": plugin,
-                         "usage": _usage_state(bool(subscription), last_seen, now),
-                         "subscription": state,
+                         "in_use": _is_in_use(bool(subscription), last_seen, now),
+                         "subscription": state_info.state,
                          "last_seen": last_seen,
-                         "date_till": date_till,
-                         "days_left": days_left,
+                         "date_till": state_info.date_till,
+                         "days_left": state_info.days_left,
                          # Versions seen in the user-agents, newest first.
                          "versions": sorted(versions_by_plugin.get(plugin.lower(), []),
                                             reverse=True)})
     return overview
 
 
-def get_server_subscription_status() -> dict:
+def get_server_subscription_status(token_users: int | None = None) -> dict:
     """
     Dashboard status entry for the privacyIDEA server itself. Same shape as
     entries from :func:`get_plugin_subscription_status` plus ``is_server: True``,
     so the frontend renders the server row without duplicating the
     classification rules.
+
+    :param token_users: number of users with active tokens, see
+        :func:`get_plugin_subscription_status`. Counted here if not given.
     """
     # Pick the row with the latest date_till for determinism when multiple
     # server subscriptions exist.
@@ -392,15 +456,16 @@ def get_server_subscription_status() -> dict:
                            reverse=True)
     subscription = subscriptions[0] if subscriptions else None
     now = datetime.datetime.now()
-    state, date_till, days_left = _subscription_state(
-        subscription, now, get_users_with_active_tokens())
+    if token_users is None:
+        token_users = get_users_with_active_tokens()
+    state_info = _subscription_state(subscription, now, token_users)
     return {"application": "privacyidea",
             "is_server": True,
-            "usage": _usage_state(bool(subscription), None, now),
-            "subscription": state,
+            "in_use": _is_in_use(bool(subscription), None, now),
+            "subscription": state_info.state,
             "last_seen": None,
-            "date_till": date_till,
-            "days_left": days_left,
+            "date_till": state_info.date_till,
+            "days_left": state_info.days_left,
             # The running server version (there is no user-agent for the
             # server). Truncate any PEP 440 local/dev suffix (e.g.
             # "3.13.1+gc6d73eab6.d20260602" -> "3.13.1").

@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 
 import mock
 
-from privacyidea.lib.subscriptions import DASHBOARD_PLUGINS
+from privacyidea.lib.subscriptions import DASHBOARD_PLUGINS, GithubRelease
 from privacyidea.models import ClientApplication, Subscription, db
 from .base import MyApiTestCase
 
@@ -98,9 +98,9 @@ class APISubscriptionsTestCase(MyApiTestCase):
 
         # Mock the GitHub lookup so the test does not hit the network.
         with mock.patch("privacyidea.api.subscriptions.get_latest_github_versions",
-                        return_value={"privacyidea-keycloak": {
-                            "version": "9.9.9", "released": "2026-01-02",
-                            "url": "https://github.com/privacyidea/keycloak-provider/releases/tag/v9.9.9"}}):
+                        return_value={"privacyidea-keycloak": GithubRelease(
+                            version="9.9.9", released="2026-01-02",
+                            url="https://github.com/privacyidea/keycloak-provider/releases/tag/v9.9.9")}):
             with self.app.test_request_context('/subscriptions/status',
                                                method="GET",
                                                headers={'Authorization': self.at}):
@@ -114,7 +114,7 @@ class APISubscriptionsTestCase(MyApiTestCase):
         self.assertListEqual(DASHBOARD_PLUGINS, [e["application"] for e in value[1:]])
         by_app = {e["application"]: e for e in value[1:]}
         self.assertEqual("valid", by_app["privacyidea-keycloak"]["subscription"])
-        self.assertEqual("yes", by_app["privacyidea-keycloak"]["usage"])
+        self.assertTrue(by_app["privacyidea-keycloak"]["in_use"])
         # The mocked GitHub lookup is merged in as current_version + date + url.
         self.assertEqual("9.9.9", by_app["privacyidea-keycloak"]["current_version"])
         self.assertEqual("2026-01-02", by_app["privacyidea-keycloak"]["current_version_date"])
@@ -128,9 +128,26 @@ class APISubscriptionsTestCase(MyApiTestCase):
         for plugin in DASHBOARD_PLUGINS:
             if plugin in mirror_keycloak:
                 self.assertEqual("valid", by_app[plugin]["subscription"])
-                self.assertEqual("yes", by_app[plugin]["usage"])
+                self.assertTrue(by_app[plugin]["in_use"])
             else:
                 # No subscription and unused on a fresh test DB.
                 self.assertEqual("none", by_app[plugin]["subscription"])
-                self.assertEqual("no", by_app[plugin]["usage"])
+                self.assertFalse(by_app[plugin]["in_use"])
+
+    def test_03_status_counts_token_users_once(self):
+        # The server row and the plugin rows both need the active-token-user count, so
+        # the endpoint counts once and hands the result to both.
+        with mock.patch("privacyidea.api.subscriptions.get_latest_github_versions",
+                        return_value={}):
+            with mock.patch("privacyidea.api.subscriptions.get_users_with_active_tokens",
+                            return_value=3) as endpoint_count:
+                with mock.patch("privacyidea.lib.subscriptions.get_users_with_active_tokens") as lib_count:
+                    with self.app.test_request_context('/subscriptions/status',
+                                                       method="GET",
+                                                       headers={'Authorization': self.at}):
+                        res = self.app.full_dispatch_request()
+                        self.assertEqual(200, res.status_code, res)
+
+        self.assertEqual(1, endpoint_count.call_count)
+        lib_count.assert_not_called()
 

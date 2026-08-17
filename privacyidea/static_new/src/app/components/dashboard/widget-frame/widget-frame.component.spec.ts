@@ -16,11 +16,11 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { provideZonelessChangeDetection } from "@angular/core";
+import { Component, provideZonelessChangeDetection } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { provideRouter } from "@angular/router";
 import { TokensWidgetComponent } from "@components/dashboard/widgets/tokens-widget/tokens-widget.component";
-import { WidgetInstance } from "@models/dashboard";
+import { DashboardWidget, WidgetInstance } from "@models/dashboard";
 import { AuthService } from "@services/auth/auth.service";
 import { DashboardLayoutService } from "@services/dashboard/dashboard-layout.service";
 import { ResolverService } from "@services/resolver/resolver.service";
@@ -34,6 +34,21 @@ import { MockSubscriptionService } from "@testing/mock-services/mock-subscriptio
 import { MockSystemService } from "@testing/mock-services/mock-system-service";
 import { MockTokenService } from "@testing/mock-services/mock-token-service";
 import { WidgetFrameComponent } from "./widget-frame.component";
+
+// No shipped widget is pinned, so the tests for the pinned behaviour stand one in. It
+// takes over an existing type id in the registry, which keeps it renderable like any
+// other widget while reporting the pinned metadata.
+const PINNED_TYPE = "events";
+
+@Component({ selector: "app-pinned-stub-widget", standalone: true, template: "" })
+class PinnedStubWidget extends DashboardWidget {
+  static override readonly type = PINNED_TYPE;
+  static override readonly pinned = true;
+
+  override reload(): void {
+    // The stub only carries the pinned metadata; there is nothing to load.
+  }
+}
 
 describe("WidgetFrameComponent", () => {
   let fixture: ComponentFixture<WidgetFrameComponent>;
@@ -213,10 +228,15 @@ describe("WidgetFrameComponent", () => {
   });
 
   describe("pinned widget", () => {
-    const subscriptionsInstance: WidgetInstance = { id: "s1", type: "subscriptions", x: 16, y: 0, cols: 8, rows: 5 };
+    const pinnedInstance: WidgetInstance = { id: "p1", type: PINNED_TYPE, x: 16, y: 0, cols: 8, rows: 5 };
 
     beforeEach(() => {
-      fixture.componentRef.setInput("instance", subscriptionsInstance);
+      const registry = TestBed.inject(WidgetRegistryService);
+      const realGet = registry.get.bind(registry);
+      jest
+        .spyOn(registry, "get")
+        .mockImplementation((type: string) => (type === PINNED_TYPE ? PinnedStubWidget : realGet(type)));
+      fixture.componentRef.setInput("instance", pinnedInstance);
       layoutService.editMode.set(true);
       fixture.detectChanges();
     });

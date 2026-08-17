@@ -88,9 +88,9 @@
                                      <span uib-tooltip="{{ usageReasonText(row.status) | translate }}"
                                            tooltip-placement="top">
                                          <span class="status-dot"
-                                               ng-class="usageDot[row.status.usage]"
+                                               ng-class="usageDotClass(row.status)"
                                                aria-hidden="true">●</span>
-                                         <span class="status-text" ng-if="subscriptionDetailed">{{ usageText[row.status.usage] | translate }}</span>
+                                         <span class="status-text" ng-if="subscriptionDetailed">{{ usageText(row.status) | translate }}</span>
                                      </span>
                                  </td>
                                  <!-- Subscription state. Compact shows only the dot. Hover explains why. -->
@@ -140,7 +140,16 @@
            </div>
        </div>
 
-       <div class="col-lg-4">
+       <!-- The panels beside the subscription overview. While it is compact they share
+            the remaining nine columns; in the detailed view it claims nine of its own, so
+            these no longer fit next to it and wrap to the line below. -->
+       <div ng-class="subscriptionDetailed ? 'col-lg-12' : 'col-lg-9'">
+         <div class="row">
+           <!-- Stacked left of the policies: the two counters side by side with the
+                audit table filling the width underneath them. -->
+           <div class="col-lg-7">
+             <div class="row">
+       <div class="col-lg-6">
            <div class="panel panel-default"
                   ng-show="checkRight('tokenlist')">
                <div class="panel-heading">
@@ -179,7 +188,7 @@
                 </div>
            </div>
        </div>
-       <div class="col-lg-3">
+       <div class="col-lg-6">
              <div class="panel panel-default"
                   ng-show="checkRight('auditlog')">
                  <div class="panel-heading">
@@ -222,7 +231,9 @@
                  </div>
            </div>
        </div>
-       <div class="col-lg-5">
+             </div>
+             <div class="row">
+       <div class="col-lg-12">
             <div class="panel panel-default"
                   ng-show="checkRight('auditlog')">
                  <div class="panel-heading" translate>Administration</div>
@@ -248,6 +259,52 @@
                     </table>
                  </div>
            </div>
+       </div>
+             </div>
+           </div>
+       <div class="col-lg-5">
+           <div class="panel panel-default"
+                ng-show="checkRight('policyread')">
+                 <div class="panel-heading">
+                    <a ui-sref="config.policies.list">
+                    <span class="glyphicon glyphicon-hand-up"
+                          aria-hidden="true"></span>
+                    <span translate>Policies</span></a>
+		 </div>
+                 <div class="panel-body">
+                    <table class="table">
+                        <tbody>
+                            <tr>
+                                <td translate>Active Policies</td>
+                                <td>{{ policies.num_active }}</td>
+                            </tr>
+                            <tr>
+                                <td span="2">
+                                    <span ng-repeat="pol in policies.active">
+                                        {{ ! $first ? "| " : "" }}<a ui-sref="config.policies.details({policyname:pol})"
+                                           ng-click="$rootScope.returnTo=dashboard;">{{ pol }}</a>
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td translate>Inactive Policies</td>
+                                <td>{{ policies.num_inactive }}</td>
+                            </tr>
+                            <tr>
+                                <td span="2">
+                                    <span ng-repeat="pol in policies.inactive">
+                                        {{ ! $first ? "| " : "" }}<a ui-sref="config.policies.details({policyname:pol})"
+                                           ng-click="$rootScope.returnTo=dashboard;">{{ pol }}</a>
+                                    </span>
+
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                 </div>
+           </div>
+       </div>
+         </div>
        </div>
    </div>
    <div class="row"> <!-- health monitoring: act-now data -->
@@ -483,48 +540,6 @@
        </div>
    </div>
    <div class="row"> <!-- configuration reference -->
-       <div class="col-lg-4">
-           <div class="panel panel-default"
-                ng-show="checkRight('policyread')">
-                 <div class="panel-heading">
-                    <a ui-sref="config.policies.list">
-                    <span class="glyphicon glyphicon-hand-up"
-                          aria-hidden="true"></span>
-                    <span translate>Policies</span></a>
-		 </div>
-                 <div class="panel-body">
-                    <table class="table">
-                        <tbody>
-                            <tr>
-                                <td translate>Active Policies</td>
-                                <td>{{ policies.num_active }}</td>
-                            </tr>
-                            <tr>
-                                <td span="2">
-                                    <span ng-repeat="pol in policies.active">
-                                        {{ ! $first ? "| " : "" }}<a ui-sref="config.policies.details({policyname:pol})"
-                                           ng-click="$rootScope.returnTo=dashboard;">{{ pol }}</a>
-                                    </span>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td translate>Inactive Policies</td>
-                                <td>{{ policies.num_inactive }}</td>
-                            </tr>
-                            <tr>
-                                <td span="2">
-                                    <span ng-repeat="pol in policies.inactive">
-                                        {{ ! $first ? "| " : "" }}<a ui-sref="config.policies.details({policyname:pol})"
-                                           ng-click="$rootScope.returnTo=dashboard;">{{ pol }}</a>
-                                    </span>
-
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                 </div>
-           </div>
-       </div>
        <div class="col-lg-4">
              <div class="panel panel-default"
                   ng-show="checkRight('eventhandling_read')">
