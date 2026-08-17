@@ -288,15 +288,17 @@ html.depth-flat {
   --depth-tone-scale: 1;
   --depth-tint: 0%;
 
-  // One hard pair per slot, still aimed by the light source, and the only thing drawing a
-  // surface's edge here. Keep offset and spread equal: an offset alone only translates the
-  // surface's own shape, so its rounded corners pull each band short of the corner, and the
-  // spread that carries the band around reaches exactly as far back as the offset moved, which
-  // is what keeps the two bands off each other's side.
+  // One hard pair per slot, and the only thing drawing a surface's edge here. The light lays a
+  // full 2px outline and the shadow, offset and spread by 1px, covers the two sides the light
+  // falls away from — so the ring closes at every corner. Two mirrored offsets cannot: each band
+  // reaches only its own two sides, leaving the corners between them bare, which shows as a 2px
+  // notch once the corners are square and no longer curve over it.
   --flat-light: var(--mat-sys-surface-container);
   --flat-pair:
     calc(1px * var(--depth-sign-x)) calc(1px * var(--depth-sign-y)) 0 1px var(--mat-sys-shadow),
-    calc(-1px * var(--depth-sign-x)) calc(-1px * var(--depth-sign-y)) 0 1px var(--flat-light);
+    0 0 0 2px var(--flat-light);
+  // The inset pair keeps the mirrored offsets: an inset shadow is clipped to the padding box, so
+  // both bands run the full side and already meet in the corners.
   --flat-inset-pair:
     inset calc(1px * var(--depth-sign-x)) calc(1px * var(--depth-sign-y)) 0 1px var(--mat-sys-shadow),
     inset calc(-1px * var(--depth-sign-x)) calc(-1px * var(--depth-sign-y)) 0 1px var(--flat-light);
