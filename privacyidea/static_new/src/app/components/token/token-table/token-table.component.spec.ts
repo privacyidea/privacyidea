@@ -31,7 +31,7 @@ import { DialogService } from "@services/dialog/dialog.service";
 import { DocumentationService } from "@services/documentation/documentation.service";
 import { RealmService } from "@services/realm/realm.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
-import { TokenDetails, TokenService } from "@services/token/token.service";
+import { TokenDetails, Tokens, TokenService } from "@services/token/token.service";
 import { PageEvent } from "@angular/material/paginator";
 import { Sort } from "@angular/material/sort";
 import {
@@ -51,7 +51,7 @@ import { of } from "rxjs";
 import { TokenTableComponent } from "./token-table.component";
 import { TokenTableSelfServiceComponent } from "./token-table.self-service.component";
 import { expectsTableStateGating } from "@testing/table-state-gating";
-import { settleFirstLoadGrace } from "@testing/first-load-grace";
+import { MockPiResponse } from "@testing/mock-services/mock-utils";
 
 class MatDialogMock {
   result = { confirmed: true };
@@ -115,6 +115,16 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
   afterEach(() => {
     jest.clearAllMocks();
   });
+
+  /** The filter row lives inside the table, which the page only draws once the list has rows. */
+  const showsTokens = (): void => {
+    authServiceMock.jwtData.set({ ...authServiceMock.jwtData(), rights: ["tokenlist"] } as JwtData);
+    const tokens: Tokens = { tokens: [{ serial: "T-1" } as TokenDetails], count: 1, current: 1 };
+    // The table state reads the resource; the component reads the unwrapped value alongside it.
+    tokenService.tokenResource.value.set(MockPiResponse.fromValue<Tokens>(tokens));
+    tokenService.tokenResourceValue.set(tokens);
+    tableFixture.detectChanges();
+  };
 
   it("gates the table on its read right, row count and filter", () => {
     expectsTableStateGating({
@@ -242,15 +252,13 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
     expect(tokenService.handleFilterInput).not.toHaveBeenCalled();
   });
 
-  it("tokenDataSource/totalLength reflect tokenResource; fall back to empty skeleton when undefined", () => {
+  it("tokenDataSource/totalLength reflect tokenResource and are empty until it answers", () => {
     authServiceMock.jwtData.set({ ...authServiceMock.jwtData(), rights: ["tokenlist"] } as JwtData);
     const allowedFixture = TestBed.createComponent(TokenTableComponent);
     const allowedTable = allowedFixture.componentInstance;
     allowedFixture.detectChanges();
 
-    const initial = allowedTable.tokenDataSource().data;
-    expect(Array.isArray(initial)).toBe(true);
-    expect(initial.length).toBe(allowedTable.pageSize());
+    expect(allowedTable.tokenDataSource().data).toEqual([]);
 
     const tokens = [{ serial: "S-1" }, { serial: "S-2" }] as TokenDetails[];
     tokenService.tokenResourceValue.set({ tokens, count: 2, current: 1 });
@@ -339,10 +347,7 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
   });
 
   it("shows a hint while user:/realm: filter syntax is typed but not yet applied", async () => {
-    await settleFirstLoadGrace(tableFixture);
-
-    authServiceMock.jwtData.set({ ...authServiceMock.jwtData(), rights: ["tokenlist"] } as JwtData);
-    tableFixture.detectChanges();
+    showsTokens();
 
     table.onFilterInput({ target: { value: "user: bob" } } as unknown as Event);
     tableFixture.detectChanges();
@@ -433,7 +438,7 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
   });
 
   it("onKeywordClick toggles the filter, focuses the input, and positions the cursor after 'user:'", async () => {
-    await settleFirstLoadGrace(tableFixture);
+    showsTokens();
 
     authServiceMock.jwtData.set({ ...authServiceMock.jwtData(), rights: ["tokenlist"] } as JwtData);
     tableUtilsService.toggleKeywordInFilter.mockReturnValue(new FilterValue().addEntry("user", "bob"));
@@ -453,7 +458,7 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
   });
 
   it("onKeywordClick does not schedule cursor positioning for non-user keywords", async () => {
-    await settleFirstLoadGrace(tableFixture);
+    showsTokens();
 
     authServiceMock.jwtData.set({ ...authServiceMock.jwtData(), rights: ["tokenlist"] } as JwtData);
     tableUtilsService.toggleKeywordInFilter.mockReturnValue(new FilterValue().addEntry("description", "foo"));
@@ -468,10 +473,7 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
   });
 
   it("onItemSelected adds or removes a filter entry and focuses the input", async () => {
-    await settleFirstLoadGrace(tableFixture);
-
-    authServiceMock.jwtData.set({ ...authServiceMock.jwtData(), rights: ["tokenlist"] } as JwtData);
-    tableFixture.detectChanges();
+    showsTokens();
     const focusSpy = jest.spyOn(table.filterInput.nativeElement, "focus");
 
     table.onItemSelected("type", "hotp");

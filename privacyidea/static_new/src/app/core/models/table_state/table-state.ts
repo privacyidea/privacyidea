@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { computed, signal, Signal } from "@angular/core";
+import { computed, Signal } from "@angular/core";
 
 export type TableStatus = "denied" | "loading" | "error" | "empty" | "filtered" | "ready";
 
@@ -26,10 +26,6 @@ export interface TableStateResource {
   reload(): unknown;
 }
 
-export function isInitialLoad(resource: Pick<TableStateResource, "hasValue" | "error">): boolean {
-  return !resource.hasValue() && resource.error() == null;
-}
-
 export interface TableStateOptions {
   readonly resource: TableStateResource;
   readonly count: () => number;
@@ -37,13 +33,6 @@ export interface TableStateOptions {
   readonly allowed?: () => boolean;
   readonly resetFilter?: () => void;
 }
-
-/**
- * How long the first load is given before anything is drawn for it. A response that arrives inside
- * this window goes straight to the table or to the state panel, so neither is shown and taken away
- * again. The global progress bar covers the wait either way.
- */
-export const FIRST_LOAD_GRACE_MS = 200;
 
 export class TableState {
   readonly status: Signal<TableStatus>;
@@ -78,13 +67,11 @@ export class TableState {
       if (status === "empty" || status === "denied" || status === "error") {
         return false;
       }
-      // Drawing a table of placeholder rows only to replace it with the empty panel a moment later
-      // reads as a glitch, so the first load draws neither until it has taken long enough to be
-      // worth reporting. The grace runs from construction, which is when that load starts.
-      return status !== "loading" || this.firstLoadGraceElapsed();
+      // A table of placeholder rows is shaped like data, so ending the load on the empty panel
+      // reads as rows arriving and then being taken away. The panel speaks for the load as well,
+      // which makes every outcome a change of its contents rather than a change of what is on screen.
+      return status !== "loading";
     });
-
-    setTimeout(() => this.firstLoadGraceElapsed.set(true), FIRST_LOAD_GRACE_MS);
   }
 
   /**
@@ -93,9 +80,6 @@ export class TableState {
    * request cannot clear it.
    */
   readonly isFiltered: Signal<boolean>;
-
-  /** False only for the opening moments of the first load; see FIRST_LOAD_GRACE_MS. */
-  private readonly firstLoadGraceElapsed = signal(false);
 
   get canResetFilter(): boolean {
     return this.options.resetFilter !== undefined;

@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { CommonModule, NgClass } from "@angular/common";
-import { Component, computed, effect, inject, linkedSignal, signal, ViewChild, WritableSignal } from "@angular/core";
+import { Component, effect, inject, linkedSignal, signal, ViewChild, WritableSignal } from "@angular/core";
 import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
 import { MatSort, MatSortHeader, MatSortModule } from "@angular/material/sort";
 import {
@@ -37,7 +37,7 @@ import {
 import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { TableStateComponent } from "@components/shared/table-state/table-state.component";
-import { isInitialLoad, TableState } from "@core/models/table_state/table-state";
+import { TableState } from "@core/models/table_state/table-state";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { AuditService } from "@services/audit/audit.service";
 import { AuthService } from "@services/auth/auth.service";
@@ -128,10 +128,6 @@ export class ClientsComponent {
     });
   }
 
-  readonly emptyRows = computed<FlattenedClientRow[]>(() =>
-    Array.from({ length: 10 }, () => ({ application: "", isFirst: true, rowspan: 1 }) as FlattenedClientRow)
-  );
-
   // Flattens the grouped client data for the material table, from ClientsDict
   flattenedClientRowsFromDict = (dict: ClientsDict): FlattenedClientRow[] => {
     const rows: FlattenedClientRow[] = [];
@@ -155,7 +151,7 @@ export class ClientsComponent {
   clientDataSource: WritableSignal<MatTableDataSource<FlattenedClientRow>> = linkedSignal({
     source: () =>
       this.clientService.clientsResource.hasValue() ? this.clientService.clientsResource.value() : undefined,
-    computation: (clientResource, previous) => {
+    computation: (clientResource) => {
       if (clientResource) {
         const clientData = clientResource.result?.value || ({} as ClientsDict);
         const dataSource = new MatTableDataSource(this.flattenedClientRowsFromDict(clientData));
@@ -168,10 +164,7 @@ export class ClientsComponent {
         };
         return dataSource;
       }
-      if (!isInitialLoad(this.clientService.clientsResource)) {
-        return new MatTableDataSource<FlattenedClientRow>([]);
-      }
-      return previous?.value ?? new MatTableDataSource(this.emptyRows());
+      return new MatTableDataSource<FlattenedClientRow>([]);
     }
   });
 

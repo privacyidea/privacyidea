@@ -18,7 +18,7 @@
  **/
 import { signal, WritableSignal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { FIRST_LOAD_GRACE_MS, TableState } from "@core/models/table_state/table-state";
+import { TableState } from "@core/models/table_state/table-state";
 import { TableStateComponent } from "./table-state.component";
 
 describe("TableStateComponent", () => {
@@ -149,40 +149,47 @@ describe("TableStateComponent", () => {
     });
   });
 
-  describe("while the first load is still out", () => {
-    it("draws neither the table nor the panel, so a short load cannot flash one and take it away", () => {
+  describe("while the request is still out", () => {
+    it("speaks for the load itself rather than letting a table of placeholders do it", () => {
       value.set(undefined);
       const state = buildState();
       render(state);
 
       expect(state.status()).toBe("loading");
+      // The page draws this panel instead of the table, so the load and both of its outcomes all
+      // happen in the same place and nothing is put on screen only to be taken away.
       expect(state.showTable()).toBe(false);
-      expect(text().trim()).toBe("");
+      expect(fixture.nativeElement.querySelector("mat-progress-spinner")).not.toBeNull();
       expect(fixture.nativeElement.querySelector("mat-icon")).toBeNull();
+      expect(text()).not.toContain("No entries yet");
     });
 
-    it("hands the table its placeholder rows once the load turns out to be a slow one", async () => {
+    it("fills in around the spinner when the list turns out to be empty", () => {
       value.set(undefined);
       const state = buildState();
       render(state);
+      expect(fixture.nativeElement.querySelector("mat-progress-spinner")).not.toBeNull();
 
-      await new Promise((resolve) => setTimeout(resolve, FIRST_LOAD_GRACE_MS + 20));
+      value.set({});
+      fixture.detectChanges();
 
-      expect(state.status()).toBe("loading");
-      expect(state.showTable()).toBe(true);
+      expect(state.status()).toBe("empty");
+      expect(fixture.nativeElement.querySelector("mat-progress-spinner")).toBeNull();
+      expect(text()).toContain("No entries yet");
     });
 
-    it("goes straight to the empty panel when the load resolves inside the window", () => {
+    it("hands the page its table once rows arrive", () => {
       value.set(undefined);
       const state = buildState();
       render(state);
       expect(state.showTable()).toBe(false);
 
       value.set({});
+      count.set(3);
       fixture.detectChanges();
 
-      expect(state.status()).toBe("empty");
-      expect(text()).toContain("No entries yet");
+      expect(state.status()).toBe("ready");
+      expect(state.showTable()).toBe(true);
     });
   });
 });

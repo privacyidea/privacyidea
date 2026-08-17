@@ -297,7 +297,6 @@
         <tr
           (click)="expandedElement = expandedElement === row ? null : row"
           *matRowDef="let row; columns: columnKeys"
-          [class.skeleton-row]="!row.serial"
           class="example-element-row"
           mat-row></tr>
 

@@ -188,7 +188,6 @@
           mat-header-row></tr>
         <tr
           *matRowDef="let row; columns: columnKeysSelfService"
-          [class.skeleton-row]="!row.serial"
           mat-row></tr>
         <tr *matNoDataRow>
           <td [attr.colspan]="columnKeysSelfService.length">

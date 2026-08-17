@@ -58,7 +58,7 @@ import { FilterAutocompleteDirective } from "@components/shared/directives/filte
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { TableStateComponent } from "@components/shared/table-state/table-state.component";
 import { FilterValue } from "@core/models/filter_value/filter_value";
-import { isInitialLoad, TableState } from "@core/models/table_state/table-state";
+import { TableState } from "@core/models/table_state/table-state";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { inlineFilterHint } from "@utils/filter-hint.utils";
 @Component({
@@ -136,7 +136,7 @@ export class ContainerTableComponent implements OnDestroy {
 
   containerDataSource: WritableSignal<MatTableDataSource<ContainerDetailData>> = linkedSignal({
     source: this.containerResource.value,
-    computation: (containerResource, previous) => {
+    computation: (containerResource) => {
       if (containerResource && containerResource.result?.value) {
         const processedData =
           containerResource.result?.value?.containers.map((item) => ({
@@ -146,13 +146,7 @@ export class ContainerTableComponent implements OnDestroy {
           })) ?? [];
         return new MatTableDataSource<ContainerDetailData>(processedData);
       }
-      if (!isInitialLoad(this.containerResource) || !this.authService.actionAllowed("container_list")) {
-        return new MatTableDataSource<ContainerDetailData>([]);
-      }
-      return (
-        previous?.value ??
-        this.tableUtilsService.emptyDataSource<ContainerDetailData>(this.pageSize(), this.columnsKeyMap)
-      );
+      return new MatTableDataSource<ContainerDetailData>([]);
     }
   });
 

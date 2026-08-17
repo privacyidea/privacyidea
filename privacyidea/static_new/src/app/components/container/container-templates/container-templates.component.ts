@@ -18,7 +18,7 @@
  **/
 
 import { CommonModule, KeyValuePipe } from "@angular/common";
-import { Component, computed, inject, linkedSignal, signal, viewChild } from "@angular/core";
+import { Component, computed, inject, signal, viewChild } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatIconModule } from "@angular/material/icon";
@@ -28,7 +28,7 @@ import { MatTableModule } from "@angular/material/table";
 import { Router, RouterLink } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { TableStateComponent } from "@components/shared/table-state/table-state.component";
-import { isInitialLoad, TableState } from "@core/models/table_state/table-state";
+import { TableState } from "@core/models/table_state/table-state";
 import { FilterOption } from "@core/models/filter_value_generic/filter-option";
 import { FilterValueGeneric } from "@core/models/filter_value_generic/filter-value-generic";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
@@ -135,25 +135,10 @@ export class ContainerTemplatesComponent {
   readonly pageSizeOptions = signal([5, 10, 25, 100]);
   readonly activeSort = signal<Sort>({ active: "", direction: "" });
 
-  readonly emptyResource = linkedSignal({
-    source: this.pageSize,
-    computation: (pageSize: number) =>
-      Array.from(
-        { length: pageSize },
-        () =>
-          ({
-            name: "",
-            container_type: "",
-            default: false,
-            template_options: { tokens: [] }
-          }) as ContainerTemplate
-      )
-  });
-
   readonly filteredContainerTemplates = computed(() => {
     const templates = this.containerTemplateService.templates();
     if (templates.length === 0) {
-      return isInitialLoad(this.containerTemplateService.templatesResource) ? this.emptyResource() : [];
+      return [];
     }
     return this.filter().hasActiveFilters ? this.filter().filterItems(templates) : templates;
   });

@@ -44,7 +44,6 @@ import { UserService } from "@services/user/user.service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { expectsTableStateGating } from "@testing/table-state-gating";
 import { MockPiResponse } from "@testing/mock-services/mock-utils";
-import { settleFirstLoadGrace } from "@testing/first-load-grace";
 
 describe("UserDetailsTokenTableComponent", () => {
   let fixture: ComponentFixture<UserDetailsTokenTableComponent>;
@@ -135,56 +134,58 @@ describe("UserDetailsTokenTableComponent", () => {
     expect(component.dataSource.sort).toBeFalsy();
   });
 
-  it("renders rows after the table returns from the empty state", async () => {
-    await settleFirstLoadGrace(fixture);
-
-    // Through authData, so the rights signal the TableState reads actually changes; a plain
-    // mockReturnValue would leave the computed with its first, cached verdict.
+  it("renders rows after the table returns from the empty state", () => {
+    // The table is torn down when the list empties and built again when rows come back. On the way
+    // back its data source reconnects, which is where anything left in the data source's sort seat
+    // would throw and leave the table unable to render.
     const authServiceMock = TestBed.inject(AuthService) as unknown as MockAuthService;
     authServiceMock.authData.set({ ...authServiceMock.authData()!, rights: ["tokenlist"] });
-    fixture.detectChanges();
 
     const table = () => fixture.nativeElement.querySelector("table");
+    const respondWith = (...tokens: TokenDetails[]) => {
+      tokenServiceMock.userTokenResource.value.set(
+        MockPiResponse.fromValue<Tokens>({ count: tokens.length, current: tokens.length, tokens })
+      );
+      fixture.detectChanges();
+    };
 
-    // Loading keeps the table mounted, so the data source is connected first.
-    tokenServiceMock.userTokenResource.value.set(undefined);
-    fixture.detectChanges();
-    expect(component.tableState.status()).toBe("loading");
+    respondWith({
+      serial: "T-FIRST",
+      tokentype: "hotp",
+      active: true,
+      revoked: false,
+      locked: false,
+      description: "",
+      failcount: 0,
+      maxfail: 10,
+      container_serial: "",
+      user_realm: "r1",
+      username: "alice",
+      resolver: ""
+    } as TokenDetails);
+    expect(component.tableState.status()).toBe("ready");
     expect(table()).not.toBeNull();
 
-    // No tokens tears it down again, disconnecting the data source.
-    tokenServiceMock.userTokenResource.value.set(
-      MockPiResponse.fromValue<Tokens>({ count: 0, current: 0, tokens: [] })
-    );
-    fixture.detectChanges();
+    // Unassigning the last token empties the list and takes the table away.
+    respondWith();
     expect(component.tableState.status()).toBe("empty");
     expect(table()).toBeNull();
 
-    tokenServiceMock.userTokenResource.value.set(
-      MockPiResponse.fromValue<Tokens>({
-        count: 1,
-        current: 1,
-        tokens: [
-          {
-            serial: "T-AFTER-ASSIGN",
-            tokentype: "hotp",
-            active: true,
-            revoked: false,
-            locked: false,
-            description: "",
-            failcount: 0,
-            maxfail: 10,
-            container_serial: "",
-            user_realm: "r1",
-            username: "alice",
-            resolver: ""
-          }
-        ] as TokenDetails[]
-      })
-    );
-    fixture.detectChanges();
+    respondWith({
+      serial: "T-AFTER-ASSIGN",
+      tokentype: "hotp",
+      active: true,
+      revoked: false,
+      locked: false,
+      description: "",
+      failcount: 0,
+      maxfail: 10,
+      container_serial: "",
+      user_realm: "r1",
+      username: "alice",
+      resolver: ""
+    } as TokenDetails);
 
-    // The table is created only now, so this is the first time the data source reconnects.
     expect(table()).not.toBeNull();
     expect(fixture.nativeElement.textContent).toContain("T-AFTER-ASSIGN");
   });

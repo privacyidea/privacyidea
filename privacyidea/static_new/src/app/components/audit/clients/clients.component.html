@@ -98,7 +98,6 @@
         mat-header-row></tr>
       <tr
         *matRowDef="let row; columns: columnKeys"
-        [class.skeleton-row]="!row.application"
         mat-row></tr>
 
       <tr *matNoDataRow>

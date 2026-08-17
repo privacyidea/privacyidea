@@ -119,7 +119,6 @@
 
         <tr
           *matRowDef="let row; columns: columnKeys"
-          [class.skeleton-row]="!row.resolvername"
           mat-row></tr>
 
         <tr *matNoDataRow>

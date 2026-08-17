@@ -228,7 +228,6 @@
           mat-header-row></tr>
         <tr
           *matRowDef="let row; columns: displayedColumns"
-          [class.skeleton-row]="!row.token.serial"
           [ngClass]="'comparison-status-' + row.status"
           mat-row></tr>
         <tr *matNoDataRow>

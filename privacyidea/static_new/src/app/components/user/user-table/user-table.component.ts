@@ -62,7 +62,7 @@ import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-t
 import { FilterAutocompleteDirective } from "@components/shared/directives/filter-autocomplete.directive";
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { TableStateComponent } from "@components/shared/table-state/table-state.component";
-import { isInitialLoad, TableState } from "@core/models/table_state/table-state";
+import { TableState } from "@core/models/table_state/table-state";
 import { UserNewResolverComponent } from "@components/user/user-new-resolver/user-new-resolver.component";
 import { FilterOption } from "@core/models/filter_value_generic/filter-option";
 import { FilterValueGeneric, keywordlessTerms } from "@core/models/filter_value_generic/filter-value-generic";
@@ -179,13 +179,6 @@ export class UserTableComponent implements OnDestroy {
     allowed: () => this.authService.actionAllowed("userlist"),
     resetFilter: () => this.userService.clearFilter()
   });
-  emptyResource: WritableSignal<UserData[]> = linkedSignal({
-    source: this.userService.pageSize,
-    computation: (pageSize: number) =>
-      Array.from({ length: pageSize }, () =>
-        Object.fromEntries(this.columnKeysMap.map((c) => [{ key: c.key, username: "" }]))
-      )
-  });
   usersDataSource: WritableSignal<MatTableDataSource<UserData>> = linkedSignal({
     source: () => ({
       filtered: this.filteredUsers(),
@@ -193,10 +186,8 @@ export class UserTableComponent implements OnDestroy {
       paginator: this.paginator()
     }),
     computation: (src, prev) => {
-      // Skeleton rows (emptyResource) are shown while loading and must not be filtered.
-      const data =
-        src.filtered ??
-        (isInitialLoad(this.userService.usersResource) ? (prev?.value?.data ?? this.emptyResource()) : []);
+      // While a reload is in flight the rows already on screen stay, rather than blanking the table.
+      const data = src.filtered ?? prev?.value?.data ?? [];
       const sorted = this.clientsideSortUserData([...data], src.sort);
       const ds = new MatTableDataSource(sorted);
       ds.paginator = src.paginator ?? null;

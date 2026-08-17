@@ -44,7 +44,7 @@ import { ClearableInputComponent } from "@components/shared/clearable-input/clea
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { HighlightPipe } from "@components/shared/pipes/highlight.pipe";
 import { TableStateComponent } from "@components/shared/table-state/table-state.component";
-import { isInitialLoad, TableState } from "@core/models/table_state/table-state";
+import { TableState } from "@core/models/table_state/table-state";
 import { AuthService } from "@services/auth/auth.service";
 import { EMPTY_EVENT, EventHandler, EventService } from "@services/event/event.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
@@ -127,15 +127,6 @@ export class EventComponent {
       sort: this.sort()
     }),
     computation: (source) => {
-      if (isInitialLoad(this.eventService.allEventsResource)) {
-        return this.tableUtilsService.emptyDataSource<EventHandler>(
-          this.pageSizeOptions()[1] ?? 10,
-          this.columnKeys(),
-          {
-            event: []
-          }
-        );
-      }
       const sorted = this.clientsideSortEventData(source.eventHandlers ?? [], this.sort());
       const dataSource = new MatTableDataSource(sorted);
       dataSource.paginator = source.paginator ?? null;

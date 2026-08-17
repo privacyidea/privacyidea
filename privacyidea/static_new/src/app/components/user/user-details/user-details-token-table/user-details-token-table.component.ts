@@ -50,7 +50,7 @@ import {
 import { MatTooltip } from "@angular/material/tooltip";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { TableStateComponent } from "@components/shared/table-state/table-state.component";
-import { isInitialLoad, TableState } from "@core/models/table_state/table-state";
+import { TableState } from "@core/models/table_state/table-state";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContainerDetailToken } from "@services/container/container.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
@@ -166,9 +166,6 @@ export class UserDetailsTokenTableComponent {
     }
     return "";
   });
-  private readonly emptyRows = computed<ContainerDetailToken[]>(
-    () => this.tableUtilsService.emptyDataSource<ContainerDetailToken>(5, this.columnsKeyMap).data
-  );
 
   constructor() {
     effect(() => {
@@ -176,7 +173,7 @@ export class UserDetailsTokenTableComponent {
         return;
       }
       if (!this.tokenService.userTokenResource.hasValue()) {
-        this.dataSource.data = isInitialLoad(this.tokenService.userTokenResource) ? this.emptyRows() : [];
+        this.dataSource.data = [];
         return;
       }
       const base = this.userTokenData().data ?? [];

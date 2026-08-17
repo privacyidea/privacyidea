@@ -30,7 +30,7 @@ import { MatTabsModule } from "@angular/material/tabs";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { TableStateComponent } from "@components/shared/table-state/table-state.component";
-import { isInitialLoad, TableState } from "@core/models/table_state/table-state";
+import { TableState } from "@core/models/table_state/table-state";
 import { TokenApplicationsActionsComponent } from "@components/token/token-applications/token-applications-actions/token-applications-actions.component";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
@@ -82,12 +82,7 @@ export class TokenApplicationsSshComponent {
     if (data) {
       return new MatTableDataSource<TokenApplication>(data);
     }
-    if (!isInitialLoad(this.machineService.tokenApplicationResource)) {
-      return new MatTableDataSource<TokenApplication>([]);
-    }
-    return this.tableUtilsService.emptyDataSource<TokenApplication>(this.machineService.pageSize(), [
-      ...this.columnsKeyMap
-    ]);
+    return new MatTableDataSource<TokenApplication>([]);
   });
   readonly tableState = new TableState({
     resource: this.machineService.tokenApplicationResource,

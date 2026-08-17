@@ -131,21 +131,6 @@
       white-space: normal;
       word-break: break-word;
     }
-
-    .skeleton-row {
-      .column-max-height {
-        border-radius: 4px;
-        height: calc(var(--global-padding) * 2);
-      }
-
-      &.col-select,
-      &.col-active {
-        .column-max-height {
-          width: 20px;
-          margin: 0 auto;
-        }
-      }
-    }
   }
 
   .inactive-icon {

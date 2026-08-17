@@ -38,8 +38,7 @@ import {
   MockRealmService,
   MockRouter,
   MockSystemService,
-  MockTableUtilsService,
-  MockTokenService
+  MockTableUtilsService
 } from "@testing/mock-services";
 import { MockPendingChangesService } from "@testing/mock-services/mock-pending-changes-service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
@@ -48,8 +47,6 @@ import { RealmTableComponent } from "./realm-table.component";
 import { AuthService } from "@services/auth/auth.service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { expectsTableStateGating } from "@testing/table-state-gating";
-import { TokenService } from "@services/token/token.service";
-import { settleFirstLoadGrace } from "@testing/first-load-grace";
 
 class LocalMockMatDialog {
   result$ = of(true);
@@ -690,44 +687,5 @@ describe("RealmTableComponent", () => {
       component.ngOnDestroy();
       expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
     });
-  });
-});
-
-// Uses the real TableUtilsService: MockTableUtilsService returns an empty data source from
-// emptyDataSource, so with the mock in place no placeholder row is rendered and this cannot be hit.
-describe("RealmTableComponent loading placeholders", () => {
-  it("renders the placeholder rows without the resolvers cell throwing", async () => {
-    TestBed.resetTestingModule();
-    await TestBed.configureTestingModule({
-      imports: [RealmTableComponent],
-      providers: [
-        { provide: AuthService, useClass: MockAuthService },
-        provideHttpClient(),
-        provideHttpClientTesting(),
-        { provide: TokenService, useClass: MockTokenService },
-        TableUtilsService,
-        { provide: RealmService, useClass: MockRealmService },
-        { provide: SystemService, useClass: MockSystemService },
-        { provide: ContentService, useClass: MockContentService },
-        { provide: NotificationService, useClass: MockNotificationService },
-        { provide: MatDialog, useClass: LocalMockMatDialog },
-        { provide: ResolverService, useClass: MockResolverService },
-        { provide: Router, useClass: MockRouter },
-        { provide: PendingChangesService, useClass: MockPendingChangesService }
-      ]
-    }).compileComponents();
-
-    // No value and no error is the initial load, which fills the table with placeholder rows. The
-    // resolvers cell reads resolverGroups, a field the column list does not mention, so a row
-    // without it throws before any realm arrives.
-    const realmServiceMock = TestBed.inject(RealmService) as unknown as MockRealmService;
-    realmServiceMock.realmResource.value.set(undefined);
-
-    const fixture = TestBed.createComponent(RealmTableComponent);
-    expect(() => fixture.detectChanges()).not.toThrow();
-    await settleFirstLoadGrace(fixture);
-
-    const rows = fixture.nativeElement.querySelectorAll("tr.mat-mdc-row");
-    expect(rows.length).toBeGreaterThan(0);
   });
 });

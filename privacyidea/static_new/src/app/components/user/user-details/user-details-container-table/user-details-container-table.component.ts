@@ -50,7 +50,7 @@ import { MatTooltip } from "@angular/material/tooltip";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { TableStateComponent } from "@components/shared/table-state/table-state.component";
-import { isInitialLoad, TableState } from "@core/models/table_state/table-state";
+import { TableState } from "@core/models/table_state/table-state";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import {
   ContainerDetailData,
@@ -149,9 +149,6 @@ export class UserDetailsContainerTableComponent {
       ? $localize`Create a container for this user to see it here.`
       : ""
   );
-  private readonly emptyRows = computed<ContainerDetailData[]>(
-    () => this.tableUtilsService.emptyDataSource<ContainerDetailData>(5, this.columnsKeyMap).data
-  );
 
   constructor() {
     effect(() => {
@@ -160,7 +157,7 @@ export class UserDetailsContainerTableComponent {
       if (resource.hasValue()) {
         this.dataSource.data = this.clientsideSortContainerData(base, this.sort());
       } else {
-        this.dataSource.data = isInitialLoad(resource) ? this.emptyRows() : [];
+        this.dataSource.data = [];
       }
     });
 

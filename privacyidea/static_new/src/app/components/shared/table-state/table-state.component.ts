@@ -19,13 +19,13 @@
 import { Component, computed, input } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
+import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
 import { TableState, TableStatus } from "@core/models/table_state/table-state";
 
 @Component({
   selector: "app-table-state",
   standalone: true,
-  imports: [MatIconModule, MatButtonModule],
-  host: { "[class.table-state-idle]": "isLoading()" },
+  imports: [MatIconModule, MatButtonModule, MatProgressSpinnerModule],
   templateUrl: "./table-state.component.html",
   styleUrl: "./table-state.component.scss"
 })

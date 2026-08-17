@@ -30,7 +30,7 @@ import { CopyableComponent } from "@components/shared/copyable/copyable.componen
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { TableStateComponent } from "@components/shared/table-state/table-state.component";
-import { isInitialLoad, TableState } from "@core/models/table_state/table-state";
+import { TableState } from "@core/models/table_state/table-state";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
@@ -107,14 +107,11 @@ export class ChallengesTableComponent {
       this.challengesService.challengesResource.hasValue()
         ? this.challengesService.challengesResource.value()
         : undefined,
-    computation: (challengesResource, previous) => {
+    computation: (challengesResource) => {
       if (challengesResource) {
         return new MatTableDataSource(challengesResource.result?.value?.challenges);
       }
-      if (!isInitialLoad(this.challengesService.challengesResource)) {
-        return new MatTableDataSource<Challenge>([]);
-      }
-      return previous?.value ?? this.tableUtilsService.emptyDataSource<Challenge>(this.pageSize(), this.columnsKeyMap);
+      return new MatTableDataSource<Challenge>([]);
     }
   });
   readonly tableState = new TableState({

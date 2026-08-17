@@ -140,8 +140,7 @@
         *matHeaderRowDef="columnKeys()"></tr>
       <tr
         mat-row
-        *matRowDef="let row; columns: columnKeys()"
-        [class.skeleton-row]="!row.name"></tr>
+        *matRowDef="let row; columns: columnKeys()"></tr>
 
       <tr *matNoDataRow>
         <td [attr.colspan]="columnKeys().length">

@@ -32,7 +32,7 @@ import { ClearableInputComponent } from "@components/shared/clearable-input/clea
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { TableStateComponent } from "@components/shared/table-state/table-state.component";
-import { isInitialLoad, TableState } from "@core/models/table_state/table-state";
+import { TableState } from "@core/models/table_state/table-state";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import {
@@ -103,12 +103,6 @@ export class MachineResolverComponent {
       sort: this.sort()
     }),
     computation: (source) => {
-      if (isInitialLoad(this.machineResolverService.machineResolverResource)) {
-        return this.tableUtilsService.emptyDataSource<MachineResolver>(
-          this.tableUtilsService.pageSizeOptions()[1] ?? 10,
-          this.columnKeysMap
-        );
-      }
       const dataSource = new MatTableDataSource(source.machineResolvers ?? []);
       dataSource.paginator = source.paginator ?? null;
       dataSource.sort = source.sort ?? null;

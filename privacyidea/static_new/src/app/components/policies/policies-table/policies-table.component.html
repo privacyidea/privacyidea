@@ -166,7 +166,6 @@
         mat-header-row></tr>
       <tr
         *matRowDef="let policy; columns: columnKeys()"
-        [class.skeleton-row]="!policy.name"
         class="policy-row"
         mat-row></tr>
 

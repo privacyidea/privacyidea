@@ -33,7 +33,7 @@ import { ClearableInputComponent } from "@components/shared/clearable-input/clea
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { TableStateComponent } from "@components/shared/table-state/table-state.component";
-import { isInitialLoad, TableState } from "@core/models/table_state/table-state";
+import { TableState } from "@core/models/table_state/table-state";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { Machine, MachineService, MachineServiceInterface } from "@services/machine/machine.service";
@@ -86,11 +86,6 @@ export class MachinesComponent {
   displayedColumns: string[] = ["hostname", "ip", "id", "resolver_name"];
 
   machineDataSource = computed(() => {
-    if (isInitialLoad(this.machineService.machinesResource)) {
-      return this.tableUtilsService.emptyDataSource<Machine>(this.pageSize(), this.displayedColumns, {
-        hostname: []
-      });
-    }
     const machines = this.machineService.machines() ?? [];
     const dataSource = new MatTableDataSource(machines);
     dataSource.paginator = this.paginator() ?? null;

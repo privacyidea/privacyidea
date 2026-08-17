@@ -32,7 +32,7 @@ import { CopyableComponent } from "@components/shared/copyable/copyable.componen
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { TableStateComponent } from "@components/shared/table-state/table-state.component";
-import { isInitialLoad, TableState } from "@core/models/table_state/table-state";
+import { TableState } from "@core/models/table_state/table-state";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { renderedRows, RowSelector } from "@services/table-utils/row-selector";
@@ -88,9 +88,6 @@ export class TokengroupsComponent {
   displayedColumns: string[] = ["select", "id", "groupname", "description"];
 
   tokengroupDataSource = computed(() => {
-    if (isInitialLoad(this.tokengroupService.tokengroupResource)) {
-      return this.tableUtilsService.emptyDataSource<Tokengroup>(this.pageSizeOptions()[1] ?? 10, this.displayedColumns);
-    }
     const groups = this.tokengroupService.tokengroups();
     const dataSource = new MatTableDataSource(groups);
     dataSource.paginator = this.paginator() ?? null;

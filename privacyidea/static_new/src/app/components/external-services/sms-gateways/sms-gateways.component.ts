@@ -36,7 +36,7 @@ import { CopyableComponent } from "@components/shared/copyable/copyable.componen
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { TableStateComponent } from "@components/shared/table-state/table-state.component";
-import { isInitialLoad, TableState } from "@core/models/table_state/table-state";
+import { TableState } from "@core/models/table_state/table-state";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { renderedRows, RowSelector } from "@services/table-utils/row-selector";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
@@ -90,9 +90,6 @@ export class SmsGatewaysComponent {
   displayedColumns: string[] = ["select", "name", "description", "providermodule"];
 
   smsDataSource = computed(() => {
-    if (isInitialLoad(this.smsGatewayService.smsGatewayResource)) {
-      return this.tableUtilsService.emptyDataSource<SmsGateway>(this.pageSizeOptions()[1] ?? 10, this.displayedColumns);
-    }
     const gateways = this.smsGatewayService.smsGateways();
     const dataSource = new MatTableDataSource(gateways);
     dataSource.paginator = this.paginator() ?? null;

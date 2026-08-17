@@ -18,7 +18,7 @@
  **/
 
 import { CommonModule, KeyValuePipe } from "@angular/common";
-import { Component, computed, inject, linkedSignal, signal, viewChild } from "@angular/core";
+import { Component, computed, inject, signal, viewChild } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatIconModule } from "@angular/material/icon";
@@ -33,7 +33,7 @@ import { ROUTE_PATHS } from "@app/route_paths";
 import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
 import { HighlightPipe } from "@components/shared/pipes/highlight.pipe";
 import { TableStateComponent } from "@components/shared/table-state/table-state.component";
-import { isInitialLoad, TableState } from "@core/models/table_state/table-state";
+import { TableState } from "@core/models/table_state/table-state";
 import { FilterOption } from "@core/models/filter_value_generic/filter-option";
 import { FilterValueGeneric } from "@core/models/filter_value_generic/filter-value-generic";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
@@ -93,8 +93,6 @@ export class PoliciesTableComponent {
 
   readonly columnKeys = computed(() => ["select", ...Object.keys(this.columns)]);
 
-  readonly skeletonRowCount = 10;
-
   readonly sort = signal<Sort>({ active: "priority", direction: "asc" });
   readonly filter = signal<FilterValueGeneric<PolicyDetail>>(
     new FilterValueGeneric({ availableFilters: policyFilterOptions })
@@ -129,15 +127,10 @@ export class PoliciesTableComponent {
     };
   });
 
-  readonly emptyResource = linkedSignal({
-    source: () => this.policyService.allPolicies(),
-    computation: () => Array.from({ length: this.skeletonRowCount }, () => ({ name: "" }) as PolicyDetail)
-  });
-
   readonly policiesListFiltered = computed(() => {
     const all = this.policyService.allPolicies();
     if (all.length === 0) {
-      return isInitialLoad(this.policyService.allPoliciesResource) ? this.emptyResource() : [];
+      return [];
     }
     return this.filter().filterItems(all);
   });

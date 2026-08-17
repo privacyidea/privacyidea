@@ -34,7 +34,6 @@ import { MockDialogService, MockPolicyService, MockRouter, MockTableUtilsService
 import { expectsTableStateGating } from "@testing/table-state-gating";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { of } from "rxjs";
-import { settleFirstLoadGrace } from "@testing/first-load-grace";
 
 @Component({ selector: "app-policy-filter", template: "", standalone: true })
 class MockPolicyFilterComponent {
@@ -103,28 +102,17 @@ describe("PoliciesTableComponent", () => {
     expect(component).toBeTruthy();
   });
 
-  it("should show skeleton rows while the policies are still loading", async () => {
-    await settleFirstLoadGrace(fixture);
-
+  it("stands the state panel in for the table while the policies are still loading", () => {
+    // A table of placeholder rows is shaped like data, so ending the load on the empty panel reads
+    // as rows arriving and then being taken away. The panel speaks for the load instead.
     mockPolicyService.allPolicies.set([]);
     mockPolicyService.allPoliciesResource.value.set(undefined);
     fixture.detectChanges();
 
-    const rows = fixture.debugElement.queryAll(By.css("tr[mat-row]"));
-
-    expect(rows.length).toBe(component.skeletonRowCount);
-    expect(rows[0].classes["skeleton-row"]).toBeTruthy();
-  });
-
-  it("should disable header checkbox when in skeleton state", async () => {
-    await settleFirstLoadGrace(fixture);
-
-    mockPolicyService.allPolicies.set([]);
-    mockPolicyService.allPoliciesResource.value.set(undefined);
-    fixture.detectChanges();
-
-    const headerCheckbox = fixture.debugElement.query(By.css("th.mat-column-select mat-checkbox"));
-    expect(headerCheckbox.componentInstance.disabled).toBeTruthy();
+    expect(component.tableState.status()).toBe("loading");
+    expect(component.tableState.showTable()).toBe(false);
+    expect(fixture.debugElement.queryAll(By.css("tr[mat-row]")).length).toBe(0);
+    expect(fixture.debugElement.query(By.css("mat-progress-spinner"))).toBeTruthy();
   });
 
   it("should display all rows when policies are present", () => {

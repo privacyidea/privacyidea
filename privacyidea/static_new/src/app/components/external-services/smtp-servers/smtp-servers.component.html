@@ -186,7 +186,6 @@
         mat-header-row></tr>
       <tr
         *matRowDef="let row; columns: displayedColumns"
-        [class.skeleton-row]="!row.identifier"
         mat-row></tr>
 
       <tr *matNoDataRow>

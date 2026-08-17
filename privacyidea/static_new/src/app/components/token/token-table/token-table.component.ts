@@ -164,20 +164,9 @@ export class TokenTableComponent implements OnDestroy {
     }
     return false;
   });
-  emptyResource = linkedSignal({
-    source: this.pageSize,
-    computation: (pageSize: number) =>
-      Array.from({ length: pageSize }, () => {
-        const emptyRow: Record<string, string> = {};
-        columnKeysMap.forEach((column) => {
-          emptyRow[column.key] = "";
-        });
-        return emptyRow as unknown as TokenDetails;
-      })
-  });
   tokenDataSource: WritableSignal<MatTableDataSource<TokenDetails>> = linkedSignal({
     source: () => ({ value: this.tokenService.tokenResourceValue(), error: this.tokenResource.error() }),
-    computation: (src, previous) => {
+    computation: (src) => {
       // tokenlist only exists in the admin scope, so a self-service user must not be gated on it -
       // the same guard the token service applies before loading.
       const deniedForAdmin = this.authService.role() === "admin" && !this.authService.actionAllowed("tokenlist");
@@ -187,7 +176,7 @@ export class TokenTableComponent implements OnDestroy {
       if (src.value) {
         return new MatTableDataSource(src.value.tokens);
       }
-      return previous?.value ?? new MatTableDataSource(this.emptyResource());
+      return new MatTableDataSource<TokenDetails>([]);
     }
   });
   totalLength: WritableSignal<number> = linkedSignal({

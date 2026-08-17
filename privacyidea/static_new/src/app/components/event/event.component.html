@@ -17,14 +17,19 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div
-  appScrollToTop aria-label="Event Handlers" class="events-table-container" i18n-aria-label>
+  appScrollToTop
+  aria-label="Event Handlers"
+  class="events-table-container"
+  i18n-aria-label>
   @if (tableState.showTable()) {
     <div class="filter-paginator-container">
       <mat-form-field
-        class="event-handler-table-filter" subscriptSizing="dynamic">
+        class="event-handler-table-filter"
+        subscriptSizing="dynamic">
         <mat-label i18n>Filter Event Handlers ...</mat-label>
         <app-clearable-input
-          (clearButtonClick)="onClearFilter()" [showClearButton]="filterHTMLInputElement.value.length > 0">
+          (clearButtonClick)="onClearFilter()"
+          [showClearButton]="filterHTMLInputElement.value.length > 0">
           <input
             #filterHTMLInputElement
             (input)="onFilterInput(filterHTMLInputElement.value)"
@@ -46,7 +51,9 @@
     <div class="actions-container">
       @if (authService.actionAllowed("eventhandling_write")) {
         <button
-          (click)="onCreateNewEventHandler()" class="action-button-primary button-width-xl" mat-stroked-button>
+          (click)="onCreateNewEventHandler()"
+          class="action-button-primary button-width-xl"
+          mat-stroked-button>
           <span class="icon-badge">
             <mat-icon class="padding-right-3">flag</mat-icon>
             <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
@@ -55,17 +62,23 @@
         </button>
       }
       <mat-slide-toggle
-        (change)="toggleDetailedView()" [checked]="detailedView()" i18n>Detailed View
+        (change)="toggleDetailedView()"
+        [checked]="detailedView()"
+        i18n
+        >Detailed View
       </mat-slide-toggle>
     </div>
 
     <table
-      [dataSource]="eventHandlerDataSource()" class="event-handler-table" mat-table>
+      [dataSource]="eventHandlerDataSource()"
+      class="event-handler-table"
+      mat-table>
       @for (column of Object.keys(columnKeysMap); track column) {
         @if (column !== "delete" || authService.actionAllowed("eventhandling_write")) {
           <ng-container [matColumnDef]="column">
             <th
-              *matHeaderCellDef mat-header-cell>
+              *matHeaderCellDef
+              mat-header-cell>
               <div class="flex ali-center">
                 {{ columnKeysMap[column] }}
                 @if (column !== "delete") {
@@ -82,11 +95,14 @@
               </div>
             </th>
             <td
-              *matCellDef="let element; let row" class="column-max-width" mat-cell>
+              *matCellDef="let element; let row"
+              class="column-max-width"
+              mat-cell>
               @switch (column) {
                 @case ("name") {
                   <div
-                    [attr.title]="element.name" [ngClass]="detailedView() ? 'break-words' : 'event-table-cell'">
+                    [attr.title]="element.name"
+                    [ngClass]="detailedView() ? 'break-words' : 'event-table-cell'">
                     @if (authService.actionAllowed("eventhandling_write")) {
                       <a
                         (click)="onEditEventHandler(element)"
@@ -144,7 +160,8 @@
                     </div>
                   } @else {
                     <div
-                      [attr.title]="element.action" class="event-table-cell">
+                      [attr.title]="element.action"
+                      class="event-table-cell">
                       <span [innerHTML]="element.action | highlight: filterString()"></span>
                     </div>
                   }
@@ -182,11 +199,11 @@
       }
 
       <tr
-        *matHeaderRowDef="columnKeys()" mat-header-row></tr>
+        *matHeaderRowDef="columnKeys()"
+        mat-header-row></tr>
       <tr
         *matRowDef="let row; columns: columnKeys()"
         [ngClass]="detailedView() ? 'detailed-row' : 'compact-row'"
-        [class.skeleton-row]="!row.name"
         class="example-element-row"
         mat-row></tr>
 

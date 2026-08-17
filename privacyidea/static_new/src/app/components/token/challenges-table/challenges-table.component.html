@@ -130,7 +130,6 @@
           mat-header-row></tr>
         <tr
           *matRowDef="let row; columns: displayedColumns"
-          [class.skeleton-row]="!row.transaction_id"
           mat-row></tr>
         <tr *matNoDataRow>
           <td [attr.colspan]="displayedColumns.length">

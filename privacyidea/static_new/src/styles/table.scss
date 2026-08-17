@@ -466,14 +466,6 @@ th:nth-child(even) {
 
 // Placeholder rows shown while a table loads for the first time: the row keeps its
 // height so the table does not jump, but no cell content is visible or interactive.
-tr.skeleton-row {
-  pointer-events: none;
-
-  td > * {
-    visibility: hidden;
-  }
-}
-
 .cdk-overlay-pane {
   position: absolute !important;
   z-index: 1;

@@ -138,7 +138,6 @@
             mat-header-row></tr>
           <tr
             *matRowDef="let row; columns: columnKeys"
-            [class.skeleton-row]="!row.username"
             mat-row></tr>
           <tr *matNoDataRow>
             <td [attr.colspan]="columnKeys.length">

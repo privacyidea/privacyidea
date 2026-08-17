@@ -224,7 +224,6 @@
           (click)="expandedElement = expandedElement === row ? null : row"
           *matRowDef="let row; columns: columnKeysSelfService"
           [class.example-expanded-row]="expandedElement === row"
-          [class.skeleton-row]="!row.serial"
           class="example-element-row"
           mat-row></tr>
 

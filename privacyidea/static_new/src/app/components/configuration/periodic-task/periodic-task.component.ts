@@ -32,7 +32,7 @@ import { CopyableComponent } from "@components/shared/copyable/copyable.componen
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { TableStateComponent } from "@components/shared/table-state/table-state.component";
-import { isInitialLoad, TableState } from "@core/models/table_state/table-state";
+import { TableState } from "@core/models/table_state/table-state";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { NotificationService } from "@services/notification/notification.service";
@@ -115,17 +115,7 @@ export class PeriodicTaskComponent implements OnInit {
     resetFilter: () => this.resetFilter()
   });
 
-  readonly emptyRows = computed<PeriodicTask[]>(() =>
-    Array.from(
-      { length: 10 },
-      () => Object.fromEntries(this.displayedColumns.map((key) => [key, ""])) as unknown as PeriodicTask
-    )
-  );
-
   periodicTasksDataSource = computed(() => {
-    if (isInitialLoad(this.periodicTaskService.periodicTasksResource)) {
-      return new MatTableDataSource(this.emptyRows());
-    }
     const tasks = this.periodicTasks();
     const dataSource = new MatTableDataSource(tasks);
     dataSource.sort = this.sort;

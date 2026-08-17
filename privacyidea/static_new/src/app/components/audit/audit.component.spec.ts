@@ -157,13 +157,6 @@ describe("AuditComponent (unit)", () => {
     expect(component.pageSizeOptions()).toEqual(customOptions);
   });
 
-  it("emptyResource mirrors pageSize", () => {
-    mockAuditService.pageSize.set(3);
-    expect(component.emptyResource().length).toBe(3);
-    mockAuditService.pageSize.set(7);
-    expect(component.emptyResource().length).toBe(7);
-  });
-
   it("auditDataSource updates when auditResource changes", () => {
     const rows: AuditData[] = [{ user: "alice" } as AuditData];
     mockAuditService.auditResource.value.set({

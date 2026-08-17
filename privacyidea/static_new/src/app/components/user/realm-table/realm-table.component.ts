@@ -64,7 +64,7 @@ import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/con
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { TableStateComponent } from "@components/shared/table-state/table-state.component";
-import { isInitialLoad, TableState } from "@core/models/table_state/table-state";
+import { TableState } from "@core/models/table_state/table-state";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
@@ -272,15 +272,6 @@ export class RealmTableComponent implements OnDestroy, OnInit {
       sort: this.sort()
     }),
     computation: (src) => {
-      if (isInitialLoad(this.realmService.realmResource)) {
-        return this.tableUtilsService.emptyDataSource<RealmRow>(
-          this.tableUtilsService.pageSizeOptions()[1] ?? 10,
-          this.columnKeys,
-          // The resolvers cell reads resolverGroups, which is not one of the columns, so a
-          // placeholder row without it throws when the cell asks for its length.
-          { resolverGroups: [] }
-        );
-      }
       const sortedRows = this._clientsideSortRealmData([...(src.rows ?? [])], this.sort());
       const dataSource = new MatTableDataSource(sortedRows);
 

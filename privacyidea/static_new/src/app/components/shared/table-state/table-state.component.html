@@ -19,7 +19,16 @@
 <div
   class="table-state"
   role="status">
-  @if (!isLoading()) {
+  @if (isLoading()) {
+    <!-- Sits where the icon will be, so the outcome fills in around it rather than replacing it. -->
+    <div class="table-state-spinner-frame">
+      <mat-progress-spinner
+        [diameter]="40"
+        aria-label="Loading"
+        i18n-aria-label
+        mode="indeterminate" />
+    </div>
+  } @else {
     @if (resolvedIcon()) {
       <span
         [class.table-state-icon-frame-error]="currentStatus() === 'error'"

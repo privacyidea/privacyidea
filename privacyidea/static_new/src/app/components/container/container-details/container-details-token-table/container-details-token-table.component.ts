@@ -51,7 +51,7 @@ import { ClearableInputComponent } from "@components/shared/clearable-input/clea
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { TableStateComponent } from "@components/shared/table-state/table-state.component";
-import { isInitialLoad, TableState } from "@core/models/table_state/table-state";
+import { TableState } from "@core/models/table_state/table-state";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import {
   ContainerDetailToken,
@@ -160,15 +160,7 @@ export class ContainerDetailsTokenTableComponent implements AfterViewInit {
       const ds = previous?.value ?? new MatTableDataSource<ContainerDetailTokenData>([]);
 
       if (!this.containerService.containerDetailsResource.hasValue()) {
-        if (!isInitialLoad(this.containerService.containerDetailsResource)) {
-          ds.data = [];
-          return ds;
-        }
-        ds.data = Array.from({ length: 5 }, () => ({
-          token: {} as ContainerDetailToken,
-          columnKey: "",
-          status: "correct" as ComparisonStatus
-        }));
+        ds.data = [];
         return ds;
       }
 
