@@ -439,7 +439,11 @@ class PolicyClass:
             combination
         :param sort_by_priority: If true, sort the resulting list by priority, ascending
             by their policy numbers.
-        :param user_agent: The user agent of the request
+        :param user_agent: The user agent of the request. ``None`` returns the user-agent-restricted
+            policies as well, which is what a caller wants that dumps or counts the policies rather
+            than matching a request - an export, the configuration report, or the check whether a
+            scope is configured at all. Pass the empty string to match only the policies that carry
+            no user agent restriction.
         :return: list of policies
         :rtype: list of dicts
         """
@@ -3456,6 +3460,13 @@ class Match:
          * *either* if there are no active policies defined in the matched scope
          * *or* the action is explicitly allowed by a policy in the matched scope
 
+        Whether the scope is configured is decided by the scope alone: every
+        active policy of the scope counts, including one that is restricted to a
+        realm, a client or a user agent which does not match this request. So a
+        scope whose only policy is restricted to one user agent is a configured
+        scope, and a request from a different user agent is denied unless a
+        policy grants the action to it.
+
         This method is **fail-open**: it returns True when the whole scope is
         unconfigured. It is therefore only correct for *permission gates* -
         checks whose result is immediately used to deny an action (typically
@@ -3478,6 +3489,12 @@ class Match:
         :return: True or False
         """
         policies_defined = self.any(write_to_audit_log=write_to_audit_log)
+        # Whether the scope is configured at all is asked without any of the filters of the request:
+        # no realm, no user, no client IP and, by passing no user_agent, no user agent either. A
+        # policy that is restricted to a user agent still configures its scope, so it has to be
+        # counted here even when it does not match this request - otherwise defining nothing but
+        # user-agent-restricted policies in a scope would leave that scope wide open for every
+        # other user agent.
         policies_at_all = self._g.policy_object.list_policies(scope=self._match_kwargs["scope"], active=True)
         # The action is *allowed* if a matched policy explicitly mentions it (``policies_defined`` is non-empty)
         # or if no policies are defined in the given scope (``policies_at_all`` is empty)
