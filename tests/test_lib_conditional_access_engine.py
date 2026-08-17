@@ -51,6 +51,8 @@ from privacyidea.lib.conditional_access.engine import (
     is_ip_blocked,
     is_ip_never_block,
     get_ip_block,
+    render_error_message,
+    RestrictionStatus,
     _lock_duration_seconds,
     _policy_count_ip,
     _safe_format,
@@ -2140,3 +2142,127 @@ class LockoutEngineTestCase(LockoutTestCase):
 
         self.assertEqual(AccessDecision.DENY,
                          evaluate_access_decision(CAContext(User("cornelius", self.realm1), source_ip=ip)).decision)
+
+    # --- the error message a restriction carries ------------------------------
+
+    def test_lock_stores_the_triggering_stage_error_message(self):
+        # The row is the whole truth about the lock: the wording is copied in when it is applied, so it
+        # survives the policy being edited or deleted and costs no join on the authentication path.
+        message = "Locked. Try again in about {duration}."
+        lock = [StageActionDefinition(LockoutAction.LOCK_USER, {"duration_seconds": 600})]
+        self._make_policy(name="msg", counter_type=AuthEventType.MFA_FAIL,
+                          stages=(StageDefinition(3, 1, lock, error_message=message),))
+        self._seed_events(AuthEventType.MFA_FAIL, 3)
+        evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+        self.assertEqual(message, self._state().error_message)
+        self.assertEqual(message, get_user_lockout(self.user).error_message)
+
+    def test_lock_without_a_stage_message_stores_none(self):
+        # The default is silence, so nothing is carried and the rejection stays generic.
+        self._make_policy(name="silent", counter_type=AuthEventType.MFA_FAIL)
+        self._seed_events(AuthEventType.MFA_FAIL, 3)
+        evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+        self.assertIsNone(self._state().error_message)
+        self.assertIsNone(get_user_lockout(self.user).error_message)
+
+    def test_relock_by_a_later_stage_replaces_the_stored_message(self):
+        # An escalating policy moves the user from one stage to a more severe one; the message must
+        # describe the restriction now in force, not the one it replaced.
+        short = [StageActionDefinition(LockoutAction.LOCK_USER, {"duration_seconds": 600})]
+        long = [StageActionDefinition(LockoutAction.LOCK_USER, {"duration_seconds": 3600})]
+        self._make_policy(name="escalating", counter_type=AuthEventType.MFA_FAIL,
+                          stages=(StageDefinition(3, 1, short, error_message="First."),
+                                  StageDefinition(5, 2, long, error_message="Second."),))
+        self._seed_events(AuthEventType.MFA_FAIL, 3)
+        evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+        self.assertEqual("First.", self._state().error_message)
+
+        self._seed_events(AuthEventType.MFA_FAIL, 2)
+        evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+        self.assertEqual("Second.", self._state().error_message)
+
+    def test_declined_downgrade_keeps_the_permanent_lock_message(self):
+        # A permanent lock is never downgraded to a timed one, so the timed stage's wording must not
+        # overwrite the permanent one's either - the message would then describe a lock not in force.
+        self._make_policy(name="permanent", counter_type=AuthEventType.MFA_FAIL, priority=1,
+                          stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.PERMANENT_LOCK_USER)],
+                                                  error_message="Permanent."),))
+        self._seed_events(AuthEventType.MFA_FAIL, 3)
+        evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+        self.assertEqual("Permanent.", self._state().error_message)
+
+        timed = [StageActionDefinition(LockoutAction.LOCK_USER, {"duration_seconds": 600})]
+        self._make_policy(name="timed", counter_type=AuthEventType.MFA_FAIL, priority=2,
+                          stages=(StageDefinition(3, 1, timed, error_message="Timed."),))
+        evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+        self.assertEqual("Permanent.", self._state().error_message)
+
+    def test_ip_block_stores_and_surfaces_the_stage_message(self):
+        ip = "203.0.113.77"
+        block = [StageActionDefinition(LockoutAction.BLOCK_IP, {"duration_seconds": 3600})]
+        self._make_policy(name="blockmsg", counter_type=AuthEventType.PASSWORD_FAIL, window=300,
+                          target=LockoutTarget.SOURCE_IP, count_mode=CountMode.PER_REQUEST,
+                          stages=(StageDefinition(3, 1, block, error_message="Blocked for {duration}."),))
+        self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=1, per_user=3)
+        evaluate_lockout_policies(CAContext(self.user, ip), AuthEventType.PASSWORD_FAIL)
+        self.assertEqual("Blocked for {duration}.", self._block(ip).error_message)
+        self.assertEqual("Blocked for {duration}.", get_ip_block(ip).error_message)
+
+    def test_render_error_message_substitutes_only_the_duration_tag(self):
+        template = "Locked. Retry in about {duration}. Braces {} and {other} stay."
+        rendered = render_error_message(template, RestrictionStatus(False, None, 90))
+        self.assertEqual("Locked. Retry in about 2 minute(s). Braces {} and {other} stay.", rendered)
+
+    def test_render_error_message_switches_to_hours(self):
+        self.assertEqual("Retry in about 2 hour(s).",
+                         render_error_message("Retry in about {duration}.", RestrictionStatus(False, None, 5400)))
+
+    def test_duration_tag_is_left_as_written_where_there_is_no_remaining_time(self):
+        # A countdown configured for something that does not count down is a misconfiguration, so the tag
+        # is left visible exactly like any other tag we do not substitute - quietly dropping the message
+        # would leave an admin wondering why their wording never appears.
+        template = "Retry in about {duration}."
+        self.assertEqual(template, render_error_message(template, RestrictionStatus(True, None, None)))
+        # A DENY or a notify-only stage leaves no restriction behind at all, so it behaves the same.
+        self.assertEqual(template, render_error_message(template))
+
+    def test_a_message_without_the_tag_is_shown_wherever_it_applies(self):
+        # Only the tag needs a duration; wording that does not use it is shown everywhere.
+        message = "Your account has been locked. Please contact your administrator."
+        self.assertEqual(message, render_error_message(message, RestrictionStatus(True, None, None)))
+        self.assertEqual(message, render_error_message(message, RestrictionStatus(False, None, 90)))
+        self.assertEqual(message, render_error_message(message))
+
+    def test_render_error_message_is_none_without_a_message(self):
+        # Nothing stored means the caller stays generic rather than inventing wording.
+        self.assertIsNone(render_error_message(None, RestrictionStatus(False, None, 60)))
+        self.assertIsNone(render_error_message("", RestrictionStatus(False, None, 60)))
+
+    def test_deny_decision_carries_the_stage_message(self):
+        # A DENY decides this one request and persists nothing, so its wording is read live off the
+        # deciding stage rather than copied to a state row.
+        self._make_policy(name="deny msg", counter_type=AuthEventType.MFA_FAIL,
+                          stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.DENY)],
+                                                  error_message="Access denied."),))
+        self._seed_events(AuthEventType.MFA_FAIL, 3)
+        result = evaluate_access_decision(CAContext(self.user))
+        self.assertEqual(AccessDecision.DENY, result.decision)
+        self.assertEqual("Access denied.", result.error_message)
+
+    def test_allow_carries_no_message(self):
+        # An ALLOW turns nothing away, so it has nothing to tell the user even with wording configured.
+        self._make_policy(name="allow msg", counter_type=AuthEventType.MFA_FAIL,
+                          stages=(StageDefinition(0, 1, [StageActionDefinition(LockoutAction.ALLOW)],
+                                                  error_message="Should never be shown."),))
+        allowed = evaluate_access_decision(CAContext(self.user))
+        self.assertEqual(AccessDecision.ALLOW, allowed.decision)
+        self.assertIsNone(allowed.error_message)
+
+    def test_undecided_request_carries_no_message(self):
+        # Below the threshold no stage decides, so the configured wording stays unused.
+        self._make_policy(name="deny high", counter_type=AuthEventType.MFA_FAIL,
+                          stages=(StageDefinition(99, 1, [StageActionDefinition(LockoutAction.DENY)],
+                                                  error_message="Not reached."),))
+        undecided = evaluate_access_decision(CAContext(self.user))
+        self.assertEqual(AccessDecision.CONTINUE, undecided.decision)
+        self.assertIsNone(undecided.error_message)

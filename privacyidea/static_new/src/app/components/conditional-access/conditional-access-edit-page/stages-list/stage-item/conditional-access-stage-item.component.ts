@@ -84,6 +84,9 @@ export class ConditionalAccessStageItemComponent {
   // screen-reader user tabbing must be told the same thing, and two literals would drift apart.
   readonly resetErrorMessageLabel = $localize`Replace with the suggested wording for this stage's actions`;
 
+  readonly durationTagUnusableHint = $localize`{duration} needs a temporary lock or block to count down. This stage \
+has none, so it would be shown to the user as written - remove the tag, or add a temporary action.`;
+
   readonly errorMessageHint = $localize`When enabled, the text you enter is shown to the user whenever authentication \
 fails while this stage applies - including on later attempts, while a lock or block from it is still in force. It \
 applies to this stage only; other stages stay silent unless you enable it there as well. By default the standard error \
@@ -122,6 +125,17 @@ was locked or an address blocked.`;
     const suggestion = this.suggestedErrorMessage();
     return !!suggestion && suggestion !== (this.stage().error_message ?? "");
   });
+
+  // The actions that leave a remaining time behind for {duration} to count down.
+  private readonly hasTimedAction = computed(() =>
+    this.stage().actions.some((action) => action.action_type === "LOCK_USER" || action.action_type === "BLOCK_IP")
+  );
+
+  // Flagged because the tag cannot be substituted without a remaining time, so it reaches the user as
+  // raw markup - visible, but not what the admin meant to write.
+  readonly durationTagUnusable = computed(
+    () => (this.stage().error_message ?? "").includes(DURATION_TAG) && !this.hasTimedAction()
+  );
 
   // Tags in the message that the server will not substitute. Purely advisory: the admin can
   // save anyway, because an unsubstituted brace expression is shown as written, which is a

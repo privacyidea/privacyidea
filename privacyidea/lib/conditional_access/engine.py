@@ -143,10 +143,74 @@ class RestrictionStatus:
         permanent.
     :ivar seconds_remaining: whole seconds until a timed restriction expires
         (``>= 0``), or ``None`` when permanent.
+    :ivar error_message: the message template stored on the restriction when it was applied, or
+        ``None`` to say nothing. Rendered with :func:`render_error_message`; kept as the template
+        rather than finished text so ``{duration}`` reflects the time left *now*, not at lock time.
+        A permanent restriction has no time left, so that tag is left as written.
     """
     permanent: bool
     expires_at: "datetime | None"
     seconds_remaining: "int | None"
+    error_message: "str | None" = None
+
+
+# The one tag substituted into a stored error message. Everything else - "{}", "{whatever}" - is left
+# exactly as written, so an admin can use braces in ordinary prose without escaping them.
+DURATION_TAG = "{duration}"
+
+
+def _render_duration(restriction: "RestrictionStatus") -> str:
+    """
+    The remaining time of a timed *restriction* as a rough, user-facing phrase.
+
+    Deliberately coarse: a lock is a thing to come back after, not to count down, and a precise figure
+    would only tell an attacker exactly when to retry.
+    """
+    seconds = max(0, restriction.seconds_remaining or 0)
+    # Round up, and never below one minute: "in about 0 minutes" would invite an immediate retry.
+    minutes = max(1, -(-seconds // 60))
+    if minutes < 60:
+        return _("{minutes} minute(s)").format(minutes=minutes)
+    return _("{hours} hour(s)").format(hours=-(-minutes // 60))
+
+
+def render_error_message(error_message: str | None,
+                         restriction: "RestrictionStatus | None" = None) -> str | None:
+    """
+    The user-facing text for *error_message*, or ``None`` when there is none and the caller should stay
+    generic.
+
+    ``{duration}`` only means something where there is a remaining time, so it is substituted only
+    against a timed restriction. Everywhere else - a permanent lock or block, a ``DENY``, a stage that
+    merely notified - it is left exactly as written, like any other tag we do not substitute. That is a
+    misconfiguration rather than a case to handle: a countdown was written for something that does not
+    count down.
+
+    A plain string replacement, not :func:`_safe_format`: with a single tag there is nothing to parse,
+    a stray brace in the admin's prose cannot make the substitution fail (``format_map`` would raise on
+    a bare ``{}`` and return the template untouched, silently dropping the duration), and no attribute
+    traversal is reachable from admin-supplied text.
+
+    Call this only when the request is actually being turned away. An expired or absent lock is not a
+    rejection at all - there is nothing to tell the user - so passing ``None`` to mean "not locked"
+    would log a missing duration for a login that is about to succeed.
+
+    :param error_message: the stored template, or ``None``
+    :param restriction: the restriction in force, when there is one; ``None`` for a decision or a
+        notification, which turn a request away without leaving anything behind
+    """
+    if not error_message:
+        return None
+    if DURATION_TAG not in error_message:
+        return error_message
+    if restriction is None or restriction.permanent or restriction.seconds_remaining is None:
+        # debug: the editor is where this is caught, and the line repeats on every rejected request from
+        # a caller we do not control - at any louder level a permanently locked account would let someone
+        # else choose our log volume.
+        log.debug(f"Leaving {DURATION_TAG} unsubstituted: it was configured for a restriction that has no "
+                  f"remaining time.")
+        return error_message
+    return error_message.replace(DURATION_TAG, _render_duration(restriction))
 
 
 @dataclass
@@ -182,6 +246,10 @@ class AccessDecisionResult:
     """
     decision: AccessDecision = AccessDecision.CONTINUE
     outcomes: list[ConditionalAccessOutcome] = field(default_factory=list)
+    # The wording of the stage that denied, read straight off it: a DENY decides this one request and
+    # persists nothing, so unlike a lock there is no state row to copy it to and nothing to go stale.
+    # None for ALLOW and CONTINUE, which turn no request away.
+    error_message: "str | None" = None
 
 
 def _resolved(user: "User") -> bool:
@@ -663,7 +731,8 @@ def get_user_lockout(user: "User", now: datetime | None = None, *,
         return None
     if state.lock_expires_at is None:
         # Permanent lock; only an admin reset clears it.
-        return RestrictionStatus(permanent=True, expires_at=None, seconds_remaining=None)
+        return RestrictionStatus(permanent=True, expires_at=None, seconds_remaining=None,
+                                 error_message=state.error_message)
     now = _naive_utc(now) if now is not None else utc_now()
     if state.lock_expires_at <= now:
         # If explicitly requested, drop expired rows
@@ -672,7 +741,7 @@ def get_user_lockout(user: "User", now: datetime | None = None, *,
         return None
     remaining = int((state.lock_expires_at - now).total_seconds())
     return RestrictionStatus(permanent=False, expires_at=state.lock_expires_at,
-                             seconds_remaining=remaining)
+                             seconds_remaining=remaining, error_message=state.error_message)
 
 
 def is_user_locked(user: "User", now: datetime | None = None, *, clear_expired: bool = False) -> bool:
@@ -776,7 +845,8 @@ def get_ip_block(source_ip: str | None, now: datetime | None = None, *,
         return None
     if state.block_expires_at is None:
         # Permanent block; only an admin reset clears it.
-        return RestrictionStatus(permanent=True, expires_at=None, seconds_remaining=None)
+        return RestrictionStatus(permanent=True, expires_at=None, seconds_remaining=None,
+                                 error_message=state.error_message)
     now = _naive_utc(now) if now is not None else utc_now()
     if state.block_expires_at <= now:
         if clear_expired:
@@ -784,7 +854,7 @@ def get_ip_block(source_ip: str | None, now: datetime | None = None, *,
         return None
     remaining = int((state.block_expires_at - now).total_seconds())
     return RestrictionStatus(permanent=False, expires_at=state.block_expires_at,
-                             seconds_remaining=remaining)
+                             seconds_remaining=remaining, error_message=state.error_message)
 
 
 def is_ip_blocked(source_ip: str | None, now: datetime | None = None, *, clear_expired: bool = False) -> bool:
@@ -861,7 +931,7 @@ def evaluate_access_decision(context: CAContext, now: datetime | None = None) ->
         if contribution.decision != AccessDecision.CONTINUE:
             # The first policy that decides wins, so no lower-priority policy is even consulted - and the outcomes
             # collected so far are exactly those of the policies that had something to say.
-            return AccessDecisionResult(contribution.decision, outcomes)
+            return AccessDecisionResult(contribution.decision, outcomes, contribution.error_message)
     return AccessDecisionResult(outcomes=outcomes)
 
 
@@ -914,12 +984,16 @@ def _policy_access_decision(policy: LockoutPolicy, context: CAContext,
         if decision is not None:
             deciding_stage = stage
             break
-    if decision is None:
+    if decision is None or deciding_stage is None:
+        # Paired by construction - a decision is only ever set together with the stage that made it -
+        # but stated so the stage can be read below without a possible-None access.
         return AccessDecisionResult()
     types = _types_label(policy.counter_types_to_track)
     # Only a DENY is recorded; see the docstring for why an ALLOW is not.
     outcomes = ([outcome_for_stage(policy, deciding_stage, LockoutAction.DENY, count, dry_run=policy.dry_run)]
                 if decision == AccessDecision.DENY else [])
+    # Only a denial turns the request away, so only a denial has anything to tell the user.
+    error_message = deciding_stage.error_message if decision == AccessDecision.DENY else None
     if policy.dry_run:
         # A dry-run policy never decides the request. The outcome still travels back: the pre-auth decision runs
         # before this request's authentication-log row exists, so the caller buffers it and it is recorded once that
@@ -929,7 +1003,7 @@ def _policy_access_decision(policy: LockoutPolicy, context: CAContext,
         return AccessDecisionResult(outcomes=outcomes)
     log.info(f"Policy {policy.name!r} returns access decision {decision} for {subject_label}: "
              f"{count} event(s) of {types} in {policy.time_window_seconds}s.")
-    return AccessDecisionResult(decision, outcomes)
+    return AccessDecisionResult(decision, outcomes, error_message)
 
 
 def _stage_access_decision(stage: LockoutPolicyStage, count: int) -> "AccessDecision | None":
@@ -1399,10 +1473,12 @@ def _execute_stage_actions(policy: LockoutPolicy, stage: LockoutPolicyStage,
                                 f"({action.action_value!r}); skipping.")
                     continue
                 lock_expires_at = now + timedelta(seconds=duration)
-                if _upsert_user_lockout_state(user, lock_expires_at=lock_expires_at):
+                if _upsert_user_lockout_state(user, lock_expires_at=lock_expires_at,
+                                              error_message=stage.error_message):
                     record(action_type, expires_at=lock_expires_at)
             elif action_type == LockoutAction.PERMANENT_LOCK_USER:
-                if _upsert_user_lockout_state(user, lock_expires_at=None):
+                if _upsert_user_lockout_state(user, lock_expires_at=None,
+                                              error_message=stage.error_message):
                     record(action_type)
             elif action_type in (LockoutAction.EMAIL_ADMIN, LockoutAction.EMAIL_USER):
                 notice = _send_lockout_email(action_type, action, user, tags)
@@ -1429,7 +1505,7 @@ def _execute_stage_actions(policy: LockoutPolicy, stage: LockoutPolicyStage,
                                     f"({action.action_value!r}); skipping.")
                         continue
                     block_expires_at = now + timedelta(seconds=duration)
-                if _upsert_ip_block(source_ip, block_expires_at=block_expires_at):
+                if _upsert_ip_block(source_ip, block_expires_at=block_expires_at, error_message=stage.error_message):
                     record(action_type, expires_at=block_expires_at)
             elif action_type in (LockoutAction.ALLOW, LockoutAction.DENY):
                 # ALLOW/DENY decide the current request pre-auth (see
@@ -1473,7 +1549,7 @@ def _delete_ip_block(state: BlockList) -> None:
         get_ca_session().delete(state)
 
 
-def _upsert_user_lockout_state(user: "User", *, lock_expires_at: datetime | None) -> bool:
+def _upsert_user_lockout_state(user: "User", *, lock_expires_at: datetime | None, error_message: str | None) -> bool:
     """
     Create or update the :class:`UserLockoutState` row for *user*.
 
@@ -1499,10 +1575,13 @@ def _upsert_user_lockout_state(user: "User", *, lock_expires_at: datetime | None
         if not downgrade_declined:
             state.username = user.login
             state.lock_expires_at = lock_expires_at
+            # Refreshed on every re-lock, so an escalating policy's later stage replaces the earlier
+            # stage's wording and the message always describes the restriction now in force.
+            state.error_message = error_message
     return write.succeeded and not downgrade_declined
 
 
-def _upsert_ip_block(source_ip: str, *, block_expires_at: datetime | None) -> bool:
+def _upsert_ip_block(source_ip: str, *, block_expires_at: datetime | None, error_message: str | None) -> bool:
     """
     Create or update the :class:`BlockList` row for *source_ip*.
 
@@ -1533,4 +1612,6 @@ def _upsert_ip_block(source_ip: str, *, block_expires_at: datetime | None) -> bo
             downgrade_declined = True
         if not downgrade_declined:
             state.block_expires_at = block_expires_at
+            # See _upsert_user_lockout_state: refreshed on every re-block.
+            state.error_message = error_message
     return write.succeeded and not downgrade_declined

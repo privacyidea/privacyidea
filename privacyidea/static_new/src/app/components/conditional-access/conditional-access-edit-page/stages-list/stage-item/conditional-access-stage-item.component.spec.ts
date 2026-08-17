@@ -282,6 +282,50 @@ describe("ConditionalAccessStageItemComponent", () => {
       expect(component.unknownTags()).toEqual(["{time}"]);
     });
 
+    it("should flag {duration} on a stage that has no temporary action", () => {
+      // Without a remaining time the server drops the whole message, so this is an error rather than
+      // the advisory hint an unrecognised tag gets.
+      withStage({
+        error_message: "Retry in about {duration}.",
+        actions: [{ action_type: "PERMANENT_LOCK_USER", action_value: null }]
+      });
+      expect(component.durationTagUnusable()).toBe(true);
+    });
+
+    it("should flag {duration} on a deny-only or notify-only stage", () => {
+      withStage({
+        error_message: "Retry in about {duration}.",
+        actions: [{ action_type: "DENY", action_value: null }]
+      });
+      expect(component.durationTagUnusable()).toBe(true);
+      withStage({
+        error_message: "Retry in about {duration}.",
+        actions: [{ action_type: "EMAIL_ADMIN", action_value: null }]
+      });
+      expect(component.durationTagUnusable()).toBe(true);
+    });
+
+    it("should accept {duration} on a temporary lock or block", () => {
+      withStage({
+        error_message: "Retry in about {duration}.",
+        actions: [{ action_type: "LOCK_USER", action_value: null }]
+      });
+      expect(component.durationTagUnusable()).toBe(false);
+      withStage({
+        error_message: "Retry in about {duration}.",
+        actions: [{ action_type: "BLOCK_IP", action_value: null }]
+      });
+      expect(component.durationTagUnusable()).toBe(false);
+    });
+
+    it("should not flag a message that does not use the tag", () => {
+      withStage({
+        error_message: "Your account has been locked.",
+        actions: [{ action_type: "PERMANENT_LOCK_USER", action_value: null }]
+      });
+      expect(component.durationTagUnusable()).toBe(false);
+    });
+
     it("should report the message length for the counter", () => {
       withStage({ error_message: "Locked." });
       expect(component.errorMessageLength()).toBe(7);

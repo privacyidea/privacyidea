@@ -117,15 +117,16 @@
               [value]="stage().error_message ?? ''"
               (input)="onErrorMessageInput($any($event.target).value)"></textarea>
             <mat-hint>
-              <span i18n>
-                {{ durationTag }} is replaced with the remaining time for temporary lock/block actions.
-              </span>
+              <span i18n>{{ durationTag }} is replaced with the remaining time for temporary lock/block actions.</span>
               @if (unknownTags().length) {
                 <span
-                  class="ca-stage-unknown-tags"
+                  class="ca-stage-message-warning"
                   i18n>
-                  {{ unknownTags().join(", ") }} is not replaced and will be shown as written.
+                  {{ unknownTags().join(", ") }} is an unknown tag and will be shown as written.
                 </span>
+              }
+              @if (durationTagUnusable()) {
+                <span class="ca-stage-message-warning">{{ durationTagUnusableHint }}</span>
               }
             </mat-hint>
             <mat-hint align="end">{{ errorMessageLength() }}/{{ maxErrorMessageLength }}</mat-hint>

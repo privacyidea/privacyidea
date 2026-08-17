@@ -287,6 +287,12 @@ class UserLockoutState(MethodsMixin, db.Model):
     # live resolver lookup (which would also fail for a since-deleted user).
     username: Mapped[str | None] = mapped_column(case_sensitive_unicode(255), nullable=True)
     lock_expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    # The message template to show the user while this lock is in force, copied from the stage that
+    # applied it. Stored rather than looked up: the row is the whole truth about the lock, so the text
+    # survives the policy being edited or deleted, costs no join on the authentication path, and works
+    # for a lock no policy wrote. NULL means say nothing. {duration} is left as written on a permanent
+    # lock, which has no remaining time to substitute.
+    error_message: Mapped[str | None] = mapped_column(Unicode(500), nullable=True)
     # When the lock was applied; refreshed on each (re)lock, so it reflects the start of the
     # current active lock rather than a generic audit timestamp.
     locked_at: Mapped[datetime] = mapped_column(
@@ -320,6 +326,8 @@ class BlockList(MethodsMixin, db.Model):
     # IPv4-mapped IPv6 address.
     ip: Mapped[str] = mapped_column(Unicode(50), primary_key=True)
     block_expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    # The message template to show while this block is in force; see UserLockoutState.error_message.
+    error_message: Mapped[str | None] = mapped_column(Unicode(500), nullable=True)
     # When the block was applied; refreshed on each (re)block, so it reflects the start of the
     # current active block rather than a generic audit timestamp.
     blocked_at: Mapped[datetime] = mapped_column(

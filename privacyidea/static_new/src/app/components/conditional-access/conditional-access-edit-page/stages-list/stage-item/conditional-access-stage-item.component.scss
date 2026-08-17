@@ -104,9 +104,11 @@
   gap: 8px;
 }
 
-// Advisory, not an error: the message still saves, so this warns without using the
-// error colour that would suggest the field is invalid.
-.ca-stage-unknown-tags {
-  color: var(--mat-sys-tertiary);
+// Both message warnings: a tag that will not be substituted, and a {duration} the server cannot render
+// at all. Neither blocks saving, but both mean the message will not read as the admin intends, so they
+// use the error colour. They sit in the subscript with the hints rather than in a <mat-error> because
+// the field has no form control, and Material only renders mat-error once a control reports an error.
+.ca-stage-message-warning {
+  color: var(--mat-sys-error);
   display: block;
 }

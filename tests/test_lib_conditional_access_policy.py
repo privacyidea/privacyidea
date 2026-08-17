@@ -34,7 +34,7 @@ from privacyidea.lib.conditional_access.lockout_policy import (
     _COUNT_MODES_BY_TARGET,
     _DEFAULT_COUNT_MODE_BY_TARGET,
     DEFAULT_ERROR_MESSAGES,
-    MAX_STAGE_ERROR_MESSAGE_LENGTH,
+    MAX_ERROR_MESSAGE_LENGTH,
     create_lockout_policy,
     delete_lockout_policy,
     enable_lockout_policy,
@@ -926,11 +926,11 @@ class LockoutPolicyCrudTestCase(MyTestCase):
                               target=LockoutTarget.USER, priority=1)
         # Over the model's Unicode(500), rejected here rather than truncated by the DB.
         self.assertRaises(ParameterError, create_lockout_policy, "TooLong", 600, ["PIN_FAIL"],
-                          stages=[{**_stage(5), "error_message": "x" * (MAX_STAGE_ERROR_MESSAGE_LENGTH + 1)}],
+                          stages=[{**_stage(5), "error_message": "x" * (MAX_ERROR_MESSAGE_LENGTH + 1)}],
                           target=LockoutTarget.USER, priority=1)
 
     def test_49_stage_error_message_at_the_length_limit_is_accepted(self):
-        message = "x" * MAX_STAGE_ERROR_MESSAGE_LENGTH
+        message = "x" * MAX_ERROR_MESSAGE_LENGTH
         policy_id = create_lockout_policy("AtLimit", 600, ["PIN_FAIL"],
                                           stages=[{**_stage(5), "error_message": message}],
                                           target=LockoutTarget.USER, priority=1)

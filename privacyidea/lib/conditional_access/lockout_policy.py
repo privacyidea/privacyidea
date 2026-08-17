@@ -66,7 +66,8 @@ matches or an action that never fires).
 A stage's optional ``error_message`` is the text an end user sees when a request is turned away by that stage. It is
 opt-in and there is no default: without one the rejection stays generic, so privacyIDEA never volunteers that an
 account is locked or an IP blocked unless an admin chose to say so. ``{duration}`` is substituted with the remaining
-time at rejection; on a permanent restriction it renders as "permanently". Every other brace expression is left exactly
+time at rejection, and only where there is one: on a permanent lock, a ``DENY`` or a notify-only stage it
+is left as written, like any other tag that is not substituted. Every other brace expression is left exactly
 as written - braces in prose need no escaping - so only the length is validated here.
 
 ``conditions`` is the *applicability* axis, orthogonal to the counting one: it restricts which requests the policy
@@ -102,8 +103,9 @@ log = logging.getLogger(__name__)
 # clean ParameterError instead of a DB-dependent truncation or error.
 MAX_NAME_LENGTH = 255
 
-# Same for a stage's error message, which is Unicode(500) in the model.
-MAX_STAGE_ERROR_MESSAGE_LENGTH = 500
+# Same for a user-facing error message, which is Unicode(500) wherever it is stored - on a stage, and
+# on the lock/block state rows that copy it. Shared, so any path taking one as input validates alike.
+MAX_ERROR_MESSAGE_LENGTH = 500
 
 # The pre-auth ALLOW/DENY actions: standing decisions that apply while the count
 # stays at or above the threshold, so they default to re-triggering (the
@@ -279,10 +281,10 @@ def _validate_stage_name(name) -> str | None:
     return name
 
 
-def _validate_stage_error_message(error_message: str | None) -> str | None:
+def validate_error_message(error_message: str | None) -> str | None:
     """
-    Validate the optional stage error message - the text surfaced to the end user
-    when a request is turned away by this stage. ``None`` or an empty/blank string
+    Validate an optional user-facing error message - the text surfaced to the end user
+    when a request is turned away. ``None`` or an empty/blank string
     means "say nothing" and returns ``None``, which is the default: a rejection
     reveals no conditional-access detail unless an admin writes it here.
 
@@ -295,15 +297,15 @@ def _validate_stage_error_message(error_message: str | None) -> str | None:
     if error_message is None:
         return None
     if not isinstance(error_message, str):
-        raise ParameterError(_("The stage error message must be a string."))
+        raise ParameterError(_("The error message must be a string."))
     stripped = error_message.strip()
     if not stripped:
         return None
-    if len(stripped) > MAX_STAGE_ERROR_MESSAGE_LENGTH:
+    if len(stripped) > MAX_ERROR_MESSAGE_LENGTH:
         # .format, not an f-string: gettext extracts the literal msgid, so the
         # placeholder has to survive into the translated string.
-        raise ParameterError(_("The stage error message must not exceed {length} characters.").format(
-            length=MAX_STAGE_ERROR_MESSAGE_LENGTH))
+        raise ParameterError(_("The error message must not exceed {length} characters.").format(
+            length=MAX_ERROR_MESSAGE_LENGTH))
     return stripped
 
 
@@ -545,7 +547,7 @@ def _validate_stages(stages) -> list[StageDefinition]:
             raise ParameterError(f"Duplicate failure_threshold {threshold}: thresholds must be unique within a policy.")
         thresholds.add(threshold)
         name = _validate_stage_name(stage.get("name"))
-        error_message = _validate_stage_error_message(stage.get("error_message"))
+        error_message = validate_error_message(stage.get("error_message"))
         priority = _validate_positive_int(stage.get("priority", 1), "priority")
         actions = stage.get("actions", [])
         if not isinstance(actions, list):
