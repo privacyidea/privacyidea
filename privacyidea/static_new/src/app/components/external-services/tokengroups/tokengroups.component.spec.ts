@@ -27,6 +27,7 @@ import { DialogService } from "@services/dialog/dialog.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import { TokengroupService } from "@services/tokengroup/tokengroup.service";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
+import { expectsTableStateGating } from "@testing/table-state-gating";
 import {
   MockAuthService,
   MockDialogService,
@@ -74,6 +75,13 @@ describe("TokengroupsComponent", () => {
     dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
     component = fixture.componentInstance;
     fixture.detectChanges();
+  });
+
+  it("gates the table on its read right, row count and filter", () => {
+    expectsTableStateGating({
+      state: component.tableState,
+      right: "tokengroup_list"
+    });
   });
 
   it("should create", () => {

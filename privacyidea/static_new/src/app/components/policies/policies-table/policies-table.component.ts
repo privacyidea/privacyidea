@@ -18,7 +18,7 @@
  **/
 
 import { CommonModule, KeyValuePipe } from "@angular/common";
-import { Component, computed, inject, linkedSignal, signal, viewChild } from "@angular/core";
+import { Component, computed, inject, signal, viewChild } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatIconModule } from "@angular/material/icon";
@@ -28,10 +28,12 @@ import { MatSortModule, Sort } from "@angular/material/sort";
 import { MatTableModule } from "@angular/material/table";
 import { MatTooltipModule } from "@angular/material/tooltip";
 
-import { Router } from "@angular/router";
+import { Router, RouterLink } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
 import { HighlightPipe } from "@components/shared/pipes/highlight.pipe";
+import { TableStateComponent } from "@components/shared/table-state/table-state.component";
+import { TableState } from "@core/models/table_state/table-state";
 import { FilterOption } from "@core/models/filter_value_generic/filter-option";
 import { FilterValueGeneric } from "@core/models/filter_value_generic/filter-value-generic";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
@@ -63,7 +65,9 @@ import { ViewConditionsColumnComponent } from "./view-conditions-column/view-con
     PolicyFilterComponent,
     ViewConditionsColumnComponent,
     CopyButtonComponent,
-    HighlightPipe
+    HighlightPipe,
+    TableStateComponent,
+    RouterLink
   ],
   templateUrl: "./policies-table.component.html",
   styleUrl: "./policies-table.component.scss"
@@ -89,11 +93,22 @@ export class PoliciesTableComponent {
 
   readonly columnKeys = computed(() => ["select", ...Object.keys(this.columns)]);
 
-  readonly skeletonRowCount = 10;
-
   readonly sort = signal<Sort>({ active: "priority", direction: "asc" });
   readonly filter = signal<FilterValueGeneric<PolicyDetail>>(
     new FilterValueGeneric({ availableFilters: policyFilterOptions })
+  );
+
+  readonly ROUTE_PATHS = ROUTE_PATHS;
+  readonly tableState = new TableState({
+    resource: this.policyService.allPoliciesResource,
+    count: () => this.policyService.allPolicies().length,
+    allowed: () => this.authService.actionAllowed("policyread"),
+    resetFilter: () => this.onFilterUpdate(this.filter().clear())
+  });
+  readonly emptyHint = computed(() =>
+    this.authService.actionAllowed("policywrite")
+      ? $localize`Create a policy to control what users and administrators are allowed to do and how the system behaves.`
+      : ""
   );
 
   // Terms to visually highlight per dense column: the keyword-less search terms plus that column's
@@ -112,14 +127,11 @@ export class PoliciesTableComponent {
     };
   });
 
-  readonly emptyResource = linkedSignal({
-    source: () => this.policyService.allPolicies(),
-    computation: () => Array.from({ length: this.skeletonRowCount }, () => ({ name: "" }) as PolicyDetail)
-  });
-
   readonly policiesListFiltered = computed(() => {
     const all = this.policyService.allPolicies();
-    if (all.length === 0) return this.emptyResource();
+    if (all.length === 0) {
+      return [];
+    }
     return this.filter().filterItems(all);
   });
 

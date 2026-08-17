@@ -27,6 +27,7 @@ import { DialogService } from "@services/dialog/dialog.service";
 import { PrivacyideaServer, PrivacyideaServerService } from "@services/privacyidea-server/privacyidea-server.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
+import { expectsTableStateGating } from "@testing/table-state-gating";
 import {
   MockAuthService,
   MockDialogService,
@@ -58,9 +59,7 @@ describe("PrivacyideaServersComponent", () => {
       ]
     }).compileComponents();
 
-    privacyideaServerServiceMock = TestBed.inject(
-      PrivacyideaServerService
-    ) as unknown as MockPrivacyideaServerService;
+    privacyideaServerServiceMock = TestBed.inject(PrivacyideaServerService) as unknown as MockPrivacyideaServerService;
     privacyideaServerServiceMock.remoteServerOptions.set([
       { identifier: "server1", url: "http://s1", tls: true, description: "desc1" },
       { identifier: "server2", url: "http://s2", tls: false, description: "desc2" }
@@ -75,6 +74,13 @@ describe("PrivacyideaServersComponent", () => {
     dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
     component = fixture.componentInstance;
     fixture.detectChanges();
+  });
+
+  it("gates the table on its read right, row count and filter", () => {
+    expectsTableStateGating({
+      state: component.tableState,
+      right: "privacyideaserver_read"
+    });
   });
 
   it("should create", () => {

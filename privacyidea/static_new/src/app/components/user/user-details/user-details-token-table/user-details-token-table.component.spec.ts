@@ -42,6 +42,7 @@ import { TokenDetails, Tokens, TokenService } from "@services/token/token.servic
 import { UserService } from "@services/user/user.service";
 
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { expectsTableStateGating } from "@testing/table-state-gating";
 import { MockPiResponse } from "@testing/mock-services/mock-utils";
 
 describe("UserDetailsTokenTableComponent", () => {
@@ -79,6 +80,35 @@ describe("UserDetailsTokenTableComponent", () => {
 
   afterEach(() => jest.clearAllMocks());
 
+  it("names only the routes out of the empty list that this admin is allowed to take", () => {
+    const authServiceMock = TestBed.inject(AuthService) as unknown as MockAuthService;
+    // Rights drive the computed; tokenEnrollmentAllowed is a plain stub and reads no signal, so the
+    // rights change is what makes the hint re-evaluate after it is set.
+    const withRights = (canEnroll: boolean, rights: string[]) => {
+      authServiceMock.tokenEnrollmentAllowed.mockReturnValue(canEnroll);
+      authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights });
+    };
+
+    withRights(true, ["assign"]);
+    expect(component.emptyHint()).toContain("or assign an existing one");
+
+    withRights(true, []);
+    expect(component.emptyHint()).toBe("Enroll a new token for this user.");
+
+    withRights(false, ["assign"]);
+    expect(component.emptyHint()).toBe("Assign an existing token to this user.");
+
+    withRights(false, []);
+    expect(component.emptyHint()).toBe("");
+  });
+
+  it("gates the table on its read right, row count and filter", () => {
+    expectsTableStateGating({
+      state: component.tableState,
+      right: "tokenlist"
+    });
+  });
+
   it("should create", () => {
     expect(component).toBeTruthy();
   });
@@ -96,8 +126,68 @@ describe("UserDetailsTokenTableComponent", () => {
     ]);
   });
 
-  it("wires sort in ngAfterViewInit", () => {
-    expect(component.dataSource.sort).toBe(component.sort);
+  it("leaves the data source's sort unset so it keeps a working change subscription", () => {
+    // MatTableDataSource reads _sort.sortChange/_sort.initialized whenever the table reconnects.
+    // Anything that is not a MatSort there makes that a merge() over undefined, which throws and
+    // leaves the data source unable to render. Ordering is done by this component, not by the
+    // data source, so the seat stays empty.
+    expect(component.dataSource.sort).toBeFalsy();
+  });
+
+  it("renders rows after the table returns from the empty state", () => {
+    // The table is torn down when the list empties and built again when rows come back. On the way
+    // back its data source reconnects, which is where anything left in the data source's sort seat
+    // would throw and leave the table unable to render.
+    const authServiceMock = TestBed.inject(AuthService) as unknown as MockAuthService;
+    authServiceMock.authData.set({ ...authServiceMock.authData()!, rights: ["tokenlist"] });
+
+    const table = () => fixture.nativeElement.querySelector("table");
+    const respondWith = (...tokens: TokenDetails[]) => {
+      tokenServiceMock.userTokenResource.value.set(
+        MockPiResponse.fromValue<Tokens>({ count: tokens.length, current: tokens.length, tokens })
+      );
+      fixture.detectChanges();
+    };
+
+    respondWith({
+      serial: "T-FIRST",
+      tokentype: "hotp",
+      active: true,
+      revoked: false,
+      locked: false,
+      description: "",
+      failcount: 0,
+      maxfail: 10,
+      container_serial: "",
+      user_realm: "r1",
+      username: "alice",
+      resolver: ""
+    } as TokenDetails);
+    expect(component.tableState.status()).toBe("ready");
+    expect(table()).not.toBeNull();
+
+    // Unassigning the last token empties the list and takes the table away.
+    respondWith();
+    expect(component.tableState.status()).toBe("empty");
+    expect(table()).toBeNull();
+
+    respondWith({
+      serial: "T-AFTER-ASSIGN",
+      tokentype: "hotp",
+      active: true,
+      revoked: false,
+      locked: false,
+      description: "",
+      failcount: 0,
+      maxfail: 10,
+      container_serial: "",
+      user_realm: "r1",
+      username: "alice",
+      resolver: ""
+    } as TokenDetails);
+
+    expect(table()).not.toBeNull();
+    expect(fixture.nativeElement.textContent).toContain("T-AFTER-ASSIGN");
   });
 
   const showTokens = (...rows: ContainerDetailToken[]) => {
@@ -148,7 +238,7 @@ describe("UserDetailsTokenTableComponent", () => {
     expect(component.dataSource.data.map((t: ContainerDetailToken) => t.serial)).toEqual(["T-1", "T-2"]);
   });
 
-  it("keeps previous list when userTokenResource is missing (linkedSignal fallback)", () => {
+  it("keeps the previous list in userTokenData while the resource has no value (linkedSignal fallback)", () => {
     tokenServiceMock.userTokenResource.value.set(
       MockPiResponse.fromValue<Tokens>({
         count: 1,
@@ -177,7 +267,8 @@ describe("UserDetailsTokenTableComponent", () => {
     tokenServiceMock.userTokenResource.value.set(undefined);
     fixture.detectChanges();
 
-    expect(component.dataSource.data.map((t: ContainerDetailToken) => t.serial)).toEqual(["KEEP-ME"]);
+    expect(component.userTokenData().data.map((t: TokenDetails) => t.serial)).toEqual(["KEEP-ME"]);
+    expect(component.dataSource.data).toEqual([]);
   });
 
   it("falls back to a new empty data source when there is no resource value and no previous value", () => {

@@ -35,6 +35,9 @@ import {
 import { TokenApplicationsSshComponent } from "./token-applications-ssh.component";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import { ContentService } from "@services/content/content.service";
+import { AuthService } from "@services/auth/auth.service";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { expectsTableStateGating } from "@testing/table-state-gating";
 
 describe("TokenApplicationsSshComponent (Jest)", () => {
   let fixture: ComponentFixture<TokenApplicationsSshComponent>;
@@ -48,6 +51,7 @@ describe("TokenApplicationsSshComponent (Jest)", () => {
     await TestBed.configureTestingModule({
       imports: [TokenApplicationsSshComponent, MatTabsModule, CopyButtonComponent],
       providers: [
+        { provide: AuthService, useClass: MockAuthService },
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: MachineService, useClass: MockMachineService },
@@ -64,6 +68,22 @@ describe("TokenApplicationsSshComponent (Jest)", () => {
     component = fixture.componentInstance;
     machineServiceMock = TestBed.inject(MachineService) as unknown as MockMachineService;
     fixture.detectChanges();
+  });
+
+  it("empties the table while the first page loads and after an error", () => {
+    machineServiceMock.tokenApplications.set(undefined as never);
+    machineServiceMock.tokenApplicationResource.value.set(undefined as never);
+    expect(component.dataSource().data).toEqual([]);
+
+    machineServiceMock.tokenApplicationResource.error.set(new Error("boom"));
+    expect(component.dataSource().data).toEqual([]);
+  });
+
+  it("gates the table on its read right, row count and filter", () => {
+    expectsTableStateGating({
+      state: component.tableState,
+      right: "manage_machine_tokens"
+    });
   });
 
   it("should create", () => {

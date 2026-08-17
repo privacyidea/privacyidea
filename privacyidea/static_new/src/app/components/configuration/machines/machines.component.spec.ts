@@ -22,10 +22,12 @@ import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { provideRouter, Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
+import { AuthService } from "@services/auth/auth.service";
 import { MachineService } from "@services/machine/machine.service";
 import { MachinesComponent } from "./machines.component";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
-import { MockMachineService, MockTableUtilsService } from "@testing/mock-services";
+import { MockAuthService, MockMachineService, MockTableUtilsService } from "@testing/mock-services";
+import { expectsTableStateGating } from "@testing/table-state-gating";
 
 describe("MachinesComponent", () => {
   let component: MachinesComponent;
@@ -40,10 +42,13 @@ describe("MachinesComponent", () => {
         provideHttpClientTesting(),
         provideRouter([]),
         { provide: MachineService, useClass: MockMachineService },
-        { provide: TableUtilsService, useClass: MockTableUtilsService }
+        { provide: TableUtilsService, useClass: MockTableUtilsService },
+        { provide: AuthService, useClass: MockAuthService }
       ]
     }).compileComponents();
 
+    const authServiceMock = TestBed.inject(AuthService) as unknown as MockAuthService;
+    authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["machinelist"] });
     machineServiceMock = TestBed.inject(MachineService) as unknown as MockMachineService;
     machineServiceMock.machines.set([
       { id: 1, hostname: ["host1"], ip: "1.1.1.1", resolver_name: "res1" },
@@ -53,6 +58,13 @@ describe("MachinesComponent", () => {
     fixture = TestBed.createComponent(MachinesComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
+  });
+
+  it("gates the table on its read right, row count and filter", () => {
+    expectsTableStateGating({
+      state: component.tableState,
+      right: "machinelist"
+    });
   });
 
   it("should create", () => {
@@ -80,8 +92,8 @@ describe("MachinesComponent", () => {
   });
 
   it("should initialize paginator page size to the second page size option", () => {
-    expect(component.paginator.pageSize).toBe(component.pageSizeOptions()[1]);
-    expect(component.paginator.pageSize).toBe(10);
+    expect(component.paginator()!.pageSize).toBe(component.pageSizeOptions()[1]);
+    expect(component.paginator()!.pageSize).toBe(10);
   });
 });
 
