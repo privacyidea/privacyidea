@@ -9,7 +9,7 @@ time. A timing assertion would say the same thing far less reliably, so this cou
 from contextlib import contextmanager
 
 import mock
-from sqlalchemy import delete, event
+from sqlalchemy import delete, event, select
 from sqlalchemy.engine import Engine
 
 from privacyidea.lib.container import add_token_to_container, find_container_by_serial, init_container
@@ -19,7 +19,7 @@ from privacyidea.lib.resolvers.LDAPIdResolver import IdResolver as LDAPResolver
 from privacyidea.lib.token import (convert_token_objects_to_dicts, get_tokens, get_tokens_paginate, init_token,
                                    remove_token)
 from privacyidea.lib.user import User
-from privacyidea.models import db, TokenContainerToken
+from privacyidea.models import db, Token, TokenContainerToken, TokenOwner
 from . import ldap3mock
 from .base import MyTestCase
 
@@ -219,6 +219,30 @@ class TokenListLookupTestCase(MyTestCase):
             db.session.execute(delete(TokenContainerToken)
                                .where(TokenContainerToken.token_id == token_id)
                                .where(TokenContainerToken.container_id == second_container_id))
+            db.session.commit()
+
+    @ldap3mock.activate
+    def test_07a_an_owner_row_without_a_resolver_is_marked(self):
+        ldap3mock.setLDAPDirectory(LDAP_DIRECTORY)
+        owner = db.session.scalars(
+            select(TokenOwner).join(Token, Token.id == TokenOwner.token_id).where(Token.serial == "LIST00")
+        ).unique().one()
+        original_resolver = owner.resolver
+
+        # An assignment that names no resolver leaves the login name unknowable, so that token is
+        # marked while the rest of the page renders. Such a token is not reachable through the
+        # paginated list, whose node filter matches the owner against the configured resolvers, so
+        # this goes through the conversion the container endpoints use.
+        owner.resolver = ""
+        db.session.commit()
+        try:
+            tokens = get_tokens(serial_wildcard=self.serial_wildcard, all_nodes=True)
+            token_dicts = convert_token_objects_to_dicts(tokens, user=None, user_role="admin")
+            usernames = {token["serial"]: token["username"] for token in token_dicts}
+            self.assertEqual("**resolver error**", usernames["LIST00"], usernames)
+            self.assertEqual("user01", usernames["LIST01"], usernames)
+        finally:
+            owner.resolver = original_resolver
             db.session.commit()
 
     @ldap3mock.activate

@@ -42,7 +42,7 @@ from privacyidea.lib.resolvers.EntraIDResolver import (CLIENT_ID, TENANT, CLIENT
 from privacyidea.lib.resolvers.HTTPResolver import (HEADERS, METHOD, ENDPOINT, EDITABLE, CONFIG_GET_USER_BY_NAME,
                                                     HTTPMethod, CONFIG_GET_USER_BY_ID, ADVANCED)
 from privacyidea.lib.resolvers.LDAPIdResolver import IdResolver as LDAPResolver, LockingServerPool
-from privacyidea.lib.resolvers.LDAPIdResolver import (SERVERPOOL_ROUNDS, SERVERPOOL_SKIP)
+from privacyidea.lib.resolvers.LDAPIdResolver import (CACHE, SERVERPOOL_ROUNDS, SERVERPOOL_SKIP)
 from privacyidea.lib.resolvers.SCIMIdResolver import IdResolver as SCIMResolver
 from privacyidea.lib.resolvers.SQLIdResolver import IdResolver as SQLResolver
 from privacyidea.lib.resolvers.UserIdResolver import UserIdResolver
@@ -724,6 +724,12 @@ class SQLResolverTestCase(MyTestCase):
         # A user ID the userid column can not hold is skipped, the rest of the batch is unaffected
         user_info_map = resolver.get_user_info_batch(["1", "not-a-number"], attributes=["username"])
         self.assertEqual({"1"}, set(user_info_map.keys()), user_info_map)
+
+        # With every ID of a chunk skipped there is nothing left to ask the database for
+        with mock.patch.object(resolver.session, "execute", wraps=resolver.session.execute) as mock_execute:
+            user_info_map = resolver.get_user_info_batch(["not-a-number"], attributes=["username"])
+        self.assertEqual(0, mock_execute.call_count)
+        self.assertEqual({}, user_info_map)
 
         # The IDs are spread over several queries so that no statement outgrows the parameter limit
         with mock.patch("privacyidea.lib.resolvers.SQLIdResolver.BATCH_QUERY_CHUNK_SIZE", 2):
@@ -3025,6 +3031,14 @@ class LDAPResolverTestCase(MyTestCase):
         self.assertEqual(1, len(search_filters), search_filters)
         self.assertEqual("keule", user_info_map["1"]["surname"], user_info_map)
 
+        # An entry that sat in the cache for longer than the timeout is fetched again
+        expired = datetime.datetime.now(tz=datetime.timezone.utc) - datetime.timedelta(seconds=240)
+        CACHE[resolver.getResolverId()]["get_user_info"]["1"]["timestamp"] = expired
+        with self._count_searches() as search_filters:
+            user_info_map = resolver.get_user_info_batch(["1"], attributes=["username"])
+        self.assertEqual(1, len(search_filters), search_filters)
+        self.assertEqual("manager", user_info_map["1"]["username"], user_info_map)
+
     @ldap3mock.activate
     def test_49_get_user_info_batch_objectguid_and_dn(self):
         ldap3mock.setLDAPDirectory(LDAPDirectory)
@@ -3059,6 +3073,40 @@ class LDAPResolverTestCase(MyTestCase):
             resolver.get_user_info_batch(["2", "3)(cn=*"], attributes=["username"])
         self.assertEqual(1, len(search_filters), search_filters)
         self.assertIn("(oid=3\\29\\28cn=\\2a)", search_filters[0], search_filters)
+
+        # An objectGUID that is no UUID can not be put into a filter, so it is skipped. With nothing
+        # left to search for, the chunk does not reach the server at all.
+        resolver = self._get_batch_resolver(uidtype="objectGUID")
+        with self._count_searches() as search_filters:
+            with LogCapture(level=logging.INFO) as lc:
+                user_info_map = resolver.get_user_info_batch(["not-a-guid"], attributes=["username"])
+        self.assertEqual(0, len(search_filters), search_filters)
+        self.assertEqual({}, user_info_map)
+        self.assertIn("Skipping user id", str(lc), str(lc))
+
+        # A malformed id does not stop the ids next to it from being resolved
+        with self._count_searches() as search_filters:
+            user_info_map = resolver.get_user_info_batch([objectGUIDs[0], "not-a-guid"],
+                                                         attributes=["username"])
+        self.assertEqual(1, len(search_filters), search_filters)
+        self.assertEqual({objectGUIDs[0]}, set(user_info_map.keys()), user_info_map)
+
+    @ldap3mock.activate
+    def test_50a_get_user_info_batch_ignores_referrals_and_matches_the_uid_case(self):
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
+        resolver = self._get_batch_resolver(uidtype="cn")
+        alice = [entry for entry in LDAPDirectory if entry["attributes"]["cn"] == "alice"][0]
+
+        def answering_search(self, search_base, search_filter, attributes):
+            # A referral has no attributes at all, and a uid attribute usually matches
+            # case-insensitively, so the server may answer in a different case than we asked in
+            return [{"type": "searchResRef"}, {"dn": alice["dn"], "attributes": alice["attributes"]}]
+
+        with mock.patch.object(LDAPResolver, "_search", answering_search):
+            user_info_map = resolver.get_user_info_batch(["ALICE"], attributes=["username"])
+
+        self.assertEqual({"ALICE"}, set(user_info_map.keys()), user_info_map)
+        self.assertEqual("alice", user_info_map["ALICE"]["username"], user_info_map)
 
     @ldap3mock.activate
     def test_51_get_user_info_batch_survives_a_server_size_limit(self):

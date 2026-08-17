@@ -222,14 +222,15 @@ def _get_cache_bucket(resolver, func_name: str) -> dict:
             for user, cached_result in CACHE[resolver_id].get(func_name, {}).items():
                 if now > cached_result.get("timestamp") + tdelta:
                     _to_be_deleted.append(user)
-        except RuntimeError:
+        except RuntimeError:  # pragma: no cover
             # This might happen if thread A evicts an expired
             # cache entry while thread B looks for expired cache entries
             pass
         for user in _to_be_deleted:
             try:
                 del CACHE[resolver_id][func_name][user]
-            except KeyError:
+            except KeyError:  # pragma: no cover
+                # Another thread evicted the same entry in the meantime
                 pass
 
     return CACHE[resolver_id].setdefault(func_name, {})
@@ -792,7 +793,8 @@ class IdResolver(UserIdResolver):
                 user_info_map[user_id] = user_info
                 cache_store(self, "get_user_info", user_id, user_info)
 
-            if (self.connection.result or {}).get("result") == RESULT_SIZE_LIMIT_EXCEEDED:
+            last_result = getattr(getattr(self, "connection", None), "result", None) or {}
+            if last_result.get("result") == RESULT_SIZE_LIMIT_EXCEEDED:
                 # The server cut the result set short without raising, so the IDs that fell off it
                 # would be indistinguishable from users that do not exist. Fetch those one by one.
                 log.warning(f"The LDAP server applied a size limit to a search for {len(chunk)} user ids. "
