@@ -39,7 +39,7 @@
   gap: 16px;
   padding: 8px;
   background-color: var(--mat-sys-surface-container);
-  border-radius: 4px;
+  border-radius: var(--border-radius);
 
   .key {
     flex: 1;

@@ -44,8 +44,6 @@ html {
     --grey-light-active: light-dark(hsl(0, 0%, 60%), hsl(0, 0%, 58%));
     --grey-base-hover: light-dark(hsl(0, 0%, 45%), hsl(0, 0%, 35%));
 
-    --dashboard-shadow-color: light-dark(#cccccc, #181818);
-
     --mat-sys-primary: var(--mat-sys-primary-base);
     --mat-sys-on-primary: light-dark(hsl(198, 66%, 95%), hsl(198, 66%, 10%));
     --mat-sys-primary-container: light-dark(hsl(198, 66%, 90%), hsl(198, 66%, 20%));
@@ -113,8 +111,6 @@ html {
     --grey-light-active: hsl(0, 0%, 60%);
     --grey-base-hover: hsl(0, 0%, 45%);
 
-    --dashboard-shadow-color: #cccccc;
-
     --mat-sys-primary: var(--mat-sys-primary-base);
     --mat-sys-on-primary: hsl(198, 66%, 95%);
     --mat-sys-primary-container: hsl(198, 66%, 90%);
@@ -179,8 +175,6 @@ html {
     --grey-light: hsl(0, 0%, 62%);
     --grey-light-active: hsl(0, 0%, 58%);
     --grey-base-hover: hsl(0, 0%, 35%);
-
-    --dashboard-shadow-color: #181818;
 
     --mat-sys-primary: var(--mat-sys-primary-base);
     --mat-sys-on-primary: hsl(198, 66%, 10%);

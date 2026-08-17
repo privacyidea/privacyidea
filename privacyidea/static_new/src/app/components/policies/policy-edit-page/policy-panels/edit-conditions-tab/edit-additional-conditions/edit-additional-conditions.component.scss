@@ -30,7 +30,7 @@ $edit-grid-layout: 60px 1.2fr 2fr 1.2fr 2fr 1.2fr 60px;
 .additional-condition-row {
   align-items: center;
   background-color: var(--mat-sys-surface-container-high);
-  border-radius: 4px;
+  border-radius: var(--border-radius);
   cursor: pointer;
   display: grid;
   gap: 12px;
@@ -103,7 +103,7 @@ $edit-grid-layout: 60px 1.2fr 2fr 1.2fr 2fr 1.2fr 60px;
 
   .readonly-badge {
     background: var(--mat-sys-secondary-container);
-    border-radius: 4px;
+    border-radius: var(--border-radius);
     color: var(--mat-sys-on-secondary-container);
     font-size: 10px;
     padding: 1px 6px;

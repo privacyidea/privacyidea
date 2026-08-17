@@ -132,7 +132,7 @@
 
     .skeleton-row {
       .column-max-height {
-        border-radius: 4px;
+        border-radius: var(--border-radius);
         height: calc(16px * 2);
       }
 

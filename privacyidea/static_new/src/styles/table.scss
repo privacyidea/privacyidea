@@ -9,7 +9,6 @@ $table-bg: var(--table-color);
 $link-color: var(--mat-sys-primary);
 $paginator-bg: var(--table-color);
 $highlight-padding: 2px 6px;
-$border-radius: 4px;
 $icon-font-size: 22px;
 $fix-width: 20rem;
 
@@ -332,7 +331,7 @@ th:nth-child(even) {
 .highlight-warning-clickable,
 .highlight-false-clickable,
 .highlight-disabled {
-  border-radius: $border-radius;
+  border-radius: var(--border-radius);
   padding: $highlight-padding;
   color: white;
   display: inline-block;
