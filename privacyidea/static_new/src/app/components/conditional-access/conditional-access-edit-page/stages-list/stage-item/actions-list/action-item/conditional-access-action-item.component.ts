@@ -29,7 +29,6 @@ import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import {
   ConditionalAccessPolicyService,
   ConditionalAccessPolicyServiceInterface,
-  EMAIL_ACTION_TYPES,
   LockoutActionType,
   LockoutStageAction,
   LockoutTarget
@@ -75,11 +74,13 @@ interface EmailField {
   onlyAdmin?: boolean;
   rows?: number;
   hint?: string;
+  // Renders the hint in the error colour, for a hint that reports a problem rather than explaining the field.
+  hintWarn?: boolean;
 }
 
 // Shown for the identifier when it has to stay a free-text input, i.e. when the configured servers
-// cannot be listed (see emailFields).
-const SMTP_TEXT_HINT = $localize`Name of a configured SMTP server.`;
+// cannot be listed because this admin may not read them (see emailFields).
+const SMTP_TEXT_HINT = $localize`Type the name: listing the servers needs the smtpserver_read right.`;
 
 // Order matters for layout: the three short fields come first so they share one
 // wrapping row, then the wide subject/body textareas flow onto their own rows.
@@ -167,20 +168,17 @@ export class ConditionalAccessActionItemComponent {
 
   readonly actionDescription = computed<string>(() => ACTION_DESCRIPTIONS[this.action().action_type] ?? "");
 
-  // Whether the email actions may be offered: their one mandatory setting is which configured SMTP
-  // server sends the mail, and that list needs smtpserver_read - the right /smtpserver/ requires.
-  // Without it the list is never fetched (see SmtpService), leaving nothing to pick from.
-  readonly emailActionsAvailable = computed<boolean>(() => this.authService.actionAllowed("smtpserver_read"));
+  // Whether the configured SMTP servers can be listed for the identifier field: /smtpserver/ requires
+  // smtpserver_read, and without it the list is never fetched (see SmtpService). The email actions stay
+  // offered either way - the identifier falls back to a free-text input carrying SMTP_TEXT_HINT, so the
+  // admin sees why there is nothing to pick from instead of finding the action missing.
+  readonly smtpServersListable = computed<boolean>(() => this.authService.actionAllowed("smtpserver_read"));
 
-  // The action types offered for the current target (see the /targets endpoint), minus the email ones
-  // when those are unavailable. The currently-selected type is always included so a stale action -
-  // now-incompatible with the target, or an email action on a policy this admin may not configure
-  // SMTP for - stays visible in the select instead of being dropped on the next save.
+  // The action types offered for the current target (see the /targets endpoint). The currently-selected
+  // type is always included so a stale action - now incompatible with the target - stays visible in the
+  // select instead of being dropped on the next save.
   readonly allowedActionTypes = computed<LockoutActionType[]>(() => {
-    const offered = this.policyService.actionsForTarget(this.target());
-    const allowed = this.emailActionsAvailable()
-      ? offered
-      : offered.filter((actionType) => !EMAIL_ACTION_TYPES.includes(actionType));
+    const allowed = this.policyService.actionsForTarget(this.target());
     const current = this.action().action_type;
     return allowed.includes(current) ? allowed : [...allowed, current];
   });
@@ -212,12 +210,14 @@ export class ConditionalAccessActionItemComponent {
   readonly emailFields = computed<EmailField[]>(() => {
     const isAdmin = this.action().action_type === "EMAIL_ADMIN";
     const fields = EMAIL_FIELDS.filter((field) => isAdmin || !field.onlyAdmin);
-    if (this.emailActionsAvailable()) {
+    if (this.smtpServersListable()) {
       return fields;
     }
-    // Only reached by an email action a policy already carries: with no list to pick from, the
-    // identifier stays a plain input, which at least shows what the action is configured with.
-    return fields.map((field) => (field.kind === "smtp" ? { ...field, kind: "text", hint: SMTP_TEXT_HINT } : field));
+    // With no list to pick from, the identifier stays a plain input: the admin can still type the
+    // name of a server, and the hint says why the configured ones are not offered.
+    return fields.map((field) =>
+      field.kind === "smtp" ? { ...field, kind: "text", hint: SMTP_TEXT_HINT, hintWarn: true } : field
+    );
   });
 
   // The identifiers of the configured SMTP servers, from /smtpserver/ (see SmtpService).

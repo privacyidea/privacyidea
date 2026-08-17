@@ -213,7 +213,7 @@
                   [value]="emailFieldValue(field.key)"
                   (input)="onEmailFieldInput(field.key, $any($event.target).value)" />
                 @if (field.hint) {
-                  <mat-hint>{{ field.hint }}</mat-hint>
+                  <mat-hint [class.ca-action-stale]="field.hintWarn">{{ field.hint }}</mat-hint>
                 }
               </mat-form-field>
             }

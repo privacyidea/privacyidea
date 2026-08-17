@@ -236,10 +236,14 @@ describe("ConditionalAccessActionItemComponent", () => {
         expect(component.staleSmtpIdentifier()).toBe("");
       });
 
-      it("falls back to a plain input without smtpserver_read", () => {
+      it("falls back to a plain input with an explaining hint without smtpserver_read", () => {
         setAction({ action_type: "EMAIL_ADMIN", action_value: { smtp_identifier: "primary" } });
         setRights([]);
-        expect(component.emailFields().find((field) => field.key === "smtp_identifier")?.kind).toBe("text");
+        const field = component.emailFields().find((each) => each.key === "smtp_identifier");
+        expect(field?.kind).toBe("text");
+        expect(field?.hint).toContain("smtpserver_read");
+        // Flagged in the error colour: it reports a missing right, not a description of the field.
+        expect(field?.hintWarn).toBe(true);
       });
     });
   });
@@ -256,28 +260,20 @@ describe("ConditionalAccessActionItemComponent", () => {
       setRights([]);
     });
 
-    it("does not offer them", () => {
+    it("still offers them, only without the server list", () => {
       setAction({ action_type: "LOCK_USER", action_value: 600 });
-      expect(component.emailActionsAvailable()).toBe(false);
-      expect(component.allowedActionTypes()).not.toContain("EMAIL_ADMIN");
-      expect(component.allowedActionTypes()).not.toContain("EMAIL_USER");
+      expect(component.smtpServersListable()).toBe(false);
+      expect(component.allowedActionTypes()).toContain("EMAIL_ADMIN");
+      expect(component.allowedActionTypes()).toContain("EMAIL_USER");
       expect(component.allowedActionTypes()).toContain("LOCK_USER");
     });
 
-    it("keeps one the policy already carries, so saving cannot drop it", () => {
+    it("keeps one the policy already carries valid for its target", () => {
       setAction({ action_type: "EMAIL_ADMIN", action_value: { smtp_identifier: "primary" } });
       expect(component.allowedActionTypes()).toContain("EMAIL_ADMIN");
-      expect(component.allowedActionTypes()).not.toContain("EMAIL_USER");
       // The action is still valid for a user-targeted policy: it is the SMTP config that is out of
       // reach, not the action type, so nothing is flagged as target-incompatible.
       expect(component.isActionAllowedForTarget()).toBe(true);
-    });
-
-    it("offers them again with the right", () => {
-      setRights(["smtpserver_read"]);
-      setAction({ action_type: "LOCK_USER", action_value: 600 });
-      expect(component.allowedActionTypes()).toContain("EMAIL_ADMIN");
-      expect(component.allowedActionTypes()).toContain("EMAIL_USER");
     });
   });
 

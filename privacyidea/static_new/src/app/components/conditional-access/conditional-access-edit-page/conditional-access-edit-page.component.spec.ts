@@ -597,10 +597,10 @@ describe("ConditionalAccessEditPageComponent — new mode", () => {
       expect(applyAndReadActionTypes(["smtpserver_read"])).toEqual(["LOCK_USER", "EMAIL_ADMIN"]);
     });
 
-    // The action select does not offer email actions without the right, so a template must not
-    // prefill one either - it could not be completed with an SMTP server.
-    it("drops it for one who may not, keeping the rest of the stage", () => {
-      expect(applyAndReadActionTypes([])).toEqual(["LOCK_USER"]);
+    // The email action stays offered without the right; the identifier field just becomes a free-text
+    // input explaining why the configured servers cannot be listed.
+    it("prefills it for one who may not, too", () => {
+      expect(applyAndReadActionTypes([])).toEqual(["LOCK_USER", "EMAIL_ADMIN"]);
       expect(component.editPolicy().name).toBe("MFA Brute-Force");
     });
   });

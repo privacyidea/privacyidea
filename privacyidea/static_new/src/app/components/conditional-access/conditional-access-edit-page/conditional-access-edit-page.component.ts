@@ -39,7 +39,6 @@ import {
   ConditionalAccessPolicyService,
   ConditionalAccessPolicyServiceInterface,
   CountMode,
-  EMAIL_ACTION_TYPES,
   EMPTY_LOCKOUT_POLICY,
   LockoutPolicy,
   LockoutPolicyCondition,
@@ -384,25 +383,11 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
     const policy: LockoutPolicySaveParams = {
       ...prefill,
       priority: prefill.priority ?? null,
-      stages: this.withConfigurableActions(prefill.stages)
+      stages: prefill.stages
     };
     this.editPolicy.set(policy);
     this.syncTimeWindowFromSeconds(policy.time_window_seconds);
     this.syncPriorityInput(policy.priority);
-  }
-
-  // Templates prefill EMAIL_ADMIN actions, which an admin who may not read the SMTP server
-  // configuration cannot complete - the action select leaves those actions out for the same reason
-  // (see ConditionalAccessActionItemComponent.emailActionsAvailable), so a template must not smuggle
-  // one in. The rest of the template still applies, and a stage left with no actions is valid.
-  private withConfigurableActions(stages: LockoutPolicyStage[]): LockoutPolicyStage[] {
-    if (this.authService.actionAllowed("smtpserver_read")) {
-      return stages;
-    }
-    return stages.map((stage) => ({
-      ...stage,
-      actions: stage.actions.filter((action) => !EMAIL_ACTION_TYPES.includes(action.action_type))
-    }));
   }
 
   // The template select's clear button: drop the selected template and reset the

@@ -62,10 +62,6 @@ export type LockoutActionType =
   | "ALLOW"
   | "DENY";
 
-// The actions that notify by email. They send through one of the configured SMTP servers, so they are
-// only offered to an admin who may read that configuration - the right /smtpserver/ requires.
-export const EMAIL_ACTION_TYPES: readonly LockoutActionType[] = ["EMAIL_ADMIN", "EMAIL_USER"];
-
 // The identity a policy counts and acts on.
 export type LockoutTarget = "user" | "source_ip";
 
