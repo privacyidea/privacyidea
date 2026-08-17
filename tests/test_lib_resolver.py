@@ -17,6 +17,7 @@ import shutil
 import ssl
 import tempfile
 import uuid
+from contextlib import contextmanager
 
 import ldap3
 import mock
@@ -696,6 +697,45 @@ class SQLResolverTestCase(MyTestCase):
         self.assertEqual("user1@testdomain.com", user_info.get("email"))
         self.assertEqual(1, user_info.get("id"))
         self.assertEqual("1", user_info.get("userid"))
+
+    def test_12_get_user_info_batch(self):
+        resolver = SQLResolver()
+        resolver.loadConfig(self.parameters)
+
+        # Several users are fetched with a single query
+        with mock.patch.object(resolver.session, "execute", wraps=resolver.session.execute) as mock_execute:
+            user_info_map = resolver.get_user_info_batch(["1", "2", "3"], attributes=["username", "email"])
+        self.assertEqual(1, mock_execute.call_count)
+        self.assertEqual({"1", "2", "3"}, set(user_info_map.keys()), user_info_map)
+        self.assertEqual("cornelius", user_info_map["3"].get("username"), user_info_map)
+        self.assertSetEqual({"id", "username", "email"}, set(user_info_map["3"].keys()), user_info_map)
+
+        # A batched user carries the same information as a single lookup, with and without attributes
+        user_info_map = resolver.get_user_info_batch(["1"])
+        self.assertEqual(resolver.get_user_info("1"), user_info_map["1"], user_info_map)
+        user_info_map = resolver.get_user_info_batch(["1"], attributes=["username", "surname"])
+        self.assertEqual(resolver.get_user_info("1", attributes=["username", "surname"]), user_info_map["1"],
+                         user_info_map)
+
+        # A user ID without a matching row is left out instead of raising
+        user_info_map = resolver.get_user_info_batch(["1", "4242"], attributes=["username"])
+        self.assertEqual({"1"}, set(user_info_map.keys()), user_info_map)
+
+        # A user ID the userid column can not hold is skipped, the rest of the batch is unaffected
+        user_info_map = resolver.get_user_info_batch(["1", "not-a-number"], attributes=["username"])
+        self.assertEqual({"1"}, set(user_info_map.keys()), user_info_map)
+
+        # The IDs are spread over several queries so that no statement outgrows the parameter limit
+        with mock.patch("privacyidea.lib.resolvers.SQLIdResolver.BATCH_QUERY_CHUNK_SIZE", 2):
+            with mock.patch.object(resolver.session, "execute", wraps=resolver.session.execute) as mock_execute:
+                user_info_map = resolver.get_user_info_batch(["1", "2", "3"], attributes=["username"])
+        self.assertEqual(2, mock_execute.call_count)
+        self.assertEqual({"1", "2", "3"}, set(user_info_map.keys()), user_info_map)
+
+        # An empty list does not reach the database at all
+        with mock.patch.object(resolver.session, "execute", wraps=resolver.session.execute) as mock_execute:
+            self.assertEqual({}, resolver.get_user_info_batch([]))
+        self.assertEqual(0, mock_execute.call_count)
 
     def test_99_testconnection_fail(self):
         resolver = SQLResolver()
@@ -2861,6 +2901,153 @@ class LDAPResolverTestCase(MyTestCase):
                                     set(user.keys()), user)
                 self.assertListEqual(["testgroup"], user["groups"])
 
+    @staticmethod
+    def _get_batch_resolver(uidtype="oid", cache_timeout=0):
+        resolver = LDAPResolver()
+        resolver.loadConfig({'LDAPURI': 'ldap://localhost',
+                             'LDAPBASE': 'o=test',
+                             'BINDDN': 'cn=manager,ou=example,o=test',
+                             'BINDPW': 'ldaptest',
+                             'LOGINNAMEATTRIBUTE': 'cn',
+                             'LDAPSEARCHFILTER': '(cn=*)',
+                             'USERINFO': '{"username": "cn",'
+                                         '"mobile" : "mobile",'
+                                         '"email" : "email",'
+                                         '"surname" : "sn",'
+                                         '"givenname" : "givenName" }',
+                             'UIDTYPE': uidtype,
+                             'CACHE_TIMEOUT': cache_timeout
+                             })
+        return resolver
+
+    @staticmethod
+    @contextmanager
+    def _count_searches():
+        """Collect the search filters the resolver sends, so a test can count the round trips."""
+        search_filters = []
+        original_search = LDAPResolver._search
+
+        def counting_search(self, search_base, search_filter, attributes):
+            search_filters.append(search_filter)
+            return original_search(self, search_base, search_filter, attributes)
+
+        with mock.patch.object(LDAPResolver, "_search", counting_search):
+            yield search_filters
+
+    @ldap3mock.activate
+    def test_46_get_user_info_batch(self):
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
+        resolver = self._get_batch_resolver()
+
+        # Four distinct users are looked up with a single search
+        with self._count_searches() as search_filters:
+            user_info_map = resolver.get_user_info_batch(["1", "2", "3", "4"], attributes=["username", "surname"])
+        self.assertEqual(1, len(search_filters), search_filters)
+        self.assertEqual({"1", "2", "3", "4"}, set(user_info_map.keys()), user_info_map)
+        self.assertEqual("alice", user_info_map["2"]["username"], user_info_map)
+        self.assertEqual("Cooper", user_info_map["2"]["surname"], user_info_map)
+        self.assertSetEqual({"username", "surname"}, set(user_info_map["2"].keys()), user_info_map)
+
+        # Without attributes every mapped attribute is returned
+        user_info_map = resolver.get_user_info_batch(["2"])
+        self.assertSetEqual({"username", "mobile", "email", "surname", "givenname"},
+                            set(user_info_map["2"].keys()), user_info_map)
+
+        # A user ID without a matching object is left out instead of raising
+        with self._count_searches() as search_filters:
+            user_info_map = resolver.get_user_info_batch(["2", "does-not-exist"], attributes=["username"])
+        self.assertEqual(1, len(search_filters), search_filters)
+        self.assertEqual({"2"}, set(user_info_map.keys()), user_info_map)
+
+        # Repeated IDs are searched for once and answered once
+        with self._count_searches() as search_filters:
+            user_info_map = resolver.get_user_info_batch(["2", "2", "2"], attributes=["username"])
+        self.assertEqual(1, search_filters[0].count("(oid=2)"), search_filters)
+        self.assertEqual({"2"}, set(user_info_map.keys()), user_info_map)
+
+        # An empty list does not reach the server at all
+        with self._count_searches() as search_filters:
+            self.assertEqual({}, resolver.get_user_info_batch([]))
+        self.assertEqual(0, len(search_filters), search_filters)
+
+    @ldap3mock.activate
+    def test_47_get_user_info_batch_chunking(self):
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
+        resolver = self._get_batch_resolver()
+
+        # A filter is only allowed to grow so far, so the IDs are spread over several searches
+        with mock.patch("privacyidea.lib.resolvers.LDAPIdResolver.BATCH_SEARCH_CHUNK_SIZE", 2):
+            with self._count_searches() as search_filters:
+                user_info_map = resolver.get_user_info_batch(["1", "2", "3", "4"], attributes=["username"])
+        self.assertEqual(2, len(search_filters), search_filters)
+        self.assertEqual({"1", "2", "3", "4"}, set(user_info_map.keys()), user_info_map)
+
+    @ldap3mock.activate
+    def test_48_get_user_info_batch_with_cache(self):
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
+        resolver = self._get_batch_resolver(cache_timeout=120)
+
+        # A warm ID is answered from the cache, only the missing ones are searched for
+        resolver.get_user_info("2", attributes=["username"])
+        with self._count_searches() as search_filters:
+            user_info_map = resolver.get_user_info_batch(["1", "2"], attributes=["username"])
+        self.assertEqual(1, len(search_filters), search_filters)
+        self.assertNotIn("(oid=2)", search_filters[0], search_filters)
+        self.assertEqual({"1", "2"}, set(user_info_map.keys()), user_info_map)
+
+        # What the batch fetched is in the cache too, so a single lookup no longer needs a search
+        with self._count_searches() as search_filters:
+            user_info = resolver.get_user_info("1", attributes=["username"])
+        self.assertEqual(0, len(search_filters), search_filters)
+        self.assertEqual("manager", user_info["username"], user_info)
+
+        # A fully warm batch does not reach the server at all
+        with self._count_searches() as search_filters:
+            user_info_map = resolver.get_user_info_batch(["1", "2"], attributes=["username"])
+        self.assertEqual(0, len(search_filters), search_filters)
+        self.assertEqual({"1", "2"}, set(user_info_map.keys()), user_info_map)
+
+        # Attributes the cached entry does not hold are fetched
+        with self._count_searches() as search_filters:
+            user_info_map = resolver.get_user_info_batch(["1"], attributes=["username", "surname"])
+        self.assertEqual(1, len(search_filters), search_filters)
+        self.assertEqual("keule", user_info_map["1"]["surname"], user_info_map)
+
+    @ldap3mock.activate
+    def test_49_get_user_info_batch_objectguid_and_dn(self):
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
+
+        # An objectGUID is searched for in its byte form and matched back with and without braces
+        resolver = self._get_batch_resolver(uidtype="objectGUID")
+        with self._count_searches() as search_filters:
+            user_info_map = resolver.get_user_info_batch([objectGUIDs[0], f"{{{objectGUIDs[1]}}}"],
+                                                         attributes=["username"])
+        self.assertEqual(1, len(search_filters), search_filters)
+        self.assertEqual("alice", user_info_map[objectGUIDs[0]]["username"], user_info_map)
+        self.assertEqual("bob", user_info_map[f"{{{objectGUIDs[1]}}}"]["username"], user_info_map)
+
+        # A DN has no attribute to OR the IDs on, so those users are looked up one by one
+        resolver = self._get_batch_resolver(uidtype="DN")
+        with self._count_searches() as search_filters:
+            user_info_map = resolver.get_user_info_batch(["cn=alice,ou=example,o=test", "cn=bob,ou=example,o=test"],
+                                                         attributes=["username"])
+        self.assertEqual(2, len(search_filters), search_filters)
+        self.assertEqual("alice", user_info_map["cn=alice,ou=example,o=test"]["username"], user_info_map)
+        self.assertEqual("bob", user_info_map["cn=bob,ou=example,o=test"]["username"], user_info_map)
+
+    @ldap3mock.activate
+    def test_50_get_user_info_batch_escapes_the_user_ids(self):
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
+        resolver = self._get_batch_resolver()
+
+        # A user ID carrying filter metacharacters must not add clauses of its own. Only the filter
+        # is checked here: the mock does not understand RFC4515 escape sequences, so which users it
+        # answers with says nothing about how a server reads the filter.
+        with self._count_searches() as search_filters:
+            resolver.get_user_info_batch(["2", "3)(cn=*"], attributes=["username"])
+        self.assertEqual(1, len(search_filters), search_filters)
+        self.assertIn("(oid=3\\29\\28cn=\\2a)", search_filters[0], search_filters)
+
 
 class BaseResolverTestCase(MyTestCase):
 
@@ -2878,6 +3065,19 @@ class BaseResolverTestCase(MyTestCase):
         success = UserIdResolver.testconnection({})
         self.assertEqual(success[0], False)
         self.assertEqual(success[1], "Not implemented")
+
+    def test_01_get_user_info_batch(self):
+        # A resolver that can not do better falls back to one lookup per user, so that every
+        # resolver supports the batch interface
+        resolver = UserIdResolver()
+        with mock.patch.object(UserIdResolver, "get_user_info",
+                               side_effect=lambda user_id, attributes=None: {"username": f"user{user_id}"}):
+            user_info_map = resolver.get_user_info_batch(["1", "2"], attributes=["username"])
+        self.assertEqual({"1": {"username": "user1"}, "2": {"username": "user2"}}, user_info_map)
+
+        # Users the resolver does not know are left out
+        self.assertEqual({}, resolver.get_user_info_batch(["1", "2"]))
+        self.assertEqual({}, resolver.get_user_info_batch([]))
 
 
 class ResolverTestCase(MyTestCase):

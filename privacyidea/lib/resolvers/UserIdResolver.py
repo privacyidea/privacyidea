@@ -153,6 +153,27 @@ class UserIdResolver:
         """
         return {}
 
+    def get_user_info_batch(self, user_ids: list, attributes: list[str] = None) -> dict:
+        """
+        Return the user information for several users at once.
+
+        The default implementation loops over :py:func:`get_user_info`, so every resolver supports
+        this method. Resolvers whose backend can answer for several users in one request should
+        override it, which is what saves the caller a round trip per user.
+
+        User IDs that do not resolve to a user are omitted from the result, they do not raise.
+
+        :param user_ids: IDs of the users in the resolver
+        :param attributes: list of attribute names to be returned for each user. If None, all attributes are returned.
+        :return: dictionary mapping each resolved user ID to its user information
+        """
+        user_info_map = {}
+        for user_id in user_ids:
+            user_info = self.get_user_info(user_id, attributes=attributes)
+            if user_info:
+                user_info_map[user_id] = user_info
+        return user_info_map
+
     def get_available_info_keys(self) -> list[str]:
         """
         This function returns a list of known privacyIDEA user attributes which can be used, e.g. for getUserList or
