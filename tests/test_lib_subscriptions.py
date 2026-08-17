@@ -10,6 +10,7 @@ from privacyidea.lib.subscriptions import (save_subscription,
                                            get_subscription,
                                            raise_exception_probability,
                                            check_subscription,
+                                           resolve_application,
                                            SubscriptionError,
                                            subscription_status)
 from privacyidea.lib.token import init_token
@@ -173,3 +174,32 @@ class SubscriptionApplicationTestCase(MyTestCase):
         res = subscription_status()
         # Token count < 50
         self.assertEqual(0, res)
+
+    def test_05_application_aliases(self):
+        # An aliased application is counted towards the subscription of another application
+        self.assertEqual("privacyidea-keycloak", resolve_application("entraid-via-keycloak"))
+        # Several clients can share one subscription
+        self.assertEqual("privacyidea-pam", resolve_application("pam"))
+        self.assertEqual("privacyidea-pam", resolve_application("pam-privacyidea"))
+        self.assertEqual("privacyidea-pam", resolve_application("pam-passkey"))
+        # The comparison is case-insensitive
+        self.assertEqual("privacyidea-keycloak", resolve_application("EntraID-via-Keycloak"))
+        self.assertEqual("privacyidea-pam", resolve_application("PAM"))
+        self.assertEqual("demo_application", resolve_application("Demo_Application"))
+        # An unknown application is passed through
+        self.assertEqual("unknown", resolve_application("Unknown"))
+        self.assertEqual("", resolve_application(None))
+
+        # Since the alias resolves to a known application, the free users are limited
+        self.setUp_user_realms()
+        init_token({"type": "spass"}, user=User("cornelius", self.realm1))
+        init_token({"type": "spass"}, user=User("shadow", self.realm1))
+        with mock.patch("random.randrange") as mock_random:
+            mock_random.return_value = 2
+            with self.assertRaises(SubscriptionError) as context:
+                check_subscription("entraid-via-keycloak", max_free_subscriptions=1)
+            self.assertEqual("privacyidea-keycloak", context.exception.application)
+        # An application without a subscription is not limited at all
+        with mock.patch("random.randrange") as mock_random:
+            mock_random.return_value = 2
+            self.assertTrue(check_subscription("some-other-client", max_free_subscriptions=1))

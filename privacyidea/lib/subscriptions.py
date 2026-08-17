@@ -77,6 +77,22 @@ APPLICATIONS = {"demo_application": 0,
                 "privacyidea authenticator": 10,
                 "privacyidea": 50}
 
+# Clients that are counted towards the subscription of another application. This way a
+# client can be distinguished in policy conditions, while it shares the subscription of
+# the application it is based on. Aliases are also the migration path when a client
+# changes the name it sends in the user agent: both names keep sharing one subscription.
+# Keys that are matched against a user agent must be the agent name the client actually
+# sends. Note that not every key is one: "privacyidea authenticator" and the generic
+# "privacyidea" are only queried explicitly, counting tokens instead of requests.
+# TODO: unify these names with the policy user_agents and client type lists. See issue #5705.
+APPLICATION_ALIASES = {"entraid-via-keycloak": "privacyidea-keycloak",
+                       # Both PAM modules share the PAM subscription. "pam-privacyidea" is
+                       # the name the first module is going to send, listed ahead of the
+                       # rename so that a new module works with an older server as well.
+                       "pam": "privacyidea-pam",
+                       "pam-privacyidea": "privacyidea-pam",
+                       "pam-passkey": "privacyidea-pam"}
+
 log = logging.getLogger(__name__)
 
 
@@ -111,6 +127,7 @@ def subscription_status(component="privacyidea", tokentype=None):
 
     :return: subscription state
     """
+    component = resolve_application(component)
     token_count = get_tokens(assigned=True, active=True, count=True, tokentype=tokentype, all_nodes=True)
     if token_count <= APPLICATIONS.get(component, 50):
         return 0
@@ -276,6 +293,19 @@ def subscription_exceeded_probability(active_tokens, allowed_tokens):
         return False
 
 
+def resolve_application(application: str) -> str:
+    """
+    Return the name of the application whose subscription the given application is counted
+    towards. Application names are compared case-insensitively, so the returned name is
+    always lower case.
+
+    :param application: the name of the application, usually taken from the user agent
+    :return: the name of the application that holds the subscription
+    """
+    application = (application or "").lower()
+    return APPLICATION_ALIASES.get(application, application)
+
+
 def check_subscription(application, max_free_subscriptions=None):
     """
     This checks if the subscription for the given application is valid.
@@ -286,12 +316,12 @@ def check_subscription(application, max_free_subscriptions=None):
         without a subscription file. If not given, the default is used.
     :return: bool
     """
-    if application.lower() in APPLICATIONS:
-        subscriptions = get_subscription(application) or get_subscription(
-            application.lower())
+    application = resolve_application(application)
+    if application in APPLICATIONS:
+        subscriptions = get_subscription(application)
         # get the number of users with active tokens
         token_users = get_users_with_active_tokens()
-        free_subscriptions = max_free_subscriptions or APPLICATIONS.get(application.lower())
+        free_subscriptions = max_free_subscriptions or APPLICATIONS.get(application)
         if len(subscriptions) == 0:
             if subscription_exceeded_probability(token_users, free_subscriptions):
                 raise SubscriptionError(description="No subscription for your client.",
