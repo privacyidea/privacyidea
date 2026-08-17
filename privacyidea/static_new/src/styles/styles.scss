@@ -1041,6 +1041,12 @@ body.self-service-layout {
   max-height: 400px;
 }
 
+// Tooltips sit on the overlay container, so they are styled globally rather than per component. The border is derived
+// from the text color so it stays subtle in both themes without depending on a theme-scoped variable.
+.mat-mdc-tooltip .mdc-tooltip__surface {
+  border: 1px solid color-mix(in srgb, var(--mat-sys-on-surface, currentColor) 25%, transparent);
+}
+
 .filter-hint-tooltip {
   white-space: pre-line;
   text-align: left;
