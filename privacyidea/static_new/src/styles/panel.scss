@@ -22,6 +22,14 @@
   padding: var(--expansion-panel-header-padding, 0 24px);
 }
 
+// Material's own padding, handed to a token so a panel whose content carries its own width can
+// take the inset off without reaching into the component's internals. Material sets it from a
+// lone .mat-expansion-panel-body and injects that at runtime, after this sheet, so the panel is
+// named too: equal specificity would leave the winner up to load order.
+.mat-expansion-panel .mat-expansion-panel-body {
+  padding: var(--expansion-panel-body-padding, 0 24px 16px);
+}
+
 // Keep this slot in step with --mat-expansion-container-elevation-shadow on :root above.
 .mat-expansion-panel {
   @include cards.card-raised(3);

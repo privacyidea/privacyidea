@@ -53,7 +53,7 @@
       title="Language">
       <div class="settings-row">
         <mat-form-field
-          class="input-width-m"
+          class="input-width-m language-field"
           subscriptSizing="dynamic">
           <mat-select
             (selectionChange)="selectLocale($event.value)"
@@ -73,7 +73,7 @@
     <app-details-card
       class="settings-card-m"
       i18n-title
-      title="Pending requests">
+      title="Pending Requests">
       <div class="settings-row">
         <mat-slide-toggle
           (change)="setShowLoadingUrls($event.checked)"
@@ -84,55 +84,64 @@
       </div>
     </app-details-card>
 
-    <app-details-card
-      class="settings-card-m"
-      i18n-title
-      title="Corners">
-      <div class="settings-row">
-        <mat-button-toggle-group
-          (change)="selectCorners($event.value)"
-          [hideSingleSelectionIndicator]="true"
-          [value]="corners()"
-          aria-label="Corners"
-          i18n-aria-label>
-          @for (level of cornerLevels; track level.value) {
-            <mat-button-toggle [value]="level.value">{{ level.label }}</mat-button-toggle>
-          }
-        </mat-button-toggle-group>
-      </div>
-    </app-details-card>
-
-    <app-details-card
-      class="settings-card-m"
-      i18n-title
-      title="Depth">
-      <div class="settings-row">
-        <mat-button-toggle-group
-          (change)="selectDepth($event.value)"
-          [hideSingleSelectionIndicator]="true"
-          [value]="depth()"
-          aria-label="Depth"
-          i18n-aria-label>
-          @for (level of depthLevels; track level.value) {
-            <mat-button-toggle [value]="level.value">{{ level.label }}</mat-button-toggle>
-          }
-        </mat-button-toggle-group>
-      </div>
-    </app-details-card>
-
-    <app-details-card
-      class="settings-card-m"
-      i18n-title
-      title="Light source">
-      <div class="settings-row">
-        <app-light-source-dial
-          [items]="lightSourceDialItems"
-          [selected]="lightSource()"
-          groupName="light-source"
-          legend="Light source"
-          i18n-legend
-          (pick)="selectLightSource($event)" />
-      </div>
-    </app-details-card>
   </div>
+
+  <mat-expansion-panel class="settings-appearance-panel">
+    <mat-expansion-panel-header>
+      <mat-panel-title i18n>Appearance</mat-panel-title>
+    </mat-expansion-panel-header>
+
+    <div class="details-cards-grid">
+      <app-details-card
+        class="settings-card-m"
+        i18n-title
+        title="Corners">
+        <div class="settings-row">
+          <mat-button-toggle-group
+            (change)="selectCorners($event.value)"
+            [hideSingleSelectionIndicator]="true"
+            [value]="corners()"
+            aria-label="Corners"
+            i18n-aria-label>
+            @for (level of cornerLevels; track level.value) {
+              <mat-button-toggle [value]="level.value">{{ level.label }}</mat-button-toggle>
+            }
+          </mat-button-toggle-group>
+        </div>
+      </app-details-card>
+
+      <app-details-card
+        class="settings-card-m"
+        i18n-title
+        title="Depth">
+        <div class="settings-row">
+          <mat-button-toggle-group
+            (change)="selectDepth($event.value)"
+            [hideSingleSelectionIndicator]="true"
+            [value]="depth()"
+            aria-label="Depth"
+            i18n-aria-label>
+            @for (level of depthLevels; track level.value) {
+              <mat-button-toggle [value]="level.value">{{ level.label }}</mat-button-toggle>
+            }
+          </mat-button-toggle-group>
+        </div>
+      </app-details-card>
+
+      <app-details-card
+        class="settings-card-m"
+        i18n-title
+        title="Light Source">
+        <div class="settings-row">
+          <app-light-source-dial
+            [items]="lightSourceDialItems"
+            [selected]="lightSource()"
+            groupName="light-source"
+            legend="Light source"
+            i18n-legend
+            (pick)="selectLightSource($event)" />
+        </div>
+      </app-details-card>
+    </div>
+  </mat-expansion-panel>
 </div>

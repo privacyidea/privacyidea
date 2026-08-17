@@ -27,6 +27,14 @@
   gap: 16px;
   // Fits the xs + s card pair (162 + 16 + 340 = the m step) plus the border-box padding the mixin sets.
   max-width: calc(var(--card-width-m) + 2 * 16px);
+
+  // The mixin caps the height and scrolls the overflow, but a flex child shrinks before the
+  // container ever overflows: the expanded panel would be squeezed and clip its own content
+  // (it is overflow: hidden) with nothing left to scroll. Each child keeps its natural height
+  // instead, so the overflow reaches the container and the scrollbar appears.
+  > * {
+    flex: none;
+  }
 }
 
 .settings-header {
@@ -55,6 +63,21 @@
 
 .settings-card-m {
   @include table.card-width(m);
+}
+
+// Header and body share one inset, so the title lines up with the cards below it.
+.settings-appearance-panel {
+  --expansion-panel-header-padding: 0 16px;
+  --expansion-panel-body-padding: 0 16px 16px;
+
+  // The m width these cards carry outside the panel is the container's full content width, which
+  // no longer fits once the panel's inset comes off it, so inside they fill the body instead.
+  // These sit inside the panel rather than on the page container, so they recess into it.
+  .settings-card-m {
+    @include styles.card-recessed(3);
+    flex: 1 1 100%;
+    max-width: 100%;
+  }
 }
 
 // Set as Material tokens, not as border-radius/background: Material paints the toggles from these,

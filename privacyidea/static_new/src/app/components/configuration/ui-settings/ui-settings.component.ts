@@ -19,6 +19,7 @@
 import { Component, inject } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatButtonToggleModule } from "@angular/material/button-toggle";
+import { MatExpansionModule } from "@angular/material/expansion";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
 import { MatSelectModule } from "@angular/material/select";
@@ -49,6 +50,7 @@ import { UiPreferencesService, UiPreferencesServiceInterface } from "@services/u
     LightSourceDialComponent,
     MatButtonModule,
     MatButtonToggleModule,
+    MatExpansionModule,
     MatFormFieldModule,
     MatIconModule,
     MatSelectModule,
