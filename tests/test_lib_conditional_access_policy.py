@@ -33,10 +33,12 @@ from privacyidea.lib.conditional_access.lockout_policy import (
     _ACTIONS_BY_TARGET,
     _COUNT_MODES_BY_TARGET,
     _DEFAULT_COUNT_MODE_BY_TARGET,
+    DEFAULT_ERROR_MESSAGES,
     MAX_STAGE_ERROR_MESSAGE_LENGTH,
     create_lockout_policy,
     delete_lockout_policy,
     enable_lockout_policy,
+    get_default_error_messages,
     get_lockout_policy,
     get_target_constraints,
     list_lockout_policies,
@@ -510,6 +512,42 @@ class LockoutPolicyCrudTestCase(MyTestCase):
         )
         self.assertIn(LockoutAction.BLOCK_IP.value, constraints[LockoutTarget.SOURCE_IP.value]["actions"])
         self.assertIn(LockoutAction.LOCK_USER.value, constraints[LockoutTarget.USER.value]["actions"])
+
+    def test_10a_default_error_messages_are_ordered_most_severe_first(self):
+        # The exact list, because both membership and order are contracts: the order is the composition
+        # rule (a client takes the first restriction the stage carries), ALLOW is absent since it rejects
+        # nothing and so has nothing to say, and the EMAIL_* pair comes last so a stage that also locks
+        # describes the lock. A new action added here has to be a deliberate decision, not a surprise.
+        suggestions = get_default_error_messages()
+        self.assertListEqual([entry.action.value for entry in DEFAULT_ERROR_MESSAGES],
+                             [entry["action_type"] for entry in suggestions])
+        self.assertListEqual([LockoutAction.PERMANENT_LOCK_USER.value, LockoutAction.PERMANENT_BLOCK_IP.value,
+                              LockoutAction.LOCK_USER.value, LockoutAction.BLOCK_IP.value,
+                              LockoutAction.DENY.value, LockoutAction.EMAIL_USER.value,
+                              LockoutAction.EMAIL_ADMIN.value],
+                             [entry["action_type"] for entry in suggestions])
+        # Resolved to plain strings, not lazy proxies the JSON encoder would choke on.
+        for entry in suggestions:
+            self.assertIsInstance(entry["message"], str)
+            self.assertTrue(entry["message"])
+
+    def test_10a3_category_says_which_suggestions_combine(self):
+        # A stage can lock and notify at once. Only one restriction is ever reported, so those are
+        # mutually exclusive, while the notifications are appended - which is the split "category" encodes.
+        by_action = {entry["action_type"]: entry["category"] for entry in get_default_error_messages()}
+        for action in (LockoutAction.PERMANENT_LOCK_USER, LockoutAction.PERMANENT_BLOCK_IP,
+                       LockoutAction.LOCK_USER, LockoutAction.BLOCK_IP, LockoutAction.DENY):
+            self.assertEqual("restriction", by_action[action.value], action)
+        for action in (LockoutAction.EMAIL_USER, LockoutAction.EMAIL_ADMIN):
+            self.assertEqual("notification", by_action[action.value], action)
+
+    def test_10b_only_timed_restrictions_suggest_the_duration_tag(self):
+        # A permanent lock has no remaining time, and DENY is not a restriction at all, so
+        # {duration} must appear only where the engine can substitute it.
+        timed = {LockoutAction.LOCK_USER, LockoutAction.BLOCK_IP}
+        for entry in DEFAULT_ERROR_MESSAGES:
+            self.assertEqual(entry.action in timed, "{duration}" in str(entry.message),
+                             f"{entry.action} duration tag mismatch")
 
     def test_11_duplicate_priority_rejected(self):
         # priority must be unique across policies: a second policy reusing a

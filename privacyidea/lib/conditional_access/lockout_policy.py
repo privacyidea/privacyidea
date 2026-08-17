@@ -83,7 +83,7 @@ from dataclasses import dataclass, field
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
-from privacyidea.lib import _
+from privacyidea.lib import _, lazy_gettext
 from privacyidea.lib.conditional_access.authentication_event_types import (
     TRACKABLE_EVENT_TYPES,
     CountMode,
@@ -330,12 +330,76 @@ _ACTIONS_BY_TARGET = {
 }
 
 
-def get_actions_by_target() -> dict[str, list[str]]:
+@dataclass(frozen=True)
+class DefaultErrorMessage:
     """
-    The stage actions each target permits, as ``{target_value: [action_value, ...]}``
-    (see :data:`_ACTIONS_BY_TARGET`).
+    One suggested wording for a stage's ``error_message`` (see :data:`DEFAULT_ERROR_MESSAGES`).
+
+    :ivar action: the stage action this wording describes
+    :ivar message: a ``lazy_gettext`` string, translated when serialized
+    :ivar category: ``"restriction"`` for wording that competes with other restrictions (only one is ever
+        shown), ``"notification"`` for wording that is appended to it. Defaults to the common case, so only
+        the notifying actions spell it out.
     """
-    return {target.value: sorted(action.value for action in actions) for target, actions in _ACTIONS_BY_TARGET.items()}
+    action: LockoutAction
+    message: object
+    category: str = "restriction"
+
+
+# Suggested wording for a stage's ``error_message``, per action, ordered most severe first. Purely an
+# authoring aid for the policy editor: nothing here is applied at runtime, and a stage without an
+# ``error_message`` stays silent.
+#
+# A stage carrying several actions composes them the way the runtime reports: one restriction - they are
+# mutually exclusive, only the longest-lasting is ever shown (see ``_binding_restriction``) - followed by
+# any notifications, which are separate facts. Hence, the order: restrictions by severity, then the EMAIL_*
+# pair with the user's own notification first, as the one the reader can act on. ALLOW has no entry,
+# having nothing to reject and so nothing to say.
+#
+# lazy_gettext, not _(): module-level constants are evaluated at import, long before a request and its
+# locale exist; ``str()`` at serialization resolves them per admin. That only decides what an admin starts
+# editing from - the stored message is a literal shown to the end user in whatever language it was written.
+#
+# Until the engine's ``login_notice`` path (``_login_notice``) is removed, an EMAIL_* stage must not carry
+# both, or the user is told twice.
+DEFAULT_ERROR_MESSAGES: list[DefaultErrorMessage] = [
+    DefaultErrorMessage(LockoutAction.PERMANENT_LOCK_USER,
+                        lazy_gettext("Your account has been locked. Please contact your administrator.")),
+    DefaultErrorMessage(LockoutAction.PERMANENT_BLOCK_IP,
+                        lazy_gettext("Access from your IP address has been blocked. "
+                                     "Please contact your administrator.")),
+    DefaultErrorMessage(LockoutAction.LOCK_USER,
+                        lazy_gettext("Your account is temporarily locked. Please try again in about {duration}.")),
+    DefaultErrorMessage(LockoutAction.BLOCK_IP,
+                        lazy_gettext("Access from your IP address is temporarily blocked. "
+                                     "Please try again in about {duration}.")),
+    DefaultErrorMessage(LockoutAction.DENY,
+                        lazy_gettext("Access has been denied.")),
+    DefaultErrorMessage(LockoutAction.EMAIL_USER,
+                        lazy_gettext("A notification email has been sent to your email address."),
+                        category="notification"),
+    DefaultErrorMessage(LockoutAction.EMAIL_ADMIN,
+                        lazy_gettext("Your administrator has been notified by email."),
+                        category="notification"),
+]
+
+
+def get_default_error_messages() -> list[dict[str, str]]:
+    """
+    The suggested stage error messages, most severe first, as
+    ``[{"action_type": ..., "category": ..., "message": ...}]`` (see :data:`DEFAULT_ERROR_MESSAGES`). Translated on
+    each call against the request locale.
+
+    ``category`` tells a client how to combine them for a stage with several actions: the ``restriction`` entries are
+    mutually exclusive (only one restriction is ever reported), so it takes the first one the stage carries, while the
+    ``notification`` entries are appended to it.
+
+    Deliberately not scoped by target: the binding is action to message, and a client picks the entry
+    whose action the stage actually carries, so wording for an action a target cannot hold simply never
+    matches.
+    """
+    return [{"action_type": entry.action.value, "category": entry.category, "message": str(entry.message)}
+            for entry in DEFAULT_ERROR_MESSAGES]
 
 
 def get_target_constraints() -> dict[str, dict[str, list[str]]]:

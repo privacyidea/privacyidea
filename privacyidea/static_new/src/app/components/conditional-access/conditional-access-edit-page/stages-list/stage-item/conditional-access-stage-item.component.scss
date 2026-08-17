@@ -64,6 +64,49 @@
 .ca-stage-fields {
   display: flex;
   flex-wrap: wrap;
+  align-items: flex-start;
   gap: 16px;
   margin-bottom: 8px;
+}
+
+// The checkbox and the field it reveals sit on one line, so the checkbox reads as that field's
+// own on/off switch rather than a separate setting stacked above it. Its own row under the
+// threshold (the message is prose, not a value), and it wraps rather than overflowing once the
+// checkbox plus a 616px field no longer fit. Items are top-aligned, not centred, so nothing
+// drifts as the field's hints wrap and grow.
+.ca-stage-error-message {
+  align-items: flex-start;
+  display: flex;
+  flex: 1 1 100%;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+// The checkbox and its info icon stay glued together as one control, so the parent's 16px gap
+// separates them from the field rather than pushing the icon away from the label it explains.
+.ca-stage-error-message-toggle {
+  align-items: center;
+  display: flex;
+  flex: 0 0 auto;
+}
+
+// The reset button sits beside the field, aligned to the input rather than centred on the
+// whole control, so it does not drift as the hints below the field grow.
+//
+// The basis is the field's own width so the wrap decision is made against the width we actually
+// want: .input-width-xl is a max-width, not a floor, so with a basis of auto the field would
+// silently shrink to whatever the checkbox left over rather than moving to its own line. Sharing
+// the line stays the preferred layout; the checkbox wraps above only once 616px no longer fits.
+.ca-stage-error-message-row {
+  align-items: flex-start;
+  display: flex;
+  flex: 1 1 var(--input-width-xl);
+  gap: 8px;
+}
+
+// Advisory, not an error: the message still saves, so this warns without using the
+// error colour that would suggest the field is invalid.
+.ca-stage-unknown-tags {
+  color: var(--mat-sys-tertiary);
+  display: block;
 }

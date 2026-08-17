@@ -32,7 +32,9 @@ from privacyidea.lib.conditional_access.authentication_event_types import (AuthE
                                                                            CA_ENFORCEMENT_EVENT_TYPES,
                                                                            TRACKABLE_EVENT_TYPES, CountMode)
 from privacyidea.lib.conditional_access.engine import LockoutAction
-from privacyidea.lib.conditional_access.lockout_policy import create_lockout_policy, list_lockout_policies
+from privacyidea.lib.conditional_access.lockout_policy import (create_lockout_policy,
+                                                               get_default_error_messages,
+                                                               list_lockout_policies)
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import SCOPE, set_policy, delete_policy
 from privacyidea.models import db
@@ -336,6 +338,22 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
                              constraints["user"]["count_modes"])
         self.assertListEqual([str(CountMode.DISTINCT_USERS), str(CountMode.PER_ATTEMPT), str(CountMode.PER_REQUEST)],
                              constraints["source_ip"]["count_modes"])
+
+    def test_list_default_error_messages(self):
+        # Only the transport seam here: that the endpoint serves the catalog in the documented shape, and
+        # that the lazy_gettext wording survives JSON encoding. Its ordering, categories and tag placement
+        # are contracts of the catalog itself and are asserted in test_lib_conditional_access_policy.
+        res = self._request("defaulterrormessages")
+        self.assertEqual(200, res.status_code, res.json)
+        suggestions = res.json["result"]["value"]
+        self.assertEqual(len(get_default_error_messages()), len(suggestions))
+        for entry in suggestions:
+            self.assertSetEqual({"action_type", "category", "message"}, set(entry))
+            self.assertTrue(entry["message"])
+
+    def test_list_default_error_messages_requires_admin(self):
+        res = self._request("defaulterrormessages", auth_token="not-a-token")
+        self.assertEqual(401, res.status_code, res.json)
 
     # --- PATCH /policy/<id> (update) -------------------------------------------
 
