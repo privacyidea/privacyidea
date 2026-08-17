@@ -63,14 +63,14 @@ class ClientApplicationTestCase(MyTestCase):
             mock_dt.now.return_value = t1
             save_clientapplication("1.2.3.4", "PAM")
         row = ClientApplication.query.filter_by(ip="1.2.3.4", clienttype="PAM").one()
-        self.assertEqual(row.lastseen, t1)
+        self.assertEqual(t1, row.lastseen)
 
         with mock.patch("privacyidea.lib.clientapplication.datetime") as mock_dt:
             mock_dt.now.return_value = t2
             save_clientapplication("1.2.3.4", "PAM")
         # Still exactly one row, and its lastseen advanced to t2.
         row = ClientApplication.query.filter_by(ip="1.2.3.4", clienttype="PAM").one()
-        self.assertEqual(row.lastseen, t2)
+        self.assertEqual(t2, row.lastseen)
 
     def test_02_multiple_nodes(self):
         @contextmanager

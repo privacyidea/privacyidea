@@ -499,7 +499,7 @@ class TtypePushAPITestCase(MyApiTestCase):
                                                          "signature": "AA"},
                                            headers={"User-Agent": "privacyIDEA-App/1.2.3"}):
             self.app.full_dispatch_request()
-        self.assertEqual(len(get_clientapplication()), 0)
+        self.assertEqual(0, len(get_clientapplication()))
 
     def test_04_api_poll_declined_chal(self):
         self.setUp_user_realms()
