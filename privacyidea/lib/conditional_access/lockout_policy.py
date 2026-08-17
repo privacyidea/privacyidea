@@ -361,9 +361,6 @@ class DefaultErrorMessage:
 # lazy_gettext, not _(): module-level constants are evaluated at import, long before a request and its
 # locale exist; ``str()`` at serialization resolves them per admin. That only decides what an admin starts
 # editing from - the stored message is a literal shown to the end user in whatever language it was written.
-#
-# Until the engine's ``login_notice`` path (``_login_notice``) is removed, an EMAIL_* stage must not carry
-# both, or the user is told twice.
 DEFAULT_ERROR_MESSAGES: list[DefaultErrorMessage] = [
     DefaultErrorMessage(LockoutAction.PERMANENT_LOCK_USER,
                         lazy_gettext("Your account has been locked. Please contact your administrator.")),

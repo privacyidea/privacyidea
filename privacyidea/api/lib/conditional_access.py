@@ -46,17 +46,18 @@ from dataclasses import dataclass
 from typing import Any
 
 from flask import request, g, Response
-from flask_babel import _
 
-from privacyidea.api.lib.utils import (log_authentication, build_ca_context, send_result, get_optional_one_of)
+from privacyidea.api.lib.utils import (GENERIC_AUTH_FAILURE, log_authentication, build_ca_context,
+                                      send_result, get_optional_one_of)
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
 from privacyidea.lib.conditional_access.engine import (get_user_lockout, get_ip_block, evaluate_access_decision,
-                                                      AccessDecision, RestrictionStatus, is_user_locked, is_ip_blocked)
+                                                       render_error_message, AccessDecision, RestrictionStatus)
 from privacyidea.lib.conditional_access.request_context import get_ca_context
 from privacyidea.lib.error import AuthError, Error
 from privacyidea.lib.user import User
 
 log = logging.getLogger(__name__)
+
 
 
 # --- /validate/*: reject generically, leaking no reason -------------------------------------------------------------
@@ -92,22 +93,27 @@ def conditional_access_precheck(user: User, log_rejection: bool = True) -> Respo
         tell why it fails and would otherwise fill the log at its polling frequency.
     """
 
-    def reject(event_type: AuthEventType, audit_info: str) -> Response:
-        """Classify the request in the authentication log (unless opted out) and return the generic failure."""
+    def reject(event_type: AuthEventType, audit_info: str, message: str | None = None) -> Response:
+        """Classify the request in the authentication log (unless opted out) and return the failure."""
         if log_rejection:
             # Staged like any other event, so request teardown writes it; attempt_id resolves as usual, which links the
             # rejection into the attempt it refused to process when the request carries that transaction.
             log_authentication(event_type, request, user=user,
                                transaction_id=get_optional_one_of(request.all_data, ["transaction_id", "state"]))
         g.audit_object.log({"success": False, "info": audit_info})
-        return send_result(False, rid=2, details={})
+        # Without a configured message the response keeps its empty detail, byte for byte what it has always been, so
+        # a rejected request is indistinguishable from any other failure.
+        return send_result(False, rid=2, details={"message": message} if message else {})
 
-    if is_user_locked(user, clear_expired=True):
+    lockout = get_user_lockout(user, clear_expired=True)
+    if lockout:
         log.info(f"Rejecting authentication for locked user {user!r}.")
-        return reject(AuthEventType.USER_LOCKED, "Rejected: account is temporarily locked")
-    if is_ip_blocked(g.client_ip, clear_expired=True):
+        return reject(AuthEventType.USER_LOCKED, "Rejected: account is temporarily locked",
+                      _restriction_message(lockout))
+    ip_block = get_ip_block(g.client_ip, clear_expired=True)
+    if ip_block:
         log.info(f"Rejecting authentication from blocked IP {g.client_ip!r}.")
-        return reject(AuthEventType.IP_BLOCKED, "Rejected: source IP is blocked")
+        return reject(AuthEventType.IP_BLOCKED, "Rejected: source IP is blocked", _restriction_message(ip_block))
     decision = evaluate_access_decision(build_ca_context(user))
     # A DENY decision is part of this request's history, but no authentication-log row exists yet to record it against
     # (and a dry-run DENY lets the request continue, so its row comes later). The context holds the outcomes until the
@@ -115,7 +121,8 @@ def conditional_access_precheck(user: User, log_rejection: bool = True) -> Respo
     get_ca_context().add_outcomes(decision.outcomes)
     if decision.decision == AccessDecision.DENY:
         log.info(f"Denying authentication for {user!r} by conditional-access policy.")
-        return reject(AuthEventType.ACCESS_DENIED, "Rejected: denied by conditional-access policy")
+        return reject(AuthEventType.ACCESS_DENIED, "Rejected: denied by conditional-access policy",
+                      render_error_message(decision.error_message))
     return None
 
 
@@ -149,38 +156,15 @@ def conditional_access_gate(identity_resolver: Callable[[], User] | None = None,
 
 # --- /auth: a rejection that explains itself ------------------------------------------------------------------------
 
-def _lockout_error_message(lockout: RestrictionStatus) -> str:
+def _restriction_message(restriction: RestrictionStatus) -> str | None:
     """
-    Build the user-facing message for a login rejected by the conditional-access
-    lockout. *lockout* is the :class:`RestrictionStatus` returned by
-    :func:`~privacyidea.lib.conditional_access.engine.get_user_lockout`: a
-    permanent lock points the user at the administrator, a timed lock states the
-    approximate remaining time (rounded up to whole minutes, at least one).
-    """
-    if lockout.permanent:
-        return _("Your account has been permanently locked. Please contact your administrator.")
-    # Ceiling remaining minutes
-    minutes = max(1, -(-lockout.seconds_remaining // 60))
-    return _("Your account is temporarily locked due to too many failed login attempts. "
-             "Please try again in about {minutes} minute(s).").format(minutes=minutes)
+    The wording to show for *restriction*, or ``None`` to stay generic.
 
-
-def _blocked_ip_error_message(client_ip: str | None, block: RestrictionStatus) -> str:
+    Nothing is volunteered: privacyIDEA never says that an account is locked or an address blocked unless an admin
+    wrote that message on the stage that applied it. The text is stored on the restriction itself, so it survives the
+    policy being edited or deleted; ``{duration}`` is substituted against the time left right now.
     """
-    Build the user-facing message for a login rejected because the source IP is
-    blocked by a conditional-access ``BLOCK_IP`` action. *block* is the
-    :class:`RestrictionStatus` returned by
-    :func:`~privacyidea.lib.conditional_access.engine.get_ip_block`:
-    a permanent block points the user at the administrator, a timed block states
-    the approximate remaining time (rounded up to whole minutes, at least one).
-    """
-    if block.permanent:
-        return _("Authentication failure. Your IP ({ip}) has been permanently blocked. "
-                 "Please contact your administrator.").format(ip=client_ip)
-    # Ceiling remaining minutes
-    minutes = max(1, -(-block.seconds_remaining // 60))
-    return _("Authentication failure. Your IP ({ip}) has been blocked. "
-             "Please try again in about {minutes} minute(s).").format(ip=client_ip, minutes=minutes)
+    return render_error_message(restriction.error_message, restriction)
 
 
 def _restriction_kind(state: RestrictionStatus) -> str:
@@ -248,15 +232,30 @@ def login_restriction(user: User, client_ip: str | None) -> LoginRestriction | N
     what tripped the stage, the lock or block it wrote is already in force, and saying so is more useful than "Wrong
     credentials". A pure read - unlike the pre-auth gate it does not clear a stale row, because the engine has just
     written this one.
+
+    ``None`` also when the restriction carries no message: the severity hint alone would still disclose that one is in
+    force, which is exactly what an unconfigured stage is meant not to do.
     """
     lockout = get_user_lockout(user)
     ip_block = get_ip_block(client_ip)
     restriction = _binding_restriction(lockout, ip_block)
-    if restriction == "block":
-        return LoginRestriction(_blocked_ip_error_message(client_ip, ip_block), _restriction_kind(ip_block))
-    if restriction == "lock":
-        return LoginRestriction(_lockout_error_message(lockout), _restriction_kind(lockout))
-    return None
+    state = ip_block if restriction == "block" else lockout if restriction == "lock" else None
+    if state is None:
+        return None
+    message = _restriction_message(state)
+    return LoginRestriction(message, _restriction_kind(state)) if message else None
+
+
+def _raise_restricted(restriction: RestrictionStatus) -> None:
+    """
+    Refuse this login because *restriction* is in force, telling the user only what the stage that applied it
+    configured. With no message the rejection is the ordinary wrong-credentials failure, so a locked account is
+    indistinguishable from a wrong password - and the severity hint is withheld too, since it would give the
+    restriction away on its own.
+    """
+    message = _restriction_message(restriction)
+    raise AuthError(message or GENERIC_AUTH_FAILURE, id=Error.AUTHENTICATE_WRONG_CREDENTIALS,
+                    details={"restriction": _restriction_kind(restriction)} if message else None)
 
 
 def _reject_restricted_login(user: User) -> None:
@@ -294,16 +293,12 @@ def _reject_restricted_login(user: User) -> None:
         log.info(f"Rejecting /auth login from blocked IP {g.client_ip!r}.")
         g.audit_object.log({"info": "Rejected: source IP is blocked"})
         log_rejection(AuthEventType.IP_BLOCKED)
-        raise AuthError(_blocked_ip_error_message(g.client_ip, ip_block),
-                        id=Error.AUTHENTICATE_WRONG_CREDENTIALS,
-                        details={"restriction": _restriction_kind(ip_block)})
+        _raise_restricted(ip_block)
     if restriction == "lock":
         log.info(f"Rejecting /auth login for locked user {user!r}.")
         g.audit_object.log({"info": "Rejected: account is temporarily locked"})
         log_rejection(AuthEventType.USER_LOCKED)
-        raise AuthError(_lockout_error_message(lockout),
-                        id=Error.AUTHENTICATE_WRONG_CREDENTIALS,
-                        details={"restriction": _restriction_kind(lockout)})
+        _raise_restricted(lockout)
     decision = evaluate_access_decision(build_ca_context(user))
     # The decision belongs to this request's history, but its authentication-log row does not exist yet: the context
     # keeps the outcomes until the login stages its event (a dry-run DENY lets the login continue and land on that row).
@@ -313,7 +308,9 @@ def _reject_restricted_login(user: User) -> None:
         g.audit_object.log({"info": "Rejected: denied by conditional-access policy"})
         # Staged after add_outcomes above, so this is the row the buffered DENY outcome is recorded against.
         log_rejection(AuthEventType.ACCESS_DENIED)
-        raise AuthError(_("Authentication failure. Access has been denied by a conditional-access policy."),
+        # A DENY persists nothing, so its wording comes straight off the deciding stage. Without one the
+        # rejection is indistinguishable from any other failed login, which is the point.
+        raise AuthError(render_error_message(decision.error_message) or GENERIC_AUTH_FAILURE,
                         id=Error.AUTHENTICATE_WRONG_CREDENTIALS)
 
 

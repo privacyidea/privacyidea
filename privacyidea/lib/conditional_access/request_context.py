@@ -246,8 +246,8 @@ class ConditionalAccessContext:
 
     def run_post_eval(self) -> list[str]:
         """
-        Let the conditional-access engine react to what this request logged, and return the user-facing notices its
-        actions produced.
+        Let the conditional-access engine react to what this request logged, and return the user-facing messages the
+        stages it triggered carry.
 
         Nothing has to be scheduled: staging an authentication event *is* the signal, and everything the engine needs
         is already recorded - the classification comes from the latest staged event, the principal and source IP from
@@ -259,7 +259,7 @@ class ConditionalAccessContext:
         (``push_wait``: the challenge trigger, then the terminal outcome) the earlier ones are still counted - counts
         are taken over the stored rows - they just do not each provoke their own evaluation.
 
-        Runs **once per distinct classification**, not merely once: an endpoint that needs the notices in its own
+        Runs **once per distinct classification**, not merely once: an endpoint that needs the messages in its own
         response can run it early (``/auth`` does) and request teardown will not repeat the same evaluation. Should a
         post-policy correct the outcome in between, however, teardown *does* evaluate again - otherwise the engine
         would be left having judged a classification that no longer holds. A classification counts as evaluated only
@@ -314,7 +314,7 @@ class ConditionalAccessContext:
         # the retry rather than a skipped second attempt.
         self._evaluated_as = event.event_type
         record_outcomes(evaluation.outcomes, event.row_id)
-        return evaluation.notices
+        return evaluation.messages
 
     def finalize(self) -> None:
         """

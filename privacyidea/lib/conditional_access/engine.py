@@ -216,8 +216,12 @@ def render_error_message(error_message: str | None,
 @dataclass
 class LockoutEvaluation:
     """
-    What one post-response evaluation produced: the notices to surface on the current response, and the outcomes to
-    record as the request's conditional-access history.
+    What one post-response evaluation produced: the user-facing messages to surface on the current response, and the
+    outcomes to record as the request's conditional-access history.
+
+    Only a stage that left no restriction behind contributes a message. A lock or block stores its stage's wording on
+    its own row, and the rejection reads it back from there, so carrying it here as well would tell the user twice.
+    In practice that leaves the notify-only stages - the ones that fire an ``EMAIL_*`` and nothing else.
 
     The engine returns these instead of writing the history itself. It has no access to the id of the
     authentication-log row (it runs before the row exists on the pre-auth path, and never sees it on the other), and
@@ -227,7 +231,7 @@ class LockoutEvaluation:
     Also used as the per-policy result inside :func:`_evaluate_policy`, since "what this produced" is the same shape
     for one policy and for all of them.
     """
-    notices: list[str] = field(default_factory=list)
+    messages: list[str] = field(default_factory=list)
     outcomes: list[ConditionalAccessOutcome] = field(default_factory=list)
 
 
@@ -1048,15 +1052,13 @@ def evaluate_lockout_policies(context: CAContext, event_type: AuthEventType | No
     actions too.
 
     The persistent side effects (lock state) are consulted by the *next* inbound
-    request via the pre-check. In addition, an executed ``EMAIL_*`` action yields
-    a short user-facing notice (e.g. "Your administrator has been notified by
-    email."); those notices are returned so the caller can surface them on the
-    current response — the login screen shows them next to the rejection, exactly
-    as it shows a lockout message. Any error is the caller's to swallow; this
+    request via the pre-check, which reads the wording back off the row they wrote. A stage that only
+    notified leaves no such row, so its message is returned here instead, for the caller to surface on
+    the response this evaluation belongs to. Any error is the caller's to swallow; this
     function itself only guards individual DB writes (see
     :func:`_upsert_user_lockout_state`).
 
-    Alongside the notices, every action that actually ran (or, in dry run, would have run) is returned as a
+    Alongside the messages, every action that actually ran (or, in dry run, would have run) is returned as a
     :class:`~privacyidea.models.conditional_access_outcome.ConditionalAccessOutcome` for the caller to record as this
     request's history.
     The engine deliberately does not write them: it never sees the id of the authentication-log row they belong to.
@@ -1069,7 +1071,7 @@ def evaluate_lockout_policies(context: CAContext, event_type: AuthEventType | No
     :param event_type: the classified outcome of the request
         (:class:`AuthEventType`)
     :param now: the reference time; defaults to :func:`utc_now`
-    :return: a :class:`LockoutEvaluation` holding the de-duplicated, order-preserving user-facing notices produced by
+    :return: a :class:`LockoutEvaluation` holding the de-duplicated, order-preserving user-facing messages produced by
         executed actions, and the outcomes to record (both empty if nothing was triggered)
     """
     if not event_type:
@@ -1089,7 +1091,7 @@ def evaluate_lockout_policies(context: CAContext, event_type: AuthEventType | No
                LockoutPolicyCounterType.counter_type == event_type)
         .order_by(LockoutPolicy.priority.asc())
     ).all()
-    notices: list[str] = []
+    messages: list[str] = []
     outcomes: list[ConditionalAccessOutcome] = []
     for policy in policies:
         # Guarded per policy so one policy's failure does not cost the others theirs: a broken policy would otherwise
@@ -1100,18 +1102,18 @@ def evaluate_lockout_policies(context: CAContext, event_type: AuthEventType | No
         except Exception as ex:
             log.warning(f"Lockout policy {policy.name!r} failed to evaluate: {ex!r}; skipping it.")
             continue
-        notices.extend(evaluation.notices)
+        messages.extend(evaluation.messages)
         outcomes.extend(evaluation.outcomes)
-    # De-duplicate the notices while preserving order: several policies tracking the same user can emit the same one
-    # in a single request. The outcomes are *not* de-duplicated - each is a distinct thing that happened, and two
-    # policies locking the same user are two facts worth keeping apart.
+    # De-duplicate the messages while preserving order: several policies tracking the same user can carry the same
+    # wording in a single request. The outcomes are *not* de-duplicated - each is a distinct thing that happened, and
+    # two policies locking the same user are two facts worth keeping apart.
     seen: set[str] = set()
     unique: list[str] = []
-    for notice in notices:
-        if notice not in seen:
-            seen.add(notice)
-            unique.append(notice)
-    return LockoutEvaluation(notices=unique, outcomes=outcomes)
+    for message in messages:
+        if message not in seen:
+            seen.add(message)
+            unique.append(message)
+    return LockoutEvaluation(messages=unique, outcomes=outcomes)
 
 
 def _action_threshold_met(action: LockoutStageAction, threshold: int, count: int) -> bool:
@@ -1151,9 +1153,9 @@ def _evaluate_policy(policy: LockoutPolicy, context: CAContext, event_type: str,
     threshold. So one stage can, for example, email once at threshold 8 while
     keeping the user locked for every further failure at 8 or more.
 
-    :return: a :class:`LockoutEvaluation` with the user-facing notices produced by the executed actions and the
+    :return: a :class:`LockoutEvaluation` with the user-facing messages produced by the executed actions and the
         outcomes describing what was done (both empty if no stage triggered; in dry run there are outcomes but no
-        notices, since nothing ran)
+        messages, since nothing ran)
     """
     # Applicability first: a policy whose conditions exclude this request neither
     # counts nor acts, and costs no counting query.
@@ -1351,36 +1353,18 @@ def _resolve_admin_recipients(recipient_group: str | None) -> list[str]:
     return []
 
 
-def _login_notice(action_type: "LockoutAction", email_config: dict, render_tags: dict) -> str:
-    """
-    Build the short message shown to the user on the login screen once an
-    ``EMAIL_*`` action has been sent, mirroring how a lockout rejection is
-    surfaced. An admin can override it per action with a ``login_notice``
-    template in ``action_value`` (``{tag}`` substitution applies); otherwise a
-    default keyed by the action type is used. The wording never reveals the
-    recipient address.
-    """
-    custom = email_config.get("login_notice")
-    if custom:
-        return _safe_format(str(custom), render_tags)
-    if action_type == LockoutAction.EMAIL_USER:
-        return _("A notification email has been sent to your email address.")
-    return _("Your administrator has been notified by email.")
-
-
 def _send_lockout_email(action_type: "LockoutAction", stage_action: LockoutStageAction,
-                        user: "User | None", tags: dict) -> str | None:
+                        user: "User | None", tags: dict) -> bool:
     """
     Send the EMAIL_ADMIN / EMAIL_USER notification for a triggered stage action.
 
     The stage action's ``action_value`` is a JSON object carrying
     ``smtp_identifier`` (the SMTP server configuration to use), ``subject`` and
     ``body`` (both rendered with ``{tag}`` substitution), an optional ``mimetype``
-    (``plain``/``html``), an optional ``login_notice`` (overrides the message
-    surfaced on the login screen) and, for EMAIL_ADMIN, an optional
-    ``recipient_group``. EMAIL_USER sends to the user's own email address. A
-    missing field or a user without an email address is logged and skipped; this
-    runs post-response and must never raise.
+    (``plain``/``html``) and, for EMAIL_ADMIN, an optional ``recipient_group``.
+    EMAIL_USER sends to the user's own email address. A missing field or a user
+    without an email address is logged and skipped; this runs post-response and
+    must never raise.
 
     *user* is ``None`` when the request carried no user to resolve - the normal case for a source-IP
     policy firing on spraying or enumeration traffic, which is exactly the traffic an EMAIL_ADMIN
@@ -1388,8 +1372,11 @@ def _send_lockout_email(action_type: "LockoutAction", stage_action: LockoutStage
     :func:`_base_action_tags`) and EMAIL_USER finds no recipient and skips, but the admin alert is
     still sent.
 
-    :return: the user-facing login-screen notice if the email was sent, else
-        ``None`` (misconfiguration, no recipient, or delivery failure).
+    Anything the user is told about it comes from the stage's own ``error_message``, so this reports
+    only whether the mail went out.
+
+    :return: whether the email was sent; ``False`` for a misconfiguration, no recipient, or a delivery
+        failure.
     """
     email_config = stage_action.action_value if isinstance(stage_action.action_value, dict) else {}
     identifier = email_config.get("smtp_identifier") or email_config.get("identifier")
@@ -1397,7 +1384,7 @@ def _send_lockout_email(action_type: "LockoutAction", stage_action: LockoutStage
     if not identifier or not subject or not body:
         log.warning(f"{action_type} action {stage_action.id}: needs smtp_identifier, subject and body in "
                     f"action_value; skipping.")
-        return
+        return False
 
     # Resolver-backed attributes are fetched once, only now that an email is sent.
     info = (user.info if user else None) or {}
@@ -1408,13 +1395,13 @@ def _send_lockout_email(action_type: "LockoutAction", stage_action: LockoutStage
         recipients = [info["email"]] if info.get("email") else []
         if not recipients:
             log.warning(f"EMAIL_USER action {stage_action.id}: user {user!r} has no email address; skipping.")
-            return
+            return False
     else:  # EMAIL_ADMIN
         recipients = _resolve_admin_recipients(email_config.get("recipient_group"))
         if not recipients:
             log.warning(f"EMAIL_ADMIN action {stage_action.id}: no recipients for "
                         f"recipient_group={email_config.get('recipient_group')!r}; skipping.")
-            return
+            return False
 
     from privacyidea.lib.smtpserver import send_email_identifier
     sent = send_email_identifier(identifier, recipients,
@@ -1423,9 +1410,9 @@ def _send_lockout_email(action_type: "LockoutAction", stage_action: LockoutStage
                                  mimetype=email_config.get("mimetype", "plain"))
     if sent:
         log.info(f"{action_type} for {user!r} sent to {len(recipients)} recipient(s) via {identifier!r}.")
-        return _login_notice(action_type, email_config, render_tags)
+        return True
     log.warning(f"{action_type} for {user!r} could not be delivered via {identifier!r}.")
-    return None
+    return False
 
 
 def _execute_stage_actions(policy: LockoutPolicy, stage: LockoutPolicyStage,
@@ -1446,11 +1433,13 @@ def _execute_stage_actions(policy: LockoutPolicy, stage: LockoutPolicyStage,
 
     :param policy: the triggering policy, for the outcomes
     :param count: the count that tripped the stage, for the outcomes
-    :return: a :class:`LockoutEvaluation` with the user-facing notices produced by executed ``EMAIL_*`` actions and one
-        outcome per action that ran (both empty if every action was skipped).
+    :return: a :class:`LockoutEvaluation` with this stage's message, when it has one and nothing it did left a
+        restriction behind to carry it, and one outcome per action that ran (both empty if every action was skipped).
     """
-    notices: list[str] = []
     outcomes: list[ConditionalAccessOutcome] = []
+    # A lock or block stores the stage's message on its own row, and the rejection reads it back from there. So the
+    # message only travels with the evaluation when the stage merely notified - otherwise the user would be told twice.
+    wrote_restriction = False
     user = context.user
     source_ip = context.source_ip
 
@@ -1475,16 +1464,15 @@ def _execute_stage_actions(policy: LockoutPolicy, stage: LockoutPolicyStage,
                 lock_expires_at = now + timedelta(seconds=duration)
                 if _upsert_user_lockout_state(user, lock_expires_at=lock_expires_at,
                                               error_message=stage.error_message):
+                    wrote_restriction = True
                     record(action_type, expires_at=lock_expires_at)
             elif action_type == LockoutAction.PERMANENT_LOCK_USER:
                 if _upsert_user_lockout_state(user, lock_expires_at=None,
                                               error_message=stage.error_message):
+                    wrote_restriction = True
                     record(action_type)
             elif action_type in (LockoutAction.EMAIL_ADMIN, LockoutAction.EMAIL_USER):
-                notice = _send_lockout_email(action_type, action, user, tags)
-                if notice:
-                    # A notice is returned exactly when the mail was accepted, so it doubles as "this action ran".
-                    notices.append(notice)
+                if _send_lockout_email(action_type, action, user, tags):
                     record(action_type)
             elif action_type in (LockoutAction.BLOCK_IP, LockoutAction.PERMANENT_BLOCK_IP):
                 # Failures are counted per user, so this blocks the source IP
@@ -1506,6 +1494,7 @@ def _execute_stage_actions(policy: LockoutPolicy, stage: LockoutPolicyStage,
                         continue
                     block_expires_at = now + timedelta(seconds=duration)
                 if _upsert_ip_block(source_ip, block_expires_at=block_expires_at, error_message=stage.error_message):
+                    wrote_restriction = True
                     record(action_type, expires_at=block_expires_at)
             elif action_type in (LockoutAction.ALLOW, LockoutAction.DENY):
                 # ALLOW/DENY decide the current request pre-auth (see
@@ -1519,7 +1508,8 @@ def _execute_stage_actions(policy: LockoutPolicy, stage: LockoutPolicyStage,
         except Exception as ex:
             log.warning(f"Lockout action {action_type} (id {action.id}) on stage {stage.id} "
                         f"failed: {ex!r}; skipping.")
-    return LockoutEvaluation(notices=notices, outcomes=outcomes)
+    messages = [stage.error_message] if stage.error_message and outcomes and not wrote_restriction else []
+    return LockoutEvaluation(messages=messages, outcomes=outcomes)
 
 
 def _delete_user_lockout_state(state: UserLockoutState) -> None:

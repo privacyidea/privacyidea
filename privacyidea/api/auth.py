@@ -79,7 +79,7 @@ from privacyidea.api.lib.prepolicy import (is_remote_user_allowed, prepolicy,
                                            pushtoken_disable_wait, webauthntoken_authz, webauthntoken_request,
                                            fido2_auth, increase_failcounter_on_challenge,
                                            disabled_token_types, auth_timelimit, load_challenge_text)
-from privacyidea.api.lib.utils import (send_result, get_all_params, INTERNAL_OPTION_KEYS,
+from privacyidea.api.lib.utils import (GENERIC_AUTH_FAILURE, send_result, get_all_params, INTERNAL_OPTION_KEYS,
                                        verify_auth_token, get_optional, get_required, log_authentication,
                                        get_auth_token_from_request, logged_in_user_from_token)
 from privacyidea.lib.audit import getAudit
@@ -572,32 +572,30 @@ def get_auth_token():
                        internal_admin=internal_admin)
 
     # Feed the classified outcome to the lockout engine. Unlike the other endpoints this cannot wait for request
-    # teardown: the engine's notices (e.g. "an email was sent") are surfaced on the rejection below, and the
-    # lock/block it may have just written is read back there to lead with the right message. So the staged log row is
-    # written now - the count has to include it - and the evaluation is run in-view. Both are idempotent, so teardown
-    # finds nothing left to do. Guarded internally; it must never break this login response.
+    # teardown: a stage this login tripped may have wording to surface on the rejection below, and the lock/block it
+    # may have just written is read back there. So the staged log row is written now - the count has to include it -
+    # and the evaluation is run in-view. Both are idempotent, so teardown finds nothing left to do. Guarded
+    # internally; it must never break this login response.
     context = get_ca_context()
     context.flush()
-    lockout_notices = context.run_post_eval()
+    stage_messages = context.run_post_eval()
 
     if not admin_auth and not user_auth:
-        # If this very request tripped a stage that locked the user or blocked its source
-        # IP, lead with that instead of the generic "Wrong credentials" — the lock/block
-        # is in force now, so that is the more useful thing to tell the user.
+        # If this very request tripped a stage that locked the user or blocked its source IP, that restriction now
+        # carries the wording and is the more useful thing to say. A stage that only notified leaves no restriction
+        # behind, so its message travels back from the evaluation instead. With neither, the failure is the ordinary
+        # one - which is what keeps a locked account indistinguishable from a wrong password.
         details = details or {}
         restriction = login_restriction(user, g.client_ip)
         if restriction:
             message = restriction.message
             details["restriction"] = restriction.kind
         else:
-            message = _("Authentication failure. Wrong credentials")
-        if lockout_notices:
-            # Append the notice(s) to the message (not an extra detail key) so the
-            # hide_specific_error_message policy masks them, and the login screen shows
-            # them in error.message exactly as it shows a lockout rejection. The result reads
-            # e.g. "Your account is temporarily locked ... in about 10 minute(s). Your
-            # administrator has been notified by email."
-            message = message.rstrip(".") + ". " + " ".join(lockout_notices)
+            message = str(GENERIC_AUTH_FAILURE)
+        if stage_messages:
+            # A notify-only stage left no restriction to carry its wording, so it is appended to whatever the
+            # failure already says rather than replacing it: the credential failure is still the reason.
+            message = message.rstrip(".") + ". " + " ".join(stage_messages)
         raise AuthError(message, id=Error.AUTHENTICATE_WRONG_CREDENTIALS,
                         details=details)
     else:

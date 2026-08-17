@@ -268,7 +268,7 @@ class LockoutEngineTestCase(LockoutTestCase):
         self._seed_ip_events("203.0.113.9", AuthEventType.PASSWORD_FAIL, n_users=5)
         # No source IP on the current request -> the IP-targeted policy cannot act.
         self.assertEqual([], evaluate_lockout_policies(CAContext(self.user, None),
-                                                      AuthEventType.PASSWORD_FAIL).notices)
+                                                      AuthEventType.PASSWORD_FAIL).messages)
 
     # --- count_user_events ----------------------------------------------------
 
@@ -930,10 +930,10 @@ class LockoutEngineTestCase(LockoutTestCase):
         self.assertListEqual([str(LockoutAction.LOCK_USER)], [outcome.action_type for outcome in evaluation.outcomes])
         self.assertTrue(is_user_locked(self.user))
 
-    def test_dry_run_returns_no_notices(self):
+    def test_dry_run_returns_no_messages(self):
         self._make_policy(name="dry", counter_type=AuthEventType.MFA_FAIL, dry_run=True)
         self._seed_events(AuthEventType.MFA_FAIL, 3)
-        self.assertEqual([], evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL).notices)
+        self.assertEqual([], evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL).messages)
 
     @smtpmock.activate
     def test_dry_run_email_action_records_the_outcome_but_sends_nothing(self):
@@ -954,7 +954,7 @@ class LockoutEngineTestCase(LockoutTestCase):
 
             self.assertListEqual([str(LockoutAction.EMAIL_ADMIN)],
                                  [outcome.action_type for outcome in evaluation.outcomes])
-            self.assertEqual([], evaluation.notices)
+            self.assertEqual([], evaluation.messages)
             # Nothing was handed to the SMTP layer at all (the mock reports no recipient).
             self.assertIsNone(smtpmock.get_sent_recipient())
         finally:
@@ -1678,8 +1678,9 @@ class LockoutEngineTestCase(LockoutTestCase):
         self.assertIsNotNone(state)
 
     @smtpmock.activate
-    def test_email_action_returns_login_notice(self):
-        # A sent EMAIL_* action returns a user-facing notice for the login screen.
+    def test_notify_only_stage_returns_its_message(self):
+        # A stage that only notified leaves no lock or block to carry its wording, so the evaluation
+        # returns it for the caller to surface on this response.
         smtpmock.setdata(response={})
         add_smtpserver(identifier="lockoutmail", server="1.2.3.4", tls=False)
         try:
@@ -1688,38 +1689,41 @@ class LockoutEngineTestCase(LockoutTestCase):
                 stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.EMAIL_ADMIN,
                                                                      {"smtp_identifier": "lockoutmail",
                                                                       "recipient_group": "soc@example.com",
-                                                                      "subject": "s", "body": "b"})]),))
+                                                                      "subject": "s", "body": "b"})],
+                                        error_message="Your administrator has been notified."),))
             self._seed_events(AuthEventType.MFA_FAIL, 3)
-            notices = evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL).notices
-            self.assertEqual(["Your administrator has been notified by email."], notices)
+            messages = evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL).messages
+            self.assertListEqual(["Your administrator has been notified."], messages)
         finally:
             delete_smtpserver("lockoutmail")
 
     @smtpmock.activate
-    def test_email_action_custom_login_notice_with_tags(self):
-        # An admin-supplied login_notice template overrides the default and is {tag}-rendered.
+    def test_notify_only_stage_without_a_message_returns_nothing(self):
+        # The default is silence here too: an email is sent, and the user is told nothing about it.
         smtpmock.setdata(response={})
         add_smtpserver(identifier="lockoutmail", server="1.2.3.4", tls=False)
         try:
             self._make_policy(
-                name="mailnotice2", counter_type=AuthEventType.MFA_FAIL,
-                stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.EMAIL_USER,
-                                                                     {"smtp_identifier": "lockoutmail", "subject": "s",
-                                                                      "body": "b",
-                                                                      "login_notice": "We emailed {username} about {count} failures."})]),))
+                name="mailsilent", counter_type=AuthEventType.MFA_FAIL,
+                stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.EMAIL_ADMIN,
+                                                                     {"smtp_identifier": "lockoutmail",
+                                                                      "recipient_group": "soc@example.com",
+                                                                      "subject": "s", "body": "b"})]),))
             self._seed_events(AuthEventType.MFA_FAIL, 3)
-            self.assertEqual(["We emailed cornelius about 3 failures."],
-                             evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL).notices)
+            self.assertListEqual([], evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL).messages)
         finally:
             delete_smtpserver("lockoutmail")
 
-    def test_no_login_notice_for_non_email_action(self):
-        # A LOCK_USER-only stage locks the user but produces no login-screen notice.
+    def test_a_locking_stage_does_not_also_return_its_message(self):
+        # The lock row already carries the wording and the rejection reads it back from there, so
+        # returning it here as well would tell the user twice.
+        lock = [StageActionDefinition(LockoutAction.LOCK_USER, {"duration_seconds": 600})]
         self._make_policy(name="lockonly", counter_type=AuthEventType.MFA_FAIL,
-                          stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.LOCK_USER, 600)]),))
+                          stages=(StageDefinition(3, 1, lock, error_message="Locked."),))
         self._seed_events(AuthEventType.MFA_FAIL, 3)
-        self.assertEqual([], evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL).notices)
+        self.assertListEqual([], evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL).messages)
         self.assertTrue(is_user_locked(self.user))
+        self.assertEqual("Locked.", self._state().error_message)
 
     # --- _safe_format / _resolve_admin_recipients -----------------------------
 
@@ -1851,7 +1855,7 @@ class LockoutEngineTestCase(LockoutTestCase):
             conditions=[self._condition(ConditionType.USER_REALM, ConditionOperator.IN, [self.realm2])],
             stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.LOCK_USER, 600)]),))
         self._seed_events(AuthEventType.MFA_FAIL, 3)
-        self.assertEqual([], evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL).notices)
+        self.assertEqual([], evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL).messages)
         self.assertFalse(is_user_locked(self.user))
 
     def _spray_policy(self, *, threshold: int = 3,
@@ -1999,7 +2003,7 @@ class LockoutEngineTestCase(LockoutTestCase):
             conditions=[self._condition(ConditionType.USER_REALM, ConditionOperator.IN, [self.realm2])],
             stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.LOCK_USER, 600)]),))
         self._seed_events(AuthEventType.MFA_FAIL, 3)
-        self.assertEqual([], evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL).notices)
+        self.assertEqual([], evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL).messages)
         self.assertFalse(is_user_locked(self.user))
 
     def test_a_condition_that_cannot_be_a_predicate_leaves_the_count_unscoped(self):
