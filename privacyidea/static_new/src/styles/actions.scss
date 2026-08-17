@@ -5,17 +5,17 @@ This file contains all styles for actions as used e.g. in policies, event handle
 .selected-actions-container {
   display: flex;
   flex-direction: column;
-  gap: calc(var(--global-gap) / 4);
+  gap: calc(16px / 4);
   min-width: 0;
   flex: 1;
 }
 
 .action-label {
-  padding: var(--quarter-global-padding) 0px;
+  padding: 4px 0px;
 }
 
 .action-value {
-  padding: var(--quarter-global-padding) 0px;
+  padding: 4px 0px;
   text-align: right;
   flex-grow: 1;
 }
@@ -27,7 +27,7 @@ This file contains all styles for actions as used e.g. in policies, event handle
   border-radius: 0;
   box-sizing: border-box;
   font-size: 1rem;
-  padding: var(--half-global-padding) 0;
+  padding: 8px 0;
   width: 100%;
 }
 
@@ -39,7 +39,7 @@ This file contains all styles for actions as used e.g. in policies, event handle
   box-sizing: border-box;
   font-size: 1rem;
   min-height: 80px;
-  padding: var(--half-global-padding) 0;
+  padding: 8px 0;
   resize: vertical;
   width: 100%;
 }

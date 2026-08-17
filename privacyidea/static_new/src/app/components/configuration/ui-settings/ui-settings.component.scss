@@ -24,16 +24,16 @@
   @include styles.main-component-style;
   display: flex;
   flex-direction: column;
-  gap: var(--global-gap);
+  gap: 16px;
   // Fits the xs + s card pair (162 + 16 + 340 = the m step) plus the border-box padding the mixin sets.
-  max-width: calc(var(--card-width-m) + 2 * var(--global-padding));
+  max-width: calc(var(--card-width-m) + 2 * 16px);
 }
 
 .settings-header {
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: var(--half-global-gap);
+  gap: 8px;
 }
 
 // The cards carry their own widths and wrap into rows; the global class is a grid with no columns.
@@ -42,7 +42,7 @@
   flex-direction: row;
   flex-wrap: wrap;
   align-items: flex-start;
-  gap: var(--global-gap);
+  gap: 16px;
 }
 
 .settings-card-xs {

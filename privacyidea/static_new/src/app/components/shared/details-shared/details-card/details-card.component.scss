@@ -25,7 +25,7 @@
   flex-direction: column;
   min-width: 0;
   box-sizing: border-box;
-  padding: var(--half-global-padding);
+  padding: 8px;
 
   ::ng-deep app-edit-buttons {
     opacity: 0;
@@ -77,7 +77,7 @@
 .details-card-body--collapsible {
   display: grid;
   grid-template-rows: 1fr;
-  margin-top: var(--quarter-global-padding);
+  margin-top: 4px;
   transition: grid-template-rows 225ms cubic-bezier(0.4, 0, 0.2, 1);
 
   > .details-card-body-inner {

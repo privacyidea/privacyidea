@@ -3,18 +3,18 @@
 .conditions-grid {
   display: flex;
   flex-direction: column;
-  gap: calc(var(--global-gap) / 4 * 3);
+  gap: calc(16px / 4 * 3);
   min-width: 350px;
 }
 
 // One card per condition kind, on the page container.
 .conditions-container {
   @include styles.card-recessed(3);
-  padding: var(--half-global-padding) var(--three-quarters-global-padding);
+  padding: 8px 12px;
 
   .conditions-title {
     font-size: 1.2em;
     font-weight: 500;
-    margin: 0 0 var(--half-global-padding);
+    margin: 0 0 8px;
   }
 }

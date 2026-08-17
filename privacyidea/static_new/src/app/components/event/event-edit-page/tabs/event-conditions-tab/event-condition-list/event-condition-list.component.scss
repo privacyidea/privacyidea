@@ -14,14 +14,14 @@
   display: flex;
   align-items: center;
   justify-content: end;
-  gap: var(--global-gap);
+  gap: 16px;
 }
 
 // The parent panel is flattened (see .event-conditions-container); this card carries the recess.
 .action-card-row-grid {
   // appearance
   @include styles.card-recessed(3);
-  padding: var(--half-global-padding) var(--global-padding);
+  padding: 8px 16px;
   // layout
   display: grid;
   grid-template-columns: auto auto;

@@ -4,6 +4,6 @@
 .edit-policy-layout {
   @include styles.main-component-style;
   box-sizing: border-box;
-  width: min(calc(var(--input-width-xxl) + 2 * var(--global-padding)), calc(100vw - 4 * var(--global-padding)));
+  width: min(calc(var(--input-width-xxl) + 2 * 16px), calc(100vw - 4 * 16px));
   margin-inline: auto;
 }

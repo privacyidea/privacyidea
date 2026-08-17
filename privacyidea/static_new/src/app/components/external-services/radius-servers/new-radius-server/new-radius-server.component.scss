@@ -7,7 +7,7 @@
 
 .radius-server-page-container {
   @include styles.main-component-style;
-  min-width: calc(var(--config-form-width) + var(--double-global-padding));
+  min-width: calc(var(--config-form-width) + 32px);
   display: grid;
   position: relative;
 }
@@ -21,7 +21,7 @@
   .action-buttons {
     display: flex;
     flex-direction: row;
-    gap: var(--global-gap);
+    gap: 16px;
   }
 }
 

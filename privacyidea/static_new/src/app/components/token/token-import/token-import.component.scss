@@ -3,7 +3,7 @@
 
 .token-import-container {
   @include styles.main-component-style;
-  width: calc(56rem + 2 * var(--global-padding));
+  width: calc(56rem + 2 * 16px);
   display: grid;
 }
 

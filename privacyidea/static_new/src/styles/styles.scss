@@ -182,18 +182,6 @@ body {
     color-mix(in srgb, var(--mat-sys-light) var(--depth-tint), var(--inset-tone-3))
   );
 
-  --double-global-padding: calc(var(--global-padding) * 2);
-  --global-padding: 16px;
-  --three-quarters-global-padding: calc(var(--global-padding) * 0.75);
-  --half-global-padding: calc(var(--global-padding) / 2);
-  --third-global-padding: calc(var(--global-padding) / 3);
-  --quarter-global-padding: calc(var(--global-padding) / 4);
-  --eighth-global-padding: calc(var(--global-padding) / 8);
-
-  --global-gap: 16px;
-  --half-global-gap: calc(var(--global-gap) / 2);
-  --quarter-global-gap: calc(var(--global-gap) / 4);
-
   // Standardized input/field widths. Used by the .input-width-* helper classes
   // and referenced in layout width calculations so they stay in sync.
   --input-width-s: 180px;
@@ -394,11 +382,11 @@ $corner-radii: (
 // The outer container of a routed page. `.admin-content` / `.selfservice-content-container`
 // (layout.component.scss) are size containers, so 100cq* is whatever the toolbars, the
 // self-service drawer and the region's own padding leave over. With border-box the caps measure
-// the padded box, so a page sizing its container to a content width must add
-// `2 * var(--global-padding)`.
+// the padded box, so a page sizing its container to a content width must add this mixin's own
+// 16px padding on both sides, i.e. 32px.
 @mixin main-component-style {
   box-sizing: border-box;
-  padding: var(--global-padding);
+  padding: 16px;
   border-radius: var(--border-radius);
   box-shadow: var(--elevation-5);
   background: var(--surface-raised);
@@ -898,9 +886,9 @@ body.self-service-layout {
   display: grid;
   grid-template-columns: repeat(2, minmax(260px, 308px));
   max-height: unset;
-  column-gap: var(--third-global-padding);
-  padding: var(--three-quarters-global-padding);
-  padding-bottom: var(--global-padding);
+  column-gap: calc(16px / 3);
+  padding: 12px;
+  padding-bottom: 16px;
   overflow-y: auto;
 }
 
@@ -914,15 +902,15 @@ body.self-service-layout {
 
 .single-column-panel.mat-mdc-select-panel {
   max-height: unset;
-  padding: var(--three-quarters-global-padding);
-  padding-bottom: var(--global-padding);
+  padding: 12px;
+  padding-bottom: 16px;
   overflow-y: auto;
 }
 
 .select-option {
   box-shadow: var(--elevation-3);
   border-radius: var(--border-radius);
-  margin: 0 0 var(--third-global-padding) 0;
+  margin: 0 0 calc(16px / 3) 0;
 }
 
 // The raised step arrives with .is-sticky and is faded in by the transition; unpinned the header
@@ -945,7 +933,7 @@ body.self-service-layout {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: var(--global-gap);
+  gap: 16px;
 }
 
 .sticky-controls .mat-mdc-form-field-subscript-wrapper {
@@ -955,7 +943,7 @@ body.self-service-layout {
 .flex-row-stretch {
   display: flex;
   align-items: stretch;
-  gap: var(--global-gap);
+  gap: 16px;
 }
 
 .flex-column {

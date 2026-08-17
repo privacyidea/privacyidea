@@ -37,7 +37,7 @@
 
 .loading-url {
   margin-left: auto;
-  margin-right: var(--global-padding);
+  margin-right: 16px;
   margin-bottom: 2px;
   color: var(--loading-indicator-color);
   opacity: var(--loading-indicator-opacity);
@@ -50,8 +50,8 @@
 }
 
 // Fills the space below the toolbar(s). The routed component stretches to it
-// (align-items: stretch) so its container can reach the bottom, inset by the
-// single --global-padding — no hard-coded toolbar heights.
+// (align-items: stretch) so its container can reach the bottom, inset by a
+// single 16px padding — no hard-coded toolbar heights.
 //
 // Also a size container: main-component-style caps routed pages at 100cqw/100cqh, measured
 // against this box. Its own size comes from `flex: 1` and the column, not from its content,
@@ -62,7 +62,7 @@
   display: flex;
   justify-content: center;
   align-items: stretch;
-  padding: var(--global-padding);
+  padding: 16px;
   overflow: hidden;
   container-type: size;
 }
@@ -92,6 +92,6 @@
   min-height: 0;
   box-sizing: border-box;
   overflow: hidden;
-  padding: var(--global-padding);
+  padding: 16px;
   container-type: size;
 }

@@ -11,23 +11,23 @@
   & {
     display: flex;
     flex-direction: column;
-    width: calc(var(--input-width-xl) + var(--global-padding) * 2);
-    gap: var(--global-gap);
+    width: calc(var(--input-width-xl) + 16px * 2);
+    gap: 16px;
   }
 }
 
 .machine-resolver-details-body {
   display: flex;
   flex-direction: column;
-  gap: var(--global-gap);
+  gap: 16px;
 }
 
 .machine-resolver-type-select {
-  margin-left: var(--global-padding);
+  margin-left: 16px;
 }
 
 .machine-resolver-details-controls {
   display: flex;
   justify-content: flex-start;
-  gap: var(--global-gap);
+  gap: 16px;
 }

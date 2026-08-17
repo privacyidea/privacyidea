@@ -10,13 +10,13 @@
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  gap: var(--global-gap);
+  gap: 16px;
   width: 100%;
   margin-bottom: 16px;
 }
 
 .no-indention {
-  padding-left: var(--global-padding);
+  padding-left: 16px;
 }
 
 .column-max-width {

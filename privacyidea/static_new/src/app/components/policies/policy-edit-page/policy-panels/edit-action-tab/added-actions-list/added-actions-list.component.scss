@@ -27,13 +27,13 @@
 
   --mat-expansion-container-background-color: transparent;
   --mat-expansion-container-elevation-shadow: none;
-  --expansion-panel-header-padding: var(--half-global-padding) var(--three-quarters-global-padding);
+  --expansion-panel-header-padding: 8px 12px;
 
   // The panel above is flattened by the tokens above; this card carries the recess instead.
   .action-card-in-panel {
     @include styles.card-recessed(3);
     font-weight: 500;
-    padding: 0 var(--global-padding);
+    padding: 0 16px;
   }
 
   .action-card-in-panel-selected {
@@ -45,6 +45,6 @@
   .policy-action-list {
     display: flex;
     flex-direction: column;
-    gap: var(--half-global-gap);
+    gap: 8px;
   }
 }

@@ -5,8 +5,8 @@
   .token-container {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--global-gap);
-    padding: var(--half-global-padding) var(--global-padding);
+    gap: 16px;
+    padding: 8px 16px;
 
     &:not(:last-child) {
       border-bottom: 1px solid var(--mat-sys-outline-variant);
@@ -51,6 +51,6 @@
   }
 
   h2 {
-    padding-left: var(--half-global-padding);
+    padding-left: 8px;
   }
 }

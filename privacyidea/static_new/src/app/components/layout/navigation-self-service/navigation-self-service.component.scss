@@ -5,8 +5,8 @@
   display: flex;
   flex-direction: column;
   align-items: start;
-  gap: var(--global-padding);
-  padding: calc(2 * var(--global-padding));
+  gap: 16px;
+  padding: calc(2 * 16px);
   overflow-y: auto;
   overflow-x: hidden;
   scrollbar-width: thin;

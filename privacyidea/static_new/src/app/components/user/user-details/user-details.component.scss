@@ -8,21 +8,21 @@
 }
 
 .flex-column {
-  gap: var(--global-gap);
+  gap: 16px;
 }
 
 .sticky-header {
-  // .details-container's grid gap already adds --global-gap above this element;
+  // .details-container's grid gap already adds 16px above this element;
   // cancel it so the sticky-header's own padding is the only visible spacing
   // below the heading (both share the same background, so the gap would
   // otherwise read as one oversized blank space).
-  margin-top: calc(-1 * var(--global-gap));
+  margin-top: calc(-1 * 16px);
 }
 
 .details-panels-row {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--global-gap);
+  gap: 16px;
   align-items: flex-start;
 }
 
@@ -33,19 +33,19 @@
 
 .details-card--wide {
   width: 100%;
-  max-width: calc(585px * 2 + var(--global-gap));
+  max-width: calc(585px * 2 + 16px);
   flex: 1 1 auto;
 }
 
 .details-panels-column {
   display: flex;
   flex-direction: column;
-  gap: var(--global-gap);
+  gap: 16px;
 }
 
 .details-field-list-columns {
   display: flex;
-  gap: var(--global-gap);
+  gap: 16px;
 
   .details-field-list {
     flex: 1 1 0;
@@ -64,15 +64,15 @@
 }
 
 .value-list li + li {
-  margin-top: var(--quarter-global-padding);
+  margin-top: 4px;
 }
 
 .value-toggle {
   display: inline-flex;
   align-items: center;
   gap: 2px;
-  margin-top: var(--quarter-global-padding);
-  padding: var(--eighth-global-padding) 6px var(--eighth-global-padding) var(--quarter-global-padding);
+  margin-top: 4px;
+  padding: 2px 6px 2px 4px;
   border: 0;
   background: transparent;
   color: var(--mat-sys-primary);
@@ -87,7 +87,7 @@
 
   &:focus-visible {
     outline: 2px solid var(--mat-sys-primary);
-    outline-offset: var(--eighth-global-padding);
+    outline-offset: 2px;
   }
 
   mat-icon {
@@ -105,7 +105,7 @@
 
 .add-attr-row {
   display: flex;
-  gap: calc(var(--global-gap) * 0.75);
+  gap: calc(16px * 0.75);
   align-items: center;
   flex-wrap: nowrap;
 
@@ -116,10 +116,10 @@
 }
 
 .ml-8 {
-  margin-left: var(--half-global-padding);
+  margin-left: 8px;
 }
 
 .no-indention {
-  margin-left: var(--half-global-padding);
-  padding-left: var(--half-global-padding);
+  margin-left: 8px;
+  padding-left: 8px;
 }

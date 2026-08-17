@@ -55,7 +55,7 @@ $description-width: 18rem;
   flex-direction: row;
   flex-wrap: wrap;
   align-items: flex-start;
-  gap: var(--global-gap);
+  gap: 16px;
 
   > * {
     flex: 1 1 28rem;
@@ -270,12 +270,12 @@ table {
 }
 
 .mat-mdc-paginator-range-label {
-  margin: 0 var(--global-padding);
+  margin: 0 16px;
   white-space: nowrap;
 }
 
 .mat-mdc-paginator-container {
-  padding: 0 0 0 var(--global-padding);
+  padding: 0 0 0 16px;
   flex-wrap: nowrap !important;
 }
 
@@ -535,7 +535,7 @@ th:nth-child(even) {
 // its own spacing.
 .details-card-title,
 app-details-card .details-header {
-  margin: var(--half-global-padding);
+  margin: 8px;
 }
 
 app-details-card .details-header {

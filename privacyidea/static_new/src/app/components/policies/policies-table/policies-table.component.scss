@@ -8,7 +8,7 @@
   border-radius: 0;
   box-sizing: border-box;
   margin: 2px;
-  padding: var(--quarter-global-padding) 0;
+  padding: 4px 0;
   width: 100%;
 }
 
@@ -45,7 +45,7 @@
 
     th,
     td {
-      padding: 0 var(--half-global-padding);
+      padding: 0 8px;
       text-align: left;
     }
 
@@ -62,7 +62,7 @@
       display: flex;
       flex-direction: row;
       align-items: center;
-      gap: var(--half-global-gap);
+      gap: 8px;
       white-space: nowrap;
       flex-wrap: nowrap;
       > div {
@@ -112,8 +112,8 @@
     td.col-description {
       max-width: 400px;
       min-width: 200px;
-      padding-bottom: var(--half-global-padding);
-      padding-top: var(--half-global-padding);
+      padding-bottom: 8px;
+      padding-top: 8px;
       white-space: normal;
       word-break: break-word;
     }
@@ -133,7 +133,7 @@
     .skeleton-row {
       .column-max-height {
         border-radius: 4px;
-        height: calc(var(--global-padding) * 2);
+        height: calc(16px * 2);
       }
 
       &.col-select,
@@ -164,7 +164,7 @@
   }
 
   .no-data-cell {
-    padding: var(--global-padding);
+    padding: 16px;
     text-align: center;
     font-style: italic;
     color: var(--mat-sys-on-surface-variant);

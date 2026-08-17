@@ -1,24 +1,24 @@
 .event-conditions-container {
   display: flex;
   flex-direction: column;
-  gap: var(--global-gap);
+  gap: 16px;
   width: 100%;
 
   --mat-expansion-container-background-color: transparent;
   --mat-expansion-container-elevation-shadow: none;
-  --expansion-panel-header-padding: var(--half-global-padding) var(--three-quarters-global-padding);
+  --expansion-panel-header-padding: 8px 12px;
 }
 
 .configured-list {
   display: flex;
   flex-direction: column;
-  gap: var(--half-global-gap);
+  gap: 8px;
 }
 
 .panel-content {
   display: flex;
   flex-direction: column;
-  gap: var(--global-gap);
+  gap: 16px;
 }
 
 .search-input {
@@ -28,7 +28,7 @@
   border-radius: 0;
   box-sizing: border-box;
   font-size: 1rem;
-  padding: var(--half-global-padding) 0;
+  padding: 8px 0;
   width: 100%;
 }
 
@@ -46,7 +46,7 @@
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: var(--global-gap);
+  gap: 16px;
 
   .selector-label {
     min-width: 60px;
@@ -63,6 +63,6 @@
   align-items: center;
   display: flex;
   flex-direction: column;
-  gap: calc(var(--global-gap) / 4);
+  gap: calc(16px / 4);
   justify-content: center;
 }

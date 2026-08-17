@@ -7,7 +7,7 @@
 
 .service-id-page-container {
   @include styles.main-component-style;
-  min-width: calc(var(--config-form-width) + var(--double-global-padding));
+  min-width: calc(var(--config-form-width) + 32px);
   display: grid;
   position: relative;
 }
@@ -16,12 +16,12 @@
   display: flex;
   flex-direction: row;
   align-items: center;
-  padding: var(--half-global-padding) var(--global-padding);
+  padding: 8px 16px;
 
   .action-buttons {
     display: flex;
     flex-direction: row;
-    gap: var(--global-gap);
+    gap: 16px;
   }
 }
 

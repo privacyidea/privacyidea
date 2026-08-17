@@ -26,7 +26,7 @@
 }
 
 .subscriptions-table {
-  @include widget.stat-table(var(--global-padding));
+  @include widget.stat-table(16px);
 
   td:nth-child(2) {
     white-space: nowrap;

@@ -31,12 +31,12 @@
   }
 }
 
-@mixin stat-table($padding-block: var(--quarter-global-padding)) {
+@mixin stat-table($padding-block: 4px) {
   width: 100%;
   border-collapse: collapse;
 
   td {
-    padding: $padding-block var(--global-padding);
+    padding: $padding-block 16px;
 
     &:nth-child(2) {
       text-align: center;
