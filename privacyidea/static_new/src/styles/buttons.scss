@@ -87,19 +87,27 @@ $button-low-contrast-variant: linear-gradient(
 
 .login-btn {
   @extend %linkish-btn;
+  --mdc-extended-fab-container-shape: var(--border-radius);
   color: var(--mat-sys-on-primary);
   background: var(--mat-sys-primary);
+  box-shadow: var(--elevation-3);
 
-  @include hover-or-active(var(--background-blue-inset), var(--box-shadow-blue-inset), true);
+  @include hover-or-active(
+    var(--background-blue-inset),
+    inset var(--depth-x-3) var(--depth-y-3) var(--depth-blur-3) var(--mat-sys-primary-dark)#{","} inset calc(-1 * var(--depth-x-3)) calc(-1 * var(--depth-y-3)) var(--depth-blur-3) var(--mat-sys-primary-light-active),
+    true
+  );
 }
 
 .passkey-btn,
 .reset-btn {
   @extend %linkish-btn;
+  --mdc-extended-fab-container-shape: var(--border-radius);
   color: var(--mat-sys-on-surface-variant);
   background: $grad-surface;
+  box-shadow: var(--elevation-3);
 
-  @include hover-or-active($grad-surface-hover, var(--box-shadow-inset), true);
+  @include hover-or-active($grad-surface-hover, var(--inset-shadow-3), true);
 }
 
 .login-actions {
