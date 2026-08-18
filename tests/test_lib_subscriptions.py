@@ -18,6 +18,7 @@ from privacyidea.lib.subscriptions import (save_subscription,
                                            get_metered_application,
                                            get_subscription_owner,
                                            get_latest_github_versions,
+                                           invalidate_github_version_cache,
                                            version_sort_key,
                                            APPLICATIONS,
                                            METERED_APPLICATIONS,
@@ -726,8 +727,7 @@ class GithubVersionTestCase(MyTestCase):
 
     @staticmethod
     def _clear_cache():
-        subscriptions_module._github_version_cache.fetched_at = None
-        subscriptions_module._github_version_cache.releases = {}
+        invalidate_github_version_cache()
 
     def test_01_fetch_parses_and_caches(self):
         response = mock.Mock(status_code=200)
@@ -771,6 +771,88 @@ class GithubVersionTestCase(MyTestCase):
                 versions = get_latest_github_versions()
                 mock_get.assert_not_called()
         self.assertIsNone(versions["privacyidea"])
+
+    def test_05_empty_lookup_is_retried_sooner_than_a_good_one(self):
+        # A lookup that found nothing is a network or rate-limit problem, so it must not
+        # keep the column empty for the full TTL. One that found releases is kept.
+        response = mock.Mock(status_code=200)
+        response.json.return_value = {"tag_name": "v4.7.3", "published_at": "2026-05-20T10:00:00Z",
+                                      "html_url": "https://github.com/privacyidea/privacyidea/releases/tag/v4.7.3"}
+        stale = datetime.now() - (subscriptions_module.GITHUB_VERSION_FAILURE_TTL + timedelta(minutes=1))
+
+        with mock.patch("privacyidea.lib.subscriptions.requests.get",
+                        side_effect=requests.RequestException("boom")):
+            empty = get_latest_github_versions()
+
+        # Age both cache levels: the shared one would otherwise still answer.
+        self._age_caches(stale, empty)
+        with mock.patch("privacyidea.lib.subscriptions.requests.get",
+                        return_value=response) as mock_get:
+            good = get_latest_github_versions()
+            self.assertEqual("4.7.3", good["privacyidea"].version)
+            self.assertTrue(mock_get.called)
+
+        # The successful result survives the same age, up to the full TTL.
+        self._age_caches(stale, good)
+        with mock.patch("privacyidea.lib.subscriptions.requests.get") as mock_get:
+            get_latest_github_versions()
+            mock_get.assert_not_called()
+
+    @staticmethod
+    def _age_caches(fetched_at, releases):
+        """Pretend the given lookup was made at ``fetched_at``, in both cache levels."""
+        subscriptions_module._github_version_cache.store(fetched_at, releases)
+        subscriptions_module._store_shared_releases(fetched_at, releases)
+
+    def test_06_another_worker_reuses_the_shared_lookup(self):
+        # A worker with a cold process-local cache must pick up the lookup a previous one
+        # published, instead of asking GitHub again: that is what keeps a multi-worker
+        # installation inside GitHub's rate limit.
+        response = mock.Mock(status_code=200)
+        response.json.return_value = {"tag_name": "v4.7.3", "published_at": "2026-05-20T10:00:00Z",
+                                      "html_url": "https://github.com/privacyidea/privacyidea/releases/tag/v4.7.3"}
+        with mock.patch("privacyidea.lib.subscriptions.requests.get", return_value=response):
+            get_latest_github_versions()
+
+        # Same shared cache, cold process: no fetch, same result.
+        subscriptions_module._github_version_cache.store(None, {})
+        with mock.patch("privacyidea.lib.subscriptions.requests.get") as mock_get:
+            versions = get_latest_github_versions()
+            mock_get.assert_not_called()
+        self.assertEqual("4.7.3", versions["privacyidea"].version)
+        self.assertEqual("https://github.com/privacyidea/privacyidea/releases/tag/v4.7.3",
+                         versions["privacyidea-keycloak"].url)
+
+    def test_07_shared_lookup_is_skipped_when_it_does_not_fit(self):
+        # The config value has a limited length. A payload beyond it is not shared rather
+        # than failing the request, so each worker falls back to its own lookup.
+        response = mock.Mock(status_code=200)
+        response.json.return_value = {"tag_name": "v4.7.3", "published_at": "2026-05-20T10:00:00Z",
+                                      "html_url": "https://github.com/privacyidea/privacyidea/releases/tag/v4.7.3"}
+        with mock.patch("privacyidea.lib.subscriptions.CONFIG_VALUE_LENGTH", 10):
+            with mock.patch("privacyidea.lib.subscriptions.requests.get", return_value=response):
+                self.assertEqual("4.7.3", get_latest_github_versions()["privacyidea"].version)
+
+            subscriptions_module._github_version_cache.store(None, {})
+            with mock.patch("privacyidea.lib.subscriptions.requests.get",
+                            return_value=response) as mock_get:
+                get_latest_github_versions()
+                self.assertTrue(mock_get.called)
+
+    def test_08_unreadable_shared_lookup_is_fetched_again(self):
+        # Whatever is in the config row, a value that cannot be read must not break the
+        # overview; it is treated as an empty cache.
+        subscriptions_module.set_privacyidea_config(
+            subscriptions_module.GITHUB_VERSION_CONFIG_KEY, "not json at all")
+        subscriptions_module._github_version_cache.store(None, {})
+        response = mock.Mock(status_code=200)
+        response.json.return_value = {"tag_name": "v1.0.0", "published_at": "2026-05-20T10:00:00Z",
+                                      "html_url": "https://github.com/privacyidea/privacyidea/releases/tag/v1.0.0"}
+
+        with mock.patch("privacyidea.lib.subscriptions.requests.get", return_value=response) as mock_get:
+            versions = get_latest_github_versions()
+            self.assertTrue(mock_get.called)
+        self.assertEqual("1.0.0", versions["privacyidea"].version)
 
     def test_04_version_check_can_be_switched_off(self):
         # PI_SUBSCRIPTION_VERSION_CHECK = False skips the lookup entirely, for

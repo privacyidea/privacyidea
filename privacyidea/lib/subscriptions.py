@@ -28,6 +28,7 @@ import dataclasses
 import datetime
 import enum
 import functools
+import json
 import logging
 import os
 import random
@@ -37,6 +38,7 @@ import requests
 from sqlalchemy import func, select, update
 
 from privacyidea.lib import lazy_gettext
+from privacyidea.lib.config import get_from_config, set_privacyidea_config
 from privacyidea.lib.crypto import Sign
 from privacyidea.lib.error import SubscriptionError
 from privacyidea.lib.framework import get_app_config_value
@@ -208,7 +210,22 @@ GITHUB_REPOS = {
 RELEASE_LINK_SUPPRESSED = {"privacyidea", "privacyidea-app"}
 # How long to cache the latest-release lookups, and the per-request timeout.
 GITHUB_VERSION_TTL = datetime.timedelta(hours=6)
+# A lookup that produced no release at all is kept for much less time: that is what a
+# network problem or GitHub's rate limit looks like, and holding on to it for the full TTL
+# would leave the column empty for hours after a single blip. A lookup that produced some
+# releases is kept for the full TTL, so a client without a published release does not put
+# the whole cache on a short retry cycle.
+GITHUB_VERSION_FAILURE_TTL = datetime.timedelta(minutes=30)
 GITHUB_FETCH_TIMEOUT = 3
+# The lookups are also cached in the config table, so a worker with a cold cache picks up
+# another worker's result instead of calling GitHub itself. Without that, every worker of
+# every node looks the versions up on its own, which both repeats the fetch latency and
+# runs a multi-worker installation into GitHub's unauthenticated rate limit.
+GITHUB_VERSION_CONFIG_KEY = "subscription.latest_releases"
+# Length of the config table's value column. The payload is about 1.6k for the clients
+# reported today; should a future one push it past the limit, the shared cache is skipped
+# instead of failing the request, and each worker falls back to its own lookup.
+CONFIG_VALUE_LENGTH = 2000
 
 log = logging.getLogger(__name__)
 
@@ -224,17 +241,79 @@ class GithubRelease:
     url: str | None = None
 
 
+def _releases_are_fresh(fetched_at: datetime.datetime | None,
+                        releases: dict[str, GithubRelease | None],
+                        now: datetime.datetime) -> bool:
+    """
+    Whether a lookup made at ``fetched_at`` may still be used: the full
+    :data:`GITHUB_VERSION_TTL` once it found any release, the shorter
+    :data:`GITHUB_VERSION_FAILURE_TTL` if it found none at all.
+    """
+    if fetched_at is None:
+        return False
+    ttl = GITHUB_VERSION_TTL if any(releases.values()) else GITHUB_VERSION_FAILURE_TTL
+    return now - fetched_at < ttl
+
+
 @dataclasses.dataclass
 class _GithubVersionCache:
-    """Process-local cache of the latest-release lookups, valid for :data:`GITHUB_VERSION_TTL`."""
+    """Process-local cache of the latest-release lookups, in front of the shared one."""
     fetched_at: datetime.datetime | None = None
     releases: dict[str, GithubRelease | None] = dataclasses.field(default_factory=dict)
 
     def is_valid(self, now: datetime.datetime) -> bool:
-        return self.fetched_at is not None and now - self.fetched_at < GITHUB_VERSION_TTL
+        return _releases_are_fresh(self.fetched_at, self.releases, now)
+
+    def store(self, fetched_at: datetime.datetime, releases: dict[str, GithubRelease | None]) -> None:
+        self.fetched_at = fetched_at
+        self.releases = releases
 
 
 _github_version_cache = _GithubVersionCache()
+
+
+def invalidate_github_version_cache() -> None:
+    """Drop the cached lookups, process-local and shared. For tests and a manual refresh."""
+    _github_version_cache.store(None, {})
+    set_privacyidea_config(GITHUB_VERSION_CONFIG_KEY, "")
+
+
+def _store_shared_releases(fetched_at: datetime.datetime,
+                           releases: dict[str, GithubRelease | None]) -> None:
+    """
+    Publish a lookup to the config table for the other workers. Best-effort: a payload
+    that does not fit the value column is not stored, leaving every worker with its own
+    process-local cache.
+    """
+    payload = json.dumps({"fetched_at": fetched_at.isoformat(),
+                          "releases": {application: dataclasses.asdict(release) if release else None
+                                       for application, release in releases.items()}},
+                         separators=(",", ":"))
+    if len(payload) > CONFIG_VALUE_LENGTH:
+        log.debug(f"Not sharing the latest releases between workers: {len(payload)} characters "
+                  f"exceed the {CONFIG_VALUE_LENGTH} the config value holds.")
+        return
+    set_privacyidea_config(GITHUB_VERSION_CONFIG_KEY, payload,
+                           desc="Latest released client versions, cached from GitHub")
+
+
+def _load_shared_releases() -> tuple[datetime.datetime | None, dict[str, GithubRelease | None]]:
+    """
+    Read the lookup another worker published, as ``(fetched_at, releases)``. Anything
+    unreadable is treated as no cache at all, so it is fetched again.
+    """
+    payload = get_from_config(GITHUB_VERSION_CONFIG_KEY)
+    if not payload:
+        return None, {}
+    try:
+        stored = json.loads(payload)
+        fetched_at = datetime.datetime.fromisoformat(stored["fetched_at"])
+        releases = {application: GithubRelease(**release) if release else None
+                    for application, release in stored["releases"].items()}
+    except (ValueError, TypeError, KeyError) as error:
+        log.debug(f"Ignoring the shared latest-release cache, it cannot be read: {error}")
+        return None, {}
+    return fetched_at, releases
 
 
 def version_check_enabled() -> bool:
@@ -275,8 +354,12 @@ def get_latest_github_versions() -> dict[str, GithubRelease | None]:
     Return ``{application: GithubRelease or None}`` for the clients in
     :data:`GITHUB_REPOS`. Results are fetched from GitHub concurrently and cached for
     :data:`GITHUB_VERSION_TTL`; this is best-effort, so unreachable or unknown
-    repositories map to None. A failed lookup is cached like a successful one, so a
-    server that cannot reach GitHub does not retry on every dashboard load — see
+    repositories map to None.
+
+    Results are cached twice: process-local, and in the config table so the other workers
+    reuse the same lookup (see :data:`GITHUB_VERSION_CONFIG_KEY`). A failed lookup is
+    cached too, so a server that cannot reach GitHub does not retry on every dashboard
+    load, but only for :data:`GITHUB_VERSION_FAILURE_TTL` — see
     :func:`version_check_enabled` to switch the lookup off entirely.
     """
     if not version_check_enabled():
@@ -285,6 +368,12 @@ def get_latest_github_versions() -> dict[str, GithubRelease | None]:
     now = datetime.datetime.now()
     if _github_version_cache.is_valid(now):
         return _github_version_cache.releases
+
+    # Another worker may have looked them up already.
+    shared_fetched_at, shared_releases = _load_shared_releases()
+    if _releases_are_fresh(shared_fetched_at, shared_releases, now):
+        _github_version_cache.store(shared_fetched_at, shared_releases)
+        return shared_releases
 
     unique_repos = set(GITHUB_REPOS.values())
     release_by_repo = {}
@@ -301,8 +390,8 @@ def get_latest_github_versions() -> dict[str, GithubRelease | None]:
         release = releases.get(application)
         if release:
             releases[application] = dataclasses.replace(release, url=None)
-    _github_version_cache.releases = releases
-    _github_version_cache.fetched_at = now
+    _github_version_cache.store(now, releases)
+    _store_shared_releases(now, releases)
     return releases
 
 
