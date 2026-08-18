@@ -1176,17 +1176,21 @@ def evaluate_lockout_policies(context: CAContext, event_type: AuthEventType | No
     # Every restriction is described once, from the row left in force, ahead of the notifications the stages
     # carry: two policies locking the same user leave one lock, and so must say so once.
     messages = _restrictions_in_force(context, restricted) + messages
-    # De-duplicate the messages while preserving order: several policies tracking the same user can carry the same
-    # wording in a single request. The outcomes are *not* de-duplicated - each is a distinct thing that happened, and
-    # two policies locking the same user are two facts worth keeping apart.
+    # Ranked before de-duplicating, so the strongest meaning of a given sentence is the one kept. An admin can
+    # configure the same wording on a notify-only stage and on a locking one; keeping the notification would have
+    # compose_failure_message append it to the generic failure rather than replace it, and the user would read
+    # "wrong credentials" for an account that is locked. The sort is stable, so messages of equal kind stay in
+    # policy-priority order, and de-duplicating afterwards no longer depends on the order they were collected in.
+    #
+    # The outcomes are *not* de-duplicated - each is a distinct thing that happened, and two policies locking the
+    # same user are two facts worth keeping apart.
     seen: set[str] = set()
     unique: list[StageMessage] = []
-    for message in messages:
+    for message in sorted(messages, key=lambda message: message.kind):
         if message.text not in seen:
             seen.add(message.text)
             unique.append(message)
-    # Stable, so messages of equal kind stay in policy-priority order.
-    return LockoutEvaluation(messages=sorted(unique, key=lambda message: message.kind), outcomes=outcomes)
+    return LockoutEvaluation(messages=unique, outcomes=outcomes)
 
 
 def _action_threshold_met(action: LockoutStageAction, threshold: int, count: int) -> bool:

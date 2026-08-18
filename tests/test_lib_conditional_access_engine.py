@@ -2435,6 +2435,23 @@ class LockoutEngineTestCase(LockoutTestCase):
                               StageMessage("We emailed you.", MessageKind.NOTIFICATION)],
                              evaluation.messages)
 
+    def test_shared_wording_is_kept_as_the_restriction_it_also_describes(self):
+        # The same sentence configured on a notify-only stage and on a locking one. It is shown once, and as
+        # the restriction: kept as a notification, compose_failure_message would append it to the generic
+        # failure instead of replacing it, so the user would read "wrong credentials" for a locked account.
+        self._make_policy(name="notify", counter_type=AuthEventType.MFA_FAIL, priority=1,
+                          stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.EMAIL_USER)],
+                                                  error_message="Contact your administrator."),))
+        self._make_policy(name="lock", counter_type=AuthEventType.MFA_FAIL, priority=2,
+                          stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.LOCK_USER,
+                                                                               {"duration_seconds": 600})],
+                                                  error_message="Contact your administrator."),))
+        self._seed_events(AuthEventType.MFA_FAIL, 3)
+        with mock.patch("privacyidea.lib.conditional_access.engine._send_lockout_email", return_value=True):
+            evaluation = evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+        self.assertListEqual([StageMessage("Contact your administrator.", MessageKind.TIMED_RESTRICTION)],
+                             evaluation.messages)
+
     def test_a_permanent_action_sets_the_rank_whatever_the_order(self):
         # The permanent lock is written second here, and still decides both the rank and the wording.
         actions = [StageActionDefinition(LockoutAction.LOCK_USER, {"duration_seconds": 600}),
