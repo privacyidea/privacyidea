@@ -52,6 +52,8 @@ from privacyidea.lib.conditional_access.engine import (
     is_ip_never_block,
     get_ip_block,
     render_error_message,
+    MessageKind,
+    StageMessage,
     RestrictionStatus,
     _lock_duration_seconds,
     _policy_count_ip,
@@ -1693,7 +1695,9 @@ class LockoutEngineTestCase(LockoutTestCase):
                                         error_message="Your administrator has been notified."),))
             self._seed_events(AuthEventType.MFA_FAIL, 3)
             messages = evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL).messages
-            self.assertListEqual(["Your administrator has been notified."], messages)
+            # Rank 2: it states an extra fact rather than the reason, so a caller appends it to the failure.
+            self.assertListEqual([StageMessage("Your administrator has been notified.", MessageKind.NOTIFICATION)],
+                                 messages)
         finally:
             delete_smtpserver("lockoutmail")
 
@@ -1714,16 +1718,27 @@ class LockoutEngineTestCase(LockoutTestCase):
         finally:
             delete_smtpserver("lockoutmail")
 
-    def test_a_locking_stage_does_not_also_return_its_message(self):
-        # The lock row already carries the wording and the rejection reads it back from there, so
-        # returning it here as well would tell the user twice.
+    def test_a_locking_stage_returns_its_message_rendered(self):
+        # Rendered here, where the duration just written is known, so no caller has to read the row back.
+        # The template is still stored, for the requests that come after this one.
         lock = [StageActionDefinition(LockoutAction.LOCK_USER, {"duration_seconds": 600})]
         self._make_policy(name="lockonly", counter_type=AuthEventType.MFA_FAIL,
-                          stages=(StageDefinition(3, 1, lock, error_message="Locked."),))
+                          stages=(StageDefinition(3, 1, lock, error_message="Locked for {duration}."),))
         self._seed_events(AuthEventType.MFA_FAIL, 3)
-        self.assertListEqual([], evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL).messages)
+        evaluation = evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+        self.assertListEqual([StageMessage("Locked for 10 minute(s).", MessageKind.TIMED_RESTRICTION)],
+                             evaluation.messages)
         self.assertTrue(is_user_locked(self.user))
-        self.assertEqual("Locked.", self._state().error_message)
+        self.assertEqual("Locked for {duration}.", self._state().error_message)
+
+    def test_a_permanent_stage_outranks_a_timed_one(self):
+        # Rank 0 before rank 1, so a caller showing several leads with the one the user can do least about.
+        self._make_policy(name="perm", counter_type=AuthEventType.MFA_FAIL, priority=1,
+                          stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.PERMANENT_LOCK_USER)],
+                                                  error_message="Permanent."),))
+        self._seed_events(AuthEventType.MFA_FAIL, 3)
+        evaluation = evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+        self.assertListEqual([StageMessage("Permanent.", MessageKind.PERMANENT_RESTRICTION)], evaluation.messages)
 
     # --- _safe_format / _resolve_admin_recipients -----------------------------
 
@@ -2270,3 +2285,27 @@ class LockoutEngineTestCase(LockoutTestCase):
         undecided = evaluate_access_decision(CAContext(self.user))
         self.assertEqual(AccessDecision.CONTINUE, undecided.decision)
         self.assertIsNone(undecided.error_message)
+
+    def test_a_stage_message_describes_its_longest_restriction(self):
+        # One message covers however many actions a stage runs, and the row keeps the last expiry written, so
+        # the message describes the longest restriction the stage produced - the one in force.
+        actions = [StageActionDefinition(LockoutAction.LOCK_USER, {"duration_seconds": 3600}),
+                   StageActionDefinition(LockoutAction.LOCK_USER, {"duration_seconds": 600})]
+        self._make_policy(name="twolocks", counter_type=AuthEventType.MFA_FAIL,
+                          stages=(StageDefinition(3, 1, actions, error_message="Locked for {duration}."),))
+        self._seed_events(AuthEventType.MFA_FAIL, 3)
+        evaluation = evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+        self.assertListEqual([StageMessage("Locked for 1 hour(s).", MessageKind.TIMED_RESTRICTION)],
+                             evaluation.messages)
+
+    def test_a_permanent_action_sets_the_rank_whatever_the_order(self):
+        # The permanent lock is written second here, and still decides both the rank and the wording.
+        actions = [StageActionDefinition(LockoutAction.LOCK_USER, {"duration_seconds": 600}),
+                   StageActionDefinition(LockoutAction.PERMANENT_LOCK_USER)]
+        self._make_policy(name="mixed", counter_type=AuthEventType.MFA_FAIL,
+                          stages=(StageDefinition(3, 1, actions, error_message="Locked for {duration}."),))
+        self._seed_events(AuthEventType.MFA_FAIL, 3)
+        evaluation = evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+        # No remaining time to substitute, so the tag is left as written - and the rank is the permanent one.
+        self.assertListEqual([StageMessage("Locked for {duration}.", MessageKind.PERMANENT_RESTRICTION)],
+                             evaluation.messages)

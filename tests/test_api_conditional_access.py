@@ -126,18 +126,19 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
             self.assertEqual(200, response.status_code, response)
             return response.json
 
-    def _lock_user(self, lock_expires_at) -> None:
+    def _lock_user(self, lock_expires_at, error_message: str | None = None) -> None:
         db.session.add(UserLockoutState(resolver=self.user.resolver, uid=self.user.uid,
-                                        realm=self.user.realm, lock_expires_at=lock_expires_at))
+                                        realm=self.user.realm, lock_expires_at=lock_expires_at,
+                                        error_message=error_message))
         db.session.commit()
 
     @staticmethod
     def _make_lock_policy(*, counter_type, threshold: int, duration: int, window: int = 3600,
-                          dry_run: bool = False, priority: int = 1) -> None:
+                          dry_run: bool = False, priority: int = 1, error_message: str | None = None) -> None:
         create_lockout_policy(
             name="ca_lock", time_window_seconds=window,
             counter_types_to_track=_counter_types(counter_type),
-            stages=[{"failure_threshold": threshold, "priority": 1,
+            stages=[{"failure_threshold": threshold, "priority": 1, "error_message": error_message,
                      "actions": [{"action_type": str(LockoutAction.LOCK_USER), "action_value": duration}]}],
             target=LockoutTarget.USER, dry_run=dry_run, priority=priority)
 
@@ -190,6 +191,47 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         # Every other column is asserted empty, which is the "a rejection row carries nothing else" decision: no
         # serial, no client label, and no other_info repeating an expiry the lock's own outcome already records.
         assert_authentication_log_entry(entries[AuthEventType.USER_LOCKED], user=self.user)
+
+    def test_configured_message_is_surfaced_on_validate_check(self):
+        # The machine-facing endpoint carries the wording in detail.message - a different shape from
+        # /auth's result.error.message, which is why it needs its own coverage.
+        self._lock_user(utc_now() + timedelta(seconds=600), error_message="Locked. Try again in about {duration}.")
+        body = self._check({"user": "cornelius", "pass": "pin755224"})
+        self.assertFalse(body["result"]["value"], body)
+        # {duration} is rendered against the time left now, not stored pre-rendered.
+        self.assertEqual("Locked. Try again in about 10 minute(s).", body["detail"]["message"], body)
+
+    def test_no_configured_message_leaves_validate_check_silent(self):
+        # The default: no message, and no detail at all - byte for byte the response this endpoint
+        # returned before stage messages existed.
+        self._lock_user(utc_now() + timedelta(seconds=600))
+        body = self._check({"user": "cornelius", "pass": "pin755224"})
+        self.assertFalse(body["result"]["value"], body)
+        self.assertFalse(body.get("detail"), body)
+
+    def test_the_request_that_trips_the_lock_reports_it(self):
+        # The lock is written during this very request - and any EMAIL_* action is sent now, not on the
+        # next login - so this is the response that reports it, not merely the ones after it.
+        self._make_lock_policy(counter_type=AuthEventType.PIN_FAIL, threshold=2, duration=600,
+                               error_message="Locked. Try again in about {duration}.")
+        first = self._check({"user": "cornelius", "pass": "wrongpin123456"})
+        self.assertFalse(first["result"]["value"], first)
+        # Below the threshold nothing has happened yet, so the ordinary token failure stands.
+        self.assertEqual("wrong otp pin", first["detail"]["message"], first)
+
+        tripping = self._check({"user": "cornelius", "pass": "wrongpin123456"})
+        self.assertFalse(tripping["result"]["value"], tripping)
+        self.assertEqual("Locked. Try again in about 10 minute(s).", tripping["detail"]["message"], tripping)
+        self.assertTrue(is_user_locked(self.user))
+
+    def test_the_tripping_request_stays_silent_without_a_message(self):
+        # The default holds on this path too: the lock is written, and the response says only what it
+        # would have said anyway.
+        self._make_lock_policy(counter_type=AuthEventType.PIN_FAIL, threshold=2, duration=600)
+        self._check({"user": "cornelius", "pass": "wrongpin123456"})
+        tripping = self._check({"user": "cornelius", "pass": "wrongpin123456"})
+        self.assertEqual("wrong otp pin", tripping["detail"]["message"], tripping)
+        self.assertTrue(is_user_locked(self.user))
 
     def test_expired_lock_does_not_reject(self):
         self._lock_user(utc_now() - timedelta(seconds=10))
@@ -1086,22 +1128,22 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
         message = res.json["result"]["error"]["message"]
         self.assertEqual(custom_error_message, message)
 
-    def test_hide_specific_error_message_strips_restriction_hint(self):
-        # With hide_specific_error_message the lockout becomes a generic failure and the
-        # restriction hint must be stripped, so neither the message nor the detail leaks
-        # that the account is (permanently) locked.
+    def test_hide_specific_error_message_masks_the_configured_wording(self):
+        # With hide_specific_error_message a configured message becomes the generic failure, so nothing in
+        # the response leaks that the account is (permanently) locked.
         from privacyidea.lib.policy import set_policy, delete_policy, SCOPE
         from privacyidea.lib.policies.actions import PolicyAction
         db.session.add(UserLockoutState(resolver=self.user.resolver, uid=self.user.uid,
-                                        realm=self.user.realm, lock_expires_at=None))
+                                        realm=self.user.realm, lock_expires_at=None,
+                                        error_message="MSG-ALPHA"))
         db.session.commit()
         set_policy(name="ca_hide", scope=SCOPE.AUTH, action=f"{PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE}")
         try:
             res = self._auth("cornelius", "test")
             self.assertEqual(401, res.status_code, res)
             message = res.json["result"]["error"]["message"]
-            self.assertNotIn("locked", message.lower(), message)
-            self.assertNotIn("administrator", message.lower(), message)
+            self.assertNotIn("MSG-ALPHA", message, message)
+            self.assertNotIn("MSG-ALPHA", str(res.json.get("detail") or {}), res.json)
         finally:
             delete_policy("ca_hide")
 

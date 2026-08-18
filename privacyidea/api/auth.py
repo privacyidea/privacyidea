@@ -70,7 +70,8 @@ import jwt
 from flask import (Blueprint, request, current_app, g)
 from flask_babel import _
 
-from privacyidea.api.lib.conditional_access import conditional_access_login_gate, login_restriction
+from privacyidea.api.lib.conditional_access import (compose_failure_message,
+                                                    conditional_access_login_gate)
 from privacyidea.api.lib.policyhelper import check_last_auth_policy, get_realm_for_authentication
 from privacyidea.api.lib.postpolicy import (postpolicy, add_user_detail_to_response, check_tokentype,
                                             check_tokeninfo, check_serial, no_detail_on_success,
@@ -581,16 +582,13 @@ def get_auth_token():
     stage_messages = context.run_post_eval()
 
     if not admin_auth and not user_auth:
-        # If this very request tripped a stage that locked the user or blocked its source IP, that restriction now
-        # carries the wording and is the more useful thing to say. A stage that only notified leaves no restriction
-        # behind, so its message travels back from the evaluation instead. With neither, the failure is the ordinary
-        # one - which is what keeps a locked account indistinguishable from a wrong password.
+        # If this very request tripped a stage, the evaluation above carries its wording: a restriction replaces
+        # the reason, a notification is appended to it (see compose_failure_message). Anything already in force
+        # was refused by the pre-check before the credentials were ever checked, so there is nothing to read back.
+        # With no wording at all the failure is the ordinary one, which is what keeps a locked account
+        # indistinguishable from a wrong password.
         details = details or {}
-        message = login_restriction(user, g.client_ip) or str(GENERIC_AUTH_FAILURE)
-        if stage_messages:
-            # A notify-only stage left no restriction to carry its wording, so it is appended to whatever the
-            # failure already says rather than replacing it: the credential failure is still the reason.
-            message = message.rstrip(".") + ". " + " ".join(stage_messages)
+        message = compose_failure_message(str(GENERIC_AUTH_FAILURE), stage_messages) or str(GENERIC_AUTH_FAILURE)
         raise AuthError(message, id=Error.AUTHENTICATE_WRONG_CREDENTIALS,
                         details=details)
     else:

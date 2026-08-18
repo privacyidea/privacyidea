@@ -174,6 +174,43 @@ def _render_duration(restriction: "RestrictionStatus") -> str:
     return _("{hours} hour(s)").format(hours=-(-minutes // 60))
 
 
+class MessageKind(int, Enum):
+    """
+    What a stage's message is about, ordered by how little the user can do about it.
+
+    The order is the presentation order when a request produced several: a permanent restriction first, then a
+    timed one, then a stage that merely notified. Telling someone to "try again in ten minutes" ahead of a
+    permanent block would be misleading, and a notification is an extra fact rather than the reason a request
+    was refused - which is why only :attr:`NOTIFICATION` is appended to the failure instead of replacing it.
+
+    ``int`` rather than ``StrEnum`` so the members sort directly, mirroring
+    :class:`~privacyidea.lib.conditional_access.engine.LockoutAction`'s use of ``str``.
+    """
+    PERMANENT_RESTRICTION = 0
+    TIMED_RESTRICTION = 1
+    NOTIFICATION = 2
+
+
+@dataclass(frozen=True)
+class StageMessage:
+    """
+    One user-facing message a triggered stage produced, already rendered.
+
+    :ivar text: what to show; ``{duration}`` is substituted here, where the duration just written is known.
+    :ivar kind: see :class:`MessageKind` - both the presentation order and whether this replaces the failure
+        reason or is appended to it.
+    """
+    text: str
+    kind: MessageKind
+
+
+def _message_kind(restriction: "RestrictionStatus | None") -> MessageKind:
+    """Which :class:`MessageKind` a message belongs to, given the restriction its stage wrote (if any)."""
+    if restriction is None:
+        return MessageKind.NOTIFICATION
+    return MessageKind.PERMANENT_RESTRICTION if restriction.permanent else MessageKind.TIMED_RESTRICTION
+
+
 def render_error_message(error_message: str | None,
                          restriction: "RestrictionStatus | None" = None) -> str | None:
     """
@@ -219,9 +256,10 @@ class LockoutEvaluation:
     What one post-response evaluation produced: the user-facing messages to surface on the current response, and the
     outcomes to record as the request's conditional-access history.
 
-    Only a stage that left no restriction behind contributes a message. A lock or block stores its stage's wording on
-    its own row, and the rejection reads it back from there, so carrying it here as well would tell the user twice.
-    In practice that leaves the notify-only stages - the ones that fire an ``EMAIL_*`` and nothing else.
+    Each message is a :class:`StageMessage`, already rendered - the engine knows the duration it just wrote, so
+    nothing has to read the row back - and ordered by :class:`MessageKind` so a caller showing several leads with the
+    one the user can do least about. Only the restrictions written by *this* request appear here; anything already
+    in force was refused by the pre-check before the request got this far.
 
     The engine returns these instead of writing the history itself. It has no access to the id of the
     authentication-log row (it runs before the row exists on the pre-auth path, and never sees it on the other), and
@@ -231,7 +269,7 @@ class LockoutEvaluation:
     Also used as the per-policy result inside :func:`_evaluate_policy`, since "what this produced" is the same shape
     for one policy and for all of them.
     """
-    messages: list[str] = field(default_factory=list)
+    messages: list[StageMessage] = field(default_factory=list)
     outcomes: list[ConditionalAccessOutcome] = field(default_factory=list)
 
 
@@ -1091,7 +1129,7 @@ def evaluate_lockout_policies(context: CAContext, event_type: AuthEventType | No
                LockoutPolicyCounterType.counter_type == event_type)
         .order_by(LockoutPolicy.priority.asc())
     ).all()
-    messages: list[str] = []
+    messages: list[StageMessage] = []
     outcomes: list[ConditionalAccessOutcome] = []
     for policy in policies:
         # Guarded per policy so one policy's failure does not cost the others theirs: a broken policy would otherwise
@@ -1108,12 +1146,13 @@ def evaluate_lockout_policies(context: CAContext, event_type: AuthEventType | No
     # wording in a single request. The outcomes are *not* de-duplicated - each is a distinct thing that happened, and
     # two policies locking the same user are two facts worth keeping apart.
     seen: set[str] = set()
-    unique: list[str] = []
+    unique: list[StageMessage] = []
     for message in messages:
-        if message not in seen:
-            seen.add(message)
+        if message.text not in seen:
+            seen.add(message.text)
             unique.append(message)
-    return LockoutEvaluation(messages=unique, outcomes=outcomes)
+    # Stable, so messages of equal kind stay in policy-priority order.
+    return LockoutEvaluation(messages=sorted(unique, key=lambda message: message.kind), outcomes=outcomes)
 
 
 def _action_threshold_met(action: LockoutStageAction, threshold: int, count: int) -> bool:
@@ -1437,9 +1476,30 @@ def _execute_stage_actions(policy: LockoutPolicy, stage: LockoutPolicyStage,
         restriction behind to carry it, and one outcome per action that ran (both empty if every action was skipped).
     """
     outcomes: list[ConditionalAccessOutcome] = []
-    # A lock or block stores the stage's message on its own row, and the rejection reads it back from there. So the
-    # message only travels with the evaluation when the stage merely notified - otherwise the user would be told twice.
-    wrote_restriction = False
+    # The strongest restriction this stage wrote, as the status its message is rendered against: a permanent one
+    # outranks a timed one, and None means the stage only notified. Rendering here is what removes the need to read
+    # the row back - nothing else can be in force, since the pre-check already refused any restriction that was.
+    written: RestrictionStatus | None = None
+
+    def restriction_written(seconds: int | None) -> None:
+        """
+        Note the restriction just written, keeping the longest-lasting one a stage produced: a permanent
+        restriction (seconds ``None``) outranks any timed one, and a longer timed one outranks a shorter.
+
+        A stage carries one message for however many actions it runs, so that message has to describe the
+        restriction the user is actually up against - the same longest-lasting rule the pre-check applies when
+        it reports what is already in force. Picking the first written instead would let a stage that locks for
+        an hour and then for ten minutes say "ten minutes", which is not the lock in force.
+        """
+        nonlocal written
+        if written is None:
+            stronger = True
+        elif written.permanent:
+            stronger = False
+        else:
+            stronger = seconds is None or seconds > written.seconds_remaining
+        if stronger:
+            written = RestrictionStatus(permanent=seconds is None, expires_at=None, seconds_remaining=seconds)
     user = context.user
     source_ip = context.source_ip
 
@@ -1464,12 +1524,12 @@ def _execute_stage_actions(policy: LockoutPolicy, stage: LockoutPolicyStage,
                 lock_expires_at = now + timedelta(seconds=duration)
                 if _upsert_user_lockout_state(user, lock_expires_at=lock_expires_at,
                                               error_message=stage.error_message):
-                    wrote_restriction = True
+                    restriction_written(duration)
                     record(action_type, expires_at=lock_expires_at)
             elif action_type == LockoutAction.PERMANENT_LOCK_USER:
                 if _upsert_user_lockout_state(user, lock_expires_at=None,
                                               error_message=stage.error_message):
-                    wrote_restriction = True
+                    restriction_written(None)
                     record(action_type)
             elif action_type in (LockoutAction.EMAIL_ADMIN, LockoutAction.EMAIL_USER):
                 if _send_lockout_email(action_type, action, user, tags):
@@ -1494,7 +1554,7 @@ def _execute_stage_actions(policy: LockoutPolicy, stage: LockoutPolicyStage,
                         continue
                     block_expires_at = now + timedelta(seconds=duration)
                 if _upsert_ip_block(source_ip, block_expires_at=block_expires_at, error_message=stage.error_message):
-                    wrote_restriction = True
+                    restriction_written(None if block_expires_at is None else duration)
                     record(action_type, expires_at=block_expires_at)
             elif action_type in (LockoutAction.ALLOW, LockoutAction.DENY):
                 # ALLOW/DENY decide the current request pre-auth (see
@@ -1508,7 +1568,9 @@ def _execute_stage_actions(policy: LockoutPolicy, stage: LockoutPolicyStage,
         except Exception as ex:
             log.warning(f"Lockout action {action_type} (id {action.id}) on stage {stage.id} "
                         f"failed: {ex!r}; skipping.")
-    messages = [stage.error_message] if stage.error_message and outcomes and not wrote_restriction else []
+    # Rendered here, ranked so the caller can lead with the restriction the user can do least about.
+    rendered = render_error_message(stage.error_message, written) if outcomes else None
+    messages = [StageMessage(rendered, _message_kind(written))] if rendered else []
     return LockoutEvaluation(messages=messages, outcomes=outcomes)
 
 

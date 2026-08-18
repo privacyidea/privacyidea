@@ -95,7 +95,7 @@ from flask_babel import _
 
 from privacyidea.api.auth import admin_required
 from privacyidea.api.lib.decorators import add_serial_from_response_to_g
-from privacyidea.api.lib.postpolicy import (postpolicy,
+from privacyidea.api.lib.postpolicy import (postpolicy, postrequest,
                                             check_tokentype, check_serial,
                                             check_tokeninfo,
                                             no_detail_on_fail,
@@ -113,7 +113,8 @@ from privacyidea.api.lib.prepolicy import (prepolicy, set_realm,
                                            webauthntoken_request, check_application_tokentype,
                                            increase_failcounter_on_challenge, get_first_policy_value, fido2_enroll,
                                            disabled_token_types, load_challenge_text)
-from privacyidea.api.lib.conditional_access import conditional_access_gate
+from privacyidea.api.lib.conditional_access import (conditional_access_gate,
+                                                    surface_conditional_access_message)
 from privacyidea.api.lib.utils import (get_all_params, get_before_request_config, get_optional_one_of, get_optional,
                                        INTERNAL_OPTION_KEYS)
 from privacyidea.api.recover import recover_blueprint
@@ -369,6 +370,7 @@ def _poll_transaction_identity() -> User:
 @validate_blueprint.route('/check', methods=['POST', 'GET'])
 @validate_blueprint.route('/radiuscheck', methods=['POST', 'GET'])
 @postpolicy(hide_specific_error_message)
+@postrequest(surface_conditional_access_message, request=request)
 @postpolicy(construct_radius_response, request=request)
 @postpolicy(is_authorized, request=request)
 @postpolicy(multichallenge_enroll_via_validate, request=request)

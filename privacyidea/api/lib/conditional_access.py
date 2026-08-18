@@ -24,10 +24,9 @@ There is one gate per entry point because they reject differently, not because t
 * :func:`conditional_access_gate` guards ``/validate/*``. A machine-facing client gets a generic failure that leaks
   no reason at all - the reason lives in the audit log and in the request's authentication-log row, for the admin.
 * :func:`conditional_access_login_gate` guards the JWT login ``/auth``. A human at the login screen is told what is
-  in force and roughly how long it lasts, so the WebUI can explain the wait instead of showing "Wrong credentials"
-  for ten minutes. That is also why the message builders live here: the same lock must be described identically
-  whether it refused the login up front or was written by the failure of this very login
-  (:func:`login_restriction`).
+  in force, if an admin configured wording for it, instead of showing "Wrong credentials" for ten minutes. A lock
+  already in force is described from its own row (:func:`_restriction_message`); one written by the failure of this
+  very login comes back rendered with the evaluation, so neither path has to read the other's work.
 
 Both end in the same place - :func:`~privacyidea.lib.conditional_access.engine.evaluate_access_decision` and the
 lock/block readers - and both classify their rejection in the authentication log, since that row is the only thing an
@@ -40,6 +39,7 @@ already has ``hide_specific_error_message`` (applied to its :class:`AuthError` b
 separate issue, which is why the two gates are still separate functions with duplicated structure.
 """
 import functools
+import json
 import logging
 from collections.abc import Callable
 from typing import Any
@@ -50,7 +50,8 @@ from privacyidea.api.lib.utils import (GENERIC_AUTH_FAILURE, log_authentication,
                                       send_result, get_optional_one_of)
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
 from privacyidea.lib.conditional_access.engine import (get_user_lockout, get_ip_block, evaluate_access_decision,
-                                                       render_error_message, AccessDecision, RestrictionStatus)
+                                                       render_error_message, AccessDecision, RestrictionStatus,
+                                                       MessageKind, StageMessage)
 from privacyidea.lib.conditional_access.request_context import get_ca_context
 from privacyidea.lib.error import AuthError, Error
 from privacyidea.lib.user import User
@@ -125,6 +126,71 @@ def conditional_access_precheck(user: User, log_rejection: bool = True) -> Respo
     return None
 
 
+def compose_failure_message(existing: str | None, messages: list[StageMessage]) -> str | None:
+    """
+    What a failed authentication should say, given what conditional access just did to it.
+
+    A restriction *replaces* the reason: the request may well have carried a wrong password, but the lock now in
+    force is the more useful thing to tell the user. A stage that only notified is *appended* instead, because
+    the credential failure is still why the request was refused. ``None`` when there is nothing to add, leaving
+    the caller's own wording alone.
+    """
+    if not messages:
+        return None
+    joined = " ".join(message.text for message in messages)
+    if any(message.kind is not MessageKind.NOTIFICATION for message in messages):
+        return joined
+    return f"{existing.rstrip('.')}. {joined}" if existing else joined
+
+
+def surface_conditional_access_message(request, response):
+    """
+    Response hook that reports on a failed authentication what conditional access just did to it.
+
+    Registered with ``postrequest``, not ``postpolicy``: nothing here is policy-driven, it runs on every failed
+    response. That decorator lives in ``api.lib.postpolicy`` despite the name, and ``sign_response`` uses it the
+    same way - a pre-existing misfiling, not a hint that this is a policy.
+
+    Without this the engine runs at request teardown, after the body is built, so the request that *trips* a
+    stage would still be answered with the ordinary failure ("wrong otp pin") while every later one carried
+    the stage's wording. The lock is written, and any ``EMAIL_*`` action is sent, during this very request -
+    so this is the response that should say so, exactly as ``/auth`` already does.
+
+    Running the evaluation here does not duplicate the one at teardown: it is guarded per classification
+    (``ConditionalAccessContext.run_post_eval``), so whichever runs first does the work and the other returns
+    nothing. Both are needed. Only this one can shape the body, because teardown runs after the response is
+    built; and only teardown is guaranteed, because a decorator is skipped entirely when the view raises and an
+    error handler builds the response instead. The flush first is what makes this request's own event part of
+    the count. A restriction now in force replaces the message, since it is the more useful thing to say; a stage
+    that only notified is appended to whatever the failure already reported, because the credential failure is
+    still the reason it was refused.
+    """
+    if not response or not response.is_json:
+        return response
+    content = response.json
+    if content.get("result", {}).get("value"):
+        # A success has nothing to report: the message is only ever shown on a failed authentication.
+        return response
+    try:
+        context = get_ca_context()
+        context.flush()
+        # Everything in force was written by this request - anything already in force was refused by the
+        # pre-check, which returns its own response - so the evaluation is the whole story and nothing has to
+        # be read back. A request the pre-check did refuse still passes through here, since it returns rather
+        # than raises and this hook wraps it; run_post_eval declines to evaluate its own rejections, so there
+        # is nothing to compose and the gate's wording is left alone.
+        message = compose_failure_message(content.get("detail", {}).get("message"), context.run_post_eval())
+        if message:
+            detail = content.get("detail") or {}
+            detail["message"] = message
+            content["detail"] = detail
+            response.set_data(json.dumps(content))
+    except Exception as ex:
+        # Never break an authentication response over the wording of its own rejection.
+        log.warning(f"Could not surface the conditional-access message on this response: {ex!r}")
+    return response
+
+
 def conditional_access_gate(identity_resolver: Callable[[], User] | None = None,
                             log_rejection: bool = True) -> Callable[[Callable], Callable]:
     """
@@ -195,26 +261,6 @@ def _binding_restriction(lockout: RestrictionStatus | None, ip_block: Restrictio
     if block_rem is not None and (lock_rem is None or block_rem > lock_rem):
         return "block"
     return "lock"
-
-
-def login_restriction(user: User, client_ip: str | None) -> str | None:
-    """
-    How to describe the lock or block in force *now*, or ``None`` if neither is.
-
-    Used on the failed-credentials path, after the engine has evaluated this login: when the login that just failed is
-    what tripped the stage, the lock or block it wrote is already in force, and saying so is more useful than "Wrong
-    credentials". A pure read - unlike the pre-auth gate it does not clear a stale row, because the engine has just
-    written this one.
-
-    ``None`` also when the restriction carries no message: an unconfigured stage is meant to disclose nothing at all.
-    """
-    lockout = get_user_lockout(user)
-    ip_block = get_ip_block(client_ip)
-    restriction = _binding_restriction(lockout, ip_block)
-    state = ip_block if restriction == "block" else lockout if restriction == "lock" else None
-    if state is None:
-        return None
-    return _restriction_message(state)
 
 
 def _raise_restricted(restriction: RestrictionStatus) -> None:

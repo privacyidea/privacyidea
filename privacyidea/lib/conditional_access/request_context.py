@@ -27,7 +27,7 @@ session it writes on.
 """
 import logging
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, TYPE_CHECKING
 
 from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType,
                                                                            CA_ENFORCEMENT_EVENT_TYPES)
@@ -38,6 +38,11 @@ from privacyidea.lib.conditional_access.outcome_log import record_outcomes
 from privacyidea.lib.framework import get_request_local_store
 from privacyidea.lib.user import User
 from privacyidea.models import ConditionalAccessOutcome
+
+if TYPE_CHECKING:
+    # Only for the annotation below: importing the engine at module level would risk an import-order cycle
+    # during app startup, which is why run_post_eval imports it inside the function instead.
+    from privacyidea.lib.conditional_access.engine import StageMessage
 
 log = logging.getLogger(__name__)
 
@@ -244,10 +249,11 @@ class ConditionalAccessContext:
         for name, value in fields.items():
             setattr(event, name, value)
 
-    def run_post_eval(self) -> list[str]:
+    def run_post_eval(self) -> list["StageMessage"]:
         """
         Let the conditional-access engine react to what this request logged, and return the user-facing messages the
-        stages it triggered carry.
+        stages it triggered carry, ordered most severe first (see
+        :class:`~privacyidea.lib.conditional_access.engine.StageMessage`).
 
         Nothing has to be scheduled: staging an authentication event *is* the signal, and everything the engine needs
         is already recorded - the classification comes from the latest staged event, the principal and source IP from
