@@ -42,7 +42,6 @@ separate issue, which is why the two gates are still separate functions with dup
 import functools
 import logging
 from collections.abc import Callable
-from dataclasses import dataclass
 from typing import Any
 
 from flask import request, g, Response
@@ -167,20 +166,6 @@ def _restriction_message(restriction: RestrictionStatus) -> str | None:
     return render_error_message(restriction.error_message, restriction)
 
 
-def _restriction_kind(state: RestrictionStatus) -> str:
-    """
-    Classify a lock/block as ``"permanent"`` or ``"temporary"`` for the WebUI.
-
-    Surfaced in the rejection's ``detail`` so the login screen can style a
-    permanent (only-an-admin-can-clear-it) restriction differently from a
-    recoverable timed one. It is a coarse hint, not the specific message, and is
-    dropped when the ``hide_specific_error_message`` policy is active (see
-    :func:`~privacyidea.api.before_after.auth_error`), so it never leaks more than
-    the message itself would.
-    """
-    return "permanent" if state.permanent else "temporary"
-
-
 def _binding_restriction(lockout: RestrictionStatus | None, ip_block: RestrictionStatus | None) -> str | None:
     """
     When both a user lockout and a source-IP block are in force, decide which one
@@ -212,19 +197,7 @@ def _binding_restriction(lockout: RestrictionStatus | None, ip_block: Restrictio
     return "lock"
 
 
-@dataclass(frozen=True)
-class LoginRestriction:
-    """
-    How a login refused by a conditional-access restriction is described to the user.
-
-    :ivar message: the user-facing reason, naming the restriction and how long it lasts.
-    :ivar kind: the coarse severity hint for the WebUI, see :func:`_restriction_kind`.
-    """
-    message: str
-    kind: str
-
-
-def login_restriction(user: User, client_ip: str | None) -> LoginRestriction | None:
+def login_restriction(user: User, client_ip: str | None) -> str | None:
     """
     How to describe the lock or block in force *now*, or ``None`` if neither is.
 
@@ -233,8 +206,7 @@ def login_restriction(user: User, client_ip: str | None) -> LoginRestriction | N
     credentials". A pure read - unlike the pre-auth gate it does not clear a stale row, because the engine has just
     written this one.
 
-    ``None`` also when the restriction carries no message: the severity hint alone would still disclose that one is in
-    force, which is exactly what an unconfigured stage is meant not to do.
+    ``None`` also when the restriction carries no message: an unconfigured stage is meant to disclose nothing at all.
     """
     lockout = get_user_lockout(user)
     ip_block = get_ip_block(client_ip)
@@ -242,20 +214,17 @@ def login_restriction(user: User, client_ip: str | None) -> LoginRestriction | N
     state = ip_block if restriction == "block" else lockout if restriction == "lock" else None
     if state is None:
         return None
-    message = _restriction_message(state)
-    return LoginRestriction(message, _restriction_kind(state)) if message else None
+    return _restriction_message(state)
 
 
 def _raise_restricted(restriction: RestrictionStatus) -> None:
     """
     Refuse this login because *restriction* is in force, telling the user only what the stage that applied it
     configured. With no message the rejection is the ordinary wrong-credentials failure, so a locked account is
-    indistinguishable from a wrong password - and the severity hint is withheld too, since it would give the
-    restriction away on its own.
+    indistinguishable from a wrong password.
     """
-    message = _restriction_message(restriction)
-    raise AuthError(message or GENERIC_AUTH_FAILURE, id=Error.AUTHENTICATE_WRONG_CREDENTIALS,
-                    details={"restriction": _restriction_kind(restriction)} if message else None)
+    raise AuthError(_restriction_message(restriction) or GENERIC_AUTH_FAILURE,
+                    id=Error.AUTHENTICATE_WRONG_CREDENTIALS)
 
 
 def _reject_restricted_login(user: User) -> None:

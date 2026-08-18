@@ -989,8 +989,8 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
         self.assertIn("minute", message.lower(), message)
         self.assertNotIn("{duration}", message, message)
         self.assertNotIn("Wrong credentials", message, message)
-        # The WebUI gets a coarse severity hint so it can color a timed lock differently.
-        self.assertEqual("temporary", res.json["detail"]["restriction"], res.json)
+        # No severity hint: the wording is the only thing the user is told.
+        self.assertNotIn("restriction", res.json.get("detail") or {}, res.json)
         # The login is classified by its rejection, so the log says why it failed even though no credential was checked.
         entries = assert_authentication_log([AuthEventType.USER_LOCKED])
         assert_authentication_log_entry(entries[AuthEventType.USER_LOCKED], user=self.user)
@@ -1054,7 +1054,6 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
         self.assertIn("minute", message.lower(), message)
         self.assertNotIn("account", message.lower(), message)
         self.assertNotIn("Wrong credentials", message, message)
-        self.assertEqual("temporary", res.json["detail"]["restriction"], res.json)
         entries = assert_authentication_log([AuthEventType.IP_BLOCKED])
         assert_authentication_log_entry(entries[AuthEventType.IP_BLOCKED], user=self.user,
                                         source_ip="203.0.113.7")
@@ -1103,7 +1102,6 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
             message = res.json["result"]["error"]["message"]
             self.assertNotIn("locked", message.lower(), message)
             self.assertNotIn("administrator", message.lower(), message)
-            self.assertNotIn("restriction", (res.json.get("detail") or {}), res.json)
         finally:
             delete_policy("ca_hide")
 
@@ -1220,7 +1218,6 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
         self.assertEqual(401, res.status_code, res)
         message = res.json["result"]["error"]["message"]
         self.assertEqual("MSG-GAMMA", message)
-        self.assertEqual("permanent", res.json["detail"]["restriction"], res.json)
 
     def test_permanent_lock_message_wins_over_timed_ip_block(self):
         # Symmetric: a permanent user lock outranks a timed IP block.
@@ -1231,7 +1228,6 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
         self.assertEqual(401, res.status_code, res)
         message = res.json["result"]["error"]["message"]
         self.assertEqual("MSG-ALPHA", message)
-        self.assertEqual("permanent", res.json["detail"]["restriction"], res.json)
 
     def test_user_locked_after_password_failures(self):
         self._make_password_policy(threshold=3)

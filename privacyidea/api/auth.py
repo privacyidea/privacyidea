@@ -586,12 +586,7 @@ def get_auth_token():
         # behind, so its message travels back from the evaluation instead. With neither, the failure is the ordinary
         # one - which is what keeps a locked account indistinguishable from a wrong password.
         details = details or {}
-        restriction = login_restriction(user, g.client_ip)
-        if restriction:
-            message = restriction.message
-            details["restriction"] = restriction.kind
-        else:
-            message = str(GENERIC_AUTH_FAILURE)
+        message = login_restriction(user, g.client_ip) or str(GENERIC_AUTH_FAILURE)
         if stage_messages:
             # A notify-only stage left no restriction to carry its wording, so it is appended to whatever the
             # failure already says rather than replacing it: the credential failure is still the reason.
