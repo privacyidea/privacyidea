@@ -129,18 +129,24 @@ myApp.controller("dashboardController", ["ConfigFactory", "TokenFactory",
         "privacyidea-shibboleth": "privacyidea-shibboleth"
     };
     // Build the landing page URL for a row as
-    // <base>/<language>/<sla|non-sla>/<component slug>. Only German is served
-    // in its own language, every other locale gets the English page. A row
-    // counts as "sla" as soon as a subscription is on file — an expired one
-    // still points at the subscriber page. Returns "" for components without a
-    // slug, which the view then renders as plain text.
+    // <base>/<language>/<sla|non-sla|expired>/<component slug>. Only German is
+    // served in its own language, every other locale gets the English page.
+    // Returns "" for components without a slug, which the view then renders as
+    // plain text.
     $scope.componentLinkTarget = function (status) {
         var slug = $scope.componentPtlSlug[status.application];
         if (!slug) { return ""; }
         var language = (gettextCatalog.getCurrentLanguage() || "").indexOf("de") === 0 ? "de" : "en";
-        var sla = status.subscription === "none" ? "non-sla" : "sla";
-        return PTL_BASE_URL + "/" + language + "/" + sla + "/" + slug;
+        return PTL_BASE_URL + "/" + language + "/" + subscriptionSegment(status) + "/" + slug;
     };
+    // Which of the three landing pages a row points at: none on file, one that has
+    // expired, or a subscription that still covers the component (valid, expiring or
+    // exceeded - all three are subscribers).
+    function subscriptionSegment(status) {
+        if (status.subscription === "none") { return "non-sla"; }
+        if (status.subscription === "expired") { return "expired"; }
+        return "sla";
+    }
     // Subscription overview view mode. Start compact; the "Show details" button
     // switches to the detailed view (adds the Expires and Last seen columns).
     $scope.subscriptionDetailed = false;

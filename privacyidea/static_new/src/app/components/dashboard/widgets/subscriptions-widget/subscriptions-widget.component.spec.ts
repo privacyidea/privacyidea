@@ -288,13 +288,40 @@ describe("SubscriptionsWidgetComponent", () => {
     );
   });
 
-  it("should keep an exceeded and an expired subscription on the sla page", () => {
+  it("should keep an exceeded subscription on the sla page", () => {
+    // Exceeded means the subscription still covers the component, just not enough users.
     const links: HTMLAnchorElement[] = Array.from(fixture.nativeElement.querySelectorAll("a[href]"));
     const keycloak = links.find((link) => link.textContent?.trim() === "Keycloak");
 
     expect(keycloak?.getAttribute("href")).toBe(
       "https://netknights.it/plugin-traffic-light/en/sla/privacyidea-keycloak"
     );
+  });
+
+  it("should send an expired subscription to its own landing page", () => {
+    subscriptionMock.getSubscriptionStatus.mockReturnValue(
+      of(
+        MockPiResponse.fromValue<SubscriptionStatus[]>([
+          status({
+            application: "privacyidea-keycloak",
+            in_use: true,
+            subscription: "expired",
+            date_till: "Tue, 30 Jun 2026 00:00:00 GMT",
+            days_left: -49
+          })
+        ])
+      )
+    );
+    TestBed.inject(DashboardDataStore).invalidate();
+
+    const expired = createWidget();
+    const links: HTMLAnchorElement[] = Array.from(expired.nativeElement.querySelectorAll("a[href]"));
+    const keycloak = links.find((link) => link.textContent?.trim() === "Keycloak");
+
+    expect(keycloak?.getAttribute("href")).toBe(
+      "https://netknights.it/plugin-traffic-light/en/expired/privacyidea-keycloak"
+    );
+    expired.destroy();
   });
 
   it("should use the German landing pages when the German bundle is served", () => {

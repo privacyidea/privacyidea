@@ -213,9 +213,8 @@ export class SubscriptionsWidgetComponent extends DashboardWidget implements OnI
   }
 
   /**
-   * Landing page of a component as <base>/<language>/<sla|non-sla>/<slug>. Only German is
-   * served in its own language, every other locale gets the English page. A component
-   * counts as "sla" as soon as a subscription is on file, an expired one included.
+   * Landing page of a component as <base>/<language>/<sla|non-sla|expired>/<slug>. Only
+   * German is served in its own language, every other locale gets the English page.
    * Returns null for components without a slug, which are then rendered as plain text.
    */
   protected componentLink(status: SubscriptionStatus): string | null {
@@ -224,8 +223,23 @@ export class SubscriptionsWidgetComponent extends DashboardWidget implements OnI
       return null;
     }
     const language = this.locale.startsWith("de") ? "de" : "en";
-    const sla = status.subscription === "none" ? "non-sla" : "sla";
-    return `${PTL_BASE_URL}/${language}/${sla}/${slug}`;
+    return `${PTL_BASE_URL}/${language}/${this.subscriptionSegment(status.subscription)}/${slug}`;
+  }
+
+  /**
+   * Which of the three landing pages a row points at: none on file, one that has expired,
+   * or a subscription that still covers the component - valid, expiring and exceeded are
+   * all subscribers.
+   */
+  private subscriptionSegment(state: SubscriptionState): string {
+    switch (state) {
+      case "none":
+        return "non-sla";
+      case "expired":
+        return "expired";
+      default:
+        return "sla";
+    }
   }
 
   protected usageDotClass(inUse: boolean): string {
