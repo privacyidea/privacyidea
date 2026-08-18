@@ -21,8 +21,9 @@ authenticating entry points, plus the messages that tell a human why.
 
 There is one gate per entry point because they reject differently, not because they decide differently:
 
-* :func:`conditional_access_gate` guards ``/validate/*``. A machine-facing client gets a generic failure that leaks
-  no reason at all - the reason lives in the audit log and in the request's authentication-log row, for the admin.
+* :func:`conditional_access_gate` guards ``/validate/*``. A machine-facing client is told whatever the stage that
+  applied the restriction configured, and by default that is nothing at all - the reason then lives only in the
+  audit log and in the request's authentication-log row, for the admin.
 * :func:`conditional_access_login_gate` guards the JWT login ``/auth``. A human at the login screen is told what is
   in force, if an admin configured wording for it, instead of showing "Wrong credentials" for ten minutes. A lock
   already in force is described from its own row (:func:`_restriction_messages`); one written by the failure of this
@@ -32,11 +33,11 @@ Both end in the same place - :func:`~privacyidea.lib.conditional_access.engine.e
 lock/block readers - and both classify their rejection in the authentication log, since that row is the only thing an
 admin can filter for: the request is turned away before anything else logs an outcome for it.
 
-TODO: the two should not differ in *whether* they explain themselves. Surfacing the reason belongs under an explicit
-policy of its own, settable per endpoint, rather than being hard-coded per entry point as it is here - ``/auth``
-already has ``hide_specific_error_message`` (applied to its :class:`AuthError` by
-:func:`~privacyidea.api.before_after.auth_error`) while ``/validate/*`` has no way to opt *in*. Unifying that is a
-separate issue, which is why the two gates are still separate functions with duplicated structure.
+TODO: both gates now say only what an admin opted into on the stage, but ``hide_specific_error_message`` discards it
+on both - on ``/auth`` through :func:`~privacyidea.api.before_after.auth_error`, on ``/validate/*`` through the
+postpolicy of the same name. That policy exists to suppress what privacyIDEA volunteers *by default*, so having it
+also throw away wording an admin deliberately configured (silently, with nothing to say it happened) is the thing to
+decouple. A separate issue, which is why the two gates are still separate functions with duplicated structure.
 """
 import functools
 import json
@@ -60,25 +61,28 @@ log = logging.getLogger(__name__)
 
 
 
-# --- /validate/*: reject generically, leaking no reason -------------------------------------------------------------
+# --- /validate/*: reject with the configured wording, or generically --------------------------------------------------
 
 def conditional_access_precheck(user: User, log_rejection: bool = True) -> Response | None:
     """
     Reject a request pre-auth (before any token logic and before the failcounter /
-    max_auth checks) when conditional-access policies forbid it. Returns a generic
-    failure :class:`~flask.Response` to be returned to the client, or ``None`` to
-    continue with the normal flow.
+    max_auth checks) when conditional-access policies forbid it. Returns the failure
+    :class:`~flask.Response` to be returned to the client, or ``None`` to continue
+    with the normal flow.
 
-    The rejection is deliberately generic and leaks no reason: the machine-facing
-    API response never reveals that the user is locked, the source IP is blocked,
-    or a policy denied access — the real reason is recorded in the audit log and,
-    for the admin, as this request's authentication-log row.
+    The rejection says only what an admin configured on the stage that applied the
+    restriction, and silence is the default: with no wording the response reveals
+    nothing - not that the user is locked, that the source IP is blocked, or that a
+    policy denied access - and is byte for byte the failure this endpoint returned
+    before stage messages existed. Either way the real reason is recorded in the
+    audit log and, for the admin, as this request's authentication-log row.
 
-    A currently-locked user is rejected first, then a source IP blocked by a
-    ``BLOCK_IP`` action. The pre-auth conditional-access DENY decision is evaluated
-    last, after the lock/block pre-checks (so an ALLOW cannot override them); a
-    DENY rejects this single request without persisting state, while
-    ALLOW / CONTINUE fall through. ``g.client_ip`` is the source IP checked.
+    A lock or block already in force rejects the request before the conditional-access
+    DENY decision is evaluated, so an ALLOW cannot override them; every restriction in
+    force that carries wording is reported, while the authentication log is classified
+    by the binding one (:func:`_binding_event_type`). A DENY rejects this single request
+    without persisting state, while ALLOW / CONTINUE fall through. ``g.client_ip`` is the
+    source IP checked.
 
     Each rejection also **classifies the request** in the authentication log
     (:class:`~privacyidea.lib.conditional_access.authentication_event_types.AuthEventType`:
