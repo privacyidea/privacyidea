@@ -148,7 +148,8 @@ myApp.controller("dashboardController", ["ConfigFactory", "TokenFactory",
         return "sla";
     }
     // Subscription overview view mode. Start compact; the "Show details" button
-    // switches to the detailed view (adds the Expires and Last seen columns).
+    // switches to the detailed view, which adds the Expires, Versions and Current
+    // version columns.
     $scope.subscriptionDetailed = false;
     $scope.toggleSubscriptionDetail = function () {
         $scope.subscriptionDetailed = !$scope.subscriptionDetailed;
