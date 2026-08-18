@@ -17,17 +17,28 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, inject, input, output } from "@angular/core";
+import { Component, computed, inject, input, output } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatIconModule } from "@angular/material/icon";
 import {
   ConditionalAccessPolicyService,
   ConditionalAccessPolicyServiceInterface,
+  LockoutActionType,
   LockoutStageAction,
   LockoutTarget
 } from "@services/conditional-access/conditional-access-policy.service";
 import { ConditionalAccessActionItemComponent } from "./action-item/conditional-access-action-item.component";
+
+// Timed actions paired with the permanent action that writes the same row. Configuring both is redundant:
+// a restriction is never weakened, so the permanent one wins whichever order they run in. Listed as explicit
+// pairs rather than derived from "any timed action plus any permanent one", which would only be equivalent
+// while a stage's actions are confined to a single target - true today (_ACTIONS_BY_TARGET on the server),
+// but it would silently mis-flag a timed user lock beside a permanent IP block if that ever changes.
+const REDUNDANT_RESTRICTION_PAIRS: readonly (readonly [LockoutActionType, LockoutActionType])[] = [
+  ["LOCK_USER", "PERMANENT_LOCK_USER"],
+  ["BLOCK_IP", "PERMANENT_BLOCK_IP"]
+];
 
 @Component({
   selector: "app-conditional-access-actions-list",
@@ -42,6 +53,16 @@ export class ConditionalAccessActionsListComponent {
   readonly actions = input.required<LockoutStageAction[]>();
   readonly target = input<LockoutTarget>("user");
   readonly actionsChange = output<LockoutStageAction[]>();
+
+  // The pairs this stage actually configures, so the warning can name them. The timed half is dead
+  // configuration - it changes nothing an admin can observe - and naming both ends is what makes the warning
+  // act on: a stage with several actions would otherwise leave the admin to work out which two conflict.
+  readonly redundantRestrictionPairs = computed(() => {
+    const configured = new Set(this.actions().map((action) => action.action_type));
+    return REDUNDANT_RESTRICTION_PAIRS.filter(
+      ([timed, permanent]) => configured.has(timed) && configured.has(permanent)
+    );
+  });
 
   onAddAction(): void {
     // Default a new action to one that is valid for the current target, so it is

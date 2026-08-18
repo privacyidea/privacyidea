@@ -283,8 +283,8 @@ describe("ConditionalAccessStageItemComponent", () => {
     });
 
     it("should flag {duration} on a stage that has no temporary action", () => {
-      // Without a remaining time the server drops the whole message, so this is an error rather than
-      // the advisory hint an unrecognised tag gets.
+      // With no remaining time to substitute, the server leaves the tag as written and the user reads it
+      // raw - an error rather than the advisory hint an unrecognised tag gets.
       withStage({
         error_message: "Retry in about {duration}.",
         actions: [{ action_type: "PERMANENT_LOCK_USER", action_value: null }]
