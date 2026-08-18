@@ -659,7 +659,8 @@ class ServerSubscriptionStatusTestCase(MyTestCase):
         self.assertTrue(entry["is_server"])
         self.assertEqual("privacyidea", entry["application"])
         self.assertEqual("none", entry["subscription"])
-        self.assertFalse(entry["in_use"])
+        # The server answering the request is in use whether or not it has a subscription.
+        self.assertTrue(entry["in_use"])
         self.assertIsNone(entry["date_till"])
         self.assertIsNone(entry["days_left"])
         # The server row reports its running version, with any dev/local

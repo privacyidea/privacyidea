@@ -80,6 +80,9 @@ myApp.controller("dashboardController", ["ConfigFactory", "TokenFactory",
     // activity), rather than making the admin guess. Returned strings are the
     // gettext() source; the template applies the `translate` filter.
     $scope.usageReasonText = function (status) {
+        if (status.is_server) {
+            return gettext("In use: this is the privacyIDEA server itself.");
+        }
         if (status.in_use) {
             return status.subscription !== "none"
                 ? gettext("In use: covered by a subscription.")

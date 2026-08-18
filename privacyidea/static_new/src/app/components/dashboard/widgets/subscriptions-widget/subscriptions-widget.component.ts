@@ -251,6 +251,9 @@ export class SubscriptionsWidgetComponent extends DashboardWidget implements OnI
    * rule we name the branch that actually applies instead of making the admin guess.
    */
   protected usageReason(status: SubscriptionStatus): string {
+    if (status.is_server) {
+      return $localize`In use: this is the privacyIDEA server itself.`;
+    }
     if (!status.in_use) {
       return $localize`Not in use: no subscription, and not seen in the last 7 days.`;
     }

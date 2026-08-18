@@ -513,7 +513,9 @@ def get_server_subscription_status(token_users: int | None = None) -> dict:
     state_info = _subscription_state(subscription, now, token_users)
     return {"application": "privacyidea",
             "is_server": True,
-            "in_use": _is_in_use(bool(subscription), None, now),
+            # The server is the one answering this request, so it is in use by definition -
+            # unlike a client, whose use is deduced from a subscription or recent activity.
+            "in_use": True,
             "subscription": state_info.state,
             "last_seen": None,
             "date_till": state_info.date_till,
