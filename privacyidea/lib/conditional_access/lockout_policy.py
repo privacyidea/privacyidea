@@ -353,10 +353,10 @@ class DefaultErrorMessage:
 # ``error_message`` stays silent.
 #
 # A stage carrying several actions composes them the way the runtime reports: one restriction - they are
-# mutually exclusive, only the longest-lasting is ever shown (see ``_binding_restriction``) - followed by
-# any notifications, which are separate facts. Hence, the order: restrictions by severity, then the EMAIL_*
-# pair with the user's own notification first, as the one the reader can act on. ALLOW has no entry,
-# having nothing to reject and so nothing to say.
+# mutually exclusive, and a stage's message describes the longest-lasting one it wrote (see
+# ``_execute_stage_actions``) - followed by any notifications, which are separate facts. Hence, the order:
+# restrictions by severity, then the EMAIL_* pair with the user's own notification first, as the one the
+# reader can act on. ALLOW has no entry, having nothing to reject and so nothing to say.
 #
 # lazy_gettext, not _(): module-level constants are evaluated at import, long before a request and its
 # locale exist; ``str()`` at serialization resolves them per admin. That only decides what an admin starts
