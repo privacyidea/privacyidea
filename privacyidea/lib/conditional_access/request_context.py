@@ -26,8 +26,11 @@ The buffer lives on ``g``, so it is per app context (and thus per request) exact
 session it writes on.
 """
 import logging
+import secrets
 from dataclasses import dataclass, field
 from typing import Any, TYPE_CHECKING
+
+from flask import has_request_context
 
 from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType,
                                                                            CA_ENFORCEMENT_EVENT_TYPES)
@@ -48,6 +51,10 @@ log = logging.getLogger(__name__)
 
 # Key the context is cached under in the app-context-local store.
 _CONTEXT_KEY = "conditional_access_context"
+
+# The key under which a challenge records the authentication attempt it was triggered for. Written by
+# :func:`~privacyidea.lib.token.auth.create_challenge`, read back by :meth:`ConditionalAccessContext.continue_attempt`.
+ATTEMPT_ID_CHALLENGE_KEY = "attempt_id"
 
 
 @dataclass
@@ -85,6 +92,8 @@ class ConditionalAccessContext:
         self.pending: list[PendingAuthEvent] = []
         self.principal = AuthPrincipal()
         self.source_ip: str | None = None
+        # The attempt this request belongs to, once it is known (see attempt_id).
+        self._attempt_id: str | None = None
         # Outcomes produced before any event was staged, i.e. by the pre-auth decision. The first event staged after
         # them takes them over (see stage), because that is the row they belong to.
         self.pending_outcomes: list[ConditionalAccessOutcome] = []
@@ -156,18 +165,69 @@ class ConditionalAccessContext:
         event = self.latest
         return event is not None and event.event_type in CA_ENFORCEMENT_EVENT_TYPES
 
-    def attempt_id_for_transaction(self, transaction_id: str) -> str | None:
+    @property
+    def attempt_id(self) -> str:
         """
-        The ``attempt_id`` of a staged event carrying *transaction_id*, newest first, or ``None`` if this request
-        staged none.
+        The id correlating everything this request contributes to one logical authentication attempt.
 
-        Lets an attempt be correlated within the request that created it, without depending on the row having been
-        written yet - the authentication-log lookup only sees committed rows.
+        An attempt spans as many requests as the flow needs - a challenge trigger, a wrong answer, the retry that
+        succeeds - and every authentication-log row of those requests carries this id, so a policy can count
+        *attempts* rather than rows. It is minted on first use and then fixed for the rest of the request, so the
+        challenge the request triggers and the rows it logs cannot disagree about which attempt they belong to.
+
+        A request continuing an earlier attempt takes that attempt's id over first (:meth:`continue_attempt`); one
+        that continues nothing starts a new attempt here.
         """
-        for event in reversed(self.pending):
-            if event.transaction_id == transaction_id and event.attempt_id:
-                return event.attempt_id
-        return None
+        if self._attempt_id is None:
+            # 128 bit, so ids do not collide silently across the retained authentication log.
+            self._attempt_id = secrets.token_hex(16)
+        return self._attempt_id
+
+    @property
+    def attempt_resolved(self) -> bool:
+        """
+        Whether this request has settled on an attempt yet, without settling on one by asking.
+
+        Reading :attr:`attempt_id` mints an id as a side effect, so this is the only way to tell "we joined a known
+        attempt" from "we are about to start a new one" - the difference between a correctly correlated row and a
+        silently orphaned one.
+        """
+        return self._attempt_id is not None
+
+    def continue_attempt(self, transaction_id: str | None) -> None:
+        """
+        Join the attempt the challenge *transaction_id* was triggered for, so this request's rows are grouped with it
+        instead of starting an attempt of their own.
+
+        The attempt id is stored in the challenge's own data when the challenge is created
+        (:func:`~privacyidea.lib.token.auth.create_challenge`), which is why this reads the challenge rather than the
+        authentication log: the grouping travels with the very thing the client hands back, so no row has to be
+        committed - nor the log indexed by ``transaction_id`` - for an attempt to be recovered.
+
+        Because a *successfully* answered challenge is deleted by the token logic, this has to run before that logic:
+        the endpoints that answer a challenge do it in ``before_request``. A caller that only learns the transaction
+        afterwards calls it itself - the out-of-band ``/ttype/push`` answer, which identifies its challenge by
+        signature and leaves it in place, and any request whose own row is the first to name the transaction.
+
+        A no-op once this request has settled on an attempt, so the earliest (and therefore most specific) caller
+        wins. Also a no-op when the transaction has no challenge left - expired, cleaned up, or never existed - in
+        which case :attr:`attempt_id` mints a fresh id and the row is at worst grouped as its own attempt rather than
+        left ungrouped.
+        """
+        if self._attempt_id is not None or not transaction_id:
+            return
+        # Deferred import: lib.challenge pulls in the ORM models and the challenge cache, so importing it at module
+        # level would risk an import-order cycle during app startup.
+        from privacyidea.lib.challenge import get_challenges
+        try:
+            for challenge in get_challenges(transaction_id=transaction_id):
+                attempt_id = challenge.get_data().get(ATTEMPT_ID_CHALLENGE_KEY)
+                if attempt_id:
+                    self._attempt_id = attempt_id
+                    return
+        except Exception as ex:
+            # Correlating an attempt must never break the authentication it is describing.
+            log.debug(f"Could not read the attempt id of transaction {transaction_id}: {ex!r}")
 
     def add_outcomes(self, outcomes: list[ConditionalAccessOutcome]) -> None:
         """
@@ -341,6 +401,36 @@ def get_ca_context() -> ConditionalAccessContext:
         context = ConditionalAccessContext()
         store[_CONTEXT_KEY] = context
     return context
+
+
+def continue_attempt(transaction_id: str | None) -> None:
+    """
+    Let this request join the attempt the challenge *transaction_id* was triggered for
+    (:meth:`ConditionalAccessContext.continue_attempt`).
+
+    For ``before_request``, which has to do this ahead of the token logic. A request that carries no transaction
+    continues nothing, and is not given a buffer just to establish that.
+    """
+    if transaction_id:
+        get_ca_context().continue_attempt(transaction_id)
+
+
+def current_attempt_id() -> str | None:
+    """
+    The attempt id of the request in progress, or ``None`` when there is no request to attribute anything to.
+
+    For :func:`~privacyidea.lib.token.auth.create_challenge`, which stamps it into every challenge so a later request
+    answering that challenge can rejoin the attempt.
+
+    An attempt is a property of one HTTP request, so this deliberately tests for a **request** context rather than
+    merely an app context. A ``pi-manage`` command or a periodic task runs inside an app context and would otherwise be
+    handed an attempt id - and since the buffer lives on ``g``, which such a task holds for its whole run, every
+    challenge it created would be stamped with the *same* id and read back as one authentication attempt. Outside a
+    request there is no attempt to speak of, so the challenge carries none and a request answering it starts its own.
+    """
+    if not has_request_context():
+        return None
+    return get_ca_context().attempt_id
 
 
 def peek_ca_context() -> ConditionalAccessContext | None:

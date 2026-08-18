@@ -50,6 +50,8 @@ import { ContainerDetailsTokenActionsComponent } from "@components/container/con
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { TableStateComponent } from "@components/shared/table-state/table-state.component";
+import { TableState } from "@core/models/table_state/table-state";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import {
   ContainerDetailToken,
@@ -89,7 +91,8 @@ interface ContainerDetailTokenData {
     MatTooltipModule,
     MatInput,
     ClearableInputComponent,
-    ContainerDetailsTokenActionsComponent
+    ContainerDetailsTokenActionsComponent,
+    TableStateComponent
   ],
   templateUrl: "./container-details-token-table.component.html",
   styleUrl: "./container-details-token-table.component.scss"
@@ -149,9 +152,18 @@ export class ContainerDetailsTokenTableComponent implements AfterViewInit {
         containerSerial: this.containerService.containerSerial()
       };
     },
+    // The rows are mutated on the kept data source rather than a new one being handed back, so the
+    // default reference equality would report "unchanged" and leave the table state on a stale count.
+    equal: () => false,
     computation: (source, previous) => {
       const { sortedData, comparison, containerSerial } = source;
       const ds = previous?.value ?? new MatTableDataSource<ContainerDetailTokenData>([]);
+
+      if (!this.containerService.containerDetailsResource.hasValue()) {
+        ds.data = [];
+        return ds;
+      }
+
       const comp = comparison?.[containerSerial];
 
       if (!comp || comp.tokens.equal) {
@@ -204,6 +216,13 @@ export class ContainerDetailsTokenTableComponent implements AfterViewInit {
     }
   });
 
+  readonly tableState = new TableState({
+    resource: this.containerService.containerDetailsResource,
+    count: () => this.dataSource().data.length,
+    allowed: () => this.authService.actionAllowed("container_list"),
+    resetFilter: () => this.clearFilter()
+  });
+
   isAssignableToAllToken = computed<boolean>(() => {
     const assignedUser = this.assignedUser();
     if (assignedUser.user_name === "") {
@@ -228,8 +247,6 @@ export class ContainerDetailsTokenTableComponent implements AfterViewInit {
 
     const externalDataSource = this.containerTokenData();
     externalDataSource.paginator = this.paginator;
-    (externalDataSource as unknown as { _sort: WritableSignal<Sort> })._sort = this.sort;
-    (dataSource as unknown as { _sort: WritableSignal<Sort> })._sort = this.sort;
 
     dataSource.filterPredicate = (data: ContainerDetailTokenData, filter: string) => {
       const row = data.token;

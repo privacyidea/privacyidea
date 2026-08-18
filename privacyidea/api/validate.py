@@ -146,6 +146,7 @@ from .lib.utils import (get_required, get_auth_error_status_code, send_error, se
                         log_authentication)
 from ..lib.conditional_access.authentication_event_types import (AuthEventType, AUTH_EVENT_TYPE_KEY,
                                                                  LOG_TRANSACTION_ID_KEY)
+from ..lib.conditional_access.request_context import continue_attempt
 from ..lib.decorators import (check_user_serial_or_cred_id_in_request)
 from ..lib.fido2.challenge import create_fido2_challenge, verify_fido2_challenge
 from ..lib.fido2.policy_action import FIDO2PolicyAction
@@ -171,6 +172,11 @@ def before_request():
     # Save the request data
     g.request_data = get_all_params(request)
     request.all_data = copy.deepcopy(g.request_data)
+
+    # Join the attempt an answered challenge belongs to. This happens here because the attempt id is recorded in the
+    # challenge, and the token logic deletes a challenge it answers successfully - by the time the outcome is logged
+    # there would be nothing left to read it from. ``state`` is the RADIUS alias of ``transaction_id``.
+    continue_attempt(get_optional_one_of(request.all_data, ["transaction_id", "state"]))
 
     privacyidea_server = get_app_config_value("PI_AUDIT_SERVERNAME", get_privacyidea_node(request.host))
     get_before_request_config()

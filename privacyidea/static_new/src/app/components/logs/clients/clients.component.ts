@@ -36,6 +36,8 @@ import {
 } from "@angular/material/table";
 import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { TableStateComponent } from "@components/shared/table-state/table-state.component";
+import { TableState } from "@core/models/table_state/table-state";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { AuditService } from "@services/audit/audit.service";
 import { AuthService } from "@services/auth/auth.service";
@@ -105,7 +107,8 @@ interface FlattenedClientRow {
     MatTooltip,
     MatIcon,
     ClearableInputComponent,
-    LocalDateTimePipe
+    LocalDateTimePipe,
+    TableStateComponent
   ]
 })
 export class ClientsComponent {
@@ -148,7 +151,7 @@ export class ClientsComponent {
   clientDataSource: WritableSignal<MatTableDataSource<FlattenedClientRow>> = linkedSignal({
     source: () =>
       this.clientService.clientsResource.hasValue() ? this.clientService.clientsResource.value() : undefined,
-    computation: (clientResource, previous) => {
+    computation: (clientResource) => {
       if (clientResource) {
         const clientData = clientResource.result?.value || ({} as ClientsDict);
         const dataSource = new MatTableDataSource(this.flattenedClientRowsFromDict(clientData));
@@ -161,8 +164,15 @@ export class ClientsComponent {
         };
         return dataSource;
       }
-      return previous?.value ?? new MatTableDataSource([] as FlattenedClientRow[]);
+      return new MatTableDataSource<FlattenedClientRow>([]);
     }
+  });
+
+  readonly tableState = new TableState({
+    resource: this.clientService.clientsResource,
+    count: () => this.clientDataSource().data.length,
+    allowed: () => this.authService.actionAllowed("clienttype"),
+    resetFilter: () => this.clearFilter()
   });
 
   filterValue = "";

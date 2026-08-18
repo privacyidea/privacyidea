@@ -22,7 +22,7 @@ from sqlalchemy import (
     JSON,
     DateTime,
     Index,
-    Sequence,
+    Identity,
     Unicode,
     Integer,
     Boolean,
@@ -62,7 +62,7 @@ class LockoutPolicy(MethodsMixin, db.Model):
     """
     __tablename__ = 'lockout_policies'
     __table_args__ = (UniqueConstraint('priority', name='uq_lockout_policy_priority'),)
-    id: Mapped[int] = mapped_column(Integer, Sequence("lockoutpolicy_seq"), primary_key=True)
+    id: Mapped[int] = mapped_column(Integer, Identity(always=False), primary_key=True)
     name: Mapped[str] = mapped_column(Unicode(255), nullable=False, unique=True)
     time_window_seconds: Mapped[int] = mapped_column(Integer, nullable=False)
     enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
@@ -149,7 +149,7 @@ class LockoutPolicyCondition(MethodsMixin, db.Model):
     __table_args__ = (
         UniqueConstraint('policy_id', 'condition_type', name='uq_lockout_condition_policy'),
     )
-    id: Mapped[int] = mapped_column(Integer, Sequence("lockoutpolicycondition_seq"), primary_key=True)
+    id: Mapped[int] = mapped_column(Integer, Identity(always=False), primary_key=True)
     policy_id: Mapped[int] = mapped_column(
         Integer, ForeignKey('lockout_policies.id', ondelete='CASCADE'), nullable=False, index=True)
     condition_type: Mapped[str] = mapped_column(Unicode(50), nullable=False)
@@ -178,7 +178,7 @@ class LockoutPolicyCounterType(MethodsMixin, db.Model):
         # current event type, then joins back to the small set of policy ids.
         Index('ix_lockout_counter_type_lookup', 'counter_type', 'policy_id'),
     )
-    id: Mapped[int] = mapped_column(Integer, Sequence("lockoutpolicycountertype_seq"), primary_key=True)
+    id: Mapped[int] = mapped_column(Integer, Identity(always=False), primary_key=True)
     policy_id: Mapped[int] = mapped_column(
         Integer, ForeignKey('lockout_policies.id', ondelete='CASCADE'), nullable=False)
     counter_type: Mapped[str] = mapped_column(Unicode(100), nullable=False)
@@ -208,7 +208,7 @@ class LockoutPolicyStage(MethodsMixin, db.Model):
         UniqueConstraint('policy_id', 'failure_threshold',
                          name='uq_lockout_stage_policy_threshold'),
     )
-    id: Mapped[int] = mapped_column(Integer, Sequence("lockoutpolicystage_seq"), primary_key=True)
+    id: Mapped[int] = mapped_column(Integer, Identity(always=False), primary_key=True)
     policy_id: Mapped[int] = mapped_column(
         Integer, ForeignKey('lockout_policies.id', ondelete='CASCADE'), nullable=False)
     # Optional human-readable label for the stage (e.g. "Warn", "Lock 10 min").
@@ -247,7 +247,7 @@ class LockoutStageAction(MethodsMixin, db.Model):
     and :func:`~privacyidea.lib.conditional_access.engine._action_threshold_met`.
     """
     __tablename__ = 'lockout_stage_actions'
-    id: Mapped[int] = mapped_column(Integer, Sequence("lockoutstageaction_seq"), primary_key=True)
+    id: Mapped[int] = mapped_column(Integer, Identity(always=False), primary_key=True)
     stage_id: Mapped[int] = mapped_column(
         Integer, ForeignKey('lockout_policy_stages.id', ondelete='CASCADE'),
         nullable=False, index=True)

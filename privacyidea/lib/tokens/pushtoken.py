@@ -1456,10 +1456,10 @@ class PushTokenClass(TokenClass):
                     return True, -1, {"transaction_id": transaction_id, "message": message}
 
                 # push_wait resolves the challenge inside this one blocking request, so log the trigger here (before
-                # the wait) — it has no other request to be recorded on and must be ordered ahead of the smartphone's
-                # out-of-band answer that arrives during the wait. Written immediately rather than at teardown for
-                # exactly that reason: the answer arrives as a separate /ttype/push request, which recovers this
-                # attempt by looking the transaction_id up in the *committed* log while this request still blocks.
+                # the wait) — it has no other request to be recorded on. Written immediately rather than at teardown
+                # because the smartphone's answer arrives during the wait as a separate /ttype/push request: its row
+                # would otherwise be committed first and the attempt's rows, which are ordered by id, would read as an
+                # answer preceding its own trigger.
                 from privacyidea.api.lib.utils import log_authentication
                 log_authentication(AuthEventType.CHALLENGE_TRIGGERED, flask_request, user=user or self.user,
                                    serial=self.token.serial, transaction_id=transaction_id, immediate=True)

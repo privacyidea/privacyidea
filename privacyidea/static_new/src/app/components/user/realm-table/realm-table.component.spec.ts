@@ -44,6 +44,9 @@ import { MockPendingChangesService } from "@testing/mock-services/mock-pending-c
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { MockResolverService } from "@testing/mock-services/mock-resolver-service";
 import { RealmTableComponent } from "./realm-table.component";
+import { AuthService } from "@services/auth/auth.service";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { expectsTableStateGating } from "@testing/table-state-gating";
 
 class LocalMockMatDialog {
   result$ = of(true);
@@ -72,6 +75,7 @@ describe("RealmTableComponent", () => {
     await TestBed.configureTestingModule({
       imports: [RealmTableComponent],
       providers: [
+        { provide: AuthService, useClass: MockAuthService },
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: TableUtilsService, useClass: MockTableUtilsService },
@@ -97,6 +101,12 @@ describe("RealmTableComponent", () => {
     pendingChangesService = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
 
     fixture.detectChanges();
+  });
+
+  it("gates the table on its read right, row count and filter", () => {
+    expectsTableStateGating({
+      state: component.tableState
+    });
   });
 
   it("should create", () => {
@@ -478,7 +488,7 @@ describe("RealmTableComponent", () => {
     expect(callNode[1]).toBe("node-1");
     expect(callNode[2]).toEqual([{ name: "res3", priority: 7 }]);
 
-    expect(notificationService.success).toHaveBeenCalledWith("Realm \"realmA\" updated.");
+    expect(notificationService.success).toHaveBeenCalledWith('Realm "realmA" updated.');
     expect(component.editingRealmName()).toBeNull();
     expect(component.isSavingEditedRealm()).toBe(false);
     expect(realmService.realmResource.reload).toHaveBeenCalled();
@@ -497,7 +507,7 @@ describe("RealmTableComponent", () => {
 
     expect(dialog.open).toHaveBeenCalled();
     expect(realmService.deleteRealm).toHaveBeenCalledWith("realmA", false);
-    expect(notificationService.success).toHaveBeenCalledWith("Realm \"realmA\" deleted.");
+    expect(notificationService.success).toHaveBeenCalledWith('Realm "realmA" deleted.');
     expect(realmService.realmResource.reload).toHaveBeenCalled();
   });
 
@@ -541,7 +551,7 @@ describe("RealmTableComponent", () => {
       });
       expect(realmService.deleteRealm).toHaveBeenNthCalledWith(1, "realmA", false);
       expect(realmService.deleteRealm).toHaveBeenNthCalledWith(2, "realmA", true);
-      expect(notificationService.success).toHaveBeenCalledWith("Realm \"realmA\" deleted.");
+      expect(notificationService.success).toHaveBeenCalledWith('Realm "realmA" deleted.');
       expect(notificationService.error).not.toHaveBeenCalled();
       expect(realmService.realmResource.reload).toHaveBeenCalled();
     });
@@ -613,7 +623,7 @@ describe("RealmTableComponent", () => {
     component.onSetDefaultRealm(row);
 
     expect(realmService.setDefaultRealm).toHaveBeenCalledWith("realmA");
-    expect(notificationService.success).toHaveBeenCalledWith("Realm \"realmA\" set as default.");
+    expect(notificationService.success).toHaveBeenCalledWith('Realm "realmA" set as default.');
     expect(realmService.realmResource.reload).toHaveBeenCalled();
     expect(realmService.defaultRealmResource.reload).toHaveBeenCalled();
   });

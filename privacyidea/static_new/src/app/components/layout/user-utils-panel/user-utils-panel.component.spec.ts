@@ -372,10 +372,15 @@ describe("UserUtilsPanelComponent", () => {
 
   describe("session time over a day", () => {
     it("sessionOverOneDay is false below a day and true at/above a day", () => {
-      sessionTimerService.remainingTime.set(24 * 60 * 60 * 1000 - 1);
+      sessionTimerService.remainingTime.set(24 * 60 * 60 * 1000 - 60_000);
       expect(component.sessionOverOneDay()).toBe(false);
 
       sessionTimerService.remainingTime.set(24 * 60 * 60 * 1000);
+      expect(component.sessionOverOneDay()).toBe(true);
+    });
+
+    it("counts the last part-minute before a day as a day, since minutes round up", () => {
+      sessionTimerService.remainingTime.set(24 * 60 * 60 * 1000 - 1);
       expect(component.sessionOverOneDay()).toBe(true);
     });
 
@@ -438,6 +443,37 @@ describe("UserUtilsPanelComponent", () => {
       expect(pendingChangesService.save).toHaveBeenCalled();
       expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
       expect(authService.logout).toHaveBeenCalled();
+    });
+  });
+
+  describe("session length sitting exactly on a format boundary", () => {
+    // A session of exactly one hour resets the countdown onto the hour/minute boundary, so reading
+    // the raw value flips the format on the first tick after every reset and back on the next
+    // activity, changing the width of the panel each time.
+    const HOUR_AND_MINUTES = "H'\u202Fh' mm'\u202Fmin'";
+
+    it("keeps the hour format across the first tick after a reset", () => {
+      sessionTimerService.remainingTime.set(3_600_000);
+      expect(component.sessionTimeFormat()).toBe(HOUR_AND_MINUTES);
+
+      sessionTimerService.remainingTime.set(3_599_000);
+      expect(component.sessionTimeFormat()).toBe(HOUR_AND_MINUTES);
+
+      sessionTimerService.remainingTime.set(3_540_001);
+      expect(component.sessionTimeFormat()).toBe(HOUR_AND_MINUTES);
+    });
+
+    it("moves to minutes only once a full minute below the hour has passed", () => {
+      sessionTimerService.remainingTime.set(3_540_000);
+      expect(component.sessionTimeFormat()).toBe("m'\u202Fmin'");
+    });
+
+    it("shows seconds only once the countdown is genuinely below ten minutes", () => {
+      sessionTimerService.remainingTime.set(600_000);
+      expect(component.sessionTimeFormat()).toBe("m'\u202Fmin'");
+
+      sessionTimerService.remainingTime.set(599_999);
+      expect(component.sessionTimeFormat()).toBe("m:ss");
     });
   });
 });

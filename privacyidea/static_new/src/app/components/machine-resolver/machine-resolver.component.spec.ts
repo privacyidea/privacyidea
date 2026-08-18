@@ -27,6 +27,7 @@ import { AuthService } from "@services/auth/auth.service";
 import { MachineResolver, MachineResolverService } from "@services/machine-resolver/machine-resolver.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { expectsTableStateGating } from "@testing/table-state-gating";
 import { MockMachineResolverService } from "@testing/mock-services/mock-machine-resolver-service";
 import { MockTableUtilsService } from "@testing/mock-services/mock-table-utils-service";
 import { of } from "rxjs";
@@ -68,8 +69,20 @@ describe("MachineResolverComponent", () => {
     authServiceMock = TestBed.inject(AuthService) as unknown as MockAuthService;
     router = TestBed.inject(Router);
     jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
-    authServiceMock.actionAllowed.mockReturnValue(true);
+    // Through the rights signal rather than by pinning actionAllowed: a constant answer reads no
+    // signal, so anything computed from it caches its first verdict and never re-evaluates.
+    authServiceMock.authData.set({
+      ...MockAuthService.MOCK_AUTH_DATA,
+      rights: ["mresolverread", "mresolverwrite", "mresolverdelete"]
+    });
     fixture.detectChanges();
+  });
+
+  it("gates the table on its read right, row count and filter", () => {
+    expectsTableStateGating({
+      state: component.tableState,
+      right: "mresolverread"
+    });
   });
 
   it("should create", () => {
@@ -101,8 +114,8 @@ describe("MachineResolverComponent", () => {
     expect(component.machineResolversDataSource().filteredData.length).toBe(2);
   });
 
-  it("falls back to an empty data source when no resolvers are loaded", () => {
-    machineResolverServiceMock.machineResolvers.set(undefined as never);
+  it("falls back to an empty data source while the resource has not loaded yet", () => {
+    machineResolverServiceMock.machineResolverResource.value.set(undefined);
     fixture.detectChanges();
     expect(component.machineResolversDataSource().data).toEqual([]);
   });
@@ -117,9 +130,7 @@ describe("MachineResolverComponent", () => {
       { resolvername: "hosts1", type: "hosts", data: { resolver: "hosts1", type: "hosts" } } as MachineResolver
     ]);
     fixture.detectChanges();
-    const link = (fixture.nativeElement as HTMLElement).querySelector<HTMLAnchorElement>(
-      ".name-actions-container a"
-    );
+    const link = (fixture.nativeElement as HTMLElement).querySelector<HTMLAnchorElement>(".name-actions-container a");
     expect(link?.getAttribute("href")).toBe(ROUTE_PATHS.MACHINE_RESOLVER_DETAILS + "hosts1");
   });
 

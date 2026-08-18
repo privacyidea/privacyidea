@@ -88,7 +88,7 @@ from privacyidea.lib.auth import (check_webui_user, ROLE, verify_db_admin,
                                   db_admin_exists)
 from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType, AUTH_EVENT_TYPE_KEY,
                                                                            LOG_TRANSACTION_ID_KEY)
-from privacyidea.lib.conditional_access.request_context import get_ca_context
+from privacyidea.lib.conditional_access.request_context import continue_attempt, get_ca_context
 from privacyidea.lib.config import get_from_config, SYSCONF, ensure_no_config_object, get_privacyidea_node
 from privacyidea.lib.crypto import geturandom, init_hsm
 from privacyidea.lib.error import AuthError, Error, ResourceNotFoundError
@@ -120,6 +120,12 @@ def before_request():
     # Save the request data
     g.request_data = get_all_params(request)
     request.all_data = copy.deepcopy(g.request_data)
+
+    # Join the attempt an answered challenge belongs to. This happens here because the attempt id is recorded in the
+    # challenge, and the token logic deletes a challenge it answers successfully - by the time the outcome is logged
+    # there would be nothing left to read it from.
+    continue_attempt(get_optional(request.all_data, "transaction_id"))
+
     privacyidea_server = get_app_config_value("PI_AUDIT_SERVERNAME", get_privacyidea_node(request.host))
     g.policy_object = PolicyClass()
     g.audit_object = getAudit(current_app.config)

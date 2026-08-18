@@ -1,0 +1,90 @@
+:host {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  justify-content: center;
+  // Compact by default. Tables that own their page opt into filling the table's
+  // footprint via `table.page-table-state-size`, so the panel is not left as a
+  // small island at the top of an otherwise empty content area.
+  min-height: var(--table-state-min-height, 15rem);
+  min-width: var(--table-state-min-width, auto);
+}
+
+// The no-data row inside a rendered table is one row among the chrome that stays
+// (filter, paginator, header), so there it keeps the compact treatment. The page
+// opt-in is set on the page's host and inherits down here too, so each stepped-up
+// value has to be put back, not just the footprint. Declaring them on the host
+// beats the inherited value; the defaults below are fallbacks, which do not.
+:host-context(td) {
+  min-height: 15rem;
+  min-width: auto;
+  --table-state-heading-font: var(--mat-sys-title-medium);
+  --table-state-icon-frame-size: 3.5rem;
+  --table-state-icon-size: 24px;
+}
+
+.table-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--half-global-gap);
+  padding: var(--double-global-padding) var(--global-padding);
+  text-align: center;
+}
+
+// A tinted disc carries the glyph instead of a washed-out icon floating on the
+// card: filled Material glyphs lose their silhouette when scaled up and faded.
+.table-state-icon-frame {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--table-state-icon-frame-size, 3.5rem);
+  height: var(--table-state-icon-frame-size, 3.5rem);
+  margin-bottom: var(--half-global-gap);
+  border-radius: 50%;
+  background-color: var(--mat-sys-primary-container);
+  color: var(--mat-sys-on-primary-container);
+}
+
+// Matches the icon disc's box so the spinner and the icon that replaces it sit on the same line.
+.table-state-spinner-frame {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--table-state-icon-frame-size, 3.5rem);
+  height: var(--table-state-icon-frame-size, 3.5rem);
+  margin-bottom: var(--half-global-gap);
+}
+
+.table-state-icon-frame-error {
+  background-color: var(--mat-sys-error-container);
+  color: var(--mat-sys-on-error-container);
+}
+
+.table-state-icon {
+  font-size: var(--table-state-icon-size, 24px);
+  width: var(--table-state-icon-size, 24px);
+  height: var(--table-state-icon-size, 24px);
+  color: inherit;
+}
+
+// The heading level is the document outline; the step of the typescale it is set
+// in is this panel's size variant. The two are chosen separately.
+.table-state-heading {
+  margin: 0;
+  font: var(--table-state-heading-font, var(--mat-sys-title-medium));
+  // The typescale shorthand carries weight 400; a heading needs the medium step.
+  font-weight: 500;
+  color: var(--mat-sys-on-surface);
+}
+
+// .table-state-actions is declared by the components that project into this panel, so it carries
+// their encapsulation attribute and cannot be styled from here. It lives in styles/actions.scss.
+
+.table-state-hint {
+  margin: 0 0 var(--half-global-gap);
+  max-width: 40rem;
+  font: var(--mat-sys-body-medium);
+  color: var(--mat-sys-on-surface-variant);
+}
