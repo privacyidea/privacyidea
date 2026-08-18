@@ -72,73 +72,107 @@ SIGN_FORMAT = """{application}
 #   ``free_users``   the free-tier limit (users with active tokens) allowed
 #                    without a subscription file.
 #   ``user_agents``  optional list of additional client user-agents that are
-#                    counted against this application's subscription. This lets
+#                    *metered* against this application's subscription, so
 #                    several distinct clients (e.g. privacyidea-pam and
-#                    pam-passkey) share one subscription. The application key
+#                    pam-passkey) can share one subscription. The application key
 #                    itself is always implicitly one of its own user-agents.
-# The flat lookups below (:data:`APPLICATIONS`, :data:`APPLICATION_ALIASES`)
-# are derived from this dict, so adding a client to a subscription is a single
-# edit here.
+#   ``clients``      optional list of client user-agents that belong to this
+#                    application but are never metered. Their use is recorded and
+#                    the dashboard shows them under this application's
+#                    subscription, but they can always authenticate.
+# The flat lookups below (:data:`APPLICATIONS`, :data:`METERED_APPLICATIONS`,
+# :data:`SUBSCRIPTION_OWNERS`) are derived from this dict, so attaching a client to
+# a subscription is a single edit here.
 SUBSCRIPTIONS = {
     "demo_application": {"free_users": 0},
     "owncloud": {"free_users": 50},
     "privacyidea-nextcloud": {"free_users": 50},
     "privacyidea-ldap-proxy": {"free_users": 50},
     "privacyidea-cp": {"free_users": 50},
-    "privacyidea-pam": {"free_users": 10000, "user_agents": ["pam-passkey"]},
+    # The PAM module identifies itself as "PAM"; privacyidea-pam stays an accepted alias
+    # of the same subscription for anything that sends the older name.
+    "privacyidea-pam": {"free_users": 10000, "user_agents": ["pam", "pam-passkey"]},
     "privacyidea-shibboleth": {"free_users": 10000},
     "privacyidea-adfs": {"free_users": 50},
     "privacyidea-keycloak": {"free_users": 10000, "user_agents": ["entraid-via-keycloak"]},
     "simplesamlphp": {"free_users": 10000},
     "privacyidea-simplesamlphp": {"free_users": 10000},
-    "privacyidea authenticator": {"free_users": 10, "user_agents": ["privacyidea-app"]},
-    "privacyidea": {"free_users": 50, "user_agents": ["privacyidea-radius"]},
+    # The Authenticator App is free to use: it is recorded and reported on the
+    # dashboard, but its authentications never count against a subscription.
+    "privacyidea authenticator": {"free_users": 10, "clients": ["privacyidea-app"]},
+    # FreeRADIUS is covered by the server's own subscription and counts against the
+    # same free tier, so RADIUS traffic is metered exactly like the server itself.
+    "privacyidea": {"free_users": 50, "user_agents": ["FreeRADIUS"]},
 }
 
 # Application and user-agent names are matched case-insensitively: clients spell their
-# user-agent however they like, so both lookups derived from SUBSCRIPTIONS are keyed and
+# user-agent however they like, so the lookups derived from SUBSCRIPTIONS are keyed and
 # valued lower-case, and every name entering them is lower-cased first.
 
 # Free-tier limit per subscription application. Derived from SUBSCRIPTIONS.
 APPLICATIONS = {application.lower(): config["free_users"]
                 for application, config in SUBSCRIPTIONS.items()}
 
-# Maps a client user-agent name to the application whose subscription it counts
-# against, so multiple user-agents can count towards the same subscription.
-# Derived from the ``user_agents`` lists in SUBSCRIPTIONS.
-APPLICATION_ALIASES = {user_agent.lower(): application.lower()
-                       for application, config in SUBSCRIPTIONS.items()
-                       for user_agent in config.get("user_agents", [])}
+# Maps a client user-agent to the application whose subscription and free tier it is
+# metered against. Only the ``user_agents`` lists: a client missing here is never
+# metered, whatever its application's free tier says.
+METERED_APPLICATIONS = {user_agent.lower(): application.lower()
+                        for application, config in SUBSCRIPTIONS.items()
+                        for user_agent in config.get("user_agents", [])}
+
+# Maps a client user-agent to the application whose subscription record describes it, for
+# the dashboard overview. Unlike METERED_APPLICATIONS this includes the unmetered
+# ``clients``, so an unmetered client still shows its application's subscription.
+SUBSCRIPTION_OWNERS = {**METERED_APPLICATIONS,
+                       **{client.lower(): application.lower()
+                          for application, config in SUBSCRIPTIONS.items()
+                          for client in config.get("clients", [])}}
 
 
-def get_subscription_application(plugin_name: str) -> str:
+def get_metered_application(plugin_name: str) -> str:
     """
-    Map a plugin user-agent name to the application whose subscription it counts against,
-    following :data:`APPLICATION_ALIASES`. The result is always lower-case: an alias
-    resolves to its owning application, any other name is returned unchanged apart from
-    the case.
+    Map a client user-agent to the application whose subscription and free tier its
+    authentications are counted against, following :data:`METERED_APPLICATIONS`. The
+    result is always lower-case: a metered client resolves to its application, any other
+    name is returned unchanged apart from the case — and a name that is no application
+    of its own is not metered at all (see :func:`check_subscription`).
 
     :param plugin_name: the plugin name parsed from a request's user-agent
-    :return: the canonical application name for subscription counting
+    :return: the application name to meter this client against
     """
     name = (plugin_name or "").lower()
-    return APPLICATION_ALIASES.get(name, name)
+    return METERED_APPLICATIONS.get(name, name)
+
+
+def get_subscription_owner(plugin_name: str) -> str:
+    """
+    Map a client user-agent to the application whose subscription record describes it,
+    following :data:`SUBSCRIPTION_OWNERS`. This is what the dashboard overview shows and
+    it says nothing about metering: an unmetered client such as the Authenticator App
+    still reports the state of its application's subscription.
+
+    :param plugin_name: the client user-agent name
+    :return: the application name whose subscription describes this client
+    """
+    name = (plugin_name or "").lower()
+    return SUBSCRIPTION_OWNERS.get(name, name)
 
 
 # Client user-agents shown on the dashboard subscription overview, each as its
-# own row. Aliased user-agents (e.g. pam-passkey, entraid-via-keycloak) stay
-# separate rows but resolve their subscription and free limit through their
-# owning application (see :func:`get_plugin_subscription_status`). The frontend
+# own row. These are the names the clients really send. A client that belongs to
+# another application (e.g. pam-passkey, entraid-via-keycloak, or the Authenticator
+# App) keeps its own row but reports that application's subscription, whether or not
+# it is metered against it (see :func:`get_plugin_subscription_status`). The frontend
 # groups these into sections and provides the display names (see the section
 # layout and ``pluginDisplayName`` in dashboardControllers.js), so this list is
 # just the set of rows the backend reports a status for; order is not
 # significant.
 DASHBOARD_PLUGINS = [
     "privacyidea-app",
-    "privacyidea-radius",
+    "freeradius",
     "privacyidea-nextcloud",
     "privacyidea-cp",
-    "privacyidea-pam",
+    "pam",
     "pam-passkey",
     "privacyidea-keycloak",
     "entraid-via-keycloak",
@@ -159,13 +193,13 @@ GITHUB_REPOS = {
     "privacyidea": "privacyidea/privacyidea",
     "privacyidea-app": "privacyidea/pi-authenticator",
     "privacyidea-cp": "privacyidea/privacyidea-credential-provider",
-    "privacyidea-pam": "privacyidea/privacyidea-pam",
+    "pam": "privacyidea/privacyidea-pam",
     "pam-passkey": "privacyidea/pam-passkey",
     "privacyidea-keycloak": "privacyidea/keycloak-provider",
     "entraid-via-keycloak": "privacyidea/keycloak-protocolmapper-entraid",
     "privacyidea-adfs": "privacyidea/adfs-provider",
     "privacyidea-shibboleth": "privacyidea/shibboleth-plugin",
-    "privacyidea-radius": "privacyidea/FreeRADIUS",
+    "freeradius": "privacyidea/FreeRADIUS",
     "privacyidea-nextcloud": "privacyidea/privacyidea-nextcloud-app",
 }
 # These clients are distributed via OS packages / app stores rather than a
@@ -365,9 +399,9 @@ def get_plugin_subscription_status(token_users: int | None = None) -> list[dict]
     * ``in_use`` — whether the plugin is actively used; see :func:`_is_in_use`.
     * ``subscription`` — the :class:`SubscriptionState` of its subscription record.
 
-    Aliased user-agents (e.g. pam-passkey) keep their own row and their own
-    ``last_seen`` but resolve their subscription through their owning
-    application. Plugin usage is derived from the ``ClientApplication`` table by
+    A client belonging to another application (e.g. pam-passkey) keeps its own row and
+    its own ``last_seen`` but resolves its subscription through that application, see
+    :func:`get_subscription_owner`. Plugin usage is derived from the ``ClientApplication`` table by
     parsing each stored user-agent with
     :func:`~privacyidea.lib.utils.get_plugin_info_from_useragent`.
 
@@ -422,9 +456,9 @@ def get_plugin_subscription_status(token_users: int | None = None) -> list[dict]
     overview = []
     for plugin in DASHBOARD_PLUGINS:
         last_seen = last_seen_by_plugin.get(plugin.lower())
-        # Aliased user-agents keep their own panel/last_seen but share the
-        # owning application's subscription.
-        owning_application = get_subscription_application(plugin)
+        # A client of another application keeps its own row and last_seen but shows
+        # that application's subscription.
+        owning_application = get_subscription_owner(plugin)
         subscription = subscriptions_by_app.get(owning_application)
         state_info = _subscription_state(subscription, now, token_users)
         overview.append({"application": plugin,
@@ -658,9 +692,11 @@ def check_subscription(application, max_free_subscriptions=None):
         without a subscription file. If not given, the default is used.
     :return: bool
     """
-    # Alias user-agents (e.g. pam-passkey) count against another application's
-    # subscription; normalize before looking up the subscription and free limit.
-    application = get_subscription_application(application)
+    # Metered clients (e.g. pam-passkey, FreeRADIUS) count against another application's
+    # subscription; resolve to that application before looking up its subscription and
+    # free limit. A client that is not metered resolves to a name that is no application
+    # of its own, falls through below and may always authenticate.
+    application = get_metered_application(application)
     if application in APPLICATIONS:
         subscriptions = get_subscription(application)
         # get the number of users with active tokens

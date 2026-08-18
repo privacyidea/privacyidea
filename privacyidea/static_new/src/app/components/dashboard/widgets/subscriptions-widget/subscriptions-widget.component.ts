@@ -64,15 +64,11 @@ const SECTIONS: SectionNode[] = [
     label: $localize`Use Cases`,
     children: [
       { application: "privacyidea-app" },
-      { application: "privacyidea-radius" },
+      { application: "freeradius" },
       { application: "privacyidea-nextcloud" },
       {
         label: $localize`System Login`,
-        children: [
-          { application: "privacyidea-cp" },
-          { application: "privacyidea-pam" },
-          { application: "pam-passkey" }
-        ]
+        children: [{ application: "privacyidea-cp" }, { application: "pam" }, { application: "pam-passkey" }]
       },
       {
         label: $localize`Single Sign On`,
@@ -91,10 +87,10 @@ const SECTIONS: SectionNode[] = [
 const DISPLAY_NAMES: Record<string, string> = {
   privacyidea: "privacyIDEA Server",
   "privacyidea-app": "privacyIDEA Authenticator App",
-  "privacyidea-radius": "FreeRADIUS",
+  freeradius: "FreeRADIUS",
   "privacyidea-nextcloud": "Nextcloud",
   "privacyidea-cp": "Windows Credential Provider",
-  "privacyidea-pam": "PAM OTP & Push",
+  pam: "PAM OTP & Push",
   "pam-passkey": "PAM Passkey",
   "privacyidea-keycloak": "Keycloak",
   "entraid-via-keycloak": "EntraID Integration",
@@ -107,10 +103,10 @@ const PTL_BASE_URL = "https://netknights.it/plugin-traffic-light";
 const PTL_SLUGS: Record<string, string> = {
   privacyidea: "privacyidea-server",
   "privacyidea-app": "privacyidea-authenticator-app",
-  "privacyidea-radius": "privacyidea-freeradius",
+  freeradius: "privacyidea-freeradius",
   "privacyidea-nextcloud": "privacyidea-nextcloud",
   "privacyidea-cp": "privacyidea-windows-credential-provider",
-  "privacyidea-pam": "privacyidea-pam-otp-push",
+  pam: "privacyidea-pam-otp-push",
   "pam-passkey": "privacyidea-pam-passkey",
   "privacyidea-keycloak": "privacyidea-keycloak",
   "entraid-via-keycloak": "privacyidea-entraid-integration",

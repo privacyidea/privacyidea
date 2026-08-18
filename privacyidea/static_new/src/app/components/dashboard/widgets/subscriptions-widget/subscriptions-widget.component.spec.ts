@@ -156,10 +156,10 @@ describe("SubscriptionsWidgetComponent", () => {
     ]);
     expect(rows.filter((row) => row.kind === "component").map((row) => row.application)).toEqual([
       "privacyidea-app",
-      "privacyidea-radius",
+      "freeradius",
       "privacyidea-nextcloud",
       "privacyidea-cp",
-      "privacyidea-pam",
+      "pam",
       "pam-passkey",
       "privacyidea-keycloak",
       "entraid-via-keycloak",
@@ -178,10 +178,10 @@ describe("SubscriptionsWidgetComponent", () => {
   });
 
   it("should fall back to an unused status for components the backend did not report", () => {
-    const radius = component.rows().find((row) => row.application === "privacyidea-radius");
+    const radius = component.rows().find((row) => row.application === "freeradius");
 
     expect(radius?.status).toEqual(
-      expect.objectContaining({ application: "privacyidea-radius", in_use: false, subscription: "none" })
+      expect.objectContaining({ application: "freeradius", in_use: false, subscription: "none" })
     );
   });
 

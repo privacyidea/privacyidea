@@ -15,8 +15,11 @@ from privacyidea.lib.subscriptions import (save_subscription,
                                            subscription_status,
                                            get_plugin_subscription_status,
                                            get_server_subscription_status,
-                                           get_subscription_application,
+                                           get_metered_application,
+                                           get_subscription_owner,
                                            get_latest_github_versions,
+                                           APPLICATIONS,
+                                           METERED_APPLICATIONS,
                                            DASHBOARD_PLUGINS)
 from privacyidea.lib import subscriptions as subscriptions_module
 from privacyidea.lib.token import init_token
@@ -182,25 +185,57 @@ class SubscriptionApplicationTestCase(MyTestCase):
         # Token count < 50
         self.assertEqual(0, res)
 
-    def test_05_useragent_aliases(self):
-        # Alias user-agents resolve to the application whose subscription they
-        # count against; non-aliases pass through lower-cased.
-        self.assertEqual("privacyidea-pam", get_subscription_application("pam-passkey"))
-        self.assertEqual("privacyidea-pam", get_subscription_application("PAM-Passkey"))
+    def test_05_metered_clients(self):
+        # A metered client resolves to the application it is counted against; any other
+        # name passes through lower-cased.
+        self.assertEqual("privacyidea-pam", get_metered_application("pam-passkey"))
+        self.assertEqual("privacyidea-pam", get_metered_application("PAM-Passkey"))
         self.assertEqual("privacyidea-keycloak",
-                         get_subscription_application("entraid-via-keycloak"))
-        self.assertEqual("privacyidea-cp", get_subscription_application("privacyidea-cp"))
-        self.assertEqual("privacyidea-cp", get_subscription_application("Privacyidea-CP"))
-        self.assertEqual("", get_subscription_application(""))
+                         get_metered_application("entraid-via-keycloak"))
+        self.assertEqual("privacyidea-cp", get_metered_application("privacyidea-cp"))
+        self.assertEqual("privacyidea-cp", get_metered_application("Privacyidea-CP"))
+        self.assertEqual("", get_metered_application(""))
 
-        # check_subscription for an alias looks up the primary's subscription
-        # rather than the alias user-agent name.
+        # check_subscription for a metered client looks up its application's
+        # subscription rather than the client's own name.
         with mock.patch("privacyidea.lib.subscriptions.get_users_with_active_tokens",
                         return_value=0):
             with mock.patch("privacyidea.lib.subscriptions.get_subscription",
                             return_value=[]) as mock_get_subscription:
                 self.assertTrue(check_subscription("pam-passkey"))
         mock_get_subscription.assert_called_once_with("privacyidea-pam")
+
+    def test_06_authenticator_app_is_never_metered(self):
+        # The Authenticator App is free to use: its authentications must not be counted
+        # against any subscription, however many users have tokens, and it must not be
+        # able to raise a SubscriptionError.
+        self.assertNotIn("privacyidea-app", METERED_APPLICATIONS)
+        self.assertEqual("privacyidea-app", get_metered_application("privacyIDEA-App"))
+        # The dashboard still reports it under the authenticator subscription.
+        self.assertEqual("privacyidea authenticator", get_subscription_owner("privacyIDEA-App"))
+
+        with mock.patch("privacyidea.lib.subscriptions.get_users_with_active_tokens",
+                        return_value=100_000) as mock_token_users:
+            with mock.patch("privacyidea.lib.subscriptions.get_subscription") as mock_get_subscription:
+                for _ in range(20):
+                    self.assertTrue(check_subscription("privacyIDEA-App"))
+        # Not metered at all: neither the free tier nor a subscription is consulted.
+        mock_get_subscription.assert_not_called()
+        mock_token_users.assert_not_called()
+
+    def test_07_freeradius_is_metered_like_the_server(self):
+        # FreeRADIUS is covered by the server's subscription and counts against the same
+        # free tier, so it resolves to "privacyidea" for metering and for display.
+        self.assertEqual("privacyidea", get_metered_application("FreeRADIUS"))
+        self.assertEqual("privacyidea", get_subscription_owner("FreeRADIUS"))
+        self.assertEqual(APPLICATIONS["privacyidea"], APPLICATIONS[get_metered_application("FreeRADIUS")])
+
+        with mock.patch("privacyidea.lib.subscriptions.get_users_with_active_tokens",
+                        return_value=0):
+            with mock.patch("privacyidea.lib.subscriptions.get_subscription",
+                            return_value=[]) as mock_get_subscription:
+                self.assertTrue(check_subscription("FreeRADIUS"))
+        mock_get_subscription.assert_called_once_with("privacyidea")
 
 
 class PluginSubscriptionStatusTestCase(MyTestCase):
@@ -258,8 +293,9 @@ class PluginSubscriptionStatusTestCase(MyTestCase):
         # expiring: subscription with less than 60 days left
         self._add_clientapp("privacyidea-adfs")
         self._add_subscription("privacyidea-adfs", days_left=5)
-        # exceeded: valid subscription but more token users than allowed
-        self._add_clientapp("privacyidea-pam")
+        # exceeded: valid subscription but more token users than allowed. The PAM row is
+        # keyed on the name the module sends; its subscription is privacyidea-pam.
+        self._add_clientapp("PAM")
         self._add_subscription("privacyidea-pam", days_left=100, num_tokens=5)
         # expired: subscription end date in the past
         self._add_clientapp("privacyidea-cp")
@@ -280,7 +316,7 @@ class PluginSubscriptionStatusTestCase(MyTestCase):
         self.assertEqual("expiring", overview["privacyidea-adfs"]["subscription"])
         self.assertLess(overview["privacyidea-adfs"]["days_left"], 60)
 
-        self.assertEqual("exceeded", overview["privacyidea-pam"]["subscription"])
+        self.assertEqual("exceeded", overview["pam"]["subscription"])
 
         self.assertEqual("expired", overview["privacyidea-cp"]["subscription"])
         self.assertLess(overview["privacyidea-cp"]["days_left"], 0)
@@ -374,8 +410,8 @@ class PluginSubscriptionStatusTestCase(MyTestCase):
             self.assertEqual("none", entry["subscription"])
 
     def test_08_alias_useragent_stays_separate_with_own_last_seen(self):
-        # pam-passkey remains its own dashboard entry with its own last_seen,
-        # even though it is counted against privacyidea-pam.
+        # pam-passkey remains its own dashboard entry with its own last_seen, even though
+        # it is counted against privacyidea-pam like the PAM module itself.
         self.assertIn("pam-passkey", DASHBOARD_PLUGINS)
         self._add_clientapp("pam-passkey")
 
@@ -387,8 +423,8 @@ class PluginSubscriptionStatusTestCase(MyTestCase):
 
         self.assertIn("pam-passkey", overview)
         self.assertIsNotNone(overview["pam-passkey"]["last_seen"])
-        # privacyidea-pam had no client activity of its own.
-        self.assertIsNone(overview["privacyidea-pam"]["last_seen"])
+        # The PAM row itself had no client activity.
+        self.assertIsNone(overview["pam"]["last_seen"])
 
     def test_09_alias_useragent_mirrors_owning_subscription(self):
         # pam-passkey has no subscription of its own; its row reflects the
@@ -441,12 +477,12 @@ class PluginSubscriptionStatusTestCase(MyTestCase):
         self.assertIsNotNone(entraid["last_seen"])
 
     def test_13_authenticator_app_useragent_wired_to_row(self):
-        # The Authenticator App sends the user-agent "privacyIDEA-App", which is
-        # the dashboard row (privacyidea-app) and is counted against the
-        # "privacyidea authenticator" subscription.
+        # The Authenticator App sends the user-agent "privacyIDEA-App", which is the
+        # dashboard row (privacyidea-app) and reports the "privacyidea authenticator"
+        # subscription without being metered against it.
         self.assertIn("privacyidea-app", DASHBOARD_PLUGINS)
         self.assertEqual("privacyidea authenticator",
-                         get_subscription_application("privacyIDEA-App"))
+                         get_subscription_owner("privacyIDEA-App"))
         self._add_clientapp("privacyIDEA-App", version="4.7.3")
         self._add_subscription("privacyidea authenticator", days_left=100)
 
@@ -481,9 +517,9 @@ class PluginSubscriptionStatusTestCase(MyTestCase):
         self.assertListEqual([], overview["privacyidea-shibboleth"]["versions"])
 
     def test_12_radius_row_mirrors_server_subscription(self):
-        # RADIUS has no subscription of its own; it is covered by the server
-        # ("privacyidea") subscription and mirrors it.
-        self.assertIn("privacyidea-radius", DASHBOARD_PLUGINS)
+        # FreeRADIUS identifies itself as "FreeRADIUS" and has no subscription of its
+        # own; it is covered by the server ("privacyidea") subscription and mirrors it.
+        self.assertIn("freeradius", DASHBOARD_PLUGINS)
         self._add_subscription("privacyidea", days_left=100)
 
         with mock.patch(
@@ -492,9 +528,30 @@ class PluginSubscriptionStatusTestCase(MyTestCase):
             overview = {e["application"]: e
                         for e in get_plugin_subscription_status()}
 
-        radius = overview["privacyidea-radius"]
+        radius = overview["freeradius"]
         self.assertEqual("valid", radius["subscription"])
         self.assertTrue(radius["in_use"])
+
+    def test_15_pam_row_matches_the_user_agent_the_module_sends(self):
+        # The PAM module identifies itself as "PAM/<version>", so that is the row's key.
+        # "privacyidea-pam" stays the application whose subscription the row reports, and
+        # remains accepted as a client name of its own.
+        self.assertIn("pam", DASHBOARD_PLUGINS)
+        self.assertEqual("privacyidea-pam", get_metered_application("PAM"))
+        self.assertEqual("privacyidea-pam", get_metered_application("privacyidea-pam"))
+        self._add_clientapp("PAM", version="1.1.0")
+        self._add_subscription("privacyidea-pam", days_left=100)
+
+        with mock.patch(
+                "privacyidea.lib.subscriptions.get_users_with_active_tokens",
+                return_value=0):
+            overview = {e["application"]: e
+                        for e in get_plugin_subscription_status()}
+
+        pam = overview["pam"]
+        self.assertTrue(pam["in_use"])
+        self.assertListEqual(["1.1.0"], pam["versions"])
+        self.assertEqual("valid", pam["subscription"])
 
     def test_13_nextcloud_row_matches_the_user_agent_the_app_sends(self):
         # The Nextcloud app identifies itself as "privacyidea-nextcloud/<version>", which
