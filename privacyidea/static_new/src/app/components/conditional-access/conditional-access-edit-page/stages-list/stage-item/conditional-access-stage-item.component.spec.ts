@@ -120,12 +120,14 @@ describe("ConditionalAccessStageItemComponent", () => {
       policyService.defaultErrorMessages.set(SUGGESTIONS);
     });
 
-    it("should emit a trimmed error_message, or null when blank", () => {
+    it("should emit the error_message exactly as typed", () => {
+      // Not trimmed here: the field is bound back to this value, so trimming would delete a space the
+      // admin has just typed. validate_error_message strips it, and treats a blank message as none.
       const spy = jest.spyOn(component.updateStage, "emit");
       component.onErrorMessageInput("  Locked.  ");
-      expect(spy).toHaveBeenCalledWith({ error_message: "Locked." });
+      expect(spy).toHaveBeenCalledWith({ error_message: "  Locked.  " });
       component.onErrorMessageInput("   ");
-      expect(spy).toHaveBeenCalledWith({ error_message: null });
+      expect(spy).toHaveBeenCalledWith({ error_message: "   " });
     });
 
     it("should be off for a stage with no message and on for one that has it", () => {
@@ -136,12 +138,26 @@ describe("ConditionalAccessStageItemComponent", () => {
     });
 
     it("should stay visible while the field is cleared mid-edit", () => {
-      // Without the explicit override the field would derive itself away the moment the admin
-      // selects-all-and-deletes, taking the input out from under them.
+      // Clearing the textarea leaves an empty message, not an absent one, so the field does not derive
+      // itself away the moment the admin selects-all-and-deletes.
       withStage({ error_message: "Locked." });
-      component.toggleErrorMessage(true);
-      withStage({ error_message: null });
+      component.onErrorMessageInput("");
+      withStage({ error_message: "" });
       expect(component.showErrorMessage()).toBe(true);
+    });
+
+    it("should emit an empty message rather than null while the field is being cleared", () => {
+      withStage({ error_message: "Locked." });
+      const spy = jest.spyOn(component.updateStage, "emit");
+      component.onErrorMessageInput("");
+      expect(spy).toHaveBeenCalledWith({ error_message: "" });
+    });
+
+    it("should hide the field only when the stage carries no message at all", () => {
+      withStage({ error_message: null });
+      expect(component.showErrorMessage()).toBe(false);
+      withStage({});
+      expect(component.showErrorMessage()).toBe(false);
     });
 
     it("should fill in the suggestion when switched on", () => {
@@ -209,16 +225,29 @@ describe("ConditionalAccessStageItemComponent", () => {
       const spy = jest.spyOn(component.updateStage, "emit");
       component.toggleErrorMessage(false);
       expect(spy).toHaveBeenCalledWith({ error_message: null });
+      // Visibility follows the stage, so it turns off once the parent has applied that emit - this
+      // component keeps no copy of the answer that could disagree with the data.
+      withStage({ error_message: null });
       expect(component.showErrorMessage()).toBe(false);
     });
 
-    it("should restore the admin's own text when switched back on, not the suggestion", () => {
+    it("should not carry a message across the stage it was written for", () => {
+      // The stages list tracks by $index, so removing a stage rebinds this component to the next one.
+      // Nothing about the message is held here, so switching on offers that stage's own suggestion -
+      // never text belonging to the stage that was removed.
       withStage({ error_message: "Mine." });
       component.toggleErrorMessage(false);
-      withStage({ error_message: null });
+      withStage({ error_message: null, actions: [{ action_type: "LOCK_USER", action_value: null }] });
       const spy = jest.spyOn(component.updateStage, "emit");
       component.toggleErrorMessage(true);
-      expect(spy).toHaveBeenCalledWith({ error_message: "Mine." });
+      expect(spy).toHaveBeenCalledWith({ error_message: "Locked. Try again in about {duration}." });
+    });
+
+    it("should switch on with an empty field when the stage has nothing to suggest", () => {
+      withStage({ error_message: null, actions: [{ action_type: "ALLOW", action_value: null }] });
+      const spy = jest.spyOn(component.updateStage, "emit");
+      component.toggleErrorMessage(true);
+      expect(spy).toHaveBeenCalledWith({ error_message: "" });
     });
 
     it("should replace the message with the suggestion on reset", () => {

@@ -93,15 +93,13 @@ applies to this stage only; other stages stay silent unless you enable it there 
 response is sent instead, exactly as for any other failed authentication, so an attacker cannot tell that an account \
 was locked or an address blocked.`;
 
-  // Null until the admin touches the checkbox, after which their choice wins for the lifetime of this
-  // component. Without that, clearing the textarea would set error_message to null and the field would
-  // vanish mid-edit, since "is a message shown" is otherwise derived from the value having one.
-  private readonly messageEnabledOverride = signal<boolean | null>(null);
-  // What the field held when it was last switched off, so switching back on restores the admin's text
-  // instead of silently replacing it with the suggestion. Session-only; never persisted.
-  private readonly rememberedMessage = signal<string | null>(null);
-
-  readonly showErrorMessage = computed(() => this.messageEnabledOverride() ?? !!this.stage().error_message);
+  // Whether this stage carries a message at all: absent or null means the admin has not turned it on, an
+  // empty string means turned on but not written yet. Read off the stage rather than kept in a signal here,
+  // because the stages list tracks by $index and reuses this component for a different stage when one is
+  // removed - local state would outlive the stage it belongs to and describe the next one.
+  readonly showErrorMessage = computed(
+    () => this.stage().error_message !== null && this.stage().error_message !== undefined
+  );
 
   readonly errorMessageLength = computed(() => (this.stage().error_message ?? "").length);
 
@@ -167,26 +165,24 @@ was locked or an address blocked.`;
   }
 
   onErrorMessageInput(value: string): void {
-    const trimmed = value.trim();
-    this.updateStage.emit({ error_message: trimmed || null });
+    // Kept verbatim, empty string included: that is what holds the field open while the admin clears it,
+    // and the server normalises a blank message to null when the policy is saved.
+    this.updateStage.emit({ error_message: value });
   }
 
   /**
    * Turn the user-facing message on or off for this stage.
    *
    * Off clears it - one field is the whole truth, so "say nothing" has to be a null message rather
-   * than a second stored flag that could disagree with it. The cleared text is kept in memory so
-   * switching back on restores what the admin wrote; only if there is nothing to restore does the
-   * server's suggestion fill the field.
+   * than a second stored flag that could disagree with it. On starts from the server's suggestion, or
+   * from an empty field when the stage has no action worth wording.
+   *
+   * Switching off therefore discards what was written. Deliberate: remembering it would mean state that
+   * belongs to this stage living in a component the list reuses for another one, and the reset button
+   * already puts the suggestion back.
    */
   toggleErrorMessage(enabled: boolean): void {
-    this.messageEnabledOverride.set(enabled);
-    if (!enabled) {
-      this.rememberedMessage.set(this.stage().error_message ?? null);
-      this.updateStage.emit({ error_message: null });
-      return;
-    }
-    this.updateStage.emit({ error_message: this.rememberedMessage() ?? this.suggestedErrorMessage() });
+    this.updateStage.emit({ error_message: enabled ? (this.suggestedErrorMessage() ?? "") : null });
   }
 
   /**
