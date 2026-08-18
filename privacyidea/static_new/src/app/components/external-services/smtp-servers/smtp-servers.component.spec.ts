@@ -28,6 +28,7 @@ import { DialogService } from "@services/dialog/dialog.service";
 import { SmtpService } from "@services/smtp/smtp.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
+import { expectsTableStateGating } from "@testing/table-state-gating";
 import { MockAuthService, MockDialogService, MockSmtpService, MockTableUtilsService } from "@testing/mock-services";
 import { Subject } from "rxjs";
 
@@ -90,6 +91,13 @@ describe("SmtpServersComponent", () => {
 
     component = fixture.componentInstance;
     fixture.detectChanges();
+  });
+
+  it("gates the table on its read right, row count and filter", () => {
+    expectsTableStateGating({
+      state: component.tableState,
+      right: "smtpserver_read"
+    });
   });
 
   it("should create", () => {

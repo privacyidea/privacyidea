@@ -396,6 +396,14 @@ def resolve_logged_in_user():
         # ...to restrict token view, audit view or token actions.
         request.all_data["user"] = g.logged_in_user.get("username")
         request.all_data["realm"] = g.logged_in_user.get("realm")
+        # The resolver is part of the identity of the logged-in user and is determined below. It has to be
+        # removed before the user object is created, because get_user_from_param() would otherwise build
+        # a user object with the resolver taken from the request.
+        request.all_data.pop("resolver", None)
+        # The userid is a stand-alone filter on the token owner and is not part of the forced user
+        # identity. A user-role caller's list is already scoped to their own tokens, so it is dropped
+        # here as well: for them it could only ever match their own uid or nothing.
+        request.all_data.pop("userid", None)
 
     try:
         request.User = get_user_from_param(request.all_data)

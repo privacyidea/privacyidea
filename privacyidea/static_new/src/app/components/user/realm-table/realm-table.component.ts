@@ -63,6 +63,8 @@ import { CopyableComponent } from "@components/shared/copyable/copyable.componen
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { TableStateComponent } from "@components/shared/table-state/table-state.component";
+import { TableState } from "@core/models/table_state/table-state";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
@@ -129,7 +131,8 @@ const columnKeysMap = [
     MatTooltip,
     NgClass,
     ScrollToTopDirective,
-    ScrollEdgesDirective
+    ScrollEdgesDirective,
+    TableStateComponent
   ],
   templateUrl: "./realm-table.component.html",
   styleUrl: "./realm-table.component.scss"
@@ -284,6 +287,12 @@ export class RealmTableComponent implements OnDestroy, OnInit {
       dataSource.filter = this.filterString().trim().toLowerCase();
       return dataSource;
     }
+  });
+
+  readonly tableState = new TableState({
+    resource: this.realmService.realmResource,
+    count: () => this.realmService.realmOptions().length,
+    resetFilter: () => this.resetFilter()
   });
 
   ngOnInit(): void {
