@@ -32,12 +32,14 @@ import {
 } from "@services/conditional-access/conditional-access-policy.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+import { SmtpService } from "@services/smtp/smtp.service";
 import {
   MockAuthService,
   MockConditionalAccessPolicyService,
   MockNotificationService,
   MockPendingChangesService,
-  MockRouter
+  MockRouter,
+  MockSmtpService
 } from "@testing/mock-services";
 import { BehaviorSubject } from "rxjs";
 import { ConditionalAccessEditPageComponent } from "./conditional-access-edit-page.component";
@@ -95,6 +97,7 @@ describe("ConditionalAccessEditPageComponent — edit mode", () => {
         { provide: AuthService, useClass: MockAuthService },
         { provide: NotificationService, useClass: MockNotificationService },
         { provide: PendingChangesService, useClass: MockPendingChangesService },
+        { provide: SmtpService, useClass: MockSmtpService },
         { provide: Router, useClass: MockRouter },
         {
           provide: ActivatedRoute,
@@ -450,6 +453,7 @@ describe("ConditionalAccessEditPageComponent — new mode", () => {
         { provide: AuthService, useClass: MockAuthService },
         { provide: NotificationService, useClass: MockNotificationService },
         { provide: PendingChangesService, useClass: MockPendingChangesService },
+        { provide: SmtpService, useClass: MockSmtpService },
         { provide: Router, useClass: MockRouter },
         {
           provide: ActivatedRoute,
@@ -555,6 +559,50 @@ describe("ConditionalAccessEditPageComponent — new mode", () => {
     expect(component.editPolicy().stages).toEqual([]);
     expect(component.editPolicy().counter_types_to_track).toEqual([]);
     expect(component.selectedTemplateKey()).toBeNull();
+  });
+
+  describe("a template carrying an email action", () => {
+    beforeEach(() => {
+      policyServiceMock.templates.set([
+        {
+          key: "mfa_bruteforce",
+          description: "Lock a user whose second factor keeps failing.",
+          policy: {
+            ...EMPTY_TEMPLATE_POLICY,
+            name: "MFA Brute-Force",
+            counter_types_to_track: ["MFA_FAIL"],
+            stages: [
+              {
+                failure_threshold: 5,
+                priority: 1,
+                actions: [
+                  { action_type: "LOCK_USER", action_value: 600 },
+                  { action_type: "EMAIL_ADMIN", action_value: { smtp_identifier: "" } }
+                ]
+              }
+            ]
+          }
+        }
+      ]);
+    });
+
+    const applyAndReadActionTypes = (rights: string[]): LockoutActionType[] => {
+      const authService = TestBed.inject(AuthService) as unknown as MockAuthService;
+      authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights });
+      component.applyTemplate("mfa_bruteforce");
+      return component.editPolicy().stages[0].actions.map((action) => action.action_type);
+    };
+
+    it("prefills it for an admin who may read the SMTP configuration", () => {
+      expect(applyAndReadActionTypes(["smtpserver_read"])).toEqual(["LOCK_USER", "EMAIL_ADMIN"]);
+    });
+
+    // The email action stays offered without the right; the identifier field just becomes a free-text
+    // input explaining why the configured servers cannot be listed.
+    it("prefills it for one who may not, too", () => {
+      expect(applyAndReadActionTypes([])).toEqual(["LOCK_USER", "EMAIL_ADMIN"]);
+      expect(component.editPolicy().name).toBe("MFA Brute-Force");
+    });
   });
 
   it("should expose the selected template's description as a hint", () => {
