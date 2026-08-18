@@ -451,6 +451,11 @@ class Audit(AuditBase):
         the same id. Entries written through a single node then land ``auto_increment_increment``
         ids apart instead of 1 apart, even though nothing was deleted.
 
+        This is a heuristic, not a guarantee: it assumes one node is the steady writer for
+        a given offset (true for a single-writer setup in front of Galera), and it reflects
+        the increment at the time this instance was created, not at the time older entries
+        were written, so a cluster resize can make the stride wrong for entries predating it.
+
         :rtype: int
         """
         if self._id_stride is None:
@@ -460,9 +465,10 @@ class Audit(AuditBase):
                     row = self.session.execute(
                         text("SHOW VARIABLES LIKE 'auto_increment_increment'")).fetchone()
                     if row:
-                        self._id_stride = int(row[1])
+                        self._id_stride = max(1, int(row[1]))
                 except Exception as exx:  # pragma: no cover
                     log.debug(f"Could not determine auto_increment_increment: {exx!r}")
+                    self.session.rollback()
         return self._id_stride
 
     def _check_missing(self, audit_id):
@@ -479,15 +485,11 @@ class Audit(AuditBase):
         res = False
         try:
             stride = self._get_id_stride()
-            id_bef = self.session.query(LogEntry.id
-                                        ).filter(LogEntry.id ==
-                                                 int(audit_id) - stride).count()
-            id_aft = self.session.query(LogEntry.id
-                                        ).filter(LogEntry.id ==
-                                                 int(audit_id) + stride).count()
+            neighbour_ids = (int(audit_id) - stride, int(audit_id) + stride)
+            found = self.session.query(LogEntry.id).filter(LogEntry.id.in_(neighbour_ids)).count()
             # We may not do a commit!
             # self.session.commit()
-            if id_bef and id_aft:
+            if found == len(neighbour_ids):
                 res = True
         except Exception as exx:  # pragma: no cover
             log.error(f"exception {exx!r}")

@@ -9,6 +9,7 @@ import types
 import unittest
 
 from mock import mock
+from sqlalchemy import text
 from sqlalchemy.pool import NullPool
 
 from privacyidea.config import TestingConfig
@@ -450,8 +451,9 @@ class AuditTestCase(MyTestCase):
             self.Audit.session.add(LogEntry(id=entry_id))
         self.Audit.session.commit()
 
-        # The default stride (sqlite has no auto_increment_increment) is 1, so the
-        # 3-apart neighbours are not found and the entry is reported as missing.
+        # With the default stride of 1, the 3-apart neighbours are not found and
+        # the entry is reported as missing.
+        self.Audit._id_stride = 1
         self.assertFalse(self.Audit._check_missing(1003))
 
         # once the stride matches the actual gap between entries, they are
@@ -465,11 +467,26 @@ class AuditTestCase(MyTestCase):
         self.Audit.session.query(LogEntry).filter(LogEntry.id.in_((1000, 1003, 1006))).delete()
         self.Audit.session.commit()
 
-    def test_13_get_id_stride_defaults_to_one_on_sqlite(self):
-        # sqlite (and any non mysql/mariadb dialect) has no auto_increment_increment,
-        # so the stride stays at the historical default of 1.
+    def test_13_get_id_stride_defaults_to_one(self):
+        # Without a configured auto_increment_increment (the default on a plain
+        # MySQL/MariaDB server, and the case for any dialect without the concept
+        # at all, e.g. sqlite/postgres), the stride stays at the historical default of 1.
         self.Audit._id_stride = None
         self.assertEqual(1, self.Audit._get_id_stride())
+
+    def test_14_get_id_stride_detects_configured_increment(self):
+        # Only meaningful against a real MySQL/MariaDB server (e.g. the
+        # unit-tests-mariadb.yml CI job, or a local mariadb-test container from
+        # compose-dev.yml) -- other dialects have no equivalent session variable.
+        if self.Audit.engine.dialect.name not in ("mysql", "mariadb"):
+            self.skipTest("auto_increment_increment only exists on MySQL/MariaDB")
+
+        self.Audit.session.execute(text("SET SESSION auto_increment_increment = 5"))
+        try:
+            self.Audit._id_stride = None
+            self.assertEqual(5, self.Audit._get_id_stride())
+        finally:
+            self.Audit.session.execute(text("SET SESSION auto_increment_increment = 1"))
 
 
 class AuditEngineOptionsTestCase(unittest.TestCase):
