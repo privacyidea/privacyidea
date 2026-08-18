@@ -159,7 +159,9 @@ Texts containing whitespaces must be enclosed in single quotes.
 
 Starting with version 2.20 you can use the tag *{challenge}*. This will add
 the challenge data that was passed in the first authentication request in the
-challenge parameter. This could contain banking transaction data.
+challenge parameter. This could contain banking transaction data, like it is
+used by the DisplayTAN token (see :ref:`ocra_token`). The tag is empty if the
+authentication request did not contain a challenge parameter.
 
 Starting with version 3.6 the `smstext` can contain a lot more tags similar to the
 policy :ref:`emailtext`:
@@ -234,7 +236,9 @@ The text can contain the following tags, that will be filled:
 
 Starting with version 2.20 you can use the tag *{challenge}*. This will add
 the challenge data that was passed in the first authentication request in the
-challenge parameter. This could contain banking transaction data.
+challenge parameter. This could contain banking transaction data, like it is
+used by the DisplayTAN token (see :ref:`ocra_token`). The tag is empty if the
+authentication request did not contain a challenge parameter.
 
 Default: *<otp>*
 
@@ -618,7 +622,40 @@ during the login process with a :ref:`push_token`.
 You can choose different texts for different users or IP addresses.
 This way you could customize push notifications for different applications.
 
-You can also use certain tags in the text, just like in :ref:`emailtext`.
+The text can contain the following tags, that will be filled:
+
+  * {serial} the serial number of the token.
+  * {user} the given name of the token owner.
+  * {givenname} the given name of the token owner.
+  * {surname} the surname of the token owner.
+  * {username} the loginname of the token owner.
+  * {userrealm} the realm of the token owner.
+  * {recipient_givenname} the given name of the token owner.
+  * {recipient_surname} the surname of the token owner.
+  * {tokentype} the type of the token, which is always *push*.
+  * {time} the current server time in the format HH:MM:SS.
+  * {date} the current server date in the format YYYY-MM-DD.
+  * {client_ip} the IP address of the client that triggered the challenge.
+  * {ua_browser} the name of the browser or of the application that triggered the
+    challenge, like *firefox* or *privacyidea-keycloak*.
+  * {ua_string} the complete user agent of the client that triggered the challenge.
+  * {action} the endpoint that triggered the challenge, like */validate/check*.
+  * {url} the base URL of the privacyIDEA server. This requires ``PI_BASE_URL`` to be
+    configured in :ref:`cfgfile`.
+
+.. note:: The remaining tags known from :ref:`emailtext` do not work here. There is no
+   {otp}, because a push notification never contains an OTP value, and *{challenge}* is
+   only filled for tokens that receive transaction data in the *challenge* parameter of
+   the authentication request (see :ref:`ocra_token`), which a push token does not.
+   If the text contains a tag that does not exist, the complete text is discarded and
+   the default text *Do you want to confirm the login?* is displayed instead.
+
+.. note:: The tags {client_ip}, {ua_browser}, {ua_string} and {action} describe the
+   client that triggered the challenge, so they can only be filled in the notification
+   that is sent via Firebase. If the smartphone fetches its open challenges by polling
+   instead, the text is rendered again for the request of the smartphone, which contains
+   no information about the client that triggered the challenge. These four tags are
+   empty in this case. The tags of the token owner are filled on both ways.
 
 .. _policy_push_title_on_mobile:
 
@@ -632,6 +669,9 @@ type: ``string``
 This is the title of the push notification that is displayed
 on the user's smartphone during the login process with
 a :ref:`push_token`.
+
+.. note:: In contrast to :ref:`policy_push_text_on_mobile`, tags are not replaced in
+   the title.
 
 .. _policy_push_wait:
 
