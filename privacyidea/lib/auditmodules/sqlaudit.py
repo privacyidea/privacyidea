@@ -48,7 +48,7 @@ import logging
 import traceback
 from collections import OrderedDict
 
-from sqlalchemy import asc, desc, and_, or_, select, delete
+from sqlalchemy import asc, desc, and_, or_, select, delete, text
 from sqlalchemy import create_engine
 from sqlalchemy.engine.url import make_url
 from sqlalchemy.ext.compiler import compiles
@@ -191,6 +191,9 @@ class Audit(AuditBase):
         # been handled. This may close an already-closed session, but this is not a problem.
         register_finalizer(self._finalize_session)
         self.session._model_changes = {}
+        # Lazily determined by _get_id_stride(), cached per instance since a single
+        # instance serves an entire request (e.g. one page of audit entries).
+        self._id_stride = None
 
     def _create_engine(self):
         """
@@ -437,6 +440,31 @@ class Audit(AuditBase):
             # clear the audit data
             self.audit_data = {}
 
+    def _get_id_stride(self):
+        """
+        Determine the step between the ids of two consecutively written audit log
+        entries.
+
+        This is normally 1. However, a Galera cluster with ``wsrep_auto_increment_control``
+        enabled (the default) raises ``auto_increment_increment`` to the cluster size and
+        gives each node its own offset, so that concurrently writing nodes cannot generate
+        the same id. Entries written through a single node then land ``auto_increment_increment``
+        ids apart instead of 1 apart, even though nothing was deleted.
+
+        :rtype: int
+        """
+        if self._id_stride is None:
+            self._id_stride = 1
+            if self.engine.dialect.name in ("mysql", "mariadb"):
+                try:
+                    row = self.session.execute(
+                        text("SHOW VARIABLES LIKE 'auto_increment_increment'")).fetchone()
+                    if row:
+                        self._id_stride = int(row[1])
+                except Exception as exx:  # pragma: no cover
+                    log.debug(f"Could not determine auto_increment_increment: {exx!r}")
+        return self._id_stride
+
     def _check_missing(self, audit_id):
         """
         Check if the audit log contains the entries before and after
@@ -450,12 +478,13 @@ class Audit(AuditBase):
         """
         res = False
         try:
+            stride = self._get_id_stride()
             id_bef = self.session.query(LogEntry.id
                                         ).filter(LogEntry.id ==
-                                                 int(audit_id) - 1).count()
+                                                 int(audit_id) - stride).count()
             id_aft = self.session.query(LogEntry.id
                                         ).filter(LogEntry.id ==
-                                                 int(audit_id) + 1).count()
+                                                 int(audit_id) + stride).count()
             # We may not do a commit!
             # self.session.commit()
             if id_bef and id_aft:
