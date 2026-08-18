@@ -256,10 +256,10 @@ class LockoutEvaluation:
     What one post-response evaluation produced: the user-facing messages to surface on the current response, and the
     outcomes to record as the request's conditional-access history.
 
-    Each message is a :class:`StageMessage`, already rendered - the engine knows the duration it just wrote, so
-    nothing has to read the row back - and ordered by :class:`MessageKind` so a caller showing several leads with the
-    one the user can do least about. Only the restrictions written by *this* request appear here; anything already
-    in force was refused by the pre-check before the request got this far.
+    Each message is a :class:`StageMessage`, already rendered and ordered by :class:`MessageKind` so a caller
+    showing several leads with the one the user can do least about. Wording for a restriction is rendered from the
+    row now in force, not by the stage that wrote it: several policies can restrict the same subject in one request
+    and only one row survives them. Notification wording comes from the stage, the only place it exists.
 
     The engine returns these instead of writing the history itself. It has no access to the id of the
     authentication-log row (it runs before the row exists on the pre-auth path, and never sees it on the other), and
@@ -271,6 +271,8 @@ class LockoutEvaluation:
     """
     messages: list[StageMessage] = field(default_factory=list)
     outcomes: list[ConditionalAccessOutcome] = field(default_factory=list)
+    #: Which rows this evaluation wrote a restriction to, so the caller knows which ones to describe.
+    restricted_targets: set[LockoutTarget] = field(default_factory=set)
 
 
 @dataclass
@@ -1071,6 +1073,33 @@ def _stage_access_decision(stage: LockoutPolicyStage, count: int) -> "AccessDeci
     return AccessDecision.ALLOW if has_allow else None
 
 
+def _restrictions_in_force(context: CAContext, targets: set[LockoutTarget]) -> list[StageMessage]:
+    """
+    The wording of the restrictions an evaluation left in force, one message per restricted row.
+
+    Read back rather than rendered by the stage that wrote it. Several policies can restrict the same subject in
+    one request and a stage can carry several restricting actions, but only one row survives them all - so the
+    stage that wrote the weaker restriction would otherwise describe a lock that is not in force, and two
+    policies locking the same user would tell the user twice. Reading the row also means ``{duration}`` counts
+    down the expiry that actually stands, whatever the upserts decided to keep.
+
+    Silent by default holds here as everywhere: a row carrying no wording produces no message.
+
+    :param targets: the targets this evaluation restricted, so an untouched row is never read or described
+    """
+    statuses = []
+    if LockoutTarget.USER in targets and context.user is not None:
+        statuses.append(get_user_lockout(context.user))
+    if LockoutTarget.SOURCE_IP in targets and context.source_ip:
+        statuses.append(get_ip_block(context.source_ip))
+    messages = []
+    for status in statuses:
+        text = render_error_message(status.error_message, status) if status else None
+        if text:
+            messages.append(StageMessage(text, _message_kind(status)))
+    return messages
+
+
 def evaluate_lockout_policies(context: CAContext, event_type: AuthEventType | None,
                               now: datetime | None = None) -> "LockoutEvaluation":
     """
@@ -1131,6 +1160,7 @@ def evaluate_lockout_policies(context: CAContext, event_type: AuthEventType | No
     ).all()
     messages: list[StageMessage] = []
     outcomes: list[ConditionalAccessOutcome] = []
+    restricted: set[LockoutTarget] = set()
     for policy in policies:
         # Guarded per policy so one policy's failure does not cost the others theirs: a broken policy would otherwise
         # disable every policy ordered behind it. The only failure that escapes is the policy query above, which runs
@@ -1142,6 +1172,10 @@ def evaluate_lockout_policies(context: CAContext, event_type: AuthEventType | No
             continue
         messages.extend(evaluation.messages)
         outcomes.extend(evaluation.outcomes)
+        restricted |= evaluation.restricted_targets
+    # Every restriction is described once, from the row left in force, ahead of the notifications the stages
+    # carry: two policies locking the same user leave one lock, and so must say so once.
+    messages = _restrictions_in_force(context, restricted) + messages
     # De-duplicate the messages while preserving order: several policies tracking the same user can carry the same
     # wording in a single request. The outcomes are *not* de-duplicated - each is a distinct thing that happened, and
     # two policies locking the same user are two facts worth keeping apart.
@@ -1472,34 +1506,14 @@ def _execute_stage_actions(policy: LockoutPolicy, stage: LockoutPolicyStage,
 
     :param policy: the triggering policy, for the outcomes
     :param count: the count that tripped the stage, for the outcomes
-    :return: a :class:`LockoutEvaluation` with this stage's message, when it has one and nothing it did left a
-        restriction behind to carry it, and one outcome per action that ran (both empty if every action was skipped).
+    :return: a :class:`LockoutEvaluation` with this stage's message when it only notified, one outcome per action
+        that ran, and the targets it restricted (all empty if every action was skipped).
     """
     outcomes: list[ConditionalAccessOutcome] = []
-    # The strongest restriction this stage wrote, as the status its message is rendered against: a permanent one
-    # outranks a timed one, and None means the stage only notified. Rendering here is what removes the need to read
-    # the row back - nothing else can be in force, since the pre-check already refused any restriction that was.
-    written: RestrictionStatus | None = None
+    # Which rows this stage wrote a restriction to. Their wording is rendered by the caller from the row that
+    # survives the whole evaluation, so a stage that restricts carries no message of its own from here.
+    restricted: set[LockoutTarget] = set()
 
-    def restriction_written(seconds: int | None) -> None:
-        """
-        Note the restriction just written, keeping the longest-lasting one a stage produced: a permanent
-        restriction (seconds ``None``) outranks any timed one, and a longer timed one outranks a shorter.
-
-        A stage carries one message for however many actions it runs, so that message has to describe the
-        restriction the user is actually up against - the same longest-lasting rule the pre-check applies when
-        it reports what is already in force. Picking the first written instead would let a stage that locks for
-        an hour and then for ten minutes say "ten minutes", which is not the lock in force.
-        """
-        nonlocal written
-        if written is None:
-            stronger = True
-        elif written.permanent:
-            stronger = False
-        else:
-            stronger = seconds is None or seconds > written.seconds_remaining
-        if stronger:
-            written = RestrictionStatus(permanent=seconds is None, expires_at=None, seconds_remaining=seconds)
     user = context.user
     source_ip = context.source_ip
 
@@ -1524,12 +1538,12 @@ def _execute_stage_actions(policy: LockoutPolicy, stage: LockoutPolicyStage,
                 lock_expires_at = now + timedelta(seconds=duration)
                 if _upsert_user_lockout_state(user, lock_expires_at=lock_expires_at,
                                               error_message=stage.error_message):
-                    restriction_written(duration)
+                    restricted.add(LockoutTarget.USER)
                     record(action_type, expires_at=lock_expires_at)
             elif action_type == LockoutAction.PERMANENT_LOCK_USER:
                 if _upsert_user_lockout_state(user, lock_expires_at=None,
                                               error_message=stage.error_message):
-                    restriction_written(None)
+                    restricted.add(LockoutTarget.USER)
                     record(action_type)
             elif action_type in (LockoutAction.EMAIL_ADMIN, LockoutAction.EMAIL_USER):
                 if _send_lockout_email(action_type, action, user, tags):
@@ -1554,7 +1568,7 @@ def _execute_stage_actions(policy: LockoutPolicy, stage: LockoutPolicyStage,
                         continue
                     block_expires_at = now + timedelta(seconds=duration)
                 if _upsert_ip_block(source_ip, block_expires_at=block_expires_at, error_message=stage.error_message):
-                    restriction_written(None if block_expires_at is None else duration)
+                    restricted.add(LockoutTarget.SOURCE_IP)
                     record(action_type, expires_at=block_expires_at)
             elif action_type in (LockoutAction.ALLOW, LockoutAction.DENY):
                 # ALLOW/DENY decide the current request pre-auth (see
@@ -1568,10 +1582,11 @@ def _execute_stage_actions(policy: LockoutPolicy, stage: LockoutPolicyStage,
         except Exception as ex:
             log.warning(f"Lockout action {action_type} (id {action.id}) on stage {stage.id} "
                         f"failed: {ex!r}; skipping.")
-    # Rendered here, ranked so the caller can lead with the restriction the user can do least about.
-    rendered = render_error_message(stage.error_message, written) if outcomes else None
-    messages = [StageMessage(rendered, _message_kind(written))] if rendered else []
-    return LockoutEvaluation(messages=messages, outcomes=outcomes)
+    # A stage that restricted is described from its row, by the caller; only a notify-only stage carries its
+    # wording from here, since it wrote nothing to read back.
+    rendered = render_error_message(stage.error_message) if outcomes and not restricted else None
+    messages = [StageMessage(rendered, _message_kind(None))] if rendered else []
+    return LockoutEvaluation(messages=messages, outcomes=outcomes, restricted_targets=restricted)
 
 
 def _delete_user_lockout_state(state: UserLockoutState) -> None:
@@ -1607,14 +1622,19 @@ def _upsert_user_lockout_state(user: "User", *, lock_expires_at: datetime | None
 
     The write is defensive: a failure is logged and rolled back so that writing
     the lockout state can never break the authentication response that already
-    completed. An existing **permanent** lock is never downgraded to a timed
-    lock.
+    completed.
 
-    :return: whether the lock was written. ``False`` when the write failed, or when it was declined because a stronger
-        (permanent) lock is already in force - the caller uses this to record the action in the history only if it
+    A lock is never **weakened**: a permanent lock is not downgraded to a timed one, and a timed lock is not
+    shortened. Several policies can lock the same user in one request (:func:`evaluate_lockout_policies` runs
+    every policy tracking the event), and a stage can carry more than one lock action; without this rule the
+    last write would win regardless of severity, so a one-hour lock followed by a ten-minute one would leave
+    the user locked for ten minutes.
+
+    :return: whether the lock was written. ``False`` when the write failed, or when it was declined because a
+        stronger lock is already in force - the caller uses this to record the action in the history only if it
         actually changed something.
     """
-    downgrade_declined = False
+    weakening_declined = False
     with guarded_write(f"the user lockout state for {user!r}") as write:
         session = get_ca_session()
         state = session.get(UserLockoutState, (user.resolver, user.uid, user.realm))
@@ -1623,14 +1643,18 @@ def _upsert_user_lockout_state(user: "User", *, lock_expires_at: datetime | None
             session.add(state)
         elif state.lock_expires_at is None and lock_expires_at is not None:
             log.info(f"Not downgrading the existing permanent lock for {user!r} to a timed lock.")
-            downgrade_declined = True
-        if not downgrade_declined:
+            weakening_declined = True
+        elif lock_expires_at is not None and lock_expires_at < state.lock_expires_at:
+            log.info(f"Not shortening the existing lock for {user!r}: it already runs until "
+                     f"{state.lock_expires_at}.")
+            weakening_declined = True
+        if not weakening_declined:
             state.username = user.login
             state.lock_expires_at = lock_expires_at
-            # Refreshed on every re-lock, so an escalating policy's later stage replaces the earlier
-            # stage's wording and the message always describes the restriction now in force.
+            # Written together with the expiry, so the wording always describes the lock now in force. A write
+            # that would weaken the lock is declined above, its wording with it.
             state.error_message = error_message
-    return write.succeeded and not downgrade_declined
+    return write.succeeded and not weakening_declined
 
 
 def _upsert_ip_block(source_ip: str, *, block_expires_at: datetime | None, error_message: str | None) -> bool:
@@ -1639,20 +1663,22 @@ def _upsert_ip_block(source_ip: str, *, block_expires_at: datetime | None, error
 
     The IP counterpart of :func:`_upsert_user_lockout_state`: the write is
     defensive (a failure is logged and rolled back so that blocking an IP can
-    never break the authentication response that already completed) and an
-    existing **permanent** block is never downgraded to a timed one.
+    never break the authentication response that already completed) and a block
+    is never weakened - neither downgraded from permanent to timed, nor
+    shortened.
 
     Never-block IPs (loopback and the ``CONDITIONAL_ACCESS_NEVER_BLOCK`` config)
     are skipped: blocking shared infrastructure (a reverse proxy, NAT egress, or
     a load balancer) would lock out everyone behind it.
 
-    :return: whether the block was written. ``False`` for a never-block IP, for a declined downgrade of a permanent
-        block, and for a failed write - so the caller records the action in the history only if it did something.
+    :return: whether the block was written. ``False`` for a never-block IP, for a write declined because a
+        stronger block is already in force, and for a failed write - so the caller records the action in the
+        history only if it did something.
     """
     if is_ip_never_block(source_ip):
         log.info(f"Not blocking IP {source_ip!r}: it is on the conditional-access never-block list.")
         return False
-    downgrade_declined = False
+    weakening_declined = False
     with guarded_write(f"the IP block for {source_ip!r}") as write:
         session = get_ca_session()
         state = session.get(BlockList, source_ip)
@@ -1661,9 +1687,13 @@ def _upsert_ip_block(source_ip: str, *, block_expires_at: datetime | None, error
             session.add(state)
         elif state.block_expires_at is None and block_expires_at is not None:
             log.info(f"Not downgrading the existing permanent block for IP {source_ip!r} to a timed block.")
-            downgrade_declined = True
-        if not downgrade_declined:
+            weakening_declined = True
+        elif block_expires_at is not None and block_expires_at < state.block_expires_at:
+            log.info(f"Not shortening the existing block for IP {source_ip!r}: it already runs until "
+                     f"{state.block_expires_at}.")
+            weakening_declined = True
+        if not weakening_declined:
             state.block_expires_at = block_expires_at
-            # See _upsert_user_lockout_state: refreshed on every re-block.
+            # See _upsert_user_lockout_state: written together with the expiry.
             state.error_message = error_message
-    return write.succeeded and not downgrade_declined
+    return write.succeeded and not weakening_declined

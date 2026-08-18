@@ -1138,6 +1138,66 @@ class LockoutEngineTestCase(LockoutTestCase):
         self.assertIsNone(self._state().lock_expires_at)
         self.assertTrue(is_user_locked(self.user))
 
+    def test_a_shorter_lock_does_not_replace_a_longer_one(self):
+        # The guard itself, against a lock already on the row: reachable when two requests race past the
+        # pre-check, or through an endpoint that has no gate. See test_two_policies_leave_the_longest_lock for
+        # the path this rule exists for.
+        db.session.add(UserLockoutState(resolver=self.user.resolver, uid=self.user.uid, realm=self.user.realm,
+                                        lock_expires_at=utc_now() + timedelta(seconds=3600),
+                                        error_message="MSG-LONG"))
+        db.session.commit()
+        self._make_policy(name="short", counter_type=AuthEventType.MFA_FAIL,
+                          stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.LOCK_USER,
+                                                                               {"duration_seconds": 600})],
+                                                  error_message="MSG-SHORT"),))
+        self._seed_events(AuthEventType.MFA_FAIL, 3)
+        evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+        # The wording is declined with the expiry: it would otherwise describe a lock that is not in force.
+        self.assertAlmostEqual(3600, (self._state().lock_expires_at - utc_now()).total_seconds(), delta=5)
+        self.assertEqual("MSG-LONG", self._state().error_message)
+
+    def test_a_longer_lock_replaces_a_shorter_one(self):
+        # The other direction is an escalation and must go through, wording included.
+        db.session.add(UserLockoutState(resolver=self.user.resolver, uid=self.user.uid, realm=self.user.realm,
+                                        lock_expires_at=utc_now() + timedelta(seconds=600),
+                                        error_message="MSG-SHORT"))
+        db.session.commit()
+        self._make_policy(name="long", counter_type=AuthEventType.MFA_FAIL,
+                          stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.LOCK_USER,
+                                                                               {"duration_seconds": 3600})],
+                                                  error_message="MSG-LONG"),))
+        self._seed_events(AuthEventType.MFA_FAIL, 3)
+        evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+        self.assertAlmostEqual(3600, (self._state().lock_expires_at - utc_now()).total_seconds(), delta=5)
+        self.assertEqual("MSG-LONG", self._state().error_message)
+
+    def test_two_policies_leave_the_longest_lock(self):
+        # The path the rule exists for: a locked user is refused before post-eval, so the way two locks land on
+        # one row is two policies tripping on the same request. The shorter one runs last (lower priority), and
+        # the row must still hold the hour.
+        self._make_policy(name="hour", counter_type=AuthEventType.MFA_FAIL, priority=1,
+                          stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.LOCK_USER,
+                                                                               {"duration_seconds": 3600})]),))
+        self._make_policy(name="tenmin", counter_type=AuthEventType.MFA_FAIL, priority=2,
+                          stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.LOCK_USER,
+                                                                               {"duration_seconds": 600})]),))
+        self._seed_events(AuthEventType.MFA_FAIL, 3)
+        evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+        self.assertAlmostEqual(3600, (self._state().lock_expires_at - utc_now()).total_seconds(), delta=5)
+
+    def test_a_second_policy_may_still_lengthen_the_lock(self):
+        # The same two policies the other way round, so the hour is the last write: the guard must decline only
+        # what would weaken the lock, never an escalation arriving from another policy.
+        self._make_policy(name="tenmin", counter_type=AuthEventType.MFA_FAIL, priority=1,
+                          stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.LOCK_USER,
+                                                                               {"duration_seconds": 600})]),))
+        self._make_policy(name="hour", counter_type=AuthEventType.MFA_FAIL, priority=2,
+                          stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.LOCK_USER,
+                                                                               {"duration_seconds": 3600})]),))
+        self._seed_events(AuthEventType.MFA_FAIL, 3)
+        evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+        self.assertAlmostEqual(3600, (self._state().lock_expires_at - utc_now()).total_seconds(), delta=5)
+
     def test_invalid_duration_action_skipped(self):
         self._make_policy(name="baddur", counter_type=AuthEventType.MFA_FAIL,
                           stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.LOCK_USER)]),))
@@ -1262,6 +1322,49 @@ class LockoutEngineTestCase(LockoutTestCase):
         # The permanent block must remain permanent (block_expires_at stays None).
         self.assertIsNone(self._block(ip).block_expires_at)
         self.assertTrue(is_ip_blocked(ip))
+
+    def test_a_shorter_block_does_not_replace_a_longer_one(self):
+        # The guard itself, against a block already on the row - the IP mirror of
+        # test_a_shorter_lock_does_not_replace_a_longer_one.
+        ip = "203.0.113.7"
+        db.session.add(BlockList(ip=ip, block_expires_at=utc_now() + timedelta(seconds=3600)))
+        db.session.commit()
+        self._make_policy(name="shortblock", counter_type=AuthEventType.PASSWORD_FAIL,
+                          target=LockoutTarget.SOURCE_IP,
+                          stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.BLOCK_IP, 600)]),))
+        self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=3)
+        evaluate_lockout_policies(CAContext(self.user, ip), AuthEventType.PASSWORD_FAIL)
+        remaining = (self._block(ip).block_expires_at - utc_now()).total_seconds()
+        self.assertAlmostEqual(3600, remaining, delta=5)
+
+    def test_two_policies_leave_the_longest_block(self):
+        # The IP mirror of test_two_policies_leave_the_longest_lock: a blocked address is refused before
+        # post-eval, so two blocks meet on one row when two policies trip on the same request.
+        ip = "203.0.113.7"
+        self._make_policy(name="hourblock", counter_type=AuthEventType.PASSWORD_FAIL, priority=1,
+                          target=LockoutTarget.SOURCE_IP,
+                          stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.BLOCK_IP, 3600)]),))
+        self._make_policy(name="tenminblock", counter_type=AuthEventType.PASSWORD_FAIL, priority=2,
+                          target=LockoutTarget.SOURCE_IP,
+                          stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.BLOCK_IP, 600)]),))
+        self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=3)
+        evaluate_lockout_policies(CAContext(self.user, ip), AuthEventType.PASSWORD_FAIL)
+        remaining = (self._block(ip).block_expires_at - utc_now()).total_seconds()
+        self.assertAlmostEqual(3600, remaining, delta=5)
+
+    def test_a_second_policy_may_still_lengthen_the_block(self):
+        # The IP mirror: the hour is the last write here, and must go through.
+        ip = "203.0.113.7"
+        self._make_policy(name="tenminblock", counter_type=AuthEventType.PASSWORD_FAIL, priority=1,
+                          target=LockoutTarget.SOURCE_IP,
+                          stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.BLOCK_IP, 600)]),))
+        self._make_policy(name="hourblock", counter_type=AuthEventType.PASSWORD_FAIL, priority=2,
+                          target=LockoutTarget.SOURCE_IP,
+                          stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.BLOCK_IP, 3600)]),))
+        self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=3)
+        evaluate_lockout_policies(CAContext(self.user, ip), AuthEventType.PASSWORD_FAIL)
+        remaining = (self._block(ip).block_expires_at - utc_now()).total_seconds()
+        self.assertAlmostEqual(3600, remaining, delta=5)
 
     def test_permanent_block_ip_action(self):
         ip = "203.0.113.7"
@@ -2296,6 +2399,40 @@ class LockoutEngineTestCase(LockoutTestCase):
         self._seed_events(AuthEventType.MFA_FAIL, 3)
         evaluation = evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
         self.assertListEqual([StageMessage("Locked for 1 hour(s).", MessageKind.TIMED_RESTRICTION)],
+                             evaluation.messages)
+
+    def test_two_policies_locking_the_same_user_produce_one_message(self):
+        # Both policies trip on this request and both lock the same user, but there is only one lock row - so
+        # the user is told once, about the lock that survived, not once per policy.
+        self._make_policy(name="hour", counter_type=AuthEventType.MFA_FAIL, priority=1,
+                          stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.LOCK_USER,
+                                                                               {"duration_seconds": 3600})],
+                                                  error_message="Locked for {duration}."),))
+        self._make_policy(name="tenmin", counter_type=AuthEventType.MFA_FAIL, priority=2,
+                          stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.LOCK_USER,
+                                                                               {"duration_seconds": 600})],
+                                                  error_message="Locked for a short while."),))
+        self._seed_events(AuthEventType.MFA_FAIL, 3)
+        evaluation = evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+        # The hour-long lock is the one in force, so its wording - and its duration - is what the user reads.
+        self.assertListEqual([StageMessage("Locked for 1 hour(s).", MessageKind.TIMED_RESTRICTION)],
+                             evaluation.messages)
+
+    def test_a_notification_from_a_second_policy_survives_alongside_the_lock(self):
+        # Only restrictions collapse onto one row. A notify-only policy describes something else that happened,
+        # so its wording is still carried, after the restriction.
+        self._make_policy(name="lock", counter_type=AuthEventType.MFA_FAIL, priority=1,
+                          stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.LOCK_USER,
+                                                                               {"duration_seconds": 600})],
+                                                  error_message="Locked for {duration}."),))
+        self._make_policy(name="notify", counter_type=AuthEventType.MFA_FAIL, priority=2,
+                          stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.EMAIL_USER)],
+                                                  error_message="We emailed you."),))
+        self._seed_events(AuthEventType.MFA_FAIL, 3)
+        with mock.patch("privacyidea.lib.conditional_access.engine._send_lockout_email", return_value=True):
+            evaluation = evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+        self.assertListEqual([StageMessage("Locked for 10 minute(s).", MessageKind.TIMED_RESTRICTION),
+                              StageMessage("We emailed you.", MessageKind.NOTIFICATION)],
                              evaluation.messages)
 
     def test_a_permanent_action_sets_the_rank_whatever_the_order(self):
