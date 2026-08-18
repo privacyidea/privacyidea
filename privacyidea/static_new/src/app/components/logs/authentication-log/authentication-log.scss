@@ -37,6 +37,26 @@
   overflow-wrap: break-word;
 }
 
+// Long values clipped so they cannot widen the table, paired with one of the width classes below (see
+// TRUNCATED_COLUMN_CLASSES). A flex item of the copyable row, hence the explicit min-width: 0 to let it shrink below
+// its content.
+.cell-truncate {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+// The opaque ids (32 hex chars for an attempt, 20 digits for a transaction): their leading characters already tell rows
+// apart, and the rest is read from the tooltip or the copy button.
+.cell-truncate-id {
+  max-width: 10ch;
+}
+
+// A client label reads as a name, so it keeps room for the product name ahead of the version.
+.cell-truncate-client {
+  max-width: 24ch;
+}
+
 // Applied to the Info column's header and data cells only while some entry on the page carries other_info, so the
 // column claims its 300px when there is something to show and collapses when there is not. Both cells need it: a table
 // column is only as wide as its widest constrained cell.

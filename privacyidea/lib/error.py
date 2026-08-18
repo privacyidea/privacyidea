@@ -193,6 +193,18 @@ class ServerError(PrivacyIDEAError):
         PrivacyIDEAError.__init__(self, description=description, id=id)
 
 
+class HandlerAbortError(ServerError):
+    """Raised by an event handler to intentionally abort the current request.
+
+    This is the only handler exception that is allowed to propagate out of
+    the event-handling loop and turn the API response into an error.
+    Handlers that want to abort the request (e.g. the Script handler with
+    ``raise_error`` enabled) should raise this instead of a plain
+    :class:`ServerError`.
+    """
+    pass
+
+
 class HSMException(PrivacyIDEAError):
     def __init__(self, description="hsm error!", id=Error.HSM):
         PrivacyIDEAError.__init__(self, description=description, id=id)

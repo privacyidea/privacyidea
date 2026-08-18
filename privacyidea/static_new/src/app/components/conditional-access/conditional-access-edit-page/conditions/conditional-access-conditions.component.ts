@@ -129,6 +129,9 @@ const DEFAULT_OPERATOR: KnownConditionOperator = "IN";
 // direction that would be wrong for half the possible operators.
 const UNKNOWN_OPERATOR_HINT = $localize`The values this condition compares against.`;
 
+// The selection of a row that carries no condition (see selectedValues).
+const NO_VALUES: string[] = [];
+
 @Component({
   selector: "app-conditional-access-conditions",
   standalone: true,
@@ -183,8 +186,12 @@ export class ConditionalAccessConditionsComponent {
   // what the admin may pick. The selected* accessors read the policy, the *Options ones the backend
   // vocabulary, so the two halves never share a source.
 
+  // The empty case is one shared array, not a fresh one per call: this feeds a mat-select's [value],
+  // whose setter compares by reference and marks the view dirty, scheduling another change-detection
+  // pass - which would build another array, for a loop that never settles (see editConditions in the
+  // edit page, and what an unsettled app does to an open overlay's position).
   selectedValues(type: string): string[] {
-    return this.conditionFor(type)?.value ?? [];
+    return this.conditionFor(type)?.value ?? NO_VALUES;
   }
 
   // The stored condition wins over the remembered choice: were it the other way round, loading a

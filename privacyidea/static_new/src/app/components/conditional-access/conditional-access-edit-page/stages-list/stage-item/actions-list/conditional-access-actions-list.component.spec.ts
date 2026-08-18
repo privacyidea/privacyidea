@@ -17,11 +17,15 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { AuthService } from "@services/auth/auth.service";
 import {
   ConditionalAccessPolicyService,
   LockoutStageAction
 } from "@services/conditional-access/conditional-access-policy.service";
+import { SmtpService } from "@services/smtp/smtp.service";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockConditionalAccessPolicyService } from "@testing/mock-services/mock-conditional-access-policy-service";
+import { MockSmtpService } from "@testing/mock-services/mock-smtp-service";
 import { ConditionalAccessActionsListComponent } from "./conditional-access-actions-list.component";
 
 describe("ConditionalAccessActionsListComponent", () => {
@@ -36,7 +40,11 @@ describe("ConditionalAccessActionsListComponent", () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [ConditionalAccessActionsListComponent],
-      providers: [{ provide: ConditionalAccessPolicyService, useClass: MockConditionalAccessPolicyService }]
+      providers: [
+        { provide: ConditionalAccessPolicyService, useClass: MockConditionalAccessPolicyService },
+        { provide: AuthService, useClass: MockAuthService },
+        { provide: SmtpService, useClass: MockSmtpService }
+      ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(ConditionalAccessActionsListComponent);

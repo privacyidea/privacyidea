@@ -269,7 +269,7 @@
       to every request.
     </p>
     <app-conditional-access-conditions
-      [conditions]="editPolicy().conditions ?? []"
+      [conditions]="editConditions()"
       (conditionsChange)="onConditionsChange($event)" />
 
     <h4 i18n>Stages &amp; Actions</h4>

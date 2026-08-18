@@ -60,7 +60,7 @@ describe("AuthenticationLog", () => {
       imports: [AuthenticationLog],
       providers: [
         provideHttpClient(),
-        // The cells that link (realm, resolver, a policy behind an outcome) instantiate routerLink, which needs an
+        // The cells that link (realm, a policy behind an outcome) instantiate routerLink, which needs an
         // ActivatedRoute.
         provideRouter([]),
         { provide: MockAuthenticationLogService, useClass: MockAuthenticationLogService },
@@ -99,8 +99,6 @@ describe("AuthenticationLog", () => {
     const keys = component.visibleColumnKeys();
     expect(keys).not.toContain("username");
     expect(keys).not.toContain("realm");
-    expect(keys).not.toContain("resolver");
-    expect(keys).not.toContain("uid");
     // Non-user columns stay visible.
     expect(keys).toContain("timestamp");
     expect(keys).toContain("event_type");
@@ -330,6 +328,47 @@ describe("AuthenticationLog", () => {
     expect(component.isInfoColumn("conditional_access_outcomes")).toBe(true);
     expect(component.isInfoColumn("other_info")).toBe(true);
     expect(component.isInfoColumn("serial")).toBe(false);
+  });
+
+  it("clips only the long-valued columns, and does so per column", () => {
+    // The two opaque ids share a width class; a client label needs more room to stay readable as a name.
+    expect(component.truncatedClass("attempt_id")).toBe("cell-truncate-id");
+    expect(component.truncatedClass("transaction_id")).toBe("cell-truncate-id");
+    expect(component.truncatedClass("client_label")).toBe("cell-truncate-client");
+    expect(component.truncatedClass("source_ip")).toBeNull();
+    expect(component.truncatedClass("serial")).toBeNull();
+  });
+
+  it("renders a clipped cell that still carries the full value for copying and filtering", () => {
+    const attemptId = "9f2c1b7e4a5d6083bc9e1f2a3b4c5d6e";
+    service.authenticationLogResource.set(
+      MockPiResponse.fromValue({
+        auth_logs: [
+          {
+            id: 1,
+            event_type: "LOGIN_SUCCESS",
+            timestamp: "2026-08-03T09:00:00Z",
+            attempt_id: attemptId,
+            source_ip: "10.0.0.5"
+          }
+        ],
+        count: 1,
+        current: 1,
+        prev: null,
+        next: null
+      })
+    );
+    fixture.detectChanges();
+
+    const clipped = fixture.nativeElement.querySelectorAll(".cell-truncate");
+    // Only the attempt id: the row carries no client label, and the source IP is never clipped.
+    expect(clipped.length).toBe(1);
+    expect(clipped[0].classList).toContain("cell-truncate-id");
+    // Clipping is visual only - the DOM keeps the whole id, so copy, tooltip and filter all see it.
+    expect(clipped[0].textContent.trim()).toBe(attemptId);
+
+    component.addFilterValue("attempt_id", attemptId);
+    expect(component.selectedFilterValues("attempt_id")).toEqual([attemptId]);
   });
 
   // --- the Conditional access column's filter ---

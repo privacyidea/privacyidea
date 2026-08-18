@@ -17,33 +17,66 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { AuthService } from "@services/auth/auth.service";
 import {
   ConditionalAccessPolicyService,
   LockoutActionType,
   LockoutStageAction,
   LockoutTarget
 } from "@services/conditional-access/conditional-access-policy.service";
+import { SmtpServer, SmtpService } from "@services/smtp/smtp.service";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockConditionalAccessPolicyService } from "@testing/mock-services/mock-conditional-access-policy-service";
+import { MockSmtpService } from "@testing/mock-services/mock-smtp-service";
 import { ConditionalAccessActionItemComponent } from "./conditional-access-action-item.component";
 
 describe("ConditionalAccessActionItemComponent", () => {
   let component: ConditionalAccessActionItemComponent;
   let fixture: ComponentFixture<ConditionalAccessActionItemComponent>;
+  let authService: MockAuthService;
+  let smtpService: MockSmtpService;
 
   function setAction(action: LockoutStageAction): void {
     fixture.componentRef.setInput("action", action);
     fixture.detectChanges();
   }
 
+  function setRights(rights: string[]): void {
+    authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights });
+    fixture.detectChanges();
+  }
+
+  function smtpServer(identifier: string): SmtpServer {
+    return {
+      identifier,
+      server: "mail.example.com",
+      port: 25,
+      timeout: 120,
+      sender: "",
+      tls: false,
+      enqueue_job: false,
+      smime: false,
+      dont_send_on_error: true
+    };
+  }
+
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [ConditionalAccessActionItemComponent],
-      providers: [{ provide: ConditionalAccessPolicyService, useClass: MockConditionalAccessPolicyService }]
+      providers: [
+        { provide: ConditionalAccessPolicyService, useClass: MockConditionalAccessPolicyService },
+        { provide: AuthService, useClass: MockAuthService },
+        { provide: SmtpService, useClass: MockSmtpService }
+      ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(ConditionalAccessActionItemComponent);
     component = fixture.componentInstance;
+    authService = TestBed.inject(AuthService) as unknown as MockAuthService;
+    smtpService = TestBed.inject(SmtpService) as unknown as MockSmtpService;
     setAction({ action_type: "LOCK_USER", action_value: 600 });
+    // The rights of a default install, where no admin policy narrows them.
+    setRights(["smtpserver_read"]);
   });
 
   it("should create", () => {
@@ -178,6 +211,69 @@ describe("ConditionalAccessActionItemComponent", () => {
       setAction({ action_type: "EMAIL_ADMIN", action_value: { subject: "Hi", body: "x" } });
       component.onEmailFieldInput("body", "");
       expect(spy).toHaveBeenCalledWith({ action_value: { subject: "Hi" } });
+    });
+
+    describe("SMTP server", () => {
+      it("offers the configured identifiers as a select", () => {
+        smtpService.smtpServers.set([smtpServer("primary"), smtpServer("backup")]);
+        setAction({ action_type: "EMAIL_ADMIN", action_value: { smtp_identifier: "backup" } });
+        expect(component.emailFields().find((field) => field.key === "smtp_identifier")?.kind).toBe("smtp");
+        expect(component.smtpOptions()).toEqual(["primary", "backup"]);
+        expect(component.staleSmtpIdentifier()).toBe("");
+      });
+
+      it("keeps and flags an identifier that is no longer configured", () => {
+        smtpService.smtpServers.set([smtpServer("primary")]);
+        setAction({ action_type: "EMAIL_ADMIN", action_value: { smtp_identifier: "retired" } });
+        // Listed, or the select would show a blank trigger for the value the action carries.
+        expect(component.smtpOptions()).toEqual(["primary", "retired"]);
+        expect(component.staleSmtpIdentifier()).toBe("retired");
+      });
+
+      it("flags nothing while no server has been listed yet", () => {
+        setAction({ action_type: "EMAIL_ADMIN", action_value: { smtp_identifier: "primary" } });
+        expect(component.smtpOptions()).toEqual(["primary"]);
+        expect(component.staleSmtpIdentifier()).toBe("");
+      });
+
+      it("falls back to a plain input with an explaining hint without smtpserver_read", () => {
+        setAction({ action_type: "EMAIL_ADMIN", action_value: { smtp_identifier: "primary" } });
+        setRights([]);
+        const field = component.emailFields().find((each) => each.key === "smtp_identifier");
+        expect(field?.kind).toBe("text");
+        expect(field?.hint).toContain("smtpserver_read");
+        // Flagged in the error colour: it reports a missing right, not a description of the field.
+        expect(field?.hintWarn).toBe(true);
+      });
+    });
+  });
+
+  describe("email actions without smtpserver_read", () => {
+    beforeEach(() => {
+      const policyServiceMock = TestBed.inject(
+        ConditionalAccessPolicyService
+      ) as unknown as MockConditionalAccessPolicyService;
+      policyServiceMock.actionsByTarget.set({
+        user: ["LOCK_USER", "PERMANENT_LOCK_USER", "EMAIL_ADMIN", "EMAIL_USER", "ALLOW", "DENY"],
+        source_ip: ["BLOCK_IP", "PERMANENT_BLOCK_IP", "EMAIL_ADMIN", "ALLOW", "DENY"]
+      });
+      setRights([]);
+    });
+
+    it("still offers them, only without the server list", () => {
+      setAction({ action_type: "LOCK_USER", action_value: 600 });
+      expect(component.smtpServersListable()).toBe(false);
+      expect(component.allowedActionTypes()).toContain("EMAIL_ADMIN");
+      expect(component.allowedActionTypes()).toContain("EMAIL_USER");
+      expect(component.allowedActionTypes()).toContain("LOCK_USER");
+    });
+
+    it("keeps one the policy already carries valid for its target", () => {
+      setAction({ action_type: "EMAIL_ADMIN", action_value: { smtp_identifier: "primary" } });
+      expect(component.allowedActionTypes()).toContain("EMAIL_ADMIN");
+      // The action is still valid for a user-targeted policy: it is the SMTP config that is out of
+      // reach, not the action type, so nothing is flagged as target-incompatible.
+      expect(component.isActionAllowedForTarget()).toBe(true);
     });
   });
 
