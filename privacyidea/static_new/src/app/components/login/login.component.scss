@@ -87,14 +87,6 @@ $border-radius: var(--border-radius);
     color: var(--red-base);
   }
 
-  .error-message-temporary {
-    color: var(--yellow-base);
-  }
-
-  .error-message-permanent {
-    color: var(--red-base);
-  }
-
   .passkey-form {
     display: flex;
     flex-direction: column;
