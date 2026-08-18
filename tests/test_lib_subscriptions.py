@@ -18,6 +18,7 @@ from privacyidea.lib.subscriptions import (save_subscription,
                                            get_metered_application,
                                            get_subscription_owner,
                                            get_latest_github_versions,
+                                           version_sort_key,
                                            APPLICATIONS,
                                            METERED_APPLICATIONS,
                                            DASHBOARD_PLUGINS)
@@ -515,6 +516,60 @@ class PluginSubscriptionStatusTestCase(MyTestCase):
         self.assertListEqual(["1.3.0", "1.2.3"], overview["privacyidea-keycloak"]["versions"])
         # A plugin never seen has no versions.
         self.assertListEqual([], overview["privacyidea-shibboleth"]["versions"])
+
+    def test_16_versions_are_ordered_by_number(self):
+        # Newest first means by number: a character sort would put 1.9.0 above 1.10.0.
+        self._add_clientapp("privacyidea-cp", version="1.9.0")
+        self._add_clientapp("privacyidea-cp", version="1.10.0")
+        self._add_clientapp("privacyidea-cp", version="1.10.1")
+
+        with mock.patch(
+                "privacyidea.lib.subscriptions.get_users_with_active_tokens",
+                return_value=0):
+            overview = {e["application"]: e
+                        for e in get_plugin_subscription_status()}
+
+        self.assertListEqual(["1.10.1", "1.10.0", "1.9.0"], overview["privacyidea-cp"]["versions"])
+        # Anything a client may send stays sortable, numeric or not.
+        self.assertListEqual(["10.0", "2.0.0-rc1", "1.2.3", "1.2"],
+                             sorted(["1.2", "10.0", "1.2.3", "2.0.0-rc1"],
+                                    key=version_sort_key, reverse=True))
+
+    def test_17_subscription_without_end_date_is_not_valid(self):
+        # Subscription.date_till is nullable. Such a record cannot be reported as
+        # covering anything, and must not leave the row green forever.
+        db.session.add(Subscription(
+            application="privacyidea-cp",
+            for_name="customer", for_email="c@x", for_phone="0",
+            by_name="vendor", by_email="v@x",
+            date_from=datetime.now() - timedelta(days=10), date_till=None,
+            num_users=10, num_tokens=10000, num_clients=10,
+            level="Gold", signature="0"))
+        db.session.commit()
+
+        with mock.patch(
+                "privacyidea.lib.subscriptions.get_users_with_active_tokens",
+                return_value=0):
+            overview = {e["application"]: e
+                        for e in get_plugin_subscription_status()}
+
+        credential_provider = overview["privacyidea-cp"]
+        self.assertEqual("expired", credential_provider["subscription"])
+        self.assertIsNone(credential_provider["date_till"])
+        self.assertIsNone(credential_provider["days_left"])
+
+    def test_18_metering_ignores_a_subscription_without_end_date(self):
+        # Metering must neither raise on the missing date nor block the client outright:
+        # the record is ignored and the free tier applies as if none were on file.
+        unusable = [{"application": "privacyidea-cp", "date_till": None}]
+        with mock.patch("privacyidea.lib.subscriptions.get_subscription", return_value=unusable):
+            with mock.patch("privacyidea.lib.subscriptions.get_users_with_active_tokens",
+                            return_value=0):
+                self.assertTrue(check_subscription("privacyidea-cp"))
+            # Far beyond the free tier it fails like an install without a subscription.
+            with mock.patch("privacyidea.lib.subscriptions.get_users_with_active_tokens",
+                            return_value=100_000):
+                self.assertRaises(SubscriptionError, check_subscription, "privacyidea-cp")
 
     def test_12_radius_row_mirrors_server_subscription(self):
         # FreeRADIUS identifies itself as "FreeRADIUS" and has no subscription of its

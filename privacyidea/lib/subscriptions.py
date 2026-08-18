@@ -306,6 +306,19 @@ def get_latest_github_versions() -> dict[str, GithubRelease | None]:
     return releases
 
 
+def version_sort_key(version: str) -> tuple:
+    """
+    Sort key ordering version strings by number instead of by character, so that 1.10.0
+    comes after 1.9.0. A part that is not a number sorts after any number in the same
+    position, which keeps the order total for whatever a client puts in its user-agent.
+
+    :param version: a version string such as "3.8.0.0"
+    :return: a tuple to sort by
+    """
+    return tuple((0, int(part)) if part.isdigit() else (1, part)
+                 for part in version.split("."))
+
+
 def get_users_with_active_tokens():
     """
     Returns the numbers of users (userId, Resolver) with active tokens.
@@ -368,13 +381,18 @@ def _subscription_state(subscription: dict | None, now: datetime.datetime,
     if not subscription:
         return SubscriptionStateInfo(SubscriptionState.NONE)
     date_till = subscription.get("date_till")
-    days_left = (date_till - now).days if date_till else None
-    if date_till and date_till < now:
+    if not date_till:
+        # Subscription.date_till is nullable. Without an end date the record cannot be
+        # said to cover anything, so it is reported like an expired one rather than
+        # staying green forever.
+        return SubscriptionStateInfo(SubscriptionState.EXPIRED)
+    days_left = (date_till - now).days
+    if date_till < now:
         return SubscriptionStateInfo(SubscriptionState.EXPIRED, date_till, days_left)
     allowed_tokens = subscription.get("num_tokens")
     if allowed_tokens is not None and token_users > allowed_tokens:
         return SubscriptionStateInfo(SubscriptionState.EXCEEDED, date_till, days_left)
-    if days_left is not None and days_left < EXPIRING_THRESHOLD_DAYS:
+    if days_left < EXPIRING_THRESHOLD_DAYS:
         return SubscriptionStateInfo(SubscriptionState.EXPIRING, date_till, days_left)
     return SubscriptionStateInfo(SubscriptionState.VALID, date_till, days_left)
 
@@ -469,7 +487,7 @@ def get_plugin_subscription_status(token_users: int | None = None) -> list[dict]
                          "days_left": state_info.days_left,
                          # Versions seen in the user-agents, newest first.
                          "versions": sorted(versions_by_plugin.get(plugin.lower(), []),
-                                            reverse=True)})
+                                            key=version_sort_key, reverse=True)})
     return overview
 
 
@@ -648,6 +666,10 @@ def raise_exception_probability(subscription=None):
         return random.randrange(0, 2)  # nosec B311
 
     expire = subscription.get("date_till")
+    if not expire:
+        # date_till is nullable. A record without an end date says nothing about being
+        # valid, so it is always treated as expired.
+        return True
     delta = datetime.datetime.now() - expire
     if delta.days > 0:
         # calculate a certain probability <1
@@ -698,7 +720,11 @@ def check_subscription(application, max_free_subscriptions=None):
     # of its own, falls through below and may always authenticate.
     application = get_metered_application(application)
     if application in APPLICATIONS:
-        subscriptions = get_subscription(application)
+        # date_till is nullable. A record without an end date says nothing about being
+        # valid, so it is ignored here: the free tier then applies exactly as it would
+        # without a subscription, rather than blocking the client outright.
+        subscriptions = [subscription for subscription in get_subscription(application)
+                         if subscription.get("date_till")]
         # get the number of users with active tokens
         token_users = get_users_with_active_tokens()
         free_subscriptions = max_free_subscriptions or APPLICATIONS.get(application)

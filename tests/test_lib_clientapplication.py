@@ -52,9 +52,8 @@ class ClientApplicationTestCase(MyTestCase):
         self.assertTrue(r["SAML"][0]["lastseen"] < datetime.now())
 
     def test_03_update_refreshes_lastseen(self):
-        # Saving the same (ip, clienttype, node) again must update the existing
-        # row's lastseen instead of leaving it stale (regression: the update
-        # path used to assign an unmapped ``last_seen`` attribute).
+        # Saving the same (ip, clienttype, node) again updates the existing row's
+        # lastseen instead of leaving it stale.
         ClientApplication.query.delete()
         t1 = datetime.now()
         t2 = t1 + timedelta(minutes=5)
