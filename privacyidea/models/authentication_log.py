@@ -19,7 +19,7 @@
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
-from sqlalchemy import BigInteger, DateTime, JSON, Index, Sequence
+from sqlalchemy import DateTime, Identity, JSON, Index
 from sqlalchemy.orm import mapped_column, Mapped, relationship
 
 from privacyidea.models import db
@@ -69,8 +69,7 @@ class AuthenticationLog(MethodsMixin, db.Model):
         Index("ix_authlog_user_time", "resolver", "uid", "realm", "timestamp"),
         Index("ix_authlog_ip_time", "source_ip", "timestamp"),
     )
-    id: Mapped[int] = mapped_column(BigIntegerType, Sequence("authentication_log_seq", data_type=BigInteger),
-                                    primary_key=True)
+    id: Mapped[int] = mapped_column(BigIntegerType, Identity(always=False), primary_key=True)
     resolver: Mapped[str | None] = mapped_column(case_sensitive_unicode(authentication_log_column_length["resolver"]))
     uid: Mapped[str | None] = mapped_column(case_sensitive_unicode(authentication_log_column_length["uid"]))
     realm: Mapped[str | None] = mapped_column(case_sensitive_unicode(authentication_log_column_length["realm"]))

@@ -1009,7 +1009,7 @@ class PushTokenClass(TokenClass):
             # failure, reason recorded only in the audit log) when that owner is
             # locked, the source IP is blocked, or a DENY policy applies - before
             # the signature is verified.
-            from privacyidea.api.lib.utils import conditional_access_precheck
+            from privacyidea.api.lib.conditional_access import conditional_access_precheck
             if conditional_access_precheck(cls._resolve_token_owner(serial)) is not None:
                 return False, {}
             return cls._handle_auth_response(serial, request_data)

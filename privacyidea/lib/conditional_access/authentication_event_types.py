@@ -62,12 +62,20 @@ class AuthEventType(str, Enum):
     NO_TOKEN = "NO_TOKEN"
     # Tokens exist but every one is unusable (revoked, locked, disabled, expired, or over max-fail).
     NO_USABLE_TOKEN = "NO_USABLE_TOKEN"
+    # The request named no token type the endpoint can start an authentication for: the type parameter is missing, or
+    # names a type this endpoint does not support. About the *request*, not about the tokens a user owns - which is what
+    # NO_TOKEN / NO_USABLE_TOKEN above are for.
+    INVALID_TOKEN_TYPE = "INVALID_TOKEN_TYPE"
     # Authentication fully succeeded.
     LOGIN_SUCCESS = "LOGIN_SUCCESS"
     # Challenge answered correctly, but the token requires at least one further challenge.
     CHALLENGE_CONTINUED = "CHALLENGE_CONTINUED"
     # A challenge was created and sent to the client (push notification, trigger_challenge, passkey, …).
     CHALLENGE_TRIGGERED = "CHALLENGE_TRIGGERED"
+    # A challenge was asked for but the server could not produce one - a required policy is missing, or creating it
+    # failed. The failure counterpart of CHALLENGE_TRIGGERED, as CHALLENGE_ANSWERED_FAIL is of the ANSWERED pair.
+    # E.g. used for /validate/initialize where a challenge is NOT triggered by a password / pin.
+    CHALLENGE_TRIGGER_FAIL = "CHALLENGE_TRIGGER_FAIL"
     # Push challenge approved on the smartphone (out-of-band, signature verified).
     CHALLENGE_ANSWERED_OUT_OF_BAND = "CHALLENGE_ANSWERED_OUT_OF_BAND"
     # Challenge response is wrong, expired, or the transaction_id is unknown.
@@ -133,7 +141,9 @@ EVENT_TYPE_OUTCOME: dict[AuthEventType, AuthEventOutcome] = {
     AuthEventType.USER_UNKNOWN: AuthEventOutcome.FAILURE,
     AuthEventType.NO_TOKEN: AuthEventOutcome.FAILURE,
     AuthEventType.NO_USABLE_TOKEN: AuthEventOutcome.FAILURE,
+    AuthEventType.INVALID_TOKEN_TYPE: AuthEventOutcome.FAILURE,
     AuthEventType.CHALLENGE_ANSWERED_FAIL: AuthEventOutcome.FAILURE,
+    AuthEventType.CHALLENGE_TRIGGER_FAIL: AuthEventOutcome.FAILURE,
     AuthEventType.CHALLENGE_DECLINED: AuthEventOutcome.FAILURE,
     AuthEventType.ENROLLMENT_CANCELED_FAIL: AuthEventOutcome.FAILURE,
     AuthEventType.UNKNOWN_FAIL_REASON: AuthEventOutcome.FAILURE,
@@ -218,6 +228,12 @@ REQUEST_EVENT_PRECEDENCE: list[AuthEventType] = [
     AuthEventType.NO_USABLE_TOKEN,
     AuthEventType.NO_TOKEN,
     AuthEventType.USER_UNKNOWN,
+    # Ranked lowest of the real failures, above the UNKNOWN_FAIL_REASON fallback: both describe the *request* the
+    # endpoint refused rather than an outcome one of the request's tokens reached, so whenever a token did reach one it
+    # is the better classification. In practice neither reduces against anything - the endpoints that emit them
+    # classify a request with a single event - and they are listed here because every non-enforcement type must be.
+    AuthEventType.CHALLENGE_TRIGGER_FAIL,
+    AuthEventType.INVALID_TOKEN_TYPE,
     AuthEventType.UNKNOWN_FAIL_REASON
 ]
 

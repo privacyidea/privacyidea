@@ -26,6 +26,9 @@ the resulting lock / block state.
 This module is deliberately **not** named ``test_*`` so pytest does not collect
 it; the concrete suites import :class:`LockoutTestCase` and add their own tests.
 """
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
+from privacyidea.lib.conditional_access.context import CAContext
+from privacyidea.lib.conditional_access.engine import evaluate_lockout_policies
 from privacyidea.lib.user import User
 from privacyidea.models import db
 from privacyidea.models.authentication_log import AuthenticationLog
@@ -122,9 +125,20 @@ class LockoutTestCase(MyTestCase):
                 username=username, source_ip=source_ip, timestamp=timestamp))
         db.session.commit()
 
-    def _state(self, user=None):
+    def _state(self, user: User | None = None) -> UserLockoutState | None:
         user = user or self.user
         return db.session.get(UserLockoutState, (user.resolver, user.uid, user.realm))
 
-    def _block(self, ip):
+    def _block(self, ip: str) -> BlockList | None:
         return db.session.get(BlockList, ip)
+
+    def _triggered_thresholds(self, event_type: AuthEventType = AuthEventType.MFA_FAIL,
+                              source_ip: str | None = None) -> list[int]:
+        """
+        Evaluate the policies and return the threshold of every stage that fired, in order.
+
+        The threshold is a stage's natural key within its policy, so this identifies which stage acted without
+        depending on a surrogate id that a policy edit would replace. Empty when nothing fired.
+        """
+        evaluation = evaluate_lockout_policies(CAContext(self.user, source_ip), event_type)
+        return [outcome.threshold for outcome in evaluation.outcomes]

@@ -70,6 +70,7 @@ import jwt
 from flask import (Blueprint, request, current_app, g)
 from flask_babel import _
 
+from privacyidea.api.lib.conditional_access import conditional_access_login_gate, login_restriction
 from privacyidea.api.lib.policyhelper import check_last_auth_policy, get_realm_for_authentication
 from privacyidea.api.lib.postpolicy import (postpolicy, add_user_detail_to_response, check_tokentype,
                                             check_tokeninfo, check_serial, no_detail_on_success,
@@ -80,16 +81,12 @@ from privacyidea.api.lib.prepolicy import (is_remote_user_allowed, prepolicy,
                                            disabled_token_types, auth_timelimit, load_challenge_text)
 from privacyidea.api.lib.utils import (send_result, get_all_params, INTERNAL_OPTION_KEYS,
                                        verify_auth_token, get_optional, get_required, log_authentication,
-                                       get_auth_token_from_request, logged_in_user_from_token,
-                                       build_ca_context)
+                                       get_auth_token_from_request, logged_in_user_from_token)
 from privacyidea.lib.audit import getAudit
 from privacyidea.lib.auth import (check_webui_user, ROLE, verify_db_admin,
                                   db_admin_exists)
 from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType, AUTH_EVENT_TYPE_KEY,
                                                                            LOG_TRANSACTION_ID_KEY)
-from privacyidea.lib.conditional_access.engine import (get_user_lockout, get_ip_block,
-                                                       evaluate_access_decision, AccessDecision,
-                                                       RestrictionStatus)
 from privacyidea.lib.conditional_access.request_context import continue_attempt, get_ca_context
 from privacyidea.lib.config import get_from_config, SYSCONF, ensure_no_config_object, get_privacyidea_node
 from privacyidea.lib.crypto import geturandom, init_hsm
@@ -183,148 +180,10 @@ def before_request():
             request.User = token.user
 
 
-def _lockout_error_message(lockout: RestrictionStatus) -> str:
-    """
-    Build the user-facing message for a login rejected by the conditional-access
-    lockout. *lockout* is the :class:`RestrictionStatus` returned by
-    :func:`~privacyidea.lib.conditional_access.engine.get_user_lockout`: a
-    permanent lock points the user at the administrator, a timed lock states the
-    approximate remaining time (rounded up to whole minutes, at least one).
-    """
-    if lockout.permanent:
-        return _("Your account has been permanently locked. Please contact your administrator.")
-    minutes = max(1, -(-lockout.seconds_remaining // 60))
-    return _("Your account is temporarily locked due to too many failed login attempts. "
-             "Please try again in about {minutes} minute(s).").format(minutes=minutes)
-
-
-def _blocked_ip_error_message(client_ip: str | None, block: RestrictionStatus) -> str:
-    """
-    Build the user-facing message for a login rejected because the source IP is
-    blocked by a conditional-access ``BLOCK_IP`` action. *block* is the
-    :class:`RestrictionStatus` returned by
-    :func:`~privacyidea.lib.conditional_access.engine.get_ip_block`:
-    a permanent block points the user at the administrator, a timed block states
-    the approximate remaining time (rounded up to whole minutes, at least one).
-    """
-    if block.permanent:
-        return _("Authentication failure. Your IP ({ip}) has been permanently blocked. "
-                 "Please contact your administrator.").format(ip=client_ip)
-    minutes = max(1, -(-block.seconds_remaining // 60))
-    return _("Authentication failure. Your IP ({ip}) has been blocked. "
-             "Please try again in about {minutes} minute(s).").format(ip=client_ip, minutes=minutes)
-
-
-def _restriction_kind(state: RestrictionStatus) -> str:
-    """
-    Classify a lock/block as ``"permanent"`` or ``"temporary"`` for the WebUI.
-
-    Surfaced in the rejection's ``detail`` so the login screen can style a
-    permanent (only-an-admin-can-clear-it) restriction differently from a
-    recoverable timed one. It is a coarse hint, not the specific message, and is
-    dropped when the ``hide_specific_error_message`` policy is active (see
-    :func:`~privacyidea.api.before_after.auth_error`), so it never leaks more than
-    the message itself would.
-    """
-    return "permanent" if state.permanent else "temporary"
-
-
-def _binding_restriction(lockout: RestrictionStatus | None, ip_block: RestrictionStatus | None) -> str | None:
-    """
-    When both a user lockout and a source-IP block are in force, decide which one
-    to report to the user. The binding constraint is the one that lasts longest (a
-    permanent restriction outranks any timed one), so that is what we surface:
-    telling a permanently-blocked user to "try again in 1 minute" because a shorter
-    user lock also happens to be active would be misleading. This is exactly the
-    case when a temporary lock escalates into a permanent IP block on the same
-    request. On a tie the user lock wins, matching the lock-before-block order of
-    the pre-check.
-
-    :param lockout: the :class:`RestrictionStatus` from :func:`get_user_lockout`, or ``None``
-    :param ip_block: the :class:`RestrictionStatus` from :func:`get_ip_block`, or ``None``
-    :return: ``"lock"`` or ``"block"`` for the restriction to report, or ``None``
-        if neither is in force
-    """
-
-    def _remaining(state: RestrictionStatus | None) -> float | None:
-        if not state:
-            return None
-        return float("inf") if state.permanent else state.seconds_remaining
-
-    lock_rem = _remaining(lockout)
-    block_rem = _remaining(ip_block)
-    if lock_rem is None and block_rem is None:
-        return None
-    if block_rem is not None and (lock_rem is None or block_rem > lock_rem):
-        return "block"
-    return "lock"
-
-
-def _conditional_access_precheck(user: User) -> None:
-    """
-    Reject an /auth login pre-auth (before any credential check) when conditional-
-    access policies forbid it. Raises :class:`AuthError` when the request must be
-    rejected and returns ``None`` otherwise.
-
-    A currently-locked user or a blocked source IP is rejected first. The rejection
-    states the restriction (how long it lasts, or that it is permanent) so the user
-    understands why login fails; an admin who prefers not to reveal it can enable
-    the hide_specific_error_message policy, which the AuthError handler applies to
-    this message. An unresolved user / local DB admin has no (resolver, uid, realm)
-    identity tuple and is therefore never locked. When both apply (e.g. a temporary
-    lock that escalated into a permanent IP block), the longer-lasting one is
-    surfaced so we never tell a permanently-blocked user to "try again in a minute".
-
-    The pre-auth conditional-access DENY decision is evaluated after the lock/block
-    pre-checks so an ALLOW cannot override them. A DENY rejects this single login
-    with a message stating it was a conditional-access decision (the policy is not
-    named); like the lock/block messages it is maskable via the
-    hide_specific_error_message policy. ALLOW / CONTINUE fall through silently.
-
-    Every rejection also classifies the login in the authentication log (``USER_LOCKED`` / ``IP_BLOCKED`` /
-    ``ACCESS_DENIED``), which is the only place an admin can filter for the reason: the login is turned away before
-    anything else logs an outcome for it. The event type follows the restriction actually reported, so the log and the
-    message a user saw cannot disagree. ``internal_admin`` comes from the flag ``before_request`` already resolved, so
-    a blocked local admin is recorded as ``admin-internal`` rather than falling back to ``user``.
-    """
-    lockout = get_user_lockout(user, clear_expired=True)
-    ip_block = get_ip_block(g.client_ip, clear_expired=True)
-    restriction = _binding_restriction(lockout, ip_block)
-
-    def log_rejection(event_type: AuthEventType) -> None:
-        """Classify this login in the authentication log. Staged, so request teardown writes it even though the
-        AuthError below unwinds the view."""
-        log_authentication(event_type, request, user=user,
-                           internal_admin=g.get("resolved_user", {}).get("is_local_admin", False))
-
-    if restriction == "block":
-        log.info(f"Rejecting /auth login from blocked IP {g.client_ip!r}.")
-        g.audit_object.log({"info": "Rejected: source IP is blocked"})
-        log_rejection(AuthEventType.IP_BLOCKED)
-        raise AuthError(_blocked_ip_error_message(g.client_ip, ip_block),
-                        id=Error.AUTHENTICATE_WRONG_CREDENTIALS,
-                        details={"restriction": _restriction_kind(ip_block)})
-    if restriction == "lock":
-        log.info(f"Rejecting /auth login for locked user {user!r}.")
-        g.audit_object.log({"info": "Rejected: account is temporarily locked"})
-        log_rejection(AuthEventType.USER_LOCKED)
-        raise AuthError(_lockout_error_message(lockout),
-                        id=Error.AUTHENTICATE_WRONG_CREDENTIALS,
-                        details={"restriction": _restriction_kind(lockout)})
-    decision = evaluate_access_decision(build_ca_context(user))
-    # The decision belongs to this request's history, but its authentication-log row does not exist yet: the context
-    # keeps the outcomes until the login stages its event (a dry-run DENY lets the login continue and land on that row).
-    get_ca_context().add_outcomes(decision.outcomes)
-    if decision.decision == AccessDecision.DENY:
-        log.info(f"Denying /auth login for {user!r} by conditional-access policy.")
-        g.audit_object.log({"info": "Rejected: denied by conditional-access policy"})
-        # Staged after add_outcomes above, so this is the row the buffered DENY outcome is recorded against.
-        log_rejection(AuthEventType.ACCESS_DENIED)
-        raise AuthError(_("Authentication failure. Access has been denied by a conditional-access policy."),
-                        id=Error.AUTHENTICATE_WRONG_CREDENTIALS)
-
-
 @jwtauth.route('', methods=['POST'])
+# Keep the conditional-access gate above the pre-policies: decorators run top-down, and it has to refuse a locked user
+# before auth_timelimit can log a trackable event for them (see conditional_access_login_gate).
+@conditional_access_login_gate()
 @prepolicy(auth_timelimit, request=request)
 @prepolicy(increase_failcounter_on_challenge, request=request)
 @prepolicy(pushtoken_disable_wait, request)
@@ -433,10 +292,9 @@ def get_auth_token():
     #  maybe a new user object that is not directly evaluated against the user store and where we can store some more
     #  information like the role (local / external admin) would be helpful
     user = request.User or User()
-    g.audit_object.log({"user": user.login, "realm": user.realm})
-    # Conditional-access pre-check: reject a locked user, a blocked source IP, or a
-    # policy DENY decision before any credential check (see the helper for details).
-    _conditional_access_precheck(user)
+    # The conditional-access pre-check and this login's audit subject are handled by the outermost decorator,
+    # @conditional_access_login_gate, so a locked user, a blocked source IP or a DENY decision is rejected before any
+    # pre-policy runs - auth_timelimit included, which would otherwise log a trackable event first.
     username = get_optional(request.all_data, "username")
     password = get_optional(request.all_data, "password")
     realm_param = get_optional(request.all_data, "realm")
@@ -732,16 +590,11 @@ def get_auth_token():
         # If this very request tripped a stage that locked the user or blocked its source
         # IP, lead with that instead of the generic "Wrong credentials" — the lock/block
         # is in force now, so that is the more useful thing to tell the user.
-        lockout = get_user_lockout(user)
-        ip_block = get_ip_block(g.client_ip)
-        restriction = _binding_restriction(lockout, ip_block)
         details = details or {}
-        if restriction == "block":
-            message = _blocked_ip_error_message(g.client_ip, ip_block)
-            details["restriction"] = _restriction_kind(ip_block)
-        elif restriction == "lock":
-            message = _lockout_error_message(lockout)
-            details["restriction"] = _restriction_kind(lockout)
+        restriction = login_restriction(user, g.client_ip)
+        if restriction:
+            message = restriction.message
+            details["restriction"] = restriction.kind
         else:
             message = _("Authentication failure. Wrong credentials")
         if lockout_notices:
