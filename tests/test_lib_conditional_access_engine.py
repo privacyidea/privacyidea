@@ -660,48 +660,17 @@ class LockoutEngineTestCase(LockoutTestCase):
                     StageDefinition(5, 1, [StageActionDefinition(LockoutAction.LOCK_USER, 600)])))
         severe_stage, mild_stage = stages[0], stages[1]
 
-        # Exactly 5 -> the mild stage fires.
+        # Exactly 5 -> the mild stage fires. The recorded outcome names the stage by its threshold.
         self._seed_events(AuthEventType.MFA_FAIL, 5)
-        evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
-        self.assertEqual(mild_stage.id, self._state().last_stage_triggered)
+        self.assertListEqual([mild_stage.failure_threshold], self._triggered_thresholds())
 
-        # 6..14 are between the two thresholds -> nothing new fires; the last
-        # triggered stage stays the mild one.
+        # 6..14 are between the two thresholds -> nothing fires.
         self._seed_events(AuthEventType.MFA_FAIL, 3)  # total 8
-        evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
-        self.assertEqual(mild_stage.id, self._state().last_stage_triggered)
+        self.assertListEqual([], self._triggered_thresholds())
 
         # Exactly 15 -> the severe stage fires.
         self._seed_events(AuthEventType.MFA_FAIL, 7)  # total 15
-        evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
-        self.assertEqual(severe_stage.id, self._state().last_stage_triggered)
-
-    def test_dedup_suppresses_repeat_within_window(self):
-        self._make_policy(name="lock3", counter_type=AuthEventType.MFA_FAIL)
-        self._seed_events(AuthEventType.MFA_FAIL, 3)
-        evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
-        # Tamper with the expiry, then re-evaluate the same stage within the window:
-        # the de-dup must skip the action and leave our value untouched.
-        sentinel = utc_now() + timedelta(seconds=99999)
-        state = self._state()
-        state.lock_expires_at = sentinel
-        db.session.commit()
-        evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
-        self.assertEqual(sentinel, self._state().lock_expires_at)
-
-    def test_dedup_refires_after_window(self):
-        self._make_policy(name="lock3", counter_type=AuthEventType.MFA_FAIL, window=3600)
-        self._seed_events(AuthEventType.MFA_FAIL, 3)
-        evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
-        # Backdate locked_at beyond the window so the de-dup no longer applies, and move the
-        # expiry to a sentinel; re-evaluation must re-fire and overwrite the sentinel.
-        sentinel = utc_now() + timedelta(seconds=99999)
-        state = self._state()
-        state.lock_expires_at = sentinel
-        state.locked_at = utc_now() - timedelta(seconds=4000)
-        db.session.commit()
-        evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
-        self.assertLess(self._state().lock_expires_at, sentinel)
+        self.assertListEqual([severe_stage.failure_threshold], self._triggered_thresholds())
 
     def test_successful_login_resets_lock_counter(self):
         # A completed login clears the accumulated failures: the threshold then
@@ -724,12 +693,9 @@ class LockoutEngineTestCase(LockoutTestCase):
         evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL, now=now)
         self.assertTrue(is_user_locked(self.user))
 
-    def test_dedup_does_not_survive_lock_expiry(self):
-        # The de-dup throttles repeats within ONE incident; an expired lock ends
-        # the incident, so re-reaching the same threshold re-fires. Regression:
-        # the de-dup used to key only on (stage, last_updated within window), so
-        # once the lock ran out the user stayed suppressed for the rest of the
-        # window even if the count returned to the threshold.
+    def test_expired_lock_is_reapplied_when_the_threshold_is_still_met(self):
+        # An expired lock leaves the failures in the window, so the stage locks the user again rather than leaving a
+        # dead zone in which the threshold is met but nothing is in force.
         self._make_policy(name="lock3", counter_type=AuthEventType.MFA_FAIL)
         self._seed_events(AuthEventType.MFA_FAIL, 3)
         evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
@@ -741,15 +707,13 @@ class LockoutEngineTestCase(LockoutTestCase):
         db.session.commit()
         self.assertFalse(is_user_locked(self.user))
 
-        # Re-reaching the threshold (count still 3, incident ended) re-locks.
+        # The threshold is still met, so the stage locks again.
         evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
         self.assertTrue(is_user_locked(self.user))
 
-    def test_dedup_does_not_survive_admin_unlock(self):
-        # An admin lifting the lock (deletes row) ends the incident just like
-        # an expiry: re-reaching the threshold is a new incident and must re-lock.
-        # Regression: the de-dup used to ignore is_locked, so after an admin unlock
-        # the same stage stayed suppressed for the rest of the window.
+    def test_admin_unlock_is_undone_when_the_threshold_is_still_met(self):
+        # An admin lifting the lock deletes the row, but the failures stay in the window, so the stage locks the user
+        # again on the next evaluation.
         self._make_policy(name="lock3", counter_type=AuthEventType.MFA_FAIL)
         self._seed_events(AuthEventType.MFA_FAIL, 3)
         evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
@@ -760,7 +724,7 @@ class LockoutEngineTestCase(LockoutTestCase):
         db.session.commit()
         self.assertFalse(is_user_locked(self.user))
 
-        # Re-reaching the threshold (count still 3, incident ended) re-locks.
+        # The threshold is still met, so the stage locks again.
         evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
         self.assertTrue(is_user_locked(self.user))
 
@@ -886,9 +850,9 @@ class LockoutEngineTestCase(LockoutTestCase):
         self.assertEqual(6, outcomes[0].event_count)
         self.assertIsNone(self._state())
 
-    def test_dry_run_records_on_every_request_because_it_keeps_no_dedup_state(self):
-        # Dry-run neither reads nor writes the de-dup state, so two successive qualifying requests both record. (A live
-        # policy would suppress the second via UserLockoutState.)
+    def test_dry_run_records_on_every_qualifying_request(self):
+        # A re-triggering action qualifies on every request at or above its threshold, so both requests record an
+        # outcome. Dry run differs only in enforcement: it writes no lock, so no state exists at the end.
         _, stages = self._make_policy(name="dry", counter_type=AuthEventType.MFA_FAIL, dry_run=True)
         stages[0].actions[0].retrigger_above_threshold = True
         db.session.commit()
@@ -1073,21 +1037,6 @@ class LockoutEngineTestCase(LockoutTestCase):
         # The permanent lock is untouched.
         self.assertIsNone(self._state().lock_expires_at)
 
-    def test_a_deduplicated_stage_records_nothing(self):
-        # The stage already fired within the window, so it does nothing on this request - and the history must not
-        # imply a second lock.
-        _, stages = self._make_policy(name="live", counter_type=AuthEventType.MFA_FAIL,
-                                      stages=(StageDefinition(3, 1,
-                                                              [StageActionDefinition(LockoutAction.LOCK_USER, 600)]),))
-        stages[0].actions[0].retrigger_above_threshold = True
-        db.session.commit()
-        self._seed_events(AuthEventType.MFA_FAIL, 3)
-        self.assertEqual(1, len(evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL).outcomes))
-
-        # Same stage, same window, still locked: de-dup suppresses the actions.
-        self._seed_events(AuthEventType.MFA_FAIL, 1)
-        self.assertListEqual([], evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL).outcomes)
-
 
     # --- per-action fire-once / re-trigger semantics ---------------------------
 
@@ -1146,9 +1095,8 @@ class LockoutEngineTestCase(LockoutTestCase):
                                                                  retrigger_above_threshold=True)])))
         severe_stage = stages[0]
         self._seed_events(AuthEventType.MFA_FAIL, 6)  # past both thresholds
-        evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
 
-        self.assertEqual(severe_stage.id, self._state().last_stage_triggered)
+        self.assertListEqual([severe_stage.failure_threshold], self._triggered_thresholds())
 
     def test_retrigger_falls_back_to_the_lower_stage_when_the_severe_one_is_not_pending(self):
         # The severe stage is fire-once at 15 and the count is 6, so it is not pending; the re-triggering stage at 3 is,
@@ -1160,9 +1108,8 @@ class LockoutEngineTestCase(LockoutTestCase):
                                                                  retrigger_above_threshold=True)])))
         mild_stage = stages[1]
         self._seed_events(AuthEventType.MFA_FAIL, 6)
-        evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
 
-        self.assertEqual(mild_stage.id, self._state().last_stage_triggered)
+        self.assertListEqual([mild_stage.failure_threshold], self._triggered_thresholds())
 
     def test_permanent_lock_action(self):
         self._make_policy(name="perm", counter_type=AuthEventType.MFA_FAIL,
@@ -1177,7 +1124,7 @@ class LockoutEngineTestCase(LockoutTestCase):
         # Pre-existing permanent lock (set by a higher-severity stage).
         db.session.add(UserLockoutState(resolver=self.user.resolver, uid=self.user.uid,
                                         realm=self.user.realm,
-                                        lock_expires_at=None, last_stage_triggered=None))
+                                        lock_expires_at=None))
         db.session.commit()
         # A timed LOCK_USER policy now tries to lock the same user.
         self._make_policy(name="timed", counter_type=AuthEventType.MFA_FAIL)
@@ -1276,8 +1223,6 @@ class LockoutEngineTestCase(LockoutTestCase):
         self.assertIsNotNone(block)
         self.assertIsNotNone(block.block_expires_at)
         self.assertGreater(block.block_expires_at, utc_now())
-        # The originating stage is recorded for de-dup / auditing.
-        self.assertEqual(stages[0].id, block.last_stage_triggered)
         self.assertTrue(is_ip_blocked(ip))
         # A BLOCK_IP-only stage writes no user lock.
         self.assertIsNone(self._state())
@@ -1348,28 +1293,8 @@ class LockoutEngineTestCase(LockoutTestCase):
         evaluate_lockout_policies(CAContext(self.user, None), AuthEventType.PASSWORD_FAIL)
         self.assertEqual(0, db.session.query(BlockList).count())
 
-    def test_block_ip_dedup_suppresses_repeat_within_window(self):
-        # An IP-blocking stage de-dups on its BlockList row: a repeat trigger
-        # within the window must not re-run the action.
-        ip = "203.0.113.7"
-        self._make_policy(name="blockip", counter_type=AuthEventType.PASSWORD_FAIL,
-                          target=LockoutTarget.SOURCE_IP,
-                          stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.BLOCK_IP, 900)]),))
-        self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=3)
-        evaluate_lockout_policies(CAContext(self.user, ip), AuthEventType.PASSWORD_FAIL)
-        # Tamper with the expiry, then re-evaluate within the window: the de-dup
-        # must skip the action and leave our sentinel untouched.
-        sentinel = utc_now() + timedelta(seconds=99999)
-        block = self._block(ip)
-        block.block_expires_at = sentinel
-        db.session.commit()
-        evaluate_lockout_policies(CAContext(self.user, ip), AuthEventType.PASSWORD_FAIL)
-        self.assertEqual(sentinel, self._block(ip).block_expires_at)
-
-    def test_block_ip_dedup_does_not_survive_block_expiry(self):
-        # Mirror of test_dedup_does_not_survive_lock_expiry for the IP dimension:
-        # an expired block ends the incident, so re-reaching the threshold re-fires
-        # and refreshes the block.
+    def test_expired_block_is_reapplied_when_the_threshold_is_still_met(self):
+        # The IP counterpart of test_expired_lock_is_reapplied_when_the_threshold_is_still_met.
         ip = "203.0.113.7"
         self._make_policy(name="blockip", counter_type=AuthEventType.PASSWORD_FAIL,
                           target=LockoutTarget.SOURCE_IP,
@@ -1381,7 +1306,7 @@ class LockoutEngineTestCase(LockoutTestCase):
         block.block_expires_at = utc_now() - timedelta(seconds=10)
         db.session.commit()
         self.assertFalse(is_ip_blocked(ip))
-        # Re-reaching the threshold (still 3 distinct users, incident ended) re-blocks.
+        # The threshold is still met (3 distinct users), so the stage blocks again.
         evaluate_lockout_policies(CAContext(self.user, ip), AuthEventType.PASSWORD_FAIL)
         self.assertTrue(is_ip_blocked(ip))
 

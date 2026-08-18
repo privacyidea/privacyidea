@@ -31,10 +31,12 @@ from flask import Response
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, AUTH_EVENT_TYPE_KEY
 from privacyidea.lib.auth import create_db_admin, delete_db_admin
 from privacyidea.lib.conditional_access.authentication_log import get_authentication_logs, AuthLogUserRole
+from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction
 from privacyidea.lib.policy import set_policy, delete_policy, SCOPE, PolicyAction, AUTHORIZED
 from privacyidea.lib.realm import set_realm, delete_realm
 from privacyidea.lib.token import init_token, remove_token, get_one_token, revoke_token
 from privacyidea.lib.user import User
+from privacyidea.models import Challenge, db
 from .authlog_utils import AuthLogTestCase, assert_authentication_log, assert_authentication_log_entry
 
 
@@ -904,3 +906,85 @@ class TriggerChallengeAuthLogTestCase(AuthLogTestCase):
 
         entries = assert_authentication_log([AuthEventType.NO_TOKEN])
         assert_authentication_log_entry(entries[AuthEventType.NO_TOKEN], user=self.user)
+
+
+class InitializeAuthLogTestCase(AuthLogTestCase):
+    """
+    Authentication-log coverage for /validate/initialize, which starts a usernameless passkey authentication.
+
+    Every branch classifies itself and the endpoint stages the row in a finally, so an initialization that failed is
+    recorded as a failed attempt instead of leaving the log silent. All rows here are userless: the passkey flow
+    resolves nobody until the assertion comes back.
+    """
+    rp_id = "example.com"
+
+    def setUp(self) -> None:
+        super().setUp()
+        self._clear_challenges()
+
+    def tearDown(self) -> None:
+        self._clear_challenges()
+        super().tearDown()
+
+    @staticmethod
+    def _clear_challenges() -> None:
+        # Around each test, like the base fixture's _clear_log: a usernameless FIDO2 challenge has no owner and is
+        # never consumed, so it would otherwise outlive its test and reach whatever counts challenges next.
+        db.session.query(Challenge).delete()
+        db.session.commit()
+
+    def _set_relying_party_id(self) -> None:
+        set_policy("authlog_rp_id", scope=SCOPE.ENROLL,
+                   action=f"{FIDO2PolicyAction.RELYING_PARTY_ID}={self.rp_id}")
+        self.addCleanup(delete_policy, "authlog_rp_id")
+
+    def _initialize(self, data: dict) -> Response:
+        with self.app.test_request_context('/validate/initialize', method='POST', data=data):
+            return self.app.full_dispatch_request()
+
+    def test_initialize_logs_challenge_triggered(self):
+        self._set_relying_party_id()
+        response = self._initialize({"type": "passkey"})
+        self.assertEqual(200, response.status_code, response.json)
+        entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED])
+        assert_authentication_log_entry(entries[AuthEventType.CHALLENGE_TRIGGERED],
+                                        transaction_id=response.json["detail"]["transaction_id"])
+
+    def test_initialize_missing_type_logs_invalid_token_type(self):
+        # The type parameter is required, so get_required raises before any branch of ours could classify - the row is
+        # owed to the upfront classification rather than to a branch of its own.
+        self._set_relying_party_id()
+        response = self._initialize({})
+        self.assertEqual(400, response.status_code, response.json)
+        entries = assert_authentication_log([AuthEventType.INVALID_TOKEN_TYPE])
+        assert_authentication_log_entry(entries[AuthEventType.INVALID_TOKEN_TYPE])
+
+    def test_initialize_unsupported_type_logs_invalid_token_type(self):
+        # A type that exists but that this endpoint cannot initialize.
+        self._set_relying_party_id()
+        response = self._initialize({"type": "hotp"})
+        self.assertEqual(400, response.status_code, response.json)
+        entries = assert_authentication_log([AuthEventType.INVALID_TOKEN_TYPE])
+        assert_authentication_log_entry(entries[AuthEventType.INVALID_TOKEN_TYPE])
+
+    def test_initialize_disabled_token_type_logs_no_usable_token(self):
+        # An admin disabling passkey leaves nothing to authenticate with, which is how a disabled token type is
+        # classified on the serial path too.
+        self._set_relying_party_id()
+        set_policy("authlog_disabled", scope=SCOPE.AUTH,
+                   action=f"{PolicyAction.DISABLED_TOKEN_TYPES}=passkey")
+        self.addCleanup(delete_policy, "authlog_disabled")
+        response = self._initialize({"type": "passkey"})
+        self.assertEqual(403, response.status_code, response.json)
+        entries = assert_authentication_log([AuthEventType.NO_USABLE_TOKEN])
+        assert_authentication_log_entry(entries[AuthEventType.NO_USABLE_TOKEN])
+
+    def test_initialize_without_relying_party_id_logs_challenge_trigger_fail(self):
+        # No relying-party-id policy, so the server cannot build the challenge at all. The fault is the server's, not a
+        # client credential failure, which is why this is CHALLENGE_TRIGGER_FAIL and not MFA_FAIL - and why it is
+        # deliberately absent from the shipped rate-limit templates, so a config gap cannot get clients blocked.
+        response = self._initialize({"type": "passkey"})
+        self.assertEqual(403, response.status_code, response.json)
+        entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGER_FAIL])
+        assert_authentication_log_entry(entries[AuthEventType.CHALLENGE_TRIGGER_FAIL])
+        self.assertEqual(0, db.session.query(Challenge).count())

@@ -326,8 +326,7 @@ def count_distinct_users_for_ip(source_ip: str, event_types: list[str], window_s
     :param window_seconds: width of the look-back window in seconds
     :param window_end: the instant the window ends; defaults to :func:`utc_now`.
         The engine passes the single reference instant captured for the whole
-        evaluation so this count shares it with the de-dup window and the new
-        block's expiry.
+        evaluation so this count shares it with the new block's expiry.
 :param extra_filters: extra SQLAlchemy predicates ANDed into the ``WHERE``, narrowing which
         rows count to the ones a policy's conditions describe (see
         :func:`~privacyidea.lib.conditional_access.conditions.condition_sql_filters`). ``None`` or
@@ -1019,13 +1018,9 @@ def evaluate_lockout_policies(context: CAContext, event_type: AuthEventType | No
     notices: list[str] = []
     outcomes: list[ConditionalAccessOutcome] = []
     for policy in policies:
-        # Guarded per policy, for two reasons. One policy's failure must not cost the others theirs - a broken policy
-        # would otherwise disable every policy ordered behind it. And it keeps the actions this call already executed
-        # from being repeated: the caller evaluates a classification again when an earlier attempt did not return
-        # (see ConditionalAccessContext.run_post_eval), and a stage whose actions leave no live state - an EMAIL-only
-        # stage writes neither a lock nor a block - has nothing for the de-dup below to recognize on the second pass.
-        # With the loop guarded, the only failure that still escapes is the policy query above, which runs before any
-        # action does, so the retry always starts from a clean slate.
+        # Guarded per policy so one policy's failure does not cost the others theirs: a broken policy would otherwise
+        # disable every policy ordered behind it. The only failure that escapes is the policy query above, which runs
+        # before any action does, so a retry always starts from a clean slate.
         try:
             evaluation = _evaluate_policy(policy, context, event_type, now)
         except Exception as ex:
@@ -1072,8 +1067,8 @@ def _evaluate_policy(policy: LockoutPolicy, context: CAContext, event_type: str,
                      now: datetime) -> "LockoutEvaluation":
     """
     Evaluate a single policy: count the user's events over the policy window,
-    find the triggered stage, de-duplicate, then execute the stage's *pending*
-    actions (or, in dry-run, only log what they would have done).
+    find the triggered stage, then execute the stage's *pending* actions (or, in
+    dry-run, only log what they would have done).
 
     Each action decides for itself whether it fires (see
     :func:`_action_threshold_met`): by default an action triggers once, when the
@@ -1083,8 +1078,8 @@ def _evaluate_policy(policy: LockoutPolicy, context: CAContext, event_type: str,
     keeping the user locked for every further failure at 8 or more.
 
     :return: a :class:`LockoutEvaluation` with the user-facing notices produced by the executed actions and the
-        outcomes describing what was done (both empty if no stage triggered or the stage was de-duplicated away; in
-        dry run there are outcomes but no notices, since nothing ran)
+        outcomes describing what was done (both empty if no stage triggered; in dry run there are outcomes but no
+        notices, since nothing ran)
     """
     # Applicability first: a policy whose conditions exclude this request neither
     # counts nor acts, and costs no counting query.
@@ -1149,8 +1144,6 @@ def _evaluate_policy(policy: LockoutPolicy, context: CAContext, event_type: str,
     pending_actions = _stage_pending_actions(triggered_stage, count)
 
     if policy.dry_run:
-        # Dry-run never reads or writes the de-dup state, so it logs on every
-        # in-window request that would trip the stage.
         log.info(f"[dry-run] policy {policy.name!r} would trigger stage {triggered_stage.id} "
                  f"(threshold {triggered_stage.failure_threshold}) for {subject_label}: "
                  f"{count} event(s) of {_types_label(policy.counter_types_to_track)} in {window}s.")
@@ -1164,50 +1157,6 @@ def _evaluate_policy(policy: LockoutPolicy, context: CAContext, event_type: str,
                     for action in pending_actions
                     if action.action_type not in (LockoutAction.ALLOW, LockoutAction.DENY)]
         return LockoutEvaluation(outcomes=outcomes)
-
-    dedup_window_start = now - timedelta(seconds=window)
-    # De-dup: with exact-threshold triggering a stage normally fires once as the
-    # count climbs past it, but a sliding window can let the count fall back to
-    # and re-reach the same threshold; this skips a stage that already fired
-    # within the window for this user, or (for IP-blocking stages) for this
-    # source IP. An incident *ends* when its lock/block is lifted — whether by
-    # expiry OR by an admin deleting the row — so
-    # re-reaching the threshold afterwards is a fresh incident that must execute
-    # again. Otherwise an expired or admin-lifted lock would leave a dead zone in
-    # which the offender could re-reach the threshold without being re-locked /
-    # re-blocked.
-    # Only a resolved user can carry a lockout-state row (it is keyed by the
-    # (resolver, uid, realm) tuple), so an unresolved one — which a source-IP
-    # policy still evaluates for — simply has no user de-dup.
-    user_state = (get_ca_session().get(UserLockoutState, (user.resolver, user.uid, user.realm))
-                  if _resolved(user) else None)
-    user_incident_active = (user_state is not None
-                            and (user_state.lock_expires_at is None
-                                 or user_state.lock_expires_at > now))
-    user_dedup = (user_incident_active
-                  and user_state.last_stage_triggered == triggered_stage.id
-                  and user_state.locked_at is not None
-                  and user_state.locked_at >= dedup_window_start)
-    # An IP-blocking stage de-dups on its BlockList row, mirroring the user
-    # de-dup. Without this such a stage has no de-dup at all (it never writes
-    # UserLockoutState): the count re-reaching the threshold would re-fire it,
-    # refreshing the block and re-running any sibling actions.
-    ip_dedup = False
-    if source_ip and any(a.action_type in (LockoutAction.BLOCK_IP, LockoutAction.PERMANENT_BLOCK_IP)
-                         for a in pending_actions):
-        ip_state = get_ca_session().get(BlockList, source_ip)
-        ip_incident_active = (ip_state is not None
-                              and (ip_state.block_expires_at is None
-                                   or ip_state.block_expires_at > now))
-        ip_dedup = (ip_incident_active
-                    and ip_state.last_stage_triggered == triggered_stage.id
-                    and ip_state.blocked_at is not None
-                    and ip_state.blocked_at >= dedup_window_start)
-    if user_dedup or ip_dedup:
-        log.debug(f"De-dup: stage {triggered_stage.id} already triggered within the window for "
-                  f"{user!r}; skipping actions.")
-        # Nothing ran, so nothing is recorded: the history must not imply a second lock.
-        return LockoutEvaluation()
 
     log.info(f"Policy {policy.name!r} triggered stage {triggered_stage.id} "
              f"(threshold {triggered_stage.failure_threshold}) for {subject_label}: "
@@ -1450,10 +1399,10 @@ def _execute_stage_actions(policy: LockoutPolicy, stage: LockoutPolicyStage,
                                 f"({action.action_value!r}); skipping.")
                     continue
                 lock_expires_at = now + timedelta(seconds=duration)
-                if _upsert_user_lockout_state(user, lock_expires_at=lock_expires_at, stage_id=stage.id):
+                if _upsert_user_lockout_state(user, lock_expires_at=lock_expires_at):
                     record(action_type, expires_at=lock_expires_at)
             elif action_type == LockoutAction.PERMANENT_LOCK_USER:
-                if _upsert_user_lockout_state(user, lock_expires_at=None, stage_id=stage.id):
+                if _upsert_user_lockout_state(user, lock_expires_at=None):
                     record(action_type)
             elif action_type in (LockoutAction.EMAIL_ADMIN, LockoutAction.EMAIL_USER):
                 notice = _send_lockout_email(action_type, action, user, tags)
@@ -1480,7 +1429,7 @@ def _execute_stage_actions(policy: LockoutPolicy, stage: LockoutPolicyStage,
                                     f"({action.action_value!r}); skipping.")
                         continue
                     block_expires_at = now + timedelta(seconds=duration)
-                if _upsert_ip_block(source_ip, block_expires_at=block_expires_at, stage_id=stage.id):
+                if _upsert_ip_block(source_ip, block_expires_at=block_expires_at):
                     record(action_type, expires_at=block_expires_at)
             elif action_type in (LockoutAction.ALLOW, LockoutAction.DENY):
                 # ALLOW/DENY decide the current request pre-auth (see
@@ -1524,7 +1473,7 @@ def _delete_ip_block(state: BlockList) -> None:
         get_ca_session().delete(state)
 
 
-def _upsert_user_lockout_state(user: "User", *, lock_expires_at: datetime | None, stage_id: int) -> bool:
+def _upsert_user_lockout_state(user: "User", *, lock_expires_at: datetime | None) -> bool:
     """
     Create or update the :class:`UserLockoutState` row for *user*.
 
@@ -1550,11 +1499,10 @@ def _upsert_user_lockout_state(user: "User", *, lock_expires_at: datetime | None
         if not downgrade_declined:
             state.username = user.login
             state.lock_expires_at = lock_expires_at
-            state.last_stage_triggered = stage_id
     return write.succeeded and not downgrade_declined
 
 
-def _upsert_ip_block(source_ip: str, *, block_expires_at: datetime | None, stage_id: int) -> bool:
+def _upsert_ip_block(source_ip: str, *, block_expires_at: datetime | None) -> bool:
     """
     Create or update the :class:`BlockList` row for *source_ip*.
 
@@ -1585,5 +1533,4 @@ def _upsert_ip_block(source_ip: str, *, block_expires_at: datetime | None, stage
             downgrade_declined = True
         if not downgrade_declined:
             state.block_expires_at = block_expires_at
-            state.last_stage_triggered = stage_id
     return write.succeeded and not downgrade_declined

@@ -269,9 +269,11 @@ class UserLockoutState(MethodsMixin, db.Model):
     user is locked, and a row whose ``lock_expires_at`` lies in the future (or is
     ``NULL`` for a permanent lock) means the user is currently locked; an admin
     lifts a lock by deleting the row (timestamps are naive UTC, see
-    :func:`~privacyidea.models.utils.utc_now`). ``last_stage_triggered`` records
-    which stage produced the current state, both for auditing and so a stage's
-    actions are not fired twice (de-dup).
+    :func:`~privacyidea.models.utils.utc_now`).
+
+    The row records the lock itself, not which policy produced it: what a stage
+    did, and to whom, is the conditional-access history
+    (:class:`~privacyidea.models.conditional_access_outcome.ConditionalAccessOutcome`).
     """
     __tablename__ = 'user_lockout_state'
     resolver: Mapped[str] = mapped_column(case_sensitive_unicode(120), primary_key=True)
@@ -282,16 +284,10 @@ class UserLockoutState(MethodsMixin, db.Model):
     # live resolver lookup (which would also fail for a since-deleted user).
     username: Mapped[str | None] = mapped_column(case_sensitive_unicode(255), nullable=True)
     lock_expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
-    # SET NULL on delete: keep the lockout state row if its stage is removed.
-    last_stage_triggered: Mapped[int | None] = mapped_column(
-        Integer, ForeignKey('lockout_policy_stages.id', ondelete='SET NULL'),
-        nullable=True, index=True)
     # When the lock was applied; refreshed on each (re)lock, so it reflects the start of the
     # current active lock rather than a generic audit timestamp.
     locked_at: Mapped[datetime] = mapped_column(
         DateTime, default=utc_now, onupdate=utc_now, nullable=False)
-
-    last_stage: Mapped["LockoutPolicyStage | None"] = relationship("LockoutPolicyStage")
 
 
 class BlockList(MethodsMixin, db.Model):
@@ -306,9 +302,12 @@ class BlockList(MethodsMixin, db.Model):
     field: a row exists only while the IP is blocked, and a row whose
     ``block_expires_at`` lies in the future means the IP is currently blocked,
     while a ``NULL`` value means a permanent block (only an admin reset, which
-    deletes the row, clears it). ``last_stage_triggered`` records the stage that
-    produced the block, for de-duplication. Timestamps are naive UTC, see
+    deletes the row, clears it). Timestamps are naive UTC, see
     :func:`~privacyidea.models.utils.utc_now`.
+
+    Like :class:`UserLockoutState` the row records the block itself, not which
+    policy produced it; that is the conditional-access history
+    (:class:`~privacyidea.models.conditional_access_outcome.ConditionalAccessOutcome`).
     """
     __tablename__ = 'block_list'
     # TODO: the blocked identity is a source IP for now. A future revision may
@@ -318,13 +317,7 @@ class BlockList(MethodsMixin, db.Model):
     # IPv4-mapped IPv6 address.
     ip: Mapped[str] = mapped_column(Unicode(50), primary_key=True)
     block_expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
-    # SET NULL on delete: keep the block if its originating stage is removed.
-    last_stage_triggered: Mapped[int | None] = mapped_column(
-        Integer, ForeignKey('lockout_policy_stages.id', ondelete='SET NULL'),
-        nullable=True, index=True)
     # When the block was applied; refreshed on each (re)block, so it reflects the start of the
     # current active block rather than a generic audit timestamp.
     blocked_at: Mapped[datetime] = mapped_column(
         DateTime, default=utc_now, onupdate=utc_now, nullable=False)
-
-    last_stage: Mapped["LockoutPolicyStage | None"] = relationship("LockoutPolicyStage")
