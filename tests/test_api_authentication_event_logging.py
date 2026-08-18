@@ -30,7 +30,9 @@ from flask import Response
 
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, AUTH_EVENT_TYPE_KEY
 from privacyidea.lib.auth import create_db_admin, delete_db_admin
+from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.conditional_access.authentication_log import get_authentication_logs, AuthLogUserRole
+from privacyidea.lib.conditional_access.request_context import ATTEMPT_ID_CHALLENGE_KEY
 from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction
 from privacyidea.lib.policy import set_policy, delete_policy, SCOPE, PolicyAction, AUTHORIZED
 from privacyidea.lib.realm import set_realm, delete_realm
@@ -318,6 +320,38 @@ class _AuthLogContractTests(_ContractHost):
                                    AuthEventType.CHALLENGE_ANSWERED_FAIL,
                                    AuthEventType.LOGIN_SUCCESS],
                                   transaction_id=transaction_id)
+
+    def test_attempt_id_is_carried_by_the_challenge(self):
+        # The grouping lives in the triggered challenge's own data, not in the authentication log: with the trigger row
+        # deleted, the answer still joins the attempt that challenge was triggered for. That is also what keeps a
+        # *successful* answer grouped at all - the token logic deletes the challenge it answered, so the attempt has to
+        # be recovered before that.
+        self._enable_challenge_response()
+        try:
+            transaction_id = self._trigger_challenge()
+            entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED], transaction_id=transaction_id)
+            attempt_id = entries[AuthEventType.CHALLENGE_TRIGGERED].attempt_id
+            challenges = get_challenges(transaction_id=transaction_id)
+            self.assertEqual(1, len(challenges))
+            self.assertEqual(attempt_id, challenges[0].get_data()[ATTEMPT_ID_CHALLENGE_KEY])
+            self._clear_log()
+            self._assert_succeeded(self._authenticate("755224", transaction_id=transaction_id))
+        finally:
+            delete_policy("authlog_cr")
+        success = assert_authentication_log([AuthEventType.LOGIN_SUCCESS])
+        self.assertEqual(attempt_id, success[AuthEventType.LOGIN_SUCCESS].attempt_id)
+
+    def test_uncontinuable_transaction_is_logged(self):
+        # A request naming a transaction whose challenge records no attempt cannot be grouped with it and starts its
+        # own, saying so. Benign here (the transaction never existed), but this line is the only signal if the
+        # resolution order in before_request is ever broken, so assert it is actually emitted. The converse - a live
+        # challenge staying silent - is covered by test_attempt_id_is_carried_by_the_challenge: the ids match there,
+        # which they could not if a new attempt had been started.
+        with self.assertLogs("privacyidea.api.lib.utils", level="DEBUG") as captured:
+            self._assert_failed(self._authenticate("755224", transaction_id="9999999999999999999"))
+        self.assertTrue(any("has no challenge recording an authentication attempt" in line
+                            for line in captured.output), captured.output)
+        assert_authentication_log([AuthEventType.CHALLENGE_ANSWERED_FAIL])
 
     # --- Authorization policies (NOT_AUTHORIZED) ---
 

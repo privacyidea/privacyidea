@@ -698,6 +698,11 @@ def create_challenge(serial: str, transaction_id: str = None, challenge: str = '
     stable identifier across both backends. To read the challenge back (from
     whichever backend holds it) use ``get_challenges()``.
 
+    The stored data always also records the conditional-access ``attempt_id`` of the request creating the challenge, so
+    that a later request answering it logs its authentication events under the same attempt - see
+    :meth:`~privacyidea.lib.conditional_access.request_context.ConditionalAccessContext.continue_attempt`. The challenge
+    is the natural carrier for that: it is exactly what the client hands back, and it is created here in one place.
+
     :param serial: Serial number of the token this challenge belongs to
     :param transaction_id: Transaction id of the challenge. A new one is generated if None.
     :param challenge: The challenge string
@@ -707,11 +712,16 @@ def create_challenge(serial: str, transaction_id: str = None, challenge: str = '
     :return: The created Challenge object
     """
     from privacyidea.lib.cache import cache_challenge, redis_feature_enabled
+    from privacyidea.lib.conditional_access.request_context import ATTEMPT_ID_CHALLENGE_KEY, current_attempt_id
     from privacyidea.models import Challenge
+    challenge_data = dict(data) if data else {}
+    attempt_id = current_attempt_id()
+    if attempt_id:
+        challenge_data[ATTEMPT_ID_CHALLENGE_KEY] = attempt_id
     db_challenge = Challenge(serial,
                              transaction_id=transaction_id,
                              challenge=challenge,
-                             data=data if data is not None else {},
+                             data=challenge_data,
                              session=session if session is not None else '',
                              validitytime=validitytime)
     if redis_feature_enabled("challenges"):

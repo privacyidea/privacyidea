@@ -45,8 +45,7 @@ authentication_log_column_length = {
     "client_label": 1024,
     "serial": 1024,
     # transaction_id (and attempt_id) originate in the challenge table, whose transaction_id is Unicode(64), so a real
-    # value never exceeds 64 here either. Keeping it at 64 lets ix_authlog_transaction be a plain full index within the
-    # MySQL/MariaDB utf8mb4 key limit.
+    # value never exceeds 64 here either.
     "transaction_id": 64,
     "attempt_id": 64,
 }
@@ -65,7 +64,6 @@ class AuthenticationLog(MethodsMixin, db.Model):
     __table_args__ = (
         Index("ix_authlog_user_event_time", "resolver", "uid", "realm", "event_type", "timestamp"),
         Index("ix_authlog_ip_event_time", "source_ip", "event_type", "timestamp"),
-        Index("ix_authlog_transaction", "transaction_id"),
         # PER_ATTEMPT counting (count_user_attempts / count_ip_attempts) range-scans a subject's rows by time with no
         # event_type predicate, so each needs timestamp right after the subject column(s).
         Index("ix_authlog_user_time", "resolver", "uid", "realm", "timestamp"),
