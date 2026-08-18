@@ -65,6 +65,14 @@
   @include table.card-width(m);
 }
 
+// Sits in the panel header, so it keeps the header's description tone and stays smaller than the
+// title beside it.
+.settings-appearance-hint {
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+}
+
 // Header and body share one inset, so the title lines up with the cards below it.
 .settings-appearance-panel {
   --expansion-panel-header-padding: 0 16px;

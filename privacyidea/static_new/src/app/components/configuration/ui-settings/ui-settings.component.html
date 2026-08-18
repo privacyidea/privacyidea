@@ -89,6 +89,14 @@
   <mat-expansion-panel class="settings-appearance-panel">
     <mat-expansion-panel-header>
       <mat-panel-title i18n>Appearance</mat-panel-title>
+      <mat-panel-description>
+        <mat-icon
+          [attr.aria-label]="appearanceHint"
+          [matTooltip]="appearanceHint"
+          class="settings-appearance-hint"
+          >info_outline</mat-icon
+        >
+      </mat-panel-description>
     </mat-expansion-panel-header>
 
     <div class="details-cards-grid">

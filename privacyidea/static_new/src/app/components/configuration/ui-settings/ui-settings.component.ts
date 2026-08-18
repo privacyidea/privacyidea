@@ -91,6 +91,7 @@ export class UISettingsComponent {
     { value: "extra-round", label: $localize`Extra round` }
   ];
   protected readonly resetTooltip = $localize`Reset UI settings to defaults`;
+  protected readonly appearanceHint = $localize`Changes how the interface looks: corner rounding, shadow depth and the direction the light comes from. Saved for your account.`;
 
   protected resetSettings(): void {
     this.appearanceService.resetToDefaults();
