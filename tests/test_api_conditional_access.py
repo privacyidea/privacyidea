@@ -244,6 +244,29 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         # The permanent block leads; the timed lock follows.
         self.assertEqual("PERMANENT-BLOCK-TEXT LOCK-TEXT", body["detail"]["message"], body)
 
+    def test_the_other_restriction_is_recorded_on_the_row(self):
+        # The log records one event_type per request, so a request refused by both is filed under the binding
+        # one and the other is listed in other_info as additional_event_types: not queryable the way
+        # event_type is, but visible to an admin reading the entry.
+        self._lock_user(utc_now() + timedelta(seconds=600))
+        db.session.add(BlockList(ip="203.0.113.7", block_expires_at=None))
+        db.session.commit()
+        self._check({"user": "cornelius", "pass": "pin755224"}, remote_addr="203.0.113.7")
+        entries = get_authentication_logs()
+        self.assertEqual(1, len(entries), entries)
+        # The permanent block binds, so that is the classification; the lock is the one recorded alongside.
+        self.assertEqual(str(AuthEventType.IP_BLOCKED), entries[0].event_type, entries[0])
+        self.assertListEqual([str(AuthEventType.USER_LOCKED)], entries[0].other_info["additional_event_types"],
+                             entries[0])
+
+    def test_a_single_restriction_records_nothing_extra(self):
+        # Only one in force, so the event type says it all and the row carries no redundant note.
+        self._lock_user(utc_now() + timedelta(seconds=600))
+        self._check({"user": "cornelius", "pass": "pin755224"})
+        entries = get_authentication_logs()
+        self.assertEqual(str(AuthEventType.USER_LOCKED), entries[0].event_type, entries[0])
+        self.assertNotIn("additional_event_types", entries[0].other_info or {}, entries[0])
+
     def test_expired_lock_does_not_reject(self):
         self._lock_user(utc_now() - timedelta(seconds=10))
         # An expired lock is not a lock: a valid authentication still succeeds.

@@ -93,12 +93,13 @@ def conditional_access_precheck(user: User, log_rejection: bool = True) -> Respo
         tell why it fails and would otherwise fill the log at its polling frequency.
     """
 
-    def reject(event_type: AuthEventType, audit_info: str, message: str | None = None) -> Response:
+    def reject(event_type: AuthEventType, audit_info: str, message: str | None = None,
+               other_info: dict | None = None) -> Response:
         """Classify the request in the authentication log (unless opted out) and return the failure."""
         if log_rejection:
             # Staged like any other event, so request teardown writes it; attempt_id resolves as usual, which links the
             # rejection into the attempt it refused to process when the request carries that transaction.
-            log_authentication(event_type, request, user=user,
+            log_authentication(event_type, request, user=user, other_info=other_info,
                                transaction_id=get_optional_one_of(request.all_data, ["transaction_id", "state"]))
         g.audit_object.log({"success": False, "info": audit_info})
         # Without a configured message the response keeps its empty detail, byte for byte what it has always been, so
@@ -112,11 +113,13 @@ def conditional_access_precheck(user: User, log_rejection: bool = True) -> Respo
         # Every restriction in force is reported; the event type follows the binding one, because the log
         # needs a single classification.
         message = " ".join(_restriction_messages(lockout, ip_block)) or None
+        audit_reason = _audit_reason(lockout, ip_block)
+        additional = _additional_event_types(binding, lockout, ip_block)
         if binding == "lock":
             log.info(f"Rejecting authentication for locked user {user!r}.")
-            return reject(AuthEventType.USER_LOCKED, "Rejected: account is temporarily locked", message)
+            return reject(AuthEventType.USER_LOCKED, audit_reason, message, additional)
         log.info(f"Rejecting authentication from blocked IP {g.client_ip!r}.")
-        return reject(AuthEventType.IP_BLOCKED, "Rejected: source IP is blocked", message)
+        return reject(AuthEventType.IP_BLOCKED, audit_reason, message, additional)
     decision = evaluate_access_decision(build_ca_context(user))
     # A DENY decision is part of this request's history, but no authentication-log row exists yet to record it against
     # (and a dry-run DENY lets the request continue, so its row comes later). The context holds the outcomes until the
@@ -264,6 +267,39 @@ def _binding_restriction(lockout: RestrictionStatus | None, ip_block: Restrictio
     return "lock"
 
 
+def _audit_reason(lockout: RestrictionStatus | None, ip_block: RestrictionStatus | None) -> str:
+    """
+    Why this request was refused, for the audit log: every restriction in force, and whether each is permanent.
+
+    Unlike the authentication log's single ``event_type`` this is free text, so it does not have to choose - and
+    the admin reading it is the one person who should see the whole picture rather than the binding half of it.
+    """
+    parts = []
+    if lockout is not None:
+        parts.append("account is permanently locked" if lockout.permanent else "account is temporarily locked")
+    if ip_block is not None:
+        parts.append("source IP is permanently blocked" if ip_block.permanent else "source IP is temporarily blocked")
+    return f"Rejected: {' and '.join(parts)}"
+
+
+def _additional_event_types(binding: str, lockout: RestrictionStatus | None,
+                            ip_block: RestrictionStatus | None) -> dict | None:
+    """
+    The event types the row could not record, for the entry's ``other_info``.
+
+    The authentication log holds one classification per request, so a request refused by both a lock and a
+    block is filed under whichever binds (:func:`_binding_restriction`) - and the other would otherwise leave no
+    trace on the row at all, while the user was told about both. Recording it here keeps the row honest: it is
+    not queryable the way ``event_type`` is, but an admin reading the entry sees the whole reason.
+
+    :return: ``{"additional_event_types": [...]}`` when more than one restriction is in force, else ``None``
+    """
+    if lockout is None or ip_block is None:
+        return None
+    other = AuthEventType.IP_BLOCKED if binding == "lock" else AuthEventType.USER_LOCKED
+    return {"additional_event_types": [str(other)]}
+
+
 def _restriction_messages(lockout: RestrictionStatus | None,
                           ip_block: RestrictionStatus | None) -> list[str]:
     """
@@ -299,8 +335,8 @@ def _reject_restricted_login(user: User) -> None:
     admin has no ``(resolver, uid, realm)`` identity tuple and is therefore never locked.
 
     The pre-auth conditional-access DENY decision is evaluated after the lock/block pre-checks so an ALLOW cannot
-    override them. A DENY rejects this single login with a message stating it was a conditional-access decision (the
-    policy is not named). ALLOW / CONTINUE fall through silently.
+    override them. A DENY rejects this single login with the deciding stage's wording, or generically without one.
+    ALLOW / CONTINUE fall through silently.
 
     Every rejection also classifies the login in the authentication log (``USER_LOCKED`` / ``IP_BLOCKED`` /
     ``ACCESS_DENIED``), which is the only place an admin can filter for the reason: the login is turned away before
@@ -313,21 +349,21 @@ def _reject_restricted_login(user: User) -> None:
     ip_block = get_ip_block(g.client_ip, clear_expired=True)
     restriction = _binding_restriction(lockout, ip_block)
 
-    def log_rejection(event_type: AuthEventType) -> None:
+    def log_rejection(event_type: AuthEventType, other_info: dict | None = None) -> None:
         """Classify this login in the authentication log. Staged, so request teardown writes it even though the
         AuthError below unwinds the view."""
-        log_authentication(event_type, request, user=user,
+        log_authentication(event_type, request, user=user, other_info=other_info,
                            internal_admin=g.get("resolved_user", {}).get("is_local_admin", False))
 
     if restriction == "block":
         log.info(f"Rejecting /auth login from blocked IP {g.client_ip!r}.")
-        g.audit_object.log({"info": "Rejected: source IP is blocked"})
-        log_rejection(AuthEventType.IP_BLOCKED)
+        g.audit_object.log({"info": _audit_reason(lockout, ip_block)})
+        log_rejection(AuthEventType.IP_BLOCKED, _additional_event_types(restriction, lockout, ip_block))
         _raise_restricted(lockout, ip_block)
     if restriction == "lock":
         log.info(f"Rejecting /auth login for locked user {user!r}.")
-        g.audit_object.log({"info": "Rejected: account is temporarily locked"})
-        log_rejection(AuthEventType.USER_LOCKED)
+        g.audit_object.log({"info": _audit_reason(lockout, ip_block)})
+        log_rejection(AuthEventType.USER_LOCKED, _additional_event_types(restriction, lockout, ip_block))
         _raise_restricted(lockout, ip_block)
     decision = evaluate_access_decision(build_ca_context(user))
     # The decision belongs to this request's history, but its authentication-log row does not exist yet: the context

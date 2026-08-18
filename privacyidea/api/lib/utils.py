@@ -350,7 +350,7 @@ def log_authentication(event_type: AuthEventType | None, request: Request | None
                        serial: str | None = None, transaction_id: str | None = None,
                        username: str | None = None,
                        internal_admin: bool = False, attempt_id: str | None = None,
-                       immediate: bool = False) -> "PendingAuthEvent | None":
+                       immediate: bool = False, other_info: dict | None = None) -> "PendingAuthEvent | None":
     """
     Record one authentication_log entry for the current request.
 
@@ -437,6 +437,7 @@ def log_authentication(event_type: AuthEventType | None, request: Request | None
         serial=serial,
         attempt_id=attempt_id,
         immediate=immediate,
+        other_info=other_info,
     )
     context.stage(event)
     if immediate:
