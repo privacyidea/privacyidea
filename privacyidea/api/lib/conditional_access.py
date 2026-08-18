@@ -25,7 +25,7 @@ There is one gate per entry point because they reject differently, not because t
   no reason at all - the reason lives in the audit log and in the request's authentication-log row, for the admin.
 * :func:`conditional_access_login_gate` guards the JWT login ``/auth``. A human at the login screen is told what is
   in force, if an admin configured wording for it, instead of showing "Wrong credentials" for ten minutes. A lock
-  already in force is described from its own row (:func:`_restriction_message`); one written by the failure of this
+  already in force is described from its own row (:func:`_restriction_messages`); one written by the failure of this
   very login comes back rendered with the evaluation, so neither path has to read the other's work.
 
 Both end in the same place - :func:`~privacyidea.lib.conditional_access.engine.evaluate_access_decision` and the
@@ -106,14 +106,17 @@ def conditional_access_precheck(user: User, log_rejection: bool = True) -> Respo
         return send_result(False, rid=2, details={"message": message} if message else {})
 
     lockout = get_user_lockout(user, clear_expired=True)
-    if lockout:
-        log.info(f"Rejecting authentication for locked user {user!r}.")
-        return reject(AuthEventType.USER_LOCKED, "Rejected: account is temporarily locked",
-                      _restriction_message(lockout))
     ip_block = get_ip_block(g.client_ip, clear_expired=True)
-    if ip_block:
+    binding = _binding_restriction(lockout, ip_block)
+    if binding:
+        # Every restriction in force is reported; the event type follows the binding one, because the log
+        # needs a single classification.
+        message = " ".join(_restriction_messages(lockout, ip_block)) or None
+        if binding == "lock":
+            log.info(f"Rejecting authentication for locked user {user!r}.")
+            return reject(AuthEventType.USER_LOCKED, "Rejected: account is temporarily locked", message)
         log.info(f"Rejecting authentication from blocked IP {g.client_ip!r}.")
-        return reject(AuthEventType.IP_BLOCKED, "Rejected: source IP is blocked", _restriction_message(ip_block))
+        return reject(AuthEventType.IP_BLOCKED, "Rejected: source IP is blocked", message)
     decision = evaluate_access_decision(build_ca_context(user))
     # A DENY decision is part of this request's history, but no authentication-log row exists yet to record it against
     # (and a dry-run DENY lets the request continue, so its row comes later). The context holds the outcomes until the
@@ -234,43 +237,55 @@ def _restriction_message(restriction: RestrictionStatus) -> str | None:
 
 def _binding_restriction(lockout: RestrictionStatus | None, ip_block: RestrictionStatus | None) -> str | None:
     """
-    When both a user lockout and a source-IP block are in force, decide which one
-    to report to the user. The binding constraint is the one that lasts longest (a
-    permanent restriction outranks any timed one), so that is what we surface:
-    telling a permanently-blocked user to "try again in 1 minute" because a shorter
-    user lock also happens to be active would be misleading. This is exactly the
-    case when a temporary lock escalates into a permanent IP block on the same
-    request. On a tie the user lock wins, matching the lock-before-block order of
-    the pre-check.
+    Which restriction classifies a request refused by both: the one that lasts longest, a permanent restriction
+    outranking any timed one. On a tie the user lock wins, matching the lock-before-block order of the pre-check.
+
+    Needed because the authentication log records one ``event_type`` per request - ``USER_LOCKED`` or
+    ``IP_BLOCKED``, the value an admin filters on - so one of the two has to stand for the refusal. What the
+    *user* is told is a separate question with a separate answer: every restriction that carries wording is
+    reported (:func:`_restriction_messages`).
 
     :param lockout: the :class:`RestrictionStatus` from :func:`get_user_lockout`, or ``None``
     :param ip_block: the :class:`RestrictionStatus` from :func:`get_ip_block`, or ``None``
-    :return: ``"lock"`` or ``"block"`` for the restriction to report, or ``None``
-        if neither is in force
+    :return: ``"lock"`` or ``"block"`` for the binding restriction, or ``None`` if neither is in force
     """
 
-    def _remaining(state: RestrictionStatus | None) -> float | None:
+    def _remaining_time(state: RestrictionStatus | None) -> float | None:
         if not state:
             return None
         return float("inf") if state.permanent else state.seconds_remaining
 
-    lock_rem = _remaining(lockout)
-    block_rem = _remaining(ip_block)
-    if lock_rem is None and block_rem is None:
+    lock_remaining = _remaining_time(lockout)
+    block_remaining = _remaining_time(ip_block)
+    if lock_remaining is None and block_remaining is None:
         return None
-    if block_rem is not None and (lock_rem is None or block_rem > lock_rem):
+    if block_remaining is not None and (lock_remaining is None or block_remaining > lock_remaining):
         return "block"
     return "lock"
 
 
-def _raise_restricted(restriction: RestrictionStatus) -> None:
+def _restriction_messages(lockout: RestrictionStatus | None,
+                          ip_block: RestrictionStatus | None) -> list[str]:
     """
-    Refuse this login because *restriction* is in force, telling the user only what the stage that applied it
-    configured. With no message the rejection is the ordinary wrong-credentials failure, so a locked account is
-    indistinguishable from a wrong password.
+    The wording of every restriction in force, most severe first, skipping those that carry none.
+
+    Both are reported rather than only the binding one. They are independent facts - an account lock and an
+    address block are resolved differently - so telling the user about one leaves them to discover the other by
+    failing again.
     """
-    raise AuthError(_restriction_message(restriction) or GENERIC_AUTH_FAILURE,
-                    id=Error.AUTHENTICATE_WRONG_CREDENTIALS)
+    ordered = sorted((state for state in (lockout, ip_block) if state is not None),
+                     key=lambda state: 0 if state.permanent else 1)
+    return [message for message in (_restriction_message(state) for state in ordered) if message]
+
+
+def _raise_restricted(lockout: RestrictionStatus | None, ip_block: RestrictionStatus | None) -> None:
+    """
+    Refuse this login because a restriction is in force, telling the user what every restriction that carries
+    wording says (see :func:`_restriction_messages`). With no wording at all the rejection is the ordinary
+    wrong-credentials failure, so a locked account is indistinguishable from a wrong password.
+    """
+    messages = _restriction_messages(lockout, ip_block)
+    raise AuthError(" ".join(messages) if messages else GENERIC_AUTH_FAILURE, id=Error.AUTHENTICATE_WRONG_CREDENTIALS)
 
 
 def _reject_restricted_login(user: User) -> None:
@@ -278,11 +293,10 @@ def _reject_restricted_login(user: User) -> None:
     Reject an ``/auth`` login pre-auth (before any credential check) when conditional-access policies forbid it.
     Raises :class:`AuthError` when the request must be rejected and returns ``None`` otherwise.
 
-    A currently-locked user or a blocked source IP is rejected first. The rejection states the restriction (how long it
-    lasts, or that it is permanent) so the user understands why login fails. An unresolved user / local DB admin has no
-    ``(resolver, uid, realm)`` identity tuple and is therefore never locked. When both apply (e.g. a temporary lock
-    that escalated into a permanent IP block), the longer-lasting one is surfaced so we never tell a
-    permanently-blocked user to "try again in a minute".
+    A currently-locked user or a blocked source IP is rejected first. The rejection says whatever wording the admin
+    configured for the restrictions in force - every one of them, so a user facing both a lock and a block is not left
+    to discover the second by failing again - and stays generic when none carries any. An unresolved user / local DB
+    admin has no ``(resolver, uid, realm)`` identity tuple and is therefore never locked.
 
     The pre-auth conditional-access DENY decision is evaluated after the lock/block pre-checks so an ALLOW cannot
     override them. A DENY rejects this single login with a message stating it was a conditional-access decision (the
@@ -290,9 +304,10 @@ def _reject_restricted_login(user: User) -> None:
 
     Every rejection also classifies the login in the authentication log (``USER_LOCKED`` / ``IP_BLOCKED`` /
     ``ACCESS_DENIED``), which is the only place an admin can filter for the reason: the login is turned away before
-    anything else logs an outcome for it. The event type follows the restriction actually reported, so the log and the
-    message a user saw cannot disagree. ``internal_admin`` comes from the flag ``before_request`` already resolved, so
-    a blocked local admin is recorded as ``admin-internal`` rather than falling back to ``user``.
+    anything else logs an outcome for it. With both a lock and a block in force the event type follows the binding one
+    (:func:`_binding_restriction`), since the log records one classification per request. ``internal_admin`` comes
+    from the flag ``before_request`` already resolved, so a blocked local admin is recorded as ``admin-internal``
+    rather than falling back to ``user``.
     """
     lockout = get_user_lockout(user, clear_expired=True)
     ip_block = get_ip_block(g.client_ip, clear_expired=True)
@@ -308,12 +323,12 @@ def _reject_restricted_login(user: User) -> None:
         log.info(f"Rejecting /auth login from blocked IP {g.client_ip!r}.")
         g.audit_object.log({"info": "Rejected: source IP is blocked"})
         log_rejection(AuthEventType.IP_BLOCKED)
-        _raise_restricted(ip_block)
+        _raise_restricted(lockout, ip_block)
     if restriction == "lock":
         log.info(f"Rejecting /auth login for locked user {user!r}.")
         g.audit_object.log({"info": "Rejected: account is temporarily locked"})
         log_rejection(AuthEventType.USER_LOCKED)
-        _raise_restricted(lockout)
+        _raise_restricted(lockout, ip_block)
     decision = evaluate_access_decision(build_ca_context(user))
     # The decision belongs to this request's history, but its authentication-log row does not exist yet: the context
     # keeps the outcomes until the login stages its event (a dry-run DENY lets the login continue and land on that row).

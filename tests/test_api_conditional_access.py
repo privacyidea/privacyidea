@@ -233,6 +233,17 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         self.assertEqual("wrong otp pin", tripping["detail"]["message"], tripping)
         self.assertTrue(is_user_locked(self.user))
 
+    def test_both_restrictions_are_reported_on_validate_check(self):
+        # Both restrictions are reported, most severe first: a user facing a permanent block behind a timed
+        # lock must not be told only to "try again in 10 minutes" when waiting cannot help.
+        self._lock_user(utc_now() + timedelta(seconds=600), error_message="LOCK-TEXT")
+        db.session.add(BlockList(ip="203.0.113.7", block_expires_at=None, error_message="PERMANENT-BLOCK-TEXT"))
+        db.session.commit()
+        body = self._check({"user": "cornelius", "pass": "pin755224"}, remote_addr="203.0.113.7")
+        self.assertFalse(body["result"]["value"], body)
+        # The permanent block leads; the timed lock follows.
+        self.assertEqual("PERMANENT-BLOCK-TEXT LOCK-TEXT", body["detail"]["message"], body)
+
     def test_expired_lock_does_not_reject(self):
         self._lock_user(utc_now() - timedelta(seconds=10))
         # An expired lock is not a lock: a valid authentication still succeeds.
@@ -1227,15 +1238,16 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
         message = res.json["result"]["error"]["message"]
         self.assertEqual("MSG-BETA", message)
 
-    def test_lock_checked_before_ip_block_at_auth(self):
-        # Both a persistent lock and a persistent IP block: the lock is checked
-        # first, so the 401 states the account lockout, not the IP block.
+    def test_both_restrictions_are_reported_at_auth(self):
+        # A lock and an IP block are independent facts, resolved differently, so both are stated - telling
+        # the user about one would leave them to discover the other by failing again. Equally severe here,
+        # so the lock leads, matching the order they are checked in.
         self._lock_user(error_message="MSG-ALPHA")
         self._block_ip("203.0.113.7", error_message="MSG-BETA")
         res = self._auth("cornelius", "test", remote_addr="203.0.113.7")
         self.assertEqual(401, res.status_code, res)
         message = res.json["result"]["error"]["message"]
-        self.assertEqual("MSG-ALPHA", message)
+        self.assertEqual("MSG-ALPHA MSG-BETA", message)
 
     def test_allow_cannot_override_lock_at_auth(self):
         # The lock is checked before the ALLOW/DENY decision, so a
@@ -1247,7 +1259,7 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
         self.assertEqual(401, res.status_code, res)
         self.assertEqual("MSG-ALPHA", res.json["result"]["error"]["message"], res.json)
 
-    def test_permanent_ip_block_message_wins_over_timed_lock(self):
+    def test_permanent_ip_block_is_reported_before_a_timed_lock(self):
         # Escalation case: the user is temp-locked (1 min) AND their IP is now
         # permanently blocked. The rejection must report the permanent block - the
         # longer-lasting (binding) restriction - not "try again in a minute", which
@@ -1259,9 +1271,10 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
         res = self._auth("cornelius", "test", remote_addr="203.0.113.7")
         self.assertEqual(401, res.status_code, res)
         message = res.json["result"]["error"]["message"]
-        self.assertEqual("MSG-GAMMA", message)
+        # The permanent block leads: waiting out the lock cannot help, so that is what the user needs first.
+        self.assertEqual("MSG-GAMMA MSG-ALPHA", message)
 
-    def test_permanent_lock_message_wins_over_timed_ip_block(self):
+    def test_permanent_lock_is_reported_before_a_timed_ip_block(self):
         # Symmetric: a permanent user lock outranks a timed IP block.
         db.session.add(UserLockoutState(resolver=self.user.resolver, uid=self.user.uid, realm=self.user.realm,
                                         lock_expires_at=None, error_message="MSG-ALPHA"))
@@ -1269,7 +1282,8 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
         res = self._auth("cornelius", "test", remote_addr="203.0.113.7")
         self.assertEqual(401, res.status_code, res)
         message = res.json["result"]["error"]["message"]
-        self.assertEqual("MSG-ALPHA", message)
+        # Symmetric: the permanent lock leads, the timed block follows.
+        self.assertEqual("MSG-ALPHA MSG-BETA", message)
 
     def test_user_locked_after_password_failures(self):
         self._make_password_policy(threshold=3)
