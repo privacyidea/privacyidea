@@ -4,6 +4,7 @@ This test file tests the lib.subscriptions.py
 from datetime import datetime, timedelta
 
 import mock
+import requests
 
 from privacyidea.lib.subscriptions import (save_subscription,
                                            delete_subscription,
@@ -11,9 +12,24 @@ from privacyidea.lib.subscriptions import (save_subscription,
                                            raise_exception_probability,
                                            check_subscription,
                                            SubscriptionError,
-                                           subscription_status)
+                                           subscription_status,
+                                           get_plugin_subscription_status,
+                                           get_server_subscription_status,
+                                           get_metered_application,
+                                           get_subscription_owner,
+                                           get_latest_github_versions,
+                                           invalidate_github_version_cache,
+                                           version_sort_key,
+                                           _subscription_state,
+                                           SubscriptionState,
+                                           EXPIRING_THRESHOLD_DAYS,
+                                           APPLICATIONS,
+                                           METERED_APPLICATIONS,
+                                           DASHBOARD_PLUGINS)
+from privacyidea.lib import subscriptions as subscriptions_module
 from privacyidea.lib.token import init_token
 from privacyidea.lib.user import User
+from privacyidea.models import ClientApplication, Subscription, db
 from .base import MyTestCase
 
 # 100 users
@@ -173,3 +189,729 @@ class SubscriptionApplicationTestCase(MyTestCase):
         res = subscription_status()
         # Token count < 50
         self.assertEqual(0, res)
+
+    def test_05_metered_clients(self):
+        # A metered client resolves to the application it is counted against; any other
+        # name passes through lower-cased.
+        self.assertEqual("privacyidea-pam", get_metered_application("pam-passkey"))
+        self.assertEqual("privacyidea-pam", get_metered_application("PAM-Passkey"))
+        self.assertEqual("privacyidea-keycloak",
+                         get_metered_application("entraid-via-keycloak"))
+        self.assertEqual("privacyidea-cp", get_metered_application("privacyidea-cp"))
+        self.assertEqual("privacyidea-cp", get_metered_application("Privacyidea-CP"))
+        self.assertEqual("", get_metered_application(""))
+
+        # check_subscription for a metered client looks up its application's
+        # subscription rather than the client's own name.
+        with mock.patch("privacyidea.lib.subscriptions.get_users_with_active_tokens",
+                        return_value=0):
+            with mock.patch("privacyidea.lib.subscriptions.get_subscription",
+                            return_value=[]) as mock_get_subscription:
+                self.assertTrue(check_subscription("pam-passkey"))
+        mock_get_subscription.assert_called_once_with("privacyidea-pam")
+
+    def test_06_authenticator_app_is_never_metered(self):
+        # The Authenticator App is free to use: its authentications must not be counted
+        # against any subscription, however many users have tokens, and it must not be
+        # able to raise a SubscriptionError.
+        self.assertNotIn("privacyidea-app", METERED_APPLICATIONS)
+        self.assertEqual("privacyidea-app", get_metered_application("privacyIDEA-App"))
+        # The dashboard still reports it under the authenticator subscription.
+        self.assertEqual("privacyidea authenticator", get_subscription_owner("privacyIDEA-App"))
+
+        with mock.patch("privacyidea.lib.subscriptions.get_users_with_active_tokens",
+                        return_value=100_000) as mock_token_users:
+            with mock.patch("privacyidea.lib.subscriptions.get_subscription") as mock_get_subscription:
+                for _ in range(20):
+                    self.assertTrue(check_subscription("privacyIDEA-App"))
+        # Not metered at all: neither the free tier nor a subscription is consulted.
+        mock_get_subscription.assert_not_called()
+        mock_token_users.assert_not_called()
+
+    def test_07_freeradius_is_metered_like_the_server(self):
+        # FreeRADIUS is covered by the server's subscription and counts against the same
+        # free tier, so it resolves to "privacyidea" for metering and for display.
+        self.assertEqual("privacyidea", get_metered_application("FreeRADIUS"))
+        self.assertEqual("privacyidea", get_subscription_owner("FreeRADIUS"))
+        self.assertEqual(APPLICATIONS["privacyidea"], APPLICATIONS[get_metered_application("FreeRADIUS")])
+
+        with mock.patch("privacyidea.lib.subscriptions.get_users_with_active_tokens",
+                        return_value=0):
+            with mock.patch("privacyidea.lib.subscriptions.get_subscription",
+                            return_value=[]) as mock_get_subscription:
+                self.assertTrue(check_subscription("FreeRADIUS"))
+        mock_get_subscription.assert_called_once_with("privacyidea")
+
+
+class PluginSubscriptionStatusTestCase(MyTestCase):
+    """
+    Tests for :func:`get_plugin_subscription_status`. Each entry carries two
+    independent axes: ``in_use`` (bool) and ``subscription``
+    (none/valid/expiring/exceeded/expired), covered here by setting up a
+    ``ClientApplication`` row, optionally a ``Subscription`` row, and mocking
+    the active-token-user count.
+    """
+
+    def setUp(self):
+        super().setUp()
+        # Tests in this class manipulate the same rows; isolate them.
+        db.session.query(ClientApplication).delete()
+        db.session.query(Subscription).delete()
+        db.session.commit()
+
+    @staticmethod
+    def _add_clientapp(plugin, version="1.0", seen_days_ago=0):
+        db.session.add(ClientApplication(
+            ip="1.2.3.4",
+            clienttype=f"{plugin}/{version} test/1",
+            node="localnode",
+            lastseen=datetime.now() - timedelta(days=seen_days_ago)))
+        db.session.commit()
+
+    @staticmethod
+    def _add_subscription(application, days_left, num_tokens=10000):
+        db.session.add(Subscription(
+            application=application,
+            for_name="customer", for_email="c@x", for_phone="0",
+            by_name="vendor", by_email="v@x",
+            date_from=datetime.now() - timedelta(days=10),
+            date_till=datetime.now() + timedelta(days=days_left),
+            num_users=10, num_tokens=num_tokens, num_clients=10,
+            level="Gold", signature="0"))
+        db.session.commit()
+
+    def test_01_none_by_default(self):
+        overview = get_plugin_subscription_status()
+        self.assertListEqual(DASHBOARD_PLUGINS, [e["application"] for e in overview])
+        for entry in overview:
+            # No subscription and never seen -> not in use, subscription none.
+            self.assertFalse(entry["in_use"])
+            self.assertEqual("none", entry["subscription"])
+            self.assertIsNone(entry["last_seen"])
+            self.assertIsNone(entry["date_till"])
+            self.assertIsNone(entry["days_left"])
+
+    def test_02_subscription_states(self):
+        # valid: subscription with more than 60 days left, within token limit
+        self._add_clientapp("privacyidea-keycloak")
+        self._add_subscription("privacyidea-keycloak", days_left=100)
+        # expiring: subscription with less than 60 days left
+        self._add_clientapp("privacyidea-adfs")
+        self._add_subscription("privacyidea-adfs", days_left=5)
+        # exceeded: valid subscription but more token users than allowed. The PAM row is
+        # keyed on the name the module sends; its subscription is privacyidea-pam.
+        self._add_clientapp("PAM")
+        self._add_subscription("privacyidea-pam", days_left=100, num_tokens=5)
+        # expired: subscription end date in the past
+        self._add_clientapp("privacyidea-cp")
+        self._add_subscription("privacyidea-cp", days_left=-5)
+        # none: no subscription, never seen -> privacyidea-shibboleth
+
+        # 1000 token users: exceeds the pam limit (5) but not the others (10000)
+        with mock.patch(
+                "privacyidea.lib.subscriptions.get_users_with_active_tokens",
+                return_value=1000):
+            overview = {e["application"]: e
+                        for e in get_plugin_subscription_status()}
+
+        self.assertEqual("valid", overview["privacyidea-keycloak"]["subscription"])
+        self.assertGreaterEqual(overview["privacyidea-keycloak"]["days_left"], 60)
+        self.assertIsNotNone(overview["privacyidea-keycloak"]["date_till"])
+
+        self.assertEqual("expiring", overview["privacyidea-adfs"]["subscription"])
+        self.assertLess(overview["privacyidea-adfs"]["days_left"], 60)
+
+        self.assertEqual("exceeded", overview["pam"]["subscription"])
+
+        self.assertEqual("expired", overview["privacyidea-cp"]["subscription"])
+        self.assertLess(overview["privacyidea-cp"]["days_left"], 0)
+
+        self.assertEqual("none", overview["privacyidea-shibboleth"]["subscription"])
+
+        # A subscription on file always counts as in use.
+        self.assertTrue(overview["privacyidea-keycloak"]["in_use"])
+        # No subscription and never seen -> not in use.
+        self.assertFalse(overview["privacyidea-shibboleth"]["in_use"])
+
+    def test_03_usage_axis(self):
+        # Recently seen without a subscription -> in use, subscription none.
+        self._add_clientapp("privacyidea-cp", seen_days_ago=1)
+        # Seen more than USAGE_RECENT_DAYS ago, no subscription -> not in use.
+        self._add_clientapp("privacyidea-shibboleth", seen_days_ago=30)
+
+        with mock.patch(
+                "privacyidea.lib.subscriptions.get_users_with_active_tokens",
+                return_value=0):
+            overview = {e["application"]: e
+                        for e in get_plugin_subscription_status()}
+
+        self.assertTrue(overview["privacyidea-cp"]["in_use"])
+        self.assertEqual("none", overview["privacyidea-cp"]["subscription"])
+        self.assertFalse(overview["privacyidea-shibboleth"]["in_use"])
+
+    def test_04_valid_subscription_stays_valid_within_token_limit(self):
+        # A valid subscription with room for the token users stays "valid".
+        self._add_clientapp("privacyidea-cp")
+        self._add_subscription("privacyidea-cp", days_left=100, num_tokens=10000)
+
+        with mock.patch(
+                "privacyidea.lib.subscriptions.get_users_with_active_tokens",
+                return_value=5000):
+            overview = {e["application"]: e
+                        for e in get_plugin_subscription_status()}
+
+        self.assertEqual("valid", overview["privacyidea-cp"]["subscription"])
+
+    def test_05_unparseable_useragent_is_skipped(self):
+        # A row whose user-agent string does not match the plugin format
+        # must not crash the function or leak into the overview.
+        db.session.add(ClientApplication(
+            ip="1.2.3.4",
+            clienttype="!!! totally not a user-agent !!!",
+            node="localnode",
+            lastseen=datetime.now()))
+        db.session.commit()
+
+        overview = get_plugin_subscription_status()
+        for entry in overview:
+            self.assertEqual("none", entry["subscription"])
+            self.assertFalse(entry["in_use"])
+
+    def test_06_null_lastseen_does_not_crash(self):
+        # ClientApplication.lastseen is nullable. If every row for a clienttype
+        # has lastseen=NULL the SQL MAX() is NULL and must not be compared
+        # against a real datetime from another iteration. The column has a
+        # default=datetime.now, so set it to NULL explicitly after insert.
+        row = ClientApplication(
+            ip="1.2.3.4",
+            clienttype="privacyidea-keycloak/1.0 test/1",
+            node="localnode")
+        db.session.add(row)
+        db.session.commit()
+        row.lastseen = None
+        db.session.commit()
+
+        overview = {e["application"]: e
+                    for e in get_plugin_subscription_status()}
+        self.assertFalse(overview["privacyidea-keycloak"]["in_use"])
+        self.assertEqual("none", overview["privacyidea-keycloak"]["subscription"])
+
+    def test_07_null_application_subscription_is_skipped(self):
+        # Subscription.application is nullable and Subscription.get() drops
+        # None fields. Such rows must not crash the dict comprehension.
+        db.session.add(Subscription(
+            application=None,
+            for_name="customer", for_email="c@x", for_phone="0",
+            by_name="vendor", by_email="v@x",
+            date_from=datetime.now() - timedelta(days=10),
+            date_till=datetime.now() + timedelta(days=100),
+            num_users=10, num_tokens=10, num_clients=10,
+            level="Gold", signature="0"))
+        db.session.commit()
+
+        overview = get_plugin_subscription_status()
+        # All plugins still report none (no matching subscription rows seeded).
+        for entry in overview:
+            self.assertEqual("none", entry["subscription"])
+
+    def test_08_alias_useragent_stays_separate_with_own_last_seen(self):
+        # pam-passkey remains its own dashboard entry with its own last_seen, even though
+        # it is counted against privacyidea-pam like the PAM module itself.
+        self.assertIn("pam-passkey", DASHBOARD_PLUGINS)
+        self._add_clientapp("pam-passkey")
+
+        with mock.patch(
+                "privacyidea.lib.subscriptions.get_users_with_active_tokens",
+                return_value=0):
+            overview = {e["application"]: e
+                        for e in get_plugin_subscription_status()}
+
+        self.assertIn("pam-passkey", overview)
+        self.assertIsNotNone(overview["pam-passkey"]["last_seen"])
+        # The PAM row itself had no client activity.
+        self.assertIsNone(overview["pam"]["last_seen"])
+
+    def test_09_alias_useragent_mirrors_owning_subscription(self):
+        # pam-passkey has no subscription of its own; its row reflects the
+        # privacyidea-pam subscription's state while keeping its own last_seen.
+        self._add_clientapp("pam-passkey")
+        self._add_subscription("privacyidea-pam", days_left=100)
+
+        with mock.patch(
+                "privacyidea.lib.subscriptions.get_users_with_active_tokens",
+                return_value=0):
+            overview = {e["application"]: e
+                        for e in get_plugin_subscription_status()}
+
+        pam_passkey = overview["pam-passkey"]
+        self.assertEqual("valid", pam_passkey["subscription"])
+        self.assertTrue(pam_passkey["in_use"])
+        self.assertIsNotNone(pam_passkey["date_till"])
+        self.assertIsNotNone(pam_passkey["last_seen"])
+
+    def test_10_alias_useragent_without_subscription_is_none(self):
+        # With no owning subscription, pam-passkey reports subscription none,
+        # but recent activity still makes it used.
+        self._add_clientapp("pam-passkey")
+
+        with mock.patch(
+                "privacyidea.lib.subscriptions.get_users_with_active_tokens",
+                return_value=1000):
+            overview = {e["application"]: e
+                        for e in get_plugin_subscription_status()}
+
+        self.assertEqual("none", overview["pam-passkey"]["subscription"])
+        self.assertTrue(overview["pam-passkey"]["in_use"])
+
+    def test_11_entraid_row_mirrors_keycloak(self):
+        # entraid-via-keycloak is its own dashboard row but counts against and
+        # mirrors the privacyidea-keycloak subscription.
+        self.assertIn("entraid-via-keycloak", DASHBOARD_PLUGINS)
+        self._add_clientapp("entraid-via-keycloak")
+        self._add_subscription("privacyidea-keycloak", days_left=100)
+
+        with mock.patch(
+                "privacyidea.lib.subscriptions.get_users_with_active_tokens",
+                return_value=0):
+            overview = {e["application"]: e
+                        for e in get_plugin_subscription_status()}
+
+        entraid = overview["entraid-via-keycloak"]
+        self.assertEqual("valid", entraid["subscription"])
+        self.assertTrue(entraid["in_use"])
+        self.assertIsNotNone(entraid["last_seen"])
+
+    def test_13_authenticator_app_useragent_wired_to_row(self):
+        # The Authenticator App sends the user-agent "privacyIDEA-App", which is the
+        # dashboard row (privacyidea-app) and reports the "privacyidea authenticator"
+        # subscription without being metered against it.
+        self.assertIn("privacyidea-app", DASHBOARD_PLUGINS)
+        self.assertEqual("privacyidea authenticator",
+                         get_subscription_owner("privacyIDEA-App"))
+        self._add_clientapp("privacyIDEA-App", version="4.7.3")
+        self._add_subscription("privacyidea authenticator", days_left=100)
+
+        with mock.patch(
+                "privacyidea.lib.subscriptions.get_users_with_active_tokens",
+                return_value=0):
+            overview = {e["application"]: e
+                        for e in get_plugin_subscription_status()}
+
+        app_row = overview["privacyidea-app"]
+        # The app's activity lands on this row ...
+        self.assertIsNotNone(app_row["last_seen"])
+        # ... and it resolves the authenticator subscription.
+        self.assertEqual("valid", app_row["subscription"])
+        self.assertTrue(app_row["in_use"])
+        # The version parsed from the user-agent is reported.
+        self.assertListEqual(["4.7.3"], app_row["versions"])
+
+    def test_14_versions_collected_from_useragents(self):
+        # Distinct versions seen in the user-agents are reported, newest first.
+        self._add_clientapp("privacyidea-keycloak", version="1.2.3")
+        self._add_clientapp("privacyidea-keycloak", version="1.3.0")
+
+        with mock.patch(
+                "privacyidea.lib.subscriptions.get_users_with_active_tokens",
+                return_value=0):
+            overview = {e["application"]: e
+                        for e in get_plugin_subscription_status()}
+
+        self.assertListEqual(["1.3.0", "1.2.3"], overview["privacyidea-keycloak"]["versions"])
+        # A plugin never seen has no versions.
+        self.assertListEqual([], overview["privacyidea-shibboleth"]["versions"])
+
+    def test_16_versions_are_ordered_by_number(self):
+        # Newest first means by number: a character sort would put 1.9.0 above 1.10.0.
+        self._add_clientapp("privacyidea-cp", version="1.9.0")
+        self._add_clientapp("privacyidea-cp", version="1.10.0")
+        self._add_clientapp("privacyidea-cp", version="1.10.1")
+
+        with mock.patch(
+                "privacyidea.lib.subscriptions.get_users_with_active_tokens",
+                return_value=0):
+            overview = {e["application"]: e
+                        for e in get_plugin_subscription_status()}
+
+        self.assertListEqual(["1.10.1", "1.10.0", "1.9.0"], overview["privacyidea-cp"]["versions"])
+        # Anything a client may send stays sortable, numeric or not.
+        self.assertListEqual(["10.0", "2.0.0-rc1", "1.2.3", "1.2"],
+                             sorted(["1.2", "10.0", "1.2.3", "2.0.0-rc1"],
+                                    key=version_sort_key, reverse=True))
+
+    def test_17_subscription_without_end_date_is_not_valid(self):
+        # Subscription.date_till is nullable. Such a record cannot be reported as
+        # covering anything, and must not leave the row green forever.
+        db.session.add(Subscription(
+            application="privacyidea-cp",
+            for_name="customer", for_email="c@x", for_phone="0",
+            by_name="vendor", by_email="v@x",
+            date_from=datetime.now() - timedelta(days=10), date_till=None,
+            num_users=10, num_tokens=10000, num_clients=10,
+            level="Gold", signature="0"))
+        db.session.commit()
+
+        with mock.patch(
+                "privacyidea.lib.subscriptions.get_users_with_active_tokens",
+                return_value=0):
+            overview = {e["application"]: e
+                        for e in get_plugin_subscription_status()}
+
+        credential_provider = overview["privacyidea-cp"]
+        self.assertEqual("expired", credential_provider["subscription"])
+        self.assertIsNone(credential_provider["date_till"])
+        self.assertIsNone(credential_provider["days_left"])
+
+    def test_18_metering_ignores_a_subscription_without_end_date(self):
+        # Metering must neither raise on the missing date nor block the client outright:
+        # the record is ignored and the free tier applies as if none were on file.
+        unusable = [{"application": "privacyidea-cp", "date_till": None}]
+        with mock.patch("privacyidea.lib.subscriptions.get_subscription", return_value=unusable):
+            with mock.patch("privacyidea.lib.subscriptions.get_users_with_active_tokens",
+                            return_value=0):
+                self.assertTrue(check_subscription("privacyidea-cp"))
+            # Far beyond the free tier it fails like an install without a subscription.
+            with mock.patch("privacyidea.lib.subscriptions.get_users_with_active_tokens",
+                            return_value=100_000):
+                self.assertRaises(SubscriptionError, check_subscription, "privacyidea-cp")
+
+    def test_12_radius_row_mirrors_server_subscription(self):
+        # FreeRADIUS identifies itself as "FreeRADIUS" and has no subscription of its
+        # own; it is covered by the server ("privacyidea") subscription and mirrors it.
+        self.assertIn("freeradius", DASHBOARD_PLUGINS)
+        self._add_subscription("privacyidea", days_left=100)
+
+        with mock.patch(
+                "privacyidea.lib.subscriptions.get_users_with_active_tokens",
+                return_value=0):
+            overview = {e["application"]: e
+                        for e in get_plugin_subscription_status()}
+
+        radius = overview["freeradius"]
+        self.assertEqual("valid", radius["subscription"])
+        self.assertTrue(radius["in_use"])
+
+    def test_15_pam_row_matches_the_user_agent_the_module_sends(self):
+        # The PAM module identifies itself as "PAM/<version>", so that is the row's key.
+        # "privacyidea-pam" stays the application whose subscription the row reports, and
+        # remains accepted as a client name of its own.
+        self.assertIn("pam", DASHBOARD_PLUGINS)
+        self.assertEqual("privacyidea-pam", get_metered_application("PAM"))
+        self.assertEqual("privacyidea-pam", get_metered_application("privacyidea-pam"))
+        self._add_clientapp("PAM", version="1.1.0")
+        self._add_subscription("privacyidea-pam", days_left=100)
+
+        with mock.patch(
+                "privacyidea.lib.subscriptions.get_users_with_active_tokens",
+                return_value=0):
+            overview = {e["application"]: e
+                        for e in get_plugin_subscription_status()}
+
+        pam = overview["pam"]
+        self.assertTrue(pam["in_use"])
+        self.assertListEqual(["1.1.0"], pam["versions"])
+        self.assertEqual("valid", pam["subscription"])
+
+    def test_13_nextcloud_row_matches_the_user_agent_the_app_sends(self):
+        # The Nextcloud app identifies itself as "privacyidea-nextcloud/<version>", which
+        # has to be the row's key: a name the clients do not send would leave the row
+        # permanently unused without any error.
+        db.session.add(ClientApplication(
+            ip="1.2.3.4",
+            clienttype="privacyidea-nextcloud/1.2.0",
+            node="localnode",
+            lastseen=datetime.now()))
+        db.session.commit()
+
+        with mock.patch(
+                "privacyidea.lib.subscriptions.get_users_with_active_tokens",
+                return_value=0):
+            overview = {e["application"]: e
+                        for e in get_plugin_subscription_status()}
+
+        nextcloud = overview["privacyidea-nextcloud"]
+        self.assertTrue(nextcloud["in_use"])
+        self.assertListEqual(["1.2.0"], nextcloud["versions"])
+
+
+class SubscriptionDayCountTestCase(MyTestCase):
+    """
+    Tests for the day count :func:`_subscription_state` reports. date_till carries a
+    calendar date, so the count is between dates and does not depend on the time of day
+    the dashboard happens to be opened.
+    """
+
+    @staticmethod
+    def _state(date_till, now, num_tokens=10000):
+        return _subscription_state({"date_till": date_till, "num_tokens": num_tokens}, now, 0)
+
+    def test_01_expiry_day_counts_as_today(self):
+        date_till = datetime(2026, 6, 30)
+        # Anywhere on the day itself the subscription is over — the date is exclusive,
+        # matching check_subscription — but no whole day has passed yet.
+        for now in (datetime(2026, 6, 30, 0, 0, 1),
+                    datetime(2026, 6, 30, 12, 0),
+                    datetime(2026, 6, 30, 23, 59, 59)):
+            info = self._state(date_till, now)
+            self.assertEqual(SubscriptionState.EXPIRED, info.state)
+            self.assertEqual(0, info.days_left)
+
+    def test_02_days_ago_counts_whole_dates(self):
+        info = self._state(datetime(2026, 6, 30), datetime(2026, 7, 3, 0, 0, 1))
+        self.assertEqual(SubscriptionState.EXPIRED, info.state)
+        self.assertEqual(-3, info.days_left)
+
+    def test_03_last_day_of_cover_is_one_day_left(self):
+        # A subscription running out tomorrow has a day left whatever the clock says.
+        for now in (datetime(2026, 6, 29, 0, 0, 1), datetime(2026, 6, 29, 23, 0)):
+            info = self._state(datetime(2026, 6, 30), now)
+            self.assertEqual(1, info.days_left)
+
+    def test_04_expiring_threshold_does_not_move_with_the_clock(self):
+        # The threshold reads the same count, so the day it turns yellow is a date, not a
+        # date plus a time of day.
+        date_till = datetime(2026, 6, 30)
+        outside = date_till - timedelta(days=EXPIRING_THRESHOLD_DAYS)
+        for now in (outside, outside.replace(hour=23, minute=59)):
+            self.assertEqual(SubscriptionState.VALID, self._state(date_till, now).state)
+        inside = date_till - timedelta(days=EXPIRING_THRESHOLD_DAYS - 1)
+        for now in (inside, inside.replace(hour=23, minute=59)):
+            self.assertEqual(SubscriptionState.EXPIRING, self._state(date_till, now).state)
+
+
+class ServerSubscriptionStatusTestCase(MyTestCase):
+    """
+    Tests for :func:`get_server_subscription_status`. Covers the subscription
+    states (none / valid / expiring / expired) plus the duplicate-row
+    tiebreaker.
+    """
+
+    def setUp(self):
+        super().setUp()
+        db.session.query(Subscription).delete()
+        db.session.commit()
+
+    @staticmethod
+    def _add_server_subscription(days_left, by_email="v@x"):
+        db.session.add(Subscription(
+            application="privacyidea",
+            for_name="customer", for_email="c@x", for_phone="0",
+            by_name="vendor", by_email=by_email,
+            date_from=datetime.now() - timedelta(days=10),
+            date_till=datetime.now() + timedelta(days=days_left),
+            num_users=10, num_tokens=10000, num_clients=10,
+            level="Gold", signature="0"))
+        db.session.commit()
+
+    def test_01_no_subscription(self):
+        entry = get_server_subscription_status()
+        self.assertTrue(entry["is_server"])
+        self.assertEqual("privacyidea", entry["application"])
+        self.assertEqual("none", entry["subscription"])
+        # The server answering the request is in use whether or not it has a subscription.
+        self.assertTrue(entry["in_use"])
+        self.assertIsNone(entry["date_till"])
+        self.assertIsNone(entry["days_left"])
+        # The server row reports its running version, with any dev/local
+        # suffix (e.g. "3.13.1+gc6d73eab6...") truncated.
+        self.assertEqual(1, len(entry["versions"]))
+        self.assertNotIn("+", entry["versions"][0])
+
+    def test_02_valid(self):
+        self._add_server_subscription(days_left=100)
+        with mock.patch(
+                "privacyidea.lib.subscriptions.get_users_with_active_tokens",
+                return_value=0):
+            entry = get_server_subscription_status()
+        self.assertEqual("valid", entry["subscription"])
+        self.assertTrue(entry["in_use"])
+        self.assertGreaterEqual(entry["days_left"], 60)
+
+    def test_03_expiring(self):
+        self._add_server_subscription(days_left=5)
+        with mock.patch(
+                "privacyidea.lib.subscriptions.get_users_with_active_tokens",
+                return_value=0):
+            entry = get_server_subscription_status()
+        self.assertEqual("expiring", entry["subscription"])
+        self.assertLess(entry["days_left"], 60)
+        self.assertGreaterEqual(entry["days_left"], 0)
+
+    def test_04_expired(self):
+        self._add_server_subscription(days_left=-5)
+        with mock.patch(
+                "privacyidea.lib.subscriptions.get_users_with_active_tokens",
+                return_value=0):
+            entry = get_server_subscription_status()
+        self.assertEqual("expired", entry["subscription"])
+        self.assertLess(entry["days_left"], 0)
+
+    def test_05_picks_latest_date_till_when_duplicates_exist(self):
+        # Two rows for the same application — the one with the latest
+        # date_till must win so the dashboard does not flap.
+        self._add_server_subscription(days_left=-5, by_email="old@x")
+        self._add_server_subscription(days_left=100, by_email="new@x")
+        with mock.patch(
+                "privacyidea.lib.subscriptions.get_users_with_active_tokens",
+                return_value=0):
+            entry = get_server_subscription_status()
+        self.assertEqual("valid", entry["subscription"])
+        self.assertGreaterEqual(entry["days_left"], 60)
+
+
+class GithubVersionTestCase(MyTestCase):
+    """
+    Tests for :func:`get_latest_github_versions`. The network is mocked so the
+    tests never contact GitHub.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self._clear_cache()
+
+    def tearDown(self):
+        self._clear_cache()
+        super().tearDown()
+
+    @staticmethod
+    def _clear_cache():
+        invalidate_github_version_cache()
+
+    def test_01_fetch_parses_and_caches(self):
+        response = mock.Mock(status_code=200)
+        response.json.return_value = {"tag_name": "v4.7.3",
+                                      "published_at": "2026-05-20T10:00:00Z",
+                                      "html_url": "https://github.com/privacyidea/privacyidea/releases/tag/v4.7.3"}
+        with mock.patch("privacyidea.lib.subscriptions.requests.get",
+                        return_value=response) as mock_get:
+            versions = get_latest_github_versions()
+        # Leading "v" stripped, date truncated to the day, keyed by application.
+        self.assertEqual("4.7.3", versions["privacyidea"].version)
+        self.assertEqual("2026-05-20", versions["privacyidea"].released)
+        # Server and app are link-suppressed (not downloaded from GitHub).
+        self.assertIsNone(versions["privacyidea"].url)
+        self.assertIsNone(versions["privacyidea-app"].url)
+        # Other clients keep the release page link.
+        self.assertEqual("4.7.3", versions["privacyidea-keycloak"].version)
+        self.assertEqual("https://github.com/privacyidea/privacyidea/releases/tag/v4.7.3",
+                         versions["privacyidea-keycloak"].url)
+        self.assertTrue(mock_get.called)
+
+        # A second call within the TTL is served from cache (no new fetch).
+        with mock.patch("privacyidea.lib.subscriptions.requests.get") as mock_get2:
+            versions2 = get_latest_github_versions()
+            mock_get2.assert_not_called()
+        self.assertEqual("4.7.3", versions2["privacyidea"].version)
+
+    def test_02_unreachable_repo_maps_to_none(self):
+        with mock.patch("privacyidea.lib.subscriptions.requests.get",
+                        side_effect=requests.RequestException("boom")):
+            versions = get_latest_github_versions()
+        self.assertIsNone(versions["privacyidea"])
+
+    def test_03_failed_lookup_is_cached_too(self):
+        # A server that cannot reach GitHub must not pay the timeout on every request,
+        # so the empty result is cached for the same TTL as a successful one.
+        with mock.patch("privacyidea.lib.subscriptions.requests.get",
+                        side_effect=requests.RequestException("boom")):
+            get_latest_github_versions()
+            with mock.patch("privacyidea.lib.subscriptions.requests.get") as mock_get:
+                versions = get_latest_github_versions()
+                mock_get.assert_not_called()
+        self.assertIsNone(versions["privacyidea"])
+
+    def test_05_empty_lookup_is_retried_sooner_than_a_good_one(self):
+        # A lookup that found nothing is a network or rate-limit problem, so it must not
+        # keep the column empty for the full TTL. One that found releases is kept.
+        response = mock.Mock(status_code=200)
+        response.json.return_value = {"tag_name": "v4.7.3", "published_at": "2026-05-20T10:00:00Z",
+                                      "html_url": "https://github.com/privacyidea/privacyidea/releases/tag/v4.7.3"}
+        stale = datetime.now() - (subscriptions_module.GITHUB_VERSION_FAILURE_TTL + timedelta(minutes=1))
+
+        with mock.patch("privacyidea.lib.subscriptions.requests.get",
+                        side_effect=requests.RequestException("boom")):
+            empty = get_latest_github_versions()
+
+        # Age both cache levels: the shared one would otherwise still answer.
+        self._age_caches(stale, empty)
+        with mock.patch("privacyidea.lib.subscriptions.requests.get",
+                        return_value=response) as mock_get:
+            good = get_latest_github_versions()
+            self.assertEqual("4.7.3", good["privacyidea"].version)
+            self.assertTrue(mock_get.called)
+
+        # The successful result survives the same age, up to the full TTL.
+        self._age_caches(stale, good)
+        with mock.patch("privacyidea.lib.subscriptions.requests.get") as mock_get:
+            get_latest_github_versions()
+            mock_get.assert_not_called()
+
+    @staticmethod
+    def _age_caches(fetched_at, releases):
+        """Pretend the given lookup was made at ``fetched_at``, in both cache levels."""
+        subscriptions_module._github_version_cache.store(fetched_at, releases)
+        subscriptions_module._store_shared_releases(fetched_at, releases)
+
+    def test_06_another_worker_reuses_the_shared_lookup(self):
+        # A worker with a cold process-local cache must pick up the lookup a previous one
+        # published, instead of asking GitHub again: that is what keeps a multi-worker
+        # installation inside GitHub's rate limit.
+        response = mock.Mock(status_code=200)
+        response.json.return_value = {"tag_name": "v4.7.3", "published_at": "2026-05-20T10:00:00Z",
+                                      "html_url": "https://github.com/privacyidea/privacyidea/releases/tag/v4.7.3"}
+        with mock.patch("privacyidea.lib.subscriptions.requests.get", return_value=response):
+            get_latest_github_versions()
+
+        # Same shared cache, cold process: no fetch, same result.
+        subscriptions_module._github_version_cache.store(None, {})
+        with mock.patch("privacyidea.lib.subscriptions.requests.get") as mock_get:
+            versions = get_latest_github_versions()
+            mock_get.assert_not_called()
+        self.assertEqual("4.7.3", versions["privacyidea"].version)
+        self.assertEqual("https://github.com/privacyidea/privacyidea/releases/tag/v4.7.3",
+                         versions["privacyidea-keycloak"].url)
+
+    def test_07_shared_lookup_is_skipped_when_it_does_not_fit(self):
+        # The config value has a limited length. A payload beyond it is not shared rather
+        # than failing the request, so each worker falls back to its own lookup.
+        response = mock.Mock(status_code=200)
+        response.json.return_value = {"tag_name": "v4.7.3", "published_at": "2026-05-20T10:00:00Z",
+                                      "html_url": "https://github.com/privacyidea/privacyidea/releases/tag/v4.7.3"}
+        with mock.patch("privacyidea.lib.subscriptions.CONFIG_VALUE_LENGTH", 10):
+            with mock.patch("privacyidea.lib.subscriptions.requests.get", return_value=response):
+                self.assertEqual("4.7.3", get_latest_github_versions()["privacyidea"].version)
+
+            subscriptions_module._github_version_cache.store(None, {})
+            with mock.patch("privacyidea.lib.subscriptions.requests.get",
+                            return_value=response) as mock_get:
+                get_latest_github_versions()
+                self.assertTrue(mock_get.called)
+
+    def test_08_unreadable_shared_lookup_is_fetched_again(self):
+        # Whatever is in the config row, a value that cannot be read must not break the
+        # overview; it is treated as an empty cache.
+        subscriptions_module.set_privacyidea_config(
+            subscriptions_module.GITHUB_VERSION_CONFIG_KEY, "not json at all")
+        subscriptions_module._github_version_cache.store(None, {})
+        response = mock.Mock(status_code=200)
+        response.json.return_value = {"tag_name": "v1.0.0", "published_at": "2026-05-20T10:00:00Z",
+                                      "html_url": "https://github.com/privacyidea/privacyidea/releases/tag/v1.0.0"}
+
+        with mock.patch("privacyidea.lib.subscriptions.requests.get", return_value=response) as mock_get:
+            versions = get_latest_github_versions()
+            self.assertTrue(mock_get.called)
+        self.assertEqual("1.0.0", versions["privacyidea"].version)
+
+    def test_04_version_check_can_be_switched_off(self):
+        # PI_SUBSCRIPTION_VERSION_CHECK = False skips the lookup entirely, for
+        # installations without internet access.
+        with mock.patch("privacyidea.lib.subscriptions.get_app_config_value",
+                        return_value=False):
+            with mock.patch("privacyidea.lib.subscriptions.requests.get") as mock_get:
+                versions = get_latest_github_versions()
+                mock_get.assert_not_called()
+        # Every dashboard client is still reported, just without a version.
+        self.assertEqual(set(subscriptions_module.GITHUB_REPOS), set(versions))
+        self.assertTrue(all(release is None for release in versions.values()))
+        # Nothing was cached, so a later call with the check enabled fetches.
+        self.assertIsNone(subscriptions_module._github_version_cache.fetched_at)
