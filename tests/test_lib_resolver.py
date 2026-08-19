@@ -706,41 +706,41 @@ class SQLResolverTestCase(MyTestCase):
         with mock.patch.object(resolver.session, "execute", wraps=resolver.session.execute) as mock_execute:
             user_info_map = resolver.get_user_info_batch(["1", "2", "3"], attributes=["username", "email"])
         self.assertEqual(1, mock_execute.call_count)
-        self.assertEqual({"1", "2", "3"}, set(user_info_map.keys()), user_info_map)
+        self.assertSetEqual({"1", "2", "3"}, set(user_info_map.keys()), user_info_map)
         self.assertEqual("cornelius", user_info_map["3"].get("username"), user_info_map)
         self.assertSetEqual({"id", "username", "email"}, set(user_info_map["3"].keys()), user_info_map)
 
         # A batched user carries the same information as a single lookup, with and without attributes
         user_info_map = resolver.get_user_info_batch(["1"])
-        self.assertEqual(resolver.get_user_info("1"), user_info_map["1"], user_info_map)
+        self.assertDictEqual(resolver.get_user_info("1"), user_info_map["1"], user_info_map)
         user_info_map = resolver.get_user_info_batch(["1"], attributes=["username", "surname"])
-        self.assertEqual(resolver.get_user_info("1", attributes=["username", "surname"]), user_info_map["1"],
+        self.assertDictEqual(resolver.get_user_info("1", attributes=["username", "surname"]), user_info_map["1"],
                          user_info_map)
 
         # A user ID without a matching row is left out instead of raising
         user_info_map = resolver.get_user_info_batch(["1", "4242"], attributes=["username"])
-        self.assertEqual({"1"}, set(user_info_map.keys()), user_info_map)
+        self.assertSetEqual({"1"}, set(user_info_map.keys()), user_info_map)
 
         # A user ID the userid column can not hold is skipped, the rest of the batch is unaffected
         user_info_map = resolver.get_user_info_batch(["1", "not-a-number"], attributes=["username"])
-        self.assertEqual({"1"}, set(user_info_map.keys()), user_info_map)
+        self.assertSetEqual({"1"}, set(user_info_map.keys()), user_info_map)
 
         # With every ID of a chunk skipped there is nothing left to ask the database for
         with mock.patch.object(resolver.session, "execute", wraps=resolver.session.execute) as mock_execute:
             user_info_map = resolver.get_user_info_batch(["not-a-number"], attributes=["username"])
         self.assertEqual(0, mock_execute.call_count)
-        self.assertEqual({}, user_info_map)
+        self.assertDictEqual({}, user_info_map)
 
         # The IDs are spread over several queries so that no statement outgrows the parameter limit
         with mock.patch("privacyidea.lib.resolvers.SQLIdResolver.BATCH_QUERY_CHUNK_SIZE", 2):
             with mock.patch.object(resolver.session, "execute", wraps=resolver.session.execute) as mock_execute:
                 user_info_map = resolver.get_user_info_batch(["1", "2", "3"], attributes=["username"])
         self.assertEqual(2, mock_execute.call_count)
-        self.assertEqual({"1", "2", "3"}, set(user_info_map.keys()), user_info_map)
+        self.assertSetEqual({"1", "2", "3"}, set(user_info_map.keys()), user_info_map)
 
         # An empty list does not reach the database at all
         with mock.patch.object(resolver.session, "execute", wraps=resolver.session.execute) as mock_execute:
-            self.assertEqual({}, resolver.get_user_info_batch([]))
+            self.assertDictEqual({}, resolver.get_user_info_batch([]))
         self.assertEqual(0, mock_execute.call_count)
 
     def test_13_get_usernames_batch(self):
@@ -752,7 +752,7 @@ class SQLResolverTestCase(MyTestCase):
         with mock.patch.object(resolver.session, "execute", wraps=resolver.session.execute) as mock_execute:
             login_map = resolver.get_usernames_batch(["1", "3", "4242"])
         self.assertEqual(1, mock_execute.call_count)
-        self.assertEqual({"1": "user1", "3": "cornelius", "4242": ""}, login_map)
+        self.assertDictEqual({"1": "user1", "3": "cornelius", "4242": ""}, login_map)
         self.assertEqual(resolver.getUsername("3"), login_map["3"], login_map)
 
     def test_99_testconnection_fail(self):
@@ -2961,7 +2961,7 @@ class LDAPResolverTestCase(MyTestCase):
         with self._count_searches() as search_filters:
             user_info_map = resolver.get_user_info_batch(["1", "2", "3", "4"], attributes=["username", "surname"])
         self.assertEqual(1, len(search_filters), search_filters)
-        self.assertEqual({"1", "2", "3", "4"}, set(user_info_map.keys()), user_info_map)
+        self.assertSetEqual({"1", "2", "3", "4"}, set(user_info_map.keys()), user_info_map)
         self.assertEqual("alice", user_info_map["2"]["username"], user_info_map)
         self.assertEqual("Cooper", user_info_map["2"]["surname"], user_info_map)
         self.assertSetEqual({"username", "surname"}, set(user_info_map["2"].keys()), user_info_map)
@@ -2975,17 +2975,17 @@ class LDAPResolverTestCase(MyTestCase):
         with self._count_searches() as search_filters:
             user_info_map = resolver.get_user_info_batch(["2", "does-not-exist"], attributes=["username"])
         self.assertEqual(1, len(search_filters), search_filters)
-        self.assertEqual({"2"}, set(user_info_map.keys()), user_info_map)
+        self.assertSetEqual({"2"}, set(user_info_map.keys()), user_info_map)
 
         # Repeated IDs are searched for once and answered once
         with self._count_searches() as search_filters:
             user_info_map = resolver.get_user_info_batch(["2", "2", "2"], attributes=["username"])
         self.assertEqual(1, search_filters[0].count("(oid=2)"), search_filters)
-        self.assertEqual({"2"}, set(user_info_map.keys()), user_info_map)
+        self.assertSetEqual({"2"}, set(user_info_map.keys()), user_info_map)
 
         # An empty list does not reach the server at all
         with self._count_searches() as search_filters:
-            self.assertEqual({}, resolver.get_user_info_batch([]))
+            self.assertDictEqual({}, resolver.get_user_info_batch([]))
         self.assertEqual(0, len(search_filters), search_filters)
 
     @ldap3mock.activate
@@ -2998,7 +2998,7 @@ class LDAPResolverTestCase(MyTestCase):
             with self._count_searches() as search_filters:
                 user_info_map = resolver.get_user_info_batch(["1", "2", "3", "4"], attributes=["username"])
         self.assertEqual(2, len(search_filters), search_filters)
-        self.assertEqual({"1", "2", "3", "4"}, set(user_info_map.keys()), user_info_map)
+        self.assertSetEqual({"1", "2", "3", "4"}, set(user_info_map.keys()), user_info_map)
 
     @ldap3mock.activate
     def test_48_get_user_info_batch_with_cache(self):
@@ -3011,7 +3011,7 @@ class LDAPResolverTestCase(MyTestCase):
             user_info_map = resolver.get_user_info_batch(["1", "2"], attributes=["username"])
         self.assertEqual(1, len(search_filters), search_filters)
         self.assertNotIn("(oid=2)", search_filters[0], search_filters)
-        self.assertEqual({"1", "2"}, set(user_info_map.keys()), user_info_map)
+        self.assertSetEqual({"1", "2"}, set(user_info_map.keys()), user_info_map)
 
         # What the batch fetched is in the cache too, so a single lookup no longer needs a search
         with self._count_searches() as search_filters:
@@ -3023,7 +3023,7 @@ class LDAPResolverTestCase(MyTestCase):
         with self._count_searches() as search_filters:
             user_info_map = resolver.get_user_info_batch(["1", "2"], attributes=["username"])
         self.assertEqual(0, len(search_filters), search_filters)
-        self.assertEqual({"1", "2"}, set(user_info_map.keys()), user_info_map)
+        self.assertSetEqual({"1", "2"}, set(user_info_map.keys()), user_info_map)
 
         # Attributes the cached entry does not hold are fetched
         with self._count_searches() as search_filters:
@@ -3081,7 +3081,7 @@ class LDAPResolverTestCase(MyTestCase):
             with LogCapture(level=logging.INFO) as lc:
                 user_info_map = resolver.get_user_info_batch(["not-a-guid"], attributes=["username"])
         self.assertEqual(0, len(search_filters), search_filters)
-        self.assertEqual({}, user_info_map)
+        self.assertDictEqual({}, user_info_map)
         self.assertIn("Skipping user id", str(lc), str(lc))
 
         # A malformed id does not stop the ids next to it from being resolved
@@ -3089,7 +3089,7 @@ class LDAPResolverTestCase(MyTestCase):
             user_info_map = resolver.get_user_info_batch([objectGUIDs[0], "not-a-guid"],
                                                          attributes=["username"])
         self.assertEqual(1, len(search_filters), search_filters)
-        self.assertEqual({objectGUIDs[0]}, set(user_info_map.keys()), user_info_map)
+        self.assertSetEqual({objectGUIDs[0]}, set(user_info_map.keys()), user_info_map)
 
     @ldap3mock.activate
     def test_50a_get_user_info_batch_ignores_referrals_and_matches_the_uid_case(self):
@@ -3105,7 +3105,7 @@ class LDAPResolverTestCase(MyTestCase):
         with mock.patch.object(LDAPResolver, "_search", answering_search):
             user_info_map = resolver.get_user_info_batch(["ALICE"], attributes=["username"])
 
-        self.assertEqual({"ALICE"}, set(user_info_map.keys()), user_info_map)
+        self.assertSetEqual({"ALICE"}, set(user_info_map.keys()), user_info_map)
         self.assertEqual("alice", user_info_map["ALICE"]["username"], user_info_map)
 
     @ldap3mock.activate
@@ -3127,7 +3127,7 @@ class LDAPResolverTestCase(MyTestCase):
         with mock.patch.object(LDAPResolver, "_search", truncating_search):
             with LogCapture(level=logging.WARNING) as lc:
                 user_info_map = resolver.get_user_info_batch(["1", "2", "3"], attributes=["username"])
-        self.assertEqual({"1", "2", "3"}, set(user_info_map.keys()), user_info_map)
+        self.assertSetEqual({"1", "2", "3"}, set(user_info_map.keys()), user_info_map)
         self.assertEqual("alice", user_info_map["2"]["username"], user_info_map)
         self.assertIn("size limit", str(lc), str(lc))
 
@@ -3141,7 +3141,7 @@ class LDAPResolverTestCase(MyTestCase):
         with self._count_searches() as search_filters:
             login_map = resolver.get_usernames_batch(["1", "2", "does-not-exist"])
         self.assertEqual(1, len(search_filters), search_filters)
-        self.assertEqual({"1": "manager", "2": "alice", "does-not-exist": ""}, login_map)
+        self.assertDictEqual({"1": "manager", "2": "alice", "does-not-exist": ""}, login_map)
         self.assertEqual(resolver.getUsername("2"), login_map["2"], login_map)
 
 
@@ -3169,19 +3169,19 @@ class BaseResolverTestCase(MyTestCase):
         with mock.patch.object(UserIdResolver, "get_user_info",
                                side_effect=lambda user_id, attributes=None: {"username": f"user{user_id}"}):
             user_info_map = resolver.get_user_info_batch(["1", "2"], attributes=["username"])
-        self.assertEqual({"1": {"username": "user1"}, "2": {"username": "user2"}}, user_info_map)
+        self.assertDictEqual({"1": {"username": "user1"}, "2": {"username": "user2"}}, user_info_map)
 
         # A user several tokens share is only looked up once
         with mock.patch.object(UserIdResolver, "get_user_info",
                                side_effect=lambda user_id, attributes=None: {"username": f"user{user_id}"}
                                ) as mock_get_user_info:
             user_info_map = resolver.get_user_info_batch(["1", "2", "1", "2"], attributes=["username"])
-        self.assertEqual({"1": {"username": "user1"}, "2": {"username": "user2"}}, user_info_map)
+        self.assertDictEqual({"1": {"username": "user1"}, "2": {"username": "user2"}}, user_info_map)
         self.assertEqual(2, mock_get_user_info.call_count)
 
         # Users the resolver does not know are left out
-        self.assertEqual({}, resolver.get_user_info_batch(["1", "2"]))
-        self.assertEqual({}, resolver.get_user_info_batch([]))
+        self.assertDictEqual({}, resolver.get_user_info_batch(["1", "2"]))
+        self.assertDictEqual({}, resolver.get_user_info_batch([]))
 
     def test_02_get_usernames_batch(self):
         # The login names go through getUsername, which for several resolvers is cheaper than
@@ -3190,17 +3190,17 @@ class BaseResolverTestCase(MyTestCase):
         with mock.patch.object(UserIdResolver, "getUsername",
                                side_effect=lambda user_id: f"user{user_id}") as mock_get_username:
             login_map = resolver.get_usernames_batch(["1", "2"])
-        self.assertEqual({"1": "user1", "2": "user2"}, login_map)
+        self.assertDictEqual({"1": "user1", "2": "user2"}, login_map)
         self.assertEqual(2, mock_get_username.call_count)
 
         # A user several tokens share is only looked up once
         with mock.patch.object(UserIdResolver, "getUsername",
                                side_effect=lambda user_id: f"user{user_id}") as mock_get_username:
             login_map = resolver.get_usernames_batch(["1", "2", "1", "2"])
-        self.assertEqual({"1": "user1", "2": "user2"}, login_map)
+        self.assertDictEqual({"1": "user1", "2": "user2"}, login_map)
         self.assertEqual(2, mock_get_username.call_count)
 
-        self.assertEqual({}, resolver.get_usernames_batch([]))
+        self.assertDictEqual({}, resolver.get_usernames_batch([]))
 
 
 class ResolverTestCase(MyTestCase):

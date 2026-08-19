@@ -122,7 +122,7 @@ class TokenListLookupTestCase(MyTestCase):
         # The owners and the containers of the page are each read with one query, not one per token
         self.assertEqual(1, count_containing(statements, "tokenowner.token_id IN"), statements)
         self.assertEqual(1, count_containing(statements, "FROM tokencontainertoken"), statements)
-        self.assertEqual({self.container_serial}, set(token["container_serial"] for token in result["tokens"]), result)
+        self.assertSetEqual({self.container_serial}, set(token["container_serial"] for token in result["tokens"]), result)
 
     @ldap3mock.activate
     def test_02_convert_token_objects_to_dicts_costs_one_search(self):
@@ -214,7 +214,7 @@ class TokenListLookupTestCase(MyTestCase):
             for _ in range(3):
                 result = get_tokens_paginate(serial="LIST00", psize=1, page=1)
                 container_serials.add(result["tokens"][0]["container_serial"])
-            self.assertEqual({self.container_serial}, container_serials, container_serials)
+            self.assertSetEqual({self.container_serial}, container_serials, container_serials)
         finally:
             db.session.execute(delete(TokenContainerToken)
                                .where(TokenContainerToken.token_id == token_id)
