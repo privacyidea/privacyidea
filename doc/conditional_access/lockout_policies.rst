@@ -201,14 +201,19 @@ from the same pages.
 The same can be done on the command line with :ref:`pi-manage <pimanage>`::
 
    pi-manage conditionalaccess list-locked-users
-   pi-manage conditionalaccess unlock-user --login <login> --realm <realm>
-   pi-manage conditionalaccess clear-locks
+   pi-manage conditionalaccess unlock-user <login> --realm <realm>
+   pi-manage conditionalaccess clear-locks [--realm <realm>]
    pi-manage conditionalaccess purge-expired-locks
 
    pi-manage conditionalaccess list-blocked-ips
    pi-manage conditionalaccess unblock-ip <ip>
    pi-manage conditionalaccess clear-blocks
    pi-manage conditionalaccess purge-expired-blocks
+
+``unlock-user`` takes the login name as an argument and requires ``--realm``;
+add ``--resolver`` only if the login exists in more than one resolver. The two
+``clear-`` commands remove everything and ask for confirmation first, so pass
+``--yes`` when calling them from a script.
 
 .. note:: If you lock yourself out of the WebUI with a source IP policy, use
    ``pi-manage conditionalaccess clear-blocks`` on the server, or add your
