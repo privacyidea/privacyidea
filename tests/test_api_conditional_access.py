@@ -947,10 +947,12 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
             db.session.query(model).delete()
         db.session.commit()
 
-    def _auth(self, username, password, remote_addr=None):
+    def _auth(self, username, password, remote_addr=None, transaction_id=None):
         kwargs = {"environ_base": {"REMOTE_ADDR": remote_addr}} if remote_addr else {}
-        with self.app.test_request_context('/auth', method='POST',
-                                           data={"username": username, "password": password}, **kwargs):
+        data = {"username": username, "password": password}
+        if transaction_id:
+            data["transaction_id"] = transaction_id
+        with self.app.test_request_context('/auth', method='POST', data=data, **kwargs):
             return self.app.full_dispatch_request()
 
     @staticmethod
@@ -1027,6 +1029,16 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
         # The login is still classified, so an admin can see why it failed even though the user cannot.
         entries = assert_authentication_log([AuthEventType.USER_LOCKED])
         assert_authentication_log_entry(entries[AuthEventType.USER_LOCKED], user=self.user)
+
+    def test_the_rejection_joins_the_transaction_it_refused(self):
+        # A passkey or push login answers its challenge at /auth carrying the transaction, so a rejection there
+        # belongs to that attempt rather than starting one of its own - the same linkage /validate rejections get.
+        self._lock_user()
+        res = self._auth("cornelius", "test", transaction_id="0123456789")
+        self.assertEqual(401, res.status_code, res)
+        entries = assert_authentication_log([AuthEventType.USER_LOCKED])
+        assert_authentication_log_entry(entries[AuthEventType.USER_LOCKED], user=self.user,
+                                        transaction_id="0123456789")
 
     def test_a_silent_lock_is_byte_identical_to_a_wrong_password(self):
         # The whole point of the silent default: a locked account must be indistinguishable from a wrong
