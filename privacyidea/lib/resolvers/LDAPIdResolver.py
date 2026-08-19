@@ -36,6 +36,7 @@ import threading
 import traceback
 import uuid
 from operator import itemgetter
+from typing import Any
 
 import ldap3
 import yaml
@@ -204,7 +205,7 @@ def ignore_sizelimit_exception(conn, generator):
 CACHE_MISS = object()
 
 
-def _get_cache_bucket(resolver, func_name: str) -> dict:
+def _get_cache_bucket(resolver: "IdResolver", func_name: str) -> dict:
     """
     Return the cache dict of this resolver for the given function, after evicting expired entries.
     """
@@ -236,7 +237,7 @@ def _get_cache_bucket(resolver, func_name: str) -> dict:
     return CACHE[resolver_id].setdefault(func_name, {})
 
 
-def cache_lookup(resolver, func_name: str, key, attributes: list[str] = None):
+def cache_lookup(resolver: "IdResolver", func_name: str, key: str, attributes: list[str] = None) -> Any:
     """
     Return the cached result of ``func_name`` for ``key``, or ``CACHE_MISS`` if there is none.
 
@@ -272,7 +273,7 @@ def cache_lookup(resolver, func_name: str, key, attributes: list[str] = None):
     return result
 
 
-def cache_store(resolver, func_name: str, key, value):
+def cache_store(resolver: "IdResolver", func_name: str, key: str, value: dict | str) -> None:
     """
     Write a result into the per-process cache, if caching is enabled for this resolver.
     """
