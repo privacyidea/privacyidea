@@ -274,54 +274,80 @@ class CleanupTest(MyTestCase):
         self.assertEqual(rows[0].window_start, recent)
 
 
+def _aggregate(count=1, value=0.01):
+    """Build the aggregate that a buffered sample produces, as ``_record`` would."""
+    return {"count": count, "sum_value": value * count, "max_value": value,
+            "buckets": [count if value <= boundary else 0 for boundary, _column in _BUCKETS]}
+
+
 class RaceToleranceTest(MyTestCase):
-    """``_get_or_create_row`` recovers from a concurrent insert."""
+    """A write recovers from another worker inserting the same row first."""
 
     def setUp(self):
         _wipe_metrics()
 
-    def test_unique_violation_falls_back_to_existing_row(self):
-        # Simulate the race window: another worker's row is already in place
-        # at flush time. We expect _get_or_create_row to roll back its INSERT
-        # and refetch the winning row.
-        now = _window_start(_utc_now())
-        existing = MetricAggregate(metric_name="race_test", labels_key="",
-                                   node="", window_start=now,
-                                   count=11, sum_value=1.1, max_value=0.5)
-        db.session.add(existing)
+    @staticmethod
+    def _counts():
+        return {row.metric_name: row.count for row in
+                db.session.execute(select(MetricAggregate)).scalars().all()}
+
+    @staticmethod
+    def _lose_the_insert_race_on(metric_name):
+        """Patch the UPDATE to report "no such row" once, so the INSERT hits the constraint.
+
+        That is the race window: another worker inserts the row between our UPDATE and
+        our INSERT.
+        """
+        original_increment = metrics._increment_row
+        already_lost = {"done": False}
+
+        def increment(session, name, *args, **kwargs):
+            if name == metric_name and not already_lost["done"]:
+                already_lost["done"] = True
+                return 0
+            return original_increment(session, name, *args, **kwargs)
+
+        return patch.object(metrics, "_increment_row", side_effect=increment)
+
+    def test_a_lost_insert_race_adds_to_the_row_that_won(self):
+        window = _window_start(_utc_now())
+        db.session.add(MetricAggregate(metric_name="race_a", labels_key="",
+                                       node="", window_start=window,
+                                       count=11, sum_value=1.1, max_value=0.5))
         db.session.commit()
 
-        # Drive the helper directly with a session whose first SELECT lies and
-        # returns None. This forces the INSERT branch, which trips the unique
-        # constraint - the path we're verifying handles cleanly.
-        from privacyidea.lib import metrics as metrics_mod
-        session = metrics_mod._metric_session()
-        try:
-            real_execute = session.execute
-            first_call = {"done": False}
+        with self._lose_the_insert_race_on("race_a"):
+            metrics._write_observations({("race_a", (), "", window): _aggregate(count=5)})
 
-            def selective_execute(stmt, *args, **kwargs):
-                if not first_call["done"]:
-                    first_call["done"] = True
+        # No duplicate row, and the samples landed on the row that won.
+        self.assertEqual({"race_a": 16}, self._counts())
 
-                    class _NullScalarResult:
-                        def scalar_one_or_none(self_inner):
-                            return None
-                    return _NullScalarResult()
-                return real_execute(stmt, *args, **kwargs)
+    def test_a_lost_insert_race_keeps_the_earlier_rows_of_the_batch(self):
+        # The rows are visited in sorted order, so race_a is applied before race_b loses
+        # its race. Recovering from that must not discard what race_a already applied.
+        window = _window_start(_utc_now())
+        db.session.add(MetricAggregate(metric_name="race_b", labels_key="",
+                                       node="", window_start=window,
+                                       count=3, sum_value=0.3, max_value=0.5))
+        db.session.commit()
 
-            with patch.object(session, "execute", side_effect=selective_execute):
-                row = metrics_mod._get_or_create_row(session, "race_test",
-                                                    "", "", now)
-            # Refetched the existing row, did not create a duplicate.
-            self.assertEqual(row.count, 11)
-        finally:
-            session.close()
+        with self._lose_the_insert_race_on("race_b"):
+            metrics._write_observations({("race_a", (), "", window): _aggregate(count=5),
+                                         ("race_b", (), "", window): _aggregate(count=5)})
 
-        rows = db.session.execute(
-            select(MetricAggregate).where(MetricAggregate.metric_name == "race_test")
-        ).scalars().all()
-        self.assertEqual(len(rows), 1)
+        self.assertEqual({"race_a": 5, "race_b": 8}, self._counts())
+
+    def test_rows_are_visited_in_a_deterministic_order(self):
+        # Workers of one node share the rows of a window; a stable lock order is what
+        # keeps two overlapping flushes from deadlocking.
+        window = _window_start(_utc_now())
+        observations = {("order_c", (), "", window): _aggregate(),
+                        ("order_a", (), "", window): _aggregate(),
+                        ("order_b", (), "", window): _aggregate()}
+        with patch.object(metrics, "_apply_aggregate") as apply_aggregate:
+            metrics._write_observations(observations)
+        visited = [call.args[1] for call in apply_aggregate.call_args_list]
+        self.assertEqual(["order_a", "order_b", "order_c"], visited)
 
 
 class BufferedWriteTest(MyTestCase):
@@ -410,13 +436,13 @@ class FailureSafetyTest(MyTestCase):
         _wipe_metrics()
 
     def test_observe_swallows_db_errors(self):
-        with patch.object(metrics, "_get_or_create_row",
+        with patch.object(metrics, "_apply_aggregate",
                           side_effect=RuntimeError("db gone")):
             # Should not raise even though the underlying call explodes.
             observe("safe_test", 0.1)
 
     def test_inc_swallows_db_errors(self):
-        with patch.object(metrics, "_get_or_create_row",
+        with patch.object(metrics, "_apply_aggregate",
                           side_effect=RuntimeError("db gone")):
             inc("safe_test")
 
@@ -429,12 +455,12 @@ class KillSwitchTest(MyTestCase):
 
     def test_disabled_skips_observe_and_inc(self):
         # When the flag is set, writes never reach the DB and the helper that
-        # would create / fetch a row must not be called.
+        # would update / create a row must not be called.
         with (patch.object(metrics, "_metrics_disabled", return_value=True),
-              patch.object(metrics, "_get_or_create_row") as get_or_create):
+              patch.object(metrics, "_apply_aggregate") as apply_aggregate):
             observe("kill_test", 0.05)
             inc("kill_test")
-        get_or_create.assert_not_called()
+        apply_aggregate.assert_not_called()
         # And nothing landed in the table.
         rows = db.session.execute(select(MetricAggregate)).scalars().all()
         self.assertEqual(rows, [])

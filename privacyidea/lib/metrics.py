@@ -25,9 +25,9 @@ import json
 import logging
 import time
 
-from sqlalchemy import select, delete
+from sqlalchemy import case, select, delete, update
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import Session, sessionmaker
 
 from privacyidea.lib.config import get_privacyidea_node
 from privacyidea.lib.framework import get_app_config_value, get_request_local_store, is_request_context
@@ -143,34 +143,62 @@ def _metric_session():
     return _metric_sessionmaker()
 
 
-def _get_or_create_row(session, metric_name: str, labels_key: str,
-                       node: str, window: datetime.datetime) -> MetricAggregate:
-    labels_hash = _labels_hash(labels_key)
-    stmt = select(MetricAggregate).where(
+def _increment_row(session: Session, metric_name: str, labels_hash: str, node: str,
+                   window: datetime.datetime, aggregate: dict) -> int:
+    """Add an aggregate to an existing row with one UPDATE. Returns the rows matched.
+
+    The increments are computed by the database (``count = count + n``), not read into
+    Python and written back, so several workers sharing a row can't overwrite each
+    other's samples. ``max_value`` uses a portable CASE rather than ``GREATEST``.
+
+    :return: 1 if the row existed, 0 if it still has to be inserted
+    """
+    increments = {
+        "count": MetricAggregate.count + aggregate["count"],
+        "sum_value": MetricAggregate.sum_value + aggregate["sum_value"],
+        "max_value": case((MetricAggregate.max_value < aggregate["max_value"], aggregate["max_value"]),
+                          else_=MetricAggregate.max_value),
+    }
+    for index, (_boundary, column) in enumerate(_BUCKETS):
+        if aggregate["buckets"][index]:
+            increments[column] = getattr(MetricAggregate, column) + aggregate["buckets"][index]
+    stmt = update(MetricAggregate).where(
         MetricAggregate.metric_name == metric_name,
         MetricAggregate.labels_hash == labels_hash,
         MetricAggregate.node == node,
         MetricAggregate.window_start == window,
-    )
-    row = session.execute(stmt).scalar_one_or_none()
-    if row is None:
-        row = MetricAggregate(
-            metric_name=metric_name, labels_key=labels_key,
-            labels_hash=labels_hash, node=node, window_start=window,
-            count=0, sum_value=0.0, max_value=0.0,
-        )
-        session.add(row)
-        try:
-            session.flush()
-        except IntegrityError:
-            # Race: another worker inserted the same (metric, labels, node,
-            # window) row between our SELECT and INSERT. Roll back the failed
-            # insert and re-fetch so the caller updates the existing row.
-            # Other exceptions (missing table, connection failure, ...) bubble
-            # up to the caller's try/except in observe()/inc().
-            session.rollback()
-            row = session.execute(stmt).scalar_one()
-    return row
+    ).values(**increments)
+    # The session holds no instances of the row, so there is nothing to synchronize and
+    # the CASE expression would only force SQLAlchemy into an extra SELECT.
+    result = session.execute(stmt, execution_options={"synchronize_session": False})
+    return result.rowcount
+
+
+def _apply_aggregate(session: Session, metric_name: str, labels_key: str, node: str,
+                     window: datetime.datetime, aggregate: dict) -> None:
+    """Add an aggregate to its row, inserting the row if this is its first sample."""
+    labels_hash = _labels_hash(labels_key)
+    if _increment_row(session, metric_name, labels_hash, node, window, aggregate):
+        return
+    try:
+        # A savepoint, so that losing the insert to another worker does not roll back the
+        # aggregates of the other rows this transaction has already applied.
+        with session.begin_nested():
+            session.add(MetricAggregate(
+                metric_name=metric_name, labels_key=labels_key,
+                labels_hash=labels_hash, node=node, window_start=window,
+                count=aggregate["count"], sum_value=aggregate["sum_value"],
+                max_value=aggregate["max_value"],
+                **{column: aggregate["buckets"][index]
+                   for index, (_boundary, column) in enumerate(_BUCKETS)},
+            ))
+    except IntegrityError:
+        # Race: another worker inserted the same (metric, labels, node, window) row
+        # between our UPDATE and our INSERT. The savepoint took the failed insert with
+        # it, so the aggregate can simply be added to the row that won.
+        # Other exceptions (missing table, connection failure, ...) bubble up to the
+        # caller's try/except in observe()/inc()/_flush_metric_buffer().
+        _increment_row(session, metric_name, labels_hash, node, window, aggregate)
 
 
 _BUFFER_KEY = "metric_observations"
@@ -188,6 +216,14 @@ def _request_metric_buffer() -> dict | None:
 
     Returns ``None`` outside a request: no teardown would run there, so the caller has
     to write its observation through immediately.
+
+    The buffer is only written at teardown, so a request whose worker is killed before
+    that (a uWSGI harakiri on a request hung in a resolver, a worker recycle) takes its
+    samples with it - the very requests an operator wants to see. A size-based early
+    flush would not help there: what such a request loses is the samples of the ops it
+    already finished, and the label sets of a single request are far too few to reach
+    any sensible size limit. Recording the pathological request needs the timing to be
+    written before the op returns, which is what costs a transaction per sample.
     """
     if not is_request_context():
         return None
@@ -214,19 +250,18 @@ def _write_observations(observations: dict) -> None:
     The write happens on its own session and commit so it can't piggyback on (or be
     rolled back by) the caller's transaction.
 
+    The rows are visited in sorted key order. Workers of the same node share the rows of
+    a window, so they have to take the row locks in one agreed order or two overlapping
+    flushes can deadlock and lose a whole request's samples.
+
     :param observations: maps (metric name, label items, node, window) to an aggregate
     """
     session = _metric_session()
     try:
-        for (name, label_items, node, window), aggregate in observations.items():
-            row = _get_or_create_row(session, name, _labels_key(dict(label_items)), node, window)
-            row.count += aggregate["count"]
-            row.sum_value = float(row.sum_value) + aggregate["sum_value"]
-            if aggregate["max_value"] > row.max_value:
-                row.max_value = float(aggregate["max_value"])
-            for index, (_boundary, column) in enumerate(_BUCKETS):
-                if aggregate["buckets"][index]:
-                    setattr(row, column, getattr(row, column) + aggregate["buckets"][index])
+        for key in sorted(observations):
+            name, label_items, node, window = key
+            _apply_aggregate(session, name, _labels_key(dict(label_items)), node, window,
+                             observations[key])
         session.commit()
     finally:
         session.close()
