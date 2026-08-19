@@ -35,6 +35,13 @@ import { ContentService, ContentServiceInterface, DetailsUser } from "@services/
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
+import {
+  FilterableTableService,
+  FilterableTableServiceInterface
+} from "@services/table-utils/filterable-table-service";
+import { loadedRows, RowSelector } from "@services/table-utils/row-selector";
+import { FilterCaseNote } from "@utils/filter-hint.utils";
+import { filterParamsEqual, toBooleanParam, withDefaultRealm } from "@utils/filter.utils";
 import { StringUtils } from "@utils/string.utils";
 import { tokenTypes } from "@utils/token.utils";
 import {
@@ -79,7 +86,7 @@ export type TokenTypeKey =
   | "webauthn"
   | "passkey";
 
-const apiFilter = [
+const apiFilterKeys = [
   "serial",
   "type",
   "active",
@@ -91,7 +98,7 @@ const apiFilter = [
   "container_serial"
 ];
 
-const advancedApiFilter = ["infokey & infovalue", "userid", "resolver", "assigned"];
+const advancedApiFilterKeys = ["infokey & infovalue", "userid", "resolver", "assigned"];
 
 const apiFilterKeyMap: Record<string, string> = {
   serial: "serial",
@@ -105,7 +112,70 @@ const apiFilterKeyMap: Record<string, string> = {
   container_serial: "container_serial"
 };
 
-const hiddenApiFilter = ["type_list"];
+const hiddenApiFilterKeys = ["type_list"];
+
+const exactMatchKeys = new Set([
+  "user",
+  "infokey",
+  "infovalue",
+  "infokey & infovalue",
+  "active",
+  "assigned",
+  "container_serial",
+  "realm"
+]);
+const booleanKeys = new Set(["active", "assigned"]);
+// `serial` is a raw LIKE (SQLite/MySQL fold case, PostgreSQL does not), the tokeninfo
+// keys and `userid` are a raw comparison (only MySQL with a _ci collation folds case).
+const caseNotes: Record<string, FilterCaseNote> = {
+  serial: "usually-insensitive",
+  userid: "usually-sensitive",
+  resolver: "usually-insensitive",
+  "infokey & infovalue": "usually-sensitive"
+};
+function toParamValue(key: string, value: string): string {
+  if (booleanKeys.has(key)) {
+    return toBooleanParam(value) ?? value;
+  }
+  if (exactMatchKeys.has(key)) {
+    return value;
+  }
+  // The tokenrealm query param accepts a comma-separated list, so every entry is wildcarded on its own.
+  if (key === "tokenrealm") {
+    return StringUtils.splitFilterList(value)
+      .map((entry) => `*${entry}*`)
+      .join(",");
+  }
+  return `*${value}*`;
+}
+
+// A single typed token type maps to the `type` query param, multiple to `type_list`. A hidden
+// `type_list` is the set of types the route allows at all, so it is sent as its own param and
+// the backend ands both clauses. Several typed types share the param with the allowed set and
+// are therefore narrowed down to it.
+function toTypeParams(filter: FilterValue): Record<string, string> {
+  const allowedTypes = StringUtils.splitFilterList(filter.hiddenFilterMap.get("type_list"));
+  const typedTypes = Array.from(
+    new Set([
+      ...StringUtils.splitFilterList(filter.filterMap.get("type")),
+      ...StringUtils.splitFilterList(filter.filterMap.get("type_list"))
+    ])
+  );
+  const params: Record<string, string> = {};
+  if (allowedTypes.length > 0) {
+    params["type_list"] = allowedTypes.join(",");
+  }
+  if (typedTypes.length === 1) {
+    params["type"] = `*${typedTypes[0]}*`;
+  } else if (typedTypes.length > 1) {
+    const narrowedTypes =
+      allowedTypes.length > 0 ? typedTypes.filter((type) => allowedTypes.includes(type)) : typedTypes;
+    if (narrowedTypes.length > 0) {
+      params["type_list"] = narrowedTypes.join(",");
+    }
+  }
+  return params;
+}
 
 export interface Tokens {
   count: number;
@@ -116,6 +186,24 @@ export interface Tokens {
 }
 
 export type TokenCount = Pick<Tokens, "count">;
+
+export interface TokenCountParams {
+  type?: TokenTypeKey;
+  type_list?: string;
+  serial?: string;
+  description?: string;
+  assigned?: "True" | "False";
+  active?: "True" | "False";
+  rollout_state?: string;
+  infokey?: string;
+  infovalue?: string;
+  container_serial?: string;
+  tokenrealm?: string;
+  realm?: string;
+  user?: string;
+  userid?: string;
+  resolver?: string;
+}
 
 export interface TokenInfo {
   CA?: string;
@@ -234,45 +322,37 @@ export interface TokenImportResult {
   n_not_imported: number;
 }
 
-export interface TokenServiceInterface {
-  apiFilterKeyMap: Record<string, string>;
+export interface TokenServiceInterface extends FilterableTableServiceInterface {
   stopPolling$: Subject<void>;
   tokenBaseUrl: string;
   eventPageSize: WritableSignal<number>;
   tokenSerial: WritableSignal<string>;
   selectedTokenType: WritableSignal<TokenType>;
   showOnlyTokenInContainer: WritableSignal<boolean>;
-  tokenFilter: WritableSignal<FilterValue>;
+  presetFilter: WritableSignal<FilterValue | null>;
   tokenDetailResource: HttpResourceRef<PiResponse<Tokens> | undefined>;
   tokenDetailResourceValue: Signal<Tokens | undefined>;
   tokenTypesResource: HttpResourceRef<PiResponse<Record<string, string>> | undefined>;
   userTokenResource: HttpResourceRef<PiResponse<Tokens> | undefined>;
   detailsUser: WritableSignal<DetailsUser>;
   tokenTypeOptions: Signal<TokenType[]>;
-  pageSize: WritableSignal<number>;
   tokenIsActive: WritableSignal<boolean>;
   tokenIsRevoked: WritableSignal<boolean>;
   defaultSizeOptions: number[];
-  apiFilter: string[];
-  advancedApiFilter: string[];
-  sort: WritableSignal<Sort>;
-  pageIndex: WritableSignal<number>;
+  booleanKeys: Set<string>;
+  caseNotes: Record<string, FilterCaseNote>;
   tokenResource: HttpResourceRef<PiResponse<Tokens> | undefined>;
   tokenSerialResource: HttpResourceRef<PiResponse<Tokens> | undefined>;
   tokenResourceValue: Signal<Tokens | null>;
-  tokenSelection: WritableSignal<TokenDetails[]>;
+  tokenSelection: RowSelector<TokenDetails>;
   selectedToken: WritableSignal<string | null>;
   tokenOptions: Signal<string[]>;
   filteredTokenOptions: Signal<string[]>;
   readonly maxDescriptionLength: number;
 
-  clearFilter(): void;
+  toggleActive(tokenSerial: string, active: boolean, notify?: boolean): Observable<PiResponse<boolean>>;
 
-  handleFilterInput($event: Event): void;
-
-  toggleActive(tokenSerial: string, active: boolean): Observable<PiResponse<boolean>>;
-
-  resetFailCount(tokenSerial: string): Observable<PiResponse<boolean>>;
+  resetFailCount(tokenSerial: string, notify?: boolean): Observable<PiResponse<boolean>>;
 
   saveTokenDetail(tokenSerial: string, key: string, value: unknown): Observable<PiResponse<boolean>>;
 
@@ -292,7 +372,7 @@ export interface TokenServiceInterface {
 
   unassignUserFromAll(tokenSerials: string[]): Observable<PiResponse<boolean>[]>;
 
-  unassignUser(tokenSerial: string): Observable<PiResponse<boolean>>;
+  unassignUser(tokenSerial: string, notify?: boolean): Observable<PiResponse<boolean>>;
 
   bulkUnassignTokens(tokenDetails: TokenDetails[]): Observable<PiResponse<BulkResult>>;
 
@@ -318,7 +398,7 @@ export interface TokenServiceInterface {
 
   getTokenDetails(tokenSerial: string): Observable<PiResponse<Tokens>>;
 
-  getTokenCount(params: Record<string, string | number>): Observable<PiResponse<TokenCount>>;
+  getTokenCount(params?: TokenCountParams): Observable<PiResponse<TokenCount>>;
 
   enrollToken<T extends TokenEnrollmentData, R extends EnrollmentResponse>(args: {
     data: T;
@@ -343,80 +423,25 @@ export interface TokenServiceInterface {
 }
 
 @Injectable()
-export class TokenService implements TokenServiceInterface {
+export class TokenService extends FilterableTableService implements TokenServiceInterface {
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly dialogService: DialogServiceInterface = inject(DialogService);
   private readonly realmService: RealmServiceInterface = inject(RealmService);
   private readonly http = inject(HttpClient);
-  readonly hiddenApiFilter = hiddenApiFilter;
-  readonly apiFilterKeyMap = apiFilterKeyMap;
   readonly stopPolling$ = new Subject<void>();
   readonly tokenBaseUrl = environment.proxyUrl + "/token/";
   readonly eventPageSize = signal(10);
   readonly tokenSerial = this.contentService.tokenSerial;
-  private readonly _filterParams = computed<Record<string, string>>(() => {
-    const allowed = [...this.apiFilter, ...this.advancedApiFilter, ...this.hiddenApiFilter, "infokey", "infovalue"];
-    const plainKeys = new Set(["user", "infokey", "infovalue", "active", "assigned", "container_serial", "realm"]);
-    const entries = [
-      ...Array.from(this.tokenFilter().filterMap.entries()),
-      ...Array.from(this.tokenFilter().hiddenFilterMap.entries())
-    ]
-      .filter(([key]) => allowed.includes(key))
-      .map(([key, value]) => [key, (value ?? "").toString().trim()] as const)
-      .filter(([key, v]) => (key === "container_serial" ? true : StringUtils.validFilterValue(v)))
-      .map(([key, v]) => [key, plainKeys.has(key) ? v : `*${v}*`] as const);
-    return Object.fromEntries(entries) as Record<string, string>;
-  });
 
-  constructor() {
-    effect(() => {
-      if (this.tokenResource.error()) {
-        const tokensResourceError = this.tokenResource.error() as HttpErrorResponse;
-        console.error("Failed to get token data.", tokensResourceError.error.result.error.message);
-        this.notificationService.error(tokensResourceError.error.result.error.message);
-      }
-    });
-    effect(() => {
-      if (this.tokenTypesResource.error()) {
-        const tokenTypesResourceError = this.tokenTypesResource.error() as HttpErrorResponse;
-        console.error("Failed to get token type data.", tokenTypesResourceError.error.result.error.message);
-        this.notificationService.error(tokenTypesResourceError.error.result.error.message);
-      }
-    });
-  }
-
-  readonly maxDescriptionLength = 80;
-
-
-  readonly detailsUser = this.contentService.detailsUser;
-
-
-  tokenSerialResource = httpResource<PiResponse<Tokens>>(() => {
-    const filter = this.selectedToken();
-    if (!filter || filter.length < 1) {
-      return undefined;
-    }
-    return {
-      url: this.tokenBaseUrl,
-      method: "GET",
-      headers: this.authService.getHeaders(),
-      params: { serial: `*${filter}*` }
-    };
-  });
-
-
-  selectedTokenType = linkedSignal({
-    source: () => ({
-      tokenTypeOptions: this.tokenTypeOptions(),
-      routeUrl: this.contentService.routeUrl()
-    }),
-    computation: (source) =>
-      source.tokenTypeOptions.find((type) => type.key === this.authService.defaultTokentype()) ||
-      source.tokenTypeOptions[0] ||
-      ({ key: "hotp", info: "", text: "" } as TokenType)
-  });
+  readonly apiFilterKeys = apiFilterKeys;
+  override readonly advancedApiFilterKeys = advancedApiFilterKeys;
+  override readonly hiddenApiFilterKeys = hiddenApiFilterKeys;
+  override readonly apiFilterKeyMap = apiFilterKeyMap;
+  override readonly exactMatchKeys = exactMatchKeys;
+  readonly booleanKeys = booleanKeys;
+  readonly caseNotes = caseNotes;
 
   showOnlyTokenInContainer = linkedSignal({
     source: this.contentService.routeUrl,
@@ -427,7 +452,9 @@ export class TokenService implements TokenServiceInterface {
     }
   });
 
-  tokenFilter: WritableSignal<FilterValue> = linkedSignal({
+  presetFilter: WritableSignal<FilterValue | null> = signal<FilterValue | null>(null);
+
+  activeFilter: WritableSignal<FilterValue> = linkedSignal({
     source: () => ({
       showOnlyTokenInContainer: this.showOnlyTokenInContainer(),
       routeUrl: this.contentService.routeUrl()
@@ -472,22 +499,107 @@ export class TokenService implements TokenServiceInterface {
     }
   });
 
-  clearFilter(): void {
-    this.tokenFilter.set(new FilterValue());
+  // Reads allEntries rather than filterMap, so that the hidden entries the route seeded
+  // reach the backend, and maps the boolean keywords the token endpoint expects.
+  override readonly filterParams = computed<Record<string, string>>(
+    () => {
+      const allowed = [...this.allFilterKeys(), "infokey", "infovalue"];
+      const activeFilter = this.activeFilter();
+      const entries = activeFilter.allEntries
+        // Filter unknown keys, token types are handled by toTypeParams
+        .filter(([key]) => allowed.includes(key) && key !== "type" && key !== "type_list")
+        // Normalize values
+        .map(([key, value]) => [key, (value ?? "").toString().trim()] as const)
+        // Remove empty values
+        .filter(([key, v]) => (key === "container_serial" ? true : StringUtils.validFilterValue(v)))
+        // Convert to query param values
+        .map(([key, v]) => [key, toParamValue(key, v)] as const);
+      return { ...Object.fromEntries(entries), ...toTypeParams(activeFilter) };
+    },
+    { equal: filterParamsEqual }
+  );
+
+  pageSize = linkedSignal<{ role: string }, number>({
+    source: () => ({
+      role: this.authService.role()
+    }),
+    computation: (source, previous) => {
+      if (previous && source.role === previous.source.role) {
+        return previous.value;
+      }
+      if (this.authService.tokenPageSize() != null && this.authService.tokenPageSize()! > 0) {
+        return this.authService.tokenPageSize()!;
+      }
+      return source.role === "user" ? 5 : 10;
+    }
+  });
+
+  pageIndex = linkedSignal({
+    source: () => ({
+      filterValue: this.activeFilter(),
+      pageSize: this.pageSize(),
+      routeUrl: this.contentService.routeUrl(),
+      sort: this.sort()
+    }),
+    computation: () => 0
+  });
+
+  sort = signal({ active: "serial", direction: "asc" } as Sort);
+
+  constructor() {
+    super();
+    effect(() => {
+      if (this.tokenResource.error()) {
+        const tokensResourceError = this.tokenResource.error() as HttpErrorResponse;
+        console.error("Failed to get token data.", tokensResourceError.error.result.error.message);
+        this.notificationService.error(tokensResourceError.error.result.error.message);
+      }
+    });
+    effect(() => {
+      if (this.tokenTypesResource.error()) {
+        const tokenTypesResourceError = this.tokenTypesResource.error() as HttpErrorResponse;
+        console.error("Failed to get token type data.", tokenTypesResourceError.error.result.error.message);
+        this.notificationService.error(tokenTypesResourceError.error.result.error.message);
+      }
+    });
   }
 
-  handleFilterInput($event: Event): void {
-    const input = $event.target as HTMLInputElement;
-    let newFilter = this.tokenFilter().copyWith({ value: input.value.trim() });
+  readonly maxDescriptionLength = 80;
 
-    if (newFilter.hasKey("user") && !newFilter.hasKey("realm")) {
-      const defaultRealm = this.realmService.defaultRealm();
-      if (defaultRealm) {
-        newFilter = newFilter.addEntry("realm", defaultRealm);
-      }
+  readonly detailsUser = this.contentService.detailsUser;
+
+  tokenSerialResource = httpResource<PiResponse<Tokens>>(() => {
+    const filter = this.selectedToken();
+    if (!filter || filter.length < 1) {
+      return undefined;
     }
+    return {
+      url: this.tokenBaseUrl,
+      method: "GET",
+      headers: this.authService.getHeaders(),
+      params: { serial: `*${filter}*` }
+    };
+  });
 
-    this.tokenFilter.set(newFilter);
+  selectedTokenType = linkedSignal({
+    source: () => ({
+      tokenTypeOptions: this.tokenTypeOptions(),
+      routeUrl: this.contentService.routeUrl()
+    }),
+    computation: (source) =>
+      source.tokenTypeOptions.find((type) => type.key === this.authService.defaultTokentype()) ||
+      source.tokenTypeOptions[0] ||
+      ({ key: "hotp", info: "", text: "" } as TokenType)
+  });
+
+  // The token endpoint filters by realm exactly, so an input without a realm keyword is
+  // pinned to the default realm rather than being sent unrestricted.
+  override filterFromInput($event: Event): FilterValue {
+    const input = $event.target as HTMLInputElement;
+    return withDefaultRealm(
+      this.activeFilter().copyWith({ value: input.value.trim() }),
+      this.realmService.defaultRealm()
+    );
   }
 
   tokenDetailResource = httpResource<PiResponse<Tokens>>(() => {
@@ -548,48 +660,34 @@ export class TokenService implements TokenServiceInterface {
     if (!this.tokenTypesResource.hasValue()) return [];
     const obj = this.tokenTypesResource?.value()?.result?.value;
     if (!obj) return [];
-    return Object.entries(obj).map(([key, info]) => ({
-      key: key as TokenTypeKey,
-      name: tokenTypes.find((t) => t.key === key)?.name || key,
-      info: String(info),
-      text: tokenTypes.find((t) => t.key === key)?.text || ""
-    }));
-  });
-
-  pageSize = linkedSignal<{ role: string }, number>({
-    source: () => ({
-      role: this.authService.role()
-    }),
-    computation: (source, previous) => {
-      if (previous && source.role === previous.source.role) {
-        return previous.value;
-      }
-      if (this.authService.tokenPageSize() != null && this.authService.tokenPageSize()! > 0) {
-        return this.authService.tokenPageSize()!;
-      }
-      return source.role === "user" ? 5 : 10;
-    }
+    return Object.entries(obj)
+      .map(([key, info]) => {
+        const infoString = String(info);
+        return {
+          value: {
+            key: key as TokenTypeKey,
+            name: tokenTypes.find((t) => t.key === key)?.name || key,
+            info: infoString,
+            text: tokenTypes.find((t) => t.key === key)?.text || ""
+          },
+          label: infoString.split(":")[0]
+        };
+      })
+      .sort((a, b) => a.label.localeCompare(b.label))
+      .map((entry) => entry.value);
   });
 
   tokenIsActive = signal(true);
   tokenIsRevoked = signal(true);
   readonly defaultSizeOptions = [5, 10, 25, 50];
-  readonly apiFilter = apiFilter;
-  readonly advancedApiFilter = advancedApiFilter;
-
-  sort = signal({ active: "serial", direction: "asc" } as Sort);
-
-  pageIndex = linkedSignal({
-    source: () => ({
-      filterValue: this.tokenFilter(),
-      pageSize: this.pageSize(),
-      routeUrl: this.contentService.routeUrl(),
-      sort: this.sort()
-    }),
-    computation: () => 0
-  });
 
   tokenResource = httpResource<PiResponse<Tokens>>(() => {
+    // Do not load tokens if the action is not allowed. tokenlist only exists in the admin
+    // policy scope, so self-service users must not be gated on it.
+    if (this.authService.role() === "admin" && !this.authService.actionAllowed("tokenlist")) {
+      return undefined;
+    }
+
     // Only load tokens on routes with a token list or selection.
     const onAllowedRoute =
       this.contentService.onTokens() ||
@@ -609,7 +707,7 @@ export class TokenService implements TokenServiceInterface {
         pagesize: this.pageSize(),
         sortby: this.sort()?.active || "serial",
         sortdir: this.sort()?.direction || "asc",
-        ...this._filterParams()
+        ...this.filterParams()
       }
     };
   });
@@ -619,12 +717,9 @@ export class TokenService implements TokenServiceInterface {
     return this.tokenResource.value()?.result?.value || null;
   });
 
-  tokenSelection: WritableSignal<TokenDetails[]> = linkedSignal({
-    source: () => ({
-      routeUrl: this.contentService.routeUrl(),
-      tokenResource: this.tokenResourceValue()
-    }),
-    computation: () => []
+  tokenSelection = new RowSelector<TokenDetails>({
+    keyGetter: (token) => token.serial,
+    visibleRows: loadedRows(this.tokenResource, (response) => response.result?.value?.tokens)
   });
 
   selectedToken = signal<string | null>(null);
@@ -742,7 +837,7 @@ export class TokenService implements TokenServiceInterface {
       });
   }
 
-  toggleActive(tokenSerial: string, active: boolean): Observable<PiResponse<boolean>> {
+  toggleActive(tokenSerial: string, active: boolean, notify = true): Observable<PiResponse<boolean>> {
     const headers = this.authService.getHeaders();
     const action = active ? "disable" : "enable";
     return this.http
@@ -750,20 +845,24 @@ export class TokenService implements TokenServiceInterface {
       .pipe(
         catchError((error) => {
           console.error("Failed to toggle active.", error);
-          const message = error.error?.result?.error?.message || "";
-          this.notificationService.error("Failed to toggle active. " + message);
+          if (notify) {
+            const message = error.error?.result?.error?.message || "";
+            this.notificationService.error("Failed to toggle active. " + message);
+          }
           return throwError(() => error);
         })
       );
   }
 
-  resetFailCount(tokenSerial: string): Observable<PiResponse<boolean>> {
+  resetFailCount(tokenSerial: string, notify = true): Observable<PiResponse<boolean>> {
     const headers = this.authService.getHeaders();
     return this.http.post<PiResponse<boolean>>(this.tokenBaseUrl + "reset", { serial: tokenSerial }, { headers }).pipe(
       catchError((error) => {
         console.error("Failed to reset fail count.", error);
-        const message = error.error?.result?.error?.message || "";
-        this.notificationService.error("Failed to reset fail count. " + message);
+        if (notify) {
+          const message = error.error?.result?.error?.message || "";
+          this.notificationService.error("Failed to reset fail count. " + message);
+        }
         return throwError(() => error);
       })
     );
@@ -907,15 +1006,17 @@ export class TokenService implements TokenServiceInterface {
     );
   }
 
-  unassignUser(tokenSerial: string): Observable<PiResponse<boolean>> {
+  unassignUser(tokenSerial: string, notify = true): Observable<PiResponse<boolean>> {
     const headers = this.authService.getHeaders();
     return this.http
       .post<PiResponse<boolean>>(`${this.tokenBaseUrl}unassign`, { serial: tokenSerial }, { headers })
       .pipe(
         catchError((error) => {
           console.error("Failed to unassign user.", error);
-          const message = error.error?.result?.error?.message || "";
-          this.notificationService.error("Failed to unassign user. " + message);
+          if (notify) {
+            const message = error.error?.result?.error?.message || "";
+            this.notificationService.error("Failed to unassign user. " + message);
+          }
           return throwError(() => error);
         })
       );
@@ -1048,10 +1149,10 @@ export class TokenService implements TokenServiceInterface {
     });
   }
 
-  getTokenCount(params: Record<string, string | number>): Observable<PiResponse<TokenCount>> {
+  getTokenCount(params: TokenCountParams = {}): Observable<PiResponse<TokenCount>> {
     return this.http.get<PiResponse<TokenCount>>(this.tokenBaseUrl, {
       headers: this.authService.getHeaders(),
-      params
+      params: { ...params, pagesize: 0 }
     });
   }
 

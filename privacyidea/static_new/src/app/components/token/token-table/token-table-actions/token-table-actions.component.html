@@ -18,11 +18,24 @@
 -->
 <div
   appOverflowNav class="flex-row gap-8">
+  @if (authService.tokenEnrollmentAllowed()) {
+    <button
+      data-overflow-pinned
+      [routerLink]="[ROUTE_PATHS.TOKENS_ENROLLMENT]"
+      class="action-button-primary button-width-l"
+      mat-stroked-button>
+      <span class="icon-badge">
+        <mat-icon class="padding-right-3">shield</mat-icon>
+        <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+      </span>
+      <span i18n>Enroll Token</span>
+    </button>
+  }
   @if (authService.oneActionAllowed(["delete", "assign", "unassign", "enable", "disable", "reset"])) {
     @if (authService.actionAllowed("delete")) {
       <button
         (click)="deleteSelectedTokens()"
-        [disabled]="tokenSelection().length === 0"
+        [disabled]="!tokenSelection.hasSelection()"
         class="action-button-delete-secondary button-width-l"
         mat-stroked-button>
         <mat-icon> delete_sweep</mat-icon>
@@ -32,7 +45,7 @@
     @if (authService.actionAllowed("assign")) {
       <button
         (click)="assignSelectedTokens()"
-        [disabled]="tokenSelection().length === 0"
+        [disabled]="!tokenSelection.hasSelection()"
         class="action-button-secondary button-width-l"
         mat-stroked-button>
         <mat-icon> person_add</mat-icon>
@@ -42,7 +55,7 @@
     @if (authService.actionAllowed("unassign")) {
       <button
         (click)="unassignSelectedTokens()"
-        [disabled]="tokenSelection().length === 0"
+        [disabled]="!tokenSelection.hasSelection()"
         class="action-button-secondary button-width-l"
         mat-stroked-button>
         <mat-icon> person_remove</mat-icon>
@@ -52,7 +65,7 @@
     @if (authService.actionAllowed("enable") && authService.actionAllowed("disable")) {
       <button
         (click)="toggleActiveSelectedTokens()"
-        [disabled]="tokenSelection().length === 0"
+        [disabled]="!tokenSelection.hasSelection()"
         class="action-button-secondary button-width-l"
         mat-stroked-button>
         <mat-icon> toggle_on</mat-icon>
@@ -62,7 +75,7 @@
     @if (authService.actionAllowed("reset")) {
       <button
         (click)="resetFailcounterSelectedTokens()"
-        [disabled]="tokenSelection().length === 0"
+        [disabled]="!tokenSelection.hasSelection()"
         class="action-button-secondary button-width-l"
         mat-stroked-button>
         <mat-icon> restart_alt</mat-icon>

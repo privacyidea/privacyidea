@@ -26,13 +26,18 @@ import { MatPaginatorModule } from "@angular/material/paginator";
 import { MatFormField, MatLabel } from "@angular/material/select";
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
 import { MatTabsModule } from "@angular/material/tabs";
+import { MatHint } from "@angular/material/form-field";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
+import { TableStateComponent } from "@components/shared/table-state/table-state.component";
+import { TableState } from "@core/models/table_state/table-state";
 import { TokenApplicationsActionsComponent } from "@components/token/token-applications/token-applications-actions/token-applications-actions.component";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { MachineService, MachineServiceInterface, TokenApplication } from "@services/machine/machine.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
+import { inlineFilterHint } from "@utils/filter-hint.utils";
 
 @Component({
   selector: "app-token-applications-offline",
@@ -49,7 +54,9 @@ import { TokenService, TokenServiceInterface } from "@services/token/token.servi
     ClearableInputComponent,
     MatIconModule,
     MatButtonModule,
-    TokenApplicationsActionsComponent
+    TokenApplicationsActionsComponent,
+    MatHint,
+    TableStateComponent
   ],
   templateUrl: "./token-applications-offline.component.html",
   styleUrls: ["./token-applications-offline.component.scss"]
@@ -59,19 +66,28 @@ export class TokenApplicationsOfflineComponent {
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
   readonly columnsKeyMap = this.tableUtilsService.pickColumns("serial", "count", "rounds");
   readonly columnKeys = [...this.tableUtilsService.getColumnKeys(this.columnsKeyMap)];
   pageSizeOptions = this.tableUtilsService.pageSizeOptions;
   length = computed(() => this.machineService.tokenApplications()?.length ?? 0);
   displayedColumns: string[] = this.columnsKeyMap.map((column) => column.key);
   sort = this.machineService.sort;
+  readonly filterHint = inlineFilterHint();
 
   dataSource = computed(() => {
     const data = this.machineService.tokenApplications();
     if (data) {
       return new MatTableDataSource<TokenApplication>(data);
     }
-    return this.tableUtilsService.emptyDataSource(this.machineService.pageSize(), [...this.columnsKeyMap]);
+    return new MatTableDataSource<TokenApplication>([]);
+  });
+  readonly tableState = new TableState({
+    resource: this.machineService.tokenApplicationResource,
+    count: () => this.length(),
+    filterActive: () => !this.machineService.activeFilter().isEmpty,
+    allowed: () => this.authService.actionAllowed("manage_machine_tokens"),
+    resetFilter: () => this.machineService.clearFilter()
   });
   @ViewChild("filterInput", { static: false })
   filterInput!: ElementRef<HTMLInputElement>;

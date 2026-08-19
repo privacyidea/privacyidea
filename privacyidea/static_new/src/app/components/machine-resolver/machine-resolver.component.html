@@ -23,111 +23,149 @@
   <div
     appScrollToTop
     class="machine-resolver-table-container">
-    <div class="filter-paginator-container input-width-xl">
-      <mat-form-field
-        subscriptSizing="dynamic"
-        class="table-filter">
-        <mat-label i18n>Filter Machine Resolvers...</mat-label>
-        <app-clearable-input
-          (clearButtonClick)="resetFilter()"
-          [showClearButton]="filterString().length > 0">
-          <input
-            #filterHTMLInputElement
-            (input)="onFilterInput(filterHTMLInputElement.value)"
-            [value]="filterString()"
-            aria-label="Filter Input"
-            i18n-aria-label
-            i18n-placeholder
-            matInput
-            placeholder="Filter by name or type" />
-        </app-clearable-input>
-      </mat-form-field>
-    </div>
+    @if (tableState.showTable()) {
+      <div class="filter-paginator-container input-width-xl">
+        <mat-form-field
+          subscriptSizing="dynamic"
+          class="table-filter">
+          <mat-label i18n>Filter Machine Resolvers...</mat-label>
+          <app-clearable-input
+            (clearButtonClick)="resetFilter()"
+            [showClearButton]="filterString().length > 0">
+            <input
+              #filterHTMLInputElement
+              (input)="onFilterInput(filterHTMLInputElement.value)"
+              [value]="filterString()"
+              aria-label="Filter Input"
+              i18n-aria-label
+              i18n-placeholder
+              matInput
+              placeholder="Filter by name or type" />
+          </app-clearable-input>
+        </mat-form-field>
+      </div>
 
-    <div class="flex-row gap-8 margin-bottom-16">
-      @if (authService.actionAllowed("mresolverwrite")) {
-        <button
-          (click)="onNewMachineResolver()"
-          class="action-button-primary button-width-l"
-          mat-stroked-button>
-          <mat-icon>add</mat-icon>
-          <span i18n>New Machine Resolver</span>
-        </button>
-      }
-    </div>
+      <div class="flex-row gap-8 margin-bottom-16">
+        @if (authService.actionAllowed("mresolverwrite")) {
+          <button
+            (click)="onNewMachineResolver()"
+            class="action-button-primary button-width-l"
+            mat-stroked-button>
+            <span class="icon-badge">
+              <mat-icon class="padding-right-3">lan</mat-icon>
+              <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+            </span>
+            <span i18n>New Machine Resolver</span>
+          </button>
+        }
+      </div>
 
-    <table
-      [dataSource]="machineResolversDataSource()"
-      aria-label="Machine Resolvers Table"
-      class="machine-resolver-table"
-      mat-table
-      matSort>
-      <ng-container matColumnDef="resolvername">
-        <th
-          *matHeaderCellDef
-          mat-header-cell
-          mat-sort-header>
-          <span i18n>Name</span>
-        </th>
-        <td
-          *matCellDef="let element"
-          mat-cell>
-          <div class="name-actions-container">
-            <a [routerLink]="[ROUTE_PATHS.MACHINE_RESOLVER_DETAILS, element.resolvername]">
-              {{ element.resolvername }}
-            </a>
-            <div class="actions-buttons">
-              @if (authService.actionAllowed("mresolverdelete")) {
+      <table
+        [dataSource]="machineResolversDataSource()"
+        aria-label="Machine Resolvers Table"
+        class="machine-resolver-table"
+        mat-table
+        matSort>
+        <ng-container matColumnDef="resolvername">
+          <th
+            *matHeaderCellDef
+            mat-header-cell
+            mat-sort-header>
+            <span i18n>Name</span>
+          </th>
+          <td
+            *matCellDef="let element"
+            mat-cell>
+            <div class="name-actions-container">
+              <a [routerLink]="[ROUTE_PATHS.MACHINE_RESOLVER_DETAILS, element.resolvername]">
+                {{ element.resolvername }}
+              </a>
+              <div class="actions-buttons">
+                @if (authService.actionAllowed("mresolverdelete")) {
+                  <button
+                    (click)="onDeleteMachineResolver(element)"
+                    aria-label="Delete machine resolver"
+                    i18n-aria-label
+                    color="warn"
+                    mat-icon-button
+                    matTooltip="Delete machine resolver"
+                    i18n-matTooltip
+                    type="button">
+                    <mat-icon>delete</mat-icon>
+                  </button>
+                }
+              </div>
+            </div>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="type">
+          <th
+            *matHeaderCellDef
+            mat-header-cell
+            mat-sort-header>
+            <span i18n>Type</span>
+          </th>
+          <td
+            *matCellDef="let element"
+            mat-cell>
+            {{ element.type }}
+          </td>
+        </ng-container>
+
+        <tr
+          *matHeaderRowDef="columnKeys"
+          mat-header-row></tr>
+
+        <tr
+          *matRowDef="let row; columns: columnKeys"
+          mat-row></tr>
+
+        <tr *matNoDataRow>
+          <td [attr.colspan]="columnKeys.length">
+            <app-table-state
+              [hint]="emptyHint()"
+              [status]="tableState.rowStatus()"
+              [table]="tableState"
+              heading="No machine resolvers yet"
+              i18n-heading
+              icon="lan">
+              @if (authService.actionAllowed("mresolverwrite")) {
                 <button
-                  (click)="onDeleteMachineResolver(element)"
-                  aria-label="Delete machine resolver"
-                  i18n-aria-label
-                  color="warn"
-                  mat-icon-button
-                  matTooltip="Delete machine resolver"
-                  i18n-matTooltip
-                  type="button">
-                  <mat-icon>delete</mat-icon>
+                  (click)="onNewMachineResolver()"
+                  class="action-button-primary button-width-l"
+                  mat-stroked-button>
+                  <span class="icon-badge">
+                    <mat-icon class="padding-right-3">lan</mat-icon>
+                    <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+                  </span>
+                  <span i18n>New Machine Resolver</span>
                 </button>
               }
-            </div>
-          </div>
-        </td>
-      </ng-container>
-
-      <ng-container matColumnDef="type">
-        <th
-          *matHeaderCellDef
-          mat-header-cell
-          mat-sort-header>
-          <span i18n>Type</span>
-        </th>
-        <td
-          *matCellDef="let element"
-          mat-cell>
-          {{ element.type }}
-        </td>
-      </ng-container>
-
-      <tr
-        *matHeaderRowDef="columnKeys"
-        mat-header-row></tr>
-
-      <tr
-        *matRowDef="let row; columns: columnKeys"
-        mat-row></tr>
-
-      <tr
-        *matNoDataRow
-        mat-no-data-row>
-        <td
-          [attr.colspan]="columnKeys.length"
-          aria-label="No Data Cell"
-          i18n-aria-label
-          i18n>
-          No data matching the filter.
-        </td>
-      </tr>
-    </table>
+            </app-table-state>
+          </td>
+        </tr>
+      </table>
+    } @else {
+      <app-table-state
+        [hint]="emptyHint()"
+        [table]="tableState"
+        heading="No machine resolvers yet"
+        i18n-heading
+        icon="lan">
+        @if (authService.actionAllowed("mresolverwrite")) {
+          <button
+            (click)="onNewMachineResolver()"
+            class="action-button-primary button-width-l"
+            mat-stroked-button>
+            <span class="icon-badge">
+              <mat-icon class="padding-right-3">lan</mat-icon>
+              <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+            </span>
+            <span i18n>New Machine Resolver</span>
+          </button>
+        }
+      </app-table-state>
+    }
   </div>
 </div>

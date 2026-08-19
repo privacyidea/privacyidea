@@ -36,9 +36,7 @@ from privacyidea.lib.token.attributes import enable_token, unassign_token
 from privacyidea.lib.token.query import (create_tokenclass_object, get_one_token, get_token_owner, get_tokens,
                                          get_tokens_from_serial_or_user)
 
-
 log = logging.getLogger(__name__)
-
 
 
 @log_with(log)
@@ -97,10 +95,10 @@ def gen_serial(tokentype: str, prefix: str = None) -> str:
                 h_serial = hexlify_and_unicode(os.urandom(h_len)).upper()[0:h_len]
             return f"{prefix!s}{num_str!s}{h_serial!s}"
 
-    # now search the number of tokens of tokenytype in the token database
+    # now search the number of tokens of tokentype in the token database
     session = db.session
     tokennum = session.execute(
-        select(func.count()).select_from(Token).where(Token.tokentype == tokentype)
+        select(func.count()).select_from(Token).where(Token.tokentype == tokentype.lower())
     ).scalar_one()
 
     # Now create the serial
@@ -167,7 +165,7 @@ def import_token(serial: str, token_dict: dict, tokenrealms: list | None = None)
     return token
 
 
-@log_with(log, hide_args_keywords={'param': 'pin'})
+@log_with(log, log_exit=False)
 def init_token(param: dict, user: User = None, tokenrealms: list[str] = None, tokenkind: str = None) -> TokenClass:
     """
     Create a new token or update an existing token with the specified parameters.

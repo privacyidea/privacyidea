@@ -21,6 +21,7 @@ import { Component, computed, inject, input } from "@angular/core";
 import { MatIconButton } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 import { DetailFieldComponent } from "@components/shared/details-shared/detail-field/detail-field.component";
+import { DetailFieldRowComponent } from "@components/shared/details-shared/field-editing/detail-field-row/detail-field-row.component";
 import { DetailsCardComponent } from "@components/shared/details-shared/details-card/details-card.component";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
@@ -30,7 +31,7 @@ import { formatTokenTimestamp } from "../token-details.constants";
 @Component({
   selector: "app-token-details-status",
   standalone: true,
-  imports: [DetailsCardComponent, DetailFieldComponent, NgClass, MatIcon, MatIconButton],
+  imports: [DetailsCardComponent, DetailFieldComponent, DetailFieldRowComponent, NgClass, MatIcon, MatIconButton],
   templateUrl: "./token-details-status.component.html",
   styleUrl: "./token-details-status.component.scss"
 })

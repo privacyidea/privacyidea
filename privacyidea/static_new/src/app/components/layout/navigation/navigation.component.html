@@ -109,14 +109,16 @@
         An open-source project
         <a
           href="https://netknights.it/"
-          target="_blank">maintained by NetKnights
+          target="_blank"
+          >maintained by NetKnights
         </a>
       </div>
       <div i18n>
         in collaboration with
         <a
           href="https://github.com/privacyidea/privacyidea"
-          target="_blank">community contributors
+          target="_blank"
+          >community contributors
         </a>
       </div>
     </div>
@@ -168,7 +170,7 @@
   </button>
   <button
     type="button"
-    (click)="documentationService.openDocumentation(contentService.routeUrl())"
+    (click)="documentationService.openDocumentation(contentService.routePath())"
     aria-label="Documentation"
     i18n-aria-label
     class="nav-button docs-button-full">
@@ -177,7 +179,7 @@
   </button>
   <button
     mat-icon-button
-    (click)="documentationService.openDocumentation(contentService.routeUrl())"
+    (click)="documentationService.openDocumentation(contentService.routePath())"
     aria-label="Documentation"
     i18n-aria-label
     matTooltip="Documentation"
@@ -191,7 +193,8 @@
     aria-label="Help translate"
     i18n-aria-label
     matTooltip="Help translate this interface on Weblate"
-    i18n-matTooltip>
+    i18n-matTooltip
+    class="translate-button">
     <mat-icon>translate</mat-icon>
   </button>
   <span class="version-text">
@@ -202,7 +205,8 @@
   </span>
   <span
     class="beta-badge margin-right-16"
-    i18n>Beta
+    i18n
+    >Beta
   </span>
 </ng-template>
 
@@ -216,7 +220,7 @@
         <button
           mat-stroked-button
           type="button"
-          class="action-button-primary button-width-s"
+          class="action-button-secondary button-width-s"
           (click)="saveDashboard()">
           <mat-icon>save</mat-icon>
           <span i18n>Save</span>
@@ -234,7 +238,7 @@
         <button
           mat-stroked-button
           type="button"
-          class="action-button-primary button-width-m"
+          class="action-button-secondary button-width-m"
           (click)="enterDashboardEdit()">
           <mat-icon>edit</mat-icon>
           <span i18n>Edit Dashboard</span>
@@ -251,28 +255,32 @@
     appOverflowNav>
     <ng-container *ngTemplateOutlet="footerText"></ng-container>
     <a
-      [ngClass]="contentService.routeUrl() === ROUTE_PATHS.TOKENS ? 'sub-nav-active' : ''"
+      [ngClass]="contentService.onTokens() ? 'sub-nav-active' : ''"
       [routerLink]="[ROUTE_PATHS.TOKENS]">
       <mat-icon class="ms--shield-list"></mat-icon>
       <span i18n>Overview</span>
     </a>
-    @if (contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_DETAILS)) {
+    @if (contentService.onTokenDetails()) {
       <a class="sub-nav-active">
-        <mat-icon>privacy_tip</mat-icon>
+        <span class="icon-badge">
+          <mat-icon class="padding-right-4">shield</mat-icon>
+          <mat-icon class="icon-badge-overlay">settings</mat-icon>
+        </span>
         <span i18n>Details</span>
       </a>
     }
-    @if (authService.tokenEnrollmentAllowed()) {
-      <a
-        [ngClass]="contentService.routeUrl() === ROUTE_PATHS.TOKENS_ENROLLMENT ? 'sub-nav-active' : ''"
-        [routerLink]="[ROUTE_PATHS.TOKENS_ENROLLMENT]">
-        <mat-icon>add_moderator</mat-icon>
+    @if (contentService.onTokensEnrollment()) {
+      <a class="sub-nav-active">
+        <span class="icon-badge">
+          <mat-icon class="padding-right-6">shield</mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+        </span>
         <span i18n>Enrollment</span>
       </a>
     }
     @if (authService.actionAllowed("importtokens")) {
       <a
-        [ngClass]="contentService.routeUrl() === ROUTE_PATHS.TOKENS_IMPORT ? 'sub-nav-active' : ''"
+        [ngClass]="contentService.onTokensImport() ? 'sub-nav-active' : ''"
         [routerLink]="[ROUTE_PATHS.TOKENS_IMPORT]">
         <mat-icon>input</mat-icon>
         <span i18n>Import</span>
@@ -280,7 +288,7 @@
     }
     @if (authService.actionAllowed("getchallenges")) {
       <a
-        [ngClass]="contentService.routeUrl() === ROUTE_PATHS.TOKENS_CHALLENGES ? 'sub-nav-active' : ''"
+        [ngClass]="contentService.onTokensChallenges() ? 'sub-nav-active' : ''"
         [routerLink]="[ROUTE_PATHS.TOKENS_CHALLENGES]">
         <mat-icon>cached</mat-icon>
         <span i18n>Challenges</span>
@@ -288,14 +296,14 @@
     }
     @if (authService.actionsAllowed(["machinelist", "manage_machine_tokens"])) {
       <a
-        [ngClass]="contentService.routeUrl() === ROUTE_PATHS.TOKENS_APPLICATIONS ? 'sub-nav-active' : ''"
+        [ngClass]="contentService.onTokensApplications() ? 'sub-nav-active' : ''"
         [routerLink]="[ROUTE_PATHS.TOKENS_APPLICATIONS]">
         <mat-icon>now_widgets</mat-icon>
         <span i18n>Applications</span>
       </a>
     }
     <a
-      [ngClass]="contentService.routeUrl() === ROUTE_PATHS.TOKENS_GET_SERIAL ? 'sub-nav-active' : ''"
+      [ngClass]="contentService.onTokensGetSerial() ? 'sub-nav-active' : ''"
       [routerLink]="[ROUTE_PATHS.TOKENS_GET_SERIAL]">
       <mat-icon>policy</mat-icon>
       <span i18n>Find Token</span>
@@ -310,22 +318,26 @@
     appOverflowNav>
     <ng-container *ngTemplateOutlet="footerText"></ng-container>
     <a
-      [ngClass]="contentService.routeUrl() === ROUTE_PATHS.CONTAINERS ? 'sub-nav-active' : ''"
+      [ngClass]="contentService.onContainers() ? 'sub-nav-active' : ''"
       [routerLink]="[ROUTE_PATHS.CONTAINERS]">
       <mat-icon class="mdi--folder-list"></mat-icon>
       <span i18n>Overview</span>
     </a>
-    @if (contentService.routeUrl().startsWith(ROUTE_PATHS.CONTAINERS_DETAILS)) {
+    @if (contentService.onContainersDetails()) {
       <a class="sub-nav-active">
-        <mat-icon>source</mat-icon>
+        <span class="icon-badge">
+          <mat-icon class="padding-right-4">folder</mat-icon>
+          <mat-icon class="icon-badge-overlay">settings</mat-icon>
+        </span>
         <span i18n>Details</span>
       </a>
     }
-    @if (authService.actionAllowed("container_create")) {
-      <a
-        [ngClass]="contentService.routeUrl() === ROUTE_PATHS.CONTAINERS_CREATE ? 'sub-nav-active' : ''"
-        [routerLink]="[ROUTE_PATHS.CONTAINERS_CREATE]">
-        <mat-icon>create_new_folder</mat-icon>
+    @if (contentService.routePath() === ROUTE_PATHS.CONTAINERS_CREATE) {
+      <a class="sub-nav-active">
+        <span class="icon-badge">
+          <mat-icon class="padding-right-6">folder</mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+        </span>
         <span i18n>Create</span>
       </a>
     }
@@ -337,13 +349,13 @@
         <span i18n>Templates</span>
       </a>
     }
-    @if (contentService.routeUrl().startsWith(ROUTE_PATHS.CONTAINERS_TEMPLATES_DETAILS)) {
+    @if (contentService.onContainersTemplatesDetails()) {
       <a class="sub-nav-active">
         <mat-icon>plagiarism</mat-icon>
         <span i18n>Template Details</span>
       </a>
     }
-    @if (contentService.routeUrl() === ROUTE_PATHS.CONTAINERS_TEMPLATES_CREATE) {
+    @if (contentService.onContainersTemplatesCreate()) {
       <a class="sub-nav-active">
         <mat-icon>note_add</mat-icon>
         <span i18n>Create Template</span>
@@ -359,7 +371,7 @@
     appOverflowNav>
     <ng-container *ngTemplateOutlet="footerText"></ng-container>
     <a
-      [ngClass]="contentService.routeUrl() === ROUTE_PATHS.USERS ? 'sub-nav-active' : ''"
+      [ngClass]="contentService.onUsers() ? 'sub-nav-active' : ''"
       [routerLink]="[ROUTE_PATHS.USERS]">
       <mat-icon class="ms--person-list"></mat-icon>
       <span i18n>Overview</span>
@@ -369,7 +381,10 @@
         href="javascript:void(0)"
         class="sub-nav-active"
         data-overflow-child>
-        <mat-icon>manage_accounts</mat-icon>
+        <span class="icon-badge">
+          <mat-icon class="padding-right-4">person</mat-icon>
+          <mat-icon class="icon-badge-overlay">settings</mat-icon>
+        </span>
         <span i18n>User Details</span>
       </a>
     }
@@ -377,12 +392,15 @@
       <a
         class="sub-nav-active"
         data-overflow-child>
-        <mat-icon>person_add</mat-icon>
+        <span class="icon-badge">
+          <mat-icon class="padding-right-6">person</mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+        </span>
         <span i18n>Create User</span>
       </a>
     }
     <a
-      [ngClass]="contentService.routeUrl() === ROUTE_PATHS.USERS_RESOLVERS ? 'sub-nav-active' : ''"
+      [ngClass]="contentService.onUsersResolvers() ? 'sub-nav-active' : ''"
       [routerLink]="[ROUTE_PATHS.USERS_RESOLVERS]">
       <mat-icon class="ms--database"></mat-icon>
       <span i18n>Resolvers</span>
@@ -391,20 +409,26 @@
       <a
         class="sub-nav-active"
         data-overflow-child>
-        <mat-icon class="ms--database"></mat-icon>
+        <span class="icon-badge">
+          <mat-icon class="ms--database padding-right-4"></mat-icon>
+          <mat-icon class="icon-badge-overlay">settings</mat-icon>
+        </span>
         <span i18n>Resolver Details</span>
       </a>
     }
-    @if (contentService.routeUrl() === ROUTE_PATHS.USERS_RESOLVERS_NEW) {
+    @if (contentService.routePath() === ROUTE_PATHS.USERS_RESOLVERS_NEW) {
       <a
         class="sub-nav-active"
         data-overflow-child>
-        <mat-icon>add</mat-icon>
+        <span class="icon-badge">
+          <mat-icon class="ms--database padding-right-6"></mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+        </span>
         <span i18n>Create Resolver</span>
       </a>
     }
     <a
-      [ngClass]="contentService.routeUrl() === ROUTE_PATHS.USERS_REALMS ? 'sub-nav-active' : ''"
+      [ngClass]="contentService.onUserRealms() ? 'sub-nav-active' : ''"
       [routerLink]="[ROUTE_PATHS.USERS_REALMS]">
       <mat-icon>public</mat-icon>
       <span i18n>Realms</span>
@@ -419,7 +443,7 @@
     appOverflowNav>
     <ng-container *ngTemplateOutlet="footerText"></ng-container>
     <a
-      [ngClass]="contentService.routeUrl() === ROUTE_PATHS.POLICIES ? 'sub-nav-active' : ''"
+      [ngClass]="contentService.routePath() === ROUTE_PATHS.POLICIES ? 'sub-nav-active' : ''"
       [routerLink]="[ROUTE_PATHS.POLICIES]">
       <mat-icon>gavel</mat-icon>
       <span i18n>Overview</span>
@@ -427,21 +451,21 @@
     @if (contentService.routeUrl().startsWith(ROUTE_PATHS.POLICIES_DETAILS)) {
       <a class="sub-nav-active">
         <span class="icon-badge">
-          <mat-icon class="margin-right-5">gavel</mat-icon>
-          <mat-icon class="icon-badge-overlay icon-badge-gear">settings</mat-icon>
+          <mat-icon class="padding-right-4">gavel</mat-icon>
+          <mat-icon class="icon-badge-overlay">settings</mat-icon>
         </span>
         <span i18n>Details</span>
       </a>
     }
-    <a
-      [ngClass]="contentService.routeUrl() === ROUTE_PATHS.POLICIES_NEW ? 'sub-nav-active' : ''"
-      [routerLink]="[ROUTE_PATHS.POLICIES_NEW]">
-      <span class="icon-badge">
-        <mat-icon class="margin-right-5">gavel</mat-icon>
-        <mat-icon class="icon-badge-overlay icon-badge-add">add</mat-icon>
-      </span>
-      <span i18n>Create</span>
-    </a>
+    @if (contentService.routePath() === ROUTE_PATHS.POLICIES_NEW) {
+      <a class="sub-nav-active">
+        <span class="icon-badge">
+          <mat-icon class="padding-right-6">gavel</mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+        </span>
+        <span i18n>Create</span>
+      </a>
+    }
     <ng-container *ngTemplateOutlet="supportDocs"></ng-container>
   </mat-toolbar>
 }
@@ -452,7 +476,7 @@
     appOverflowNav>
     <ng-container *ngTemplateOutlet="footerText"></ng-container>
     <a
-      [ngClass]="contentService.routeUrl() === ROUTE_PATHS.SUBSCRIPTION ? 'sub-nav-active' : ''"
+      [ngClass]="contentService.onSubscription() ? 'sub-nav-active' : ''"
       [routerLink]="[ROUTE_PATHS.SUBSCRIPTION]">
       <mat-icon>event_repeat</mat-icon>
       <span i18n>Overview</span>
@@ -468,7 +492,7 @@
     <ng-container *ngTemplateOutlet="footerText"></ng-container>
     @if (authService.actionAllowed("auditlog")) {
       <a
-        [ngClass]="contentService.routeUrl() === ROUTE_PATHS.AUDIT ? 'sub-nav-active' : ''"
+        [ngClass]="contentService.onAudit() ? 'sub-nav-active' : ''"
         [routerLink]="[ROUTE_PATHS.AUDIT]">
         <mat-icon>list_alt</mat-icon>
         <span i18n>Log</span>
@@ -476,7 +500,7 @@
     }
     @if (authService.actionAllowed("clienttype")) {
       <a
-        [ngClass]="contentService.routeUrl() === ROUTE_PATHS.CLIENTS ? 'sub-nav-active' : ''"
+        [ngClass]="contentService.onClients() ? 'sub-nav-active' : ''"
         [routerLink]="[ROUTE_PATHS.CLIENTS]">
         <mat-icon>recent_actors</mat-icon>
         <span i18n>Known Clients</span>
@@ -493,21 +517,21 @@
     <ng-container *ngTemplateOutlet="footerText"></ng-container>
     @if (authService.actionAllowed("configread")) {
       <a
-        [ngClass]="contentService.routeUrl() === ROUTE_PATHS.CONFIGURATION_SYSTEM ? 'sub-nav-active' : ''"
+        [ngClass]="contentService.onConfigurationSystem() ? 'sub-nav-active' : ''"
         [routerLink]="[ROUTE_PATHS.CONFIGURATION_SYSTEM]">
         <mat-icon>build</mat-icon>
         <span i18n>System</span>
       </a>
     }
     <a
-      [ngClass]="contentService.routeUrl() === ROUTE_PATHS.CONFIGURATION_TOKENTYPES ? 'sub-nav-active' : ''"
+      [ngClass]="contentService.onConfigurationTokenTypes() ? 'sub-nav-active' : ''"
       [routerLink]="[ROUTE_PATHS.CONFIGURATION_TOKENTYPES]">
       <mat-icon>safety_check</mat-icon>
       <span i18n>Tokentypes</span>
     </a>
     @if (authService.actionAllowed("machinelist")) {
       <a
-        [ngClass]="contentService.routeUrl() === ROUTE_PATHS.CONFIGURATION_MACHINES ? 'sub-nav-active' : ''"
+        [ngClass]="contentService.routePath() === ROUTE_PATHS.CONFIGURATION_MACHINES ? 'sub-nav-active' : ''"
         [routerLink]="[ROUTE_PATHS.CONFIGURATION_MACHINES]">
         <mat-icon>point_of_sale</mat-icon>
         <span i18n>Machines</span>
@@ -517,13 +541,16 @@
       <a
         class="sub-nav-active"
         data-overflow-child>
-        <mat-icon>point_of_sale</mat-icon>
+        <span class="icon-badge">
+          <mat-icon class="padding-right-4">point_of_sale</mat-icon>
+          <mat-icon class="icon-badge-overlay">settings</mat-icon>
+        </span>
         <span i18n>Machine Details</span>
       </a>
     }
     @if (authService.actionAllowed("mresolverread")) {
       <a
-        [ngClass]="contentService.routeUrl() === ROUTE_PATHS.MACHINE_RESOLVER ? 'sub-nav-active' : ''"
+        [ngClass]="contentService.routePath() === ROUTE_PATHS.MACHINE_RESOLVER ? 'sub-nav-active' : ''"
         [routerLink]="[ROUTE_PATHS.MACHINE_RESOLVER]">
         <mat-icon>lan</mat-icon>
         <span i18n>Machine Resolver</span>
@@ -534,26 +561,26 @@
         class="sub-nav-active"
         data-overflow-child>
         <span class="icon-badge">
-          <mat-icon>lan</mat-icon>
-          <mat-icon class="icon-badge-overlay icon-badge-gear">settings</mat-icon>
+          <mat-icon class="padding-right-4">lan</mat-icon>
+          <mat-icon class="icon-badge-overlay">settings</mat-icon>
         </span>
         <span i18n>Machine Resolver Details</span>
       </a>
     }
-    @if (contentService.routeUrl() === ROUTE_PATHS.MACHINE_RESOLVER_NEW) {
+    @if (contentService.routePath() === ROUTE_PATHS.MACHINE_RESOLVER_NEW) {
       <a
         class="sub-nav-active"
         data-overflow-child>
         <span class="icon-badge">
-          <mat-icon>lan</mat-icon>
-          <mat-icon class="icon-badge-overlay icon-badge-add">add</mat-icon>
+          <mat-icon class="padding-right-6">lan</mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
         </span>
         <span i18n>Create Machine Resolver</span>
       </a>
     }
     @if (authService.actionAllowed("eventhandling_read")) {
       <a
-        [ngClass]="contentService.routeUrl() === ROUTE_PATHS.EVENTS ? 'sub-nav-active' : ''"
+        [ngClass]="contentService.routePath() === ROUTE_PATHS.EVENTS ? 'sub-nav-active' : ''"
         [routerLink]="[ROUTE_PATHS.EVENTS]">
         <mat-icon>flag</mat-icon>
         <span i18n>Events</span>
@@ -564,26 +591,26 @@
         class="sub-nav-active"
         data-overflow-child>
         <span class="icon-badge">
-          <mat-icon class="margin-right-5">flag</mat-icon>
-          <mat-icon class="icon-badge-overlay icon-badge-gear">settings</mat-icon>
+          <mat-icon class="padding-right-4">flag</mat-icon>
+          <mat-icon class="icon-badge-overlay">settings</mat-icon>
         </span>
         <span i18n>Event Details</span>
       </a>
     }
-    @if (contentService.routeUrl() === ROUTE_PATHS.EVENTS_NEW) {
+    @if (contentService.routePath() === ROUTE_PATHS.EVENTS_NEW) {
       <a
         class="sub-nav-active"
         data-overflow-child>
         <span class="icon-badge">
-          <mat-icon class="margin-right-3">flag</mat-icon>
-          <mat-icon class="icon-badge-overlay icon-badge-add">add</mat-icon>
+          <mat-icon class="padding-right-6">flag</mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
         </span>
         <span i18n>Create Event</span>
       </a>
     }
     @if (authService.actionAllowed("periodictask_read")) {
       <a
-        [ngClass]="contentService.routeUrl() === ROUTE_PATHS.CONFIGURATION_PERIODIC_TASKS ? 'sub-nav-active' : ''"
+        [ngClass]="contentService.routePath() === ROUTE_PATHS.CONFIGURATION_PERIODIC_TASKS ? 'sub-nav-active' : ''"
         [routerLink]="[ROUTE_PATHS.CONFIGURATION_PERIODIC_TASKS]">
         <mat-icon>event_repeat</mat-icon>
         <span i18n>Periodic Tasks</span>
@@ -594,21 +621,29 @@
         class="sub-nav-active"
         data-overflow-child>
         <span class="icon-badge">
-          <mat-icon>event_repeat</mat-icon>
-          <mat-icon class="icon-badge-overlay icon-badge-gear">settings</mat-icon>
+          <mat-icon class="padding-right-3">event_repeat</mat-icon>
+          <mat-icon class="icon-badge-overlay">settings</mat-icon>
         </span>
         <span i18n>Periodic Task Details</span>
       </a>
     }
-    @if (contentService.routeUrl() === ROUTE_PATHS.CONFIGURATION_PERIODIC_TASKS_NEW) {
+    @if (contentService.routePath() === ROUTE_PATHS.CONFIGURATION_PERIODIC_TASKS_NEW) {
       <a
         class="sub-nav-active"
         data-overflow-child>
         <span class="icon-badge">
-          <mat-icon>event_repeat</mat-icon>
-          <mat-icon class="icon-badge-overlay icon-badge-add">add</mat-icon>
+          <mat-icon class="padding-right-2">event_repeat</mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
         </span>
         <span i18n>Create Periodic Task</span>
+      </a>
+    }
+    @if (contentService.routeUrl() === ROUTE_PATHS.SETTINGS) {
+      <a
+        class="sub-nav-active"
+        [routerLink]="[ROUTE_PATHS.SETTINGS]">
+        <mat-icon>settings</mat-icon>
+        <span i18n>UI Settings</span>
       </a>
     }
     <ng-container *ngTemplateOutlet="supportDocs"></ng-container>
@@ -622,7 +657,7 @@
     <ng-container *ngTemplateOutlet="footerText"></ng-container>
     @if (authService.actionAllowed("smtpserver_read")) {
       <a
-        [ngClass]="contentService.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_SMTP ? 'sub-nav-active' : ''"
+        [ngClass]="contentService.routePath() === ROUTE_PATHS.EXTERNAL_SERVICES_SMTP ? 'sub-nav-active' : ''"
         [routerLink]="[ROUTE_PATHS.EXTERNAL_SERVICES_SMTP]">
         <mat-icon>email</mat-icon>
         <span i18n>SMTP Servers</span>
@@ -633,26 +668,26 @@
         class="sub-nav-active"
         data-overflow-child>
         <span class="icon-badge">
-          <mat-icon class="margin-right-5">email</mat-icon>
-          <mat-icon class="icon-badge-overlay icon-badge-gear">settings</mat-icon>
+          <mat-icon class="padding-right-4">email</mat-icon>
+          <mat-icon class="icon-badge-overlay">settings</mat-icon>
         </span>
         <span i18n>SMTP Details</span>
       </a>
     }
-    @if (contentService.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_SMTP_NEW) {
+    @if (contentService.routePath() === ROUTE_PATHS.EXTERNAL_SERVICES_SMTP_NEW) {
       <a
         class="sub-nav-active"
         data-overflow-child>
         <span class="icon-badge">
-          <mat-icon class="margin-right-3">email</mat-icon>
-          <mat-icon class="icon-badge-overlay icon-badge-add">add</mat-icon>
+          <mat-icon class="padding-right-6">email</mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
         </span>
         <span i18n>Create SMTP Server</span>
       </a>
     }
     @if (authService.actionAllowed("radiusserver_read")) {
       <a
-        [ngClass]="contentService.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS ? 'sub-nav-active' : ''"
+        [ngClass]="contentService.routePath() === ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS ? 'sub-nav-active' : ''"
         [routerLink]="[ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS]">
         <mat-icon>vpn_lock</mat-icon>
         <span i18n>RADIUS Servers</span>
@@ -663,26 +698,26 @@
         class="sub-nav-active"
         data-overflow-child>
         <span class="icon-badge">
-          <mat-icon class="margin-right-5">vpn_lock</mat-icon>
-          <mat-icon class="icon-badge-overlay icon-badge-gear">settings</mat-icon>
+          <mat-icon class="padding-right-4">vpn_lock</mat-icon>
+          <mat-icon class="icon-badge-overlay">settings</mat-icon>
         </span>
         <span i18n>RADIUS Details</span>
       </a>
     }
-    @if (contentService.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS_NEW) {
+    @if (contentService.routePath() === ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS_NEW) {
       <a
         class="sub-nav-active"
         data-overflow-child>
         <span class="icon-badge">
-          <mat-icon class="margin-right-3">vpn_lock</mat-icon>
-          <mat-icon class="icon-badge-overlay icon-badge-add">add</mat-icon>
+          <mat-icon class="padding-right-6">vpn_lock</mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
         </span>
         <span i18n>Create RADIUS Server</span>
       </a>
     }
     @if (authService.actionAllowed("smtpserver_read")) {
       <a
-        [ngClass]="contentService.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_SMS ? 'sub-nav-active' : ''"
+        [ngClass]="contentService.routePath() === ROUTE_PATHS.EXTERNAL_SERVICES_SMS ? 'sub-nav-active' : ''"
         [routerLink]="[ROUTE_PATHS.EXTERNAL_SERVICES_SMS]">
         <mat-icon>sms</mat-icon>
         <span i18n>SMS Gateways</span>
@@ -693,26 +728,26 @@
         class="sub-nav-active"
         data-overflow-child>
         <span class="icon-badge">
-          <mat-icon class="margin-right-5">sms</mat-icon>
-          <mat-icon class="icon-badge-overlay icon-badge-gear">settings</mat-icon>
+          <mat-icon class="padding-right-4">sms</mat-icon>
+          <mat-icon class="icon-badge-overlay">settings</mat-icon>
         </span>
         <span i18n>SMS Gateway Details</span>
       </a>
     }
-    @if (contentService.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_SMS_NEW) {
+    @if (contentService.routePath() === ROUTE_PATHS.EXTERNAL_SERVICES_SMS_NEW) {
       <a
         class="sub-nav-active"
         data-overflow-child>
         <span class="icon-badge">
-          <mat-icon class="margin-right-3">sms</mat-icon>
-          <mat-icon class="icon-badge-overlay icon-badge-add">add</mat-icon>
+          <mat-icon class="padding-right-6">sms</mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
         </span>
         <span i18n>Create SMS Gateway</span>
       </a>
     }
     @if (authService.actionAllowed("caconnectorread")) {
       <a
-        [ngClass]="contentService.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_CA_CONNECTORS ? 'sub-nav-active' : ''"
+        [ngClass]="contentService.routePath() === ROUTE_PATHS.EXTERNAL_SERVICES_CA_CONNECTORS ? 'sub-nav-active' : ''"
         [routerLink]="[ROUTE_PATHS.EXTERNAL_SERVICES_CA_CONNECTORS]">
         <mat-icon>assured_workload</mat-icon>
         <span i18n>CA Connectors</span>
@@ -723,26 +758,26 @@
         class="sub-nav-active"
         data-overflow-child>
         <span class="icon-badge">
-          <mat-icon class="margin-right-3">assured_workload</mat-icon>
-          <mat-icon class="icon-badge-overlay icon-badge-gear">settings</mat-icon>
+          <mat-icon class="padding-right-4">assured_workload</mat-icon>
+          <mat-icon class="icon-badge-overlay">settings</mat-icon>
         </span>
         <span i18n>CA Connector Details</span>
       </a>
     }
-    @if (contentService.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_CA_CONNECTORS_NEW) {
+    @if (contentService.routePath() === ROUTE_PATHS.EXTERNAL_SERVICES_CA_CONNECTORS_NEW) {
       <a
         class="sub-nav-active"
         data-overflow-child>
         <span class="icon-badge">
-          <mat-icon class="margin-right-2">assured_workload</mat-icon>
-          <mat-icon class="icon-badge-overlay icon-badge-add">add</mat-icon>
+          <mat-icon class="padding-right-6">assured_workload</mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
         </span>
         <span i18n>Create CA Connector</span>
       </a>
     }
     @if (authService.actionAllowed("privacyideaserver_read")) {
       <a
-        [ngClass]="contentService.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_PRIVACYIDEA ? 'sub-nav-active' : ''"
+        [ngClass]="contentService.routePath() === ROUTE_PATHS.EXTERNAL_SERVICES_PRIVACYIDEA ? 'sub-nav-active' : ''"
         [routerLink]="[ROUTE_PATHS.EXTERNAL_SERVICES_PRIVACYIDEA]">
         <mat-icon class="mdi--pi-logo"></mat-icon>
         <span i18n>PrivacyIDEA Servers</span>
@@ -753,26 +788,26 @@
         class="sub-nav-active"
         data-overflow-child>
         <span class="icon-badge">
-          <mat-icon class="mdi--pi-logo margin-right-5"></mat-icon>
-          <mat-icon class="icon-badge-overlay icon-badge-gear">settings</mat-icon>
+          <mat-icon class="mdi--pi-logo padding-right-4"></mat-icon>
+          <mat-icon class="icon-badge-overlay">settings</mat-icon>
         </span>
         <span i18n>PrivacyIDEA Server Details</span>
       </a>
     }
-    @if (contentService.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_PRIVACYIDEA_NEW) {
+    @if (contentService.routePath() === ROUTE_PATHS.EXTERNAL_SERVICES_PRIVACYIDEA_NEW) {
       <a
         class="sub-nav-active"
         data-overflow-child>
         <span class="icon-badge">
-          <mat-icon class="mdi--pi-logo margin-right-3"></mat-icon>
-          <mat-icon class="icon-badge-overlay icon-badge-add">add</mat-icon>
+          <mat-icon class="mdi--pi-logo padding-right-6"></mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
         </span>
         <span i18n>Create PrivacyIDEA Server</span>
       </a>
     }
     @if (authService.actionAllowed("tokengroup_list")) {
       <a
-        [ngClass]="contentService.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_TOKENGROUPS ? 'sub-nav-active' : ''"
+        [ngClass]="contentService.routePath() === ROUTE_PATHS.EXTERNAL_SERVICES_TOKENGROUPS ? 'sub-nav-active' : ''"
         [routerLink]="[ROUTE_PATHS.EXTERNAL_SERVICES_TOKENGROUPS]">
         <mat-icon>local_police</mat-icon>
         <span i18n>Tokengroups</span>
@@ -783,26 +818,26 @@
         class="sub-nav-active"
         data-overflow-child>
         <span class="icon-badge">
-          <mat-icon class="margin-right-5">local_police</mat-icon>
-          <mat-icon class="icon-badge-overlay icon-badge-gear">settings</mat-icon>
+          <mat-icon class="padding-right-4">local_police</mat-icon>
+          <mat-icon class="icon-badge-overlay">settings</mat-icon>
         </span>
         <span i18n>Tokengroup Details</span>
       </a>
     }
-    @if (contentService.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_TOKENGROUPS_NEW) {
+    @if (contentService.routePath() === ROUTE_PATHS.EXTERNAL_SERVICES_TOKENGROUPS_NEW) {
       <a
         class="sub-nav-active"
         data-overflow-child>
         <span class="icon-badge">
-          <mat-icon class="margin-right-3">local_police</mat-icon>
-          <mat-icon class="icon-badge-overlay icon-badge-add">add</mat-icon>
+          <mat-icon class="padding-right-6">local_police</mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
         </span>
         <span i18n>Create Tokengroup</span>
       </a>
     }
     @if (authService.actionAllowed("serviceid_list")) {
       <a
-        [ngClass]="contentService.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS ? 'sub-nav-active' : ''"
+        [ngClass]="contentService.routePath() === ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS ? 'sub-nav-active' : ''"
         [routerLink]="[ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS]">
         <mat-icon>storage</mat-icon>
         <span i18n>Service IDs</span>
@@ -813,19 +848,19 @@
         class="sub-nav-active"
         data-overflow-child>
         <span class="icon-badge">
-          <mat-icon class="margin-right-5">storage</mat-icon>
-          <mat-icon class="icon-badge-overlay icon-badge-gear">settings</mat-icon>
+          <mat-icon class="padding-right-4">storage</mat-icon>
+          <mat-icon class="icon-badge-overlay">settings</mat-icon>
         </span>
         <span i18n>Service ID Details</span>
       </a>
     }
-    @if (contentService.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS_NEW) {
+    @if (contentService.routePath() === ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS_NEW) {
       <a
         class="sub-nav-active"
         data-overflow-child>
         <span class="icon-badge">
-          <mat-icon class="margin-right-3">storage</mat-icon>
-          <mat-icon class="icon-badge-overlay icon-badge-add">add</mat-icon>
+          <mat-icon class="padding-right-6">storage</mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
         </span>
         <span i18n>Create Service ID</span>
       </a>

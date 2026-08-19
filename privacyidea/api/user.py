@@ -92,7 +92,7 @@ def get_users():
     **Realm and resolver scoping**
 
     * ``realm=R`` only — queries every resolver assigned to realm
-      ``R``.
+      ``R``. Several realms may be given as a comma-separated list.
     * ``resolver=X`` only — queries only resolver ``X``, in every
       realm that contains it.
     * ``realm=R`` together with ``resolver=X`` — queries only ``X``
@@ -100,10 +100,10 @@ def get_users():
     * Neither parameter — queries every resolver in every realm.
 
     If an admin caller omits ``realm=`` and their matching
-    :ref:`policy_userlist` policy is restricted to one or more realms,
-    the first realm from the policy is used as ``realm=`` for the
-    request. Additional realms in the same policy are not consulted by
-    this endpoint.
+    :ref:`policy_userlist` policy grants one or more realms, every
+    realm granted across their matching policies is used (the union),
+    unless any matching policy grants no realms at all, in which case
+    no realm filter is added and every realm is queried.
 
     :query realm: realm to list (see scoping rules above).
     :query resolver: resolver to list (see scoping rules above).
@@ -173,6 +173,10 @@ def get_users():
     """
     realm = get_optional(request.all_data, "realm")
     resolver = get_optional(request.all_data, "resolver")
+    # realmadmin may have injected a list of realms for a multi-realm admin.
+    # Normalise to a comma-separated string so the audit info stays scalar.
+    if isinstance(realm, list):
+        realm = ",".join(realm)
     search_parameters = dict(request.all_data)
     requested_attributes = request.all_data.get("attributes")
     if requested_attributes:

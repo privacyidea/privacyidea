@@ -19,7 +19,8 @@
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { DetailsEditRegistry } from "@components/shared/details-shared/details-edit-registry.service";
+import { DetailsEditRegistry } from "@components/shared/details-shared/field-editing/details-edit-registry.service";
+import { EditableField } from "@components/shared/details-shared/field-editing/editable-field";
 import { AuthService } from "@services/auth/auth.service";
 import { ContainerService } from "@services/container/container.service";
 import { NotificationService } from "@services/notification/notification.service";
@@ -33,14 +34,13 @@ import {
 import { ContainerDetailsStatesComponent } from "./container-details-states.component";
 
 interface ContainerStatesFieldInternals {
-  toggle(): void;
+  field: EditableField;
   onStatesChange(newStates: string[]): void;
-  commit(): void;
-  cancel(): void;
 }
 
 describe("ContainerDetailsStatesComponent", () => {
   let component: ContainerDetailsStatesComponent;
+  let internals: ContainerStatesFieldInternals;
   let fixture: ComponentFixture<ContainerDetailsStatesComponent>;
   let containerService: MockContainerService;
   let notificationService: MockNotificationService;
@@ -61,6 +61,7 @@ describe("ContainerDetailsStatesComponent", () => {
 
     fixture = TestBed.createComponent(ContainerDetailsStatesComponent);
     component = fixture.componentInstance;
+    internals = component as unknown as ContainerStatesFieldInternals;
     containerService = TestBed.inject(ContainerService) as unknown as MockContainerService;
     notificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;
     fixture.componentRef.setInput("states", ["active"]);
@@ -72,56 +73,56 @@ describe("ContainerDetailsStatesComponent", () => {
   });
 
   it("toggle() seeds the selection from the current states when entering edit mode", () => {
-    expect(component.isEditing()).toBe(false);
+    expect(internals.field.isEditing()).toBe(false);
 
-    (component as unknown as ContainerStatesFieldInternals).toggle();
+    internals.field.toggle();
 
-    expect(component.isEditing()).toBe(true);
+    expect(internals.field.isEditing()).toBe(true);
     expect(component.selectedStates()).toEqual(["active"]);
 
-    (component as unknown as ContainerStatesFieldInternals).toggle();
-    expect(component.isEditing()).toBe(false);
+    internals.field.toggle();
+    expect(internals.field.isEditing()).toBe(false);
   });
 
   it("onStatesChange() drops the previously selected mutually-exclusive state", () => {
     component.selectedStates.set(["active"]);
-    (component as unknown as ContainerStatesFieldInternals).onStatesChange(["active", "disabled"]);
+    internals.onStatesChange(["active", "disabled"]);
     // "active" was selected before, so it gets removed in favor of "disabled"
     expect(component.selectedStates()).toEqual(["disabled"]);
   });
 
   it("onStatesChange() keeps the new states when they are not mutually exclusive", () => {
-    (component as unknown as ContainerStatesFieldInternals).onStatesChange(["active", "lost"]);
+    internals.onStatesChange(["active", "lost"]);
     expect(component.selectedStates()).toEqual(["active", "lost"]);
   });
 
   it("commit() rejects an empty selection with an error and does not call the service", () => {
     component.selectedStates.set([]);
 
-    (component as unknown as ContainerStatesFieldInternals).commit();
+    internals.field.commit();
 
     expect(notificationService.error).toHaveBeenCalledWith("At least one state must be selected.");
     expect(containerService.setStates).not.toHaveBeenCalled();
   });
 
-  it("commit() persists the selection and leaves edit mode", () => {
-    component.isEditing.set(true);
+  it("commit() persists the selection and leaves edit mode", async () => {
+    internals.field.toggle();
     component.selectedStates.set(["disabled"]);
 
-    (component as unknown as ContainerStatesFieldInternals).commit();
+    await internals.field.commit();
 
     expect(containerService.setStates).toHaveBeenCalledWith(containerService.containerSerial(), ["disabled"]);
-    expect(component.isEditing()).toBe(false);
+    expect(internals.field.isEditing()).toBe(false);
   });
 
   it("cancel() restores the original states and leaves edit mode", () => {
-    component.isEditing.set(true);
+    internals.field.toggle();
     component.selectedStates.set(["disabled"]);
 
-    (component as unknown as ContainerStatesFieldInternals).cancel();
+    internals.field.cancel();
 
     expect(component.selectedStates()).toEqual(["active"]);
-    expect(component.isEditing()).toBe(false);
+    expect(internals.field.isEditing()).toBe(false);
   });
 
   it("registers and unregisters its edit handle with the registry", () => {

@@ -29,6 +29,7 @@ import { SystemService } from "@services/system/system.service";
 import { MockAuthService, MockDialogService } from "@testing/mock-services";
 import { MockPendingChangesService } from "@testing/mock-services/mock-pending-changes-service";
 import { MockPeriodicTaskService } from "@testing/mock-services/mock-periodic-task-service";
+import { expectedLocalDateTimeFromInput } from "@testing/expected-local-date-time";
 import { MockSystemService } from "@testing/mock-services/mock-system-service";
 import { of, throwError } from "rxjs";
 import { PeriodicTaskEditComponent } from "./periodic-task-edit.component";
@@ -420,6 +421,24 @@ describe("PeriodicTaskEditComponent", () => {
     it("returns false when a different error kind is present", async () => {
       const { component } = await createComponent({});
       expect(component.fieldHasError(makeField([{ kind: "pattern" }], true, true), "required")).toBe(false);
+    });
+  });
+
+  describe("Template rendering", () => {
+    it("renders last_update and last_runs as local date/time, not the raw fixed format", async () => {
+      const task: PeriodicTask = {
+        ...VALID_TASK,
+        last_update: "2026-01-15T10:00:00",
+        last_runs: { "node-a": "2026-01-16T11:30:00" }
+      };
+      const { fixture, component } = await createComponent({ name: task.name }, [task]);
+      fixture.detectChanges();
+
+      const metadataRows = fixture.nativeElement.querySelectorAll(".metadata-row");
+      expect(metadataRows[0].textContent).toContain(expectedLocalDateTimeFromInput("2026-01-15T10:00:00"));
+      expect(metadataRows[1].textContent).toContain(expectedLocalDateTimeFromInput("2026-01-16T11:30:00"));
+      expect(metadataRows[0].textContent).not.toContain("2026-01-15T10:00:00");
+      expect(component.isDateValue("2026-01-16T11:30:00")).toBe(true);
     });
   });
 });

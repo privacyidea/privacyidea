@@ -26,7 +26,8 @@ from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.config import (set_privacyidea_config,
                                     get_inc_fail_count_on_false_pin,
                                     delete_privacyidea_config, SYSCONF)
-from privacyidea.lib.container import init_container, find_container_by_serial, create_container_template
+from privacyidea.lib.container import (init_container, find_container_by_serial, create_container_template,
+                                       delete_container_by_serial, delete_container_template)
 from privacyidea.lib.error import Error
 from privacyidea.lib.event import delete_event
 from privacyidea.lib.event import set_event
@@ -72,6 +73,9 @@ class MultiChallengeEnrollTest(MyApiTestCase):
 
     def setUp(self):
         super(MultiChallengeEnrollTest, self).setUp()
+        # The requests in this class must not rely on request-local data another request left behind: every
+        # blueprint's before_request has to initialize its own. Hence, g is reset here and after each request.
+        self.reset_flask_g()
 
         ldap3mock.setLDAPDirectory(LDAPDirectory)
         params = {'LDAPURI': 'ldap://localhost',
@@ -118,6 +122,7 @@ class MultiChallengeEnrollTest(MyApiTestCase):
             self.assertTrue(result.get("status"))
             self.assertTrue(result.get("value"))
             self.assertEqual(result.get("authentication"), "ACCEPT")
+        self.reset_flask_g()
 
         # Set enroll policy
         set_policy("pol_multienroll", scope=SCOPE.AUTH,
@@ -157,6 +162,7 @@ class MultiChallengeEnrollTest(MyApiTestCase):
             self.assertEqual(1, len(detail.get("messages")))
             self.assertEqual("Please scan the QR code and enter the OTP value!", detail.get("messages")[0])
             serial = detail.get("serial")
+        self.reset_flask_g()
 
         # 3. scan the qrcode / Get the OTP value
         token_obj = get_tokens(serial=serial)[0]
@@ -174,6 +180,7 @@ class MultiChallengeEnrollTest(MyApiTestCase):
             self.assertTrue(result.get("status"))
             self.assertTrue(result.get("value"))
             self.assertEqual(result.get("authentication"), "ACCEPT")
+        self.reset_flask_g()
 
         log_msg = str(capture)
         self.assertNotIn('alicepw', log_msg, log_msg)
@@ -228,6 +235,7 @@ class MultiChallengeEnrollTest(MyApiTestCase):
             self.assertTrue(result.get("status"))
             self.assertTrue(result.get("value"))
             self.assertEqual(result.get("authentication"), "ACCEPT")
+        self.reset_flask_g()
 
         # Set enroll policy
         set_policy("pol_multienroll", scope=SCOPE.AUTH,
@@ -261,6 +269,7 @@ class MultiChallengeEnrollTest(MyApiTestCase):
             link = detail.get("link")
             self.assertTrue(link.startswith("otpauth://totp"), link)
             serial = detail.get("serial")
+        self.reset_flask_g()
 
         # 3. scan the qrcode / Get the OTP value
         token_obj = get_tokens(serial=serial)[0]
@@ -281,6 +290,7 @@ class MultiChallengeEnrollTest(MyApiTestCase):
             self.assertTrue(result.get("status"))
             self.assertFalse(result.get("value"))
             self.assertEqual(result.get("authentication"), "REJECT")
+        self.reset_flask_g()
 
         # 4. run the 2nd authentication with the OTP value and the transaction_id
         with self.app.test_request_context('/validate/check',
@@ -294,6 +304,7 @@ class MultiChallengeEnrollTest(MyApiTestCase):
             self.assertTrue(result.get("status"))
             self.assertTrue(result.get("value"))
             self.assertEqual(result.get("authentication"), "ACCEPT")
+        self.reset_flask_g()
 
         sha256regexp = re.compile(r"Entering create_google_authenticator_url with arguments.*'hash_algo': 'sha256'")
         self.assertTrue(sha256regexp.search(log_msg), log_msg)
@@ -330,6 +341,7 @@ class MultiChallengeEnrollTest(MyApiTestCase):
             self.assertTrue(result.get("status"))
             self.assertTrue(result.get("value"))
             self.assertEqual(result.get("authentication"), "ACCEPT")
+        self.reset_flask_g()
 
         # Set Policy scope:auth, action:enroll_via_multichallenge=email
         set_policy("pol_multienroll", scope=SCOPE.AUTH,
@@ -359,6 +371,7 @@ class MultiChallengeEnrollTest(MyApiTestCase):
             self.assertEqual(ClientMode.INTERACTIVE, detail.get("multi_challenge")[0].get("client_mode"))
             self.assertIn("image", detail)
             serial = detail.get("serial")
+        self.reset_flask_g()
 
         # 3. Enter a correct email address and finalize the token
         with self.app.test_request_context('/validate/check',
@@ -374,6 +387,7 @@ class MultiChallengeEnrollTest(MyApiTestCase):
             self.assertFalse(result.get("value"))
             self.assertEqual(result.get("authentication"), "CHALLENGE")
             transaction_id = detail.get("transaction_id")
+        self.reset_flask_g()
 
         # The email was sent, with the OTP value
         token_obj = get_tokens(serial=serial)[0]
@@ -391,6 +405,7 @@ class MultiChallengeEnrollTest(MyApiTestCase):
             self.assertTrue(result.get("status"))
             self.assertTrue(result.get("value"))
             self.assertEqual(result.get("authentication"), "ACCEPT")
+        self.reset_flask_g()
 
         # Cleanup
         delete_policy("pol_passthru")
@@ -422,6 +437,7 @@ class MultiChallengeEnrollTest(MyApiTestCase):
             self.assertTrue(result.get("status"))
             self.assertTrue(result.get("value"))
             self.assertEqual(result.get("authentication"), "ACCEPT")
+        self.reset_flask_g()
 
         # Set Policy scope:auth, action:enroll_via_multichallenge=email
         set_policy("pol_multienroll", scope=SCOPE.AUTH,
@@ -445,6 +461,7 @@ class MultiChallengeEnrollTest(MyApiTestCase):
             # Check, that multi_challenge is also contained.
             self.assertEqual(ClientMode.INTERACTIVE, detail.get("multi_challenge")[0].get("client_mode"))
             self.assertIn("image", detail)
+        self.reset_flask_g()
 
         # 3. Enter an invalid email address and finalize the token
         with self.app.test_request_context('/validate/check',
@@ -459,6 +476,7 @@ class MultiChallengeEnrollTest(MyApiTestCase):
             self.assertFalse(result.get("status"))
             self.assertFalse(result.get("value"))
             self.assertEqual(result.get("error").get("message"), "ERR401: The email address is not valid!")
+        self.reset_flask_g()
 
         # Cleanup
         delete_policy("pol_passthru")
@@ -493,6 +511,7 @@ class MultiChallengeEnrollTest(MyApiTestCase):
             self.assertTrue(result.get("status"))
             self.assertTrue(result.get("value"))
             self.assertEqual(result.get("authentication"), "ACCEPT")
+        self.reset_flask_g()
 
         # Set Policy scope:auth, action:enroll_via_multichallenge=email
         set_policy("pol_multienroll", scope=SCOPE.AUTH,
@@ -520,6 +539,7 @@ class MultiChallengeEnrollTest(MyApiTestCase):
             self.assertEqual(ClientMode.INTERACTIVE, detail.get("multi_challenge")[0].get("client_mode"))
             self.assertIn("image", detail)
             serial = detail.get("serial")
+        self.reset_flask_g()
 
         # 3. Enter the phone number and finalize the token
         with self.app.test_request_context('/validate/check',
@@ -535,6 +555,7 @@ class MultiChallengeEnrollTest(MyApiTestCase):
             self.assertFalse(result.get("value"))
             self.assertEqual(result.get("authentication"), "CHALLENGE")
             transaction_id = detail.get("transaction_id")
+        self.reset_flask_g()
 
         # The SMS was sent, with the OTP value
         token_obj = get_tokens(serial=serial)[0]
@@ -552,6 +573,7 @@ class MultiChallengeEnrollTest(MyApiTestCase):
             self.assertTrue(result.get("status"))
             self.assertTrue(result.get("value"))
             self.assertEqual(result.get("authentication"), "ACCEPT")
+        self.reset_flask_g()
 
         # Cleanup
         delete_policy("pol_passthru")
@@ -586,6 +608,7 @@ class MultiChallengeEnrollTest(MyApiTestCase):
             self.assertTrue(result.get("status"))
             self.assertTrue(result.get("value"))
             self.assertEqual(result.get("authentication"), "ACCEPT")
+        self.reset_flask_g()
 
         # Set Policy scope:auth, action:enroll_via_multichallenge=email
         set_policy("pol_multienroll", scope=SCOPE.AUTH,
@@ -609,6 +632,7 @@ class MultiChallengeEnrollTest(MyApiTestCase):
             # Check, that multi_challenge is also contained.
             self.assertEqual(ClientMode.INTERACTIVE, detail.get("multi_challenge")[0].get("client_mode"))
             self.assertIn("image", detail)
+        self.reset_flask_g()
 
         # 3. Enter an inncorrect email address and finalize the token
         # The validator expects a gmail email address and the enrollment will fail.
@@ -624,6 +648,7 @@ class MultiChallengeEnrollTest(MyApiTestCase):
             self.assertFalse(result.get("status"))
             self.assertFalse(result.get("value"))
             self.assertEqual(result.get("error").get("message"), "ERR401: The email address is not valid!")
+        self.reset_flask_g()
 
             # Cleanup
         delete_policy("pol_passthru")
@@ -662,6 +687,7 @@ class MultiChallengeEnrollTest(MyApiTestCase):
             self.assertEqual(res.json.get("result").get("authentication"), "ACCEPT")
             self.assertNotIn("transaction_id", res.json.get("detail"))
             self.assertNotIn("multi_challenge", res.json.get("detail"))
+        self.reset_flask_g()
         # Check that we have the proper log message (action_detail) in the audit
         audit_entry = self.find_most_recent_audit_entry(action='POST /validate/check')
         self.assertIsNotNone(audit_entry)
@@ -757,6 +783,7 @@ class MultiChallengeEnrollTest(MyApiTestCase):
                 self.assertEqual(time_step, token.get_tokeninfo(key="timeStep"))
 
                 token.delete_token()
+            self.reset_flask_g()
 
         # System default
         check_token_init("sha1", "30")
@@ -788,6 +815,7 @@ class MultiChallengeEnrollTest(MyApiTestCase):
             detail = data.get("detail")
             self.assertNotIn("transaction_id", detail)
             self.assertNotIn("multi_challenge", detail)
+        self.reset_flask_g()
         if check_audit:
             # Check that we have the proper log message (action_detail) in the audit
             audit_entry = self.find_most_recent_audit_entry(action='POST /validate/check')
@@ -858,6 +886,7 @@ class MultiChallengeEnrollTest(MyApiTestCase):
             # check that tokens for container are created
             tokens = container.tokens
             self.assertSetEqual({"totp", "hotp"}, {token.type for token in tokens})
+        self.reset_flask_g()
 
         # Poll transaction
         with self.app.test_request_context(f"/validate/polltransaction/{transaction_id}", method='GET',
@@ -868,6 +897,7 @@ class MultiChallengeEnrollTest(MyApiTestCase):
             self.assertTrue(result["status"])
             self.assertFalse(result["value"])
             self.assertEqual("pending", res.json["detail"].get("challenge_status"))
+        self.reset_flask_g()
 
         # Mock smartphone finalizing the registration
         mock_smph = MockSmartphone()
@@ -887,6 +917,7 @@ class MultiChallengeEnrollTest(MyApiTestCase):
             self.assertTrue(result["status"])
             self.assertTrue(result["value"])
             self.assertEqual("accept", res.json["detail"].get("challenge_status"))
+        self.reset_flask_g()
 
         # Validate Check
         with self.app.test_request_context('/validate/check', method='POST', data={"user": "alice", "pass": "",
@@ -897,3 +928,122 @@ class MultiChallengeEnrollTest(MyApiTestCase):
             self.assertTrue(result.get("status"))
             self.assertTrue(result.get("value"))
             self.assertEqual(AUTH_RESPONSE.ACCEPT, result.get("authentication"))
+        self.reset_flask_g()
+
+        # Cleanup
+        delete_policy("enroll_via_multichallenge")
+        delete_policy("registration")
+        for token in container.tokens:
+            remove_token(token.get_serial())
+        delete_container_by_serial(serial)
+        delete_container_template("test")
+
+    @ldap3mock.activate
+    def test_09_cancel_enroll_HOTP(self):
+        # Init LDAP
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
+        # create realm
+        set_realm("ldaprealm", resolvers=[{'name': "catchall"}])
+        set_default_realm("ldaprealm")
+
+        # passthru + enroll a HOTP token via multichallenge, but make the enrollment optional so it can be cancelled
+        set_policy("pol_passthru", scope=SCOPE.AUTH, action=PolicyAction.PASSTHRU)
+        set_policy("pol_multienroll", scope=SCOPE.AUTH,
+                   action="{0!s}=hotp".format(PolicyAction.ENROLL_VIA_MULTICHALLENGE))
+        set_policy("pol_multienroll_optional", scope=SCOPE.AUTH,
+                   action="{0!s}=true".format(PolicyAction.ENROLL_VIA_MULTICHALLENGE_OPTIONAL))
+
+        # Authenticate via passthru, which triggers the enrollment challenge
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "alice",
+                                                 "pass": "alicepw"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"))
+            self.assertFalse(result.get("value"))
+            self.assertEqual("CHALLENGE", result.get("authentication"))
+            detail = res.json.get("detail")
+            transaction_id = detail.get("transaction_id")
+            self.assertTrue(detail.get(PolicyAction.ENROLL_VIA_MULTICHALLENGE))
+            self.assertTrue(detail.get(PolicyAction.ENROLL_VIA_MULTICHALLENGE_OPTIONAL))
+            serial = detail.get("serial")
+            self.assertTrue(serial)
+        self.reset_flask_g()
+
+        # The rollout token and the challenge exist before the cancellation
+        self.assertEqual(1, len(get_tokens(serial=serial)))
+        self.assertEqual(1, len(get_challenges(transaction_id=transaction_id)))
+
+        # Cancel the enrollment instead of answering the challenge
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"transaction_id": transaction_id,
+                                                 "cancel_enrollment": True}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"))
+            self.assertTrue(result.get("value"))
+            self.assertIn("Cancelled enrollment via multichallenge", res.json.get("detail").get("message"))
+        self.reset_flask_g()
+
+        # The rollout token and the challenge have been removed
+        self.assertEqual(0, len(get_tokens(serial=serial)))
+        self.assertEqual(0, len(get_challenges(transaction_id=transaction_id)))
+
+        # Cleanup
+        delete_policy("pol_passthru")
+        delete_policy("pol_multienroll")
+        delete_policy("pol_multienroll_optional")
+
+    @ldap3mock.activate
+    def test_10_cancel_enroll_HOTP_not_allowed(self):
+        # Init LDAP
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
+        # create realm
+        set_realm("ldaprealm", resolvers=[{'name': "catchall"}])
+        set_default_realm("ldaprealm")
+
+        # passthru + enroll a HOTP token via multichallenge, but without the optional flag the enrollment is mandatory
+        set_policy("pol_passthru", scope=SCOPE.AUTH, action=PolicyAction.PASSTHRU)
+        set_policy("pol_multienroll", scope=SCOPE.AUTH,
+                   action="{0!s}=hotp".format(PolicyAction.ENROLL_VIA_MULTICHALLENGE))
+
+        # Authenticate via passthru, which triggers the enrollment challenge
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "alice",
+                                                 "pass": "alicepw"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertEqual("CHALLENGE", result.get("authentication"))
+            detail = res.json.get("detail")
+            transaction_id = detail.get("transaction_id")
+            self.assertTrue(detail.get(PolicyAction.ENROLL_VIA_MULTICHALLENGE))
+            self.assertFalse(detail.get(PolicyAction.ENROLL_VIA_MULTICHALLENGE_OPTIONAL))
+            serial = detail.get("serial")
+        self.reset_flask_g()
+
+        # Trying to cancel a mandatory enrollment is treated like a wrong OTP: REJECT, token and challenge stay
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"transaction_id": transaction_id,
+                                                 "cancel_enrollment": True}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertFalse(result.get("value"))
+            self.assertEqual("REJECT", result.get("authentication"))
+            self.assertIn("Failed to cancel enrollment", res.json.get("detail").get("message"))
+        self.reset_flask_g()
+
+        # The rollout token still exists because the enrollment was not cancelled
+        self.assertEqual(1, len(get_tokens(serial=serial)))
+
+        # Cleanup
+        delete_policy("pol_passthru")
+        delete_policy("pol_multienroll")
+        remove_token(serial)

@@ -28,12 +28,8 @@ import { DialogService } from "@services/dialog/dialog.service";
 import { SmtpService } from "@services/smtp/smtp.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
-import {
-  MockAuthService,
-  MockDialogService,
-  MockSmtpService,
-  MockTableUtilsService
-} from "@testing/mock-services";
+import { expectsTableStateGating } from "@testing/table-state-gating";
+import { MockAuthService, MockDialogService, MockSmtpService, MockTableUtilsService } from "@testing/mock-services";
 import { Subject } from "rxjs";
 
 describe("SmtpServersComponent", () => {
@@ -97,8 +93,41 @@ describe("SmtpServersComponent", () => {
     fixture.detectChanges();
   });
 
+  it("gates the table on its read right, row count and filter", () => {
+    expectsTableStateGating({
+      state: component.tableState,
+      right: "smtpserver_read"
+    });
+  });
+
   it("should create", () => {
     expect(component).toBeTruthy();
+  });
+
+  it("should only select the rows left by the filter", async () => {
+    component.onFilterInput("server1");
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    component.selector.selectAllRows();
+
+    expect(component.selector.selectedRows().map((row) => row.identifier)).toEqual(["server1"]);
+  });
+
+  it("should keep tracking the rendered rows after the data source is rebuilt", async () => {
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    smtpServiceMock.smtpServers.set([
+      { ...smtpServiceMock.smtpServers()[0], identifier: "server3" },
+      { ...smtpServiceMock.smtpServers()[1], identifier: "server4" }
+    ]);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    component.selector.selectAllRows();
+
+    expect(component.selector.selectedRows().map((row) => row.identifier)).toEqual(["server3", "server4"]);
   });
 
   it("should display servers from service", () => {
@@ -124,7 +153,8 @@ describe("SmtpServersComponent", () => {
 
   it("should delete server after confirmation", async () => {
     const server = smtpServiceMock.smtpServers()[0];
-    component.deleteServer(server);
+    component.selector.selectRow(server);
+    component.deleteSelected();
     expect(dialogServiceMock.openDialog).toHaveBeenCalled();
     confirmClosed.next(true);
     confirmClosed.complete();

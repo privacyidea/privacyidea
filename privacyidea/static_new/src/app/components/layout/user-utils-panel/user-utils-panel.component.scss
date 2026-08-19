@@ -11,6 +11,13 @@ $font-size-default: 14px;
   font-size: $font-size-default;
 }
 
+.utils-group,
+.utils-group-self-service {
+  .mat-mdc-icon-button {
+    --mat-icon-button-icon-color: var(--mat-sys-on-surface);
+  }
+}
+
 .utils-group {
   display: flex;
   flex-direction: row;
@@ -35,14 +42,18 @@ $font-size-default: 14px;
   &.utils {
     display: flex;
     flex-direction: row;
+    flex-wrap: wrap;
     justify-content: space-around;
     align-items: center;
   }
 
+  // Break the timer onto its own full-width row so its text never overflows the
+  // fixed-width panel next to the action buttons.
   .session-timer {
-    width: auto;
-    text-align: right;
-    white-space: break-spaces;
+    flex-basis: 100%;
+    width: 100%;
+    text-align: center;
+    white-space: nowrap;
   }
 }
 
@@ -54,12 +65,13 @@ $font-size-default: 14px;
 .profile-text {
   @include text-label;
   font-weight: bold;
-  margin-right: var(--global-gap);
+  margin-left: -8px;
+  margin-right: 8px;
 }
 
 .node-text {
   @include text-label;
-  max-width: 12rem;
+  width: 64px;
   overflow: hidden;
   text-overflow: ellipsis;
 }
@@ -68,4 +80,11 @@ $font-size-default: 14px;
   @include text-label;
   padding: 2px 6px;
   border-radius: var(--border-radius);
+  // The countdown changes on every tick and changes shape at the hour and ten-minute marks. Even
+  // digits of differing width would shove the buttons beside it around, so it holds one width and
+  // its digits all take the same space.
+  display: inline-block;
+  min-width: 5.5rem;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
 }

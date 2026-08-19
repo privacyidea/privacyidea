@@ -16,13 +16,7 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<div
-  class="policy-action-item"
-  tabindex="0"
-  role="button"
-  (click)="selectActionByName.emit(selectableAction().actionName)"
-  (keydown.enter)="selectActionByName.emit(selectableAction().actionName)"
-  (keydown.space)="$event.preventDefault(); selectActionByName.emit(selectableAction().actionName)">
+<div class="policy-action-item">
   <div class="detail-text">
     <span
       class="detail-label"

@@ -16,13 +16,13 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { DatePipe } from "@angular/common";
 import { Component, computed, effect, inject, WritableSignal } from "@angular/core";
 import { MatButton } from "@angular/material/button";
 import { MatCard, MatCardContent } from "@angular/material/card";
 import { MatIcon, MatIconModule } from "@angular/material/icon";
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
 import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
+import { LocalDateTimePipe } from "@components/shared/pipes/local-date-time.pipe";
 import { DialogAction } from "@models/dialog";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { LostTokenData, TokenService, TokenServiceInterface } from "@services/token/token.service";
@@ -30,7 +30,7 @@ import { LostTokenData, TokenService, TokenServiceInterface } from "@services/to
 @Component({
   selector: "app-lost-token",
   standalone: true,
-  imports: [MatCard, MatCardContent, DatePipe, DialogWrapperComponent, MatIconModule, MatButton, MatIcon],
+  imports: [MatCard, MatCardContent, LocalDateTimePipe, DialogWrapperComponent, MatIconModule, MatButton, MatIcon],
   templateUrl: "./lost-token.component.html",
   styleUrl: "./lost-token.component.scss"
 })

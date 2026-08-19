@@ -123,6 +123,45 @@ describe("ViewActionColumnComponent", () => {
     expect(mockPolicyService.getDetailsOfAction).toHaveBeenCalledWith("container_add_token", undefined);
   });
 
+  it("keeps the original order when no highlight terms are set", () => {
+    mockPolicyService.getDetailsOfAction.mockReturnValue({ type: "str" });
+    fixture.componentRef.setInput("actions", { alpha: "1", beta: "2", gamma: "3" });
+    fixture.detectChanges();
+
+    expect(component.actionsList().map((a) => a.name)).toEqual(["alpha", "beta", "gamma"]);
+  });
+
+  it("floats entries matching a term to the top, preserving order within each group", () => {
+    mockPolicyService.getDetailsOfAction.mockReturnValue({ type: "str" });
+    fixture.componentRef.setInput("actions", { alpha: "1", beta: "match-here", gamma: "3", delta: "matched" });
+    fixture.componentRef.setInput("highlightTerms", ["match"]);
+    fixture.detectChanges();
+
+    // beta and delta match (by value); alpha and gamma keep their relative order after them.
+    expect(component.actionsList().map((a) => a.name)).toEqual(["beta", "delta", "alpha", "gamma"]);
+  });
+
+  it("matches on the action name as well as the value", () => {
+    mockPolicyService.getDetailsOfAction.mockReturnValue({ type: "str" });
+    fixture.componentRef.setInput("actions", { alpha: "1", login_mode: "x" });
+    fixture.componentRef.setInput("highlightTerms", ["login"]);
+    fixture.detectChanges();
+
+    expect(component.actionsList()[0].name).toBe("login_mode");
+  });
+
+  it("does not float a boolean action whose only match is its hidden value", () => {
+    mockPolicyService.getDetailsOfAction.mockImplementation((name: string) =>
+      name === "flag" ? { type: "bool" } : { type: "str" }
+    );
+    fixture.componentRef.setInput("actions", { alpha: "1", flag: true });
+    fixture.componentRef.setInput("highlightTerms", ["true"]);
+    fixture.detectChanges();
+
+    // The boolean value is not rendered, so it must not reorder to the top.
+    expect(component.actionsList().map((a) => a.name)).toEqual(["alpha", "flag"]);
+  });
+
   it("should resolve correct isBoolean per scope", () => {
     mockPolicyService.getDetailsOfAction.mockImplementation((name: string, scope: string) => {
       if (scope === "admin" && name === "container_add_token") return { type: "bool" };

@@ -17,13 +17,15 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import {
+  afterNextRender,
   Component,
   computed,
   ElementRef,
   inject,
   linkedSignal,
-  signal,
+  OnDestroy,
   ViewChild,
+  viewChild,
   WritableSignal
 } from "@angular/core";
 import {
@@ -40,24 +42,30 @@ import {
   MatTable,
   MatTableDataSource
 } from "@angular/material/table";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { UserData, UserService, UserServiceInterface } from "@services/user/user.service";
+import { inlineFilterHint } from "@utils/filter-hint.utils";
 
 import { NgClass } from "@angular/common";
 import { MatIconButton } from "@angular/material/button";
 import { MatDialog } from "@angular/material/dialog";
 import { MatIcon } from "@angular/material/icon";
-import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
+import { MatFormField, MatHint, MatInput, MatLabel } from "@angular/material/input";
 import { MatPaginator } from "@angular/material/paginator";
 import { Sort } from "@angular/material/sort";
-import { MatTooltipModule } from "@angular/material/tooltip";
 import { RouterLink } from "@angular/router";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
-import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { FilterAutocompleteDirective } from "@components/shared/directives/filter-autocomplete.directive";
+import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
+import { TableStateComponent } from "@components/shared/table-state/table-state.component";
+import { TableState } from "@core/models/table_state/table-state";
 import { UserNewResolverComponent } from "@components/user/user-new-resolver/user-new-resolver.component";
+import { FilterOption } from "@core/models/filter_value_generic/filter-option";
+import { FilterValueGeneric, keywordlessTerms } from "@core/models/filter_value_generic/filter-value-generic";
 import { ResolverService } from "@services/resolver/resolver.service";
 import { UserTableActionsComponent } from "./user-table-actions/user-table-actions.component";
 
@@ -73,12 +81,28 @@ const columnKeysMap = [
   { key: "resolver", label: $localize`Resolver` }
 ];
 
+// Per-column predicates for the free-text search: a term matches if it is a substring of any column.
+const userFilterOptions: FilterOption<UserData>[] = columnKeysMap.map(
+  (column) =>
+    new FilterOption<UserData>({
+      key: column.key,
+      label: column.label,
+      matches: () => true,
+      globalMatches: (item, term) =>
+        String(item[column.key as keyof UserData] ?? "")
+          .toLowerCase()
+          .includes(term)
+    })
+);
+
 @Component({
   selector: "app-user-table",
   imports: [
+    FilterAutocompleteDirective,
     MatCell,
     MatCellDef,
     MatFormField,
+    MatHint,
     MatLabel,
     MatInput,
     MatPaginator,
@@ -99,25 +123,26 @@ const columnKeysMap = [
     RouterLink,
     MatIcon,
     MatIconButton,
-    MatTooltipModule,
-    ScrollEdgesDirective
+    ScrollEdgesDirective,
+    TableStateComponent
   ],
   templateUrl: "./user-table.component.html",
   styleUrl: "./user-table.component.scss"
 })
-export class UserTableComponent {
+export class UserTableComponent implements OnDestroy {
   protected readonly columnKeysMap = columnKeysMap;
   readonly columnKeys: string[] = this.columnKeysMap.map((column) => column.key);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly userService: UserServiceInterface = inject(UserService);
   protected readonly resolverService = inject(ResolverService);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly dialog = inject(MatDialog);
-  readonly apiFilter = this.userService.apiFilterOptions;
+  readonly apiFilterKeys = this.userService.apiFilterKeys;
+  readonly filterHint = inlineFilterHint();
   private basePageSizeOptions = [...this.tableUtilsService.pageSizeOptions()];
-  @ViewChild(MatPaginator) paginator!: MatPaginator;
+  readonly paginator = viewChild(MatPaginator);
   @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: ElementRef<HTMLInputElement>;
-  sort = signal({ active: "", direction: "" } as Sort);
   pageSizeOptions = computed(() => {
     if (!this.basePageSizeOptions.includes(this.userService.pageSize())) {
       this.basePageSizeOptions.push(this.userService.pageSize());
@@ -126,46 +151,71 @@ export class UserTableComponent {
     return this.basePageSizeOptions;
   });
 
-  totalLength: WritableSignal<number> = linkedSignal({
-    source: () => (this.userService.usersResource.hasValue() ? this.userService.usersResource.value() : undefined),
-    computation: (userResource, previous) => {
-      if (userResource) {
-        return userResource.result?.value?.length ?? 0;
-      }
-      return previous?.value ?? 0;
-    }
+  // Empty base; free-text terms are layered on per query to reuse the shared FilterValueGeneric model.
+  private readonly freeTextFilter = new FilterValueGeneric<UserData>({ availableFilters: userFilterOptions });
+
+  // Applied client-side across all columns of the fully-loaded user list, while keyword segments
+  // (e.g. "username: root") go to the server via UserService.filterParams.
+  readonly freeTextTerms = computed<string[]>(() =>
+    keywordlessTerms(this.userService.activeFilter().filterString.toLowerCase())
+  );
+
+  // Free-text-filtered users, computed once and shared by both the row list and the total count so the
+  // full list is not filtered twice per change.
+  private readonly filteredUsers = computed<UserData[] | undefined>(() => {
+    const userRes = this.userService.usersResource.hasValue() ? this.userService.usersResource.value() : undefined;
+    if (!userRes) return undefined;
+    return this.applyFreeText(userRes.result?.value ?? [], this.freeTextTerms());
   });
-  emptyResource: WritableSignal<UserData[]> = linkedSignal({
-    source: this.userService.pageSize,
-    computation: (pageSize: number) =>
-      Array.from({ length: pageSize }, () =>
-        Object.fromEntries(this.columnKeysMap.map((c) => [{ key: c.key, username: "" }]))
-      )
+
+  totalLength: WritableSignal<number> = linkedSignal({
+    source: () => this.filteredUsers(),
+    computation: (filtered, previous) => (filtered ? filtered.length : (previous?.value ?? 0))
+  });
+  readonly tableState = new TableState({
+    resource: this.userService.usersResource,
+    count: () => this.totalLength(),
+    filterActive: () => !this.userService.activeFilter().isEmpty,
+    allowed: () => this.authService.actionAllowed("userlist"),
+    resetFilter: () => this.userService.clearFilter()
   });
   usersDataSource: WritableSignal<MatTableDataSource<UserData>> = linkedSignal({
     source: () => ({
-      userRes: this.userService.usersResource.hasValue() ? this.userService.usersResource.value() : undefined,
-      sort: this.sort()
+      filtered: this.filteredUsers(),
+      sort: this.userService.sort(),
+      paginator: this.paginator()
     }),
     computation: (src, prev) => {
-      const data = src.userRes?.result?.value ?? prev?.value?.data ?? this.emptyResource();
-      const sorted = this.clientsideSortUserData([...data], this.sort());
+      // While a reload is in flight the rows already on screen stay, rather than blanking the table.
+      const data = src.filtered ?? prev?.value?.data ?? [];
+      const sorted = this.clientsideSortUserData([...data], src.sort);
       const ds = new MatTableDataSource(sorted);
-      ds.paginator = this.paginator;
+      ds.paginator = src.paginator ?? null;
       return ds;
     }
   });
 
+  constructor() {
+    // Autofocus the filter so the user can type immediately on entering the page.
+    afterNextRender(() => this.filterInput?.nativeElement.focus());
+  }
+
+  ngOnDestroy(): void {
+    // Do not carry a stale (and invisible) filter over to the next visit of the page.
+    this.userService.clearFilter();
+  }
+
   toggleFilter(filterKeyword: string): void {
-    const newValue = this.tableUtilsService.toggleKeywordInFilter({
-      keyword: filterKeyword,
-      currentValue: this.userService.apiUserFilter()
-    });
-    this.userService.apiUserFilter.set(newValue);
+    this.userService.updateFilter((current) =>
+      this.tableUtilsService.toggleKeywordInFilter({
+        keyword: filterKeyword,
+        currentValue: current
+      })
+    );
   }
 
   isFilterSelected(filter: string): boolean {
-    return this.userService.apiUserFilter().hasKey(filter);
+    return this.userService.activeFilter().hasKey(filter);
   }
 
   getFilterIconName(keyword: string): string {
@@ -192,6 +242,13 @@ export class UserTableComponent {
         maxHeight: "100vh"
       });
     }
+  }
+
+  // Keeps users where every term matches at least one column (AND across terms, OR across columns).
+  private applyFreeText(data: UserData[], terms: string[]): UserData[] {
+    if (!terms.length) return data;
+    const filter = terms.reduce((acc, term) => acc.addFreeText(term), this.freeTextFilter);
+    return filter.filterItems(data);
   }
 
   private clientsideSortUserData(data: UserData[], s: Sort): UserData[] {

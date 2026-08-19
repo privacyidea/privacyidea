@@ -20,7 +20,9 @@ import { Component, computed, effect, inject, OnInit, signal } from "@angular/co
 import { RouterLink } from "@angular/router";
 import { PiResponse } from "@app/app.component";
 import { ROUTE_PATHS } from "@app/route_paths";
+import { TokensWidgetIconComponent } from "@components/dashboard/widgets/tokens-widget/tokens-widget-icon.component";
 import { WidgetStateComponent } from "@components/dashboard/widgets/widget-state/widget-state.component";
+import { FilterValue } from "@core/models/filter_value/filter_value";
 import { DashboardWidget, WidgetSize } from "@models/dashboard";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { DashboardDataRef, DashboardDataStore } from "@services/dashboard/dashboard-data-store.service";
@@ -53,10 +55,13 @@ interface TokenCountResponses {
 export class TokensWidgetComponent extends DashboardWidget implements OnInit {
   static override readonly type = "tokens";
   static override readonly requiredAction = "tokenlist";
-  static override readonly title = $localize`Tokens`;
+  static override readonly title = $localize`Token Usage`;
   static override readonly icon = "shield";
-  static override readonly defaultSize: WidgetSize = { cols: 6, rows: 8 };
-  static override readonly minSize: WidgetSize = { cols: 4, rows: 5 };
+  static override readonly titleLink = ROUTE_PATHS.TOKENS;
+  static override readonly titleLinkAction = "tokenlist";
+  static override readonly headerIcon = TokensWidgetIconComponent;
+  static override readonly defaultSize: WidgetSize = { cols: 6, rows: 5 };
+  static override readonly minSize: WidgetSize = { cols: 4, rows: 3 };
   static override readonly maxSize: WidgetSize = { cols: 12, rows: 9 };
 
   protected readonly routePaths = ROUTE_PATHS;
@@ -66,6 +71,11 @@ export class TokensWidgetComponent extends DashboardWidget implements OnInit {
   private readonly store = inject(DashboardDataStore);
 
   private readonly dataRef = signal<DashboardDataRef<TokenCountResponses> | null>(null);
+  override readonly partialLoading = computed(() => this.dataRef()?.revalidating() ?? false);
+  override readonly refreshFailed = computed(() => {
+    const ref = this.dataRef();
+    return !!ref && ref.error() && ref.value() !== undefined;
+  });
 
   readonly counts = computed<TokenCounts>(() => {
     const results = this.dataRef()?.value();
@@ -78,6 +88,26 @@ export class TokensWidgetComponent extends DashboardWidget implements OnInit {
     };
   });
 
+  readonly showHardware = computed(() => {
+    const { hardware, total } = this.counts();
+    return hardware > 0 && hardware !== total;
+  });
+
+  readonly showSoftware = computed(() => {
+    const { software, total } = this.counts();
+    return software > 0 && software !== total;
+  });
+
+  readonly distinguishKinds = computed(() => {
+    const { hardware, software } = this.counts();
+    return hardware > 0 && software > 0;
+  });
+
+  readonly unassignedTotal = computed(() => {
+    const { unassigned_hardware, unassigned_software } = this.counts();
+    return unassigned_hardware + unassigned_software;
+  });
+
   constructor() {
     super();
     effect(() => {
@@ -86,17 +116,39 @@ export class TokensWidgetComponent extends DashboardWidget implements OnInit {
         return;
       }
       const value = ref.value();
-      if (value !== undefined) {
-        this.state.set(Object.values(value).every((response) => response.result?.status === true) ? "ready" : "error");
-      } else if (ref.error()) {
-        this.state.set("error");
-      } else {
-        this.state.set("loading");
+      if (value === undefined) {
+        this.state.set(ref.error() ? "error" : "loading");
+        return;
       }
+      this.state.set(Object.values(value).every((response) => response.result?.status === true) ? "ready" : "error");
     });
   }
 
+  showAllTokens(): void {
+    this.tokenService.presetFilter.set(new FilterValue());
+  }
+
+  showKind(kind: "hardware" | "software", unassignedOnly = false): void {
+    let filter = new FilterValue().addEntry("infokey", "tokenkind").addEntry("infovalue", kind);
+    if (unassignedOnly) {
+      filter = filter.addEntry("assigned", "False");
+    }
+    this.tokenService.presetFilter.set(filter);
+  }
+
+  showUnassigned(): void {
+    this.tokenService.presetFilter.set(new FilterValue().addEntry("assigned", "False"));
+  }
+
   ngOnInit(): void {
+    this.load();
+  }
+
+  override reload(): void {
+    this.load();
+  }
+
+  private load(): void {
     if (!this.authService.actionAllowed("tokenlist")) {
       this.state.set("denied");
       return;
@@ -104,17 +156,15 @@ export class TokensWidgetComponent extends DashboardWidget implements OnInit {
     this.dataRef.set(
       this.store.load("dashboard:tokens", () =>
         forkJoin({
-          total: this.tokenService.getTokenCount({ pagesize: 0 }),
-          hardware: this.tokenService.getTokenCount({ pagesize: 0, infokey: "tokenkind", infovalue: "hardware" }),
-          software: this.tokenService.getTokenCount({ pagesize: 0, infokey: "tokenkind", infovalue: "software" }),
+          total: this.tokenService.getTokenCount(),
+          hardware: this.tokenService.getTokenCount({ infokey: "tokenkind", infovalue: "hardware" }),
+          software: this.tokenService.getTokenCount({ infokey: "tokenkind", infovalue: "software" }),
           unassigned_hardware: this.tokenService.getTokenCount({
-            pagesize: 0,
             infokey: "tokenkind",
             infovalue: "hardware",
             assigned: "False"
           }),
           unassigned_software: this.tokenService.getTokenCount({
-            pagesize: 0,
             infokey: "tokenkind",
             infovalue: "software",
             assigned: "False"

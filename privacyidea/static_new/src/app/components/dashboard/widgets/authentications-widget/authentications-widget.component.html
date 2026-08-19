@@ -19,7 +19,7 @@
 
 <app-widget-state [state]="state()">
   <p
-    class="auth-subtitle"
+    class="auth-subtitle margin-left-8 margin-top-8"
     i18n>
     Authentications in the last 24 hours
   </p>
@@ -37,22 +37,23 @@
         <tr>
           <td i18n>Users / Tokens with Failures</td>
           <td class="auth-failed-cell">
-            @for (userobj of counts().users; track userobj.user + userobj.realm; let first = $first) {
-              @if (!first) {
-                <span class="auth-separator">|</span>
-              }
+            @for (userobj of counts().users; track userobj.user + userobj.realm) {
               <a
                 (click)="contentService.userSelected(userobj.user, userobj.realm)"
                 (keydown.enter)="contentService.userSelected(userobj.user, userobj.realm)"
                 role="button"
-                tabindex="0">{{ userobj.user }}&#64;{{ userobj.realm }}[{{ userobj.fails }}]</a>
+                tabindex="0">
+                {{ userobj.user }}&#64;{{ userobj.realm }}[{{ userobj.fails }}]
+              </a>
             }
             @for (serial of counts().serials; track serial) {
               <a
                 (click)="contentService.tokenSelected(serial)"
                 (keydown.enter)="contentService.tokenSelected(serial)"
                 role="button"
-                tabindex="0">{{ serial }}</a>
+                tabindex="0">
+                {{ serial }}
+              </a>
             }
           </td>
         </tr>

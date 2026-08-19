@@ -17,12 +17,13 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { CdkDragEnd, CdkDragMove, CdkDragStart } from "@angular/cdk/drag-drop";
-import { provideZonelessChangeDetection } from "@angular/core";
+import { Component, provideZonelessChangeDetection } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { provideRouter } from "@angular/router";
-import { WidgetInstance } from "@models/dashboard";
+import { DashboardWidget, WidgetInstance, WidgetSize } from "@models/dashboard";
 import { AuthService } from "@services/auth/auth.service";
 import { DashboardLayoutService } from "@services/dashboard/dashboard-layout.service";
+import { WidgetRegistryService } from "@services/dashboard/widget-registry.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { SubscriptionService } from "@services/subscription/subscription.service";
 import { TokenService } from "@services/token/token.service";
@@ -30,6 +31,26 @@ import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockSubscriptionService } from "@testing/mock-services/mock-subscription-service";
 import { MockTokenService } from "@testing/mock-services/mock-token-service";
 import { DashboardComponent } from "./dashboard.component";
+
+// No shipped widget is pinned, so the tests for the pinned behaviour stand one in. It
+// takes over an existing type id in the registry, which keeps it renderable like any
+// other widget while reporting the pinned metadata.
+const PINNED_TYPE = "events";
+const PINNED_SIZE: WidgetSize = { cols: 8, rows: 5 };
+
+@Component({ selector: "app-pinned-stub-widget", standalone: true, template: "" })
+class PinnedStubWidget extends DashboardWidget {
+  static override readonly type = PINNED_TYPE;
+  static override readonly pinned = true;
+  static override readonly fixedPosition = { x: 0, y: 0 };
+  static override readonly defaultSize: WidgetSize = PINNED_SIZE;
+  static override readonly minSize: WidgetSize = PINNED_SIZE;
+  static override readonly maxSize: WidgetSize = PINNED_SIZE;
+
+  override reload(): void {
+    // The stub only carries the pinned metadata; there is nothing to load.
+  }
+}
 
 describe("DashboardComponent", () => {
   let fixture: ComponentFixture<DashboardComponent>;
@@ -69,7 +90,7 @@ describe("DashboardComponent", () => {
 
   const firstWidget = (): WidgetInstance => layoutService.widgets()[0];
 
-  const pinnedWidget = (): WidgetInstance => layoutService.widgets().find((widget) => widget.type === "subscriptions")!;
+  const pinnedWidget = (): WidgetInstance => layoutService.widgets().find((widget) => widget.type === PINNED_TYPE)!;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -85,10 +106,15 @@ describe("DashboardComponent", () => {
     }).compileComponents();
 
     (TestBed.inject(AuthService) as unknown as MockAuthService).actionAllowed.mockReturnValue(true);
+    const registry = TestBed.inject(WidgetRegistryService);
+    const realGet = registry.get.bind(registry);
+    jest.spyOn(registry, "get").mockImplementation((type: string) =>
+      type === PINNED_TYPE ? PinnedStubWidget : realGet(type)
+    );
     layoutService = TestBed.inject(DashboardLayoutService);
     layoutService.widgets.set([
       { id: "tokens-1", type: "tokens", x: 0, y: 0, cols: 6, rows: 8 },
-      { id: "subscriptions-1", type: "subscriptions", x: 16, y: 0, cols: 8, rows: 5 }
+      { id: "pinned-1", type: PINNED_TYPE, x: 16, y: 0, ...PINNED_SIZE }
     ]);
     layoutService.editMode.set(false);
 
@@ -202,7 +228,7 @@ describe("DashboardComponent", () => {
     it("should clamp an undersized stored widget up to its min for display", () => {
       const tiny: WidgetInstance = { id: "x", type: "tokens", x: 0, y: 0, cols: 1, rows: 1 };
       expect(component['effectiveCols'](tiny)).toBe(4);
-      expect(component['effectiveRows'](tiny)).toBe(5);
+      expect(component['effectiveRows'](tiny)).toBe(3);
     });
 
     it("should clamp display width to the field's right edge", () => {
@@ -241,12 +267,12 @@ describe("DashboardComponent", () => {
       expect(component['resizePreview']()?.cols).toBe(12);
     });
 
-    it("should clamp the height down to the effective minimum (tokens: 5 rows)", () => {
+    it("should clamp the height down to the effective minimum (tokens: 3 rows)", () => {
       const widget = firstWidget();
       component['onResizeStart'](widget, "s", pointerEvent({ clientY: 1000 }));
       component['onResizeMove'](pointerEvent({ clientY: 0 }));
 
-      expect(component['resizePreview']()?.rows).toBe(5);
+      expect(component['resizePreview']()?.rows).toBe(3);
     });
 
     it("should clamp the height up to the widget's max (tokens: 9 rows)", () => {
@@ -285,8 +311,8 @@ describe("DashboardComponent", () => {
       component['onResizeMove'](pointerEvent({ clientX: 100000, clientY: 100000 }));
 
       const preview = component['resizePreview']();
-      expect(preview?.cols).toBe(8);
-      expect(preview?.rows).toBe(5);
+      expect(preview?.cols).toBe(PINNED_SIZE.cols);
+      expect(preview?.rows).toBe(PINNED_SIZE.rows);
     });
 
     it("should ignore a resize move without an active resize", () => {

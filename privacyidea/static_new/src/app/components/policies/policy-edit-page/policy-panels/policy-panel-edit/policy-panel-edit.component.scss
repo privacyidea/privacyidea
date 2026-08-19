@@ -19,23 +19,7 @@
     flex-wrap: nowrap;
     gap: var(--half-global-gap);
     justify-content: center;
-    padding: var(--half-global-padding) 0;
-    width: 100%;
-
-    .action-button-1 {
-      flex: 1;
-      justify-content: center;
-    }
-  }
-
-  .action-button-1 {
-    padding: var(--global-padding);
-
-    &.action-button-active {
-      background-color: var(--mat-sys-primary-base);
-      color: var(--mat-sys-on-primary);
-      border-color: var(--mat-sys-primary);
-    }
+    padding: var(--half-global-padding) var(--double-global-padding);
   }
 
   .name-priority-row {

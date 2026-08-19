@@ -16,13 +16,25 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, ElementRef, inject, linkedSignal, ViewChild, WritableSignal } from "@angular/core";
+import {
+  Component,
+  computed,
+  effect,
+  ElementRef,
+  inject,
+  linkedSignal,
+  OnDestroy,
+  ViewChild,
+  WritableSignal
+} from "@angular/core";
 import { MatDividerModule } from "@angular/material/divider";
 import { MatMenuModule } from "@angular/material/menu";
 import { MatPaginatorModule, PageEvent } from "@angular/material/paginator";
 import { MatSortModule, Sort } from "@angular/material/sort";
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
 import { MatTooltipModule } from "@angular/material/tooltip";
+import { RouterLink } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
@@ -30,17 +42,24 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
 import { TokenDetails, TokenService, TokenServiceInterface } from "@services/token/token.service";
 
 import { NgClass } from "@angular/common";
-import { MatIconButton } from "@angular/material/button";
+import { MatButton, MatIconButton } from "@angular/material/button";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
-import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { FilterAutocompleteDirective } from "@components/shared/directives/filter-autocomplete.directive";
+import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
+import { TableStateComponent } from "@components/shared/table-state/table-state.component";
+import { TableState } from "@core/models/table_state/table-state";
 import { FilterValue } from "@core/models/filter_value/filter_value";
+import { MultiSelectFilterComponent } from "@components/shared/multi-select-filter/multi-select-filter.component";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { filterColumnHint, inlineFilterHint } from "@utils/filter-hint.utils";
+import { withDefaultRealm } from "@utils/filter.utils";
+import { StringUtils } from "@utils/string.utils";
 import { TokenTableActionsComponent } from "./token-table-actions/token-table-actions.component";
 
 const columnKeysMap = [
@@ -61,6 +80,7 @@ const columnKeysMap = [
   selector: "app-token-table",
   standalone: true,
   imports: [
+    FilterAutocompleteDirective,
     MatTableModule,
     MatFormFieldModule,
     MatInputModule,
@@ -72,17 +92,21 @@ const columnKeysMap = [
     ScrollToTopDirective,
     ClearableInputComponent,
     CopyableComponent,
+    MultiSelectFilterComponent,
     TokenTableActionsComponent,
+    MatButton,
     MatIconButton,
     MatMenuModule,
     MatDividerModule,
     MatTooltipModule,
-    ScrollEdgesDirective
+    ScrollEdgesDirective,
+    TableStateComponent,
+    RouterLink
   ],
   templateUrl: "./token-table.component.html",
   styleUrl: "./token-table.component.scss"
 })
-export class TokenTableComponent {
+export class TokenTableComponent implements OnDestroy {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
@@ -93,14 +117,45 @@ export class TokenTableComponent {
   readonly columnKeysMap = columnKeysMap;
   readonly columnKeys: string[] = columnKeysMap.map((column) => column.key);
   readonly apiFilterKeyMap = this.tokenService.apiFilterKeyMap;
-  readonly advancedApiFilter = this.tokenService.advancedApiFilter;
+  readonly advancedApiFilterKeys = this.tokenService.advancedApiFilterKeys;
+  readonly filterKeywords = [...this.tokenService.apiFilterKeys, ...this.tokenService.advancedApiFilterKeys].filter(
+    (keyword) => !keyword.includes(" ")
+  );
+  readonly filterHint = inlineFilterHint();
+  readonly tokenTypeFilterOptions = computed(() => this.tokenService.tokenTypeOptions().map((type) => type.key));
+  private basePageSizeOptions = [...this.tableUtilsService.pageSizeOptions()];
+  @ViewChild("filterHTMLInputElement", { static: false })
+  filterInput!: ElementRef<HTMLInputElement>;
+  tokenSelection = this.tokenService.tokenSelection;
+  tokenResource = this.tokenService.tokenResource;
+  activeFilter = this.tokenService.activeFilter;
+  readonly ROUTE_PATHS = ROUTE_PATHS;
+  readonly emptyHint = computed(() =>
+    this.authService.tokenEnrollmentAllowed() ? $localize`Enroll your first token to get started.` : ""
+  );
+  pageSize = this.tokenService.pageSize;
+  pageIndex = this.tokenService.pageIndex;
+  sort = this.tokenService.sort;
+
+  constructor() {
+    effect(() => {
+      if (!this.contentService.onTokens()) {
+        return;
+      }
+      const preset = this.tokenService.presetFilter();
+      if (preset) {
+        this.tokenService.presetFilter.set(null);
+        this.tokenService.setFilter(preset);
+      }
+    });
+  }
   protected readonly filterInputValue = linkedSignal({
-    source: () => this.tokenService.tokenFilter().filterString,
+    source: () => this.tokenService.activeFilter().filterString,
     computation: (v) => v
   });
   protected readonly showFilterHint = computed(() => {
     const current = this.filterInputValue().trim().toLowerCase();
-    const applied = this.tokenService.tokenFilter().filterString.trim().toLowerCase();
+    const applied = this.tokenService.activeFilter().filterString.trim().toLowerCase();
 
     if (current !== applied) {
       const hasUser = /(^|\s)user:/.test(current);
@@ -109,36 +164,19 @@ export class TokenTableComponent {
     }
     return false;
   });
-  private basePageSizeOptions = [...this.tableUtilsService.pageSizeOptions()];
-  @ViewChild("filterHTMLInputElement", { static: false })
-  filterInput!: ElementRef<HTMLInputElement>;
-  tokenSelection = this.tokenService.tokenSelection;
-  tokenResource = this.tokenService.tokenResource;
-  tokenFilter = this.tokenService.tokenFilter;
-  pageSize = this.tokenService.pageSize;
-  pageIndex = this.tokenService.pageIndex;
-  sort = this.tokenService.sort;
-  emptyResource = linkedSignal({
-    source: this.pageSize,
-    computation: (pageSize: number) =>
-      Array.from({ length: pageSize }, () => {
-        const emptyRow: Record<string, string> = {};
-        columnKeysMap.forEach((column) => {
-          emptyRow[column.key] = "";
-        });
-        return emptyRow as unknown as TokenDetails;
-      })
-  });
   tokenDataSource: WritableSignal<MatTableDataSource<TokenDetails>> = linkedSignal({
     source: () => ({ value: this.tokenService.tokenResourceValue(), error: this.tokenResource.error() }),
-    computation: (src, previous) => {
-      if (src.error) {
+    computation: (src) => {
+      // tokenlist only exists in the admin scope, so a self-service user must not be gated on it -
+      // the same guard the token service applies before loading.
+      const deniedForAdmin = this.authService.role() === "admin" && !this.authService.actionAllowed("tokenlist");
+      if (src.error || deniedForAdmin) {
         return new MatTableDataSource<TokenDetails>([]);
       }
       if (src.value) {
         return new MatTableDataSource(src.value.tokens);
       }
-      return previous?.value ?? new MatTableDataSource(this.emptyResource());
+      return new MatTableDataSource<TokenDetails>([]);
     }
   });
   totalLength: WritableSignal<number> = linkedSignal({
@@ -153,6 +191,13 @@ export class TokenTableComponent {
       return previous?.value ?? 0;
     }
   });
+  readonly tableState = new TableState({
+    resource: this.tokenResource,
+    count: () => this.totalLength(),
+    filterActive: () => !this.activeFilter().isEmpty,
+    allowed: () => this.authService.actionAllowed("tokenlist"),
+    resetFilter: () => this.tokenService.clearFilter()
+  });
   pageSizeOptions = computed(() => {
     if (!this.basePageSizeOptions.includes(this.pageSize())) {
       this.basePageSizeOptions.push(this.pageSize());
@@ -161,25 +206,8 @@ export class TokenTableComponent {
     return this.basePageSizeOptions;
   });
 
-  isAllSelected() {
-    return this.tokenSelection().length === this.tokenDataSource().data.length;
-  }
-
-  toggleAllRows() {
-    if (this.isAllSelected()) {
-      this.tokenSelection.set([]);
-    } else {
-      this.tokenSelection.set([...this.tokenDataSource().data]);
-    }
-  }
-
-  toggleRow(tokenDetails: TokenDetails): void {
-    const current = this.tokenSelection();
-    if (current.includes(tokenDetails)) {
-      this.tokenSelection.set(current.filter((r) => r !== tokenDetails));
-    } else {
-      this.tokenSelection.set([...current, tokenDetails]);
-    }
+  ngOnDestroy(): void {
+    this.tokenSelection.deselectAllRows();
   }
 
   toggleActive(tokenDetails: TokenDetails): void {
@@ -233,42 +261,47 @@ export class TokenTableComponent {
   }
 
   toggleFilter(filterKeyword: string): void {
-    let newValue;
-    if (filterKeyword === "active") {
-      newValue = this.tableUtilsService.toggleBooleanInFilter({
-        keyword: filterKeyword,
-        currentValue: this.tokenService.tokenFilter()
-      });
-    } else {
-      newValue = this.tableUtilsService.toggleKeywordInFilter({
-        keyword: filterKeyword,
-        currentValue: this.tokenService.tokenFilter()
-      });
-    }
+    this.tokenService.updateFilter((current) => {
+      let newValue =
+        filterKeyword === "active"
+          ? this.tableUtilsService.toggleBooleanInFilter({
+              keyword: filterKeyword,
+              currentValue: current
+            })
+          : this.tableUtilsService.toggleKeywordInFilter({
+              keyword: filterKeyword,
+              currentValue: current
+            });
 
-    if (filterKeyword === "user" && newValue.hasKey("user") && !newValue.hasKey("realm")) {
-      const defaultRealm = this.realmService.defaultRealm();
-      if (defaultRealm) {
-        newValue = newValue.addEntry("realm", defaultRealm);
+      if (filterKeyword === "user") {
+        newValue = withDefaultRealm(newValue, this.realmService.defaultRealm());
       }
-    }
 
-    this.tokenService.tokenFilter.set(newValue);
+      return newValue;
+    });
   }
 
   isFilterSelected(filter: string, inputValue: FilterValue): boolean {
     return inputValue.hasKey(filter);
   }
 
+  filterColumnTooltip(label: string, keyword: string): string {
+    return filterColumnHint(label, {
+      exactMatch: this.tokenService.exactMatchKeys.has(keyword),
+      isBoolean: this.tokenService.booleanKeys.has(keyword),
+      caseNote: this.tokenService.caseNotes[keyword]
+    });
+  }
+
   getFilterIconName(keyword: string): string {
     if (keyword === "active" || keyword === "assigned") {
-      const value = this.tokenService.tokenFilter()?.getValueOfKey(keyword)?.toLowerCase();
-      if (!value) {
+      const value = this.tokenService.activeFilter().booleanValueOfKey(keyword);
+      if (value === undefined) {
         return "filter_alt";
       }
-      return value === "true" ? "screen_rotation_alt" : value === "false" ? "filter_alt_off" : "filter_alt";
+      return value ? "screen_rotation_alt" : "filter_alt_off";
     } else {
-      const isSelected = this.isFilterSelected(keyword, this.tokenService.tokenFilter());
+      const isSelected = this.isFilterSelected(keyword, this.tokenService.activeFilter());
       return isSelected ? "filter_alt_off" : "filter_alt";
     }
   }
@@ -278,7 +311,7 @@ export class TokenTableComponent {
     const inputElement = this.filterInput?.nativeElement;
     if (inputElement) {
       inputElement.focus();
-      if (filterKeyword === "user" && this.tokenService.tokenFilter().hasKey("user")) {
+      if (filterKeyword === "user" && this.tokenService.activeFilter().hasKey("user")) {
         setTimeout(() => {
           const filterString = inputElement.value;
           const userIndex = filterString.indexOf("user:");
@@ -291,15 +324,20 @@ export class TokenTableComponent {
     }
   }
 
+  selectedFilterValues(keyword: string): string[] {
+    return StringUtils.splitFilterList(this.tokenService.filterDraft().getValueOfKey(keyword));
+  }
+
+  setFilterValues(keyword: string, values: string[]): void {
+    this.tokenService.updateFilter((current) =>
+      values.length ? current.addEntry(keyword, values.join(",")) : current.removeKey(keyword)
+    );
+  }
+
   onItemSelected(keyword: string, value: string): void {
-    const currentFilter = this.tokenService.tokenFilter();
-    let newValue;
-    if (value) {
-      newValue = currentFilter.addEntry(keyword, value);
-    } else {
-      newValue = currentFilter.removeKey(keyword);
-    }
-    this.tokenService.tokenFilter.set(newValue);
+    this.tokenService.updateFilter((current) =>
+      value ? current.addEntry(keyword, value) : current.removeKey(keyword)
+    );
     this.filterInput?.nativeElement.focus();
   }
 }

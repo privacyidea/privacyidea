@@ -19,160 +19,188 @@
 <div
   appScrollToTop
   class="privacyidea-servers-container">
-  <div class="filter-paginator-container">
-    <mat-form-field
-      appearance="fill"
-      class="table-filter"
-      subscriptSizing="dynamic">
-      <mat-label i18n>Filter privacyIDEA Servers...</mat-label>
-      <app-clearable-input
-        (clearButtonClick)="resetFilter()"
-        [showClearButton]="filterString().length > 0">
-        <input
-          #filterHTMLInputElement
-          (input)="onFilterInput(filterHTMLInputElement.value)"
-          [value]="filterString()"
-          aria-label="Filter Input"
-          i18n-aria-label
-          i18n-placeholder
-          matInput
-          placeholder="Filter by identifier or URL" />
-      </app-clearable-input>
-    </mat-form-field>
-    <mat-paginator
-      [length]="totalLength()"
-      [pageSizeOptions]="pageSizeOptions()"
-      [pageSize]="pageSizeOptions()[1]"
-      showFirstLastButtons />
-  </div>
-  <div class="actions-container">
-    <button
-      (click)="openEditDialog()"
-      class="action-button-primary button-width-l"
-      mat-stroked-button>
-      <mat-icon>add</mat-icon>
-      <span i18n>Create PrivacyIDEA Server</span>
-    </button>
-  </div>
-  <table
-    [dataSource]="privacyideaDataSource()"
-    class="privacyidea-servers-table"
-    mat-table
-    matSort>
-    <ng-container matColumnDef="identifier">
-      <th
-        *matHeaderCellDef
-        i18n
-        mat-header-cell
-        mat-sort-header>
-        Identifier
-      </th>
-      <td
-        *matCellDef="let server"
-        mat-cell>
-        <app-copyable [copyText]="server.identifier">
-          <a
-            role="button"
-            tabindex="0"
-            (click)="openEditDialog(server)"
-            (keydown.enter)="openEditDialog(server)"
-            class="flex ali-center">
-            {{ server.identifier }}
-          </a>
-        </app-copyable>
-      </td>
-    </ng-container>
+  @if (tableState.showTable()) {
+    <div class="filter-paginator-container">
+      <mat-form-field
+        appearance="fill"
+        class="table-filter"
+        subscriptSizing="dynamic">
+        <mat-label i18n>Filter privacyIDEA Servers...</mat-label>
+        <app-clearable-input
+          (clearButtonClick)="resetFilter()"
+          [showClearButton]="filterString().length > 0">
+          <input
+            #filterHTMLInputElement
+            (input)="onFilterInput(filterHTMLInputElement.value)"
+            [value]="filterString()"
+            aria-label="Filter Input"
+            i18n-aria-label
+            i18n-placeholder
+            matInput
+            placeholder="Filter by identifier or URL" />
+        </app-clearable-input>
+      </mat-form-field>
+      <mat-paginator
+        [length]="totalLength()"
+        [pageSizeOptions]="pageSizeOptions()"
+        [pageSize]="pageSizeOptions()[1]"
+        showFirstLastButtons />
+    </div>
+    <div class="actions-container">
+      <button
+        (click)="openEditDialog()"
+        class="action-button-primary button-width-l"
+        mat-stroked-button>
+        <span class="icon-badge">
+          <mat-icon class="mdi--pi-logo padding-right-3"></mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+        </span>
+        <span i18n>Create PrivacyIDEA Server</span>
+      </button>
+      <button
+        (click)="deleteSelected()"
+        [disabled]="!selector.hasSelection()"
+        class="action-button-delete-secondary button-width-l"
+        mat-stroked-button>
+        <mat-icon>delete_sweep</mat-icon>
+        <span i18n>Delete</span>
+      </button>
+    </div>
+    <table
+      [dataSource]="privacyideaDataSource()"
+      class="privacyidea-servers-table"
+      mat-table
+      matSort>
+      <ng-container matColumnDef="select">
+        <th
+          *matHeaderCellDef
+          class="table-checkbox"
+          mat-header-cell>
+          <mat-checkbox
+            (change)="$event.checked ? selector.selectAllRows() : selector.deselectAllRows()"
+            [checked]="selector.allRowsSelected()"
+            [disabled]="!selector.hasVisibleRows()"
+            [indeterminate]="selector.someRowsSelected()" />
+        </th>
+        <td
+          *matCellDef="let row"
+          class="table-checkbox"
+          mat-cell>
+          <mat-checkbox
+            (change)="selector.setRowSelected(row, $event.checked)"
+            (click)="$event.stopPropagation()"
+            [checked]="selector.isRowSelected(row)" />
+        </td>
+      </ng-container>
 
-    <ng-container matColumnDef="url">
-      <th
-        *matHeaderCellDef
-        i18n
-        mat-header-cell
-        mat-sort-header>
-        URL
-      </th>
-      <td
-        *matCellDef="let server"
-        mat-cell>
-        {{ server.url }}
-      </td>
-    </ng-container>
+      <ng-container matColumnDef="identifier">
+        <th
+          *matHeaderCellDef
+          i18n
+          mat-header-cell
+          mat-sort-header>
+          Identifier
+        </th>
+        <td
+          *matCellDef="let server"
+          mat-cell>
+          <app-copyable [copyText]="server.identifier">
+            <a
+              role="button"
+              tabindex="0"
+              (click)="openEditDialog(server)"
+              (keydown.enter)="openEditDialog(server)"
+              class="flex ali-center">
+              {{ server.identifier }}
+            </a>
+          </app-copyable>
+        </td>
+      </ng-container>
 
-    <ng-container matColumnDef="tls">
-      <th
-        *matHeaderCellDef
-        i18n
-        mat-header-cell
-        mat-sort-header>
-        Verify TLS
-      </th>
-      <td
-        *matCellDef="let server"
-        mat-cell>
-        <div class="flex just-center">
-          @if (server.tls) {
-            <mat-icon>check</mat-icon>
-          } @else {
-            <mat-icon>close</mat-icon>
-          }
-        </div>
-      </td>
-    </ng-container>
+      <ng-container matColumnDef="url">
+        <th
+          *matHeaderCellDef
+          i18n
+          mat-header-cell
+          mat-sort-header>
+          URL
+        </th>
+        <td
+          *matCellDef="let server"
+          mat-cell>
+          {{ server.url }}
+        </td>
+      </ng-container>
 
-    <ng-container matColumnDef="description">
-      <th
-        *matHeaderCellDef
-        i18n
-        mat-header-cell
-        mat-sort-header>
-        Description
-      </th>
-      <td
-        *matCellDef="let server"
-        mat-cell>
-        {{ server.description }}
-      </td>
-    </ng-container>
+      <ng-container matColumnDef="tls">
+        <th
+          *matHeaderCellDef
+          i18n
+          mat-header-cell
+          mat-sort-header>
+          Verify TLS
+        </th>
+        <td
+          *matCellDef="let server"
+          mat-cell>
+          <div class="flex just-center">
+            @if (server.tls) {
+              <mat-icon>check</mat-icon>
+            } @else {
+              <mat-icon>close</mat-icon>
+            }
+          </div>
+        </td>
+      </ng-container>
 
-    <ng-container matColumnDef="actions">
-      <th
-        *matHeaderCellDef
-        i18n
-        mat-header-cell>
-        Actions
-      </th>
-      <td
-        *matCellDef="let server"
-        mat-cell>
-        <div class="flex just-center">
-          <button
-            (click)="deleteServer(server)"
-            color="warn"
-            i18n-matTooltip
-            mat-icon-button
-            matTooltip="Delete">
-            <mat-icon>delete</mat-icon>
-          </button>
-        </div>
-      </td>
-    </ng-container>
+      <ng-container matColumnDef="description">
+        <th
+          *matHeaderCellDef
+          i18n
+          mat-header-cell
+          mat-sort-header>
+          Description
+        </th>
+        <td
+          *matCellDef="let server"
+          mat-cell>
+          {{ server.description }}
+        </td>
+      </ng-container>
 
-    <tr
-      *matHeaderRowDef="displayedColumns"
-      mat-header-row></tr>
-    <tr
-      *matRowDef="let row; columns: displayedColumns"
-      mat-row></tr>
+      <tr
+        *matHeaderRowDef="displayedColumns"
+        mat-header-row></tr>
+      <tr
+        *matRowDef="let row; columns: displayedColumns"
+        mat-row></tr>
 
-    <tr
-      *matNoDataRow
-      class="mat-row">
-      <td
-        class="mat-cell"
-        colspan="5"
-        i18n>
-        No privacyIDEA servers found.
-      </td>
-    </tr>
-  </table>
+      <tr *matNoDataRow>
+        <td colspan="5">
+          <app-table-state
+            [status]="tableState.rowStatus()"
+            [table]="tableState" />
+        </td>
+      </tr>
+    </table>
+  } @else {
+    <app-table-state
+      [table]="tableState"
+      heading="No privacyIDEA servers yet"
+      hint="Create a privacyIDEA server to forward authentication requests to another instance."
+      i18n-heading
+      i18n-hint
+      icon="dns">
+      <button
+        (click)="openEditDialog()"
+        class="action-button-primary button-width-l"
+        mat-stroked-button>
+        <span class="icon-badge">
+          <mat-icon class="mdi--pi-logo padding-right-3"></mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+        </span>
+        <span i18n>Create PrivacyIDEA Server</span>
+      </button>
+    </app-table-state>
+  }
 </div>

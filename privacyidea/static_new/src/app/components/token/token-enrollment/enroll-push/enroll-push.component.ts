@@ -56,6 +56,8 @@ export class EnrollPushComponent extends EnrollTokenBase<PushEnrollmentData> {
 
   firstStepDialogRef: MatDialogRef<AbstractDialogComponent, boolean> | null = null;
 
+  override readonly showEnrollDataInLastStep: boolean = false;
+
   buildEnrollmentArgs(basicOptions: TokenEnrollmentData): EnrollmentArgs<PushEnrollmentData> | null {
     const enrollmentData: PushEnrollmentData = {
       ...basicOptions,
@@ -76,15 +78,18 @@ export class EnrollPushComponent extends EnrollTokenBase<PushEnrollmentData> {
     });
     if (!pollResponse) {
       return null;
-    } else {
-      return {
-        ...initResponse,
-        detail: {
-          ...initResponse.detail,
-          rollout_state: pollResponse.result?.value?.tokens[0].rollout_state ?? initResponse.detail.rollout_state
-        }
-      };
     }
+    const rolloutState = pollResponse.result?.value?.tokens[0].rollout_state ?? initResponse.detail.rollout_state;
+    if (rolloutState === "clientwait") {
+      return null;
+    }
+    return {
+      ...initResponse,
+      detail: {
+        ...initResponse.detail,
+        rollout_state: rolloutState
+      }
+    };
   }
 
   private pollTokenRolloutState = (

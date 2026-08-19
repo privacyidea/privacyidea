@@ -23,10 +23,12 @@ import {
   RadiusServers,
   RadiusServerServiceInterface
 } from "@services/radius-server/radius-server.service";
-import { MockHttpResourceRef } from "./mock-utils";
+import { MockHttpResourceRef, MockPiResponse } from "./mock-utils";
 
 export class MockRadiusService implements RadiusServerServiceInterface {
-  radiusServerResource = new MockHttpResourceRef<PiResponse<RadiusServers> | undefined>(undefined);
+  radiusServerResource = new MockHttpResourceRef<PiResponse<RadiusServers> | undefined>(
+    MockPiResponse.fromValue<RadiusServers>({})
+  );
   radiusServers = signal<RadiusServer[]>([]);
   postRadiusServer = jest.fn(async (): Promise<void> => Promise.resolve());
   testRadiusServer = jest.fn(async (): Promise<boolean> => Promise.resolve(true));

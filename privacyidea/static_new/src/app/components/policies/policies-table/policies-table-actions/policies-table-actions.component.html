@@ -20,10 +20,23 @@
   <div
     appOverflowNav
     class="flex-row margin-bottom-16 gap-8">
+    @if (authService.actionAllowed("policywrite")) {
+      <button
+        (click)="createNewPolicy()"
+        class="action-button-primary button-width-l create-policy-button"
+        mat-stroked-button>
+        <span class="icon-badge">
+          <mat-icon class="padding-right-4">gavel</mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+        </span>
+        <span i18n>Create Policy</span>
+      </button>
+    }
+
     @if (authService.actionAllowed("policydelete")) {
       <button
         (click)="deleteSelectedPolicies()"
-        [disabled]="policySelection().size < 1"
+        [disabled]="policySelection().length < 1"
         class="action-button-delete-secondary button-width-m"
         mat-stroked-button>
         <mat-icon>delete_sweep</mat-icon>
@@ -34,7 +47,7 @@
     @if (authService.actionAllowed("policywrite")) {
       <button
         (click)="copySelectedPolicies()"
-        [disabled]="policySelection().size < 1"
+        [disabled]="policySelection().length < 1"
         class="action-button-secondary button-width-m"
         mat-stroked-button>
         <mat-icon>content_copy</mat-icon>

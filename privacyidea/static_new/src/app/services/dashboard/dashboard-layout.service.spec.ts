@@ -20,7 +20,11 @@ import { provideZonelessChangeDetection } from "@angular/core";
 import { TestBed } from "@angular/core/testing";
 import { DASHBOARD_COLUMNS, WidgetInstance } from "@models/dashboard";
 import { AuthService } from "@services/auth/auth.service";
+import { UserSettingsService } from "@services/user-settings/user-settings.service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { MockUserSettingsService } from "@testing/mock-services/mock-user-settings-service";
+import { WidgetComponentType } from "@models/dashboard";
+import { WidgetRegistryService } from "./widget-registry.service";
 import { DashboardLayoutService } from "./dashboard-layout.service";
 import { DashboardPersistenceService } from "./dashboard-persistence.service";
 
@@ -32,18 +36,31 @@ describe("DashboardLayoutService", () => {
   const overlaps = (a: WidgetInstance, b: WidgetInstance): boolean =>
     a.x < b.x + b.cols && a.x + a.cols > b.x && a.y < b.y + b.rows && a.y + a.rows > b.y;
 
+  /** Reads the stored layout back; the mocked user settings resolve synchronously. */
+  const stored = (): WidgetInstance[] | null => {
+    let result: WidgetInstance[] | null = null;
+    persistence.load().subscribe((widgets) => {
+      result = widgets;
+    });
+    return result;
+  };
+
   /** Builds the service after optionally seeding persistence, so the constructor picks up the stored layout. */
   const build = (seed?: WidgetInstance[]): void => {
     persistence = TestBed.inject(DashboardPersistenceService);
     if (seed) {
-      persistence.save(seed);
+      persistence.save(seed).subscribe();
     }
     service = TestBed.inject(DashboardLayoutService);
   };
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [provideZonelessChangeDetection(), { provide: AuthService, useClass: MockAuthService }]
+      providers: [
+        provideZonelessChangeDetection(),
+        { provide: AuthService, useClass: MockAuthService },
+        { provide: UserSettingsService, useClass: MockUserSettingsService }
+      ]
     });
     auth = TestBed.inject(AuthService) as unknown as MockAuthService;
     auth.actionAllowed.mockReturnValue(true);
@@ -52,13 +69,14 @@ describe("DashboardLayoutService", () => {
   describe("initialisation", () => {
     it("should fall back to the default layout when persistence is empty", () => {
       build();
-      expect(service.widgets()).toHaveLength(6);
+      expect(service.widgets()).toHaveLength(7);
       expect(service.widgets().map((widget) => widget.type).sort()).toEqual([
         "administration",
         "authentications",
         "events",
         "policies",
         "subscriptions",
+        "token-types",
         "tokens"
       ]);
     });
@@ -70,10 +88,10 @@ describe("DashboardLayoutService", () => {
       expect(service.widgets()).toContainEqual(stored[0]);
     });
 
-    it("should always include the pinned widget at its fixed position", () => {
+    it("should open the default layout with the subscription overview in the corner", () => {
       build();
-      const pinned = service.widgets().find((widget) => widget.type === "subscriptions");
-      expect(pinned).toMatchObject({ x: 16, y: 0 });
+      const subscriptions = service.widgets().find((widget) => widget.type === "subscriptions");
+      expect(subscriptions).toMatchObject({ x: 0, y: 0 });
     });
 
     it("should start in view mode", () => {
@@ -96,7 +114,7 @@ describe("DashboardLayoutService", () => {
       const saveSpy = jest.spyOn(persistence, "save");
       service.addWidget("events");
       expect(saveSpy).not.toHaveBeenCalled();
-      expect((persistence.load() ?? []).some((widget) => widget.type === "events")).toBe(false);
+      expect((stored() ?? []).some((widget) => widget.type === "events")).toBe(false);
     });
 
     it("should report pending changes once the layout diverges", () => {
@@ -112,7 +130,7 @@ describe("DashboardLayoutService", () => {
       service.saveEdit();
       expect(service.editMode()).toBe(false);
       expect(service.hasPendingChanges()).toBe(false);
-      expect(persistence.load()?.some((widget) => widget.type === "events")).toBe(true);
+      expect(stored()?.some((widget) => widget.type === "events")).toBe(true);
     });
 
     it("should revert the staged layout on cancelEdit", () => {
@@ -121,7 +139,7 @@ describe("DashboardLayoutService", () => {
       service.cancelEdit();
       expect(service.editMode()).toBe(false);
       expect(service.widgets().some((widget) => widget.type === "events")).toBe(false);
-      expect((persistence.load() ?? []).some((widget) => widget.type === "events")).toBe(false);
+      expect((stored() ?? []).some((widget) => widget.type === "events")).toBe(false);
     });
   });
 
@@ -170,7 +188,7 @@ describe("DashboardLayoutService", () => {
     it("should persist the layout after adding", () => {
       const before = service.widgets().length;
       service.addWidget("events");
-      expect(persistence.load()).toHaveLength(before + 1);
+      expect(stored()).toHaveLength(before + 1);
     });
 
     it("should not add a second widget of a type that is already placed", () => {
@@ -205,9 +223,17 @@ describe("DashboardLayoutService", () => {
     });
 
     it("should not remove a pinned widget", () => {
-      const pinned = service.widgets().find((widget) => widget.type === "subscriptions")!;
+      // No shipped widget is pinned, so report one type as pinned to cover the branch.
+      const registry = TestBed.inject(WidgetRegistryService);
+      const realGet = registry.get.bind(registry);
+      jest.spyOn(registry, "get").mockImplementation((type: string) =>
+        type === "events" ? ({ ...realGet(type), pinned: true } as unknown as WidgetComponentType) : realGet(type)
+      );
+      const pinned = service.widgets().find((widget) => widget.type === "events")!;
+
       service.removeWidget(pinned.id);
-      expect(service.widgets().some((widget) => widget.type === "subscriptions")).toBe(true);
+
+      expect(service.widgets().some((widget) => widget.type === "events")).toBe(true);
     });
 
     it("should leave the layout untouched for an unknown id", () => {
@@ -219,7 +245,7 @@ describe("DashboardLayoutService", () => {
     it("should persist after removing", () => {
       const tokens = service.widgets().find((widget) => widget.type === "tokens")!;
       service.removeWidget(tokens.id);
-      expect(persistence.load()?.some((widget) => widget.type === "tokens")).toBe(false);
+      expect(stored()?.some((widget) => widget.type === "tokens")).toBe(false);
     });
   });
 
@@ -249,8 +275,8 @@ describe("DashboardLayoutService", () => {
     it("should persist after moving", () => {
       const id = service.widgets()[0].id;
       service.moveWidgetTo(id, 3, 3);
-      const stored = persistence.load()?.find((widget) => widget.id === id);
-      expect(stored).toMatchObject({ x: 3, y: 3 });
+      const storedWidget = stored()?.find((widget) => widget.id === id);
+      expect(storedWidget).toMatchObject({ x: 3, y: 3 });
     });
   });
 
@@ -269,8 +295,8 @@ describe("DashboardLayoutService", () => {
     it("should persist after resizing", () => {
       const id = service.widgets()[0].id;
       service.resizeWidget(id, 12, 5);
-      const stored = persistence.load()?.find((widget) => widget.id === id);
-      expect(stored).toMatchObject({ cols: 12, rows: 5 });
+      const storedWidget = stored()?.find((widget) => widget.id === id);
+      expect(storedWidget).toMatchObject({ cols: 12, rows: 5 });
     });
   });
 
@@ -281,13 +307,14 @@ describe("DashboardLayoutService", () => {
       service.removeWidget(service.widgets().find((widget) => widget.type === "events")!.id);
       service.resetLayout();
 
-      expect(service.widgets()).toHaveLength(6);
+      expect(service.widgets()).toHaveLength(7);
       expect(service.widgets().map((widget) => widget.type).sort()).toEqual([
         "administration",
         "authentications",
         "events",
         "policies",
         "subscriptions",
+        "token-types",
         "tokens"
       ]);
     });
@@ -295,7 +322,7 @@ describe("DashboardLayoutService", () => {
     it("should persist the reset layout", () => {
       service.removeWidget(service.widgets().find((widget) => widget.type === "events")!.id);
       service.resetLayout();
-      expect(persistence.load()).toHaveLength(6);
+      expect(stored()).toHaveLength(7);
     });
   });
 
@@ -335,10 +362,10 @@ describe("DashboardLayoutService", () => {
       service.pruneForbiddenWidgets();
 
       expect(service.hasWidgetOfType("tokens")).toBe(false);
-      expect(persistence.load()?.some((widget) => widget.type === "tokens")).toBe(false);
+      expect(stored()?.some((widget) => widget.type === "tokens")).toBe(false);
     });
 
-    it("should keep allowed and pinned widgets when pruning", () => {
+    it("should keep the allowed widgets when pruning", () => {
       build();
       auth.actionAllowed.mockImplementation((action: string) => action !== "tokenlist");
 

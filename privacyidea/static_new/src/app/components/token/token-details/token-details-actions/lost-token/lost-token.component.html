@@ -70,11 +70,7 @@
         class="bold-warning">
         The password can not be shown again later!
       </p>
-      <p i18n>
-        The token is valid until {{ lostTokenData?.end_date | date: "longDate" }} at{{
-          lostTokenData?.end_date | date: "shortTime"
-        }}.
-      </p>
+      <p i18n>The token is valid until {{ lostTokenData?.end_date | localDateTime }}.</p>
     }
   </div>
 </app-dialog-wrapper>

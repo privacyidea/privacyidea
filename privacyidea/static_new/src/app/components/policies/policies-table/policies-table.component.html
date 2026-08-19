@@ -22,165 +22,197 @@
   aria-label="Policy Table"
   class="policies-table-layout"
   i18n-aria-label>
-  @if (authService.actionAllowed("policyread")) {
-    <app-policy-filter
-      #filterComponent
-      (filterChange)="onFilterUpdate($event)"
-      [initialFilter]="filter()"
-      [unfilteredPolicies]="policyService.allPolicies()"
-      class="policies-table-filter"></app-policy-filter>
-  }
-
-  <app-policies-table-actions [policySelection]="selectedPolicies()" />
-
-  <table
-    (matSortChange)="onSortChange($event)"
-    [dataSource]="sortedFilteredPolicies()"
-    class="policies-table"
-    mat-table
-    matSort
-    matSortActive="priority"
-    matSortDirection="asc">
-    <ng-container matColumnDef="select">
-      <th
-        *matHeaderCellDef
-        mat-header-cell>
-        <mat-checkbox
-          (change)="masterToggle()"
-          [checked]="isAllSelected()"
-          [disabled]="policyService.allPolicies().length === 0"
-          [indeterminate]="selectedPolicies().size > 0 && !isAllSelected()"
-          aria-label="Select all policies"
-          i18n-aria-label></mat-checkbox>
-      </th>
-      <td
-        *matCellDef="let policy"
-        mat-cell>
-        <mat-checkbox
-          (change)="updateSelection($event, policy.name)"
-          (click)="$event.stopPropagation()"
-          [checked]="selectedPolicies().has(policy.name)"
-          [disabled]="!policy.name"
-          aria-label="Select policy"
-          i18n-aria-label></mat-checkbox>
-      </td>
-    </ng-container>
-
-    @for (column of columns | keyvalue: keepOrder; track column.key) {
-      <ng-container [matColumnDef]="column.key">
-        <th
-          *matHeaderCellDef
-          [class]="'col-' + column.key"
-          [disabled]="!column.value.sortable || policyService.allPolicies().length === 0"
-          mat-header-cell
-          mat-sort-header>
-          <div class="table-header-container">
-            @if (column.value.label) {
-              <div>{{ column.value.label }}</div>
-            }
-            @if (isFilterable(column.key)) {
-              <div class="flex">
-                <button
-                  (click)="$event.stopPropagation(); onFilterClick(column.key)"
-                  [disabled]="policyService.allPolicies().length === 0"
-                  class="filter-button"
-                  mat-icon-button>
-                  <mat-icon class="keyword-button-icon margin-left-0">
-                    {{ getFilterIconName(column.key) }}
-                  </mat-icon>
-                </button>
-              </div>
-            }
-          </div>
-        </th>
-
-        <td
-          *matCellDef="let policy"
-          [class]="'col-' + column.key"
-          mat-cell>
-          <div class="column-max-height">
-            @if (policy.name) {
-              @switch (column.key) {
-                @case ("priority") {
-                  {{ policy.priority }}
-                }
-                @case ("name") {
-                  <div class="name-wrapper">
-                    @if (authService.actionAllowed("policywrite")) {
-                      <a
-                        (click)="$event.stopPropagation(); editPolicy(policy)"
-                        (keydown.enter)="$event.stopPropagation(); editPolicy(policy)"
-                        (keydown.space)="$event.stopPropagation(); $event.preventDefault(); editPolicy(policy)"
-                        tabindex="0"
-                        role="button"
-                        class="flex ali-center bold">
-                        {{ policy.name }}
-                      </a>
-                      <app-copy-button [copyText]="policy.name" />
-                    } @else {
-                      {{ policy.name }}
-                    }
-                  </div>
-                }
-                @case ("scope") {
-                  {{ policy.scope?.toLowerCase() }}
-                }
-                @case ("description") {
-                  {{ policy.description }}
-                }
-                @case ("actions") {
-                  @if (policy.action) {
-                    <app-view-action-column
-                      [actions]="policy.action"
-                      [scope]="policy.scope" />
-                  }
-                }
-                @case ("conditions") {
-                  <app-view-conditions-column [policy]="policy" />
-                }
-                @case ("active") {
-                  <div class="flex just-center">
-                    <mat-icon
-                      (click)="$event.stopPropagation(); togglePolicyActive(policy)"
-                      [class.active-icon]="policy.active"
-                      [class.inactive-icon]="!policy.active"
-                      [matTooltip]="policy.active ? 'Deactivate policy' : 'Activate policy'"
-                      class="clickable-icon">
-                      check_circle
-                    </mat-icon>
-                  </div>
-                }
-                @default {
-                  {{ policy[column.key] }}
-                }
-              }
-            }
-          </div>
-        </td>
-      </ng-container>
+  @if (tableState.showTable()) {
+    @if (authService.actionAllowed("policyread")) {
+      <app-policy-filter
+        #filterComponent
+        (filterChange)="onFilterUpdate($event)"
+        [initialFilter]="filter()"
+        [unfilteredPolicies]="policyService.allPolicies()"
+        class="policies-table-filter"></app-policy-filter>
     }
 
-    <tr
-      *matHeaderRowDef="columnKeys()"
-      mat-header-row></tr>
-    <tr
-      *matRowDef="let policy; columns: columnKeys()"
-      [class.skeleton-row]="!policy.name"
-      class="policy-row"
-      mat-row></tr>
+    <app-policies-table-actions [policySelection]="selector.selectedRows()" />
 
-    <tr
-      *matNoDataRow
-      aria-label="No Data Row"
-      class="mat-mdc-no-data-row"
-      i18n-aria-label>
-      <td
-        [attr.colspan]="columnKeys().length"
-        aria-label="No Data Cell"
-        i18n
-        i18n-aria-label>
-        No data matching the filter.
-      </td>
-    </tr>
-  </table>
+    <table
+      (matSortChange)="onSortChange($event)"
+      [dataSource]="sortedFilteredPolicies()"
+      class="policies-table"
+      mat-table
+      matSort
+      matSortActive="priority"
+      matSortDirection="asc">
+      <ng-container matColumnDef="select">
+        <th
+          *matHeaderCellDef
+          mat-header-cell>
+          <mat-checkbox
+            (change)="$event.checked ? selector.selectAllRows() : selector.deselectAllRows()"
+            [checked]="selector.allRowsSelected()"
+            [disabled]="!selector.hasVisibleRows()"
+            [indeterminate]="selector.someRowsSelected()"
+            aria-label="Select all policies"
+            i18n-aria-label></mat-checkbox>
+        </th>
+        <td
+          *matCellDef="let policy"
+          mat-cell>
+          <mat-checkbox
+            (change)="selector.setRowSelected(policy, $event.checked)"
+            (click)="$event.stopPropagation()"
+            [checked]="selector.isRowSelected(policy)"
+            [disabled]="!policy.name"
+            aria-label="Select policy"
+            i18n-aria-label></mat-checkbox>
+        </td>
+      </ng-container>
+
+      @for (column of columns | keyvalue: keepOrder; track column.key) {
+        <ng-container [matColumnDef]="column.key">
+          <th
+            *matHeaderCellDef
+            [class]="'col-' + column.key"
+            [disabled]="!column.value.sortable || policyService.allPolicies().length === 0"
+            mat-header-cell
+            mat-sort-header>
+            <div class="table-header-container">
+              @if (column.value.label) {
+                <div>{{ column.value.label }}</div>
+              }
+              @if (isFilterable(column.key)) {
+                <div class="flex">
+                  <button
+                    (click)="$event.stopPropagation(); onFilterClick(column.key)"
+                    [disabled]="policyService.allPolicies().length === 0"
+                    class="filter-button"
+                    mat-icon-button>
+                    <mat-icon class="keyword-button-icon margin-left-0">
+                      {{ getFilterIconName(column.key) }}
+                    </mat-icon>
+                  </button>
+                </div>
+              }
+            </div>
+          </th>
+
+          <td
+            *matCellDef="let policy"
+            [class]="'col-' + column.key"
+            mat-cell>
+            <div class="column-max-height">
+              @if (policy.name) {
+                @switch (column.key) {
+                  @case ("priority") {
+                    {{ policy.priority }}
+                  }
+                  @case ("name") {
+                    <div class="name-wrapper">
+                      @if (authService.actionAllowed("policywrite")) {
+                        <a
+                          (click)="$event.stopPropagation(); editPolicy(policy)"
+                          (keydown.enter)="$event.stopPropagation(); editPolicy(policy)"
+                          (keydown.space)="$event.stopPropagation(); $event.preventDefault(); editPolicy(policy)"
+                          tabindex="0"
+                          role="button"
+                          class="flex ali-center">
+                          {{ policy.name }}
+                        </a>
+                        <app-copy-button [copyText]="policy.name" />
+                      } @else {
+                        {{ policy.name }}
+                      }
+                    </div>
+                  }
+                  @case ("scope") {
+                    {{ policy.scope?.toLowerCase() }}
+                  }
+                  @case ("description") {
+                    <span [innerHTML]="policy.description ?? '' | highlight: highlightTerms().description"></span>
+                  }
+                  @case ("actions") {
+                    @if (policy.action) {
+                      <app-view-action-column
+                        [actions]="policy.action"
+                        [highlightTerms]="highlightTerms().actions"
+                        [scope]="policy.scope" />
+                    }
+                  }
+                  @case ("conditions") {
+                    <app-view-conditions-column
+                      [highlightTerms]="highlightTerms().conditions"
+                      [policy]="policy" />
+                  }
+                  @case ("active") {
+                    <div class="flex just-center">
+                      <mat-slide-toggle
+                        (click)="togglePolicyActive(policy); $event.stopPropagation()"
+                        [checked]="policy.active"
+                        [disableRipple]="true"
+                        [matTooltip]="policy.active ? 'Deactivate policy' : 'Activate policy'" />
+                    </div>
+                  }
+                  @default {
+                    {{ policy[column.key] }}
+                  }
+                }
+              }
+            </div>
+          </td>
+        </ng-container>
+      }
+
+      <tr
+        *matHeaderRowDef="columnKeys()"
+        mat-header-row></tr>
+      <tr
+        *matRowDef="let policy; columns: columnKeys()"
+        class="policy-row"
+        mat-row></tr>
+
+      <tr *matNoDataRow>
+        <td [attr.colspan]="columnKeys().length">
+          <app-table-state
+            [hint]="emptyHint()"
+            [status]="tableState.rowStatus()"
+            [table]="tableState"
+            heading="No policies yet"
+            i18n-heading
+            icon="gavel">
+            @if (authService.actionAllowed("policywrite")) {
+              <button
+                [routerLink]="[ROUTE_PATHS.POLICIES_NEW]"
+                class="action-button-primary button-width-l"
+                mat-stroked-button>
+                <span class="icon-badge">
+                  <mat-icon class="padding-right-4">gavel</mat-icon>
+                  <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+                </span>
+                <span i18n>Create Policy</span>
+              </button>
+            }
+          </app-table-state>
+        </td>
+      </tr>
+    </table>
+  } @else {
+    <app-table-state
+      [hint]="emptyHint()"
+      [table]="tableState"
+      heading="No policies yet"
+      i18n-heading
+      icon="gavel">
+      @if (authService.actionAllowed("policywrite")) {
+        <button
+          [routerLink]="[ROUTE_PATHS.POLICIES_NEW]"
+          class="action-button-primary button-width-l"
+          mat-stroked-button>
+          <span class="icon-badge">
+            <mat-icon class="padding-right-4">gavel</mat-icon>
+            <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+          </span>
+          <span i18n>Create Policy</span>
+        </button>
+      }
+    </app-table-state>
+  }
 </div>

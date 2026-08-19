@@ -16,16 +16,25 @@ coverage:
       # combined backend+frontend percentage (which moves whenever either
       # side grows, independent of actual coverage change).
       default: false
+      # Both project statuses are informational: they report the coverage
+      # trend but never fail a PR. The flags are only uploaded on PRs that
+      # touch their own paths and no workflow uploads on push to master, so
+      # the baseline is carried forward. With `target: auto` a stale
+      # carryforward baseline reads as a coverage drop and red-flags PRs
+      # that never touched that flag's code (e.g. a backend-only PR failing
+      # codecov/project/frontend). `patch` below is the real enforced gate.
       backend:
         flags:
           - backend
         target: auto
         threshold: 1%
+        informational: true
       frontend:
         flags:
           - frontend
         target: auto
         threshold: 1%
+        informational: true
     patch:
       default: false
       backend:
@@ -35,7 +44,14 @@ coverage:
       frontend:
         flags:
           - frontend
+        # `target: auto` requires the patch to be covered as well as the flag
+        # already is. With a small patch that bar has no tolerance: at ~85%
+        # flag coverage a six-line patch fails on a single uncovered line,
+        # which is usually a guard clause or an error branch rather than
+        # untested logic. The threshold allows that much slack while the
+        # target keeps new frontend code at the level of the existing code.
         target: auto
+        threshold: 5%
 
 flag_management:
   default_rules:

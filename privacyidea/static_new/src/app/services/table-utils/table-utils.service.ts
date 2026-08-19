@@ -18,7 +18,6 @@
  **/
 import { inject, Injectable, signal, WritableSignal } from "@angular/core";
 import { Sort } from "@angular/material/sort";
-import { MatTableDataSource } from "@angular/material/table";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContainerDetailToken } from "@services/container/container.service";
@@ -91,8 +90,6 @@ type KeysOfColumns<C extends readonly ColumnDef[]> = {
 export interface TableUtilsServiceInterface {
   pageSizeOptions: WritableSignal<number[]>;
 
-  emptyDataSource<T>(pageSize: number, columnsKeyMap: { key: string; label: string }[]): MatTableDataSource<T>;
-
   toggleKeywordInFilter(args: { keyword: string; currentValue: FilterValue }): FilterValue;
 
   toggleBooleanInFilter(args: { keyword: string; currentValue: FilterValue }): FilterValue;
@@ -127,7 +124,7 @@ export interface TableUtilsServiceInterface {
 
   getSortIcon(columnKey: string, sort: Sort): string;
 
-  onSortButtonClick(key: string, sort: WritableSignal<Sort>): void;
+  onSortButtonClick(key: string, sort: WritableSignal<Sort>, fallback?: Sort): void;
 
   clientsideSortTokenData(data: ContainerDetailToken[], s: Sort): ContainerDetailToken[];
 }
@@ -138,53 +135,15 @@ export class TableUtilsService implements TableUtilsServiceInterface {
   private readonly tokenService: TokenServiceInterface = inject(TokenService);
   pageSizeOptions = signal([5, 10, 25, 50]);
 
-  emptyDataSource<T>(pageSize: number, columnsKeyMap: { key: string; label: string }[]): MatTableDataSource<T> {
-    return new MatTableDataSource(
-      Array.from({ length: pageSize }, () => {
-        const emptyRow: Record<string, string> = {};
-        columnsKeyMap.forEach((column) => {
-          emptyRow[column.key] = "";
-        });
-        return emptyRow as T;
-      })
-    );
-  }
-
+  // A keyword such as "machineid & resolver" is a label for two keys that are filtered together.
   toggleKeywordInFilter(args: { keyword: string; currentValue: FilterValue }): FilterValue {
     const { keyword, currentValue } = args;
-
-    if (keyword.includes("&")) {
-      const keywords = keyword.split("&").map((k) => k.trim());
-      let newValue = currentValue;
-      for (const key of keywords) {
-        newValue = this.toggleKeywordInFilter({ keyword: key, currentValue: newValue });
-      }
-      return newValue;
-    }
-    if (currentValue.hasKey(keyword)) {
-      return currentValue.removeKey(keyword);
-    } else {
-      return currentValue.addKey(keyword);
-    }
+    return currentValue.toggleKeys(keyword.split("&").map((key) => key.trim()));
   }
 
   public toggleBooleanInFilter(args: { keyword: string; currentValue: FilterValue }): FilterValue {
     const { keyword, currentValue } = args;
-    const booleanValue = currentValue.getValueOfKey(keyword)?.toLowerCase();
-
-    if (!booleanValue) {
-      return currentValue.addEntry(keyword, "true");
-    } else {
-      const existingValue = booleanValue;
-
-      if (existingValue === "true") {
-        return currentValue.addEntry(keyword, "false");
-      } else if (existingValue === "false") {
-        return currentValue.removeKey(keyword);
-      } else {
-        return currentValue.addEntry(keyword, "true");
-      }
-    }
+    return currentValue.toggleBooleanKey(keyword);
   }
 
   isLink(columnKey: string): boolean {
@@ -406,7 +365,11 @@ export class TableUtilsService implements TableUtilsServiceInterface {
     return sort.direction === "asc" ? "keyboard_arrow_upward" : "keyboard_arrow_downward";
   }
 
-  onSortButtonClick(columnKey: string, sort: WritableSignal<Sort>): void {
+  onSortButtonClick(
+    columnKey: string,
+    sort: WritableSignal<Sort>,
+    fallback: Sort = { active: "serial", direction: "asc" }
+  ): void {
     const current = sort();
     let direction: Sort["direction"] = "asc";
 
@@ -418,11 +381,7 @@ export class TableUtilsService implements TableUtilsServiceInterface {
       }
     }
 
-    if (direction === "") {
-      sort.set({ active: "serial", direction: "asc" });
-    } else {
-      sort.set({ active: columnKey, direction });
-    }
+    sort.set(direction === "" ? fallback : { active: columnKey, direction });
   }
 
   clientsideSortTokenData(data: ContainerDetailToken[], s: Sort) {

@@ -27,6 +27,7 @@ import { CaConnectorService } from "@services/ca-connector/ca-connector.service"
 import { DialogService } from "@services/dialog/dialog.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
+import { expectsTableStateGating } from "@testing/table-state-gating";
 import {
   MockAuthService,
   MockCaConnectorService,
@@ -75,8 +76,25 @@ describe("CaConnectorsComponent", () => {
     fixture.detectChanges();
   });
 
+  it("gates the table on its read right, row count and filter", () => {
+    expectsTableStateGating({
+      state: component.tableState,
+      right: "caconnectorread"
+    });
+  });
+
   it("should create", () => {
     expect(component).toBeTruthy();
+  });
+
+  it("should only select the connectors left by the filter", async () => {
+    component.onFilterInput("conn1");
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    component.selector.selectAllRows();
+
+    expect(component.selector.selectedRows().map((row) => row.connectorname)).toEqual(["conn1"]);
   });
 
   it("should display connectors from service", () => {
@@ -104,7 +122,8 @@ describe("CaConnectorsComponent", () => {
 
   it("should delete connector after confirmation", () => {
     const connector = caConnectorServiceMock.caConnectors()[0];
-    component.deleteConnector(connector);
+    component.selector.selectRow(connector);
+    component.deleteSelected();
     expect(dialogServiceMock.openDialog).toHaveBeenCalled();
     confirmClosed.next(true);
     confirmClosed.complete();

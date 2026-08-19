@@ -27,9 +27,12 @@ import { MatPaginator, MatPaginatorModule, PageEvent } from "@angular/material/p
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
-import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
+import { TableStateComponent } from "@components/shared/table-state/table-state.component";
+import { TableState } from "@core/models/table_state/table-state";
 import { FilterValue } from "@core/models/filter_value/filter_value";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
@@ -39,6 +42,7 @@ import {
   ChallengesServiceInterface
 } from "@services/token/challenges/challenges.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
+import { inlineFilterHint } from "@utils/filter-hint.utils";
 
 import { ChallengesTableActionsComponent } from "./challenges-table-actions/challenges-table-actions.component";
 
@@ -65,7 +69,8 @@ const columnKeysMap = [
     ScrollToTopDirective,
     ClearableInputComponent,
     ChallengesTableActionsComponent,
-    ScrollEdgesDirective
+    ScrollEdgesDirective,
+    TableStateComponent
   ],
   templateUrl: "./challenges-table.component.html",
   styleUrls: ["./challenges-table.component.scss"]
@@ -76,17 +81,19 @@ export class ChallengesTableComponent {
   protected readonly challengesService: ChallengesServiceInterface = inject(ChallengesService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
 
   columnsKeyMap = columnKeysMap;
   displayedColumns = columnKeysMap.map((c) => c.key);
   pageSizeOptions = this.tableUtilsService.pageSizeOptions;
-  apiFilter = this.challengesService.apiFilter;
-  advancedApiFilter = this.challengesService.advancedApiFilter;
+  apiFilterKeys = this.challengesService.apiFilterKeys;
+  readonly filterHint = inlineFilterHint();
+  advancedApiFilterKeys = this.challengesService.advancedApiFilterKeys;
   tokenSerial = this.tokenService.tokenSerial;
   pageSize = this.challengesService.pageSize;
   pageIndex = this.challengesService.pageIndex;
   sort = this.challengesService.sort;
-  length = linkedSignal({
+  length: WritableSignal<number> = linkedSignal({
     source: () =>
       this.challengesService.challengesResource.hasValue()
         ? this.challengesService.challengesResource.value()
@@ -100,12 +107,19 @@ export class ChallengesTableComponent {
       this.challengesService.challengesResource.hasValue()
         ? this.challengesService.challengesResource.value()
         : undefined,
-    computation: (challengesResource, previous) => {
+    computation: (challengesResource) => {
       if (challengesResource) {
         return new MatTableDataSource(challengesResource.result?.value?.challenges);
       }
-      return previous?.value ?? new MatTableDataSource<Challenge>([]);
+      return new MatTableDataSource<Challenge>([]);
     }
+  });
+  readonly tableState = new TableState({
+    resource: this.challengesService.challengesResource,
+    count: () => this.length(),
+    filterActive: () => !this.challengesService.activeFilter().isEmpty,
+    allowed: () => this.authService.actionAllowed("getchallenges"),
+    resetFilter: () => this.challengesService.clearFilter()
   });
 
   @ViewChild("filterHTMLInputElement", { static: false })
@@ -119,11 +133,12 @@ export class ChallengesTableComponent {
   }
 
   toggleFilter(filterKeyword: string): void {
-    const newValue = this.tableUtilsService.toggleKeywordInFilter({
-      keyword: filterKeyword,
-      currentValue: this.challengesService.challengesFilter()
-    });
-    this.challengesService.challengesFilter.set(newValue);
+    this.challengesService.updateFilter((current) =>
+      this.tableUtilsService.toggleKeywordInFilter({
+        keyword: filterKeyword,
+        currentValue: current
+      })
+    );
   }
 
   isFilterSelected(filter: string, inputValue: FilterValue): boolean {
@@ -131,7 +146,7 @@ export class ChallengesTableComponent {
   }
 
   getFilterIconName(keyword: string): string {
-    const isSelected = this.isFilterSelected(keyword, this.challengesService.challengesFilter());
+    const isSelected = this.isFilterSelected(keyword, this.challengesService.activeFilter());
     return isSelected ? "filter_alt_off" : "filter_alt";
   }
 

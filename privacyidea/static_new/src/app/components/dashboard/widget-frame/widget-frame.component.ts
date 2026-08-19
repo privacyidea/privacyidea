@@ -17,31 +17,106 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { CdkDragHandle } from "@angular/cdk/drag-drop";
-import { NgComponentOutlet } from "@angular/common";
-import { Component, computed, inject, input } from "@angular/core";
+import { NgComponentOutlet, NgTemplateOutlet } from "@angular/common";
+import { Component, computed, inject, input, TemplateRef, viewChild } from "@angular/core";
 import { MatIconButton } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
-import { WidgetInstance } from "@models/dashboard";
+import { MatProgressSpinner } from "@angular/material/progress-spinner";
+import { MatTooltip } from "@angular/material/tooltip";
+import { RouterLink } from "@angular/router";
+import { WidgetInstance, WidgetState } from "@models/dashboard";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { DashboardLayoutService, DashboardLayoutServiceInterface } from "@services/dashboard/dashboard-layout.service";
 import { WidgetRegistryService, WidgetRegistryServiceInterface } from "@services/dashboard/widget-registry.service";
+
+interface DashboardWidgetLike {
+  state?: () => WidgetState;
+  loading?: () => boolean;
+  partialLoading?: () => boolean;
+  refreshFailed?: () => boolean;
+  reload?: () => void;
+  headerActions?: () => TemplateRef<unknown> | undefined;
+}
 
 @Component({
   selector: "app-widget-frame",
   standalone: true,
-  imports: [NgComponentOutlet, MatIcon, MatIconButton, CdkDragHandle],
+  imports: [
+    NgComponentOutlet,
+    NgTemplateOutlet,
+    MatIcon,
+    MatIconButton,
+    MatProgressSpinner,
+    MatTooltip,
+    CdkDragHandle,
+    RouterLink
+  ],
   templateUrl: "./widget-frame.component.html",
   styleUrl: "./widget-frame.component.scss"
 })
 export class WidgetFrameComponent {
   private readonly registry: WidgetRegistryServiceInterface = inject(WidgetRegistryService);
+  private readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly layoutService: DashboardLayoutServiceInterface = inject(DashboardLayoutService);
 
   readonly instance = input.required<WidgetInstance>();
+
+  private readonly outlet = viewChild<NgComponentOutlet>("widgetOutlet");
 
   protected readonly widgetType = computed(() => this.registry.get(this.instance().type));
   protected readonly component = computed(() => this.widgetType() ?? null);
   protected readonly pinned = computed(() => this.widgetType()?.pinned ?? false);
   protected readonly outletInputs = computed(() => ({ instance: this.instance() }));
+
+  protected readonly initialLoading = computed(() => {
+    const instance = this.outlet()?.componentInstance as DashboardWidgetLike | undefined;
+    return instance?.state?.() === "loading";
+  });
+
+  protected readonly loading = computed(() => {
+    const instance = this.outlet()?.componentInstance as DashboardWidgetLike | undefined;
+    return instance?.loading?.() ?? false;
+  });
+
+  protected readonly partialLoading = computed(() => {
+    const instance = this.outlet()?.componentInstance as DashboardWidgetLike | undefined;
+    return instance?.partialLoading?.() ?? false;
+  });
+
+  protected readonly refreshFailed = computed(() => {
+    const instance = this.outlet()?.componentInstance as DashboardWidgetLike | undefined;
+    return instance?.refreshFailed?.() ?? false;
+  });
+
+  protected readonly headerIcon = computed(() => this.widgetType()?.headerIcon ?? null);
+
+  protected readonly headerActions = computed(() => {
+    const instance = this.outlet()?.componentInstance as DashboardWidgetLike | undefined;
+    return instance?.headerActions?.() ?? null;
+  });
+
+  protected readonly titleLink = computed(() => {
+    if (this.layoutService.editMode()) {
+      return null;
+    }
+    const widgetType = this.widgetType();
+    const link = widgetType?.titleLink ?? null;
+    if (!link) {
+      return null;
+    }
+    const action = widgetType?.titleLinkAction ?? null;
+    return !action || this.authService.actionAllowed(action) ? link : null;
+  });
+
+  protected readonly showHeaderSpinner = computed(
+    () => !this.initialLoading() && (this.loading() || this.partialLoading())
+  );
+  protected readonly showReload = computed(() => !this.initialLoading() && !this.showHeaderSpinner());
+
+  protected reload(): void {
+    const instance = this.outlet()?.componentInstance as DashboardWidgetLike | undefined;
+    instance?.reload?.();
+  }
 
   protected remove(): void {
     this.layoutService.removeWidget(this.instance().id);

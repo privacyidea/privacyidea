@@ -26,7 +26,9 @@ import { AuthService } from "@services/auth/auth.service";
 import { ClientsDict, ClientsService } from "@services/clients/clients.service";
 import { ContentService } from "@services/content/content.service";
 import { MockAuditService, MockClientsService, MockContentService, MockPiResponse } from "@testing/mock-services";
+import { expectsTableStateGating } from "@testing/table-state-gating";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { expectedLocalDateTimeFromInput } from "@testing/expected-local-date-time";
 
 describe("ClientsComponent", () => {
   let fixture: ComponentFixture<ClientsComponent>;
@@ -46,6 +48,9 @@ describe("ClientsComponent", () => {
       ]
     }).compileComponents();
 
+    const authServiceMock = TestBed.inject(AuthService) as unknown as MockAuthService;
+    authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["clienttype"] });
+
     fixture = TestBed.createComponent(ClientsComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
@@ -53,6 +58,13 @@ describe("ClientsComponent", () => {
 
   afterEach(() => {
     jest.clearAllMocks();
+  });
+
+  it("gates the table on its read right, row count and filter", () => {
+    expectsTableStateGating({
+      state: component.tableState,
+      right: "clienttype"
+    });
   });
 
   it("should be created", () => {
@@ -108,14 +120,14 @@ describe("ClientsComponent", () => {
     expect(result.comment).toBe("Keycloak/25.0.1");
   });
 
-  it("should call auditService.auditFilter.set with correct IP filter", () => {
-    const spy = jest.spyOn(component.auditService.auditFilter, "set");
+  it("should call auditService.activeFilter.set with correct IP filter", () => {
+    const spy = jest.spyOn(component.auditService.activeFilter, "set");
     component.showInAuditLog("ip", "1.2.3.4");
     expect(spy).toHaveBeenCalledWith(new FilterValue({ value: "client: 1.2.3.4" }));
   });
 
-  it("should call auditService.auditFilter.set with correct user agent filter", () => {
-    const spy = jest.spyOn(component.auditService.auditFilter, "set");
+  it("should call auditService.activeFilter.set with correct user agent filter", () => {
+    const spy = jest.spyOn(component.auditService.activeFilter, "set");
     component.showInAuditLog("application", "privacyIDEA-Keycloak/1.5.1 Keycloak/25.0.1");
     expect(spy).toHaveBeenCalledWith(
       new FilterValue({
@@ -124,8 +136,8 @@ describe("ClientsComponent", () => {
     );
   });
 
-  it("should not set auditFilter for not covered columns", () => {
-    const spy = jest.spyOn(component.auditService.auditFilter, "set");
+  it("should not set activeFilter for not covered columns", () => {
+    const spy = jest.spyOn(component.auditService.activeFilter, "set");
     component.showInAuditLog("hostname", "host");
     expect(spy).not.toHaveBeenCalled();
   });
@@ -141,5 +153,19 @@ describe("ClientsComponent", () => {
     expect(ds.data.length).toBe(1);
     expect(ds.data[0].hostname).toBe("host");
     expect(ds.sortingDataAccessor(ds.data[0], "lastseen")).toBe(new Date("2024-06-01T12:00:00Z").getTime());
+  });
+
+  it("should render the lastseen column as local date/time, not raw UTC", () => {
+    const dict: ClientsDict = {
+      app: [{ hostname: "host", ip: "1.2.3.4", lastseen: "2024-06-01T12:00:00Z", application: "app" }]
+    };
+    component.clientService.clientsResource.value.set(MockPiResponse.fromValue(dict));
+    fixture.detectChanges();
+
+    const cells = fixture.nativeElement.querySelectorAll("td");
+    const cellText = cells[cells.length - 1].textContent.trim();
+    expect(cellText).toBe(expectedLocalDateTimeFromInput("2024-06-01T12:00:00Z"));
+    expect(cellText).not.toContain("UTC");
+    expect(cellText).not.toContain("2024-06-01T12:00:00Z");
   });
 });

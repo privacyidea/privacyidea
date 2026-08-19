@@ -32,6 +32,9 @@ import {
   TokenType,
   TokenTypeKey
 } from "@services/token/token.service";
+import { RowSelector } from "@services/table-utils/row-selector";
+import { Debouncer } from "@utils/debounce.utils";
+import { FilterCaseNote } from "@utils/filter-hint.utils";
 import { of, Subject } from "rxjs";
 import { MockHttpResourceRef, MockPiResponse } from "./mock-utils";
 
@@ -83,7 +86,11 @@ export class MockTokenService implements TokenServiceInterface {
     text: "HMAC-based One-Time Password"
   });
   showOnlyTokenInContainer = signal(false);
-  tokenFilter = signal(new FilterValue());
+  activeFilter = signal(new FilterValue());
+  filterDebouncer = new Debouncer(this.activeFilter);
+  filterDraft = this.activeFilter;
+  filterParams = signal<Record<string, string>>({});
+  presetFilter = signal<FilterValue | null>(null);
   readonly tokenDetailResource = new MockHttpResourceRef<PiResponse<Tokens>>(makeTokenDetailResponse("hotp"));
   readonly tokenTypesResource = new MockHttpResourceRef<PiResponse<Record<string, string>> | undefined>(
     MockPiResponse.fromValue<Record<string, string>>({})
@@ -101,14 +108,33 @@ export class MockTokenService implements TokenServiceInterface {
   readonly tokenIsActive = signal(true);
   readonly tokenIsRevoked = signal(false);
   defaultSizeOptions: number[] = [10, 25, 50];
-  apiFilter: string[] = [];
-  advancedApiFilter: string[] = [];
+  apiFilterKeys: string[] = [];
+  advancedApiFilterKeys: string[] = [];
+  hiddenApiFilterKeys: string[] = [];
+  allFilterKeys: Signal<string[]> = signal([
+    ...this.apiFilterKeys,
+    ...this.advancedApiFilterKeys,
+    ...this.hiddenApiFilterKeys
+  ]);
+  exactMatchKeys = new Set<string>();
+  booleanKeys = new Set<string>();
+  caseNotes: Record<string, FilterCaseNote> = {};
   sort = signal<Sort>({ active: "serial", direction: "asc" });
   readonly pageIndex = signal(0);
   readonly tokenResource = new MockHttpResourceRef<PiResponse<Tokens> | undefined>(undefined);
   tokenResourceValue = signal<Tokens | null>(null);
   readonly tokenSerialResource = new MockHttpResourceRef<PiResponse<Tokens> | undefined>(undefined);
-  readonly tokenSelection = signal<TokenDetails[]>([]);
+  readonly selectableTokens = signal<TokenDetails[]>([]);
+  readonly tokenSelection = new RowSelector<TokenDetails>({
+    keyGetter: (token) => token.serial,
+    visibleRows: this.selectableTokens
+  });
+
+  /** Makes the given tokens the visible rows and selects them all. */
+  setTokenSelection(tokens: TokenDetails[]): void {
+    this.selectableTokens.set(tokens);
+    this.tokenSelection.selectAllRows();
+  }
   selectedToken = signal<string | null>(null);
   tokenOptions = signal<string[]>([]);
   filteredTokenOptions: Signal<string[]> = computed(() => {
@@ -116,7 +142,15 @@ export class MockTokenService implements TokenServiceInterface {
     return this.tokenOptions().filter((option) => option.toLowerCase().includes(filter));
   });
   clearFilter = jest.fn();
+  filterFromInput = jest.fn();
   handleFilterInput = jest.fn();
+  applyFilterInput = jest.fn();
+  setFilter = jest.fn().mockImplementation((filter: FilterValue) => {
+    this.activeFilter.set(filter);
+  });
+  updateFilter = jest.fn().mockImplementation((computeFilter: (current: FilterValue) => FilterValue) => {
+    this.activeFilter.set(computeFilter(this.activeFilter()));
+  });
   readonly toggleActive = jest.fn().mockReturnValue(of({}));
   readonly resetFailCount = jest.fn().mockReturnValue(of(null));
   readonly saveTokenDetail = jest.fn().mockReturnValue(of(MockPiResponse.fromValue<boolean>(true)));
@@ -142,9 +176,7 @@ export class MockTokenService implements TokenServiceInterface {
   setRandomPin = jest.fn();
   readonly resyncOTPToken = jest.fn().mockReturnValue(of(null));
   readonly getTokenDetails = jest.fn().mockReturnValue(of({}));
-  readonly getTokenCount = jest
-    .fn()
-    .mockReturnValue(of(MockPiResponse.fromValue<TokenCount>({ count: 0 })));
+  readonly getTokenCount = jest.fn().mockReturnValue(of(MockPiResponse.fromValue<TokenCount>({ count: 0 })));
   enrollToken = jest.fn().mockReturnValue(of({ detail: { serial: "X" } } as unknown as EnrollmentResponse));
   verifyToken = jest.fn().mockReturnValue(
     of(
@@ -175,5 +207,4 @@ export class MockTokenService implements TokenServiceInterface {
   getTokengroups = jest.fn();
   setTokengroup = jest.fn();
   importTokens = jest.fn();
-  hiddenApiFilter: string[] = [];
 }

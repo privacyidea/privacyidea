@@ -27,6 +27,7 @@ import { DialogService } from "@services/dialog/dialog.service";
 import { PrivacyideaServer, PrivacyideaServerService } from "@services/privacyidea-server/privacyidea-server.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
+import { expectsTableStateGating } from "@testing/table-state-gating";
 import {
   MockAuthService,
   MockDialogService,
@@ -58,9 +59,7 @@ describe("PrivacyideaServersComponent", () => {
       ]
     }).compileComponents();
 
-    privacyideaServerServiceMock = TestBed.inject(
-      PrivacyideaServerService
-    ) as unknown as MockPrivacyideaServerService;
+    privacyideaServerServiceMock = TestBed.inject(PrivacyideaServerService) as unknown as MockPrivacyideaServerService;
     privacyideaServerServiceMock.remoteServerOptions.set([
       { identifier: "server1", url: "http://s1", tls: true, description: "desc1" },
       { identifier: "server2", url: "http://s2", tls: false, description: "desc2" }
@@ -77,8 +76,25 @@ describe("PrivacyideaServersComponent", () => {
     fixture.detectChanges();
   });
 
+  it("gates the table on its read right, row count and filter", () => {
+    expectsTableStateGating({
+      state: component.tableState,
+      right: "privacyideaserver_read"
+    });
+  });
+
   it("should create", () => {
     expect(component).toBeTruthy();
+  });
+
+  it("should only select the servers left by the filter", async () => {
+    component.onFilterInput("server1");
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    component.selector.selectAllRows();
+
+    expect(component.selector.selectedRows().map((row) => row.identifier)).toEqual(["server1"]);
   });
 
   it("should display servers from service", () => {
@@ -113,7 +129,8 @@ describe("PrivacyideaServersComponent", () => {
 
   it("should delete server after confirmation", () => {
     const server = privacyideaServerServiceMock.remoteServerOptions()[0];
-    component.deleteServer(server);
+    component.selector.selectRow(server);
+    component.deleteSelected();
     expect(dialogServiceMock.openDialog).toHaveBeenCalled();
     confirmClosed.next(true);
     confirmClosed.complete();

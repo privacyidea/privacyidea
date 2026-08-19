@@ -16,22 +16,21 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { NgClass } from "@angular/common";
+import { NgClass, NgTemplateOutlet } from "@angular/common";
 import {
-  AfterViewInit,
   Component,
+  computed,
   effect,
-  ElementRef,
   inject,
+  input,
   linkedSignal,
   signal,
-  ViewChild,
+  TemplateRef,
   WritableSignal
 } from "@angular/core";
-import { MatIconButton } from "@angular/material/button";
+import { MatButton, MatIconButton } from "@angular/material/button";
+import { MatCheckbox } from "@angular/material/checkbox";
 import { MatIcon } from "@angular/material/icon";
-import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
-import { MatPaginator } from "@angular/material/paginator";
 import { Sort } from "@angular/material/sort";
 import {
   MatCell,
@@ -48,8 +47,10 @@ import {
   MatTableDataSource
 } from "@angular/material/table";
 import { MatTooltip } from "@angular/material/tooltip";
-import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
+import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { TableStateComponent } from "@components/shared/table-state/table-state.component";
+import { TableState } from "@core/models/table_state/table-state";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import {
   ContainerDetailData,
@@ -57,21 +58,19 @@ import {
   ContainerServiceInterface
 } from "@services/container/container.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { RowSelector } from "@services/table-utils/row-selector";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { UserService, UserServiceInterface } from "@services/user/user.service";
+import { forkJoin } from "rxjs";
 
 @Component({
   selector: "app-user-details-container-table",
   imports: [
     CopyableComponent,
-    ClearableInputComponent,
     MatHeaderRowDef,
     MatRowDef,
     MatNoDataRow,
-    MatFormField,
-    MatLabel,
-    MatInput,
-    MatPaginator,
     MatTable,
     MatHeaderCellDef,
     MatColumnDef,
@@ -82,34 +81,40 @@ import { UserService, UserServiceInterface } from "@services/user/user.service";
     MatTooltip,
     MatHeaderRow,
     MatRow,
-    MatFormField,
-    MatLabel,
     MatIcon,
-    MatIconButton
+    MatIconButton,
+    MatButton,
+    MatCheckbox,
+    TableStateComponent,
+    NgTemplateOutlet
   ],
   templateUrl: "./user-details-container-table.component.html",
   styleUrl: "./user-details-container-table.component.scss"
 })
-export class UserDetailsContainerTableComponent implements AfterViewInit {
+export class UserDetailsContainerTableComponent {
+  /**
+   * The way out of the empty state. Passed as a template rather than projected content because this
+   * component renders it in a different place depending on the table's state, and a single
+   * ng-content slot can only ever be rendered once.
+   */
+  readonly createAction = input<TemplateRef<unknown> | undefined>(undefined);
+
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly userService: UserServiceInterface = inject(UserService);
+  private readonly dialogService: DialogServiceInterface = inject(DialogService);
 
   readonly columnsKeyMap = this.tableUtilsService.pickColumns("serial", "type", "states", "description", "realms");
   readonly columnKeys = [...this.tableUtilsService.getColumnKeys(this.columnsKeyMap)];
-  displayedColumns: string[] = this.columnsKeyMap.map((c) => c.key);
+
+  get displayedColumns(): string[] {
+    return ["select", ...this.columnsKeyMap.map((c) => c.key)];
+  }
 
   dataSource = new MatTableDataSource<ContainerDetailData>([]);
-  filterValue = "";
   sort = signal({ active: "serial", direction: "asc" } as Sort);
-
-  pageSize = 10;
-  pageSizeOptions = this.tableUtilsService.pageSizeOptions;
-
-  @ViewChild(MatPaginator) paginator!: MatPaginator;
-  @ViewChild("filterInput", { static: false }) filterInput!: ElementRef<HTMLInputElement>;
 
   userContainers: WritableSignal<ContainerDetailData[]> = linkedSignal({
     source: () => ({
@@ -127,10 +132,33 @@ export class UserDetailsContainerTableComponent implements AfterViewInit {
     }
   });
 
+  selector = new RowSelector<ContainerDetailData>({
+    keyGetter: (container) => container.serial,
+    visibleRows: this.userContainers
+  });
+
+  readonly tableState = new TableState({
+    resource: this.containerService.userContainersResource,
+    count: () => this.userContainers().length,
+    allowed: () => this.authService.actionAllowed("container_list")
+  });
+
+  /** Creating one is the only route out of the empty state here, so the hint is dropped without that right. */
+  readonly emptyHint = computed(() =>
+    this.authService.actionAllowed("container_create")
+      ? $localize`Create a container for this user to see it here.`
+      : ""
+  );
+
   constructor() {
     effect(() => {
       const base = this.userContainers();
-      this.dataSource.data = this.clientsideSortContainerData(base, this.sort());
+      const resource = this.containerService.userContainersResource;
+      if (resource.hasValue()) {
+        this.dataSource.data = this.clientsideSortContainerData(base, this.sort());
+      } else {
+        this.dataSource.data = [];
+      }
     });
 
     effect(() => {
@@ -139,30 +167,48 @@ export class UserDetailsContainerTableComponent implements AfterViewInit {
     });
   }
 
-  ngAfterViewInit(): void {
-    this.dataSource.paginator = this.paginator;
-    (this.dataSource as unknown as { _sort: WritableSignal<Sort> })._sort = this.sort;
-
-    this.dataSource.filterPredicate = (row: ContainerDetailData, filter: string) => {
-      const currentState = (row.states?.[0] ?? "").toString();
-      const realmsJoined = (row.realms ?? []).join(" ");
-      const haystack = [row.serial, row.type, row.description ?? "", currentState, realmsJoined]
-        .join(" ")
-        .toLowerCase();
-
-      return haystack.includes(filter);
-    };
+  deleteSelected() {
+    const selected = this.selector.selectedRows();
+    this.dialogService
+      .openDialog({
+        component: SimpleConfirmationDialogComponent,
+        data: {
+          title: $localize`Delete Containers`,
+          items: selected.map((container) => container.serial),
+          itemType: "container",
+          confirmAction: { label: $localize`Delete`, value: true, type: "destruct" }
+        }
+      })
+      .afterClosed()
+      .subscribe({
+        next: (result) => {
+          if (result) {
+            forkJoin(selected.map((container) => this.containerService.deleteContainer(container.serial))).subscribe({
+              next: () => this.containerService.userContainersResource.reload()
+            });
+          }
+        }
+      });
   }
 
-  handleFilterInput($event: Event): void {
-    const raw = ($event.target as HTMLInputElement).value ?? "";
-    const normalised = raw.trim().toLowerCase();
-    this.filterValue = normalised;
-    this.dataSource.filter = normalised;
+  unassignSelected() {
+    const selected = this.selector.selectedRows();
+    const username = this.userService.detailsUser().username;
+    const realm = this.userService.selectedUserRealm();
+    forkJoin(
+      selected.map((container) => this.containerService.unassignUser(container.serial, username, realm))
+    ).subscribe({
+      next: () => this.containerService.userContainersResource.reload()
+    });
   }
 
-  onPageSizeChange(size: number) {
-    this.pageSize = size;
+  toggleActiveSelected() {
+    const selected = this.selector.selectedRows();
+    forkJoin(
+      selected.map((container) => this.containerService.toggleActive(container.serial, container.states))
+    ).subscribe({
+      next: () => this.containerService.userContainersResource.reload()
+    });
   }
 
   handleStateClick(element: ContainerDetailData) {

@@ -8,6 +8,7 @@
   flex-direction: column;
   overflow: hidden;
   max-height: var(--table-max-height);
+  @include table.page-table-state-size;
 
   :host-context(body.self-service-layout) & {
     height: auto;
@@ -25,4 +26,11 @@
   .container_serial-width {
     width: 170px;
   }
+}
+
+.filter-paginator-container > .margin-left-8 {
+  // Centre the button on the 56px input infix rather than the full field
+  // height, which includes the hint line below the input.
+  align-self: flex-start;
+  margin-top: 16px;
 }

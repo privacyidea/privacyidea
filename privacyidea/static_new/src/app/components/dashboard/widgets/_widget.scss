@@ -24,6 +24,13 @@
   height: 100%;
 }
 
+@mixin sortable-headers {
+  th {
+    padding-block: 0;
+    white-space: nowrap;
+  }
+}
+
 @mixin stat-table($padding-block: var(--quarter-global-padding)) {
   width: 100%;
   border-collapse: collapse;

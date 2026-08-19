@@ -2,14 +2,17 @@
 This testfile tests the basic app functionality of the privacyIDEA app
 """
 import os
+import subprocess
+import sys
+import tempfile
 import unittest
 import flask
 import inspect
 import logging
 import mock
 from testfixtures import Comparison, compare, OutputCapture
-from privacyidea.app import create_app
-from privacyidea.config import config, TestingConfig
+from privacyidea.app import create_app, _setup_database_engine_options
+from privacyidea.config import config, ConfigKey, TestingConfig
 
 dirname = os.path.dirname(os.path.abspath(os.path.dirname(__file__)))
 
@@ -172,3 +175,98 @@ class AppTestCase(unittest.TestCase):
                            level=logging.NOTSET,
                            partial=True)
             ], logger.handlers)
+
+
+class DatabaseEngineOptionsTestCase(unittest.TestCase):
+    """
+    The engine options for the main database are resolved before the engine is created.
+    They are checked on the helper directly, since building a whole app for a
+    non-SQLite URI would require a reachable database server.
+    """
+
+    @staticmethod
+    def _resolve(database_uri, engine_options=None):
+        app = flask.Flask(__name__)
+        app.config[ConfigKey.VERBOSE] = False
+        app.config[ConfigKey.SQLALCHEMY_DATABASE_URI] = database_uri
+        if engine_options is not None:
+            app.config[ConfigKey.SQLALCHEMY_ENGINE_OPTIONS] = engine_options
+        _setup_database_engine_options(app)
+        return app.config[ConfigKey.SQLALCHEMY_ENGINE_OPTIONS]
+
+    def test_01_pre_ping_enabled_for_server_databases(self):
+        self.assertTrue(self._resolve("mysql+pymysql://pi:pi@localhost/pi")["pool_pre_ping"])
+
+    def test_02_pre_ping_skipped_for_sqlite(self):
+        self.assertNotIn("pool_pre_ping", self._resolve("sqlite:////etc/privacyidea/data.sqlite"))
+
+    def test_03_explicit_setting_is_kept(self):
+        options = self._resolve("mysql+pymysql://pi:pi@localhost/pi", {"pool_pre_ping": False})
+        self.assertFalse(options["pool_pre_ping"])
+
+    def test_04_other_options_are_preserved(self):
+        options = self._resolve("oracle://pi:pi@localhost/pi", {"max_identifier_length": 128})
+        self.assertEqual(128, options["max_identifier_length"])
+        self.assertTrue(options["pool_pre_ping"])
+
+    def test_05_configured_options_are_not_modified(self):
+        engine_options = {"max_identifier_length": 128}
+        self._resolve("mysql+pymysql://pi:pi@localhost/pi", engine_options)
+        self.assertEqual({"max_identifier_length": 128}, engine_options)
+
+    def test_06_missing_database_uri(self):
+        app = flask.Flask(__name__)
+        app.config[ConfigKey.VERBOSE] = False
+        _setup_database_engine_options(app)
+        self.assertTrue(app.config[ConfigKey.SQLALCHEMY_ENGINE_OPTIONS]["pool_pre_ping"])
+
+
+class DockerConfigSecretKeyTestCase(unittest.TestCase):
+    """
+    DockerConfig reads the Flask SECRET_KEY from SECRET_KEY / SECRET_KEY_FILE and
+    also accepts PI_SECRET_KEY / PI_SECRET_KEY_FILE as an alias (for consistency
+    with the other PI_* secret variables), with the unprefixed name taking
+    precedence.
+
+    DockerConfig evaluates these at import time, so each case is checked in a
+    fresh subprocess with a controlled environment. Reloading the config module
+    in-process must be avoided: it would rebind ``privacyidea.config.config`` away
+    from the reference ``privacyidea.app`` holds and silently break config
+    overrides for later tests on the same worker.
+    """
+    _SECRET_ENV = ("SECRET_KEY", "SECRET_KEY_FILE", "PI_SECRET_KEY", "PI_SECRET_KEY_FILE")
+    _SCRIPT = ("import sys\n"
+               "import privacyidea.config as c\n"
+               "sys.stdout.write(getattr(c.DockerConfig, 'SECRET_KEY', '') or '<none>')\n")
+
+    def _docker_secret_key(self, extra_env):
+        env = {key: value for key, value in os.environ.items() if key not in self._SECRET_ENV}
+        env.update(extra_env)
+        result = subprocess.run([sys.executable, "-c", self._SCRIPT],
+                                env=env, cwd=dirname, capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        return result.stdout
+
+    def _write_secret(self, tmpdir, name, value):
+        path = os.path.join(tmpdir, name)
+        with open(path, "w") as secret_file:
+            secret_file.write(value + "\n")
+        return path
+
+    def test_01_pi_secret_key_file_alias(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            alias = self._write_secret(tmpdir, "pi_sk", "ALIAS-VALUE")
+            self.assertEqual(self._docker_secret_key({"PI_SECRET_KEY_FILE": alias}), "ALIAS-VALUE")
+
+    def test_02_plain_secret_key_file_still_works(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            plain = self._write_secret(tmpdir, "plain_sk", "PLAIN-VALUE")
+            self.assertEqual(self._docker_secret_key({"SECRET_KEY_FILE": plain}), "PLAIN-VALUE")
+
+    def test_03_plain_takes_precedence_over_alias(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            plain = self._write_secret(tmpdir, "plain_sk", "PLAIN-VALUE")
+            alias = self._write_secret(tmpdir, "pi_sk", "ALIAS-VALUE")
+            self.assertEqual(
+                self._docker_secret_key({"SECRET_KEY_FILE": plain, "PI_SECRET_KEY_FILE": alias}),
+                "PLAIN-VALUE")

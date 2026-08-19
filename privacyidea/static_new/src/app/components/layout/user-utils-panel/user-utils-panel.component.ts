@@ -22,11 +22,9 @@ import { Component, computed, HostListener, inject, signal } from "@angular/core
 import { MatIconButton } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 import { MatTooltip } from "@angular/material/tooltip";
-import { Router } from "@angular/router";
+import { Router, RouterLink } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
-import { LanguageSwitcherComponent } from "@components/shared/language-switcher/language-switcher.component";
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
-import { ThemeSwitcherComponent } from "@components/shared/theme-switcher/theme-switcher.component";
 import { AuditService, AuditServiceInterface } from "@services/audit/audit.service";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { CaConnectorService, CaConnectorServiceInterface } from "@services/ca-connector/ca-connector.service";
@@ -37,6 +35,7 @@ import {
 } from "@services/container-template/container-template.service";
 import { ContainerService, ContainerServiceInterface } from "@services/container/container.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { DashboardDataStore } from "@services/dashboard/dashboard-data-store.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { DocumentationService, DocumentationServiceInterface } from "@services/documentation/documentation.service";
 import { EventService, EventServiceInterface } from "@services/event/event.service";
@@ -74,9 +73,12 @@ import { from } from "rxjs";
 
 const PROFILE_TEXT_BREAKPOINT = 1701;
 
+const TEN_MINUTES_MS = 600_000;
+const ONE_HOUR_MS = 3_600_000;
+
 @Component({
   selector: "app-user-utils-panel",
-  imports: [MatIcon, MatIconButton, MatTooltip, LanguageSwitcherComponent, ThemeSwitcherComponent, NgClass, DatePipe],
+  imports: [MatIcon, MatIconButton, MatTooltip, NgClass, DatePipe, RouterLink],
   templateUrl: "./user-utils-panel.component.html",
   styleUrl: "./user-utils-panel.component.scss"
 })
@@ -96,6 +98,7 @@ export class UserUtilsPanelComponent {
   private readonly subscriptionService = inject(SubscriptionService);
   private readonly machineResolverService: MachineResolverServiceInterface = inject(MachineResolverService);
   private readonly containerTemplateService: ContainerTemplateServiceInterface = inject(ContainerTemplateService);
+  private readonly dashboardDataStore = inject(DashboardDataStore);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   protected readonly sessionTimerService: SessionTimerServiceInterface = inject(SessionTimerService);
@@ -132,17 +135,48 @@ export class UserUtilsPanelComponent {
     return profileText;
   });
 
+  /**
+   * The displayed time rounded up to the minute, once minutes are the smallest unit shown.
+   *
+   * The formats below change at whole hours and at ten minutes, and a session length set to exactly
+   * one of those - 3600 seconds, say - resets the countdown to sit exactly on the boundary. Reading
+   * the raw value there flips the format on the first tick after every reset, and back on the next
+   * activity, which changes the width of the panel. Rounding up keeps the value on one side of the
+   * boundary until it has genuinely passed it.
+   */
+  protected readonly displayedTime = computed(() => {
+    const remaining = this.sessionTimerService.remainingTime() ?? 0;
+    // Below ten minutes the seconds are on show, so the value is used as it is.
+    if (remaining < TEN_MINUTES_MS) {
+      return remaining;
+    }
+    return Math.ceil(remaining / 60_000) * 60_000;
+  });
+
   sessionTimeFormat = computed(() => {
     // Use non-breaking half space (U+202F) between number and unit
-    if (this.sessionTimerService.remainingTime()! < 599999) {
+    if (this.displayedTime() < TEN_MINUTES_MS) {
       // less than 10 minutes remaining, show minutes and seconds
       return "m:ss";
-    } else if (this.sessionTimerService.remainingTime()! < 3600000) {
+    } else if (this.displayedTime() < ONE_HOUR_MS) {
       // less than an hour, show only minutes
       return "m'\u202Fmin'";
     }
     // show hours and minutes
     return "H'\u202Fh' mm'\u202Fmin'";
+  });
+
+  // Once more than a day remains, the DatePipe format above can no longer
+  // represent the duration, so show days (and any whole hours) without minutes.
+  sessionOverOneDay = computed(() => this.displayedTime() >= 86_400_000);
+
+  sessionDaysText = computed(() => {
+    const ms = this.displayedTime();
+    const days = Math.floor(ms / 86_400_000);
+    const hours = Math.floor((ms % 86_400_000) / 3_600_000);
+    // Non-breaking half space (U+202F) between number and unit, matching the
+    // hour/minute format above.
+    return hours > 0 ? `${days}\u202Fd ${hours}\u202Fh` : `${days}\u202Fd`;
   });
 
   localNode = computed(() => this.authService.showNode());
@@ -196,14 +230,17 @@ export class UserUtilsPanelComponent {
       this.userService.usersResource.reload();
       return;
     } else if (this.contentService.onUserDetails()) {
-      this.userService.usersResource.reload();
+      this.userService.userResource.reload();
       this.tokenService.tokenResource.reload();
       this.tokenService.userTokenResource.reload();
       this.containerService.userContainersResource.reload();
       return;
     }
 
-    switch (this.contentService.routeUrl()) {
+    switch (this.contentService.routePath()) {
+      case ROUTE_PATHS.DASHBOARD:
+        this.dashboardDataStore.refreshAll();
+        break;
       case ROUTE_PATHS.TOKENS:
         this.tokenService.tokenResource.reload();
         break;

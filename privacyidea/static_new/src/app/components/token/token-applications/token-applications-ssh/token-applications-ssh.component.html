@@ -37,145 +37,149 @@
   <div
     appScrollToTop
     class="application-table-container">
-    <div class="filter-paginator-container">
-      <mat-form-field
-        subscriptSizing="dynamic"
-        class="application-table-filter">
-        <mat-label i18n>Filter SSH Applications...</mat-label>
-        <app-clearable-input
-          (clearButtonClick)="machineService.clearFilter()"
-          [showClearButton]="machineService.machineFilter().isNotEmpty">
-          <input
-            #filterInput
-            (input)="machineService.handleFilterInput($event)"
-            [value]="machineService.machineFilter().filterString"
-            aria-label="Filter Input"
-            i18n-aria-label
-            i18n-placeholder
-            id="ssh-filter-input"
-            matInput
-            placeholder="Example query: 'service_id: myService'" />
-        </app-clearable-input>
-      </mat-form-field>
-      <mat-paginator
-        (page)="machineService.onPageEvent($event)"
-        [length]="length()"
-        [pageIndex]="machineService.pageIndex()"
-        [pageSizeOptions]="pageSizeOptions()"
-        [pageSize]="machineService.pageSize()"
-        showFirstLastButtons />
-    </div>
-    <div class="margin-bottom-16">
-      <app-token-applications-actions />
-    </div>
-    <table
-      [dataSource]="dataSource()"
-      aria-label="Token Applications Table"
-      class="token-table"
-      i18n-aria-label
-      mat-table>
-      @for (column of columnsKeyMap; track column) {
-        <ng-container [matColumnDef]="column.key">
-          <th
-            *matHeaderCellDef
-            attr.aria-label="{{ column.label }} Header"
-            mat-header-cell>
-            <div class="flex ali-center">
-              {{ column.label }}
-              <div class="margin-left-16 flex">
-                @if (machineService.sshApiFilter.includes(column.key)) {
+    @if (tableState.showTable()) {
+      <div class="filter-paginator-container">
+        <mat-form-field
+          subscriptSizing="dynamic"
+          class="application-table-filter">
+          <mat-label i18n>Filter SSH Applications...</mat-label>
+          <app-clearable-input
+            (clearButtonClick)="machineService.clearFilter()"
+            [showClearButton]="machineService.filterDraft().isNotEmpty">
+            <input
+              #filterInput
+              (input)="machineService.handleFilterInput($event)"
+              [value]="machineService.filterDraft().filterString"
+              aria-label="Filter Input"
+              i18n-aria-label
+              i18n-placeholder
+              id="ssh-filter-input"
+              matInput
+              placeholder="Example query: 'service_id: myService'" />
+          </app-clearable-input>
+          <mat-hint>{{ filterHint }}</mat-hint>
+        </mat-form-field>
+        <mat-paginator
+          (page)="machineService.onPageEvent($event)"
+          [length]="length()"
+          [pageIndex]="machineService.pageIndex()"
+          [pageSizeOptions]="pageSizeOptions()"
+          [pageSize]="machineService.pageSize()"
+          showFirstLastButtons />
+      </div>
+      <div class="margin-bottom-16">
+        <app-token-applications-actions />
+      </div>
+      <table
+        [dataSource]="dataSource()"
+        aria-label="Token Applications Table"
+        class="token-table"
+        i18n-aria-label
+        mat-table>
+        @for (column of columnsKeyMap; track column) {
+          <ng-container [matColumnDef]="column.key">
+            <th
+              *matHeaderCellDef
+              mat-header-cell>
+              <div class="flex ali-center">
+                {{ column.label }}
+                <div class="margin-left-16 flex">
+                  @if (machineService.sshApiFilterKeys.includes(column.key)) {
+                    <button
+                      (click)="onKeywordClick(column.key)"
+                      aria-label="Filter by {{ column.label }}"
+                      i18n-aria-label
+                      class="filter-button"
+                      mat-icon-button
+                      type="button">
+                      <mat-icon class="keyword-button-icon margin-left-0">
+                        {{ getFilterIconName(column.key) }}
+                      </mat-icon>
+                    </button>
+                  }
                   <button
-                    (click)="onKeywordClick(column.key)"
-                    class="filter-button"
+                    (click)="tableUtilsService.onSortButtonClick(column.key, sort)"
+                    aria-label="Sort by {{ column.label }}"
+                    i18n-aria-label
+                    class="sort-button"
                     mat-icon-button
                     type="button">
-                    <mat-icon class="keyword-button-icon margin-left-0">
-                      {{ getFilterIconName(column.key) }}
-                    </mat-icon>
+                    <mat-icon>{{ tableUtilsService.getSortIcon(column.key, sort()) }}</mat-icon>
                   </button>
-                }
-                <button
-                  (click)="tableUtilsService.onSortButtonClick(column.key, sort)"
-                  class="sort-button"
-                  mat-icon-button
-                  type="button">
-                  <mat-icon>{{ tableUtilsService.getSortIcon(column.key, sort()) }}</mat-icon>
-                </button>
+                </div>
               </div>
-            </div>
-          </th>
-          <td
-            *matCellDef="let element"
-            attr.aria-label="{{ column.label }} Cell"
-            mat-cell>
-            <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
-              @switch (column.key) {
-                @case ("serial") {
-                  <app-copyable [copyText]="element.serial">
+            </th>
+            <td
+              *matCellDef="let element"
+              mat-cell>
+              <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
+                @switch (column.key) {
+                  @case ("serial") {
+                    <app-copyable [copyText]="element.serial">
+                      <a
+                        (click)="contentService.tokenSelected(element.serial)"
+                        (keydown.enter)="contentService.tokenSelected(element.serial)"
+                        (keydown.space)="$event.preventDefault(); contentService.tokenSelected(element.serial)"
+                        attr.aria-label="{{ column.label }} Link"
+                        role="button"
+                        tabindex="0">
+                        {{ element[column.key] }}
+                      </a>
+                    </app-copyable>
+                  }
+                  @case ("user") {
                     <a
-                      (click)="contentService.tokenSelected(element.serial)"
-                      (keydown.enter)="contentService.tokenSelected(element.serial)"
-                      (keydown.space)="$event.preventDefault(); contentService.tokenSelected(element.serial)"
+                      (click)="contentService.userSelected(element[column.key], element['user_realm'])"
+                      (keydown.enter)="contentService.userSelected(element[column.key], element['user_realm'])"
+                      (keydown.space)="
+                        $event.preventDefault(); contentService.userSelected(element[column.key], element['user_realm'])
+                      "
                       attr.aria-label="{{ column.label }} Link"
                       role="button"
                       tabindex="0">
                       {{ element[column.key] }}
                     </a>
-                  </app-copyable>
-                }
-                @case ("user") {
-                  <a
-                    (click)="contentService.userSelected(element[column.key], element['user_realm'])"
-                    (keydown.enter)="contentService.userSelected(element[column.key], element['user_realm'])"
-                    (keydown.space)="
-                      $event.preventDefault(); contentService.userSelected(element[column.key], element['user_realm'])
-                    "
-                    attr.aria-label="{{ column.label }} Link"
-                    role="button"
-                    tabindex="0">
-                    {{ element[column.key] }}
-                  </a>
-                }
-                @default {
-                  @if (tableUtilsService.isLink(column.key)) {
-                    <a
-                      attr.aria-label="{{ column.label }} Link"
-                      href="#">
-                      {{ element[column.key] }}
-                    </a>
-                  } @else {
-                    <span [ngClass]="tableUtilsService.getClassForColumn(column.key, element)">
-                      {{ tableUtilsService.getDisplayText(column.key, element) }}
-                    </span>
+                  }
+                  @default {
+                    @if (tableUtilsService.isLink(column.key)) {
+                      <a
+                        attr.aria-label="{{ column.label }} Link"
+                        href="#">
+                        {{ element[column.key] }}
+                      </a>
+                    } @else {
+                      <span [ngClass]="tableUtilsService.getClassForColumn(column.key, element)">
+                        {{ tableUtilsService.getDisplayText(column.key, element) }}
+                      </span>
+                    }
                   }
                 }
-              }
-            </div>
+              </div>
+            </td>
+          </ng-container>
+        }
+        <tr
+          *matHeaderRowDef="displayedColumns"
+          mat-header-row></tr>
+        <tr
+          *matRowDef="let row; columns: displayedColumns"
+          mat-row></tr>
+        <tr *matNoDataRow>
+          <td [attr.colspan]="displayedColumns.length">
+            <app-table-state
+              [status]="tableState.rowStatus()"
+              [table]="tableState" />
           </td>
-        </ng-container>
-      }
-      <tr
-        *matHeaderRowDef="displayedColumns"
-        aria-label="Header Row"
-        i18n-aria-label
-        mat-header-row></tr>
-      <tr
-        *matRowDef="let row; columns: displayedColumns"
-        aria-label="Data Row"
-        i18n-aria-label
-        mat-row></tr>
-      <tr
-        *matNoDataRow
-        aria-label="No Data Row"
-        i18n-aria-label>
-        <td
-          [attr.colspan]="displayedColumns.length"
-          aria-label="No Data Cell"
-          i18n
-          i18n-aria-label>
-          No data matching the filter.
-        </td>
-      </tr>
-    </table>
+        </tr>
+      </table>
+    } @else {
+      <app-table-state
+        [table]="tableState"
+        heading="No SSH applications yet"
+        hint="Attach an SSH token to a service ID in the token details to see it here."
+        i18n-heading
+        i18n-hint
+        icon="terminal" />
+    }
   </div>
 </div>

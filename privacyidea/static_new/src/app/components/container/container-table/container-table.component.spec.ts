@@ -19,14 +19,10 @@
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from "@angular/material/dialog";
-import { MatPaginator, PageEvent } from "@angular/material/paginator";
+import { PageEvent } from "@angular/material/paginator";
 import { Sort } from "@angular/material/sort";
-import { MatTableDataSource } from "@angular/material/table";
 import { ActivatedRoute, NavigationEnd, Router } from "@angular/router";
-import { of, Subject } from "rxjs";
-
-import { ContainerTableSelfServiceComponent } from "./container-table.self-service.component";
+import { of } from "rxjs";
 
 import { AuthService } from "@services/auth/auth.service";
 import { ContainerDetailData, ContainerService } from "@services/container/container.service";
@@ -35,13 +31,12 @@ import { NotificationService } from "@services/notification/notification.service
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
 
 import { ContainerTableComponent } from "@components/container/container-table/container-table.component";
-import { DialogService } from "@services/dialog/dialog.service";
+import { FilterValue } from "@core/models/filter_value/filter_value";
 import { TokenService } from "@services/token/token.service";
-import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
+import { expectsTableStateGating } from "@testing/table-state-gating";
 import {
   MockContainerService,
   MockContentService,
-  MockDialogService,
   MockLocalService,
   MockNotificationService,
   MockTableUtilsService,
@@ -90,6 +85,13 @@ describe("ContainerTableComponent (Jest)", () => {
     containerService = TestBed.inject(ContainerService) as unknown as MockContainerService;
     component = fixture.componentInstance;
     fixture.detectChanges();
+  });
+
+  it("gates the table on its read right, row count and filter", () => {
+    expectsTableStateGating({
+      state: component.tableState,
+      right: "container_list"
+    });
   });
 
   it("should create", () => {
@@ -166,12 +168,46 @@ describe("ContainerTableComponent (Jest)", () => {
     });
   });
 
-  describe("Selection helpers", () => {
-    it("toggleAllRows selects *then* clears every row", () => {
-      const dataSource = component.containerDataSource();
-      expect(dataSource.data.length).toBe(0);
+  describe("#onFilterInput", () => {
+    it("applies the filter while typing as long as no user or realm filter is used", () => {
+      const inputEvent = { target: { value: "type: generic" } } as unknown as Event;
 
-      const containerDetailData0: ContainerDetailData = {
+      component.onFilterInput(inputEvent);
+
+      expect(containerService.handleFilterInput).toHaveBeenCalledWith(inputEvent);
+    });
+
+    it("defers the user and the realm filter until the input is confirmed", () => {
+      component.onFilterInput({ target: { value: "user: alice" } } as unknown as Event);
+      expect(containerService.handleFilterInput).not.toHaveBeenCalled();
+
+      component.onFilterInput({ target: { value: "realm: realm1" } } as unknown as Event);
+      expect(containerService.handleFilterInput).not.toHaveBeenCalled();
+    });
+
+    it("hints that the filter has to be confirmed while a user filter is typed", () => {
+      component.onFilterInput({ target: { value: "user: alice" } } as unknown as Event);
+
+      expect(component.showFilterHint()).toBe(true);
+    });
+
+    it("does not hint once the typed filter is the applied one", () => {
+      containerService.activeFilter.set(new FilterValue({ value: "user: alice" }));
+      component.onFilterInput({ target: { value: "user: alice" } } as unknown as Event);
+
+      expect(component.showFilterHint()).toBe(false);
+    });
+
+    it("does not hint for a filter that is applied while typing", () => {
+      component.onFilterInput({ target: { value: "type: generic" } } as unknown as Event);
+
+      expect(component.showFilterHint()).toBe(false);
+    });
+  });
+
+  describe("Selection", () => {
+    it("exposes the selection held by the container service", () => {
+      const containerDetailData: ContainerDetailData = {
         serial: "CONT-1",
         states: [],
         realms: [],
@@ -179,130 +215,11 @@ describe("ContainerTableComponent (Jest)", () => {
         type: "",
         users: []
       };
-      const containerDetailData1 = { ...containerDetailData0, serial: "CONT-2" };
-      const containerDetailData2 = { ...containerDetailData0, serial: "CONT-3" };
-      const dataSourceFilled = new MatTableDataSource<ContainerDetailData, MatPaginator>([
-        containerDetailData0,
-        containerDetailData1,
-        containerDetailData2
-      ]);
-      component.containerDataSource.set(dataSourceFilled);
+      containerService.setContainerSelection([containerDetailData, { ...containerDetailData, serial: "CONT-2" }]);
 
-      fixture.detectChanges();
-      expect(component.isAllSelected()).toBe(false);
-      component.toggleAllRows();
-      expect(component.isAllSelected()).toBe(true);
-      const elements = component.containerDataSource().data;
-      expect(component.containerSelection().length).toBe(elements.length);
-
-      component.toggleAllRows();
-      expect(component.isAllSelected()).toBe(false);
-      expect(component.containerSelection().length).toBe(0);
+      expect(component.containerSelection).toBe(containerService.containerSelection);
+      expect(component.containerSelection.selectedRows().map((row) => row.serial)).toEqual(["CONT-1", "CONT-2"]);
+      expect(component.containerSelection.allRowsSelected()).toBe(true);
     });
-
-    it("toggleRow adds and removes a single row", () => {
-      const row = component.containerDataSource().data[0];
-
-      component.toggleRow(row);
-      expect(component.containerSelection()).toContain(row);
-
-      component.toggleRow(row);
-      expect(component.containerSelection()).not.toContain(row);
-    });
-  });
-});
-
-describe("ContainerTableSelfServiceComponent", () => {
-  let component: ContainerTableSelfServiceComponent;
-  let fixture: ComponentFixture<ContainerTableSelfServiceComponent>;
-  let containerService: MockContainerService;
-  let dialogServiceMock: MockDialogService;
-  let confirmClosed: Subject<boolean>;
-
-  beforeEach(async () => {
-    TestBed.resetTestingModule();
-
-    await TestBed.configureTestingModule({
-      imports: [ContainerTableSelfServiceComponent, MatDialogModule],
-      providers: [
-        provideHttpClient(),
-        provideHttpClientTesting(),
-        { provide: AuthService, useClass: MockAuthService },
-        { provide: ContainerService, useClass: MockContainerService },
-        { provide: TableUtilsService, useClass: MockTableUtilsService },
-        { provide: NotificationService, useClass: MockNotificationService },
-        { provide: ContentService, useClass: MockContentService },
-        { provide: DialogService, useClass: MockDialogService },
-        { provide: TokenService, useClass: MockTokenService },
-        { provide: MAT_DIALOG_DATA, useValue: {} },
-        { provide: MatDialogRef, useClass: MockMatDialogRef },
-        {
-          provide: Router,
-          useValue: {
-            navigate: jest.fn(),
-            events: of(new NavigationEnd(0, "/", "/"))
-          }
-        },
-        {
-          provide: ActivatedRoute,
-          useValue: {
-            params: of({ id: "123" })
-          }
-        },
-        MockLocalService,
-        MockNotificationService
-      ]
-    }).compileComponents();
-
-    fixture = TestBed.createComponent(ContainerTableSelfServiceComponent);
-    containerService = TestBed.inject(ContainerService) as unknown as MockContainerService;
-
-    dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
-    confirmClosed = new Subject();
-    const dialogRefMock = new MockMatDialogRef();
-    dialogRefMock.afterClosed.mockReturnValue(confirmClosed);
-    dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
-
-    component = fixture.componentInstance;
-    fixture.detectChanges();
-  });
-
-  afterEach(() => jest.clearAllMocks());
-
-  it("should create", () => {
-    expect(component).toBeTruthy();
-  });
-
-  it("exposes the expected self-service columns", () => {
-    expect(component.columnKeysSelfService).toEqual(["serial", "type", "states", "description", "delete"]);
-  });
-
-  it("deleteContainer opens confirmation dialog, deletes and reloads when confirmed", () => {
-    const serial = "CONT-DEL";
-    const deleteSpy = jest.spyOn(containerService, "deleteContainer");
-    const reloadSpy = jest.spyOn(containerService.containerResource, "reload");
-
-    component.deleteContainer(serial);
-    confirmClosed.next(true);
-    confirmClosed.complete();
-
-    expect(dialogServiceMock.openDialog).toHaveBeenCalled();
-    expect(deleteSpy).toHaveBeenCalledWith(serial);
-    expect(reloadSpy).toHaveBeenCalled();
-  });
-
-  it("deleteContainer does nothing when dialog closes with falsy value", () => {
-    const serial = "CONT-NOOP";
-    const deleteSpy = jest.spyOn(containerService, "deleteContainer");
-    const reloadSpy = jest.spyOn(containerService.containerResource, "reload");
-
-    component.deleteContainer(serial);
-
-    confirmClosed.next(false);
-    confirmClosed.complete();
-
-    expect(dialogServiceMock.openDialog).toHaveBeenCalled();
-    expect(deleteSpy).not.toHaveBeenCalled();
-    expect(reloadSpy).not.toHaveBeenCalled();
   });
 });

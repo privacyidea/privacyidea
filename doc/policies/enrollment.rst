@@ -729,6 +729,50 @@ For these reasons, ``none`` is the recommended setting for passkeys; see :ref:`p
 This policy is separate from :ref:`policy_webauthn_enroll_authenticator_attestation_form` and
 :ref:`policy_webauthn_enroll_authenticator_attestation_level`, which are not used for passkey enrollment.
 
+.. _policy_passkey_user_label:
+
+passkey_user_label
+~~~~~~~~~~~~~~~~~~~
+
+type: string
+
+This action configures the name of the passkey that the authenticator shows in the credential selection when
+the user logs in (and during registration). It is the value that lets a user tell passkeys apart, for example
+when the same login name exists in several realms. The resolved value is also used as the display name. If the
+policy is not set, the name defaults to the login name of the user.
+
+The value supports tags of the form ``{tagname}`` for replacement. The following tags are always available:
+
+* ``{user}`` – the login name of the user
+* ``{realm}`` – the realm of the user
+* ``{resolver}`` – the resolver of the user
+* ``{serial}`` – the serial number of the passkey token
+
+In addition, every attribute the user's resolver provides can be used as a tag, for example ``{givenname}``,
+``{surname}``, ``{email}`` or ``{mobile}`` (the available attributes depend on the resolver type and
+configuration). The built-in tags above take precedence over resolver attributes with the same name.
+
+For example, if the user ``alice`` in the realm ``example`` has the given name ``Alice`` and the surname
+``Miller``, the value ``{user}@{realm}`` results in a name of ``alice@example`` and ``{givenname} {surname}``
+in ``Alice Miller``.
+
+Unknown tags and tags whose value is empty (for example an attribute that the resolver does not return) are
+replaced with an empty string. Static text and braces that do not form a valid tag are kept unchanged. If the
+whole template resolves to an empty value, the login name of the user is used as a fallback.
+
+.. note:: Whether the configured name is actually shown during login depends on the browser and authenticator.
+    Browsers reliably show the name for roaming authenticators (security keys), while platform and synced
+    passkey managers may show the display name instead; both are set to the same resolved value. In addition,
+    the browser is allowed to drop these fields before passing them to the authenticator: Firefox on Linux
+    currently does not forward the name/display name, so it is not stored on the authenticator. This is purely
+    cosmetic and does not affect authentication.
+
+.. note:: The resolved name is truncated to 64 bytes, because authenticators may not store longer names (and may
+    truncate them at an arbitrary position otherwise). Note that this limit is in bytes, not characters: since
+    the value is encoded as UTF-8, non-ASCII characters (e.g. accented letters or umlauts) take up more than one
+    byte, so the effective number of characters may be lower than 64. Keep the template short enough that the
+    resolved name stays within this limit.
+
 .. _policy_webauthn_enroll_req:
 
 webauthn_req
@@ -905,5 +949,14 @@ type: ``string``
 
 This policy can be used to force the privacyIDEA Authenticator App to secure the token with a pin or
 biometric. If you select any, the token can be unlocked with both.
+
+The app then requires the selected authentication method every time the token is used or its data is
+revealed, for example when an OTP value is displayed or a push request is accepted or declined. If the
+user has configured a stricter method for the whole app, that stricter method applies.
+
+The policy describes how the app gates the *use* of the token. It is not a statement about the storage of
+the key material and it does not tie the key to a particular biometric that is enrolled on the device. The
+app stores the token data in the secure storage provided by the operating system, and choosing
+``biometric`` does not make the key unusable when the user later adds or removes a fingerprint or face.
 
 .. note:: This needs the privacyIDEA Authenticator app 4.6.1 or higher.

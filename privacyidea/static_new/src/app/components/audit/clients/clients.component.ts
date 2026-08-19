@@ -36,6 +36,8 @@ import {
 } from "@angular/material/table";
 import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { TableStateComponent } from "@components/shared/table-state/table-state.component";
+import { TableState } from "@core/models/table_state/table-state";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { AuditService } from "@services/audit/audit.service";
 import { AuthService } from "@services/auth/auth.service";
@@ -47,6 +49,7 @@ import { MatTooltip } from "@angular/material/tooltip";
 import { RouterLink } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { LocalDateTimePipe } from "@components/shared/pipes/local-date-time.pipe";
 import { StringUtils } from "@utils/string.utils";
 import { filter } from "rxjs";
 
@@ -103,7 +106,9 @@ interface FlattenedClientRow {
     MatIconButton,
     MatTooltip,
     MatIcon,
-    ClearableInputComponent
+    ClearableInputComponent,
+    LocalDateTimePipe,
+    TableStateComponent
   ]
 })
 export class ClientsComponent {
@@ -146,7 +151,7 @@ export class ClientsComponent {
   clientDataSource: WritableSignal<MatTableDataSource<FlattenedClientRow>> = linkedSignal({
     source: () =>
       this.clientService.clientsResource.hasValue() ? this.clientService.clientsResource.value() : undefined,
-    computation: (clientResource, previous) => {
+    computation: (clientResource) => {
       if (clientResource) {
         const clientData = clientResource.result?.value || ({} as ClientsDict);
         const dataSource = new MatTableDataSource(this.flattenedClientRowsFromDict(clientData));
@@ -159,12 +164,18 @@ export class ClientsComponent {
         };
         return dataSource;
       }
-      return previous?.value ?? new MatTableDataSource([] as FlattenedClientRow[]);
+      return new MatTableDataSource<FlattenedClientRow>([]);
     }
   });
 
-  filterValue = "";
+  readonly tableState = new TableState({
+    resource: this.clientService.clientsResource,
+    count: () => this.clientDataSource().data.length,
+    allowed: () => this.authService.actionAllowed("clienttype"),
+    resetFilter: () => this.clearFilter()
+  });
 
+  filterValue = "";
 
   onSortChange(event: { active: string }) {
     this.activeSortColumn.set(event.active || null);
@@ -183,11 +194,11 @@ export class ClientsComponent {
   showInAuditLog(column: string, value: string) {
     if (column === "application") {
       const userAgent = this._split_user_agent(value);
-      this.auditService.auditFilter.set(
+      this.auditService.setFilter(
         new FilterValue({ value: `user_agent: ${userAgent.userAgent} user_agent_version: ${userAgent.version}` })
       );
     } else if (column === "ip") {
-      this.auditService.auditFilter.set(new FilterValue({ value: `client: ${value}` }));
+      this.auditService.setFilter(new FilterValue({ value: `client: ${value}` }));
     }
   }
 

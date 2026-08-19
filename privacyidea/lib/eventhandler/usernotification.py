@@ -127,6 +127,27 @@ class UserNotificationEventHandler(BaseEventHandler):
         body = mail_body
         return body
 
+    @staticmethod
+    def get_admin_realm_emails(admin_realm):
+        """
+        Collect the email addresses of all users in the given admin realm.
+
+        A broken resolver in the realm would otherwise silently drop its admins
+        from the result, so skipped resolvers are captured and warn-logged --
+        the returned list may be incomplete.
+
+        :param admin_realm: the name of the admin realm
+        :return: a list of email addresses of users that have an email
+        """
+        attr = is_attribute_at_all()
+        failures: list[str] = []
+        ulist = get_user_list({"realm": admin_realm}, include_custom_attributes=attr, failures=failures)
+        if failures:
+            skipped = sorted(failures)
+            log.warning(f"Admin recipient list for realm {admin_realm!r} may be incomplete; "
+                        f"resolvers skipped due to errors: {skipped}")
+        return [u.get("email") for u in ulist if u.get("email")]
+
     @property
     def actions(self):
         """
@@ -171,7 +192,8 @@ class UserNotificationEventHandler(BaseEventHandler):
                         NOTIFY_TYPE.EMAIL]},
                 "reply_to " + NOTIFY_TYPE.ADMIN_REALM: {
                     "type": "str",
-                    "value": get_app_config_value("SUPERUSER_REALM", []),
+                    "required": True,
+                    "value": get_app_config_value("SUPERUSER_REALM", None),
                     "visibleIf": "reply_to",
                     "visibleValue": NOTIFY_TYPE.ADMIN_REALM},
                 "reply_to " + NOTIFY_TYPE.INTERNAL_ADMIN: {
@@ -224,7 +246,8 @@ class UserNotificationEventHandler(BaseEventHandler):
                         NOTIFY_TYPE.EMAIL]},
                 "To " + NOTIFY_TYPE.ADMIN_REALM: {
                     "type": "str",
-                    "value": get_app_config_value("SUPERUSER_REALM", []),
+                    "required": True,
+                    "value": get_app_config_value("SUPERUSER_REALM", None),
                     "visibleIf": "To",
                     "visibleValue": NOTIFY_TYPE.ADMIN_REALM},
                 "To " + NOTIFY_TYPE.INTERNAL_ADMIN: {
@@ -349,25 +372,18 @@ class UserNotificationEventHandler(BaseEventHandler):
                 "email": internal_admin.email if internal_admin else ""
             }
         elif notify_type == NOTIFY_TYPE.ADMIN_REALM:
-            # Send emails to all the users in the specified admin realm. A broken
-            # resolver in the realm would otherwise silently drop its admins from
-            # the recipient list of this notification, so capture and warn-log
-            # any skipped resolvers — the recipient list may be incomplete.
+            # Send emails to all the users in the specified admin realm.
             admin_realm = handler_options.get("To " + NOTIFY_TYPE.ADMIN_REALM)
-            attr = is_attribute_at_all()
-            failures: list[str] = []
-            ulist = get_user_list({"realm": admin_realm}, include_custom_attributes=attr,
-                                  failures=failures)
-            if failures:
-                skipped = sorted(failures)
-                log.warning(f"Admin notification recipient list for realm {admin_realm!r} "
-                            f"may be incomplete; resolvers skipped due to errors: {skipped}")
-            # create a list of all user-emails, if the user has an email
-            emails = [u.get("email") for u in ulist if u.get("email")]
-            recipient = {
-                "givenname": f"admin of realm {admin_realm}",
-                "email": emails
-            }
+            if admin_realm:
+                recipient = {
+                    "givenname": f"admin of realm {admin_realm}",
+                    "email": self.get_admin_realm_emails(admin_realm)
+                }
+            else:
+                log.warning("No admin realm specified for ADMIN_REALM notification. "
+                            "No recipients will be notified.")
+                self.run_details = ("No admin realm configured for the notification. "
+                                    "No notification was sent.")
         elif notify_type == NOTIFY_TYPE.LOGGED_IN_USER:
             # Send notification to the logged in user
             if logged_in_user.get("username") and not logged_in_user.get(
@@ -382,7 +398,7 @@ class UserNotificationEventHandler(BaseEventHandler):
             else:
                 # Try to find the user in the specified realm
                 user = User(logged_in_user.get("username"),
-                                logged_in_user.get("realm"))
+                            logged_in_user.get("realm"))
                 email = handler_options.get("To " + NOTIFY_TYPE.LOGGED_IN_USER, 'email')
                 if user:
                     user_info = user.get_specific_info(["givenname", "surname", email, "mobile"])
@@ -468,8 +484,6 @@ class UserNotificationEventHandler(BaseEventHandler):
             subject = subject.format(**tags)
             # Send notification
             if action.lower() == "sendmail":
-                if not recipient:
-                    log.warning("Unable to determine the recipient for the user notification!")
                 if reply_to_type:
                     if reply_to_type == NOTIFY_TYPE.NO_REPLY_TO:
                         reply_to = ""
@@ -485,20 +499,13 @@ class UserNotificationEventHandler(BaseEventHandler):
 
                     elif reply_to_type == NOTIFY_TYPE.ADMIN_REALM:
                         # Adds all email addresses from a specific admin realm to the reply-to-header.
-                        # A broken resolver in the realm would otherwise silently drop its admins
-                        # from the reply-to list, so capture and warn-log any skipped resolvers.
                         admin_realm = handler_options.get("reply_to " + NOTIFY_TYPE.ADMIN_REALM)
-                        attr = is_attribute_at_all()
-                        failures: list[str] = []
-                        ulist = get_user_list({"realm": admin_realm}, include_custom_attributes=attr,
-                                              failures=failures)
-                        if failures:
-                            skipped = sorted(failures)
-                            log.warning(f"Reply-to recipient list for realm {admin_realm!r} "
-                                        f"may be incomplete; resolvers skipped due to errors: {skipped}")
-                        # create a list of all user-emails, if the user has an email
-                        emails = [u.get("email") for u in ulist if u.get("email")]
-                        reply_to = ",".join(emails)
+                        if admin_realm:
+                            reply_to = ",".join(self.get_admin_realm_emails(admin_realm))
+                        else:
+                            log.warning("No admin realm specified for ADMIN_REALM reply-to. "
+                                        "Reply-To will fall back to the SMTP sender address.")
+                            reply_to = None
 
                     elif reply_to_type == NOTIFY_TYPE.LOGGED_IN_USER:
                         # Add email address from the logged in user into the reply-to header
@@ -513,7 +520,7 @@ class UserNotificationEventHandler(BaseEventHandler):
                         else:
                             # Try to find the user in the specified realm
                             user = User(logged_in_user.get("username"),
-                                            logged_in_user.get("realm"))
+                                        logged_in_user.get("realm"))
                             if user:
                                 reply_to = user.get_specific_info([email]).get(email) if user else ""
 

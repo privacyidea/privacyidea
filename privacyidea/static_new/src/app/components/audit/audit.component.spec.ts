@@ -32,6 +32,8 @@ import {
   MockNotificationService
 } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { expectsTableStateGating } from "@testing/table-state-gating";
+import { expectedLocalDateTimeFromInput } from "@testing/expected-local-date-time";
 import { MockTableUtilsService } from "@testing/mock-services/mock-table-utils-service";
 import { of } from "rxjs";
 import { AuditComponent } from "./audit.component";
@@ -92,6 +94,13 @@ describe("AuditComponent (unit)", () => {
     jest.clearAllMocks();
   });
 
+  it("gates the table on its read right, row count and filter", () => {
+    expectsTableStateGating({
+      state: component.tableState,
+      right: "auditlog"
+    });
+  });
+
   it("creates", () => {
     expect(component).toBeTruthy();
     expect(component.columnKeys.length).toBe(component.columnKeysMap.length);
@@ -148,13 +157,6 @@ describe("AuditComponent (unit)", () => {
     expect(component.pageSizeOptions()).toEqual(customOptions);
   });
 
-  it("emptyResource mirrors pageSize", () => {
-    mockAuditService.pageSize.set(3);
-    expect(component.emptyResource().length).toBe(3);
-    mockAuditService.pageSize.set(7);
-    expect(component.emptyResource().length).toBe(7);
-  });
-
   it("auditDataSource updates when auditResource changes", () => {
     const rows: AuditData[] = [{ user: "alice" } as AuditData];
     mockAuditService.auditResource.value.set({
@@ -188,5 +190,75 @@ describe("AuditComponent (unit)", () => {
     });
     expect(mockAuditService.pageSize()).toBe(15);
     expect(mockAuditService.pageIndex()).toBe(2);
+  });
+});
+
+describe("AuditComponent (template rendering)", () => {
+  let fixture: ComponentFixture<AuditComponent>;
+  let component: AuditComponent;
+  let mockAuditService: MockAuditService;
+
+  beforeEach(async () => {
+    TestBed.resetTestingModule();
+
+    await TestBed.configureTestingModule({
+      imports: [AuditComponent],
+      providers: [
+        provideHttpClient(),
+        { provide: ActivatedRoute, useValue: { params: of({ id: "123" }) } },
+        { provide: MockAuditService, useClass: MockAuditService },
+        { provide: MockTableUtilsService, useClass: MockTableUtilsService },
+        { provide: MockContentService, useClass: MockContentService },
+        { provide: MockAuthService, useClass: MockAuthService },
+        { provide: AuditService, useExisting: MockAuditService },
+        { provide: TableUtilsService, useExisting: MockTableUtilsService },
+        { provide: ContentService, useExisting: MockContentService },
+        { provide: AuthService, useExisting: MockAuthService },
+        MockLocalService,
+        MockNotificationService
+      ]
+    }).compileComponents();
+
+    const authServiceMock = TestBed.inject(AuthService) as unknown as MockAuthService;
+    authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["auditlog"] });
+
+    fixture = TestBed.createComponent(AuditComponent);
+    component = fixture.componentInstance;
+    mockAuditService = TestBed.inject(MockAuditService);
+    fixture.detectChanges();
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("renders the startdate column as local date/time, not the raw server string", () => {
+    const rows: AuditData[] = [{ startdate: "2026-01-15T10:00:00.123456" } as AuditData];
+    mockAuditService.auditResource.value.set({
+      detail: undefined,
+      id: 0,
+      jsonrpc: "",
+      signature: "",
+      time: 0,
+      version: "",
+      versionnumber: "",
+      result: {
+        value: {
+          count: 1,
+          auditdata: rows,
+          auditcolumns: [],
+          current: 0
+        },
+        status: true
+      }
+    });
+    fixture.detectChanges();
+
+    const startdateColumnIndex = component.columnKeysMap.findIndex((c) => c.key === "startdate");
+    const cells = fixture.nativeElement.querySelectorAll("tbody td");
+    const cellText = cells[startdateColumnIndex].textContent.trim();
+
+    expect(cellText).toBe(expectedLocalDateTimeFromInput("2026-01-15T10:00:00.123456"));
+    expect(cellText).not.toContain("2026-01-15T10:00:00");
   });
 });

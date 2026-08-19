@@ -25,6 +25,7 @@ import { PiResponse } from "@app/app.component";
 import { AuthService } from "@services/auth/auth.service";
 import { ContainerDetailData, ContainerDetails, ContainerService } from "@services/container/container.service";
 import { ContentService } from "@services/content/content.service";
+import { DialogService } from "@services/dialog/dialog.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import { UserService } from "@services/user/user.service";
 import {
@@ -38,13 +39,17 @@ import {
   MockTableUtilsService,
   MockUserService
 } from "@testing/mock-services";
+import { of } from "rxjs";
 import { UserDetailsContainerTableComponent } from "./user-details-container-table.component";
+import { expectsTableStateGating } from "@testing/table-state-gating";
 
 describe("UserDetailsContainerTableComponent", () => {
   let fixture: ComponentFixture<UserDetailsContainerTableComponent>;
   let component: UserDetailsContainerTableComponent;
 
   let containerServiceMock: MockContainerService;
+  let authServiceMock: MockAuthService;
+  let userServiceMock: MockUserService;
 
   beforeEach(async () => {
     TestBed.resetTestingModule();
@@ -68,6 +73,14 @@ describe("UserDetailsContainerTableComponent", () => {
     fixture = TestBed.createComponent(UserDetailsContainerTableComponent);
 
     containerServiceMock = TestBed.inject(ContainerService) as unknown as MockContainerService;
+    authServiceMock = TestBed.inject(AuthService) as unknown as MockAuthService;
+    userServiceMock = TestBed.inject(UserService) as unknown as MockUserService;
+    // Through the rights signal rather than by pinning actionAllowed: a constant answer reads no
+    // signal, so anything computed from it caches its first verdict and never re-evaluates.
+    authServiceMock.authData.set({
+      ...MockAuthService.MOCK_AUTH_DATA,
+      rights: ["container_list", "container_create", "container_delete", "container_unassign_user", "container_state"]
+    });
 
     component = fixture.componentInstance;
     fixture.detectChanges();
@@ -75,52 +88,27 @@ describe("UserDetailsContainerTableComponent", () => {
 
   afterEach(() => jest.clearAllMocks());
 
+  it("gates the table on its read right, row count and filter", () => {
+    expectsTableStateGating({
+      state: component.tableState,
+      right: "container_list"
+    });
+  });
+
   it("should create", () => {
     expect(component).toBeTruthy();
   });
 
-  it("has the expected displayed columns", () => {
-    expect(component.displayedColumns).toEqual(["serial", "type", "states", "description", "realms"]);
+  it("has the select column first followed by the data columns", () => {
+    expect(component.displayedColumns).toEqual(["select", "serial", "type", "states", "description", "realms"]);
   });
 
-  it("exposes pageSizeOptions from TableUtilsService", () => {
-    expect(component.pageSizeOptions()).toEqual([5, 10, 25, 50]);
-  });
-
-  it("wires paginator and sort in ngAfterViewInit", () => {
-    expect(component.dataSource.paginator).toBe(component.paginator);
-    expect(component.dataSource.sort).toBe(component.sort);
-  });
-
-  it("filterPredicate matches on combined fields", () => {
-    const row = {
-      serial: "SER-001",
-      type: "Box",
-      description: "My demo container",
-      states: ["active"],
-      realms: ["r1", "r2"],
-      tokens: [],
-      users: [{ user_name: "alice", user_realm: "r1" }]
-    } as unknown as ContainerDetailData;
-
-    const pred = component.dataSource.filterPredicate!;
-    expect(pred(row, "active")).toBe(true);
-    expect(pred(row, "r2")).toBe(true);
-    expect(pred(row, "demo")).toBe(true);
-    expect(pred(row, "nope")).toBe(false);
-  });
-
-  it("handleFilterInput normalises and applies to dataSource.filter", () => {
-    const ev = { target: { value: "  MixedCase Text  " } } as unknown as Event;
-    component.handleFilterInput(ev);
-
-    expect(component.filterValue).toBe("mixedcase text");
-    expect(component.dataSource.filter).toBe("mixedcase text");
-  });
-
-  it("onPageSizeChange updates pageSize", () => {
-    component.onPageSizeChange(25);
-    expect(component.pageSize).toBe(25);
+  it("leaves the data source's sort unset so it keeps a working change subscription", () => {
+    // MatTableDataSource reads _sort.sortChange/_sort.initialized whenever the table reconnects.
+    // Anything that is not a MatSort there makes that a merge() over undefined, which throws and
+    // leaves the data source unable to render. Ordering is done by this component, not by the
+    // data source, so the seat stays empty.
+    expect(component.dataSource.sort).toBeFalsy();
   });
 
   describe("userContainers signal", () => {
@@ -162,10 +150,97 @@ describe("UserDetailsContainerTableComponent", () => {
     });
   });
 
-  it("handleStateClick calls toggleActive and reloads", () => {
-    const element = { serial: "C-123", states: ["active"] } as unknown as ContainerDetailData;
-    component.handleStateClick(element);
-    expect(containerServiceMock.toggleActive).toHaveBeenCalledWith("C-123", ["active"]);
+  const showContainers = (...rows: ContainerDetailData[]) => {
+    component.userContainers.set(rows);
+    fixture.detectChanges();
+    component.selector.deselectAllRows();
+  };
+
+  describe("selection", () => {
+    it("has nothing to select when the resource has no value", () => {
+      containerServiceMock.userContainersResource.value.set(undefined);
+      fixture.detectChanges();
+
+      expect(component.selector.hasVisibleRows()).toBe(false);
+      expect(component.selector.allRowsSelected()).toBe(false);
+    });
+
+    it("scopes the selection to the containers of the user", () => {
+      showContainers(
+        { serial: "C-1", states: [] } as unknown as ContainerDetailData,
+        { serial: "C-2", states: [] } as unknown as ContainerDetailData
+      );
+
+      component.selector.selectAllRows();
+
+      expect(component.selector.selectedRows().map((row) => row.serial)).toEqual(["C-1", "C-2"]);
+      expect(component.selector.allRowsSelected()).toBe(true);
+    });
+  });
+
+  describe("deleteSelected", () => {
+    const selected: ContainerDetailData[] = [
+      { serial: "C-1", states: [] } as unknown as ContainerDetailData,
+      { serial: "C-2", states: [] } as unknown as ContainerDetailData
+    ];
+
+    function mockDialogResult(result: unknown): void {
+      jest
+        .spyOn((component as unknown as { dialogService: DialogService }).dialogService, "openDialog")
+        .mockReturnValue({ afterClosed: () => of(result) } as ReturnType<DialogService["openDialog"]>);
+    }
+
+    it("deletes every selected container and reloads when confirmed", () => {
+      showContainers(...selected);
+      component.selector.selectAllRows();
+      mockDialogResult(true);
+
+      component.deleteSelected();
+
+      expect(containerServiceMock.deleteContainer).toHaveBeenCalledWith("C-1");
+      expect(containerServiceMock.deleteContainer).toHaveBeenCalledWith("C-2");
+      expect(containerServiceMock.userContainersResource.reload).toHaveBeenCalledTimes(1);
+    });
+
+    it("does nothing when the confirmation is dismissed", () => {
+      showContainers(...selected);
+      component.selector.selectAllRows();
+      mockDialogResult(false);
+
+      component.deleteSelected();
+
+      expect(containerServiceMock.deleteContainer).not.toHaveBeenCalled();
+      expect(containerServiceMock.userContainersResource.reload).not.toHaveBeenCalled();
+    });
+  });
+
+  it("unassignSelected unassigns each container for the current user and reloads", () => {
+    userServiceMock.detailsUser.set({ username: "alice", realm: "r1" });
+    userServiceMock.selectedUserRealm.set("r1");
+    showContainers(
+      { serial: "C-1", states: [] } as unknown as ContainerDetailData,
+      { serial: "C-2", states: [] } as unknown as ContainerDetailData
+    );
+    component.selector.selectAllRows();
+
+    component.unassignSelected();
+
+    expect(containerServiceMock.unassignUser).toHaveBeenCalledWith("C-1", "alice", "r1");
+    expect(containerServiceMock.unassignUser).toHaveBeenCalledWith("C-2", "alice", "r1");
+    expect(containerServiceMock.userContainersResource.reload).toHaveBeenCalledTimes(1);
+  });
+
+  it("toggleActiveSelected toggles each container and reloads", () => {
+    showContainers(
+      { serial: "C-1", states: ["active"] } as unknown as ContainerDetailData,
+      { serial: "C-2", states: ["disabled"] } as unknown as ContainerDetailData
+    );
+    component.selector.selectAllRows();
+
+    component.toggleActiveSelected();
+
+    expect(containerServiceMock.toggleActive).toHaveBeenCalledWith("C-1", ["active"]);
+    expect(containerServiceMock.toggleActive).toHaveBeenCalledWith("C-2", ["disabled"]);
     expect(containerServiceMock.userContainersResource.reload).toHaveBeenCalledTimes(1);
   });
 });

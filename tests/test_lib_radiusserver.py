@@ -72,10 +72,13 @@ class RADIUSServerTestCase(MyTestCase):
 
         radius = get_radius("myserver")
         with LogCapture(level=logging.DEBUG) as lc:
-            r = radius.request("user", "password")
+            r = radius.request("user", "Tr0ub4dor&3")
             self.assertIsInstance(r, pyrad.packet.Packet)
             self.assertEqual(r.code, pyrad.packet.AccessAccept)
-            self.assertIn("{'password': 'HIDDEN'}", lc.records[0].message)
+            # The password is hidden wherever it was passed, so assert on the value rather than on
+            # the position or keyword it arrived in.
+            self.assertNotIn("Tr0ub4dor&3", lc.records[0].message)
+            self.assertIn("HIDDEN", lc.records[0].message)
 
         radiusmock.setdata(response=radiusmock.AccessReject)
         r = radius.request("user", "password")
@@ -176,3 +179,22 @@ class RADIUSServerTestCase(MyTestCase):
         self.assertIn("exprad", servers)
         self.assertEqual(servers["exprad"]["secret"], "radsecret")
         delete_radius("exprad")
+
+    def test_10_import_legacy_password_key(self):
+        from privacyidea.lib.radiusserver import import_radiusserver, list_radiusservers
+        # Config files exported by older privacyIDEA versions serialize the RADIUS
+        # secret under the legacy 'password' key. Importing them must still work
+        # (the secret is mapped onto the 'secret' key add_radius() expects).
+        legacy_export = {"legacyrad": {"server": "1.2.3.4",
+                                       "port": 1812,
+                                       "dictionary": DICT_FILE,
+                                       "description": "",
+                                       "password": "legacysecret",
+                                       "timeout": 5,
+                                       "retries": 3,
+                                       "options": {}}}
+        import_radiusserver(legacy_export)
+        servers = list_radiusservers()
+        self.assertIn("legacyrad", servers)
+        self.assertEqual("legacysecret", servers["legacyrad"]["secret"])
+        delete_radius("legacyrad")

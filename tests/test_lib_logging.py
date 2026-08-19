@@ -18,8 +18,25 @@
 import logging
 import logging.config
 
-from privacyidea.lib.log import DEFAULT_LOGGING_CONFIG
+from privacyidea.lib.log import DEFAULT_LOGGING_CONFIG, SecureFormatter
 from privacyidea.lib.utils import parse_date
+
+
+def _record(msg, args=(), **extra):
+    record = logging.LogRecord("test", logging.INFO, "some_file.py", 1, msg, args, None)
+    record.__dict__.update(extra)
+    return record
+
+
+def test_log_formatter_non_string_message():
+    # A log call may pass any object as the message, e.g. log.info(exception)
+    formatter = SecureFormatter("%(message)s")
+    assert (formatter.format(_record(ValueError("boom\0bad")))
+            == "!!Log Entry Secured by SecureFormatter!! boom.bad")
+    # The caller location is appended to a non-string message as well
+    assert formatter.format(_record(RuntimeError("failed"), s_line=42)) == "failed (called from some_file.py:1)"
+    # A format string with arguments is still interpolated
+    assert formatter.format(_record("value is %s", ("x",))) == "value is x"
 
 
 def test_log_formatter(caplog, tmp_path):
@@ -30,3 +47,4 @@ def test_log_formatter(caplog, tmp_path):
     assert parse_date("2016/\0x052/20") is None
     assert ("!!Log Entry Secured by SecureFormatter!! Dateformat 2016/.x052/20 "
             "could not be parsed") == caplog.messages[0]
+

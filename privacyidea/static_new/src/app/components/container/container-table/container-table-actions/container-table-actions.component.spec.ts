@@ -25,7 +25,7 @@ import { ActivatedRoute } from "@angular/router";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { of } from "rxjs";
 import { ContainerTableActionsComponent } from "./container-table-actions.component";
-import { ContainerService } from "@services/container/container.service";
+import { ContainerDetailData, ContainerService } from "@services/container/container.service";
 import {
   MockContainerService,
   MockContentService,
@@ -80,56 +80,51 @@ describe("ContainerTableActionsComponent", () => {
 
     it("deletes every selected container, clears the selection and reloads when confirmed", () => {
       const reloadSpy = jest.spyOn(containerService.containerResource, "reload");
-      containerService.containerSelection.set([
-        { serial: "CONT-1" },
-        { serial: "CONT-2" }
-      ] as ReturnType<typeof containerService.containerSelection>);
+      containerService.setContainerSelection([{ serial: "CONT-1" }, { serial: "CONT-2" }] as ContainerDetailData[]);
       mockDialogResult(true);
 
       component.deleteSelectedContainer();
 
       expect(containerService.deleteContainer).toHaveBeenCalledWith("CONT-1");
       expect(containerService.deleteContainer).toHaveBeenCalledWith("CONT-2");
-      expect(containerService.containerSelection()).toEqual([]);
+      expect(containerService.containerSelection.hasSelection()).toBe(false);
       expect(reloadSpy).toHaveBeenCalled();
     });
 
     it("does nothing when the confirmation is dismissed", () => {
-      containerService.containerSelection.set([
-        { serial: "CONT-1" }
-      ] as ReturnType<typeof containerService.containerSelection>);
+      containerService.setContainerSelection([{ serial: "CONT-1" }] as ContainerDetailData[]);
       mockDialogResult(false);
 
       component.deleteSelectedContainer();
 
       expect(containerService.deleteContainer).not.toHaveBeenCalled();
-      expect(containerService.containerSelection().length).toBe(1);
+      expect(containerService.containerSelection.selectedCount()).toBe(1);
     });
   });
 
   describe("getFilterIconName", () => {
     it("returns filter_alt for 'assigned' when no value is set", () => {
-      containerService.containerFilter.set(new FilterValue());
+      containerService.activeFilter.set(new FilterValue());
       expect(component.getFilterIconName("assigned")).toBe("filter_alt");
     });
 
     it("returns screen_rotation_alt for 'assigned' when value is 'true'", () => {
-      containerService.containerFilter.set(new FilterValue({ value: "assigned: true" }));
+      containerService.activeFilter.set(new FilterValue({ value: "assigned: true" }));
       expect(component.getFilterIconName("assigned")).toBe("screen_rotation_alt");
     });
 
     it("returns filter_alt_off for 'assigned' when value is 'false'", () => {
-      containerService.containerFilter.set(new FilterValue({ value: "assigned: false" }));
+      containerService.activeFilter.set(new FilterValue({ value: "assigned: false" }));
       expect(component.getFilterIconName("assigned")).toBe("filter_alt_off");
     });
 
     it("returns filter_alt_off for a non-assigned keyword that is present in the filter", () => {
-      containerService.containerFilter.set(new FilterValue({ value: "type: " }));
+      containerService.activeFilter.set(new FilterValue({ value: "type: " }));
       expect(component.getFilterIconName("type")).toBe("filter_alt_off");
     });
 
     it("returns filter_alt for a non-assigned keyword that is not in the filter", () => {
-      containerService.containerFilter.set(new FilterValue());
+      containerService.activeFilter.set(new FilterValue());
       expect(component.getFilterIconName("type")).toBe("filter_alt");
     });
   });
@@ -144,10 +139,10 @@ describe("ContainerTableActionsComponent", () => {
     });
 
     it("toggles boolean filter and reopens the menu for 'assigned'", () => {
-      const initialFilter = containerService.containerFilter();
+      const initialFilter = containerService.activeFilter();
       const newFilter = new FilterValue({ value: "assigned: true" });
       tableUtilsService.toggleBooleanInFilter.mockReturnValue(newFilter);
-      const setSpy = jest.spyOn(containerService.containerFilter, "set");
+      const setSpy = jest.spyOn(containerService.activeFilter, "set");
       const openMenu = jest.fn();
       jest
         .spyOn(component, "advancedFilterTrigger")
@@ -167,10 +162,10 @@ describe("ContainerTableActionsComponent", () => {
     });
 
     it("toggles keyword filter and focuses the filter input for non-assigned keywords", () => {
-      const initialFilter = containerService.containerFilter();
+      const initialFilter = containerService.activeFilter();
       const newFilter = new FilterValue({ value: "type: " });
       tableUtilsService.toggleKeywordInFilter.mockReturnValue(newFilter);
-      const setSpy = jest.spyOn(containerService.containerFilter, "set");
+      const setSpy = jest.spyOn(containerService.activeFilter, "set");
       const focus = jest.fn();
       const getElementByIdSpy = jest
         .spyOn(document, "getElementById")

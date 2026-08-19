@@ -8,7 +8,7 @@ import json
 from privacyidea.lib.crypto import get_rand_digit_str
 from .base import MyTestCase
 from privacyidea.lib.challenge import (get_challenges, extract_answered_challenges, delete_challenges,
-                                       cancel_enrollment_via_multichallenge)
+                                       cancel_enrollment_via_multichallenge, get_challenges_paginate)
 from privacyidea.lib.cache import redis_feature_enabled
 from privacyidea.lib.policy import (set_policy, delete_policy, SCOPE)
 from privacyidea.lib.policies.actions import PolicyAction
@@ -51,6 +51,28 @@ class ChallengeTestCase(MyTestCase):
         self.assertEqual(len(chals), 0)
 
         delete_policy("chalresp")
+
+    def test_01a_get_challenges_paginate_like_escaping(self):
+        # SQL LIKE metacharacters in the filter must match literally; only '*' is a wildcard.
+        Challenge(serial="ESC_01", transaction_id="txn_esc_1").save()
+        Challenge(serial="ESCX01", transaction_id="txn_esc_2").save()
+
+        # '*' expands: "ESC*01" matches both serials
+        result = get_challenges_paginate(serial="ESC*01")
+        self.assertSetEqual({"ESC_01", "ESCX01"},
+                            {challenge["serial"] for challenge in result["challenges"]}, result)
+
+        # '_' is literal: "ESC_*" matches only "ESC_01", not "ESCX01"
+        result = get_challenges_paginate(serial="ESC_*")
+        self.assertListEqual(["ESC_01"], [challenge["serial"] for challenge in result["challenges"]], result)
+
+        # transaction_id also goes through the wildcard branch, matching both challenges
+        result = get_challenges_paginate(transaction_id="txn_esc_*")
+        self.assertSetEqual({"ESC_01", "ESCX01"},
+                            {challenge["serial"] for challenge in result["challenges"]}, result)
+
+        delete_challenges(serial="ESC_01")
+        delete_challenges(serial="ESCX01")
 
     def test_02_extract_answered_challenges(self):
         token = init_token({"genkey": 1, "serial": "CHAL2", "pin": "pin"})
@@ -166,22 +188,22 @@ class ChallengeDataEncryptionTestCase(MyTestCase):
     """Test that challenge data is encrypted in the database."""
 
     def test_01_challenge_data_encrypted(self):
-        """OTP data stored in a challenge is encrypted in the database."""
-        otp_value = "123456"
+        """Challenge data (dict) is encrypted in the database."""
+        data = {"otp": "123456"}
         c = Challenge(serial="SPASS01", transaction_id="tid_enc_001",
-                      data=otp_value, validitytime=300)
+                      data=data, validitytime=300)
         c.save()
 
         # Verify the raw _data attribute is the encrypted form (not plaintext)
-        self.assertNotEqual(c._data, otp_value,
-                            "OTP data should be stored encrypted!")
+        self.assertNotEqual(c._data, json.dumps(data),
+                            "Challenge data should be stored encrypted!")
         self.assertIn(":", c._data)
 
         # Verify the data property transparently decrypts
-        self.assertEqual(c.data, otp_value)
+        self.assertEqual(json.loads(c.data), data)
 
-        # Verify get_data() also works (parses JSON)
-        self.assertEqual(c.get_data(), int(otp_value))  # json.loads("123456") -> 123456
+        # Verify get_data() returns the dict
+        self.assertEqual(c.get_data(), data)
 
         # Clean up
         db.session.delete(c)
@@ -260,83 +282,78 @@ class ChallengeDataEncryptionTestCase(MyTestCase):
         db.session.delete(c)
         db.session.commit()
 
-    def test_06_challenge_legacy_plaintext_data_readable(self):
-        """Legacy unencrypted data (pre-migration) can still be read."""
-        c = Challenge(serial="LEGACY01", transaction_id="tid_enc_006",
-                      validitytime=120)
-        c.save()
-
-        # Bypass set_data() and write plaintext directly to _data (pre-migration state)
-        c._data = "654321"  # raw plaintext OTP
-        db.session.commit()
-
-        # data property should fall back to returning raw value when decryption fails
-        self.assertEqual(c.data, "654321")
-
-        # get_data() parses as JSON -> returns int
-        retrieved = c.get_data()
-        self.assertEqual(retrieved, 654321)
-
-        # Clean up
-        db.session.delete(c)
-        db.session.commit()
-
-    def test_07_challenge_legacy_json_data_readable(self):
-        """Legacy unencrypted JSON data (pre-migration) can still be read."""
-        c = Challenge(serial="LEGACY02", transaction_id="tid_enc_007",
-                      validitytime=120)
-        c.save()
-
-        # Bypass set_data() and write plaintext JSON directly to _data
-        legacy_data = {"user_verification": "preferred"}
-        c._data = json.dumps(legacy_data)
-        db.session.commit()
-
-        # data property should return the raw JSON string (decryption fails, falls back)
-        self.assertEqual(c.data, json.dumps(legacy_data))
-
-        # get_data() should parse the JSON
-        retrieved = c.get_data()
-        self.assertEqual(retrieved, legacy_data)
-
-        # Clean up
-        db.session.delete(c)
-        db.session.commit()
-
     def test_08_data_property_setter_encrypts(self):
         """Assigning to c.data via the property setter encrypts the value."""
         c = Challenge(serial="SETTER01", transaction_id="tid_enc_008",
                       validitytime=300)
         c.save()
 
-        # Assign via property setter (c.data = ...)
-        c.data = "secret_otp_789"
-        db.session.commit()
-
-        # Raw _data should be encrypted (not plaintext)
-        self.assertNotEqual(c._data, "secret_otp_789")
-        self.assertIn(":", c._data)
-
-        # Reading via property should decrypt
-        self.assertEqual(c.data, "secret_otp_789")
-
-        # Assign a dict via setter
+        # Assign a dict via property setter
         c.data = {"push_confirmed": True}
         db.session.commit()
 
         self.assertNotEqual(c._data, json.dumps({"push_confirmed": True}))
         self.assertIn(":", c._data)
         self.assertEqual(json.loads(c.data), {"push_confirmed": True})
+        self.assertEqual(c.get_data(), {"push_confirmed": True})
 
-        # Assign empty string via setter - stored as empty, not encrypted
-        c.data = ""
+        # Assign empty dict via setter - stored as empty, not encrypted
+        c.data = {}
         db.session.commit()
         self.assertEqual(c._data, "")
+        self.assertEqual(c.get_data(), {})
 
         # Assign None via setter
         c.data = None
         db.session.commit()
         self.assertEqual(c._data, "")
+        self.assertEqual(c.get_data(), {})
+
+        # Clean up
+        db.session.delete(c)
+        db.session.commit()
+
+    def test_09_get_data_returns_empty_dict_on_corrupt_data(self):
+        """get_data() returns {} if decrypted data is not valid JSON."""
+        from privacyidea.lib.crypto import encryptPassword
+
+        c = Challenge(serial="CORRUPT01", transaction_id="tid_enc_009",
+                      validitytime=300)
+        c.save()
+
+        # Bypass set_data() and write non-JSON encrypted data directly
+        c._data = encryptPassword("not valid json {{{")
+        db.session.commit()
+
+        # get_data() should catch the JSONDecodeError and return {}
+        self.assertEqual(c.get_data(), {})
+
+        # Clean up
+        db.session.delete(c)
+        db.session.commit()
+
+    def test_10_get_data_returns_empty_dict_on_non_dict_json(self):
+        """get_data() returns {} if decrypted data is valid JSON but not a dict."""
+        from privacyidea.lib.crypto import encryptPassword
+
+        c = Challenge(serial="NONDICT01", transaction_id="tid_enc_010",
+                      validitytime=300)
+        c.save()
+
+        # Store a JSON list (valid JSON, but not a dict)
+        c._data = encryptPassword('[1, 2, 3]')
+        db.session.commit()
+        self.assertEqual(c.get_data(), {})
+
+        # Store a JSON integer
+        c._data = encryptPassword('42')
+        db.session.commit()
+        self.assertEqual(c.get_data(), {})
+
+        # Store a JSON string
+        c._data = encryptPassword('"just a string"')
+        db.session.commit()
+        self.assertEqual(c.get_data(), {})
 
         # Clean up
         db.session.delete(c)

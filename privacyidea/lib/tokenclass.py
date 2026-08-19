@@ -96,11 +96,19 @@ from privacyidea.lib.utils import (is_true, decode_base32check,
                                    to_unicode, create_img, parse_timedelta,
                                    parse_legacy_time, split_pin_pass)
 from .challenge import get_challenges
+from .challenge_types import ChallengeSession
+# Re-exported for backwards compatibility: these live in challenge_types so that
+# models.challenge and lib.cache.redis can import them without a circular import.
+from .challenge_types import (  # noqa: F401
+    CHALLENGE_REFUSAL_STATUS,
+    CHALLENGE_REFUSAL_SESSIONS,
+    is_challenge_open,
+)
 from .config import (get_from_config, get_prepend_pin)
 from .decorators import check_token_locked
 from .error import (TokenAdminError,
                     ParameterError, ResourceNotFoundError)
-from .log import log_with
+from .log import log_with, redacted_attributes
 from .policies.actions import PolicyAction
 from .policydecorators import libpolicy, auth_otppin, challenge_response_allowed
 from .user import (User)
@@ -116,11 +124,6 @@ TWOSTEP_DEFAULT_CLIENTSIZE = 8
 TWOSTEP_DEFAULT_DIFFICULTY = 10000
 
 log = logging.getLogger(__name__)
-
-
-class ChallengeSession:
-    ENROLLMENT = "enrollment"
-    DECLINED = "challenge_declined"
 
 
 class Tokenkind:
@@ -1136,7 +1139,7 @@ class TokenClass:
         db.session.execute(statement)
         db.session.commit()
 
-    def delete_tokengroup(self, tokengroup: str = None, tokengroup_id: int = None):
+    def delete_tokengroup(self, tokengroup: str = None, tokengroup_id: int = None) -> bool:
         """
         Removes a token group from a token.
         You either need to specify the name or the ID of the tokengroup. If none of them is given, all token groups
@@ -1155,10 +1158,11 @@ class TokenClass:
             if not tokengroup_db:
                 log.warning("Tokengroup %s does not exist. Cannot remove it from token %s.", tokengroup,
                             self.get_serial())
-                raise ResourceNotFoundError(f"Tokengroup {tokengroup} does not exist.")
+                raise ResourceNotFoundError(_("Tokengroup {0!s} does not exist.").format(tokengroup))
             statement = statement.where(TokenTokengroup.tokengroup_id == tokengroup_db.id)
         db.session.execute(statement)
         db.session.commit()
+        return True
 
     @check_token_locked
     def set_count_auth_success_max(self, count):
@@ -1585,13 +1589,7 @@ class TokenClass:
         :return: token state as string representation
         :rtype:  string
         """
-        ldict = {}
-        for attr in self.__dict__:
-            key = f"{attr!r}"
-            val = f"{getattr(self, attr)!r}"
-            ldict[key] = val
-        res = f"<{self.__class__!r} {ldict!r}>"
-        return res
+        return f"<{self.__class__!r} {redacted_attributes(self)!r}>"
 
     def get_init_detail(self, params=None, user=None):
         """
@@ -1771,7 +1769,7 @@ class TokenClass:
                     # challenge is still valid
                     # Add the challenge to the options for check_otp
                     options["challenge"] = challenge.challenge
-                    options["data"] = challenge.data
+                    options["data"] = challenge.get_data()
                     if challenge.session == ChallengeSession.ENROLLMENT:
                         self.enroll_via_validate_2nd_step(passw, options=options)
                         challenge.delete()

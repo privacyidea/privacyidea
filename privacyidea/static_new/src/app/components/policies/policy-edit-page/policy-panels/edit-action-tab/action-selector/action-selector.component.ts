@@ -63,7 +63,7 @@ export class ActionSelectorComponent {
   readonly actionAdd = output<{ action: { name: string; value: string | boolean }; newScope?: string | null }>();
   readonly scopeChange = output<string | undefined>();
 
-  readonly allPolicyScopes = this.policyService.allPolicyScopes();
+  readonly allPolicyScopes = this.policyService.allPolicyScopes;
 
   readonly selectedActionGroup: WritableSignal<string> = linkedSignal({
     source: () => this.actionGroupNamesFiltered(),

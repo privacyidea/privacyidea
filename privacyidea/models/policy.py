@@ -30,6 +30,23 @@ from privacyidea.models.utils import MethodsMixin
 log = logging.getLogger(__name__)
 
 
+def parse_action_string(action: str) -> dict:
+    """
+    Parse a policy action string into a ``{key: value}`` dict.
+
+    Actions are comma-separated; a comma escaped as ``\\,`` does not split. An
+    action given without ``=`` maps to ``True``. This lives in the models layer
+    so the ORM (``Policy.get``) and the policy engine (``validate_actions`` /
+    ``filter_invalid_actions`` in lib.policy) all parse action strings the same
+    way. The caller is responsible for short-circuiting an empty ``action``.
+    """
+    actions = {}
+    for part in re.split(r'(?<!\\),', action or ""):
+        key_value = part.strip().split("=", 1)
+        actions[key_value[0]] = key_value[1] if len(key_value) == 2 else True
+    return actions
+
+
 class Policy(TimestampMethodsMixin, db.Model):
     """
     The policy table contains the policy definitions.
@@ -156,16 +173,7 @@ class Policy(TimestampMethodsMixin, db.Model):
              "priority": self.priority,
              "description": self.get_policy_description(),
              "user_agents": self._split_string(self.user_agents)}
-        action_list = []
-        if self.action:
-            action_list = [x.strip().split("=", 1) for x in re.split(r'(?<!\\),', self.action or "")]
-        action_dict = {}
-        for a in action_list:
-            if len(a) > 1:
-                action_dict[a[0]] = a[1]
-            else:
-                action_dict[a[0]] = True
-        d["action"] = action_dict
+        d["action"] = parse_action_string(self.action) if self.action else {}
         if key:
             ret = d.get(key)
         else:

@@ -31,27 +31,34 @@ import { environment } from "@env/environment";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
+import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
+import {
+  FilterableTableService,
+  FilterableTableServiceInterface
+} from "@services/table-utils/filterable-table-service";
+import { loadedRows, RowSelector } from "@services/table-utils/row-selector";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 import { UserService, UserServiceInterface } from "@services/user/user.service";
+import { buildFilterParams, filterParamsEqual, toWildcardParam, withDefaultRealm } from "@utils/filter.utils";
 import { StringUtils } from "@utils/string.utils";
 import { catchError, forkJoin, lastValueFrom, Observable, of, Subject, throwError } from "rxjs";
 
-const apiFilter = ["container_serial", "type", "description", "container_realm", "state"];
-const advancedApiFilter = ["token_serial", "template", "assigned"];
+// `realm` is the realm of the assigned user: the backend resolves `user` together with `realm` into
+// the user object the container list is filtered by. `container_realm` is the realm of the container
+// itself and is a separate filter.
+const apiFilterKeys = ["container_serial", "type", "description", "user", "realm", "container_realm", "state"];
+const advancedApiFilterKeys = ["token_serial", "template", "assigned"];
+
+// `realm` is the realm of the assigned user (it builds the endpoint's user object), not the container's
+// own realm, which is `container_realm`. It is only ever set implicitly to scope a `user:` filter, so it
+// stays out of `apiFilterKeys` and is not offered as a keyword.
+const hiddenApiFilterKeys = ["realm"];
+
+const exactMatchKeys = new Set(["user", "realm", "type", "state", "assigned"]);
 
 // Filter keywords, a single value maps to the `type` query param, multiple to `type_list`.
 // TODO(4.0.0): send a single list-only `types` param once the backend drops the type/type_list split.
 const CONTAINER_TYPE_FILTER_KEYS = new Set<string>(["type", "types"]);
-
-export function toWildcardParam(
-  key: string,
-  value: string | null | undefined,
-  plainKeys: Set<string>
-): Record<string, string> {
-  const trimmed = (value ?? "").trim();
-  if (!StringUtils.validFilterValue(trimmed)) return {};
-  return { [key]: plainKeys.has(key) ? trimmed : `*${trimmed}*` };
-}
 
 export const CONTAINER_STATE_OPTIONS = [
   { value: "active", label: $localize`active` },
@@ -188,12 +195,10 @@ export interface ContainerUnregisterData {
   success: boolean;
 }
 
-export interface ContainerServiceInterface {
+export interface ContainerServiceInterface extends FilterableTableServiceInterface {
   compatibleWithSelectedTokenType: WritableSignal<string | null>;
   filterContainersByTokenOwner: WritableSignal<boolean>;
   isPollingActive: Signal<boolean>;
-  apiFilter: string[];
-  advancedApiFilter: string[];
   stopPolling$: Subject<void>;
   containerBaseUrl: string;
   eventPageSize: WritableSignal<number>;
@@ -201,21 +206,17 @@ export interface ContainerServiceInterface {
   containerSerial: WritableSignal<string>;
   containerDetail: Signal<ContainerDetailData | null>;
   selectedContainerSerial: WritableSignal<string | null>;
-  sort: WritableSignal<Sort>;
-  containerFilter: WritableSignal<FilterValue>;
-  filterParams: Signal<Record<string, string>>;
-  pageSize: WritableSignal<number>;
-  pageIndex: WritableSignal<number>;
   containerResource: HttpResourceRef<PiResponse<ContainerDetails> | undefined>;
   userContainersResource: HttpResourceRef<PiResponse<ContainerDetails> | undefined>;
   containersForTokenTypeResource: HttpResourceRef<PiResponse<ContainerDetails> | undefined>;
   containersForTokenType: Signal<string[]>;
-  containerSelection: WritableSignal<ContainerDetailData[]>;
+  containerSelection: RowSelector<ContainerDetailData>;
   containerTypesResource: HttpResourceRef<PiResponse<ContainerTypes> | undefined>;
   containerTypeOptions: Signal<ContainerType[]>;
   selectedContainerType: WritableSignal<ContainerType | undefined>;
   containerDetailsResource: HttpResourceRef<PiResponse<ContainerDetails> | undefined>;
   containerDetails: WritableSignal<ContainerDetails>;
+  supportedTokenTypes: Signal<string[]>;
   templateComparison: WritableSignal<TemplateComparisonResult | null>;
   addToken: (tokenSerial: string, containerSerial: string) => Observable<PiResponse<boolean>>;
   removeToken: (tokenSerial: string, containerSerial: string) => Observable<PiResponse<boolean>>;
@@ -252,9 +253,7 @@ export interface ContainerServiceInterface {
   unregister: (containerSerial: string) => Observable<PiResponse<ContainerUnregisterData>>;
   containerBelongsToUser: (containerSerial: string) => false | true | undefined;
 
-  handleFilterInput($event: Event): void;
-
-  clearFilter(): void;
+  applyFilterInput($event: Event): void;
 
   stopPolling(): void;
 
@@ -264,12 +263,13 @@ export interface ContainerServiceInterface {
 }
 
 @Injectable()
-export class ContainerService implements ContainerServiceInterface {
+export class ContainerService extends FilterableTableService implements ContainerServiceInterface {
   private readonly tokenService: TokenServiceInterface = inject(TokenService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly userService: UserServiceInterface = inject(UserService);
+  private readonly realmService: RealmServiceInterface = inject(RealmService);
   private readonly http = inject(HttpClient);
   private readonly pollingTrigger = signal<number>(0);
   private readonly isRolloverPolling = signal(false);
@@ -282,8 +282,6 @@ export class ContainerService implements ContainerServiceInterface {
     computation: () => false
   });
   readonly isPollingActive = signal(false);
-  readonly apiFilter = apiFilter;
-  readonly advancedApiFilter = advancedApiFilter;
   stopPolling$ = new Subject<void>();
   containerBaseUrl = environment.proxyUrl + "/container/";
   readonly eventPageSize = signal(10);
@@ -309,7 +307,8 @@ export class ContainerService implements ContainerServiceInterface {
     }
     return String(assigned).trim() !== "";
   });
-  private pollingTimeoutId: ReturnType<typeof setTimeout> | undefined;  containerDetail = computed(() => {
+  private pollingTimeoutId: ReturnType<typeof setTimeout> | undefined;
+  containerDetail = computed(() => {
     const details = this.containerDetails();
     const serial = this.containerSerial();
     if (!details || !serial) {
@@ -320,6 +319,7 @@ export class ContainerService implements ContainerServiceInterface {
   containerTemplateBaseUrl = environment.proxyUrl + "/container/template/";
 
   constructor() {
+    super();
     effect(() => {
       this.notificationService.handleResourceError(this.containerDetailsResource.error(), "container details");
     });
@@ -367,6 +367,13 @@ export class ContainerService implements ContainerServiceInterface {
     });
   }
 
+  // The container endpoint filters by realm exactly, so an input without a realm keyword
+  // is pinned to the default realm rather than being sent unrestricted.
+  override filterFromInput($event: Event): FilterValue {
+    const input = $event.target as HTMLInputElement;
+    return withDefaultRealm(this.activeFilter().copyWith({ value: input.value }), this.realmService.defaultRealm());
+  }
+
   private containerRequest(params: Record<string, string | number | boolean>) {
     return {
       url: this.containerBaseUrl,
@@ -382,68 +389,64 @@ export class ContainerService implements ContainerServiceInterface {
       pagesize: this.pageSize(),
       ...params
     });
-  }  selectedContainerSerial: WritableSignal<string | null> = linkedSignal({
+  }
+  selectedContainerSerial: WritableSignal<string | null> = linkedSignal({
     source: () => this.contentService.onTokensEnrollment(),
     computation: (onTokensEnrollment, previous) => {
       return onTokensEnrollment ? (previous?.value ?? "") : "";
     }
   });
 
+  readonly apiFilterKeys = apiFilterKeys;
+  override readonly advancedApiFilterKeys = advancedApiFilterKeys;
+  override readonly hiddenApiFilterKeys = hiddenApiFilterKeys;
+  override readonly exactMatchKeys = exactMatchKeys;
 
-
-
-
-  sort = signal<Sort>({ active: "serial", direction: "asc" });
-
-
-  containerFilter: WritableSignal<FilterValue> = linkedSignal({
+  activeFilter: WritableSignal<FilterValue> = linkedSignal({
     source: this.contentService.routeUrl,
     computation: () => new FilterValue()
   });
 
+  // The type keywords are collected separately, because a single value maps to the `type`
+  // query param and several to `type_list`.
+  override readonly filterParams = computed<Record<string, string>>(
+    () => {
+      const allowed = this.allFilterKeys().filter((key) => !CONTAINER_TYPE_FILTER_KEYS.has(key));
 
-  filterParams = computed<Record<string, string>>(() => {
-    const allowed = [...this.apiFilter, ...this.advancedApiFilter];
-    const plainKeys = new Set(["user", "type", "state", "assigned"]);
+      const filterMap = this.activeFilter().filterMap;
+      const params = buildFilterParams(filterMap, allowed, exactMatchKeys);
 
-    const filterMap = this.containerFilter().filterMap;
+      const types = Array.from(CONTAINER_TYPE_FILTER_KEYS)
+        .flatMap((key) => (filterMap.get(key) ?? "").split(","))
+        .map((value) => value.trim())
+        .filter((value) => StringUtils.validFilterValue(value));
+      const uniqueTypes = Array.from(new Set(types));
+      if (uniqueTypes.length === 1) {
+        params["type"] = uniqueTypes[0];
+      } else if (uniqueTypes.length > 1) {
+        params["type_list"] = uniqueTypes.join(",");
+      }
 
-    const entries = Array.from(filterMap.entries())
-      .filter(([key]) => allowed.includes(key) && !CONTAINER_TYPE_FILTER_KEYS.has(key))
-      .flatMap(([key, value]) => Object.entries(toWildcardParam(key, value?.toString(), plainKeys)));
-
-    const params = Object.fromEntries(entries) as Record<string, string>;
-
-    const types = Array.from(CONTAINER_TYPE_FILTER_KEYS)
-      .flatMap((key) => (filterMap.get(key) ?? "").split(","))
-      .map((value) => value.trim())
-      .filter((value) => StringUtils.validFilterValue(value));
-    const uniqueTypes = Array.from(new Set(types));
-    if (uniqueTypes.length === 1) {
-      params["type"] = uniqueTypes[0];
-    } else if (uniqueTypes.length > 1) {
-      params["type_list"] = uniqueTypes.join(",");
-    }
-
-    return params;
-  });
-
+      return params;
+    },
+    { equal: filterParamsEqual }
+  );
 
   pageSize = linkedSignal({
-    source: () => ({ filter: this.containerFilter(), size: this.eventPageSize() }),
+    source: () => ({ filter: this.activeFilter(), size: this.eventPageSize() }),
     computation: ({ size }): number => (size > 0 ? size : 10)
   });
 
-
   pageIndex = linkedSignal({
     source: () => ({
-      filterValue: this.containerFilter(),
+      filterValue: this.activeFilter(),
       pageSize: this.pageSize(),
       routeUrl: this.contentService.routeUrl()
     }),
     computation: () => 0
   });
 
+  sort = signal<Sort>({ active: "serial", direction: "asc" });
 
   containerResource = httpResource<PiResponse<ContainerDetails>>(() => {
     // Do not load containers if the action is not allowed.
@@ -477,8 +480,12 @@ export class ContainerService implements ContainerServiceInterface {
     return this.containerRequest({
       no_token: 1,
       ...this.filterParams(),
-      ...(this.userService.detailsUser().username && { user: this.userService.detailsUser().username }),
-      ...(this.userService.selectedUserRealm() && { realm: this.userService.selectedUserRealm() })
+      // The realm is only sent together with the username: on its own it filters for the containers of
+      // all users of that realm, which are not the containers of the user shown on the details page.
+      ...(this.userService.detailsUser().username && {
+        user: this.userService.detailsUser().username,
+        ...(this.userService.selectedUserRealm() && { realm: this.userService.selectedUserRealm() })
+      })
     });
   });
 
@@ -508,9 +515,12 @@ export class ContainerService implements ContainerServiceInterface {
     }
 
     const token = this.tokenService.tokenDetailResource.value()?.result?.value?.tokens?.[0];
+    // A single value maps to the `type` query param, multiple to `type_list` (see filterParams above).
+    const typeParam: Record<string, string> =
+      compatibleTypes.length === 1 ? { type: compatibleTypes[0] } : { type_list: compatibleTypes.join(",") };
     const params: Record<string, string | number | boolean> = {
       no_token: 1,
-      type: compatibleTypes.join(","),
+      ...typeParam,
       ...this.serialFilterParam(),
       ...(this.filterContainersByTokenOwner() && token?.username && { user: token.username }),
       ...(this.filterContainersByTokenOwner() &&
@@ -536,14 +546,9 @@ export class ContainerService implements ContainerServiceInterface {
     }
   });
 
-  containerSelection: WritableSignal<ContainerDetailData[]> = linkedSignal({
-    source: () => ({
-      pageIndex: this.pageIndex(),
-      pageSize: this.pageSize(),
-      sort: this.sort(),
-      filterValue: this.containerFilter()
-    }),
-    computation: () => []
+  containerSelection = new RowSelector<ContainerDetailData>({
+    keyGetter: (container) => container.serial,
+    visibleRows: loadedRows(this.containerResource, (response) => response.result?.value?.containers)
   });
 
   containerTypesResource = httpResource<PiResponse<ContainerTypes>>(() => {
@@ -551,6 +556,7 @@ export class ContainerService implements ContainerServiceInterface {
     const onAllowedRoute =
       this.contentService.onContainers() ||
       this.contentService.onContainersCreate() ||
+      this.contentService.onContainersDetails() ||
       this.contentService.onContainersWizard() ||
       this.contentService.onTokensEnrollment() ||
       this.contentService.onTokenDetails();
@@ -627,6 +633,11 @@ export class ContainerService implements ContainerServiceInterface {
       if (!containerDetail) return source.isLoading ? (previous?.value ?? empty) : empty;
       return containerDetail;
     }
+  });
+
+  supportedTokenTypes = computed<string[]>(() => {
+    const containerType = this.containerDetails().containers[0]?.type;
+    return this.containerTypeOptions().find((type) => type.containerType === containerType)?.token_types ?? [];
   });
 
   addToken(tokenSerial: string, containerSerial: string): Observable<PiResponse<boolean>> {
@@ -750,12 +761,14 @@ export class ContainerService implements ContainerServiceInterface {
   unassignUser(containerSerial: string, username: string, userRealm: string): Observable<PiResponse<boolean>> {
     const headers = this.authService.getHeaders();
     return this.http
-      .post<
-        PiResponse<boolean>
-      >(`${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/unassign`, {
-        user: username,
-        realm: userRealm
-      }, { headers })
+      .post<PiResponse<boolean>>(
+        `${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/unassign`,
+        {
+          user: username,
+          realm: userRealm
+        },
+        { headers }
+      )
       .pipe(
         catchError((error) => {
           console.error("Failed to unassign user.", error);
@@ -769,12 +782,14 @@ export class ContainerService implements ContainerServiceInterface {
   assignUser(args: { containerSerial: string; username: string; userRealm: string }): Observable<PiResponse<boolean>> {
     const headers = this.authService.getHeaders();
     return this.http
-      .post<
-        PiResponse<boolean>
-      >(`${this.containerBaseUrl}${encodeURIComponent(args.containerSerial)}/assign`, {
-        user: args.username,
-        realm: args.userRealm
-      }, { headers })
+      .post<PiResponse<boolean>>(
+        `${this.containerBaseUrl}${encodeURIComponent(args.containerSerial)}/assign`,
+        {
+          user: args.username,
+          realm: args.userRealm
+        },
+        { headers }
+      )
       .pipe(
         catchError((error) => {
           console.error("Failed to assign user.", error);
@@ -991,16 +1006,6 @@ export class ContainerService implements ContainerServiceInterface {
       ?.result?.value?.containers?.some((container) => container.serial === containerSerial);
   }
 
-  handleFilterInput($event: Event): void {
-    const input = $event.target as HTMLInputElement;
-    const newFilter = this.containerFilter().copyWith({ value: input.value });
-    this.containerFilter.set(newFilter);
-  }
-
-  clearFilter(): void {
-    this.containerFilter.set(new FilterValue());
-  }
-
   stopPolling(): void {
     clearTimeout(this.pollingTimeoutId);
     this.isPollingActive.set(false);
@@ -1030,7 +1035,6 @@ export class ContainerService implements ContainerServiceInterface {
     this.isPollingActive.set(true);
     this.pollingTrigger.update((count) => count + 1);
   }
-
 
   async compareWithTemplate() {
     const serial = this.containerSerial();

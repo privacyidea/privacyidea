@@ -34,13 +34,10 @@
           tableUtilsService.getSpanClassForKey({ key: 'active', value: tokenIsActive(), maxfail: maxfail() })
         " />
     } @else {
-      <div class="detail-field">
-        <div
-          class="detail-field-key"
-          i18n>
-          Status
-        </div>
-        <div class="detail-field-value">
+      <app-detail-field-row
+        label="Status"
+        i18n-label>
+        <ng-container fieldValue>
           @if (!isAnyEditingOrRevoked() && authService.actionAllowed(tokenIsActive() ? "disable" : "enable")) {
             <button
               type="button"
@@ -64,54 +61,43 @@
               </span>
             </div>
           }
-        </div>
-      </div>
+        </ng-container>
+      </app-detail-field-row>
     }
     <app-detail-field
       label="Rollout State"
       i18n-label
       [displayText]="str(tokenDetails().rollout_state)" />
-    <div class="detail-field">
+    <app-detail-field-row
+      label="Fail Count"
+      i18n-label>
       <div
-        class="detail-field-key"
-        i18n>
-        Fail Count
+        fieldValue
+        [ngClass]="[tableUtilsService.getDivClassForKey('failcount')]">
+        <span
+          [ngClass]="[
+            tableUtilsService.getSpanClassForKey({
+              key: 'failcount',
+              value: tokenDetails().failcount,
+              maxfail: maxfail()
+            })
+          ]">
+          {{
+            tableUtilsService.getDisplayTextForKeyAndRevoked("failcount", tokenDetails().failcount, tokenIsRevoked())
+          }}
+        </span>
       </div>
-      <div class="detail-field-value">
-        <div class="value-row">
-          <div class="value-content">
-            <div [ngClass]="[tableUtilsService.getDivClassForKey('failcount')]">
-              <span
-                [ngClass]="[
-                  tableUtilsService.getSpanClassForKey({
-                    key: 'failcount',
-                    value: tokenDetails().failcount,
-                    maxfail: maxfail()
-                  })
-                ]">
-                {{
-                  tableUtilsService.getDisplayTextForKeyAndRevoked(
-                    "failcount",
-                    tokenDetails().failcount,
-                    tokenIsRevoked()
-                  )
-                }}
-              </span>
-            </div>
-          </div>
-          <div class="value-edit">
-            @if (!isAnyEditingOrRevoked() && authService.actionAllowed("reset")) {
-              <button
-                mat-icon-button
-                (click)="resetFailCount()"
-                i18n-aria-label="Reset Fail Count">
-                <mat-icon>lock_reset</mat-icon>
-              </button>
-            }
-          </div>
-        </div>
-      </div>
-    </div>
+      <ng-container fieldEdit>
+        @if (!isAnyEditingOrRevoked() && authService.actionAllowed("reset")) {
+          <button
+            mat-icon-button
+            (click)="resetFailCount()"
+            i18n-aria-label="Reset Fail Count">
+            <mat-icon>lock_reset</mat-icon>
+          </button>
+        }
+      </ng-container>
+    </app-detail-field-row>
     @if (createdDisplay()) {
       <app-detail-field
         label="Created"

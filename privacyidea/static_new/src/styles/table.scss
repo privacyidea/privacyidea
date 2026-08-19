@@ -158,6 +158,23 @@ $description-width: 18rem;
   }
 }
 
+// Sizes the standalone state panel (empty, denied, error) for a table that owns its
+// page: the panel claims the footprint the table would have had, so it reads as the
+// page content rather than as a small island at the top of an empty content area.
+// Tables embedded as one section of a details page deliberately do not opt in — there
+// the compact default keeps the section proportionate to its neighbours.
+// Opted into by tables that own their page: the state panel fills the footprint
+// the table would have had, and steps up one typescale/icon size with it. A
+// panel alone on a page and a panel sitting among a page's other sections are
+// the same component at two sizes, not two different components.
+@mixin page-table-state-size {
+  --table-state-min-height: calc(var(--table-max-height) - 2 * var(--global-padding));
+  --table-state-min-width: min(44rem, var(--max-width));
+  --table-state-heading-font: var(--mat-sys-title-large);
+  --table-state-icon-frame-size: 5.5rem;
+  --table-state-icon-size: 40px;
+}
+
 @mixin base-table-structure(
   $table-class: ".table",
   $filter-class: ".table-filter",
@@ -178,7 +195,7 @@ $description-width: 18rem;
   }
 
   #{$filter-class} {
-    max-width: 932px;
+    max-width: var(--input-width-xxl);
     min-width: 300px;
     width: 100%;
     flex: 7 1;
@@ -268,6 +285,7 @@ table {
 .mat-mdc-paginator-container {
   padding: 0 0 0 var(--global-padding);
   flex-wrap: nowrap !important;
+  --mat-paginator-container-size: 0px;
 }
 
 a {
@@ -446,6 +464,8 @@ th:nth-child(even) {
   width: 42px;
 }
 
+// Placeholder rows shown while a table loads for the first time: the row keeps its
+// height so the table does not jump, but no cell content is visible or interactive.
 .cdk-overlay-pane {
   position: absolute !important;
   z-index: 1;
@@ -485,7 +505,7 @@ th:nth-child(even) {
     background: var(--mat-sys-surface-variant);
   }
 
-  .detail-field-key {
+  .detail-field-label {
     display: flex;
     align-items: center;
     padding: 0 12px;
@@ -511,6 +531,7 @@ th:nth-child(even) {
   .value-content {
     flex: 1 1 auto;
     min-width: 0;
+    overflow-wrap: anywhere;
   }
 
   .value-edit {
@@ -531,7 +552,6 @@ th:nth-child(even) {
 
 .details-cards-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
   gap: 16px;
   align-items: start;
 }
@@ -597,7 +617,8 @@ th:nth-child(even) {
     padding-left: 16px !important;
   }
 
-  .details-table .mat-mdc-form-field:not(.height-77):not(.height-115):not(.height-126):not(.height-136):not(.height-137) {
+  .details-table
+    .mat-mdc-form-field:not(.height-77):not(.height-115):not(.height-126):not(.height-136):not(.height-137) {
     --mat-form-field-container-height: 52px;
     --mat-form-field-container-vertical-padding: 8px;
   }
@@ -610,6 +631,10 @@ th:nth-child(even) {
 .selfservice-paginator-label {
   flex: 1;
   margin-right: 16px;
+}
+
+.mat-mdc-autocomplete-panel.token-option-panel {
+  max-height: 400px;
 }
 
 .token-option {

@@ -90,7 +90,7 @@ import json
 import logging
 import threading
 
-from flask import (Blueprint, request, g, current_app, Response)
+from flask import (Blueprint, request, g, Response)
 from flask_babel import _
 
 from privacyidea.api.auth import admin_required
@@ -113,32 +113,33 @@ from privacyidea.api.lib.prepolicy import (prepolicy, set_realm,
                                            webauthntoken_request, check_application_tokentype,
                                            increase_failcounter_on_challenge, get_first_policy_value, fido2_enroll,
                                            disabled_token_types, load_challenge_text)
-from privacyidea.api.lib.utils import get_all_params, get_optional_one_of, get_optional, INTERNAL_OPTION_KEYS
+from privacyidea.api.lib.utils import (get_all_params, get_before_request_config, get_optional_one_of, get_optional,
+                                       INTERNAL_OPTION_KEYS)
 from privacyidea.api.recover import recover_blueprint
+from privacyidea.lib.remembered_device import (create_remembered_device, consume_remember_device_cookie,
+                                         user_identity, count_user_devices, apply_cookie_action,
+                                         CookieAction, PERSISTENT_COOKIE_NAME, RememberStatus)
 from privacyidea.api.register import register_blueprint
 from privacyidea.lib.applications.offline import MachineApplication
-from privacyidea.lib.audit import getAudit
 from privacyidea.lib.challenge import get_challenges, extract_answered_challenges, cancel_enrollment_via_multichallenge
-from privacyidea.lib.config import (get_from_config,
-                                    SYSCONF, ensure_no_config_object, get_privacyidea_node)
+from privacyidea.lib.config import ensure_no_config_object, get_privacyidea_node
 from privacyidea.lib.container import find_container_for_token, find_container_by_serial, check_container_challenge
-from privacyidea.lib.error import ParameterError, PolicyError, ResourceNotFoundError, Error
-from privacyidea.lib.event import EventConfiguration
+from privacyidea.lib.error import ParameterError, PolicyError, ResourceNotFoundError, Error, AuthError
 from privacyidea.lib.event import event
 from privacyidea.lib.machine import list_machine_tokens, get_auth_items, attach_token
 from privacyidea.lib.policy import Match
-from privacyidea.lib.policy import PolicyClass, SCOPE
+from privacyidea.lib.policy import SCOPE
 from privacyidea.lib.policydecorators import reset_all_user_tokens_active, reset_token_failcounters
 from privacyidea.lib.subscriptions import CheckSubscription
 from privacyidea.lib.token import (check_user_pass, check_serial_pass,
                                    check_otp, create_challenges_from_tokens, get_one_token)
 from privacyidea.lib.token import get_tokens
-from privacyidea.lib.tokenclass import ChallengeSession
+from privacyidea.lib.tokenclass import CHALLENGE_REFUSAL_STATUS
 from privacyidea.lib.user import log_used_user, User, split_user
-from privacyidea.lib.utils import get_client_ip, get_plugin_info_from_useragent, AUTH_RESPONSE
+from privacyidea.lib.utils import get_plugin_info_from_useragent, AUTH_RESPONSE
 from privacyidea.lib.utils import is_true, get_computer_name_from_user_agent
 from .lib.policyhelper import check_last_auth_policy, get_realm_for_authentication
-from .lib.utils import get_required, map_error_to_code, send_error, send_result
+from .lib.utils import get_required, get_auth_error_status_code, send_error, send_result
 from ..lib.decorators import (check_user_serial_or_cred_id_in_request)
 from ..lib.fido2.challenge import create_fido2_challenge, verify_fido2_challenge
 from ..lib.fido2.policy_action import FIDO2PolicyAction
@@ -166,19 +167,7 @@ def before_request():
     request.all_data = copy.deepcopy(g.request_data)
 
     privacyidea_server = get_app_config_value("PI_AUDIT_SERVERNAME", get_privacyidea_node(request.host))
-    # Create a policy_object, that reads the database audit settings
-    # and contains the complete policy definition during the request.
-    # This audit_object can be used in the postpolicy and prepolicy
-    # It can be passed to the inner policies.
-
-    g.policy_object = PolicyClass()
-
-    g.audit_object = getAudit(current_app.config, g.startdate)
-    g.event_config = EventConfiguration()
-    # access_route contains the ip addresses of all clients, hops and proxies.
-    g.client_ip = get_client_ip(request, get_from_config(SYSCONF.OVERRIDECLIENT))
-    # Save the HTTP header in the localproxy object
-    g.request_headers = request.headers
+    get_before_request_config()
     g.serial = get_optional(request.all_data, "serial", default=None)
     ua_name, ua_version, _ua_comment = get_plugin_info_from_useragent(request.user_agent.string)
     g.user_agent = ua_name
@@ -209,6 +198,16 @@ def before_request():
         "user": request.User.login,
         "resolver": request.User.resolver,
         "realm": request.User.realm})
+
+    # A known API key whose client is disabled (e.g. suspended) was presented:
+    # the request is not identified (the middleware left g.client_id None), but a
+    # real, previously issued key still being used is worth recording.
+    rejected = g.get("rejected_api_client")
+    if rejected:
+        g.audit_object.add_to_log(
+            {"action_detail": f"{rejected['status']} API key presented "
+                              f"(client {rejected['client_id']})"},
+            add_with_comma=True)
 
 
 @validate_blueprint.route('/offlinerefill', methods=['POST'])
@@ -299,7 +298,7 @@ def offlinerefill():
                 scope=SCOPE.TOKEN,
                 action=PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE_FOR_OFFLINE_REFILL,
                 user_object=request.User if hasattr(request, "User") else None).any():
-            return send_error("Failed offline token refill", error_code=Error.VALIDATE), map_error_to_code(e)
+            return send_error("Failed offline token refill", error_code=Error.VALIDATE), get_auth_error_status_code(e)
         raise
 
 
@@ -736,7 +735,19 @@ def _finalize_auth_response(context):
     g.audit_object.log({"user": user.login, "resolver": user.resolver, "realm": user.realm})
 
     serials_str = ",".join(context["serial_list"])
+
+    # Decide whether to issue a persistent "remember device" cookie. This is an
+    # optional enhancement on an already-successful auth, so a failure here (e.g.
+    # a transient DB error while creating the device) must never turn that success
+    # into a 500 - fall back to issuing no cookie.
+    try:
+        cookie_action = _resolve_persistent_cookie(user, success)
+    except Exception as exc:  # noqa: BLE001 - issuance is best-effort, never fatal
+        log.warning(f"Could not issue a remember-device cookie: {exc}")
+        cookie_action = None
+
     ret = send_result(context["result"], rid=2, details=details, **context["response_params"])
+    apply_cookie_action(ret, cookie_action)
 
     g.audit_object.log({
         "info": log_used_user(user, details.get("message")),
@@ -746,6 +757,219 @@ def _finalize_auth_response(context):
         "token_type": details.get("type")
     })
 
+    return ret
+
+
+def _resolve_persistent_cookie(user: User, success: bool) -> CookieAction | None:
+    """
+    Decide whether to *issue* a new persistent ("remember device") cookie on a
+    successful authentication, returning a ``"set"`` :class:`CookieAction` or
+    ``None``.
+
+    ``/validate/check`` only issues cookies. A presented cookie is consumed and
+    rotated by the dedicated recognition endpoint (``/validate/remember_device``),
+    never here, so this endpoint carries no cookie theft/rotation logic. A cookie
+    is issued when the request is made by an identified API client, opts in
+    (``request_persistent_cookie``) and the ``remember_device`` policy (scope
+    auth, matched on user/realm) allows it.
+    """
+    if not success or not g.get("client_id"):
+        return None
+    if not is_true(get_optional(request.all_data, "request_persistent_cookie")):
+        return None
+    identity = user_identity(user)
+    if not identity:
+        # The recognition endpoint binds and matches on the resolver-stable user
+        # identity, so a remembered device for a userless (serial-only) auth could
+        # never be recognised. Do not issue a cookie that can never be redeemed.
+        return None
+    if not Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.REMEMBER_DEVICE, user_object=user).any():
+        return None
+    # Optional per-user device cap (remember_device_max_devices, off by default):
+    # once the user has this many live devices for this client, opt-in issues no
+    # new cookie - the existing devices keep working. Unset / invalid / <=0 =
+    # unlimited. Each opt-in otherwise mints a new series (a client cannot be
+    # deduped reliably, and multiple devices per user are legitimate), so this is
+    # the knob for admins who want to bound that growth.
+    # Best-effort: count-then-create is not atomic, so two concurrent logins can
+    # both pass the check and overshoot the cap by the concurrency. That is an
+    # accepted trade-off - the cap bounds accumulation, it is not a security
+    # control, and serialising issuance per user is not worth the contention.
+    max_pols = Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.REMEMBER_DEVICE_MAX_DEVICES,
+                          user_object=user).action_values(unique=True)
+    if max_pols:
+        try:
+            max_devices = int(list(max_pols)[0])
+        except (ValueError, TypeError):
+            max_devices = 0
+        if max_devices > 0 and count_user_devices(g.client_id, identity.resolver, identity.user_id,
+                                                   identity.realm_id) >= max_devices:
+            return None
+    # The cookie lifetime is a policy value so it can differ per realm/user/client
+    # (e.g. a shorter lifetime for admins). Unset / invalid -> the model default.
+    validity_days = None
+    validity_pols = Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.REMEMBER_DEVICE_VALIDITY,
+                               user_object=user).action_values(unique=True)
+    if validity_pols:
+        try:
+            validity_days = int(list(validity_pols)[0])
+        except (ValueError, TypeError):
+            validity_days = None
+    device, cookie_value = create_remembered_device(identity,
+                                                    client_id=g.client_id,
+                                                    ip_address=g.client_ip,
+                                                    user_agent=g.get("user_agent"),
+                                                    validity_days=validity_days)
+    return CookieAction("set", cookie_value, device.expires_at)
+
+
+@validate_blueprint.route('/capabilities', methods=['GET'])
+def get_capabilities():
+    """
+    Discovery endpoint for API clients.
+
+    Requires an identified API client (the ``X-API-Key`` header, resolved into
+    ``g.client_id`` by the API-key middleware). Returns the capabilities this
+    server offers to the client.
+
+    .. important::
+
+       This is **client-level** discovery only. ``remember_device: true`` means
+       a ``remember_device`` policy exists for this server; it is **not** a
+       per-user guarantee. A ``remember_device`` policy scoped to specific
+       users/realms still gates the feature per user at issuance
+       (``/validate/check``) and
+       recognition (``/validate/remember_device``). A client should treat ``true``
+       as "worth attempting" and rely on those endpoints for the authoritative
+       per-user answer.
+
+    :status 200: capabilities in ``result.value``.
+    :status 401: no API client is identified.
+
+    **Example response**:
+
+    .. sourcecode:: http
+
+       HTTP/1.1 200 OK
+       Content-Type: application/json
+
+       {
+         "id": 1,
+         "jsonrpc": "2.0",
+         "result": {
+           "status": true,
+           "value": {"capabilities": {"remember_device": true}}
+         },
+         "version": "privacyIDEA unknown"
+       }
+    """
+    if g.get("client_id") is None:
+        raise AuthError(_("Authentication failure. A valid API key is required."),
+                        id=Error.AUTHENTICATE_AUTH_HEADER)
+    # Whether "remember device" is offered depends on whether a remember_device
+    # policy (SCOPE.AUTH) exists at all - this is a client-level "is it worth
+    # attempting" answer, not the per-user decision made at issuance/recognition.
+    remember_device = Match.generic(g, scope=SCOPE.AUTH,
+                                    action=PolicyAction.REMEMBER_DEVICE).any()
+    # A successful discovery is a success in the audit log; validate's
+    # before_request seeds success=False, so record it explicitly.
+    g.audit_object.log({"success": True})
+    return send_result({"capabilities": {"remember_device": remember_device}})
+
+
+@validate_blueprint.route('/remember_device', methods=['POST'])
+def check_remember_device():
+    """
+    Recognition endpoint for the persistent "remember device" cookie.
+
+    Answers a single question - *is this device remembered for this user and
+    client?* - and rotates the cookie on a hit. It is deliberately **not** an
+    authentication: it verifies no credential, triggers no challenge (no push,
+    no SMS) and does not feed the authentication accounting. A recognised device
+    lets the calling client skip the second factor; enforcing a first factor
+    beforehand is the client's responsibility.
+
+    Requires an identified API client (``X-API-Key`` -> ``g.client_id``) and the
+    ``user``/``realm`` the cookie was issued for. The cookie is bound to that
+    exact user and client, so it can never be replayed for another account or a
+    different client. A stale counter is treated as theft: the whole series is
+    invalidated and the cookie cleared. Recognition is only offered when the
+    ``remember_device`` policy allows it (the same gate ``/validate/capabilities``
+    reports); otherwise the answer is always ``false`` and a presented cookie is
+    left untouched.
+
+    Issuing a cookie stays on ``/validate/check`` (``request_persistent_cookie=1``).
+
+    :reqheader X-API-Key: the API client's key
+    :reqheader Cookie: ``pi_remember_device=<series>:<counter>``
+    :formparam user: the username the cookie was issued for
+    :formparam realm: the user's realm
+    :status 200: ``result.value`` is ``true`` when the device is recognised,
+        ``false`` otherwise (a miss is a normal answer, not an error).
+    :status 401: no API client is identified.
+    """
+    if g.get("client_id") is None:
+        raise AuthError(_("Authentication failure. A valid API key is required."),
+                        id=Error.AUTHENTICATE_AUTH_HEADER)
+
+    user = request.User
+    recognised = False
+    cookie_action = None
+
+    # Only evaluate the remember_device policy (which also writes a policy-match
+    # audit entry) once we know there is actually a cookie and a bindable user to
+    # recognise, so a cookie-less poll does not pay for a discarded evaluation.
+    # Resolving the user to a stable identity (resolver, user_id, realm) is itself
+    # the existence check: a deleted/removed account no longer resolves, so
+    # user_identity returns None and its remembered devices stop being
+    # recognised - i.e. deleting the account revokes them.
+    presented = request.cookies.get(PERSISTENT_COOKIE_NAME)
+    identity = user_identity(user)
+
+    if presented and identity and Match.user(g, scope=SCOPE.AUTH,
+                                             action=PolicyAction.REMEMBER_DEVICE,
+                                             user_object=user).any():
+        result = consume_remember_device_cookie(presented, g.client_id, identity, g.get("client_ip"))
+        if result.status == RememberStatus.RECOGNIZED:
+            recognised = True
+            cookie_action = CookieAction("set", result.cookie_value, result.expires_at)
+        elif result.status == RememberStatus.GRACE:
+            # Tolerated concurrent/duplicate request: recognised, but do not
+            # rotate (the client keeps the cookie it already has).
+            recognised = True
+        elif result.status == RememberStatus.FOREIGN:
+            # The cookie is live but belongs to a different user on this same
+            # client (a shared browser). Not recognised, but leave the cookie
+            # alone - clearing it would wipe the rightful user's remembered device
+            # off the shared browser just because someone else logged in.
+            pass
+        elif result.status == RememberStatus.THEFT:
+            # Baseline theft response: consume_remember_device_cookie has already
+            # invalidated the whole series. Record it in action_detail (which the
+            # error path does not overwrite) and drop the cookie. This is the seam
+            # for future escalations (notify the user, block the client/IP, feed a
+            # risk score).
+            log.warning("Persistent device cookie reuse detected; series invalidated.")
+            g.audit_object.add_to_log({"action_detail": "persistent cookie reuse detected"},
+                                      add_with_comma=True)
+            cookie_action = CookieAction("clear")
+        else:  # miss: the cookie is dead (unknown or expired) - clear it
+            cookie_action = CookieAction("clear")
+
+    # A recognition is its own audit action ("POST /validate/remember_device") and
+    # is intentionally not marked as an authentication (no ACCEPT/REJECT), so it
+    # never counts towards the auth success/failure accounting.
+    g.audit_object.log({
+        "user": user.login, "resolver": user.resolver, "realm": user.realm,
+        "success": recognised,
+        "info": "remembered device recognised" if recognised else "device not recognised",
+    })
+
+    # Default rid (1) so send_result does not stamp result.authentication
+    # (ACCEPT/REJECT): recognition is not an authentication - the answer is
+    # result.value / detail.remembered_device, and the audit records no ACCEPT/REJECT.
+    ret = send_result(recognised, details={"remembered_device": recognised})
+    apply_cookie_action(ret, cookie_action)
     return ret
 
 
@@ -935,9 +1159,10 @@ def poll_transaction(transaction_id=None):
         non-expired challenge with this transaction id has been
         answered, ``false`` otherwise. ``detail.challenge_status`` is
         one of ``accept`` (an answered challenge exists),
-        ``declined`` (the user declined a challenge), or ``pending``
-        (the challenges are still open or no matching challenge
-        exists at all).
+        ``declined`` (the user declined a challenge they did not
+        trigger), ``cancelled`` (the user aborted a challenge they
+        triggered themselves), or ``pending`` (the challenges are
+        still open or no matching challenge exists at all).
     """
 
     if transaction_id is None:
@@ -947,19 +1172,25 @@ def poll_transaction(transaction_id=None):
     matching_challenges = [challenge for challenge in get_challenges(transaction_id=transaction_id)
                            if challenge.is_valid()]
     answered_challenges = extract_answered_challenges(matching_challenges)
-    declined_challenges = []
     if answered_challenges:
         result = True
         log_challenges = answered_challenges
         details = {"challenge_status": "accept"}
     else:
         result = False
+        # Group refused challenges by the status they report and report them in the precedence
+        # defined by CHALLENGE_REFUSAL_STATUS: "declined" (not-me) outranks "cancelled"
+        # (self-abort) as the higher-suspicion signal for conditional access.
+        refused_challenges = {}
         for challenge in matching_challenges:
-            if challenge.session == ChallengeSession.DECLINED:
-                declined_challenges.append(challenge)
-        if declined_challenges:
-            log_challenges = declined_challenges
-            details = {"challenge_status": "declined"}
+            status = CHALLENGE_REFUSAL_STATUS.get(challenge.session)
+            if status:
+                refused_challenges.setdefault(status, []).append(challenge)
+        for status in CHALLENGE_REFUSAL_STATUS.values():
+            if refused_challenges.get(status):
+                log_challenges = refused_challenges[status]
+                details = {"challenge_status": status}
+                break
         else:
             log_challenges = matching_challenges
             details = {"challenge_status": "pending"}
@@ -974,14 +1205,7 @@ def poll_transaction(transaction_id=None):
         })
         # check if the challenge is from a token or container
         challenge = log_challenges[0]
-        challenge_type = "token"
-        if challenge.data:
-            try:
-                challenge_data = json.loads(challenge.data)
-                if isinstance(challenge_data, dict):
-                    challenge_type = challenge_data.get("type", "token")
-            except json.JSONDecodeError:
-                pass
+        challenge_type = challenge.get_data().get("type", "token")
         if challenge_type == "container":
             container = find_container_by_serial(log_challenges[0].serial)
             users = container.get_users()

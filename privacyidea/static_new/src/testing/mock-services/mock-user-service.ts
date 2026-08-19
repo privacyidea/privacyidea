@@ -18,16 +18,22 @@
  **/
 import { HttpResourceRef } from "@angular/common/http";
 import { linkedSignal, Signal, signal } from "@angular/core";
+import { Sort } from "@angular/material/sort";
 import { PiResponse } from "@app/app.component";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { UserAttributePolicy, UserData, UserServiceInterface } from "@services/user/user.service";
 import { of } from "rxjs";
+import { Debouncer } from "@utils/debounce.utils";
 import { MockHttpResourceRef, MockPiResponse } from "./mock-utils";
 
 export class MockUserService implements UserServiceInterface {
   userAttributes: Signal<Record<string, string>> = signal({});
   userAttributesList = signal<{ key: string; value: string }[]>([]);
   userAttributesResource: HttpResourceRef<PiResponse<Record<string, string>, unknown> | undefined> =
+    new MockHttpResourceRef(MockPiResponse.fromValue({}));
+  internalAttributes: Signal<Record<string, string>> = signal({});
+  internalAttributesList = signal<{ key: string; value: string }[]>([]);
+  internalAttributesResource: HttpResourceRef<PiResponse<Record<string, string>, unknown> | undefined> =
     new MockHttpResourceRef(MockPiResponse.fromValue({}));
   attributePolicy: Signal<UserAttributePolicy> = signal<UserAttributePolicy>({
     delete: ["department", "attr2", "attr1"],
@@ -54,20 +60,46 @@ export class MockUserService implements UserServiceInterface {
   setUserAttribute = jest.fn().mockReturnValue(of({}));
   deleteUserAttribute = jest.fn().mockReturnValue(of({}));
 
-  resetFilter = jest.fn().mockImplementation(() => {
-    this.apiUserFilter.set(new FilterValue());
+  clearFilter = jest.fn().mockImplementation(() => {
+    this.activeFilter.set(new FilterValue());
+  });
+
+  filterFromInput = jest.fn().mockImplementation(($event: Event) => {
+    const inputElement = $event.target as HTMLInputElement;
+    return new FilterValue({ value: inputElement.value });
   });
 
   handleFilterInput = jest.fn().mockImplementation(($event: Event) => {
-    const inputElement = $event.target as HTMLInputElement;
-    this.apiUserFilter.set(new FilterValue({ value: inputElement.value }));
+    this.activeFilter.set(this.filterFromInput($event));
   });
 
-  apiUserFilter = signal(new FilterValue());
+  applyFilterInput = jest.fn().mockImplementation(($event: Event) => {
+    this.activeFilter.set(this.filterFromInput($event));
+  });
+
+  activeFilter = signal(new FilterValue());
+  filterDebouncer = new Debouncer(this.activeFilter);
+  filterDraft = this.activeFilter;
+  filterParams = signal<Record<string, string>>({});
+  setFilter = jest.fn().mockImplementation((filter: FilterValue) => {
+    this.activeFilter.set(filter);
+  });
+  updateFilter = jest.fn().mockImplementation((computeFilter: (current: FilterValue) => FilterValue) => {
+    this.activeFilter.set(computeFilter(this.activeFilter()));
+  });
   pageIndex = signal(0);
+  sort = signal<Sort>({ active: "", direction: "" });
   pageSize = signal(10);
-  apiFilterOptions: string[] = [];
-  advancedApiFilterOptions: string[] = [];
+  apiFilterKeys: string[] = [];
+  advancedApiFilterKeys: string[] = [];
+  hiddenApiFilterKeys: string[] = [];
+  apiFilterKeyMap: Record<string, string> = {};
+  exactMatchKeys = new Set<string>();
+  allFilterKeys: Signal<string[]> = signal([
+    ...this.apiFilterKeys,
+    ...this.advancedApiFilterKeys,
+    ...this.hiddenApiFilterKeys
+  ]);
 
   userResource: HttpResourceRef<PiResponse<UserData[]> | undefined> = new MockHttpResourceRef(
     MockPiResponse.fromValue([])

@@ -37,22 +37,12 @@
   </div>
 
   <div class="tab-buttons">
-    <button
-      mat-stroked-button
-      class="action-button-1"
-      [class.action-button-active]="activeTab() === 'actions'"
-      (click)="setActiveTab('actions')"
-      i18n>
-      ACTIONS
-    </button>
-    <button
-      mat-stroked-button
-      class="action-button-1"
-      [class.action-button-active]="activeTab() === 'conditions'"
-      (click)="setActiveTab('conditions')"
-      i18n>
-      CONDITIONS
-    </button>
+    <app-selector-buttons
+      class="width-100"
+      [initialValue]="activeTab()"
+      [values]="tabValues"
+      [labels]="tabLabels"
+      (selected)="onTabSelected($event)" />
   </div>
 
   @if (activeTab() === "actions") {

@@ -385,6 +385,16 @@ class PolicyTestCase(MyTestCase):
         import_policy([only_invalid], skip_invalid=True)
         self.assertFalse(_check_policy_name("alldeadpol", PolicyClass().match_policies()))
 
+    def test_06f_import_policy_skip_invalid_keeps_actionless_policy(self):
+        # A policy that has no actions has nothing invalid to drop, so
+        # skip_invalid must import it just like a plain import would rather than
+        # skipping it: the flag only removes invalid actions / skips policies
+        # that were emptied by dropping, never a policy that was empty to start.
+        actionless = {"name": "emptyactpol", "scope": SCOPE.ADMIN, "action": {}}
+        import_policy([actionless], skip_invalid=True)
+        self.assertTrue(PolicyClass().list_policies(name="emptyactpol"))
+        delete_policy("emptyactpol")
+
     def test_07_client_policies(self):
         delete_policy(name="pol2a")
         set_policy(name="pol1", scope=SCOPE.CONTAINER, client="172.16.0.3, 172.16.0.4/24")
@@ -2457,12 +2467,29 @@ class PolicyTestCase(MyTestCase):
         self.assertEqual(2, len(policies), policies)
         self.assertSetEqual({"policy-keycloak", "policy-no-agent"}, {policy["name"] for policy in policies})
 
-        # no user agent filter only returns policies without user agent
+        # No user agent filter returns all policies, including the user-agent-restricted ones. This
+        # is what a caller needs that dumps or counts the policies instead of matching a request:
+        # the configuration export, the configuration report, and the check whether a scope has any
+        # policy at all.
         policies = P.list_policies(scope=SCOPE.AUTH)
-        self.assertEqual(1, len(policies), policies)
-        self.assertSetEqual({"policy-no-agent"},
+        self.assertEqual(3, len(policies), policies)
+        self.assertSetEqual({"policy-cp", "policy-keycloak", "policy-no-agent"},
                             {policy["name"] for policy in policies})
 
+        # empty string user agent returns only policies without a user agent condition
+        policies = P.list_policies(scope=SCOPE.AUTH, user_agent="")
+        self.assertEqual(1, len(policies), policies)
+        self.assertSetEqual({"policy-no-agent"}, {policy["name"] for policy in policies})
+
+        # set_policy strips empty user_agent strings
+        set_policy(name="policy-empty-ua", scope=SCOPE.AUTH,
+                   action={PolicyAction.CHALLENGERESPONSE: ["hotp"]},
+                   user_agents="")
+        pol = P.list_policies(name="policy-empty-ua")
+        self.assertEqual(1, len(pol))
+        self.assertFalse(pol[0].get("user_agents"))
+
+        delete_policy("policy-empty-ua")
         delete_policy("policy-cp")
         delete_policy("policy-keycloak")
         delete_policy("policy-no-agent")
@@ -3404,6 +3431,49 @@ class PolicyMatchTestCase(MyTestCase):
         token_corny.delete_token()
         token_hans.delete_token()
         token_no_user.delete_token()
+
+    def test_07_allowed_with_only_a_user_agent_restricted_policy(self):
+        # A policy restricted to one user agent configures its scope for every user agent: the
+        # action is allowed to the agent the policy names and denied to the others, instead of the
+        # scope counting as unconfigured and allowing everybody.
+        delete_all_policies()
+        set_policy(name="only-webui", scope=SCOPE.USER, action=PolicyAction.ENROLLPIN,
+                   user_agents="privacyIDEA-WebUI")
+        user = User("cornelius", self.realm1)
+
+        def user_match(user_agent):
+            g = FakeFlaskG()
+            g.client_ip = "127.0.0.1"
+            g.audit_object = mock.Mock()
+            g.audit_object.audit_data = {}
+            g.policy_object = PolicyClass()
+            g.user_agent = user_agent
+            return Match.user(g, scope=SCOPE.USER, action=PolicyAction.ENROLLPIN, user_object=user)
+
+        self.assertTrue(user_match("privacyIDEA-WebUI").allowed())
+        self.assertFalse(user_match("privacyIDEA-CP").allowed())
+        # The scope counts as configured no matter which agent asks
+        self.assertEqual(1, len(PolicyClass().list_policies(scope=SCOPE.USER, active=True)))
+
+        # The same for an admin policy: the agent it names keeps the action, the others lose it
+        delete_policy("only-webui")
+        set_policy(name="only-cp", scope=SCOPE.ADMIN, action=PolicyAction.DELETE,
+                   user_agents="privacyIDEA-CP")
+
+        def admin_match(user_agent):
+            g = FakeFlaskG()
+            g.client_ip = "127.0.0.1"
+            g.audit_object = mock.Mock()
+            g.audit_object.audit_data = {}
+            g.policy_object = PolicyClass()
+            g.user_agent = user_agent
+            g.logged_in_user = {"username": "admin", "realm": "", "role": ROLE.ADMIN}
+            return Match.admin(g, action=PolicyAction.DELETE)
+
+        self.assertTrue(admin_match("privacyIDEA-CP").allowed())
+        self.assertFalse(admin_match("privacyIDEA-WebUI").allowed())
+
+        delete_policy("only-cp")
 
     @classmethod
     def tearDownClass(cls):

@@ -15,6 +15,9 @@
   max-height: var(--detail-max-height);
   display: flex;
   flex-direction: column;
+  // Width is fixed to the rendered top-row width by the component (see
+  // fitWidthToTopRow) so the panel hugs the cards with no trailing whitespace.
+  // Falls back to the full available width until that measurement runs.
   width: 100%;
   box-sizing: border-box;
   height: 100%;
@@ -79,11 +82,17 @@
 .details-grid {
   @include table.details-cards-flex;
   margin-top: 8px;
+  // Cards keep their own width (no growing); the panel is fixed to the rendered
+  // top-row width by the component (fitWidthToTopRow) so there is no trailing
+  // whitespace.
+  > * {
+    flex-grow: 0;
+  }
 
   // app-token-details-machine is display:contents and renders 0..N machine
   // panels; size those unwrapped panels like the sibling cards.
   > .details-card--machine > * {
-    flex: 1 1 28rem;
+    flex: 0 0 28rem;
     min-width: 0;
     box-sizing: border-box;
   }

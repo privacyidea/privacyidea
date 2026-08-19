@@ -24,6 +24,7 @@ import { MatTooltipModule } from "@angular/material/tooltip";
 import { PiResponse } from "@app/app.component";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { FilterValue } from "@core/models/filter_value/filter_value";
 import { AuditService, AuditServiceInterface } from "@services/audit/audit.service";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
@@ -36,7 +37,7 @@ import { SelectedUserAssignDialogComponent } from "./selected-user-attach-dialog
 import { ToggleActiveAction, ToggleActiveDialogComponent } from "./toggle-active-dialog/toggle-active-dialog.component";
 
 import { MatMenuModule } from "@angular/material/menu";
-import { Router } from "@angular/router";
+import { Router, RouterLink } from "@angular/router";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { DocumentationService, DocumentationServiceInterface } from "@services/documentation/documentation.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
@@ -44,7 +45,7 @@ import { OverflowNavDirective } from "../../../shared/directives/overflow-nav/ov
 
 @Component({
   selector: "app-token-table-actions",
-  imports: [MatButtonModule, MatIcon, MatMenuModule, MatTooltipModule, OverflowNavDirective],
+  imports: [MatButtonModule, MatIcon, MatMenuModule, MatTooltipModule, OverflowNavDirective, RouterLink],
   templateUrl: "./token-table-actions.component.html",
   styleUrl: "./token-table-actions.component.scss"
 })
@@ -60,7 +61,7 @@ export class TokenTableActionsComponent {
   protected readonly auditService: AuditServiceInterface = inject(AuditService);
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   readonly ROUTE_PATHS = ROUTE_PATHS;
-  readonly advancedApiFilter = this.tokenService.advancedApiFilter;
+  readonly advancedApiFilterKeys = this.tokenService.advancedApiFilterKeys;
   private router = inject(Router);
   tokenIsActive = this.tokenService.tokenIsActive;
   tokenIsRevoked = this.tokenService.tokenIsRevoked;
@@ -130,12 +131,12 @@ export class TokenTableActionsComponent {
   }
 
   deleteSelectedTokens(): void {
-    const serialList = this.tokenSelection().map((token) => token.serial);
+    const serialList = this.tokenSelection.selectedRows().map((token) => token.serial);
     this.tokenService.bulkDeleteWithConfirmDialog(serialList, () => this.tokenService.tokenResource.reload());
   }
 
   toggleActiveSelectedTokens(): void {
-    const selectedTokens = this.tokenSelection();
+    const selectedTokens = this.tokenSelection.selectedRows();
     if (selectedTokens.length === 0) return;
     this.dialogService
       .openDialog({
@@ -194,7 +195,7 @@ export class TokenTableActionsComponent {
   }
 
   resetFailcounterSelectedTokens(): void {
-    const selectedTokens = this.tokenSelection();
+    const selectedTokens = this.tokenSelection.selectedRows();
     if (selectedTokens.length === 0) return;
     this.dialogService
       .openDialog({
@@ -244,7 +245,7 @@ export class TokenTableActionsComponent {
       .pipe(
         filter(Boolean),
         switchMap((result) =>
-          from(this.tokenSelection()).pipe(
+          from(this.tokenSelection.selectedRows()).pipe(
             concatMap((token) => {
               const assign$ = this.tokenService.assignUser({
                 tokenSerial: token.serial,
@@ -273,7 +274,7 @@ export class TokenTableActionsComponent {
   }
 
   unassignSelectedTokens() {
-    const selectedTokens = this.tokenSelection();
+    const selectedTokens = this.tokenSelection.selectedRows();
     this.dialogService
       .openDialog({
         component: SimpleConfirmationDialogComponent,
@@ -330,7 +331,7 @@ export class TokenTableActionsComponent {
   }
 
   isFilterSelected(filter: string): boolean {
-    const inputValue = this.tokenService.tokenFilter();
+    const inputValue = this.tokenService.activeFilter();
     if (filter === "infokey & infovalue") {
       return inputValue.hasKey("infokey") && inputValue.hasKey("infovalue");
     }
@@ -339,11 +340,11 @@ export class TokenTableActionsComponent {
 
   getFilterIconName(keyword: string): string {
     if (keyword === "active" || keyword === "assigned") {
-      const value = this.tokenService.tokenFilter()?.getValueOfKey(keyword)?.toLowerCase();
-      if (!value) {
+      const value = this.tokenService.activeFilter().booleanValueOfKey(keyword);
+      if (value === undefined) {
         return "filter_alt";
       }
-      return value === "true" ? "screen_rotation_alt" : value === "false" ? "filter_alt_off" : "filter_alt";
+      return value ? "screen_rotation_alt" : "filter_alt_off";
     } else {
       const isSelected = this.isFilterSelected(keyword);
       return isSelected ? "filter_alt_off" : "filter_alt";
@@ -359,14 +360,17 @@ export class TokenTableActionsComponent {
   }
 
   private toggleFilter(filterKeyword: string): void {
+    this.tokenService.updateFilter((current) => this.toggledFilter(filterKeyword, current));
+  }
+
+  private toggledFilter(filterKeyword: string, current: FilterValue): FilterValue {
     let newValue;
     if (filterKeyword === "assigned") {
       newValue = this.tableUtilsService.toggleBooleanInFilter({
         keyword: filterKeyword,
-        currentValue: this.tokenService.tokenFilter()
+        currentValue: current
       });
     } else if (filterKeyword === "infokey & infovalue") {
-      const current = this.tokenService.tokenFilter();
       const hasKey = current.hasKey("infokey");
       const hasVal = current.hasKey("infovalue");
 
@@ -402,9 +406,9 @@ export class TokenTableActionsComponent {
     } else {
       newValue = this.tableUtilsService.toggleKeywordInFilter({
         keyword: filterKeyword,
-        currentValue: this.tokenService.tokenFilter()
+        currentValue: current
       });
     }
-    this.tokenService.tokenFilter.set(newValue);
+    return newValue;
   }
 }

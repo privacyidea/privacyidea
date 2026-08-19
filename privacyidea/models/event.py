@@ -44,6 +44,8 @@ class EventHandler(MethodsMixin, db.Model):
     active: Mapped[bool | None] = mapped_column(Boolean, default=True)
     ordering: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     position: Mapped[str | None] = mapped_column(Unicode(10), default="post")
+    # If the handler raises an exception, the request is aborted instead of continuing without the handler.
+    abort_on_error: Mapped[bool | None] = mapped_column(Boolean, default=False)
     # This is the name of the event in the code
     event: Mapped[str] = mapped_column(Unicode(255), nullable=False)
     # This is the identifier of an event handler module
@@ -58,7 +60,7 @@ class EventHandler(MethodsMixin, db.Model):
 
     def __init__(self, name, event, handlermodule, action, condition="",
                  ordering=0, options=None, id=None, conditions=None,
-                 active=True, position="post"):
+                 active=True, position="post", abort_on_error=False):
         self.name = name
         self.ordering = ordering
         self.event = event
@@ -67,6 +69,7 @@ class EventHandler(MethodsMixin, db.Model):
         self.action = action
         self.active = active
         self.position = position
+        self.abort_on_error = abort_on_error
         if id == "":
             id = None
         self.id = id
@@ -84,6 +87,7 @@ class EventHandler(MethodsMixin, db.Model):
              "id": self.id,
              "ordering": self.ordering,
              "position": self.position or "post",
+             "abort_on_error": bool(self.abort_on_error),
              "action": self.action,
              "condition": self.condition}
         event_list = [x.strip() for x in self.event.split(",")]

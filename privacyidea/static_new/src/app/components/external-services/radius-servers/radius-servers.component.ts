@@ -17,8 +17,9 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, ElementRef, inject, signal, ViewChild, WritableSignal } from "@angular/core";
+import { Component, computed, ElementRef, inject, signal, ViewChild, viewChild, WritableSignal } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
+import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
@@ -38,7 +39,10 @@ import { ClearableInputComponent } from "@components/shared/clearable-input/clea
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { TableStateComponent } from "@components/shared/table-state/table-state.component";
+import { TableState } from "@core/models/table_state/table-state";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { renderedRows, RowSelector } from "@services/table-utils/row-selector";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 
 @Component({
@@ -50,13 +54,15 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
     MatSortModule,
     MatIconModule,
     MatButtonModule,
+    MatCheckboxModule,
     MatTooltipModule,
     ScrollToTopDirective,
     MatFormField,
     MatLabel,
     ClearableInputComponent,
     MatInput,
-    CopyableComponent
+    CopyableComponent,
+    TableStateComponent
   ],
   templateUrl: "./radius-servers.component.html",
   styleUrl: "./radius-servers.component.scss"
@@ -73,19 +79,30 @@ export class RadiusServersComponent {
   totalLength: WritableSignal<number> = computed(
     () => this.radiusService.radiusServers().length
   ) as WritableSignal<number>;
+  readonly tableState = new TableState({
+    resource: this.radiusService.radiusServerResource,
+    count: () => this.radiusService.radiusServers().length,
+    allowed: () => this.authService.actionAllowed("radiusserver_read"),
+    resetFilter: () => this.resetFilter()
+  });
 
-  @ViewChild(MatPaginator) paginator!: MatPaginator;
+  readonly paginator = viewChild(MatPaginator);
   @ViewChild(MatSort) sort!: MatSort;
   @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: ElementRef;
 
-  displayedColumns: string[] = ["identifier", "server", "dictionary", "description", "actions"];
+  displayedColumns: string[] = ["select", "identifier", "server", "dictionary", "description"];
 
   radiusDataSource = computed(() => {
     const servers = this.radiusService.radiusServers();
     const dataSource = new MatTableDataSource(servers);
-    dataSource.paginator = this.paginator;
+    dataSource.paginator = this.paginator() ?? null;
     dataSource.sort = this.sort;
     return dataSource;
+  });
+
+  selector = new RowSelector<RadiusServer>({
+    keyGetter: (server) => server.identifier,
+    visibleRows: renderedRows(this.radiusDataSource)
   });
 
   onCreateNewServer(): void {
@@ -96,21 +113,26 @@ export class RadiusServersComponent {
     this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS_DETAILS + server.identifier);
   }
 
-  deleteServer(server: RadiusServer): void {
+  deleteSelected(): void {
+    const selected = this.selector.selectedRows();
+    if (selected.length === 0) {
+      return;
+    }
     this.dialogService
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: $localize`Delete RADIUS Server`,
-          items: [server.identifier],
+          title: $localize`Delete RADIUS Servers`,
+          items: selected.map((row) => row.identifier),
           itemType: "radius-server",
           confirmAction: { label: $localize`Delete`, value: true, type: "destruct" }
         }
       })
       .afterClosed()
-      .subscribe({
-        next: (result) => {
-          if (result) this.radiusService.deleteRadiusServer(server.identifier);
+      .subscribe((result) => {
+        if (result) {
+          selected.forEach((row) => void this.radiusService.deleteRadiusServer(row.identifier).catch(() => undefined));
+          this.selector.deselectAllRows();
         }
       });
   }

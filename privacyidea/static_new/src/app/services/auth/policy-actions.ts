@@ -49,6 +49,7 @@ export type PolicyAction =
   | "force_app_pin"
   | "getserial"
   | "getrandom"
+  | "get_user_internal_attributes"
   | "hide_audit_columns"
   | "importtokens"
   | "last_auth"

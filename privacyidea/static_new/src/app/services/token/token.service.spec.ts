@@ -35,7 +35,7 @@ import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
 import { MockContentService, MockPiResponse, MockRealmService } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
-import { BulkResult, TokenGroups, Tokens, TokenService } from "./token.service";
+import { BulkResult, TokenCountParams, TokenGroups, Tokens, TokenService } from "./token.service";
 
 class MockNotificationService {
   success = jest.fn();
@@ -79,6 +79,8 @@ describe("TokenService", () => {
     postSpy = jest.spyOn(http, "post");
     deleteSpy = jest.spyOn(http, "delete");
     authService = TestBed.inject(AuthService) as unknown as MockAuthService;
+    // tokenResource only issues a request when the admin may list tokens.
+    authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["tokenlist"] });
     notificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;
     getSpy = jest.spyOn(http, "get");
 
@@ -132,6 +134,41 @@ describe("TokenService", () => {
         error: (err) => {
           expect(err).toBe(error);
           expect(notificationService.error).toHaveBeenCalledWith("Failed to toggle active. boom");
+          done();
+        }
+      });
+    });
+
+    it("does not notify when notify=false but still propagates error", (done) => {
+      const error = new HttpErrorResponse({
+        error: { result: { error: { message: "boom" } } },
+        status: 500
+      });
+      postSpy.mockReturnValue(throwError(() => error));
+
+      tokenService.toggleActive("HOTP1", true, false).subscribe({
+        next: () => {
+          fail("expected error");
+        },
+        error: (err) => {
+          expect(err).toBe(error);
+          expect(notificationService.error).not.toHaveBeenCalled();
+          done();
+        }
+      });
+    });
+
+    it("falls back to an empty message when the error has no result message", (done) => {
+      const error = new HttpErrorResponse({ error: {}, status: 500 });
+      postSpy.mockReturnValue(throwError(() => error));
+
+      tokenService.toggleActive("HOTP1", true).subscribe({
+        next: () => {
+          fail("expected error");
+        },
+        error: (err) => {
+          expect(err).toBe(error);
+          expect(notificationService.error).toHaveBeenCalledWith("Failed to toggle active. ");
           done();
         }
       });
@@ -265,6 +302,52 @@ describe("TokenService", () => {
     });
   });
 
+  describe("getTokenCount()", () => {
+    it("always sends pagesize=0 when called without filters", () => {
+      getSpy.mockReturnValue(of(MockPiResponse.fromValue({ count: 0 })));
+
+      tokenService.getTokenCount().subscribe();
+
+      expect(getSpy).toHaveBeenCalledWith(tokenService.tokenBaseUrl, {
+        headers: authService.getHeaders(),
+        params: { pagesize: 0 }
+      });
+    });
+
+    it("preserves provided filters while forcing pagesize=0", () => {
+      getSpy.mockReturnValue(of(MockPiResponse.fromValue({ count: 1 })));
+
+      tokenService
+        .getTokenCount({ type: "hotp", assigned: "False", infokey: "tokenkind", infovalue: "hardware" })
+        .subscribe();
+
+      expect(getSpy).toHaveBeenCalledWith(tokenService.tokenBaseUrl, {
+        headers: authService.getHeaders(),
+        params: {
+          type: "hotp",
+          assigned: "False",
+          infokey: "tokenkind",
+          infovalue: "hardware",
+          pagesize: 0
+        }
+      });
+    });
+
+    it("does not allow overriding pagesize even when passed via an unsafe cast", () => {
+      getSpy.mockReturnValue(of(MockPiResponse.fromValue({ count: 2 })));
+
+      tokenService.getTokenCount({ serial: "S1", pagesize: 25 } as unknown as TokenCountParams).subscribe();
+
+      expect(getSpy).toHaveBeenCalledWith(tokenService.tokenBaseUrl, {
+        headers: authService.getHeaders(),
+        params: {
+          serial: "S1",
+          pagesize: 0
+        }
+      });
+    });
+  });
+
   describe("pollTokenRolloutState()", () => {
     it("emits error once and stops polling when request fails", async () => {
       jest.useFakeTimers();
@@ -328,7 +411,7 @@ describe("TokenService", () => {
   describe("token filter -> tokenResource request params", () => {
     it("wildcard-wraps non-ID filter fields in the outgoing request", () => {
       contentServiceMock.onTokens = signal(true);
-      tokenService.tokenFilter.set(new FilterValue({ value: "serial: otp user: alice description: vpn" }));
+      tokenService.activeFilter.set(new FilterValue({ value: "serial: otp user: alice description: vpn" }));
       TestBed.tick();
 
       const req = mockBackend.expectOne((r) => r.url === "/token/");
@@ -340,7 +423,7 @@ describe("TokenService", () => {
 
     it("omits empty / wildcard-only filter values from the outgoing request", () => {
       contentServiceMock.onTokens = signal(true);
-      tokenService.tokenFilter.set(
+      tokenService.activeFilter.set(
         new FilterValue({ value: "serial: '' type: hotp active: '  ' description: * rollout_state: ***" })
       );
       TestBed.tick();
@@ -353,11 +436,129 @@ describe("TokenService", () => {
       expect(req.request.params.has("rollout_state")).toBe(false);
       req.flush(MockPiResponse.fromValue({ count: 0, current: 1, tokens: [] }));
     });
+
+    it("normalizes assigned/active boolean filters to backend format True/False", () => {
+      contentServiceMock.onTokens = signal(true);
+      tokenService.activeFilter.set(new FilterValue({ value: "assigned: false active: true serial: OTP" }));
+      TestBed.tick();
+
+      const req = mockBackend.expectOne((r) => r.url === "/token/");
+      expect(req.request.params.get("assigned")).toBe("False");
+      expect(req.request.params.get("active")).toBe("True");
+      expect(req.request.params.get("serial")).toBe("*OTP*");
+      req.flush(MockPiResponse.fromValue({ count: 0, current: 1, tokens: [] }));
+    });
+
+    it("sends a hidden type_list entry unwrapped as a comma-separated param", () => {
+      contentServiceMock.onTokens = signal(true);
+      tokenService.activeFilter.set(new FilterValue().updateHiddenEntry("type_list", "hotp,webauthn"));
+      TestBed.tick();
+
+      const req = mockBackend.expectOne((r) => r.url === "/token/");
+      expect(req.request.params.get("type_list")).toBe("hotp,webauthn");
+      req.flush(MockPiResponse.fromValue({ count: 0, current: 1, tokens: [] }));
+    });
+
+    it("combines a hidden type_list with a typed tokentype filter", () => {
+      contentServiceMock.onTokens = signal(true);
+      tokenService.activeFilter.set(
+        new FilterValue({ value: "type: hotp" }).updateHiddenEntry("type_list", "hotp,webauthn")
+      );
+      TestBed.tick();
+
+      const req = mockBackend.expectOne((r) => r.url === "/token/");
+      expect(req.request.params.get("type_list")).toBe("hotp,webauthn");
+      expect(req.request.params.get("type")).toBe("*hotp*");
+      req.flush(MockPiResponse.fromValue({ count: 0, current: 1, tokens: [] }));
+    });
+
+    it("omits type_list when the hidden entry is empty", () => {
+      contentServiceMock.onTokens = signal(true);
+      tokenService.activeFilter.set(new FilterValue().updateHiddenEntry("type_list", ""));
+      TestBed.tick();
+
+      const req = mockBackend.expectOne((r) => r.url === "/token/");
+      expect(req.request.params.has("type_list")).toBe(false);
+      req.flush(MockPiResponse.fromValue({ count: 0, current: 1, tokens: [] }));
+    });
+    it("sends a single token type as a wildcarded type param", () => {
+      contentServiceMock.onTokens = signal(true);
+      tokenService.activeFilter.set(new FilterValue({ value: "type: hotp" }));
+      TestBed.tick();
+
+      const req = mockBackend.expectOne((r) => r.url === "/token/");
+      expect(req.request.params.get("type")).toBe("*hotp*");
+      expect(req.request.params.has("type_list")).toBe(false);
+      req.flush(MockPiResponse.fromValue({ count: 0, current: 1, tokens: [] }));
+    });
+
+    it("sends multiple token types as type_list instead of type", () => {
+      contentServiceMock.onTokens = signal(true);
+      tokenService.activeFilter.set(new FilterValue({ value: "type: hotp,totp" }));
+      TestBed.tick();
+
+      const req = mockBackend.expectOne((r) => r.url === "/token/");
+      expect(req.request.params.get("type_list")).toBe("hotp,totp");
+      expect(req.request.params.has("type")).toBe(false);
+      req.flush(MockPiResponse.fromValue({ count: 0, current: 1, tokens: [] }));
+    });
+
+    it("merges the type and type_list keywords into a single deduplicated list", () => {
+      contentServiceMock.onTokens = signal(true);
+      tokenService.activeFilter.set(new FilterValue({ value: "type: hotp type_list: totp,hotp" }));
+      TestBed.tick();
+
+      const req = mockBackend.expectOne((r) => r.url === "/token/");
+      expect(req.request.params.get("type_list")).toBe("hotp,totp");
+      expect(req.request.params.has("type")).toBe(false);
+      req.flush(MockPiResponse.fromValue({ count: 0, current: 1, tokens: [] }));
+    });
+
+    it("wildcard-wraps every token realm of a comma-separated list on its own", () => {
+      contentServiceMock.onTokens = signal(true);
+      tokenService.activeFilter.set(new FilterValue({ value: "tokenrealm: realm1,realm2" }));
+      TestBed.tick();
+
+      const req = mockBackend.expectOne((r) => r.url === "/token/");
+      expect(req.request.params.get("tokenrealm")).toBe("*realm1*,*realm2*");
+      req.flush(MockPiResponse.fromValue({ count: 0, current: 1, tokens: [] }));
+    });
+  });
+
+  describe("tokenTypeOptions() ordering", () => {
+    const flushRights = async (value: Record<string, string>) => {
+      contentServiceMock.onTokensEnrollment = signal(true);
+      TestBed.tick();
+      const req = mockBackend.expectOne((r) => r.url.endsWith("/auth/rights"));
+      req.flush(MockPiResponse.fromValue(value));
+      await Promise.resolve();
+    };
+
+    it("sorts options alphabetically by the label (text before the first colon)", async () => {
+      await flushRights({
+        hotp: "Zulu: event based",
+        totp: "Alpha: time based",
+        spass: "Mike: simple pass"
+      });
+
+      expect(tokenService.tokenTypeOptions().map((o) => o.key)).toEqual(["totp", "spass", "hotp"]);
+    });
+
+    it("uses the full info string as the label when it contains no colon", async () => {
+      await flushRights({
+        hotp: "Beta",
+        totp: "Alpha"
+      });
+
+      const options = tokenService.tokenTypeOptions();
+      expect(options.map((o) => o.key)).toEqual(["totp", "hotp"]);
+      expect(options[0].info).toBe("Alpha");
+    });
   });
 
   describe("showOnlyTokenInContainer -> token container filter", () => {
     const containerRoute = ROUTE_PATHS.CONTAINERS_DETAILS + "/CONT0001";
-    const hasContainerFilter = () => tokenService.tokenFilter().hiddenFilterMap.has("container_serial");
+    const hasContainerFilter = () => tokenService.activeFilter().hiddenFilterMap.has("container_serial");
 
     it("defaults to false on the container details route (shows only tokens not in a container)", () => {
       contentServiceMock.routeUrl.set(containerRoute);
@@ -755,6 +956,35 @@ describe("TokenService", () => {
         }
       });
     });
+
+    it("does not notify when notify=false but still propagates error", (done) => {
+      const boom = new HttpErrorResponse({
+        error: { result: { error: { message: "uu" } } },
+        status: 500
+      });
+      postSpy.mockReturnValue(throwError(() => boom));
+
+      tokenService.unassignUser("SER", false).subscribe({
+        error: (e) => {
+          expect(e).toBe(boom);
+          expect(notificationService.error).not.toHaveBeenCalled();
+          done();
+        }
+      });
+    });
+
+    it("falls back to an empty message when the error has no result message", (done) => {
+      const boom = new HttpErrorResponse({ error: {}, status: 500 });
+      postSpy.mockReturnValue(throwError(() => boom));
+
+      tokenService.unassignUser("SER").subscribe({
+        error: (e) => {
+          expect(e).toBe(boom);
+          expect(notificationService.error).toHaveBeenCalledWith("Failed to unassign user. ");
+          done();
+        }
+      });
+    });
   });
 
   describe("assignUser()", () => {
@@ -787,6 +1017,35 @@ describe("TokenService", () => {
         error: (e) => {
           expect(e).toBe(boom);
           expect(notificationService.error).toHaveBeenCalledWith("Failed to reset fail count. rf");
+          done();
+        }
+      });
+    });
+
+    it("does not notify when notify=false but still propagates error", (done) => {
+      const boom = new HttpErrorResponse({
+        error: { result: { error: { message: "rf" } } },
+        status: 500
+      });
+      postSpy.mockReturnValue(throwError(() => boom));
+
+      tokenService.resetFailCount("SER", false).subscribe({
+        error: (e) => {
+          expect(e).toBe(boom);
+          expect(notificationService.error).not.toHaveBeenCalled();
+          done();
+        }
+      });
+    });
+
+    it("falls back to an empty message when the error has no result message", (done) => {
+      const boom = new HttpErrorResponse({ error: {}, status: 500 });
+      postSpy.mockReturnValue(throwError(() => boom));
+
+      tokenService.resetFailCount("SER").subscribe({
+        error: (e) => {
+          expect(e).toBe(boom);
+          expect(notificationService.error).toHaveBeenCalledWith("Failed to reset fail count. ");
           done();
         }
       });
@@ -1067,6 +1326,29 @@ describe("TokenService", () => {
       expect(tokenService.tokenResourceValue()).toEqual(responseValue);
     });
 
+    it("scopes tokenSelection to the loaded page and drops it when a new page arrives", async () => {
+      contentServiceMock.onTokens = signal(true);
+      TestBed.tick();
+
+      const firstPage = mockBackend.expectOne((r) => r.url === "/token/");
+      firstPage.flush(
+        MockPiResponse.fromValue({ count: 25, current: 1, tokens: [{ serial: "T-1" }, { serial: "T-2" }] })
+      );
+      await Promise.resolve();
+
+      tokenService.tokenSelection.selectAllRows();
+      expect(tokenService.tokenSelection.selectedRows().map((token) => token.serial)).toEqual(["T-1", "T-2"]);
+      expect(tokenService.tokenSelection.allRowsSelected()).toBe(true);
+
+      tokenService.pageIndex.set(1);
+      TestBed.tick();
+      const secondPage = mockBackend.expectOne((r) => r.url === "/token/");
+      secondPage.flush(MockPiResponse.fromValue({ count: 25, current: 2, tokens: [{ serial: "T-3" }] }));
+      await Promise.resolve();
+
+      expect(tokenService.tokenSelection.hasSelection()).toBe(false);
+    });
+
     it("should handle error state from tokenResource", async () => {
       contentServiceMock.onTokens = signal(true);
       TestBed.tick();
@@ -1081,6 +1363,22 @@ describe("TokenService", () => {
 
       expect(tokenService.tokenResource.hasValue()).toBe(false);
       expect(tokenService.tokenResourceValue()).toBeNull();
+    });
+  });
+
+  describe("filter metadata", () => {
+    it("marks the keywords whose case behaviour deviates", () => {
+      expect(tokenService.caseNotes).toEqual({
+        serial: "usually-insensitive",
+        userid: "usually-sensitive",
+        resolver: "usually-insensitive",
+        "infokey & infovalue": "usually-sensitive"
+      });
+    });
+
+    it("only notes keywords the UI can actually look up", () => {
+      const lookupKeys = [...tokenService.apiFilterKeys, ...tokenService.advancedApiFilterKeys];
+      Object.keys(tokenService.caseNotes).forEach((key) => expect(lookupKeys).toContain(key));
     });
   });
 });

@@ -19,7 +19,7 @@
 
 <div class="utils-group flex-row">
   <span
-    class="margin-left-8"
+    class="padding-8"
     [matTooltip]="profileTooltip()"
     [matTooltipDisabled]="isLargeScreen()">
     <mat-icon>account_circle</mat-icon>
@@ -40,8 +40,15 @@
       }
     </div>
   }
-  <app-language-switcher></app-language-switcher>
-  <app-theme-switcher></app-theme-switcher>
+  <button
+    [routerLink]="ROUTE_PATHS.SETTINGS"
+    aria-label="UI Settings"
+    i18n-aria-label
+    mat-icon-button
+    i18n-matTooltip
+    matTooltip="UI Settings">
+    <mat-icon>settings</mat-icon>
+  </button>
   <button
     (click)="refreshPage()"
     mat-icon-button
@@ -60,7 +67,11 @@
     class="session-timer"
     i18n-matTooltip
     matTooltip="Time until session expires">
-    {{ sessionTimerService.remainingTime() | date: sessionTimeFormat() : "UTC" }}
+    @if (sessionOverOneDay()) {
+      {{ sessionDaysText() }}
+    } @else {
+      {{ displayedTime() | date: sessionTimeFormat() : "UTC" }}
+    }
   </div>
   <button
     (click)="logout()"

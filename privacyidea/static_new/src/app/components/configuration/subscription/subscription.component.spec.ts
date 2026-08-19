@@ -27,6 +27,7 @@ import { DialogService } from "@services/dialog/dialog.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { SubscriptionService } from "@services/subscription/subscription.service";
 import { MockDialogService, MockNotificationService, MockPiResponse } from "@testing/mock-services";
+import { expectsTableStateGating } from "@testing/table-state-gating";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockSubscriptionService } from "@testing/mock-services/mock-subscription-service";
 import { of } from "rxjs";
@@ -84,6 +85,12 @@ describe("SubscriptionComponent", () => {
 
     fixture = TestBed.createComponent(SubscriptionComponent);
     component = fixture.componentInstance;
+  });
+
+  it("gates the table on its read right, row count and filter", () => {
+    expectsTableStateGating({
+      state: component.tableState
+    });
   });
 
   it("should create", () => {

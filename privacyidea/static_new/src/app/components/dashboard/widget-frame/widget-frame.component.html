@@ -23,23 +23,80 @@
     cdkDragHandle
     [cdkDragHandleDisabled]="!layoutService.editMode() || pinned()"
     [class.draggable]="layoutService.editMode() && !pinned()">
-    <span class="widget-title">{{ widgetType()?.title }}</span>
+    <span class="widget-title-group">
+      @if (headerIcon(); as icon) {
+        <ng-container *ngComponentOutlet="icon" />
+      } @else if (widgetType()?.icon) {
+        <mat-icon class="widget-title-icon">{{ widgetType()?.icon }}</mat-icon>
+      }
+      @if (titleLink(); as link) {
+        <a
+          class="widget-title widget-title-link"
+          [routerLink]="link"
+          >{{ widgetType()?.title }}</a
+        >
+      } @else {
+        <span class="widget-title">{{ widgetType()?.title }}</span>
+      }
+    </span>
 
-    @if (layoutService.editMode() && !pinned()) {
-      <button
-        mat-icon-button
-        class="widget-remove"
-        (click)="remove()"
-        aria-label="Remove widget"
-        i18n-aria-label>
-        <mat-icon>close</mat-icon>
-      </button>
-    }
+    <div class="widget-actions">
+      <!-- What the widget itself contributes, ahead of the frame's own controls so those
+           stay in the same place in every widget. -->
+      @if (headerActions(); as actions) {
+        <ng-container [ngTemplateOutlet]="actions" />
+      }
+
+      @if (showHeaderSpinner()) {
+        <mat-progress-spinner
+          class="widget-action widget-loading"
+          mode="indeterminate"
+          [diameter]="18"
+          aria-label="Loading widget"
+          i18n-aria-label />
+      }
+
+      @if (refreshFailed()) {
+        <mat-icon
+          class="widget-action widget-stale"
+          matTooltip="Refresh failed"
+          i18n-matTooltip
+          aria-label="Refresh failed"
+          i18n-aria-label>
+          warning
+        </mat-icon>
+      }
+
+      @if (showReload()) {
+        <button
+          mat-icon-button
+          class="widget-action widget-reload"
+          (click)="reload()"
+          aria-label="Reload widget"
+          i18n-aria-label>
+          <mat-icon>refresh</mat-icon>
+        </button>
+      }
+
+      @if (layoutService.editMode() && !pinned()) {
+        <button
+          mat-icon-button
+          class="widget-action widget-remove"
+          (click)="remove()"
+          aria-label="Remove widget"
+          i18n-aria-label>
+          <mat-icon>close</mat-icon>
+        </button>
+      }
+    </div>
   </div>
 
   <div class="widget-body">
     @if (component(); as widgetComponent) {
-      <ng-container *ngComponentOutlet="widgetComponent; inputs: outletInputs()" />
+      <ng-template
+        [ngComponentOutlet]="widgetComponent"
+        [ngComponentOutletInputs]="outletInputs()"
+        #widgetOutlet="ngComponentOutlet"></ng-template>
     }
   </div>
 </div>
