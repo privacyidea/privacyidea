@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, provideZonelessChangeDetection } from "@angular/core";
+import { Component, provideZonelessChangeDetection, TemplateRef, viewChild } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { provideRouter } from "@angular/router";
 import { TokensWidgetComponent } from "@components/dashboard/widgets/tokens-widget/tokens-widget.component";
@@ -47,6 +47,31 @@ class PinnedStubWidget extends DashboardWidget {
 
   override reload(): void {
     // The stub only carries the pinned metadata; there is nothing to load.
+  }
+}
+
+// A widget that contributes a button to the frame's header. Stands in for the shipped
+// widgets that do, and takes over a type id in the registry the same way.
+const ACTIONS_TYPE = "policies";
+
+@Component({
+  selector: "app-actions-stub-widget",
+  standalone: true,
+  template: `<ng-template #headerActions><button class="stub-header-action">act</button></ng-template>`
+})
+class HeaderActionsStubWidget extends DashboardWidget {
+  static override readonly type = ACTIONS_TYPE;
+  override readonly headerActions = viewChild<TemplateRef<unknown>>("headerActions");
+
+  constructor() {
+    super();
+    // Ready rather than loading, so the frame offers its reload button and the order of
+    // the two sets of controls can be told apart.
+    this.state.set("ready");
+  }
+
+  override reload(): void {
+    // Nothing to load; the stub exists for the header template.
   }
 }
 
@@ -251,6 +276,46 @@ describe("WidgetFrameComponent", () => {
 
     it("should not mark the header as draggable in edit mode", () => {
       expect(fixture.nativeElement.querySelector(".widget-header.draggable")).toBeNull();
+    });
+  });
+
+  describe("widget contributed header actions", () => {
+    const actionsInstance: WidgetInstance = { id: "a1", type: ACTIONS_TYPE, x: 0, y: 0, cols: 6, rows: 5 };
+
+    // A frame is created per widget id and never hosts a different widget, so each case
+    // gets its own frame rather than swapping the instance on the shared one.
+    const frameFor = (instance: WidgetInstance): ComponentFixture<WidgetFrameComponent> => {
+      const registry = TestBed.inject(WidgetRegistryService);
+      const realGet = registry.get.bind(registry);
+      jest
+        .spyOn(registry, "get")
+        .mockImplementation((type: string) => (type === ACTIONS_TYPE ? HeaderActionsStubWidget : realGet(type)));
+      const frame = TestBed.createComponent(WidgetFrameComponent);
+      frame.componentRef.setInput("instance", instance);
+      frame.detectChanges();
+      return frame;
+    };
+
+    it("should render them in the header, ahead of the frame's own controls", () => {
+      const frame = frameFor(actionsInstance);
+      const actions = frame.nativeElement.querySelector(".widget-actions");
+      const contributed = actions.querySelector(".stub-header-action");
+      const reload = actions.querySelector(".widget-reload");
+
+      expect(contributed).not.toBeNull();
+      expect(reload).not.toBeNull();
+      // The frame's own controls keep their place, so the reload button does not move from
+      // one widget to the next.
+      expect(contributed.compareDocumentPosition(reload) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      frame.destroy();
+    });
+
+    it("should leave the header alone for a widget that contributes none", () => {
+      const frame = frameFor(tokensInstance);
+
+      expect(frame.componentInstance["headerActions"]()).toBeNull();
+      expect(frame.nativeElement.querySelector(".stub-header-action")).toBeNull();
+      frame.destroy();
     });
   });
 });

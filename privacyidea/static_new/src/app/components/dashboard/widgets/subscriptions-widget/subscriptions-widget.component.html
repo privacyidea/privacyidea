@@ -17,9 +17,13 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 
-<app-widget-state [state]="state()">
-  <div class="subscription-actions">
+<!-- Handed to the widget frame, which renders it in the header next to the reload button.
+     Declared outside app-widget-state so the frame can read it before the data arrives,
+     and held back until there is something to copy or expand. -->
+<ng-template #headerActions>
+  @if (state() === "ready") {
     <app-copy-button
+      class="widget-header-action"
       [copyText]="statusJson()"
       matTooltip="Copy subscription info as JSON"
       i18n-matTooltip
@@ -27,7 +31,7 @@
       i18n-aria-label />
     <button
       mat-icon-button
-      class="subscription-detail-toggle"
+      class="widget-header-action subscription-detail-toggle"
       (click)="toggleDetailed()"
       [matTooltip]="detailToggleTooltip()"
       [attr.aria-pressed]="detailed()"
@@ -35,8 +39,10 @@
       i18n-aria-label>
       <mat-icon>{{ detailed() ? "close_fullscreen" : "open_in_full" }}</mat-icon>
     </button>
-  </div>
+  }
+</ng-template>
 
+<app-widget-state [state]="state()">
   <div class="table-container">
     <table
       class="subscription-table"

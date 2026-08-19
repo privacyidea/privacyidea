@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { DatePipe } from "@angular/common";
-import { Component, computed, effect, inject, LOCALE_ID, OnInit, signal } from "@angular/core";
+import { Component, computed, effect, inject, LOCALE_ID, OnInit, signal, TemplateRef, viewChild } from "@angular/core";
 import { MatIconButton } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 import { MatTooltipModule } from "@angular/material/tooltip";
@@ -141,6 +141,9 @@ export class SubscriptionsWidgetComponent extends DashboardWidget implements OnI
   static override readonly defaultSize: WidgetSize = { cols: 8, rows: 10 };
   static override readonly minSize: WidgetSize = { cols: 5, rows: 4 };
   static override readonly maxSize: WidgetSize = { cols: 16, rows: 16 };
+
+  // Read by the widget frame, which renders these in its header.
+  override readonly headerActions = viewChild<TemplateRef<unknown>>("headerActions");
 
   private readonly subscriptionService = inject(SubscriptionService);
   private readonly authService: AuthServiceInterface = inject(AuthService);

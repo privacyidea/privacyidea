@@ -26,23 +26,32 @@
   overflow: hidden;
 }
 
-.subscription-actions {
+// The frame renders these in its header, but they are declared in this component's
+// template, so view encapsulation keeps the frame's own .widget-action sizing from
+// reaching them. Repeated here so they match the reload button beside them.
+.widget-header-action {
   display: flex;
-  justify-content: flex-end;
   align-items: center;
-  gap: var(--quarter-global-padding);
-  flex: 0 0 auto;
+  justify-content: center;
+  flex: none;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  --mdc-icon-button-state-layer-size: 28px;
 
-  .subscription-detail-toggle {
-    width: 28px;
-    height: 28px;
-    padding: 0;
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    line-height: 18px;
+  }
 
-    mat-icon {
-      font-size: 18px;
-      width: 18px;
-      height: 18px;
-    }
+  // The copy icon lives inside the copy button's own component.
+  ::ng-deep .copy-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    line-height: 18px;
   }
 }
 
@@ -61,8 +70,10 @@
   // column widths keep the extra columns inside the widget instead of widening the
   // table, and every cell stays one line high, so the two views are the same height.
   table-layout: fixed;
-  // Dense rows so the compact view fits every component without scrolling.
-  font-size: 0.85rem;
+  // The size the rest of the tables use (styles/table.scss), kept in rem so it still
+  // follows the browser's font size. The rows are dense through their padding and line
+  // height instead, which is what lets the compact view fit every component.
+  font-size: 0.875rem;
 
   th,
   td {
