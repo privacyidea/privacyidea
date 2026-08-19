@@ -373,6 +373,11 @@ $button-low-contrast-variant: linear-gradient(
   }
 
   &:not([disabled]) {
+    // Set the rest background here (not only at the top level) so it wins over
+    // Material's transparent outlined-button background; otherwise a stroked
+    // action button shows its container through and looks darker on a non-white
+    // surface (e.g. the recessed stage well) than on the white page.
+    background-color: $bg;
     color: $color;
     @if $border {
       border-color: $color;
@@ -459,7 +464,12 @@ $button-low-contrast-variant: linear-gradient(
   }
 }
 
-.sort-button {
+// Compact icon buttons that sit inline with table text (column sorting, the
+// conditional-access priority arrows). The touch target is pinned to the visible
+// 24px box: Material's default 48px target would overhang the neighbouring cell
+// content and pull the ripple/hover layer out of line with the icon.
+.sort-button,
+.reorder-button {
   top: 0;
   right: 2px;
   height: 24px;

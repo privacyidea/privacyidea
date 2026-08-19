@@ -1979,6 +1979,35 @@ def get_static_policy_definitions(scope=None):
                                  "desc": _("Admin is allowed to view the Audit log."),
                                  "group": GROUP.SYSTEM,
                                  'mainmenu': [MAIN_MENU.AUDIT]},
+            PolicyAction.AUTHENTICATION_LOG_READ: {'type': 'bool',
+                                                   "desc": _("Admin is allowed to read the authentication log. If the "
+                                                             "policy is scoped to realms, resolvers or users, the "
+                                                             "admin only sees entries matching that scope."),
+                                                   "group": GROUP.SYSTEM},
+            PolicyAction.LOCKOUT_POLICY_READ: {'type': 'bool',
+                                               "desc": _("Admin is allowed to read the conditional-access "
+                                                         "lockout policies."),
+                                               "group": GROUP.SYSTEM},
+            PolicyAction.LOCKOUT_POLICY_WRITE: {'type': 'bool',
+                                                "desc": _("Admin is allowed to create, edit and delete the "
+                                                          "conditional-access lockout policies."),
+                                                "group": GROUP.SYSTEM},
+            PolicyAction.USER_LOCKOUT_READ: {'type': 'bool',
+                                             "desc": _("Admin is allowed to read the conditional-access user "
+                                                       "lockout state: view a user's lock and list the locked "
+                                                       "users."),
+                                             "group": GROUP.SYSTEM},
+            PolicyAction.USER_LOCKOUT_RESET: {'type': 'bool',
+                                              "desc": _("Admin is allowed to reset (unlock) a conditional-access "
+                                                        "user lockout."),
+                                              "group": GROUP.SYSTEM},
+            PolicyAction.BLOCKLIST_READ: {'type': 'bool',
+                                          "desc": _("Admin is allowed to read the conditional-access blocklist."),
+                                          "group": GROUP.SYSTEM},
+            PolicyAction.BLOCKLIST_RESET: {'type': 'bool',
+                                           "desc": _("Admin is allowed to remove entries from the "
+                                                     "conditional-access blocklist."),
+                                           "group": GROUP.SYSTEM},
             PolicyAction.AUDIT_AGE: {'type': 'str',
                                      "desc": _("The admin will only see audit "
                                                "entries of the last 10d, 3m or 2y."),
@@ -2292,6 +2321,10 @@ def get_static_policy_definitions(scope=None):
                           " using the token serial number."),
                 'mainmenu': [MAIN_MENU.TOKENS],
                 'group': GROUP.TOKEN},
+            PolicyAction.AUTHENTICATION_LOG_READ: {
+                'type': 'bool',
+                'desc': _("The user is allowed to read their own entries from the authentication log."),
+                'group': GROUP.SYSTEM},
             PolicyAction.DISABLE: {'type': 'bool',
                                    'desc': _('The user is allowed to disable his own tokens.'),
                                    'mainmenu': [MAIN_MENU.TOKENS],

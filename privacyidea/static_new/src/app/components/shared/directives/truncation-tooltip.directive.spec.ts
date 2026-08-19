@@ -35,6 +35,13 @@ import { TruncationTooltipDirective } from "./truncation-tooltip.directive";
       [appTruncationTooltip]="text()">
       {{ text() }}<i class="icon">unfold_more</i>
     </span>
+    <!-- A host that wraps a focusable element, as the dashboard widgets' clipped cells do: only there can focus land
+         inside the host, so only there does the focus path apply. -->
+    <span
+      class="with-link"
+      [appTruncationTooltip]="text()">
+      <a href="#">{{ text() }}</a>
+    </span>
   `
 })
 class HostComponent {
@@ -84,6 +91,50 @@ describe("TruncationTooltipDirective", () => {
     jest.runOnlyPendingTimers();
 
     expect(tooltipOf("with-text")._isTooltipVisible()).toBe(true);
+    jest.useRealTimers();
+  });
+
+  it("waits for the pointer to rest before opening", () => {
+    jest.useFakeTimers();
+    const element = elementOf("with-text");
+    setWidths(element, 300, 100);
+
+    element.dispatchEvent(new MouseEvent("mouseenter"));
+    jest.advanceTimersByTime(400);
+    // Still nothing: a pointer merely passing over the element must not pop a tooltip.
+    expect(tooltipOf("with-text")._isTooltipVisible()).toBe(false);
+
+    jest.advanceTimersByTime(100);
+    expect(tooltipOf("with-text")._isTooltipVisible()).toBe(true);
+    jest.useRealTimers();
+  });
+
+  it("drops a pending tooltip when the pointer moves on before the delay is up", () => {
+    jest.useFakeTimers();
+    const element = elementOf("with-text");
+    setWidths(element, 300, 100);
+
+    element.dispatchEvent(new MouseEvent("mouseenter"));
+    jest.advanceTimersByTime(200);
+    element.dispatchEvent(new MouseEvent("mouseleave"));
+    jest.runOnlyPendingTimers();
+
+    expect(tooltipOf("with-text")._isTooltipVisible()).toBe(false);
+    jest.useRealTimers();
+  });
+
+  it("opens without the delay when focus reaches inside the host", () => {
+    jest.useFakeTimers();
+    const element = elementOf("with-link");
+    setWidths(element, 300, 100);
+
+    // Real focus, not a synthetic focusin: this only reaches the host because it wraps something focusable. A clipped
+    // leaf value (a table cell's plain text) has no focus path, and does not need one - the string is in the DOM in
+    // full, so nothing is gated behind the pointer.
+    element.querySelector("a")!.focus();
+    jest.advanceTimersByTime(0);
+
+    expect(tooltipOf("with-link")._isTooltipVisible()).toBe(true);
     jest.useRealTimers();
   });
 

@@ -18,6 +18,7 @@
 #
 import logging
 from datetime import timedelta
+from typing import TYPE_CHECKING
 
 from flask import g
 
@@ -25,6 +26,9 @@ from privacyidea.lib.policy import Match, SCOPE
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import parse_timelimit, AUTH_RESPONSE
+
+if TYPE_CHECKING:
+    from privacyidea.lib.conditional_access.authentication_log import AuthenticationLogVisibilityScope
 
 log = logging.getLogger(__name__)
 
@@ -152,3 +156,44 @@ def get_admin_audit_params() -> dict:
                 admin_params["admin_realm"] = g.logged_in_user["realm"]
                 admin_params["allowed_audit_realms"] = list(set(allowed_audit_realms))
     return admin_params
+
+
+def get_policy_visibility_scopes(action: str) -> list["AuthenticationLogVisibilityScope"] | None:
+    """
+    Determine the visibility boundary for *action*: which records the logged-in principal may act on, expressed as
+    realm / resolver / user scopes. Used to constrain list/read endpoints — the authentication log
+    (``authentication_log_read``), the conditional-access lockout state (``user_lockout_read``), etc. — to only the
+    entries a scoped admin is allowed to see.
+
+    A **user** may only ever act on their own entries, so a single scope built from the logged-in user's realm and
+    username is returned (never ``None``).
+
+    For an **admin** the scopes are derived from the target scoping (realm, resolver, user) of that action's
+    policies: one scope per scoping policy, combined OR across policies and AND across the dimensions a single policy
+    sets. ``None`` (no restriction) is returned if no policy of this action is scoped, or if any applicable policy
+    has no target scope at all (such a policy grants access to all entries). adminrealm, adminuser and policy
+    conditions need no handling here: ``Match.admin(...).policies()`` already returns only the policies applicable to
+    the current admin and request.
+
+    :param action: the policy action whose scoping to read (e.g. ``authentication_log_read``, ``user_lockout_read``)
+    :return: a list of :class:`AuthenticationLogVisibilityScope`, or ``None`` for unrestricted access
+    """
+    from privacyidea.lib.auth import ROLE
+    from privacyidea.lib.conditional_access.authentication_log import AuthenticationLogVisibilityScope
+    if g.logged_in_user["role"] == ROLE.USER:
+        return [AuthenticationLogVisibilityScope(realms=[g.logged_in_user["realm"]], resolvers=[],
+                                                 usernames=[g.logged_in_user["username"]])]
+    if g.logged_in_user["role"] != ROLE.ADMIN:
+        return None
+    scopes = []
+    for policy in Match.admin(g, action=action).policies():
+        realms = policy.get("realm") or []
+        resolvers = policy.get("resolver") or []
+        usernames = policy.get("user") or []
+        if not (realms or resolvers or usernames):
+            # An applicable policy with no target scope grants access to all entries.
+            return None
+        scopes.append(AuthenticationLogVisibilityScope(
+            realms=realms, resolvers=resolvers, usernames=usernames,
+            username_case_insensitive=bool(policy.get("user_case_insensitive"))))
+    return scopes or None

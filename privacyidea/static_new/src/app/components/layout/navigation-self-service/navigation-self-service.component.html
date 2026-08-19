@@ -92,5 +92,12 @@
         matIconName="receipt_long"
         title="Audit Log" />
     }
+    @if (authService.rights().includes("authentication_log_read")) {
+      <app-navigation-self-service-button
+        i18n-title
+        key="{{ this.ROUTE_PATHS.AUTHENTICATION_LOG }}"
+        matIconClass="mdi--list-lock"
+        title="Authentication Log" />
+    }
   }
 </div>

@@ -25,16 +25,10 @@ from sqlalchemy import (
     Unicode,
     BigInteger,
 )
-from sqlalchemy.dialects import sqlite
 from sqlalchemy.orm import Mapped, mapped_column
 
 from privacyidea.models import db
-from privacyidea.models.utils import MethodsMixin
-
-# Use a variant type for sqlite since it does not allow auto-increment with BigInteger type.
-# (See https://docs.sqlalchemy.org/en/20/dialects/sqlite.html#allowing-autoincrement-behavior-sqlalchemy-types-other-than-integer-integer)
-BigIntegerType = BigInteger()
-BigIntegerType = BigIntegerType.with_variant(sqlite.INTEGER(), "sqlite")
+from privacyidea.models.utils import MethodsMixin, BigIntegerType
 
 audit_column_length = {"signature": 1100,
                        "action": 200,
@@ -72,13 +66,13 @@ class Audit(MethodsMixin, db.Model):
     action: Mapped[str | None] = mapped_column(Unicode(audit_column_length.get("action")), default="")
     success: Mapped[int | None] = mapped_column(Integer, default=0)
     authentication: Mapped[str | None] = mapped_column(Unicode(audit_column_length.get("authentication")),
-                                                          default="")
+                                                       default="")
     serial: Mapped[str | None] = mapped_column(Unicode(audit_column_length.get("serial")), default="")
     token_type: Mapped[str | None] = mapped_column(Unicode(audit_column_length.get("token_type")), default="")
     container_serial: Mapped[str | None] = mapped_column(Unicode(audit_column_length.get("container_serial")),
-                                                            default="")
+                                                         default="")
     container_type: Mapped[str | None] = mapped_column(Unicode(audit_column_length.get("container_type")),
-                                                          default="")
+                                                       default="")
     user: Mapped[str | None] = mapped_column(Unicode(audit_column_length.get("user")), default="", index=True)
     realm: Mapped[str | None] = mapped_column(Unicode(audit_column_length.get("realm")), default="")
     resolver: Mapped[str | None] = mapped_column(Unicode(audit_column_length.get("resolver")), default="")
@@ -86,13 +80,13 @@ class Audit(MethodsMixin, db.Model):
     action_detail: Mapped[str | None] = mapped_column(Unicode(audit_column_length.get("action_detail")), default="")
     info: Mapped[str | None] = mapped_column(Unicode(audit_column_length.get("info")), default="")
     privacyidea_server: Mapped[str | None] = mapped_column(Unicode(audit_column_length.get("privacyidea_server")),
-                                                              default="")
+                                                           default="")
     client: Mapped[str | None] = mapped_column(Unicode(audit_column_length.get("client")), default="")
     user_agent: Mapped[str | None] = mapped_column(Unicode(audit_column_length.get("user_agent")), default="")
     user_agent_version: Mapped[str | None] = mapped_column(Unicode(audit_column_length.get("user_agent_version")),
-                                                              default="")
+                                                           default="")
     loglevel: Mapped[str | None] = mapped_column(Unicode(audit_column_length.get("loglevel")), default="default")
     clearance_level: Mapped[str | None] = mapped_column(Unicode(audit_column_length.get("clearance_level")),
-                                                           default="default")
+                                                        default="default")
     thread_id: Mapped[str | None] = mapped_column(Unicode(audit_column_length.get("thread_id")), default="0")
     policies: Mapped[str | None] = mapped_column(Unicode(audit_column_length.get("policies")), default="")

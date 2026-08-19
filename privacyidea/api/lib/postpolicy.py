@@ -56,7 +56,9 @@ from urllib.parse import quote
 from flask import g, current_app, make_response, Request
 from flask_babel import _, lazy_gettext
 
-from privacyidea.api.lib.utils import get_all_params, hardening_action_active
+from privacyidea.api.lib.utils import get_all_params, log_authentication, hardening_action_active
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
+from privacyidea.lib.conditional_access.request_context import get_ca_context
 from privacyidea.config import ConfigKey
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.config import (get_multichallenge_enrollable_types, get_token_class, get_privacyidea_node)
@@ -1157,6 +1159,21 @@ def multichallenge_enroll_via_validate(request, response):
             challenge.save()
         content.get("detail", {})["enroll_via_multichallenge"] = True
         content.get("detail", {})["enroll_via_multichallenge_optional"] = enrollment_optional
+
+        # Re-classify staged authentication log event or create new if non exists
+        enrolled_serial = content.get("detail", {}).get("serial")
+        context = get_ca_context()
+        if context.amendable is not None:
+            # Pass only what this policy determined, so an absent serial does not clear the logged one.
+            corrections = {}
+            if enrolled_serial is not None:
+                corrections["serial"] = enrolled_serial
+            if transaction_id:
+                corrections["transaction_id"] = transaction_id
+            context.reclassify(AuthEventType.ENROLLMENT_TRIGGERED, **corrections)
+        else:
+            log_authentication(AuthEventType.ENROLLMENT_TRIGGERED, request, user=user,
+                               serial=enrolled_serial, transaction_id=transaction_id)
     response.set_data(json.dumps(content))
 
     return response
@@ -1256,6 +1273,16 @@ def is_authorized(request, response):
 
     if authorized_pol:
         if list(authorized_pol)[0] == AUTHORIZED.DENY:
+            context = get_ca_context()
+            # Nothing to classify when conditional access already turned the request away before any token logic ran:
+            # its rejection row records why, and a NOT_AUTHORIZED row of our own would bury that reason and hand the
+            # lockout counters an attempt the lock itself produced.
+            if not context.rejected_by_conditional_access:
+                if context.amendable is not None:
+                    # Correcting the staged event
+                    context.reclassify(AuthEventType.NOT_AUTHORIZED)
+                else:
+                    log_authentication(AuthEventType.NOT_AUTHORIZED, request, user=request.User)
             raise ValidateError("User is not authorized to authenticate under these conditions.")
 
     return response

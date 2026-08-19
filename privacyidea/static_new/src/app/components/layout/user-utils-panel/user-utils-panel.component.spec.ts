@@ -27,6 +27,7 @@ import { MatSnackBar } from "@angular/material/snack-bar";
 import { ActivatedRoute, provideRouter } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { AuditService } from "@services/audit/audit.service";
+import { AuthenticationLogService } from "@services/authentication-log/authentication-log.service";
 import { AuthService } from "@services/auth/auth.service";
 import { CaConnectorService } from "@services/ca-connector/ca-connector.service";
 import { ClientsService } from "@services/clients/clients.service";
@@ -43,6 +44,8 @@ import { NotificationService } from "@services/notification/notification.service
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { PeriodicTaskService } from "@services/periodic-task/periodic-task.service";
 import { PolicyService } from "@services/policies/policies.service";
+import { ConditionalAccessPolicyService } from "@services/conditional-access/conditional-access-policy.service";
+import { ConditionalAccessStateService } from "@services/conditional-access-state/conditional-access-state.service";
 import { PrivacyideaServerService } from "@services/privacyidea-server/privacyidea-server.service";
 import { RadiusServerService } from "@services/radius-server/radius-server.service";
 import { RealmService } from "@services/realm/realm.service";
@@ -60,6 +63,7 @@ import { UserService } from "@services/user/user.service";
 import { VersioningService } from "@services/version/version.service";
 import {
   MockAuditService,
+  MockAuthenticationLogService,
   MockCaConnectorService,
   MockChallengesService,
   MockClientsService,
@@ -74,6 +78,8 @@ import {
   MockNotificationService,
   MockPendingChangesService,
   MockPeriodicTaskService,
+  MockConditionalAccessPolicyService,
+  MockConditionalAccessStateService,
   MockPolicyService,
   MockPrivacyideaServerService,
   MockRadiusService,
@@ -104,6 +110,7 @@ describe("UserUtilsPanelComponent", () => {
   let machineService: MockMachineService;
   let userService: MockUserService;
   let auditService: MockAuditService;
+  let authenticationLogService: MockAuthenticationLogService;
   let content: MockContentService;
   let authService: MockAuthService;
   let sessionTimerService: MockSessionTimerService;
@@ -144,8 +151,11 @@ describe("UserUtilsPanelComponent", () => {
         { provide: VersioningService, useClass: MockVersioningService },
         { provide: DocumentationService, useClass: MockDocumentationService },
         { provide: AuditService, useClass: MockAuditService },
+        { provide: AuthenticationLogService, useClass: MockAuthenticationLogService },
         { provide: ClientsService, useClass: MockClientsService },
         { provide: PolicyService, useClass: MockPolicyService },
+        { provide: ConditionalAccessPolicyService, useClass: MockConditionalAccessPolicyService },
+        { provide: ConditionalAccessStateService, useClass: MockConditionalAccessStateService },
         { provide: SubscriptionService, useClass: MockSubscriptionService },
         { provide: MachineResolverService, useClass: MockMachineResolverService },
         { provide: ContainerTemplateService, useClass: MockContainerTemplateService },
@@ -182,6 +192,7 @@ describe("UserUtilsPanelComponent", () => {
     machineService = TestBed.inject(MachineService) as unknown as MockMachineService;
     userService = TestBed.inject(UserService) as unknown as MockUserService;
     auditService = TestBed.inject(AuditService) as unknown as MockAuditService;
+    authenticationLogService = TestBed.inject(AuthenticationLogService) as unknown as MockAuthenticationLogService;
     content = TestBed.inject(ContentService) as unknown as MockContentService;
     authService = TestBed.inject(AuthService) as unknown as MockAuthService;
     sessionTimerService = TestBed.inject(SessionTimerService) as unknown as MockSessionTimerService;
@@ -221,6 +232,24 @@ describe("UserUtilsPanelComponent", () => {
       expect(tokenService.tokenResource.reload).toHaveBeenCalled();
       expect(tokenService.userTokenResource.reload).toHaveBeenCalled();
       expect(containerService.userContainersResource.reload).toHaveBeenCalled();
+    });
+
+    it("refreshes the conditional-access page", () => {
+      const caService = TestBed.inject(
+        ConditionalAccessPolicyService
+      ) as unknown as MockConditionalAccessPolicyService;
+      content.routeUrl.set(ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS);
+      component.refreshPage();
+      expect(caService.policiesResource.reload).toHaveBeenCalled();
+    });
+
+    it("refreshes the conditional-access details page", () => {
+      const caService = TestBed.inject(
+        ConditionalAccessPolicyService
+      ) as unknown as MockConditionalAccessPolicyService;
+      content.routeUrl.set(`${ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS_DETAILS}5`);
+      component.refreshPage();
+      expect(caService.policiesResource.reload).toHaveBeenCalled();
     });
 
     it("refreshes dashboard route", () => {
@@ -268,10 +297,34 @@ describe("UserUtilsPanelComponent", () => {
       expect(auditService.auditResource.reload).toHaveBeenCalled();
     });
 
+    it("refreshes authentication log route", () => {
+      content.routeUrl.set(ROUTE_PATHS.AUTHENTICATION_LOG);
+      component.refreshPage();
+      expect(authenticationLogService.authenticationLogResource.reload).toHaveBeenCalled();
+    });
+
     it("refreshes users route", () => {
       content.routeUrl.set(ROUTE_PATHS.USERS);
       component.refreshPage();
       expect(userService.usersResource.reload).toHaveBeenCalled();
+    });
+
+    it("refreshes locked-users route", () => {
+      const casService = TestBed.inject(
+        ConditionalAccessStateService
+      ) as unknown as MockConditionalAccessStateService;
+      content.routeUrl.set(ROUTE_PATHS.LOCKED_USERS);
+      component.refreshPage();
+      expect(casService.lockedUsersResource.reload).toHaveBeenCalled();
+    });
+
+    it("refreshes blocklist route", () => {
+      const casService = TestBed.inject(
+        ConditionalAccessStateService
+      ) as unknown as MockConditionalAccessStateService;
+      content.routeUrl.set(ROUTE_PATHS.BLOCKLIST);
+      component.refreshPage();
+      expect(casService.blocklistResource.reload).toHaveBeenCalled();
     });
   });
 

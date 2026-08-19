@@ -104,3 +104,11 @@ $table-cell-font-size: 0.875rem;
 .margin-top-20 {
   margin-top: 20px;
 }
+
+
+// Widen the app-info-hint tooltips so a two-sentence explanation stays readable
+// (the overlay renders outside component scope, so this lives in the global sheet).
+.info-hint-tooltip .mdc-tooltip__surface {
+  background-color: #e8e8e8;
+  max-width: 320px;
+}

@@ -20,7 +20,6 @@ import { Component, input, output } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 import { MatMenuModule } from "@angular/material/menu";
-import { MatTooltipModule } from "@angular/material/tooltip";
 
 import { MultiSelectMenuComponent } from "./multi-select-menu/multi-select-menu.component";
 import { MultiSelectFilterOption } from "./multi-select-filter-option";
@@ -41,7 +40,7 @@ export type { MultiSelectFilterOption };
 @Component({
   selector: "app-multi-select-filter",
   standalone: true,
-  imports: [MatButtonModule, MatIcon, MatMenuModule, MatTooltipModule, MultiSelectMenuComponent],
+  imports: [MatButtonModule, MatIcon, MatMenuModule, MultiSelectMenuComponent],
   templateUrl: "./multi-select-filter.component.html",
   styleUrl: "./multi-select-filter.component.scss"
 })

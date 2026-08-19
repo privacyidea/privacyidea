@@ -814,10 +814,24 @@ body.self-service-layout {
   --mat-option-selected-state-layer-color: var(--mat-sys-primary-light-hover);
 }
 
-.mat-mdc-select-panel[aria-multiselectable="false"] {
-  .mat-mdc-option.mdc-list-item--selected:not(.mdc-list-item--disabled),
+// The hover / keyboard-active layers above are opaque primary tones, not the translucent overlay
+// Material ships, so the label has to move with them: against primary-light on-primary measures
+// 4.96:1 (light) and 5.71:1 (dark), where on-surface would be 3.84:1 and 2.94:1 and fail AA. This
+// applies to every panel - a multi-select's options take the same layers.
+.mat-mdc-select-panel {
   .mat-mdc-option.mdc-list-item:not(.mdc-list-item--disabled):hover,
   .mat-mdc-option.mdc-list-item.mat-mdc-option-active:not(.mdc-list-item--disabled) {
+    .mdc-list-item__primary-text {
+      color: var(--mat-sys-on-primary) !important;
+    }
+  }
+}
+
+// The *selected* layer only paints in a single-select panel - Material excludes
+// .mat-mdc-option-multiple from the selected background - so a multi-select's selected but
+// unhovered row keeps the surface background and must keep on-surface text with it.
+.mat-mdc-select-panel[aria-multiselectable="false"] {
+  .mat-mdc-option.mdc-list-item--selected:not(.mdc-list-item--disabled) {
     .mdc-list-item__primary-text {
       color: var(--mat-sys-on-primary) !important;
     }
@@ -882,6 +896,18 @@ mat-chip.mat-mdc-chip {
       cursor: pointer !important;
     }
   }
+}
+
+// The authentication-log date-range picker renders in the CDK overlay; panelClass lands on the <mat-calendar>, so we
+// scope the content container via :has() and the calendar directly. Other datepickers keep their default look.
+.mat-datepicker-content:has(.mat-calendar.auth-log-datepicker) {
+  background-color: var(--mat-sys-surface-container-lowest);
+  border-radius: var(--border-radius);
+  border: 1px solid var(--mat-sys-surface-container-highest);
+}
+
+.mat-calendar.auth-log-datepicker {
+  border-radius: var(--border-radius);
 }
 
 .mat-drawer-backdrop {

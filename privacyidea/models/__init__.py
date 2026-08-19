@@ -36,17 +36,23 @@
 
 from .db import db
 from .audit import Audit, audit_column_length
+from .authentication_log import AuthenticationLog, authentication_log_column_length
 from .cache import AuthCache, UserCache
 from .caconnector import CAConnector, CAConnectorConfig
 from .challenge import Challenge, cleanup_challenges
 from .client import Client, ClientStatus
 from .remembered_device import RememberedDevice
+from .conditional_access_outcome import (ConditionalAccessOutcome,
+                                         conditional_access_outcome_column_length)
 from .config import (Config, NodeName, Admin, PasswordReset,
                      save_config_timestamp, PRIVACYIDEA_TIMESTAMP)
 from .customuserattribute import CustomUserAttribute
 from .internaluserattribute import InternalUserAttribute
 from .event import EventHandler, EventHandlerOption, EventHandlerCondition
 from .eventcounter import EventCounter
+from .lockout_policy import (BlockList, LockoutPolicy, LockoutPolicyCondition,
+                            LockoutPolicyCounterType, LockoutPolicyStage,
+                            LockoutStageAction, UserLockoutState)
 from .machine import (MachineResolver, MachineResolverConfig, MachineToken,
                       MachineTokenOptions, get_machineresolver_id,
                       get_machinetoken_ids)
@@ -70,12 +76,14 @@ from .tokengroup import Tokengroup, TokenTokengroup
 from .usersetting import UserSetting
 
 # We don't use "import *" but to avoid the unused import warning we define this
-__all__ = ["db", "Audit", "audit_column_length", "AuthCache", "UserCache",
-           "CAConnector", "CAConnectorConfig", "Challenge", "cleanup_challenges", "Client", "ClientStatus",
-           "RememberedDevice",
+__all__ = ["db", "Audit", "audit_column_length", "AuthenticationLog", "authentication_log_column_length", "AuthCache",
+           "UserCache", "CAConnector", "CAConnectorConfig", "Challenge", "cleanup_challenges", "Client", "ClientStatus",
+           "RememberedDevice", "ConditionalAccessOutcome", "conditional_access_outcome_column_length",
            "Config", "NodeName", "Admin", "PasswordReset", "save_config_timestamp",
            "PRIVACYIDEA_TIMESTAMP", "CustomUserAttribute", "InternalUserAttribute",
            "EventHandler", "EventHandlerOption", "EventHandlerCondition", "EventCounter",
+           "BlockList", "LockoutPolicy", "LockoutPolicyCondition", "LockoutPolicyCounterType",
+           "LockoutPolicyStage", "LockoutStageAction", "UserLockoutState",
            "MachineResolver", "MachineResolverConfig", "MachineToken",
            "MachineTokenOptions", "get_machineresolver_id", "get_machinetoken_ids",
            "MetricAggregate", "MonitoringStats",

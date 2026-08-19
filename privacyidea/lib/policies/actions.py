@@ -237,6 +237,13 @@ class PolicyAction:
     REQUIRE_AUTH_FOR_RESOLVER_DETAILS = "require_auth_for_resolver_details"
     PASSKEY_LOGIN = "passkey_login"
     HIDE_VERSION = "hide_version"
+    AUTHENTICATION_LOG_READ = "authentication_log_read"
+    LOCKOUT_POLICY_READ = "lockout_policy_read"
+    LOCKOUT_POLICY_WRITE = "lockout_policy_write"
+    USER_LOCKOUT_READ = "user_lockout_read"
+    USER_LOCKOUT_RESET = "user_lockout_reset"
+    BLOCKLIST_READ = "blocklist_read"
+    BLOCKLIST_RESET = "blocklist_reset"
 
 
 class PasskeyLoginButtonOptions:

@@ -23,18 +23,22 @@
   [showCancelButton]="true"
   (actionTriggered)="onAction($event)">
   <div class="margin-right-16">
-    <p i18n>
-      Are you sure you want to {{ data.confirmAction.label.toLocaleLowerCase() }}
-      @if (data.items.length > 1) {
-        all selected ({{ data.items.length }}) {{ data.itemType }}s?
-      } @else {
-        this {{ data.itemType }}?
-      }
-    </p>
-    <ul>
-      @for (item of data.items; track item) {
-        <li>{{ item }}</li>
-      }
-    </ul>
+    @if (data.message) {
+      <p>{{ data.message }}</p>
+    } @else {
+      <p i18n>
+        Are you sure you want to {{ data.confirmAction.label.toLocaleLowerCase() }}
+        @if (data.items.length > 1) {
+          all selected ({{ data.items.length }}) {{ data.itemType }}s?
+        } @else {
+          this {{ data.itemType }}?
+        }
+      </p>
+      <ul>
+        @for (item of data.items; track item) {
+          <li>{{ item }}</li>
+        }
+      </ul>
+    }
   </div>
 </app-dialog-wrapper>

@@ -29,10 +29,13 @@ from sqlalchemy.orm.session import close_all_sessions
 
 from privacyidea.app import create_app
 from privacyidea.cli.pimanage import cli as pi_manage
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
 from privacyidea.lib.lifecycle import call_finalizers
 from privacyidea.lib.resolver import (save_resolver, delete_resolver,
                                       get_resolver_list)
-from privacyidea.models import db, Challenge
+from privacyidea.models import db, Challenge, AuthenticationLog, ConditionalAccessOutcome
+from privacyidea.models.lockout_policy import BlockList, UserLockoutState
+from privacyidea.models.utils import utc_now
 from .base import CliTestCase
 from ..base import PWFILE
 
@@ -376,8 +379,8 @@ class PIManageBackupTestCase(CliTestCase):
 
             runner = self.app.test_cli_runner()
             with mock.patch.dict(self.app.config, {
-                    "SQLALCHEMY_DATABASE_URI": "mysql+pymysql://u:p@localhost/pi_test",
-                    "PI_ENCFILE": str(enc_file)}):
+                "SQLALCHEMY_DATABASE_URI": "mysql+pymysql://u:p@localhost/pi_test",
+                "PI_ENCFILE": str(enc_file)}):
                 with mock.patch("privacyidea.cli.pimanage.backup.subprocess.run",
                                 side_effect=failing_run):
                     result = runner.invoke(pi_manage, [
@@ -429,6 +432,7 @@ class PIManageBackupTestCase(CliTestCase):
             # The dump must be kept for inspection, not unlinked.
             self.assertTrue(sqlfile.exists(),
                             "dump file was deleted despite the restore failing")
+
 
 class PIManageRealmTestCase(CliTestCase):
     def test_01_pimanage_realm_help(self):
@@ -920,3 +924,259 @@ class PIManageConfigCRUDTestCase(CliTestCase):
             from privacyidea.lib.policy import delete_policy
             delete_policy("clifilepol")
             os.unlink(pol_path)
+
+
+class PIManageAuthLogTestCase(CliTestCase):
+    """
+    Tests for ``pi-manage authlog cleanup``.
+    """
+
+    def _insert(self, age_days, outcomes=0):
+        # Insert one authentication-log entry aged the given number of days, with *outcomes* conditional-access
+        # outcomes hanging off it.
+        entry = AuthenticationLog(event_type=AuthEventType.LOGIN_SUCCESS, resolver="r", uid="u", realm="rlm",
+                                  timestamp=utc_now() - dt.timedelta(days=age_days))
+        entry.save()
+        for _ in range(outcomes):
+            db.session.add(ConditionalAccessOutcome(auth_log_id=entry.id, action_type="LOCK_USER",
+                                                    policy_name="p", threshold=3, event_count=3))
+        db.session.commit()
+
+    def tearDown(self):
+        # Children first: nothing cascades on SQLite.
+        ConditionalAccessOutcome.query.delete()
+        AuthenticationLog.query.delete()
+        db.session.commit()
+        super().tearDown()
+
+    def test_01_help(self):
+        runner = self.app.test_cli_runner()
+        res = runner.invoke(pi_manage, ["authlog", "cleanup", "-h"])
+        self.assertEqual(res.exit_code, 0, res.output)
+        self.assertIn("Clean up old authentication log entries.", res.output, res)
+
+    def test_02_dryrun(self):
+        self._insert(age_days=10)
+        self._insert(age_days=0)
+        before = AuthenticationLog.query.count()
+
+        runner = self.app.test_cli_runner()
+        res = runner.invoke(pi_manage, ["authlog", "cleanup", "--age", "7", "--dryrun"])
+
+        self.assertEqual(res.exit_code, 0, res.output)
+        self.assertIn("Would delete 1 authentication log entries", res.output, res)
+        self.assertEqual(AuthenticationLog.query.count(), before, "rows were deleted during --dryrun")
+
+    def test_03_cleanup_age(self):
+        self._insert(age_days=10)
+        self._insert(age_days=0)
+
+        runner = self.app.test_cli_runner()
+        res = runner.invoke(pi_manage, ["authlog", "cleanup", "--age", "7"])
+
+        self.assertEqual(res.exit_code, 0, res.output)
+        self.assertEqual(AuthenticationLog.query.count(), 1, "only the recent entry must remain")
+        self.assertIn("Deleted 1 authentication log entries", res.output, res)
+
+    def test_04_cleanup_chunked(self):
+        for _ in range(3):
+            self._insert(age_days=10)
+
+        runner = self.app.test_cli_runner()
+        res = runner.invoke(pi_manage, ["authlog", "cleanup", "--age", "1", "--chunksize", "1"])
+
+        self.assertEqual(res.exit_code, 0, res.output)
+        self.assertEqual(AuthenticationLog.query.count(), 0, "table should be empty after chunked cleanup")
+        self.assertIn("Deleted 3 authentication log entries", res.output, res)
+
+    def test_05_age_required(self):
+        runner = self.app.test_cli_runner()
+        res = runner.invoke(pi_manage, ["authlog", "cleanup"])
+        self.assertNotEqual(res.exit_code, 0, res.output)
+        self.assertIn("--age", res.output, res)
+
+    def test_06_cleanup_removes_the_conditional_access_outcomes_too(self):
+        # Retention is one story for the whole authentication history: an entry's conditional-access outcomes go with
+        # it, including on SQLite, where the foreign key does not cascade and the lib deletes them explicitly.
+        self._insert(age_days=10, outcomes=2)
+        self._insert(age_days=0, outcomes=1)
+
+        runner = self.app.test_cli_runner()
+        res = runner.invoke(pi_manage, ["authlog", "cleanup", "--age", "7"])
+
+        self.assertEqual(0, res.exit_code, res.output)
+        self.assertEqual(1, AuthenticationLog.query.count(), "only the recent entry must remain")
+        self.assertEqual(1, ConditionalAccessOutcome.query.count(), "only the recent entry's outcome must remain")
+
+    def test_07_dryrun_keeps_the_outcomes(self):
+        self._insert(age_days=10, outcomes=2)
+
+        runner = self.app.test_cli_runner()
+        res = runner.invoke(pi_manage, ["authlog", "cleanup", "--age", "7", "--dryrun"])
+
+        self.assertEqual(0, res.exit_code, res.output)
+        self.assertEqual(2, ConditionalAccessOutcome.query.count(), "--dryrun must not delete anything")
+
+
+class PIManageConditionalAccessTestCase(CliTestCase):
+    """
+    Tests for ``pi-manage conditionalaccess`` — the escape hatch for clearing
+    locked users and blocked IPs from the command line.
+    """
+
+    def tearDown(self):
+        BlockList.query.delete()
+        UserLockoutState.query.delete()
+        db.session.commit()
+        super().tearDown()
+
+    def test_01_help_lists_subcommands(self):
+        runner = self.app.test_cli_runner()
+        res = runner.invoke(pi_manage, ["conditionalaccess"])
+        self.assertIn("list-blocked-ips", res.output, res)
+        self.assertIn("unblock-ip", res.output, res)
+        self.assertIn("list-locked-users", res.output, res)
+        self.assertIn("unlock-user", res.output, res)
+
+    def test_02_list_and_unblock_ip(self):
+        runner = self.app.test_cli_runner()
+        res = runner.invoke(pi_manage, ["conditionalaccess", "list-blocked-ips"])
+        self.assertIn("No blocked IPs.", res.output, res)
+
+        db.session.add(BlockList(ip="203.0.113.7", block_expires_at=utc_now() + dt.timedelta(seconds=600)))
+        db.session.commit()
+
+        res = runner.invoke(pi_manage, ["conditionalaccess", "list-blocked-ips"])
+        self.assertIn("203.0.113.7", res.output, res)
+
+        res = runner.invoke(pi_manage, ["conditionalaccess", "unblock-ip", "203.0.113.7"])
+        self.assertIn("Removed the block for IP 203.0.113.7.", res.output, res)
+        self.assertIsNone(BlockList.query.filter_by(ip="203.0.113.7").first())
+
+    def test_03_unblock_missing_ip(self):
+        runner = self.app.test_cli_runner()
+        res = runner.invoke(pi_manage, ["conditionalaccess", "unblock-ip", "203.0.113.9"])
+        self.assertEqual(res.exit_code, 0, res.output)
+        self.assertIn("No block found for IP 203.0.113.9.", res.output, res)
+
+    def test_04_list_and_unlock_by_id(self):
+        runner = self.app.test_cli_runner()
+        db.session.add(UserLockoutState(resolver="reso1", uid="42", realm="realm1",
+                                        lock_expires_at=utc_now() + dt.timedelta(seconds=600)))
+        db.session.commit()
+
+        res = runner.invoke(pi_manage, ["conditionalaccess", "list-locked-users"])
+        self.assertIn("uid=42", res.output, res)
+        self.assertIn("realm=realm1", res.output, res)
+
+        res = runner.invoke(pi_manage, ["conditionalaccess", "unlock-by-id",
+                                        "--resolver", "reso1", "--uid", "42", "--realm", "realm1"])
+        self.assertIn("Unlocked", res.output, res)
+        self.assertIsNone(UserLockoutState.query.filter_by(resolver="reso1", uid="42",
+                                                           realm="realm1").first())
+
+    def test_04b_unlock_by_id_without_resolver(self):
+        # --resolver is optional (disambiguator only); unlock-by-id must work on (uid, realm) alone.
+        runner = self.app.test_cli_runner()
+        db.session.add(UserLockoutState(resolver="reso1", uid="42", realm="realm1",
+                                        lock_expires_at=utc_now() + dt.timedelta(seconds=600)))
+        db.session.commit()
+        res = runner.invoke(pi_manage, ["conditionalaccess", "unlock-by-id", "--uid", "42", "--realm", "realm1"])
+        self.assertEqual(0, res.exit_code, res.output)
+        self.assertIn("Unlocked", res.output, res)
+        self.assertIsNone(UserLockoutState.query.filter_by(uid="42", realm="realm1").first())
+
+    def test_05_clear_blocks(self):
+        runner = self.app.test_cli_runner()
+        for ip in ("203.0.113.7", "203.0.113.8"):
+            db.session.add(BlockList(ip=ip, block_expires_at=utc_now() + dt.timedelta(seconds=600)))
+        db.session.commit()
+
+        res = runner.invoke(pi_manage, ["conditionalaccess", "clear-blocks", "--yes"])
+        self.assertIn("Removed 2 IP block(s).", res.output, res)
+        self.assertEqual(0, BlockList.query.count())
+
+    def test_06_unlock_non_existing_user_works(self):
+        db.session.add(UserLockoutState(resolver="test", realm="nope", username="ghost", uid="1234"))
+        db.session.commit()
+        runner = self.app.test_cli_runner()
+        res = runner.invoke(pi_manage,
+                            ["conditionalaccess", "unlock-user", "ghost", "--realm", "nope", "--resolver", "test"])
+        self.assertEqual(0, res.exit_code, res.output)
+        self.assertEqual(0, UserLockoutState.query.count())
+        self.assertIn("Unlocked user ghost@nope (resolver=test)", res.output, res)
+
+    def test_06_unlock_user_without_resolver(self):
+        # Regression: --resolver is optional (only disambiguates), so unlock-user must still
+        # unlock without it. It used to compile to ``resolver IS NULL`` and silently do nothing.
+        db.session.add(UserLockoutState(resolver="test", realm="nope", username="ghost", uid="1234"))
+        db.session.commit()
+        runner = self.app.test_cli_runner()
+        res = runner.invoke(pi_manage, ["conditionalaccess", "unlock-user", "ghost", "--realm", "nope"])
+        self.assertEqual(0, res.exit_code, res.output)
+        self.assertEqual(0, UserLockoutState.query.count())
+        self.assertIn("Unlocked user ghost@nope", res.output, res)
+
+    def test_06_unlock_user_without_entry(self):
+        runner = self.app.test_cli_runner()
+        res = runner.invoke(pi_manage,
+                            ["conditionalaccess", "unlock-user", "user", "--realm", "nope", "--resolver", "test"])
+        self.assertEqual(0, res.exit_code, res.output)
+        self.assertIn("No lock found for user user@nope", res.output, res)
+
+    def test_07_list_locks_empty(self):
+        runner = self.app.test_cli_runner()
+        res = runner.invoke(pi_manage, ["conditionalaccess", "list-locked-users"])
+        self.assertIn("No locked users.", res.output, res)
+
+    def test_08_unlock_by_id_missing(self):
+        runner = self.app.test_cli_runner()
+        res = runner.invoke(pi_manage, ["conditionalaccess", "unlock-by-id",
+                                        "--resolver", "reso1", "--uid", "999", "--realm", "realm1"])
+        self.assertEqual(res.exit_code, 0, res.output)
+        self.assertIn("No lock found", res.output, res)
+
+    def test_09_clear_locks(self):
+        runner = self.app.test_cli_runner()
+        for uid in ("1", "2", "3"):
+            db.session.add(UserLockoutState(resolver="reso1", uid=uid, realm="realm1",
+                                            lock_expires_at=utc_now() + dt.timedelta(seconds=600)))
+        db.session.commit()
+        res = runner.invoke(pi_manage, ["conditionalaccess", "clear-locks", "--yes"])
+        self.assertIn("Removed 3 user lock(s).", res.output, res)
+        self.assertEqual(0, UserLockoutState.query.count())
+
+    def test_09b_clear_locks_by_realm(self):
+        runner = self.app.test_cli_runner()
+        db.session.add(UserLockoutState(resolver="reso1", uid="1", realm="realm1",
+                                        lock_expires_at=utc_now() + dt.timedelta(seconds=600)))
+        db.session.add(UserLockoutState(resolver="reso2", uid="2", realm="realm2",
+                                        lock_expires_at=utc_now() + dt.timedelta(seconds=600)))
+        db.session.commit()
+        res = runner.invoke(pi_manage, ["conditionalaccess", "clear-locks", "--realm", "realm1", "--yes"])
+        self.assertIn("Removed 1 user lock(s) in realm 'realm1'.", res.output, res)
+        # Only the realm1 lock was removed; realm2 is untouched.
+        self.assertEqual(0, UserLockoutState.query.filter_by(realm="realm1").count())
+        self.assertEqual(1, UserLockoutState.query.filter_by(realm="realm2").count())
+
+    def test_09c_purge_expired_blocks(self):
+        runner = self.app.test_cli_runner()
+        db.session.add(BlockList(ip="203.0.113.7", block_expires_at=utc_now() - dt.timedelta(seconds=60)))  # expired
+        db.session.add(BlockList(ip="203.0.113.8", block_expires_at=utc_now() + dt.timedelta(seconds=600)))  # active
+        db.session.commit()
+        res = runner.invoke(pi_manage, ["conditionalaccess", "purge-expired-blocks"])
+        self.assertIn("Removed 1 stale IP block(s).", res.output, res)
+        # The active block is untouched.
+        self.assertIsNone(BlockList.query.filter_by(ip="203.0.113.7").first())
+        self.assertIsNotNone(BlockList.query.filter_by(ip="203.0.113.8").first())
+
+    def test_09d_purge_expired_locks(self):
+        runner = self.app.test_cli_runner()
+        db.session.add(UserLockoutState(resolver="reso1", uid="1", realm="realm1",
+                                        lock_expires_at=utc_now() - dt.timedelta(seconds=60)))  # expired
+        db.session.add(UserLockoutState(resolver="reso1", uid="2", realm="realm1",
+                                        lock_expires_at=utc_now() + dt.timedelta(seconds=600)))  # active
+        db.session.commit()
+        res = runner.invoke(pi_manage, ["conditionalaccess", "purge-expired-locks"])
+        self.assertIn("Removed 1 stale user lock(s).", res.output, res)
+        self.assertEqual(1, UserLockoutState.query.count())

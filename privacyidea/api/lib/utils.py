@@ -22,7 +22,6 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-from flask_babel import _
 import json
 import logging
 import re
@@ -30,12 +29,17 @@ import string
 import threading
 import time
 from copy import copy
+from typing import TYPE_CHECKING
 from urllib.parse import unquote
 
 import jwt
-from flask import (jsonify,
-                   current_app, request, g, Response)
+from flask import jsonify, current_app, Response, Request, request, g, has_request_context
+from flask_babel import _
 
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
+from privacyidea.lib.conditional_access.authentication_log import AuthLogUserRole, PendingAuthEvent
+from privacyidea.lib.conditional_access.request_context import AuthPrincipal, get_ca_context
+from privacyidea.lib.user import User
 from privacyidea.lib.audit import getAudit
 from privacyidea.lib.config import get_from_config, SYSCONF
 from privacyidea.lib.event import EventConfiguration
@@ -56,9 +60,12 @@ from privacyidea.lib.policy import PolicyClass
 from privacyidea.lib.policy import check_policy_name  # noqa: F401
 from privacyidea.lib.policy import Match, SCOPE
 from privacyidea.lib.policies.actions import PolicyAction
-from ...lib.error import (PolicyError, ResourceNotFoundError,
+from ...lib.error import (ConflictError, PolicyError, ResourceNotFoundError,
                           PrivacyIDEAError, AuthError, Error)
 from ...lib.log import log_with
+
+if TYPE_CHECKING:
+    from privacyidea.lib.conditional_access.context import CAContext
 
 log = logging.getLogger(__name__)
 ENCODING = "utf-8"
@@ -90,6 +97,27 @@ NO_UNQUOTE_USER_AGENTS = {
 
 SESSION_KEY_LENGTH = 32
 
+
+def to_list_param(value):
+    """
+    Normalize a request parameter that may arrive as a JSON list or a comma-separated
+    string into a list of stripped, non-empty string entries. Empty entries are
+    dropped, so ``"a,"`` yields ``["a"]`` and a blank value (``""`` / ``","``) yields
+    an empty list ``[]`` — never ``[""]``, which would otherwise filter on an empty
+    string. A not-supplied parameter (``None``) still yields ``None``.
+
+    An empty list is returned (rather than ``None``) for a supplied-but-blank value so
+    every caller gets an iterable: filter builders treat ``[]`` as "no filter" just like
+    ``None``, while callers that iterate the result (e.g. setting container realms) do
+    not choke on ``None``.
+
+    Unlike :func:`privacyidea.lib.utils.to_list`, this splits a comma-separated string
+    into its entries rather than wrapping the whole string as a single-element list.
+    """
+    if value is None:
+        return None
+    items = value if isinstance(value, (list, tuple)) else str(value).split(",")
+    return [entry for entry in (str(item).strip() for item in items) if entry]
 
 
 def send_result(obj, rid=1, details=None, **kwargs) -> Response:
@@ -236,6 +264,181 @@ def getLowerParams(param):
             lval = param[key]
             ret[lkey] = lval
     return ret
+
+
+def _determine_user_role(user: User | None, internal_admin: bool) -> AuthLogUserRole:
+    """
+    Classify the authenticating principal for the authentication log. A local database admin is only knowable at the
+    caller (``/auth`` via ``verify_db_admin``/``db_admin_exists``) and is signalled by *internal_admin*. Otherwise a
+    user whose realm is a configured ``SUPERUSER_REALM`` is an external (admin-realm) admin; everyone else is a
+    regular user. The superuser realms are only readable inside an app context, so outside one the principal is
+    treated as a regular user (the only events logged outside a request are user token flows, e.g. push_wait).
+    """
+    if internal_admin:
+        return AuthLogUserRole.ADMIN_INTERNAL
+    if user and user.realm and has_request_context():
+        superuser_realms = [realm.lower() for realm in current_app.config.get("SUPERUSER_REALM", [])]
+        if user.realm.lower() in superuser_realms:
+            return AuthLogUserRole.ADMIN_EXTERNAL
+    return AuthLogUserRole.USER
+
+
+def log_authentication(event_type: AuthEventType | None, request: Request | None = None, user: User | None = None,
+                       serial: str | None = None, transaction_id: str | None = None,
+                       username: str | None = None,
+                       internal_admin: bool = False,
+                       immediate: bool = False) -> "PendingAuthEvent | None":
+    """
+    Record one authentication_log entry for the current request.
+
+    This is the single API-layer persistence point: the lib layer classifies
+    the outcome and the views call this to record it. ``source_ip`` uses the
+    same client-IP resolution as the audit log; ``client_label`` is the
+    ``client_id`` parameter if supplied, otherwise the User-Agent header.
+
+    The entry is **staged**, not written: it goes into this request's conditional-access buffer and is written once,
+    with everything else the request staged, at request teardown. A later stage can therefore still amend it (a
+    post-policy correcting the classification just assigns to the returned event), and the request produces one row
+    per event rather than a row plus corrections. The returned :class:`PendingAuthEvent` is that handle; its
+    ``row_id`` is filled in when the row is written.
+
+    Pass *immediate* to flush the buffer on the spot. Needed only when this row has to be ordered ahead of a row that
+    **another request** writes while this one is still running - the ``push_wait`` trigger, whose answer arrives out of
+    band at ``/ttype/push`` during the wait, and whose row ``id`` must therefore stay below that answer's.
+
+    The ``(resolver, uid, realm)`` identity tuple is only written for a resolved
+    user; an unresolvable user (e.g. USER_UNKNOWN) is logged with resolver and uid
+    None while realm and username are still captured from the User object.
+
+    ``username`` overrides the login name derived from the User object. It is needed for
+    local administrators, who have no User object (the login name is not stored there) but
+    whose login name should still be recorded.
+
+    Some requests identify a token but not its user (e.g. the smartphone ``/ttype/push`` confirm carries only the
+    serial). In that case the token owner is resolved from the serial, so a row that names a single token always also
+    records that token's user, keeping the log symmetric.
+
+    ``source_ip`` (from ``g``) and ``client_label`` (from ``request``) are only read inside a request context, so the
+    lib layer can record an event from outside a view (e.g. push_wait). Worst case those two columns are empty; the
+    event itself is never lost.
+
+    ``user_role`` records whether the principal is a regular user or an admin (see :class:`AuthLogUserRole`). Pass
+    ``internal_admin=True`` for a local database admin (``/auth`` only); an admin-realm admin is detected from the
+    user's realm, so the caller need not flag it.
+
+    ``attempt_id`` groups all rows of one logical authentication attempt and is taken off this request's
+    conditional-access context, which resolved it once (see
+    :attr:`~privacyidea.lib.conditional_access.request_context.ConditionalAccessContext.attempt_id`) - there is
+    nothing for a caller to pass.
+    """
+    if not event_type:
+        log.debug("Not logging authentication event, because no event type is given.")
+        return
+    client_label = None
+    source_ip = None
+    if has_request_context():
+        source_ip = g.client_ip
+        if request is not None:
+            client_label = get_optional(request.all_data, "client_id") or (request.user_agent.string or None)
+    # TODO: replace by user function (after related PR is merged)
+    resolved = bool(user and user.resolver)
+    if not resolved and serial and "," not in serial:
+        # The request carried a single serial but no (resolved) user. Resolve the token owner so the user is logged
+        # alongside the serial. A failure here must not break the logging, so it is swallowed.
+        try:
+            from privacyidea.lib.token import get_one_token
+            token = get_one_token(serial=serial, silent_fail=True)
+            if token is not None and token.user and token.user.resolver:
+                user = token.user
+                resolved = True
+        except Exception as ex:
+            log.debug(f"Could not resolve the token owner for the authentication log: {ex!r}")
+    context = get_ca_context()
+    # Fall back to the row's own transaction when nothing has established the attempt yet. ``before_request`` covers
+    # the requests that answer a challenge - it must, since the token logic deletes a challenge it answered
+    # successfully - so this catches the callers that only learn their transaction here: the out-of-band /ttype/push
+    # answer, and a challenge triggered and resolved inside one request (push_wait).
+    context.continue_attempt(transaction_id)
+    if not context.attempt_resolved:
+        answered = get_optional_one_of(getattr(request, "all_data", None) or {}, ["transaction_id", "state"])
+        if answered:
+            # The request continues a transaction, yet no challenge of it records an attempt, so this row starts one of
+            # its own instead of joining the transaction's other rows. Expected for a stale or forged transaction_id.
+            # Otherwise it is the fingerprint of a broken invariant, and the reason this is logged at all: an endpoint
+            # that answers a challenge without ``before_request`` resolving the attempt before the token logic consumes
+            # the challenge, or a ``set_data`` that replaced a challenge's data rather than updating it.
+            log.debug(f"Transaction {answered} has no challenge recording an authentication attempt. The log row for "
+                      f"this request starts a new attempt rather than joining that transaction's.")
+    # Record who this request is authenticating on the request's context, so the policy evaluation acts on the same
+    # principal the row is written for - including the token owner resolved just above, which the caller does not know
+    # about. Kept as an AuthPrincipal rather than a bare User because a local database admin has no user object.
+    context.principal = AuthPrincipal(user=user or User(), username=username, internal_admin=internal_admin)
+    context.source_ip = source_ip
+    event = PendingAuthEvent(
+        event_type=event_type,
+        transaction_id=transaction_id,
+        resolver=user.resolver if resolved else None,
+        uid=user.uid if resolved else None,
+        realm=(user.realm or None) if user else None,
+        username=username or ((user.login or None) if user else None),
+        user_role=_determine_user_role(user, internal_admin),
+        source_ip=source_ip,
+        client_label=client_label,
+        serial=serial,
+        attempt_id=context.attempt_id,
+        immediate=immediate,
+    )
+    context.stage(event)
+    if immediate:
+        context.flush()
+    return event
+
+
+def build_ca_context(user, internal_admin: bool | None = None) -> "CAContext":
+    """
+    Assemble the :class:`~privacyidea.lib.conditional_access.context.CAContext`
+    for the current request — the single parameter object the conditional-access
+    engine evaluates against.
+
+    This is the one place that reads Flask state (``g`` / ``request``) for the
+    engine, keeping the lib layer free of it. Outside a request context (an event
+    recorded from outside a view, e.g. the push_wait flow) the request-scoped
+    fields are simply ``None``; nothing here raises.
+
+    ``internal_admin`` flags a local database admin, which
+    :func:`_determine_user_role` cannot infer from the user object alone (such an
+    admin has no realm to match against ``SUPERUSER_REALM``). Left at ``None`` it
+    is taken from ``g.resolved_user``, which ``/auth``'s ``before_request`` fills
+    in from its own ``db_admin_exists`` lookup — so the **pre-auth** check
+    classifies a local admin correctly without a second query, and endpoints that
+    never see one (``/validate/*``, where ``g.resolved_user`` is absent) fall back
+    to ``False``. Pass it explicitly to override, as ``/auth`` does after the
+    credential check, where the flag is *verified* rather than merely claimed.
+
+    Note the pre-auth value is a claimed identity: it says an admin of that name
+    exists and no realm was given, not that the password was right. That is the
+    same standing as the admin-realm classification, which likewise reads the
+    realm before any credential is checked, and it is what lets a break-glass
+    condition (``USER_ROLE NOT_IN [admin-internal]``) exempt the emergency account
+    from a pre-auth DENY.
+
+    :param user: the authenticating user
+    :param internal_admin: True for a local database admin; ``None`` to derive it
+        from the request
+    :return: the context describing this request
+    """
+    from privacyidea.lib.conditional_access.context import CAContext
+    source_ip = None
+    if has_request_context():
+        # g.get, not g.client_ip: a request context is not a guarantee that before_request got as far
+        # as setting it (an AuthError raised early leaves it unset, which is why
+        # hardening_action_active re-derives it), and this must never turn an authentication into a
+        # 500. A missing source IP simply means source_ip-target policies do not apply.
+        source_ip = g.get("client_ip")
+        if internal_admin is None:
+            internal_admin = g.get("resolved_user", {}).get("is_local_admin", False)
+    return CAContext(user=user or None, source_ip=source_ip,
+                     user_role=str(_determine_user_role(user, bool(internal_admin))))
 
 
 def check_unquote(request, data):
@@ -460,6 +663,7 @@ def map_error_to_code(error: Exception, default: int = 500) -> int:
         AuthError: 401,
         PolicyError: 403,
         ResourceNotFoundError: 404,
+        ConflictError: 409,
         NotImplementedError: 501,
     }
     # return the code for the closest ancestor that is in the map
