@@ -28,10 +28,34 @@ state immediately, without hammering the SQL cluster with throwaway writes.
 
 ### What this is *not*
 
-* **Not a write-through / read-through cache.** When the feature is on,
-  challenges are written to Redis **only** — there is no SQL row to fall back
-  to. The TTL *is* the lifecycle; nothing copies the challenge to SQL.
-* **Not used for anything but challenges (yet).**
+* **Not a write-through / read-through cache** *for challenges*. When that
+  feature is on, challenges are written to Redis **only** — there is no SQL row
+  to fall back to. The TTL *is* the lifecycle; nothing copies the challenge to
+  SQL. The workloads added later do not all work this way — see below.
+* **Not one switch.** Every workload has its own flag and can be rolled out or
+  rolled back on its own.
+
+### The other workloads
+
+Everything below section 3 describes the *challenge* workload, which is the most
+involved one. Three more share the same connection, cooldown and flag machinery:
+
+| Flag | Workload | Relationship to the database |
+|---|---|---|
+| `PI_REDIS_CACHE_USERS` | Login→ID, ID→login and the attributes a resolver returns (`privacyidea/lib/cache/user.py`) | Read-through cache. The user store stays authoritative; a miss asks the resolver. Dropping the keyspace costs a few extra lookups. |
+| `PI_REDIS_CACHE_AUTH` | The entries of the `auth_cache` policy (`privacyidea/lib/cache/auth.py`) | Redis is the store while it is reachable, like challenges — losing an entry costs one real authentication. Falls back to the `authcache` table when Redis is not. |
+| `PI_REDIS_CACHE_HEALTH` | The certificate health results behind the dashboard panel (`privacyidea/lib/health.py`) | Shared copy of a per-process cache. The per-process dictionary stays in front of it; a failure just means this worker probes for itself. |
+
+Two things to know when working on them:
+
+* **The user and auth caches encrypt their values** with `encryptPassword`, because
+  they hold personal data and an Argon2 hash of a password respectively. The
+  challenge and health workloads store plaintext. If you add a workload, decide
+  this deliberately and write it down in the docs.
+* **A cache read must never fail a request.** All three guard the crypto broadly:
+  `decryptPassword` returns a placeholder for a failed decryption, but it reaches
+  the HSM *before* that guard applies, so an HSM that is not ready raises. Falling
+  back to the resolver or the database is always correct; raising is not.
 
 ---
 
@@ -43,6 +67,11 @@ Two settings, both required to actually store challenges in Redis:
 |---|---|
 | `PI_REDIS_URL` | Redis connection URL, e.g. `redis://127.0.0.1:6379/0`. Unset → Redis is completely off, every cache function is a no-op. |
 | `PI_REDIS_CACHE_CHALLENGES` | Per-feature opt-in. `PI_REDIS_URL` alone does **nothing** for challenges; this flag turns the challenge workload on. |
+| `PI_REDIS_CACHE_USERS` | Per-feature opt-in for user store lookups. |
+| `PI_REDIS_USER_CACHE_TTL` | (optional) Lifetime of a user cache entry in seconds. Default `300`; `0` disables the workload. |
+| `PI_REDIS_CACHE_AUTH` | Per-feature opt-in for the `auth_cache` policy's entries. |
+| `PI_REDIS_AUTH_CACHE_TTL` | (optional) Fallback lifetime in seconds, used only when no policy window applies. Default `3600`. |
+| `PI_REDIS_CACHE_HEALTH` | Per-feature opt-in for the certificate health results. Their lifetime is `PI_CERT_CHECK_CACHE_SECONDS`. |
 | `PI_REDIS_RETRY_COOLDOWN` | (optional) Seconds to wait before retrying after a Redis failure. Default `30`. |
 
 The `PI_REDIS_URL` alone-does-nothing design is deliberate: each cacheable
@@ -54,6 +83,9 @@ touching the others.
 ```python
 PI_REDIS_URL = "redis://127.0.0.1:6379/0"
 PI_REDIS_CACHE_CHALLENGES = True
+PI_REDIS_CACHE_USERS = True
+PI_REDIS_CACHE_AUTH = True
+PI_REDIS_CACHE_HEALTH = True
 ```
 
 Environment override (Flask `from_prefixed_env("PRIVACYIDEA")` — note the
@@ -62,6 +94,9 @@ Environment override (Flask `from_prefixed_env("PRIVACYIDEA")` — note the
 ```bash
 PRIVACYIDEA_PI_REDIS_URL=redis://127.0.0.1:6379/0
 PRIVACYIDEA_PI_REDIS_CACHE_CHALLENGES=true
+PRIVACYIDEA_PI_REDIS_CACHE_USERS=true
+PRIVACYIDEA_PI_REDIS_CACHE_AUTH=true
+PRIVACYIDEA_PI_REDIS_CACHE_HEALTH=true
 ```
 
 ### Redis 7 is required
@@ -108,7 +143,7 @@ config keys.
 
 ---
 
-## 3. Where the code lives
+## 3. Where the code lives (challenges)
 
 ```
 privacyidea/lib/cache/
