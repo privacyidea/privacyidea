@@ -197,16 +197,34 @@ class SharedCacheTest(MyTestCase):
         self.assertEqual(0, ldap_mock.call_count)
         self.assertEqual(0, srv_mock.call_count)
 
-    def test_03_a_shared_answer_is_kept_locally_too(self):
+    def test_03_a_shared_answer_answers_again_when_redis_goes_away(self):
+        # The shared copy is consulted first, so the local one is what is left
+        # when Redis stops answering - not a way to skip Redis while it is up
         entries = [{"source": "ldap", "name": "reso", "status": "ok"}]
         self.client.store[health._CERTIFICATE_KEY] = json.dumps(entries)
         with (self._with_client(self.client),
-              patch.object(health, "_check_ldap_resolvers", return_value=[]),
+              patch.object(health, "_check_ldap_resolvers", return_value=[]) as ldap_mock,
               patch.object(health, "_server_cert_entries", return_value=[])):
-            health.get_certificate_status()
-            # The second call in this worker does not ask Redis again
-            self.client.store.clear()
             self.assertEqual(entries, health.get_certificate_status())
+        with (self._with_client(None),
+              patch.object(health, "_check_ldap_resolvers", return_value=[]) as ldap_mock,
+              patch.object(health, "_server_cert_entries", return_value=[])):
+            self.assertEqual(entries, health.get_certificate_status())
+        self.assertEqual(0, ldap_mock.call_count)
+
+    def test_03b_dropping_the_shared_copy_reaches_a_worker_that_has_its_own(self):
+        # The point of dropping the shared copy: a worker holding a local copy
+        # must not keep serving it for the rest of its own TTL
+        stale = [{"source": "ldap", "name": "stale", "status": "ok"}]
+        fresh = [{"source": "ldap", "name": "fresh", "status": "ok"}]
+        self.client.store[health._CERTIFICATE_KEY] = json.dumps(stale)
+        with (self._with_client(self.client),
+              patch.object(health, "_check_ldap_resolvers", return_value=fresh),
+              patch.object(health, "_server_cert_entries", return_value=[])):
+            self.assertEqual(stale, health.get_certificate_status())
+            # This worker now holds the stale answer locally as well
+            health.invalidate_certificate_cache()
+            self.assertEqual(fresh, health.get_certificate_status())
 
     def test_04_a_refresh_probes_and_shares_again(self):
         stale = [{"source": "ldap", "name": "old", "status": "ok"}]

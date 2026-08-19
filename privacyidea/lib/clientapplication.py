@@ -103,14 +103,23 @@ def _note_write(client_key: tuple, interval: int) -> None:
     if len(last_writes) <= _MAX_TRACKED_CLIENTS:
         return
     try:
-        stale = [key for key, written_at in last_writes.items()
-                 if (now - written_at).total_seconds() >= interval]
+        by_age = sorted(last_writes.items(), key=lambda item: item[1])
     except RuntimeError:
         # Another thread added a client while we were looking. Nothing here has
         # to be exact - the entries are only there to skip writes - so leave the
         # pruning to whoever gets there next
         return
-    for key in stale:
+    # Entries past the interval are useless, and dropping those is usually
+    # enough. It is not enough when more clients than the bound are seen inside
+    # one interval - a deployment reached from very many addresses - because
+    # then every entry is still fresh. So the oldest are dropped either way, and
+    # the worst case is that those clients pay one write again.
+    doomed = [key for key, written_at in by_age
+              if (now - written_at).total_seconds() >= interval]
+    if len(last_writes) - len(doomed) > _MAX_TRACKED_CLIENTS:
+        keep_from = len(last_writes) - _MAX_TRACKED_CLIENTS
+        doomed = [key for key, _written_at in by_age[:keep_from]]
+    for key in doomed:
         last_writes.pop(key, None)
 
 

@@ -63,7 +63,7 @@ from uuid import uuid4
 import redis as redis_lib
 from passlib.hash import argon2
 
-from privacyidea.lib.cache.redis import _disable_redis, redis_client_for_feature
+from privacyidea.lib.cache.redis import _disable_redis, redis_client_for_feature, redis_feature_configured
 from privacyidea.lib.crypto import FAILED_TO_DECRYPT_PASSWORD, decryptPassword, encryptPassword
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.models.utils import utc_now
@@ -82,11 +82,13 @@ _DEFAULT_TTL_SECONDS = 3600
 # ``count:<id>`` carries how often it has been used.
 #
 # The counter is a field of its own rather than a member of the record so it can
-# be raised with HINCRBY. Folding it into the encrypted record would turn every
-# cache hit into a read-modify-write, and two concurrent authentications could
-# then both write the same value - letting an entry be used once more than
-# ``max_auths`` allows. The database-backed cache raises the counter in a single
-# UPDATE and does not have that weakness, so neither should this.
+# be raised with HINCRBY, which keeps two concurrent authentications from losing
+# one another's increment the way a read-modify-write of the encrypted record
+# would. It does not make the limit exact: reading the count and raising it are
+# still two round trips, so two authentications can both see the last permitted
+# use and both take it. The database-backed cache has the same gap between its
+# SELECT and its UPDATE, so this is the behaviour it already had - a cached
+# authentication can be spent once more than ``max_auths`` says under a race.
 _USER_KEY = "pi:authcache:v1:{}:{}:{}"  # pi:authcache:v1:<username>:<realm>:<resolver>
 _ENTRY_FIELD = "entry:{}"
 _COUNT_FIELD = "count:{}"
@@ -402,7 +404,9 @@ def cache_enabled() -> bool:
     Return True if cached authentications are kept in Redis rather than in the
     database.
 
-    Used by the cleanup command to explain that it has nothing to delete,
-    instead of reporting a count of zero as though the cache were empty.
+    Reports the *configuration*, not live connectivity: an operator who has
+    enabled the workload should be told the same thing whether or not Redis
+    happens to be reachable at that moment, and a cleanup run must not change
+    what it does because of a passing outage.
     """
-    return _cache_client() is not None
+    return redis_feature_configured(AUTH_CACHE_FEATURE)

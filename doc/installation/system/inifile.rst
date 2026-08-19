@@ -523,7 +523,7 @@ Redis cache
 .. index:: Redis, cache, HA, high availability
 
 privacyIDEA can offload selected state to Redis instead of the SQL database.
-Two workloads use it today:
+Four workloads use it today:
 
 * **Challenges** - challenge data for challenge-response token flows in HA
   setups, where multiple privacyIDEA nodes would otherwise have to round-trip
@@ -546,9 +546,9 @@ its own feature flag and stays off by default.
 
 .. note::
 
-   Redis **7 or later** is required. Both caches rely on the
-   ``EXPIRE ... NX`` and ``EXPIRE ... GT`` options to keep TTLs consistent
-   across concurrent writes; these were introduced in Redis 7.
+   Redis **7 or later** is required. The challenge, user and authentication
+   workloads rely on the ``EXPIRE ... NX`` and ``EXPIRE ... GT`` options to keep
+   TTLs consistent across concurrent writes; these were introduced in Redis 7.
    The version is checked when the connection is established: an older server
    is refused up front, and the worker falls back to DB-only operation (and
    keeps retrying the connection) rather than failing later on the first write.

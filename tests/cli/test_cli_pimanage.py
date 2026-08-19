@@ -879,10 +879,6 @@ class PIManageConfigCRUDTestCase(CliTestCase):
         self.assertIn("Active", result.output)
 
     def test_05_authcache_cleanup(self):
-        # The command deletes rows; with Redis holding the cached authentications
-        # it reports that there is nothing to delete instead (see the Redis auth
-        # cache tests for that branch)
-        self.app.config["PI_REDIS_CACHE_AUTH"] = False
         runner = self.app.test_cli_runner()
         result = runner.invoke(pi_manage, ["config", "authcache", "cleanup"])
         self.assertEqual(result.exit_code, 0, result.output)

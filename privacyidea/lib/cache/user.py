@@ -113,6 +113,9 @@ _LOGIN_KEY = "pi:user:v1:login:{}:{}"  # pi:user:v1:login:<resolver>:<uid>   -> 
 _USER_INFO_KEY = "pi:user:v1:info:{}:{}"  # pi:user:v1:info:<resolver>:<uid> -> attribute dict
 _INDEX_KEY = "pi:user:v1:index:{}"  # pi:user:v1:index:<resolver>            -> SET of the keys above
 
+# How many keys one UNLINK may name when a resolver's entries are dropped.
+_UNLINK_BATCH_SIZE = 500
+
 
 def _ttl_seconds() -> int:
     """
@@ -182,6 +185,14 @@ def _read(client, resolver_name: str, key: str) -> str | None:
         _disable_redis(error)
         return None
     if raw is None:
+        # The name stays in the resolver's index when the entry behind it
+        # expires. Taking it back out here is what keeps the index from growing
+        # to one member per user ever seen: a miss is exactly the moment we
+        # learn the entry is gone.
+        try:
+            client.srem(_INDEX_KEY.format(_segment(resolver_name)), key)
+        except redis_lib.exceptions.RedisError as error:
+            _disable_redis(error)
         return None
     try:
         value = decryptPassword(raw)
@@ -326,6 +337,10 @@ def cached_user_info(resolver, resolver_name: str, user_id, attributes: list[str
              requested attributes
     """
     client = _cache_client()
+    # A resolver reads an empty list of attributes as "all of them", so the cache
+    # has to mean the same thing by it - taking it literally would answer later
+    # requests with an empty user
+    attributes = attributes or None
     if client is None or user_id in (None, ""):
         return resolver.get_user_info(user_id, attributes)
 
@@ -339,8 +354,18 @@ def cached_user_info(resolver, resolver_name: str, user_id, attributes: list[str
 
     user_info = resolver.get_user_info(user_id, attributes)
     if user_info:
-        payload = json.dumps({"attributes": sorted(attributes) if attributes is not None else None,
-                              "info": user_info})
+        try:
+            payload = json.dumps({"attributes": sorted(attributes) if attributes is not None else None,
+                                  "info": user_info})
+        except (TypeError, ValueError) as error:
+            # A resolver may hand back a value JSON has no representation for - a
+            # UUID primary key from an SQL resolver, a datetime from an LDAP
+            # attribute. The answer is already in hand, so the only thing to do is
+            # not cache it. Coercing it to a string instead would let a cache hit
+            # return a different type than a miss.
+            log.warning(f"The user information of {user_id!r} in {resolver_name!r} can not be "
+                        f"serialised, it was not cached: {error}")
+            return user_info
         _write(client, resolver_name, key, payload)
     return user_info
 
@@ -365,7 +390,7 @@ def _covered_user_info(cached: str, attributes: list[str] = None) -> dict | None
         log.warning(f"Ignoring a malformed user cache entry: {error}")
         return None
 
-    if attributes is None:
+    if not attributes:
         # Only an entry that was itself written for all attributes is known to
         # hold all of them
         return user_info if cached_attributes is None else None
@@ -410,15 +435,27 @@ def invalidate_resolver(resolver_name: str) -> None:
     if client is None:
         return
     index_key = _INDEX_KEY.format(_segment(resolver_name))
+    dropped = 0
     try:
-        keys = list(client.sscan_iter(index_key))
-        if keys:
-            client.unlink(*keys)
+        # Deleted in batches rather than as one UNLINK with every member as an
+        # argument: a large directory leaves hundreds of thousands of names in the
+        # index, and handing them to the server in a single command makes it
+        # allocate and work through all of them at once.
+        batch = []
+        for name in client.sscan_iter(index_key):
+            batch.append(name)
+            if len(batch) >= _UNLINK_BATCH_SIZE:
+                client.unlink(*batch)
+                dropped += len(batch)
+                batch = []
+        if batch:
+            client.unlink(*batch)
+            dropped += len(batch)
         client.unlink(index_key)
     except redis_lib.exceptions.RedisError as error:
         _disable_redis(error)
         return
-    log.info(f"Dropped {len(keys)} user cache entries of the resolver {resolver_name!r}.")
+    log.info(f"Dropped {dropped} user cache entries of the resolver {resolver_name!r}.")
 
 
 def flush_user_cache() -> int:

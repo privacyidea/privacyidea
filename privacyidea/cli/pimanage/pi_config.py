@@ -745,17 +745,17 @@ def authcache_cleanup(minutes):
     Remove all entries where the last_auth entry is older than the given number
     of minutes.
 
-    This only concerns the database. With PI_REDIS_CACHE_AUTH enabled, cached
-    authentications live in Redis and expire on their own, so there is nothing
-    here to clean up.
+    With PI_REDIS_CACHE_AUTH enabled, cached authentications live in Redis and
+    expire on their own. The table is still cleaned: an entry written while Redis
+    was unreachable went to the database, and once Redis answers again nothing
+    reads or deletes that row, so this is the only thing that reclaims it.
     """
     from privacyidea.lib.cache.auth import cache_enabled
-    if cache_enabled():
-        click.echo("Cached authentications are kept in Redis, where they expire on their own. "
-                   "Nothing to clean up.")
-        return
     r = cleanup(minutes)
     click.echo(f"{r} entries deleted from authcache")
+    if cache_enabled():
+        click.echo("Cached authentications are kept in Redis, where they expire on their own. "
+                   "Any entries deleted here were written while Redis was unreachable.")
 
 
 config_cli.add_command(authcache_cli)

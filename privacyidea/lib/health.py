@@ -402,27 +402,30 @@ def get_certificate_status(refresh: bool = False) -> list:
 
     With ``PI_REDIS_CACHE_HEALTH`` enabled the results are shared between all
     workers and nodes, so the endpoints are probed once per TTL for the whole
-    installation instead of once per worker process. The per-process dictionary
-    stays in front of it, since a worker that already has the answer has no
-    reason to ask Redis for it.
+    installation instead of once per worker process. The shared copy is consulted
+    *before* the per-process one, which keeps two promises: dropping it reaches
+    every worker rather than only the one that served the request, and an entry
+    cannot outlive its TTL twice over by being re-stamped locally on the way
+    past. The per-process dictionary is what answers when Redis cannot.
     """
     ttl = _cache_ttl()
     now = datetime.datetime.now(tz=datetime.timezone.utc)
     cache_key = "certificates"
     client = _cache_client()
     if not refresh:
-        with _CACHE_LOCK:
-            cached = _CACHE.get(cache_key)
-            if cached and (now - cached[0]).total_seconds() < ttl:
-                return cached[1]
         if client is not None:
             shared = _read_shared_certificates(client)
             if shared is not None:
-                # Hold on to it locally too, so the next request in this worker
-                # does not go to Redis either
+                # Kept locally as well, so this worker still has an answer if
+                # Redis becomes unreachable before the next request
                 with _CACHE_LOCK:
                     _CACHE[cache_key] = (now, shared)
                 return shared
+        else:
+            with _CACHE_LOCK:
+                cached = _CACHE.get(cache_key)
+                if cached and (now - cached[0]).total_seconds() < ttl:
+                    return cached[1]
 
     results = _check_ldap_resolvers()
     results.extend(_check_keycloak_resolvers())

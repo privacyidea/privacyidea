@@ -439,6 +439,46 @@ class UserCacheRedisTestCase(_RealRedisBase):
                 self.assertEqual("1000", cached_user_id(resolver, RESOLVER_NAME, "alice"))
         self.assertEqual(["alice"], resolver.user_id_calls)
 
+    def test_17_a_value_that_cannot_be_serialised_does_not_fail_the_lookup(self):
+        # A resolver may return something JSON cannot represent - a UUID primary
+        # key from an SQL resolver, a datetime from an LDAP attribute. The answer
+        # is already in hand, so the caller gets it and nothing is cached
+        import uuid
+        user_id = uuid.uuid4()
+        resolver = FakeResolver(users={"alice": ("1000", {"username": "alice", "id": user_id})})
+        with user_cache_in_store(self._real_client):
+            self.assertEqual({"username": "alice", "id": user_id},
+                             cached_user_info(resolver, RESOLVER_NAME, "1000", None))
+        self.assertEqual([], list(self._real_client.scan_iter(match="pi:user:v1:info:*")))
+
+    def test_18_an_empty_attribute_list_means_all_of_them(self):
+        # Every resolver reads a falsy attribute list as "all attributes", so a
+        # cached entry written for one must answer the same way. Taking it
+        # literally would hand back an empty user for the rest of the TTL
+        resolver = FakeResolver()
+        with user_cache_in_store(self._real_client):
+            first = cached_user_info(resolver, RESOLVER_NAME, "1000", [])
+            self.assertEqual("alice", first.get("username"))
+            self.assertEqual("alice@example.com", first.get("email"))
+            # Served from the cache this time, and still complete
+            second = cached_user_info(resolver, RESOLVER_NAME, "1000", [])
+            self.assertEqual(first, second)
+        self.assertEqual([("1000", None)], resolver.user_info_calls)
+
+    def test_19_an_expired_entry_leaves_the_resolver_index(self):
+        # Without this the index keeps one member per user ever seen
+        resolver = FakeResolver()
+        with user_cache_in_store(self._real_client):
+            cached_user_id(resolver, RESOLVER_NAME, "alice")
+            key = f"pi:user:v1:uid:{RESOLVER_NAME}:alice"
+            self.assertIn(key, self._real_client.smembers(f"pi:user:v1:index:{RESOLVER_NAME}"))
+            # Simulate the entry expiring while its name stays in the index
+            self._real_client.unlink(key)
+            cached_user_id(resolver, RESOLVER_NAME, "alice")
+        index = self._real_client.smembers(f"pi:user:v1:index:{RESOLVER_NAME}")
+        # The miss took the dead name out; the refetch put the live one back
+        self.assertEqual({key}, index)
+
     def test_16_logins_cannot_reach_another_resolvers_keyspace(self):
         # A login built to look like a key separator must stay inside its own
         # resolver's namespace
