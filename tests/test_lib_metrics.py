@@ -405,13 +405,14 @@ class BufferedWriteTest(MyTestCase):
         self.assertEqual(2, rows[0].count)
 
     def test_samples_are_kept_apart_per_window(self):
-        window = _window_start(_utc_now())
-        with self.app.test_request_context("/user/"):
-            observe("buffer_test", 0.01)
-            # A request that spans a window boundary reports into the window each sample
-            # was taken in, not the one the flush happens in.
-            with patch.object(metrics, "_utc_now",
-                              return_value=_utc_now() + datetime.timedelta(seconds=300)):
+        base = _utc_now()
+        window = _window_start(base)
+        with patch.object(metrics, "_utc_now", return_value=base):
+            with self.app.test_request_context("/user/"):
+                observe("buffer_test", 0.01)
+                # A request that spans a window boundary reports into the window each sample
+                # was taken in, not the one the flush happens in.
+                metrics._utc_now.return_value = base + datetime.timedelta(seconds=300)
                 observe("buffer_test", 0.01)
         windows = sorted(row.window_start for row in self._rows("buffer_test"))
         self.assertEqual([window, window + datetime.timedelta(seconds=300)], windows)
