@@ -137,8 +137,9 @@ export class SubscriptionsWidgetComponent extends DashboardWidget implements OnI
   static override readonly titleLink = ROUTE_PATHS.SUBSCRIPTION;
   static override readonly titleLinkAction = "managesubscription";
   // The default is tall enough for the compact view to show every component without
-  // scrolling; widening it makes room for the detailed view's extra columns.
-  static override readonly defaultSize: WidgetSize = { cols: 8, rows: 10 };
+  // scrolling, at the row height the inherited font size gives; widening it makes room for
+  // the detailed view's extra columns.
+  static override readonly defaultSize: WidgetSize = { cols: 8, rows: 11 };
   static override readonly minSize: WidgetSize = { cols: 5, rows: 4 };
   static override readonly maxSize: WidgetSize = { cols: 16, rows: 16 };
 

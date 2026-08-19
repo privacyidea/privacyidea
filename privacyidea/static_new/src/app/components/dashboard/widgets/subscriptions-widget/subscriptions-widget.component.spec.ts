@@ -139,7 +139,7 @@ describe("SubscriptionsWidgetComponent", () => {
     expect(SubscriptionsWidgetComponent.pinned).toBe(false);
     expect(SubscriptionsWidgetComponent.fixedPosition).toBeNull();
     // Opens tall enough for the compact view to show every component without scrolling.
-    expect(SubscriptionsWidgetComponent.defaultSize).toEqual({ cols: 8, rows: 10 });
+    expect(SubscriptionsWidgetComponent.defaultSize).toEqual({ cols: 8, rows: 11 });
     expect(SubscriptionsWidgetComponent.minSize.cols).toBeLessThan(SubscriptionsWidgetComponent.defaultSize.cols);
     expect(SubscriptionsWidgetComponent.maxSize.cols).toBeGreaterThan(SubscriptionsWidgetComponent.defaultSize.cols);
   });
