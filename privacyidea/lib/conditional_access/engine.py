@@ -86,6 +86,13 @@ class LockoutAction(str, Enum):
         return self.value
 
 
+#: The actions that turn a request away or leave a lockout or blocklist row behind. A stage carrying one of them
+#: describes an enforcement, whether or not that enforcement actually happened.
+ENFORCING_ACTIONS = frozenset({LockoutAction.LOCK_USER, LockoutAction.PERMANENT_LOCK_USER,
+                               LockoutAction.BLOCK_IP, LockoutAction.PERMANENT_BLOCK_IP,
+                               LockoutAction.DENY})
+
+
 class AccessDecision(str, Enum):
     """
     The verdict of the pre-auth conditional-access decision step
@@ -1517,6 +1524,10 @@ def _execute_stage_actions(policy: LockoutPolicy, stage: LockoutPolicyStage,
     # Which rows this stage wrote a restriction to. Their wording is rendered by the caller from the row that
     # survives the whole evaluation, so a stage that restricts carries no message of its own from here.
     restricted: set[LockoutTarget] = set()
+    # Whether any action set out to enforce something, which is not the same as having enforced it: a write can be
+    # declined as weakening or fail outright, and a DENY decides the request pre-auth rather than here. Either way
+    # the stage's wording describes that enforcement, so it must not leave here as a notification.
+    attempted_enforcement = False
 
     user = context.user
     source_ip = context.source_ip
@@ -1531,6 +1542,7 @@ def _execute_stage_actions(policy: LockoutPolicy, stage: LockoutPolicyStage,
         except ValueError:
             log.warning(f"Unknown lockout action type {action.action_type!r} on stage {stage.id}; skipping.")
             continue
+        attempted_enforcement = attempted_enforcement or action_type in ENFORCING_ACTIONS
 
         try:
             if action_type == LockoutAction.LOCK_USER:
@@ -1586,9 +1598,15 @@ def _execute_stage_actions(policy: LockoutPolicy, stage: LockoutPolicyStage,
         except Exception as ex:
             log.warning(f"Lockout action {action_type} (id {action.id}) on stage {stage.id} "
                         f"failed: {ex!r}; skipping.")
+    if stage.error_message and outcomes and attempted_enforcement and not restricted:
+        log.info(f"Not showing the error message of stage {stage.id} (policy {policy.name!r}): it describes an "
+                 "enforcement that was (partially) declined, could not be written, or does not decide this request.")
     # A stage that restricted is described from its row, by the caller; only a notify-only stage carries its
-    # wording from here, since it wrote nothing to read back.
-    rendered = render_error_message(stage.error_message) if outcomes and not restricted else None
+    # wording from here, since it wrote nothing to read back. A stage that enforced nothing after setting out to is
+    # not notify-only either: rendering its wording here would leave a ``{duration}`` unsubstituted and rank it as a
+    # notification, so it stays silent and whatever did take effect speaks for the request - the row that survived,
+    # or the DENY on the request it actually turns away.
+    rendered = render_error_message(stage.error_message) if outcomes and not attempted_enforcement else None
     messages = [StageMessage(rendered, _message_kind(None))] if rendered else []
     return LockoutEvaluation(messages=messages, outcomes=outcomes, restricted_targets=restricted)
 

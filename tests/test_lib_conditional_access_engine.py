@@ -1843,6 +1843,62 @@ class LockoutEngineTestCase(LockoutTestCase):
         evaluation = evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
         self.assertListEqual([StageMessage("Permanent.", MessageKind.PERMANENT_RESTRICTION)], evaluation.messages)
 
+    @smtpmock.activate
+    def test_a_declined_restriction_does_not_speak_as_a_notification(self):
+        # The lower-priority stage restricts nothing - its timed lock would weaken the permanent one written just
+        # before it - but its mail goes out, so the stage did something. That must not turn its wording into a
+        # notification: it describes a lock, and rendering it here would append it to the failure with the
+        # {duration} it has no restriction to substitute against.
+        smtpmock.setdata(response={})
+        add_smtpserver(identifier="lockoutmail", server="1.2.3.4", tls=False)
+        try:
+            self._make_policy(name="perm", counter_type=AuthEventType.MFA_FAIL, priority=1,
+                              stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.PERMANENT_LOCK_USER)],
+                                                      error_message="Permanent."),))
+            self._make_policy(
+                name="timed", counter_type=AuthEventType.MFA_FAIL, priority=2,
+                stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.LOCK_USER, 600),
+                                               StageActionDefinition(LockoutAction.EMAIL_ADMIN,
+                                                                     {"smtp_identifier": "lockoutmail",
+                                                                      "recipient_group": "soc@example.com",
+                                                                      "subject": "s", "body": "b"})],
+                                        error_message="Locked for {duration}."),))
+            self._seed_events(AuthEventType.MFA_FAIL, 3)
+            evaluation = evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+            self.assertListEqual([StageMessage("Permanent.", MessageKind.PERMANENT_RESTRICTION)],
+                                 evaluation.messages)
+            # The declined lock recorded nothing, the mail that did go out did.
+            self.assertEqual([str(LockoutAction.PERMANENT_LOCK_USER), str(LockoutAction.EMAIL_ADMIN)],
+                             [outcome.action_type for outcome in evaluation.outcomes])
+        finally:
+            delete_smtpserver("lockoutmail")
+
+    @smtpmock.activate
+    def test_a_deny_stage_does_not_speak_from_the_post_response_engine(self):
+        # A DENY decides the request pre-auth, where its wording is rendered (_evaluate_rejection). Here it is a
+        # no-op - the count only reaches the threshold once this request's own event is written - so the mail is
+        # the whole of what this stage did, and the wording that describes the denial must not be appended to a
+        # request the denial did not turn away.
+        smtpmock.setdata(response={})
+        add_smtpserver(identifier="lockoutmail", server="1.2.3.4", tls=False)
+        try:
+            self._make_policy(
+                name="denyandmail", counter_type=AuthEventType.MFA_FAIL,
+                stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.DENY),
+                                               StageActionDefinition(LockoutAction.EMAIL_ADMIN,
+                                                                     {"smtp_identifier": "lockoutmail",
+                                                                      "recipient_group": "soc@example.com",
+                                                                      "subject": "s", "body": "b"})],
+                                        error_message="Access denied."),))
+            self._seed_events(AuthEventType.MFA_FAIL, 3)
+            evaluation = evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+            self.assertListEqual([], evaluation.messages)
+            # The DENY records nothing here either - it is recorded by the decision step that makes it.
+            self.assertEqual([str(LockoutAction.EMAIL_ADMIN)],
+                             [outcome.action_type for outcome in evaluation.outcomes])
+        finally:
+            delete_smtpserver("lockoutmail")
+
     # --- _safe_format / _resolve_admin_recipients -----------------------------
 
     def test_safe_format_leaves_unknown_tags_and_never_raises(self):
