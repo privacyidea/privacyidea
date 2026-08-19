@@ -71,6 +71,7 @@ from privacyidea.lib.realm import get_realms
 from privacyidea.lib.resolver import get_resolver_list, CENSORED
 from privacyidea.lib.health import get_certificate_status
 from privacyidea.lib.metrics import get_metrics, cleanup_old_metrics
+from privacyidea.lib.cache.user import flush_user_cache
 from privacyidea.lib.usercache import delete_user_cache
 from privacyidea.lib.utils import hexlify_and_unicode, b64encode_and_unicode, is_true
 from .auth import admin_required
@@ -777,7 +778,10 @@ def delete_user_cache_api():
        }
     """
     row_count = delete_user_cache()
-    g.audit_object.log({"success": True, "info": f"Deleted {row_count} entries from user cache"})
+    flushed_resolvers = flush_user_cache()
+    g.audit_object.log({"success": True,
+                        "info": f"Deleted {row_count} entries from user cache, "
+                                f"flushed {flushed_resolvers} resolvers from the Redis user cache"})
     return send_result({"status": True, "deleted": row_count})
 
 

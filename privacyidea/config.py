@@ -73,6 +73,10 @@ class ConfigKey:
 
     REDIS_URL = "PI_REDIS_URL"
     REDIS_CACHE_CHALLENGES = "PI_REDIS_CACHE_CHALLENGES"
+    REDIS_CACHE_USERS = "PI_REDIS_CACHE_USERS"
+    REDIS_USER_CACHE_TTL = "PI_REDIS_USER_CACHE_TTL"
+    REDIS_CACHE_AUTH = "PI_REDIS_CACHE_AUTH"
+    REDIS_AUTH_CACHE_TTL = "PI_REDIS_AUTH_CACHE_TTL"
     REDIS_RETRY_COOLDOWN = "PI_REDIS_RETRY_COOLDOWN"
 
     AUDIT_SQL_URI = "PI_AUDIT_SQL_URI"
@@ -171,6 +175,10 @@ class TestingConfig(Config):
     PI_REDIS_URL = os.environ.get(ConfigKey.REDIS_URL)
     PI_REDIS_CACHE_CHALLENGES = (os.environ.get(ConfigKey.REDIS_CACHE_CHALLENGES, "false").lower()
                                  in ("true", "1", "yes", "on"))
+    PI_REDIS_CACHE_USERS = (os.environ.get(ConfigKey.REDIS_CACHE_USERS, "false").lower()
+                            in ("true", "1", "yes", "on"))
+    PI_REDIS_CACHE_AUTH = (os.environ.get(ConfigKey.REDIS_CACHE_AUTH, "false").lower()
+                           in ("true", "1", "yes", "on"))
     # This is used to encrypt the admin passwords
     PI_PEPPER = ""
     # This is only for testing encrypted files

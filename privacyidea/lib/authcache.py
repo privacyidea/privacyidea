@@ -27,6 +27,7 @@ from sqlalchemy import update, select, delete
 
 from ..models import AuthCache, db
 from ..models.utils import utc_now
+from .cache import auth as redis_auth_cache
 
 ROUNDS = 9
 log = logging.getLogger(__name__)
@@ -36,12 +37,29 @@ def _hash_password(password):
     return argon2.using(rounds=ROUNDS).hash(password)
 
 
-def add_to_cache(username: str, realm: str, resolver: str, password: str) -> int:
+def add_to_cache(username: str, realm: str, resolver: str, password: str,
+                 max_age_seconds: int = None) -> int:
+    """
+    Remember a successful authentication so the next one within the policy's
+    window does not have to reach the user store.
+
+    :param username: login name of the user
+    :param realm: realm of the user
+    :param resolver: resolver name of the user
+    :param password: the password that authenticated
+    :param max_age_seconds: how long the entry may be used, from the policy.
+        Only Redis can act on it - a database row has no lifetime of its own and
+        is removed by the cleanup job instead.
+    :return: the id of the database row, or 0 if the entry went to Redis, which
+        has no row to identify
+    """
+    auth_hash = _hash_password(password)
+    log.debug(f'Adding record to auth cache: ({username!r}, {realm!r}, {resolver!r}, {auth_hash!r})')
+    if redis_auth_cache.add_to_cache(username, realm, resolver, auth_hash, max_age_seconds):
+        return 0
     # Can not store timezone aware timestamps!
     first_auth = utc_now()
-    auth_hash = _hash_password(password)
     record = AuthCache(username, realm, resolver, auth_hash, first_auth, first_auth)
-    log.debug(f'Adding record to auth cache: ({username!r}, {realm!r}, {resolver!r}, {auth_hash!r})')
     r = record.save()
     return r
 
@@ -70,6 +88,12 @@ def delete_from_cache(username: str, realm: str, resolver: str, password: str,
     authentication of the entry is before this time point, it is not valid anymore.
     :param max_auths: Maximum number of allowed authentications.
     """
+    deleted_in_redis = redis_auth_cache.delete_from_cache(username, realm, resolver, password,
+                                                         last_valid_cache_time=last_valid_cache_time,
+                                                         max_auths=max_auths)
+    if deleted_in_redis is not None:
+        return deleted_in_redis
+
     stmt = select(AuthCache).where(AuthCache.username == username,
                                    AuthCache.realm == realm,
                                    AuthCache.resolver == resolver)
@@ -132,6 +156,14 @@ def verify_in_cache(username, realm, resolver, password, first_auth=None, last_a
     :type max_auths: int
     :return:
     """
+    cached = redis_auth_cache.verify_in_cache(username, realm, resolver, password,
+                                              first_auth=first_auth, last_auth=last_auth,
+                                              max_auths=max_auths)
+    if cached is not None:
+        # Redis holds the cached authentications, so its answer is the whole
+        # answer - a miss there is a miss, not a reason to look in the database
+        return cached
+
     result = False
 
     select_stmt = select(AuthCache).where(AuthCache.username == username, AuthCache.realm == realm,

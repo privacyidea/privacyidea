@@ -228,6 +228,28 @@ def _flush_redis_between_tests():
     _flush_worker_redis()
 
 
+@pytest.fixture(autouse=True)
+def _clear_ldap_resolver_cache():
+    """Give every test a clean LDAP resolver cache.
+
+    ``LDAPIdResolver.CACHE`` is a module-level dictionary keyed on the resolver
+    ID, which is derived from the resolver's configuration. Two tests that
+    configure an LDAP resolver the same way therefore share one cache entry,
+    even across test files, and nothing ever empties it. Any test that asserts
+    on the cache is then order-dependent: it passes when its file runs alone and
+    fails when it runs after a file that happened to build a resolver with the
+    same configuration.
+
+    Clearing before each test makes the empty cache every such test already
+    assumes a guarantee instead of a coincidence. No test populates the cache in
+    one method and reads it in another, so there is nothing to preserve between
+    them.
+    """
+    from privacyidea.lib.resolvers.LDAPIdResolver import CACHE
+    CACHE.clear()
+    yield
+
+
 CAKEY = "cakey.pem"
 CACERT = "cacert.pem"
 OPENSSLCNF = "openssl.cnf"

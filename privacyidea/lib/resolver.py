@@ -49,6 +49,7 @@ from typing import Any
 
 from sqlalchemy import func, delete, select
 
+from privacyidea.lib.cache.user import invalidate_resolver
 from privacyidea.lib.framework import get_request_local_store
 from privacyidea.lib.usercache import delete_user_cache
 from privacyidea.lib.utils import (sanity_name_check, get_data_from_params,
@@ -184,6 +185,7 @@ def save_resolver(params):
 
     # Remove corresponding entries from the user cache
     delete_user_cache(resolver=resolvername)
+    invalidate_resolver(resolvername)
     save_config_timestamp()
     db.session.commit()
 
@@ -296,6 +298,7 @@ def delete_resolver(resolvername):
 
     # Remove corresponding entries from the user cache
     delete_user_cache(resolver=resolvername)
+    invalidate_resolver(resolvername)
 
     # Resolver TLS endpoints may have changed - drop cached cert health.
     from privacyidea.lib.health import invalidate_certificate_cache

@@ -54,6 +54,8 @@ from typing import Any
 
 from sqlalchemy import select, delete
 
+from privacyidea.lib.cache.user import (cached_user_id, cached_user_info, cached_username,
+                                       invalidate_user)
 from privacyidea.lib.error import ParameterError, ResolverError, UserError
 from privacyidea.models import CustomUserAttribute, InternalUserAttribute, db
 from .config import get_from_config, SYSCONF
@@ -132,13 +134,13 @@ class User:
                 raise UserError(f"The resolver '{self.resolver!s}' does not exist!")
             if self.uid is None:
                 # Determine the uid
-                self.uid = resolver.getUserId(self.login)
+                self.uid = cached_user_id(resolver, self.resolver, self.login)
             if not self.login:
                 # Determine the login if it does not exist or
-                self.used_login = self.login = resolver.getUsername(self.uid)
+                self.used_login = self.login = cached_username(resolver, self.resolver, self.uid)
             if resolver.has_multiple_loginnames:
                 # if the resolver has multiple logins the primary login might be another value!
-                self.login = resolver.getUsername(self.uid)
+                self.login = cached_username(resolver, self.resolver, self.uid)
 
     def is_empty(self) -> bool:
         # ignore if only resolver is set! as it makes no sense
@@ -242,7 +244,7 @@ class User:
             log.info(f"Resolver {resolvername!r} not found!")
             return False
         else:
-            uid = resolver.getUserId(self.login)
+            uid = cached_user_id(resolver, resolvername, self.login)
             if uid not in ["", None]:
                 log.info(f"user {self.login!r} found in resolver {resolvername!r}")
                 log.info(f"userid resolved to {uid!r} ")
@@ -309,7 +311,7 @@ class User:
         # others to not completely break the LDAP cache
         if attributes is not None and "groups" not in attributes and "groups" in available_attributes:
             available_attributes.remove("groups")
-        full_user_info = resolver.get_user_info(uid, available_attributes)
+        full_user_info = cached_user_info(resolver, self.resolver, uid, available_attributes)
         # only return requested attributes
         user_info = {key: value for key, value in full_user_info.items() if attributes is None or key in attributes}
         # Now add the custom attributes, this is used e.g. in ADDUSERINRESPONSE
@@ -644,6 +646,7 @@ class User:
                         success = True
                         # Delete entries corresponding to the old username from the user cache
                         delete_user_cache(username=self.login, resolver=self.resolver)
+                        invalidate_user(self.resolver, login=self.login, user_id=uid)
                         # If necessary, update the username
                         if attributes.get("username"):
                             self.login = attributes.get("username")
@@ -682,6 +685,7 @@ class User:
                         log.info(f"Successfully deleted user {self!r}.")
                         # Delete corresponding entry from the user cache
                         delete_user_cache(username=self.login, resolver=self.resolver)
+                        invalidate_user(self.resolver, login=self.login, user_id=uid)
                     else:  # pragma: no cover
                         log.info(f"user {self!r} failed to update.")
 
@@ -1007,7 +1011,7 @@ def get_username(user_id: str, resolvername: str) -> str:
     if user_id:
         resolver = get_resolver_object(resolvername)
         if resolver:
-            username = resolver.getUsername(user_id)
+            username = cached_username(resolver, resolvername, user_id)
     return username
 
 
