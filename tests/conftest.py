@@ -270,6 +270,25 @@ def _clear_clientapplication_write_throttle():
     yield
 
 
+@pytest.fixture(autouse=True)
+def _clear_subscription_user_count():
+    """Let every test see the users it created itself.
+
+    The subscription check reuses the number of users with active tokens for a
+    short while instead of counting them on every authentication. The number is
+    kept in the app-local store, which outlives a single test, so a test that
+    assigns tokens and then authenticates could otherwise be judged against a
+    count taken before its users existed.
+    """
+    from privacyidea.lib.framework import get_app_local_store
+    from privacyidea.lib.subscriptions import _USER_COUNT_KEY
+    try:
+        get_app_local_store().pop(_USER_COUNT_KEY, None)
+    except RuntimeError:
+        pass
+    yield
+
+
 CAKEY = "cakey.pem"
 CACERT = "cacert.pem"
 OPENSSLCNF = "openssl.cnf"

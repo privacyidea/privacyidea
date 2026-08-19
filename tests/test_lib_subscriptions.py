@@ -1,17 +1,23 @@
 """
 This test file tests the lib.subscriptions.py
 """
+import time
 from datetime import datetime, timedelta
 
 import mock
 
+from privacyidea.lib.framework import get_app_local_store
 from privacyidea.lib.subscriptions import (save_subscription,
                                            delete_subscription,
                                            get_subscription,
+                                           get_users_with_active_tokens,
                                            raise_exception_probability,
                                            check_subscription,
                                            SubscriptionError,
-                                           subscription_status)
+                                           subscription_status,
+                                           _USER_COUNT_KEY,
+                                           _count_interval_seconds,
+                                           _users_with_active_tokens_for_check)
 from privacyidea.lib.token import init_token
 from privacyidea.lib.user import User
 from .base import MyTestCase
@@ -51,6 +57,17 @@ SUBSCRIPTION4 = {'by_address': 'provider-address', 'for_email': 'customer@exampl
 
 
 class SubscriptionApplicationTestCase(MyTestCase):
+
+    def setUp(self):
+        super().setUp()
+        # These tests assign tokens and expect the very next check to judge the
+        # subscription against them. The check normally reuses the number of
+        # users it counted moments ago, so count on every check here instead.
+        self.app.config["PI_SUBSCRIPTION_COUNT_INTERVAL"] = 0
+
+    def tearDown(self):
+        self.app.config.pop("PI_SUBSCRIPTION_COUNT_INTERVAL", None)
+        super().tearDown()
 
     def test_01_subscriptions(self):
         r = save_subscription(SUBSCRIPTION1)
@@ -173,3 +190,73 @@ class SubscriptionApplicationTestCase(MyTestCase):
         res = subscription_status()
         # Token count < 50
         self.assertEqual(0, res)
+
+
+class SubscriptionUserCountTestCase(MyTestCase):
+    """
+    ``check_subscription`` runs on every authentication carrying a known
+    plugin's user agent, so it does not count the users every time.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.app.config["PI_SUBSCRIPTION_COUNT_INTERVAL"] = 60
+
+    def tearDown(self):
+        self.app.config.pop("PI_SUBSCRIPTION_COUNT_INTERVAL", None)
+        get_app_local_store().pop(_USER_COUNT_KEY, None)
+        super().tearDown()
+
+    def test_01_the_users_are_counted_once_per_interval(self):
+        with mock.patch("privacyidea.lib.subscriptions.get_users_with_active_tokens",
+                        return_value=1) as mock_count:
+            for _ in range(5):
+                self.assertEqual(1, _users_with_active_tokens_for_check(50))
+        self.assertEqual(1, mock_count.call_count)
+
+    def test_02_an_interval_of_zero_counts_every_time(self):
+        self.app.config["PI_SUBSCRIPTION_COUNT_INTERVAL"] = 0
+        with mock.patch("privacyidea.lib.subscriptions.get_users_with_active_tokens",
+                        return_value=1) as mock_count:
+            for _ in range(3):
+                _users_with_active_tokens_for_check(50)
+        self.assertEqual(3, mock_count.call_count)
+
+    def test_03_a_number_that_would_deny_access_is_never_reused(self):
+        # Tokens deleted a moment ago would otherwise keep users locked out for
+        # the rest of the interval, so the count is taken again before the
+        # subscription can be declared exceeded
+        get_app_local_store()[_USER_COUNT_KEY] = (time.monotonic(), 80)
+        with mock.patch("privacyidea.lib.subscriptions.get_users_with_active_tokens",
+                        return_value=10) as mock_count:
+            self.assertEqual(10, _users_with_active_tokens_for_check(50))
+        self.assertEqual(1, mock_count.call_count)
+
+    def test_04_a_number_within_the_subscription_is_reused(self):
+        get_app_local_store()[_USER_COUNT_KEY] = (time.monotonic(), 10)
+        with mock.patch("privacyidea.lib.subscriptions.get_users_with_active_tokens",
+                        return_value=99) as mock_count:
+            self.assertEqual(10, _users_with_active_tokens_for_check(50))
+            # Exactly at the limit is still within it
+            get_app_local_store()[_USER_COUNT_KEY] = (time.monotonic(), 50)
+            self.assertEqual(50, _users_with_active_tokens_for_check(50))
+        self.assertEqual(0, mock_count.call_count)
+
+    def test_05_a_number_older_than_the_interval_is_counted_again(self):
+        get_app_local_store()[_USER_COUNT_KEY] = (time.monotonic() - 61, 10)
+        with mock.patch("privacyidea.lib.subscriptions.get_users_with_active_tokens",
+                        return_value=11) as mock_count:
+            self.assertEqual(11, _users_with_active_tokens_for_check(50))
+        self.assertEqual(1, mock_count.call_count)
+
+    def test_06_a_malformed_interval_falls_back_to_the_default(self):
+        self.app.config["PI_SUBSCRIPTION_COUNT_INTERVAL"] = "not a number"
+        self.assertEqual(60, _count_interval_seconds())
+        self.app.config["PI_SUBSCRIPTION_COUNT_INTERVAL"] = -5
+        self.assertEqual(0, _count_interval_seconds())
+
+    def test_07_the_displayed_count_stays_exact(self):
+        # The subscription overview and the statistics task must not be served a
+        # number that was counted a minute ago
+        get_app_local_store()[_USER_COUNT_KEY] = (time.monotonic(), 4711)
+        self.assertEqual(0, get_users_with_active_tokens())

@@ -300,6 +300,19 @@ reads that precisely. Each worker process skips the write for a client it wrote
 within the interval, so ``lastseen`` is behind by at most that much. Set it to
 ``0`` to write on every request.
 
+``PI_SUBSCRIPTION_COUNT_INTERVAL`` (default ``60`` seconds) sets how long the
+number of users with active tokens may be reused between subscription checks.
+The check runs on every authentication that carries a known plugin's user agent,
+and counting those users means a ``DISTINCT`` across the whole ``tokenowner`` and
+``token`` tables. A number is only reused while it stays within what the
+subscription allows: as soon as it would say the subscription is exceeded, the
+users are counted again, so an authentication is never refused on the strength of
+a number that may be out of date. The other direction is the accepted trade - a
+user given a token within the interval may not be counted yet, which changes
+nothing for enforcement that is deliberately probabilistic. The subscription
+overview and the statistics task always count exactly. Set it to ``0`` to count
+on every check.
+
 Metrics and certificate health
 ------------------------------
 
