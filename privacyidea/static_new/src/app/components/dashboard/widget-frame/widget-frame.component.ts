@@ -17,8 +17,8 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { CdkDragHandle } from "@angular/cdk/drag-drop";
-import { NgComponentOutlet } from "@angular/common";
-import { Component, computed, inject, input, viewChild } from "@angular/core";
+import { NgComponentOutlet, NgTemplateOutlet } from "@angular/common";
+import { Component, computed, inject, input, TemplateRef, viewChild } from "@angular/core";
 import { MatIconButton } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 import { MatProgressSpinner } from "@angular/material/progress-spinner";
@@ -35,12 +35,22 @@ interface DashboardWidgetLike {
   partialLoading?: () => boolean;
   refreshFailed?: () => boolean;
   reload?: () => void;
+  headerActions?: () => TemplateRef<unknown> | undefined;
 }
 
 @Component({
   selector: "app-widget-frame",
   standalone: true,
-  imports: [NgComponentOutlet, MatIcon, MatIconButton, MatProgressSpinner, MatTooltip, CdkDragHandle, RouterLink],
+  imports: [
+    NgComponentOutlet,
+    NgTemplateOutlet,
+    MatIcon,
+    MatIconButton,
+    MatProgressSpinner,
+    MatTooltip,
+    CdkDragHandle,
+    RouterLink
+  ],
   templateUrl: "./widget-frame.component.html",
   styleUrl: "./widget-frame.component.scss"
 })
@@ -79,6 +89,11 @@ export class WidgetFrameComponent {
   });
 
   protected readonly headerIcon = computed(() => this.widgetType()?.headerIcon ?? null);
+
+  protected readonly headerActions = computed(() => {
+    const instance = this.outlet()?.componentInstance as DashboardWidgetLike | undefined;
+    return instance?.headerActions?.() ?? null;
+  });
 
   protected readonly titleLink = computed(() => {
     if (this.layoutService.editMode()) {
