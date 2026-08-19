@@ -788,8 +788,7 @@ class LockoutPolicyTestCase(MyTestCase):
                                      priority=10)
         stage15.save()
 
-        # Stages are ordered by descending priority, so the most severe
-        # stage comes first
+        # Stages are ordered by descending priority, so the most severe stage comes first
         self.assertEqual([15, 5], [s.failure_threshold for s in policy.stages])
         self.assertEqual(policy_id, stage5.policy.id)
 
@@ -814,9 +813,8 @@ class LockoutPolicyTestCase(MyTestCase):
         self.assertEqual([], LockoutStageAction.query.all())
 
     def test_03_counter_types_to_track_is_a_list(self):
-        # A policy can track several counter types; the counter_types_to_track
-        # association proxy over the normalized child table round-trips the list
-        # (order preserved).
+        # A policy can track several counter types: the counter_types_to_track association proxy over the
+        # normalized child table round-trips the list, preserving order.
         policy = LockoutPolicy(name="Multi counter policy",
                                counter_types_to_track=[AuthEventType.PASSWORD_FAIL, AuthEventType.MFA_FAIL,
                                                        AuthEventType.TOKEN_ONLY_FAIL],
@@ -860,10 +858,8 @@ class LockoutPolicyTestCase(MyTestCase):
         self.assertEqual([], LockoutPolicyCondition.query.filter_by(policy_id=policy_id).all())
 
     def test_05_condition_is_unique_per_type(self):
-        # Conditions are ANDed, so two of the same type on one policy could only
-        # narrow to a contradiction; the (policy_id, condition_type) constraint
-        # rejects them. Every other not-null column is filled in, so the
-        # IntegrityError can only be that constraint.
+        # Conditions are ANDed: two of the same type on one policy would only narrow to a contradiction, so the
+        # (policy_id, condition_type) constraint rejects them (every other required column here is already filled in).
         policy = LockoutPolicy(name="Duplicate condition policy",
                                counter_types_to_track=[AuthEventType.MFA_FAIL],
                                time_window_seconds=600,
@@ -952,8 +948,8 @@ class ConditionalAccessOutcomeTestCase(MyTestCase):
         self.assertNotIn("timestamp", outcome_dict)
 
     def test_03_an_action_with_nothing_to_record_has_no_info(self):
-        # EMAIL_* / DENY create no restriction, and a permanent lock has no expiry, so there is nothing action-specific
-        # to store: the column stays NULL rather than holding an empty dict.
+        # EMAIL_* / DENY create no restriction, and a permanent lock has no expiry, so there is nothing
+        # action-specific to store: the column stays NULL rather than holding an empty dict.
         auth_log_id = self._authentication_log_row()
         outcome = self._make_outcome(auth_log_id, action_type="EMAIL_ADMIN")
         self._store(outcome)

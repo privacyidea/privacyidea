@@ -72,9 +72,9 @@ class LockoutPolicyCrudTestCase(MyTestCase):
 
     @staticmethod
     def _clear():
-        # Roll back anything a failed CRUD call left pending, then drop all rows. expunge_all clears the identity map
-        # so a persistent object a test loaded (e.g. via a rejected update) cannot collide with a later test that
-        # reuses the same primary key - mirroring the per-request session teardown that isolates this in production.
+        # Roll back anything a failed CRUD call left pending, then delete all rows; expunge_all clears the identity map
+        # so a test's stale loaded object can't collide with a later test reusing the same primary key, mirroring the
+        # per-request session teardown that isolates this in production.
         db.session.rollback()
         for model in (LockoutStageAction, LockoutPolicyStage, LockoutPolicyCondition,
                       LockoutPolicyCounterType, LockoutPolicy):
@@ -254,9 +254,9 @@ class LockoutPolicyCrudTestCase(MyTestCase):
         self.assertEqual(CountMode.DISTINCT_USERS, get_lockout_policy(ip_id)["count_mode"])
 
     def test_02g_count_mode_target_compatibility(self):
-        # DISTINCT_USERS is the one mode specific to source_ip (there is no distinct-accounts notion for a single
-        # user), so it is the only incompatible pair and is rejected before anything is written. The volume modes are
-        # valid for either target.
+        # DISTINCT_USERS is the one mode specific to source_ip (there is no distinct-accounts notion for a single user),
+        # so it is the only incompatible target/mode pair and is rejected before anything is written; the volume modes
+        # are valid for either target.
         self.assertRaisesRegex(
             ParameterError,
             "count_mode 'DISTINCT_USERS' is not allowed for target 'user'",
@@ -285,9 +285,8 @@ class LockoutPolicyCrudTestCase(MyTestCase):
 
     def test_02h_update_target_revalidates_count_mode(self):
         # Switching a source_ip policy (default DISTINCT_USERS) to user without also fixing the mode is rejected: the
-        # effective (target, count_mode) pair is validated, not just each field in isolation, and DISTINCT_USERS is
-        # invalid for a user target. (The compatible switch that also supplies a volume count_mode is covered
-        # end-to-end by the API test suite.)
+        # effective (target, count_mode) pair is validated, not just each field in isolation. (The compatible switch
+        # that also supplies a volume count_mode is covered end-to-end by the API test suite.)
         reject_id = create_lockout_policy(
             "Reject", 300, ["PASSWORD_FAIL"], [self._ip_stage()], target=LockoutTarget.SOURCE_IP, priority=1
         )
@@ -320,8 +319,8 @@ class LockoutPolicyCrudTestCase(MyTestCase):
         self.assertEqual(["MFA_FAIL", "PIN_FAIL"], get_lockout_policy(policy_id)["counter_types_to_track"])
 
     def test_02c_event_types_written_by_conditional_access_are_not_trackable(self):
-        # A policy counting its own rejections is a lock that feeds itself: while the user is locked every request adds
-        # to the count, so a re-triggering lock never expires and no successful login can clear it. Refusing the value
+        # A policy counting its own rejections is a lock that feeds itself: while the user is locked, every request adds
+        # to the count, so a re-triggering lock never expires and no successful login can clear it; refusing the value
         # at the CRUD boundary makes that impossible rather than merely discouraged.
         for event_type in CA_ENFORCEMENT_EVENT_TYPES:
             self.assertRaises(
@@ -407,9 +406,8 @@ class LockoutPolicyCrudTestCase(MyTestCase):
         self.assertEqual(1, db.session.query(LockoutPolicyStage).count())
         self.assertEqual(1, db.session.query(LockoutPolicyCounterType).count())
         self.assertEqual(1, db.session.query(LockoutStageAction).count())
-        # replacing children with a reused counter type / threshold stays within
-        # the (policy_id, counter_type) and (policy_id, failure_threshold) unique
-        # constraints
+        # replacing children with a reused counter type / threshold stays within the (policy_id, counter_type) and
+        # (policy_id, failure_threshold) unique constraints
         update_lockout_policy(
             policy_id, counter_types_to_track=["MFA_FAIL"], stages=[_stage(3, actions=[{"action_type": "ALLOW"}])]
         )
@@ -461,10 +459,9 @@ class LockoutPolicyCrudTestCase(MyTestCase):
         self.assertRaises(ResourceNotFoundError, enable_lockout_policy, 424242)
 
     def test_08_actions_by_target_is_exhaustive(self):
-        # Guard the manual registration in _ACTIONS_BY_TARGET so a newly added enum
-        # option is not silently forgotten: every LockoutTarget must have an entry
-        # (a missing key would KeyError at validation), and every LockoutAction must
-        # be allowed on at least one target (else it is unusable on any policy).
+        # Guards the manual registration in _ACTIONS_BY_TARGET so a newly added enum option isn't silently forgotten:
+        # every LockoutTarget must have an entry (a missing key would KeyError at validation), and every LockoutAction
+        # must be allowed on at least one target, or it is unusable on any policy.
         self.assertSetEqual(
             set(LockoutTarget), set(_ACTIONS_BY_TARGET), "a LockoutTarget is missing from _ACTIONS_BY_TARGET"
         )
@@ -472,9 +469,9 @@ class LockoutPolicyCrudTestCase(MyTestCase):
         self.assertSetEqual(set(LockoutAction), covered, "a LockoutAction is not assignable to any target")
 
     def test_09_count_modes_by_target_is_exhaustive(self):
-        # Guard the per-target count-mode registration like test_08 does for actions: every target needs an entry in
-        # both maps (a missing key KeyErrors at validation), each target's default must be one of its allowed modes,
-        # and every CountMode must be usable on some target (else it is dead).
+        # Guards the per-target count-mode registration like test_08 does for actions: every target needs an entry in
+        # both maps (a missing key KeyErrors at validation), each target's default must be one of its allowed modes, and
+        # every CountMode must be usable on some target, or it is dead.
         self.assertSetEqual(
             set(LockoutTarget), set(_COUNT_MODES_BY_TARGET), "a LockoutTarget is missing from _COUNT_MODES_BY_TARGET"
         )
@@ -542,10 +539,9 @@ class LockoutPolicyCrudTestCase(MyTestCase):
         self.assertEqual(5, policy["priority"])
 
     def test_14_create_priority_race_reported_as_parameter_error(self):
-        # The app-level uniqueness check races with concurrent writers: two
-        # requests can both pass validation and only collide at the DB unique
-        # constraint on commit. That must surface as a clean ParameterError
-        # (a 400), not bubble as a 500, and must leave the session usable.
+        # The app-level uniqueness check races with concurrent writers: two requests can both pass validation and only
+        # collide at the DB unique constraint on commit. That must surface as a clean ParameterError (a 400), not bubble
+        # as a 500, and must leave the session usable.
         create_lockout_policy("Winner", 600, ["PIN_FAIL"], [_stage()], target=LockoutTarget.USER, priority=1)
         # Bypass the app-level check to force the DB-constraint path (the race window).
         with mock.patch.object(
@@ -651,9 +647,9 @@ class LockoutPolicyCrudTestCase(MyTestCase):
         self.assertListEqual([("P7", 7)], self._order())
 
     def test_24_reorder_only_the_moved_rows_is_equivalent_to_sending_all(self):
-        # The rows whose position changes are the permutation's support (a union of
-        # cycles), so the values they hold are the same before and after: sending only
-        # them must land exactly the order that sending everything would.
+        # The rows whose position changes are the permutation's support (a union of cycles), so they hold the same set
+        # of priority values before and after the swap; sending only those rows must therefore land exactly the order
+        # that sending every row would.
         a, b, c, d = self._numbered(1, 2, 3, 4)
         # drag P4 two places up: A P4 B C  ->  the moved rows are P4, P2, P3
         reorder_lockout_policies([d, b, c], expected_priorities=[4, 2, 3])
@@ -676,9 +672,8 @@ class LockoutPolicyCrudTestCase(MyTestCase):
         self.assertListEqual([("P2", 1), ("P1", 2)], self._order())
 
     def test_27_reorder_assertion_ignores_untouched_policies(self):
-        # Two admins rearranging disjoint parts of the list must both succeed: the
-        # assertion covers only the submitted rows, so an unrelated change is not a
-        # conflict. This is the whole point of sending a subset.
+        # Two admins rearranging disjoint parts of the list must both succeed: the assertion covers only the submitted
+        # rows, so an unrelated change is not a conflict - this is the whole point of sending a subset.
         a, b, c, d = self._numbered(1, 2, 3, 4)
         reorder_lockout_policies([d, c], expected_priorities=[4, 3])  # admin 2 swaps P3/P4
         reorder_lockout_policies([b, a], expected_priorities=[2, 1])  # admin 1 swaps P1/P2
@@ -777,12 +772,11 @@ class LockoutPolicyCrudTestCase(MyTestCase):
         self.assertRaises(ParameterError, self._create_with_conditions, "Malformed", "not a list")
 
     def test_36a_falsy_non_list_conditions_are_rejected(self):
-        # A falsy non-list must be a 400 like any other malformed value, not be read as "no conditions":
-        # that would create a policy applying to *everyone*, the wrong direction to fail for an
-        # access-control policy. Only an omitted parameter means unconditioned (test_30).
-        # Distinct name *and* priority per case on purpose: both are unique across policies, so if the
-        # validation regressed, the first case would leak a policy and every later one would raise on the
-        # collision instead of on the value - passing for the wrong reason and hiding the regression.
+        # A falsy non-list must be a 400 like any other malformed value, not read as "no conditions": that would create
+        # a policy applying to *everyone*, the wrong direction to fail for an access-control policy. Only an omitted
+        # parameter means unconditioned (test_30). Distinct name *and* priority per case is deliberate: both are unique
+        # across policies, so a validation regression would leak a policy on the first case, and every later case would
+        # then raise on that collision instead of on the value - passing for the wrong reason and hiding the regression.
         for index, conditions in enumerate((0, False, {}, "")):
             with self.subTest(conditions=conditions):
                 self.assertRaises(ParameterError, self._create_with_conditions,

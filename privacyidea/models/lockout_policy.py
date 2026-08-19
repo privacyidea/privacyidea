@@ -66,14 +66,13 @@ class LockoutPolicy(MethodsMixin, db.Model):
     name: Mapped[str] = mapped_column(Unicode(255), nullable=False, unique=True)
     time_window_seconds: Mapped[int] = mapped_column(Integer, nullable=False)
     enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
-    # With dry_run the policy is evaluated and the decision is logged,
-    # but no action is enforced.
+    # With dry_run set, the policy is evaluated and logged but no action is enforced.
     dry_run: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     priority: Mapped[int] = mapped_column(Integer, nullable=False)
     # The identity this policy counts and acts on: "user" or "source_ip".
     target: Mapped[str] = mapped_column(Unicode(100), nullable=False)
-    # How the tracked counters are counted against the stage thresholds: per authentication_log row
-    # ("PER_REQUEST", the default) or per whole authentication attempt ("PER_ATTEMPT").
+    # Counting mode against the stage thresholds: per authentication_log row
+    # (PER_REQUEST) or per whole authentication attempt (PER_ATTEMPT).
     count_mode: Mapped[str] = mapped_column(Unicode(20), default=CountMode.PER_REQUEST, nullable=False)
 
     stages: Mapped[list["LockoutPolicyStage"]] = relationship(
@@ -81,28 +80,22 @@ class LockoutPolicy(MethodsMixin, db.Model):
         back_populates="policy",
         cascade="all, delete-orphan",
         order_by="LockoutPolicyStage.priority.desc()")
-    # The failure counter type(s) this policy tracks, normalized into the
-    # lockout_policy_counter_types child table so the per-request lookup can be a
-    # single indexed equality filter (``counter_type = :event_type``) instead of
-    # loading every enabled policy and filtering a JSON list in Python.
+    # The failure counter type(s) this policy tracks, normalized into this indexed child table: the
+    # per-request lookup is one equality filter on counter_type, avoiding a Python scan of every enabled policy.
     counter_types: Mapped[list["LockoutPolicyCounterType"]] = relationship(
         "LockoutPolicyCounterType",
         back_populates="policy",
         cascade="all, delete-orphan",
         order_by="LockoutPolicyCounterType.id")
-    # List-of-strings view over ``counter_types``: read it like a list, and assign
-    # a list (e.g. ``LockoutPolicy(counter_types_to_track=["PIN_FAIL"])``) to
-    # create the child rows. Order of assignment is preserved.
+    # List-of-strings view over ``counter_types``: read it like a list, and assign a list (e.g.
+    # ``LockoutPolicy(counter_types_to_track=["PIN_FAIL"])``) to create the child rows, in order.
     counter_types_to_track: AssociationProxy[list[str]] = association_proxy(
         "counter_types", "counter_type",
         creator=lambda counter_type: LockoutPolicyCounterType(counter_type=counter_type))
-    # Restrictions on *whether* this policy applies to a request at all, evaluated
-    # against the request context before anything is counted. All of them must
-    # match (AND); no rows at all means the policy applies to everyone.
-    # Ordered by condition_type rather than by id: they are ANDed, so evaluation order
-    # is irrelevant, and a canonical order means the same set of conditions always
-    # reads back identically no matter what order it was written in - which is what
-    # lets a client compare a policy against its own draft without sorting first.
+    # Whether this policy applies to a request, evaluated before anything is counted: all conditions
+    # must match (AND); none at all means the policy applies to everyone.
+    # Ordered by condition_type, not id, so the same set of conditions always reads back in the same
+    # order, letting a client compare a policy against its own draft without sorting first.
     conditions: Mapped[list["LockoutPolicyCondition"]] = relationship(
         "LockoutPolicyCondition",
         back_populates="policy",
@@ -203,8 +196,7 @@ class LockoutPolicyStage(MethodsMixin, db.Model):
     """
     __tablename__ = 'lockout_policy_stages'
     __table_args__ = (
-        # The unique constraint's backing index also serves lookups by
-        # policy_id, so no separate index is needed.
+        # The unique constraint's backing index also serves lookups by policy_id, so no separate index is needed.
         UniqueConstraint('policy_id', 'failure_threshold',
                          name='uq_lockout_stage_policy_threshold'),
     )
@@ -279,13 +271,12 @@ class UserLockoutState(MethodsMixin, db.Model):
     resolver: Mapped[str] = mapped_column(case_sensitive_unicode(120), primary_key=True)
     uid: Mapped[str] = mapped_column(case_sensitive_unicode(320), primary_key=True)
     realm: Mapped[str] = mapped_column(case_sensitive_unicode(255), primary_key=True)
-    # Denormalized login captured at lock time (the primary key is uid-based). It lets the management
-    # views display and filter by name, and lets a user-scoped read policy be enforced in SQL, without a
-    # live resolver lookup (which would also fail for a since-deleted user).
+    # Denormalized login captured at lock time; lets management views display/filter by name and lets
+    # a user-scoped read policy be enforced in SQL without a live resolver lookup, which fails for a deleted user.
     username: Mapped[str | None] = mapped_column(case_sensitive_unicode(255), nullable=True)
     lock_expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
-    # When the lock was applied; refreshed on each (re)lock, so it reflects the start of the
-    # current active lock rather than a generic audit timestamp.
+    # When the lock was applied; refreshed on each (re)lock, so it marks the start of the current
+    # active lock, not a generic audit timestamp.
     locked_at: Mapped[datetime] = mapped_column(
         DateTime, default=utc_now, onupdate=utc_now, nullable=False)
 
@@ -310,14 +301,12 @@ class BlockList(MethodsMixin, db.Model):
     (:class:`~privacyidea.models.conditional_access_outcome.ConditionalAccessOutcome`).
     """
     __tablename__ = 'block_list'
-    # TODO: the blocked identity is a source IP for now. A future revision may
-    # block other identifiers (device, API key, ...); the suggested shape is then
-    # generic columns (id, entry_type, value) instead of an IP-typed primary key.
-    # 50 matches authentication_log.source_ip, which is wide enough for an
-    # IPv4-mapped IPv6 address.
+    # TODO: the blocked identity is a source IP for now; a future revision may generalize to other
+    # identifiers (device, API key, ...) via generic columns (id, entry_type, value).
+    # 50 matches authentication_log.source_ip, wide enough for an IPv4-mapped IPv6 address.
     ip: Mapped[str] = mapped_column(Unicode(50), primary_key=True)
     block_expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
-    # When the block was applied; refreshed on each (re)block, so it reflects the start of the
-    # current active block rather than a generic audit timestamp.
+    # When the block was applied; refreshed on each (re)block, so it marks the start of the current
+    # active block, not a generic audit timestamp.
     blocked_at: Mapped[datetime] = mapped_column(
         DateTime, default=utc_now, onupdate=utc_now, nullable=False)

@@ -138,8 +138,8 @@ def record_outcomes(outcomes: Sequence[ConditionalAccessOutcome], auth_log_id: i
         return False
     label = ("the conditional-access outcome" if len(outcomes) == 1
              else f"the {len(outcomes)} conditional-access outcomes")
-    # Named `write` rather than `outcome`: in this module that word already means a conditional-access outcome, and
-    # this is the result of the database write.
+    # Named `write`, not `outcome`, because `outcome` already means a conditional-access outcome in this module;
+    # `write` is the database-write result.
     with guarded_write(f"{label} of authentication log entry {auth_log_id}") as write:
         for outcome in outcomes:
             outcome.auth_log_id = auth_log_id

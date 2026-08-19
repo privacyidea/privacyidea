@@ -143,9 +143,8 @@ class LockoutEngineTestCase(LockoutTestCase):
         self.assertEqual(2, count_distinct_users_for_ip(ip, [AuthEventType.PASSWORD_FAIL], 300, window_end=now))
 
     def test_count_distinct_users_for_ip_counts_unknown_usernames(self):
-        # Enumeration / credential stuffing: many *nonexistent* usernames from one IP never resolve
-        # (resolver/uid/realm are NULL), so keying on the identity tuple would collapse them all to one.
-        # Keying on the attempted username counts each guess as a distinct targeted account.
+        # Nonexistent usernames from one IP have no resolved identity (NULL resolver/uid/realm), so counting keys on
+        # the attempted username, keeping each guess a distinct account rather than collapsing them into one.
         ip = "10.0.0.9"
         self._seed_ip_unknown_events(ip, AuthEventType.USER_UNKNOWN, [f"guess{i}" for i in range(8)])
         self.assertEqual(8, count_distinct_users_for_ip(ip, [AuthEventType.USER_UNKNOWN], 300))
@@ -158,8 +157,8 @@ class LockoutEngineTestCase(LockoutTestCase):
         self.assertEqual(5, count_distinct_users_for_ip(ip, [AuthEventType.PASSWORD_FAIL], 300))
 
     def test_count_distinct_users_for_ip_userless_rows_collapse(self):
-        # A request with no user at all (e.g. an initial usernameless passkey auth) has a NULL username
-        # and must not inflate the signal: any number of such rows collapses into a single group.
+        # A userless request (e.g. an initial usernameless passkey auth) has a NULL username, so any number of such
+        # rows collapses into one group rather than inflating the signal.
         ip = "10.0.0.11"
         self._seed_ip_unknown_events(ip, AuthEventType.CHALLENGE_ANSWERED_FAIL, [None, None, None, None])
         self.assertEqual(1, count_distinct_users_for_ip(ip, [AuthEventType.CHALLENGE_ANSWERED_FAIL], 300))
@@ -209,15 +208,15 @@ class LockoutEngineTestCase(LockoutTestCase):
 
     def test_count_ip_attempts_login_success_supersedes_failure_in_attempt(self):
         # A LOGIN_SUCCESS is terminal for its attempt (fetched even though untracked), so a failed row in the same
-        # attempt does not make it count as a failure.
+        # attempt does not count as a failure.
         ip = "10.1.0.6"
         self._seed_ip_attempt(ip, "won", [AuthEventType.PASSWORD_FAIL, AuthEventType.LOGIN_SUCCESS])
         self._seed_ip_attempt(ip, "lost", [AuthEventType.PASSWORD_FAIL])
         self.assertEqual(1, count_ip_attempts(ip, [AuthEventType.PASSWORD_FAIL], 300))
 
     def test_count_ip_volume_modes_do_not_reset_on_success(self):
-        # A successful login by one account must not clear per-IP volume aggregated across the IP (unlike the user
-        # counters' since_last_success). Both volume modes keep counting the pre-success failures.
+        # A successful login by one account must not clear per-IP volume aggregated across the IP, unlike the user
+        # counters' since_last_success; both volume modes keep counting the pre-success failures.
         ip = "10.1.0.7"
         self._seed_ip_attempt(ip, "s1", [AuthEventType.PASSWORD_FAIL])
         self._seed_ip_attempt(ip, "s2", [AuthEventType.PASSWORD_FAIL])
@@ -226,7 +225,7 @@ class LockoutEngineTestCase(LockoutTestCase):
         self.assertEqual(2, count_ip_attempts(ip, [AuthEventType.PASSWORD_FAIL], 300))
 
     def test_source_ip_per_request_policy_blocks_on_volume_from_one_user(self):
-        # PER_REQUEST on a source_ip target = plain per-IP rate limiting: raw request volume from a single account
+        # PER_REQUEST on a source_ip target is plain per-IP rate limiting: raw request volume from a single account
         # trips it, where the DISTINCT_USERS spraying signal (1 distinct user) never would.
         ip = "203.0.113.20"
         self._make_policy(name="ratelimit", counter_type=AuthEventType.PASSWORD_FAIL, window=300,
@@ -284,8 +283,8 @@ class LockoutEngineTestCase(LockoutTestCase):
     def test_count_user_events_excludes_future_rows(self):
         now = utc_now()
         self._seed_events(AuthEventType.MFA_FAIL, 2, timestamp=now - timedelta(seconds=60))
-        # A row time-stamped after `now` (clock skew, a concurrent insert, or an
-        # explicitly historical `now`) must not be counted: the window ends at `now`.
+        # A row timestamped after `now` (clock skew, a concurrent insert, or an explicitly historical `now`) must
+        # not be counted, since the window ends at `now`.
         self._seed_events(AuthEventType.MFA_FAIL, 1, timestamp=now + timedelta(seconds=60))
         self.assertEqual(2, count_user_events(self.user.resolver, self.user.uid, self.user.realm,
                                               [AuthEventType.MFA_FAIL], 3600, window_end=now))
@@ -329,8 +328,7 @@ class LockoutEngineTestCase(LockoutTestCase):
                                               since_last_success=True))
 
     def test_count_user_events_combined_types(self):
-        # A list of event types is counted together (OR-sum), not per type; an
-        # untracked type does not contribute.
+        # A list of event types is counted together (OR-sum), not per type; an untracked type does not contribute.
         self._seed_events(AuthEventType.PASSWORD_FAIL, 2)
         self._seed_events(AuthEventType.TOKEN_ONLY_FAIL, 3)
         self._seed_events(AuthEventType.MFA_FAIL, 4)
@@ -368,7 +366,7 @@ class LockoutEngineTestCase(LockoutTestCase):
         self.assertEqual(1, self._count_attempts([AuthEventType.LOGIN_SUCCESS]))
 
     def test_count_attempts_login_success_absorbs_later_stray(self):
-        # A stray answer replayed after the attempt already logged in (same attempt_id, higher id) must not
+        # A stray answer replayed after the attempt already logged in (same attempt_id, higher row id) must not
         # flip the success to a failure.
         self._seed_attempt("a1", [AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.LOGIN_SUCCESS,
                                   AuthEventType.CHALLENGE_ANSWERED_FAIL])
@@ -376,8 +374,8 @@ class LockoutEngineTestCase(LockoutTestCase):
         self.assertEqual(0, self._count_attempts([AuthEventType.CHALLENGE_ANSWERED_FAIL]))
 
     def test_count_attempts_multichallenge_order_by_id(self):
-        # Same event types, opposite order: the representative is the latest event (by row id), which an
-        # event-type ranking could not tell apart.
+        # Same event types in opposite order: the representative is the latest event by row id, which an
+        # event-type ranking could not distinguish.
         # Wrong answer then progressed (continue) -> in progress, not a failure.
         self._seed_attempt("a1", [AuthEventType.MFA_FAIL, AuthEventType.CHALLENGE_CONTINUED])
         # Progressed then failed the next challenge -> a failure.
@@ -386,12 +384,11 @@ class LockoutEngineTestCase(LockoutTestCase):
         self.assertEqual(1, self._count_attempts([AuthEventType.CHALLENGE_CONTINUED]))  # only a1
 
     def test_count_attempts_ignores_a_conditional_access_rejection_row(self):
-        # The rejection rows conditional access writes for itself are not outcomes *of* the attempt and must not
-        # classify one. The representative is the latest row by id, so a rejection correlated into an existing attempt
-        # (a client retrying an answered transaction while locked) would otherwise displace the tracked failure with an
-        # untracked type and *remove* an attempt that had already been counted - which would stop an escalation from
-        # reaching its next stage once the lock expired. Excluding the type from the trackable vocabulary cannot help
-        # here: every in-window row of the subject is fetched, whatever its type.
+        # A rejection row conditional access wrote for itself is not an attempt outcome: since the representative is
+        # the latest row by id, letting it classify would displace a tracked failure and remove an already-counted
+        # attempt, stalling escalation once the lock expires.
+        # Excluding the type from the trackable vocabulary would not help, since every in-window row of the subject
+        # is fetched regardless of its type.
         self._seed_attempt("a1", [AuthEventType.MFA_FAIL])
         self.assertEqual(1, self._count_attempts([AuthEventType.MFA_FAIL]))
 
@@ -419,7 +416,7 @@ class LockoutEngineTestCase(LockoutTestCase):
 
     def test_count_attempts_since_last_success_resets(self):
         # A successful attempt floors the per-attempt count: only failed attempts after the last completed login
-        # count, so a good login clears the slate (the per-attempt counterpart of count_user_events' reset).
+        # count, so a good login clears the slate - the per-attempt counterpart of count_user_events' reset.
         self._seed_attempt("a1", [AuthEventType.MFA_FAIL])
         self._seed_attempt("a2", [AuthEventType.LOGIN_SUCCESS])
         self._seed_attempt("a3", [AuthEventType.MFA_FAIL])
@@ -627,8 +624,8 @@ class LockoutEngineTestCase(LockoutTestCase):
         self.assertIsNone(self._state())
 
     def test_evaluate_combined_count_across_tracked_types(self):
-        # A policy tracking several types locks on the *combined* count: 2 + 1 = 3
-        # reaches the threshold even though neither type alone does.
+        # A policy tracking several types locks on the combined count: 2 + 1 = 3 reaches the threshold even though
+        # neither type alone does.
         self._make_policy(name="combo",
                           counter_type=[AuthEventType.PASSWORD_FAIL, AuthEventType.MFA_FAIL])
         self._seed_events(AuthEventType.PASSWORD_FAIL, 2)
@@ -638,8 +635,8 @@ class LockoutEngineTestCase(LockoutTestCase):
         self.assertTrue(is_user_locked(self.user))
 
     def test_evaluate_untracked_current_event_skips_policy(self):
-        # The policy only reacts when the *current* event type is one it tracks,
-        # even if enough events of its tracked types already exist.
+        # The policy only reacts when the current event type is one it tracks, even if enough events of its tracked
+        # types already exist.
         self._make_policy(name="combo",
                           counter_type=[AuthEventType.PASSWORD_FAIL, AuthEventType.PIN_FAIL])
         self._seed_events(AuthEventType.PASSWORD_FAIL, 3)
@@ -651,9 +648,8 @@ class LockoutEngineTestCase(LockoutTestCase):
         self.assertTrue(is_user_locked(self.user))
 
     def test_stage_exact_threshold_selection(self):
-        # A stage fires only at its EXACT threshold: threshold 5 (mild) and
-        # threshold 15 (severe). An intermediate count between the two triggers
-        # nothing; each stage fires when its own threshold is hit exactly.
+        # A stage fires only at its exact threshold - here 5 (mild) and 15 (severe) - so an intermediate count
+        # between the two triggers nothing.
         _, stages = self._make_policy(
             name="tiers", counter_type=AuthEventType.MFA_FAIL,
             stages=(StageDefinition(15, 2, [StageActionDefinition(LockoutAction.LOCK_USER, 1800)]),
@@ -673,16 +669,14 @@ class LockoutEngineTestCase(LockoutTestCase):
         self.assertListEqual([severe_stage.failure_threshold], self._triggered_thresholds())
 
     def test_successful_login_resets_lock_counter(self):
-        # A completed login clears the accumulated failures: the threshold then
-        # applies to failures *after* the login, so a single later typo does not
-        # re-lock a user who already authenticated successfully.
+        # A completed login clears the accumulated failures, so the threshold applies only to failures after the
+        # login and a single later typo does not re-lock an already-authenticated user.
         now = utc_now()
         self._make_policy(name="lock3", counter_type=AuthEventType.MFA_FAIL)
         self._seed_events(AuthEventType.MFA_FAIL, 3, timestamp=now - timedelta(seconds=300))
         self._seed_events(AuthEventType.LOGIN_SUCCESS, 1, timestamp=now - timedelta(seconds=200))
 
-        # One failure after the successful login: 1 < 3 -> not locked, the three
-        # pre-login failures no longer count.
+        # One failure after the successful login: 1 < 3, not locked - the three pre-login failures no longer count.
         self._seed_events(AuthEventType.MFA_FAIL, 1, timestamp=now - timedelta(seconds=100))
         evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL, now=now)
         self.assertIsNone(self._state())
@@ -695,7 +689,7 @@ class LockoutEngineTestCase(LockoutTestCase):
 
     def test_expired_lock_is_reapplied_when_the_threshold_is_still_met(self):
         # An expired lock leaves the failures in the window, so the stage locks the user again rather than leaving a
-        # dead zone in which the threshold is met but nothing is in force.
+        # dead zone where the threshold is met but nothing is in force.
         self._make_policy(name="lock3", counter_type=AuthEventType.MFA_FAIL)
         self._seed_events(AuthEventType.MFA_FAIL, 3)
         evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
@@ -712,8 +706,8 @@ class LockoutEngineTestCase(LockoutTestCase):
         self.assertTrue(is_user_locked(self.user))
 
     def test_admin_unlock_is_undone_when_the_threshold_is_still_met(self):
-        # An admin lifting the lock deletes the row, but the failures stay in the window, so the stage locks the user
-        # again on the next evaluation.
+        # An admin lifting the lock deletes the row, but the failures stay in the window, so the stage locks the
+        # user again on the next evaluation.
         self._make_policy(name="lock3", counter_type=AuthEventType.MFA_FAIL)
         self._seed_events(AuthEventType.MFA_FAIL, 3)
         evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
@@ -729,9 +723,8 @@ class LockoutEngineTestCase(LockoutTestCase):
         self.assertTrue(is_user_locked(self.user))
 
     def test_fire_once_default_does_not_refire_above_threshold(self):
-        # Default (retrigger_above_threshold unset): after the lock expires, a
-        # further failure that pushes the count above the threshold does NOT
-        # re-fire the threshold-3 stage.
+        # By default (retrigger_above_threshold unset), a further failure that pushes the count above the
+        # threshold after the lock expires does not re-fire the threshold-3 stage.
         self._make_policy(name="lock3", counter_type=AuthEventType.MFA_FAIL)
         self._seed_events(AuthEventType.MFA_FAIL, 3)
         evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
@@ -748,9 +741,8 @@ class LockoutEngineTestCase(LockoutTestCase):
         self.assertFalse(is_user_locked(self.user))
 
     def test_retrigger_above_threshold_refires(self):
-        # With retrigger_above_threshold the action keeps firing while the count is
-        # at or above its threshold: after the lock expires, a further failure
-        # (count 4 >= 3) re-locks the classic way.
+        # With retrigger_above_threshold set, the action keeps firing while the count stays at or above its
+        # threshold, so after the lock expires a further failure (count 4 >= 3) re-locks the user.
         _, stages = self._make_policy(name="lock3", counter_type=AuthEventType.MFA_FAIL)
         stages[0].actions[0].retrigger_above_threshold = True
         db.session.commit()
@@ -776,8 +768,8 @@ class LockoutEngineTestCase(LockoutTestCase):
         self.assertFalse(is_user_locked(self.user))
 
     def test_dry_run_returns_an_outcome_for_every_action_it_would_have_run(self):
-        # A dry-run policy writes no state; what it *would* have done comes back as outcomes for the caller to record
-        # as this request's history (the engine itself never writes them).
+        # A dry-run policy writes no state; what it would have done comes back as outcomes for the caller to record
+        # as this request's history, since the engine itself never writes them.
         policy, _stages = self._make_policy(name="dry", counter_type=AuthEventType.MFA_FAIL, dry_run=True)
         self._seed_events(AuthEventType.MFA_FAIL, 3)
         evaluation = evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
@@ -791,16 +783,17 @@ class LockoutEngineTestCase(LockoutTestCase):
         self.assertEqual(3, outcome.event_count)
         # An unnamed stage contributes no name; the threshold identifies the stage either way.
         self.assertIsNone(outcome.stage_name)
-        # The expiry the lock *would* have had, so a dry run is comparable with an enforced one. Action-specific
-        # detail lives in `info`, not in a column only two of the seven action types would ever fill.
+        # The outcome carries the expiry the lock would have had, for comparison with an enforced run; action-specific
+        # detail lives in `info` (JSON) rather than a dedicated column, since only two of the seven action types
+        # would ever use it.
         self.assertIn("expires_at", outcome.info)
         # Still a dry run: no lockout state is ever written.
         self.assertIsNone(self._state())
         self.assertFalse(is_user_locked(self.user))
 
     def test_dry_run_one_outcome_per_matching_policy(self):
-        # Several dry-run policies tracking the same event all evaluate on one request, so one request yields one
-        # outcome per policy that would have triggered.
+        # Several dry-run policies tracking the same event all evaluate on one request, so it yields one outcome
+        # per policy that would have triggered.
         self._make_policy(name="dry_a", counter_type=AuthEventType.MFA_FAIL, dry_run=True)
         self._make_policy(name="dry_b", counter_type=AuthEventType.MFA_FAIL, dry_run=True, priority=2,
                           stages=(StageDefinition(2, 1, [StageActionDefinition(LockoutAction.PERMANENT_LOCK_USER)]),))
@@ -812,8 +805,8 @@ class LockoutEngineTestCase(LockoutTestCase):
         self.assertIsNone(self._state())
 
     def test_dry_run_outcome_records_the_stage_name_when_the_stage_has_one(self):
-        # A named stage puts its label in the outcome, so an admin reading the history sees "Lock 10 min" rather than
-        # only a threshold.
+        # A named stage puts its label in the outcome, so an admin reading the history sees "Lock 10 min" rather
+        # than only a threshold.
         self._make_policy(
             name="dry_named", counter_type=AuthEventType.MFA_FAIL, dry_run=True,
             stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.LOCK_USER, 600)],
@@ -829,16 +822,16 @@ class LockoutEngineTestCase(LockoutTestCase):
         self.assertIsNone(self._state())
 
     def test_dry_run_fire_once_records_nothing_above_threshold(self):
-        # A fire-once action (the default) only fires at the EXACT threshold, and dry-run enforces nothing that would
-        # stop the count climbing. So once the count has passed the threshold a dry-run policy records nothing until
-        # the window rolls over or a success resets it - the same semantics as a live fire-once policy.
+        # A fire-once action fires only at the exact threshold, and dry-run does not stop the count climbing, so
+        # once the count passes the threshold it records nothing until the window rolls over or a success resets
+        # it - the same semantics as a live fire-once policy.
         self._make_policy(name="dry", counter_type=AuthEventType.MFA_FAIL, dry_run=True)
         self._seed_events(AuthEventType.MFA_FAIL, 6)  # well past the threshold of 3
         self.assertEqual([], evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL).outcomes)
 
     def test_dry_run_retrigger_records_a_outcome_above_threshold(self):
         # With a re-triggering action the dry run keeps reporting for as long as the count stays at or above the
-        # threshold, which is what makes dry-run usable for sizing a policy.
+        # threshold, which is what makes dry run usable for sizing a policy.
         _, stages = self._make_policy(name="dry", counter_type=AuthEventType.MFA_FAIL, dry_run=True)
         stages[0].actions[0].retrigger_above_threshold = True
         db.session.commit()
@@ -852,7 +845,7 @@ class LockoutEngineTestCase(LockoutTestCase):
 
     def test_dry_run_records_on_every_qualifying_request(self):
         # A re-triggering action qualifies on every request at or above its threshold, so both requests record an
-        # outcome. Dry run differs only in enforcement: it writes no lock, so no state exists at the end.
+        # outcome; dry run differs only in enforcement, writing no lock, so no state exists at the end.
         _, stages = self._make_policy(name="dry", counter_type=AuthEventType.MFA_FAIL, dry_run=True)
         stages[0].actions[0].retrigger_above_threshold = True
         db.session.commit()
@@ -864,7 +857,7 @@ class LockoutEngineTestCase(LockoutTestCase):
         self.assertIsNone(self._state())
 
     def test_dry_run_records_one_outcome_per_pending_action_of_the_stage(self):
-        # One outcome per action, not one per stage: each action is a separate thing that would have happened, and the
+        # One outcome per action, not per stage: each action is a separate thing that would have happened, and the
         # history is queried by action.
         self._make_policy(
             name="dry", counter_type=AuthEventType.MFA_FAIL, dry_run=True,
@@ -880,8 +873,8 @@ class LockoutEngineTestCase(LockoutTestCase):
         self.assertIsNone(outcomes[1].info)
 
     def test_dry_run_outcome_has_no_expiry_when_the_duration_is_misconfigured(self):
-        # An invalid duration would make the enforced path skip the action entirely. In dry run the outcome is still
-        # produced - with no expiry, which is exactly the misconfiguration a dry run is meant to surface.
+        # An invalid duration makes the enforced path skip the action entirely, but in dry run the outcome is
+        # still produced with no expiry - exactly the misconfiguration a dry run is meant to surface.
         self._make_policy(
             name="dry_broken", counter_type=AuthEventType.MFA_FAIL, dry_run=True,
             stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.LOCK_USER, "not-a-duration")]),))
@@ -904,9 +897,10 @@ class LockoutEngineTestCase(LockoutTestCase):
         self.assertIsNone(self._block(ip))
 
     def test_a_failing_policy_does_not_cost_the_other_policies_their_evaluation(self):
-        # Guarded per policy: the first one raising must neither disable the ones ordered behind it nor let the
-        # failure escape - the caller evaluates the classification again when the call does not return, and a stage
-        # whose actions leave no live state (EMAIL-only) has no de-dup to stop the second pass repeating them.
+        # Each policy is guarded separately, so one policy raising does not disable the ones ordered behind it or
+        # propagate the failure.
+        # The caller retries the whole evaluation if the call never returns, and a stage whose actions leave no
+        # state (EMAIL only) has nothing to stop the retry from repeating them.
         self._make_policy(name="broken", counter_type=AuthEventType.MFA_FAIL, priority=1)
         self._make_policy(name="works", counter_type=AuthEventType.MFA_FAIL, priority=2)
         self._seed_events(AuthEventType.MFA_FAIL, 3)
@@ -935,8 +929,8 @@ class LockoutEngineTestCase(LockoutTestCase):
 
     @smtpmock.activate
     def test_dry_run_email_action_records_the_outcome_but_sends_nothing(self):
-        # Dry-run must not produce the side effect itself: the outcome names EMAIL_ADMIN, but no mail is sent and no
-        # user-facing notice is returned.
+        # Dry-run must not produce the side effect itself: the outcome names EMAIL_ADMIN, but no mail is sent and
+        # no user-facing notice is returned.
         smtpmock.setdata(response={})
         add_smtpserver(identifier="lockoutmail", server="1.2.3.4", tls=False)
         db.session.add(Admin(username="ca_dry_adm", email="dryadm@example.com"))
@@ -961,8 +955,8 @@ class LockoutEngineTestCase(LockoutTestCase):
             db.session.commit()
 
     def test_dry_run_does_not_suppress_a_live_policy_on_the_same_request(self):
-        # A dry-run policy is inert, not blocking: an enforcing policy tripped by the same request still locks. Both
-        # produce an outcome, and only the dry-run one is flagged.
+        # A dry-run policy is inert, not blocking: an enforcing policy tripped by the same request still locks;
+        # both produce an outcome, and only the dry-run one is flagged.
         self._make_policy(name="dry", counter_type=AuthEventType.MFA_FAIL, dry_run=True, priority=1)
         self._make_policy(name="live", counter_type=AuthEventType.MFA_FAIL, priority=2)
         self._seed_events(AuthEventType.MFA_FAIL, 3)
@@ -983,8 +977,8 @@ class LockoutEngineTestCase(LockoutTestCase):
         self.assertEqual(1, len(outcomes))
         self.assertFalse(outcomes[0].dry_run)
         self.assertEqual(str(LockoutAction.LOCK_USER), outcomes[0].action_type)
-        # The recorded expiry is the one that ended up in the state row, so the history says how long the lock lasted
-        # even after the row is gone - as an aware ISO-8601 string, since `info` is a JSON column.
+        # The recorded expiry is the one that ended up in the state row, so the history says how long the lock
+        # lasted even after the row is gone - stored as an aware ISO-8601 string since `info` is a JSON column.
         self.assertEqual({"expires_at": self._state().lock_expires_at.replace(tzinfo=timezone.utc).isoformat()},
                          outcomes[0].info)
 
@@ -999,8 +993,8 @@ class LockoutEngineTestCase(LockoutTestCase):
         self.assertIsNone(outcomes[0].info)
 
     def test_a_skipped_action_records_nothing(self):
-        # A misconfigured duration makes the action a no-op, and the history must not claim a lock that never happened.
-        # The server log (a warning from _execute_stage_actions) is the record of the misconfiguration.
+        # A misconfigured duration makes the action a no-op, and the history must not claim a lock that never
+        # happened; the server log (a warning from _execute_stage_actions) records the misconfiguration instead.
         self._make_policy(
             name="broken", counter_type=AuthEventType.MFA_FAIL,
             stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.LOCK_USER, "not-a-duration")]),))
@@ -1041,8 +1035,8 @@ class LockoutEngineTestCase(LockoutTestCase):
     # --- per-action fire-once / re-trigger semantics ---------------------------
 
     def test_retrigger_action_also_fires_at_the_exact_threshold(self):
-        # "At or above" includes the threshold itself, so a re-triggering action fires on the first qualifying request
-        # too, not only above it.
+        # "At or above" includes the threshold itself, so a re-triggering action also fires on the first
+        # qualifying request, not only above it.
         _, stages = self._make_policy(name="lock3", counter_type=AuthEventType.MFA_FAIL)
         stages[0].actions[0].retrigger_above_threshold = True
         db.session.commit()
@@ -1051,8 +1045,8 @@ class LockoutEngineTestCase(LockoutTestCase):
         self.assertTrue(is_user_locked(self.user))
 
     def test_fire_once_and_retrigger_actions_in_one_stage_are_decided_separately(self):
-        # The flag is per action: above the threshold only the re-triggering LOCK_USER still fires, while the
-        # fire-once EMAIL_ADMIN stays silent - one stage that keeps a user locked but emails only once.
+        # The flag is per action: above the threshold only the re-triggering LOCK_USER still fires while the
+        # fire-once EMAIL_ADMIN stays silent, so one stage keeps a user locked but emails only once.
         _, stages = self._make_policy(
             name="mixed", counter_type=AuthEventType.MFA_FAIL,
             stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.LOCK_USER, 600,
@@ -1064,15 +1058,15 @@ class LockoutEngineTestCase(LockoutTestCase):
         self.assertTrue(lock_action.retrigger_above_threshold)
         self.assertFalse(email_action.retrigger_above_threshold)
 
-        # At a count above the threshold only the re-triggering action is pending, so the stage still fires (the
-        # unreachable SMTP identifier would raise if the email action were executed, and is guarded per action).
+        # At a count above the threshold only the re-triggering action is pending, so the stage still fires - the
+        # unreachable SMTP identifier would raise if the email action ran, but each action is guarded separately.
         self._seed_events(AuthEventType.MFA_FAIL, 5)
         evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
         self.assertTrue(is_user_locked(self.user))
 
     def test_dry_run_outcome_reports_only_the_pending_actions(self):
-        # Mirrors the live behaviour above: above the threshold the fire-once action is not pending, so the outcome
-        # lists only the re-triggering one.
+        # Mirrors the live behaviour above: above the threshold the fire-once action is not pending, so the
+        # outcome lists only the re-triggering one.
         self._make_policy(
             name="dry_mixed", counter_type=AuthEventType.MFA_FAIL, dry_run=True,
             stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.LOCK_USER, 600,
@@ -1085,8 +1079,8 @@ class LockoutEngineTestCase(LockoutTestCase):
         self.assertListEqual([str(LockoutAction.LOCK_USER)], [outcome.action_type for outcome in outcomes])
 
     def test_retrigger_stage_selection_prefers_the_highest_priority_pending_stage(self):
-        # Both stages re-trigger and both thresholds are passed, so the most severe (highest-priority) stage is the one
-        # that fires; only that one stage's actions run per policy per request.
+        # Both stages re-trigger and both thresholds are passed, so the most severe (highest-priority) stage
+        # fires; only that one stage's actions run per policy per request.
         _, stages = self._make_policy(
             name="tiers", counter_type=AuthEventType.MFA_FAIL,
             stages=(StageDefinition(5, 2, [StageActionDefinition(LockoutAction.LOCK_USER, 1800,
@@ -1099,8 +1093,8 @@ class LockoutEngineTestCase(LockoutTestCase):
         self.assertListEqual([severe_stage.failure_threshold], self._triggered_thresholds())
 
     def test_retrigger_falls_back_to_the_lower_stage_when_the_severe_one_is_not_pending(self):
-        # The severe stage is fire-once at 15 and the count is 6, so it is not pending; the re-triggering stage at 3 is,
-        # and it fires instead.
+        # The severe stage is fire-once at 15 and the count is 6, so it is not pending; the re-triggering stage
+        # at 3 is pending and fires instead.
         _, stages = self._make_policy(
             name="tiers", counter_type=AuthEventType.MFA_FAIL,
             stages=(StageDefinition(15, 2, [StageActionDefinition(LockoutAction.LOCK_USER, 1800)]),
@@ -1142,8 +1136,8 @@ class LockoutEngineTestCase(LockoutTestCase):
         self.assertIsNone(self._state())
 
     def test_unknown_action_type_skipped(self):
-        # An unknown action type must be skipped by the engine, not raise. Built via _make_policy (which builds the
-        # ORM directly, without CRUD validation) so the invalid action reaches the engine.
+        # An unknown action type must be skipped by the engine, not raise; built via _make_policy, which constructs
+        # the ORM directly without CRUD validation, so the invalid action reaches the engine.
         self._make_policy(name="weird", counter_type=AuthEventType.MFA_FAIL,
                           stages=(StageDefinition(3, 1, [StageActionDefinition("TELEPORT_USER")]),))
         self._seed_events(AuthEventType.MFA_FAIL, 3)
@@ -1197,8 +1191,8 @@ class LockoutEngineTestCase(LockoutTestCase):
         self.assertFalse(is_ip_blocked("127.0.0.1"))
 
     def test_allowlisted_ip_block_row_is_not_enforced(self):
-        # Even with an existing block row, an allowlisted IP reads as not blocked, so
-        # adding an IP to the allowlist immediately lifts a stale or mistaken block.
+        # Even with an existing block row, an allowlisted IP reads as not blocked, so adding an IP to the
+        # allowlist immediately lifts a stale or mistaken block.
         db.session.add(BlockList(ip="203.0.113.7", block_expires_at=utc_now() + timedelta(seconds=900)))
         db.session.commit()
         self.assertTrue(is_ip_blocked("203.0.113.7"))
@@ -1274,8 +1268,7 @@ class LockoutEngineTestCase(LockoutTestCase):
 
     def test_permanent_block_ip_ignores_action_value(self):
         ip = "203.0.113.7"
-        # action_value is irrelevant for the permanent variant: even a "valid"
-        # duration does not make it timed.
+        # action_value is irrelevant for the permanent variant: even a "valid" duration does not make it timed.
         self._make_policy(name="permblockdur", counter_type=AuthEventType.PASSWORD_FAIL,
                           target=LockoutTarget.SOURCE_IP,
                           stages=(
@@ -1311,9 +1304,9 @@ class LockoutEngineTestCase(LockoutTestCase):
         self.assertTrue(is_ip_blocked(ip))
 
     def test_source_ip_policy_fires_for_unresolved_user(self):
-        # A source-IP policy must still act when the current request's user is
-        # unresolved (unknown username) - that is the spraying/enumeration case.
-        # A user-target policy in the same run stays a no-op for the unknown user.
+        # A source-IP policy still acts when the current request's user is unresolved (unknown username) - the
+        # spraying/enumeration case.
+        # A user-target policy in the same run stays a no-op for that unknown user.
         ip = "203.0.113.60"
         self._make_policy(name="spray", counter_type=AuthEventType.PASSWORD_FAIL, window=300,
                           target=LockoutTarget.SOURCE_IP, priority=1,
@@ -1330,11 +1323,9 @@ class LockoutEngineTestCase(LockoutTestCase):
     # --- multiple policies on one request -------------------------------------
 
     def test_multiple_policies_fire_together(self):
-        # Several enabled policies of different targets trip on one request: a
-        # per-user timed lock (user target, threshold 5) plus a timed and a
-        # permanent IP block (source_ip target, threshold 7). All apply, and the
-        # permanent block wins over the timed one regardless of evaluation order
-        # (cross-policy, same request).
+        # Several enabled policies of different targets can all trip on one request: a per-user timed lock plus
+        # a timed and a permanent IP block.
+        # All apply together, and the permanent block wins over the timed one regardless of evaluation order.
         ip = "203.0.113.50"
         self._make_policy(name="lock", counter_type=AuthEventType.PIN_FAIL, priority=1,
                           stages=(StageDefinition(5, 1, [StageActionDefinition(LockoutAction.LOCK_USER, 60)]),))
@@ -1344,8 +1335,8 @@ class LockoutEngineTestCase(LockoutTestCase):
         self._make_policy(name="blockperm", counter_type=AuthEventType.PIN_FAIL, priority=4,
                           target=LockoutTarget.SOURCE_IP,
                           stages=(StageDefinition(7, 1, [StageActionDefinition(LockoutAction.PERMANENT_BLOCK_IP)]),))
-        # 5 failures for the current user (trips the per-user lock) plus 7 distinct
-        # users from the IP (trips both IP-block policies).
+        # 5 failures for the current user trip the per-user lock; 7 distinct users from the IP trip both
+        # IP-block policies.
         self._seed_events(AuthEventType.PIN_FAIL, 5)
         self._seed_ip_events(ip, AuthEventType.PIN_FAIL, n_users=7)
         evaluate_lockout_policies(CAContext(self.user, ip), AuthEventType.PIN_FAIL)
@@ -1379,16 +1370,16 @@ class LockoutEngineTestCase(LockoutTestCase):
         self.assertEqual(AccessDecision.CONTINUE, evaluate_access_decision(CAContext(self.user)).decision)
 
     def test_access_decision_deny_default_refires_above_threshold(self):
-        # DENY defaults to re-trigger, so the decision stands while the count is at
-        # or above the threshold, not only at the exact count.
+        # DENY defaults to re-trigger, so the decision stands while the count is at or above the threshold, not
+        # only at the exact count.
         self._make_policy(name="deny", counter_type=AuthEventType.PASSWORD_FAIL,
                           stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.DENY)]),))
         self._seed_events(AuthEventType.PASSWORD_FAIL, 5)
         self.assertEqual(AccessDecision.DENY, evaluate_access_decision(CAContext(self.user)).decision)
 
     def test_access_decision_fire_once_deny_only_at_exact_threshold(self):
-        # A decision action switched to fire-once decides only at the exact count:
-        # once the count climbs past the threshold it no longer denies.
+        # A decision action switched to fire-once decides only at the exact count: once the count climbs past
+        # the threshold it no longer denies.
         self._make_policy(name="deny", counter_type=AuthEventType.PASSWORD_FAIL,
                           stages=(StageDefinition(3, 1, [StageActionDefinition(
                               LockoutAction.DENY, retrigger_above_threshold=False)]),))
@@ -1398,8 +1389,8 @@ class LockoutEngineTestCase(LockoutTestCase):
         self.assertEqual(AccessDecision.CONTINUE, evaluate_access_decision(CAContext(self.user)).decision)
 
     def test_access_decision_denies_on_combined_count(self):
-        # The pre-auth decision also counts all tracked types together: 2 + 2 = 4
-        # crosses the threshold of 3, so the request is denied.
+        # The pre-auth decision also counts all tracked types together: 2 + 2 = 4 crosses the threshold of 3,
+        # so the request is denied.
         self._make_policy(name="deny",
                           counter_type=[AuthEventType.PASSWORD_FAIL, AuthEventType.MFA_FAIL],
                           stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.DENY)]),))
@@ -1408,9 +1399,8 @@ class LockoutEngineTestCase(LockoutTestCase):
         self.assertEqual(AccessDecision.DENY, evaluate_access_decision(CAContext(self.user)).decision)
 
     def test_access_decision_does_not_reset_on_success(self):
-        # Unlike the lock, the DENY decision counts every failure in the raw
-        # window: a successful login in between does NOT clear it (it self-heals
-        # only as the failures age out). Pins the "lock only" reset scope.
+        # Unlike the lock, the DENY decision counts every failure in the raw window: a successful login in
+        # between does not clear it, and it self-heals only as failures age out - pinning the reset to the lock only.
         now = utc_now()
         self._make_policy(name="deny", counter_type=AuthEventType.PASSWORD_FAIL,
                           stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.DENY)]),))
@@ -1426,8 +1416,7 @@ class LockoutEngineTestCase(LockoutTestCase):
         self.assertEqual(AccessDecision.ALLOW, evaluate_access_decision(CAContext(self.user)).decision)
 
     def test_access_decision_higher_priority_allow_overrides_deny(self):
-        # An ALLOW policy at higher precedence (lower priority number) wins over a
-        # DENY with a higher number.
+        # An ALLOW policy at higher precedence (lower priority number) wins over a DENY with a higher number.
         self._make_policy(name="deny", counter_type=AuthEventType.PASSWORD_FAIL, priority=10,
                           stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.DENY)]),))
         self._make_policy(name="allow", counter_type=AuthEventType.PASSWORD_FAIL, priority=1,
@@ -1476,9 +1465,8 @@ class LockoutEngineTestCase(LockoutTestCase):
         self.assertEqual(AccessDecision.DENY, evaluate_access_decision(CAContext(self.user)).decision)
 
     def test_access_decision_skips_unknown_action_type(self):
-        # An unrecognized action type in a decision stage is ignored (not raised),
-        # so the stage contributes no decision. Uses direct ORM since the CRUD
-        # layer would reject the invalid type.
+        # An unrecognized action type in a decision stage is ignored (not raised), so the stage contributes no
+        # decision; built via direct ORM since the CRUD layer would reject the invalid type.
         self._make_policy(name="unknown", counter_type=AuthEventType.PASSWORD_FAIL,
                           stages=(StageDefinition(3, 1, [StageActionDefinition("TELEPORT_USER")]),))
         self._seed_events(AuthEventType.PASSWORD_FAIL, 3)
@@ -1496,8 +1484,8 @@ class LockoutEngineTestCase(LockoutTestCase):
         self.assertEqual(AccessDecision.DENY, evaluate_access_decision(CAContext(self.user, ip)).decision)
 
     def test_access_decision_source_ip_deny_for_unresolved_user(self):
-        # IP decisions fire regardless of whether the current user resolved -
-        # that is the point of an IP-scoped DENY (spraying/enumeration).
+        # IP decisions fire regardless of whether the current user resolved - that is the point of an IP-scoped
+        # DENY (spraying/enumeration).
         ip = "203.0.113.31"
         self._make_policy(name="ipdeny", counter_type=AuthEventType.PASSWORD_FAIL,
                           target=LockoutTarget.SOURCE_IP,
@@ -1597,8 +1585,8 @@ class LockoutEngineTestCase(LockoutTestCase):
 
     @smtpmock.activate
     def test_email_admin_alerts_on_userless_spraying_traffic(self):
-        # A source-IP policy fires on traffic that resolved no user, which is exactly the traffic an
-        # EMAIL_ADMIN alert exists to report. The user-derived tags render empty, but the alert is sent.
+        # A source-IP policy fires on traffic that resolved no user, which is exactly the traffic an EMAIL_ADMIN
+        # alert exists to report; the user-derived tags render empty, but the alert is still sent.
         smtpmock.setdata(response={})
         add_smtpserver(identifier="lockoutmail", server="1.2.3.4", tls=False)
         ip = "10.0.0.32"
@@ -1659,9 +1647,8 @@ class LockoutEngineTestCase(LockoutTestCase):
             delete_smtpserver("lockoutmail")
 
     def test_email_failure_does_not_break_other_actions(self):
-        # A stage that both locks the user and emails them: the email points at an
-        # unknown SMTP server, so sending raises. Per-action guarding must keep the
-        # LOCK_USER write intact.
+        # A stage that both locks the user and emails them: the email points at an unknown SMTP server so
+        # sending raises, but per-action guarding must keep the LOCK_USER write intact.
         _, stages = self._make_policy(
             name="lockandmail", counter_type=AuthEventType.MFA_FAIL,
             stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.LOCK_USER, 600)]),))
@@ -1781,8 +1768,8 @@ class LockoutEngineTestCase(LockoutTestCase):
             policy, CAContext(self.user, user_role=str(AuthLogUserRole.ADMIN_INTERNAL))))
 
     def test_missing_value_does_not_match_a_positive_condition(self):
-        # An unresolved user has no realm, and a context built outside /auth has no
-        # role. A missing value is in no set, so an IN condition does not match.
+        # An unresolved user has no realm, and a context built outside /auth has no role; since a missing value
+        # is in no set, an IN condition does not match either.
         realm_policy, _ = self._make_policy(
             name="needs realm", counter_type=AuthEventType.MFA_FAIL,
             conditions=[self._condition(ConditionType.USER_REALM, ConditionOperator.IN, [self.realm1])])
@@ -1794,28 +1781,27 @@ class LockoutEngineTestCase(LockoutTestCase):
         self.assertFalse(policy_matches_context(role_policy, CAContext(self.user)))
 
     def test_missing_value_matches_when_negated(self):
-        # A missing value belongs to no set, so NOT_IN matches it. This is what
-        # keeps an exemption honest: an anti-enumeration policy carrying
-        # "realm NOT_IN [other]" must still apply to the probes of non-existent
-        # usernames it exists to stop, which resolve to no realm at all.
+        # A missing value belongs to no set, so NOT_IN matches it - this is what keeps an exemption honest.
+        # An anti-enumeration policy carrying "realm NOT_IN [other]" must still apply to probes of nonexistent
+        # usernames, which resolve to no realm at all.
         policy, _ = self._make_policy(
             name="needs realm negated", counter_type=AuthEventType.MFA_FAIL,
             conditions=[self._condition(ConditionType.USER_REALM, ConditionOperator.NOT_IN, ["other"])])
         self.assertTrue(policy_matches_context(policy, CAContext(User())))
 
     def test_unknown_condition_type_or_operator_does_not_match(self):
-        # Only reachable via a version downgrade (the CRUD rejects both at write
-        # time). It must not raise, and must not silently widen the policy.
+        # Only reachable via a version downgrade, since the CRUD rejects both at write time; it must not raise,
+        # and must not silently widen the policy.
         context = CAContext(self.user)
         self.assertFalse(condition_matches(
             self._condition("NO_SUCH_TYPE", ConditionOperator.IN, ["x"]), context, "p"))
         self.assertFalse(condition_matches(
             self._condition(ConditionType.USER_REALM, "NO_SUCH_OP", ["x"]), context, "p"))
 
-    # Only a hand-edited row reaches the evaluators with any of these, since the CRUD writes nothing but a
-    # non-empty list of strings. Each has to be rejected outright rather than compared, and NOT_IN is what
-    # makes that load-bearing: a value no row can match answers False for IN on its own, but True for
-    # NOT_IN, so a corrupted exemption would apply to *everything* instead of to nothing.
+    # Only a hand-edited row reaches the evaluators with any of these values, since the CRUD writes nothing but
+    # a non-empty list of strings, so each must be rejected outright rather than compared.
+    # NOT_IN is what makes that load-bearing: a value no row can match answers False for IN but True for NOT_IN,
+    # so a corrupted exemption would apply to everything instead of to nothing.
     MALFORMED_CONDITION_VALUES = [("not a list", "realm1"), ("empty list", []), ("non-strings", [1, 2])]
 
     def test_malformed_condition_value_does_not_match(self):
@@ -1827,8 +1813,8 @@ class LockoutEngineTestCase(LockoutTestCase):
                         CAContext(self.user), "p"))
 
     def test_malformed_condition_value_does_not_match_a_row(self):
-        # The row evaluator answers a malformed value the same way as the gate, so a corrupted condition
-        # cannot gate one way and scope another.
+        # The row evaluator answers a malformed value the same way as the gate, so a corrupted condition cannot
+        # gate one way and scope another.
         row = AuthenticationLog(event_type=str(AuthEventType.MFA_FAIL), realm=self.realm1,
                                 attempt_id="att-malformed", timestamp=utc_now())
         priority = 0
@@ -1892,9 +1878,8 @@ class LockoutEngineTestCase(LockoutTestCase):
         db.session.commit()
 
     def test_conditions_scope_a_source_ip_count_to_the_rows_they_describe(self):
-        # Having passed the gate, a source-IP policy counts only the history its conditions describe.
-        # Its subject is the IP, whose rows span many users, so this is what makes it count what the
-        # admin asked for: three realm1 accounts reach the threshold, the two realm2 ones are ignored.
+        # A source-IP policy's subject (the IP) spans many users' rows, so its conditions still scope the count
+        # after the gate: three realm1 accounts reach the threshold, the two realm2 ones are ignored.
         ip = "10.0.0.9"
         self._spray_policy(threshold=3)
         self._seed_ip_accounts(ip, (self.realm1, self.realm1, self.realm1, self.realm2, self.realm2))
@@ -1904,8 +1889,8 @@ class LockoutEngineTestCase(LockoutTestCase):
         self.assertTrue(is_ip_blocked(ip))
 
     def test_conditions_exclude_rows_outside_them_from_a_source_ip_count(self):
-        # The complement: five realm2 accounts plus two realm1 ones is seven rows, which would trip a
-        # threshold of 3 unscoped. Scoped to realm1 the count is 2 and nothing fires.
+        # The complement: five realm2 accounts plus two realm1 ones is seven rows, which would trip a threshold
+        # of 3 unscoped, but scoped to realm1 the count is 2 and nothing fires.
         ip = "10.0.0.10"
         self._spray_policy(threshold=3)
         self._seed_ip_accounts(ip, (self.realm1, self.realm1,
@@ -1916,8 +1901,8 @@ class LockoutEngineTestCase(LockoutTestCase):
         self.assertFalse(is_ip_blocked(ip))
 
     def test_a_source_ip_policy_is_still_gated_by_its_conditions(self):
-        # Scoping is *in addition to* the gate, not instead of it: a request the conditions exclude is
-        # not judged by the policy at all, whatever the IP's history looks like.
+        # Scoping applies in addition to the gate, not instead of it: a request the conditions exclude is not
+        # judged by the policy at all, whatever the IP's history looks like.
         ip = "10.0.0.14"
         self._spray_policy(threshold=3)
         self._seed_ip_accounts(ip, (self.realm1, self.realm1, self.realm1))
@@ -1927,10 +1912,9 @@ class LockoutEngineTestCase(LockoutTestCase):
         self.assertFalse(is_ip_blocked(ip))
 
     def test_positive_condition_excludes_rows_with_no_value_from_the_count(self):
-        # The IN half of the missing-value rule, on the counting side: a row whose realm is NULL is in
-        # no set, so an IN-scoped count skips it - matching the gate, which does not apply an IN policy
-        # to a request carrying no realm. Three NULL-realm accounts therefore never reach a threshold
-        # of 2, however many of them there are.
+        # The counting side of the IN missing-value rule: a NULL-realm row is in no set, so an IN-scoped count
+        # skips it, matching the gate's refusal to apply an IN policy to a realm-less request.
+        # NULL-realm accounts therefore never reach the threshold, however many of them there are.
         ip = "10.0.0.15"
         self._spray_policy(threshold=2, operator=ConditionOperator.IN, values=[self.realm1])
         self._seed_ip_accounts(ip, (None, None, None))
@@ -1940,10 +1924,11 @@ class LockoutEngineTestCase(LockoutTestCase):
         self.assertFalse(is_ip_blocked(ip))
 
     def test_negated_condition_gates_and_counts_rows_with_no_value_alike(self):
-        # The gate and the filter cannot disagree, because matches_missing and the SQL are aligned on a
-        # missing value: NOT_IN admits a request carrying no realm, and its filter admits the NULL-realm
-        # rows such requests write. Plain "realm NOT IN (...)" is false for NULL in SQL, which would
-        # have excluded exactly the enumeration traffic the exemption is written to catch.
+        # matches_missing and the SQL filter are aligned on a missing value, so the gate and the count filter
+        # cannot disagree: NOT_IN admits a realm-less request, and its filter admits the NULL-realm rows such
+        # requests write.
+        # Plain SQL "realm NOT IN (...)" is false for NULL, which would otherwise exclude exactly the
+        # enumeration traffic this exemption exists to catch.
         ip = "10.0.0.11"
         self._spray_policy(threshold=3, operator=ConditionOperator.NOT_IN, values=[self.realm2])
         self._seed_ip_accounts(ip, (None, None, None))
@@ -1968,12 +1953,11 @@ class LockoutEngineTestCase(LockoutTestCase):
         self.assertTrue(is_ip_blocked(ip))
 
     def test_scoping_leaves_a_user_target_outcome_unchanged(self):
-        # For a user target the filters are redundant: the subject is one (resolver, uid, realm)
-        # identity, so the realm is pinned and with it the role - an admin realm holds only admins, and
-        # an internal admin has no realm, so no identity is ever both. They are still applied, and the
-        # point of this test is that they must not exclude the subject's *own* rows: a policy conditioned
-        # on the realm and role it is already scoped to has to keep firing exactly as an unconditioned
-        # one would.
+        # For a user target, realm and role filters are redundant: the subject is a single (resolver, uid, realm)
+        # identity, so the realm is pinned and with it the role - an admin realm holds only admins, and an
+        # internal admin has no realm.
+        # The filters are still applied, and must not exclude the subject's own rows: a policy conditioned on
+        # the realm and role it is already scoped to must keep firing exactly as an unconditioned one would.
         self._make_policy(
             name="scoped to its own subject", counter_type=AuthEventType.MFA_FAIL,
             conditions=[self._condition(ConditionType.USER_REALM, ConditionOperator.IN, [self.realm1]),
@@ -2001,10 +1985,10 @@ class LockoutEngineTestCase(LockoutTestCase):
         self.assertFalse(is_user_locked(self.user))
 
     def test_a_condition_that_cannot_be_a_predicate_leaves_the_count_unscoped(self):
-        # A condition type the log does not record cannot narrow a query, so such a policy counts
-        # everything the subject did and relies on the gate alone - the behaviour it had before scoping
-        # existed. All or nothing: honouring only the scopable conditions of a mixed policy would count
-        # rows the admin excluded. Simulated with a spec carrying no log_column.
+        # A condition type the log does not record cannot narrow a query, so such a policy counts everything
+        # the subject did and relies on the gate alone.
+        # This is all-or-nothing: honouring only the scopable conditions of a mixed policy would count rows
+        # the admin excluded (simulated here with a spec carrying no log_column).
         ip = "10.0.0.13"
         unscopable = ConditionTypeSpec(name="CLIENT_LABEL", label="Client label",
                                        operators=frozenset({ConditionOperator.IN}),
@@ -2024,8 +2008,8 @@ class LockoutEngineTestCase(LockoutTestCase):
             self.assertTrue(is_ip_blocked(ip))
 
     def test_conditions_gate_the_pre_auth_decision(self):
-        # A DENY at threshold 0 always fires for a matching context, and contributes
-        # no decision at all for one its realm condition excludes.
+        # A DENY at threshold 0 always fires for a matching context, and contributes no decision at all for a
+        # context its realm condition excludes.
         self._make_policy(
             name="deny realm1", counter_type=AuthEventType.MFA_FAIL,
             conditions=[self._condition(ConditionType.USER_REALM, ConditionOperator.IN, [self.realm1])],
@@ -2059,10 +2043,10 @@ class LockoutEngineTestCase(LockoutTestCase):
         return policy
 
     def test_a_condition_that_would_drop_a_success_does_not_turn_the_attempt_into_a_failure(self):
-        # The reduction needs the whole attempt: a LOGIN_SUCCESS supersedes the attempt's failures. A
-        # condition applied to the *rows* could admit the failure and drop the success - NOT_IN matches a
-        # missing value, so a NULL-realm failure passes while the realm1 success does not - and the attempt
-        # would count as a failure. Applying it to the reduced outcome instead leaves the success in charge.
+        # The reduction needs the whole attempt, since a LOGIN_SUCCESS supersedes the attempt's failures; a
+        # condition applied per row could admit a NULL-realm failure via NOT_IN while excluding the realm1
+        # success, miscounting the attempt as a failure.
+        # Applying the condition to the reduced outcome instead keeps the success in charge.
         ip = "10.0.0.40"
         self._seed_ip_attempt_rows(ip, "att-mixed", [(AuthEventType.MFA_FAIL, None),
                                                      (AuthEventType.LOGIN_SUCCESS, self.realm1)])
@@ -2071,8 +2055,8 @@ class LockoutEngineTestCase(LockoutTestCase):
         self.assertEqual(0, _policy_count_ip(policy, ip, utc_now()))
 
     def test_conditions_scope_a_per_attempt_count_by_the_outcome_row(self):
-        # Having kept the reduction whole, the conditions still scope: of two failed attempts the realm1
-        # one counts and the realm2 one does not.
+        # Having kept the reduction whole, the conditions still scope: of two failed attempts, the realm1 one
+        # counts and the realm2 one does not.
         ip = "10.0.0.41"
         self._seed_ip_attempt_rows(ip, "att-r1", [(AuthEventType.MFA_FAIL, self.realm1)])
         self._seed_ip_attempt_rows(ip, "att-r2", [(AuthEventType.MFA_FAIL, self.realm2)])
@@ -2081,9 +2065,9 @@ class LockoutEngineTestCase(LockoutTestCase):
         self.assertEqual(1, _policy_count_ip(policy, ip, utc_now()))
 
     def test_per_attempt_scoping_reads_the_success_row_not_a_later_stray(self):
-        # A policy tracking LOGIN_SUCCESS (a rate limit tracking every type) counts succeeded attempts, so
-        # which row the condition is read from becomes visible: the attempt is classified by its success,
-        # and must be filtered by that same row rather than by the stray replay that follows it.
+        # A policy tracking LOGIN_SUCCESS (a rate limit tracking every type) counts succeeded attempts, so the
+        # attempt must be filtered by the row that classified it as a success, not by a stray replay that
+        # follows it.
         ip = "10.0.0.42"
         self._seed_ip_attempt_rows(ip, "att-stray", [(AuthEventType.LOGIN_SUCCESS, self.realm1),
                                                      (AuthEventType.CHALLENGE_ANSWERED_FAIL, self.realm2)])
@@ -2093,8 +2077,8 @@ class LockoutEngineTestCase(LockoutTestCase):
         self.assertEqual(1, _policy_count_ip(policy, ip, utc_now()))
 
     def test_an_unscopable_condition_leaves_a_per_attempt_count_unscoped(self):
-        # Mirrors the PER_REQUEST rule: a condition that cannot be expressed against the log scopes
-        # nothing, so the count stays wide rather than silently dropping every attempt.
+        # Mirrors the PER_REQUEST rule: a condition that cannot be expressed against the log scopes nothing,
+        # so the count stays wide rather than silently dropping every attempt.
         ip = "10.0.0.43"
         self._seed_ip_attempt_rows(ip, "att-a", [(AuthEventType.MFA_FAIL, self.realm1)])
         self._seed_ip_attempt_rows(ip, "att-b", [(AuthEventType.MFA_FAIL, self.realm2)])
@@ -2111,10 +2095,10 @@ class LockoutEngineTestCase(LockoutTestCase):
             self.assertEqual(2, _policy_count_ip(policy, ip, utc_now()))
 
     def test_conditions_scope_the_pre_auth_decision_count(self):
-        # The pre-auth counterpart of test_conditions_exclude_rows_outside_them_from_a_source_ip_count:
-        # gating and scoping are separate, so a policy the conditions admit must still count only the
-        # rows they describe. Two realm1 accounts plus five realm2 ones is seven distinct accounts,
-        # which would deny on a threshold of 3 unscoped; scoped to realm1 the count is 2.
+        # The pre-auth counterpart of test_conditions_exclude_rows_outside_them_from_a_source_ip_count: gating
+        # and scoping are separate, so a policy the conditions admit must still count only the rows they describe.
+        # Two realm1 accounts plus five realm2 ones is seven distinct accounts, which would deny at a threshold
+        # of 3 unscoped; scoped to realm1 the count is 2.
         ip = "10.0.0.30"
         self._make_policy(
             name="scoped spray deny", counter_type=AuthEventType.MFA_FAIL,
@@ -2128,8 +2112,8 @@ class LockoutEngineTestCase(LockoutTestCase):
                          evaluate_access_decision(CAContext(User("cornelius", self.realm1), source_ip=ip)).decision)
 
     def test_pre_auth_decision_denies_once_the_scoped_count_reaches_the_threshold(self):
-        # The complement, so the test above cannot pass merely by never denying: three realm1 accounts
-        # do reach the same threshold, and the two realm2 ones neither add to nor block that.
+        # The complement, so the test above cannot pass merely by never denying: three realm1 accounts do
+        # reach the same threshold, and the two realm2 ones neither add to nor block that.
         ip = "10.0.0.31"
         self._make_policy(
             name="scoped spray deny", counter_type=AuthEventType.MFA_FAIL,

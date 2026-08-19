@@ -82,8 +82,7 @@ class ConditionalAccessSessionTestCase(MyTestCase):
         self.assertIsNot(session, get_ca_session())
 
     def test_07_closer_registered_as_appcontext_teardown(self):
-        # Covers the callers that never run a request (pi-manage, scripts, periodic tasks), for which
-        # call_finalizers() is never invoked.
+        # Covers callers with no request (pi-manage, scripts, periodic tasks), where call_finalizers() never runs.
         self.assertIn(close_ca_session, self.app.teardown_appcontext_funcs)
 
 
@@ -124,7 +123,7 @@ class GuardedWriteTestCase(MyTestCase):
             get_ca_session().add(self._entry("alice"))
             raise error
 
-        # error should be caught by the guarded write, hence we should reach here otherwise the test fail
+        # Reaching this line means guarded_write caught the exception; otherwise it would have propagated.
         self.assertFalse(outcome.succeeded)
         self.assertIs(error, outcome.error)
         self.assertListEqual([], self._stored_usernames())
@@ -142,7 +141,7 @@ class GuardedWriteTestCase(MyTestCase):
             get_ca_session().add(self._entry("alice"))
             raise RuntimeError("write failed")
 
-        # error should be caught by the guarded write, hence we should reach here otherwise the test fail
+        # Reaching this line means guarded_write caught the exception; otherwise it would have propagated.
         with guarded_write("an authentication log entry") as outcome:
             get_ca_session().add(self._entry("bob"))
 
@@ -150,8 +149,8 @@ class GuardedWriteTestCase(MyTestCase):
         self.assertListEqual(["bob"], self._stored_usernames())
 
     def test_05_commit_does_not_commit_pending_request_work(self):
-        # The whole point of the dedicated session: a conditional-access commit must not persist whatever else
-        # the request happens to have pending on db.session.
+        # This is the point of the dedicated session: a conditional-access commit must never persist whatever
+        # else the request has pending on db.session.
         db.session.add(self._entry("pending-on-request-session"))
 
         with guarded_write("an authentication log entry") as outcome:
@@ -170,24 +169,22 @@ class GuardedWriteTestCase(MyTestCase):
             get_ca_session().add(self._entry("alice"))
             raise RuntimeError("write failed")
 
-        # error should be caught by the guarded write, hence we should reach here otherwise the test fail
+        # Reaching this line means guarded_write caught the exception; otherwise it would have propagated.
         self.assertFalse(outcome.succeeded)
         self.assertIn(pending, db.session.new)
         db.session.commit()
         self.assertListEqual(["pending-on-request-session"], self._stored_usernames())
 
     def test_07_write_lock_on_the_request_session_is_a_contained_failure(self):
-        # Database write locking behavior is SQLite-specific. On MariaDB and PostgreSQL, row-level locking
-        # allows concurrent writes and this test does not apply.
+        # This test is SQLite-specific: MariaDB and PostgreSQL use row-level locking, so it does not apply there.
         if db.engine.dialect.name != "sqlite":
             self.skipTest("Database write locking behavior is SQLite-specific. On MariaDB and PostgreSQL, "
                           "row-level locking allows concurrent writes and this test does not apply.")
 
-        # Two sessions means two connections. On SQLite, which locks the whole database for writing, a request
-        # session that has flushed without committing blocks the conditional-access write: it waits out the
-        # driver's lock timeout (5s by default) and then fails. The entry is lost, but the failure stays
-        # contained - it is swallowed, the request's own work survives, and the session remains usable.
-        # Callers must therefore release the request session before writing; see the next test.
+        # SQLite locks the whole database for writing, so a request session that has flushed without committing
+        # blocks the conditional-access write until the driver's lock timeout (5s by default) expires and it fails.
+        # The failure is swallowed and stays contained, leaving the request's own session usable; callers must
+        # therefore release the request session before writing (see the next test).
         pending = self._entry("flushed-on-request-session")
         db.session.add(pending)
         db.session.flush()
@@ -201,14 +198,13 @@ class GuardedWriteTestCase(MyTestCase):
         self.assertListEqual(["flushed-on-request-session"], self._stored_usernames())
 
     def test_07b_flushed_lock_succeeds_on_non_sqlite(self):
-        # On MariaDB and PostgreSQL with row-level locking, a conditional-access write succeeds even when the
-        # request session has a flushed-but-uncommitted transaction (the opposite of SQLite behavior in test_07).
-        # This documents the production database behavior.
+        # MariaDB and PostgreSQL use row-level locking, so this write succeeds even with a flushed-but-uncommitted
+        # request-session transaction, unlike SQLite in test_07; this documents production database behavior.
         if db.engine.dialect.name == "sqlite":
             self.skipTest("This test documents non-SQLite (row-level locking) behavior. "
                           "See test_07 for SQLite's database-level locking behavior.")
 
-        # Add and flush work on the request session without committing
+        # Add work to the request session and flush it, without committing.
         pending = self._entry("flushed-on-request-session")
         db.session.add(pending)
         db.session.flush()
@@ -223,9 +219,9 @@ class GuardedWriteTestCase(MyTestCase):
         self.assertListEqual(["alice", "flushed-on-request-session"], self._stored_usernames())
 
     def test_08_commits_once_the_request_session_released_its_lock(self):
-        # The mitigation for the above: with the request session committed (or rolled back) first, there is no
-        # competing write lock and the conditional-access write goes through. This is why request teardown has to
-        # release db.session before flushing the conditional-access writes.
+        # Once the request session is committed (or rolled back) first, there is no competing write lock, so the
+        # conditional-access write goes through - which is why teardown releases db.session before flushing
+        # conditional-access writes.
         db.session.add(self._entry("flushed-on-request-session"))
         db.session.flush()
         db.session.commit()

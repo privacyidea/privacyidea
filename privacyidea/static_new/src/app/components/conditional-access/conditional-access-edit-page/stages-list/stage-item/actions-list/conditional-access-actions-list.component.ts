@@ -44,8 +44,8 @@ export class ConditionalAccessActionsListComponent {
   readonly actionsChange = output<LockoutStageAction[]>();
 
   onAddAction(): void {
-    // Default a new action to one that is valid for the current target, so it is
-    // never born incompatible (e.g. LOCK_USER under a source_ip policy).
+    // Defaults a new action to one valid for the current target, so it is never born incompatible
+    // (e.g. LOCK_USER under a source_ip policy).
     const allowed = this.policyService.actionsForTarget(this.target());
     const actionType = allowed[0] ?? "LOCK_USER";
     this.actionsChange.emit([...this.actions(), { action_type: actionType, action_value: null }]);

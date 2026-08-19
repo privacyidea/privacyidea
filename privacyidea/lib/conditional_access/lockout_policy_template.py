@@ -121,10 +121,8 @@ MFA_BRUTEFORCE = LockoutPolicyTemplate(
         ],
     })
 
-# The authentication-failure event types the failed-attempt rate limits count. Explicit and curated on purpose -
-# deliberately NOT derived from the FAILURE outcome class - because a "FAILURE" outcome does not by itself mean a
-# type belongs in an authentication rate limit: a new failure type must be a conscious decision, never silently
-# pulled in.
+# The failure event types the failed-attempt rate limits count, curated by hand rather than derived from the
+# FAILURE outcome class, so adding a new failure type here is always a conscious decision, never automatic.
 _USER_AUTH_FAILURES = [
     AuthEventType.PASSWORD_FAIL,
     AuthEventType.PIN_FAIL,

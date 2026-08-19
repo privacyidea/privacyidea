@@ -319,8 +319,8 @@ describe("ConditionalAccessPolicyService", () => {
       ).toEqual([{ condition_type: "USER_REALM", values: ["deleted"] }]);
     });
 
-    // A type whose values cannot be enumerated (choices null) has nothing to be judged against, so no
-    // value of it can be called stale - USER_ROLE carries null in this fixture for exactly that case.
+    // A condition type with no enumerable choices (null) has nothing to compare against, so USER_ROLE, which carries
+    // null in this fixture, can never be reported stale.
     it("should treat a non-enumerable condition type as having no stale values", async () => {
       await load();
       expect(service.choicesForConditionType("USER_ROLE")).toBeNull();
@@ -329,8 +329,8 @@ describe("ConditionalAccessPolicyService", () => {
       ).toEqual([]);
     });
 
-    // A type the endpoint does not serve has no operators and no choices, so the editor falls back to
-    // its own labels rather than rendering an empty toggle group.
+    // A type the endpoint does not serve has no operators and no choices, so the editor shows its own hard-coded labels
+    // and never an empty toggle group.
     it("should return no operators and no choices for an unserved condition type", async () => {
       await load();
       expect(service.operatorsForConditionType("NOT_SERVED")).toEqual([]);
@@ -573,9 +573,9 @@ describe("ConditionalAccessPolicyService", () => {
       });
 
       expect(await promise).toBe(false);
-      // The client supplies the "what now" wording for a conflict; the API only states the
-      // mismatch. Asserted as "not the generic failure text" so rewording the copy does not
-      // break the test - what matters is that a 409 is handled distinctly.
+      // The notification blends the client's own wording with the API's mismatch message, so the assertion only checks
+      // it isn't the generic failure text and mentions "refreshed", enough to confirm the 409 is handled distinctly
+      // without pinning the exact copy.
       const shown = notificationServiceMock.error.mock.calls[0][0] as string;
       expect(shown).not.toContain("Failed to reorder");
       expect(shown).toContain("refreshed");

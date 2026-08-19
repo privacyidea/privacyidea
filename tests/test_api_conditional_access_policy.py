@@ -262,8 +262,7 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
         self.assertFalse(policy["stages"][0]["actions"][0]["retrigger_above_threshold"])
 
     def test_create_action_retrigger_flag_round_trips(self):
-        # One stage, two actions with independent modes: the lock re-triggers, the
-        # email fires once.
+        # One stage, two actions with independent modes: the lock re-triggers, the email fires once.
         body = self._policy_body(
             name="Retrig",
             stages=[{"failure_threshold": 8,
@@ -504,10 +503,8 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
         self.assertListEqual([("P1", 1), ("P2", 2)], self._order())
 
     def test_reorder_route_coexists_with_the_policy_id_route(self):
-        # 'policy/<policy_id>' uses a string converter, so the literal 'policy/order'
-        # also matches it. Only PUT is routed to the reorder endpoint; the other verbs
-        # fall through to the id route and must fail cleanly on the non-numeric id
-        # rather than acting on some policy.
+        # The id route's string converter also matches the literal path 'policy/order'; only PUT binds to the
+        # reorder endpoint, so other verbs fall through to the id route and must fail cleanly on a non-numeric id.
         first, second = self._numbered(1, 2)
         self.assertEqual(200, self._request("policy/order", method="PUT",
                                             json_data={"policy_ids": [second, first]}).status_code)
@@ -542,16 +539,14 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
                             json_data={"policy_ids": [second, first], "expected_priorities": [2, 1]})
         self.assertEqual(409, res.status_code, res.json)
         message = res.json["result"]["error"]["message"]
-        # Names the mismatching policy; deliberately no priority numbers and no advice
-        # about what the client should do next.
+        # Names the mismatching policy; deliberately omits priority numbers and advice on what to do next.
         self.assertIn("P2", message)
         self.assertIn("expected priorities", message)
         self.assertNotIn("Reload", message)
         self.assertListEqual([("P2", 1), ("P1", 2)], self._order())
 
     def test_reorder_of_disjoint_rows_does_not_conflict(self):
-        # Two admins rearranging different parts of the list both succeed - the whole
-        # reason the client sends only the rows it moved.
+        # Two admins rearranging different parts of the list both succeed: the client sends only the rows it moved.
         self._numbered(1, 2, 3, 4)
         ids = {policy["name"]: policy["id"] for policy in list_lockout_policies()}
         self.assertEqual(200, self._request("policy/order", method="PUT",

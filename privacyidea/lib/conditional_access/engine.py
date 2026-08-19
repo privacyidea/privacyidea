@@ -50,6 +50,35 @@ if TYPE_CHECKING:
 
 log = logging.getLogger(__name__)
 
+# --- What this module is ----------------------------------------------------------------------------------------------
+# The conditional-access engine: it decides whether a request may proceed, then reacts to how that request turned
+# out. Two entry points, one per phase of a request:
+#
+#   evaluate_access_decision()  - pre-auth, before any credential check. Counts the subject's prior events and
+#                                 answers ALLOW / DENY / CONTINUE. A DENY refuses this one request and persists
+#                                 nothing, so it lifts by itself as the failures age out of the window.
+#   evaluate_lockout_policies() - post-response, once this request's authentication_log row exists so the count
+#                                 includes it. Runs the actions of the single triggered stage: lock, block, email.
+#
+# Callers gate in a fixed order - locked user, then blocked source IP, then the ALLOW/DENY decision - so an ALLOW
+# can never override a restriction that is already persisted (see api/lib/conditional_access.py).
+#
+# What a policy counts: its tracked event types, summed, over its window, for one subject. A `user` policy keys on
+# the resolved (resolver, uid, realm); a `source_ip` policy keys on the IP and applies even when nobody resolves,
+# which is what catches spraying. CountMode decides what "one" means - a row, a whole challenge-response attempt,
+# or a distinct targeted account. Only the lock path forgives failures older than the last successful login; the
+# pre-auth decision and every source_ip mode deliberately do not.
+#
+# What trips: stages, each with a failure threshold. Only the highest matching stage of a policy fires, and each of
+# its actions decides for itself - once at the exact threshold by default, or on every request at or above it.
+#
+# Policies run by ascending priority and the first one to decide wins. A `dry_run` policy still produces outcomes
+# but changes nothing, which is how an admin measures a policy before enforcing it.
+#
+# This module writes no history: it returns ConditionalAccessOutcome objects because it never sees the id of the
+# authentication-log row they belong to. Its own state writes go through guarded_write, one row per block.
+# ----------------------------------------------------------------------------------------------------------------------
+
 
 class LockoutAction(str, Enum):
     """
@@ -383,15 +412,13 @@ def _count_matching_attempts(rows: Sequence[AuthenticationLog], tracked_types: s
     latest: dict[str, AuthenticationLog] = {}
     success: dict[str, AuthenticationLog] = {}
     last_success_id = -1
-    # First pass: aggregate every row into its attempt — the attempt's latest (highest-id) row, its latest success row
-    # if it has one, and the newest LOGIN_SUCCESS row id (the reset point for since_last_success).
+    # First pass: for each row, track its attempt's latest row, its latest success row, and the newest LOGIN_SUCCESS
+    # id (the since_last_success reset point).
     for row in rows:
         if row.event_type in CA_ENFORCEMENT_EVENT_TYPES:
-            # A row conditional access wrote for its own rejection is not an outcome *of* the attempt and must not
-            # classify one: the representative is the latest row by id, so a rejection correlated into an existing
-            # attempt (a client retrying an answered transaction while locked) would displace a tracked failure with an
-            # untracked type and *remove* an attempt that had already been counted - which would stop an escalation
-            # from reaching its next stage once the lock expired.
+            # A row conditional access wrote for its own rejection must never classify the attempt: as the latest row
+            # it would replace a real tracked failure with an untracked type and drop an already-counted attempt,
+            # stalling an escalation once the lock expires.
             continue
         if row.event_type == AuthEventType.LOGIN_SUCCESS:
             last_success_id = max(last_success_id, row.id)
@@ -403,9 +430,8 @@ def _count_matching_attempts(rows: Sequence[AuthenticationLog], tracked_types: s
             latest[row.attempt_id] = row
     cutoff_id = last_success_id if since_last_success else -1
     matches = 0
-    # Second pass: over the distinct attempts, resolve each representative row and count the ones whose event matches —
-    # when flooring, only those whose latest row is newer than the last successful login, and only those whose
-    # representative the row filter admits.
+    # Second pass: for each attempt, count it if its representative's event type matches, it is newer than the last
+    # success when flooring, and the row filter admits it.
     for attempt_id, row in latest.items():
         representative = success.get(attempt_id) or row
         if representative.event_type not in tracked_types or row.id <= cutoff_id:
@@ -666,7 +692,6 @@ def get_user_lockout(user: "User", now: datetime | None = None, *,
         return RestrictionStatus(permanent=True, expires_at=None, seconds_remaining=None)
     now = _naive_utc(now) if now is not None else utc_now()
     if state.lock_expires_at <= now:
-        # If explicitly requested, drop expired rows
         if clear_expired:
             _delete_user_lockout_state(state)
         return None
@@ -689,11 +714,9 @@ def is_user_locked(user: "User", now: datetime | None = None, *, clear_expired: 
     return get_user_lockout(user, now=now, clear_expired=clear_expired) is not None
 
 
-# Built-in never-block networks: blocking loopback would lock out a same-host
-# reverse proxy — and when OVERRIDECLIENT is unset every client is seen as that
-# proxy — turning one BLOCK_IP action into a self-inflicted outage. Admins extend
-# this via the CONDITIONAL_ACCESS_NEVER_BLOCK system config (proxy / load-balancer
-# / NAT / management CIDRs).
+# Built-in never-block networks: with OVERRIDECLIENT unset, every client appears as the same-host reverse proxy, so
+# blocking loopback would turn one BLOCK_IP action into a self-inflicted outage. CONDITIONAL_ACCESS_NEVER_BLOCK
+# extends this list with admin-configured proxy, load-balancer, NAT, or management CIDRs.
 _DEFAULT_NEVER_BLOCK_NETWORKS = ("127.0.0.0/8", "::1/128")
 
 
@@ -703,8 +726,8 @@ def _never_block_networks() -> "list[ipaddress._BaseNetwork]":
     bare IPs) configured in the ``CONDITIONAL_ACCESS_NEVER_BLOCK`` system config.
     Invalid config entries are logged and ignored rather than breaking the engine.
     """
-    # Lazy import: config is loaded very early in app startup; importing it at
-    # module load would risk an import-order cycle.
+    # Imported lazily because config loads very early in app startup; importing it at module load risks an
+    # import-order cycle.
     from privacyidea.lib.config import get_from_config, SYSCONF
     networks = [ipaddress.ip_network(cidr) for cidr in _DEFAULT_NEVER_BLOCK_NETWORKS]
     configured = get_from_config(SYSCONF.CONDITIONAL_ACCESS_NEVER_BLOCK) or ""
@@ -770,8 +793,8 @@ def get_ip_block(source_ip: str | None, now: datetime | None = None, *,
     state = get_ca_session().get(BlockList, source_ip)
     if not state:
         return None
-    # A block row exists; honor the never-block allowlist so adding an IP to it
-    # immediately stops enforcing any (e.g. stale or mistaken) block on that IP.
+    # A block row exists, but the never-block allowlist is honored here too, so adding an IP to it immediately stops
+    # enforcing any stale or mistaken block on that IP.
     if is_ip_never_block(source_ip):
         return None
     if state.block_expires_at is None:
@@ -859,8 +882,8 @@ def evaluate_access_decision(context: CAContext, now: datetime | None = None) ->
         contribution = _policy_access_decision(policy, context, now)
         outcomes.extend(contribution.outcomes)
         if contribution.decision != AccessDecision.CONTINUE:
-            # The first policy that decides wins, so no lower-priority policy is even consulted - and the outcomes
-            # collected so far are exactly those of the policies that had something to say.
+            # The first policy that decides wins: no lower-priority policy is consulted, and the collected outcomes
+            # are exactly those of the policies that had something to say.
             return AccessDecisionResult(contribution.decision, outcomes)
     return AccessDecisionResult(outcomes=outcomes)
 
@@ -885,25 +908,22 @@ def _policy_access_decision(policy: LockoutPolicy, context: CAContext,
     Only a ``DENY`` produces an outcome. An ``ALLOW`` at threshold 0 is the documented default-allow idiom and matches
     every request of every user it covers, so recording it would add a row to every authentication.
     """
-    # Applicability first: a policy whose conditions exclude this request
-    # contributes no decision, and costs no counting query.
+    # Applicability is checked first: a policy whose conditions exclude this request contributes no decision and
+    # costs no counting query.
     if not policy_matches_context(policy, context):
         return AccessDecisionResult()
-    # The counts below scope themselves to the policy's conditions (see _count_scoping), exactly as the
-    # post-response path does. Both paths must scope identically: they count the same subject over the
-    # same window, so a policy that denies on one count and acts on another would be reasoning about two
-    # different histories.
+    # Counts here are scoped to the policy's conditions via _count_scoping, exactly like the post-response path.
+    # Both paths must count the same subject over the same window, or a policy could deny based on one history and
+    # act on another.
     if policy.target == LockoutTarget.SOURCE_IP:
-        # IP-scoped: decide on the source IP regardless of user resolution. A
-        # never-block IP is never denied by an IP policy (mirrors the BLOCK_IP
-        # allowlist), so it contributes no decision.
+        # IP-scoped: decides on the source IP regardless of user resolution; a never-block IP is never denied here
+        # either, mirroring the BLOCK_IP allowlist.
         if not context.source_ip or is_ip_never_block(context.source_ip):
             return AccessDecisionResult()
         count = _policy_count_ip(policy, context.source_ip, now)
         subject_label = f"source IP {context.source_ip}"
     else:
-        # User-scoped: keyed on the resolved user, so an unresolved user is never
-        # decided by a user policy.
+        # User-scoped: keyed on the resolved user, so an unresolved user is never decided by a user policy.
         if not _resolved(context.user):
             return AccessDecisionResult()
         count = _policy_count(policy, context.user, now)
@@ -921,9 +941,8 @@ def _policy_access_decision(policy: LockoutPolicy, context: CAContext,
     outcomes = ([outcome_for_stage(policy, deciding_stage, LockoutAction.DENY, count, dry_run=policy.dry_run)]
                 if decision == AccessDecision.DENY else [])
     if policy.dry_run:
-        # A dry-run policy never decides the request. The outcome still travels back: the pre-auth decision runs
-        # before this request's authentication-log row exists, so the caller buffers it and it is recorded once that
-        # row is written (see ConditionalAccessContext.stage).
+        # A dry-run policy never decides the request, but the pre-auth decision runs before the log row exists, so
+        # the caller buffers this outcome and records it once that row is written (see ConditionalAccessContext.stage).
         log.info(f"[dry-run] policy {policy.name!r} would return {decision} for {subject_label}: "
                  f"{count} event(s) of {types} in {policy.time_window_seconds}s.")
         return AccessDecisionResult(outcomes=outcomes)
@@ -1002,11 +1021,9 @@ def evaluate_lockout_policies(context: CAContext, event_type: AuthEventType | No
         return LockoutEvaluation()
     now = _naive_utc(now) if now is not None else utc_now()
     event_type = str(event_type)
-    # Select only the enabled policies that track the current event type, via an
-    # indexed equality filter on the normalized lockout_policy_counter_types
-    # table (policy_id, counter_type) is unique, so a policy matches at
-    # most once. The combined count over *all* of a matched policy's tracked types
-    # is then computed in _evaluate_policy.
+    # Selects only enabled policies tracking the current event type via an indexed equality filter on the normalized
+    # lockout_policy_counter_types table; (policy_id, counter_type) is unique, so a policy matches at most once.
+    # _evaluate_policy then computes the combined count over all of a matched policy's tracked types.
     policies = get_ca_session().scalars(
         select(LockoutPolicy)
         .options(selectinload(LockoutPolicy.conditions))
@@ -1018,9 +1035,9 @@ def evaluate_lockout_policies(context: CAContext, event_type: AuthEventType | No
     notices: list[str] = []
     outcomes: list[ConditionalAccessOutcome] = []
     for policy in policies:
-        # Guarded per policy so one policy's failure does not cost the others theirs: a broken policy would otherwise
-        # disable every policy ordered behind it. The only failure that escapes is the policy query above, which runs
-        # before any action does, so a retry always starts from a clean slate.
+        # Each policy is evaluated inside its own guard, so a broken policy cannot disable every policy ordered
+        # behind it. The only unguarded step is the policy query above, which runs before any action, so a retry
+        # always starts clean.
         try:
             evaluation = _evaluate_policy(policy, context, event_type, now)
         except Exception as ex:
@@ -1028,9 +1045,9 @@ def evaluate_lockout_policies(context: CAContext, event_type: AuthEventType | No
             continue
         notices.extend(evaluation.notices)
         outcomes.extend(evaluation.outcomes)
-    # De-duplicate the notices while preserving order: several policies tracking the same user can emit the same one
-    # in a single request. The outcomes are *not* de-duplicated - each is a distinct thing that happened, and two
-    # policies locking the same user are two facts worth keeping apart.
+    # Notices are de-duplicated while preserving order, since several policies tracking the same user can emit the
+    # same one. Outcomes are never de-duplicated: each is a distinct fact, and two policies locking the same user are
+    # two facts worth keeping apart.
     seen: set[str] = set()
     unique: list[str] = []
     for notice in notices:
@@ -1081,23 +1098,16 @@ def _evaluate_policy(policy: LockoutPolicy, context: CAContext, event_type: str,
         outcomes describing what was done (both empty if no stage triggered; in dry run there are outcomes but no
         notices, since nothing ran)
     """
-    # Applicability first: a policy whose conditions exclude this request neither
-    # counts nor acts, and costs no counting query.
+    # Applicability is checked first: a policy whose conditions exclude this request neither counts nor acts, and
+    # costs no counting query.
     if not policy_matches_context(policy, context):
         return LockoutEvaluation()
-    # A condition then *also* narrows what is counted, which the counts below apply for themselves (see
-    # _count_scoping). The two halves cannot disagree: OperatorSpec.matches_missing is what answers a
-    # missing value on both sides - directly for the row predicate, and mirrored by OperatorSpec.sql for
-    # the SQL one - so a request the gate admits is one whose rows the scoping admits.
-    #
-    # What it changes is what a policy counts once it applies. That matters for a source-IP policy,
-    # whose subject is the IP and whose rows therefore span many identities, realms and roles: without
-    # this it would count the whole IP's history however narrowly it was scoped. For a user policy the
-    # filters are redundant rather than wrong - the subject is one (resolver, uid, realm) identity, so
-    # the realm is pinned, and with it the role (an admin realm holds only admins, and an internal
-    # admin has no realm at all, so no identity is ever both).
-    #
-    # A policy whose conditions cannot all be expressed as predicates counts unscoped, as before.
+    # A policy's conditions scope what is counted, not just whether it applies (see _count_scoping); matches_missing
+    # and the SQL filter treat a missing value the same way, so the gate and the count never disagree.
+    # This matters for a source-IP policy, whose rows span many identities and roles and would otherwise count the
+    # whole IP's history; for a user policy the filters add little, since the subject already pins one identity's
+    # realm and role.
+    # A policy whose conditions cannot all be expressed as predicates counts unscoped.
     window = policy.time_window_seconds
     user = context.user
     source_ip = context.source_ip
@@ -1106,37 +1116,31 @@ def _evaluate_policy(policy: LockoutPolicy, context: CAContext, event_type: str,
             # An IP-targeted policy cannot count or act without a source IP.
             log.debug(f"Skipping source-IP policy {policy.name!r}: the request carries no source IP.")
             return LockoutEvaluation()
-        # Count per the policy's mode: distinct targeted accounts (spraying) or plain per-IP volume. No
-        # since-last-success reset in any mode — a legit login by one account must not clear a signal aggregated
-        # across the whole IP (see _policy_count_ip).
+        # Counts per the policy's mode: distinct targeted accounts (spraying) or plain per-IP volume; no mode resets
+        # on success, since one account's login must not clear a signal aggregated across the whole IP (see
+        # _policy_count_ip).
         count = _policy_count_ip(policy, source_ip, now)
         subject_label = f"source IP {source_ip}"
     else:
         if not _resolved(user):
-            # A user-target policy is keyed on the resolved (resolver, uid, realm)
-            # user, so an unresolved user (unknown login, local admin) is never
-            # locked. Source-IP policies above still run for such requests.
+            # A user-target policy is keyed on the resolved (resolver, uid, realm) user, so an unresolved user
+            # (unknown login, local admin) is never locked; source-IP policies above still run for such requests.
             return LockoutEvaluation()
-        # The lock counts consecutive failures since the user's last completed login:
-        # a successful authentication clears the slate, so a legitimate user is not
-        # re-locked by stale pre-login failures on their next single typo. (The DENY
-        # decision deliberately does not reset on success — see _policy_access_decision.)
-        # The count is the *combined* total over all of the policy's tracked types,
-        # not just the current request's event_type, so a policy tracking several
-        # failure types trips on their sum.
+        # The lock counts consecutive failures since the user's last completed login, so a legitimate user is not
+        # re-locked by stale pre-login failures (the pre-auth DENY decision deliberately does not reset on success —
+        # see _policy_access_decision).
+        # The count is the combined total across all of the policy's tracked types, not just the current
+        # event_type, so a policy tracking several failure types trips on their sum.
         count = _policy_count(policy, user, now, since_last_success=True)
         subject_label = repr(user)
 
-    # Pick the triggered stage: the highest-priority stage that has at least one
-    # action whose per-action condition is met (see _action_threshold_met). By
-    # default an action fires only at the exact threshold, so each fire-once action
-    # triggers once as the count climbs past it (a threshold-8 email is sent when
-    # the 8th failure lands, not again at 9); a re-triggering action keeps firing
-    # while the count stays at or above the threshold. Stages are ordered
-    # highest-priority first by the relationship, so the most severe stage with a
-    # pending action wins; only that one stage's pending actions run (one stage per
-    # policy per request). (Contrast the pre-auth ALLOW/DENY decision - see
-    # _policy_access_decision.)
+    # Picks the triggered stage: the highest-priority stage with at least one action whose per-action condition is
+    # met (see _action_threshold_met).
+    # By default an action fires once, exactly at the threshold (a threshold-8 email sends on the 8th failure, not
+    # again at 9); retrigger_above_threshold keeps it firing while the count stays at or above the threshold.
+    # Stages are ordered highest-priority first, so the most severe stage with a pending action wins and only that
+    # stage's actions run (one stage per policy per request); contrast the pre-auth ALLOW/DENY decision in
+    # _policy_access_decision.
     triggered_stage = next((stage for stage in policy.stages
                             if _stage_pending_actions(stage, count)), None)
     if triggered_stage is None:
@@ -1147,11 +1151,11 @@ def _evaluate_policy(policy: LockoutPolicy, context: CAContext, event_type: str,
         log.info(f"[dry-run] policy {policy.name!r} would trigger stage {triggered_stage.id} "
                  f"(threshold {triggered_stage.failure_threshold}) for {subject_label}: "
                  f"{count} event(s) of {_types_label(policy.counter_types_to_track)} in {window}s.")
-        # One outcome per action that would have run, carrying the expiry it would have written - which is the whole
-        # point of dry run: the history shows what enforcing this policy would have done to real traffic. A LOCK_USER
-        # or BLOCK_IP whose duration is misconfigured records no expiry, so dry run surfaces that too.
-        # ALLOW/DENY are left out: they decide the request pre-auth and are recorded there (_policy_access_decision),
-        # so recording them again here would double-count the same decision.
+        # One outcome is recorded per action that would have run, carrying the expiry it would have written, so the
+        # history shows what enforcing this policy would have done (a misconfigured LOCK_USER/BLOCK_IP duration
+        # surfaces as a missing expiry).
+        # ALLOW/DENY are excluded here since they are already recorded pre-auth by _policy_access_decision;
+        # recording them again would double-count the same decision.
         outcomes = [outcome_for_stage(policy, triggered_stage, action.action_type, count, dry_run=True,
                                       expires_at=_action_expiry(action, now))
                     for action in pending_actions
@@ -1268,8 +1272,8 @@ def _resolve_admin_recipients(recipient_group: str | None) -> list[str]:
     if "@" in group:
         return [addr.strip() for addr in group.split(",") if addr.strip()]
     if group.lower() in ("internal_admins", "admins", "all"):
-        # Imported lazily: keeps the engine's hot path free of lib.auth's heavy
-        # token/container imports and avoids any import-time coupling.
+        # Imported lazily to keep the engine's hot path free of lib.auth's heavy token/container imports and avoid
+        # import-time coupling.
         from privacyidea.lib.auth import get_all_db_admins
         return [admin.email for admin in get_all_db_admins() if admin.email]
     log.warning(f"Unknown EMAIL_ADMIN recipient_group {recipient_group!r}; "
@@ -1411,10 +1415,8 @@ def _execute_stage_actions(policy: LockoutPolicy, stage: LockoutPolicyStage,
                     notices.append(notice)
                     record(action_type)
             elif action_type in (LockoutAction.BLOCK_IP, LockoutAction.PERMANENT_BLOCK_IP):
-                # Failures are counted per user, so this blocks the source IP
-                # of the request that tripped a *per-user* policy. It does not
-                # detect password spraying (failures from one IP across many
-                # users); it simply blocks the offending request's IP.
+                # BLOCK_IP on a per-user policy blocks only the source IP of the request that tripped it; it is not
+                # a password-spraying detector (failures from one IP across many users).
                 if not source_ip:
                     log.warning(f"{action_type} action {action.id} on stage {stage.id}: this request "
                                 f"has no source IP; skipping.")
@@ -1432,10 +1434,9 @@ def _execute_stage_actions(policy: LockoutPolicy, stage: LockoutPolicyStage,
                 if _upsert_ip_block(source_ip, block_expires_at=block_expires_at):
                     record(action_type, expires_at=block_expires_at)
             elif action_type in (LockoutAction.ALLOW, LockoutAction.DENY):
-                # ALLOW/DENY decide the current request pre-auth (see
-                # evaluate_access_decision); they are not post-response side
-                # effects, so there is nothing to do here - and nothing to record: the decision is already an outcome
-                # of its own from _policy_access_decision.
+                # ALLOW/DENY decide the current request pre-auth (see evaluate_access_decision), so there is
+                # nothing to do or record here — the decision is already recorded as its own outcome in
+                # _policy_access_decision.
                 log.debug(f"{action_type} is a pre-auth access decision; skipping in the "
                           f"post-response engine.")
             else:

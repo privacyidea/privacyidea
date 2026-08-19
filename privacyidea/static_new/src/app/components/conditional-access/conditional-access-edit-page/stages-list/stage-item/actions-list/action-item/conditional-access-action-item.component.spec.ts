@@ -271,8 +271,8 @@ describe("ConditionalAccessActionItemComponent", () => {
     it("keeps one the policy already carries valid for its target", () => {
       setAction({ action_type: "EMAIL_ADMIN", action_value: { smtp_identifier: "primary" } });
       expect(component.allowedActionTypes()).toContain("EMAIL_ADMIN");
-      // The action is still valid for a user-targeted policy: it is the SMTP config that is out of
-      // reach, not the action type, so nothing is flagged as target-incompatible.
+      // The action is still valid for a user-targeted policy: it is the SMTP config that is out of reach, not the
+      // action type, so nothing is flagged as target-incompatible.
       expect(component.isActionAllowedForTarget()).toBe(true);
     });
   });

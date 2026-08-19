@@ -51,8 +51,8 @@ import { DashboardDataRef, DashboardDataStore } from "@services/dashboard/dashbo
 import { formatLocalDateTime } from "@utils/date-format.utils";
 import { forkJoin, of } from "rxjs";
 
-// How many lock records are read for the list. Everything in force is listed, so this is only the ceiling past which
-// the widget defers to the locked-users page (and says so in its footer).
+// Cap on how many lock records the widget fetches for the list; beyond it the widget defers to the locked-users page,
+// as its footer states.
 const LOCK_RECORD_LIMIT = 100;
 
 const MS_PER_DAY = 86_400_000;
@@ -63,8 +63,8 @@ const ACTIVITY_BINS = 32;
 // Window fallback until the blocklist has loaded (or when it holds no entry to date the window from).
 const DEFAULT_WINDOW_MS = 30 * MS_PER_DAY;
 
-// Presets on the icon button at each end of the slider: each one moves only its own end of the window, expressed as
-// an age relative to now (0 = now, null = as far back as the data goes).
+// Presets for the icon buttons at each end of the slider, each moving only its own end, expressed as an age relative to
+// now (0 = now, null = as far back as the data goes).
 export interface RangePreset {
   label: string;
   ageMs: number | null;
@@ -83,8 +83,8 @@ export const WINDOW_END_PRESETS: readonly RangePreset[] = [
   { label: $localize`Up to 7 days ago`, ageMs: 7 * MS_PER_DAY }
 ];
 
-// The three areas the widget summarizes are governed by separate rights, so each is fetched only when its own
-// right is granted and left out of the summary otherwise (see ConditionalAccessSummary's nullable sections).
+// Each of the three areas the widget summarizes has its own read right, so it is fetched only when granted and left out
+// of the summary otherwise (see ConditionalAccessSummary's nullable sections).
 const POLICY_READ: PolicyAction = "lockout_policy_read";
 const LOCKOUT_READ: PolicyAction = "user_lockout_read";
 const BLOCKLIST_READ: PolicyAction = "blocklist_read";
@@ -100,7 +100,8 @@ interface ConditionalAccessResponses {
 }
 
 // One row of the highlights list: a blocked IP or a locked user, reduced to what the row shows. `at` is when the
-// restriction was imposed (the sort key and what the range filter tests), `link` where the row leads.
+// restriction was imposed, both the sort key and what the range filter tests; `kind` decides where the row links (see
+// highlightLink).
 export interface RestrictionHighlight {
   label: string;
   permanent: boolean;
@@ -116,7 +117,7 @@ export interface PolicySummary {
   disabled: number;
 }
 
-// One record set split by state. `inForce` (permanent + temporary) is what actually restricts access right now;
+// One record set split by state: `inForce` (permanent + temporary) is what actually restricts access right now, while
 // `expired` rows no longer do and are what the pages' purge action removes.
 export interface StateSummary {
   permanent: number;
@@ -208,9 +209,8 @@ export class ConditionalAccessWidgetComponent extends DashboardWidget implements
             inForce: enforced.length
           }
         : null,
-      // Every restriction still in force that was imposed inside the selected range - blocked IPs and locked users in
-      // one list, most recent first. Expired rows are left to the blocklist / locked-users pages, where they get
-      // purged.
+      // Every restriction still in force and imposed inside the selected range, blocked IPs and locked users combined
+      // into one most-recent-first list; expired rows are left for the blocklist / locked-users pages to purge.
       highlights: [
         ...enforced.map<RestrictionHighlight>((entry) => ({
           label: entry.identifier,
@@ -236,9 +236,9 @@ export class ConditionalAccessWidgetComponent extends DashboardWidget implements
 
   readonly sliderSteps = SLIDER_STEPS;
 
-  // When restrictions were imposed: every block on record, whatever its state, plus the locks the highlights page
-  // carries. The histogram is about when they were imposed, not about which of them still bite. Locks are limited to
-  // that page, so an older lock outside it is not charted.
+  // Times restrictions were imposed: every block on record regardless of state, plus the locks the highlights list
+  // carries; the histogram tracks when they were imposed, not whether they still bite, so a lock outside that limited
+  // list is not charted.
   private readonly restrictionTimes = computed<number[]>(() => {
     const responses = this.dataRef()?.value();
     return [
@@ -255,8 +255,8 @@ export class ConditionalAccessWidgetComponent extends DashboardWidget implements
     return Date.now();
   });
 
-  // The window the slider spans: from the oldest recorded block (at least a day back) up to now, until a preset
-  // moves either end. Writable, so dragging the thumbs narrows the selection without re-zooming the window.
+  // The window the slider spans, from the oldest recorded block (at least a day back) to now, until a preset moves an
+  // end; it is writable so dragging the thumbs narrows the selection without re-zooming the window.
   readonly windowStartMs = linkedSignal(() => {
     const times = this.restrictionTimes();
     const end = this.nowMs();
@@ -309,8 +309,8 @@ export class ConditionalAccessWidgetComponent extends DashboardWidget implements
       : this.summaryFormat(this.selectedToMs())
   );
 
-  // Move one end of the window. A preset with no age reaches back to the oldest recorded block; the ends never cross,
-  // so picking a start inside the current end (or the other way round) drags the other end along.
+  // Moves one end of the window. A preset with no age reaches back to the oldest recorded block; since the ends never
+  // cross, moving one past the other drags that other end along too.
   applyStartPreset(preset: RangePreset): void {
     const start = preset.ageMs === null ? this.oldestRestrictionMs() : this.nowMs() - preset.ageMs;
     this.windowStartMs.set(start);
@@ -358,15 +358,15 @@ export class ConditionalAccessWidgetComponent extends DashboardWidget implements
     return Number.isNaN(time) || (time >= this.selectedFromMs() && time <= this.selectedToMs());
   }
 
-  // Stale rows across both areas: they restrict nobody, but they are what the purge actions on the
-  // locked-users and blocklist pages clean up, so the widget names them in one place.
+  // Stale rows across both areas restrict nobody, but they are what the locked-users and blocklist pages' purge actions
+  // clean up, so the widget names them in one place.
   readonly staleRecords = computed<number>(() => {
     const summary = this.summary();
     return (summary.lockedUsers?.expired ?? 0) + (summary.blockedIps?.expired ?? 0);
   });
 
-  // The restrictions in force the list does not carry: those outside the selected range, and any beyond
-  // LOCK_RECORD_LIMIT. Named in the footer, so the list is never mistaken for the whole picture.
+  // Restrictions in force that the list omits: those outside the selected range, plus any beyond LOCK_RECORD_LIMIT;
+  // named in the footer so the list is never mistaken for the whole picture.
   readonly hiddenHighlightCount = computed<number>(() => {
     const summary = this.summary();
     const inForce = (summary.blockedIps?.inForce ?? 0) + (summary.lockedUsers?.inForce ?? 0);
@@ -407,14 +407,14 @@ export class ConditionalAccessWidgetComponent extends DashboardWidget implements
       this.store.load<ConditionalAccessResponses>("dashboard:conditional-access", () =>
         forkJoin({
           policies: canReadPolicies ? this.policyService.getPolicies() : of(null),
-          // The lock counts come per state rather than from one page of records: the totals must cover every
-          // lock, not just the page the widget could show.
+          // Lock counts come per state rather than from one page of records, so the totals cover every lock rather than
+          // only the page the widget can show.
           permanentLocks: canReadLockouts ? this.stateService.countLockedUsers(["permanent"]) : of(null),
           temporaryLocks: canReadLockouts ? this.stateService.countLockedUsers(["temporary"]) : of(null),
           expiredLocks: canReadLockouts ? this.stateService.countLockedUsers(["expired"]) : of(null),
-          // Expired entries are included so the widget can report the stale rows a purge would remove.
-          // The records behind the list: the locks still in force, so a lock is listed next to a blocked IP. The
-          // counts above stay exact regardless of how many records this page holds.
+          // Expired entries are included so the widget can report the stale rows a purge would remove. The records
+          // behind the list: locks still in force, listed alongside blocked IPs, while the counts above stay exact
+          // regardless of how many records this page holds.
           recentLocks: canReadLockouts
             ? this.stateService.fetchLockedUsers(["permanent", "temporary"], LOCK_RECORD_LIMIT)
             : of(null),
@@ -424,14 +424,14 @@ export class ConditionalAccessWidgetComponent extends DashboardWidget implements
     );
   }
 
-  // Where a highlight row leads: an IP to its own events in the authentication log (the filter is pre-seeded in
+  // Where a highlight row leads: an IP to its own events in the authentication log (filter pre-seeded in
   // highlightClicked), a locked user to the locked-users page.
   highlightLink(entry: RestrictionHighlight): string {
     return entry.kind === "ip" ? ROUTE_PATHS.AUTHENTICATION_LOG : ROUTE_PATHS.LOCKED_USERS;
   }
 
-  // Pre-seed the authentication-log filter with a highlighted IP so the log opens on that IP's events only,
-  // mirroring the blocklist page. The navigation itself is the template's routerLink.
+  // Pre-seeds the authentication-log filter with a highlighted IP so the log opens on just that IP's events, mirroring
+  // the blocklist page; the template's routerLink handles the navigation itself.
   highlightClicked(entry: RestrictionHighlight): void {
     if (entry.kind === "ip") {
       this.authenticationLogService.authenticationLogFilter.set(new FilterValue().addEntry("source_ip", entry.label));
@@ -449,15 +449,15 @@ export class ConditionalAccessWidgetComponent extends DashboardWidget implements
     return $localize`In force until ${formatLocalDateTime(entry.expiresAt)}`;
   }
 
-  // A restriction in force is what an admin needs to notice, so any non-zero count is flagged; zero reads as
+  // A restriction in force is what an admin needs to notice, so any non-zero count is flagged, while zero reads as
   // "nobody is currently locked out or blocked".
   protected restrictionClass(count: number): string {
     return count > 0 ? "highlight-false" : "highlight-true";
   }
 
   private policySummary(policies: LockoutPolicy[]): PolicySummary {
-    // A dry-run policy is counted on its own and never as enforcing: it evaluates and records findings, but
-    // its actions never run, so an admin reading "3 enforcing" must not be counting it.
+    // A dry-run policy is counted on its own, never as enforcing: it evaluates and records findings, but its actions
+    // never run, so "3 enforcing" must not include it.
     const enabled = policies.filter((policy) => policy.enabled);
     const dryRun = enabled.filter((policy) => policy.dry_run);
     return {

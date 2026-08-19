@@ -90,13 +90,12 @@ from privacyidea.models.lockout_policy import (LockoutPolicy, LockoutPolicyCondi
 
 log = logging.getLogger(__name__)
 
-# name is Unicode(255) in the model; checked here so an over-long name is a
-# clean ParameterError instead of a DB-dependent truncation or error.
+# The model column is Unicode(255); checked here so an over-long name raises a clean ParameterError
+# instead of a DB-dependent truncation.
 MAX_NAME_LENGTH = 255
 
-# The pre-auth ALLOW/DENY actions: standing decisions that apply while the count
-# stays at or above the threshold, so they default to re-triggering (the
-# post-response lock/email/block effects default to fire-once).
+# ALLOW/DENY are standing pre-auth decisions, so they default to re-triggering while the count stays at or above the
+# threshold; the post-response lock/email/block actions default to firing once.
 DECISION_ACTIONS = frozenset({str(LockoutAction.ALLOW), str(LockoutAction.DENY)})
 
 
@@ -144,19 +143,12 @@ def lockout_policy_to_dict(policy: LockoutPolicy) -> dict:
     its stages and actions into the plain-dict shape documented in the module
     docstring (plus the ``id`` of each row).
     """
-    # The scalar columns (id, name, time_window_seconds, enabled, dry_run,
-    # priority) map straight through; counter_types_to_track (an association
-    # proxy) and stages (a relationship) are not table columns, so they are
-    # serialized explicitly.
+    # Scalar columns (id, name, time_window_seconds, enabled, dry_run, priority) map straight through, while
+    # counter_types_to_track and stages are not table columns, so both are serialized explicitly below.
     result = {column: getattr(policy, column) for column in policy.__table__.columns.keys()}
     result["counter_types_to_track"] = list(policy.counter_types_to_track)
-    # Conditions restrict which requests the policy applies to; an empty list means
-    # it applies to everyone. Unlike a stage, a condition carries no id here: nothing
-    # addresses one (no foreign key points at the table, and within a policy the
-    # condition type is already unique), and an update replaces them wholesale, so an
-    # id would only be a value that churns on every write. They are served in
-    # condition_type order - a canonical order for an ANDed set, so the same
-    # conditions always serialize identically and a client can diff the response.
+    # An empty list means the policy applies to everyone; conditions carry no id because updates replace them wholesale.
+    # They serialize in condition_type order (canonical for an ANDed set), so identical conditions diff cleanly.
     result["conditions"] = [
         {
             "condition_type": condition.condition_type,
@@ -164,10 +156,8 @@ def lockout_policy_to_dict(policy: LockoutPolicy) -> dict:
             "value": condition.value,
         } for condition in policy.conditions
     ]
-    # Stages are ordered for display by ascending failure_threshold (the stage
-    # that triggers first comes first). This is independent of the engine's
-    # evaluation order (highest priority first, see the model relationship),
-    # which is why we sort here rather than relying on policy.stages order.
+    # Stages are listed in ascending failure_threshold order for display, independent of the engine's priority-based
+    # evaluation order, so this sorts explicitly rather than relying on policy.stages' relationship order.
     result["stages"] = [
         {
             "id": stage.id,
@@ -266,10 +256,8 @@ def _validate_stage_name(name) -> str | None:
     return name
 
 
-# The actions each target may carry. A user-targeted policy locks/notifies the
-# user; a source-IP policy blocks the IP or alerts the admin - LOCK_USER /
-# EMAIL_USER would have no user to act on. Both targets may decide the request
-# pre-auth via ALLOW/DENY (keyed on the user, resp. the source IP).
+# The actions each target permits: a user policy locks/notifies the user, a source-IP policy blocks the IP or alerts
+# the admin (LOCK_USER/EMAIL_USER have no user to act on); both may also decide the request pre-auth via ALLOW/DENY.
 _ACTIONS_BY_TARGET = {
     LockoutTarget.USER: {
         LockoutAction.LOCK_USER,
@@ -343,11 +331,8 @@ def _validate_target_actions(stage_defs: list["StageDefinition"], target: "Locko
         )
 
 
-# The count modes each target may use, and the default when the caller does not specify one. Both targets support the
-# volume modes (per request or per whole attempt); a ``source_ip`` target additionally offers ``DISTINCT_USERS`` - the
-# distinct targeted accounts (spraying / enumeration) signal - and defaults to it, since that is the characteristic
-# per-IP threat, while the volume modes give plain per-IP rate limiting. Mirrors the per-target ``_ACTIONS_BY_TARGET``
-# registration.
+# Count modes each target may use, and its default; both support the volume modes (per-request, per-attempt).
+# source_ip also offers DISTINCT_USERS, the spraying/enumeration signal, defaulting to it as the characteristic threat.
 _COUNT_MODES_BY_TARGET = {
     LockoutTarget.USER: {CountMode.PER_REQUEST, CountMode.PER_ATTEMPT},
     LockoutTarget.SOURCE_IP: {CountMode.DISTINCT_USERS, CountMode.PER_REQUEST, CountMode.PER_ATTEMPT},
@@ -431,8 +416,8 @@ def _validate_stages(stages) -> list[StageDefinition]:
         unknown = set(stage) - allowed_stage_keys - {"id"}
         if unknown:
             raise ParameterError(f"Unknown stage key(s): {', '.join(sorted(unknown))}.")
-        # A threshold of 0 always matches (e.g. an ALLOW allowlist / default-allow
-        # stage); higher thresholds fire at count >= threshold. So 0 is valid.
+        # A threshold of 0 always matches (e.g. an ALLOW allowlist / default-allow stage); higher thresholds fire
+        # once the count reaches them.
         threshold = stage.get("failure_threshold")
         if isinstance(threshold, bool) or not isinstance(threshold, int) or threshold < 0:
             raise ParameterError("'failure_threshold' must be a non-negative integer.")
@@ -456,9 +441,8 @@ def _validate_stages(stages) -> list[StageDefinition]:
                 raise ParameterError(
                     f"Unknown action type '{action_type}'. Valid types: {', '.join(sorted(valid_actions))}."
                 )
-            # retrigger_above_threshold is a per-action checkbox (coerced like the
-            # policy-level enabled/dry_run booleans). An omitted flag stays None
-            # and is resolved to the action-aware default by :func:`_build_stages`.
+            # retrigger_above_threshold is a per-action flag, coerced like the policy-level enabled/dry_run booleans;
+            # left unset it stays None, and _build_stages resolves it to the action-aware default.
             retrigger_raw = action.get("retrigger_above_threshold")
             retrigger = None if retrigger_raw is None else bool(retrigger_raw)
             normalized_actions.append(
@@ -694,10 +678,8 @@ def create_lockout_policy(
     counter_types = _validate_counter_types(counter_types_to_track)
     stage_defs = _validate_stages(stages)
     _validate_target_actions(stage_defs, lockout_target)
-    # `is None`, not `or []`: only an *omitted* conditions parameter means "applies to everyone". Any other
-    # value goes through _validate_conditions, so a falsy non-list (0, False, {}) is a 400 rather than
-    # being silently read as "no conditions" - which would widen an access-control policy to every request
-    # on malformed input. Mirrors the `is not None` discipline of update_lockout_policy.
+    # Checked with `is None`, not `or []`: only an omitted conditions parameter means "applies to everyone";
+    # any other falsy value is a 400, not silently "no conditions" - which would widen the policy to every request.
     condition_defs = _validate_conditions([] if conditions is None else conditions)
 
     policy = LockoutPolicy(
@@ -756,9 +738,7 @@ def update_lockout_policy(
     :raises ResourceNotFoundError: if no policy with this id exists
     """
     policy = _get_policy(policy_id)
-    # Validate everything first: an invalid stage list must not leave a
-    # half-applied rename behind (nothing is flushed before the commit below,
-    # but keeping validation up front makes that invariant obvious).
+    # Validates everything up front, so an invalid stage list cannot leave a half-applied rename behind.
     if name is not None:
         name = _validate_name(name, exclude_id=policy.id)
     if time_window_seconds is not None:
@@ -812,10 +792,8 @@ def update_lockout_policy(
             policy.count_mode = count_mode
             changed_fields.append("count_mode")
         if counter_types_to_track is not None:
-            # Delete the existing rows and flush before inserting the replacements,
-            # so a single flush never holds two rows with the same
-            # (policy_id, counter_type). This keeps a replacement that reuses a
-            # counter type within the (policy_id, counter_type) unique constraint.
+            # Deletes the existing rows and flushes before inserting the replacements, so a flush never holds two rows
+            # with the same (policy_id, counter_type), even when a replacement reuses a counter type.
             policy.counter_types = []
             db.session.flush()
             policy.counter_types_to_track = counter_types_to_track
@@ -828,9 +806,8 @@ def update_lockout_policy(
             policy.stages = _build_stages(stages)
             changed_fields.append("stages")
         if conditions is not None:
-            # Same split-flush replacement, keeping the
-            # (policy_id, condition_type) unique constraint when a condition type
-            # is reused across the update.
+            # Same split-flush replacement, keeping the (policy_id, condition_type) unique constraint when a
+            # condition type is reused across the update.
             policy.conditions = []
             db.session.flush()
             policy.conditions = _build_conditions(conditions)
@@ -894,7 +871,6 @@ def reorder_lockout_policies(policy_ids: list[int], expected_priorities: list[in
     if expected_priorities is not None:
         stale = [policy.name for policy, expected in zip(policies, expected_priorities) if policy.priority != expected]
         if stale:
-            # Raise error for mismatching policy priorities.
             names = ", ".join(f"'{name}'" for name in stale)
             raise ConflictError(
                 "The submitted expected priorities do not match the current "
@@ -903,11 +879,8 @@ def reorder_lockout_policies(policy_ids: list[int], expected_priorities: list[in
     # The values these policies hold, lowest first: reassigned in the requested order.
     priorities = sorted(policy.priority for policy in policies)
     with _unique_conflict_as_400():
-        # Park every policy on a value that cannot collide with a live one (ids are
-        # unique and priorities are validated >= 1) before assigning the new ones: the
-        # uniqueness constraint is checked per statement, so writing the final values
-        # straight away would collide with whichever policy still holds them. The
-        # flushes force the statement order rather than leaving it to the unit of work.
+        # Parks every policy on a value that can't collide with a live one (ids unique, priorities >= 1), then
+        # assigns the new ones, since uniqueness is checked per statement; the flushes force that statement order.
         for policy in policies:
             policy.priority = -policy.id
         db.session.flush()

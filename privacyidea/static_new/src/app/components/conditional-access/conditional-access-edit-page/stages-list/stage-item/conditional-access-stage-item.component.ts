@@ -40,14 +40,14 @@ export class ConditionalAccessStageItemComponent {
   readonly stage = input.required<LockoutPolicyStage>();
   // 1-based trigger order (lowest threshold = Stage 1), shown as "Stage N".
   readonly stageNumber = input.required<number>();
-  // The identity the policy acts on; passed down to the action editor so it can
-  // offer only the action types valid for this target.
+  // The identity the policy acts on, passed down to the action editor so it can offer only the
+  // action types valid for this target.
   readonly target = input<LockoutTarget>("user");
   readonly updateStage = output<Partial<LockoutPolicyStage>>();
   readonly removeStage = output<void>();
 
-  // A saved stage (with an id) shows its name as text plus an edit button; an
-  // unsaved stage has no id and stays in the name input until the policy is saved.
+  // A saved stage (with an id) shows its name as text plus an edit button; an unsaved stage has no
+  // id and stays in the name input until the policy is saved.
   readonly editingName = signal(false);
 
   onNameInput(value: string): void {

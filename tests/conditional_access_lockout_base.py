@@ -52,15 +52,13 @@ class LockoutTestCase(MyTestCase):
     """
 
     def setUp(self):
-        # The app context is pushed once per class, so g outlives the individual requests a test
-        # dispatches and leftovers bleed between tests (e.g. a previous /auth leaving
-        # resolved_user.is_local_admin set, which build_ca_context reads to classify the role).
-        # The engine's inputs come from g, so these tests start it empty.
+        # The app context is pushed once per class, so g outlives individual requests and leftovers bleed between
+        # tests (e.g. a previous /auth leaving resolved_user.is_local_admin set, which build_ca_context reads for
+        # the role); the engine's inputs come from g, so these tests start it empty.
         self.reset_flask_g()
         self.setUp_user_realms()
-        # "cornelius" resolves to a non-empty uid in the test resolver ("root" has an
-        # empty uid there), so it is a fully resolved (resolver, uid, realm) identity
-        # the engine acts on; it also carries an email address the EMAIL_* actions target.
+        # "cornelius" resolves to a non-empty uid ("root" has an empty one), so it is a fully resolved
+        # (resolver, uid, realm) identity the engine acts on, and it carries an email the EMAIL_* actions target.
         self.user = User("cornelius", self.realm1, self.resolvername1)
         self._clear()
 

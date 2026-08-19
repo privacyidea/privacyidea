@@ -95,8 +95,8 @@ def conditional_access_precheck(user: User, log_rejection: bool = True) -> Respo
     def reject(event_type: AuthEventType, audit_info: str) -> Response:
         """Classify the request in the authentication log (unless opted out) and return the generic failure."""
         if log_rejection:
-            # Staged like any other event, so request teardown writes it; attempt_id resolves as usual, which links the
-            # rejection into the attempt it refused to process when the request carries that transaction.
+            # Staged like any other event, so teardown writes it, and attempt_id still links this rejection into the
+            # attempt it refused when the request carries a transaction id.
             log_authentication(event_type, request, user=user,
                                transaction_id=get_optional_one_of(request.all_data, ["transaction_id", "state"]))
         g.audit_object.log({"success": False, "info": audit_info})
@@ -109,9 +109,9 @@ def conditional_access_precheck(user: User, log_rejection: bool = True) -> Respo
         log.info(f"Rejecting authentication from blocked IP {g.client_ip!r}.")
         return reject(AuthEventType.IP_BLOCKED, "Rejected: source IP is blocked")
     decision = evaluate_access_decision(build_ca_context(user))
-    # A DENY decision is part of this request's history, but no authentication-log row exists yet to record it against
-    # (and a dry-run DENY lets the request continue, so its row comes later). The context holds the outcomes until the
-    # request stages the event they belong to - which, for an enforced DENY, is the row written just below.
+    # The DENY decision belongs to this request's history before any log row exists, so the context buffers its outcomes
+    # until the request stages an event - the row written just below for an enforced DENY, or a later row if this is a
+    # dry run that lets the request continue.
     get_ca_context().add_outcomes(decision.outcomes)
     if decision.decision == AccessDecision.DENY:
         log.info(f"Denying authentication for {user!r} by conditional-access policy.")
@@ -305,8 +305,8 @@ def _reject_restricted_login(user: User) -> None:
                         id=Error.AUTHENTICATE_WRONG_CREDENTIALS,
                         details={"restriction": _restriction_kind(lockout)})
     decision = evaluate_access_decision(build_ca_context(user))
-    # The decision belongs to this request's history, but its authentication-log row does not exist yet: the context
-    # keeps the outcomes until the login stages its event (a dry-run DENY lets the login continue and land on that row).
+    # The decision belongs to this request's history before its log row exists, so the context keeps its outcomes until
+    # the login stages an event; a dry-run DENY lets the login continue and lands on that later row.
     get_ca_context().add_outcomes(decision.outcomes)
     if decision.decision == AccessDecision.DENY:
         log.info(f"Denying /auth login for {user!r} by conditional-access policy.")

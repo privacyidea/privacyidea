@@ -245,8 +245,8 @@ describe("ConditionalAccessEditPageComponent — edit mode", () => {
     expect(component.priorityInput()).toBe(String(mockPolicy.priority));
   });
 
-  // mat-form-field only projects <mat-error> while its control is in an error state, so
-  // asserting on the signals alone would pass with nothing rendered. These read the DOM.
+  // mat-form-field only projects <mat-error> while its control is in an error state, so asserting on the signals alone
+  // would pass with nothing rendered; these helpers read the DOM instead.
   const renderedErrors = (): string[] =>
     Array.from(fixture.nativeElement.querySelectorAll("mat-error")).map((element) =>
       (element as HTMLElement).textContent!.trim()
@@ -360,8 +360,8 @@ describe("ConditionalAccessEditPageComponent — edit mode", () => {
       expect(component.hasChanges()).toBe(true);
     });
 
-    // An empty list would stringify differently from an absent key, marking a policy that never had
-    // conditions as dirty after a condition was added and removed again.
+    // An empty list would stringify differently from an absent key, marking a policy that never had conditions as dirty
+    // after a condition was added and removed again.
     it("should drop the key rather than store an empty list, leaving the policy unchanged", () => {
       component.onConditionsChange([{ condition_type: "USER_REALM", operator: "IN", value: ["sales"] }]);
       component.onConditionsChange([]);
@@ -383,8 +383,8 @@ describe("ConditionalAccessEditPageComponent — edit mode", () => {
       ]);
     });
 
-    // Omitting the key here would leave the stored conditions in place: the backend replaces them
-    // only when the key is present, so clearing them takes an explicit empty list.
+    // Omitting the key here would leave the stored conditions in place: the backend replaces them only when the key is
+    // present, so clearing them takes an explicit empty list.
     it("should send an empty list when the stored policy's last condition is removed", async () => {
       policyServiceMock.policies.set([
         { ...mockPolicy, conditions: [{ condition_type: "USER_REALM", operator: "IN", value: ["sales"] }] }
@@ -403,8 +403,8 @@ describe("ConditionalAccessEditPageComponent — edit mode", () => {
       expect(component.canSave()).toBe(true);
     });
 
-    // The backend rejects a value outside the type's current vocabulary, and the editor PATCHes the
-    // whole policy - so without this gate any save of such a policy would fail with a 400.
+    // The backend rejects a value outside the type's current vocabulary, and since the editor PATCHes the whole policy,
+    // without this gate any save of such a policy would fail with a 400.
     it("should be invalid and block saving when a condition names a value that is gone", () => {
       component.onConditionsChange([{ condition_type: "USER_REALM", operator: "IN", value: ["sales", "deleted"] }]);
       expect(component.conditionValuesValid()).toBe(false);
@@ -418,16 +418,16 @@ describe("ConditionalAccessEditPageComponent — edit mode", () => {
       expect(component.conditionValuesValid()).toBe(true);
     });
 
-    // Dropping a stale value silently would rewrite the policy on load: dropping it from a NOT_IN
-    // widens an exemption and from an IN narrows enforcement, neither of which the admin asked for.
+    // Dropping a stale value silently would rewrite the policy on load: dropping it from a NOT_IN widens an exemption,
+    // and from an IN narrows enforcement, neither of which the admin asked for.
     it("should keep a stale value on the loaded policy instead of dropping it", () => {
       policyServiceMock.policies.set([
         { ...mockPolicy, conditions: [{ condition_type: "USER_REALM", operator: "NOT_IN", value: ["deleted"] }] }
       ]);
       paramMap$.next(convertToParamMap({ id: String(mockPolicy.id) }));
       fixture.detectChanges();
-      // toMatchObject rather than toEqual: Signal Forms stamps its own identity symbols onto the
-      // objects of the model it wraps, which an exact comparison would trip over.
+      // toMatchObject rather than toEqual: Signal Forms stamps its own identity symbols onto the objects of the model
+      // it wraps, which an exact comparison would trip over.
       expect(component.editPolicy().conditions).toMatchObject([
         { condition_type: "USER_REALM", operator: "NOT_IN", value: ["deleted"] }
       ]);
@@ -597,8 +597,8 @@ describe("ConditionalAccessEditPageComponent — new mode", () => {
       expect(applyAndReadActionTypes(["smtpserver_read"])).toEqual(["LOCK_USER", "EMAIL_ADMIN"]);
     });
 
-    // The email action stays offered without the right; the identifier field just becomes a free-text
-    // input explaining why the configured servers cannot be listed.
+    // The email action stays offered without the right; the identifier field becomes free text explaining why the
+    // configured servers cannot be listed.
     it("prefills it for one who may not, too", () => {
       expect(applyAndReadActionTypes([])).toEqual(["LOCK_USER", "EMAIL_ADMIN"]);
       expect(component.editPolicy().name).toBe("MFA Brute-Force");
