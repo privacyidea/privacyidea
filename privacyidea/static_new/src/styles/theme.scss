@@ -9,8 +9,19 @@ html {
     --rose-ripple: light-dark(#f4d7e0, #433d3e);
     --sky-bg: light-dark(#edf3f5, #283034);
 
-    // Highlight half of every shadow pair (--elevation-* in styles.scss), held short of pure white.
-    --mat-sys-light: light-dark(#f5f5f5, #242424);
+    // Highlight half of every shadow pair (--elevation-* in styles.scss). Kept a close step from
+    // --mat-sys-shadow so both halves read as grey and the pair separates surfaces softly.
+    --mat-sys-light: light-dark(#e8e8e8, #303030);
+
+    // The two halves of the flat depth level's 1px border. A border is a hard line on the surface
+    // it outlines, so it needs tones that clear both --mat-sys-background and --table-color; the
+    // shadow pair above is deliberately soft and lands too near one or the other. Straddling the
+    // page is no good either: a tone light enough to show against it is then the card's own fill.
+    // So both halves sit clear of both surfaces on the same side — darker in light mode, lighter
+    // in dark — which also lets them stay close together. --flat-border-light is the half a step
+    // back toward the surface, and lands on the two edges the light reaches.
+    --flat-border-shadow: light-dark(hsl(0, 0%, 70%), hsl(0, 0%, 45%));
+    --flat-border-light: light-dark(hsl(0, 0%, 82%), hsl(0, 0%, 32%));
 
     --mat-sys-primary-dark: light-dark(hsl(198, 66%, 25%), hsl(198, 66%, 60%));
     --mat-sys-primary-base: light-dark(hsl(198, 66%, 30%), hsl(198, 66%, 55%));
@@ -59,7 +70,7 @@ html {
     --mat-sys-on-surface-variant: light-dark(hsl(0, 0%, 30%), hsl(0, 0%, 80%));
     --mat-sys-on-primary-container: light-dark(hsl(198, 66%, 10%), hsl(198, 66%, 80%));
     // Shadow half of every shadow pair (--elevation-* in styles.scss), held short of pure black.
-    --mat-sys-shadow: light-dark(#cccccc, #0d0d0d);
+    --mat-sys-shadow: light-dark(#d1d1d1, #1c1c1c);
 
     --mat-sys-outline: light-dark(hsl(246, 4%, 48%), hsl(0, 0%, 40%));
     --nav-item-border: light-dark(#d0d0d0, #333333);
@@ -77,7 +88,17 @@ html {
     --rose-ripple: #f4d7e0;
     --sky-bg: #edf3f5;
 
-    --mat-sys-light: #f5f5f5;
+    --mat-sys-light: #e8e8e8;
+
+    // The two halves of the flat depth level's 1px border. A border is a hard line on the surface
+    // it outlines, so it needs tones that clear both --mat-sys-background and --table-color; the
+    // shadow pair above is deliberately soft and lands too near one or the other. Straddling the
+    // page is no good either: a tone light enough to show against it is then the card's own fill.
+    // So both halves sit clear of both surfaces on the same side — darker in light mode, lighter
+    // in dark — which also lets them stay close together. --flat-border-light is the half a step
+    // back toward the surface, and lands on the two edges the light reaches.
+    --flat-border-shadow: hsl(0, 0%, 70%);
+    --flat-border-light: hsl(0, 0%, 82%);
 
     --mat-sys-primary-dark: hsl(198, 66%, 25%);
     --mat-sys-primary-base: hsl(198, 66%, 30%);
@@ -125,7 +146,7 @@ html {
     --mat-sys-on-surface: hsl(0, 0%, 10%);
     --mat-sys-on-surface-variant: hsl(0, 0%, 30%);
     --mat-sys-on-primary-container: hsl(198, 66%, 10%);
-    --mat-sys-shadow: #cccccc;
+    --mat-sys-shadow: #d1d1d1;
     --mat-sys-outline: hsl(246, 4%, 48%);
     --nav-item-border: #d0d0d0;
 
@@ -142,7 +163,17 @@ html {
     --rose-ripple: #433d3e;
     --sky-bg: #283034;
 
-    --mat-sys-light: #242424;
+    --mat-sys-light: #303030;
+
+    // The two halves of the flat depth level's 1px border. A border is a hard line on the surface
+    // it outlines, so it needs tones that clear both --mat-sys-background and --table-color; the
+    // shadow pair above is deliberately soft and lands too near one or the other. Straddling the
+    // page is no good either: a tone light enough to show against it is then the card's own fill.
+    // So both halves sit clear of both surfaces on the same side — darker in light mode, lighter
+    // in dark — which also lets them stay close together. --flat-border-light is the half a step
+    // back toward the surface, and lands on the two edges the light reaches.
+    --flat-border-shadow: hsl(0, 0%, 45%);
+    --flat-border-light: hsl(0, 0%, 32%);
 
     --mat-sys-primary-dark: hsl(198, 66%, 60%);
     --mat-sys-primary-base: hsl(198, 66%, 55%);
@@ -190,7 +221,7 @@ html {
     --mat-sys-on-surface: hsl(0, 0%, 90%);
     --mat-sys-on-surface-variant: hsl(0, 0%, 80%);
     --mat-sys-on-primary-container: hsl(198, 66%, 80%);
-    --mat-sys-shadow: #0d0d0d;
+    --mat-sys-shadow: #1c1c1c;
     --mat-sys-outline: hsl(0, 0%, 40%);
     --nav-item-border: #363636;
 

@@ -27,6 +27,7 @@ $light-source-step-angle: math.div(360, $light-source-steps);
 // Must stay in step with AppearanceService's DEFAULT_LIGHT_SOURCE.
 $default-light-source: 16;
 
+// A direction component reduced to -1, 0 or 1, for offsets that must land on whole pixels.
 @function sign-of($value) {
   @if $value > 0 {
     @return 1;
@@ -278,9 +279,9 @@ body {
 // one theme's tone into the other.
 
 // --depth-scale drives --elevation-*, --inset-shadow-*, --side-glow and, through --depth-tint,
-// the --surface-raised / --inset-surface-* gradients. "flat" overrides the shadow slots with one
-// hard 1px pair, so all three collapse onto the same shadow and the inset tones alone say how
-// deep a surface sits.
+// the --surface-raised / --inset-surface-* gradients. "flat" overrides the shadow slots with a
+// 1px two-tone border, so all three collapse onto the same edge and the inset tones alone say how deep a
+// surface sits.
 html.depth-flat {
   --depth-scale: 0;
   // Tone alone separates the levels here: the ladder at full strength, the tint at nothing, so
@@ -288,20 +289,26 @@ html.depth-flat {
   --depth-tone-scale: 1;
   --depth-tint: 0%;
 
-  // One hard pair per slot, and the only thing drawing a surface's edge here. The light lays a
-  // full 2px outline and the shadow, offset and spread by 1px, covers the two sides the light
-  // falls away from — so the ring closes at every corner. Two mirrored offsets cannot: each band
-  // reaches only its own two sides, leaving the corners between them bare, which shows as a 2px
-  // notch once the corners are square and no longer curve over it.
-  --flat-light: var(--mat-sys-surface-container);
+  // The border keeps the two tones of a shadow pair, so an edge still reads as lit from one side
+  // even with no shadow to cast: the darker tone on the two sides the light falls away from, the
+  // lighter one on the two it reaches. --flat-border-shadow / --flat-border-light carry them, set
+  // per theme in theme.scss — see the note there for why the border cannot borrow the shadow
+  // pair's own tones or a step of the container ladder.
+
+  // Three bands, each an unspread 1px so the edge is an even 1px the whole way round. The two
+  // mirrored offsets reach only their own two sides, leaving one pixel bare at the two corners
+  // between them; the uniform ring is listed last, so it paints under both and fills exactly
+  // those corners.
   --flat-pair:
-    calc(1px * var(--depth-sign-x)) calc(1px * var(--depth-sign-y)) 0 1px var(--mat-sys-shadow),
-    0 0 0 2px var(--flat-light);
-  // The inset pair keeps the mirrored offsets: an inset shadow is clipped to the padding box, so
-  // both bands run the full side and already meet in the corners.
+    calc(1px * var(--depth-sign-x)) calc(1px * var(--depth-sign-y)) 0 0 var(--flat-border-shadow),
+    calc(-1px * var(--depth-sign-x)) calc(-1px * var(--depth-sign-y)) 0 0 var(--flat-border-light),
+    0 0 0 1px var(--flat-border-shadow);
+  // The same three, inset: an inset band lands on the side its offset moves away from, so the
+  // mirrored pair covers all four edges inside the padding box.
   --flat-inset-pair:
-    inset calc(1px * var(--depth-sign-x)) calc(1px * var(--depth-sign-y)) 0 1px var(--mat-sys-shadow),
-    inset calc(-1px * var(--depth-sign-x)) calc(-1px * var(--depth-sign-y)) 0 1px var(--flat-light);
+    inset calc(1px * var(--depth-sign-x)) calc(1px * var(--depth-sign-y)) 0 0 var(--flat-border-shadow),
+    inset calc(-1px * var(--depth-sign-x)) calc(-1px * var(--depth-sign-y)) 0 0 var(--flat-border-light),
+    inset 0 0 0 1px var(--flat-border-shadow);
 
   --elevation-3: var(--flat-pair);
   --elevation-5: var(--flat-pair);
@@ -309,12 +316,12 @@ html.depth-flat {
   --inset-shadow-3: var(--flat-inset-pair);
   --inset-shadow-5: var(--flat-inset-pair);
   --inset-shadow-8: var(--flat-inset-pair);
-  // The same pair, horizontal only: these surfaces hang off a bar, and the spread the other slots
-  // use would draw a line along the bottom edge they share with it. The offset carries the full
-  // 2px instead, so the band is as thick as theirs.
+  // The same border, horizontal only: these surfaces hang off a bar, and the ring the other slots
+  // use would draw a line along the bottom edge they share with it. Two mirrored bands run the
+  // full height, so no corner is left bare and no filler ring is needed.
   --side-glow:
-    calc(2px * var(--depth-sign-x)) 0 0 0 var(--mat-sys-shadow),
-    calc(-2px * var(--depth-sign-x)) 0 0 0 var(--flat-light);
+    calc(1px * var(--depth-sign-x)) 0 0 0 var(--flat-border-shadow),
+    calc(-1px * var(--depth-sign-x)) 0 0 0 var(--flat-border-light);
 }
 
 // Each level's tone scale is the next level's shadow scale; very-strong tops the ladder out with
@@ -355,9 +362,9 @@ html.depth-very-strong {
       --dial-angle: #{$angle}deg;
       --depth-dir-x: #{$dir-x};
       --depth-dir-y: #{$dir-y};
-      // The same directions as -1, 0 or 1. Blurred shadows take the fractional ones; the hard
-      // flat pair takes these, so its offsets stay whole pixels and every edge rasterizes to the
-      // same width wherever the box happens to land on the pixel grid.
+      // The same directions as -1, 0 or 1. Blurred shadows take the fractional ones; the flat
+      // border takes these, so its offsets stay whole pixels and every edge rasterizes to the same
+      // width wherever the box happens to land on the pixel grid.
       --depth-sign-x: #{sign-of($dir-x)};
       --depth-sign-y: #{sign-of($dir-y)};
     }
