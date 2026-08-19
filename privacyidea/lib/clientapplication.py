@@ -27,7 +27,6 @@ The code is tested in tests/test_lib_clientapplication.py.
 """
 
 import logging
-import time
 import traceback
 from datetime import datetime
 
@@ -79,12 +78,18 @@ def _written_within(client_key: tuple, interval: int) -> bool:
     Return True if this worker wrote the given client's row less than
     ``interval`` seconds ago.
 
+    The age is measured on the same clock the ``lastseen`` column is written
+    from, because that is what the interval is about: how stale the recorded
+    timestamp may become. A clock set backwards can therefore hold a refresh
+    back for as long as the jump, which for a "last seen" column is not worth
+    guarding against.
+
     Only ever reads. The timestamp is recorded in :py:func:`_note_write` after
     the row has actually been written, so a write that fails is retried on the
     next request instead of being skipped for a whole interval.
     """
     last_write = get_app_local_store().get(_LAST_WRITE_KEY, {}).get(client_key)
-    return last_write is not None and time.monotonic() - last_write < interval
+    return last_write is not None and (datetime.now() - last_write).total_seconds() < interval
 
 
 def _note_write(client_key: tuple, interval: int) -> None:
@@ -93,12 +98,13 @@ def _note_write(client_key: tuple, interval: int) -> None:
         # Nothing is being skipped, so there is nothing to remember
         return
     last_writes = get_app_local_store().setdefault(_LAST_WRITE_KEY, {})
-    now = time.monotonic()
+    now = datetime.now()
     last_writes[client_key] = now
     if len(last_writes) <= _MAX_TRACKED_CLIENTS:
         return
     try:
-        stale = [key for key, written_at in last_writes.items() if now - written_at >= interval]
+        stale = [key for key, written_at in last_writes.items()
+                 if (now - written_at).total_seconds() >= interval]
     except RuntimeError:
         # Another thread added a client while we were looking. Nothing here has
         # to be exact - the entries are only there to skip writes - so leave the

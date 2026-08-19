@@ -21,20 +21,188 @@
 
 :host {
   @include widget.host;
-  width: 100%;
-  align-items: flex-start;
+  flex-direction: column;
+  align-items: stretch;
+  overflow: hidden;
 }
 
-.subscriptions-table {
-  @include widget.stat-table(var(--global-padding));
+// The frame renders these in its header, but they are declared in this component's
+// template, so view encapsulation keeps the frame's own .widget-action sizing from
+// reaching them. Repeated here so they match the reload button beside them.
+.widget-header-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  --mdc-icon-button-state-layer-size: 28px;
 
-  td:nth-child(2) {
-    white-space: nowrap;
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    line-height: 18px;
   }
 
-  td:last-child {
-    text-align: right;
-    font-weight: normal;
+  // The copy icon lives inside the copy button's own component.
+  ::ng-deep .copy-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    line-height: 18px;
+  }
+}
+
+.table-container {
+  box-sizing: border-box;
+  overflow: auto;
+  height: 100%;
+  width: 100%;
+}
+
+.subscription-table {
+  width: 100%;
+  border-collapse: collapse;
+  // The widget cannot grow when the admin switches to the detailed view — the dashboard
+  // layout is theirs to arrange — so both views have to live in the same box. Fixed
+  // column widths keep the extra columns inside the widget instead of widening the
+  // table, and every cell stays one line high, so the two views are the same height.
+  table-layout: fixed;
+  // No font size of its own: the other widgets' tables set none either, so this one reads
+  // at the same size as the widgets beside it. The rows are dense through their padding
+  // and line height instead, which is what lets the compact view fit every component.
+
+  th,
+  td {
+    text-align: left;
+    padding: 1px var(--quarter-global-padding);
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    // The same line height the scrollable versions cell needs, so a row is exactly as
+    // tall in the detailed view as in the compact one.
+    line-height: 1.5;
+    // Opt out of the app-wide column striping (styles/table.scss): here the columns are
+    // an overview of states, and a fill on every other one only groups them by accident.
+    background: transparent;
+  }
+
+  th {
+    font-weight: 600;
+    // Dimmed through the text colour, not opacity: opacity would composite the whole
+    // element and let the rows scrolling underneath show through the sticky header.
+    color: var(--mat-sys-on-surface-variant);
+    position: sticky;
+    top: 0;
+    // Matches the widget frame so the rows scroll under the sticky header.
+    background: var(--mat-sys-surface-container-lowest);
+  }
+
+  // Compact view: only three columns, so they share the width in proportion instead of
+  // leaving the two dots pressed against the right edge. Half for the name, a quarter
+  // for each status — which also gives both headers room to be read in full.
+  .application-cell {
+    width: 50%;
+  }
+
+  .dot-column {
+    text-align: center;
+    width: 25%;
+  }
+
+  // Detailed view: it trades the two dot columns for the dates and versions, and the
+  // space they free goes to those columns rather than to the name — a date with its
+  // "days left" needs the room, a component name does not. Proportional so the split
+  // holds at whatever width the admin gives the widget, and the table never grows wider
+  // than the widget in either view.
+  &.detailed {
+    .application-cell {
+      width: 30%;
+    }
+
+    // The widest content of the four: a date plus "(expiring, 41 days left)".
+    .expires-cell {
+      width: 34%;
+    }
+
+    .versions-cell {
+      width: 16%;
+    }
+
+    .current-version-cell {
+      width: 20%;
+    }
+  }
+
+  .section-row td {
+    font-weight: 600;
+    color: var(--mat-sys-on-surface-variant);
+    padding-top: var(--quarter-global-padding);
+  }
+
+  .server-row .application-cell {
+    font-weight: 600;
+  }
+
+  .muted {
+    color: var(--grey-base);
+  }
+
+  // A client can have many versions in use. The list stays on one line and scrolls
+  // inside its cell rather than wrapping, which would make the row (and with it the
+  // whole widget) taller. The full list is in the cell's tooltip.
+  .versions-scroll {
+    overflow-x: auto;
+    white-space: nowrap;
+    // One line high whatever the content: a taller cell would push the row, and with it
+    // the whole table, past the height the compact view needs. The scrollbar is thin and
+    // sits inside that line.
+    height: 1.5em;
+    line-height: 1.5em;
+    scrollbar-width: thin;
+  }
+}
+
+.status-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.status-dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--grey-base);
+  // Holds the glyph that carries the state alongside the colour. Small enough, and with
+  // its own line height, that the dot stays inside the single line every cell is.
+  font-size: 10px;
+  line-height: 1;
+  font-weight: 700;
+  // Paired with the dot fill rather than with the page surface: the fills are the same
+  // in both themes, so the ink on them has to be too.
+  color: hsl(0, 0%, 100%);
+
+  &.dot-good {
+    background: var(--green-light);
+  }
+
+  &.dot-warn {
+    background: var(--yellow-light-active);
+    // The yellow is too light to read white on.
+    color: hsl(0, 0%, 12%);
+  }
+
+  &.dot-bad {
+    background: var(--red-light);
+  }
+
+  &.dot-none {
+    background: var(--grey-base);
   }
 }

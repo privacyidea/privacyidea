@@ -5,8 +5,6 @@ import mock
 from datetime import datetime, timedelta
 from contextlib import contextmanager
 
-import time
-
 from sqlalchemy import event
 from sqlalchemy.engine import Engine
 
@@ -57,6 +55,26 @@ class ClientApplicationTestCase(MyTestCase):
         self.assertEqual(r["PAM"][0]["ip"], "1.2.3.4")
         self.assertTrue(r["RADIUS"][0]["lastseen"] < datetime.now())
         self.assertTrue(r["SAML"][0]["lastseen"] < datetime.now())
+
+    def test_03_update_refreshes_lastseen(self):
+        # Saving the same (ip, clienttype, node) again updates the existing row's
+        # lastseen instead of leaving it stale.
+        ClientApplication.query.delete()
+        t1 = datetime.now()
+        t2 = t1 + timedelta(minutes=5)
+
+        with mock.patch("privacyidea.lib.clientapplication.datetime") as mock_dt:
+            mock_dt.now.return_value = t1
+            save_clientapplication("1.2.3.4", "PAM")
+        row = ClientApplication.query.filter_by(ip="1.2.3.4", clienttype="PAM").one()
+        self.assertEqual(t1, row.lastseen)
+
+        with mock.patch("privacyidea.lib.clientapplication.datetime") as mock_dt:
+            mock_dt.now.return_value = t2
+            save_clientapplication("1.2.3.4", "PAM")
+        # Still exactly one row, and its lastseen advanced to t2.
+        row = ClientApplication.query.filter_by(ip="1.2.3.4", clienttype="PAM").one()
+        self.assertEqual(t2, row.lastseen)
 
     def test_02_multiple_nodes(self):
         @contextmanager
@@ -212,12 +230,10 @@ class ClientApplicationWriteThrottleTestCase(MyTestCase):
                 first_seen = datetime.now()
                 mock_dt.now.return_value = first_seen
                 save_clientapplication("1.2.3.4", "PAM")
-                # Move the worker's clock past the interval rather than sleeping
-                with mock.patch("privacyidea.lib.clientapplication.time.monotonic",
-                                return_value=time.monotonic() + 61):
-                    later = first_seen + timedelta(seconds=61)
-                    mock_dt.now.return_value = later
-                    save_clientapplication("1.2.3.4", "PAM")
+                # Move the clock past the interval rather than sleeping
+                later = first_seen + timedelta(seconds=61)
+                mock_dt.now.return_value = later
+                save_clientapplication("1.2.3.4", "PAM")
         row = ClientApplication.query.filter_by(ip="1.2.3.4", clienttype="PAM").one()
         self.assertEqual(later, row.lastseen)
 
@@ -258,7 +274,7 @@ class ClientApplicationWriteThrottleTestCase(MyTestCase):
             save_clientapplication("1.2.3.4", "PAM")
             last_writes = get_app_local_store()[_LAST_WRITE_KEY]
             # Fill it past the cap with clients last written long ago
-            long_ago = time.monotonic() - 3600
+            long_ago = datetime.now() - timedelta(hours=1)
             for index in range(_MAX_TRACKED_CLIENTS + 10):
                 last_writes[("node", f"10.0.{index // 256}.{index % 256}", "PAM")] = long_ago
             save_clientapplication("10.1.1.1", "PAM")
