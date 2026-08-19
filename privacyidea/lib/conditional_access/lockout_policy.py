@@ -40,9 +40,8 @@ A policy is passed around as a plain dict::
         "stages": [
             {
                 "failure_threshold": 5,
-                "priority": 1,
                 "actions": [
-                    {"action_type": "LOCK_USER", "action_value": {"lock_duration_seconds": 600},
+                    {"action_type": "LOCK_USER", "action_value": {"duration_seconds": 600},
                      "retrigger_above_threshold": True},
                     {"action_type": "EMAIL_ADMIN", "action_value": {"smtp_identifier": "..."},
                      "retrigger_above_threshold": False},
@@ -132,7 +131,6 @@ class StageDefinition:
     """
 
     failure_threshold: int
-    priority: int
     actions: list[StageActionDefinition] = field(default_factory=list)
     name: str | None = None
 
@@ -156,14 +154,13 @@ def lockout_policy_to_dict(policy: LockoutPolicy) -> dict:
             "value": condition.value,
         } for condition in policy.conditions
     ]
-    # Stages are listed in ascending failure_threshold order for display, independent of the engine's priority-based
-    # evaluation order, so this sorts explicitly rather than relying on policy.stages' relationship order.
+    # Stages are listed in ascending failure_threshold order for display, the reverse of the engine's evaluation
+    # order, so this sorts explicitly rather than relying on policy.stages' relationship order.
     result["stages"] = [
         {
             "id": stage.id,
             "name": stage.name,
             "failure_threshold": stage.failure_threshold,
-            "priority": stage.priority,
             "actions": [
                 {
                     "id": action.id,
@@ -392,21 +389,67 @@ def _validate_counter_types(counter_types) -> list[str]:
     return seen
 
 
+def _validate_threshold_for_actions(threshold: int, actions: list[StageActionDefinition]) -> None:
+    """
+    Check a stage's ``failure_threshold`` against what its actions do.
+
+    A threshold counts failures, so 1 is the lowest meaningful value for anything
+    that reacts to a count. "Lock the user after 0 failures" is not a rule, it is
+    a typo, so :attr:`LockoutAction.LOCK_USER`, ``BLOCK_IP``, the ``PERMANENT_*``
+    variants and the ``EMAIL_*`` actions all require at least 1.
+
+    The :data:`DECISION_ACTIONS` are the exception, because they do not react to a
+    count at all - they state a standing verdict, and re-trigger by default, so at
+    threshold 0 they apply to every request the policy covers:
+
+    * ``ALLOW`` at 0 is the allowlist / default-allow idiom: exempt this realm,
+      role or address from every policy ordered behind it.
+    * ``DENY`` at 0 is a lockdown: refuse everything the policy covers, whatever
+      the subject has done. Scope it with conditions - a ``USER_ROLE NOT_IN
+      [admin-internal]`` carve-out is the break-glass pattern - because a ``DENY``
+      writes no state, so no ``pi-manage conditionalaccess`` reset command can
+      lift it; recovering from an unscoped one means disabling the policy in the
+      database.
+
+    A stage with no actions at all is refused at 0 as well: at any other threshold
+    it is merely inert, but at 0 it is indistinguishable from an unfinished rule.
+
+    :raises ParameterError: if the threshold is 0 and the stage has no actions, or
+        any action that is not a standing decision
+    """
+    if threshold > 0:
+        return
+    offenders = sorted({str(action.action_type) for action in actions
+                        if str(action.action_type) not in DECISION_ACTIONS})
+    if not actions or offenders:
+        listed = ", ".join(offenders) if offenders else "no action"
+        raise ParameterError(
+            f"A failure_threshold of 0 is only allowed on a stage whose every action is one of "
+            f"{', '.join(sorted(DECISION_ACTIONS))} - those state a standing verdict instead of counting "
+            f"failures; this stage has {listed}. Use a threshold of 1 or more."
+        )
+
+
 def _validate_stages(stages) -> list[StageDefinition]:
     """
-    Validate the stage definitions: a non-empty list of dicts, each with a
-    unique non-negative ``failure_threshold``, an optional positive ``priority``
-    (default 1) and a list of actions whose ``action_type`` is a valid
+    Validate the stage definitions: a non-empty list of dicts, each with a unique
+    ``failure_threshold`` and a list of actions whose ``action_type`` is a valid
     :class:`LockoutAction`. ``action_value`` may be any JSON-serializable value
     (its action-specific interpretation happens in the engine); unknown keys in
     a stage or action dict are rejected so typos fail loudly.
+
+    A threshold counts failures, so it starts at 1. The exception is a stage whose
+    every action is a standing decision (``ALLOW`` or ``DENY``): threshold 0 then
+    means "always", which is the allowlist and the lockdown idiom. Any action that
+    reacts to a count is refused at 0 - see
+    :func:`_validate_threshold_for_actions`.
 
     :return: normalized list of :class:`StageDefinition` (without ids)
     """
     if not isinstance(stages, list) or not stages:
         raise ParameterError("'stages' must be a non-empty list of stage definitions.")
     valid_actions = {action.value for action in LockoutAction}
-    allowed_stage_keys = {"name", "failure_threshold", "priority", "actions"}
+    allowed_stage_keys = {"name", "failure_threshold", "actions"}
     allowed_action_keys = {"action_type", "action_value", "retrigger_above_threshold"}
     normalized = []
     thresholds = set()
@@ -416,8 +459,8 @@ def _validate_stages(stages) -> list[StageDefinition]:
         unknown = set(stage) - allowed_stage_keys - {"id"}
         if unknown:
             raise ParameterError(f"Unknown stage key(s): {', '.join(sorted(unknown))}.")
-        # A threshold of 0 always matches (e.g. an ALLOW allowlist / default-allow stage); higher thresholds fire
-        # once the count reaches them.
+        # Range-checked here, then checked against the stage's actions once those are known: only an all-ALLOW
+        # stage may use 0 (see _validate_threshold_for_actions).
         threshold = stage.get("failure_threshold")
         if isinstance(threshold, bool) or not isinstance(threshold, int) or threshold < 0:
             raise ParameterError("'failure_threshold' must be a non-negative integer.")
@@ -425,7 +468,6 @@ def _validate_stages(stages) -> list[StageDefinition]:
             raise ParameterError(f"Duplicate failure_threshold {threshold}: thresholds must be unique within a policy.")
         thresholds.add(threshold)
         name = _validate_stage_name(stage.get("name"))
-        priority = _validate_positive_int(stage.get("priority", 1), "priority")
         actions = stage.get("actions", [])
         if not isinstance(actions, list):
             raise ParameterError("'actions' must be a list of action definitions.")
@@ -452,8 +494,9 @@ def _validate_stages(stages) -> list[StageDefinition]:
                     retrigger_above_threshold=retrigger,
                 )
             )
+        _validate_threshold_for_actions(threshold, normalized_actions)
         normalized.append(
-            StageDefinition(failure_threshold=threshold, priority=priority, name=name, actions=normalized_actions)
+            StageDefinition(failure_threshold=threshold, name=name, actions=normalized_actions)
         )
     return normalized
 
@@ -575,7 +618,6 @@ def _build_stages(stage_defs: list[StageDefinition]) -> list[LockoutPolicyStage]
         LockoutPolicyStage(
             name=stage.name,
             failure_threshold=stage.failure_threshold,
-            priority=stage.priority,
             actions=[
                 LockoutStageAction(
                     action_type=action.action_type,

@@ -784,11 +784,10 @@ class LockoutPolicyTestCase(MyTestCase):
         # Add two stages with different thresholds
         stage5 = LockoutPolicyStage(policy_id=policy_id, failure_threshold=5)
         stage5.save()
-        stage15 = LockoutPolicyStage(policy_id=policy_id, failure_threshold=15,
-                                     priority=10)
+        stage15 = LockoutPolicyStage(policy_id=policy_id, failure_threshold=15)
         stage15.save()
 
-        # Stages are ordered by descending priority, so the most severe stage comes first
+        # Stages are ordered by descending threshold, so the most severe stage comes first
         self.assertEqual([15, 5], [s.failure_threshold for s in policy.stages])
         self.assertEqual(policy_id, stage5.policy.id)
 

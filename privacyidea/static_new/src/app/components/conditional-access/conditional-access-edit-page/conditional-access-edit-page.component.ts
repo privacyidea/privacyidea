@@ -60,6 +60,11 @@ const TIME_UNIT_FACTORS: Record<TimeUnit, number> = {
   hours: 3600
 };
 
+// The actions that state a standing verdict instead of reacting to a failure count. They are the only
+// ones a stage may carry at threshold 0, where they then apply to every request the policy covers -
+// mirroring DECISION_ACTIONS and _validate_threshold_for_actions in lib/conditional_access.
+const STANDING_DECISION_ACTIONS: string[] = ["ALLOW", "DENY"];
+
 // Human-readable labels for the policy targets served by /conditionalaccess/targets; a target missing here falls back
 // to its raw value.
 const TARGET_LABELS: Record<string, string> = {
@@ -200,9 +205,19 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
   counterTypesValid = computed(() => this.editPolicy().counter_types_to_track.length > 0);
   stagesValid = computed(() => {
     const stages = this.editPolicy().stages;
-    // Priority is derived from the threshold on save rather than edited here; a threshold of 0 is
-    // valid as an always-matching ALLOW/DENY allowlist stage.
-    return stages.length > 0 && stages.every((stage) => stage.failure_threshold >= 0);
+    // A threshold counts failures, so it starts at 1. The exception the backend also makes
+    // (_validate_threshold_for_actions): a stage whose every action is a standing ALLOW/DENY verdict
+    // may use 0, which then means "always" - the allowlist and the lockdown idiom.
+    return (
+      stages.length > 0 &&
+      stages.every(
+        (stage) =>
+          stage.failure_threshold >= 1 ||
+          (stage.failure_threshold === 0 &&
+            stage.actions.length > 0 &&
+            stage.actions.every((action) => STANDING_DECISION_ACTIONS.includes(action.action_type)))
+      )
+    );
   });
   // Every stage action must be allowed for the selected target, matching the backend's
   // _ACTIONS_BY_TARGET check; the action select only offers compatible actions, but switching an
@@ -238,9 +253,9 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
   // and targetActionsValid.
   readonly staleConditionValues = computed(() => this.policyService.staleConditionValues(this.editPolicy().conditions));
   conditionValuesValid = computed(() => this.staleConditionValues().length === 0);
-  // Only the highest-priority stage whose threshold is met ever fires, so two stages sharing a
-  // threshold would leave one permanently dead; the backend also rejects this
-  // (uq_lockout_stage_policy_threshold), so it is blocked here too.
+  // Only the highest matching threshold ever fires, so two stages sharing a threshold would leave
+  // one permanently dead; the backend also rejects this (uq_lockout_stage_policy_threshold), so it
+  // is blocked here too.
   stageThresholdsUnique = computed(() => {
     const thresholds = this.editPolicy().stages.map((stage) => stage.failure_threshold);
     return new Set(thresholds).size === thresholds.length;
@@ -449,13 +464,10 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
   }
 
   savePolicy(): Promise<boolean> {
-    // Stage priority is not user-editable: each stage's priority is derived from its unique
-    // failure_threshold, so a higher threshold gets a higher priority and wins when several match.
+    // Stages carry no priority: the engine evaluates them by descending failure_threshold, so the
+    // thresholds the admin entered are the order.
     const policy = this.editPolicy();
-    const payload: LockoutPolicySaveParams = {
-      ...policy,
-      stages: policy.stages.map((stage) => ({ ...stage, priority: stage.failure_threshold }))
-    };
+    const payload: LockoutPolicySaveParams = { ...policy };
     if (!payload.conditions?.length) {
       // The backend only replaces conditions when the key is present, so an empty list is sent to
       // clear stored conditions, while a policy with none omits the key entirely — otherwise

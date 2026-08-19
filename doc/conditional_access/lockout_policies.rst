@@ -121,8 +121,22 @@ the 9th. Enable **re-trigger above threshold** for an action that should fire on
 every further request as well - a lock usually should, so that it is renewed
 while the attack continues.
 
-A threshold of ``0`` always matches. This is how a default rule is written, for
-example an ``ALLOW`` action at threshold 0 as an exception for one realm.
+Stages are evaluated from the highest threshold down, so the order follows the
+thresholds themselves and there is nothing else to configure.
+
+A threshold counts failures and therefore starts at 1. ``ALLOW`` and ``DENY`` are
+the exception: they state a standing verdict instead of reacting to a count, so a
+stage carrying nothing but ``ALLOW`` or nothing but ``DENY`` may use threshold
+``0``, which then means *always*. That is how the two blanket rules are written -
+an ``ALLOW`` exempting one realm from everything behind it, or a ``DENY`` locking
+down what the policy covers.
+
+.. warning:: A ``DENY`` at threshold 0 refuses **every** request the policy
+   covers, whatever the subject has done. Scope it with conditions, and leave
+   yourself a way back in - *user role is not one of [admin-internal]* keeps the
+   internal administrators able to log in. A ``DENY`` stores no state, so none of
+   the ``pi-manage conditionalaccess`` reset commands can lift it; undoing an
+   unscoped one means disabling the policy in the database.
 
 .. _lockout_policies_actions:
 

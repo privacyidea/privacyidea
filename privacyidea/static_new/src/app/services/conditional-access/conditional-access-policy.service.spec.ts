@@ -50,7 +50,6 @@ describe("ConditionalAccessPolicyService", () => {
       {
         id: 1,
         failure_threshold: 5,
-        priority: 1,
         actions: [{ id: 1, action_type: "LOCK_USER", action_value: { lock_duration_seconds: 600 } }]
       }
     ],
@@ -247,7 +246,7 @@ describe("ConditionalAccessPolicyService", () => {
         count_mode: "PER_REQUEST" as const,
         counter_types_to_track: ["PASSWORD_FAIL" as const],
         stages: [
-          { failure_threshold: 10, priority: 1, actions: [{ action_type: "LOCK_USER" as const, action_value: null }] }
+          { failure_threshold: 10, actions: [{ action_type: "LOCK_USER" as const, action_value: null }] }
         ]
       }
     };

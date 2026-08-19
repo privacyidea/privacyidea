@@ -267,9 +267,11 @@ def create_policy():
         types (e.g. ``["PIN_FAIL", "MFA_FAIL"]``) counted together against the
         stage thresholds. Required.
     :jsonparam stages: non-empty list of stage definitions, each
-        ``{"failure_threshold": <int>, "priority": <int, optional>,
+        ``{"failure_threshold": <int>, "name": <str, optional>,
         "actions": [{"action_type": <LockoutAction>, "action_value": <any>}]}``.
-        Required.
+        Thresholds must be unique within the policy and are the evaluation order
+        (highest first). A threshold starts at 1, except on a stage whose every
+        action is ``ALLOW``, where 0 means "always". Required.
     :jsonparam enabled: whether the policy is evaluated (default true).
     :jsonparam dry_run: log-only mode, nothing is enforced (default false).
     :jsonparam priority: evaluation priority; lower numbers are evaluated first.

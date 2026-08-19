@@ -70,7 +70,7 @@ PASSWORD_BRUTEFORCE = LockoutPolicyTemplate(
         "counter_types_to_track": [AuthEventType.PASSWORD_FAIL,
                                    AuthEventType.PIN_FAIL],
         "stages": [
-            {"failure_threshold": 10, "priority": 1,
+            {"failure_threshold": 10,
              "actions": [{"action_type": LockoutAction.LOCK_USER,
                           "action_value": {"duration_seconds": 900}}]},
         ],
@@ -89,10 +89,10 @@ MFA_BRUTEFORCE = LockoutPolicyTemplate(
         "count_mode": CountMode.PER_REQUEST,
         "counter_types_to_track": [AuthEventType.MFA_FAIL],
         "stages": [
-            {"failure_threshold": 3, "priority": 1,
+            {"failure_threshold": 3,
              "actions": [{"action_type": LockoutAction.LOCK_USER,
                           "action_value": {"duration_seconds": 600}}]},
-            {"failure_threshold": 5, "priority": 2,
+            {"failure_threshold": 5,
              "actions": [
                  {"action_type": LockoutAction.LOCK_USER,
                   "action_value": {"duration_seconds": 1800}},
@@ -106,7 +106,7 @@ MFA_BRUTEFORCE = LockoutPolicyTemplate(
                                "{event_type} events. Time: {time}.")}},
              ]},
 
-            {"failure_threshold": 10, "priority": 3,
+            {"failure_threshold": 10,
              "actions": [
                  {"action_type": LockoutAction.PERMANENT_LOCK_USER},
                  {"action_type": LockoutAction.EMAIL_ADMIN,
@@ -154,7 +154,7 @@ USER_RATE_LIMITING = LockoutPolicyTemplate(
         "count_mode": CountMode.PER_ATTEMPT,
         "counter_types_to_track": list(TRACKABLE_EVENT_TYPES),
         "stages": [
-            {"failure_threshold": 20, "priority": 1,
+            {"failure_threshold": 20,
              "actions": [{"action_type": LockoutAction.DENY}]},
         ],
     })
@@ -173,7 +173,7 @@ USER_FAILED_RATE_LIMITING = LockoutPolicyTemplate(
         "count_mode": CountMode.PER_ATTEMPT,
         "counter_types_to_track": list(_USER_AUTH_FAILURES),
         "stages": [
-            {"failure_threshold": 10, "priority": 1,
+            {"failure_threshold": 10,
              "actions": [{"action_type": LockoutAction.DENY}]},
         ],
     })
@@ -192,7 +192,7 @@ PASSWORD_SPRAYING = LockoutPolicyTemplate(
         "count_mode": CountMode.DISTINCT_USERS,
         "counter_types_to_track": [AuthEventType.PASSWORD_FAIL, AuthEventType.PIN_FAIL],
         "stages": [
-            {"failure_threshold": 20, "priority": 1,
+            {"failure_threshold": 20,
              "actions": [{"action_type": LockoutAction.BLOCK_IP,
                           "action_value": {"duration_seconds": 3600}}]},
         ],
@@ -213,7 +213,7 @@ USER_ENUMERATION = LockoutPolicyTemplate(
         "count_mode": CountMode.DISTINCT_USERS,
         "counter_types_to_track": [AuthEventType.USER_UNKNOWN],
         "stages": [
-            {"failure_threshold": 10, "priority": 1,
+            {"failure_threshold": 10,
              "actions": [{"action_type": LockoutAction.BLOCK_IP,
                           "action_value": {"duration_seconds": 3600}}]},
         ],
@@ -237,7 +237,7 @@ IP_FAILED_RATE_LIMITING = LockoutPolicyTemplate(
         "count_mode": CountMode.DISTINCT_USERS,
         "counter_types_to_track": list(_IP_AUTH_FAILURES),
         "stages": [
-            {"failure_threshold": 20, "priority": 1,
+            {"failure_threshold": 20,
              "actions": [{"action_type": LockoutAction.DENY}]},
         ],
     })
@@ -257,7 +257,7 @@ IP_RATE_LIMITING = LockoutPolicyTemplate(
         "count_mode": CountMode.DISTINCT_USERS,
         "counter_types_to_track": list(TRACKABLE_EVENT_TYPES),
         "stages": [
-            {"failure_threshold": 30, "priority": 1,
+            {"failure_threshold": 30,
              "actions": [{"action_type": LockoutAction.DENY}]},
         ],
     })

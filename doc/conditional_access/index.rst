@@ -94,10 +94,11 @@ Blocking the wrong address can lock out everybody. ``127.0.0.0/8`` and
 comma-separated list of IP addresses or CIDR networks.
 
 The exemption is also applied while enforcing, so adding an address
-immediately stops an existing block from taking effect. An exempt address is
-skipped silently: no block is created and nothing is recorded for it, so a
-source IP policy tried out from the privacyIDEA host itself looks as if it never
-triggered.
+immediately stops an existing block from taking effect. It withholds the block
+itself, not the whole policy: an exempt address is never blocked and is never
+refused by a ``DENY``, but a policy it trips still counts, still records what it
+did in the authentication log, and still runs the other actions of the stage -
+an ``EMAIL_ADMIN`` alongside the block is sent as usual.
 
 .. warning:: A source IP is only meaningful if privacyIDEA sees the real client
    address. Behind a reverse proxy or a load balancer you have to configure

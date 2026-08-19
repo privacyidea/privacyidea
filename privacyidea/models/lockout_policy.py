@@ -79,7 +79,10 @@ class LockoutPolicy(MethodsMixin, db.Model):
         "LockoutPolicyStage",
         back_populates="policy",
         cascade="all, delete-orphan",
-        order_by="LockoutPolicyStage.priority.desc()")
+        # Descending threshold, which is the evaluation order: the most severe matching stage wins. The
+        # (policy_id, failure_threshold) unique constraint makes this a total order, so the triggered stage never
+        # depends on insertion order.
+        order_by="LockoutPolicyStage.failure_threshold.desc()")
     # The failure counter type(s) this policy tracks, normalized into this indexed child table: the
     # per-request lookup is one equality filter on counter_type, avoiding a Python scan of every enabled policy.
     counter_types: Mapped[list["LockoutPolicyCounterType"]] = relationship(
@@ -188,11 +191,14 @@ class LockoutPolicyStage(MethodsMixin, db.Model):
     the stage's ``failure_threshold`` (see
     :attr:`LockoutStageAction.retrigger_above_threshold` for the per-action
     fire-once vs re-trigger choice); escalation is expressed as separate stages
-    per threshold. The stage's own ``priority`` column (distinct from, and
-    ordered opposite to, :attr:`LockoutPolicy.priority`) orders the stages
-    *within* one policy for the pre-auth ALLOW/DENY decision: stages are
-    evaluated by descending ``priority``, so the most severe matching stage
-    supplies the verdict.
+    per threshold. Stages are evaluated by descending ``failure_threshold``, so
+    the most severe matching stage is the one that acts (and, on the pre-auth
+    path, the one that supplies the ALLOW/DENY verdict). The threshold is unique
+    per policy, so that order is total and needs nothing else configured.
+
+    A threshold counts failures and therefore starts at 1; the CRUD layer allows
+    0 only on a stage whose every action is ``ALLOW``, the unconditional
+    default-allow idiom.
     """
     __tablename__ = 'lockout_policy_stages'
     __table_args__ = (
@@ -206,7 +212,6 @@ class LockoutPolicyStage(MethodsMixin, db.Model):
     # Optional human-readable label for the stage (e.g. "Warn", "Lock 10 min").
     name: Mapped[str | None] = mapped_column(Unicode(255), nullable=True)
     failure_threshold: Mapped[int] = mapped_column(Integer, nullable=False)
-    priority: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
 
     policy: Mapped["LockoutPolicy"] = relationship("LockoutPolicy", back_populates="stages")
     actions: Mapped[list["LockoutStageAction"]] = relationship(

@@ -55,12 +55,12 @@ from privacyidea.models.lockout_policy import (
 from .base import MyTestCase
 
 
-def _stage(threshold=5, priority=1, actions=None, retrigger=False):
+def _stage(threshold=5, actions=None, retrigger=False):
     if actions is None:
         actions = [{"action_type": "LOCK_USER", "action_value": {"lock_duration_seconds": 600}}]
     # retrigger is per action; apply it to each action of this stage.
     actions = [{**action, "retrigger_above_threshold": retrigger} for action in actions]
-    return {"failure_threshold": threshold, "priority": priority, "actions": actions}
+    return {"failure_threshold": threshold, "actions": actions}
 
 
 class LockoutPolicyCrudTestCase(MyTestCase):
@@ -86,7 +86,7 @@ class LockoutPolicyCrudTestCase(MyTestCase):
         policy_id = create_lockout_policy(
             "Brute Force", 600, ["PIN_FAIL", "MFA_FAIL"],
             stages=[_stage(5),
-                    _stage(10, priority=2,
+                    _stage(10,
                            actions=[{"action_type": "PERMANENT_LOCK_USER", "action_value": None},
                                     {"action_type": "EMAIL_ADMIN",
                                      "action_value": {"smtp_identifier": "mock"}}])],
@@ -141,6 +141,31 @@ class LockoutPolicyCrudTestCase(MyTestCase):
         self.assertTrue(by_threshold[3]["actions"][0]["retrigger_above_threshold"])  # DENY
         self.assertFalse(by_threshold[5]["actions"][0]["retrigger_above_threshold"])  # LOCK_USER
 
+    def test_01d_threshold_zero_is_only_for_standing_decisions(self):
+        # A threshold counts failures, so anything reacting to a count starts at 1. ALLOW and DENY state a
+        # standing verdict instead, so 0 means "always": the allowlist and the lockdown idiom.
+        usr = LockoutTarget.USER
+        for action_type in ("ALLOW", "DENY"):
+            policy_id = create_lockout_policy(
+                f"zero_{action_type}", 600, ["PIN_FAIL"],
+                [{"failure_threshold": 0, "actions": [{"action_type": action_type}]}],
+                target=usr, priority=1)
+            policy = get_lockout_policy(policy_id)
+            self.assertEqual(0, policy["stages"][0]["failure_threshold"])
+            delete_lockout_policy(policy_id)
+
+        # Everything that reacts to a count is refused at 0, as is a stage with no action to justify it.
+        for stage in ([{"failure_threshold": 0, "actions": [{"action_type": "LOCK_USER",
+                                                             "action_value": {"duration_seconds": 60}}]}],
+                      [{"failure_threshold": 0, "actions": [{"action_type": "EMAIL_ADMIN"}]}],
+                      # A mixed stage is refused too: the LOCK_USER half would fire at zero failures.
+                      [{"failure_threshold": 0, "actions": [{"action_type": "ALLOW"},
+                                                            {"action_type": "LOCK_USER",
+                                                             "action_value": {"duration_seconds": 60}}]}],
+                      [{"failure_threshold": 0, "actions": []}]):
+            self.assertRaises(ParameterError, create_lockout_policy, "zero_bad", 600, ["PIN_FAIL"],
+                              stage, target=usr, priority=1)
+
     def test_02_create_validation_errors(self):
         valid = dict(
             time_window_seconds=600,
@@ -181,7 +206,7 @@ class LockoutPolicyCrudTestCase(MyTestCase):
         self.assertRaises(ParameterError, create_lockout_policy, "P", 600, ["PIN_FAIL"], None,
                           target=usr, priority=2)
         self.assertRaises(ParameterError, create_lockout_policy, "P", 600, ["PIN_FAIL"],
-                          [{"priority": 1}], target=usr, priority=2)  # missing threshold
+                          [{"name": "no threshold"}], target=usr, priority=2)  # missing threshold
         self.assertRaises(ParameterError, create_lockout_policy, "P", 600, ["PIN_FAIL"],
                           [_stage(5), _stage(5)], target=usr, priority=2)  # duplicate threshold
         self.assertRaises(ParameterError, create_lockout_policy, "P", 600, ["PIN_FAIL"],
@@ -438,7 +463,7 @@ class LockoutPolicyCrudTestCase(MyTestCase):
 
     def test_06_delete(self):
         policy_id = create_lockout_policy(
-            "Doomed", 600, ["PIN_FAIL"], [_stage(5), _stage(10, priority=2)], target=LockoutTarget.USER, priority=1
+            "Doomed", 600, ["PIN_FAIL"], [_stage(5), _stage(10)], target=LockoutTarget.USER, priority=1
         )
         self.assertEqual(policy_id, delete_lockout_policy(policy_id))
         self.assertRaises(ResourceNotFoundError, get_lockout_policy, policy_id)

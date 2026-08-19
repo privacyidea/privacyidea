@@ -840,8 +840,8 @@ def evaluate_access_decision(context: CAContext, now: datetime | None = None) ->
     Because there is no event for the current request yet, the decision is keyed
     on the user's **prior** event history: for each enabled policy the events of
     its ``counter_types_to_track`` are counted (combined across all tracked
-    types) over its window, and the highest-priority stage with a matching
-    ALLOW/DENY action supplies the decision. A
+    types) over its window, and the matching stage with the highest threshold
+    supplies the decision. A
     ``DENY`` action therefore rejects this single request without persisting any
     state — a stateless, self-healing reject that lifts on its own as the
     failures age out of the window (contrast the durable :attr:`LockoutAction.LOCK_USER`).
@@ -902,8 +902,8 @@ def _policy_access_decision(policy: LockoutPolicy, context: CAContext,
     stands while the failures are high), which is what makes ``ALLOW`` at threshold
     0 a default-allow and ``DENY`` a self-healing reject. An admin can switch a
     decision action to fire-once, in which case it only decides the request at the
-    exact threshold count. The highest-priority stage with a met ALLOW/DENY action
-    supplies the decision.
+    exact threshold count. The stage with the highest threshold whose ALLOW/DENY
+    action is met supplies the decision.
 
     Only a ``DENY`` produces an outcome. An ``ALLOW`` at threshold 0 is the documented default-allow idiom and matches
     every request of every user it covers, so recording it would add a row to every authentication.
@@ -1134,11 +1134,11 @@ def _evaluate_policy(policy: LockoutPolicy, context: CAContext, event_type: str,
         count = _policy_count(policy, user, now, since_last_success=True)
         subject_label = repr(user)
 
-    # Picks the triggered stage: the highest-priority stage with at least one action whose per-action condition is
+    # Picks the triggered stage: the highest-threshold stage with at least one action whose per-action condition is
     # met (see _action_threshold_met).
     # By default an action fires once, exactly at the threshold (a threshold-8 email sends on the 8th failure, not
     # again at 9); retrigger_above_threshold keeps it firing while the count stays at or above the threshold.
-    # Stages are ordered highest-priority first, so the most severe stage with a pending action wins and only that
+    # Stages are ordered by descending threshold, so the most severe stage with a pending action wins and only that
     # stage's actions run (one stage per policy per request); contrast the pre-auth ALLOW/DENY decision in
     # _policy_access_decision.
     triggered_stage = next((stage for stage in policy.stages
@@ -1373,6 +1373,10 @@ def _execute_stage_actions(policy: LockoutPolicy, stage: LockoutPolicyStage,
     expiry ended up in the state row. A skipped action - unknown type, no valid duration, no recipient, a never-block
     IP, an undeliverable mail, a permanent lock that must not be downgraded - is logged and left out of the history, so
     every stored outcome is a thing that happened rather than a thing that was configured.
+
+    The never-block allowlist is checked per action, in :func:`_upsert_ip_block`, not for the stage as a whole: a
+    ``BLOCK_IP`` against an exempt address is skipped and not recorded, while an ``EMAIL_ADMIN`` on the same stage
+    still runs and is still recorded. The stage tripped; only the block is withheld.
 
     :param policy: the triggering policy, for the outcomes
     :param count: the count that tripped the stage, for the outcomes

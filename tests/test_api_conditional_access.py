@@ -136,7 +136,7 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         create_lockout_policy(
             name="ca_lock", time_window_seconds=window,
             counter_types_to_track=_counter_types(counter_type),
-            stages=[{"failure_threshold": threshold, "priority": 1,
+            stages=[{"failure_threshold": threshold,
                      "actions": [{"action_type": str(LockoutAction.LOCK_USER), "action_value": duration}]}],
             target=LockoutTarget.USER, dry_run=dry_run, priority=priority)
 
@@ -146,7 +146,7 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         create_lockout_policy(
             name="ca_blockip", time_window_seconds=window,
             counter_types_to_track=_counter_types(counter_type),
-            stages=[{"failure_threshold": threshold, "priority": 1,
+            stages=[{"failure_threshold": threshold,
                      "actions": [{"action_type": str(LockoutAction.BLOCK_IP), "action_value": duration}]}],
             target=LockoutTarget.SOURCE_IP, priority=priority)
 
@@ -156,7 +156,7 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         create_lockout_policy(
             name=name, time_window_seconds=window,
             counter_types_to_track=_counter_types(counter_type),
-            stages=[{"failure_threshold": threshold, "priority": 1,
+            stages=[{"failure_threshold": threshold,
                      "actions": [{"action_type": str(action), "action_value": None}]}],
             target=LockoutTarget.USER, priority=priority)
 
@@ -396,7 +396,7 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         create_lockout_policy(
             name="ca_permlock", time_window_seconds=3600,
             counter_types_to_track=_counter_types(AuthEventType.MFA_FAIL),
-            stages=[{"failure_threshold": 3, "priority": 1,
+            stages=[{"failure_threshold": 3,
                      "actions": [{"action_type": str(LockoutAction.PERMANENT_LOCK_USER), "action_value": None}]}],
             target=LockoutTarget.USER, priority=99)
         key = (self.user.resolver, self.user.uid, self.user.realm)
@@ -718,7 +718,7 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         create_lockout_policy(
             name="ca_initialize_rate", time_window_seconds=3600,
             counter_types_to_track=_counter_types(AuthEventType.CHALLENGE_TRIGGERED),
-            stages=[{"failure_threshold": 2, "priority": 1,
+            stages=[{"failure_threshold": 2,
                      "actions": [{"action_type": str(LockoutAction.BLOCK_IP), "action_value": 600}]}],
             target=LockoutTarget.SOURCE_IP, count_mode=str(CountMode.PER_REQUEST), priority=1)
 
@@ -790,7 +790,7 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         create_lockout_policy(
             name="ca_on_success", time_window_seconds=3600,
             counter_types_to_track=_counter_types(AuthEventType.LOGIN_SUCCESS),
-            stages=[{"failure_threshold": 1, "priority": 1,
+            stages=[{"failure_threshold": 1,
                      "actions": [{"action_type": str(LockoutAction.PERMANENT_LOCK_USER), "action_value": None}]}],
             target=LockoutTarget.USER, priority=1)
         set_policy("authz_deny", scope=SCOPE.AUTHZ, action=f"{PolicyAction.AUTHORIZED}={AUTHORIZED.DENY}")
@@ -861,7 +861,7 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
         create_lockout_policy(
             name="ca_pw", time_window_seconds=window,
             counter_types_to_track=_counter_types(AuthEventType.PASSWORD_FAIL),
-            stages=[{"failure_threshold": threshold, "priority": 1,
+            stages=[{"failure_threshold": threshold,
                      "actions": [{"action_type": str(LockoutAction.LOCK_USER), "action_value": duration}]}],
             target=LockoutTarget.USER, priority=priority)
 
@@ -870,7 +870,7 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
         create_lockout_policy(
             name="ca_pw_dry", time_window_seconds=window,
             counter_types_to_track=_counter_types(AuthEventType.PASSWORD_FAIL),
-            stages=[{"failure_threshold": threshold, "priority": 1,
+            stages=[{"failure_threshold": threshold,
                      "actions": [{"action_type": str(LockoutAction.LOCK_USER), "action_value": duration}]}],
             target=LockoutTarget.USER, dry_run=True, priority=priority)
 
@@ -903,7 +903,7 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
         create_lockout_policy(
             name=name, time_window_seconds=window,
             counter_types_to_track=_counter_types(AuthEventType.PASSWORD_FAIL),
-            stages=[{"failure_threshold": threshold, "priority": 1,
+            stages=[{"failure_threshold": threshold,
                      "actions": [{"action_type": str(action), "action_value": None}]}],
             target=LockoutTarget.USER, priority=priority)
 
@@ -912,7 +912,7 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
         create_lockout_policy(
             name="ca_block_ip", time_window_seconds=window,
             counter_types_to_track=_counter_types(AuthEventType.PASSWORD_FAIL),
-            stages=[{"failure_threshold": threshold, "priority": 1,
+            stages=[{"failure_threshold": threshold,
                      "actions": [{"action_type": str(LockoutAction.BLOCK_IP), "action_value": duration}]}],
             target=LockoutTarget.SOURCE_IP, priority=priority)
 
@@ -1203,7 +1203,7 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
             create_lockout_policy(
                 name="ca_mail", time_window_seconds=3600,
                 counter_types_to_track=_counter_types(AuthEventType.PASSWORD_FAIL),
-                stages=[{"failure_threshold": 2, "priority": 1,
+                stages=[{"failure_threshold": 2,
                          "actions": [{"action_type": str(LockoutAction.EMAIL_ADMIN),
                                       "action_value": {"smtp_identifier": "lockoutmail",
                                                        "recipient_group": "soc@example.com",
@@ -1237,7 +1237,7 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
             create_lockout_policy(
                 name="ca_lockmail", time_window_seconds=3600,
                 counter_types_to_track=_counter_types(AuthEventType.PASSWORD_FAIL),
-                stages=[{"failure_threshold": 2, "priority": 1,
+                stages=[{"failure_threshold": 2,
                          "actions": [{"action_type": str(LockoutAction.LOCK_USER), "action_value": 600},
                                      {"action_type": str(LockoutAction.EMAIL_ADMIN),
                                       "action_value": {"smtp_identifier": "lockoutmail",
@@ -1266,7 +1266,7 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
         create_lockout_policy(
             name="ca_deny_ip", time_window_seconds=3600,
             counter_types_to_track=_counter_types(AuthEventType.PASSWORD_FAIL),
-            stages=[{"failure_threshold": 0, "priority": 1,
+            stages=[{"failure_threshold": 0,
                      "actions": [{"action_type": str(LockoutAction.DENY), "action_value": None}]}],
             conditions=[{"condition_type": str(ConditionType.USER_ROLE),
                          "operator": str(ConditionOperator.NOT_IN),

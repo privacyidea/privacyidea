@@ -61,7 +61,7 @@ describe("ConditionalAccessComponent", () => {
     target: "user",
     count_mode: "PER_REQUEST",
     counter_types_to_track: ["PIN_FAIL"],
-    stages: [{ failure_threshold: 5, priority: 1, actions: [] }],
+    stages: [{ failure_threshold: 5, actions: [] }],
     conditions: []
   };
 
@@ -139,8 +139,8 @@ describe("ConditionalAccessComponent", () => {
     const multiStage: LockoutPolicy = {
       ...samplePolicy,
       stages: [
-        { failure_threshold: 3, priority: 1, actions: [] },
-        { failure_threshold: 5, priority: 2, actions: [] }
+        { failure_threshold: 3, actions: [] },
+        { failure_threshold: 5, actions: [] }
       ]
     };
     expect(component.thresholdDisplay(multiStage)).toBe("3, 5");
@@ -150,10 +150,9 @@ describe("ConditionalAccessComponent", () => {
     const policy: LockoutPolicy = {
       ...samplePolicy,
       stages: [
-        { failure_threshold: 3, priority: 1, actions: [{ action_type: "LOCK_USER", action_value: 60 }] },
+        { failure_threshold: 3, actions: [{ action_type: "LOCK_USER", action_value: 60 }] },
         {
           failure_threshold: 5,
-          priority: 2,
           actions: [
             { action_type: "EMAIL_ADMIN", action_value: null },
             { action_type: "BLOCK_IP", action_value: 60 }
