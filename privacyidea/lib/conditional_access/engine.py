@@ -257,6 +257,43 @@ def render_error_message(error_message: str | None,
     return error_message.replace(DURATION_TAG, _render_duration(restriction))
 
 
+def rank_and_deduplicate(messages: list["StageMessage"]) -> list["StageMessage"]:
+    """
+    The messages to show, ordered by :class:`MessageKind` and with each distinct sentence kept once.
+
+    Ranked before de-duplicating, so the strongest meaning of a given sentence is the one kept. An admin can
+    configure the same wording on a notify-only stage and on a locking one; keeping the notification would have
+    :func:`~privacyidea.api.lib.conditional_access.compose_failure_message` append it to the generic failure rather
+    than replace it, and the user would read "wrong credentials" for an account that is locked. The sort is stable,
+    so messages of equal kind stay in the order they were collected in.
+
+    Used by both paths that describe a restriction - the post-response evaluation and the pre-check that refuses
+    the requests after it - so the same state cannot be worded differently depending on which one answers.
+    """
+    seen: set[str] = set()
+    unique: list["StageMessage"] = []
+    for message in sorted(messages, key=lambda message: message.kind):
+        if message.text not in seen:
+            seen.add(message.text)
+            unique.append(message)
+    return unique
+
+
+def restriction_messages(*restrictions: "RestrictionStatus | None") -> list["StageMessage"]:
+    """
+    The wording of each of *restrictions* that carries any, ranked and de-duplicated.
+
+    Silent by default holds here as everywhere: a restriction carrying no wording produces no message, and
+    ``None`` (nothing in force) contributes nothing at all.
+    """
+    messages = []
+    for restriction in restrictions:
+        text = render_error_message(restriction.error_message, restriction) if restriction else None
+        if text:
+            messages.append(StageMessage(text, _message_kind(restriction)))
+    return rank_and_deduplicate(messages)
+
+
 @dataclass
 class LockoutEvaluation:
     """
@@ -1099,12 +1136,7 @@ def _restrictions_in_force(context: CAContext, targets: set[LockoutTarget]) -> l
         statuses.append(get_user_lockout(context.user))
     if LockoutTarget.SOURCE_IP in targets and context.source_ip:
         statuses.append(get_ip_block(context.source_ip))
-    messages = []
-    for status in statuses:
-        text = render_error_message(status.error_message, status) if status else None
-        if text:
-            messages.append(StageMessage(text, _message_kind(status)))
-    return messages
+    return restriction_messages(*statuses)
 
 
 def evaluate_lockout_policies(context: CAContext, event_type: AuthEventType | None,
@@ -1183,21 +1215,10 @@ def evaluate_lockout_policies(context: CAContext, event_type: AuthEventType | No
     # Every restriction is described once, from the row left in force, ahead of the notifications the stages
     # carry: two policies locking the same user leave one lock, and so must say so once.
     messages = _restrictions_in_force(context, restricted) + messages
-    # Ranked before de-duplicating, so the strongest meaning of a given sentence is the one kept. An admin can
-    # configure the same wording on a notify-only stage and on a locking one; keeping the notification would have
-    # compose_failure_message append it to the generic failure rather than replace it, and the user would read
-    # "wrong credentials" for an account that is locked. The sort is stable, so messages of equal kind stay in
-    # policy-priority order, and de-duplicating afterwards no longer depends on the order they were collected in.
-    #
-    # The outcomes are *not* de-duplicated - each is a distinct thing that happened, and two policies locking the
-    # same user are two facts worth keeping apart.
-    seen: set[str] = set()
-    unique: list[StageMessage] = []
-    for message in sorted(messages, key=lambda message: message.kind):
-        if message.text not in seen:
-            seen.add(message.text)
-            unique.append(message)
-    return LockoutEvaluation(messages=unique, outcomes=outcomes)
+    # Ranked and de-duplicated by rank_and_deduplicate, which is stable, so messages of equal kind stay in
+    # policy-priority order. The outcomes are *not* de-duplicated - each is a distinct thing that happened, and
+    # two policies locking the same user are two facts worth keeping apart.
+    return LockoutEvaluation(messages=rank_and_deduplicate(messages), outcomes=outcomes)
 
 
 def _action_threshold_met(action: LockoutStageAction, threshold: int, count: int) -> bool:

@@ -1320,6 +1320,18 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
         # Symmetric: the permanent lock leads, the timed block follows.
         self.assertEqual("MSG-ALPHA MSG-BETA", message)
 
+    def test_the_same_wording_on_a_lock_and_a_block_is_said_once(self):
+        # One generic sentence, configured on a user stage and on a source-IP stage. Both restrictions are in force
+        # and both are still reported - the rejection just does not say the same thing twice, exactly as the
+        # post-response evaluation does not for two policies locking the same user.
+        db.session.add(UserLockoutState(resolver=self.user.resolver, uid=self.user.uid, realm=self.user.realm,
+                                        lock_expires_at=None, error_message="MSG-ALPHA"))
+        db.session.add(BlockList(ip="203.0.113.7", block_expires_at=None, error_message="MSG-ALPHA"))
+        db.session.commit()
+        res = self._auth("cornelius", "test", remote_addr="203.0.113.7")
+        self.assertEqual(401, res.status_code, res)
+        self.assertEqual("MSG-ALPHA", res.json["result"]["error"]["message"])
+
     def test_user_locked_after_password_failures(self):
         self._make_password_policy(threshold=3)
         for _ in range(3):

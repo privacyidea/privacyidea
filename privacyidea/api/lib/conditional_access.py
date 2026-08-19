@@ -51,8 +51,8 @@ from privacyidea.api.lib.utils import (GENERIC_AUTH_FAILURE, log_authentication,
                                       send_result, get_optional_one_of)
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
 from privacyidea.lib.conditional_access.engine import (get_user_lockout, get_ip_block, evaluate_access_decision,
-                                                       render_error_message, AccessDecision, RestrictionStatus,
-                                                       MessageKind, StageMessage)
+                                                       render_error_message, restriction_messages, AccessDecision,
+                                                       RestrictionStatus, MessageKind, StageMessage)
 from privacyidea.lib.conditional_access.request_context import get_ca_context
 from privacyidea.lib.error import AuthError, Error
 from privacyidea.lib.user import User
@@ -257,17 +257,6 @@ def conditional_access_gate(identity_resolver: Callable[[], User] | None = None,
 
 # --- what a rejection is made of, shared by both gates ---------------------------------------------------------------
 
-def _restriction_message(restriction: RestrictionStatus) -> str | None:
-    """
-    The wording to show for *restriction*, or ``None`` to stay generic.
-
-    Nothing is volunteered: privacyIDEA never says that an account is locked or an address blocked unless an admin
-    wrote that message on the stage that applied it. The text is stored on the restriction itself, so it survives the
-    policy being edited or deleted; ``{duration}`` is substituted against the time left right now.
-    """
-    return render_error_message(restriction.error_message, restriction)
-
-
 def _binding_event_type(lockout: RestrictionStatus | None,
                         ip_block: RestrictionStatus | None) -> AuthEventType | None:
     """
@@ -338,11 +327,11 @@ def _restriction_messages(lockout: RestrictionStatus | None,
 
     Both are reported rather than only the binding one. They are independent facts - an account lock and an
     address block are resolved differently - so telling the user about one leaves them to discover the other by
-    failing again.
+    failing again. Unless they are worded the same: :func:`~privacyidea.lib.conditional_access.engine.
+    restriction_messages` keeps each sentence once, so an admin who wrote one generic line on a user stage and on
+    a source-IP stage does not have the user read it twice for the request both refuse.
     """
-    ordered = sorted((state for state in (lockout, ip_block) if state is not None),
-                     key=lambda state: 0 if state.permanent else 1)
-    return [message for message in (_restriction_message(state) for state in ordered) if message]
+    return [message.text for message in restriction_messages(lockout, ip_block)]
 
 
 # --- /auth: raise the rejection as an AuthError ---------------------------------------------------------------------
