@@ -26,6 +26,8 @@ import { MatIconModule } from "@angular/material/icon";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { TableStateComponent } from "@components/shared/table-state/table-state.component";
+import { TableState } from "@core/models/table_state/table-state";
 import { AuthService } from "@services/auth/auth.service";
 import { DialogService } from "@services/dialog/dialog.service";
 import { NotificationService } from "@services/notification/notification.service";
@@ -41,7 +43,8 @@ import { SubscriptionService } from "@services/subscription/subscription.service
     MatDividerModule,
     MatCardModule,
     MatTooltipModule,
-    ScrollToTopDirective
+    ScrollToTopDirective,
+    TableStateComponent
   ],
   templateUrl: "./subscription.component.html",
   styleUrl: "./subscription.component.scss"
@@ -57,6 +60,10 @@ export class SubscriptionComponent {
     return value ? Object.values(value) : [];
   });
   protected authService = inject(AuthService);
+  readonly tableState = new TableState({
+    resource: this.subscriptionsResource,
+    count: () => this.subscriptions().length
+  });
 
   upload(event: Event): void {
     const element = event.currentTarget as HTMLInputElement;

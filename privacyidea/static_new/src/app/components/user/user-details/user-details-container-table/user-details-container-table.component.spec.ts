@@ -41,6 +41,7 @@ import {
 } from "@testing/mock-services";
 import { of } from "rxjs";
 import { UserDetailsContainerTableComponent } from "./user-details-container-table.component";
+import { expectsTableStateGating } from "@testing/table-state-gating";
 
 describe("UserDetailsContainerTableComponent", () => {
   let fixture: ComponentFixture<UserDetailsContainerTableComponent>;
@@ -74,13 +75,25 @@ describe("UserDetailsContainerTableComponent", () => {
     containerServiceMock = TestBed.inject(ContainerService) as unknown as MockContainerService;
     authServiceMock = TestBed.inject(AuthService) as unknown as MockAuthService;
     userServiceMock = TestBed.inject(UserService) as unknown as MockUserService;
-    (authServiceMock.actionAllowed as jest.Mock).mockReturnValue(true);
+    // Through the rights signal rather than by pinning actionAllowed: a constant answer reads no
+    // signal, so anything computed from it caches its first verdict and never re-evaluates.
+    authServiceMock.authData.set({
+      ...MockAuthService.MOCK_AUTH_DATA,
+      rights: ["container_list", "container_create", "container_delete", "container_unassign_user", "container_state"]
+    });
 
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
 
   afterEach(() => jest.clearAllMocks());
+
+  it("gates the table on its read right, row count and filter", () => {
+    expectsTableStateGating({
+      state: component.tableState,
+      right: "container_list"
+    });
+  });
 
   it("should create", () => {
     expect(component).toBeTruthy();
@@ -90,8 +103,12 @@ describe("UserDetailsContainerTableComponent", () => {
     expect(component.displayedColumns).toEqual(["select", "serial", "type", "states", "description", "realms"]);
   });
 
-  it("wires sort onto the dataSource", () => {
-    expect(component.dataSource.sort).toBe(component.sort);
+  it("leaves the data source's sort unset so it keeps a working change subscription", () => {
+    // MatTableDataSource reads _sort.sortChange/_sort.initialized whenever the table reconnects.
+    // Anything that is not a MatSort there makes that a merge() over undefined, which throws and
+    // leaves the data source unable to render. Ordering is done by this component, not by the
+    // data source, so the seat stays empty.
+    expect(component.dataSource.sort).toBeFalsy();
   });
 
   describe("userContainers signal", () => {

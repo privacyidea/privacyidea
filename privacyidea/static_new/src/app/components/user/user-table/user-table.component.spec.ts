@@ -38,6 +38,9 @@ import { UserTableComponent } from "./user-table.component";
 import { ResolverService } from "@services/resolver/resolver.service";
 import { MockResolverService } from "@testing/mock-services/mock-resolver-service";
 import { RealmService } from "@services/realm/realm.service";
+import { AuthService } from "@services/auth/auth.service";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { expectsTableStateGating } from "@testing/table-state-gating";
 
 describe("UserTableComponent", () => {
   let component: UserTableComponent;
@@ -48,6 +51,7 @@ describe("UserTableComponent", () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       providers: [
+        { provide: AuthService, useClass: MockAuthService },
         provideHttpClient(),
         {
           provide: ActivatedRoute,
@@ -71,6 +75,13 @@ describe("UserTableComponent", () => {
     mockUserService = TestBed.inject(UserService) as unknown as MockUserService;
     mockTableUtilsService = TestBed.inject(TableUtilsService) as unknown as MockTableUtilsService;
     fixture.detectChanges();
+  });
+
+  it("gates the table on its read right, row count and filter", () => {
+    expectsTableStateGating({
+      state: component.tableState,
+      right: "userlist"
+    });
   });
 
   it("should create", () => {
