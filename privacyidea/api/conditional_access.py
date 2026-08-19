@@ -271,7 +271,7 @@ def create_policy():
         "actions": [{"action_type": <LockoutAction>, "action_value": <any>}]}``.
         Thresholds must be unique within the policy and are the evaluation order
         (highest first). A threshold starts at 1, except on a stage whose every
-        action is ``ALLOW``, where 0 means "always". Required.
+        action is ``DENY``, where 0 means "always". Required.
     :jsonparam enabled: whether the policy is evaluated (default true).
     :jsonparam dry_run: log-only mode, nothing is enforced (default false).
     :jsonparam priority: evaluation priority; lower numbers are evaluated first.

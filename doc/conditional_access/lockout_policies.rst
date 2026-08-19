@@ -124,12 +124,11 @@ while the attack continues.
 Stages are evaluated from the highest threshold down, so the order follows the
 thresholds themselves and there is nothing else to configure.
 
-A threshold counts failures and therefore starts at 1. ``ALLOW`` and ``DENY`` are
-the exception: they state a standing verdict instead of reacting to a count, so a
-stage carrying nothing but ``ALLOW`` or nothing but ``DENY`` may use threshold
-``0``, which then means *always*. That is how the two blanket rules are written -
-an ``ALLOW`` exempting one realm from everything behind it, or a ``DENY`` locking
-down what the policy covers.
+A threshold counts failures and therefore starts at 1. ``DENY`` is the exception:
+it states a standing verdict instead of reacting to a count, so a stage carrying
+nothing but ``DENY`` may use threshold ``0``, which then means *always*. That is
+how a lockdown is written - refuse everything the policy covers, whatever the
+subject has done.
 
 .. warning:: A ``DENY`` at threshold 0 refuses **every** request the policy
    covers, whatever the subject has done. Scope it with conditions, and leave
@@ -156,10 +155,6 @@ Actions
     The rejection lifts by itself as the counted entries age out of the window.
     Use it for a rate limit that must not leave a lock behind.
 
-**ALLOW**
-    Exempt the request from the policies that follow. Since the lock and the
-    block are checked first, ``ALLOW`` cannot release an existing restriction.
-
 **EMAIL_USER**, **EMAIL_ADMIN**
     Notify the user, or an administrator, that the threshold was reached.
     ``EMAIL_USER`` sends to the address in the user store. ``EMAIL_ADMIN`` sends
@@ -171,6 +166,25 @@ Actions
     ``{event_type}``, ``{policy}`` and ``{time}``; ``EMAIL_USER`` additionally
     offers ``{email}``, ``{givenname}`` and ``{surname}``.
 
+.. _lockout_policies_exceptions:
+
+Exempting a subject
+-------------------
+
+An exception is written as a **condition** on the policy you want the subject
+exempted from - *realm is not one of [service]*, or *user role is not one of
+[admin-internal]*. A policy whose conditions do not match is never evaluated for
+that request at all, so the exemption is exact and visible on the rule it applies
+to.
+
+Because the condition takes the whole policy out of play, it covers every action
+the policy carries. The exempt subject is neither refused, nor locked, nor
+blocked, nor mailed about.
+
+An exemption for a service account or a monitoring probe therefore goes on each
+policy it needs to be out of - which is also where an administrator reading that
+policy will look for it.
+
 Which actions a policy may use depends on its target:
 
 .. list-table::
@@ -181,10 +195,10 @@ Which actions a policy may use depends on its target:
      - Actions
      - Count modes
    * - ``user``
-     - LOCK_USER, PERMANENT_LOCK_USER, EMAIL_USER, EMAIL_ADMIN, ALLOW, DENY
+     - LOCK_USER, PERMANENT_LOCK_USER, EMAIL_USER, EMAIL_ADMIN, DENY
      - PER_REQUEST, PER_ATTEMPT
    * - ``source_ip``
-     - BLOCK_IP, PERMANENT_BLOCK_IP, EMAIL_ADMIN, ALLOW, DENY
+     - BLOCK_IP, PERMANENT_BLOCK_IP, EMAIL_ADMIN, DENY
      - DISTINCT_USERS, PER_REQUEST, PER_ATTEMPT
 
 .. note:: ``BLOCK_IP`` in a ``user`` policy is not available: a user policy

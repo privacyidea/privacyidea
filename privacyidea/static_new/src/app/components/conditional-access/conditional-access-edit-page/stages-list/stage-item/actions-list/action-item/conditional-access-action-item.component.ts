@@ -44,7 +44,6 @@ const ACTION_DESCRIPTIONS: Record<LockoutActionType, string> = {
   PERMANENT_BLOCK_IP: $localize`Block the request's source IP until an administrator unblocks it.`,
   EMAIL_ADMIN: $localize`Send a notification email to an admin recipient group.`,
   EMAIL_USER: $localize`Send a notification email to the affected user.`,
-  ALLOW: $localize`Allow the request and skip any lower-priority policies.`,
   DENY: $localize`Reject the request; it clears itself as failures age out of the window.`
 };
 
@@ -193,14 +192,14 @@ export class ConditionalAccessActionItemComponent {
   });
 
   // Effective checkbox state; when the action carries no explicit value, the display mirrors the
-  // server's action-aware default, where ALLOW/DENY decisions re-trigger and the lock/email/block
-  // effects fire once at the threshold.
+  // server's action-aware default, where the standing DENY verdict re-triggers and the
+  // lock/email/block effects fire once at the threshold.
   readonly retriggerChecked = computed<boolean>(() => {
     const action = this.action();
     if (action.retrigger_above_threshold != null) {
       return action.retrigger_above_threshold;
     }
-    return action.action_type === "ALLOW" || action.action_type === "DENY";
+    return action.action_type === "DENY";
   });
 
   readonly valueMode = computed<ActionValueMode>(() =>

@@ -93,9 +93,10 @@ log = logging.getLogger(__name__)
 # instead of a DB-dependent truncation.
 MAX_NAME_LENGTH = 255
 
-# ALLOW/DENY are standing pre-auth decisions, so they default to re-triggering while the count stays at or above the
-# threshold; the post-response lock/email/block actions default to firing once.
-DECISION_ACTIONS = frozenset({str(LockoutAction.ALLOW), str(LockoutAction.DENY)})
+# DENY is a standing pre-auth decision, so it defaults to re-triggering while the count stays at or above the
+# threshold; the post-response lock/email/block actions default to firing once. A set because both the threshold-0 rule
+# and the retrigger default ask "is this a standing verdict?".
+DECISION_ACTIONS = frozenset({str(LockoutAction.DENY)})
 
 
 @dataclass
@@ -254,7 +255,7 @@ def _validate_stage_name(name) -> str | None:
 
 
 # The actions each target permits: a user policy locks/notifies the user, a source-IP policy blocks the IP or alerts
-# the admin (LOCK_USER/EMAIL_USER have no user to act on); both may also decide the request pre-auth via ALLOW/DENY.
+# the admin (LOCK_USER/EMAIL_USER have no user to act on); both may also refuse the request pre-auth via DENY.
 _ACTIONS_BY_TARGET = {
     LockoutTarget.USER: {
         LockoutAction.LOCK_USER,
@@ -262,14 +263,12 @@ _ACTIONS_BY_TARGET = {
         LockoutAction.EMAIL_USER,
         LockoutAction.EMAIL_ADMIN,
         LockoutAction.DENY,
-        LockoutAction.ALLOW,
     },
     LockoutTarget.SOURCE_IP: {
         LockoutAction.BLOCK_IP,
         LockoutAction.PERMANENT_BLOCK_IP,
         LockoutAction.EMAIL_ADMIN,
         LockoutAction.DENY,
-        LockoutAction.ALLOW,
     },
 }
 
@@ -398,18 +397,15 @@ def _validate_threshold_for_actions(threshold: int, actions: list[StageActionDef
     a typo, so :attr:`LockoutAction.LOCK_USER`, ``BLOCK_IP``, the ``PERMANENT_*``
     variants and the ``EMAIL_*`` actions all require at least 1.
 
-    The :data:`DECISION_ACTIONS` are the exception, because they do not react to a
-    count at all - they state a standing verdict, and re-trigger by default, so at
-    threshold 0 they apply to every request the policy covers:
+    ``DENY`` is the exception, because it does not react to a count at all - it
+    states a standing verdict, and re-triggers by default, so at threshold 0 it
+    applies to every request the policy covers. That is the lockdown idiom: refuse
+    everything the policy covers, whatever the subject has done.
 
-    * ``ALLOW`` at 0 is the allowlist / default-allow idiom: exempt this realm,
-      role or address from every policy ordered behind it.
-    * ``DENY`` at 0 is a lockdown: refuse everything the policy covers, whatever
-      the subject has done. Scope it with conditions - a ``USER_ROLE NOT_IN
-      [admin-internal]`` carve-out is the break-glass pattern - because a ``DENY``
-      writes no state, so no ``pi-manage conditionalaccess`` reset command can
-      lift it; recovering from an unscoped one means disabling the policy in the
-      database.
+    Scope such a policy with conditions - a ``USER_ROLE NOT_IN [admin-internal]``
+    carve-out is the break-glass pattern - because a ``DENY`` writes no state, so no
+    ``pi-manage conditionalaccess`` reset command can lift it; recovering from an
+    unscoped one means disabling the policy in the database.
 
     A stage with no actions at all is refused at 0 as well: at any other threshold
     it is merely inert, but at 0 it is indistinguishable from an unfinished rule.
@@ -439,9 +435,8 @@ def _validate_stages(stages) -> list[StageDefinition]:
     a stage or action dict are rejected so typos fail loudly.
 
     A threshold counts failures, so it starts at 1. The exception is a stage whose
-    every action is a standing decision (``ALLOW`` or ``DENY``): threshold 0 then
-    means "always", which is the allowlist and the lockdown idiom. Any action that
-    reacts to a count is refused at 0 - see
+    every action is a standing ``DENY``: threshold 0 then means "always", the
+    lockdown idiom. Any action that reacts to a count is refused at 0 - see
     :func:`_validate_threshold_for_actions`.
 
     :return: normalized list of :class:`StageDefinition` (without ids)
@@ -459,7 +454,7 @@ def _validate_stages(stages) -> list[StageDefinition]:
         unknown = set(stage) - allowed_stage_keys - {"id"}
         if unknown:
             raise ParameterError(f"Unknown stage key(s): {', '.join(sorted(unknown))}.")
-        # Range-checked here, then checked against the stage's actions once those are known: only an all-ALLOW
+        # Range-checked here, then checked against the stage's actions once those are known: only an all-DENY
         # stage may use 0 (see _validate_threshold_for_actions).
         threshold = stage.get("failure_threshold")
         if isinstance(threshold, bool) or not isinstance(threshold, int) or threshold < 0:

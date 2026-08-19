@@ -53,13 +53,13 @@ questions, in this order:
 2. Is this source IP blocked?
 3. Does a policy deny this request?
 
-The first question answered with *yes* ends the request. Because the lock and
-the block are checked first, an ``ALLOW`` action can never re-admit a user who
-is already locked.
+The first question answered with *yes* ends the request.
 
-For the third question the policies are evaluated by ascending **priority** -
-a lower number takes precedence, as elsewhere in privacyIDEA - and the first
-policy that decides wins. If none decides, the request proceeds normally.
+For the third question the policies are evaluated by ascending **priority** - a
+lower number takes precedence, as elsewhere in privacyIDEA - and the first policy
+that denies wins. If none denies, the request proceeds normally. A subject is
+exempted from a policy by giving that policy a condition, see
+:ref:`lockout_policies_exceptions`.
 
 After the request has been answered, its authentication log entry is evaluated
 against the thresholds. Locks, blocks and notifications are created at this

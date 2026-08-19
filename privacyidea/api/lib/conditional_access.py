@@ -75,9 +75,9 @@ def conditional_access_precheck(user: User, log_rejection: bool = True) -> Respo
 
     A currently-locked user is rejected first, then a source IP blocked by a
     ``BLOCK_IP`` action. The pre-auth conditional-access DENY decision is evaluated
-    last, after the lock/block pre-checks (so an ALLOW cannot override them); a
+    last, after the lock/block pre-checks; a
     DENY rejects this single request without persisting state, while
-    ALLOW / CONTINUE fall through. ``g.client_ip`` is the source IP checked.
+    CONTINUE falls through. ``g.client_ip`` is the source IP checked.
 
     Each rejection also **classifies the request** in the authentication log
     (:class:`~privacyidea.lib.conditional_access.authentication_event_types.AuthEventType`:
@@ -270,9 +270,9 @@ def _reject_restricted_login(user: User) -> None:
     that escalated into a permanent IP block), the longer-lasting one is surfaced so we never tell a
     permanently-blocked user to "try again in a minute".
 
-    The pre-auth conditional-access DENY decision is evaluated after the lock/block pre-checks so an ALLOW cannot
+    The pre-auth conditional-access DENY decision is evaluated after the lock/block pre-checks so a decision cannot
     override them. A DENY rejects this single login with a message stating it was a conditional-access decision (the
-    policy is not named). ALLOW / CONTINUE fall through silently.
+    policy is not named). CONTINUE falls through silently.
 
     Every rejection also classifies the login in the authentication log (``USER_LOCKED`` / ``IP_BLOCKED`` /
     ``ACCESS_DENIED``), which is the only place an admin can filter for the reason: the login is turned away before

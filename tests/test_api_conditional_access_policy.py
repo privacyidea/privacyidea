@@ -169,7 +169,7 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
         self.assertEqual(400, res.status_code, res.json)
 
     def test_create_source_ip_deny_is_allowed(self):
-        # ALLOW/DENY are valid on a source_ip policy (IP-scoped pre-auth decision).
+        # DENY is valid on a source_ip policy (IP-scoped pre-auth decision).
         body = self._policy_body(name="IP deny", target="source_ip",
                                  counter_types_to_track=[str(AuthEventType.PASSWORD_FAIL)],
                                  stages=[{"failure_threshold": 20,

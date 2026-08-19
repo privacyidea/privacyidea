@@ -96,7 +96,7 @@ export class ConditionalAccessComponent implements OnDestroy {
   // Rows selected via the checkbox column; the "Delete Selected" table action acts on these.
   policySelection = signal<LockoutPolicy[]>([]);
 
-  priorityReorderHint = $localize`Move policies with the arrows in the Priority column to change the order they are evaluated in. Priorities are only relevant for the actions DENY and ALLOW.`;
+  priorityReorderHint = $localize`Move policies with the arrows in the Priority column to change the order they are evaluated in. Priority only decides which DENY policy is named when a request is refused; lock, block and email actions all run regardless of it.`;
   priorityReorderHintAriaLabel = $localize`About rearranging priorities`;
 
   @ViewChild(MatPaginator) paginator!: MatPaginator;

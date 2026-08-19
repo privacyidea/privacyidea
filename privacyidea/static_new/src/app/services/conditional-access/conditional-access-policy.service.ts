@@ -59,7 +59,6 @@ export type LockoutActionType =
   | "EMAIL_USER"
   | "BLOCK_IP"
   | "PERMANENT_BLOCK_IP"
-  | "ALLOW"
   | "DENY";
 
 // The identity a policy counts and acts on.

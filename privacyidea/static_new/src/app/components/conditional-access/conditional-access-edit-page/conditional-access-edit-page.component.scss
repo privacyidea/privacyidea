@@ -46,9 +46,32 @@
   color: var(--mat-sys-error, #b3261e);
 }
 
+.ca-save-blockers {
+  margin: 0 0 24px;
+  max-width: 1008px;
+  padding: 12px 16px;
+  border-left: 3px solid var(--mat-sys-error, #b3261e);
+  color: var(--mat-sys-on-surface-variant);
+  background: var(--mat-sys-surface-container-low);
+
+  ul {
+    margin: 4px 0 0;
+    padding-inline-start: 20px;
+  }
+
+  li + li {
+    margin-top: 2px;
+  }
+}
+
+.ca-save-blockers-title {
+  margin: 0;
+  color: var(--mat-sys-error, #b3261e);
+  font-weight: 500;
+}
+
 .ca-section-hint {
   margin: 0 0 16px;
   max-width: 1008px;
   color: var(--mat-sys-on-surface-variant);
 }
-

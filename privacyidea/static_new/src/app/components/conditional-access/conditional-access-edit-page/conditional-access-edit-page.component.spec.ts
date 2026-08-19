@@ -161,21 +161,51 @@ describe("ConditionalAccessEditPageComponent — edit mode", () => {
     expect(component.canSave()).toBe(false);
   });
 
+  // The select carries no form control, so its mat-error only renders once appErrorState says so.
+  it("should flag the tracked event types as an error while none are selected", () => {
+    component.onCounterTypesChange([]);
+    expect(component.showCounterTypesError()).toBe(true);
+    expect(component.saveBlockers()).toContain("Select at least one tracked event type.");
+
+    component.onCounterTypesChange(["PIN_FAIL"]);
+    expect(component.showCounterTypesError()).toBe(false);
+    expect(component.saveBlockers()).not.toContain("Select at least one tracked event type.");
+  });
+
+  it("should list nothing to fix while the policy is valid", () => {
+    expect(component.canSave()).toBe(true);
+    expect(component.saveBlockers()).toEqual([]);
+  });
+
+  it("should name every reason saving is blocked", () => {
+    component.editPolicy.set({
+      ...component.editPolicy(),
+      name: "",
+      priority: null,
+      counter_types_to_track: [],
+      stages: [{ failure_threshold: 0, actions: [] }]
+    });
+    expect(component.canSave()).toBe(false);
+    expect(component.saveBlockers()).toEqual([
+      "Name is required.",
+      "Priority is required and must be a whole number of at least 1.",
+      "Select at least one tracked event type.",
+      "Every stage needs a failure threshold of at least 1 - or 0 on a stage carrying only DENY."
+    ]);
+  });
+
   it("should become invalid when stages is emptied", () => {
     component.onStagesChange([]);
     expect(component.stagesValid()).toBe(false);
     expect(component.canSave()).toBe(false);
   });
 
-  it.each(["ALLOW", "DENY"] as const)(
-    "should stay valid when a zero-threshold stage only carries %s",
-    (actionType) => {
-      component.onStagesChange([{ failure_threshold: 0, actions: [{ action_type: actionType, action_value: null }] }]);
-      expect(component.stagesValid()).toBe(true);
-    }
-  );
+  it("should stay valid when a zero-threshold stage only carries DENY", () => {
+    component.onStagesChange([{ failure_threshold: 0, actions: [{ action_type: "DENY", action_value: null }] }]);
+    expect(component.stagesValid()).toBe(true);
+  });
 
-  // A threshold counts failures, so only a standing ALLOW/DENY verdict may sit at 0; the backend
+  // A threshold counts failures, so only a standing DENY verdict may sit at 0; the backend
   // refuses the rest in _validate_threshold_for_actions.
   it.each([
     ["no action to justify it", []],
@@ -183,7 +213,7 @@ describe("ConditionalAccessEditPageComponent — edit mode", () => {
     [
       "a standing verdict mixed with a counting action",
       [
-        { action_type: "ALLOW", action_value: null },
+        { action_type: "DENY", action_value: null },
         { action_type: "LOCK_USER", action_value: 60 }
       ]
     ]
@@ -669,8 +699,8 @@ describe("ConditionalAccessEditPageComponent — new mode", () => {
 
     beforeEach(() => {
       policyServiceMock.actionsByTarget.set({
-        user: ["LOCK_USER", "ALLOW", "DENY"],
-        source_ip: ["BLOCK_IP", "ALLOW", "DENY"]
+        user: ["LOCK_USER", "DENY"],
+        source_ip: ["BLOCK_IP", "DENY"]
       });
     });
 

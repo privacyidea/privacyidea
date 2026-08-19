@@ -127,8 +127,8 @@ class LockoutPolicyCrudTestCase(MyTestCase):
         self.assertFalse(by_type["EMAIL_ADMIN"]["retrigger_above_threshold"])
 
     def test_01c_retrigger_default_is_action_aware(self):
-        # When the client omits retrigger_above_threshold, ALLOW/DENY decision
-        # actions default to re-trigger and the lock/email/block effects to fire-once.
+        # When the client omits retrigger_above_threshold, the standing DENY verdict
+        # defaults to re-trigger and the lock/email/block effects to fire-once.
         policy_id = create_lockout_policy(
             "Defaults", 600, ["PIN_FAIL"],
             stages=[{"failure_threshold": 3, "actions": [{"action_type": "DENY"}]},
@@ -142,24 +142,23 @@ class LockoutPolicyCrudTestCase(MyTestCase):
         self.assertFalse(by_threshold[5]["actions"][0]["retrigger_above_threshold"])  # LOCK_USER
 
     def test_01d_threshold_zero_is_only_for_standing_decisions(self):
-        # A threshold counts failures, so anything reacting to a count starts at 1. ALLOW and DENY state a
-        # standing verdict instead, so 0 means "always": the allowlist and the lockdown idiom.
+        # A threshold counts failures, so anything reacting to a count starts at 1. DENY states a standing
+        # verdict instead, so 0 means "always": the lockdown idiom.
         usr = LockoutTarget.USER
-        for action_type in ("ALLOW", "DENY"):
-            policy_id = create_lockout_policy(
-                f"zero_{action_type}", 600, ["PIN_FAIL"],
-                [{"failure_threshold": 0, "actions": [{"action_type": action_type}]}],
-                target=usr, priority=1)
-            policy = get_lockout_policy(policy_id)
-            self.assertEqual(0, policy["stages"][0]["failure_threshold"])
-            delete_lockout_policy(policy_id)
+        policy_id = create_lockout_policy(
+            "zero_deny", 600, ["PIN_FAIL"],
+            [{"failure_threshold": 0, "actions": [{"action_type": "DENY"}]}],
+            target=usr, priority=1)
+        policy = get_lockout_policy(policy_id)
+        self.assertEqual(0, policy["stages"][0]["failure_threshold"])
+        delete_lockout_policy(policy_id)
 
         # Everything that reacts to a count is refused at 0, as is a stage with no action to justify it.
         for stage in ([{"failure_threshold": 0, "actions": [{"action_type": "LOCK_USER",
                                                              "action_value": {"duration_seconds": 60}}]}],
                       [{"failure_threshold": 0, "actions": [{"action_type": "EMAIL_ADMIN"}]}],
                       # A mixed stage is refused too: the LOCK_USER half would fire at zero failures.
-                      [{"failure_threshold": 0, "actions": [{"action_type": "ALLOW"},
+                      [{"failure_threshold": 0, "actions": [{"action_type": "DENY"},
                                                             {"action_type": "LOCK_USER",
                                                              "action_value": {"duration_seconds": 60}}]}],
                       [{"failure_threshold": 0, "actions": []}]):
@@ -434,12 +433,12 @@ class LockoutPolicyCrudTestCase(MyTestCase):
         # replacing children with a reused counter type / threshold stays within the (policy_id, counter_type) and
         # (policy_id, failure_threshold) unique constraints
         update_lockout_policy(
-            policy_id, counter_types_to_track=["MFA_FAIL"], stages=[_stage(3, actions=[{"action_type": "ALLOW"}])]
+            policy_id, counter_types_to_track=["MFA_FAIL"], stages=[_stage(3, actions=[{"action_type": "DENY"}])]
         )
         policy = get_lockout_policy(policy_id)
         self.assertEqual(["MFA_FAIL"], policy["counter_types_to_track"])
         self.assertEqual(3, policy["stages"][0]["failure_threshold"])
-        self.assertEqual("ALLOW", policy["stages"][0]["actions"][0]["action_type"])
+        self.assertEqual("DENY", policy["stages"][0]["actions"][0]["action_type"])
         self.assertEqual(1, db.session.query(LockoutPolicyStage).count())
         self.assertEqual(1, db.session.query(LockoutPolicyCounterType).count())
 

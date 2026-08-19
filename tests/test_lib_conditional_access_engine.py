@@ -103,7 +103,7 @@ class LockoutEngineTestCase(LockoutTestCase):
 
         ``count_mode`` defaults to the target's default (``DISTINCT_USERS`` for source_ip, else ``PER_REQUEST``),
         mirroring the CRUD default. An action spec that leaves ``retrigger_above_threshold`` unset gets the same
-        action-aware default an admin would get (re-trigger for the ALLOW/DENY decisions, fire-once for the
+        action-aware default an admin would get (re-trigger for the standing DENY verdict, fire-once for the
         post-response effects), because :func:`_build_stages` resolves it.
 
         :param stages: the :class:`StageDefinition` specs to create
@@ -1348,7 +1348,7 @@ class LockoutEngineTestCase(LockoutTestCase):
         self.assertIsNone(block.block_expires_at)
         self.assertTrue(is_ip_blocked(ip))
 
-    # --- evaluate_access_decision (ALLOW / DENY) ------------------------------
+    # --- evaluate_access_decision (DENY) --------------------------------------
 
     def test_access_decision_no_policies_is_continue(self):
         self.assertEqual(AccessDecision.CONTINUE, evaluate_access_decision(CAContext(self.user)).decision)
@@ -1407,28 +1407,21 @@ class LockoutEngineTestCase(LockoutTestCase):
         # The three pre-login failures still trigger DENY despite the login.
         self.assertEqual(AccessDecision.DENY, evaluate_access_decision(CAContext(self.user), now=now).decision)
 
-    def test_access_decision_allow_threshold_zero_is_default_allow(self):
-        # A stage with threshold 0 always matches -> default allow, no events needed.
-        self._make_policy(name="allow", counter_type=AuthEventType.PASSWORD_FAIL,
-                          stages=(StageDefinition(0, [StageActionDefinition(LockoutAction.ALLOW)]),))
-        self.assertEqual(AccessDecision.ALLOW, evaluate_access_decision(CAContext(self.user)).decision)
-
-    def test_access_decision_higher_priority_allow_overrides_deny(self):
-        # An ALLOW policy at higher precedence (lower priority number) wins over a DENY with a higher number.
-        self._make_policy(name="deny", counter_type=AuthEventType.PASSWORD_FAIL, priority=10,
-                          stages=(StageDefinition(3, [StageActionDefinition(LockoutAction.DENY)]),))
-        self._make_policy(name="allow", counter_type=AuthEventType.PASSWORD_FAIL, priority=1,
-                          stages=(StageDefinition(0, [StageActionDefinition(LockoutAction.ALLOW)]),))
-        self._seed_events(AuthEventType.PASSWORD_FAIL, 5)
-        self.assertEqual(AccessDecision.ALLOW, evaluate_access_decision(CAContext(self.user)).decision)
-
-    def test_access_decision_higher_priority_deny_overrides_allow(self):
-        self._make_policy(name="allow", counter_type=AuthEventType.PASSWORD_FAIL, priority=10,
-                          stages=(StageDefinition(0, [StageActionDefinition(LockoutAction.ALLOW)]),))
-        self._make_policy(name="deny", counter_type=AuthEventType.PASSWORD_FAIL, priority=1,
-                          stages=(StageDefinition(3, [StageActionDefinition(LockoutAction.DENY)]),))
-        self._seed_events(AuthEventType.PASSWORD_FAIL, 5)
+    def test_access_decision_deny_threshold_zero_is_a_lockdown(self):
+        # DENY re-triggers by default, so a stage with threshold 0 always matches: no events needed.
+        self._make_policy(name="lockdown", counter_type=AuthEventType.PASSWORD_FAIL,
+                          stages=(StageDefinition(0, [StageActionDefinition(LockoutAction.DENY)]),))
         self.assertEqual(AccessDecision.DENY, evaluate_access_decision(CAContext(self.user)).decision)
+
+    def test_access_decision_exemption_is_a_condition_not_an_action(self):
+        # A subject is exempted by a condition on the denying policy itself, which is then not evaluated for that
+        # request at all.
+        self._make_policy(name="lockdown", counter_type=AuthEventType.PASSWORD_FAIL,
+                          stages=(StageDefinition(0, [StageActionDefinition(LockoutAction.DENY)]),),
+                          conditions=[LockoutPolicyCondition(condition_type=str(ConditionType.USER_REALM),
+                                                             operator=str(ConditionOperator.NOT_IN),
+                                                             value=[self.user.realm])])
+        self.assertEqual(AccessDecision.CONTINUE, evaluate_access_decision(CAContext(self.user)).decision)
 
     def test_access_decision_ignores_lockout_only_stage(self):
         # A LOCK_USER stage is a post-response side effect, not a pre-auth decision.
@@ -1450,15 +1443,17 @@ class LockoutEngineTestCase(LockoutTestCase):
         self.assertEqual(AccessDecision.CONTINUE, evaluate_access_decision(CAContext(self.user)).decision)
 
     def test_access_decision_unresolved_user_is_continue(self):
-        self._make_policy(name="allow", counter_type=AuthEventType.PASSWORD_FAIL,
-                          stages=(StageDefinition(0, [StageActionDefinition(LockoutAction.ALLOW)]),))
+        # A user-target policy is keyed on the resolved identity, so an unresolved user is never denied by one - even
+        # by an always-met DENY stage.
+        self._make_policy(name="lockdown", counter_type=AuthEventType.PASSWORD_FAIL,
+                          stages=(StageDefinition(0, [StageActionDefinition(LockoutAction.DENY)]),))
         self.assertEqual(AccessDecision.CONTINUE, evaluate_access_decision(CAContext(User())).decision)
 
-    def test_access_decision_both_actions_on_stage_denies(self):
-        # A stage misconfigured with both ALLOW and DENY fails closed (DENY wins).
+    def test_access_decision_deny_alongside_a_post_response_action_still_denies(self):
+        # A stage may mix the pre-auth DENY with a post-response effect; the decision step reads only the DENY.
         self._make_policy(name="both", counter_type=AuthEventType.PASSWORD_FAIL,
-                          stages=(StageDefinition(3, [StageActionDefinition(LockoutAction.ALLOW),
-                                                         StageActionDefinition(LockoutAction.DENY)]),))
+                          stages=(StageDefinition(3, [StageActionDefinition(LockoutAction.LOCK_USER, 600),
+                                                      StageActionDefinition(LockoutAction.DENY)]),))
         self._seed_events(AuthEventType.PASSWORD_FAIL, 3)
         self.assertEqual(AccessDecision.DENY, evaluate_access_decision(CAContext(self.user)).decision)
 

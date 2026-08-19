@@ -84,7 +84,7 @@ describe("ConditionalAccessActionItemComponent", () => {
   });
 
   it("should describe every action type", () => {
-    for (const type of ["LOCK_USER", "PERMANENT_LOCK_USER", "BLOCK_IP", "ALLOW", "DENY", "EMAIL_USER"] as const) {
+    for (const type of ["LOCK_USER", "PERMANENT_LOCK_USER", "BLOCK_IP", "DENY", "EMAIL_USER"] as const) {
       setAction({ action_type: type, action_value: null });
       expect(component.actionDescription().length).toBeGreaterThan(0);
     }
@@ -95,7 +95,7 @@ describe("ConditionalAccessActionItemComponent", () => {
     expect(component.valueMode()).toBe("duration");
     setAction({ action_type: "EMAIL_ADMIN", action_value: {} });
     expect(component.valueMode()).toBe("email");
-    setAction({ action_type: "ALLOW", action_value: null });
+    setAction({ action_type: "DENY", action_value: null });
     expect(component.valueMode()).toBe("none");
   });
 
@@ -107,8 +107,8 @@ describe("ConditionalAccessActionItemComponent", () => {
         ConditionalAccessPolicyService
       ) as unknown as MockConditionalAccessPolicyService;
       policyServiceMock.actionsByTarget.set({
-        user: ["LOCK_USER", "PERMANENT_LOCK_USER", "EMAIL_ADMIN", "EMAIL_USER", "ALLOW", "DENY"],
-        source_ip: ["BLOCK_IP", "PERMANENT_BLOCK_IP", "EMAIL_ADMIN", "ALLOW", "DENY"]
+        user: ["LOCK_USER", "PERMANENT_LOCK_USER", "EMAIL_ADMIN", "EMAIL_USER", "DENY"],
+        source_ip: ["BLOCK_IP", "PERMANENT_BLOCK_IP", "EMAIL_ADMIN", "DENY"]
       });
     });
 
@@ -254,8 +254,8 @@ describe("ConditionalAccessActionItemComponent", () => {
         ConditionalAccessPolicyService
       ) as unknown as MockConditionalAccessPolicyService;
       policyServiceMock.actionsByTarget.set({
-        user: ["LOCK_USER", "PERMANENT_LOCK_USER", "EMAIL_ADMIN", "EMAIL_USER", "ALLOW", "DENY"],
-        source_ip: ["BLOCK_IP", "PERMANENT_BLOCK_IP", "EMAIL_ADMIN", "ALLOW", "DENY"]
+        user: ["LOCK_USER", "PERMANENT_LOCK_USER", "EMAIL_ADMIN", "EMAIL_USER", "DENY"],
+        source_ip: ["BLOCK_IP", "PERMANENT_BLOCK_IP", "EMAIL_ADMIN", "DENY"]
       });
       setRights([]);
     });

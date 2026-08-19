@@ -55,13 +55,14 @@ log = logging.getLogger(__name__)
 # out. Two entry points, one per phase of a request:
 #
 #   evaluate_access_decision()  - pre-auth, before any credential check. Counts the subject's prior events and
-#                                 answers ALLOW / DENY / CONTINUE. A DENY refuses this one request and persists
+#                                 answers DENY / CONTINUE. A DENY refuses this one request and persists
 #                                 nothing, so it lifts by itself as the failures age out of the window.
 #   evaluate_lockout_policies() - post-response, once this request's authentication_log row exists so the count
 #                                 includes it. Runs the actions of the single triggered stage: lock, block, email.
 #
-# Callers gate in a fixed order - locked user, then blocked source IP, then the ALLOW/DENY decision - so an ALLOW
-# can never override a restriction that is already persisted (see api/lib/conditional_access.py).
+# Callers gate in a fixed order - locked user, then blocked source IP, then the DENY decision (see
+# api/lib/conditional_access.py). A subject is exempted from a policy by an applicability condition on that policy
+# (USER_REALM NOT_IN [...]), which excludes it from evaluation entirely.
 #
 # What a policy counts: its tracked event types, summed, over its window, for one subject. A `user` policy keys on
 # the resolved (resolver, uid, realm); a `source_ip` policy keys on the IP and applies even when nobody resolves,
@@ -88,10 +89,15 @@ class LockoutAction(str, Enum):
     :attr:`LOCK_USER`, :attr:`PERMANENT_LOCK_USER`, :attr:`EMAIL_ADMIN`,
     :attr:`EMAIL_USER`, :attr:`BLOCK_IP` and :attr:`PERMANENT_BLOCK_IP` are
     post-response side effects executed by :func:`evaluate_lockout_policies`.
-    :attr:`ALLOW` and :attr:`DENY` decide the *current* request and are therefore
-    handled by the pre-auth decision step (:func:`evaluate_access_decision`)
-    instead. The action table stores the string value, so the enum can grow
-    without a schema change.
+    :attr:`DENY` decides the *current* request and is therefore handled by the
+    pre-auth decision step (:func:`evaluate_access_decision`) instead. The action
+    table stores the string value, so the enum can grow without a schema change.
+
+    An exemption is expressed as an applicability condition on the policy being
+    exempted from (``USER_REALM NOT_IN [...]``), not as an action: conditions are
+    the only scoping mechanism, and a policy whose conditions do not match is
+    skipped in both phases, so the exemption covers the lock, block and email
+    actions as well as the :attr:`DENY`.
 
     The ``PERMANENT_*`` variants ignore ``action_value`` and never expire (only an
     admin reset clears them); the timed :attr:`LOCK_USER` / :attr:`BLOCK_IP` read
@@ -108,7 +114,6 @@ class LockoutAction(str, Enum):
     EMAIL_USER = "EMAIL_USER"
     BLOCK_IP = "BLOCK_IP"
     PERMANENT_BLOCK_IP = "PERMANENT_BLOCK_IP"
-    ALLOW = "ALLOW"
     DENY = "DENY"
 
     def __str__(self) -> str:
@@ -121,15 +126,16 @@ class AccessDecision(str, Enum):
     (:func:`evaluate_access_decision`) for a single request.
 
     :attr:`DENY` rejects the current request outright (no persistent state is
-    written); :attr:`ALLOW` permits it and short-circuits any lower-priority
-    DENY policy, but does **not** bypass the credential check; :attr:`CONTINUE`
-    is the default ("no decision policy matched") and lets the normal flow
-    proceed. These map to the :attr:`LockoutAction.ALLOW` / :attr:`LockoutAction.DENY`
-    stage actions, which - unlike the lockout/email/block actions - decide the
-    current request and so are handled here, before authentication, rather than
-    in the post-response engine.
+    written); :attr:`CONTINUE` is the default ("no policy denied this request")
+    and lets the normal flow proceed. It maps to the
+    :attr:`LockoutAction.DENY` stage action, which - unlike the
+    lockout/email/block actions - decides the current request and so is handled
+    here, before authentication, rather than in the post-response engine.
+
+    Two states rather than a bool, because "no policy had an opinion" and "a
+    policy said yes" are worth telling apart in the logs, and because the enum can
+    grow if another standing verdict is ever added.
     """
-    ALLOW = "ALLOW"
     DENY = "DENY"
     CONTINUE = "CONTINUE"
 
@@ -201,8 +207,8 @@ class AccessDecisionResult:
     """
     The verdict of the pre-auth decision step plus the outcomes it produced.
 
-    A ``DENY`` yields an outcome (enforced or dry-run); an ``ALLOW`` yields none, because the default-allow idiom - an
-    ``ALLOW`` at threshold 0, which matches every request - would otherwise write one row per authentication.
+    A ``DENY`` yields an outcome (enforced or dry-run); a ``CONTINUE`` yields none, since a policy with no opinion has
+    nothing to record.
 
     One type for a single policy's contribution (:func:`_policy_access_decision`) and for the whole evaluation
     (:func:`evaluate_access_decision`), the way :class:`LockoutEvaluation` serves one policy and all of them. Hence the
@@ -830,32 +836,32 @@ def evaluate_access_decision(context: CAContext, now: datetime | None = None) ->
     Pre-auth conditional-access decision for the current request: should it be
     denied, explicitly allowed, or left to the normal flow?
 
-    This runs **before** the credential check (and, per the chosen precedence,
-    *after* the persistent :func:`is_user_locked` / :func:`is_ip_blocked`
-    pre-checks, so an :attr:`AccessDecision.ALLOW` can never override a lock or
-    block). It handles only the :attr:`LockoutAction.ALLOW` /
-    :attr:`LockoutAction.DENY` actions; the lockout/email/block actions are
+    This runs **before** the credential check, and after the persistent
+    :func:`is_user_locked` / :func:`is_ip_blocked` pre-checks. It handles only the
+    :attr:`LockoutAction.DENY` action; the lockout/email/block actions are
     post-response side effects handled by :func:`evaluate_lockout_policies`.
 
     Because there is no event for the current request yet, the decision is keyed
     on the user's **prior** event history: for each enabled policy the events of
     its ``counter_types_to_track`` are counted (combined across all tracked
     types) over its window, and the matching stage with the highest threshold
-    supplies the decision. A
-    ``DENY`` action therefore rejects this single request without persisting any
-    state — a stateless, self-healing reject that lifts on its own as the
-    failures age out of the window (contrast the durable :attr:`LockoutAction.LOCK_USER`).
-    Because ALLOW/DENY actions default to re-triggering (``count >= threshold``), a
-    stage with ``failure_threshold`` 0 always matches, so an ``ALLOW`` action at
-    threshold 0 acts as a default-allow / allowlist exception.
+    supplies the decision. A ``DENY`` action therefore rejects this single request
+    without persisting any state — a stateless, self-healing reject that lifts on
+    its own as the failures age out of the window (contrast the durable
+    :attr:`LockoutAction.LOCK_USER`). Because ``DENY`` defaults to re-triggering
+    (``count >= threshold``), a stage with ``failure_threshold`` 0 always matches,
+    which is the lockdown idiom - scope it with conditions.
 
     Policies are evaluated by ascending ``priority`` (a lower number means higher
-    precedence, matching privacyIDEA's policy engine) and the first one that
-    yields a decision wins, so an ALLOW with a lower priority number overrides a
-    DENY with a higher number and vice versa. ``dry_run`` policies are logged but
-    never enforced.
+    precedence, matching privacyIDEA's policy engine) and the first one that denies
+    wins, which is what decides *which* policy is named as having refused the
+    request. ``dry_run`` policies are logged but never enforced.
 
-    Both targets decide here: a ``user`` policy is keyed on the resolved
+    A subject is exempted by an applicability condition on this policy
+    (``USER_REALM NOT_IN [...]``, ``USER_ROLE NOT_IN [...]``): a policy whose
+    conditions do not match is never evaluated for that request.
+
+    Both targets can deny here: a ``user`` policy is keyed on the resolved
     ``(resolver, uid, realm)`` user (an unresolved user - unknown login, local
     admin - is never decided by a user policy), while a ``source_ip`` policy is
     keyed on the context's source IP and therefore applies even when the user is
@@ -891,22 +897,19 @@ def evaluate_access_decision(context: CAContext, now: datetime | None = None) ->
 def _policy_access_decision(policy: LockoutPolicy, context: CAContext,
                             now: datetime) -> "AccessDecisionResult":
     """
-    What a single policy contributes to the pre-auth decision: its ALLOW/DENY verdict, and the outcome to record for it.
+    What a single policy contributes to the pre-auth decision: whether it denies the request, and the outcome to
+    record for it.
 
-    The decision is :attr:`AccessDecision.CONTINUE` when this policy does not decide the request: wrong or absent
-    subject, no ALLOW/DENY action's threshold condition is met, or the policy is in dry run - a dry-run policy is never
+    The decision is :attr:`AccessDecision.CONTINUE` when this policy does not deny the request: wrong or absent
+    subject, no ``DENY`` action's threshold condition is met, or the policy is in dry run - a dry-run policy is never
     enforced, but it still yields its outcome, which is how an admin measures what enforcing it would do.
 
-    Each ALLOW/DENY action decides for itself via :func:`_action_threshold_met`:
-    such actions default to re-triggering (``count >= threshold``, so the decision
-    stands while the failures are high), which is what makes ``ALLOW`` at threshold
-    0 a default-allow and ``DENY`` a self-healing reject. An admin can switch a
-    decision action to fire-once, in which case it only decides the request at the
-    exact threshold count. The stage with the highest threshold whose ALLOW/DENY
+    Each ``DENY`` action decides for itself via :func:`_action_threshold_met`: it
+    defaults to re-triggering (``count >= threshold``, so the refusal stands while
+    the failures are high), which is what makes it a self-healing reject. An admin
+    can switch it to fire-once, in which case it only refuses the request at the
+    exact threshold count. The stage with the highest threshold whose ``DENY``
     action is met supplies the decision.
-
-    Only a ``DENY`` produces an outcome. An ``ALLOW`` at threshold 0 is the documented default-allow idiom and matches
-    every request of every user it covers, so recording it would add a row to every authentication.
     """
     # Applicability is checked first: a policy whose conditions exclude this request contributes no decision and
     # costs no counting query.
@@ -928,18 +931,12 @@ def _policy_access_decision(policy: LockoutPolicy, context: CAContext,
             return AccessDecisionResult()
         count = _policy_count(policy, context.user, now)
         subject_label = repr(context.user)
-    decision, deciding_stage = None, None
-    for stage in policy.stages:
-        decision = _stage_access_decision(stage, count)
-        if decision is not None:
-            deciding_stage = stage
-            break
-    if decision is None:
+    deciding_stage = next((stage for stage in policy.stages if _stage_denies(stage, count)), None)
+    if deciding_stage is None:
         return AccessDecisionResult()
+    decision = AccessDecision.DENY
     types = _types_label(policy.counter_types_to_track)
-    # Only a DENY is recorded; see the docstring for why an ALLOW is not.
-    outcomes = ([outcome_for_stage(policy, deciding_stage, LockoutAction.DENY, count, dry_run=policy.dry_run)]
-                if decision == AccessDecision.DENY else [])
+    outcomes = [outcome_for_stage(policy, deciding_stage, LockoutAction.DENY, count, dry_run=policy.dry_run)]
     if policy.dry_run:
         # A dry-run policy never decides the request, but the pre-auth decision runs before the log row exists, so
         # the caller buffers this outcome and records it once that row is written (see ConditionalAccessContext.stage).
@@ -951,27 +948,22 @@ def _policy_access_decision(policy: LockoutPolicy, context: CAContext,
     return AccessDecisionResult(decision, outcomes)
 
 
-def _stage_access_decision(stage: LockoutPolicyStage, count: int) -> "AccessDecision | None":
+def _stage_denies(stage: LockoutPolicyStage, count: int) -> bool:
     """
-    Extract the pre-auth ALLOW/DENY decision from a stage's actions whose
-    per-action threshold condition is met at *count*, or ``None`` if no such
-    ALLOW/DENY action applies. If both an ALLOW and a DENY apply, DENY wins (fail
-    closed).
+    Whether *stage* refuses the request at *count*: it carries a ``DENY`` action
+    whose per-action threshold condition is met. An unparsable action type is
+    skipped rather than treated as a refusal.
     """
-    has_allow = False
     for action in stage.actions:
         try:
             action_type = LockoutAction(action.action_type)
         except ValueError:
             continue
-        if action_type not in (LockoutAction.ALLOW, LockoutAction.DENY):
+        if action_type != LockoutAction.DENY:
             continue
-        if not _action_threshold_met(action, stage.failure_threshold, count):
-            continue
-        if action_type == LockoutAction.DENY:
-            return AccessDecision.DENY
-        has_allow = True
-    return AccessDecision.ALLOW if has_allow else None
+        if _action_threshold_met(action, stage.failure_threshold, count):
+            return True
+    return False
 
 
 def evaluate_lockout_policies(context: CAContext, event_type: AuthEventType | None,
@@ -1139,7 +1131,7 @@ def _evaluate_policy(policy: LockoutPolicy, context: CAContext, event_type: str,
     # By default an action fires once, exactly at the threshold (a threshold-8 email sends on the 8th failure, not
     # again at 9); retrigger_above_threshold keeps it firing while the count stays at or above the threshold.
     # Stages are ordered by descending threshold, so the most severe stage with a pending action wins and only that
-    # stage's actions run (one stage per policy per request); contrast the pre-auth ALLOW/DENY decision in
+    # stage's actions run (one stage per policy per request); contrast the pre-auth DENY decision in
     # _policy_access_decision.
     triggered_stage = next((stage for stage in policy.stages
                             if _stage_pending_actions(stage, count)), None)
@@ -1154,12 +1146,12 @@ def _evaluate_policy(policy: LockoutPolicy, context: CAContext, event_type: str,
         # One outcome is recorded per action that would have run, carrying the expiry it would have written, so the
         # history shows what enforcing this policy would have done (a misconfigured LOCK_USER/BLOCK_IP duration
         # surfaces as a missing expiry).
-        # ALLOW/DENY are excluded here since they are already recorded pre-auth by _policy_access_decision;
-        # recording them again would double-count the same decision.
+        # DENY is excluded here since it is already recorded pre-auth by _policy_access_decision; recording it
+        # again would double-count the same decision.
         outcomes = [outcome_for_stage(policy, triggered_stage, action.action_type, count, dry_run=True,
                                       expires_at=_action_expiry(action, now))
                     for action in pending_actions
-                    if action.action_type not in (LockoutAction.ALLOW, LockoutAction.DENY)]
+                    if action.action_type != LockoutAction.DENY]
         return LockoutEvaluation(outcomes=outcomes)
 
     log.info(f"Policy {policy.name!r} triggered stage {triggered_stage.id} "
@@ -1174,7 +1166,7 @@ def _action_expiry(stage_action: LockoutStageAction, now: datetime) -> datetime 
     When the restriction written by *stage_action* ends, or ``None`` when there is nothing to expire.
 
     ``None`` covers three different cases, which the action type tells apart: a ``PERMANENT_*`` action (never expires),
-    an action that creates no restriction at all (``EMAIL_*``, ``ALLOW``/``DENY``), and a timed action whose configured
+    an action that creates no restriction at all (``EMAIL_*``, ``DENY``), and a timed action whose configured
     duration is missing or invalid - which is a misconfiguration the enforced path skips and logs, and which a dry-run
     outcome surfaces as "would have locked, but for how long is not configured".
     """
@@ -1437,9 +1429,9 @@ def _execute_stage_actions(policy: LockoutPolicy, stage: LockoutPolicyStage,
                     block_expires_at = now + timedelta(seconds=duration)
                 if _upsert_ip_block(source_ip, block_expires_at=block_expires_at):
                     record(action_type, expires_at=block_expires_at)
-            elif action_type in (LockoutAction.ALLOW, LockoutAction.DENY):
-                # ALLOW/DENY decide the current request pre-auth (see evaluate_access_decision), so there is
-                # nothing to do or record here — the decision is already recorded as its own outcome in
+            elif action_type == LockoutAction.DENY:
+                # DENY decides the current request pre-auth (see evaluate_access_decision), so there is nothing to
+                # do or record here — the decision is already recorded as its own outcome in
                 # _policy_access_decision.
                 log.debug(f"{action_type} is a pre-auth access decision; skipping in the "
                           f"post-response engine.")

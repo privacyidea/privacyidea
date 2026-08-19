@@ -63,7 +63,7 @@ const TIME_UNIT_FACTORS: Record<TimeUnit, number> = {
 // The actions that state a standing verdict instead of reacting to a failure count. They are the only
 // ones a stage may carry at threshold 0, where they then apply to every request the policy covers -
 // mirroring DECISION_ACTIONS and _validate_threshold_for_actions in lib/conditional_access.
-const STANDING_DECISION_ACTIONS: string[] = ["ALLOW", "DENY"];
+const STANDING_DECISION_ACTIONS: string[] = ["DENY"];
 
 // Human-readable labels for the policy targets served by /conditionalaccess/targets; a target missing here falls back
 // to its raw value.
@@ -155,7 +155,7 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
 
   // Info-hint help text as a $localize string, keeping all of this component's user-facing text in
   // one place and extractable for translation.
-  protected readonly priorityHelp = $localize`Priority decides how this policy ranks against the others: a lower number means higher precedence, so for an allow/deny decision the matching policy with the lowest priority number wins, while lock, block and email policies all run regardless of priority. It is required and must be unique across policies so the order is unambiguous.`;
+  protected readonly priorityHelp = $localize`Priority decides how this policy ranks against the others: a lower number means higher precedence, so when several policies would deny a request, the one with the lowest priority number is the one named as having refused it. Lock, block and email policies all run regardless of priority. It is required and must be unique across policies so the order is unambiguous.`;
   protected readonly priorityHelpAriaLabel = $localize`About priority`;
 
   // Templates offered on the create page and the one currently picked, whose description shows as
@@ -202,12 +202,18 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
     return this.policyService.policies().find((policy) => policy.priority === priority && policy.id !== currentId);
   });
   priorityUnique = computed(() => !this.priorityConflict());
+  // Tracked event types are required and have no default: a policy that counts nothing would never
+  // trip, so the backend rejects an empty list too. Shown as an error straight away rather than on
+  // touch, matching Priority - the other required field the editor starts empty.
   counterTypesValid = computed(() => this.editPolicy().counter_types_to_track.length > 0);
+  // mat-select carries no form control here (it is [value] + (selectionChange)), so Material never
+  // derives an error state for it and its mat-error would stay hidden; appErrorState supplies one.
+  showCounterTypesError = computed(() => !this.counterTypesValid());
   stagesValid = computed(() => {
     const stages = this.editPolicy().stages;
     // A threshold counts failures, so it starts at 1. The exception the backend also makes
-    // (_validate_threshold_for_actions): a stage whose every action is a standing ALLOW/DENY verdict
-    // may use 0, which then means "always" - the allowlist and the lockdown idiom.
+    // (_validate_threshold_for_actions): a stage whose every action is a standing DENY verdict
+    // may use 0, which then means "always" - the lockdown idiom.
     return (
       stages.length > 0 &&
       stages.every(
@@ -275,6 +281,50 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
       this.countModeValid() &&
       this.conditionValuesValid()
   );
+
+  // Everything canSave() checks, as the text the admin needs to act on. Save is disabled by a
+  // failing check somewhere down the form, sometimes off-screen, so listing the reasons beats
+  // leaving the button greyed out with no explanation. Kept in the same order as canSave() so a
+  // check added there is easy to mirror here.
+  saveBlockers = computed<string[]>(() => {
+    const blockers: string[] = [];
+    if (!this.editPolicy().name.trim()) {
+      blockers.push($localize`Name is required.`);
+    } else if (this.nameTooLong()) {
+      blockers.push($localize`Name must not exceed 255 characters.`);
+    }
+    if (!this.timeWindowValid()) {
+      blockers.push($localize`Time window must be at least 1 second.`);
+    }
+    if (!this.priorityValid()) {
+      blockers.push($localize`Priority is required and must be a whole number of at least 1.`);
+    } else if (!this.priorityUnique()) {
+      blockers.push($localize`Priority must be unique across policies.`);
+    }
+    if (!this.counterTypesValid()) {
+      blockers.push($localize`Select at least one tracked event type.`);
+    }
+    if (!this.stagesValid()) {
+      blockers.push(
+        $localize`Every stage needs a failure threshold of at least 1 - or 0 on a stage carrying only DENY.`
+      );
+    }
+    if (!this.stageThresholdsUnique()) {
+      blockers.push($localize`Each stage must have a different failure threshold.`);
+    }
+    if (!this.targetActionsValid()) {
+      blockers.push($localize`Some actions are not allowed for the selected target.`);
+    }
+    if (!this.countModeValid()) {
+      blockers.push($localize`The selected count mode is not allowed for the selected target.`);
+    }
+    if (!this.conditionValuesValid()) {
+      blockers.push(
+        $localize`A condition names a value that no longer exists: ${this.staleConditionValues().join(", ")}.`
+      );
+    }
+    return blockers;
+  });
 
   nameTouched = signal(false);
   showNameError = computed(() => this.nameTouched() && !this.policyForm().valid());
@@ -464,8 +514,8 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
   }
 
   savePolicy(): Promise<boolean> {
-    // Stages carry no priority: the engine evaluates them by descending failure_threshold, so the
-    // thresholds the admin entered are the order.
+    // The engine evaluates stages by descending failure_threshold, so the thresholds the admin
+    // entered are the order and nothing extra is derived here.
     const policy = this.editPolicy();
     const payload: LockoutPolicySaveParams = { ...policy };
     if (!payload.conditions?.length) {

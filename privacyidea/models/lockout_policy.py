@@ -193,12 +193,12 @@ class LockoutPolicyStage(MethodsMixin, db.Model):
     fire-once vs re-trigger choice); escalation is expressed as separate stages
     per threshold. Stages are evaluated by descending ``failure_threshold``, so
     the most severe matching stage is the one that acts (and, on the pre-auth
-    path, the one that supplies the ALLOW/DENY verdict). The threshold is unique
+    path, the one that supplies the DENY verdict). The threshold is unique
     per policy, so that order is total and needs nothing else configured.
 
     A threshold counts failures and therefore starts at 1; the CRUD layer allows
-    0 only on a stage whose every action is ``ALLOW``, the unconditional
-    default-allow idiom.
+    0 only on a stage whose every action is ``DENY``, the unconditional lockdown
+    idiom.
     """
     __tablename__ = 'lockout_policy_stages'
     __table_args__ = (
@@ -235,7 +235,7 @@ class LockoutStageAction(MethodsMixin, db.Model):
     threshold (the classic re-triggering lockout; de-dup still throttles repeats
     within one incident). Because it is per action, one stage can e.g. email once
     at its threshold while re-triggering the user lock. The CRUD layer picks an
-    action-aware default when the client omits it (ALLOW/DENY decisions default to
+    action-aware default when the client omits it (the DENY decision defaults to
     True, the lock/email/block effects to False); see
     :func:`~privacyidea.lib.conditional_access.lockout_policy._validate_stages`
     and :func:`~privacyidea.lib.conditional_access.engine._action_threshold_met`.
