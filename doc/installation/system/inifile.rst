@@ -282,6 +282,24 @@ you configure pooling. It uses the settings from the above mentioned
 
 .. _picfg_metrics_health:
 
+Authentication path tuning
+--------------------------
+
+These parameters reduce work that every authentication request would otherwise
+repeat. Both trade a little precision in data that is only ever read as an
+approximation, and both can be turned off by setting them to ``0``.
+
+``PI_CLIENTAPPLICATION_WRITE_INTERVAL`` (default ``60`` seconds) sets how long a
+client may keep its recorded ``lastseen`` timestamp before it is written again.
+privacyIDEA notes the address and user agent of every authenticating client in
+the ``clientapplication`` table, which is what the client list in the WebUI and
+the metering of plugin traffic read. Without this interval that means a
+``SELECT``, an ``UPDATE`` and a ``COMMIT`` per request - a cluster-wide write in
+a replicated setup - to keep a timestamp accurate to the second that nobody
+reads that precisely. Each worker process skips the write for a client it wrote
+within the interval, so ``lastseen`` is behind by at most that much. Set it to
+``0`` to write on every request.
+
 Metrics and certificate health
 ------------------------------
 

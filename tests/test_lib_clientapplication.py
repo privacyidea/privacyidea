@@ -5,9 +5,16 @@ import mock
 from datetime import datetime, timedelta
 from contextlib import contextmanager
 
-from privacyidea.models import ClientApplication
+import time
+
+from sqlalchemy import event
+from sqlalchemy.engine import Engine
+
+from privacyidea.lib.framework import get_app_local_store
+from privacyidea.models import ClientApplication, db
 from .base import MyTestCase
-from privacyidea.lib.clientapplication import (get_clientapplication,
+from privacyidea.lib.clientapplication import (_LAST_WRITE_KEY, _MAX_TRACKED_CLIENTS,
+                                               _write_interval_seconds, get_clientapplication,
                                                save_clientapplication)
 
 
@@ -130,3 +137,132 @@ class ClientApplicationTestCase(MyTestCase):
         self.assertIn({"clienttype": "PAM", "hostname": None, "lastseen": t2}, apps["1.2.3.4"])
         self.assertIn({"clienttype": "RADIUS", "hostname": None, "lastseen": t2}, apps["1.2.3.4"])
         self.assertEqual(apps["2.3.4.5"], [{"clienttype": "PAM", "hostname": None, "lastseen": t1}])
+
+
+class ClientApplicationWriteThrottleTestCase(MyTestCase):
+    """
+    ``save_clientapplication`` runs on every /validate/check request, so it does
+    not rewrite a row it has just written.
+    """
+
+    @contextmanager
+    def _write_interval(self, seconds):
+        """Set how long a row may keep its old lastseen before being rewritten."""
+        key = "PI_CLIENTAPPLICATION_WRITE_INTERVAL"
+        had_key = key in self.app.config
+        old_value = self.app.config.get(key)
+        self.app.config[key] = seconds
+        try:
+            yield
+        finally:
+            if had_key:
+                self.app.config[key] = old_value
+            else:
+                self.app.config.pop(key, None)
+
+    def _statements(self):
+        """Count the statements a save costs, so the test states the actual point."""
+        statements = []
+
+        def on_execute(conn, cursor, statement, parameters, context, executemany):
+            statements.append(statement)
+
+        return statements, on_execute
+
+    def setUp(self):
+        super().setUp()
+        ClientApplication.query.delete()
+        db.session.commit()
+
+    def test_01_the_first_write_always_happens(self):
+        with self._write_interval(60):
+            save_clientapplication("1.2.3.4", "PAM")
+        row = ClientApplication.query.filter_by(ip="1.2.3.4", clienttype="PAM").one()
+        self.assertIsNotNone(row.lastseen)
+
+    def test_02_a_repeated_save_within_the_interval_is_skipped(self):
+        with self._write_interval(60):
+            with mock.patch("privacyidea.lib.clientapplication.datetime") as mock_dt:
+                first_seen = datetime.now()
+                mock_dt.now.return_value = first_seen
+                save_clientapplication("1.2.3.4", "PAM")
+                # A second later the same client is back. Its row already says
+                # it was around, so there is nothing worth writing
+                mock_dt.now.return_value = first_seen + timedelta(seconds=1)
+                save_clientapplication("1.2.3.4", "PAM")
+        row = ClientApplication.query.filter_by(ip="1.2.3.4", clienttype="PAM").one()
+        self.assertEqual(first_seen, row.lastseen)
+
+    def test_03_the_skipped_save_costs_no_statement(self):
+        # The reason for the throttle is the SELECT, the UPDATE and the COMMIT
+        # that every request would otherwise pay
+        with self._write_interval(60):
+            save_clientapplication("1.2.3.4", "PAM")
+            statements, on_execute = self._statements()
+            event.listen(Engine, "before_cursor_execute", on_execute)
+            try:
+                save_clientapplication("1.2.3.4", "PAM")
+            finally:
+                event.remove(Engine, "before_cursor_execute", on_execute)
+        self.assertEqual([], statements)
+
+    def test_04_a_save_after_the_interval_writes_again(self):
+        with self._write_interval(60):
+            with mock.patch("privacyidea.lib.clientapplication.datetime") as mock_dt:
+                first_seen = datetime.now()
+                mock_dt.now.return_value = first_seen
+                save_clientapplication("1.2.3.4", "PAM")
+                # Move the worker's clock past the interval rather than sleeping
+                with mock.patch("privacyidea.lib.clientapplication.time.monotonic",
+                                return_value=time.monotonic() + 61):
+                    later = first_seen + timedelta(seconds=61)
+                    mock_dt.now.return_value = later
+                    save_clientapplication("1.2.3.4", "PAM")
+        row = ClientApplication.query.filter_by(ip="1.2.3.4", clienttype="PAM").one()
+        self.assertEqual(later, row.lastseen)
+
+    def test_05_clients_are_throttled_one_by_one(self):
+        with self._write_interval(60):
+            with mock.patch("privacyidea.lib.clientapplication.datetime") as mock_dt:
+                first_seen = datetime.now()
+                mock_dt.now.return_value = first_seen
+                save_clientapplication("1.2.3.4", "PAM")
+                # A different address, and a different client type on the same
+                # address, are both clients of their own
+                save_clientapplication("1.2.3.4", "RADIUS")
+                save_clientapplication("10.1.1.1", "PAM")
+        self.assertEqual(3, ClientApplication.query.count())
+
+    def test_06_an_interval_of_zero_writes_every_time(self):
+        with self._write_interval(0):
+            with mock.patch("privacyidea.lib.clientapplication.datetime") as mock_dt:
+                first_seen = datetime.now()
+                mock_dt.now.return_value = first_seen
+                save_clientapplication("1.2.3.4", "PAM")
+                later = first_seen + timedelta(seconds=1)
+                mock_dt.now.return_value = later
+                save_clientapplication("1.2.3.4", "PAM")
+        row = ClientApplication.query.filter_by(ip="1.2.3.4", clienttype="PAM").one()
+        self.assertEqual(later, row.lastseen)
+
+    def test_07_a_malformed_interval_falls_back_to_the_default(self):
+        with self._write_interval("not a number"):
+            self.assertEqual(60, _write_interval_seconds())
+        with self._write_interval(-5):
+            self.assertEqual(0, _write_interval_seconds())
+
+    def test_08_the_tracked_clients_do_not_grow_without_end(self):
+        # A server reached from very many addresses must not accumulate one
+        # entry per address forever
+        with self._write_interval(60):
+            save_clientapplication("1.2.3.4", "PAM")
+            last_writes = get_app_local_store()[_LAST_WRITE_KEY]
+            # Fill it past the cap with clients last written long ago
+            long_ago = time.monotonic() - 3600
+            for index in range(_MAX_TRACKED_CLIENTS + 10):
+                last_writes[("node", f"10.0.{index // 256}.{index % 256}", "PAM")] = long_ago
+            save_clientapplication("10.1.1.1", "PAM")
+        self.assertLessEqual(len(get_app_local_store()[_LAST_WRITE_KEY]), _MAX_TRACKED_CLIENTS)
+        # The client that was just written is still remembered
+        self.assertIn(("10.1.1.1", "PAM"),
+                      [(key[1], key[2]) for key in get_app_local_store()[_LAST_WRITE_KEY]])

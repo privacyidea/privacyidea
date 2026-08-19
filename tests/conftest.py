@@ -250,6 +250,26 @@ def _clear_ldap_resolver_cache():
     yield
 
 
+@pytest.fixture(autouse=True)
+def _clear_clientapplication_write_throttle():
+    """Let every test write a client application row again.
+
+    ``save_clientapplication`` skips rewriting a row this worker wrote moments
+    ago, remembering that in the app-local store. The store outlives a single
+    test, so a test that empties the table and then saves the same client again
+    would find no row - the write it expected was skipped as a duplicate of one
+    the previous test made.
+    """
+    from privacyidea.lib.clientapplication import _LAST_WRITE_KEY
+    from privacyidea.lib.framework import get_app_local_store
+    try:
+        get_app_local_store().pop(_LAST_WRITE_KEY, None)
+    except RuntimeError:
+        # No application context yet - nothing has been remembered either
+        pass
+    yield
+
+
 CAKEY = "cakey.pem"
 CACERT = "cacert.pem"
 OPENSSLCNF = "openssl.cnf"
