@@ -421,7 +421,7 @@ def invalidate_user(resolver_name: str, login: str = None, user_id=None) -> None
         _unlink(client, resolver_name, keys)
 
 
-def invalidate_resolver(resolver_name: str) -> None:
+def invalidate_resolver(resolver_name: str) -> bool:
     """
     Drop everything cached for one resolver.
 
@@ -430,10 +430,14 @@ def invalidate_resolver(resolver_name: str) -> None:
     changes, nothing cached under it can be trusted.
 
     :param resolver_name: The name of the resolver
+    :return: True if the entries are gone, False if Redis could not be asked and
+             they may still be there. Callers that report what they dropped have
+             to be able to tell those apart.
     """
     client = _cache_client()
     if client is None:
-        return
+        # Nothing is cached for this resolver, so there is nothing left behind
+        return True
     index_key = _INDEX_KEY.format(_segment(resolver_name))
     dropped = 0
     try:
@@ -454,8 +458,9 @@ def invalidate_resolver(resolver_name: str) -> None:
         client.unlink(index_key)
     except redis_lib.exceptions.RedisError as error:
         _disable_redis(error)
-        return
+        return False
     log.info(f"Dropped {dropped} user cache entries of the resolver {resolver_name!r}.")
+    return True
 
 
 def flush_user_cache() -> int:
@@ -467,13 +472,20 @@ def flush_user_cache() -> int:
     of keys. A resolver that no longer exists keeps its entries until they
     expire, which is why deleting a resolver drops them at that moment.
 
-    :return: the number of resolvers whose entries were dropped
+    Counts the resolvers actually dropped, not the ones attempted: the first
+    failure puts the connection into its retry cooldown, so every resolver after
+    it silently does nothing. Reporting the attempted number would tell an admin
+    the cache was flushed while most of it is still there.
+
+    :return: the number of resolvers whose entries were dropped, which is short
+             of the configured total when Redis could not be reached
     """
     if _cache_client() is None:
         return 0
     # Imported here because the resolver module reads the user cache itself
     from privacyidea.lib.resolver import get_resolver_list
-    resolver_names = list(get_resolver_list())
-    for resolver_name in resolver_names:
-        invalidate_resolver(resolver_name)
-    return len(resolver_names)
+    flushed = 0
+    for resolver_name in get_resolver_list():
+        if invalidate_resolver(resolver_name):
+            flushed += 1
+    return flushed

@@ -43,6 +43,31 @@ _CACHE_LOCK = threading.Lock()
 HEALTH_CACHE_FEATURE = "health"
 _CERTIFICATE_KEY = "pi:health:v1:certificates"
 
+# Held while one worker refreshes the shared results. Without it the sharing only
+# helps in the steady state: the moment the shared entry expires, every worker
+# that notices probes every endpoint at once, which is the burst of outbound
+# connections this feature exists to remove - just once per TTL instead of once
+# per request. The loser of the race serves its own copy for this one request
+# rather than waiting, since a dashboard panel is not worth blocking on.
+_REFRESH_LOCK_KEY = "pi:health:v1:certificates:refreshing"
+_REFRESH_LOCK_SECONDS = 60
+
+
+def _claim_refresh(client) -> bool:
+    """
+    Return True if this worker should be the one to probe the endpoints.
+
+    A ``SET NX`` with an expiry is enough: the lock is an optimisation, so a
+    worker that dies holding it only means the endpoints are probed a minute
+    later than they could have been, and a failure to reach Redis means everyone
+    probes exactly as they did before.
+    """
+    try:
+        return bool(client.set(_REFRESH_LOCK_KEY, "1", nx=True, ex=_REFRESH_LOCK_SECONDS))
+    except redis_lib.exceptions.RedisError as error:
+        _disable_redis(error)
+        return True
+
 
 def _cache_client():
     """Return the Redis client to share health results through, or None."""
@@ -109,7 +134,11 @@ def invalidate_certificate_cache() -> None:
     if client is None:
         return
     try:
-        client.unlink(_CERTIFICATE_KEY)
+        # The refresh lease goes with it: a lease held by a worker that probed a
+        # moment ago would otherwise keep the next request answering from a local
+        # copy for up to a minute, which is exactly the stale answer this call is
+        # supposed to get rid of.
+        client.unlink(_CERTIFICATE_KEY, _REFRESH_LOCK_KEY)
     except redis_lib.exceptions.RedisError as error:
         _disable_redis(error)
 
@@ -426,6 +455,15 @@ def get_certificate_status(refresh: bool = False) -> list:
                 cached = _CACHE.get(cache_key)
                 if cached and (now - cached[0]).total_seconds() < ttl:
                     return cached[1]
+
+    if client is not None and not refresh and not _claim_refresh(client):
+        # Another worker is already probing. Answer from this worker's own copy,
+        # however old, rather than adding to the burst; the next request picks up
+        # the shared result.
+        with _CACHE_LOCK:
+            cached = _CACHE.get(cache_key)
+        if cached:
+            return cached[1]
 
     results = _check_ldap_resolvers()
     results.extend(_check_keycloak_resolvers())

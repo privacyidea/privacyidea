@@ -757,8 +757,14 @@ def delete_user_cache_api():
     Requires admin authentication.
 
     :reqheader PI-Authorization: authentication token.
-    :status 200: ``{"status": True, "deleted": <n>}`` in ``result.value``,
-        where ``n`` is the number of cache entries removed.
+    :status 200: ``{"status": True, "deleted": <n>, "flushed_resolvers": <m>}``
+        in ``result.value``, where ``n`` is the number of rows removed from the
+        ``usercache`` table and ``m`` the number of resolvers whose entries were
+        dropped from the Redis user cache (0 when it is not enabled). Both are
+        reported because either store can hold entries: with Redis enabled the
+        table is usually empty, so ``deleted`` alone would say nothing was
+        cleared. ``m`` short of the number of configured resolvers means Redis
+        could not be reached and entries may remain.
 
     **Example response**:
 
@@ -772,7 +778,7 @@ def delete_user_cache_api():
          "jsonrpc": "2.0",
          "result": {
            "status": true,
-           "value": {"status": true, "deleted": 42}
+           "value": {"status": true, "deleted": 42, "flushed_resolvers": 2}
          },
          "version": "privacyIDEA unknown"
        }
@@ -782,7 +788,8 @@ def delete_user_cache_api():
     g.audit_object.log({"success": True,
                         "info": f"Deleted {row_count} entries from user cache, "
                                 f"flushed {flushed_resolvers} resolvers from the Redis user cache"})
-    return send_result({"status": True, "deleted": row_count})
+    return send_result({"status": True, "deleted": row_count,
+                        "flushed_resolvers": flushed_resolvers})
 
 
 @system_blueprint.route("/metricscleanup", methods=['POST'])

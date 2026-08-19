@@ -185,9 +185,15 @@ def save_resolver(params):
 
     # Remove corresponding entries from the user cache
     delete_user_cache(resolver=resolvername)
-    invalidate_resolver(resolvername)
     save_config_timestamp()
     db.session.commit()
+
+    # Only now that the new configuration is committed and the timestamp says so.
+    # Dropping the shared entries earlier leaves a window in which another worker
+    # is still serving the previous configuration, misses the cache, and fills it
+    # again from what it is still holding - and those entries would then outlive
+    # the change by a full TTL.
+    invalidate_resolver(resolvername)
 
     # Resolver TLS endpoints may have changed - drop cached cert health.
     from privacyidea.lib.health import invalidate_certificate_cache

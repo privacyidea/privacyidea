@@ -758,11 +758,12 @@ instance on a public interface.
 
 What is stored differs per workload:
 
-* Challenge data is stored as plaintext - exactly the same content, and the
-  same lack of encryption, as the SQL ``challenge`` table it replaces. The
-  exposure window is small (entries carry the challenge validity TTL, typically
-  a few minutes), but the data is no less sensitive than a challenge row in the
-  database.
+* Challenge data is stored as plaintext, and here Redis is **less** protected
+  than the table it replaces: the SQL ``challenge.data`` column is encrypted with
+  the server's encryption key, the Redis copy is not. The field can carry the OTP
+  itself for email and SMS tokens, or a push token's display code. The exposure
+  window is small - entries only live for the challenge validity time, typically
+  a few minutes - but do not read this as "the same as the database".
 * User cache values are **encrypted** with the server's encryption key before
   they are written, so a dump of the Redis database is not a dump of your
   directory. The keys are not encrypted: a key contains a login name or a user

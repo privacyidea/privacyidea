@@ -4,6 +4,7 @@
 import datetime
 import json
 import threading
+from contextlib import contextmanager
 from unittest.mock import MagicMock, patch
 
 from cryptography import x509
@@ -14,6 +15,18 @@ from cryptography.x509.oid import NameOID
 
 from privacyidea.lib import health
 from tests.base import MyTestCase
+
+
+@contextmanager
+def _local_cache(results):
+    """Give the per-process cache a copy, as a worker that probed earlier would have."""
+    previous = dict(health._CACHE)
+    health._CACHE["certificates"] = (datetime.datetime.now(tz=datetime.timezone.utc), results)
+    try:
+        yield
+    finally:
+        health._CACHE.clear()
+        health._CACHE.update(previous)
 
 
 def _cm(value):
@@ -156,9 +169,13 @@ class SharedCacheTest(MyTestCase):
         def get(self, key):
             return self.store.get(key)
 
-        def set(self, key, value, ex=None):
+        def set(self, key, value, ex=None, nx=False):
+            # nx is what makes the refresh lease a lease
+            if nx and key in self.store:
+                return None
             self.store[key] = value
             self.set_calls.append((key, ex))
+            return True
 
         def unlink(self, *keys):
             for key in keys:
@@ -184,7 +201,7 @@ class SharedCacheTest(MyTestCase):
             self.assertEqual(entries, health.get_certificate_status())
         self.assertIn(health._CERTIFICATE_KEY, self.client.store)
         # The shared copy expires with the same TTL as the per-process one
-        self.assertEqual([(health._CERTIFICATE_KEY, 3600)], self.client.set_calls)
+        self.assertIn((health._CERTIFICATE_KEY, 3600), self.client.set_calls)
 
     def test_02_another_workers_results_are_used_instead_of_probing(self):
         entries = [{"source": "ldap", "name": "reso", "status": "ok"}]
@@ -277,6 +294,39 @@ class SharedCacheTest(MyTestCase):
             self.assertEqual(entries, health.get_certificate_status())
             health.get_certificate_status()
         self.assertEqual(1, ldap_mock.call_count)
+
+    def test_08b_only_one_worker_probes_when_the_shared_copy_expires(self):
+        # Sharing alone only helps in the steady state: at expiry every worker
+        # that notices the miss would otherwise probe every endpoint at once,
+        # which is the burst the feature exists to remove
+        first = [{"source": "ldap", "name": "probed", "status": "ok"}]
+        own = [{"source": "ldap", "name": "own", "status": "ok"}]
+        with (self._with_client(self.client),
+              patch.object(health, "_check_ldap_resolvers", return_value=first) as ldap_mock,
+              patch.object(health, "_server_cert_entries", return_value=[])):
+            # This worker wins the race and probes
+            self.assertEqual(first, health.get_certificate_status())
+            self.assertEqual(1, ldap_mock.call_count)
+            self.assertTrue(self.client.store.get(health._REFRESH_LOCK_KEY))
+
+            # A second worker, holding its own older copy, finds the shared entry
+            # gone and the lease taken: it answers from its copy instead of
+            # probing again
+            self.client.store.pop(health._CERTIFICATE_KEY)
+            with _local_cache(own):
+                self.assertEqual(own, health.get_certificate_status())
+            self.assertEqual(1, ldap_mock.call_count)
+
+    def test_08c_invalidating_releases_the_refresh_lease(self):
+        # Otherwise a lease taken a moment ago keeps the next request on a local
+        # copy, which is the stale answer the invalidation is meant to remove
+        with (self._with_client(self.client),
+              patch.object(health, "_check_ldap_resolvers", return_value=[]),
+              patch.object(health, "_server_cert_entries", return_value=[])):
+            health.get_certificate_status()
+            self.assertIn(health._REFRESH_LOCK_KEY, self.client.store)
+            health.invalidate_certificate_cache()
+            self.assertNotIn(health._REFRESH_LOCK_KEY, self.client.store)
 
     def test_09_the_feature_flag_is_the_documented_one(self):
         # The flag name is derived from the feature name, so a typo in either
