@@ -1,0 +1,160 @@
+.. index:: Authentication log
+.. _authentication_log:
+
+Authentication log
+==================
+
+The authentication log records the outcome of every authentication request:
+what was attempted, by whom, from where, and how it ended. It is the data
+:ref:`lockout_policies` count, and it is readable on its own under
+*Logs → Authentication log*.
+
+It is separate from the :ref:`audit` log. The audit log records *what the API
+did*, in free text, for every call. The authentication log records *how an
+authentication ended*, one entry per request, with a fixed set of event types
+that can be filtered and counted reliably.
+
+Each entry holds
+
+* the time of the request,
+* the user, as resolver, user ID, realm and the login name that was used, plus
+  the role (user, internal or external administrator),
+* the event type, see below,
+* the source IP and the client description,
+* the token serial, the transaction ID and the attempt ID,
+* what conditional access did to this request, if anything,
+* additional details, such as the part of an over-long value that did not fit
+  its column.
+
+The user is recorded by resolver, user ID and realm, so entries stay
+attributable after a rename. A login naming a user that does not exist is still
+recorded, with the attempted login name and no resolved user.
+
+.. _authentication_log_attempts:
+
+Attempts
+--------
+
+A challenge-response login takes several requests: one that triggers the
+challenge and one that answers it. These share an **attempt ID**, so they can be
+recognised as one logical authentication attempt, and a lockout policy using the
+``PER_ATTEMPT`` count mode counts them once.
+
+The attempt ID also survives a multi-challenge login, where answering one
+challenge triggers the next one and the transaction ID changes. Filtering the
+log on an attempt ID therefore shows the whole chain.
+
+.. _authentication_log_event_types:
+
+Event types
+-----------
+
+Every entry carries exactly one event type. Each type belongs to an outcome
+class - *success*, *failure* or *pending* - which the WebUI uses to colour the
+entry.
+
+Success
+   ``LOGIN_SUCCESS``
+     the authentication completed.
+
+Pending
+   ``CHALLENGE_TRIGGERED``
+     a challenge was created and sent to the client.
+   ``CHALLENGE_CONTINUED``
+     a challenge was answered correctly, but a further one is required.
+   ``CHALLENGE_ANSWERED_OUT_OF_BAND``
+     a push challenge was approved on the smartphone.
+   ``ENROLLMENT_TRIGGERED``
+     a successful authentication started the enrollment of a new token.
+
+Failure
+   ``PASSWORD_FAIL``
+     wrong user store password.
+   ``PIN_FAIL``
+     wrong token PIN.
+   ``TOKEN_ONLY_FAIL``
+     no PIN was required, and the OTP value was wrong.
+   ``MFA_FAIL``
+     the first factor was correct but the second failed. Also used for a failed
+     passkey authentication, where the cause cannot be determined.
+   ``USER_UNKNOWN``
+     the login name was not found in any resolver.
+   ``NO_TOKEN``
+     the user exists but has no token.
+   ``NO_USABLE_TOKEN``
+     the user has tokens, but every one is revoked, disabled, expired or over
+     its failcount.
+   ``INVALID_TOKEN_TYPE``
+     the request named no token type this endpoint can authenticate with.
+   ``CHALLENGE_ANSWERED_FAIL``
+     the challenge response was wrong or expired, or the transaction is unknown.
+   ``CHALLENGE_TRIGGER_FAIL``
+     a challenge was requested but the server could not create one, for example
+     because a required policy is missing.
+   ``CHALLENGE_DECLINED``
+     a push challenge was rejected on the smartphone.
+   ``ENROLLMENT_CANCELED_FAIL``
+     cancelling an enrollment failed.
+   ``NOT_AUTHORIZED``
+     an authorization policy refused the authentication.
+   ``UNKNOWN_FAIL_REASON``
+     the authentication failed and nothing more specific was determined.
+
+Conditional access writes three further types for the requests it refuses
+itself: ``USER_LOCKED``, ``IP_BLOCKED`` and ``ACCESS_DENIED``. They record why a
+request was turned away, and they are the types a lockout policy cannot track,
+see :ref:`lockout_policies`.
+
+Searching
+---------
+
+The log can be filtered in the WebUI and via ``GET /authenticationlog/`` on any
+column. Filter values are matched as follows:
+
+* A value without a wildcard must match the column exactly, and is
+  case-sensitive unless the case-insensitive option is set.
+* ``*`` matches any sequence of characters, for example ``serial=TOTP*``.
+  Wildcard matching is always case-insensitive.
+* Several values can be given as a comma-separated list, for example
+  ``event_type=MFA_FAIL,PIN_FAIL``, matching entries equal to any of them.
+
+A time range can be given in addition, and the result can be sorted by any
+column except the conditional-access outcomes and the details.
+
+The *Conditional access* column filters on what conditional access did: the
+action type, the name of the policy that acted, and whether the outcome was a
+dry run or enforced. Filtering on the action type with ``*`` shows every entry
+conditional access acted on at all.
+
+Who sees what
+-------------
+
+Reading the log requires the ``authentication_log_read`` right, see
+:ref:`conditional_access_rights`.
+
+If the administrator's policy is scoped to realms, resolvers or users, only
+matching entries are returned; an administrator always also sees their own
+entries. Users granted the right in the user scope see only their own entries,
+and the columns identifying the user are hidden for them.
+
+.. _authentication_log_cleanup:
+
+Cleaning up entries
+-------------------
+
+.. index:: retention time
+
+The authentication log grows with every authentication request and is **not**
+pruned automatically. Set up a cron job to enforce your retention period, using
+:ref:`pi-manage <pimanage>`::
+
+   pi-manage authlog cleanup --age 365
+
+This deletes all entries older than one year, together with the
+conditional-access outcomes recorded on them. Add ``--chunksize`` to delete in
+batches on a large table, and ``--dryrun`` to see how many entries would be
+removed without deleting anything.
+
+.. note:: Deleting entries also removes them from the counts a lockout policy
+   makes. Keep the retention period comfortably longer than the longest time
+   window you use in a policy.
