@@ -679,3 +679,26 @@ This is intentional — refreshing the window on every stale request would keep 
 never-rotating (or stolen) cookie alive indefinitely and defeat the rotation.
 
 .. versionadded:: 3.14
+
+.. _ini_subscription_version_check:
+
+Subscription version check
+--------------------------
+
+.. index:: subscription, air-gapped
+
+The subscription overview on the dashboard shows the latest released version of
+each privacyIDEA component next to the version actually in use. These releases
+are looked up on GitHub, cached for six hours and requested with a short timeout;
+an unreachable repository simply leaves the column empty.
+
+In an installation without internet access the lookup can never succeed, and
+paying the timeout for it is pointless. Switch it off with::
+
+    PI_SUBSCRIPTION_VERSION_CHECK = False
+
+The overview still lists every component with its usage and subscription state,
+only the latest-release column stays empty. This is the only outbound request the
+subscription overview makes.
+
+.. versionadded:: 3.14
