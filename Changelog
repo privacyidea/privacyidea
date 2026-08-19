@@ -66,7 +66,7 @@ Version 3.14dev1
     connector fail after the imports were reordered (#4881)
   * Replaced the remaining usages of PyOpenSSL with the cryptography package (#1991)
   * `GET /user/` accepts the parameter `include_custom_attributes`, so a user list can be fetched without looking up
-    the custom attributes of every user
+    the custom attributes of every user (#5185)
   * Updated the pinned dependencies for the backend.
 
   Fixes:
