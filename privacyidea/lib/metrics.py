@@ -11,6 +11,10 @@ Two primitives:
 Reads via :func:`get_metrics` aggregate across nodes and time windows. Multi-node
 setups partition writes by ``PI_NODE`` so workers don't contend on the same row.
 
+While a request is handled, observations are aggregated in memory and written once
+at teardown, so instrumenting a per-item loop costs one transaction per request
+instead of one per item. See :func:`_request_metric_buffer`.
+
 This module never raises out of ``observe``/``inc``: failing to record a metric
 must not break the operation being measured. Errors are logged at debug level.
 """
@@ -26,7 +30,8 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import sessionmaker
 
 from privacyidea.lib.config import get_privacyidea_node
-from privacyidea.lib.framework import get_app_config_value
+from privacyidea.lib.framework import get_app_config_value, get_request_local_store, is_request_context
+from privacyidea.lib.lifecycle import register_finalizer
 from privacyidea.lib.utils import is_true
 from privacyidea.models import db
 from privacyidea.models.metric_aggregate import MetricAggregate
@@ -83,6 +88,17 @@ def _labels_key(labels: dict | None) -> str:
         return ""
     return json.dumps({k: labels[k] for k in sorted(labels)},
                       separators=(",", ":"), ensure_ascii=False)
+
+
+def _label_items(labels: dict | None) -> tuple:
+    """Return the label set as a hashable tuple of sorted (key, value) pairs.
+
+    Buffered samples are grouped by this instead of by :py:func:`_labels_key`, so the
+    JSON serialization runs once per row at flush time rather than once per sample.
+    """
+    if not labels:
+        return ()
+    return tuple(sorted(labels.items()))
 
 
 def _parse_labels_key(labels_key: str) -> dict:
@@ -157,33 +173,101 @@ def _get_or_create_row(session, metric_name: str, labels_key: str,
     return row
 
 
+_BUFFER_KEY = "metric_observations"
+
+
+def _request_metric_buffer() -> dict | None:
+    """Return the request-local buffer that collects observations until teardown.
+
+    Writing a metric row costs a transaction, so an operation instrumented inside a
+    per-item loop (the resolvers report one timing per user) would pay for one commit
+    per item, and an enclosing timing would even measure those commits. Instead the
+    observations of a request are aggregated here - all observations sharing a metric
+    name, label set and window collapse into a single row update - and written by one
+    finalizer at the end of the request.
+
+    Returns ``None`` outside a request: no teardown would run there, so the caller has
+    to write its observation through immediately.
+    """
+    if not is_request_context():
+        return None
+    store = get_request_local_store()
+    if _BUFFER_KEY not in store:
+        store[_BUFFER_KEY] = {}
+        register_finalizer(_flush_metric_buffer)
+    return store[_BUFFER_KEY]
+
+
+def _flush_metric_buffer() -> None:
+    """Write the observations buffered during this request. Registered as a finalizer."""
+    try:
+        buffered_observations = get_request_local_store().pop(_BUFFER_KEY, None)
+        if buffered_observations:
+            _write_observations(buffered_observations)
+    except Exception as e:
+        log.debug(f"metrics: flushing the buffered observations failed: {e}")
+
+
+def _write_observations(observations: dict) -> None:
+    """Apply aggregated observations to their rows in one transaction.
+
+    The write happens on its own session and commit so it can't piggyback on (or be
+    rolled back by) the caller's transaction.
+
+    :param observations: maps (metric name, label items, node, window) to an aggregate
+    """
+    session = _metric_session()
+    try:
+        for (name, label_items, node, window), aggregate in observations.items():
+            row = _get_or_create_row(session, name, _labels_key(dict(label_items)), node, window)
+            row.count += aggregate["count"]
+            row.sum_value = float(row.sum_value) + aggregate["sum_value"]
+            if aggregate["max_value"] > row.max_value:
+                row.max_value = float(aggregate["max_value"])
+            for index, (_boundary, column) in enumerate(_BUCKETS):
+                if aggregate["buckets"][index]:
+                    setattr(row, column, getattr(row, column) + aggregate["buckets"][index])
+        session.commit()
+    finally:
+        session.close()
+
+
+def _record(name: str, labels: dict | None, value: float | None = None, count: int = 1) -> None:
+    """Add one sample to the buffer, or write it through when there is no request to flush it.
+
+    :param name: the metric name
+    :param labels: the label set of this sample
+    :param value: the observed value in seconds, or None for a counter
+    :param count: how much the sample increments the count by
+    """
+    key = (name, _label_items(labels), get_privacyidea_node() or "", _window_start(_utc_now()))
+    buffer = _request_metric_buffer()
+    observations = buffer if buffer is not None else {}
+    aggregate = observations.setdefault(key, {"count": 0, "sum_value": 0.0, "max_value": 0.0,
+                                              "buckets": [0] * len(_BUCKETS)})
+    aggregate["count"] += count
+    if value is not None:
+        aggregate["sum_value"] += float(value)
+        aggregate["max_value"] = max(aggregate["max_value"], float(value))
+        # Count the sample in every bucket whose upper bound is >= value (cumulative).
+        for index, (boundary, _column) in enumerate(_BUCKETS):
+            if value <= boundary:
+                aggregate["buckets"][index] += 1
+    if buffer is None:
+        _write_observations(observations)
+
+
 def observe(name: str, value: float, labels: dict | None = None) -> None:
     """Record a numeric observation (seconds for timings) for histogram ``name``.
 
     Updates count / sum / max plus the cumulative bucket whose upper bound
-    contains ``value``. The write happens on its own session and commit so
-    it can't piggyback on (or be rolled back by) the caller's transaction.
+    contains ``value``. During a request the update is buffered and written at
+    teardown, otherwise it is written immediately.
     """
-    if _metrics_disabled():
-        return
     try:
-        node = get_privacyidea_node() or ""
-        labels_key = _labels_key(labels)
-        window = _window_start(_utc_now())
-        session = _metric_session()
-        try:
-            row = _get_or_create_row(session, name, labels_key, node, window)
-            row.count += 1
-            row.sum_value = float(row.sum_value) + float(value)
-            if value > row.max_value:
-                row.max_value = float(value)
-            # Increment every bucket whose upper bound is >= value (cumulative).
-            for boundary, column in _BUCKETS:
-                if value <= boundary:
-                    setattr(row, column, getattr(row, column) + 1)
-            session.commit()
-        finally:
-            session.close()
+        if _metrics_disabled():
+            return
+        _record(name, labels, value=value)
     except Exception as e:
         log.debug(f"metrics.observe({name!r}) failed: {e}")
 
@@ -191,21 +275,12 @@ def observe(name: str, value: float, labels: dict | None = None) -> None:
 def inc(name: str, labels: dict | None = None, by: int = 1) -> None:
     """Increment a counter by ``by`` (default 1).
 
-    Same isolation guarantees as :func:`observe`: own session, own commit.
+    Buffered and isolated exactly like :func:`observe`.
     """
-    if _metrics_disabled():
-        return
     try:
-        node = get_privacyidea_node() or ""
-        labels_key = _labels_key(labels)
-        window = _window_start(_utc_now())
-        session = _metric_session()
-        try:
-            row = _get_or_create_row(session, name, labels_key, node, window)
-            row.count += by
-            session.commit()
-        finally:
-            session.close()
+        if _metrics_disabled():
+            return
+        _record(name, labels, count=by)
     except Exception as e:
         log.debug(f"metrics.inc({name!r}) failed: {e}")
 

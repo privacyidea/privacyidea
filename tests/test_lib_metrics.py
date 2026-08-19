@@ -324,6 +324,85 @@ class RaceToleranceTest(MyTestCase):
         self.assertEqual(len(rows), 1)
 
 
+class BufferedWriteTest(MyTestCase):
+    """Observations made during a request are aggregated and written once at teardown."""
+
+    def setUp(self):
+        _wipe_metrics()
+
+    @staticmethod
+    def _rows(name):
+        return db.session.execute(
+            select(MetricAggregate).where(MetricAggregate.metric_name == name)
+        ).scalars().all()
+
+    def test_a_request_writes_its_observations_in_one_transaction(self):
+        labels = {"resolver": "passwd1", "op": "get_user_info"}
+        with patch.object(metrics, "_write_observations",
+                          side_effect=metrics._write_observations) as write:
+            with self.app.test_request_context("/user/"):
+                for _ in range(70):
+                    observe("buffer_test", 0.01, labels)
+                # Nothing is written while the request is still running.
+                self.assertEqual([], self._rows("buffer_test"))
+                write.assert_not_called()
+            # Leaving the request context tears it down, which runs the finalizer.
+            self.assertEqual(1, write.call_count)
+        # The 70 samples collapsed into a single row.
+        rows = self._rows("buffer_test")
+        self.assertEqual(1, len(rows))
+        self.assertEqual(70, rows[0].count)
+        self.assertAlmostEqual(0.7, rows[0].sum_value)
+        self.assertAlmostEqual(0.01, rows[0].max_value)
+        self.assertEqual(70, rows[0].bucket_le_50ms)
+
+    def test_one_row_per_label_set(self):
+        with patch.object(metrics, "_write_observations",
+                          side_effect=metrics._write_observations) as write:
+            with self.app.test_request_context("/user/"):
+                for _ in range(5):
+                    observe("buffer_test", 0.01, {"op": "get_user_info"})
+                for _ in range(3):
+                    observe("buffer_test", 0.02, {"op": "get_username"})
+                inc("buffer_counter", {"op": "get_user_info"})
+            self.assertEqual(1, write.call_count)
+        counts = {row.labels_key: row.count for row in self._rows("buffer_test")}
+        self.assertEqual({'{"op":"get_user_info"}': 5, '{"op":"get_username"}': 3}, counts)
+        self.assertEqual(1, self._rows("buffer_counter")[0].count)
+
+    def test_the_buffer_adds_to_a_row_an_earlier_request_created(self):
+        for _ in range(2):
+            with self.app.test_request_context("/user/"):
+                observe("buffer_test", 0.01)
+        rows = self._rows("buffer_test")
+        self.assertEqual(1, len(rows))
+        self.assertEqual(2, rows[0].count)
+
+    def test_samples_are_kept_apart_per_window(self):
+        window = _window_start(_utc_now())
+        with self.app.test_request_context("/user/"):
+            observe("buffer_test", 0.01)
+            # A request that spans a window boundary reports into the window each sample
+            # was taken in, not the one the flush happens in.
+            with patch.object(metrics, "_utc_now",
+                              return_value=_utc_now() + datetime.timedelta(seconds=300)):
+                observe("buffer_test", 0.01)
+        windows = sorted(row.window_start for row in self._rows("buffer_test"))
+        self.assertEqual([window, window + datetime.timedelta(seconds=300)], windows)
+
+    def test_without_a_request_the_sample_is_written_through(self):
+        # A cron job or a pi-manage call has no teardown that could flush a buffer, so the
+        # sample must reach the table right away.
+        observe("buffer_test", 0.01)
+        self.assertEqual(1, self._rows("buffer_test")[0].count)
+
+    def test_a_failing_flush_is_swallowed(self):
+        with patch.object(metrics, "_write_observations",
+                          side_effect=RuntimeError("db gone")):
+            with self.app.test_request_context("/user/"):
+                observe("buffer_test", 0.01)
+
+
 class FailureSafetyTest(MyTestCase):
     """``observe`` and ``inc`` must never raise."""
 
