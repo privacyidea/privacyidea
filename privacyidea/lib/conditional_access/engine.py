@@ -271,7 +271,7 @@ def rank_and_deduplicate(messages: list["StageMessage"]) -> list["StageMessage"]
     the requests after it - so the same state cannot be worded differently depending on which one answers.
     """
     seen: set[str] = set()
-    unique: list["StageMessage"] = []
+    unique: list[StageMessage] = []
     for message in sorted(messages, key=lambda message: message.kind):
         if message.text not in seen:
             seen.add(message.text)
