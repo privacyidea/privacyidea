@@ -391,6 +391,10 @@ class EmailTokenTestCase(MyTestCase):
         self.assertTrue(r, r)
 
     def test_18b_challenge_request_dynamic_multivalue(self):
+        # The mock replaces the resolver, which the Redis user cache answers
+        # before: reading token.user.info below would then cache the real address
+        # and the mocked one would never be seen
+        self.pin_to_database("users")
         db_token = Token.query.filter_by(serial=self.serial2).first()
         token = EmailTokenClass(db_token)
         # if the email is a multi-value attribute, the first address should be chosen
