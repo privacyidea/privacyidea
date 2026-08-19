@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 """Tests for ``privacyidea.lib.health`` certificate-status helpers."""
 import datetime
+import json
 import threading
 from unittest.mock import MagicMock, patch
 
@@ -132,6 +133,160 @@ class CacheTest(MyTestCase):
         for t in threads:
             t.join()
         self.assertEqual(health._CACHE, {})
+
+
+class SharedCacheTest(MyTestCase):
+    """
+    ``get_certificate_status`` shares its results through Redis.
+
+    Producing them means opening a TLS connection to every configured endpoint,
+    so the point of sharing is that one worker probes and the others read the
+    answer. The tests use a stub client rather than a real Redis: what matters
+    here is which side produces the results, not Redis' own semantics, and the
+    stub makes "another worker got there first" expressible at all.
+    """
+
+    class StubRedis:
+        """The three operations the shared health cache uses."""
+
+        def __init__(self):
+            self.store = {}
+            self.set_calls = []
+
+        def get(self, key):
+            return self.store.get(key)
+
+        def set(self, key, value, ex=None):
+            self.store[key] = value
+            self.set_calls.append((key, ex))
+
+        def unlink(self, *keys):
+            for key in keys:
+                self.store.pop(key, None)
+
+    def setUp(self):
+        super().setUp()
+        health.invalidate_certificate_cache()
+        self.client = self.StubRedis()
+
+    def tearDown(self):
+        health.invalidate_certificate_cache()
+        super().tearDown()
+
+    def _with_client(self, client):
+        return patch.object(health, "_cache_client", return_value=client)
+
+    def test_01_the_results_are_shared_after_probing(self):
+        entries = [{"source": "ldap", "name": "reso", "status": "ok"}]
+        with (self._with_client(self.client),
+              patch.object(health, "_check_ldap_resolvers", return_value=entries),
+              patch.object(health, "_server_cert_entries", return_value=[])):
+            self.assertEqual(entries, health.get_certificate_status())
+        self.assertIn(health._CERTIFICATE_KEY, self.client.store)
+        # The shared copy expires with the same TTL as the per-process one
+        self.assertEqual([(health._CERTIFICATE_KEY, 3600)], self.client.set_calls)
+
+    def test_02_another_workers_results_are_used_instead_of_probing(self):
+        entries = [{"source": "ldap", "name": "reso", "status": "ok"}]
+        self.client.store[health._CERTIFICATE_KEY] = json.dumps(entries)
+        with (self._with_client(self.client),
+              patch.object(health, "_check_ldap_resolvers", return_value=[]) as ldap_mock,
+              patch.object(health, "_server_cert_entries", return_value=[]) as srv_mock):
+            self.assertEqual(entries, health.get_certificate_status())
+        # No endpoint was contacted by this worker
+        self.assertEqual(0, ldap_mock.call_count)
+        self.assertEqual(0, srv_mock.call_count)
+
+    def test_03_a_shared_answer_is_kept_locally_too(self):
+        entries = [{"source": "ldap", "name": "reso", "status": "ok"}]
+        self.client.store[health._CERTIFICATE_KEY] = json.dumps(entries)
+        with (self._with_client(self.client),
+              patch.object(health, "_check_ldap_resolvers", return_value=[]),
+              patch.object(health, "_server_cert_entries", return_value=[])):
+            health.get_certificate_status()
+            # The second call in this worker does not ask Redis again
+            self.client.store.clear()
+            self.assertEqual(entries, health.get_certificate_status())
+
+    def test_04_a_refresh_probes_and_shares_again(self):
+        stale = [{"source": "ldap", "name": "old", "status": "ok"}]
+        fresh = [{"source": "ldap", "name": "new", "status": "ok"}]
+        self.client.store[health._CERTIFICATE_KEY] = json.dumps(stale)
+        with (self._with_client(self.client),
+              patch.object(health, "_check_ldap_resolvers", return_value=fresh),
+              patch.object(health, "_server_cert_entries", return_value=[])):
+            self.assertEqual(fresh, health.get_certificate_status(refresh=True))
+        self.assertEqual(fresh, json.loads(self.client.store[health._CERTIFICATE_KEY]))
+
+    def test_05_invalidating_drops_the_shared_results(self):
+        # One admin's resolver change has to reach every worker on every node,
+        # not only the one that served the request
+        self.client.store[health._CERTIFICATE_KEY] = "[]"
+        with self._with_client(self.client):
+            health.invalidate_certificate_cache()
+        self.assertEqual({}, self.client.store)
+
+    def test_06_a_malformed_shared_entry_is_probed_over(self):
+        for raw in ["not json", '{"not": "a list"}', "null"]:
+            health.invalidate_certificate_cache()
+            self.client.store[health._CERTIFICATE_KEY] = raw
+            entries = [{"source": "ldap", "name": "reso", "status": "ok"}]
+            with (self._with_client(self.client),
+                  patch.object(health, "_check_ldap_resolvers", return_value=entries),
+                  patch.object(health, "_server_cert_entries", return_value=[])):
+                self.assertEqual(entries, health.get_certificate_status(), raw)
+
+    def test_07_a_failing_redis_falls_back_to_probing(self):
+        import redis as redis_lib
+        entries = [{"source": "ldap", "name": "reso", "status": "ok"}]
+        broken = self.StubRedis()
+
+        def explode(*args, **kwargs):
+            raise redis_lib.exceptions.ConnectionError("gone")
+
+        broken.get = explode
+        broken.set = explode
+        with (self._with_client(broken),
+              patch.object(health, "_check_ldap_resolvers", return_value=entries),
+              patch.object(health, "_server_cert_entries", return_value=[])):
+            self.assertEqual(entries, health.get_certificate_status())
+
+    def test_08_without_redis_nothing_changes(self):
+        entries = [{"source": "ldap", "name": "reso", "status": "ok"}]
+        with (self._with_client(None),
+              patch.object(health, "_check_ldap_resolvers", return_value=entries) as ldap_mock,
+              patch.object(health, "_server_cert_entries", return_value=[])):
+            self.assertEqual(entries, health.get_certificate_status())
+            health.get_certificate_status()
+        self.assertEqual(1, ldap_mock.call_count)
+
+    def test_09_the_feature_flag_is_the_documented_one(self):
+        # The flag name is derived from the feature name, so a typo in either
+        # would leave the cache permanently off without any error
+        import os
+
+        from privacyidea.lib.framework import get_app_local_store
+        store = get_app_local_store()
+        store['_redis_client_entry'] = (os.getpid(), self.client)
+        self.app.config['PI_REDIS_URL'] = "redis://stub:6379/0"
+        try:
+            self.app.config.pop('PI_REDIS_CACHE_HEALTH', None)
+            self.assertIsNone(health._cache_client())
+            self.app.config['PI_REDIS_CACHE_HEALTH'] = True
+            self.assertIs(self.client, health._cache_client())
+        finally:
+            store.pop('_redis_client_entry', None)
+            store.pop('_redis_retry_after', None)
+            self.app.config.pop('PI_REDIS_CACHE_HEALTH', None)
+            self.app.config.pop('PI_REDIS_URL', None)
+
+    def test_10_a_malformed_ttl_falls_back_to_the_default(self):
+        with patch.object(health, "get_app_config_value", return_value=None):
+            self.assertEqual(3600, health._cache_ttl())
+        with patch.object(health, "get_app_config_value", return_value="not a number"):
+            self.assertEqual(3600, health._cache_ttl())
+        with patch.object(health, "get_app_config_value", return_value=60):
+            self.assertEqual(60, health._cache_ttl())
 
 
 class ServerCertEntriesTest(MyTestCase):

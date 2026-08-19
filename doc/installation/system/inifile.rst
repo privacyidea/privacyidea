@@ -536,6 +536,10 @@ Two workloads use it today:
 * **Cached authentications** - the entries the :ref:`policy_auth_cache` policy
   works with. Like challenges they are ephemeral, and losing one costs nothing
   but a single real authentication.
+* **Certificate health results** - the certificate expiry information behind the
+  dashboard panel. Producing it means opening a TLS connection to every
+  configured endpoint, which is worth doing once for the installation rather
+  than once per worker process.
 
 More workloads (metrics, ...) may opt into Redis later; each one ships behind
 its own feature flag and stays off by default.
@@ -563,6 +567,7 @@ Configuration is two-stage:
     PI_REDIS_CACHE_CHALLENGES = True
     PI_REDIS_CACHE_USERS = True
     PI_REDIS_CACHE_AUTH = True
+    PI_REDIS_CACHE_HEALTH = True
 
     # Optional: lifetime of a user cache entry in seconds. Default 300.
     # Setting it to 0 disables the user cache, like clearing the flag.
@@ -683,6 +688,33 @@ Like the other workloads it degrades safely: if Redis cannot be reached the
 database takes over, and a lost entry costs one real authentication against the
 user store, nothing else.
 
+.. _redis_health_cache:
+
+Certificate health results
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. index:: health, certificate, Redis
+
+``PI_REDIS_CACHE_HEALTH`` shares the certificate expiry information behind the
+:ref:`dashboard` panel between all workers and nodes.
+
+Producing that information means opening a TLS connection to every configured
+LDAP and Keycloak resolver endpoint, every EntraID client-certificate
+credential, and every admin-configured server certificate. Those results are
+cached for ``PI_CERT_CHECK_CACHE_SECONDS`` (default 3600) either way - but
+without Redis the cache is a dictionary in one worker process, so a deployment
+with eight workers on three nodes probes every endpoint twenty-four times per
+hour instead of once.
+
+The per-process cache stays in front of the shared one: a worker that already
+has the answer has no reason to ask Redis for it. The TTL is the same for both,
+and saving or deleting a resolver drops the shared copy as well, so one admin's
+change reaches every worker instead of only the one that served the request.
+
+Nothing here is on the authentication path and the results only feed a display,
+so if Redis cannot be reached the worker simply probes for itself, exactly as it
+did before.
+
 .. _redis_cache_security:
 
 Security
@@ -742,6 +774,9 @@ What is stored differs per workload:
   leaked in the clear. Note that, exactly as with the database-backed cache, a
   password changed in the user store stays usable until its entry expires, so
   keep the :ref:`policy_auth_cache` window short enough to live with that.
+* Certificate health results are stored as plaintext. They hold no credentials,
+  but they do name your internal LDAP and Keycloak hosts and their certificate
+  subjects, which is one more reason not to expose the Redis instance.
 
 .. _redis_cache_upgrades:
 
