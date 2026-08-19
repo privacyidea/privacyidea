@@ -111,25 +111,38 @@
                    expiry says most of what the subscription dot says, and both values
                    stay in the copied JSON. -->
               @if (!detailed()) {
+                <!-- Each dot backs its colour with a glyph, so the state does not rest on
+                     hue alone, and with an accessible name, since the tooltip is the only
+                     other place the state is spelled out. -->
+                @let usageDot = usageDotClass(status.in_use);
                 <td class="dot-column">
                   <span
                     class="status-cell"
+                    role="img"
+                    [attr.aria-label]="usageReason(status)"
                     [matTooltip]="usageReason(status)">
                     <span
                       class="status-dot"
-                      [class]="usageDotClass(status.in_use)"
-                      aria-hidden="true"></span>
+                      [class]="usageDot"
+                      aria-hidden="true"
+                      >{{ dotGlyph(usageDot) }}</span
+                    >
                   </span>
                 </td>
 
+                @let subscriptionDot = subscriptionDotClass(status.subscription);
                 <td class="dot-column">
                   <span
                     class="status-cell"
+                    role="img"
+                    [attr.aria-label]="subscriptionReason(status.subscription)"
                     [matTooltip]="subscriptionReason(status.subscription)">
                     <span
                       class="status-dot"
-                      [class]="subscriptionDotClass(status.subscription)"
-                      aria-hidden="true"></span>
+                      [class]="subscriptionDot"
+                      aria-hidden="true"
+                      >{{ dotGlyph(subscriptionDot) }}</span
+                    >
                   </span>
                 </td>
               } @else {
@@ -139,7 +152,11 @@
                   class="expires-cell"
                   [matTooltip]="subscriptionReason(status.subscription)">
                   @if (status.date_till) {
-                    {{ status.date_till | date: "yyyy-MM-dd" }}
+                    <!-- date_till is a calendar date from the subscription file; the time
+                         of day in the serialized value is not one. Formatting it in UTC
+                         keeps the date the file names, instead of the day before it for
+                         admins west of UTC. -->
+                    {{ status.date_till | date: "yyyy-MM-dd" : "UTC" }}
                     <span class="muted">({{ expiryNote(status) }})</span>
                   } @else {
                     <span class="muted">—</span>

@@ -106,9 +106,12 @@
                                  <!-- Expires (detailed view only). -->
                                  <td ng-if="row.kind !== 'label' && subscriptionDetailed">
                                      <span ng-if="row.status.date_till">
-                                         {{ row.status.date_till | date: "y-MM-dd" }}
+                                         {{ row.status.date_till | date: "y-MM-dd" : "UTC" }}
                                          <span ng-if="row.status.days_left > 0">
                                              ({{ row.status.days_left }} <span translate>days left</span>)
+                                         </span>
+                                         <span ng-if="row.status.days_left === 0">
+                                             (<span translate>today</span>)
                                          </span>
                                          <span ng-if="row.status.days_left < 0">
                                              ({{ -row.status.days_left }} <span translate>days ago</span>)

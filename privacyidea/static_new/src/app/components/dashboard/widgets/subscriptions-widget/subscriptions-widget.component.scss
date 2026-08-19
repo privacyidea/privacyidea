@@ -81,7 +81,9 @@
 
   th {
     font-weight: 600;
-    opacity: 0.7;
+    // Dimmed through the text colour, not opacity: opacity would composite the whole
+    // element and let the rows scrolling underneath show through the sticky header.
+    color: var(--mat-sys-on-surface-variant);
     position: sticky;
     top: 0;
     // Matches the widget frame so the rows scroll under the sticky header.
@@ -126,7 +128,7 @@
 
   .section-row td {
     font-weight: 600;
-    opacity: 0.7;
+    color: var(--mat-sys-on-surface-variant);
     padding-top: var(--quarter-global-padding);
   }
 
@@ -160,11 +162,21 @@
 }
 
 .status-dot {
-  display: inline-block;
-  width: 10px;
-  height: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
   border-radius: 50%;
   background: var(--grey-base);
+  // Holds the glyph that carries the state alongside the colour. Small enough, and with
+  // its own line height, that the dot stays inside the single line every cell is.
+  font-size: 10px;
+  line-height: 1;
+  font-weight: 700;
+  // Paired with the dot fill rather than with the page surface: the fills are the same
+  // in both themes, so the ink on them has to be too.
+  color: hsl(0, 0%, 100%);
 
   &.dot-good {
     background: var(--green-light);
@@ -172,6 +184,8 @@
 
   &.dot-warn {
     background: var(--yellow-light-active);
+    // The yellow is too light to read white on.
+    color: hsl(0, 0%, 12%);
   }
 
   &.dot-bad {

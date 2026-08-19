@@ -213,6 +213,36 @@ describe("SubscriptionsWidgetComponent", () => {
     expect(dots[1].classList).toContain("dot-warn");
   });
 
+  it("should give every dot a glyph and a name, so the colour is not the only channel", () => {
+    const rows: HTMLElement[] = Array.from(fixture.nativeElement.querySelectorAll("tbody tr"));
+    const dotsOf = (name: string): HTMLElement[] =>
+      Array.from(
+        rows
+          .find((row) => row.querySelector(".application-cell")?.textContent?.includes(name))!
+          .querySelectorAll(".status-dot")
+      );
+
+    // In use and expiring: the two dots differ in glyph as well as in hue.
+    const [serverUsage, serverSubscription] = dotsOf("privacyIDEA Server");
+    expect(serverUsage.textContent!.trim()).toBe("\u2713");
+    expect(serverSubscription.textContent!.trim()).toBe("!");
+
+    // Not in use and no subscription: red against grey, again told apart by the glyph.
+    const [radiusUsage, radiusSubscription] = dotsOf("FreeRADIUS");
+    expect(radiusUsage.textContent!.trim()).toBe("\u2715");
+    expect(radiusSubscription.textContent!.trim()).toBe("\u2013");
+
+    // The reason is the cell's accessible name, not only its tooltip: the dot itself is
+    // hidden from assistive technology.
+    const cells: HTMLElement[] = Array.from(fixture.nativeElement.querySelectorAll(".status-cell"));
+    expect(cells.length).toBe(11 * 2);
+    for (const cell of cells) {
+      expect(cell.getAttribute("role")).toBe("img");
+      expect(cell.getAttribute("aria-label")).toBeTruthy();
+    }
+    expect(cells[0].getAttribute("aria-label")).toBe("In use: this is the privacyIDEA server itself.");
+  });
+
   it("should trade the status dots for the dates and versions when toggled to detailed", () => {
     component.toggleDetailed();
     fixture.detectChanges();
@@ -274,6 +304,32 @@ describe("SubscriptionsWidgetComponent", () => {
     const serverExpiry = expired.nativeElement.querySelector("tbody tr .expires-cell");
     expect(serverExpiry.textContent.replace(/\s+/g, " ").trim()).toBe("2026-06-30 (expired, 49 days ago)");
     expired.destroy();
+  });
+
+  it("should call the expiry day today rather than counting zero days", () => {
+    subscriptionMock.getSubscriptionStatus.mockReturnValue(
+      of(
+        MockPiResponse.fromValue<SubscriptionStatus[]>([
+          status({
+            application: "privacyidea",
+            is_server: true,
+            in_use: true,
+            subscription: "expired",
+            date_till: "Tue, 30 Jun 2026 00:00:00 GMT",
+            days_left: 0
+          })
+        ])
+      )
+    );
+    TestBed.inject(DashboardDataStore).invalidate();
+
+    const today = createWidget();
+    today.componentInstance.toggleDetailed();
+    today.detectChanges();
+
+    const serverExpiry = today.nativeElement.querySelector("tbody tr .expires-cell");
+    expect(serverExpiry.textContent.replace(/\s+/g, " ").trim()).toBe("2026-06-30 (expired, today)");
+    today.destroy();
   });
 
   it("should link a component with a subscription to the sla page and one without to non-sla", () => {

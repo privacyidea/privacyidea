@@ -247,6 +247,24 @@ export class SubscriptionsWidgetComponent extends DashboardWidget implements OnI
   }
 
   /**
+   * The glyph shown inside a status dot. Without it the usage column would be a green
+   * dot against a red one, which is the pair colour-blind admins cannot separate, so
+   * every state carries a shape next to its colour.
+   */
+  protected dotGlyph(dotClass: string): string {
+    switch (dotClass) {
+      case "dot-good":
+        return "\u2713";
+      case "dot-warn":
+        return "!";
+      case "dot-bad":
+        return "\u2715";
+      default:
+        return "\u2013";
+    }
+  }
+
+  /**
    * Why the usage dot has the colour it has. For the "subscription or recent activity"
    * rule we name the branch that actually applies instead of making the admin guess.
    */
@@ -287,6 +305,11 @@ export class SubscriptionsWidgetComponent extends DashboardWidget implements OnI
     const daysLeft = status.days_left;
     if (daysLeft === null) {
       return state;
+    }
+    if (daysLeft === 0) {
+      // The count is between calendar dates, so zero means the date is today: neither
+      // "0 days left" nor "0 days ago" says that.
+      return $localize`${state}:state:, today`;
     }
     return daysLeft < 0
       ? $localize`${state}:state:, ${-daysLeft}:days: days ago`

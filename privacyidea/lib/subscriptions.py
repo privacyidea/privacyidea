@@ -453,7 +453,8 @@ class SubscriptionStateInfo:
     state: SubscriptionState
     # End date of the subscription, None if none is on file.
     date_till: datetime.datetime | None = None
-    # Days until date_till, negative once it has passed; None if none is on file.
+    # Whole days between today and date_till, negative once it has passed, 0 on the day
+    # itself; None if none is on file.
     days_left: int | None = None
 
 
@@ -475,7 +476,10 @@ def _subscription_state(subscription: dict | None, now: datetime.datetime,
         # said to cover anything, so it is reported like an expired one rather than
         # staying green forever.
         return SubscriptionStateInfo(SubscriptionState.EXPIRED)
-    days_left = (date_till - now).days
+    # date_till is a calendar date, so the remaining days are counted between dates:
+    # subtracting the timestamps instead would floor the difference and report a whole
+    # day gone one second past midnight.
+    days_left = (date_till.date() - now.date()).days
     if date_till < now:
         return SubscriptionStateInfo(SubscriptionState.EXPIRED, date_till, days_left)
     allowed_tokens = subscription.get("num_tokens")

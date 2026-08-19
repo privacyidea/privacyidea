@@ -20,6 +20,9 @@ from privacyidea.lib.subscriptions import (save_subscription,
                                            get_latest_github_versions,
                                            invalidate_github_version_cache,
                                            version_sort_key,
+                                           _subscription_state,
+                                           SubscriptionState,
+                                           EXPIRING_THRESHOLD_DAYS,
                                            APPLICATIONS,
                                            METERED_APPLICATIONS,
                                            DASHBOARD_PLUGINS)
@@ -629,6 +632,51 @@ class PluginSubscriptionStatusTestCase(MyTestCase):
         nextcloud = overview["privacyidea-nextcloud"]
         self.assertTrue(nextcloud["in_use"])
         self.assertListEqual(["1.2.0"], nextcloud["versions"])
+
+
+class SubscriptionDayCountTestCase(MyTestCase):
+    """
+    Tests for the day count :func:`_subscription_state` reports. date_till carries a
+    calendar date, so the count is between dates and does not depend on the time of day
+    the dashboard happens to be opened.
+    """
+
+    @staticmethod
+    def _state(date_till, now, num_tokens=10000):
+        return _subscription_state({"date_till": date_till, "num_tokens": num_tokens}, now, 0)
+
+    def test_01_expiry_day_counts_as_today(self):
+        date_till = datetime(2026, 6, 30)
+        # Anywhere on the day itself the subscription is over — the date is exclusive,
+        # matching check_subscription — but no whole day has passed yet.
+        for now in (datetime(2026, 6, 30, 0, 0, 1),
+                    datetime(2026, 6, 30, 12, 0),
+                    datetime(2026, 6, 30, 23, 59, 59)):
+            info = self._state(date_till, now)
+            self.assertEqual(SubscriptionState.EXPIRED, info.state)
+            self.assertEqual(0, info.days_left)
+
+    def test_02_days_ago_counts_whole_dates(self):
+        info = self._state(datetime(2026, 6, 30), datetime(2026, 7, 3, 0, 0, 1))
+        self.assertEqual(SubscriptionState.EXPIRED, info.state)
+        self.assertEqual(-3, info.days_left)
+
+    def test_03_last_day_of_cover_is_one_day_left(self):
+        # A subscription running out tomorrow has a day left whatever the clock says.
+        for now in (datetime(2026, 6, 29, 0, 0, 1), datetime(2026, 6, 29, 23, 0)):
+            info = self._state(datetime(2026, 6, 30), now)
+            self.assertEqual(1, info.days_left)
+
+    def test_04_expiring_threshold_does_not_move_with_the_clock(self):
+        # The threshold reads the same count, so the day it turns yellow is a date, not a
+        # date plus a time of day.
+        date_till = datetime(2026, 6, 30)
+        outside = date_till - timedelta(days=EXPIRING_THRESHOLD_DAYS)
+        for now in (outside, outside.replace(hour=23, minute=59)):
+            self.assertEqual(SubscriptionState.VALID, self._state(date_till, now).state)
+        inside = date_till - timedelta(days=EXPIRING_THRESHOLD_DAYS - 1)
+        for now in (inside, inside.replace(hour=23, minute=59)):
+            self.assertEqual(SubscriptionState.EXPIRING, self._state(date_till, now).state)
 
 
 class ServerSubscriptionStatusTestCase(MyTestCase):
