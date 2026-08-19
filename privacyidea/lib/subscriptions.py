@@ -94,7 +94,9 @@ SUBSCRIPTIONS = {
     "privacyidea-cp": {"free_users": 50},
     # The PAM module identifies itself as "PAM"; privacyidea-pam stays an accepted alias
     # of the same subscription for anything that sends the older name.
-    "privacyidea-pam": {"free_users": 10000, "user_agents": ["pam", "pam-passkey"]},
+    # "pam-privacyidea" is the name the first module is going to send, listed ahead of
+    # the rename so that a new module works with an older server as well.
+    "privacyidea-pam": {"free_users": 10000, "user_agents": ["pam", "pam-privacyidea", "pam-passkey"]},
     "privacyidea-shibboleth": {"free_users": 10000},
     "privacyidea-adfs": {"free_users": 50},
     "privacyidea-keycloak": {"free_users": 10000, "user_agents": ["entraid-via-keycloak"]},
@@ -631,6 +633,7 @@ def subscription_status(component="privacyidea", tokentype=None):
 
     :return: subscription state
     """
+    component = get_metered_application(component)
     token_count = get_tokens(assigned=True, active=True, count=True, tokentype=tokentype, all_nodes=True)
     if token_count <= APPLICATIONS.get(component, 50):
         return 0
