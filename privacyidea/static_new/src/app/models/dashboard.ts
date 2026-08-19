@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { computed, Directive, input, signal, Type } from "@angular/core";
+import { computed, Directive, input, Signal, signal, TemplateRef, Type } from "@angular/core";
 import { PolicyAction } from "@services/auth/policy-actions";
 
 export const DASHBOARD_COLUMNS = 24;
@@ -54,6 +54,13 @@ export abstract class DashboardWidget {
   readonly loading = computed(() => this.state() === "loading");
   readonly partialLoading = computed(() => false);
   readonly refreshFailed = computed(() => false);
+  /**
+   * Buttons the widget adds to its frame's header, in front of the reload button, so a
+   * widget does not have to spend a row of its own body on a toolbar. A template rather
+   * than a list of icons and callbacks, so a widget can hand over components that keep
+   * state of their own — the copy button and its "copied" feedback, for one.
+   */
+  readonly headerActions?: Signal<TemplateRef<unknown> | undefined>;
 
   static readonly type: WidgetTypeId;
   static readonly title: string = "";
