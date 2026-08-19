@@ -70,10 +70,9 @@
   // column widths keep the extra columns inside the widget instead of widening the
   // table, and every cell stays one line high, so the two views are the same height.
   table-layout: fixed;
-  // The size the rest of the tables use (styles/table.scss), kept in rem so it still
-  // follows the browser's font size. The rows are dense through their padding and line
-  // height instead, which is what lets the compact view fit every component.
-  font-size: 0.875rem;
+  // No font size of its own: the other widgets' tables set none either, so this one reads
+  // at the same size as the widgets beside it. The rows are dense through their padding
+  // and line height instead, which is what lets the compact view fit every component.
 
   th,
   td {
