@@ -195,6 +195,7 @@ class SubscriptionApplicationTestCase(MyTestCase):
         # name passes through lower-cased.
         self.assertEqual("privacyidea-pam", get_metered_application("pam-passkey"))
         self.assertEqual("privacyidea-pam", get_metered_application("PAM-Passkey"))
+        self.assertEqual("privacyidea-pam", get_metered_application("pam-privacyidea"))
         self.assertEqual("privacyidea-keycloak",
                          get_metered_application("entraid-via-keycloak"))
         self.assertEqual("privacyidea-cp", get_metered_application("privacyidea-cp"))
