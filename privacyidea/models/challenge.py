@@ -42,26 +42,6 @@ from privacyidea.models.utils import MethodsMixin, utc_now
 log = logging.getLogger(__name__)
 
 
-def normalize_challenge_data(data) -> str:
-    """
-    Coerce challenge data to the string form both storage backends persist.
-
-    Callers pass strings, dicts or arbitrary serialisable values. Shared with
-    the Redis cache so that a challenge carries the same ``data`` string
-    whichever backend holds it.
-
-    :param data: The challenge data (string, dict, or other serializable value)
-    :return: The normalised string, or '' for empty input
-    """
-    if data is None or data == '':
-        return ''
-    if isinstance(data, dict):
-        return json.dumps(data)
-    if isinstance(data, str):
-        return data
-    return convert_column_to_unicode(data)
-
-
 class Challenge(MethodsMixin, db.Model):
     """
     Table for handling of the generic challenges.
@@ -81,7 +61,7 @@ class Challenge(MethodsMixin, db.Model):
 
     @property
     def data(self):
-        """Return the decrypted challenge data, or the raw value for legacy data."""
+        """Return the decrypted challenge data as a JSON string, or empty string."""
         raw = self._data
         if not raw:
             return raw
@@ -101,7 +81,7 @@ class Challenge(MethodsMixin, db.Model):
 
     @log_with(log)
     def __init__(self, serial, transaction_id=None,
-                 challenge='', data='', session='', validitytime=120):
+                 challenge='', data=None, session='', validitytime=120):
         # We manually assign attributes here as they depend on the function parameters
         self.transaction_id = transaction_id or self.create_transaction_id()
         self.challenge = challenge
@@ -141,25 +121,39 @@ class Challenge(MethodsMixin, db.Model):
         """
         return is_challenge_open(self.is_valid(), self.otp_valid, self.get_session())
 
-    def set_data(self, data):
+    def set_data(self, data: dict | None):
         """
         Set the internal data of the challenge.
         The data is encrypted before being stored in the database since it
         may contain OTP values.
 
-        :param data: The challenge data (string, dict, or other serializable value)
+        :param data: The challenge data. Must be a dict (or None/empty).
         """
-        normalized = normalize_challenge_data(data)
-        self._data = encryptPassword(normalized) if normalized else ''
+        if not data:
+            self._data = ''
+        else:
+            self._data = encryptPassword(json.dumps(data))
 
-    def get_data(self):
-        if not self.data:
+    def get_data(self) -> dict:
+        """
+        Get the decrypted challenge data as a dict.
+
+        :return: The challenge data as a dict. Returns ``{}`` if no data is stored.
+        :rtype: dict
+        """
+        data = self.data
+        if not data:
             return {}
         try:
-            data = json.loads(self.data)
-        except (json.JSONDecodeError, UnicodeDecodeError, ValueError):
-            data = self.data
-        return data
+            result = json.loads(data)
+        except (json.JSONDecodeError, ValueError):
+            log.warning("Challenge %s: failed to decode data as JSON.", self.transaction_id)
+            return {}
+        if not isinstance(result, dict):
+            log.warning("Challenge %s: data is not a dict (got %s). Returning empty dict.",
+                        self.transaction_id, type(result).__name__)
+            return {}
+        return result
 
     def get_session(self):
         return self.session

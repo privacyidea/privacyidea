@@ -1,3 +1,9 @@
+from datetime import datetime, timedelta
+
+import mock
+
+from privacyidea.lib.subscriptions import DASHBOARD_PLUGINS, GithubRelease
+from privacyidea.models import ClientApplication, Subscription, db
 from .base import MyApiTestCase
 
 SUB_FILE = "tests/testdata/test.sub"
@@ -72,4 +78,76 @@ class APISubscriptionsTestCase(MyApiTestCase):
             result = res.json.get("result")
             value = result.get("value")
             self.assertEqual(len(value), 0)
+
+    def test_02_status_endpoint(self):
+        # Seed a used+valid plugin and leave the rest unused.
+        db.session.add(ClientApplication(
+            ip="1.2.3.4",
+            clienttype="privacyidea-keycloak/1.0 test/1",
+            node="localnode",
+            lastseen=datetime.now()))
+        db.session.add(Subscription(
+            application="privacyidea-keycloak",
+            for_name="customer", for_email="c@x", for_phone="0",
+            by_name="vendor", by_email="v@x",
+            date_from=datetime.now() - timedelta(days=10),
+            date_till=datetime.now() + timedelta(days=100),
+            num_users=10, num_tokens=10, num_clients=10,
+            level="Gold", signature="0"))
+        db.session.commit()
+
+        # Mock the GitHub lookup so the test does not hit the network.
+        with mock.patch("privacyidea.api.subscriptions.get_latest_github_versions",
+                        return_value={"privacyidea-keycloak": GithubRelease(
+                            version="9.9.9", released="2026-01-02",
+                            url="https://github.com/privacyidea/keycloak-provider/releases/tag/v9.9.9")}):
+            with self.app.test_request_context('/subscriptions/status',
+                                               method="GET",
+                                               headers={'Authorization': self.at}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res)
+                value = res.json.get("result").get("value")
+
+        # First entry is always the server row, followed by DASHBOARD_PLUGINS in order.
+        self.assertTrue(value[0].get("is_server"))
+        self.assertEqual("privacyidea", value[0]["application"])
+        self.assertListEqual(DASHBOARD_PLUGINS, [e["application"] for e in value[1:]])
+        by_app = {e["application"]: e for e in value[1:]}
+        self.assertEqual("valid", by_app["privacyidea-keycloak"]["subscription"])
+        self.assertTrue(by_app["privacyidea-keycloak"]["in_use"])
+        # The mocked GitHub lookup is merged in as current_version + date + url.
+        self.assertEqual("9.9.9", by_app["privacyidea-keycloak"]["current_version"])
+        self.assertEqual("2026-01-02", by_app["privacyidea-keycloak"]["current_version_date"])
+        self.assertEqual("https://github.com/privacyidea/keycloak-provider/releases/tag/v9.9.9",
+                         by_app["privacyidea-keycloak"]["current_version_url"])
+        self.assertIsNone(by_app["privacyidea-adfs"]["current_version"])
+        self.assertIsNone(by_app["privacyidea-adfs"]["current_version_url"])
+        # entraid-via-keycloak mirrors the keycloak subscription (same owning
+        # application), so it is valid/used too even without its own client row.
+        mirror_keycloak = {"privacyidea-keycloak", "entraid-via-keycloak"}
+        for plugin in DASHBOARD_PLUGINS:
+            if plugin in mirror_keycloak:
+                self.assertEqual("valid", by_app[plugin]["subscription"])
+                self.assertTrue(by_app[plugin]["in_use"])
+            else:
+                # No subscription and unused on a fresh test DB.
+                self.assertEqual("none", by_app[plugin]["subscription"])
+                self.assertFalse(by_app[plugin]["in_use"])
+
+    def test_03_status_counts_token_users_once(self):
+        # The server row and the plugin rows both need the active-token-user count, so
+        # the endpoint counts once and hands the result to both.
+        with mock.patch("privacyidea.api.subscriptions.get_latest_github_versions",
+                        return_value={}):
+            with mock.patch("privacyidea.api.subscriptions.get_users_with_active_tokens",
+                            return_value=3) as endpoint_count:
+                with mock.patch("privacyidea.lib.subscriptions.get_users_with_active_tokens") as lib_count:
+                    with self.app.test_request_context('/subscriptions/status',
+                                                       method="GET",
+                                                       headers={'Authorization': self.at}):
+                        res = self.app.full_dispatch_request()
+                        self.assertEqual(200, res.status_code, res)
+
+        self.assertEqual(1, endpoint_count.call_count)
+        lib_count.assert_not_called()
 

@@ -16,8 +16,18 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { NgClass } from "@angular/common";
-import { Component, effect, inject, linkedSignal, signal, WritableSignal } from "@angular/core";
+import { NgClass, NgTemplateOutlet } from "@angular/common";
+import {
+  Component,
+  computed,
+  effect,
+  inject,
+  input,
+  linkedSignal,
+  signal,
+  TemplateRef,
+  WritableSignal
+} from "@angular/core";
 import { MatButton, MatIconButton } from "@angular/material/button";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatIcon } from "@angular/material/icon";
@@ -39,6 +49,8 @@ import {
 import { MatTooltip } from "@angular/material/tooltip";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { TableStateComponent } from "@components/shared/table-state/table-state.component";
+import { TableState } from "@core/models/table_state/table-state";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import {
   ContainerDetailData,
@@ -47,6 +59,7 @@ import {
 } from "@services/container/container.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { RowSelector } from "@services/table-utils/row-selector";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { UserService, UserServiceInterface } from "@services/user/user.service";
 import { forkJoin } from "rxjs";
@@ -71,12 +84,21 @@ import { forkJoin } from "rxjs";
     MatIcon,
     MatIconButton,
     MatButton,
-    MatCheckbox
+    MatCheckbox,
+    TableStateComponent,
+    NgTemplateOutlet
   ],
   templateUrl: "./user-details-container-table.component.html",
   styleUrl: "./user-details-container-table.component.scss"
 })
 export class UserDetailsContainerTableComponent {
+  /**
+   * The way out of the empty state. Passed as a template rather than projected content because this
+   * component renders it in a different place depending on the table's state, and a single
+   * ng-content slot can only ever be rendered once.
+   */
+  readonly createAction = input<TemplateRef<unknown> | undefined>(undefined);
+
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
@@ -110,20 +132,33 @@ export class UserDetailsContainerTableComponent {
     }
   });
 
-  selection: WritableSignal<ContainerDetailData[]> = linkedSignal({
-    source: () =>
-      this.containerService.userContainersResource.hasValue()
-        ? this.containerService.userContainersResource.value()
-        : undefined,
-    computation: () => []
+  selector = new RowSelector<ContainerDetailData>({
+    keyGetter: (container) => container.serial,
+    visibleRows: this.userContainers
   });
 
-  constructor() {
-    (this.dataSource as unknown as { _sort: WritableSignal<Sort> })._sort = this.sort;
+  readonly tableState = new TableState({
+    resource: this.containerService.userContainersResource,
+    count: () => this.userContainers().length,
+    allowed: () => this.authService.actionAllowed("container_list")
+  });
 
+  /** Creating one is the only route out of the empty state here, so the hint is dropped without that right. */
+  readonly emptyHint = computed(() =>
+    this.authService.actionAllowed("container_create")
+      ? $localize`Create a container for this user to see it here.`
+      : ""
+  );
+
+  constructor() {
     effect(() => {
       const base = this.userContainers();
-      this.dataSource.data = this.clientsideSortContainerData(base, this.sort());
+      const resource = this.containerService.userContainersResource;
+      if (resource.hasValue()) {
+        this.dataSource.data = this.clientsideSortContainerData(base, this.sort());
+      } else {
+        this.dataSource.data = [];
+      }
     });
 
     effect(() => {
@@ -132,29 +167,8 @@ export class UserDetailsContainerTableComponent {
     });
   }
 
-  isAllSelected() {
-    return this.selection().length === this.dataSource.data.length && this.dataSource.data.length > 0;
-  }
-
-  toggleAllRows() {
-    if (this.isAllSelected()) {
-      this.selection.set([]);
-    } else {
-      this.selection.set([...this.dataSource.data]);
-    }
-  }
-
-  toggleRow(row: ContainerDetailData) {
-    const current = this.selection();
-    if (current.includes(row)) {
-      this.selection.set(current.filter((r) => r !== row));
-    } else {
-      this.selection.set([...current, row]);
-    }
-  }
-
   deleteSelected() {
-    const selected = this.selection();
+    const selected = this.selector.selectedRows();
     this.dialogService
       .openDialog({
         component: SimpleConfirmationDialogComponent,
@@ -178,7 +192,7 @@ export class UserDetailsContainerTableComponent {
   }
 
   unassignSelected() {
-    const selected = this.selection();
+    const selected = this.selector.selectedRows();
     const username = this.userService.detailsUser().username;
     const realm = this.userService.selectedUserRealm();
     forkJoin(
@@ -189,7 +203,7 @@ export class UserDetailsContainerTableComponent {
   }
 
   toggleActiveSelected() {
-    const selected = this.selection();
+    const selected = this.selector.selectedRows();
     forkJoin(
       selected.map((container) => this.containerService.toggleActive(container.serial, container.states))
     ).subscribe({

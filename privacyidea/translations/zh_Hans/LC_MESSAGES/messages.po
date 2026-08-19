@@ -3,13 +3,15 @@
 # This file is distributed under the same license as the PROJECT project.
 # FIRST AUTHOR <EMAIL@ADDRESS>, 2020.
 # Paul Lettich <paul.lettich@netknights.it>, 2025.
+# reducedradius <137701630+flytothehighest@users.noreply.github.com>, 2026.
 msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
-"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"Report-Msgid-Bugs-To: translations@privacyidea.org\n"
 "POT-Creation-Date: 2026-05-19 14:39+0200\n"
-"PO-Revision-Date: 2025-04-10 12:05+0000\n"
-"Last-Translator: Paul Lettich <paul.lettich@netknights.it>\n"
+"PO-Revision-Date: 2026-08-07 12:07+0000\n"
+"Last-Translator: reducedradius "
+"<137701630+flytothehighest@users.noreply.github.com>\n"
 "Language-Team: Chinese (Simplified Han script) <https://hosted.weblate.org/"
 "projects/privacyidea/privacyidea-server/zh_Hans/>\n"
 "Language: zh_Hans\n"
@@ -18,22 +20,21 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 "Generated-By: Babel 2.17.0\n"
+"X-Generator: Weblate 2026.8.1.dev0\n"
 
 #: api/auth.py:290
 msgid "Authentication with passkey disabled."
-msgstr ""
+msgstr "禁用通行密钥认证。"
 
 # | msgid "Authentication failure. Missing Username"
 #: api/auth.py:295
-#, fuzzy
 msgid "Authentication failure. The passkey is not registered."
-msgstr "验证失败,缺少用户名"
+msgstr "验证失败,通行密钥未注册。"
 
 # | msgid "Authentication failure. Your token has expired: {0!s}"
 #: api/auth.py:307
-#, fuzzy
 msgid "Authentication failure. Token has no user."
-msgstr "验证失败,因为您的令牌已过期: {0!s}"
+msgstr "验证失败,因为您的令牌无对应用户。"
 
 #: api/auth.py:311
 #, python-brace-format
@@ -67,9 +68,8 @@ msgstr "验证失败，凭证错误"
 
 # | msgid "Authentication failure. Missing Username"
 #: api/before_after.py:518 api/lib/postpolicy.py:977 api/validate.py:664
-#, fuzzy
 msgid "Authentication failed."
-msgstr "验证失败,缺少用户名"
+msgstr "验证失败。"
 
 #: api/container.py:275
 msgid "Missing parameter 'realm', 'resolver', and/or 'user_id'"
@@ -163,9 +163,8 @@ msgid "The token does not exist"
 msgstr ""
 
 #: api/validate.py:267
-#, fuzzy
 msgid "The token is not valid."
-msgstr "值的类型。"
+msgstr "该令牌无效。"
 
 #: api/validate.py:280
 msgid "Machine can not be identified by user agent!"
@@ -271,9 +270,8 @@ msgid ""
 msgstr "验证失败。您没有访问此资源所需的角色（{required_role}）！"
 
 #: api/lib/utils.py:466
-#, fuzzy
 msgid "Invalid policy name:"
-msgstr "'{0！s}'是无效的策略名称。"
+msgstr "无效的策略名称："
 
 #: api/lib/utils.py:469
 msgid "The name of the policy may only contain the characters a-zA-Z0-9_. -"

@@ -54,6 +54,9 @@ class FederationEventHandler(BaseEventHandler):
     identifier = "Federation"
     description = "This event handler can forward the request to other " \
                   "privacyIDEA servers"
+    # The forwarded response replaces the response of this server. Continuing without the handler would answer
+    # the client with the locally created response as if the remote server had produced it.
+    default_abort_on_error = True
 
     # TODO: Do we need to change the federation handler this way, that it does only pre-handling?
 

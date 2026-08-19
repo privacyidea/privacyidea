@@ -1794,12 +1794,35 @@ def check_external(request=None, action="init"):
     return True
 
 
+_api_key_required_deprecation_warned = False
+
+
+def _warn_api_key_required_deprecated():
+    """
+    Log the ``api_key_required`` deprecation once per process, so a deployment
+    that still relies on it is nudged toward API clients without spamming the log
+    on every request.
+    """
+    global _api_key_required_deprecation_warned
+    if not _api_key_required_deprecation_warned:
+        _api_key_required_deprecation_warned = True
+        log.warning("The 'api_key_required' policy (and the JWT minted by 'pi-manage api "
+                    "createtoken') is deprecated and will be removed in a future release. "
+                    "The X-API-Key API clients feature is intended to replace it.")
+
+
 def api_key_required(request=None, action=None):
     """
     This is a decorator for check_user_pass and check_serial_pass.
     It checks, if a policy scope=auth, action=apikeyrequired is set.
     If so, the validate request will only be performed, if a JWT token is passed
     with role=validate.
+
+    .. deprecated::
+        The ``api_key_required`` policy and its ``Authorization`` JWT (minted by
+        ``pi-manage api createtoken``) are deprecated and will be removed in a
+        future release. The X-API-Key API clients feature is intended to replace
+        them; it does not yet cover this use case.
     """
     user_object = request.User
 
@@ -1807,6 +1830,7 @@ def api_key_required(request=None, action=None):
     action = Match.user(g, scope=SCOPE.AUTHZ, action=PolicyAction.APIKEY, user_object=user_object).policies()
     # Do we have a policy?
     if action:
+        _warn_api_key_required_deprecated()
         # check if we were passed a correct JWT
         # Get the Authorization token from the header
         auth_token = request.headers.get('PI-Authorization')

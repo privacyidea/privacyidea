@@ -23,23 +23,29 @@ Provide decorator to test the subscriptions.
 The code is tested in tests/test_lib_subscriptions.py.
 """
 
+import concurrent.futures
+import dataclasses
 import datetime
+import enum
 import functools
+import json
 import logging
 import os
 import random
 import traceback
 
+import requests
 from sqlalchemy import func, select, update
 
 from privacyidea.lib import lazy_gettext
+from privacyidea.lib.config import get_from_config, set_privacyidea_config
 from privacyidea.lib.crypto import Sign
 from privacyidea.lib.error import SubscriptionError
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.token import get_tokens
 from .log import log_with
-from .utils import get_plugin_info_from_useragent
-from ..models import Subscription, db
+from .utils import get_plugin_info_from_useragent, get_version_number, is_true
+from ..models import ClientApplication, Subscription, db
 
 EXPIRE_MESSAGE = lazy_gettext("My subscription has expired.")
 SUBSCRIPTION_DATE_FORMAT = "%Y-%m-%d"
@@ -63,21 +69,343 @@ SIGN_FORMAT = """{application}
 {level}
 """
 
-APPLICATIONS = {"demo_application": 0,
-                "owncloud": 50,
-                "privacyidea-nextcloud": 50,
-                "privacyidea-ldap-proxy": 50,
-                "privacyidea-cp": 50,
-                "privacyidea-pam": 10000,
-                "privacyidea-shibboleth": 10000,
-                "privacyidea-adfs": 50,
-                "privacyidea-keycloak": 10000,
-                "simplesamlphp": 10000,
-                "privacyidea-simplesamlphp": 10000,
-                "privacyidea authenticator": 10,
-                "privacyidea": 50}
+# Single source of truth for subscription applications. Each entry maps an
+# application name to its configuration:
+#   ``free_users``   the free-tier limit (users with active tokens) allowed
+#                    without a subscription file.
+#   ``user_agents``  optional list of additional client user-agents that are
+#                    *metered* against this application's subscription, so
+#                    several distinct clients (e.g. privacyidea-pam and
+#                    pam-passkey) can share one subscription. The application key
+#                    itself is always implicitly one of its own user-agents.
+#   ``clients``      optional list of client user-agents that belong to this
+#                    application but are never metered. Their use is recorded and
+#                    the dashboard shows them under this application's
+#                    subscription, but they can always authenticate.
+# The flat lookups below (:data:`APPLICATIONS`, :data:`METERED_APPLICATIONS`,
+# :data:`SUBSCRIPTION_OWNERS`) are derived from this dict, so attaching a client to
+# a subscription is a single edit here.
+SUBSCRIPTIONS = {
+    "demo_application": {"free_users": 0},
+    "owncloud": {"free_users": 50},
+    "privacyidea-nextcloud": {"free_users": 50},
+    "privacyidea-ldap-proxy": {"free_users": 50},
+    "privacyidea-cp": {"free_users": 50},
+    # The PAM module identifies itself as "PAM"; privacyidea-pam stays an accepted alias
+    # of the same subscription for anything that sends the older name.
+    "privacyidea-pam": {"free_users": 10000, "user_agents": ["pam", "pam-passkey"]},
+    "privacyidea-shibboleth": {"free_users": 10000},
+    "privacyidea-adfs": {"free_users": 50},
+    "privacyidea-keycloak": {"free_users": 10000, "user_agents": ["entraid-via-keycloak"]},
+    "simplesamlphp": {"free_users": 10000},
+    "privacyidea-simplesamlphp": {"free_users": 10000},
+    # The Authenticator App is free to use: it is recorded and reported on the
+    # dashboard, but its authentications never count against a subscription.
+    "privacyidea authenticator": {"free_users": 10, "clients": ["privacyidea-app"]},
+    # FreeRADIUS is covered by the server's own subscription and counts against the
+    # same free tier, so RADIUS traffic is metered exactly like the server itself.
+    "privacyidea": {"free_users": 50, "user_agents": ["FreeRADIUS"]},
+}
+
+# Application and user-agent names are matched case-insensitively: clients spell their
+# user-agent however they like, so the lookups derived from SUBSCRIPTIONS are keyed and
+# valued lower-case, and every name entering them is lower-cased first.
+
+# Free-tier limit per subscription application. Derived from SUBSCRIPTIONS.
+APPLICATIONS = {application.lower(): config["free_users"]
+                for application, config in SUBSCRIPTIONS.items()}
+
+# Maps a client user-agent to the application whose subscription and free tier it is
+# metered against. Only the ``user_agents`` lists: a client missing here is never
+# metered, whatever its application's free tier says.
+METERED_APPLICATIONS = {user_agent.lower(): application.lower()
+                        for application, config in SUBSCRIPTIONS.items()
+                        for user_agent in config.get("user_agents", [])}
+
+# Maps a client user-agent to the application whose subscription record describes it, for
+# the dashboard overview. Unlike METERED_APPLICATIONS this includes the unmetered
+# ``clients``, so an unmetered client still shows its application's subscription.
+SUBSCRIPTION_OWNERS = {**METERED_APPLICATIONS,
+                       **{client.lower(): application.lower()
+                          for application, config in SUBSCRIPTIONS.items()
+                          for client in config.get("clients", [])}}
+
+
+def get_metered_application(plugin_name: str) -> str:
+    """
+    Map a client user-agent to the application whose subscription and free tier its
+    authentications are counted against, following :data:`METERED_APPLICATIONS`. The
+    result is always lower-case: a metered client resolves to its application, any other
+    name is returned unchanged apart from the case — and a name that is no application
+    of its own is not metered at all (see :func:`check_subscription`).
+
+    :param plugin_name: the plugin name parsed from a request's user-agent
+    :return: the application name to meter this client against
+    """
+    name = (plugin_name or "").lower()
+    return METERED_APPLICATIONS.get(name, name)
+
+
+def get_subscription_owner(plugin_name: str) -> str:
+    """
+    Map a client user-agent to the application whose subscription record describes it,
+    following :data:`SUBSCRIPTION_OWNERS`. This is what the dashboard overview shows and
+    it says nothing about metering: an unmetered client such as the Authenticator App
+    still reports the state of its application's subscription.
+
+    :param plugin_name: the client user-agent name
+    :return: the application name whose subscription describes this client
+    """
+    name = (plugin_name or "").lower()
+    return SUBSCRIPTION_OWNERS.get(name, name)
+
+
+# Client user-agents shown on the dashboard subscription overview, each as its
+# own row. These are the names the clients really send. A client that belongs to
+# another application (e.g. pam-passkey, entraid-via-keycloak, or the Authenticator
+# App) keeps its own row but reports that application's subscription, whether or not
+# it is metered against it (see :func:`get_plugin_subscription_status`). The frontend
+# groups these into sections and provides the display names (see the section
+# layout and ``pluginDisplayName`` in dashboardControllers.js), so this list is
+# just the set of rows the backend reports a status for; order is not
+# significant.
+DASHBOARD_PLUGINS = [
+    "privacyidea-app",
+    "freeradius",
+    "privacyidea-nextcloud",
+    "privacyidea-cp",
+    "pam",
+    "pam-passkey",
+    "privacyidea-keycloak",
+    "entraid-via-keycloak",
+    "privacyidea-adfs",
+    "privacyidea-shibboleth",
+]
+
+# A subscription within this many days of its end date is flagged "expiring".
+EXPIRING_THRESHOLD_DAYS = 60
+# A plugin seen within this many days counts as actively used.
+USAGE_RECENT_DAYS = 7
+
+# GitHub repository (``owner/repo``) hosting each dashboard client, used to look
+# up the latest released version. Keyed by the dashboard application/user-agent.
+# An unknown/unreachable repository or one without a published release simply
+# yields no "current version" (None) — e.g. FreeRADIUS currently has no release.
+GITHUB_REPOS = {
+    "privacyidea": "privacyidea/privacyidea",
+    "privacyidea-app": "privacyidea/pi-authenticator",
+    "privacyidea-cp": "privacyidea/privacyidea-credential-provider",
+    "pam": "privacyidea/privacyidea-pam",
+    "pam-passkey": "privacyidea/pam-passkey",
+    "privacyidea-keycloak": "privacyidea/keycloak-provider",
+    "entraid-via-keycloak": "privacyidea/keycloak-protocolmapper-entraid",
+    "privacyidea-adfs": "privacyidea/adfs-provider",
+    "privacyidea-shibboleth": "privacyidea/shibboleth-plugin",
+    "freeradius": "privacyidea/FreeRADIUS",
+    "privacyidea-nextcloud": "privacyidea/privacyidea-nextcloud-app",
+}
+# These clients are distributed via OS packages / app stores rather than a
+# downloadable GitHub release, so report their latest version + date but no
+# link to the release page.
+RELEASE_LINK_SUPPRESSED = {"privacyidea", "privacyidea-app"}
+# How long to cache the latest-release lookups, and the per-request timeout.
+GITHUB_VERSION_TTL = datetime.timedelta(hours=6)
+# A lookup that produced no release at all is kept for much less time: that is what a
+# network problem or GitHub's rate limit looks like, and holding on to it for the full TTL
+# would leave the column empty for hours after a single blip. A lookup that produced some
+# releases is kept for the full TTL, so a client without a published release does not put
+# the whole cache on a short retry cycle.
+GITHUB_VERSION_FAILURE_TTL = datetime.timedelta(minutes=30)
+GITHUB_FETCH_TIMEOUT = 3
+# The lookups are also cached in the config table, so a worker with a cold cache picks up
+# another worker's result instead of calling GitHub itself. Without that, every worker of
+# every node looks the versions up on its own, which both repeats the fetch latency and
+# runs a multi-worker installation into GitHub's unauthenticated rate limit.
+GITHUB_VERSION_CONFIG_KEY = "subscription.latest_releases"
+# Length of the config table's value column. The payload is about 1.6k for the clients
+# reported today; should a future one push it past the limit, the shared cache is skipped
+# instead of failing the request, and each worker falls back to its own lookup.
+CONFIG_VALUE_LENGTH = 2000
 
 log = logging.getLogger(__name__)
+
+
+@dataclasses.dataclass(frozen=True)
+class GithubRelease:
+    """The latest release of a client as published on GitHub."""
+    # Release tag with any leading "v" stripped, e.g. "3.13.1".
+    version: str
+    # Release date as YYYY-MM-DD, None if GitHub did not report one.
+    released: str | None = None
+    # Release page, None for clients that are not downloaded from GitHub.
+    url: str | None = None
+
+
+def _releases_are_fresh(fetched_at: datetime.datetime | None,
+                        releases: dict[str, GithubRelease | None],
+                        now: datetime.datetime) -> bool:
+    """
+    Whether a lookup made at ``fetched_at`` may still be used: the full
+    :data:`GITHUB_VERSION_TTL` once it found any release, the shorter
+    :data:`GITHUB_VERSION_FAILURE_TTL` if it found none at all.
+    """
+    if fetched_at is None:
+        return False
+    ttl = GITHUB_VERSION_TTL if any(releases.values()) else GITHUB_VERSION_FAILURE_TTL
+    return now - fetched_at < ttl
+
+
+@dataclasses.dataclass
+class _GithubVersionCache:
+    """Process-local cache of the latest-release lookups, in front of the shared one."""
+    fetched_at: datetime.datetime | None = None
+    releases: dict[str, GithubRelease | None] = dataclasses.field(default_factory=dict)
+
+    def is_valid(self, now: datetime.datetime) -> bool:
+        return _releases_are_fresh(self.fetched_at, self.releases, now)
+
+    def store(self, fetched_at: datetime.datetime, releases: dict[str, GithubRelease | None]) -> None:
+        self.fetched_at = fetched_at
+        self.releases = releases
+
+
+_github_version_cache = _GithubVersionCache()
+
+
+def invalidate_github_version_cache() -> None:
+    """Drop the cached lookups, process-local and shared. For tests and a manual refresh."""
+    _github_version_cache.store(None, {})
+    set_privacyidea_config(GITHUB_VERSION_CONFIG_KEY, "")
+
+
+def _store_shared_releases(fetched_at: datetime.datetime,
+                           releases: dict[str, GithubRelease | None]) -> None:
+    """
+    Publish a lookup to the config table for the other workers. Best-effort: a payload
+    that does not fit the value column is not stored, leaving every worker with its own
+    process-local cache.
+    """
+    payload = json.dumps({"fetched_at": fetched_at.isoformat(),
+                          "releases": {application: dataclasses.asdict(release) if release else None
+                                       for application, release in releases.items()}},
+                         separators=(",", ":"))
+    if len(payload) > CONFIG_VALUE_LENGTH:
+        log.debug(f"Not sharing the latest releases between workers: {len(payload)} characters "
+                  f"exceed the {CONFIG_VALUE_LENGTH} the config value holds.")
+        return
+    set_privacyidea_config(GITHUB_VERSION_CONFIG_KEY, payload,
+                           desc="Latest released client versions, cached from GitHub")
+
+
+def _load_shared_releases() -> tuple[datetime.datetime | None, dict[str, GithubRelease | None]]:
+    """
+    Read the lookup another worker published, as ``(fetched_at, releases)``. Anything
+    unreadable is treated as no cache at all, so it is fetched again.
+    """
+    payload = get_from_config(GITHUB_VERSION_CONFIG_KEY)
+    if not payload:
+        return None, {}
+    try:
+        stored = json.loads(payload)
+        fetched_at = datetime.datetime.fromisoformat(stored["fetched_at"])
+        releases = {application: GithubRelease(**release) if release else None
+                    for application, release in stored["releases"].items()}
+    except (ValueError, TypeError, KeyError) as error:
+        log.debug(f"Ignoring the shared latest-release cache, it cannot be read: {error}")
+        return None, {}
+    return fetched_at, releases
+
+
+def version_check_enabled() -> bool:
+    """
+    Whether the latest released versions of the clients may be looked up on GitHub. Set
+    ``PI_SUBSCRIPTION_VERSION_CHECK = False`` in pi.cfg to switch the lookup off, e.g. in
+    air-gapped installations where it can never succeed and would only cost the timeout.
+    """
+    return is_true(get_app_config_value("PI_SUBSCRIPTION_VERSION_CHECK", True))
+
+
+def _fetch_latest_release(repo: str) -> GithubRelease | None:
+    """
+    Return the latest :class:`GithubRelease` of a GitHub ``owner/repo``, or None if it
+    can't be determined. Failures are logged at debug level only: not reaching GitHub is
+    an expected state in installations without internet access.
+    """
+    url = f"https://api.github.com/repos/{repo}/releases/latest"
+    try:
+        response = requests.get(url, timeout=GITHUB_FETCH_TIMEOUT,
+                                headers={"Accept": "application/vnd.github+json"})
+        if response.status_code == 200:
+            data = response.json()
+            version = (data.get("tag_name") or "").lstrip("v")
+            if not version:
+                return None
+            return GithubRelease(version=version,
+                                 released=(data.get("published_at") or "")[:10] or None,
+                                 url=data.get("html_url"))
+        log.debug(f"GitHub returned {response.status_code} for the latest release of {repo}")
+    except (requests.RequestException, ValueError) as error:
+        log.debug(f"Could not fetch the latest release for {repo}: {error}")
+    return None
+
+
+def get_latest_github_versions() -> dict[str, GithubRelease | None]:
+    """
+    Return ``{application: GithubRelease or None}`` for the clients in
+    :data:`GITHUB_REPOS`. Results are fetched from GitHub concurrently and cached for
+    :data:`GITHUB_VERSION_TTL`; this is best-effort, so unreachable or unknown
+    repositories map to None.
+
+    Results are cached twice: process-local, and in the config table so the other workers
+    reuse the same lookup (see :data:`GITHUB_VERSION_CONFIG_KEY`). A failed lookup is
+    cached too, so a server that cannot reach GitHub does not retry on every dashboard
+    load, but only for :data:`GITHUB_VERSION_FAILURE_TTL` — see
+    :func:`version_check_enabled` to switch the lookup off entirely.
+    """
+    if not version_check_enabled():
+        return {application: None for application in GITHUB_REPOS}
+
+    now = datetime.datetime.now()
+    if _github_version_cache.is_valid(now):
+        return _github_version_cache.releases
+
+    # Another worker may have looked them up already.
+    shared_fetched_at, shared_releases = _load_shared_releases()
+    if _releases_are_fresh(shared_fetched_at, shared_releases, now):
+        _github_version_cache.store(shared_fetched_at, shared_releases)
+        return shared_releases
+
+    unique_repos = set(GITHUB_REPOS.values())
+    release_by_repo = {}
+    with concurrent.futures.ThreadPoolExecutor(max_workers=len(unique_repos) or 1) as executor:
+        future_to_repo = {executor.submit(_fetch_latest_release, repo): repo
+                          for repo in unique_repos}
+        for future in concurrent.futures.as_completed(future_to_repo):
+            release_by_repo[future_to_repo[future]] = future.result()
+
+    releases = {application: release_by_repo.get(repo)
+                for application, repo in GITHUB_REPOS.items()}
+    # Drop the release link for clients that are not downloaded from GitHub.
+    for application in RELEASE_LINK_SUPPRESSED:
+        release = releases.get(application)
+        if release:
+            releases[application] = dataclasses.replace(release, url=None)
+    _github_version_cache.store(now, releases)
+    _store_shared_releases(now, releases)
+    return releases
+
+
+def version_sort_key(version: str) -> tuple:
+    """
+    Sort key ordering version strings by number instead of by character, so that 1.10.0
+    comes after 1.9.0. A part that is not a number sorts after any number in the same
+    position, which keeps the order total for whatever a client puts in its user-agent.
+
+    :param version: a version string such as "3.8.0.0"
+    :return: a tuple to sort by
+    """
+    return tuple((0, int(part)) if part.isdigit() else (1, part)
+                 for part in version.split("."))
 
 
 def get_users_with_active_tokens():
@@ -98,6 +426,197 @@ def get_users_with_active_tokens():
     result = db.session.execute(stmt)
     rows = result.all()
     return len(rows)
+
+
+class SubscriptionState(str, enum.Enum):
+    """
+    State of a subscription record, with the colour the dashboard maps it to. This is
+    about the subscription itself, independent of how recently the client was used.
+    Inherits from str so the members serialize as their value in an API response.
+    """
+    # No subscription on file.
+    NONE = "none"                # grey
+    # Subscription valid, not near expiry, within the token limit.
+    VALID = "valid"              # green
+    # Valid but ends within EXPIRING_THRESHOLD_DAYS days.
+    EXPIRING = "expiring"        # yellow
+    # Valid but more users with active tokens than the subscription allows.
+    EXCEEDED = "exceeded"        # yellow
+    # The subscription's date_till is in the past.
+    EXPIRED = "expired"          # red
+
+
+@dataclasses.dataclass(frozen=True)
+class SubscriptionStateInfo:
+    """How a subscription record was classified, plus the dates the dashboard shows."""
+    # The classification, see SubscriptionState.
+    state: SubscriptionState
+    # End date of the subscription, None if none is on file.
+    date_till: datetime.datetime | None = None
+    # Whole days between today and date_till, negative once it has passed, 0 on the day
+    # itself; None if none is on file.
+    days_left: int | None = None
+
+
+def _subscription_state(subscription: dict | None, now: datetime.datetime,
+                        token_users: int) -> SubscriptionStateInfo:
+    """
+    Classify a subscription record into a dashboard :class:`SubscriptionState`.
+
+    :param subscription: the subscription dict, or None if none is on file
+    :param now: the reference "now" timestamp
+    :param token_users: number of users with active tokens (for the token check)
+    :return: the classification and the dates belonging to it
+    """
+    if not subscription:
+        return SubscriptionStateInfo(SubscriptionState.NONE)
+    date_till = subscription.get("date_till")
+    if not date_till:
+        # Subscription.date_till is nullable. Without an end date the record cannot be
+        # said to cover anything, so it is reported like an expired one rather than
+        # staying green forever.
+        return SubscriptionStateInfo(SubscriptionState.EXPIRED)
+    # date_till is a calendar date, so the remaining days are counted between dates:
+    # subtracting the timestamps instead would floor the difference and report a whole
+    # day gone one second past midnight.
+    days_left = (date_till.date() - now.date()).days
+    if date_till < now:
+        return SubscriptionStateInfo(SubscriptionState.EXPIRED, date_till, days_left)
+    allowed_tokens = subscription.get("num_tokens")
+    if allowed_tokens is not None and token_users > allowed_tokens:
+        return SubscriptionStateInfo(SubscriptionState.EXCEEDED, date_till, days_left)
+    if days_left < EXPIRING_THRESHOLD_DAYS:
+        return SubscriptionStateInfo(SubscriptionState.EXPIRING, date_till, days_left)
+    return SubscriptionStateInfo(SubscriptionState.VALID, date_till, days_left)
+
+
+def _is_in_use(has_subscription: bool, last_seen: datetime.datetime | None,
+               now: datetime.datetime) -> bool:
+    """
+    Whether a client counts as actively used: it has a subscription on file or was seen
+    within :data:`USAGE_RECENT_DAYS` days.
+    """
+    if has_subscription:
+        return True
+    return last_seen is not None and (now - last_seen).days < USAGE_RECENT_DAYS
+
+
+def get_plugin_subscription_status(token_users: int | None = None) -> list[dict]:
+    """
+    Return a dashboard status entry for each plugin in :data:`DASHBOARD_PLUGINS`.
+
+    Each entry carries two independent axes:
+
+    * ``in_use`` — whether the plugin is actively used; see :func:`_is_in_use`.
+    * ``subscription`` — the :class:`SubscriptionState` of its subscription record.
+
+    A client belonging to another application (e.g. pam-passkey) keeps its own row and
+    its own ``last_seen`` but resolves its subscription through that application, see
+    :func:`get_subscription_owner`. Plugin usage is derived from the ``ClientApplication`` table by
+    parsing each stored user-agent with
+    :func:`~privacyidea.lib.utils.get_plugin_info_from_useragent`.
+
+    :param token_users: number of users with active tokens, needed to decide whether a
+        subscription is exceeded. Pass it when the caller already knows the count — a
+        request rendering both this and :func:`get_server_subscription_status` should
+        count once and hand the result to both. Counted here if not given.
+    :return: list of dicts in the order of :data:`DASHBOARD_PLUGINS`. Each dict
+        has the keys ``application``, ``in_use``, ``subscription``, ``last_seen``,
+        ``date_till``, ``days_left`` and ``versions`` (the distinct client
+        versions seen in the user-agents, newest first).
+    """
+    stmt = (
+        select(ClientApplication.clienttype,
+               func.max(ClientApplication.lastseen).label("max_lastseen"))
+        .group_by(ClientApplication.clienttype)
+    )
+    last_seen_by_plugin: dict[str, datetime.datetime] = {}
+    # Distinct client versions seen per plugin, parsed from the user-agents.
+    versions_by_plugin: dict[str, set] = {}
+    for clienttype, max_lastseen in db.session.execute(stmt).all():
+        # MAX() can return NULL when every row for a clienttype has a NULL
+        # lastseen; skip those so a later real timestamp doesn't compare
+        # against None.
+        if max_lastseen is None:
+            continue
+        plugin, version, _comment = get_plugin_info_from_useragent(clienttype)
+        if not plugin:
+            continue
+        key = plugin.lower()
+        current = last_seen_by_plugin.get(key)
+        if current is None or max_lastseen > current:
+            last_seen_by_plugin[key] = max_lastseen
+        if version:
+            versions_by_plugin.setdefault(key, set()).add(version)
+
+    # Batch-load every subscription once instead of per-plugin lookups.
+    # Sort by date_till ascending so that, when multiple rows exist for the
+    # same application, the dict ends up keyed to the row with the latest
+    # date_till — deterministic regardless of DB iteration order.
+    all_subscriptions = sorted(get_subscription(),
+                               key=lambda s: s.get("date_till") or datetime.datetime.min)
+    # Subscription.application is nullable and Subscription.get() omits None
+    # fields, so a row with application=NULL has no "application" key.
+    subscriptions_by_app = {sub["application"].lower(): sub
+                            for sub in all_subscriptions
+                            if sub.get("application")}
+
+    if token_users is None:
+        token_users = get_users_with_active_tokens()
+    now = datetime.datetime.now()
+    overview = []
+    for plugin in DASHBOARD_PLUGINS:
+        last_seen = last_seen_by_plugin.get(plugin.lower())
+        # A client of another application keeps its own row and last_seen but shows
+        # that application's subscription.
+        owning_application = get_subscription_owner(plugin)
+        subscription = subscriptions_by_app.get(owning_application)
+        state_info = _subscription_state(subscription, now, token_users)
+        overview.append({"application": plugin,
+                         "in_use": _is_in_use(bool(subscription), last_seen, now),
+                         "subscription": state_info.state,
+                         "last_seen": last_seen,
+                         "date_till": state_info.date_till,
+                         "days_left": state_info.days_left,
+                         # Versions seen in the user-agents, newest first.
+                         "versions": sorted(versions_by_plugin.get(plugin.lower(), []),
+                                            key=version_sort_key, reverse=True)})
+    return overview
+
+
+def get_server_subscription_status(token_users: int | None = None) -> dict:
+    """
+    Dashboard status entry for the privacyIDEA server itself. Same shape as
+    entries from :func:`get_plugin_subscription_status` plus ``is_server: True``,
+    so the frontend renders the server row without duplicating the
+    classification rules.
+
+    :param token_users: number of users with active tokens, see
+        :func:`get_plugin_subscription_status`. Counted here if not given.
+    """
+    # Pick the row with the latest date_till for determinism when multiple
+    # server subscriptions exist.
+    subscriptions = sorted(get_subscription("privacyidea"),
+                           key=lambda s: s.get("date_till") or datetime.datetime.min,
+                           reverse=True)
+    subscription = subscriptions[0] if subscriptions else None
+    now = datetime.datetime.now()
+    if token_users is None:
+        token_users = get_users_with_active_tokens()
+    state_info = _subscription_state(subscription, now, token_users)
+    return {"application": "privacyidea",
+            "is_server": True,
+            # The server is the one answering this request, so it is in use by definition -
+            # unlike a client, whose use is deduced from a subscription or recent activity.
+            "in_use": True,
+            "subscription": state_info.state,
+            "last_seen": None,
+            "date_till": state_info.date_till,
+            "days_left": state_info.days_left,
+            # The running server version (there is no user-agent for the
+            # server). Truncate any PEP 440 local/dev suffix (e.g.
+            # "3.13.1+gc6d73eab6.d20260602" -> "3.13.1").
+            "versions": [get_version_number().split("+")[0]]}
 
 
 def subscription_status(component="privacyidea", tokentype=None):
@@ -242,6 +761,10 @@ def raise_exception_probability(subscription=None):
         return random.randrange(0, 2)  # nosec B311
 
     expire = subscription.get("date_till")
+    if not expire:
+        # date_till is nullable. A record without an end date says nothing about being
+        # valid, so it is always treated as expired.
+        return True
     delta = datetime.datetime.now() - expire
     if delta.days > 0:
         # calculate a certain probability <1
@@ -286,12 +809,20 @@ def check_subscription(application, max_free_subscriptions=None):
         without a subscription file. If not given, the default is used.
     :return: bool
     """
-    if application.lower() in APPLICATIONS:
-        subscriptions = get_subscription(application) or get_subscription(
-            application.lower())
+    # Metered clients (e.g. pam-passkey, FreeRADIUS) count against another application's
+    # subscription; resolve to that application before looking up its subscription and
+    # free limit. A client that is not metered resolves to a name that is no application
+    # of its own, falls through below and may always authenticate.
+    application = get_metered_application(application)
+    if application in APPLICATIONS:
+        # date_till is nullable. A record without an end date says nothing about being
+        # valid, so it is ignored here: the free tier then applies exactly as it would
+        # without a subscription, rather than blocking the client outright.
+        subscriptions = [subscription for subscription in get_subscription(application)
+                         if subscription.get("date_till")]
         # get the number of users with active tokens
         token_users = get_users_with_active_tokens()
-        free_subscriptions = max_free_subscriptions or APPLICATIONS.get(application.lower())
+        free_subscriptions = max_free_subscriptions or APPLICATIONS.get(application)
         if len(subscriptions) == 0:
             if subscription_exceeded_probability(token_users, free_subscriptions):
                 raise SubscriptionError(description="No subscription for your client.",

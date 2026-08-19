@@ -1,0 +1,43 @@
+<!-- Hide any freshly-shown API key when navigating onto the create view: the
+     key panel is a one-time flash on the list, not sticky across the menu. -->
+<div ng-init="dismissApiKey()"></div>
+
+<h2 class="form-signin-heading" translate>Create a new client</h2>
+
+<form name="formClient" role="form" validate
+      class="form-horizontal">
+
+    <div class="form-group">
+        <label for="display_name" class="col-sm-3 control-label"
+               translate>Display name</label>
+        <div class="col-sm-9">
+            <input name="display_name" id="display_name" class="form-control"
+                   ng-model="params.display_name" required
+                   placeholder="My Windows Credential Provider"
+                   autofocus/>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label for="client_type" class="col-sm-3 control-label"
+               translate>Client type</label>
+        <div class="col-sm-9">
+            <select name="client_type" id="client_type" class="form-control"
+                    ng-model="params.client_type" required
+                    ng-options="type.name as type.label for type in clientTypes">
+            </select>
+            <p class="help-block" translate>The kind of integration this client
+                represents. This cannot be changed later.</p>
+        </div>
+    </div>
+
+    <div class="text-center"
+         ng-show="checkRight('api_client_add')">
+        <button ng-click="saveClient()"
+                ng-disabled="formClient.$invalid"
+                class="btn btn-primary"
+                translate>Create client
+        </button>
+    </div>
+
+</form>

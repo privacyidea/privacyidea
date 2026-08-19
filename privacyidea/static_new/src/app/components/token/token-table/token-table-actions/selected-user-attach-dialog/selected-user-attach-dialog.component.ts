@@ -86,7 +86,7 @@ export class SelectedUserAssignDialogComponent extends AbstractDialogComponent<
     }
   ]);
   selectionContainsAssignedToken = computed(() =>
-    this.tokenService.tokenSelection().some((token) => token.username && token.username !== "")
+    this.tokenService.tokenSelection.selectedRows().some((token) => token.username && token.username !== "")
   );
   displayUser = (value: UserData | string | null): string => {
     if (!value) return "";

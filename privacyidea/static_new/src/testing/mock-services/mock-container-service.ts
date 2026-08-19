@@ -31,6 +31,7 @@ import {
   ContainerTypes,
   TemplateComparisonResult
 } from "@services/container/container.service";
+import { RowSelector } from "@services/table-utils/row-selector";
 import { MockHttpResourceRef, MockPiResponse } from "@testing/mock-services/mock-utils";
 import { Observable, of, Subject } from "rxjs";
 import { Debouncer } from "@utils/debounce.utils";
@@ -73,7 +74,17 @@ export class MockContainerService implements ContainerServiceInterface {
   containersForTokenTypeResource = new MockHttpResourceRef<PiResponse<ContainerDetails> | undefined>(
     MockPiResponse.fromValue({ containers: [], count: 0 })
   );
-  containerSelection = signal<ContainerDetailData[]>([]);
+  selectableContainers = signal<ContainerDetailData[]>([]);
+  containerSelection = new RowSelector<ContainerDetailData>({
+    keyGetter: (container) => container.serial,
+    visibleRows: this.selectableContainers
+  });
+
+  /** Makes the given containers the visible rows and selects them all. */
+  setContainerSelection(containers: ContainerDetailData[]): void {
+    this.selectableContainers.set(containers);
+    this.containerSelection.selectAllRows();
+  }
   containerTypesResource = new MockHttpResourceRef<PiResponse<ContainerTypes, unknown> | undefined>(
     MockPiResponse.fromValue<ContainerTypes>(new Map())
   );

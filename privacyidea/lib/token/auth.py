@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 """Authentication and validation against tokens (the check_* family)."""
 
+import json
 import logging
 from collections import defaultdict
 from typing import TYPE_CHECKING
@@ -32,9 +33,7 @@ from privacyidea.lib.token.query import get_one_token, get_tokens
 if TYPE_CHECKING:
     from privacyidea.models import Challenge
 
-
 log = logging.getLogger(__name__)
-
 
 
 @log_with(log)
@@ -628,7 +627,7 @@ def challenge_text_replace(message: str, user: User | None, token_obj: TokenClas
 
 
 def create_challenge(serial: str, transaction_id: str = None, challenge: str = '',
-                     data=None, session: str = '',
+                     data: dict | None = None, session: str = '',
                      validitytime: int = 120) -> "Challenge":
     """
     Create a new challenge and persist it - to Redis if available, to the DB otherwise.
@@ -649,18 +648,17 @@ def create_challenge(serial: str, transaction_id: str = None, challenge: str = '
     :param serial: Serial number of the token this challenge belongs to
     :param transaction_id: Transaction id of the challenge. A new one is generated if None.
     :param challenge: The challenge string
-    :param data: Optional data to store with the challenge (str, dict, or None)
+    :param data: Challenge data dict. Pass None or {} for no data.
     :param session: Session string
     :param validitytime: Validity period in seconds (default: 120)
     :return: The created Challenge object
     """
     from privacyidea.lib.cache import cache_challenge, redis_feature_enabled
     from privacyidea.models import Challenge
-    from privacyidea.models.challenge import normalize_challenge_data
     db_challenge = Challenge(serial,
                              transaction_id=transaction_id,
                              challenge=challenge,
-                             data=data if data is not None else '',
+                             data=data if data is not None else {},
                              session=session if session is not None else '',
                              validitytime=validitytime)
     if redis_feature_enabled("challenges"):
@@ -670,12 +668,12 @@ def create_challenge(serial: str, transaction_id: str = None, challenge: str = '
             serial=db_challenge.serial,
             transaction_id=db_challenge.transaction_id,
             challenge=db_challenge.challenge,
-            # Normalise the caller's value the same way Challenge.set_data does
+            # Serialise the caller's dict the same way Challenge.set_data does
             # rather than reading it back through the decrypting ``.data``
             # property: the cache layer encrypts in ChallengeDTO.to_payload(),
             # so going via the property would decrypt only to re-encrypt, at the
             # cost of an extra HSM round trip on the authentication hot path.
-            data=normalize_challenge_data(data),
+            data=json.dumps(data) if data else '',
             session=db_challenge.session,
             timestamp=db_challenge.timestamp,
             expiration=db_challenge.expiration,

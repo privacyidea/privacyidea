@@ -196,7 +196,7 @@ class MigrationEncryptionTestCase(MyTestCase):
         self.assertEqual(data_col.type.length, 2000)
 
         # Create a challenge with a large data payload (up to original 512 chars)
-        large_data = "x" * 512
+        large_data = {"payload": "x" * 480}
         c = Challenge(serial="COLSIZE01", transaction_id="colsize_tid001",
                       data=large_data, validitytime=300)
         c.save()
@@ -207,8 +207,8 @@ class MigrationEncryptionTestCase(MyTestCase):
         db_challenge = db.session.execute(stmt).scalar_one()
         # The raw _data should be encrypted (longer than original)
         self.assertGreater(len(db_challenge._data), 512)
-        # Should decrypt correctly
-        self.assertEqual(db_challenge.data, large_data)
+        # Should decrypt correctly via get_data()
+        self.assertEqual(db_challenge.get_data(), large_data)
 
         # Clean up
         db.session.delete(db_challenge)

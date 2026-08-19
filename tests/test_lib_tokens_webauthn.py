@@ -554,7 +554,7 @@ class WebAuthnTokenTestCase(MyTestCase):
 
         # Store the UV requirement under the old "user_verification" key to simulate a challenge that
         # was written by code that predates the change. verify_fido2_challenge() must still pick it up.
-        old_key_data = json.dumps({"user_verification": "required"})
+        old_key_data = {"user_verification": "required"}
 
         # UV not set + policy "required" -> fail
         failing_db_challenge = Challenge(

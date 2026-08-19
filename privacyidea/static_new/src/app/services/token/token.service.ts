@@ -39,6 +39,7 @@ import {
   FilterableTableService,
   FilterableTableServiceInterface
 } from "@services/table-utils/filterable-table-service";
+import { loadedRows, RowSelector } from "@services/table-utils/row-selector";
 import { FilterCaseNote } from "@utils/filter-hint.utils";
 import { filterParamsEqual, toBooleanParam, withDefaultRealm } from "@utils/filter.utils";
 import { StringUtils } from "@utils/string.utils";
@@ -125,16 +126,13 @@ const exactMatchKeys = new Set([
 ]);
 const booleanKeys = new Set(["active", "assigned"]);
 // `serial` is a raw LIKE (SQLite/MySQL fold case, PostgreSQL does not), the tokeninfo
-// keys are a raw equality comparison (only MySQL with a _ci collation folds case).
+// keys and `userid` are a raw comparison (only MySQL with a _ci collation folds case).
 const caseNotes: Record<string, FilterCaseNote> = {
   serial: "usually-insensitive",
+  userid: "usually-sensitive",
+  resolver: "usually-insensitive",
   "infokey & infovalue": "usually-sensitive"
 };
-// TODO: temporary. The backend accepts these keywords but never applies them, because
-// the filter clauses were removed in 78c0cc621 and not restored. Once they either work
-// again or are dropped, remove this set along with the whole "unsupported" mechanism.
-const unsupportedKeys = new Set(["userid", "resolver"]);
-
 function toParamValue(key: string, value: string): string {
   if (booleanKeys.has(key)) {
     return toBooleanParam(value) ?? value;
@@ -343,11 +341,10 @@ export interface TokenServiceInterface extends FilterableTableServiceInterface {
   defaultSizeOptions: number[];
   booleanKeys: Set<string>;
   caseNotes: Record<string, FilterCaseNote>;
-  unsupportedKeys: Set<string>;
   tokenResource: HttpResourceRef<PiResponse<Tokens> | undefined>;
   tokenSerialResource: HttpResourceRef<PiResponse<Tokens> | undefined>;
   tokenResourceValue: Signal<Tokens | null>;
-  tokenSelection: WritableSignal<TokenDetails[]>;
+  tokenSelection: RowSelector<TokenDetails>;
   selectedToken: WritableSignal<string | null>;
   tokenOptions: Signal<string[]>;
   filteredTokenOptions: Signal<string[]>;
@@ -445,7 +442,6 @@ export class TokenService extends FilterableTableService implements TokenService
   override readonly exactMatchKeys = exactMatchKeys;
   readonly booleanKeys = booleanKeys;
   readonly caseNotes = caseNotes;
-  readonly unsupportedKeys = unsupportedKeys;
 
   showOnlyTokenInContainer = linkedSignal({
     source: this.contentService.routeUrl,
@@ -686,6 +682,12 @@ export class TokenService extends FilterableTableService implements TokenService
   readonly defaultSizeOptions = [5, 10, 25, 50];
 
   tokenResource = httpResource<PiResponse<Tokens>>(() => {
+    // Do not load tokens if the action is not allowed. tokenlist only exists in the admin
+    // policy scope, so self-service users must not be gated on it.
+    if (this.authService.role() === "admin" && !this.authService.actionAllowed("tokenlist")) {
+      return undefined;
+    }
+
     // Only load tokens on routes with a token list or selection.
     const onAllowedRoute =
       this.contentService.onTokens() ||
@@ -715,12 +717,9 @@ export class TokenService extends FilterableTableService implements TokenService
     return this.tokenResource.value()?.result?.value || null;
   });
 
-  tokenSelection: WritableSignal<TokenDetails[]> = linkedSignal({
-    source: () => ({
-      routeUrl: this.contentService.routeUrl(),
-      tokenResource: this.tokenResourceValue()
-    }),
-    computation: () => []
+  tokenSelection = new RowSelector<TokenDetails>({
+    keyGetter: (token) => token.serial,
+    visibleRows: loadedRows(this.tokenResource, (response) => response.result?.value?.tokens)
   });
 
   selectedToken = signal<string | null>(null);

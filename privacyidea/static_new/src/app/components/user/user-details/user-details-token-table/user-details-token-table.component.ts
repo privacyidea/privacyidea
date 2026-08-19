@@ -16,8 +16,19 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { NgClass } from "@angular/common";
-import { AfterViewInit, Component, effect, inject, linkedSignal, signal, WritableSignal } from "@angular/core";
+import { NgClass, NgTemplateOutlet } from "@angular/common";
+import {
+  Component,
+  computed,
+  effect,
+  inject,
+  input,
+  linkedSignal,
+  signal,
+  TemplateRef,
+  WritableSignal
+} from "@angular/core";
+import { toSignal } from "@angular/core/rxjs-interop";
 import { MatButton, MatIconButton } from "@angular/material/button";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatIcon } from "@angular/material/icon";
@@ -38,10 +49,13 @@ import {
 } from "@angular/material/table";
 import { MatTooltip } from "@angular/material/tooltip";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
+import { TableStateComponent } from "@components/shared/table-state/table-state.component";
+import { TableState } from "@core/models/table_state/table-state";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContainerDetailToken } from "@services/container/container.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
+import { RowSelector } from "@services/table-utils/row-selector";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { TokenDetails, TokenService, TokenServiceInterface } from "@services/token/token.service";
 import { UserService, UserServiceInterface } from "@services/user/user.service";
@@ -71,13 +85,23 @@ interface BulkActionResult {
     MatTable,
     MatTooltip,
     NgClass,
+    NgTemplateOutlet,
     MatHeaderCellDef,
-    MatNoDataRow
+    MatNoDataRow,
+    TableStateComponent
   ],
   templateUrl: "./user-details-token-table.component.html",
   styleUrl: "./user-details-token-table.component.scss"
 })
-export class UserDetailsTokenTableComponent implements AfterViewInit {
+export class UserDetailsTokenTableComponent {
+  /**
+   * The two ways out of the empty state. They are passed as templates rather than projected content
+   * because this component renders them in a different place depending on the table's state, and a
+   * single ng-content slot can only ever be rendered once.
+   */
+  readonly enrollAction = input<TemplateRef<unknown> | undefined>(undefined);
+  readonly assignAction = input<TemplateRef<unknown> | undefined>(undefined);
+
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
@@ -102,11 +126,6 @@ export class UserDetailsTokenTableComponent implements AfterViewInit {
   dataSource = new MatTableDataSource<ContainerDetailToken>([]);
   sort = signal({ active: "serial", direction: "asc" } as Sort);
   apiFilterKeys = this.tokenService.apiFilterKeys;
-  selection: WritableSignal<ContainerDetailToken[]> = linkedSignal({
-    source: () =>
-      this.tokenService.userTokenResource.hasValue() ? this.tokenService.userTokenResource.value() : undefined,
-    computation: () => []
-  });
   userTokenData: WritableSignal<MatTableDataSource<TokenDetails>> = linkedSignal({
     source: () =>
       this.tokenService.userTokenResource.hasValue() ? this.tokenService.userTokenResource.value() : undefined,
@@ -117,10 +136,44 @@ export class UserDetailsTokenTableComponent implements AfterViewInit {
       return new MatTableDataSource<TokenDetails>(userTokenResource.result?.value?.tokens ?? []);
     }
   });
+  private readonly renderedRows = toSignal(this.dataSource.connect(), {
+    initialValue: [] as ContainerDetailToken[]
+  });
+
+  selector = new RowSelector<ContainerDetailToken>({
+    keyGetter: (row) => row.serial,
+    visibleRows: this.renderedRows
+  });
+
+  readonly tableState = new TableState({
+    resource: this.tokenService.userTokenResource,
+    count: () => this.userTokenData().data.length,
+    allowed: () => this.authService.actionAllowed("tokenlist")
+  });
+
+  /** Both routes out of the empty state are rights-gated, so the hint only offers the ones this admin has. */
+  readonly emptyHint = computed(() => {
+    const canEnroll = this.authService.tokenEnrollmentAllowed();
+    const canAssign = this.authService.actionAllowed("assign");
+    if (canEnroll && canAssign) {
+      return $localize`Enroll a new token for this user, or assign an existing one.`;
+    }
+    if (canEnroll) {
+      return $localize`Enroll a new token for this user.`;
+    }
+    if (canAssign) {
+      return $localize`Assign an existing token to this user.`;
+    }
+    return "";
+  });
 
   constructor() {
     effect(() => {
       if (!this.userTokenData) {
+        return;
+      }
+      if (!this.tokenService.userTokenResource.hasValue()) {
+        this.dataSource.data = [];
         return;
       }
       const base = this.userTokenData().data ?? [];
@@ -136,45 +189,20 @@ export class UserDetailsTokenTableComponent implements AfterViewInit {
     });
   }
 
-  ngAfterViewInit(): void {
-    (this.dataSource as unknown as { _sort: WritableSignal<Sort> })._sort = this.sort;
-  }
-
-  isAllSelected(): boolean {
-    return this.selection().length === this.dataSource.data.length && this.dataSource.data.length > 0;
-  }
-
-  toggleAllRows(): void {
-    if (this.isAllSelected()) {
-      this.selection.set([]);
-    } else {
-      this.selection.set([...this.dataSource.data]);
-    }
-  }
-
-  toggleRow(row: ContainerDetailToken): void {
-    const current = this.selection();
-    if (current.includes(row)) {
-      this.selection.set(current.filter((r) => r !== row));
-    } else {
-      this.selection.set([...current, row]);
-    }
-  }
-
   deleteSelected(): void {
-    const serials = this.selection().map((r) => r.serial);
+    const serials = this.selector.selectedRows().map((r) => r.serial);
     this.tokenService.bulkDeleteWithConfirmDialog(serials, () => this.tokenService.userTokenResource.reload());
   }
 
   unassignSelected(): void {
-    const serials = this.selection().map((r) => r.serial);
+    const serials = this.selector.selectedRows().map((r) => r.serial);
     forkJoin(serials.map((s) => this.runBulkAction(s, this.tokenService.unassignUser(s, false)))).subscribe({
       next: (results) => this.finishBulkAction("unassign", results)
     });
   }
 
   toggleActiveSelected(): void {
-    const rows = this.selection();
+    const rows = this.selector.selectedRows();
     forkJoin(
       rows.map((r) => this.runBulkAction(r.serial, this.tokenService.toggleActive(r.serial, r.active, false)))
     ).subscribe({
@@ -183,7 +211,7 @@ export class UserDetailsTokenTableComponent implements AfterViewInit {
   }
 
   resetFailcountSelected(): void {
-    const serials = this.selection().map((r) => r.serial);
+    const serials = this.selector.selectedRows().map((r) => r.serial);
     forkJoin(serials.map((s) => this.runBulkAction(s, this.tokenService.resetFailCount(s, false)))).subscribe({
       next: (results) => this.finishBulkAction("reset fail count", results)
     });

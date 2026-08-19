@@ -28,6 +28,7 @@ import { DialogService } from "@services/dialog/dialog.service";
 import { ServiceIdService } from "@services/service-id/service-id.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
+import { expectsTableStateGating } from "@testing/table-state-gating";
 import {
   MockAuthService,
   MockDialogService,
@@ -76,20 +77,25 @@ describe("ServiceIdsComponent", () => {
     fixture.detectChanges();
   });
 
+  it("gates the table on its read right, row count and filter", () => {
+    expectsTableStateGating({
+      state: component.tableState,
+      right: "serviceid_list"
+    });
+  });
+
   it("should create", () => {
     expect(component).toBeTruthy();
   });
 
-  it("should toggle row and all-row selection", () => {
-    const row = component.serviceIdDataSource().data[0];
-    component.toggleRow(row);
-    expect(component.isSelected(row)).toBe(true);
-    component.toggleRow(row);
-    expect(component.isSelected(row)).toBe(false);
-    component.toggleAllRows();
-    expect(component.isAllSelected()).toBe(true);
-    component.toggleAllRows();
-    expect(component.selection().length).toBe(0);
+  it("should only select the service IDs left by the filter", async () => {
+    component.onFilterInput("service1");
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    component.selector.selectAllRows();
+
+    expect(component.selector.selectedRows().map((row) => row.servicename)).toEqual(["service1"]);
   });
 
   it("should display service IDs from service", () => {
@@ -117,7 +123,7 @@ describe("ServiceIdsComponent", () => {
 
   it("should delete service ID after confirmation", async () => {
     const serviceId = serviceIdServiceMock.serviceIds()[0];
-    component.selection.set([serviceId]);
+    component.selector.selectRow(serviceId);
     component.deleteSelected();
     expect(dialogServiceMock.openDialog).toHaveBeenCalled();
     confirmClosed.next(true);

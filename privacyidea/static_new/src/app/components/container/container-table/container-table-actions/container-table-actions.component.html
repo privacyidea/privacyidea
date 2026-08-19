@@ -35,7 +35,7 @@
   @if (authService.actionAllowed("container_delete")) {
     <button
       (click)="deleteSelectedContainer()"
-      [disabled]="containerSelection().length === 0"
+      [disabled]="!containerSelection.hasSelection()"
       class="action-button-delete-secondary button-width-m"
       mat-stroked-button>
       <mat-icon> delete_sweep</mat-icon>

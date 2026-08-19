@@ -331,6 +331,23 @@ angular.module('privacyideaApp.configStates', ['ui.router', 'privacyideaApp.vers
                     url: "/edit/",
                     templateUrl: configpath + "config.serviceid.edit.html" + versioningSuffixProviderProvider.$get().$get()
                 })
+                .state('config.clients', {
+                    url: "/clients",
+                    templateUrl: configpath + "config.system.html" + versioningSuffixProviderProvider.$get().$get(),
+                    controller: "clientsController"
+                })
+                .state('config.clients.list', {
+                    url: "/list",
+                    templateUrl: configpath + "config.clients.list.html" + versioningSuffixProviderProvider.$get().$get()
+                })
+                .state('config.clients.add', {
+                    url: "/add/",
+                    templateUrl: configpath + "config.clients.add.html" + versioningSuffixProviderProvider.$get().$get()
+                })
+                .state('config.clients.remembered_devices', {
+                    url: "/remembered_devices/:clientid",
+                    templateUrl: configpath + "config.clients.remembered_devices.html" + versioningSuffixProviderProvider.$get().$get()
+                })
                 .state('config.privacyideaserver', {
                     url: "/privacyideaserver",
                     templateUrl: configpath + "config.system.html" + versioningSuffixProviderProvider.$get().$get(),

@@ -41,6 +41,7 @@ import {
 } from "@testing/mock-services";
 import { of } from "rxjs";
 import { UserDetailsContainerTableComponent } from "./user-details-container-table.component";
+import { expectsTableStateGating } from "@testing/table-state-gating";
 
 describe("UserDetailsContainerTableComponent", () => {
   let fixture: ComponentFixture<UserDetailsContainerTableComponent>;
@@ -74,13 +75,25 @@ describe("UserDetailsContainerTableComponent", () => {
     containerServiceMock = TestBed.inject(ContainerService) as unknown as MockContainerService;
     authServiceMock = TestBed.inject(AuthService) as unknown as MockAuthService;
     userServiceMock = TestBed.inject(UserService) as unknown as MockUserService;
-    (authServiceMock.actionAllowed as jest.Mock).mockReturnValue(true);
+    // Through the rights signal rather than by pinning actionAllowed: a constant answer reads no
+    // signal, so anything computed from it caches its first verdict and never re-evaluates.
+    authServiceMock.authData.set({
+      ...MockAuthService.MOCK_AUTH_DATA,
+      rights: ["container_list", "container_create", "container_delete", "container_unassign_user", "container_state"]
+    });
 
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
 
   afterEach(() => jest.clearAllMocks());
+
+  it("gates the table on its read right, row count and filter", () => {
+    expectsTableStateGating({
+      state: component.tableState,
+      right: "container_list"
+    });
+  });
 
   it("should create", () => {
     expect(component).toBeTruthy();
@@ -90,8 +103,12 @@ describe("UserDetailsContainerTableComponent", () => {
     expect(component.displayedColumns).toEqual(["select", "serial", "type", "states", "description", "realms"]);
   });
 
-  it("wires sort onto the dataSource", () => {
-    expect(component.dataSource.sort).toBe(component.sort);
+  it("leaves the data source's sort unset so it keeps a working change subscription", () => {
+    // MatTableDataSource reads _sort.sortChange/_sort.initialized whenever the table reconnects.
+    // Anything that is not a MatSort there makes that a merge() over undefined, which throws and
+    // leaves the data source unable to render. Ordering is done by this component, not by the
+    // data source, so the seat stays empty.
+    expect(component.dataSource.sort).toBeFalsy();
   });
 
   describe("userContainers signal", () => {
@@ -133,45 +150,31 @@ describe("UserDetailsContainerTableComponent", () => {
     });
   });
 
-  describe("selection signal source", () => {
-    it("falls back to undefined when the resource has no value, still resolving to []", () => {
-      containerServiceMock.userContainersResource.value.set(undefined);
-      expect(component.selection()).toEqual([]);
-    });
-  });
+  const showContainers = (...rows: ContainerDetailData[]) => {
+    component.userContainers.set(rows);
+    fixture.detectChanges();
+    component.selector.deselectAllRows();
+  };
 
   describe("selection", () => {
-    const rows: ContainerDetailData[] = [
-      { serial: "C-1", states: [] } as unknown as ContainerDetailData,
-      { serial: "C-2", states: [] } as unknown as ContainerDetailData
-    ];
+    it("has nothing to select when the resource has no value", () => {
+      containerServiceMock.userContainersResource.value.set(undefined);
+      fixture.detectChanges();
 
-    beforeEach(() => {
-      component.dataSource.data = rows;
+      expect(component.selector.hasVisibleRows()).toBe(false);
+      expect(component.selector.allRowsSelected()).toBe(false);
     });
 
-    it("toggleAllRows selects and deselects every row", () => {
-      component.toggleAllRows();
-      expect(component.selection()).toEqual(rows);
-      expect(component.isAllSelected()).toBe(true);
+    it("scopes the selection to the containers of the user", () => {
+      showContainers(
+        { serial: "C-1", states: [] } as unknown as ContainerDetailData,
+        { serial: "C-2", states: [] } as unknown as ContainerDetailData
+      );
 
-      component.toggleAllRows();
-      expect(component.selection()).toEqual([]);
-      expect(component.isAllSelected()).toBe(false);
-    });
+      component.selector.selectAllRows();
 
-    it("toggleRow adds and removes a single row", () => {
-      component.toggleRow(rows[0]);
-      expect(component.selection()).toEqual([rows[0]]);
-
-      component.toggleRow(rows[0]);
-      expect(component.selection()).toEqual([]);
-    });
-
-    it("isAllSelected is false when the table is empty", () => {
-      component.dataSource.data = [];
-      component.selection.set([]);
-      expect(component.isAllSelected()).toBe(false);
+      expect(component.selector.selectedRows().map((row) => row.serial)).toEqual(["C-1", "C-2"]);
+      expect(component.selector.allRowsSelected()).toBe(true);
     });
   });
 
@@ -188,7 +191,8 @@ describe("UserDetailsContainerTableComponent", () => {
     }
 
     it("deletes every selected container and reloads when confirmed", () => {
-      component.selection.set(selected);
+      showContainers(...selected);
+      component.selector.selectAllRows();
       mockDialogResult(true);
 
       component.deleteSelected();
@@ -199,7 +203,8 @@ describe("UserDetailsContainerTableComponent", () => {
     });
 
     it("does nothing when the confirmation is dismissed", () => {
-      component.selection.set(selected);
+      showContainers(...selected);
+      component.selector.selectAllRows();
       mockDialogResult(false);
 
       component.deleteSelected();
@@ -212,10 +217,11 @@ describe("UserDetailsContainerTableComponent", () => {
   it("unassignSelected unassigns each container for the current user and reloads", () => {
     userServiceMock.detailsUser.set({ username: "alice", realm: "r1" });
     userServiceMock.selectedUserRealm.set("r1");
-    component.selection.set([
+    showContainers(
       { serial: "C-1", states: [] } as unknown as ContainerDetailData,
       { serial: "C-2", states: [] } as unknown as ContainerDetailData
-    ]);
+    );
+    component.selector.selectAllRows();
 
     component.unassignSelected();
 
@@ -225,10 +231,11 @@ describe("UserDetailsContainerTableComponent", () => {
   });
 
   it("toggleActiveSelected toggles each container and reloads", () => {
-    component.selection.set([
+    showContainers(
       { serial: "C-1", states: ["active"] } as unknown as ContainerDetailData,
       { serial: "C-2", states: ["disabled"] } as unknown as ContainerDetailData
-    ]);
+    );
+    component.selector.selectAllRows();
 
     component.toggleActiveSelected();
 

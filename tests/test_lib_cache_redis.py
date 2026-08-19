@@ -58,7 +58,6 @@ from privacyidea.lib.token import create_challenge, init_token, remove_token
 from privacyidea.models import Challenge, db
 from privacyidea.models.utils import utc_now
 
-
 _TEST_REDIS_URL = os.environ.get('TEST_REDIS_URL')
 
 
@@ -199,12 +198,27 @@ class TestChallengeDTO(MyTestCase):
         dto = _make_dto(data='{"key": "value"}')
         self.assertEqual(dto.get_data(), {"key": "value"})
 
-    def test_get_data_plain_string(self):
-        dto = _make_dto(data='plain')
-        self.assertEqual(dto.get_data(), 'plain')
 
     def test_get_data_empty(self):
         dto = _make_dto(data='')
+        self.assertEqual(dto.get_data(), {})
+
+    def test_get_data_invalid_json(self):
+        dto = _make_dto(data='not valid json {{{')
+        self.assertEqual(dto.get_data(), {})
+
+    def test_get_data_non_dict_json(self):
+        """get_data() returns {} when stored data is valid JSON but not a dict."""
+        # A JSON list
+        dto = _make_dto(data='[1, 2, 3]')
+        self.assertEqual(dto.get_data(), {})
+
+        # A JSON integer
+        dto = _make_dto(data='42')
+        self.assertEqual(dto.get_data(), {})
+
+        # A JSON string
+        dto = _make_dto(data='"just a string"')
         self.assertEqual(dto.get_data(), {})
 
     def test_set_otp_status(self):
@@ -219,18 +233,6 @@ class TestChallengeDTO(MyTestCase):
         dto = _make_dto()
         dto.set_data({"mode": "push"})
         self.assertEqual(dto.get_data(), {"mode": "push"})
-
-    def test_set_data_string(self):
-        dto = _make_dto()
-        dto.set_data("raw_string")
-        self.assertEqual(dto.data, "raw_string")
-
-    def test_set_data_other_type(self):
-        # Neither str nor dict -> coerced via convert_column_to_unicode,
-        # mirroring the DB Challenge.set_data (covers the else branch).
-        dto = _make_dto()
-        dto.set_data(12345)
-        self.assertEqual(dto.data, "12345")
 
     def test_set_session(self):
         dto = _make_dto()
@@ -844,7 +846,7 @@ class TestCreateChallengeIntegration(_RealRedisBase):
         banner. Challenges only live in Redis, so count is 0."""
         with redis_in_store(self._real_client):
             create_challenge(self.serial, challenge='p_nofilt', validitytime=120)
-            unfiltered = get_challenges_paginate()       # no serial, no txn_id
+            unfiltered = get_challenges_paginate()  # no serial, no txn_id
             wildcard = get_challenges_paginate(serial='*')  # the pattern the WebUI sends
 
         for result in (unfiltered, wildcard):
@@ -1094,10 +1096,11 @@ class TestChallengeDataEncryption(_RealRedisBase):
         return json.loads(raw)
 
     def test_otp_value_is_not_stored_in_the_clear(self):
+        # The shape the email and SMS tokens store under *.concurrent_challenges.
         otp_value = "987654"
         with redis_in_store(type(self)._real_client):
             cache_challenge(serial="SE_ENC_1", transaction_id="txn-enc-001",
-                            challenge="", data=otp_value, session="",
+                            challenge="", data=json.dumps({"otp": otp_value}), session="",
                             timestamp=utc_now(), expiration=utc_now() + timedelta(seconds=120))
 
             stored = self._raw_payload("txn-enc-001", "SE_ENC_1")
@@ -1111,12 +1114,12 @@ class TestChallengeDataEncryption(_RealRedisBase):
         otp_value = "987654"
         with redis_in_store(type(self)._real_client):
             cache_challenge(serial="SE_ENC_2", transaction_id="txn-enc-002",
-                            challenge="", data=otp_value, session="",
+                            challenge="", data=json.dumps({"otp": otp_value}), session="",
                             timestamp=utc_now(), expiration=utc_now() + timedelta(seconds=120))
 
             challenges = get_challenges_from_cache(transaction_id="txn-enc-002")
             self.assertEqual(1, len(challenges))
-            self.assertEqual(otp_value, challenges[0].data)
+            self.assertEqual({"otp": otp_value}, challenges[0].get_data())
 
     def test_dict_data_is_encrypted_and_round_trips(self):
         """Push code-to-phone stores a dict; get_data() must return it intact."""
@@ -1170,11 +1173,12 @@ class TestChallengeDataEncryption(_RealRedisBase):
         """The full create_challenge() path, not just the cache layer directly."""
         otp_value = "246800"
         with redis_in_store(type(self)._real_client):
-            challenge = create_challenge("SE_ENC_7", data=otp_value)
+            challenge = create_challenge("SE_ENC_7", data={"otp": otp_value})
 
             stored = self._raw_payload(challenge.transaction_id, "SE_ENC_7")
             self.assertNotIn(otp_value, json.dumps(stored))
-            self.assertEqual(otp_value, get_challenges(transaction_id=challenge.transaction_id)[0].data)
+            cached = get_challenges(transaction_id=challenge.transaction_id)[0]
+            self.assertEqual({"otp": otp_value}, cached.get_data())
 
 
 class TestChallengeDataEncryptionUnit(MyTestCase):
@@ -1206,11 +1210,11 @@ class TestChallengeDataEncryptionUnit(MyTestCase):
         self.assertIsNone(_deserialize(self._payload('not-valid-ciphertext')))
 
     def test_payload_round_trips_through_encryption(self):
-        dto = _make_dto(data='424242')
+        dto = _make_dto(data=json.dumps({"otp": "424242"}))
         payload = dto.to_payload()
 
         self.assertNotIn('424242', payload)
-        self.assertEqual('424242', _deserialize(payload).data)
+        self.assertEqual({"otp": "424242"}, _deserialize(payload).get_data())
 
     def test_non_object_payload_is_a_cache_miss(self):
         """
