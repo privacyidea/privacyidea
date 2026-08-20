@@ -25,16 +25,44 @@ The code is tested in tests/test_lib_tokens_ssh
 
 import logging
 
+from privacyidea.config import ConfigKey
 from privacyidea.lib import _
 from privacyidea.lib.error import TokenAdminError
+from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.log import log_with
 from privacyidea.lib.params import get_required
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import SCOPE, GROUP
 from privacyidea.lib.tokenclass import TokenClass, AuthenticationMode
 from privacyidea.lib.tokenrolloutstate import RolloutState
+from privacyidea.lib.utils import to_list
 
 log = logging.getLogger(__name__)
+
+#: SSH key types which are always allowed to be enrolled.
+DEFAULT_ALLOWED_SSH_KEY_TYPES = ["ssh-rsa", "ssh-ed25519", "ecdsa-sha2-nistp256",
+                                 "sk-ecdsa-sha2-nistp256@openssh.com", "sk-ssh-ed25519@openssh.com"]
+
+
+def get_allowed_ssh_key_types() -> list[str]:
+    """
+    Return the list of SSH key types which may be enrolled.
+
+    This is the list of the default key types extended by the key types
+    configured in the config file with ``PI_ALLOWED_SSH_KEY_TYPES``. As the
+    ``pi.cfg`` is a python file, the config value must be a list, e.g.
+    ``PI_ALLOWED_SSH_KEY_TYPES = ["ssh-dss", "ecdsa-sha2-nistp521"]``.
+
+    :return: list of allowed SSH key types
+    """
+    extra_key_types = get_app_config_value(ConfigKey.ALLOWED_SSH_KEY_TYPES, [])
+
+    allowed_key_types = list(DEFAULT_ALLOWED_SSH_KEY_TYPES)
+    for key_type in to_list(extra_key_types):
+        key_type = str(key_type).strip()
+        if key_type and key_type not in allowed_key_types:
+            allowed_key_types.append(key_type)
+    return allowed_key_types
 
 
 ##TODO: We should save a fingerprint of the SSH Key in the encrypted OTP
@@ -121,11 +149,12 @@ class SSHkeyTokenClass(TokenClass):
         get_required(param, "sshkey")
 
         key_elem = param.get("sshkey").split(" ", 2)
-        if key_elem[0] not in ["ssh-rsa", "ssh-ed25519", "ecdsa-sha2-nistp256",
-                               "sk-ecdsa-sha2-nistp256@openssh.com", "sk-ssh-ed25519@openssh.com"]:
+        allowed_key_types = get_allowed_ssh_key_types()
+        if key_elem[0] not in allowed_key_types:
             self.token.rollout_state = RolloutState.BROKEN
             self.token.save()
-            raise TokenAdminError("The keytype you specified is not supported.")
+            raise TokenAdminError(f"The keytype you specified is not supported. "
+                                  f"Allowed key types are: {', '.join(allowed_key_types)}")
 
         if len(key_elem) < 2:
             self.token.rollout_state = RolloutState.BROKEN

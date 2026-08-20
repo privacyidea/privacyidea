@@ -26,3 +26,20 @@ Definitions :ref:`application_ssh`.
    distribute the SSH keys to all machines. You rather store the SSH keys
    centrally in privacyIDEA and use **privacyidea-authorizedkeys** to fetch
    the keys in real time during the login process.
+
+.. _sshkey_allowed_key_types:
+
+Allowed key types
+~~~~~~~~~~~~~~~~~
+
+By default the following SSH key types can be enrolled:
+
+* ``ssh-rsa``
+* ``ssh-ed25519``
+* ``ecdsa-sha2-nistp256``
+* ``sk-ecdsa-sha2-nistp256@openssh.com``
+* ``sk-ssh-ed25519@openssh.com``
+
+Additional key types can be allowed with the configuration entry
+``PI_ALLOWED_SSH_KEY_TYPES`` in ``pi.cfg``, see
+:ref:`picfg_allowed_ssh_key_types`.

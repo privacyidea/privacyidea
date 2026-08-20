@@ -2,10 +2,12 @@
 This test file tests the lib.tokens.sshkeytoken
 This depends on lib.tokenclass
 """
+from privacyidea.config import ConfigKey
 from privacyidea.lib.error import TokenAdminError
 from privacyidea.lib.token import init_token, import_tokens, get_tokens
 from privacyidea.lib.tokenrolloutstate import RolloutState
-from privacyidea.lib.tokens.sshkeytoken import SSHkeyTokenClass
+from privacyidea.lib.tokens.sshkeytoken import (SSHkeyTokenClass, get_allowed_ssh_key_types,
+                                                DEFAULT_ALLOWED_SSH_KEY_TYPES)
 from privacyidea.models import Token
 from .base import MyTestCase
 
@@ -189,3 +191,32 @@ class SSHTokenTestCase(MyTestCase):
 
         # Clean up
         token.delete_token()
+
+    def test_06_allowed_key_types_from_config(self):
+        # Without the config entry only the default key types are allowed
+        self.assertEqual(DEFAULT_ALLOWED_SSH_KEY_TYPES, get_allowed_ssh_key_types())
+
+        # A list adds additional key types and duplicates of the defaults are ignored
+        self.app.config[ConfigKey.ALLOWED_SSH_KEY_TYPES] = ["ssh-rsa", "ssh-something", "ssh-dss"]
+        self.assertEqual(DEFAULT_ALLOWED_SSH_KEY_TYPES + ["ssh-something", "ssh-dss"],
+                         get_allowed_ssh_key_types())
+
+        # ... and the token can now be enrolled with such a key
+        token = init_token({"type": "sshkey", "serial": "SSHKCONF1",
+                            "sshkey": self.unsupported_keytype})
+        self.assertEqual("ssh-something", token.get_tokeninfo("ssh_type"))
+        self.assertEqual(self.unsupported_keytype, token.get_sshkey())
+        token.delete_token()
+
+        # A single string is accepted as well and wrapped into a list
+        self.app.config[ConfigKey.ALLOWED_SSH_KEY_TYPES] = "ssh-something"
+        self.assertEqual(DEFAULT_ALLOWED_SSH_KEY_TYPES + ["ssh-something"],
+                         get_allowed_ssh_key_types())
+
+        # Without the config entry the key type is rejected again
+        del self.app.config[ConfigKey.ALLOWED_SSH_KEY_TYPES]
+        self.assertRaises(TokenAdminError, init_token,
+                          {"type": "sshkey", "serial": "SSHKCONF2",
+                           "sshkey": self.unsupported_keytype})
+        for broken_token in get_tokens(serial="SSHKCONF2"):
+            broken_token.delete_token()
