@@ -5,7 +5,7 @@
 import logging
 import traceback
 from collections.abc import Iterator
-from typing import Any
+from typing import Any, NamedTuple
 
 from flask_sqlalchemy.session import Session
 from sqlalchemy import and_, false, func, or_, select
@@ -28,6 +28,11 @@ from privacyidea.models import (db, Token, Realm, TokenRealm, TokenInfo, TokenOw
 from privacyidea.models.utils import clob_to_varchar
 
 log = logging.getLogger(__name__)
+
+# The number of token IDs that go into one ``IN`` clause when the owners and containers of a page
+# are looked up. Databases cap the number of bind parameters a statement may carry, so a page that
+# is larger than this is looked up in several queries.
+PAGE_QUERY_CHUNK_SIZE = 500
 
 
 @log_with(log)
@@ -367,6 +372,179 @@ def get_tokens_paginated_generator(tokentype: str | None = None, realm: str | No
             break
 
 
+def _chunked(items: list, size: int = PAGE_QUERY_CHUNK_SIZE) -> Iterator[list]:
+    """
+    Split a list of values that go into an ``IN`` clause into chunks a database accepts.
+    """
+    for start in range(0, len(items), size):
+        yield items[start:start + size]
+
+
+def _get_owner_by_token_id(token_ids: list[int]) -> dict[int, TokenOwner]:
+    """
+    Return the owner of each of the given tokens, with one query for the whole page.
+
+    A token can have several owners, in which case the first one is returned, just like
+    ``Token.first_owner`` does for a single token.
+
+    :param token_ids: The database IDs of the tokens
+    :return: dictionary mapping a token ID to its owner. Tokens without an owner are not contained.
+    """
+    owner_by_token_id = {}
+    for chunk in _chunked(token_ids):
+        owners = db.session.scalars(
+            select(TokenOwner).where(TokenOwner.token_id.in_(chunk)).order_by(TokenOwner.id)
+        ).unique().all()
+        for owner in owners:
+            owner_by_token_id.setdefault(owner.token_id, owner)
+    return owner_by_token_id
+
+
+def _get_container_serial_by_token_id(token_ids: list[int]) -> dict[int, str]:
+    """
+    Return the serial of the container each of the given tokens is in, with one query for the whole
+    page.
+
+    The association table allows a token in several containers. The one with the lowest ID is
+    returned in that case, so that the same page does not show a different container every time.
+
+    :param token_ids: The database IDs of the tokens
+    :return: dictionary mapping a token ID to a container serial. Tokens that are in no container
+             are not contained.
+    """
+    container_serial_by_token_id = {}
+    for chunk in _chunked(token_ids):
+        rows = db.session.execute(
+            select(TokenContainerToken.token_id, TokenContainer.serial)
+            .join(TokenContainer, TokenContainer.id == TokenContainerToken.container_id)
+            .where(TokenContainerToken.token_id.in_(chunk))
+            .order_by(TokenContainerToken.container_id)
+        ).all()
+        for token_id, container_serial in rows:
+            container_serial_by_token_id.setdefault(token_id, container_serial)
+    return container_serial_by_token_id
+
+
+class ResolvedOwnerLogins(NamedTuple):
+    """The result of resolving the login names of a page of token owners."""
+    #: login name keyed by (resolver name, user ID)
+    login_by_owner: dict[tuple[str, str], str]
+    #: whether the resolver is editable, keyed by resolver name
+    editable_by_resolver: dict[str, bool]
+    #: (resolver name, user ID) keys whose login name could not be resolved
+    unresolvable_owners: set[tuple[str, str]]
+
+
+def _resolve_owner_logins(owners: list[TokenOwner]) -> ResolvedOwnerLogins:
+    """
+    Resolve the login names of the given token owners with one batch lookup per resolver, instead
+    of one user store lookup per owner.
+
+    An owner whose login name can not be looked up is reported as unresolvable, so that the caller
+    can mark that single token while the rest of the page still renders.
+
+    :param owners: The token owners of the page
+    :return: the resolved logins, editable flags and unresolvable owners of the page
+    """
+    user_ids_by_resolver = {}
+    login_by_owner = {}
+    editable_by_resolver = {}
+    unresolvable_owners = set()
+    for owner in owners:
+        if owner.resolver:
+            user_ids_by_resolver.setdefault(owner.resolver, []).append(owner.user_id)
+        else:
+            # An owner without a resolver is a broken assignment, its login name is not knowable
+            unresolvable_owners.add((owner.resolver, owner.user_id))
+
+    for resolver_name, owned_user_ids in user_ids_by_resolver.items():
+        # Several tokens of one user are the normal case, and a resolver without a batch lookup of
+        # its own pays for every repetition. dict.fromkeys drops the duplicates but keeps the order.
+        user_ids = list(dict.fromkeys(owned_user_ids))
+        resolver = None
+        try:
+            # Building a resolver reads and applies its configuration, which raises on a broken one
+            resolver = get_resolver_object(resolver_name)
+        except Exception as resolver_error:
+            log.error(f"The resolver {resolver_name!r} can not be loaded: {resolver_error!s}")
+            log.debug(traceback.format_exc())
+        if resolver is None:
+            log.error(f"No user information can be retrieved from the resolver {resolver_name!r}!")
+            unresolvable_owners.update((resolver_name, user_id) for user_id in user_ids)
+            continue
+        editable_by_resolver[resolver_name] = resolver.editable
+
+        # In certain cases the LDAP or SQL server might not be reachable. Then an exception is raised
+        try:
+            login_map = resolver.get_usernames_batch(user_ids)
+        except Exception as batch_error:
+            # A failing batch must not cost the whole page. Fall back to looking the users of this
+            # resolver up one by one, so that only the ones that keep failing are marked.
+            log.error(f"User information can not be retrieved in one batch: {batch_error!s}")
+            log.debug(traceback.format_exc())
+            login_map = {}
+            for user_id in user_ids:
+                try:
+                    login_map[user_id] = resolver.getUsername(user_id)
+                except Exception as user_error:
+                    log.error(f"User information can not be retrieved: {user_error!s}")
+                    log.debug(traceback.format_exc())
+                    unresolvable_owners.add((resolver_name, user_id))
+
+        for user_id in user_ids:
+            login_by_owner[(resolver_name, user_id)] = login_map.get(user_id) or ""
+
+    return ResolvedOwnerLogins(login_by_owner, editable_by_resolver, unresolvable_owners)
+
+
+def _build_token_dicts(tokens: list[TokenClass], hidden_token_info: list[str] | None = None) -> list[dict]:
+    """
+    Build the dictionaries the token list is rendered from, including the owner and the container of
+    each token.
+
+    The owners of the page are resolved with one batch lookup per resolver and the containers with
+    one query for the whole page, so that a page costs a constant number of user store round trips
+    instead of one per token.
+
+    :param tokens: A list of token objects
+    :param hidden_token_info: List of token-info keys to remove from the results
+    :return: A list of dictionaries
+    """
+    token_objects = [token for token in tokens if isinstance(token, TokenClass)]
+    token_ids = [token.token.id for token in token_objects]
+    owner_by_token_id = _get_owner_by_token_id(token_ids)
+    login_by_owner, editable_by_resolver, unresolvable_owners = _resolve_owner_logins(
+        list(owner_by_token_id.values()))
+    container_serial_by_token_id = _get_container_serial_by_token_id(token_ids)
+
+    token_dict_list = []
+    for token in token_objects:
+        token_dict = token.get_as_dict()
+        # add user information
+        token_dict["username"] = ""
+        token_dict["user_realm"] = ""
+        owner = owner_by_token_id.get(token.token.id)
+        if owner:
+            owner_key = (owner.resolver, owner.user_id)
+            if owner_key in unresolvable_owners:
+                token_dict["username"] = "**resolver error**"
+            else:
+                token_dict["username"] = login_by_owner.get(owner_key, "")
+                token_dict["user_realm"] = owner.realm.name.lower() if owner.realm else ""
+                token_dict["user_editable"] = editable_by_resolver.get(owner.resolver, False)
+
+        if hidden_token_info:
+            for key in list(token_dict['info']):
+                if key in hidden_token_info:
+                    token_dict['info'].pop(key)
+
+        token_dict["container_serial"] = container_serial_by_token_id.get(token.token.id, "")
+
+        token_dict_list.append(token_dict)
+
+    return token_dict_list
+
+
 def convert_token_objects_to_dicts(tokens: list[TokenClass], user: User | None, user_role: str = "user",
                                    allowed_realms: list[str] | None = None,
                                    hidden_token_info: list[str] | None = None) -> list[dict]:
@@ -388,48 +566,18 @@ def convert_token_objects_to_dicts(tokens: list[TokenClass], user: User | None, 
     :rtype: list
     """
     token_dict_list = []
-    for token in tokens:
-        if isinstance(token, TokenClass):
-            token_dict = token.get_as_dict()
-            # add user information
-            # In certain cases the LDAP or SQL server might not be reachable.
-            # Then an exception is raised
-            token_dict["username"] = ""
-            token_dict["user_realm"] = ""
-            try:
-                token_owner = token.user
-                if token_owner:
-                    token_dict["username"] = token_owner.login
-                    token_dict["user_realm"] = token_owner.realm
-                    token_dict["user_editable"] = get_resolver_object(token_owner.resolver).editable
-            except Exception as exx:
-                log.error(f"User information can not be retrieved: {exx!s}")
-                log.debug(traceback.format_exc())
-                token_dict["username"] = "**resolver error**"
+    for token_dict in _build_token_dicts(tokens, hidden_token_info=hidden_token_info):
+        # Reduce token info if the user is not the owner
+        if user_role != "admin":
+            if not user or user.login != token_dict["username"] or user.realm != token_dict["user_realm"]:
+                token_dict = {"serial": token_dict["serial"]}
+        elif user_role == "admin" and allowed_realms is not None:
+            same_realms = list(set(token_dict["realms"]).intersection(allowed_realms))
+            if len(same_realms) == 0:
+                # The token is in no realm the admin is allowed to see
+                token_dict = {"serial": token_dict["serial"]}
 
-            if hidden_token_info:
-                for key in list(token_dict['info']):
-                    if key in hidden_token_info:
-                        token_dict['info'].pop(key)
-
-            # check if token is in a container
-            token_dict["container_serial"] = ""
-            from privacyidea.lib.container import find_container_for_token
-            container = find_container_for_token(token.get_serial())
-            if container:
-                token_dict["container_serial"] = container.serial
-
-            # Reduce token info if the user is not the owner
-            if user_role != "admin":
-                if not user or user.login != token_dict["username"] or user.realm != token_dict["user_realm"]:
-                    token_dict = {"serial": token_dict["serial"]}
-            elif user_role == "admin" and allowed_realms is not None:
-                same_realms = list(set(token_dict["realms"]).intersection(allowed_realms))
-                if len(same_realms) == 0:
-                    # The token is in no realm the admin is allowed to see
-                    token_dict = {"serial": token_dict["serial"]}
-
-            token_dict_list.append(token_dict)
+        token_dict_list.append(token_dict)
 
     return token_dict_list
 
@@ -646,42 +794,9 @@ def get_tokens_paginate(tokentype: str | None = None, token_type_list: list[str]
     offset = (page - 1) * psize
     tokens = session.scalars(sql_query.limit(psize).offset(offset)).unique().all()
 
-    token_list = []
-    for token in tokens:
-        # TODO first creating the object and then converting it to a dict, probably not efficient
-        token = create_tokenclass_object(token)
-        if isinstance(token, TokenClass):
-            token_dict = token.get_as_dict()
-            # add user information
-            # In certain cases the LDAP or SQL server might not be reachable.
-            # Then an exception is raised
-            token_dict["username"] = ""
-            token_dict["user_realm"] = ""
-            try:
-                user = token.user
-                if user:
-                    token_dict["username"] = user.login
-                    token_dict["user_realm"] = user.realm
-                    token_dict["user_editable"] = get_resolver_object(
-                        user.resolver).editable
-            except Exception as ex:
-                log.error(f"User information can not be retrieved: {ex!r}")
-                log.debug(traceback.format_exc())
-                token_dict["username"] = "**resolver error**"
-
-            if hidden_tokeninfo:
-                for key in list(token_dict['info']):
-                    if key in hidden_tokeninfo:
-                        token_dict['info'].pop(key)
-
-            # check if token is in a container
-            token_dict["container_serial"] = ""
-            from privacyidea.lib.container import find_container_for_token
-            container = find_container_for_token(token.get_serial())
-            if container:
-                token_dict["container_serial"] = container.serial
-
-            token_list.append(token_dict)
+    # TODO first creating the objects and then converting them to dicts, probably not efficient
+    token_objects = [create_tokenclass_object(token) for token in tokens]
+    token_list = _build_token_dicts(token_objects, hidden_token_info=hidden_tokeninfo)
 
     previous_page = page - 1 if page > 1 else None
     next_page = page + 1 if offset + psize < total_count else None
