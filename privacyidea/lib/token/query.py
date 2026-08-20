@@ -387,14 +387,32 @@ def _get_owner_by_token_id(token_ids: list[int]) -> dict[int, TokenOwner]:
     A token can have several owners, in which case the first one is returned, just like
     ``Token.first_owner`` does for a single token.
 
+    A chunk whose page-wide query fails (a transient DB error) falls back to looking its
+    tokens up one by one, so that failure marks only the tokens it actually affects
+    instead of failing the whole page -- mirroring how ``_resolve_owner_logins`` recovers
+    from a failed resolver batch lookup.
+
     :param token_ids: The database IDs of the tokens
-    :return: dictionary mapping a token ID to its owner. Tokens without an owner are not contained.
+    :return: dictionary mapping a token ID to its owner. Tokens without an owner (or whose
+             owner could not be read even one by one) are not contained.
     """
     owner_by_token_id = {}
     for chunk in _chunked(token_ids):
-        owners = db.session.scalars(
-            select(TokenOwner).where(TokenOwner.token_id.in_(chunk)).order_by(TokenOwner.id)
-        ).unique().all()
+        try:
+            owners = db.session.scalars(
+                select(TokenOwner).where(TokenOwner.token_id.in_(chunk)).order_by(TokenOwner.id)
+            ).unique().all()
+        except Exception as chunk_error:
+            log.error(f"Could not read the owners of a page of tokens in one query: {chunk_error!s}")
+            log.debug(traceback.format_exc())
+            owners = []
+            for token_id in chunk:
+                try:
+                    owners.extend(db.session.scalars(
+                        select(TokenOwner).where(TokenOwner.token_id == token_id).order_by(TokenOwner.id)
+                    ).unique().all())
+                except Exception as token_error:
+                    log.error(f"Could not read the owner of token {token_id}: {token_error!s}")
         for owner in owners:
             owner_by_token_id.setdefault(owner.token_id, owner)
     return owner_by_token_id
