@@ -23,7 +23,6 @@ api requests and reduce your traffic this way.
 
 from privacyidea.lib.eventhandler.base import BaseEventHandler
 from privacyidea.lib import _
-from privacyidea.lib.token import get_tokens
 from privacyidea.lib.utils import create_tag_dict, is_true
 import json
 import logging
@@ -157,18 +156,9 @@ class WebHookHandler(BaseEventHandler):
             token_serial = request.all_data.get('serial', '') if request else ""
             tokenowner = self._get_tokenowner(request) if request else None
             logged_in_user = g.logged_in_user if hasattr(g, 'logged_in_user') else {}
-            tokentype = None
-            tokendescription = None
-            if token_serial:
-                tokens = get_tokens(serial=token_serial)
-                if tokens:
-                    tokentype = tokens[0].get_tokentype()
-                    tokendescription = tokens[0].token.description
-            else:
-                token_objects = get_tokens(user=tokenowner) if tokenowner else []
-                token_serial = ','.join([tok.get_serial() for tok in token_objects])
-
             try:
+                token_serial, tokentype, tokendescription = self._get_token_data(token_serial, tokenowner)
+
                 tags = create_tag_dict(logged_in_user=logged_in_user,
                                        request=request,
                                        client_ip=g.client_ip if hasattr(g, 'client_ip') else None,
@@ -195,8 +185,7 @@ class WebHookHandler(BaseEventHandler):
                     def replace_recursive(val):
                         if isinstance(val, dict):
                             return {
-                                k.format(**tags) if isinstance(k, str) else k:
-                                    replace_recursive(v)
+                                k.format(**tags): replace_recursive(v)
                                 for k, v in val.items()
                             }
                         elif isinstance(val, list):
