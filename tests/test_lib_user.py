@@ -639,6 +639,27 @@ class UserTestCase(PristineSqliteFixtures, MyTestCase):
         self.assertEqual(users, [])
         self.assertEqual(failures, [self.resolvername1], failures)
 
+    def test_get_user_list_node_pinned_resolver_recorded_without_resolver_filter(self):
+        # The same pinned-resolver detection must also apply to a realm-only (or
+        # all-realms) query, not only when the caller names the resolver explicitly.
+        other_node = "11111111-2222-3333-4444-555555555555"
+        node = NodeName(id=other_node, name="OtherNode")
+        db.session.add(node)
+        self.addCleanup(db.session.delete, node)
+
+        (added, failed) = set_realm("pinned_realm",
+                                    [{"name": self.resolvername1, "node": other_node}])
+        self.assertEqual(len(failed), 0)
+        self.assertEqual(len(added), 1)
+
+        get_app_config()["PI_NODE_UUID"] = "00000000-0000-0000-0000-000000000000"
+        self.assertEqual([], get_ordered_resolvers("pinned_realm"))
+
+        failures = []
+        users = get_user_list({"realm": "pinned_realm"}, failures=failures)
+        self.assertEqual(users, [])
+        self.assertEqual(failures, [self.resolvername1], failures)
+
     def test_get_user_list_user_object_does_not_narrow_other_realm(self):
         # When both a `user` object (carrying its own resolver) and a separate
         # `realm` param are supplied, the user's resolver must narrow only the
@@ -650,6 +671,19 @@ class UserTestCase(PristineSqliteFixtures, MyTestCase):
         user = User(login="root", realm=self.realm1, resolver=self.resolvername1)
         users = get_user_list({"realm": "double"}, user=user)
         self.assertTrue(any(u.get("realm") == "double" for u in users), users)
+
+    def test_get_user_list_resolver_only_not_narrowed_by_user_object(self):
+        # A resolver-only query passed alongside a `user` object must still be
+        # honoured: the user's own realm/resolver extends the scope, it must not
+        # silently replace the explicitly requested resolver's own realms.
+        self._setup_double_realm()
+        user = User(login="root", realm=self.realm1, resolver=self.resolvername1)
+        users = get_user_list({"resolver": "double1"}, user=user)
+        realms_seen = {u.get("realm") for u in users}
+        self.assertIn("double", realms_seen, users)
+        for entry in users:
+            if entry.get("realm") == "double":
+                self.assertEqual("double1", entry["resolver"], entry)
 
     def test_get_user_list_resolver_recovers_not_marked_skipped(self):
         # A resolver-only query iterates every realm containing the resolver. If

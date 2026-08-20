@@ -908,6 +908,12 @@ def get_user_list(param: dict | None = None, user: User | None = None,
     realm_filters = {}
     for realm in param_realms:
         realm_filters[realm] = param_resolver
+    if not realm_filters and param_resolver:
+        # A resolver was given without an explicit realm: seed its own scope (every
+        # realm containing it) before folding in the user's realm below, so a
+        # user object passed alongside a resolver-only query narrows/extends that
+        # scope instead of silently replacing it with just the user's own realm.
+        realm_filters = {realm: param_resolver for realm in get_realms_of_resolver(param_resolver)}
     if user_realm:
         realm_filters[user_realm] = realm_filters.get(user_realm) or user_resolver
 
@@ -955,18 +961,20 @@ def get_user_list(param: dict | None = None, user: User | None = None,
     succeeded_resolvers = set()
 
     for realm, resolver_filter in realm_filters.items():
-        resolvers = get_ordered_resolvers(realm)
+        realm_config = get_realms(realm)
+        resolvers = get_ordered_resolvers(realm, realm_config=realm_config)
+        # A resolver assigned to this realm but pinned to a different node is filtered
+        # out of get_ordered_resolvers() before we ever see it, whether or not the
+        # caller asked for a specific resolver. Record it here so a plain realm (or
+        # all-realms) query does not silently report incomplete data as complete.
+        if failures is not None:
+            assigned_resolvers = {entry.get("name")
+                                  for entry in realm_config.get(realm, {}).get("resolver", [])}
+            for missing_name in assigned_resolvers - set(resolvers):
+                if missing_name not in failures:
+                    failures.append(missing_name)
         if resolver_filter:
             if resolver_filter not in resolvers:
-                # The resolver is not queryable in this realm: either it is genuinely not
-                # assigned to the realm (an empty result is the expected answer) or it is
-                # assigned but pinned to a different node, in which case it could not be
-                # queried here and is recorded as a skipped resolver.
-                assigned_resolvers = {entry.get("name")
-                                      for entry in get_realms(realm).get(realm, {}).get("resolver", [])}
-                if (resolver_filter in assigned_resolvers and failures is not None
-                        and resolver_filter not in failures):
-                    failures.append(resolver_filter)
                 log.info(f"Resolver {resolver_filter!r} is not queryable in realm {realm!r}, skipping.")
                 continue
             resolvers = [resolver_filter]
