@@ -1,3 +1,135 @@
+Version 3.14dev1
+
+  Features:
+  * API clients can authenticate with an API key in the `X-API-Key` header, which gives an integration a stable,
+    revocable machine identity of its own. On top of that, such a client can be issued a rotating "remember this
+    device" cookie with theft detection, gated by the new `remember_device` policy and revocable per device by an
+    admin (#5636, #5637, #5639, #5640, #5696)
+  * Users and administrators can store their own settings, e.g. the state of the WebUI widgets, via the new user
+    settings API. Rows whose user no longer exists can be cleaned up with `pi-tokenjanitor user-settings` (#4220, #5657)
+  * Challenges can optionally be cached in Redis (`PI_REDIS_URL` and `PI_REDIS_CACHE_CHALLENGES`) to keep the
+    short-lived challenge writes off the database. The challenge data is now always an encrypted JSON dict, hence the
+    migration clears the challenge table (#5532, #5620)
+  * The dashboard shows which plugins and client applications talk to this server and whether they are covered by a
+    subscription, with links to the documentation and the products (#4057, #5383)
+
+  Enhancements:
+  * Added a new policy scope "hardening". The action `hide_version` removes the version number from responses to
+    unauthenticated requests and `hide_auth_error_status` returns a uniform 401 for failed authentications, so the
+    status code no longer reveals the reason (#5390, #5630)
+  * Sensitive configuration values are no longer returned by the API. CA connectors, machine resolvers, RADIUS servers,
+    SMS gateways and SMTP servers return the placeholder `__CENSORED__`, which can be sent back unchanged to keep the
+    stored value (#5431)
+  * SMTP and SMS servers now declare which of their fields are secrets, so that headers and options containing
+    credentials are stored encrypted in the database as well (#5462, #5463)
+  * New health endpoints report the remaining validity of the privacyIDEA server certificate and of the certificates
+    used by LDAP, Keycloak and EntraID resolvers, as well as resolver timings and notification delivery, which feed the
+    new dashboard panels (#5266, #4202)
+  * The server records some internal metrics, e.g. how long a resolver takes to answer or whether a notification was
+    delivered, in a new pre-aggregated table. Schedule the new "MetricsCleanup" task to keep it small, or disable the
+    recording completely with `PI_NO_INTERNAL_METRICS` in `pi.cfg` (#5270)
+  * Event handler conditions can now check the userinfo of the user, like the additional conditions of a
+    policy (#5023, #4201)
+  * Event handlers can be renamed (#5591)
+  * `GET /token/` accepts a comma-separated list of realms, so the tokens of a user in several realms can be fetched
+    with a single request (#4845)
+  * `GET /container/` accepts a list of container types as filter, e.g. to list all containers a given token could be
+    added to (#5378)
+  * The name a passkey shows in the credential selection can be configured with a policy and may contain tags like
+    `{user}@{realm}`, which helps to tell passkeys of the same login name in different realms apart (#5557)
+  * The new `passthru_ignore_rollout_state` action excludes tokens in a given rollout state, e.g. `verify`, from
+    passthru authentication (#5133)
+  * Every token now has a rollout state: tokens that completed the enrollment have the state `enrolled` instead of an
+    empty value. A migration script updates the existing tokens (#5070)
+  * Internal user information like the FIDO2 user id or the last used token type is no longer written to the custom
+    user attributes but to a new internal table, and reading it requires the new `get_user_internal_attributes`
+    right (#5095)
+  * The push token can send a decline reason, so that "it was not me" and "it was me, cancel anyway" become
+    distinguishable. The server advertises the signed capabilities of a challenge, hence older apps keep working
+    unchanged (#5562, #5583)
+  * `pi-manage db upgrade` and `downgrade` report the revisions they migrated between. The help now also explains how
+    to pass a relative revision, e.g. `pi-manage db downgrade -- -1` to undo a single revision (#5284)
+  * `pi-manage config import` returns a non-zero exit code on failure, continues after an object that can not be
+    imported and reports the result at the end. Configurations from older versions containing actions that no longer
+    exist can be imported with `--skip-invalid` (#5516)
+  * Removed the `/validate/samlcheck` endpoint, which was deprecated in 3.11. Use `/validate/check` with the
+    authorization policies `add_user_in_response` and `add_resolver_in_response` instead (#5414)
+  * Removed the u2f token type. Existing tokens are set to the type `deprecated` and disabled by the migration and can
+    be removed with `pi-tokenjanitor deprecated delete u2f`.
+  * Cancelling an active challenge requires the new admin action `cancelchallenge` instead of the read-only
+    `getchallenges` right. The challenges of a user can be listed with the new `GET /token/challenges/user`, and the
+    challenge listings no longer contain the `id` field, use the `transaction_id` instead.
+  * Database connections are validated before they are used, so a request no longer fails because of an idle timeout or
+    a restarted database. It can be switched off with `SQLALCHEMY_ENGINE_OPTIONS = {"pool_pre_ping": False}` (#5757)
+  * `pi-manage` uses the tarfile package of Python instead of calling the `tar` command (#3815)
+  * The CA connector types are registered explicitly instead of being discovered via subclasses, which made saving a
+    connector fail after the imports were reordered (#4881)
+  * Replaced the remaining usages of PyOpenSSL with the cryptography package (#1991)
+  * `GET /user/` accepts the parameter `include_custom_attributes`, so a user list can be fetched without looking up
+    the custom attributes of every user (#5185)
+  * Updated the pinned dependencies for the backend.
+
+  Fixes:
+  * Realms can be deleted again when a custom user attribute was set for one of their users (#5094)
+  * Editing an inactive policy no longer activates it, because the `active` parameter is now honoured (#5411)
+  * A realm administrator with the `userlist` right sees the users of all realms granted to them, instead of only the
+    first realm of the first matching policy (#5421)
+  * `GET /user/` no longer returns a single user per realm when the requested `attributes` do not contain the
+    username (#5482)
+  * The user notification handler no longer mails every user of every realm when it is configured to notify an admin
+    realm but no realm is selected (#5481)
+  * Search filters escape `_` and `%`, so `*` is the only wildcard and a serial like `OATH_01` matches literally (#5561)
+  * The `resolver` and `userid` filters of `GET /token/` are applied now. Both parameters were accepted and documented
+    before, but they never became a condition of the query, so all tokens were returned (#5689, #5624)
+  * `GET /container/` filters by the realm of the assigned user when `realm` is given without `user`, instead of
+    returning an empty list (#5684)
+  * Resolvers with the same priority in a realm are sorted alphabetically by name, so that the order of the users of a
+    realm no longer depends on the database (#5063)
+  * Clarified the documentation of the `resolver` parameter of the user endpoints, which filters additively together
+    with the realm instead of narrowing it down (#5255)
+  * The `force_..._server_generate` policies are only enforced if such a policy is actually defined. Previously the
+    server generation was enforced as soon as no admin or user policies existed at all (#5570)
+  * The machine resolver returns the hostname always as a list and no longer fails to fetch all machines because of a
+    single LDAP entry without a hostname or with a malformed IP (#5584)
+  * `get_tokens` no longer returns an empty list when a specific realm is combined with the allowed realms of a realm
+    administrator (#5525)
+  * Importing tokens no longer deletes an already existing token if the import of that entry fails, and entries without
+    a serial or type are reported as failed instead of raising (#5526)
+  * `assign_tokengroup` and `unassign_tokengroup` no longer report a missing parameter or a database error as
+    "tokengroup does not exist" (#5527)
+  * Fixed several minor issues in the token library, e.g. `check_user_pass` raising when it is called without
+    options (#5528)
+  * The total count of the token list is de-duplicated, so it can not diverge from the returned tokens and point to an
+    empty next page (#5623)
+  * A push challenge that is answered on the phone can be completed even if it expired between the answer and the
+    request that finalizes the authentication (#5423)
+  * PIN policies are enforced again when a request carries no user, e.g. when the PIN of a token is set by
+    serial (#5536)
+  * Made the migration scripts idempotent, so that a schema update can be repeated after it was interrupted (#5367)
+  * Challenges of a `push_wait` authentication are deleted when the request is done. Their transaction id is never
+    returned to the client, hence they could not be answered anymore anyway (#5491)
+  * The step that triggers a challenge during a WebUI login is no longer counted as a failed authentication towards
+    `auth_max_fail`, which could lock out a user during a normal login (#5628)
+  * Enrolling a smartphone container from a template via `/validate/check` no longer fails with an error 500 because
+    the policies of the request were not initialized (#5651)
+  * `POST /container/register/finalize` and setting the realms of a container write a proper success value to the audit
+    log (#5652, #5664)
+  * Policies with a User Agent condition are no longer missing from `pi-manage config export` and from the
+    configuration report. Note that a scope whose policies all carry a User Agent condition is no longer treated as
+    empty, please read the update notes (#5683)
+  * A failing event handler no longer turns a successful request into an error: the failure is audited and the
+    remaining handlers still run. The new `abort_on_error` option restores the old behaviour per handler (#5686)
+  * The HTTP resolver handles special characters in credentials and identifiers correctly, so that a password
+    containing `*` or a user principal name containing `#` no longer breaks the resolver (#5701)
+  * Corrected the redaction configuration of the `log_with` decorator, which hid all arguments of `init_token` and of
+    the RADIUS token instead of only the secret ones (#5524)
+  * A censored configuration export censors the option and header values of an SMS gateway by their stored encryption
+    state instead of guessing from the key name, and importing a RADIUS server from an older version no longer raises
+  * Logging an exception object instead of a message no longer raises inside the log handler
+  * `pi-tokenjanitor findcontainer delete_info` reports only the container infos it actually deleted
+  * Corrected the documentation of the "Clear failcounter after minutes" setting: any authentication attempt clears the
+    fail counter, not only a successful one (#5515)
+
 Version 3.13.3
 
   Fixes:

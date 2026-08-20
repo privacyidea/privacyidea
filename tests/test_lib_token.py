@@ -214,6 +214,55 @@ class TokenTestCase(MyTestCase):
         tokenobject_list = get_tokens(serial_wildcard="*")
         self.assertEqual(4, len(tokenobject_list))
 
+    def test_02c_get_tokens_resolver_and_userid_filter(self):
+        # The resolver and the userid are filters of their own, independent of a user object
+        init_token({"type": "spass", "serial": "RESO01"},
+                   user=User(login="cornelius", realm=self.realm1, resolver=self.resolvername1))
+        init_token({"type": "spass", "serial": "RESO02"})
+
+        serials = [token.token.serial for token in get_tokens(resolver=self.resolvername1)]
+        self.assertIn("RESO01", serials)
+        self.assertNotIn("RESO02", serials)
+
+        # The resolver name is matched case-insensitively and honors '*' as wildcard
+        serials = [token.token.serial for token in get_tokens(resolver=self.resolvername1.upper())]
+        self.assertIn("RESO01", serials)
+        serials = [token.token.serial for token in get_tokens(resolver="resol*")]
+        self.assertIn("RESO01", serials)
+        self.assertNotIn("RESO02", serials)
+
+        # A resolver that does not exist matches nothing
+        self.assertListEqual([], get_tokens(resolver="no_such_resolver"))
+
+        # The same for the user id of the token owner, in both entry points
+        serials = [token.token.serial for token in get_tokens(userid="1000")]
+        self.assertIn("RESO01", serials)
+        self.assertNotIn("RESO02", serials)
+        self.assertListEqual([], get_tokens(userid="999999"))
+
+        serials = [token["serial"] for token in get_tokens_paginate(userid="1000")["tokens"]]
+        self.assertIn("RESO01", serials)
+        self.assertNotIn("RESO02", serials)
+        self.assertListEqual([], get_tokens_paginate(userid="999999")["tokens"])
+
+        # The user id honors '*' as wildcard
+        serials = [token.token.serial for token in get_tokens(userid="100*")]
+        self.assertIn("RESO01", serials)
+        self.assertNotIn("RESO02", serials)
+
+        # A user object carrying only a realm returns the tokens of all users of that realm
+        serials = [token.token.serial for token in get_tokens(user=User(realm=self.realm1))]
+        self.assertIn("RESO01", serials)
+        self.assertNotIn("RESO02", serials)
+
+        # A realm that does not exist matches nothing, while an unresolvable login is an error
+        self.assertListEqual([], get_tokens(user=User(realm="no_such_realm")))
+        self.assertRaises(UserError, get_tokens,
+                          user=User(login="no_such_user", realm=self.realm1))
+
+        remove_token("RESO01")
+        remove_token("RESO02")
+
     def test_02a_get_tokens_like_wildcard_escaping(self):
         # SQL LIKE metacharacters (_ and %) in filter values must be matched
         # literally; only the '*' wildcard should expand.
@@ -284,8 +333,20 @@ class TokenTestCase(MyTestCase):
         self.assertEqual(0, get_num_tokens_in_realm(self.realm1, active=False))
 
     def test_05_get_token_in_resolver(self):
-        tokenobject_list = get_tokens_in_resolver(self.resolvername1)
-        self.assertGreater(len(tokenobject_list), 0)
+        # Only the tokens whose owner is in the given resolver are returned
+        init_token({"type": "spass", "serial": "INRES01"},
+                   user=User(login="cornelius", realm=self.realm1, resolver=self.resolvername1))
+        init_token({"type": "spass", "serial": "INRES02"})
+
+        serials = [token_obj.token.serial for token_obj in get_tokens_in_resolver(self.resolvername1)]
+        self.assertIn("INRES01", serials)
+        self.assertNotIn("INRES02", serials)
+
+        # A resolver that owns no token matches nothing
+        self.assertListEqual([], get_tokens_in_resolver("no_such_resolver"))
+
+        remove_token("INRES01")
+        remove_token("INRES02")
 
     def test_06_get_realms_of_token(self):
         # Return a list of realmnames for a token
@@ -506,6 +567,20 @@ class TokenTestCase(MyTestCase):
         stmt = select(TokenRealm).filter_by(token_id=token_id)
         token_realm_db = db.session.execute(stmt).one_or_none()
         self.assertIsNone(token_realm_db)
+
+    def test_16a_set_realms_with_no_allowed_realm(self):
+        # An empty list of allowed realms is an admin allowed no realm at all, which is not the
+        # same as None ("every realm"): no realm is set and the existing ones are kept.
+        self.setUp_user_realm2()
+        serial = "NOALLOWEDREALM01"
+        init_token({"serial": serial, "otpkey": self.otpkey})
+        set_realms(serial, [self.realm1])
+        self.assertEqual([self.realm1], get_realms_of_token(serial))
+
+        set_realms(serial, [self.realm2], allowed_realms=[])
+
+        self.assertEqual([self.realm1], get_realms_of_token(serial))
+        remove_token(serial=serial)
 
     def test_17_set_defaults(self):
         serial = "SETTOKEN"

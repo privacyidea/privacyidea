@@ -42,6 +42,7 @@ import { ClearableInputComponent } from "@components/shared/clearable-input/clea
 import { FilterAutocompleteDirective } from "@components/shared/directives/filter-autocomplete.directive";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
+import { TableStateComponent } from "@components/shared/table-state/table-state.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { LocalDateTimePipe } from "@components/shared/pipes/local-date-time.pipe";
 import { AuditComponent } from "./audit.component";
@@ -75,7 +76,8 @@ import { AuditComponent } from "./audit.component";
     ScrollToTopDirective,
     ClearableInputComponent,
     ScrollEdgesDirective,
-    LocalDateTimePipe
+    LocalDateTimePipe,
+    TableStateComponent
   ],
   templateUrl: "./audit.self-service.component.html",
   styleUrl: "./audit.component.scss"

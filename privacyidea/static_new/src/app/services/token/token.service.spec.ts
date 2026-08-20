@@ -79,6 +79,8 @@ describe("TokenService", () => {
     postSpy = jest.spyOn(http, "post");
     deleteSpy = jest.spyOn(http, "delete");
     authService = TestBed.inject(AuthService) as unknown as MockAuthService;
+    // tokenResource only issues a request when the admin may list tokens.
+    authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["tokenlist"] });
     notificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;
     getSpy = jest.spyOn(http, "get");
 
@@ -1368,6 +1370,8 @@ describe("TokenService", () => {
     it("marks the keywords whose case behaviour deviates", () => {
       expect(tokenService.caseNotes).toEqual({
         serial: "usually-insensitive",
+        userid: "usually-sensitive",
+        resolver: "usually-insensitive",
         "infokey & infovalue": "usually-sensitive"
       });
     });

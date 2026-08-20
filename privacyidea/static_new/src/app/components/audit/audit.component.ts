@@ -50,6 +50,8 @@ import { CopyableComponent } from "@components/shared/copyable/copyable.componen
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { FilterAutocompleteDirective } from "@components/shared/directives/filter-autocomplete.directive";
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
+import { TableStateComponent } from "@components/shared/table-state/table-state.component";
+import { TableState } from "@core/models/table_state/table-state";
 import { LocalDateTimePipe } from "@components/shared/pipes/local-date-time.pipe";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { inlineFilterHint } from "@utils/filter-hint.utils";
@@ -147,7 +149,8 @@ const columnKeysMap = [
     MatIconModule,
     MatTooltipModule,
     ScrollEdgesDirective,
-    LocalDateTimePipe
+    LocalDateTimePipe,
+    TableStateComponent
   ],
   templateUrl: "./audit.component.html",
   styleUrl: "./audit.component.scss"
@@ -172,19 +175,21 @@ export class AuditComponent {
       return auditResource?.result?.value?.count ?? previous?.value ?? 0;
     }
   });
-  emptyResource: WritableSignal<AuditData[]> = linkedSignal({
-    source: this.auditService.pageSize,
-    computation: (pageSize: number) =>
-      Array.from({ length: pageSize }, () => Object.fromEntries(this.columnKeysMap.map((col) => [col.key, ""])))
-  });
   auditDataSource: WritableSignal<MatTableDataSource<AuditData>> = linkedSignal({
     source: () => (this.auditService.auditResource.hasValue() ? this.auditService.auditResource.value() : undefined),
-    computation: (auditResource, previous) => {
+    computation: (auditResource) => {
       if (auditResource) {
         return new MatTableDataSource(auditResource.result?.value?.auditdata);
       }
-      return previous?.value ?? new MatTableDataSource(this.emptyResource());
+      return new MatTableDataSource<AuditData>([]);
     }
+  });
+  readonly tableState = new TableState({
+    resource: this.auditService.auditResource,
+    count: () => this.totalLength(),
+    filterActive: () => !this.auditService.activeFilter().isEmpty,
+    allowed: () => this.authService.actionAllowed("auditlog"),
+    resetFilter: () => this.auditService.clearFilter()
   });
   basePageSizeOptions = [...this.tableUtilsService.pageSizeOptions()];
   pageSizeOptions = computed(() => {
