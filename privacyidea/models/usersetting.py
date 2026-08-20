@@ -15,6 +15,7 @@
 #
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+import hashlib
 import logging
 from datetime import datetime
 from typing import Any
@@ -34,6 +35,29 @@ from privacyidea.models import db
 from privacyidea.models.utils import MethodsMixin, utc_now
 
 log = logging.getLogger(__name__)
+
+
+def _compute_subject_hash(subject_type: str, username: str | None, user_id: str | None,
+                          resolver: str | None, realm_id: int | None) -> str:
+    """SHA-256 hex digest identifying a principal, for ``uq_usersetting_subject``.
+
+    A raw composite UNIQUE constraint over the five identity columns is 3124
+    bytes wide under utf8mb4 (username/user_id alone are Unicode(320) each) --
+    over MySQL's 3072-byte index-key limit, and MySQL rejects the CREATE TABLE
+    outright. Hashing the tuple keeps the constraint at a fixed 64 bytes
+    regardless of column widths. It also, as a side effect, makes the
+    constraint fire for local admins (realm_id NULL) too: NULL is only
+    "distinct from itself" in SQL when it appears as a raw column value, not
+    once folded into this hash.
+    """
+    identity = "\x1f".join([
+        subject_type or "",
+        username or "",
+        user_id or "",
+        resolver or "",
+        str(realm_id) if realm_id is not None else "",
+    ])
+    return hashlib.sha256(identity.encode("utf-8")).hexdigest()
 
 
 class UserSetting(MethodsMixin, db.Model):
@@ -65,15 +89,14 @@ class UserSetting(MethodsMixin, db.Model):
     __table_args__ = (
         # One settings document per principal. For local admins only username is
         # set; for users the (user_id, resolver, realm_id) tuple identifies the
-        # row. Uniqueness for local admins (realm_id NULL) is additionally
-        # guaranteed by the get-or-create logic in lib.usersetting, since SQL
-        # treats NULLs in a unique key as distinct.
-        UniqueConstraint('subject_type', 'username', 'user_id', 'resolver', 'realm_id',
-                         name='uq_usersetting_subject'),
-        # The local-admin lookup (subject_type, username) uses the unique key's
-        # leading prefix, but the resolver-user lookup keys on
-        # (user_id, resolver, realm_id) -- which is not a prefix of the unique
-        # key -- so it gets its own index to stay seekable as the table grows.
+        # row. The constraint is on subject_hash rather than the raw columns --
+        # see _compute_subject_hash for why.
+        UniqueConstraint('subject_hash', name='uq_usersetting_subject'),
+        # subject_hash makes the local-admin lookup (subject_type, username) no
+        # longer a prefix of the unique key, so it gets its own index -- mirrors
+        # ix_usersetting_user below, which does the same for the resolver-user
+        # lookup on (user_id, resolver, realm_id).
+        db.Index('ix_usersetting_subject_type_username', 'subject_type', 'username'),
         db.Index('ix_usersetting_user', 'user_id', 'resolver', 'realm_id'),
     )
 
@@ -83,6 +106,10 @@ class UserSetting(MethodsMixin, db.Model):
     user_id: Mapped[str | None] = mapped_column(Unicode(320), default='')
     resolver: Mapped[str | None] = mapped_column(Unicode(120), default='')
     realm_id: Mapped[int | None] = mapped_column(Integer, ForeignKey('realm.id', ondelete='CASCADE'))
+    # SHA-256 hex digest of the five columns above, computed in __init__. See
+    # _compute_subject_hash for why the unique constraint is on this instead
+    # of the raw columns.
+    subject_hash: Mapped[str] = mapped_column(Unicode(64), nullable=False)
     settings: Mapped[Any | None] = mapped_column(JSON, nullable=True)
     last_modified: Mapped[datetime | None] = mapped_column(
         DateTime,
@@ -98,5 +125,6 @@ class UserSetting(MethodsMixin, db.Model):
         self.user_id = user_id
         self.resolver = resolver
         self.realm_id = realm_id
+        self.subject_hash = _compute_subject_hash(subject_type, username, user_id, resolver, realm_id)
         self.settings = settings
         self.node = node
