@@ -119,6 +119,12 @@ class postpolicy:
         :param request: The original request object, that needs to be passed
         :type request: Request Object
         """
+        if request is None:
+            # A missing request is not a usable default: policy functions
+            # match on request.User, so a silently-None request disables
+            # every user/realm-scoped condition of the wrapped policy
+            # function instead of raising.
+            raise ValueError(f"postpolicy({function.__name__}, ...) requires request= to be passed explicitly.")
         self.request = request
         self.function = function
 
