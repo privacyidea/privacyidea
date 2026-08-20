@@ -253,8 +253,9 @@ class LockoutTemplateBehaviourTestCase(LockoutTestCase):
             self.assertFalse(status.permanent, "lock is permanent, expected timed")
             self.assertEqual(1800, status.seconds_remaining, "wrong lock duration")
             self.assertIn("soc@example.com", smtpmock.get_sent_recipient(), "admin not emailed")
-            self.assertListEqual(["Your administrator has been notified by email."], evaluation.notices,
-                                 "wrong login notice")
+            # The shipped templates carry no error_message, so nothing is surfaced: the email goes out
+            # and the user is told only that authentication failed.
+            self.assertListEqual([], evaluation.messages, "a shipped template should stay silent")
         finally:
             Admin.query.filter_by(username="ca_soc").delete()
             db.session.commit()
@@ -290,7 +291,7 @@ class LockoutTemplateBehaviourTestCase(LockoutTestCase):
         evaluation = evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL, now=now)
         self.assertEqual(1800, get_user_lockout(self.user, now=now).seconds_remaining,
                          "lock did not fire without SMTP configured")
-        self.assertListEqual([], evaluation.notices, "unexpected login notice")
+        self.assertListEqual([], evaluation.messages, "a shipped template should stay silent")
 
     # --- per-user rate limit (all attempts, DENY) -----------------------------
 

@@ -28,7 +28,7 @@ session it writes on.
 import logging
 import secrets
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, TYPE_CHECKING
 
 from flask import has_request_context
 
@@ -41,6 +41,11 @@ from privacyidea.lib.conditional_access.outcome_log import record_outcomes
 from privacyidea.lib.framework import get_request_local_store
 from privacyidea.lib.user import User
 from privacyidea.models import ConditionalAccessOutcome
+
+if TYPE_CHECKING:
+    # Only for the annotation below: importing the engine at module level would risk an import-order cycle
+    # during app startup, which is why run_post_eval imports it inside the function instead.
+    from privacyidea.lib.conditional_access.engine import StageMessage
 
 log = logging.getLogger(__name__)
 
@@ -304,10 +309,11 @@ class ConditionalAccessContext:
         for name, value in fields.items():
             setattr(event, name, value)
 
-    def run_post_eval(self) -> list[str]:
+    def run_post_eval(self) -> list["StageMessage"]:
         """
-        Let the conditional-access engine react to what this request logged, and return the user-facing notices its
-        actions produced.
+        Let the conditional-access engine react to what this request logged, and return the user-facing messages the
+        stages it triggered carry, ordered most severe first (see
+        :class:`~privacyidea.lib.conditional_access.engine.StageMessage`).
 
         Nothing has to be scheduled: staging an authentication event *is* the signal, and everything the engine needs
         is already recorded - the classification comes from the latest staged event, the principal and source IP from
@@ -319,7 +325,7 @@ class ConditionalAccessContext:
         (``push_wait``: the challenge trigger, then the terminal outcome) the earlier ones are still counted - counts
         are taken over the stored rows - they just do not each provoke their own evaluation.
 
-        Runs **once per distinct classification**, not merely once: an endpoint that needs the notices in its own
+        Runs **once per distinct classification**, not merely once: an endpoint that needs the messages in its own
         response can run it early (``/auth`` does) and request teardown will not repeat the same evaluation. Should a
         post-policy correct the outcome in between, however, teardown *does* evaluate again - otherwise the engine
         would be left having judged a classification that no longer holds. A classification counts as evaluated only
@@ -374,7 +380,7 @@ class ConditionalAccessContext:
         # the retry rather than a skipped second attempt.
         self._evaluated_as = event.event_type
         record_outcomes(evaluation.outcomes, event.row_id)
-        return evaluation.notices
+        return evaluation.messages
 
     def finalize(self) -> None:
         """

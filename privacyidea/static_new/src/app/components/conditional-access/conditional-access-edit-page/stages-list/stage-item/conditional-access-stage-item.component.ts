@@ -17,26 +17,53 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, input, output, signal } from "@angular/core";
+import { Component, computed, inject, input, output, signal } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
+import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
+import { MatTooltipModule } from "@angular/material/tooltip";
+import { InfoHintComponent } from "@components/shared/info-hint/info-hint.component";
 import {
+  ConditionalAccessPolicyService,
+  ConditionalAccessPolicyServiceInterface,
   LockoutPolicyStage,
   LockoutStageAction,
   LockoutTarget
 } from "@services/conditional-access/conditional-access-policy.service";
 import { ConditionalAccessActionsListComponent } from "./actions-list/conditional-access-actions-list.component";
 
+// The one tag the server substitutes into a stage's error message.
+const DURATION_TAG = "{duration}";
+
+// Mirrors MAX_STAGE_ERROR_MESSAGE_LENGTH in privacyidea.lib.conditional_access.lockout_policy
+// (Unicode(500) in the model). Enforced here too so the field cannot be overrun into a 400.
+const MAX_ERROR_MESSAGE_LENGTH = 500;
+
+// Anything shaped like a tag, so a typo ("{durations}") can be pointed out. Deliberately does
+// not match "{}" or an empty brace pair: only a named placeholder could have been meant as a tag.
+const TAG_PATTERN = /\{[A-Za-z_][A-Za-z0-9_]*\}/g;
+
 @Component({
   selector: "app-conditional-access-stage-item",
   standalone: true,
-  imports: [MatButtonModule, MatFormFieldModule, MatIconModule, MatInputModule, ConditionalAccessActionsListComponent],
+  imports: [
+    MatButtonModule,
+    MatCheckboxModule,
+    MatFormFieldModule,
+    MatIconModule,
+    MatInputModule,
+    MatTooltipModule,
+    ConditionalAccessActionsListComponent,
+    InfoHintComponent
+  ],
   templateUrl: "./conditional-access-stage-item.component.html",
   styleUrl: "./conditional-access-stage-item.component.scss"
 })
 export class ConditionalAccessStageItemComponent {
+  private readonly policyService: ConditionalAccessPolicyServiceInterface = inject(ConditionalAccessPolicyService);
+
   readonly stage = input.required<LockoutPolicyStage>();
   // 1-based trigger order (lowest threshold = Stage 1), shown as "Stage N".
   readonly stageNumber = input.required<number>();
@@ -49,6 +76,70 @@ export class ConditionalAccessStageItemComponent {
   // A saved stage (with an id) shows its name as text plus an edit button; an
   // unsaved stage has no id and stays in the name input until the policy is saved.
   readonly editingName = signal(false);
+
+  readonly durationTag = DURATION_TAG;
+  readonly maxErrorMessageLength = MAX_ERROR_MESSAGE_LENGTH;
+
+  // One string for the reset button's tooltip and its accessible name: a sighted user hovering and a
+  // screen-reader user tabbing must be told the same thing, and two literals would drift apart.
+  readonly resetErrorMessageLabel = $localize`Replace with the suggested wording for this stage's actions`;
+
+  readonly durationTagUnusableHint = $localize`{duration} needs a temporary lock or block to count down. This stage \
+has none, so it would be shown to the user as written - remove the tag, or add a temporary action.`;
+
+  readonly errorMessageHint = $localize`Shown to the user when authentication fails while this stage applies, \
+including on later attempts while a lock or block from it is still in force. It applies to this stage only. Left \
+empty, the standard error response is sent, so a rejection cannot be told apart from any other failed authentication.`;
+
+  // Whether this stage carries a message at all: absent or null means the admin has not turned it on, an
+  // empty string means turned on but not written yet. Read off the stage rather than kept in a signal here,
+  // because the stages list tracks by $index and reuses this component for a different stage when one is
+  // removed - local state would outlive the stage it belongs to and describe the next one.
+  readonly showErrorMessage = computed(
+    () => this.stage().error_message !== null && this.stage().error_message !== undefined
+  );
+
+  readonly errorMessageLength = computed(() => (this.stage().error_message ?? "").length);
+
+  // The suggestion for this stage as it stands, composed the way the runtime actually reports: one
+  // restriction (the first the stage carries - the server orders them most severe first, and only one
+  // restriction is ever shown) followed by every notification it also triggers, since being emailed
+  // about is a separate fact from being locked out. Null when the stage carries neither, e.g. an
+  // allow-only stage, which has nothing to tell the user.
+  readonly suggestedErrorMessage = computed(() => {
+    const present = new Set(this.stage().actions.map((action) => action.action_type));
+    const offered = this.policyService.defaultErrorMessages().filter((entry) => present.has(entry.action_type));
+    const restriction = offered.find((entry) => entry.category === "restriction");
+    const notifications = offered.filter((entry) => entry.category === "notification");
+    const sentences = [...(restriction ? [restriction] : []), ...notifications].map((entry) => entry.message);
+    return sentences.length ? sentences.join(" ") : null;
+  });
+
+  // Offer the reset only when it would change something: there is a suggestion, and it is not already
+  // what the field holds.
+  readonly canResetErrorMessage = computed(() => {
+    const suggestion = this.suggestedErrorMessage();
+    return !!suggestion && suggestion !== (this.stage().error_message ?? "");
+  });
+
+  // The actions that leave a remaining time behind for {duration} to count down.
+  private readonly hasTimedAction = computed(() =>
+    this.stage().actions.some((action) => action.action_type === "LOCK_USER" || action.action_type === "BLOCK_IP")
+  );
+
+  // Flagged because the tag cannot be substituted without a remaining time, so it reaches the user as
+  // raw markup - visible, but not what the admin meant to write.
+  readonly durationTagUnusable = computed(
+    () => (this.stage().error_message ?? "").includes(DURATION_TAG) && !this.hasTimedAction()
+  );
+
+  // Tags in the message that the server will not substitute. Purely advisory: the admin can
+  // save anyway, because an unsubstituted brace expression is shown as written, which is a
+  // legitimate thing to want in prose.
+  readonly unknownTags = computed(() => {
+    const matches = (this.stage().error_message ?? "").match(TAG_PATTERN) ?? [];
+    return [...new Set(matches.filter((tag) => tag !== DURATION_TAG))];
+  });
 
   onNameInput(value: string): void {
     const trimmed = value.trim();
@@ -69,6 +160,38 @@ export class ConditionalAccessStageItemComponent {
     if (!isNaN(parsed) && parsed >= 0) {
       this.updateStage.emit({ failure_threshold: parsed });
     }
+  }
+
+  onErrorMessageInput(value: string): void {
+    // Kept verbatim, empty string included: that is what holds the field open while the admin clears it,
+    // and the server normalises a blank message to null when the policy is saved.
+    this.updateStage.emit({ error_message: value });
+  }
+
+  /**
+   * Turn the user-facing message on or off for this stage.
+   *
+   * Off clears it - one field is the whole truth, so "say nothing" has to be a null message rather
+   * than a second stored flag that could disagree with it. On starts from the server's suggestion, or
+   * from an empty field when the stage has no action worth wording.
+   *
+   * Switching off therefore discards what was written. Deliberate: remembering it would mean state that
+   * belongs to this stage living in a component the list reuses for another one, and the reset button
+   * already puts the suggestion back.
+   */
+  toggleErrorMessage(enabled: boolean): void {
+    this.updateStage.emit({ error_message: enabled ? (this.suggestedErrorMessage() ?? "") : null });
+  }
+
+  /**
+   * Replace the message with the suggestion for the stage's current actions.
+   *
+   * Manual by design: the actions can change long after the message was written, and regenerating on
+   * every change would throw away an admin's wording without asking. This is the way to pick the new
+   * suggestion up once they do want it.
+   */
+  resetErrorMessageToSuggestion(): void {
+    this.updateStage.emit({ error_message: this.suggestedErrorMessage() });
   }
 
   onActionsChange(actions: LockoutStageAction[]): void {

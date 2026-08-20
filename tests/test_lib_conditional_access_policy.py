@@ -33,9 +33,12 @@ from privacyidea.lib.conditional_access.lockout_policy import (
     _ACTIONS_BY_TARGET,
     _COUNT_MODES_BY_TARGET,
     _DEFAULT_COUNT_MODE_BY_TARGET,
+    DEFAULT_ERROR_MESSAGES,
+    MAX_ERROR_MESSAGE_LENGTH,
     create_lockout_policy,
     delete_lockout_policy,
     enable_lockout_policy,
+    get_default_error_messages,
     get_lockout_policy,
     get_target_constraints,
     list_lockout_policies,
@@ -510,6 +513,42 @@ class LockoutPolicyCrudTestCase(MyTestCase):
         self.assertIn(LockoutAction.BLOCK_IP.value, constraints[LockoutTarget.SOURCE_IP.value]["actions"])
         self.assertIn(LockoutAction.LOCK_USER.value, constraints[LockoutTarget.USER.value]["actions"])
 
+    def test_10a_default_error_messages_are_ordered_most_severe_first(self):
+        # The exact list, because both membership and order are contracts: the order is the composition
+        # rule (a client takes the first restriction the stage carries), ALLOW is absent since it rejects
+        # nothing and so has nothing to say, and the EMAIL_* pair comes last so a stage that also locks
+        # describes the lock. A new action added here has to be a deliberate decision, not a surprise.
+        suggestions = get_default_error_messages()
+        self.assertListEqual([entry.action.value for entry in DEFAULT_ERROR_MESSAGES],
+                             [entry["action_type"] for entry in suggestions])
+        self.assertListEqual([LockoutAction.PERMANENT_LOCK_USER.value, LockoutAction.PERMANENT_BLOCK_IP.value,
+                              LockoutAction.LOCK_USER.value, LockoutAction.BLOCK_IP.value,
+                              LockoutAction.DENY.value, LockoutAction.EMAIL_USER.value,
+                              LockoutAction.EMAIL_ADMIN.value],
+                             [entry["action_type"] for entry in suggestions])
+        # Resolved to plain strings, not lazy proxies the JSON encoder would choke on.
+        for entry in suggestions:
+            self.assertIsInstance(entry["message"], str)
+            self.assertTrue(entry["message"])
+
+    def test_10a3_category_says_which_suggestions_combine(self):
+        # A stage can lock and notify at once. Only one restriction is ever reported, so those are
+        # mutually exclusive, while the notifications are appended - which is the split "category" encodes.
+        by_action = {entry["action_type"]: entry["category"] for entry in get_default_error_messages()}
+        for action in (LockoutAction.PERMANENT_LOCK_USER, LockoutAction.PERMANENT_BLOCK_IP,
+                       LockoutAction.LOCK_USER, LockoutAction.BLOCK_IP, LockoutAction.DENY):
+            self.assertEqual("restriction", by_action[action.value], action)
+        for action in (LockoutAction.EMAIL_USER, LockoutAction.EMAIL_ADMIN):
+            self.assertEqual("notification", by_action[action.value], action)
+
+    def test_10b_only_timed_restrictions_suggest_the_duration_tag(self):
+        # A permanent lock has no remaining time, and DENY is not a restriction at all, so
+        # {duration} must appear only where the engine can substitute it.
+        timed = {LockoutAction.LOCK_USER, LockoutAction.BLOCK_IP}
+        for entry in DEFAULT_ERROR_MESSAGES:
+            self.assertEqual(entry.action in timed, "{duration}" in str(entry.message),
+                             f"{entry.action} duration tag mismatch")
+
     def test_11_duplicate_priority_rejected(self):
         # priority must be unique across policies: a second policy reusing a
         # priority is rejected and nothing is persisted.
@@ -838,3 +877,71 @@ class LockoutPolicyCrudTestCase(MyTestCase):
         self.assertIn(self.realm1, realm_entry["choices"])
         self.assertListEqual(sorted(role.value for role in AuthLogUserRole),
                              metadata[ConditionType.USER_ROLE.value]["choices"])
+
+    def test_43_stage_error_message_round_trips(self):
+        message = "Your account is locked. Please try again in about {duration}."
+        policy_id = create_lockout_policy(
+            "Message", 600, ["PIN_FAIL"],
+            stages=[{"failure_threshold": 5, "error_message": message,
+                     "actions": [{"action_type": "LOCK_USER",
+                                  "action_value": {"lock_duration_seconds": 600}}]}],
+            target=LockoutTarget.USER, priority=1)
+        self.assertEqual(message, get_lockout_policy(policy_id)["stages"][0]["error_message"])
+
+    def test_44_stage_error_message_defaults_to_none(self):
+        # No message means the rejection stays generic: nothing is surfaced unless
+        # an admin wrote it.
+        policy_id = create_lockout_policy("NoMessage", 600, ["PIN_FAIL"], stages=[_stage(5)],
+                                          target=LockoutTarget.USER, priority=1)
+        self.assertIsNone(get_lockout_policy(policy_id)["stages"][0]["error_message"])
+
+    def test_45_blank_stage_error_message_is_stored_as_none(self):
+        for blank in ("", "   ", "\n\t"):
+            policy_id = create_lockout_policy(f"Blank{len(blank)}", 600, ["PIN_FAIL"],
+                                              stages=[{**_stage(5), "error_message": blank}],
+                                              target=LockoutTarget.USER, priority=1)
+            self.assertIsNone(get_lockout_policy(policy_id)["stages"][0]["error_message"])
+            delete_lockout_policy(policy_id)
+
+    def test_46_stage_error_message_is_stripped(self):
+        policy_id = create_lockout_policy("Strip", 600, ["PIN_FAIL"],
+                                          stages=[{**_stage(5), "error_message": "  Locked.  "}],
+                                          target=LockoutTarget.USER, priority=1)
+        self.assertEqual("Locked.", get_lockout_policy(policy_id)["stages"][0]["error_message"])
+
+    def test_47_unknown_brace_expressions_are_kept_verbatim(self):
+        # Brace expressions other than {duration} are deliberately not validated:
+        # only {duration} is substituted at rejection time, so an admin can write
+        # braces in ordinary prose without escaping them.
+        message = "Locked {} for {duration} — see {unknown} or {{escaped}}."
+        policy_id = create_lockout_policy("Braces", 600, ["PIN_FAIL"],
+                                          stages=[{**_stage(5), "error_message": message}],
+                                          target=LockoutTarget.USER, priority=1)
+        self.assertEqual(message, get_lockout_policy(policy_id)["stages"][0]["error_message"])
+
+    def test_48_stage_error_message_validation_errors(self):
+        for invalid in (123, [], {}, True):
+            self.assertRaises(ParameterError, create_lockout_policy, "Invalid", 600, ["PIN_FAIL"],
+                              stages=[{**_stage(5), "error_message": invalid}],
+                              target=LockoutTarget.USER, priority=1)
+        # Over the model's Unicode(500), rejected here rather than truncated by the DB.
+        self.assertRaises(ParameterError, create_lockout_policy, "TooLong", 600, ["PIN_FAIL"],
+                          stages=[{**_stage(5), "error_message": "x" * (MAX_ERROR_MESSAGE_LENGTH + 1)}],
+                          target=LockoutTarget.USER, priority=1)
+
+    def test_49_stage_error_message_at_the_length_limit_is_accepted(self):
+        message = "x" * MAX_ERROR_MESSAGE_LENGTH
+        policy_id = create_lockout_policy("AtLimit", 600, ["PIN_FAIL"],
+                                          stages=[{**_stage(5), "error_message": message}],
+                                          target=LockoutTarget.USER, priority=1)
+        self.assertEqual(message, get_lockout_policy(policy_id)["stages"][0]["error_message"])
+
+    def test_50_update_replaces_and_clears_the_stage_error_message(self):
+        policy_id = create_lockout_policy("Update", 600, ["PIN_FAIL"],
+                                          stages=[{**_stage(5), "error_message": "Old."}],
+                                          target=LockoutTarget.USER, priority=1)
+        update_lockout_policy(policy_id, stages=[{**_stage(5), "error_message": "New."}])
+        self.assertEqual("New.", get_lockout_policy(policy_id)["stages"][0]["error_message"])
+        # Stages are replaced wholesale, so omitting the message clears it.
+        update_lockout_policy(policy_id, stages=[_stage(5)])
+        self.assertIsNone(get_lockout_policy(policy_id)["stages"][0]["error_message"])

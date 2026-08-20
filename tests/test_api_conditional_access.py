@@ -23,6 +23,7 @@ policy stage and lock the user.
 """
 from datetime import datetime, timedelta
 
+from privacyidea.api.lib.utils import GENERIC_AUTH_FAILURE
 from privacyidea.lib.conditional_access.conditions import ConditionOperator, ConditionType
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, CountMode
 from privacyidea.lib.conditional_access.authentication_log import AuthLogUserRole, get_authentication_logs
@@ -125,18 +126,19 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
             self.assertEqual(200, response.status_code, response)
             return response.json
 
-    def _lock_user(self, lock_expires_at) -> None:
+    def _lock_user(self, lock_expires_at, error_message: str | None = None) -> None:
         db.session.add(UserLockoutState(resolver=self.user.resolver, uid=self.user.uid,
-                                        realm=self.user.realm, lock_expires_at=lock_expires_at))
+                                        realm=self.user.realm, lock_expires_at=lock_expires_at,
+                                        error_message=error_message))
         db.session.commit()
 
     @staticmethod
     def _make_lock_policy(*, counter_type, threshold: int, duration: int, window: int = 3600,
-                          dry_run: bool = False, priority: int = 1) -> None:
+                          dry_run: bool = False, priority: int = 1, error_message: str | None = None) -> None:
         create_lockout_policy(
             name="ca_lock", time_window_seconds=window,
             counter_types_to_track=_counter_types(counter_type),
-            stages=[{"failure_threshold": threshold, "priority": 1,
+            stages=[{"failure_threshold": threshold, "priority": 1, "error_message": error_message,
                      "actions": [{"action_type": str(LockoutAction.LOCK_USER), "action_value": duration}]}],
             target=LockoutTarget.USER, dry_run=dry_run, priority=priority)
 
@@ -189,6 +191,81 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         # Every other column is asserted empty, which is the "a rejection row carries nothing else" decision: no
         # serial, no client label, and no other_info repeating an expiry the lock's own outcome already records.
         assert_authentication_log_entry(entries[AuthEventType.USER_LOCKED], user=self.user)
+
+    def test_configured_message_is_surfaced_on_validate_check(self):
+        # The machine-facing endpoint carries the wording in detail.message - a different shape from
+        # /auth's result.error.message, which is why it needs its own coverage.
+        self._lock_user(utc_now() + timedelta(seconds=600), error_message="Locked. Try again in about {duration}.")
+        body = self._check({"user": "cornelius", "pass": "pin755224"})
+        self.assertFalse(body["result"]["value"], body)
+        # {duration} is rendered against the time left now, not stored pre-rendered.
+        self.assertEqual("Locked. Try again in about 10 minute(s).", body["detail"]["message"], body)
+
+    def test_no_configured_message_leaves_validate_check_silent(self):
+        # The default: no message, and no detail at all - byte for byte the response this endpoint
+        # returned before stage messages existed.
+        self._lock_user(utc_now() + timedelta(seconds=600))
+        body = self._check({"user": "cornelius", "pass": "pin755224"})
+        self.assertFalse(body["result"]["value"], body)
+        self.assertFalse(body.get("detail"), body)
+
+    def test_the_request_that_trips_the_lock_reports_it(self):
+        # The lock is written during this very request - and any EMAIL_* action is sent now, not on the
+        # next login - so this is the response that reports it, not merely the ones after it.
+        self._make_lock_policy(counter_type=AuthEventType.PIN_FAIL, threshold=2, duration=600,
+                               error_message="Locked. Try again in about {duration}.")
+        first = self._check({"user": "cornelius", "pass": "wrongpin123456"})
+        self.assertFalse(first["result"]["value"], first)
+        # Below the threshold nothing has happened yet, so the ordinary token failure stands.
+        self.assertEqual("wrong otp pin", first["detail"]["message"], first)
+
+        tripping = self._check({"user": "cornelius", "pass": "wrongpin123456"})
+        self.assertFalse(tripping["result"]["value"], tripping)
+        self.assertEqual("Locked. Try again in about 10 minute(s).", tripping["detail"]["message"], tripping)
+        self.assertTrue(is_user_locked(self.user))
+
+    def test_the_tripping_request_stays_silent_without_a_message(self):
+        # The default holds on this path too: the lock is written, and the response says only what it
+        # would have said anyway.
+        self._make_lock_policy(counter_type=AuthEventType.PIN_FAIL, threshold=2, duration=600)
+        self._check({"user": "cornelius", "pass": "wrongpin123456"})
+        tripping = self._check({"user": "cornelius", "pass": "wrongpin123456"})
+        self.assertEqual("wrong otp pin", tripping["detail"]["message"], tripping)
+        self.assertTrue(is_user_locked(self.user))
+
+    def test_both_restrictions_are_reported_on_validate_check(self):
+        # Both restrictions are reported, most severe first: a user facing a permanent block behind a timed
+        # lock must not be told only to "try again in 10 minutes" when waiting cannot help.
+        self._lock_user(utc_now() + timedelta(seconds=600), error_message="LOCK-TEXT")
+        db.session.add(BlockList(ip="203.0.113.7", block_expires_at=None, error_message="PERMANENT-BLOCK-TEXT"))
+        db.session.commit()
+        body = self._check({"user": "cornelius", "pass": "pin755224"}, remote_addr="203.0.113.7")
+        self.assertFalse(body["result"]["value"], body)
+        # The permanent block leads; the timed lock follows.
+        self.assertEqual("PERMANENT-BLOCK-TEXT LOCK-TEXT", body["detail"]["message"], body)
+
+    def test_the_other_restriction_is_recorded_on_the_row(self):
+        # The log records one event_type per request, so a request refused by both is filed under the binding
+        # one and the other is listed in other_info as additional_event_types: not queryable the way
+        # event_type is, but visible to an admin reading the entry.
+        self._lock_user(utc_now() + timedelta(seconds=600))
+        db.session.add(BlockList(ip="203.0.113.7", block_expires_at=None))
+        db.session.commit()
+        self._check({"user": "cornelius", "pass": "pin755224"}, remote_addr="203.0.113.7")
+        entries = get_authentication_logs()
+        self.assertEqual(1, len(entries), entries)
+        # The permanent block binds, so that is the classification; the lock is the one recorded alongside.
+        self.assertEqual(str(AuthEventType.IP_BLOCKED), entries[0].event_type, entries[0])
+        self.assertListEqual([str(AuthEventType.USER_LOCKED)], entries[0].other_info["additional_event_types"],
+                             entries[0])
+
+    def test_a_single_restriction_records_nothing_extra(self):
+        # Only one in force, so the event type says it all and the row carries no redundant note.
+        self._lock_user(utc_now() + timedelta(seconds=600))
+        self._check({"user": "cornelius", "pass": "pin755224"})
+        entries = get_authentication_logs()
+        self.assertEqual(str(AuthEventType.USER_LOCKED), entries[0].event_type, entries[0])
+        self.assertNotIn("additional_event_types", entries[0].other_info or {}, entries[0])
 
     def test_expired_lock_does_not_reject(self):
         self._lock_user(utc_now() - timedelta(seconds=10))
@@ -870,10 +947,12 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
             db.session.query(model).delete()
         db.session.commit()
 
-    def _auth(self, username, password, remote_addr=None):
+    def _auth(self, username, password, remote_addr=None, transaction_id=None):
         kwargs = {"environ_base": {"REMOTE_ADDR": remote_addr}} if remote_addr else {}
-        with self.app.test_request_context('/auth', method='POST',
-                                           data={"username": username, "password": password}, **kwargs):
+        data = {"username": username, "password": password}
+        if transaction_id:
+            data["transaction_id"] = transaction_id
+        with self.app.test_request_context('/auth', method='POST', data=data, **kwargs):
             return self.app.full_dispatch_request()
 
     @staticmethod
@@ -919,38 +998,87 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
         self.assertEqual(str(LockoutAction.LOCK_USER), outcomes[0].action_type)
 
     @staticmethod
-    def _make_decision_policy(*, name, threshold, action, priority=1, window=3600):
+    def _make_decision_policy(*, name, threshold, action, priority=1, window=3600, error_message=None):
         create_lockout_policy(
             name=name, time_window_seconds=window,
             counter_types_to_track=_counter_types(AuthEventType.PASSWORD_FAIL),
-            stages=[{"failure_threshold": threshold, "priority": 1,
+            stages=[{"failure_threshold": threshold, "priority": 1, "error_message": error_message,
                      "actions": [{"action_type": str(action), "action_value": None}]}],
             target=LockoutTarget.USER, priority=priority)
 
     @staticmethod
-    def _make_block_ip_policy(*, threshold, duration=600, window=3600, priority=1):
+    def _make_block_ip_policy(*, threshold, duration=600, window=3600, priority=1, error_message=None):
         create_lockout_policy(
             name="ca_block_ip", time_window_seconds=window,
             counter_types_to_track=_counter_types(AuthEventType.PASSWORD_FAIL),
-            stages=[{"failure_threshold": threshold, "priority": 1,
+            stages=[{"failure_threshold": threshold, "priority": 1, "error_message": error_message,
                      "actions": [{"action_type": str(LockoutAction.BLOCK_IP), "action_value": duration}]}],
             target=LockoutTarget.SOURCE_IP, priority=priority)
 
-    def test_locked_user_rejected_at_auth(self):
+    def test_locked_user_rejected_silently_by_default(self):
+        # Nothing is volunteered: with no message configured, a locked user is refused exactly like a
+        # wrong password, down to the absent severity hint - which would give the lock away on its own.
         db.session.add(UserLockoutState(resolver=self.user.resolver, uid=self.user.uid, realm=self.user.realm,
                                         lock_expires_at=utc_now() + timedelta(seconds=600)))
         db.session.commit()
-        # Correct userstore password, but the user is locked -> 401 that states the lockout.
         res = self._auth("cornelius", "test")
         self.assertEqual(401, res.status_code, res)
         self.assertEqual(4031, res.json["result"]["error"]["code"], res.json)
-        # The message tells the user about the (timed) lockout instead of "Wrong credentials".
+        self.assertEqual(GENERIC_AUTH_FAILURE, res.json["result"]["error"]["message"], res.json)
+        self.assertNotIn("restriction", res.json.get("detail") or {}, res.json)
+        # The login is still classified, so an admin can see why it failed even though the user cannot.
+        entries = assert_authentication_log([AuthEventType.USER_LOCKED])
+        assert_authentication_log_entry(entries[AuthEventType.USER_LOCKED], user=self.user)
+
+    def test_the_rejection_joins_the_transaction_it_refused(self):
+        # A passkey or push login answers its challenge at /auth carrying the transaction, so a rejection there
+        # belongs to that attempt rather than starting one of its own - the same linkage /validate rejections get.
+        self._lock_user()
+        res = self._auth("cornelius", "test", transaction_id="0123456789")
+        self.assertEqual(401, res.status_code, res)
+        entries = assert_authentication_log([AuthEventType.USER_LOCKED])
+        assert_authentication_log_entry(entries[AuthEventType.USER_LOCKED], user=self.user,
+                                        transaction_id="0123456789")
+
+    def test_a_silent_lock_is_byte_identical_to_a_wrong_password(self):
+        # The whole point of the silent default: a locked account must be indistinguishable from a wrong
+        # password. Compared end to end rather than against a constant, so it holds however many places
+        # happen to build the generic failure.
+        wrong = self._auth("cornelius", "wrongpassword")
+        self.assertEqual(401, wrong.status_code, wrong)
+        self._clear_authentication_log()
+
+        db.session.add(UserLockoutState(resolver=self.user.resolver, uid=self.user.uid, realm=self.user.realm,
+                                        lock_expires_at=utc_now() + timedelta(seconds=600)))
+        db.session.commit()
+        locked = self._auth("cornelius", "test")
+
+        self.assertEqual(wrong.status_code, locked.status_code, locked.json)
+        self.assertEqual(wrong.json["result"]["error"]["message"],
+                         locked.json["result"]["error"]["message"], locked.json)
+        self.assertEqual(wrong.json["result"]["error"]["code"],
+                         locked.json["result"]["error"]["code"], locked.json)
+        # The detail too, not just the error: an empty detail against a populated one would give the
+        # lock away as surely as the wording would - the severity hint is withheld for that reason.
+        self.assertEqual(wrong.json.get("detail"), locked.json.get("detail"), locked.json)
+
+    def test_locked_user_rejected_at_auth(self):
+        db.session.add(UserLockoutState(resolver=self.user.resolver, uid=self.user.uid, realm=self.user.realm,
+                                        lock_expires_at=utc_now() + timedelta(seconds=600),
+                                        error_message="Your account is locked. Try again in about {duration}."))
+        db.session.commit()
+        # Correct userstore password, but the user is locked -> 401 carrying the configured wording.
+        res = self._auth("cornelius", "test")
+        self.assertEqual(401, res.status_code, res)
+        self.assertEqual(4031, res.json["result"]["error"]["code"], res.json)
         message = res.json["result"]["error"]["message"]
         self.assertIn("locked", message.lower(), message)
+        # {duration} is rendered against the time left now, not stored pre-rendered.
         self.assertIn("minute", message.lower(), message)
+        self.assertNotIn("{duration}", message, message)
         self.assertNotIn("Wrong credentials", message, message)
-        # The WebUI gets a coarse severity hint so it can color a timed lock differently.
-        self.assertEqual("temporary", res.json["detail"]["restriction"], res.json)
+        # No severity hint: the wording is the only thing the user is told.
+        self.assertNotIn("restriction", res.json.get("detail") or {}, res.json)
         # The login is classified by its rejection, so the log says why it failed even though no credential was checked.
         entries = assert_authentication_log([AuthEventType.USER_LOCKED])
         assert_authentication_log_entry(entries[AuthEventType.USER_LOCKED], user=self.user)
@@ -990,34 +1118,30 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
         db.session.commit()
 
     def test_permanently_locked_user_message_at_auth(self):
-        # A permanent lock (no expiry) points the user at the administrator.
-        db.session.add(UserLockoutState(resolver=self.user.resolver, uid=self.user.uid, realm=self.user.realm,
-                                        lock_expires_at=None))
+        # A permanent lock (no expiry) shows wording written for one: no countdown to offer.
+        custom_error_message = "Your account has been locked. Please contact your administrator."
+        db.session.add(UserLockoutState(
+            resolver=self.user.resolver, uid=self.user.uid, realm=self.user.realm, lock_expires_at=None,
+            error_message=custom_error_message))
         db.session.commit()
         res = self._auth("cornelius", "test")
         self.assertEqual(401, res.status_code, res)
         self.assertEqual(4031, res.json["result"]["error"]["code"], res.json)
-        message = res.json["result"]["error"]["message"]
-        self.assertIn("locked", message.lower(), message)
-        self.assertIn("administrator", message.lower(), message)
-        self.assertNotIn("minute", message.lower(), message)
-        self.assertEqual("permanent", res.json["detail"]["restriction"], res.json)
+        self.assertEqual(custom_error_message, res.json["result"]["error"]["message"])
 
     def test_blocked_ip_rejected_at_auth(self):
-        db.session.add(BlockList(ip="203.0.113.7", block_expires_at=utc_now() + timedelta(seconds=600)))
+        db.session.add(BlockList(ip="203.0.113.7", block_expires_at=utc_now() + timedelta(seconds=600),
+                                 error_message="Your address is blocked. Try again in about {duration}."))
         db.session.commit()
-        # Correct userstore password, but the source IP is blocked -> 401 whose message
-        # names the block, the offending IP and the remaining time (like the user lock).
+        # Correct userstore password, but the source IP is blocked -> 401 carrying the block's wording.
         res = self._auth("cornelius", "test", remote_addr="203.0.113.7")
         self.assertEqual(401, res.status_code, res)
         self.assertEqual(4031, res.json["result"]["error"]["code"], res.json)
         message = res.json["result"]["error"]["message"]
-        self.assertIn("blocked", message.lower(), message)
-        self.assertIn("203.0.113.7", message, message)
+        self.assertIn("Your address is blocked. Try again in about", message, message)
         self.assertIn("minute", message.lower(), message)
         self.assertNotIn("account", message.lower(), message)
         self.assertNotIn("Wrong credentials", message, message)
-        self.assertEqual("temporary", res.json["detail"]["restriction"], res.json)
         entries = assert_authentication_log([AuthEventType.IP_BLOCKED])
         assert_authentication_log_entry(entries[AuthEventType.IP_BLOCKED], user=self.user,
                                         source_ip="203.0.113.7")
@@ -1038,37 +1162,34 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
                                         source_ip="203.0.113.7", user_role=AuthLogUserRole.ADMIN_INTERNAL)
 
     def test_permanently_blocked_ip_message_at_auth(self):
-        # A permanent block (no expiry) points the user at the administrator, no minutes.
-        db.session.add(BlockList(ip="203.0.113.7", block_expires_at=None))
+        # A permanent block (no expiry) shows wording written for one, with no countdown.
+        custom_error_message = "Your address has been blocked. Please contact your administrator."
+        db.session.add(BlockList(
+            ip="203.0.113.7", block_expires_at=None,
+            error_message=custom_error_message))
         db.session.commit()
         res = self._auth("cornelius", "test", remote_addr="203.0.113.7")
         self.assertEqual(401, res.status_code, res)
         self.assertEqual(4031, res.json["result"]["error"]["code"], res.json)
         message = res.json["result"]["error"]["message"]
-        self.assertIn("blocked", message.lower(), message)
-        self.assertIn("203.0.113.7", message, message)
-        self.assertIn("administrator", message.lower(), message)
-        self.assertNotIn("minute", message.lower(), message)
-        self.assertNotIn("Wrong credentials", message, message)
-        self.assertEqual("permanent", res.json["detail"]["restriction"], res.json)
+        self.assertEqual(custom_error_message, message)
 
-    def test_hide_specific_error_message_strips_restriction_hint(self):
-        # With hide_specific_error_message the lockout becomes a generic failure and the
-        # restriction hint must be stripped, so neither the message nor the detail leaks
-        # that the account is (permanently) locked.
+    def test_hide_specific_error_message_masks_the_configured_wording(self):
+        # With hide_specific_error_message a configured message becomes the generic failure, so nothing in
+        # the response leaks that the account is (permanently) locked.
         from privacyidea.lib.policy import set_policy, delete_policy, SCOPE
         from privacyidea.lib.policies.actions import PolicyAction
         db.session.add(UserLockoutState(resolver=self.user.resolver, uid=self.user.uid,
-                                        realm=self.user.realm, lock_expires_at=None))
+                                        realm=self.user.realm, lock_expires_at=None,
+                                        error_message="MSG-ALPHA"))
         db.session.commit()
         set_policy(name="ca_hide", scope=SCOPE.AUTH, action=f"{PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE}")
         try:
             res = self._auth("cornelius", "test")
             self.assertEqual(401, res.status_code, res)
             message = res.json["result"]["error"]["message"]
-            self.assertNotIn("locked", message.lower(), message)
-            self.assertNotIn("administrator", message.lower(), message)
-            self.assertNotIn("restriction", (res.json.get("detail") or {}), res.json)
+            self.assertNotIn("MSG-ALPHA", message, message)
+            self.assertNotIn("MSG-ALPHA", str(res.json.get("detail") or {}), res.json)
         finally:
             delete_policy("ca_hide")
 
@@ -1076,7 +1197,7 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
         # The failure that trips the BLOCK_IP stage (by crossing the distinct-user
         # threshold) already tells the user about the block instead of "Wrong
         # credentials".
-        self._make_block_ip_policy(threshold=3)
+        self._make_block_ip_policy(threshold=3, error_message="Blocked. Try again in about {duration}.")
         ip = "203.0.113.7"
         # Below the threshold, a failure is just a plain wrong-credentials rejection.
         res = self._auth("cornelius", "wrongpass", remote_addr=ip)
@@ -1088,8 +1209,7 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
         res = self._auth("cornelius", "wrongpass", remote_addr=ip)
         self.assertEqual(401, res.status_code, res)
         message = res.json["result"]["error"]["message"]
-        self.assertIn("blocked", message.lower(), message)
-        self.assertIn(ip, message, message)
+        self.assertIn("Blocked. Try again in about", message, message)
         self.assertIn("minute", message.lower(), message)
         self.assertNotIn("Wrong credentials", message, message)
         # The user themselves is not locked - only the IP was blocked.
@@ -1099,7 +1219,7 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
         # After enough prior PASSWORD_FAILs the next login is denied pre-auth, even with
         # the correct password. The message states it was a conditional-access decision
         # (without naming the policy); no new log row and no persisted lock.
-        self._make_decision_policy(name="ca_deny", threshold=3, action=LockoutAction.DENY)
+        self._make_decision_policy(name="ca_deny", threshold=3, action=LockoutAction.DENY, error_message="MSG-DELTA")
         for _ in range(3):
             res = self._auth("cornelius", "wrongpass")
             self.assertEqual(401, res.status_code, res)
@@ -1108,10 +1228,8 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
         self.assertEqual(401, res.status_code, res)
         self.assertEqual(4031, res.json["result"]["error"]["code"], res.json)
         message = res.json["result"]["error"]["message"]
-        self.assertIn("denied", message.lower(), message)
-        self.assertIn("conditional-access policy", message.lower(), message)
-        self.assertNotIn("Wrong credentials", message, message)
-        self.assertNotIn("locked", message.lower(), message)
+        # A DENY persists nothing, so the wording is read live off the deciding stage.
+        self.assertEqual("MSG-DELTA", message)
         self.assertListEqual([AuthEventType.ACCESS_DENIED], _rows_since(logs_before))
         self.assertFalse(is_user_locked(self.user))
 
@@ -1122,87 +1240,97 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
     # observable through the distinct 401 messages ("account" for the lock, the
     # IP for the block, "conditional-access" for the decision).
 
-    def _lock_user(self):
+    def _lock_user(self, error_message=None):
         db.session.add(UserLockoutState(resolver=self.user.resolver, uid=self.user.uid, realm=self.user.realm,
-                                        lock_expires_at=utc_now() + timedelta(seconds=600)))
+                                        lock_expires_at=utc_now() + timedelta(seconds=600),
+                                        error_message=error_message))
         db.session.commit()
 
-    def _block_ip(self, ip):
-        db.session.add(BlockList(ip=ip, block_expires_at=utc_now() + timedelta(seconds=600)))
+    def _block_ip(self, ip, error_message=None):
+        db.session.add(BlockList(ip=ip, block_expires_at=utc_now() + timedelta(seconds=600),
+                                 error_message=error_message))
         db.session.commit()
 
     def test_lock_checked_before_deny_at_auth(self):
         # Both a persistent lock and an always-met DENY stage: the lock is checked
         # first, so the 401 states the account lockout, not the policy denial.
-        self._lock_user()
-        self._make_decision_policy(name="ca_deny", threshold=0, action=LockoutAction.DENY)
+        self._lock_user(error_message="MSG-ALPHA")
+        self._make_decision_policy(name="ca_deny", threshold=0, action=LockoutAction.DENY,
+                                   error_message="MSG-DELTA")
         res = self._auth("cornelius", "test")
         self.assertEqual(401, res.status_code, res)
         message = res.json["result"]["error"]["message"]
-        self.assertIn("account", message.lower(), message)
-        self.assertNotIn("conditional-access", message.lower(), message)
+        self.assertEqual("MSG-ALPHA", message)
 
     def test_ip_block_checked_before_deny_at_auth(self):
         # Both a persistent IP block and an always-met DENY stage: the block is
         # checked first, so the 401 names the blocked IP, not the policy denial.
-        self._block_ip("203.0.113.7")
-        self._make_decision_policy(name="ca_deny", threshold=0, action=LockoutAction.DENY)
+        self._block_ip("203.0.113.7", error_message="MSG-BETA")
+        self._make_decision_policy(name="ca_deny", threshold=0, action=LockoutAction.DENY,
+                                   error_message="MSG-DELTA")
         res = self._auth("cornelius", "test", remote_addr="203.0.113.7")
         self.assertEqual(401, res.status_code, res)
         message = res.json["result"]["error"]["message"]
-        self.assertIn("203.0.113.7", message, message)
-        self.assertNotIn("conditional-access", message.lower(), message)
+        self.assertEqual("MSG-BETA", message)
 
-    def test_lock_checked_before_ip_block_at_auth(self):
-        # Both a persistent lock and a persistent IP block: the lock is checked
-        # first, so the 401 states the account lockout, not the IP block.
-        self._lock_user()
-        self._block_ip("203.0.113.7")
+    def test_both_restrictions_are_reported_at_auth(self):
+        # A lock and an IP block are independent facts, resolved differently, so both are stated - telling
+        # the user about one would leave them to discover the other by failing again. Equally severe here,
+        # so the lock leads, matching the order they are checked in.
+        self._lock_user(error_message="MSG-ALPHA")
+        self._block_ip("203.0.113.7", error_message="MSG-BETA")
         res = self._auth("cornelius", "test", remote_addr="203.0.113.7")
         self.assertEqual(401, res.status_code, res)
         message = res.json["result"]["error"]["message"]
-        self.assertIn("account", message.lower(), message)
-        self.assertNotIn("203.0.113.7", message, message)
+        self.assertEqual("MSG-ALPHA MSG-BETA", message)
 
     def test_allow_cannot_override_lock_at_auth(self):
         # The lock is checked before the ALLOW/DENY decision, so a
         # maximum-priority default-allow exception cannot unlock a locked user.
-        self._lock_user()
+        self._lock_user(error_message="MSG-ALPHA")
         self._make_decision_policy(name="ca_allow", threshold=0,
                                    action=LockoutAction.ALLOW, priority=1)
         res = self._auth("cornelius", "test")
         self.assertEqual(401, res.status_code, res)
-        self.assertIn("account", res.json["result"]["error"]["message"].lower(), res.json)
+        self.assertEqual("MSG-ALPHA", res.json["result"]["error"]["message"], res.json)
 
-    def test_permanent_ip_block_message_wins_over_timed_lock(self):
+    def test_permanent_ip_block_is_reported_before_a_timed_lock(self):
         # Escalation case: the user is temp-locked (1 min) AND their IP is now
         # permanently blocked. The rejection must report the permanent block - the
         # longer-lasting (binding) restriction - not "try again in a minute", which
         # would be misleading since waiting it out cannot help.
-        self._lock_user()  # timed user lock, 600s
-        db.session.add(BlockList(ip="203.0.113.7", block_expires_at=None))
+        self._lock_user(error_message="MSG-ALPHA")  # timed user lock, 600s
+        db.session.add(BlockList(ip="203.0.113.7", block_expires_at=None,
+                                 error_message="MSG-GAMMA"))
         db.session.commit()
         res = self._auth("cornelius", "test", remote_addr="203.0.113.7")
         self.assertEqual(401, res.status_code, res)
         message = res.json["result"]["error"]["message"]
-        self.assertIn("blocked", message.lower(), message)
-        self.assertIn("203.0.113.7", message, message)
-        self.assertIn("administrator", message.lower(), message)
-        self.assertNotIn("minute", message.lower(), message)
-        self.assertNotIn("account", message.lower(), message)
+        # The permanent block leads: waiting out the lock cannot help, so that is what the user needs first.
+        self.assertEqual("MSG-GAMMA MSG-ALPHA", message)
 
-    def test_permanent_lock_message_wins_over_timed_ip_block(self):
+    def test_permanent_lock_is_reported_before_a_timed_ip_block(self):
         # Symmetric: a permanent user lock outranks a timed IP block.
         db.session.add(UserLockoutState(resolver=self.user.resolver, uid=self.user.uid, realm=self.user.realm,
-                                        lock_expires_at=None))
-        self._block_ip("203.0.113.7")  # timed block, 600s
+                                        lock_expires_at=None, error_message="MSG-ALPHA"))
+        self._block_ip("203.0.113.7", error_message="MSG-BETA")  # timed block, 600s
         res = self._auth("cornelius", "test", remote_addr="203.0.113.7")
         self.assertEqual(401, res.status_code, res)
         message = res.json["result"]["error"]["message"]
-        self.assertIn("account", message.lower(), message)
-        self.assertIn("administrator", message.lower(), message)
-        self.assertNotIn("minute", message.lower(), message)
-        self.assertNotIn("203.0.113.7", message, message)
+        # Symmetric: the permanent lock leads, the timed block follows.
+        self.assertEqual("MSG-ALPHA MSG-BETA", message)
+
+    def test_the_same_wording_on_a_lock_and_a_block_is_said_once(self):
+        # One generic sentence, configured on a user stage and on a source-IP stage. Both restrictions are in force
+        # and both are still reported - the rejection just does not say the same thing twice, exactly as the
+        # post-response evaluation does not for two policies locking the same user.
+        db.session.add(UserLockoutState(resolver=self.user.resolver, uid=self.user.uid, realm=self.user.realm,
+                                        lock_expires_at=None, error_message="MSG-ALPHA"))
+        db.session.add(BlockList(ip="203.0.113.7", block_expires_at=None, error_message="MSG-ALPHA"))
+        db.session.commit()
+        res = self._auth("cornelius", "test", remote_addr="203.0.113.7")
+        self.assertEqual(401, res.status_code, res)
+        self.assertEqual("MSG-ALPHA", res.json["result"]["error"]["message"])
 
     def test_user_locked_after_password_failures(self):
         self._make_password_policy(threshold=3)
@@ -1228,24 +1356,25 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
             create_lockout_policy(
                 name="ca_mail", time_window_seconds=3600,
                 counter_types_to_track=_counter_types(AuthEventType.PASSWORD_FAIL),
-                stages=[{"failure_threshold": 2, "priority": 1,
+                stages=[{"failure_threshold": 2, "priority": 1, "error_message": "MSG-DELTA",
                          "actions": [{"action_type": str(LockoutAction.EMAIL_ADMIN),
                                       "action_value": {"smtp_identifier": "lockoutmail",
                                                        "recipient_group": "soc@example.com",
                                                        "subject": "alert", "body": "alert"}}]}],
                 target=LockoutTarget.USER, priority=1)
 
-            # 1st failure is below the threshold: plain rejection, no email, no notice.
+            # 1st failure is below the threshold: plain rejection, no email, nothing surfaced.
             res = self._auth("cornelius", "wrongpass")
             self.assertEqual(401, res.status_code, res)
-            self.assertNotIn("notified", res.json["result"]["error"]["message"].lower())
+            self.assertEqual(str(GENERIC_AUTH_FAILURE), res.json["result"]["error"]["message"])
 
-            # 2nd failure trips the stage: the email is sent and its notice rides back on the 401.
+            # 2nd failure trips the stage: the email goes out and the stage's own wording rides back on
+            # the 401. A notify-only stage leaves no lock row, so this is the one path where the message
+            # travels with the evaluation rather than being read off a restriction.
             res = self._auth("cornelius", "wrongpass")
             self.assertEqual(401, res.status_code, res)
-            message = res.json["result"]["error"]["message"]
-            self.assertIn("Wrong credentials", message, message)
-            self.assertIn("administrator has been notified", message.lower(), message)
+            # Appended to the ordinary failure, not replacing it: the credential failure is still the reason.
+            self.assertEqual(f"{GENERIC_AUTH_FAILURE}. MSG-DELTA", res.json["result"]["error"]["message"])
             self.assertEqual(["soc@example.com"], smtpmock.get_sent_recipient())
             # An EMAIL-only stage writes no lock state, so the pre-check still lets the user in.
             self.assertFalse(is_user_locked(self.user))
@@ -1263,6 +1392,7 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
                 name="ca_lockmail", time_window_seconds=3600,
                 counter_types_to_track=_counter_types(AuthEventType.PASSWORD_FAIL),
                 stages=[{"failure_threshold": 2, "priority": 1,
+                         "error_message": "Locked for {duration}. Your administrator has been notified.",
                          "actions": [{"action_type": str(LockoutAction.LOCK_USER), "action_value": 600},
                                      {"action_type": str(LockoutAction.EMAIL_ADMIN),
                                       "action_value": {"smtp_identifier": "lockoutmail",
@@ -1274,11 +1404,11 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
             res = self._auth("cornelius", "wrongpass")  # 2nd: trips the stage -> lock + email
             self.assertEqual(401, res.status_code, res)
             message = res.json["result"]["error"]["message"]
-            # Reads "Your account is temporarily locked ... in about N minute(s). Your
-            # administrator has been notified by email."
-            self.assertIn("temporarily locked", message.lower(), message)
+            # One message, written by the admin to cover both facts, carried by the lock row. The stage
+            # does not also contribute it through the evaluation, or the user would be told twice.
+            self.assertIn("Locked for", message, message)
             self.assertIn("minute", message.lower(), message)
-            self.assertIn("administrator has been notified", message.lower(), message)
+            self.assertEqual(1, message.count("administrator has been notified"), message)
             self.assertNotIn("Wrong credentials", message, message)
             self.assertTrue(is_user_locked(self.user))
         finally:
@@ -1292,7 +1422,7 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
         create_lockout_policy(
             name="ca_deny_ip", time_window_seconds=3600,
             counter_types_to_track=_counter_types(AuthEventType.PASSWORD_FAIL),
-            stages=[{"failure_threshold": 0, "priority": 1,
+            stages=[{"failure_threshold": 0, "priority": 1, "error_message": "MSG-DELTA",
                      "actions": [{"action_type": str(LockoutAction.DENY), "action_value": None}]}],
             conditions=[{"condition_type": str(ConditionType.USER_ROLE),
                          "operator": str(ConditionOperator.NOT_IN),
@@ -1309,4 +1439,4 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
         # A regular user from the same IP is not exempt and is denied.
         res = self._auth("cornelius", "test", remote_addr="10.0.0.5")
         self.assertEqual(401, res.status_code, res.json)
-        self.assertIn("conditional-access", res.json["result"]["error"]["message"])
+        self.assertEqual("MSG-DELTA", res.json["result"]["error"]["message"])

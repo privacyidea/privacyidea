@@ -19,39 +19,40 @@
 The API-layer conditional-access gates: what turns an inbound request away before any credential check, for both
 authenticating entry points, plus the messages that tell a human why.
 
-There is one gate per entry point because they reject differently, not because they decide differently:
+Both entry points **decide** identically - :func:`_evaluate_rejection` is the whole decision - and differ only in how a
+rejection reaches the client:
 
-* :func:`conditional_access_gate` guards ``/validate/*``. A machine-facing client gets a generic failure that leaks
-  no reason at all - the reason lives in the audit log and in the request's authentication-log row, for the admin.
-* :func:`conditional_access_login_gate` guards the JWT login ``/auth``. A human at the login screen is told what is
-  in force and roughly how long it lasts, so the WebUI can explain the wait instead of showing "Wrong credentials"
-  for ten minutes. That is also why the message builders live here: the same lock must be described identically
-  whether it refused the login up front or was written by the failure of this very login
-  (:func:`login_restriction`).
+* :func:`conditional_access_gate` guards ``/validate/*`` and **returns** the rejection as a :class:`~flask.Response`: a
+  machine-facing failure that says whatever the triggering stage configured, and by default nothing at all.
+* :func:`conditional_access_login_gate` guards the JWT login ``/auth`` and **raises** an :class:`AuthError` the login
+  screen renders, so a human is told what is in force instead of "Wrong credentials" for ten minutes. An ``AuthError``
+  needs some message, so with no wording configured it falls back to the generic failure rather than to silence.
 
-Both end in the same place - :func:`~privacyidea.lib.conditional_access.engine.evaluate_access_decision` and the
-lock/block readers - and both classify their rejection in the authentication log, since that row is the only thing an
-admin can filter for: the request is turned away before anything else logs an outcome for it.
+Both classify their rejection in the authentication log, since that row is the only thing an admin can filter for: the
+request is turned away before anything else logs an outcome for it. Both link it to the transaction the request
+carries, if any, so the rejection lands on the attempt it refused to process. ``/auth`` additionally records the
+``internal_admin`` flag, being the only entry point where a local admin authenticates.
 
-TODO: the two should not differ in *whether* they explain themselves. Surfacing the reason belongs under an explicit
-policy of its own, settable per endpoint, rather than being hard-coded per entry point as it is here - ``/auth``
-already has ``hide_specific_error_message`` (applied to its :class:`AuthError` by
-:func:`~privacyidea.api.before_after.auth_error`) while ``/validate/*`` has no way to opt *in*. Unifying that is a
-separate issue, which is why the two gates are still separate functions with duplicated structure.
+TODO: both gates say only what an admin opted into on the stage, but ``hide_specific_error_message`` discards it on
+both - on ``/auth`` through :func:`~privacyidea.api.before_after.auth_error`, on ``/validate/*`` through the postpolicy
+of the same name. That policy exists to suppress what privacyIDEA volunteers *by default*, so having it also throw away
+wording an admin deliberately configured (silently, with nothing to say it happened) is the thing to decouple.
 """
 import functools
+import json
 import logging
-from collections.abc import Callable
 from dataclasses import dataclass
+from collections.abc import Callable
 from typing import Any
 
 from flask import request, g, Response
-from flask_babel import _
 
-from privacyidea.api.lib.utils import (log_authentication, build_ca_context, send_result, get_optional_one_of)
+from privacyidea.api.lib.utils import (GENERIC_AUTH_FAILURE, log_authentication, build_ca_context,
+                                      send_result, get_optional_one_of)
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
 from privacyidea.lib.conditional_access.engine import (get_user_lockout, get_ip_block, evaluate_access_decision,
-                                                      AccessDecision, RestrictionStatus, is_user_locked, is_ip_blocked)
+                                                       render_error_message, restriction_messages, AccessDecision,
+                                                       RestrictionStatus, MessageKind, StageMessage)
 from privacyidea.lib.conditional_access.request_context import get_ca_context
 from privacyidea.lib.error import AuthError, Error
 from privacyidea.lib.user import User
@@ -59,30 +60,86 @@ from privacyidea.lib.user import User
 log = logging.getLogger(__name__)
 
 
-# --- /validate/*: reject generically, leaking no reason -------------------------------------------------------------
+
+def _rejected_transaction_id() -> str | None:
+    """
+    The transaction this request belongs to, if it carries one.
+
+    Passed to the authentication-log row so ``attempt_id`` resolves as usual and the rejection lands on the attempt
+    it refused to process, rather than starting one of its own. Both entry points can carry a transaction: a
+    ``/validate`` challenge answer, and a passkey or push login answering its challenge at ``/auth``.
+    """
+    return get_optional_one_of(request.all_data, ["transaction_id", "state"])
+
+
+@dataclass(frozen=True)
+class Rejection:
+    """
+    What conditional access turns a request away with, before either gate decides how to deliver it.
+
+    :ivar event_type: how the authentication log classifies the rejection
+    :ivar audit_info: the free-text reason for the audit entry
+    :ivar message: the wording the triggering stage configured, or ``None`` to stay generic
+    :ivar other_info: extra fields for the authentication-log row, or ``None``
+    """
+    event_type: AuthEventType
+    audit_info: str
+    message: str | None
+    other_info: dict | None = None
+
+
+def _evaluate_rejection(user: User) -> "Rejection | None":
+    """
+    Whether conditional access turns this request away, and what to say when it does - the whole decision, shared
+    by both entry points so neither can answer it differently from the other.
+
+    A lock or block already in force refuses the request before the conditional-access DENY decision is evaluated,
+    so an ALLOW cannot override them. Every restriction in force that carries wording is reported, while the
+    authentication log is classified by the binding one (:func:`_binding_event_type`), because that row holds one
+    classification per request. A DENY refuses this single request without persisting state; ALLOW / CONTINUE
+    return ``None`` and the request continues. ``g.client_ip`` is the source IP checked.
+
+    Reads clear an expired row as they go, so a lock that has run out is not treated as one.
+    """
+    lockout = get_user_lockout(user, clear_expired=True)
+    ip_block = get_ip_block(g.client_ip, clear_expired=True)
+    binding = _binding_event_type(lockout, ip_block)
+    if binding:
+        subject = f"locked user {user!r}" if binding is AuthEventType.USER_LOCKED else f"blocked IP {g.client_ip!r}"
+        log.info(f"Rejecting {request.path} for {subject}.")
+        return Rejection(binding, _audit_reason(lockout, ip_block),
+                       " ".join(_restriction_messages(lockout, ip_block)) or None,
+                       _additional_event_types(binding, lockout, ip_block))
+    decision = evaluate_access_decision(build_ca_context(user))
+    # A DENY decision is part of this request's history, but no authentication-log row exists yet to record it against
+    # (and a dry-run DENY lets the request continue, so its row comes later). The context holds the outcomes until the
+    # request stages the event they belong to - which, for an enforced DENY, is the row the caller writes next.
+    get_ca_context().add_outcomes(decision.outcomes)
+    if decision.decision == AccessDecision.DENY:
+        log.info(f"Denying {request.path} for {user!r} by conditional-access policy.")
+        # A DENY persists nothing, so its wording comes straight off the deciding stage.
+        return Rejection(AuthEventType.ACCESS_DENIED, "Rejected: denied by conditional-access policy",
+                       render_error_message(decision.error_message))
+    return None
+
+
+# --- /validate/*: return the rejection as a response ---------------------------------------------------------------
 
 def conditional_access_precheck(user: User, log_rejection: bool = True) -> Response | None:
     """
     Reject a request pre-auth (before any token logic and before the failcounter /
-    max_auth checks) when conditional-access policies forbid it. Returns a generic
-    failure :class:`~flask.Response` to be returned to the client, or ``None`` to
-    continue with the normal flow.
+    max_auth checks) when conditional-access policies forbid it. Returns the failure
+    :class:`~flask.Response` to be returned to the client, or ``None`` to continue
+    with the normal flow.
 
-    The rejection is deliberately generic and leaks no reason: the machine-facing
-    API response never reveals that the user is locked, the source IP is blocked,
-    or a policy denied access — the real reason is recorded in the audit log and,
-    for the admin, as this request's authentication-log row.
-
-    A currently-locked user is rejected first, then a source IP blocked by a
-    ``BLOCK_IP`` action. The pre-auth conditional-access DENY decision is evaluated
-    last, after the lock/block pre-checks (so an ALLOW cannot override them); a
-    DENY rejects this single request without persisting state, while
-    ALLOW / CONTINUE fall through. ``g.client_ip`` is the source IP checked.
-
-    Each rejection also **classifies the request** in the authentication log
-    (:class:`~privacyidea.lib.conditional_access.authentication_event_types.AuthEventType`:
-    ``USER_LOCKED`` / ``IP_BLOCKED`` / ``ACCESS_DENIED``), because the reason is otherwise nowhere an admin can filter
-    for: the request is turned away before anything else logs an outcome for it.
+    The decision is :func:`_evaluate_rejection`; this renders it for a machine-facing
+    client. The response says only what an admin configured on the triggering stage,
+    and silence is the default: with no wording it reveals nothing - not that the user
+    is locked, that the source IP is blocked, or that a policy denied access - and is
+    byte for byte the failure this endpoint returned before stage messages existed.
+    Either way the real reason is recorded in the audit log and, for the admin, as this
+    request's authentication-log row - the only place an admin can filter for it, since
+    the request is turned away before anything else logs an outcome for it.
 
     :param user: the identity to gate on
     :param log_rejection: write that authentication-log row. A rejection row **replaces** the row the request would
@@ -92,31 +149,82 @@ def conditional_access_precheck(user: User, log_rejection: bool = True) -> Respo
         tell why it fails and would otherwise fill the log at its polling frequency.
     """
 
-    def reject(event_type: AuthEventType, audit_info: str) -> Response:
-        """Classify the request in the authentication log (unless opted out) and return the generic failure."""
-        if log_rejection:
-            # Staged like any other event, so request teardown writes it; attempt_id resolves as usual, which links the
-            # rejection into the attempt it refused to process when the request carries that transaction.
-            log_authentication(event_type, request, user=user,
-                               transaction_id=get_optional_one_of(request.all_data, ["transaction_id", "state"]))
-        g.audit_object.log({"success": False, "info": audit_info})
-        return send_result(False, rid=2, details={})
+    rejection = _evaluate_rejection(user)
+    if rejection is None:
+        return None
+    g.audit_object.log({"success": False, "info": rejection.audit_info})
+    if log_rejection:
+        # Staged like any other event, so request teardown writes it.
+        log_authentication(rejection.event_type, request, user=user, other_info=rejection.other_info,
+                           transaction_id=_rejected_transaction_id())
+    # Without a configured message the response keeps its empty detail, byte for byte what it has always been, so
+    # a rejected request is indistinguishable from any other failure.
+    return send_result(False, rid=2, details={"message": rejection.message} if rejection.message else {})
 
-    if is_user_locked(user, clear_expired=True):
-        log.info(f"Rejecting authentication for locked user {user!r}.")
-        return reject(AuthEventType.USER_LOCKED, "Rejected: account is temporarily locked")
-    if is_ip_blocked(g.client_ip, clear_expired=True):
-        log.info(f"Rejecting authentication from blocked IP {g.client_ip!r}.")
-        return reject(AuthEventType.IP_BLOCKED, "Rejected: source IP is blocked")
-    decision = evaluate_access_decision(build_ca_context(user))
-    # A DENY decision is part of this request's history, but no authentication-log row exists yet to record it against
-    # (and a dry-run DENY lets the request continue, so its row comes later). The context holds the outcomes until the
-    # request stages the event they belong to - which, for an enforced DENY, is the row written just below.
-    get_ca_context().add_outcomes(decision.outcomes)
-    if decision.decision == AccessDecision.DENY:
-        log.info(f"Denying authentication for {user!r} by conditional-access policy.")
-        return reject(AuthEventType.ACCESS_DENIED, "Rejected: denied by conditional-access policy")
-    return None
+
+def compose_failure_message(existing: str | None, messages: list[StageMessage]) -> str | None:
+    """
+    What a failed authentication should say, given what conditional access just did to it.
+
+    A restriction *replaces* the reason: the request may well have carried a wrong password, but the lock now in
+    force is the more useful thing to tell the user. A stage that only notified is *appended* instead, because
+    the credential failure is still why the request was refused. ``None`` when there is nothing to add, leaving
+    the caller's own wording alone.
+    """
+    if not messages:
+        return None
+    joined = " ".join(message.text for message in messages)
+    if any(message.kind is not MessageKind.NOTIFICATION for message in messages):
+        return joined
+    return f"{existing.rstrip('.')}. {joined}" if existing else joined
+
+
+def surface_conditional_access_message(request, response):
+    """
+    Response hook that reports on a failed authentication what conditional access just did to it.
+
+    Registered with ``postrequest``, not ``postpolicy``: nothing here is policy-driven, it runs on every failed
+    response. That decorator lives in ``api.lib.postpolicy`` despite the name, and ``sign_response`` uses it the
+    same way - a pre-existing misfiling, not a hint that this is a policy.
+
+    Without this the engine runs at request teardown, after the body is built, so the request that *trips* a
+    stage would still be answered with the ordinary failure ("wrong otp pin") while every later one carried
+    the stage's wording. The lock is written, and any ``EMAIL_*`` action is sent, during this very request -
+    so this is the response that should say so, exactly as ``/auth`` already does.
+
+    Running the evaluation here does not duplicate the one at teardown: it is guarded per classification
+    (``ConditionalAccessContext.run_post_eval``), so whichever runs first does the work and the other returns
+    nothing. Both are needed. Only this one can shape the body, because teardown runs after the response is
+    built; and only teardown is guaranteed, because a decorator is skipped entirely when the view raises and an
+    error handler builds the response instead. The flush first is what makes this request's own event part of
+    the count. A restriction now in force replaces the message, since it is the more useful thing to say; a stage
+    that only notified is appended to whatever the failure already reported, because the credential failure is
+    still the reason it was refused.
+    """
+    if not response or not response.is_json:
+        return response
+    content = response.json
+    if content.get("result", {}).get("value"):
+        # A success has nothing to report: the message is only ever shown on a failed authentication.
+        return response
+    try:
+        context = get_ca_context()
+        context.flush()
+        # Everything in force was written by this request - anything already in force was refused by the
+        # pre-check, which returns its own response - so the evaluation is the whole story and nothing has to
+        # be read back. A request the pre-check did refuse still passes through here, since it returns rather
+        # than raises and this hook wraps it; run_post_eval declines to evaluate its own rejections, so there
+        # is nothing to compose and the gate's wording is left alone.
+        message = compose_failure_message(content.get("detail", {}).get("message"), context.run_post_eval())
+        if message:
+            detail = content.get("detail") or {}
+            detail["message"] = message
+            content["detail"] = detail
+            response.set_data(json.dumps(content))
+    except Exception as ex:
+        # Never break an authentication response over the wording of its own rejection.
+        log.warning(f"Could not surface the conditional-access message on this response: {ex!r}")
+    return response
 
 
 def conditional_access_gate(identity_resolver: Callable[[], User] | None = None,
@@ -147,174 +255,112 @@ def conditional_access_gate(identity_resolver: Callable[[], User] | None = None,
     return decorator
 
 
-# --- /auth: a rejection that explains itself ------------------------------------------------------------------------
+# --- what a rejection is made of, shared by both gates ---------------------------------------------------------------
 
-def _lockout_error_message(lockout: RestrictionStatus) -> str:
+def _binding_event_type(lockout: RestrictionStatus | None,
+                        ip_block: RestrictionStatus | None) -> AuthEventType | None:
     """
-    Build the user-facing message for a login rejected by the conditional-access
-    lockout. *lockout* is the :class:`RestrictionStatus` returned by
-    :func:`~privacyidea.lib.conditional_access.engine.get_user_lockout`: a
-    permanent lock points the user at the administrator, a timed lock states the
-    approximate remaining time (rounded up to whole minutes, at least one).
-    """
-    if lockout.permanent:
-        return _("Your account has been permanently locked. Please contact your administrator.")
-    # Ceiling remaining minutes
-    minutes = max(1, -(-lockout.seconds_remaining // 60))
-    return _("Your account is temporarily locked due to too many failed login attempts. "
-             "Please try again in about {minutes} minute(s).").format(minutes=minutes)
+    How a request refused by both a lock and a block is classified: by the restriction that lasts longest, a
+    permanent one outranking any timed one. On a tie the user lock wins, matching the lock-before-block order
+    of the pre-check.
 
-
-def _blocked_ip_error_message(client_ip: str | None, block: RestrictionStatus) -> str:
-    """
-    Build the user-facing message for a login rejected because the source IP is
-    blocked by a conditional-access ``BLOCK_IP`` action. *block* is the
-    :class:`RestrictionStatus` returned by
-    :func:`~privacyidea.lib.conditional_access.engine.get_ip_block`:
-    a permanent block points the user at the administrator, a timed block states
-    the approximate remaining time (rounded up to whole minutes, at least one).
-    """
-    if block.permanent:
-        return _("Authentication failure. Your IP ({ip}) has been permanently blocked. "
-                 "Please contact your administrator.").format(ip=client_ip)
-    # Ceiling remaining minutes
-    minutes = max(1, -(-block.seconds_remaining // 60))
-    return _("Authentication failure. Your IP ({ip}) has been blocked. "
-             "Please try again in about {minutes} minute(s).").format(ip=client_ip, minutes=minutes)
-
-
-def _restriction_kind(state: RestrictionStatus) -> str:
-    """
-    Classify a lock/block as ``"permanent"`` or ``"temporary"`` for the WebUI.
-
-    Surfaced in the rejection's ``detail`` so the login screen can style a
-    permanent (only-an-admin-can-clear-it) restriction differently from a
-    recoverable timed one. It is a coarse hint, not the specific message, and is
-    dropped when the ``hide_specific_error_message`` policy is active (see
-    :func:`~privacyidea.api.before_after.auth_error`), so it never leaks more than
-    the message itself would.
-    """
-    return "permanent" if state.permanent else "temporary"
-
-
-def _binding_restriction(lockout: RestrictionStatus | None, ip_block: RestrictionStatus | None) -> str | None:
-    """
-    When both a user lockout and a source-IP block are in force, decide which one
-    to report to the user. The binding constraint is the one that lasts longest (a
-    permanent restriction outranks any timed one), so that is what we surface:
-    telling a permanently-blocked user to "try again in 1 minute" because a shorter
-    user lock also happens to be active would be misleading. This is exactly the
-    case when a temporary lock escalates into a permanent IP block on the same
-    request. On a tie the user lock wins, matching the lock-before-block order of
-    the pre-check.
+    Needed because the authentication log records one ``event_type`` per request - the value an admin filters
+    on - so one of the two has to stand for the rejection. What the *user* is told is a separate question with a
+    separate answer: every restriction that carries wording is reported (:func:`_restriction_messages`).
 
     :param lockout: the :class:`RestrictionStatus` from :func:`get_user_lockout`, or ``None``
     :param ip_block: the :class:`RestrictionStatus` from :func:`get_ip_block`, or ``None``
-    :return: ``"lock"`` or ``"block"`` for the restriction to report, or ``None``
-        if neither is in force
+    :return: the :class:`AuthEventType` to file the rejection under, or ``None`` if neither is in force
     """
 
-    def _remaining(state: RestrictionStatus | None) -> float | None:
+    def _remaining_time(state: RestrictionStatus | None) -> float | None:
         if not state:
             return None
         return float("inf") if state.permanent else state.seconds_remaining
 
-    lock_rem = _remaining(lockout)
-    block_rem = _remaining(ip_block)
-    if lock_rem is None and block_rem is None:
+    lock_remaining = _remaining_time(lockout)
+    block_remaining = _remaining_time(ip_block)
+    if lock_remaining is None and block_remaining is None:
         return None
-    if block_rem is not None and (lock_rem is None or block_rem > lock_rem):
-        return "block"
-    return "lock"
+    if block_remaining is not None and (lock_remaining is None or block_remaining > lock_remaining):
+        return AuthEventType.IP_BLOCKED
+    return AuthEventType.USER_LOCKED
 
 
-@dataclass(frozen=True)
-class LoginRestriction:
+def _audit_reason(lockout: RestrictionStatus | None, ip_block: RestrictionStatus | None) -> str:
     """
-    How a login refused by a conditional-access restriction is described to the user.
+    Why this request was refused, for the audit log: every restriction in force, and whether each is permanent.
 
-    :ivar message: the user-facing reason, naming the restriction and how long it lasts.
-    :ivar kind: the coarse severity hint for the WebUI, see :func:`_restriction_kind`.
+    Unlike the authentication log's single ``event_type`` this is free text, so it does not have to choose - and
+    the admin reading it is the one person who should see the whole picture rather than the binding half of it.
     """
-    message: str
-    kind: str
+    parts = []
+    if lockout is not None:
+        parts.append("account is permanently locked" if lockout.permanent else "account is temporarily locked")
+    if ip_block is not None:
+        parts.append("source IP is permanently blocked" if ip_block.permanent else "source IP is temporarily blocked")
+    return f"Rejected: {' and '.join(parts)}"
 
 
-def login_restriction(user: User, client_ip: str | None) -> LoginRestriction | None:
+def _additional_event_types(binding: AuthEventType, lockout: RestrictionStatus | None,
+                            ip_block: RestrictionStatus | None) -> dict | None:
     """
-    How to describe the lock or block in force *now*, or ``None`` if neither is.
+    The event types the row could not record, for the entry's ``other_info``.
 
-    Used on the failed-credentials path, after the engine has evaluated this login: when the login that just failed is
-    what tripped the stage, the lock or block it wrote is already in force, and saying so is more useful than "Wrong
-    credentials". A pure read - unlike the pre-auth gate it does not clear a stale row, because the engine has just
-    written this one.
+    The authentication log holds one classification per request, so a request refused by both a lock and a
+    block is filed under whichever binds (:func:`_binding_event_type`) - and the other would otherwise leave no
+    trace on the row at all, while the user was told about both. Recording it here keeps the row honest: it is
+    not queryable the way ``event_type`` is, but an admin reading the entry sees the whole reason.
+
+    :return: ``{"additional_event_types": [...]}`` when more than one restriction is in force, else ``None``
     """
-    lockout = get_user_lockout(user)
-    ip_block = get_ip_block(client_ip)
-    restriction = _binding_restriction(lockout, ip_block)
-    if restriction == "block":
-        return LoginRestriction(_blocked_ip_error_message(client_ip, ip_block), _restriction_kind(ip_block))
-    if restriction == "lock":
-        return LoginRestriction(_lockout_error_message(lockout), _restriction_kind(lockout))
-    return None
+    if lockout is None or ip_block is None:
+        return None
+    other = AuthEventType.IP_BLOCKED if binding is AuthEventType.USER_LOCKED else AuthEventType.USER_LOCKED
+    return {"additional_event_types": [str(other)]}
 
+
+def _restriction_messages(lockout: RestrictionStatus | None,
+                          ip_block: RestrictionStatus | None) -> list[str]:
+    """
+    The wording of every restriction in force, most severe first, skipping those that carry none.
+
+    Both are reported rather than only the binding one. They are independent facts - an account lock and an
+    address block are resolved differently - so telling the user about one leaves them to discover the other by
+    failing again. Unless they are worded the same: :func:`~privacyidea.lib.conditional_access.engine.
+    restriction_messages` keeps each sentence once, so an admin who wrote one generic line on a user stage and on
+    a source-IP stage does not have the user read it twice for the request both refuse.
+    """
+    return [message.text for message in restriction_messages(lockout, ip_block)]
+
+
+# --- /auth: raise the rejection as an AuthError ---------------------------------------------------------------------
 
 def _reject_restricted_login(user: User) -> None:
     """
     Reject an ``/auth`` login pre-auth (before any credential check) when conditional-access policies forbid it.
-    Raises :class:`AuthError` when the request must be rejected and returns ``None`` otherwise.
+    Raises :class:`AuthError` when the login must be rejected and returns ``None`` otherwise.
 
-    A currently-locked user or a blocked source IP is rejected first. The rejection states the restriction (how long it
-    lasts, or that it is permanent) so the user understands why login fails. An unresolved user / local DB admin has no
-    ``(resolver, uid, realm)`` identity tuple and is therefore never locked. When both apply (e.g. a temporary lock
-    that escalated into a permanent IP block), the longer-lasting one is surfaced so we never tell a
-    permanently-blocked user to "try again in a minute".
+    The decision is :func:`_evaluate_rejection`; this renders it for a human at the login screen. The rejection says
+    whatever wording the admin configured for the restrictions in force - every one of them, so a user facing both a
+    lock and a block is not left to discover the second by failing again. With no wording it falls back to the generic
+    failure, so a locked account is indistinguishable from a wrong password: an ``AuthError`` has to carry some message,
+    which is the one thing this path cannot borrow from ``/validate``, where the rejection simply carries no detail.
 
-    The pre-auth conditional-access DENY decision is evaluated after the lock/block pre-checks so an ALLOW cannot
-    override them. A DENY rejects this single login with a message stating it was a conditional-access decision (the
-    policy is not named). ALLOW / CONTINUE fall through silently.
-
-    Every rejection also classifies the login in the authentication log (``USER_LOCKED`` / ``IP_BLOCKED`` /
-    ``ACCESS_DENIED``), which is the only place an admin can filter for the reason: the login is turned away before
-    anything else logs an outcome for it. The event type follows the restriction actually reported, so the log and the
-    message a user saw cannot disagree. ``internal_admin`` comes from the flag ``before_request`` already resolved, so
-    a blocked local admin is recorded as ``admin-internal`` rather than falling back to ``user``.
+    An unresolved user / local DB admin has no ``(resolver, uid, realm)`` identity tuple and is therefore never locked.
+    ``internal_admin`` comes from the flag ``before_request`` already resolved, so a blocked local admin is recorded as
+    ``admin-internal`` rather than falling back to ``user``.
     """
-    lockout = get_user_lockout(user, clear_expired=True)
-    ip_block = get_ip_block(g.client_ip, clear_expired=True)
-    restriction = _binding_restriction(lockout, ip_block)
-
-    def log_rejection(event_type: AuthEventType) -> None:
-        """Classify this login in the authentication log. Staged, so request teardown writes it even though the
-        AuthError below unwinds the view."""
-        log_authentication(event_type, request, user=user,
-                           internal_admin=g.get("resolved_user", {}).get("is_local_admin", False))
-
-    if restriction == "block":
-        log.info(f"Rejecting /auth login from blocked IP {g.client_ip!r}.")
-        g.audit_object.log({"info": "Rejected: source IP is blocked"})
-        log_rejection(AuthEventType.IP_BLOCKED)
-        raise AuthError(_blocked_ip_error_message(g.client_ip, ip_block),
-                        id=Error.AUTHENTICATE_WRONG_CREDENTIALS,
-                        details={"restriction": _restriction_kind(ip_block)})
-    if restriction == "lock":
-        log.info(f"Rejecting /auth login for locked user {user!r}.")
-        g.audit_object.log({"info": "Rejected: account is temporarily locked"})
-        log_rejection(AuthEventType.USER_LOCKED)
-        raise AuthError(_lockout_error_message(lockout),
-                        id=Error.AUTHENTICATE_WRONG_CREDENTIALS,
-                        details={"restriction": _restriction_kind(lockout)})
-    decision = evaluate_access_decision(build_ca_context(user))
-    # The decision belongs to this request's history, but its authentication-log row does not exist yet: the context
-    # keeps the outcomes until the login stages its event (a dry-run DENY lets the login continue and land on that row).
-    get_ca_context().add_outcomes(decision.outcomes)
-    if decision.decision == AccessDecision.DENY:
-        log.info(f"Denying /auth login for {user!r} by conditional-access policy.")
-        g.audit_object.log({"info": "Rejected: denied by conditional-access policy"})
-        # Staged after add_outcomes above, so this is the row the buffered DENY outcome is recorded against.
-        log_rejection(AuthEventType.ACCESS_DENIED)
-        raise AuthError(_("Authentication failure. Access has been denied by a conditional-access policy."),
-                        id=Error.AUTHENTICATE_WRONG_CREDENTIALS)
+    rejection = _evaluate_rejection(user)
+    if rejection is None:
+        return
+    g.audit_object.log({"success": False, "info": rejection.audit_info})
+    # Staged rather than written, so request teardown records it even though the AuthError below unwinds the view -
+    # and staged after _evaluate_rejection, so an enforced DENY's buffered outcome lands on this row.
+    log_authentication(rejection.event_type, request, user=user, other_info=rejection.other_info,
+                       transaction_id=_rejected_transaction_id(),
+                       internal_admin=g.get("resolved_user", {}).get("is_local_admin", False))
+    raise AuthError(rejection.message or GENERIC_AUTH_FAILURE, id=Error.AUTHENTICATE_WRONG_CREDENTIALS)
 
 
 def conditional_access_login_gate() -> Callable[[Callable], Callable]:

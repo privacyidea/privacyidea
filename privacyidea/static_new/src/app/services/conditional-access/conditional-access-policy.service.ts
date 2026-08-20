@@ -72,6 +72,18 @@ export type LockoutTarget = "user" | "source_ip";
 // privacyidea.lib.conditional_access.authentication_event_types.CountMode.
 export type CountMode = "PER_REQUEST" | "PER_ATTEMPT" | "DISTINCT_USERS";
 
+// Suggested wording for a stage's error_message, bound to the action it describes and served by
+// /conditionalaccess/defaulterrormessages, most severe first. A stage may lock and notify at once, so "category"
+// says how to combine them: the "restriction" entries are mutually exclusive, since only one restriction is ever
+// reported to the user, so the editor takes the first of those the stage carries; the "notification" entries are
+// orthogonal facts and are appended to it. Not scoped by target - an entry for an action a target cannot hold
+// simply never matches. Authoring aid only, never applied at runtime.
+export interface DefaultErrorMessage {
+  action_type: LockoutActionType;
+  category: "restriction" | "notification";
+  message: string;
+}
+
 // Everything the backend constrains by target, served per target by /conditionalaccess/targets: the stage actions
 // it allows and the count modes it supports (both sorted; the UI treats the first count mode as the default).
 export interface TargetConstraints {
@@ -91,6 +103,11 @@ export interface LockoutStageAction {
 export interface LockoutPolicyStage {
   id?: number;
   name?: string | null;
+  // Text shown to the end user when this stage turns a request away. Absent, null or empty
+  // means nothing is surfaced, which is the default: a rejection reveals no conditional-access
+  // detail unless an admin wrote it here. "{duration}" is replaced with the remaining time;
+  // every other brace expression is shown as written.
+  error_message?: string | null;
   failure_threshold: number;
   priority: number;
   actions: LockoutStageAction[];
@@ -205,6 +222,8 @@ export interface ConditionalAccessPolicyServiceInterface {
   readonly targetsResource: HttpResourceRef<PiResponse<Record<string, TargetConstraints>> | undefined>;
   readonly actionsByTarget: Signal<Record<LockoutTarget, LockoutActionType[]>>;
   readonly countModesByTarget: Signal<Record<LockoutTarget, CountMode[]>>;
+  readonly defaultErrorMessagesResource: HttpResourceRef<PiResponse<DefaultErrorMessage[]> | undefined>;
+  readonly defaultErrorMessages: Signal<DefaultErrorMessage[]>;
   readonly targets: Signal<LockoutTarget[]>;
   readonly templatesResource: HttpResourceRef<PiResponse<LockoutPolicyTemplate[]> | undefined>;
   readonly templates: Signal<LockoutPolicyTemplate[]>;
@@ -252,6 +271,7 @@ export class ConditionalAccessPolicyService implements ConditionalAccessPolicySe
   readonly targetsUrl = environment.proxyUrl + "/conditionalaccess/targets";
   readonly templatesUrl = environment.proxyUrl + "/conditionalaccess/template";
   readonly conditionTypesUrl = environment.proxyUrl + "/conditionalaccess/conditiontypes";
+  readonly defaultErrorMessagesUrl = environment.proxyUrl + "/conditionalaccess/defaulterrormessages";
 
   // The routes that read the conditional-access configuration: its own pages, and the authentication log, whose
   // Conditional access filter offers the real policy names and action types rather than a hardcoded list.
@@ -341,6 +361,23 @@ export class ConditionalAccessPolicyService implements ConditionalAccessPolicySe
       Object.fromEntries(
         Object.entries(this.targetConstraints()).map(([target, entry]) => [target, entry.count_modes])
       ) as Record<LockoutTarget, CountMode[]>
+  );
+
+  // Suggested error-message wording per stage action, most severe first. Fetched rather than hard-coded so the
+  // suggestions stay translated by the server and in step with the actions the engine actually supports.
+  readonly defaultErrorMessagesResource = httpResource<PiResponse<DefaultErrorMessage[]>>(() => {
+    if (!this.authService.actionAllowed("lockout_policy_read") || !this.contentService.onConditionalAccess()) {
+      return undefined;
+    }
+    return {
+      url: this.defaultErrorMessagesUrl,
+      method: "GET",
+      headers: this.authService.getHeaders()
+    };
+  });
+
+  readonly defaultErrorMessages: Signal<DefaultErrorMessage[]> = computed(
+    () => this.defaultErrorMessagesResource.value()?.result?.value ?? []
   );
 
   readonly targets: Signal<LockoutTarget[]> = computed(() => Object.keys(this.targetConstraints()) as LockoutTarget[]);

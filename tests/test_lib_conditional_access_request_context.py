@@ -25,7 +25,8 @@ from sqlalchemy import select
 
 from privacyidea.lib.challenge import delete_challenges
 from privacyidea.lib.conditional_access.authentication_event_types import (CA_ENFORCEMENT_EVENT_TYPES, AuthEventType)
-from privacyidea.lib.conditional_access.engine import LockoutAction, LockoutEvaluation
+from privacyidea.lib.conditional_access.engine import (LockoutAction, LockoutEvaluation, MessageKind,
+                                                       StageMessage)
 from privacyidea.lib.conditional_access.outcome_log import get_outcomes
 from privacyidea.lib.conditional_access.authentication_log import (AuthLogUserRole, PendingAuthEvent,
                                                                   get_authentication_logs,
@@ -384,12 +385,12 @@ class ConditionalAccessContextTestCase(MyTestCase):
         evaluate.assert_not_called()
 
     def test_24_post_eval_does_not_repeat_the_same_classification(self):
-        # /auth runs it in-view for the notices; request teardown must not repeat that same evaluation.
+        # /auth runs it in-view for the messages; request teardown must not repeat that same evaluation.
         context = ConditionalAccessContext()
         context.stage(self._event("alice"))
         with mock.patch("privacyidea.lib.conditional_access.engine.evaluate_lockout_policies") as evaluate:
-            evaluate.return_value = LockoutEvaluation(notices=["a notice"])
-            self.assertListEqual(["a notice"], context.run_post_eval())
+            evaluate.return_value = LockoutEvaluation(messages=[StageMessage("a message", MessageKind.NOTIFICATION)])
+            self.assertListEqual([StageMessage("a message", MessageKind.NOTIFICATION)], context.run_post_eval())
             self.assertListEqual([], context.run_post_eval())
         self.assertEqual(1, evaluate.call_count)
 
@@ -429,8 +430,9 @@ class ConditionalAccessContextTestCase(MyTestCase):
             self.assertListEqual([], context.run_post_eval())
 
         with mock.patch("privacyidea.lib.conditional_access.engine.evaluate_lockout_policies") as evaluate:
-            evaluate.return_value = LockoutEvaluation(notices=["locked"], outcomes=[])
-            self.assertListEqual(["locked"], context.run_post_eval())
+            evaluate.return_value = LockoutEvaluation(
+                messages=[StageMessage("locked", MessageKind.TIMED_RESTRICTION)], outcomes=[])
+            self.assertListEqual([StageMessage("locked", MessageKind.TIMED_RESTRICTION)], context.run_post_eval())
         evaluate.assert_called_once()
 
     def test_26_evaluation_counts_over_a_committed_read_view(self):
@@ -521,9 +523,9 @@ class ConditionalAccessContextTestCase(MyTestCase):
         event = context.stage(self._event("alice"))
         context.flush()
         with mock.patch("privacyidea.lib.conditional_access.engine.evaluate_lockout_policies") as evaluate:
-            evaluate.return_value = LockoutEvaluation(notices=["a notice"],
+            evaluate.return_value = LockoutEvaluation(messages=[StageMessage("a message", MessageKind.NOTIFICATION)],
                                                       outcomes=[self._make_outcome(LockoutAction.PERMANENT_LOCK_USER)])
-            self.assertListEqual(["a notice"], context.run_post_eval())
+            self.assertListEqual([StageMessage("a message", MessageKind.NOTIFICATION)], context.run_post_eval())
 
         outcomes = get_outcomes(event.row_id)
         self.assertListEqual([str(LockoutAction.PERMANENT_LOCK_USER)], [outcome.action_type for outcome in outcomes])

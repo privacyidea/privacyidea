@@ -36,6 +36,7 @@ import jwt
 from flask import jsonify, current_app, Response, Request, request, g, has_request_context
 from flask_babel import _
 
+from privacyidea.lib import lazy_gettext
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
 from privacyidea.lib.conditional_access.authentication_log import AuthLogUserRole, PendingAuthEvent
 from privacyidea.lib.conditional_access.request_context import AuthPrincipal, get_ca_context
@@ -68,6 +69,9 @@ if TYPE_CHECKING:
     from privacyidea.lib.conditional_access.context import CAContext
 
 log = logging.getLogger(__name__)
+
+# The wording of an ordinary failed authentication
+GENERIC_AUTH_FAILURE = lazy_gettext("Authentication failure. Wrong credentials")
 ENCODING = "utf-8"
 TRUSTED_JWT_ALGOS = ["ES256", "ES384", "ES512",
                      "RS256", "RS384", "RS512",
@@ -285,9 +289,8 @@ def _determine_user_role(user: User | None, internal_admin: bool) -> AuthLogUser
 
 def log_authentication(event_type: AuthEventType | None, request: Request | None = None, user: User | None = None,
                        serial: str | None = None, transaction_id: str | None = None,
-                       username: str | None = None,
-                       internal_admin: bool = False,
-                       immediate: bool = False) -> "PendingAuthEvent | None":
+                       username: str | None = None, internal_admin: bool = False,
+                       immediate: bool = False, other_info: dict | None = None) -> "PendingAuthEvent | None":
     """
     Record one authentication_log entry for the current request.
 
@@ -387,6 +390,7 @@ def log_authentication(event_type: AuthEventType | None, request: Request | None
         serial=serial,
         attempt_id=context.attempt_id,
         immediate=immediate,
+        other_info=other_info,
     )
     context.stage(event)
     if immediate:

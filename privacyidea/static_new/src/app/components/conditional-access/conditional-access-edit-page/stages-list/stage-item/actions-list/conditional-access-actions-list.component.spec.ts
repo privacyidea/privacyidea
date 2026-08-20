@@ -89,4 +89,60 @@ describe("ConditionalAccessActionsListComponent", () => {
     component.onRemoveAction(0);
     expect(spy).toHaveBeenCalledWith([actions[1]]);
   });
+
+  describe("redundant restrictions", () => {
+    const withActions = (list: LockoutStageAction[]) => {
+      fixture.componentRef.setInput("actions", list);
+      fixture.detectChanges();
+    };
+
+    it("should flag a timed restriction that sits next to a permanent one", () => {
+      // The permanent lock wins the row whichever order they run in, so the timed action changes nothing.
+      withActions([
+        { action_type: "LOCK_USER", action_value: 600 },
+        { action_type: "PERMANENT_LOCK_USER", action_value: null }
+      ]);
+      expect(component.redundantRestrictionPairs()).toEqual([["LOCK_USER", "PERMANENT_LOCK_USER"]]);
+
+      withActions([
+        { action_type: "BLOCK_IP", action_value: 600 },
+        { action_type: "PERMANENT_BLOCK_IP", action_value: null }
+      ]);
+      // Both ends are reported, so the warning can name the action that is doing nothing.
+      expect(component.redundantRestrictionPairs()).toEqual([["BLOCK_IP", "PERMANENT_BLOCK_IP"]]);
+    });
+
+    it("should not flag a stage that carries only one kind of restriction", () => {
+      withActions([{ action_type: "LOCK_USER", action_value: 600 }]);
+      expect(component.redundantRestrictionPairs()).toEqual([]);
+
+      withActions([{ action_type: "PERMANENT_BLOCK_IP", action_value: null }]);
+      expect(component.redundantRestrictionPairs()).toEqual([]);
+    });
+
+    it("should not flag a timed and a permanent action that restrict different subjects", () => {
+      // The server confines a stage's actions to one target, so this cannot be saved today - but the pairing
+      // is checked per subject so that it stays correct if a stage is ever allowed to mix them. A user lock
+      // and an IP block are separate rows: neither overrides the other.
+      withActions([
+        { action_type: "LOCK_USER", action_value: 600 },
+        { action_type: "PERMANENT_BLOCK_IP", action_value: null }
+      ]);
+      expect(component.redundantRestrictionPairs()).toEqual([]);
+    });
+
+    it("should name both actions in the rendered warning", () => {
+      // The point of the warning is telling the admin which two of their actions conflict, so the text has to
+      // carry the names - a stage with several actions gives them nothing to go on otherwise.
+      withActions([
+        { action_type: "LOCK_USER", action_value: 600 },
+        { action_type: "EMAIL_ADMIN", action_value: null },
+        { action_type: "PERMANENT_LOCK_USER", action_value: null }
+      ]);
+      const warning = fixture.nativeElement.querySelector(".ca-actions-list-warning");
+      expect(warning).toBeTruthy();
+      expect(warning.textContent).toContain("LOCK_USER");
+      expect(warning.textContent).toContain("PERMANENT_LOCK_USER");
+    });
+  });
 });

@@ -86,6 +86,13 @@ class LockoutAction(str, Enum):
         return self.value
 
 
+#: The actions that turn a request away or leave a lockout or blocklist row behind. A stage carrying one of them
+#: describes an enforcement, whether or not that enforcement actually happened.
+ENFORCING_ACTIONS = frozenset({LockoutAction.LOCK_USER, LockoutAction.PERMANENT_LOCK_USER,
+                               LockoutAction.BLOCK_IP, LockoutAction.PERMANENT_BLOCK_IP,
+                               LockoutAction.DENY})
+
+
 class AccessDecision(str, Enum):
     """
     The verdict of the pre-auth conditional-access decision step
@@ -143,17 +150,160 @@ class RestrictionStatus:
         permanent.
     :ivar seconds_remaining: whole seconds until a timed restriction expires
         (``>= 0``), or ``None`` when permanent.
+    :ivar error_message: the message template stored on the restriction when it was applied, or
+        ``None`` to say nothing. Rendered with :func:`render_error_message`; kept as the template
+        rather than finished text so ``{duration}`` reflects the time left *now*, not at lock time.
+        A permanent restriction has no time left, so that tag is left as written.
     """
     permanent: bool
     expires_at: "datetime | None"
     seconds_remaining: "int | None"
+    error_message: "str | None" = None
+
+
+# The one tag substituted into a stored error message. Everything else - "{}", "{whatever}" - is left
+# exactly as written, so an admin can use braces in ordinary prose without escaping them.
+DURATION_TAG = "{duration}"
+
+
+def _render_duration(restriction: "RestrictionStatus") -> str:
+    """
+    The remaining time of a timed *restriction* as a rough, user-facing phrase.
+
+    Deliberately coarse: a lock is a thing to come back after, not to count down, and a precise figure
+    would only tell an attacker exactly when to retry.
+    """
+    seconds = max(0, restriction.seconds_remaining or 0)
+    # Round up, and never below one minute: "in about 0 minutes" would invite an immediate retry.
+    minutes = max(1, -(-seconds // 60))
+    if minutes < 60:
+        return _("{minutes} minute(s)").format(minutes=minutes)
+    return _("{hours} hour(s)").format(hours=-(-minutes // 60))
+
+
+class MessageKind(int, Enum):
+    """
+    What a stage's message is about, ordered by how little the user can do about it.
+
+    The order is the presentation order when a request produced several: a permanent restriction first, then a
+    timed one, then a stage that merely notified. Telling someone to "try again in ten minutes" ahead of a
+    permanent block would be misleading, and a notification is an extra fact rather than the reason a request
+    was refused - which is why only :attr:`NOTIFICATION` is appended to the failure instead of replacing it.
+
+    ``int`` rather than ``StrEnum`` so the members sort directly, mirroring
+    :class:`~privacyidea.lib.conditional_access.engine.LockoutAction`'s use of ``str``.
+    """
+    PERMANENT_RESTRICTION = 0
+    TIMED_RESTRICTION = 1
+    NOTIFICATION = 2
+
+
+@dataclass(frozen=True)
+class StageMessage:
+    """
+    One user-facing message a triggered stage produced, already rendered.
+
+    :ivar text: what to show; ``{duration}`` is substituted here, where the duration just written is known.
+    :ivar kind: see :class:`MessageKind` - both the presentation order and whether this replaces the failure
+        reason or is appended to it.
+    """
+    text: str
+    kind: MessageKind
+
+
+def _message_kind(restriction: "RestrictionStatus | None") -> MessageKind:
+    """Which :class:`MessageKind` a message belongs to, given the restriction its stage wrote (if any)."""
+    if restriction is None:
+        return MessageKind.NOTIFICATION
+    return MessageKind.PERMANENT_RESTRICTION if restriction.permanent else MessageKind.TIMED_RESTRICTION
+
+
+def render_error_message(error_message: str | None,
+                         restriction: "RestrictionStatus | None" = None) -> str | None:
+    """
+    The user-facing text for *error_message*, or ``None`` when there is none and the caller should stay
+    generic.
+
+    ``{duration}`` only means something where there is a remaining time, so it is substituted only
+    against a timed restriction. Everywhere else - a permanent lock or block, a ``DENY``, a stage that
+    merely notified - it is left exactly as written, like any other tag we do not substitute. That is a
+    misconfiguration rather than a case to handle: a countdown was written for something that does not
+    count down.
+
+    A plain string replacement, not :func:`_safe_format`: with a single tag there is nothing to parse,
+    a stray brace in the admin's prose cannot make the substitution fail (``format_map`` would raise on
+    a bare ``{}`` and return the template untouched, silently dropping the duration), and no attribute
+    traversal is reachable from admin-supplied text.
+
+    Call this only when the request is actually being turned away. An expired or absent lock is not a
+    rejection at all - there is nothing to tell the user - so passing ``None`` to mean "not locked"
+    would log a missing duration for a login that is about to succeed.
+
+    :param error_message: the stored template, or ``None``
+    :param restriction: the restriction in force, when there is one; ``None`` for a decision or a
+        notification, which turn a request away without leaving anything behind
+    """
+    if not error_message:
+        return None
+    if DURATION_TAG not in error_message:
+        return error_message
+    if restriction is None or restriction.permanent or restriction.seconds_remaining is None:
+        # debug: the editor is where this is caught, and the line repeats on every rejected request from
+        # a caller we do not control - at any louder level a permanently locked account would let someone
+        # else choose our log volume.
+        log.debug(f"Leaving {DURATION_TAG} unsubstituted: it was configured for a restriction that has no "
+                  f"remaining time.")
+        return error_message
+    return error_message.replace(DURATION_TAG, _render_duration(restriction))
+
+
+def rank_and_deduplicate(messages: list["StageMessage"]) -> list["StageMessage"]:
+    """
+    The messages to show, ordered by :class:`MessageKind` and with each distinct sentence kept once.
+
+    Ranked before de-duplicating, so the strongest meaning of a given sentence is the one kept. An admin can
+    configure the same wording on a notify-only stage and on a locking one; keeping the notification would have
+    :func:`~privacyidea.api.lib.conditional_access.compose_failure_message` append it to the generic failure rather
+    than replace it, and the user would read "wrong credentials" for an account that is locked. The sort is stable,
+    so messages of equal kind stay in the order they were collected in.
+
+    Used by both paths that describe a restriction - the post-response evaluation and the pre-check that refuses
+    the requests after it - so the same state cannot be worded differently depending on which one answers.
+    """
+    seen: set[str] = set()
+    unique: list[StageMessage] = []
+    for message in sorted(messages, key=lambda message: message.kind):
+        if message.text not in seen:
+            seen.add(message.text)
+            unique.append(message)
+    return unique
+
+
+def restriction_messages(*restrictions: "RestrictionStatus | None") -> list["StageMessage"]:
+    """
+    The wording of each of *restrictions* that carries any, ranked and de-duplicated.
+
+    Silent by default holds here as everywhere: a restriction carrying no wording produces no message, and
+    ``None`` (nothing in force) contributes nothing at all.
+    """
+    messages = []
+    for restriction in restrictions:
+        text = render_error_message(restriction.error_message, restriction) if restriction else None
+        if text:
+            messages.append(StageMessage(text, _message_kind(restriction)))
+    return rank_and_deduplicate(messages)
 
 
 @dataclass
 class LockoutEvaluation:
     """
-    What one post-response evaluation produced: the notices to surface on the current response, and the outcomes to
-    record as the request's conditional-access history.
+    What one post-response evaluation produced: the user-facing messages to surface on the current response, and the
+    outcomes to record as the request's conditional-access history.
+
+    Each message is a :class:`StageMessage`, already rendered and ordered by :class:`MessageKind` so a caller
+    showing several leads with the one the user can do least about. Wording for a restriction is rendered from the
+    row now in force, not by the stage that wrote it: several policies can restrict the same subject in one request
+    and only one row survives them. Notification wording comes from the stage, the only place it exists.
 
     The engine returns these instead of writing the history itself. It has no access to the id of the
     authentication-log row (it runs before the row exists on the pre-auth path, and never sees it on the other), and
@@ -163,8 +313,10 @@ class LockoutEvaluation:
     Also used as the per-policy result inside :func:`_evaluate_policy`, since "what this produced" is the same shape
     for one policy and for all of them.
     """
-    notices: list[str] = field(default_factory=list)
+    messages: list[StageMessage] = field(default_factory=list)
     outcomes: list[ConditionalAccessOutcome] = field(default_factory=list)
+    #: Which rows this evaluation wrote a restriction to, so the caller knows which ones to describe.
+    restricted_targets: set[LockoutTarget] = field(default_factory=set)
 
 
 @dataclass
@@ -182,6 +334,10 @@ class AccessDecisionResult:
     """
     decision: AccessDecision = AccessDecision.CONTINUE
     outcomes: list[ConditionalAccessOutcome] = field(default_factory=list)
+    # The wording of the stage that denied, read straight off it: a DENY decides this one request and
+    # persists nothing, so unlike a lock there is no state row to copy it to and nothing to go stale.
+    # None for ALLOW and CONTINUE, which turn no request away.
+    error_message: "str | None" = None
 
 
 def _resolved(user: "User") -> bool:
@@ -663,7 +819,8 @@ def get_user_lockout(user: "User", now: datetime | None = None, *,
         return None
     if state.lock_expires_at is None:
         # Permanent lock; only an admin reset clears it.
-        return RestrictionStatus(permanent=True, expires_at=None, seconds_remaining=None)
+        return RestrictionStatus(permanent=True, expires_at=None, seconds_remaining=None,
+                                 error_message=state.error_message)
     now = _naive_utc(now) if now is not None else utc_now()
     if state.lock_expires_at <= now:
         # If explicitly requested, drop expired rows
@@ -672,7 +829,7 @@ def get_user_lockout(user: "User", now: datetime | None = None, *,
         return None
     remaining = int((state.lock_expires_at - now).total_seconds())
     return RestrictionStatus(permanent=False, expires_at=state.lock_expires_at,
-                             seconds_remaining=remaining)
+                             seconds_remaining=remaining, error_message=state.error_message)
 
 
 def is_user_locked(user: "User", now: datetime | None = None, *, clear_expired: bool = False) -> bool:
@@ -776,7 +933,8 @@ def get_ip_block(source_ip: str | None, now: datetime | None = None, *,
         return None
     if state.block_expires_at is None:
         # Permanent block; only an admin reset clears it.
-        return RestrictionStatus(permanent=True, expires_at=None, seconds_remaining=None)
+        return RestrictionStatus(permanent=True, expires_at=None, seconds_remaining=None,
+                                 error_message=state.error_message)
     now = _naive_utc(now) if now is not None else utc_now()
     if state.block_expires_at <= now:
         if clear_expired:
@@ -784,7 +942,7 @@ def get_ip_block(source_ip: str | None, now: datetime | None = None, *,
         return None
     remaining = int((state.block_expires_at - now).total_seconds())
     return RestrictionStatus(permanent=False, expires_at=state.block_expires_at,
-                             seconds_remaining=remaining)
+                             seconds_remaining=remaining, error_message=state.error_message)
 
 
 def is_ip_blocked(source_ip: str | None, now: datetime | None = None, *, clear_expired: bool = False) -> bool:
@@ -861,7 +1019,7 @@ def evaluate_access_decision(context: CAContext, now: datetime | None = None) ->
         if contribution.decision != AccessDecision.CONTINUE:
             # The first policy that decides wins, so no lower-priority policy is even consulted - and the outcomes
             # collected so far are exactly those of the policies that had something to say.
-            return AccessDecisionResult(contribution.decision, outcomes)
+            return AccessDecisionResult(contribution.decision, outcomes, contribution.error_message)
     return AccessDecisionResult(outcomes=outcomes)
 
 
@@ -914,12 +1072,16 @@ def _policy_access_decision(policy: LockoutPolicy, context: CAContext,
         if decision is not None:
             deciding_stage = stage
             break
-    if decision is None:
+    if decision is None or deciding_stage is None:
+        # Paired by construction - a decision is only ever set together with the stage that made it -
+        # but stated so the stage can be read below without a possible-None access.
         return AccessDecisionResult()
     types = _types_label(policy.counter_types_to_track)
     # Only a DENY is recorded; see the docstring for why an ALLOW is not.
     outcomes = ([outcome_for_stage(policy, deciding_stage, LockoutAction.DENY, count, dry_run=policy.dry_run)]
                 if decision == AccessDecision.DENY else [])
+    # Only a denial turns the request away, so only a denial has anything to tell the user.
+    error_message = deciding_stage.error_message if decision == AccessDecision.DENY else None
     if policy.dry_run:
         # A dry-run policy never decides the request. The outcome still travels back: the pre-auth decision runs
         # before this request's authentication-log row exists, so the caller buffers it and it is recorded once that
@@ -929,7 +1091,7 @@ def _policy_access_decision(policy: LockoutPolicy, context: CAContext,
         return AccessDecisionResult(outcomes=outcomes)
     log.info(f"Policy {policy.name!r} returns access decision {decision} for {subject_label}: "
              f"{count} event(s) of {types} in {policy.time_window_seconds}s.")
-    return AccessDecisionResult(decision, outcomes)
+    return AccessDecisionResult(decision, outcomes, error_message)
 
 
 def _stage_access_decision(stage: LockoutPolicyStage, count: int) -> "AccessDecision | None":
@@ -955,6 +1117,28 @@ def _stage_access_decision(stage: LockoutPolicyStage, count: int) -> "AccessDeci
     return AccessDecision.ALLOW if has_allow else None
 
 
+def _restrictions_in_force(context: CAContext, targets: set[LockoutTarget]) -> list[StageMessage]:
+    """
+    The wording of the restrictions an evaluation left in force, one message per restricted row.
+
+    Read back rather than rendered by the stage that wrote it. Several policies can restrict the same subject in
+    one request and a stage can carry several restricting actions, but only one row survives them all - so the
+    stage that wrote the weaker restriction would otherwise describe a lock that is not in force, and two
+    policies locking the same user would tell the user twice. Reading the row also means ``{duration}`` counts
+    down the expiry that actually stands, whatever the upserts decided to keep.
+
+    Silent by default holds here as everywhere: a row carrying no wording produces no message.
+
+    :param targets: the targets this evaluation restricted, so an untouched row is never read or described
+    """
+    statuses = []
+    if LockoutTarget.USER in targets and context.user is not None:
+        statuses.append(get_user_lockout(context.user))
+    if LockoutTarget.SOURCE_IP in targets and context.source_ip:
+        statuses.append(get_ip_block(context.source_ip))
+    return restriction_messages(*statuses)
+
+
 def evaluate_lockout_policies(context: CAContext, event_type: AuthEventType | None,
                               now: datetime | None = None) -> "LockoutEvaluation":
     """
@@ -974,15 +1158,13 @@ def evaluate_lockout_policies(context: CAContext, event_type: AuthEventType | No
     actions too.
 
     The persistent side effects (lock state) are consulted by the *next* inbound
-    request via the pre-check. In addition, an executed ``EMAIL_*`` action yields
-    a short user-facing notice (e.g. "Your administrator has been notified by
-    email."); those notices are returned so the caller can surface them on the
-    current response — the login screen shows them next to the rejection, exactly
-    as it shows a lockout message. Any error is the caller's to swallow; this
+    request via the pre-check, which reads the wording back off the row they wrote. A stage that only
+    notified leaves no such row, so its message is returned here instead, for the caller to surface on
+    the response this evaluation belongs to. Any error is the caller's to swallow; this
     function itself only guards individual DB writes (see
     :func:`_upsert_user_lockout_state`).
 
-    Alongside the notices, every action that actually ran (or, in dry run, would have run) is returned as a
+    Alongside the messages, every action that actually ran (or, in dry run, would have run) is returned as a
     :class:`~privacyidea.models.conditional_access_outcome.ConditionalAccessOutcome` for the caller to record as this
     request's history.
     The engine deliberately does not write them: it never sees the id of the authentication-log row they belong to.
@@ -995,7 +1177,7 @@ def evaluate_lockout_policies(context: CAContext, event_type: AuthEventType | No
     :param event_type: the classified outcome of the request
         (:class:`AuthEventType`)
     :param now: the reference time; defaults to :func:`utc_now`
-    :return: a :class:`LockoutEvaluation` holding the de-duplicated, order-preserving user-facing notices produced by
+    :return: a :class:`LockoutEvaluation` holding the de-duplicated, order-preserving user-facing messages produced by
         executed actions, and the outcomes to record (both empty if nothing was triggered)
     """
     if not event_type:
@@ -1015,8 +1197,9 @@ def evaluate_lockout_policies(context: CAContext, event_type: AuthEventType | No
                LockoutPolicyCounterType.counter_type == event_type)
         .order_by(LockoutPolicy.priority.asc())
     ).all()
-    notices: list[str] = []
+    messages: list[StageMessage] = []
     outcomes: list[ConditionalAccessOutcome] = []
+    restricted: set[LockoutTarget] = set()
     for policy in policies:
         # Guarded per policy so one policy's failure does not cost the others theirs: a broken policy would otherwise
         # disable every policy ordered behind it. The only failure that escapes is the policy query above, which runs
@@ -1026,18 +1209,16 @@ def evaluate_lockout_policies(context: CAContext, event_type: AuthEventType | No
         except Exception as ex:
             log.warning(f"Lockout policy {policy.name!r} failed to evaluate: {ex!r}; skipping it.")
             continue
-        notices.extend(evaluation.notices)
+        messages.extend(evaluation.messages)
         outcomes.extend(evaluation.outcomes)
-    # De-duplicate the notices while preserving order: several policies tracking the same user can emit the same one
-    # in a single request. The outcomes are *not* de-duplicated - each is a distinct thing that happened, and two
-    # policies locking the same user are two facts worth keeping apart.
-    seen: set[str] = set()
-    unique: list[str] = []
-    for notice in notices:
-        if notice not in seen:
-            seen.add(notice)
-            unique.append(notice)
-    return LockoutEvaluation(notices=unique, outcomes=outcomes)
+        restricted |= evaluation.restricted_targets
+    # Every restriction is described once, from the row left in force, ahead of the notifications the stages
+    # carry: two policies locking the same user leave one lock, and so must say so once.
+    messages = _restrictions_in_force(context, restricted) + messages
+    # Ranked and de-duplicated by rank_and_deduplicate, which is stable, so messages of equal kind stay in
+    # policy-priority order. The outcomes are *not* de-duplicated - each is a distinct thing that happened, and
+    # two policies locking the same user are two facts worth keeping apart.
+    return LockoutEvaluation(messages=rank_and_deduplicate(messages), outcomes=outcomes)
 
 
 def _action_threshold_met(action: LockoutStageAction, threshold: int, count: int) -> bool:
@@ -1077,9 +1258,9 @@ def _evaluate_policy(policy: LockoutPolicy, context: CAContext, event_type: str,
     threshold. So one stage can, for example, email once at threshold 8 while
     keeping the user locked for every further failure at 8 or more.
 
-    :return: a :class:`LockoutEvaluation` with the user-facing notices produced by the executed actions and the
+    :return: a :class:`LockoutEvaluation` with the user-facing messages produced by the executed actions and the
         outcomes describing what was done (both empty if no stage triggered; in dry run there are outcomes but no
-        notices, since nothing ran)
+        messages, since nothing ran)
     """
     # Applicability first: a policy whose conditions exclude this request neither
     # counts nor acts, and costs no counting query.
@@ -1277,36 +1458,18 @@ def _resolve_admin_recipients(recipient_group: str | None) -> list[str]:
     return []
 
 
-def _login_notice(action_type: "LockoutAction", email_config: dict, render_tags: dict) -> str:
-    """
-    Build the short message shown to the user on the login screen once an
-    ``EMAIL_*`` action has been sent, mirroring how a lockout rejection is
-    surfaced. An admin can override it per action with a ``login_notice``
-    template in ``action_value`` (``{tag}`` substitution applies); otherwise a
-    default keyed by the action type is used. The wording never reveals the
-    recipient address.
-    """
-    custom = email_config.get("login_notice")
-    if custom:
-        return _safe_format(str(custom), render_tags)
-    if action_type == LockoutAction.EMAIL_USER:
-        return _("A notification email has been sent to your email address.")
-    return _("Your administrator has been notified by email.")
-
-
 def _send_lockout_email(action_type: "LockoutAction", stage_action: LockoutStageAction,
-                        user: "User | None", tags: dict) -> str | None:
+                        user: "User | None", tags: dict) -> bool:
     """
     Send the EMAIL_ADMIN / EMAIL_USER notification for a triggered stage action.
 
     The stage action's ``action_value`` is a JSON object carrying
     ``smtp_identifier`` (the SMTP server configuration to use), ``subject`` and
     ``body`` (both rendered with ``{tag}`` substitution), an optional ``mimetype``
-    (``plain``/``html``), an optional ``login_notice`` (overrides the message
-    surfaced on the login screen) and, for EMAIL_ADMIN, an optional
-    ``recipient_group``. EMAIL_USER sends to the user's own email address. A
-    missing field or a user without an email address is logged and skipped; this
-    runs post-response and must never raise.
+    (``plain``/``html``) and, for EMAIL_ADMIN, an optional ``recipient_group``.
+    EMAIL_USER sends to the user's own email address. A missing field or a user
+    without an email address is logged and skipped; this runs post-response and
+    must never raise.
 
     *user* is ``None`` when the request carried no user to resolve - the normal case for a source-IP
     policy firing on spraying or enumeration traffic, which is exactly the traffic an EMAIL_ADMIN
@@ -1314,8 +1477,11 @@ def _send_lockout_email(action_type: "LockoutAction", stage_action: LockoutStage
     :func:`_base_action_tags`) and EMAIL_USER finds no recipient and skips, but the admin alert is
     still sent.
 
-    :return: the user-facing login-screen notice if the email was sent, else
-        ``None`` (misconfiguration, no recipient, or delivery failure).
+    Anything the user is told about it comes from the stage's own ``error_message``, so this reports
+    only whether the mail went out.
+
+    :return: whether the email was sent; ``False`` for a misconfiguration, no recipient, or a delivery
+        failure.
     """
     email_config = stage_action.action_value if isinstance(stage_action.action_value, dict) else {}
     identifier = email_config.get("smtp_identifier") or email_config.get("identifier")
@@ -1323,7 +1489,7 @@ def _send_lockout_email(action_type: "LockoutAction", stage_action: LockoutStage
     if not identifier or not subject or not body:
         log.warning(f"{action_type} action {stage_action.id}: needs smtp_identifier, subject and body in "
                     f"action_value; skipping.")
-        return
+        return False
 
     # Resolver-backed attributes are fetched once, only now that an email is sent.
     info = (user.info if user else None) or {}
@@ -1334,13 +1500,13 @@ def _send_lockout_email(action_type: "LockoutAction", stage_action: LockoutStage
         recipients = [info["email"]] if info.get("email") else []
         if not recipients:
             log.warning(f"EMAIL_USER action {stage_action.id}: user {user!r} has no email address; skipping.")
-            return
+            return False
     else:  # EMAIL_ADMIN
         recipients = _resolve_admin_recipients(email_config.get("recipient_group"))
         if not recipients:
             log.warning(f"EMAIL_ADMIN action {stage_action.id}: no recipients for "
                         f"recipient_group={email_config.get('recipient_group')!r}; skipping.")
-            return
+            return False
 
     from privacyidea.lib.smtpserver import send_email_identifier
     sent = send_email_identifier(identifier, recipients,
@@ -1349,9 +1515,9 @@ def _send_lockout_email(action_type: "LockoutAction", stage_action: LockoutStage
                                  mimetype=email_config.get("mimetype", "plain"))
     if sent:
         log.info(f"{action_type} for {user!r} sent to {len(recipients)} recipient(s) via {identifier!r}.")
-        return _login_notice(action_type, email_config, render_tags)
+        return True
     log.warning(f"{action_type} for {user!r} could not be delivered via {identifier!r}.")
-    return None
+    return False
 
 
 def _execute_stage_actions(policy: LockoutPolicy, stage: LockoutPolicyStage,
@@ -1372,11 +1538,18 @@ def _execute_stage_actions(policy: LockoutPolicy, stage: LockoutPolicyStage,
 
     :param policy: the triggering policy, for the outcomes
     :param count: the count that tripped the stage, for the outcomes
-    :return: a :class:`LockoutEvaluation` with the user-facing notices produced by executed ``EMAIL_*`` actions and one
-        outcome per action that ran (both empty if every action was skipped).
+    :return: a :class:`LockoutEvaluation` with this stage's message when it only notified, one outcome per action
+        that ran, and the targets it restricted (all empty if every action was skipped).
     """
-    notices: list[str] = []
     outcomes: list[ConditionalAccessOutcome] = []
+    # Which rows this stage wrote a restriction to. Their wording is rendered by the caller from the row that
+    # survives the whole evaluation, so a stage that restricts carries no message of its own from here.
+    restricted: set[LockoutTarget] = set()
+    # Whether any action set out to enforce something, which is not the same as having enforced it: a write can be
+    # declined as weakening or fail outright, and a DENY decides the request pre-auth rather than here. Either way
+    # the stage's wording describes that enforcement, so it must not leave here as a notification.
+    attempted_enforcement = False
+
     user = context.user
     source_ip = context.source_ip
 
@@ -1390,6 +1563,7 @@ def _execute_stage_actions(policy: LockoutPolicy, stage: LockoutPolicyStage,
         except ValueError:
             log.warning(f"Unknown lockout action type {action.action_type!r} on stage {stage.id}; skipping.")
             continue
+        attempted_enforcement = attempted_enforcement or action_type in ENFORCING_ACTIONS
 
         try:
             if action_type == LockoutAction.LOCK_USER:
@@ -1399,16 +1573,17 @@ def _execute_stage_actions(policy: LockoutPolicy, stage: LockoutPolicyStage,
                                 f"({action.action_value!r}); skipping.")
                     continue
                 lock_expires_at = now + timedelta(seconds=duration)
-                if _upsert_user_lockout_state(user, lock_expires_at=lock_expires_at):
+                if _upsert_user_lockout_state(user, lock_expires_at=lock_expires_at,
+                                              error_message=stage.error_message):
+                    restricted.add(LockoutTarget.USER)
                     record(action_type, expires_at=lock_expires_at)
             elif action_type == LockoutAction.PERMANENT_LOCK_USER:
-                if _upsert_user_lockout_state(user, lock_expires_at=None):
+                if _upsert_user_lockout_state(user, lock_expires_at=None,
+                                              error_message=stage.error_message):
+                    restricted.add(LockoutTarget.USER)
                     record(action_type)
             elif action_type in (LockoutAction.EMAIL_ADMIN, LockoutAction.EMAIL_USER):
-                notice = _send_lockout_email(action_type, action, user, tags)
-                if notice:
-                    # A notice is returned exactly when the mail was accepted, so it doubles as "this action ran".
-                    notices.append(notice)
+                if _send_lockout_email(action_type, action, user, tags):
                     record(action_type)
             elif action_type in (LockoutAction.BLOCK_IP, LockoutAction.PERMANENT_BLOCK_IP):
                 # Failures are counted per user, so this blocks the source IP
@@ -1429,7 +1604,8 @@ def _execute_stage_actions(policy: LockoutPolicy, stage: LockoutPolicyStage,
                                     f"({action.action_value!r}); skipping.")
                         continue
                     block_expires_at = now + timedelta(seconds=duration)
-                if _upsert_ip_block(source_ip, block_expires_at=block_expires_at):
+                if _upsert_ip_block(source_ip, block_expires_at=block_expires_at, error_message=stage.error_message):
+                    restricted.add(LockoutTarget.SOURCE_IP)
                     record(action_type, expires_at=block_expires_at)
             elif action_type in (LockoutAction.ALLOW, LockoutAction.DENY):
                 # ALLOW/DENY decide the current request pre-auth (see
@@ -1443,7 +1619,17 @@ def _execute_stage_actions(policy: LockoutPolicy, stage: LockoutPolicyStage,
         except Exception as ex:
             log.warning(f"Lockout action {action_type} (id {action.id}) on stage {stage.id} "
                         f"failed: {ex!r}; skipping.")
-    return LockoutEvaluation(notices=notices, outcomes=outcomes)
+    if stage.error_message and outcomes and attempted_enforcement and not restricted:
+        log.info(f"Not showing the error message of stage {stage.id} (policy {policy.name!r}): it describes an "
+                 "enforcement that was (partially) declined, could not be written, or does not decide this request.")
+    # A stage that restricted is described from its row, by the caller; only a notify-only stage carries its
+    # wording from here, since it wrote nothing to read back. A stage that enforced nothing after setting out to is
+    # not notify-only either: rendering its wording here would leave a ``{duration}`` unsubstituted and rank it as a
+    # notification, so it stays silent and whatever did take effect speaks for the request - the row that survived,
+    # or the DENY on the request it actually turns away.
+    rendered = render_error_message(stage.error_message) if outcomes and not attempted_enforcement else None
+    messages = [StageMessage(rendered, _message_kind(None))] if rendered else []
+    return LockoutEvaluation(messages=messages, outcomes=outcomes, restricted_targets=restricted)
 
 
 def _delete_user_lockout_state(state: UserLockoutState) -> None:
@@ -1473,20 +1659,25 @@ def _delete_ip_block(state: BlockList) -> None:
         get_ca_session().delete(state)
 
 
-def _upsert_user_lockout_state(user: "User", *, lock_expires_at: datetime | None) -> bool:
+def _upsert_user_lockout_state(user: "User", *, lock_expires_at: datetime | None, error_message: str | None) -> bool:
     """
     Create or update the :class:`UserLockoutState` row for *user*.
 
     The write is defensive: a failure is logged and rolled back so that writing
     the lockout state can never break the authentication response that already
-    completed. An existing **permanent** lock is never downgraded to a timed
-    lock.
+    completed.
 
-    :return: whether the lock was written. ``False`` when the write failed, or when it was declined because a stronger
-        (permanent) lock is already in force - the caller uses this to record the action in the history only if it
+    A lock is never **weakened**: a permanent lock is not downgraded to a timed one, and a timed lock is not
+    shortened. Several policies can lock the same user in one request (:func:`evaluate_lockout_policies` runs
+    every policy tracking the event), and a stage can carry more than one lock action; without this rule the
+    last write would win regardless of severity, so a one-hour lock followed by a ten-minute one would leave
+    the user locked for ten minutes.
+
+    :return: whether the lock was written. ``False`` when the write failed, or when it was declined because a
+        stronger lock is already in force - the caller uses this to record the action in the history only if it
         actually changed something.
     """
-    downgrade_declined = False
+    weakening_declined = False
     with guarded_write(f"the user lockout state for {user!r}") as write:
         session = get_ca_session()
         state = session.get(UserLockoutState, (user.resolver, user.uid, user.realm))
@@ -1495,33 +1686,42 @@ def _upsert_user_lockout_state(user: "User", *, lock_expires_at: datetime | None
             session.add(state)
         elif state.lock_expires_at is None and lock_expires_at is not None:
             log.info(f"Not downgrading the existing permanent lock for {user!r} to a timed lock.")
-            downgrade_declined = True
-        if not downgrade_declined:
+            weakening_declined = True
+        elif lock_expires_at is not None and lock_expires_at < state.lock_expires_at:
+            log.info(f"Not shortening the existing lock for {user!r}: it already runs until "
+                     f"{state.lock_expires_at}.")
+            weakening_declined = True
+        if not weakening_declined:
             state.username = user.login
             state.lock_expires_at = lock_expires_at
-    return write.succeeded and not downgrade_declined
+            # Written together with the expiry, so the wording always describes the lock now in force. A write
+            # that would weaken the lock is declined above, its wording with it.
+            state.error_message = error_message
+    return write.succeeded and not weakening_declined
 
 
-def _upsert_ip_block(source_ip: str, *, block_expires_at: datetime | None) -> bool:
+def _upsert_ip_block(source_ip: str, *, block_expires_at: datetime | None, error_message: str | None) -> bool:
     """
     Create or update the :class:`BlockList` row for *source_ip*.
 
     The IP counterpart of :func:`_upsert_user_lockout_state`: the write is
     defensive (a failure is logged and rolled back so that blocking an IP can
-    never break the authentication response that already completed) and an
-    existing **permanent** block is never downgraded to a timed one.
+    never break the authentication response that already completed) and a block
+    is never weakened - neither downgraded from permanent to timed, nor
+    shortened.
 
     Never-block IPs (loopback and the ``CONDITIONAL_ACCESS_NEVER_BLOCK`` config)
     are skipped: blocking shared infrastructure (a reverse proxy, NAT egress, or
     a load balancer) would lock out everyone behind it.
 
-    :return: whether the block was written. ``False`` for a never-block IP, for a declined downgrade of a permanent
-        block, and for a failed write - so the caller records the action in the history only if it did something.
+    :return: whether the block was written. ``False`` for a never-block IP, for a write declined because a
+        stronger block is already in force, and for a failed write - so the caller records the action in the
+        history only if it did something.
     """
     if is_ip_never_block(source_ip):
         log.info(f"Not blocking IP {source_ip!r}: it is on the conditional-access never-block list.")
         return False
-    downgrade_declined = False
+    weakening_declined = False
     with guarded_write(f"the IP block for {source_ip!r}") as write:
         session = get_ca_session()
         state = session.get(BlockList, source_ip)
@@ -1530,7 +1730,13 @@ def _upsert_ip_block(source_ip: str, *, block_expires_at: datetime | None) -> bo
             session.add(state)
         elif state.block_expires_at is None and block_expires_at is not None:
             log.info(f"Not downgrading the existing permanent block for IP {source_ip!r} to a timed block.")
-            downgrade_declined = True
-        if not downgrade_declined:
+            weakening_declined = True
+        elif block_expires_at is not None and block_expires_at < state.block_expires_at:
+            log.info(f"Not shortening the existing block for IP {source_ip!r}: it already runs until "
+                     f"{state.block_expires_at}.")
+            weakening_declined = True
+        if not weakening_declined:
             state.block_expires_at = block_expires_at
-    return write.succeeded and not downgrade_declined
+            # See _upsert_user_lockout_state: written together with the expiry.
+            state.error_message = error_message
+    return write.succeeded and not weakening_declined

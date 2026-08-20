@@ -24,6 +24,7 @@ import {
   ConditionOperatorMeta,
   ConditionTypeMeta,
   CountMode,
+  DefaultErrorMessage,
   LockoutActionType,
   LockoutPolicy,
   LockoutPolicyCondition,
@@ -62,6 +63,10 @@ export class MockConditionalAccessPolicyService implements ConditionalAccessPoli
   templatesResource = new MockHttpResourceRef(MockPiResponse.fromValue<LockoutPolicyTemplate[]>([]));
 
   templates = signal<LockoutPolicyTemplate[]>([]);
+
+  defaultErrorMessagesResource = new MockHttpResourceRef(MockPiResponse.fromValue<DefaultErrorMessage[]>([]));
+
+  defaultErrorMessages = signal<DefaultErrorMessage[]>([]);
 
   conditionTypesResource = new MockHttpResourceRef(MockPiResponse.fromValue<Record<string, ConditionTypeMeta>>({}));
 

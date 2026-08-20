@@ -41,6 +41,7 @@ A policy is passed around as a plain dict::
             {
                 "failure_threshold": 5,
                 "priority": 1,
+                "error_message": "Your account is locked. Please try again in about {duration}.",
                 "actions": [
                     {"action_type": "LOCK_USER", "action_value": {"lock_duration_seconds": 600},
                      "retrigger_above_threshold": True},
@@ -62,6 +63,13 @@ must be :class:`~privacyidea.lib.conditional_access.engine.LockoutAction` names;
 :class:`~privacyidea.lib.error.ParameterError` (fail-closed - a typo must not silently create a policy that never
 matches or an action that never fires).
 
+A stage's optional ``error_message`` is the text an end user sees when a request is turned away by that stage. It is
+opt-in and there is no default: without one the rejection stays generic, so privacyIDEA never volunteers that an
+account is locked or an IP blocked unless an admin chose to say so. ``{duration}`` is substituted with the remaining
+time at rejection, and only where there is one: on a permanent lock, a ``DENY`` or a notify-only stage it
+is left as written, like any other tag that is not substituted. Every other brace expression is left exactly
+as written - braces in prose need no escaping - so only the length is validated here.
+
 ``conditions`` is the *applicability* axis, orthogonal to the counting one: it restricts which requests the policy
 applies to at all, while the counter types and thresholds decide what trips it. It is optional - a policy without
 conditions applies to every request - and is validated against the registries in
@@ -76,6 +84,7 @@ from dataclasses import dataclass, field
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
+from privacyidea.lib import _, lazy_gettext
 from privacyidea.lib.conditional_access.authentication_event_types import (
     TRACKABLE_EVENT_TYPES,
     CountMode,
@@ -93,6 +102,10 @@ log = logging.getLogger(__name__)
 # name is Unicode(255) in the model; checked here so an over-long name is a
 # clean ParameterError instead of a DB-dependent truncation or error.
 MAX_NAME_LENGTH = 255
+
+# Same for a user-facing error message, which is Unicode(500) wherever it is stored - on a stage, and
+# on the lock/block state rows that copy it. Shared, so any path taking one as input validates alike.
+MAX_ERROR_MESSAGE_LENGTH = 500
 
 # The pre-auth ALLOW/DENY actions: standing decisions that apply while the count
 # stays at or above the threshold, so they default to re-triggering (the
@@ -136,6 +149,7 @@ class StageDefinition:
     priority: int
     actions: list[StageActionDefinition] = field(default_factory=list)
     name: str | None = None
+    error_message: str | None = None
 
 
 def lockout_policy_to_dict(policy: LockoutPolicy) -> dict:
@@ -172,6 +186,7 @@ def lockout_policy_to_dict(policy: LockoutPolicy) -> dict:
         {
             "id": stage.id,
             "name": stage.name,
+            "error_message": stage.error_message,
             "failure_threshold": stage.failure_threshold,
             "priority": stage.priority,
             "actions": [
@@ -266,6 +281,34 @@ def _validate_stage_name(name) -> str | None:
     return name
 
 
+def validate_error_message(error_message: str | None) -> str | None:
+    """
+    Validate an optional user-facing error message - the text surfaced to the end user
+    when a request is turned away. ``None`` or an empty/blank string
+    means "say nothing" and returns ``None``, which is the default: a rejection
+    reveals no conditional-access detail unless an admin writes it here.
+
+    Only the length is checked. Brace expressions are deliberately *not*
+    validated: ``{duration}`` is the one tag substituted at rejection time and
+    everything else - ``{}``, ``{whatever}`` - is left literal, so an admin can
+    write braces in ordinary prose without escaping them. The WebUI hints at an
+    unrecognized tag; it is not an error here.
+    """
+    if error_message is None:
+        return None
+    if not isinstance(error_message, str):
+        raise ParameterError(_("The error message must be a string."))
+    stripped = error_message.strip()
+    if not stripped:
+        return None
+    if len(stripped) > MAX_ERROR_MESSAGE_LENGTH:
+        # .format, not an f-string: gettext extracts the literal msgid, so the
+        # placeholder has to survive into the translated string.
+        raise ParameterError(_("The error message must not exceed {length} characters.").format(
+            length=MAX_ERROR_MESSAGE_LENGTH))
+    return stripped
+
+
 # The actions each target may carry. A user-targeted policy locks/notifies the
 # user; a source-IP policy blocks the IP or alerts the admin - LOCK_USER /
 # EMAIL_USER would have no user to act on. Both targets may decide the request
@@ -289,12 +332,73 @@ _ACTIONS_BY_TARGET = {
 }
 
 
-def get_actions_by_target() -> dict[str, list[str]]:
+@dataclass(frozen=True)
+class DefaultErrorMessage:
     """
-    The stage actions each target permits, as ``{target_value: [action_value, ...]}``
-    (see :data:`_ACTIONS_BY_TARGET`).
+    One suggested wording for a stage's ``error_message`` (see :data:`DEFAULT_ERROR_MESSAGES`).
+
+    :ivar action: the stage action this wording describes
+    :ivar message: a ``lazy_gettext`` string, translated when serialized
+    :ivar category: ``"restriction"`` for wording that competes with other restrictions (only one is ever
+        shown), ``"notification"`` for wording that is appended to it. Defaults to the common case, so only
+        the notifying actions spell it out.
     """
-    return {target.value: sorted(action.value for action in actions) for target, actions in _ACTIONS_BY_TARGET.items()}
+    action: LockoutAction
+    message: object
+    category: str = "restriction"
+
+
+# Suggested wording for a stage's ``error_message``, per action, ordered most severe first. Purely an
+# authoring aid for the policy editor: nothing here is applied at runtime, and a stage without an
+# ``error_message`` stays silent.
+#
+# A stage carrying several actions composes them the way the runtime reports: one restriction - they are
+# mutually exclusive, and a stage's message describes the longest-lasting one it wrote (see
+# ``_execute_stage_actions``) - followed by any notifications, which are separate facts. Hence, the order:
+# restrictions by severity, then the EMAIL_* pair with the user's own notification first, as the one the
+# reader can act on. ALLOW has no entry, having nothing to reject and so nothing to say.
+#
+# lazy_gettext, not _(): module-level constants are evaluated at import, long before a request and its
+# locale exist; ``str()`` at serialization resolves them per admin. That only decides what an admin starts
+# editing from - the stored message is a literal shown to the end user in whatever language it was written.
+DEFAULT_ERROR_MESSAGES: list[DefaultErrorMessage] = [
+    DefaultErrorMessage(LockoutAction.PERMANENT_LOCK_USER,
+                        lazy_gettext("Your account has been locked. Please contact your administrator.")),
+    DefaultErrorMessage(LockoutAction.PERMANENT_BLOCK_IP,
+                        lazy_gettext("Access from your IP address has been blocked. "
+                                     "Please contact your administrator.")),
+    DefaultErrorMessage(LockoutAction.LOCK_USER,
+                        lazy_gettext("Your account is temporarily locked. Please try again in about {duration}.")),
+    DefaultErrorMessage(LockoutAction.BLOCK_IP,
+                        lazy_gettext("Access from your IP address is temporarily blocked. "
+                                     "Please try again in about {duration}.")),
+    DefaultErrorMessage(LockoutAction.DENY,
+                        lazy_gettext("Access has been denied.")),
+    DefaultErrorMessage(LockoutAction.EMAIL_USER,
+                        lazy_gettext("A notification email has been sent to your email address."),
+                        category="notification"),
+    DefaultErrorMessage(LockoutAction.EMAIL_ADMIN,
+                        lazy_gettext("Your administrator has been notified by email."),
+                        category="notification"),
+]
+
+
+def get_default_error_messages() -> list[dict[str, str]]:
+    """
+    The suggested stage error messages, most severe first, as
+    ``[{"action_type": ..., "category": ..., "message": ...}]`` (see :data:`DEFAULT_ERROR_MESSAGES`). Translated on
+    each call against the request locale.
+
+    ``category`` tells a client how to combine them for a stage with several actions: the ``restriction`` entries are
+    mutually exclusive (only one restriction is ever reported), so it takes the first one the stage carries, while the
+    ``notification`` entries are appended to it.
+
+    Deliberately not scoped by target: the binding is action to message, and a client picks the entry
+    whose action the stage actually carries, so wording for an action a target cannot hold simply never
+    matches.
+    """
+    return [{"action_type": entry.action.value, "category": entry.category, "message": str(entry.message)}
+            for entry in DEFAULT_ERROR_MESSAGES]
 
 
 def get_target_constraints() -> dict[str, dict[str, list[str]]]:
@@ -411,7 +515,7 @@ def _validate_stages(stages) -> list[StageDefinition]:
     """
     Validate the stage definitions: a non-empty list of dicts, each with a
     unique non-negative ``failure_threshold``, an optional positive ``priority``
-    (default 1) and a list of actions whose ``action_type`` is a valid
+    (default 1), an optional user-facing ``error_message`` and a list of actions whose ``action_type`` is a valid
     :class:`LockoutAction`. ``action_value`` may be any JSON-serializable value
     (its action-specific interpretation happens in the engine); unknown keys in
     a stage or action dict are rejected so typos fail loudly.
@@ -421,7 +525,7 @@ def _validate_stages(stages) -> list[StageDefinition]:
     if not isinstance(stages, list) or not stages:
         raise ParameterError("'stages' must be a non-empty list of stage definitions.")
     valid_actions = {action.value for action in LockoutAction}
-    allowed_stage_keys = {"name", "failure_threshold", "priority", "actions"}
+    allowed_stage_keys = {"name", "error_message", "failure_threshold", "priority", "actions"}
     allowed_action_keys = {"action_type", "action_value", "retrigger_above_threshold"}
     normalized = []
     thresholds = set()
@@ -440,6 +544,7 @@ def _validate_stages(stages) -> list[StageDefinition]:
             raise ParameterError(f"Duplicate failure_threshold {threshold}: thresholds must be unique within a policy.")
         thresholds.add(threshold)
         name = _validate_stage_name(stage.get("name"))
+        error_message = validate_error_message(stage.get("error_message"))
         priority = _validate_positive_int(stage.get("priority", 1), "priority")
         actions = stage.get("actions", [])
         if not isinstance(actions, list):
@@ -469,7 +574,8 @@ def _validate_stages(stages) -> list[StageDefinition]:
                 )
             )
         normalized.append(
-            StageDefinition(failure_threshold=threshold, priority=priority, name=name, actions=normalized_actions)
+            StageDefinition(failure_threshold=threshold, priority=priority, name=name,
+                            error_message=error_message, actions=normalized_actions)
         )
     return normalized
 
@@ -590,6 +696,7 @@ def _build_stages(stage_defs: list[StageDefinition]) -> list[LockoutPolicyStage]
     return [
         LockoutPolicyStage(
             name=stage.name,
+            error_message=stage.error_message,
             failure_threshold=stage.failure_threshold,
             priority=stage.priority,
             actions=[
