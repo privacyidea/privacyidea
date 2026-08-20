@@ -119,8 +119,7 @@ class AuthEventClassificationTestCase(MyTestCase):
         fake_g.policy_object = PolicyClass()
         fake_g.audit_object = FakeAudit()
         fake_g.client_ip = "10.0.0.1"
-        # OTPPIN=none: there is no first factor, so only the token is verified -> TOKEN_ONLY_FAIL, not the
-        # high-signal MFA_FAIL.
+        # OTPPIN=none: with no first factor, only the token is verified -> TOKEN_ONLY_FAIL, not MFA_FAIL.
         tokens = get_tokens(user=self.user)
         _res, reply = check_token_list(tokens, "000000", user=self.user, options={"g": fake_g})
         self.assertEqual(AuthEventType.TOKEN_ONLY_FAIL, reply.get(AUTH_EVENT_TYPE_KEY))
@@ -146,8 +145,8 @@ class AuthEventClassificationTestCase(MyTestCase):
         fake_g.policy_object = PolicyClass()
         fake_g.audit_object = FakeAudit()
         fake_g.client_ip = "10.0.0.1"
-        # OTPPIN=none but a PIN is supplied anyway: the PIN check fails and the OTP is never checked, so this is a
-        # rejected first-factor attempt -> PIN_FAIL (matches PIN brute-force)
+        # OTPPIN=none but a PIN is supplied anyway: the PIN check fails and the OTP is never checked, so this
+        # counts as a rejected first-factor attempt -> PIN_FAIL (matches PIN brute-force).
         tokens = get_tokens(user=self.user)
         _res, reply = check_token_list(tokens, "somepin755224", user=self.user, options={"g": fake_g})
         self.assertEqual(AuthEventType.PIN_FAIL, reply.get(AUTH_EVENT_TYPE_KEY))
@@ -159,9 +158,8 @@ class RequestEventPrecedenceTestCase(MyTestCase):
     """Unit tests for the per-request precedence and reduce_request_events."""
 
     def test_01_precedence_covers_every_event_type(self):
-        # Every AuthEventType must have a precedence rank
-        # Only the event types a token flow can produce need a precedence: the conditional-access rejections classify a
-        # request that was turned away before any token logic ran, so they never reach reduce_request_events.
+        # Every AuthEventType must have a precedence rank, except the conditional-access enforcement types.
+        # Those classify a request rejected before any token logic ran, so they never reach reduce_request_events.
         self.assertSetEqual(set(AuthEventType) - CA_ENFORCEMENT_EVENT_TYPES, set(REQUEST_EVENT_PRECEDENCE),
                             "Add missing AuthEventType REQUEST_EVENT_PRECEDENCE list or remove unexisting ones from it.")
         # No event is listed twice (which would make its rank ambiguous).

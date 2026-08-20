@@ -65,13 +65,13 @@ describe("AuthenticationLogService", () => {
     httpMock.verify();
   });
 
-  // The event-types resource loads under the same gate as the log page, so flush it where a test only asserts the
-  // page request (keeps httpMock.verify() clean).
+  // The event-types resource loads under the same gate as the log page, so a test asserting only the page request must
+  // also flush this one (keeps httpMock.verify() clean).
   const flushEventTypes = () =>
     httpMock.match((r) => r.url.endsWith("/eventtypes")).forEach((r) => r.flush(MockPiResponse.fromValue([])));
 
-  // The oldest-entry resource (page_size=1, timestamp asc) loads under the same gate as the log page; flush it where a
-  // test only asserts the page request.
+  // The oldest-entry resource (page_size=1, timestamp asc) loads under the same gate as the log page, so a test
+  // asserting only the page request must also flush this one.
   const flushOldest = () =>
     httpMock
       .match((r) => r.url.endsWith("/authenticationlog/") && r.params.get("page_size") === "1")
@@ -99,8 +99,8 @@ describe("AuthenticationLogService", () => {
   });
 
   it("forwards the conditional-access outcome filters as flat params", () => {
-    // Three advanced keys, sent as they are typed: the backend filters on the entry's outcomes with them (ca_dry_run is
-    // a tri-state there, so its absence means "both").
+    // Three advanced keys are sent as typed; the backend filters on the entry's outcomes with them, and ca_dry_run is a
+    // tri-state there, so its absence means "both".
     service.authenticationLogFilter.set(
       new FilterValue({ value: "ca_action_type: LOCK_USER,BLOCK_IP ca_policy_name: Brute* ca_dry_run: false" })
     );

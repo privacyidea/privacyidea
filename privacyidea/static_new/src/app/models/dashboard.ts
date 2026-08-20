@@ -67,8 +67,8 @@ export abstract class DashboardWidget {
   static readonly titleLink: string | null = null;
   static readonly pinned: boolean = false;
   static readonly fixedPosition: { x: number; y: number } | null = null;
-  // The right(s) a widget needs to be offered at all. A list means any one of them is enough, for a widget that
-  // summarizes several separately-governed areas: it then shows only the parts the admin may read.
+  // The right(s) a widget needs to be offered at all; a list means any one is enough, for a widget summarizing several
+  // separately-governed areas that then shows only the parts the admin may read.
   static readonly requiredAction: PolicyAction | PolicyAction[] | null = null;
   static readonly titleLinkAction: PolicyAction | null = null;
 

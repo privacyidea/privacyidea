@@ -1308,11 +1308,11 @@ def check_base_action(request=None, action=None, anonymous=False):
 
     # In certain cases we can not resolve the user by the serial!
     if role == ROLE.ADMIN and action in (PolicyAction.AUDIT, PolicyAction.AUTHENTICATION_LOG_READ):
-        # For an admin, the request "realm"/"user" parameters filter the log and must not drive the policy match;
-        # the realm restriction is enforced separately (audit: "allowed_audit_realm" decorator; authentication log:
-        # get_policy_visibility_scopes). For a user reading the authentication log, realm/username are
-        # the user's own identity (from determine_logged_in_userparams) and are kept so a realm/resolver-scoped
-        # user-scope policy matches; the user only ever sees their own entries anyway.
+        # For an admin, realm/user only filter the log and must not drive the policy match, since the realm restriction
+        # is enforced separately (audit: allowed_audit_realm decorator; authentication log:
+        # get_policy_visibility_scopes), so they are cleared here. For a user reading their own log, realm/username come
+        # from their own identity (determine_logged_in_userparams) and are kept so a realm/resolver-scoped user-scope
+        # policy still matches - the user only ever sees their own entries anyway.
         realm = username = resolver = None
     elif action in (PolicyAction.AUDIT, PolicyAction.AUTHENTICATION_LOG_READ):
         pass

@@ -23,7 +23,7 @@ import { MatIconModule } from "@angular/material/icon";
 import { LockoutPolicyStage, LockoutTarget } from "@services/conditional-access/conditional-access-policy.service";
 import { ConditionalAccessStageItemComponent } from "./stage-item/conditional-access-stage-item.component";
 
-const NEW_STAGE: LockoutPolicyStage = { failure_threshold: 1, priority: 1, actions: [] };
+const NEW_STAGE: LockoutPolicyStage = { failure_threshold: 1, actions: [] };
 
 @Component({
   selector: "app-conditional-access-stages-list",
@@ -37,8 +37,8 @@ export class ConditionalAccessStagesListComponent {
   readonly target = input<LockoutTarget>("user");
   readonly stagesChange = output<LockoutPolicyStage[]>();
 
-  // 1-based order in which this stage triggers: the lowest threshold is Stage 1.
-  // Recomputed live, so editing a threshold re-numbers the stages.
+  // 1-based order in which this stage triggers (lowest threshold = Stage 1), recomputed live so
+  // editing a threshold re-numbers the stages.
   stageNumber(stage: LockoutPolicyStage): number {
     return this.stages().filter((other) => other.failure_threshold < stage.failure_threshold).length + 1;
   }

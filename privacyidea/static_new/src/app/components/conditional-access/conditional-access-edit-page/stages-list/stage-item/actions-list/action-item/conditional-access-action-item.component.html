@@ -75,7 +75,7 @@
     </mat-checkbox>
     <app-info-hint
       class="margin-top-8"
-      text="When off, this action runs once, when the count reaches the stage's threshold exactly. When on, it runs again on every further tracked event while the count stays at or above the threshold, until the policy escalates to the next stage. Allow/Deny default to on; the lock, email and block actions default to off."
+      text="When off, this action runs once, when the count reaches the stage's threshold exactly. When on, it runs again on every further tracked event while the count stays at or above the threshold, until the policy escalates to the next stage. Deny defaults to on; the lock, email and block actions default to off."
       i18n-text
       ariaLabel="About re-triggering"
       i18n-ariaLabel />
@@ -108,15 +108,18 @@
             (selectionChange)="onDurationUnitChange($event.value)">
             <mat-option
               value="seconds"
-              i18n>Seconds
+              i18n
+              >Seconds
             </mat-option>
             <mat-option
               value="minutes"
-              i18n>Minutes
+              i18n
+              >Minutes
             </mat-option>
             <mat-option
               value="hours"
-              i18n>Hours
+              i18n
+              >Hours
             </mat-option>
           </mat-select>
         </mat-form-field>
@@ -162,11 +165,9 @@
                     </mat-option>
                   }
                 </mat-select>
-                <!--
-                  Rendered as a hint rather than a mat-error: a mat-select without a form control never
-                  enters errorState, so a mat-error would be silently dropped. As a hint it both shows
-                  and lands in the form field's aria-describedby, so it is announced with the control.
-                -->
+                <!-- Rendered as a hint, not a mat-error, since a mat-select without a form control never enters
+                  errorState (so a mat-error would be silently dropped), and a hint is shown and included in the
+                  field's aria-describedby, so it is announced together with the control. -->
                 @if (staleSmtpIdentifier()) {
                   <mat-hint
                     class="ca-action-stale"
@@ -239,9 +240,9 @@
             <p
               class="ca-placeholder-intro"
               i18n>
-              Add <code>!r</code> before the closing brace to insert the value's quoted form, e.g. <code>{{ '{' }}
-              policy!r{{ '}' }}</code> renders <code>'Brute Force PIN Lockout'</code> instead of <code>Brute Force PIN
-                                                                                                       Lockout</code>.
+              Add <code>!r</code> before the closing brace to insert the value's quoted form, e.g.
+              <code>{{ "{" }} policy!r{{ "}" }}</code> renders <code>'Brute Force PIN Lockout'</code> instead of
+              <code>Brute Force PIN Lockout</code>.
             </p>
           </div>
         </details>

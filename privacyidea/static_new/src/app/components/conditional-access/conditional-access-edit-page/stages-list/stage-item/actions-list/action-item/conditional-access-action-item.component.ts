@@ -44,7 +44,6 @@ const ACTION_DESCRIPTIONS: Record<LockoutActionType, string> = {
   PERMANENT_BLOCK_IP: $localize`Block the request's source IP until an administrator unblocks it.`,
   EMAIL_ADMIN: $localize`Send a notification email to an admin recipient group.`,
   EMAIL_USER: $localize`Send a notification email to the affected user.`,
-  ALLOW: $localize`Allow the request and skip any lower-priority policies.`,
   DENY: $localize`Reject the request; it clears itself as failures age out of the window.`
 };
 
@@ -54,8 +53,8 @@ const ACTION_DESCRIPTIONS: Record<LockoutActionType, string> = {
 // - "none": the action takes no value (stored as null).
 type ActionValueMode = "duration" | "email" | "none";
 
-// The duration is always stored (and sent to the backend) in seconds; the unit
-// select only changes how that value is entered and displayed.
+// The duration is always stored and sent to the backend in seconds; the unit select only changes
+// how it is entered and displayed.
 type DurationUnit = "seconds" | "minutes" | "hours";
 
 const DURATION_UNIT_FACTORS: Record<DurationUnit, number> = {
@@ -67,8 +66,8 @@ const DURATION_UNIT_FACTORS: Record<DurationUnit, number> = {
 interface EmailField {
   key: string;
   label: string;
-  // "smtp" is a select over the configured SMTP server identifiers, fetched from the backend;
-  // "select" one over the field's own fixed options.
+  // "smtp" is a select over the configured SMTP server identifiers fetched from the backend;
+  // "select" is one over the field's own fixed options.
   kind: "text" | "textarea" | "select" | "smtp";
   options?: readonly string[];
   onlyAdmin?: boolean;
@@ -78,12 +77,12 @@ interface EmailField {
   hintWarn?: boolean;
 }
 
-// Shown for the identifier when it has to stay a free-text input, i.e. when the configured servers
-// cannot be listed because this admin may not read them (see emailFields).
+// Shown for the identifier when it must stay a free-text input because this admin lacks the right
+// to list configured servers (see emailFields).
 const SMTP_TEXT_HINT = $localize`Type the name: listing the servers needs the smtpserver_read right.`;
 
-// Order matters for layout: the three short fields come first so they share one
-// wrapping row, then the wide subject/body textareas flow onto their own rows.
+// Order matters for layout: the three short fields come first to share one wrapping row, then the
+// wide subject/body textareas flow onto their own rows.
 const EMAIL_FIELDS: readonly EmailField[] = [
   {
     key: "smtp_identifier",
@@ -115,8 +114,8 @@ const EMAIL_FIELDS: readonly EmailField[] = [
   }
 ];
 
-// The {tag} substitutions available in the subject/body, matching the render
-// context the engine builds (privacyidea/lib/conditional_access/engine.py).
+// The {tag} substitutions available in the subject/body, matching the render context the engine
+// builds (privacyidea/lib/conditional_access/engine.py).
 export interface EmailPlaceholder {
   tag: string;
   description: string;
@@ -169,38 +168,38 @@ export class ConditionalAccessActionItemComponent {
   readonly actionDescription = computed<string>(() => ACTION_DESCRIPTIONS[this.action().action_type] ?? "");
 
   // Whether the configured SMTP servers can be listed for the identifier field: /smtpserver/ requires
-  // smtpserver_read, and without it the list is never fetched (see SmtpService). The email actions stay
-  // offered either way - the identifier falls back to a free-text input carrying SMTP_TEXT_HINT, so the
-  // admin sees why there is nothing to pick from instead of finding the action missing.
+  // smtpserver_read, so without it the list is never fetched (see SmtpService); the email actions stay
+  // offered either way, with the identifier falling back to a free-text input carrying
+  // SMTP_TEXT_HINT so the admin sees why there is nothing to pick from.
   readonly smtpServersListable = computed<boolean>(() => this.authService.actionAllowed("smtpserver_read"));
 
-  // The action types offered for the current target (see the /targets endpoint). The currently-selected
-  // type is always included so a stale action - now incompatible with the target - stays visible in the
-  // select instead of being dropped on the next save.
+  // Action types offered for the current target (see /targets); the currently-selected type is
+  // always included so a stale, now-incompatible action stays visible in the select instead of
+  // being dropped on the next save.
   readonly allowedActionTypes = computed<LockoutActionType[]>(() => {
     const allowed = this.policyService.actionsForTarget(this.target());
     const current = this.action().action_type;
     return allowed.includes(current) ? allowed : [...allowed, current];
   });
 
-  // Whether the selected action is valid for the current target. Changing the
-  // target can leave a stale, now-incompatible action (e.g. LOCK_USER after
-  // switching to source_ip); flag it so it's fixed before the backend 400s. While
-  // the allowed list is still loading (empty) we cannot judge, so treat as valid.
+  // Whether the selected action is valid for the current target; switching the target can leave a
+  // stale, now-incompatible action (e.g. LOCK_USER under source_ip), flagged here so it is fixed
+  // before the backend 400s, though treated as valid while the allowed list is still loading
+  // (empty), since compatibility cannot yet be judged.
   readonly isActionAllowedForTarget = computed<boolean>(() => {
     const allowed = this.policyService.actionsForTarget(this.target());
     return allowed.length === 0 || allowed.includes(this.action().action_type);
   });
 
-  // Effective checkbox state. When the action carries no explicit value the
-  // display mirrors the server's action-aware default: ALLOW/DENY decisions
-  // re-trigger, the lock/email/block effects fire once at the threshold.
+  // Effective checkbox state; when the action carries no explicit value, the display mirrors the
+  // server's action-aware default, where the standing DENY verdict re-triggers and the
+  // lock/email/block effects fire once at the threshold.
   readonly retriggerChecked = computed<boolean>(() => {
     const action = this.action();
     if (action.retrigger_above_threshold != null) {
       return action.retrigger_above_threshold;
     }
-    return action.action_type === "ALLOW" || action.action_type === "DENY";
+    return action.action_type === "DENY";
   });
 
   readonly valueMode = computed<ActionValueMode>(() =>
@@ -213,8 +212,8 @@ export class ConditionalAccessActionItemComponent {
     if (this.smtpServersListable()) {
       return fields;
     }
-    // With no list to pick from, the identifier stays a plain input: the admin can still type the
-    // name of a server, and the hint says why the configured ones are not offered.
+    // With no list to pick from, the identifier stays a plain input the admin can type a server
+    // name into, and the hint explains why the configured ones are not offered.
     return fields.map((field) =>
       field.kind === "smtp" ? { ...field, kind: "text", hint: SMTP_TEXT_HINT, hintWarn: true } : field
     );
@@ -225,23 +224,23 @@ export class ConditionalAccessActionItemComponent {
     this.smtpService.smtpServers().map((server) => server.identifier)
   );
 
-  // Nothing can be said about the servers while the request is in flight, and a template prefills
-  // its email action expanded, so without this the "none configured" hint flashes on the create page.
+  // Nothing can be said about the servers while the request is in flight; since a template prefills
+  // its email action expanded, without this the "none configured" hint flashes on the create page.
   readonly smtpServersLoading = computed<boolean>(() => this.smtpService.smtpServerResource.isLoading());
 
-  // The options of the SMTP server select: the configured identifiers plus the one the action already
-  // carries when that is not among them. Without it mat-select would render a blank trigger for a
-  // value it has no option for, and the admin could not see what the action actually says.
+  // Options of the SMTP server select: the configured identifiers plus the one the action already
+  // carries when not among them, so mat-select does not render a blank trigger for an option-less
+  // value the admin needs to see.
   readonly smtpOptions = computed<string[]>(() => {
     const identifiers = this.smtpIdentifiers();
     const current = this.emailFieldValue("smtp_identifier");
     return current && !identifiers.includes(current) ? [...identifiers, current] : identifiers;
   });
 
-  // The stored identifier when it names a server that is not configured - deleted or renamed since -
-  // in which case the engine finds no server and skips the email (_send_lockout_email), so it is
-  // flagged rather than left looking valid. Judged only against a non-empty list: until /smtpserver/
-  // has answered the identifiers are simply unknown, and calling the stored one gone would be a guess.
+  // Stored identifier when it names a server that is no longer configured (deleted or renamed), in
+  // which case the engine finds no server and skips the email (_send_lockout_email), so it is
+  // flagged rather than left looking valid; judged only against a non-empty list, since until
+  // /smtpserver/ has answered, calling the stored one gone would be a guess.
   readonly staleSmtpIdentifier = computed<string>(() => {
     const identifiers = this.smtpIdentifiers();
     const current = this.emailFieldValue("smtp_identifier");
@@ -299,8 +298,8 @@ export class ConditionalAccessActionItemComponent {
   }
 
   onActionTypeChange(actionType: LockoutActionType): void {
-    // A value shaped for the old mode is meaningless in a different one, so reset
-    // it when the mode changes (e.g. switching an email object to a duration).
+    // A value shaped for the previous mode is meaningless in a different one, so it resets when the
+    // mode changes (e.g. switching an email object to a duration).
     if (ConditionalAccessActionItemComponent.modeFor(actionType) !== this.valueMode()) {
       this.updateAction.emit({ action_type: actionType, action_value: null });
     } else {
@@ -320,8 +319,8 @@ export class ConditionalAccessActionItemComponent {
   }
 
   onDurationUnitChange(unit: DurationUnit): void {
-    // Keep the entered number and re-interpret it in the new unit, matching the
-    // policy time-window selector.
+    // Keeps the entered number and re-interprets it in the new unit, matching the policy
+    // time-window selector.
     const current = this.durationValue();
     this.durationUnit.set(unit);
     const parsed = parseInt(current, 10);
@@ -332,8 +331,8 @@ export class ConditionalAccessActionItemComponent {
 
   onEmailFieldInput(key: string, value: string): void {
     const next = { ...this.emailValue() };
-    // mimetype always carries a value (defaults to "plain"); other empty fields
-    // are dropped so the stored object stays minimal.
+    // mimetype always carries a value (defaults to "plain"); other empty fields are dropped so the
+    // stored object stays minimal.
     if (value === "" && key !== "mimetype") {
       delete next[key];
     } else {

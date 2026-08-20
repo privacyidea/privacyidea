@@ -33,14 +33,14 @@ import { catchError, map } from "rxjs/operators";
 const LOCKED_USERS_DEFAULT_PAGE_SIZE = 15;
 
 // The locked-users list supports these filter keys (comma-separated / wildcard values, matched
-// case-insensitively by the backend). Plural to match the API query parameters (`usernames`, `realms`,
-// `resolvers`), which each accept a list of values. `states` selects the lock state(s)
-// (permanent / temporary / expired) and replaces the former "show expired" toggle.
+// case-insensitively by the backend); plural to match the API query parameters (`usernames`,
+// `realms`, `resolvers`), which each accept a list of values.
+// `states` selects which lock state(s) to show (permanent / temporary / expired).
 const LOCKED_USERS_FILTER_KEYS = ["usernames", "realms", "resolvers", "states"];
 
 // The lock states a record can be in, as accepted by the `states` query parameter of `lockout/users`:
-// permanent (no expiry), temporary (expiry still ahead) and expired (a stale row a purge removes).
-// Mirrors privacyidea.lib.conditional_access.lockout_state.LOCK_STATES.
+// permanent (no expiry), temporary (expiry still ahead) and expired (a stale row a purge removes);
+// mirrors LOCK_STATES in the Python backend.
 export type LockState = "permanent" | "temporary" | "expired";
 
 // Shallow value-equality for the flat filter-params record, so a value-less key edit does not re-notify.
@@ -49,7 +49,7 @@ function shallowEqualRecord(a: Record<string, string>, b: Record<string, string>
   return aKeys.length === Object.keys(b).length && aKeys.every((key) => a[key] === b[key]);
 }
 
-// One user-lockout record. Both `lockout/user` (single lookup) and `lockout/users` (list)
+// One user-lockout record, as returned by both `lockout/user` (single lookup) and `lockout/users` (list).
 export interface LockedUserEntry {
   resolver: string;
   uid: string;
@@ -151,8 +151,8 @@ export class ConditionalAccessStateService implements ConditionalAccessStateServ
   lockedUsersSort = signal<Sort>({ active: "locked_at", direction: "desc" });
   lockedUsersPageSize = signal(LOCKED_USERS_DEFAULT_PAGE_SIZE);
 
-  // 1-based (matches the API's page param). Reset to the first page whenever the effective filter, sort,
-  // page size or the show-expired toggle changes.
+  // 1-based (matches the API's page param); resets to the first page whenever the effective filter,
+  // sort or page size changes.
   lockedUsersPageIndex = linkedSignal({
     source: () => ({
       filterParams: this.lockedUsersFilterParams(),
@@ -213,9 +213,10 @@ export class ConditionalAccessStateService implements ConditionalAccessStateServ
     };
   });
 
-  // Count the locks in the given state(s) without pulling the records themselves: the page metadata carries the
-  // total, so the smallest page is enough. Used by the dashboard widget, whose summary needs one number per state
-  // (the paginated resource above is bound to the locked-users page and its filters).
+  // Counts the locks in the given state(s) without pulling the records themselves: the page metadata
+  // carries the total, so the smallest page is enough.
+  // Used by the dashboard widget, whose summary needs one number per state (the paginated resource
+  // above is bound to the locked-users page and its filters).
   countLockedUsers(states: LockState[]): Observable<PiResponse<LockedUsersPage>> {
     return this.http.get<PiResponse<LockedUsersPage>>(this.conditionalAccessBaseUrl + "lockout/users", {
       headers: this.authService.getHeaders(),

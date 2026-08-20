@@ -124,8 +124,8 @@ export class DashboardLayoutService implements DashboardLayoutServiceInterface {
     if (!requiredAction?.length) {
       return true;
     }
-    // A widget may name several rights (see DashboardWidget.requiredAction): any one of them makes it useful,
-    // because it renders the parts the admin is allowed to read and leaves out the rest.
+    // A widget may name several rights (see DashboardWidget.requiredAction); any one is enough, because the widget
+    // renders only the parts the admin may read and leaves out the rest.
     const actions = Array.isArray(requiredAction) ? requiredAction : [requiredAction];
     return actions.some((action) => this.auth.actionAllowed(action));
   }

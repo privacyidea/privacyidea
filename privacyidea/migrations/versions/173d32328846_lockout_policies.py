@@ -117,8 +117,8 @@ def upgrade():
 
 
 def downgrade():
-    # Drop children before parents because of the foreign keys. The indexes, the
-    # foreign keys and the identities all go with their table.
+    # Drop children before parents because of the foreign keys.
+    # The indexes, foreign keys and identities all go with their table.
     for table_name in TABLES:
         try:
             op.drop_table(table_name)

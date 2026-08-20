@@ -68,8 +68,8 @@ describe("ConditionalAccessActionsListComponent", () => {
       ConditionalAccessPolicyService
     ) as unknown as MockConditionalAccessPolicyService;
     policyServiceMock.actionsByTarget.set({
-      user: ["LOCK_USER", "ALLOW", "DENY"],
-      source_ip: ["BLOCK_IP", "ALLOW", "DENY"]
+      user: ["LOCK_USER", "DENY"],
+      source_ip: ["BLOCK_IP", "DENY"]
     });
     fixture.componentRef.setInput("target", "source_ip");
 

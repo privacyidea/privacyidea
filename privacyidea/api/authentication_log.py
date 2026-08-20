@@ -39,8 +39,8 @@ log = logging.getLogger(__name__)
 
 authentication_log_blueprint = Blueprint("authentication_log_blueprint", __name__)
 
-# Filter parameters that map 1:1 to a get_authentication_logs_paginate keyword argument. The ca_* ones filter on the
-# entry's conditional-access outcomes rather than on a column of its own row; ca_dry_run is parsed separately because
+# Each filter parameter maps 1:1 to a get_authentication_logs_paginate keyword argument; the ca_* ones filter on the
+# entry's conditional-access outcomes rather than a column of its own row, and ca_dry_run is parsed separately because
 # it is a boolean, not a list of values.
 _FILTER_PARAMS = ["resolver", "uid", "realm", "username", "user_role", "event_type", "source_ip", "serial",
                   "transaction_id", "attempt_id", "client_label", "ca_action_type", "ca_policy_name"]
@@ -118,8 +118,8 @@ def get_authentication_log():
     end_time = isoparse(end_time) if end_time else None
 
     visibility_scopes = get_policy_visibility_scopes(PolicyAction.AUTHENTICATION_LOG_READ)
-    # A scoped admin always also sees their own entries, added to the policy scope as an extra OR alternative.
-    # (A user already sees only their own entries, so this is irrelevant for them.)
+    # A scoped admin always also sees their own entries, added to the policy scope as an extra OR alternative;
+    # irrelevant for a user, who already sees only their own entries.
     if g.logged_in_user["role"] == ROLE.ADMIN and visibility_scopes is not None:
         own_realm = g.logged_in_user.get("realm")
         own_username = g.logged_in_user.get("username")
