@@ -41,6 +41,7 @@ import pytest
 import redis as redis_lib
 
 from .base import MyTestCase
+from privacyidea.lib.cache import redis as redis_cache
 from privacyidea.lib.cache.redis import (
     ChallengeDTO,
     _deserialize,
@@ -52,6 +53,8 @@ from privacyidea.lib.cache.redis import (
     get_redis,
 )
 from privacyidea.lib.challenge import get_challenges, get_challenges_paginate
+from privacyidea.lib.crypto import decryptPassword
+from privacyidea.lib.error import HSMException
 from privacyidea.lib.framework import get_app_local_store
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.token import create_challenge, init_token, remove_token
@@ -1095,6 +1098,23 @@ class TestChallengeDataEncryption(_RealRedisBase):
         raw = type(self)._real_client.hget(_TXN_KEY.format(transaction_id), serial)
         return json.loads(raw)
 
+    def _assert_encrypted(self, stored, expected_plaintext, secret):
+        """
+        Assert the stored ``data`` field is the ciphertext of ``expected_plaintext``
+        and that ``secret`` appears in no field at all.
+
+        The ciphertext is checked by decrypting it rather than by searching the
+        payload for the secret. The ciphertext is random hex, so a numeric secret
+        turns up in it by chance about once in a few hundred thousand runs - the
+        other fields, which are stored in the clear, are the ones worth searching.
+        """
+        self.assertNotEqual(expected_plaintext, stored["data"])
+        # The privacyIDEA password encryption emits "<iv>:<ciphertext>".
+        self.assertIn(":", stored["data"])
+        self.assertEqual(expected_plaintext, decryptPassword(stored["data"]))
+        plaintext_fields = {key: value for key, value in stored.items() if key != "data"}
+        self.assertNotIn(secret, json.dumps(plaintext_fields))
+
     def test_otp_value_is_not_stored_in_the_clear(self):
         # The shape the email and SMS tokens store under *.concurrent_challenges.
         otp_value = "987654"
@@ -1104,11 +1124,7 @@ class TestChallengeDataEncryption(_RealRedisBase):
                             timestamp=utc_now(), expiration=utc_now() + timedelta(seconds=120))
 
             stored = self._raw_payload("txn-enc-001", "SE_ENC_1")
-            self.assertNotEqual(otp_value, stored["data"])
-            # The privacyIDEA password encryption emits "<iv>:<ciphertext>".
-            self.assertIn(":", stored["data"])
-            # The OTP must not survive anywhere in the serialised entry.
-            self.assertNotIn(otp_value, json.dumps(stored))
+            self._assert_encrypted(stored, json.dumps({"otp": otp_value}), otp_value)
 
     def test_data_round_trips_back_to_plaintext(self):
         otp_value = "987654"
@@ -1123,9 +1139,6 @@ class TestChallengeDataEncryption(_RealRedisBase):
 
     def test_dict_data_is_encrypted_and_round_trips(self):
         """Push code-to-phone stores a dict; get_data() must return it intact."""
-        # The secret is spelled with non-hex characters on purpose: the stored
-        # payload is a long hex IV + ciphertext, so a short all-hex needle could
-        # turn up in it by chance and fail this assertion at random.
         data_dict = {"smartphone_confirmed": True, "display_code": "code-4829-xyz"}
         with redis_in_store(type(self)._real_client):
             cache_challenge(serial="SE_ENC_3", transaction_id="txn-enc-003",
@@ -1133,7 +1146,7 @@ class TestChallengeDataEncryption(_RealRedisBase):
                             timestamp=utc_now(), expiration=utc_now() + timedelta(seconds=120))
 
             stored = self._raw_payload("txn-enc-003", "SE_ENC_3")
-            self.assertNotIn("code-4829-xyz", json.dumps(stored))
+            self._assert_encrypted(stored, json.dumps(data_dict), "code-4829-xyz")
 
             challenges = get_challenges_from_cache(transaction_id="txn-enc-003")
             self.assertEqual(data_dict, challenges[0].get_data())
@@ -1149,8 +1162,7 @@ class TestChallengeDataEncryption(_RealRedisBase):
             dto.set_data({"display_code": "135791"})
 
             stored = self._raw_payload("txn-enc-004", "SE_ENC_4")
-            self.assertNotIn("135791", json.dumps(stored))
-            self.assertIn(":", stored["data"])
+            self._assert_encrypted(stored, json.dumps({"display_code": "135791"}), "135791")
 
             reread = get_challenges_from_cache(transaction_id="txn-enc-004")[0]
             self.assertEqual({"display_code": "135791"}, reread.get_data())
@@ -1176,9 +1188,71 @@ class TestChallengeDataEncryption(_RealRedisBase):
             challenge = create_challenge("SE_ENC_7", data={"otp": otp_value})
 
             stored = self._raw_payload(challenge.transaction_id, "SE_ENC_7")
-            self.assertNotIn(otp_value, json.dumps(stored))
+            self._assert_encrypted(stored, json.dumps({"otp": otp_value}), otp_value)
             cached = get_challenges(transaction_id=challenge.transaction_id)[0]
             self.assertEqual({"otp": otp_value}, cached.get_data())
+
+    def test_a_status_update_keeps_the_stored_ciphertext(self):
+        """
+        A wrong answer only bumps the counter, so the entry keeps the ciphertext it
+        already had instead of encrypting the unchanged data again - with a hardware
+        security module every encryption is a round trip to the device.
+        """
+        otp_value = "864209"
+        with redis_in_store(type(self)._real_client):
+            cache_challenge(serial="SE_ENC_8", transaction_id="txn-enc-008",
+                            challenge="", data=json.dumps({"otp": otp_value}), session="",
+                            timestamp=utc_now(), expiration=utc_now() + timedelta(seconds=120))
+            before = self._raw_payload("txn-enc-008", "SE_ENC_8")
+
+            dto = get_challenges_from_cache(transaction_id="txn-enc-008")[0]
+            with patch.object(redis_cache, "encryptPassword") as encrypt:
+                dto.set_otp_status(False)
+            encrypt.assert_not_called()
+
+            after = self._raw_payload("txn-enc-008", "SE_ENC_8")
+            self.assertEqual(before["data"], after["data"])
+            self.assertEqual(1, after["received_count"])
+            # And the value is still readable, i.e. the ciphertext was really stored.
+            self.assertEqual({"otp": otp_value},
+                             get_challenges_from_cache(transaction_id="txn-enc-008")[0].get_data())
+
+    def test_changing_the_data_replaces_the_stored_ciphertext(self):
+        """The cached ciphertext must not outlive the value it belongs to."""
+        with redis_in_store(type(self)._real_client):
+            cache_challenge(serial="SE_ENC_9", transaction_id="txn-enc-009",
+                            challenge="", data=json.dumps({"mode": "code_to_phone"}), session="",
+                            timestamp=utc_now(), expiration=utc_now() + timedelta(seconds=120))
+            before = self._raw_payload("txn-enc-009", "SE_ENC_9")
+
+            dto = get_challenges_from_cache(transaction_id="txn-enc-009")[0]
+            dto.set_data({"mode": "code_to_phone", "smartphone_confirmed": True})
+
+            after = self._raw_payload("txn-enc-009", "SE_ENC_9")
+            self.assertNotEqual(before["data"], after["data"])
+            self.assertEqual({"mode": "code_to_phone", "smartphone_confirmed": True},
+                             get_challenges_from_cache(transaction_id="txn-enc-009")[0].get_data())
+
+    def test_a_failing_encryption_does_not_silently_drop_a_data_change(self):
+        """
+        Losing a ``data`` write cannot be swallowed the way a lost counter can: push
+        code-to-phone persists ``smartphone_confirmed`` this way, and a dropped write
+        would leave the challenge answerable for a replayed confirm. The database
+        path raises here too.
+        """
+        with redis_in_store(type(self)._real_client):
+            cache_challenge(serial="SE_ENC_10", transaction_id="txn-enc-010",
+                            challenge="", data=json.dumps({"mode": "code_to_phone"}), session="",
+                            timestamp=utc_now(), expiration=utc_now() + timedelta(seconds=120))
+            dto = get_challenges_from_cache(transaction_id="txn-enc-010")[0]
+
+            with patch.object(redis_cache, "encryptPassword",
+                              side_effect=HSMException("hsm not ready!")):
+                self.assertRaises(HSMException, dto.set_data, {"smartphone_confirmed": True})
+                # A counter-only save encrypts nothing, so it still goes through.
+                dto_status = get_challenges_from_cache(transaction_id="txn-enc-010")[0]
+                dto_status.set_otp_status(False)
+            self.assertEqual(1, self._raw_payload("txn-enc-010", "SE_ENC_10")["received_count"])
 
 
 class TestChallengeDataEncryptionUnit(MyTestCase):
@@ -1210,10 +1284,13 @@ class TestChallengeDataEncryptionUnit(MyTestCase):
         self.assertIsNone(_deserialize(self._payload('not-valid-ciphertext')))
 
     def test_payload_round_trips_through_encryption(self):
-        dto = _make_dto(data=json.dumps({"otp": "424242"}))
-        payload = dto.to_payload()
+        plaintext = json.dumps({"otp": "424242"})
+        payload = _make_dto(data=plaintext).to_payload()
 
-        self.assertNotIn('424242', payload)
+        # Checked by decrypting rather than by searching the payload: the ciphertext
+        # is random hex, so a numeric needle would match it by chance now and then.
+        self.assertNotEqual(plaintext, json.loads(payload)['data'])
+        self.assertEqual(plaintext, decryptPassword(json.loads(payload)['data']))
         self.assertEqual({"otp": "424242"}, _deserialize(payload).get_data())
 
     def test_non_object_payload_is_a_cache_miss(self):
@@ -1224,6 +1301,19 @@ class TestChallengeDataEncryptionUnit(MyTestCase):
         for raw in ('null', '"a string"', '123', '[1, 2, 3]'):
             with self.subTest(raw=raw):
                 self.assertIsNone(_deserialize(raw))
+
+    def test_an_unavailable_security_module_is_a_cache_miss(self):
+        """
+        With an encrypted encryption key that nobody has unlocked yet, fetching the
+        security module raises instead of returning it, and decryptPassword() does
+        not guard that. Reading a challenge must still not raise: listing or
+        deleting challenges works off the cache metadata and never needed the
+        plaintext.
+        """
+        payload = _make_dto(data=json.dumps({"otp": "424242"})).to_payload()
+        with patch.object(redis_cache, "decryptPassword",
+                          side_effect=HSMException("hsm not ready!")):
+            self.assertIsNone(_deserialize(payload))
 
 
 class TestRedisKeyNames(MyTestCase):

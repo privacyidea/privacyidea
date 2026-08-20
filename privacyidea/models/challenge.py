@@ -79,6 +79,17 @@ class Challenge(MethodsMixin, db.Model):
         """Allow direct assignment to data (encrypts before storing)."""
         self.set_data(value)
 
+    @property
+    def encrypted_data(self) -> str:
+        """
+        Return the stored ciphertext of ``data``, without decrypting it.
+
+        For a caller that has to persist the very same value somewhere else - the
+        Redis cache stores this challenge instead of the row - so that it does not
+        have to decrypt and re-encrypt what is already encrypted here.
+        """
+        return self._data or ''
+
     @log_with(log)
     def __init__(self, serial, transaction_id=None,
                  challenge='', data=None, session='', validitytime=120):
