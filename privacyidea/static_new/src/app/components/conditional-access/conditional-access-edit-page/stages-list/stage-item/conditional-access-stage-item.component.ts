@@ -87,11 +87,9 @@ export class ConditionalAccessStageItemComponent {
   readonly durationTagUnusableHint = $localize`{duration} needs a temporary lock or block to count down. This stage \
 has none, so it would be shown to the user as written - remove the tag, or add a temporary action.`;
 
-  readonly errorMessageHint = $localize`When enabled, the text you enter is shown to the user whenever authentication \
-fails while this stage applies - including on later attempts, while a lock or block from it is still in force. It \
-applies to this stage only; other stages stay silent unless you enable it there as well. By default the standard error \
-response is sent instead, exactly as for any other failed authentication, so an attacker cannot tell that an account \
-was locked or an address blocked.`;
+  readonly errorMessageHint = $localize`Shown to the user when authentication fails while this stage applies, \
+including on later attempts while a lock or block from it is still in force. It applies to this stage only. Left \
+empty, the standard error response is sent, so a rejection cannot be told apart from any other failed authentication.`;
 
   // Whether this stage carries a message at all: absent or null means the admin has not turned it on, an
   // empty string means turned on but not written yet. Read off the stage rather than kept in a signal here,
