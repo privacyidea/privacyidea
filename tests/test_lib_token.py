@@ -1510,6 +1510,25 @@ class TokenTestCase(MyTestCase):
         db.session.commit()
         tok.delete_token()
 
+    def test_41c_owners_relationship_orders_by_id(self):
+        """first_owner (owners.first()) of a multi-owner token must be deterministic.
+
+        The owners relationship is lazy='dynamic', so first_owner's plain
+        "SELECT ... FROM tokenowner WHERE token_id = ?" needs its own explicit order_by to agree
+        with any other query on the same table that orders explicitly (e.g. the token list
+        page's batched owner lookup). Checked on the compiled statement rather than actual row
+        order, since some backends (e.g. SQLite here) happen to return rows in insertion order
+        even without an ORDER BY, which would hide a missing one.
+        """
+        self.setUp_user_realms()
+        tok = init_token({"type": "hotp", "genkey": True},
+                         user=User("cornelius", self.realm1))
+        try:
+            compiled = str(tok.token.owners.statement.compile(compile_kwargs={"literal_binds": True}))
+            self.assertIn("ORDER BY tokenowner.id", compiled, compiled)
+        finally:
+            tok.delete_token()
+
     def test_42_sort_tokens(self):
         # return pagination
         tokendata = get_tokens_paginate(sortby=Token.serial, page=1, psize=5)
