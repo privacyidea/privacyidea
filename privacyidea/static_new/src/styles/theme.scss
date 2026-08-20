@@ -13,15 +13,21 @@ html {
     // --mat-sys-shadow so both halves read as grey and the pair separates surfaces softly.
     --mat-sys-light: light-dark(#e8e8e8, #303030);
 
-    // The two halves of the flat depth level's 1px border. A border is a hard line on the surface
+    // The tones the flat depth level's border is drawn in. A border is a hard line on the surface
     // it outlines, so it needs tones that clear both --mat-sys-background and --table-color; the
     // shadow pair above is deliberately soft and lands too near one or the other. Straddling the
     // page is no good either: a tone light enough to show against it is then the card's own fill.
-    // So both halves sit clear of both surfaces on the same side — darker in light mode, lighter
-    // in dark — which also lets them stay close together. --flat-border-light is the half a step
-    // back toward the surface, and lands on the two edges the light reaches.
-    --flat-border-shadow: light-dark(hsl(0, 0%, 70%), hsl(0, 0%, 45%));
-    --flat-border-light: light-dark(hsl(0, 0%, 82%), hsl(0, 0%, 32%));
+    // So every tone sits clear of both surfaces on the same side — darker in light mode, lighter in
+    // dark. Three steps, each a --shadow / --light pair for a surface's two halves: -1 is the most
+    // contrasty, -3 the lightest. styles.scss hands the shallower depth slots (3, then 5) the
+    // lighter steps and the deepest (8) the boldest, the same relationship the blurred shadow pair
+    // has through --depth-scale.
+    --flat-border-shadow-1: light-dark(hsl(0, 0%, 70%), hsl(0, 0%, 45%));
+    --flat-border-shadow-2: light-dark(hsl(0, 0%, 77%), hsl(0, 0%, 55%));
+    --flat-border-shadow-3: light-dark(hsl(0, 0%, 84%), hsl(0, 0%, 65%));
+    --flat-border-light-1: light-dark(hsl(0, 0%, 82%), hsl(0, 0%, 32%));
+    --flat-border-light-2: light-dark(hsl(0, 0%, 86%), hsl(0, 0%, 42%));
+    --flat-border-light-3: light-dark(hsl(0, 0%, 90%), hsl(0, 0%, 52%));
 
     --mat-sys-primary-dark: light-dark(hsl(198, 66%, 25%), hsl(198, 66%, 60%));
     --mat-sys-primary-base: light-dark(hsl(198, 66%, 30%), hsl(198, 66%, 55%));
@@ -90,15 +96,21 @@ html {
 
     --mat-sys-light: #e8e8e8;
 
-    // The two halves of the flat depth level's 1px border. A border is a hard line on the surface
+    // The tones the flat depth level's border is drawn in. A border is a hard line on the surface
     // it outlines, so it needs tones that clear both --mat-sys-background and --table-color; the
     // shadow pair above is deliberately soft and lands too near one or the other. Straddling the
     // page is no good either: a tone light enough to show against it is then the card's own fill.
-    // So both halves sit clear of both surfaces on the same side — darker in light mode, lighter
-    // in dark — which also lets them stay close together. --flat-border-light is the half a step
-    // back toward the surface, and lands on the two edges the light reaches.
-    --flat-border-shadow: hsl(0, 0%, 70%);
-    --flat-border-light: hsl(0, 0%, 82%);
+    // So every tone sits clear of both surfaces on the same side — darker in light mode, lighter in
+    // dark. Three steps, each a --shadow / --light pair for a surface's two halves: -1 is the most
+    // contrasty, -3 the lightest. styles.scss hands the shallower depth slots (3, then 5) the
+    // lighter steps and the deepest (8) the boldest, the same relationship the blurred shadow pair
+    // has through --depth-scale.
+    --flat-border-shadow-1: hsl(0, 0%, 70%);
+    --flat-border-shadow-2: hsl(0, 0%, 77%);
+    --flat-border-shadow-3: hsl(0, 0%, 84%);
+    --flat-border-light-1: hsl(0, 0%, 82%);
+    --flat-border-light-2: hsl(0, 0%, 86%);
+    --flat-border-light-3: hsl(0, 0%, 90%);
 
     --mat-sys-primary-dark: hsl(198, 66%, 25%);
     --mat-sys-primary-base: hsl(198, 66%, 30%);
@@ -165,15 +177,21 @@ html {
 
     --mat-sys-light: #303030;
 
-    // The two halves of the flat depth level's 1px border. A border is a hard line on the surface
+    // The tones the flat depth level's border is drawn in. A border is a hard line on the surface
     // it outlines, so it needs tones that clear both --mat-sys-background and --table-color; the
     // shadow pair above is deliberately soft and lands too near one or the other. Straddling the
     // page is no good either: a tone light enough to show against it is then the card's own fill.
-    // So both halves sit clear of both surfaces on the same side — darker in light mode, lighter
-    // in dark — which also lets them stay close together. --flat-border-light is the half a step
-    // back toward the surface, and lands on the two edges the light reaches.
-    --flat-border-shadow: hsl(0, 0%, 45%);
-    --flat-border-light: hsl(0, 0%, 32%);
+    // So every tone sits clear of both surfaces on the same side — darker in light mode, lighter in
+    // dark. Three steps, each a --shadow / --light pair for a surface's two halves: -1 is the most
+    // contrasty, -3 the lightest. styles.scss hands the shallower depth slots (3, then 5) the
+    // lighter steps and the deepest (8) the boldest, the same relationship the blurred shadow pair
+    // has through --depth-scale.
+    --flat-border-shadow-1: hsl(0, 0%, 45%);
+    --flat-border-shadow-2: hsl(0, 0%, 55%);
+    --flat-border-shadow-3: hsl(0, 0%, 65%);
+    --flat-border-light-1: hsl(0, 0%, 32%);
+    --flat-border-light-2: hsl(0, 0%, 42%);
+    --flat-border-light-3: hsl(0, 0%, 52%);
 
     --mat-sys-primary-dark: hsl(198, 66%, 60%);
     --mat-sys-primary-base: hsl(198, 66%, 55%);

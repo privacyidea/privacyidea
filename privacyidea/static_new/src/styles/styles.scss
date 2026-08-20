@@ -280,7 +280,7 @@ body {
 
 // --depth-scale drives --elevation-*, --inset-shadow-*, --side-glow and, through --depth-tint,
 // the --surface-raised / --inset-surface-* gradients. "flat" overrides the shadow slots with a
-// 1px two-tone border, so all three collapse onto the same edge and the inset tones alone say how deep a
+// 1px two-tone border, one pair per slot, so all three collapse onto the same edge and the inset tones alone say how deep a
 // surface sits.
 html.depth-flat {
   --depth-scale: 0;
@@ -291,37 +291,35 @@ html.depth-flat {
 
   // The border keeps the two tones of a shadow pair, so an edge still reads as lit from one side
   // even with no shadow to cast: the darker tone on the two sides the light falls away from, the
-  // lighter one on the two it reaches. --flat-border-shadow / --flat-border-light carry them, set
-  // per theme in theme.scss — see the note there for why the border cannot borrow the shadow
-  // pair's own tones or a step of the container ladder.
+  // lighter one on the two it reaches. Three pairs, one per depth slot, off the ladders in
+  // theme.scss — see the note there for why the border cannot borrow the shadow pair's own tones
+  // or a step of the container ladder. The shallowest slot (3) gets the lightest pair and the
+  // deepest (8) the boldest, same as the elevation shadows below scale with --depth-scale.
+  @each $slot, $step in (3: 3, 5: 2, 8: 1) {
+    // Three bands, each an unspread 1px so the edge is an even 1px the whole way round. The two
+    // mirrored offsets reach only their own two sides, leaving one pixel bare at the two corners
+    // between them; the uniform ring is listed last, so it paints under both and fills exactly
+    // those corners.
+    --flat-pair-#{$slot}:
+      calc(1px * var(--depth-sign-x)) calc(1px * var(--depth-sign-y)) 0 0 var(--flat-border-shadow-#{$step}),
+      calc(-1px * var(--depth-sign-x)) calc(-1px * var(--depth-sign-y)) 0 0 var(--flat-border-light-#{$step}),
+      0 0 0 1px var(--flat-border-shadow-#{$step});
+    // The same three, inset: an inset band lands on the side its offset moves away from, so the
+    // mirrored pair covers all four edges inside the padding box.
+    --flat-inset-pair-#{$slot}:
+      inset calc(1px * var(--depth-sign-x)) calc(1px * var(--depth-sign-y)) 0 0 var(--flat-border-shadow-#{$step}),
+      inset calc(-1px * var(--depth-sign-x)) calc(-1px * var(--depth-sign-y)) 0 0 var(--flat-border-light-#{$step}),
+      inset 0 0 0 1px var(--flat-border-shadow-#{$step});
 
-  // Three bands, each an unspread 1px so the edge is an even 1px the whole way round. The two
-  // mirrored offsets reach only their own two sides, leaving one pixel bare at the two corners
-  // between them; the uniform ring is listed last, so it paints under both and fills exactly
-  // those corners.
-  --flat-pair:
-    calc(1px * var(--depth-sign-x)) calc(1px * var(--depth-sign-y)) 0 0 var(--flat-border-shadow),
-    calc(-1px * var(--depth-sign-x)) calc(-1px * var(--depth-sign-y)) 0 0 var(--flat-border-light),
-    0 0 0 1px var(--flat-border-shadow);
-  // The same three, inset: an inset band lands on the side its offset moves away from, so the
-  // mirrored pair covers all four edges inside the padding box.
-  --flat-inset-pair:
-    inset calc(1px * var(--depth-sign-x)) calc(1px * var(--depth-sign-y)) 0 0 var(--flat-border-shadow),
-    inset calc(-1px * var(--depth-sign-x)) calc(-1px * var(--depth-sign-y)) 0 0 var(--flat-border-light),
-    inset 0 0 0 1px var(--flat-border-shadow);
-
-  --elevation-3: var(--flat-pair);
-  --elevation-5: var(--flat-pair);
-  --elevation-8: var(--flat-pair);
-  --inset-shadow-3: var(--flat-inset-pair);
-  --inset-shadow-5: var(--flat-inset-pair);
-  --inset-shadow-8: var(--flat-inset-pair);
-  // The same border, horizontal only: these surfaces hang off a bar, and the ring the other slots
-  // use would draw a line along the bottom edge they share with it. Two mirrored bands run the
-  // full height, so no corner is left bare and no filler ring is needed.
+    --elevation-#{$slot}: var(--flat-pair-#{$slot});
+    --inset-shadow-#{$slot}: var(--flat-inset-pair-#{$slot});
+  }
+  // The same border, horizontal only, at the slot-5 tone: these surfaces hang off a bar, and the
+  // ring the other slots use would draw a line along the bottom edge they share with it. Two
+  // mirrored bands run the full height, so no corner is left bare and no filler ring is needed.
   --side-glow:
-    calc(1px * var(--depth-sign-x)) 0 0 0 var(--flat-border-shadow),
-    calc(-1px * var(--depth-sign-x)) 0 0 0 var(--flat-border-light);
+    calc(1px * var(--depth-sign-x)) 0 0 0 var(--flat-border-shadow-2),
+    calc(-1px * var(--depth-sign-x)) 0 0 0 var(--flat-border-light-2);
 }
 
 // Each level's tone scale is the next level's shadow scale; very-strong tops the ladder out with
