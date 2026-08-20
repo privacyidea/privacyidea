@@ -192,6 +192,19 @@ class UserIdResolver:
         # once even though the result would be the same
         return {user_id: self.getUsername(user_id) for user_id in dict.fromkeys(user_ids)}
 
+    def _usernames_via_user_info_batch(self, user_ids: list) -> dict:
+        """
+        Shared :py:func:`get_usernames_batch` body for a resolver whose :py:func:`get_user_info_batch`
+        is the real batched implementation: read just the username attribute of each user through
+        it, defaulting an ID without a match to "" -- exactly like :py:func:`getUsername` does for a
+        single user.
+
+        :param user_ids: IDs of the users in the resolver
+        :return: dictionary mapping each user ID to its login name
+        """
+        user_info_map = self.get_user_info_batch(user_ids, attributes=["username"])
+        return {user_id: user_info_map.get(user_id, {}).get("username", "") for user_id in user_ids}
+
     def get_available_info_keys(self) -> list[str]:
         """
         This function returns a list of known privacyIDEA user attributes which can be used, e.g. for getUserList or

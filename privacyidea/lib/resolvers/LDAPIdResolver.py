@@ -766,7 +766,11 @@ class IdResolver(UserIdResolver):
                 else:
                     returned_id = user_id.strip("{").strip("}")
                 requested_ids[returned_id] = user_id
-                requested_ids_lower.setdefault(returned_id.lower(), user_id)
+                # Several requested IDs can lowercase to the same key -- two case variants of a
+                # login that a case-insensitively-matching uid attribute treats as one entry -- so
+                # this keeps every one of them, not just the first, or a later alias would never get
+                # a result even though it identifies the same LDAP object.
+                requested_ids_lower.setdefault(returned_id.lower(), []).append(user_id)
                 id_filter += f"({self.uidtype}={search_uid})"
             if not id_filter:
                 continue
@@ -782,17 +786,22 @@ class IdResolver(UserIdResolver):
                 if not returned_id:  # pragma: no cover
                     log.info("Ignoring an LDAP object that carries no value for the uid attribute.")
                     continue
-                user_id = requested_ids.get(returned_id)
-                if user_id is None:
-                    user_id = requested_ids_lower.get(returned_id.lower())
-                if user_id is None:  # pragma: no cover
+                # Every requested ID this entry could satisfy: the exact match plus any case
+                # variants of it, so two aliases of one user (see requested_ids_lower above) both
+                # get a result from the single entry the server returned for them.
+                matched_user_ids = set(requested_ids_lower.get(returned_id.lower(), ()))
+                exact_user_id = requested_ids.get(returned_id)
+                if exact_user_id is not None:
+                    matched_user_ids.add(exact_user_id)
+                if not matched_user_ids:  # pragma: no cover
                     log.info(f"Ignoring LDAP object with uid {returned_id!r}, which was not searched for.")
                     continue
                 # Note that with a recursive group search this maps to one extra search per user,
                 # unless the group attribute is not among the requested attributes.
                 user_info = self._ldap_attributes_to_user_object(entry.get("attributes"), attributes)
-                user_info_map[user_id] = user_info
-                cache_store(self, "get_user_info", user_id, user_info)
+                for user_id in matched_user_ids:
+                    user_info_map[user_id] = user_info
+                    cache_store(self, "get_user_info", user_id, user_info)
 
             last_result = getattr(getattr(self, "connection", None), "result", None) or {}
             if last_result.get("result") == RESULT_SIZE_LIMIT_EXCEEDED:
@@ -817,8 +826,7 @@ class IdResolver(UserIdResolver):
         :return: dictionary mapping each user ID to its login name. IDs without a matching LDAP
                  object are mapped to an empty string, as getUsername does for a single user.
         """
-        user_info_map = self.get_user_info_batch(user_ids, attributes=["username"])
-        return {user_id: user_info_map.get(user_id, {}).get("username", "") for user_id in user_ids}
+        return self._usernames_via_user_info_batch(user_ids)
 
     def get_available_info_keys(self) -> list[str]:
         """
