@@ -51,17 +51,24 @@ jobs:
           # MariaDB 10.11 is the LTS most installs run (Ubuntu 24.04 default);
           # 11.x is the rolling latest. Migrations emit version-specific DDL, so
           # both are exercised (this job is path-gated to migration/model
-          # changes, so the extra entry rarely runs). Both versions run as static
-          # service containers below — 10.11 on host port 3306, 11 on 3307 — so
-          # the image stays a literal tag; a ${{ }} expression in image: is
-          # flagged by zizmor as an unpinned reference. Each entry's db_url
-          # targets the right port.
+          # changes, so the extra entry rarely runs). All db entries run as
+          # static service containers below — 10.11 on host port 3306, 11 on
+          # 3307, MySQL on 3308 — so the image stays a literal tag; a ${{ }}
+          # expression in image: is flagged by zizmor as an unpinned reference.
+          # Each entry's db_url targets the right port.
           - label: MariaDB 10.11
             db_url: "mysql+pymysql://privacyidea:privacyidea@127.0.0.1:3306/privacyidea_migration_test"
             pip_extra: "PyMySQL"
 
           - label: MariaDB 11
             db_url: "mysql+pymysql://privacyidea:privacyidea@127.0.0.1:3307/privacyidea_migration_test"
+            pip_extra: "PyMySQL"
+
+          # Real MySQL has no CREATE SEQUENCE at all (unlike MariaDB 10.3+), so
+          # it exercises the sequence-less fallback branch of the migration
+          # helpers in privacyidea/models/db.py.
+          - label: MySQL 8.4
+            db_url: "mysql+pymysql://privacyidea:privacyidea@127.0.0.1:3308/privacyidea_migration_test"
             pip_extra: "PyMySQL"
 
           - label: PostgreSQL
@@ -95,6 +102,21 @@ jobs:
           - 3307:3306
         options: >-
           --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: privacyidea_migration_test
+          MYSQL_USER: privacyidea
+          MYSQL_PASSWORD: privacyidea
+        ports:
+          - 3308:3306
+        options: >-
+          --health-cmd="mysqladmin ping"
           --health-interval=10s
           --health-timeout=5s
           --health-retries=10
@@ -145,18 +167,19 @@ jobs:
         run: |
           python -b -m pytest -v --tb=short -m migration tests/test_migrations.py tests/test_migration_*.py
 
-      # pi-manage backup shells out to mysqldump/mysql. Install MariaDB's client
-      # (which provides the mysqldump compat name) and fail loudly if it is
+      # pi-manage backup shells out to mysqldump/mysql, which applies to both
+      # MariaDB and real MySQL. Install MariaDB's client (which provides the
+      # mysqldump compat name and talks to both) and fail loudly if it is
       # missing, so the round-trip below runs for real instead of self-skipping.
       - name: Install MariaDB client for backup round-trip
-        if: startsWith(matrix.db.label, 'MariaDB')
+        if: startsWith(matrix.db.label, 'MariaDB') || startsWith(matrix.db.label, 'MySQL')
         run: |
           sudo apt-get update
           sudo apt-get install -y mariadb-client
           mysqldump --version
 
       - name: Run backup/restore round-trip test
-        if: startsWith(matrix.db.label, 'MariaDB')
+        if: startsWith(matrix.db.label, 'MariaDB') || startsWith(matrix.db.label, 'MySQL')
         env:
           TEST_DATABASE_URL: ${{ matrix.db.db_url }}
           PYTHONWARNINGS: "once::DeprecationWarning"
