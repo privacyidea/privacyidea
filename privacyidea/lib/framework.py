@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-from flask import current_app, g
+from flask import current_app, g, has_request_context
 # We import the gettext function here and export it as ``_``.
 from flask_babel import gettext as _
 
@@ -40,6 +40,20 @@ def get_request_local_store():
     if '_request_local_store' not in g:
         g._request_local_store = {}
     return g._request_local_store
+
+
+def is_request_context() -> bool:
+    """
+    Check whether the current code runs while a request is being handled.
+
+    The request-local store of :py:func:`get_request_local_store` is also available in a
+    bare application context (``pi-manage``, a cron job, a background thread), but nothing
+    tears such a context down at the end of a request. Code that defers work to a finalizer
+    needs to know the difference.
+
+    :return: True if a request is being handled
+    """
+    return has_request_context()
 
 
 def get_app_config():
@@ -91,5 +105,5 @@ def get_base_url(required=False):
     return ""
 
 
-__all__ = ['get_app_local_store', 'get_request_local_store',
+__all__ = ['get_app_local_store', 'get_request_local_store', 'is_request_context',
            'get_app_config', 'get_app_config_value', 'get_base_url', '_']
