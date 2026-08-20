@@ -998,3 +998,19 @@ class APIUsersTestCase(PristineSqliteFixtures, MyApiTestCase):
                 self.assertEqual([], result.get("value"), res.json)
                 detail = res.json.get("detail") or {}
                 self.assertEqual([flaky], detail.get("skipped_resolvers"), res.json)
+
+    def test_15_get_users_empty_attributes_param(self):
+        # An empty ``attributes=`` must behave like omitting the parameter
+        # entirely, not like an unrecognised resolver search field: it must
+        # not cause the resolver to be reported as skipped.
+        self.setUp_user_realms()
+        with self.app.test_request_context('/user/',
+                                           method='GET',
+                                           query_string=urlencode(
+                                               {"username": "cornelius", "attributes": ""}),
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            result = res.json.get("result")
+            self.assertTrue(len(result.get("value")) > 0, res.json)
+            self.assertIsNone(res.json.get("detail"), res.json)

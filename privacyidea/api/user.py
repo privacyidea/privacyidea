@@ -115,7 +115,11 @@ def get_users():
         Wildcard support is resolver-class-specific. A resolver that
         rejects an unknown search key is skipped for that request and
         reported back via ``detail.skipped_resolvers`` (see
-        :status:`200`).
+        :status:`200`); this applies to the SQL, LDAP and passwd
+        resolvers. HTTP-based resolvers (e.g. Keycloak, Entra ID) instead
+        silently drop an unrecognised key and search without it, so an
+        unmapped attribute is never reported as skipped there. The SCIM
+        resolver does not apply any of the given search fields at all.
     :query attributes: comma-separated list of attribute names to
         return per user (whitespace around names is stripped). In
         addition to user-store attributes, the privacyIDEA-managed
@@ -164,7 +168,9 @@ def get_users():
                "mobile": "+44 12345",
                "phone": "+44 67890",
                "description": "Alice Liddell,...",
-               "resolver": "ldap-corp"
+               "realm": "realm1",
+               "resolver": "ldap-corp",
+               "editable": false
              }
            ]
          },
@@ -179,9 +185,12 @@ def get_users():
         realm = ",".join(realm)
     search_parameters = dict(request.all_data)
     requested_attributes = request.all_data.get("attributes")
+    if "attributes" in search_parameters:
+        # Never forward "attributes" as a resolver search field, even when its
+        # value is empty and therefore not parsed into a filter list below.
+        del search_parameters["attributes"]
     if requested_attributes:
         requested_attributes = [attr.strip() for attr in requested_attributes.split(",")]
-        del search_parameters['attributes']
 
     include_custom_attributes = (is_true(request.all_data.get("include_custom_attributes", True))
                                  and is_attribute_at_all())
