@@ -6,7 +6,7 @@ Lockout policies
 
 A lockout policy counts authentication log entries for one subject over a time
 window and runs actions when a threshold is reached. Lockout policies are
-managed under *Policies → Conditional access* and are independent of the
+managed under *Policies → Conditional Access* and are independent of the
 policies described in :ref:`policies`.
 
 Policy settings
@@ -20,8 +20,8 @@ Policy settings
 **priority**
 
   A unique positive number. Policies are evaluated in ascending order and the
-  first one that denies or allows a request decides it, so a lower number takes
-  precedence. Use *Rearrange* in the policy list to change the order.
+  first one that denies a request decides it, so a lower number takes
+  precedence. Use *Reorder Policies* in the policy list to change the order.
 
 **enabled**
 
@@ -88,10 +88,11 @@ Policy settings
   Several conditions are combined with AND. Conditions also narrow what is
   counted, not just whether the policy applies.
 
-  .. note:: A request that carries no value for a condition - a login naming a
-     user that does not exist has no realm - does not match *is one of*, but
-     does match *is not one of*. An exception written as *realm is not one of
-     [sales]* therefore also covers requests with no realm at all.
+  .. note:: A request that carries no value for a condition does not match
+     *is one of*, but does match *is not one of*. An exception written as
+     *realm is not one of [sales]* therefore also covers requests with no
+     realm at all. However, this only happens if the client does not send
+     a realm at all and no default realm is defined.
 
 Counting and resetting
 ----------------------
@@ -163,8 +164,8 @@ Actions
     An email action needs the identifier of an :ref:`smtpserver` configuration
     plus subject and body. Subject and body may contain ``{username}``,
     ``{realm}``, ``{resolver}``, ``{client_ip}``, ``{count}``, ``{threshold}``,
-    ``{event_type}``, ``{policy}`` and ``{time}``; ``EMAIL_USER`` additionally
-    offers ``{email}``, ``{givenname}`` and ``{surname}``.
+    ``{stage_id}``, ``{event_type}``, ``{policy}`` and ``{time}``; ``EMAIL_USER``
+    additionally offers ``{email}``, ``{givenname}`` and ``{surname}``.
 
 .. _lockout_policies_exceptions:
 
@@ -208,7 +209,7 @@ Which actions a policy may use depends on its target:
 Templates
 ---------
 
-The *New policy* page offers templates for the common cases - password
+The *New Conditional Access* page offers templates for the common cases - password
 brute force, MFA brute force, per-user and per-IP rate limits, password
 spraying and user enumeration. A template fills in tracked events, window,
 count mode, stages and actions; you pick the priority and review the
