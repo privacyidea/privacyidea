@@ -4557,3 +4557,28 @@ class WebhookTestCase(MyTestCase):
         # The data should be sent unchanged — no replacement performed
         posted = mock_post.call_args.kwargs["data"]
         self.assertEqual(posted, data)
+
+    @patch('privacyidea.lib.eventhandler.base.get_tokens')
+    @patch('requests.post')
+    def test_16_token_lookup_failure_does_not_propagate(self, mock_post, mock_get_tokens):
+        """A failing token lookup while gathering tags must be swallowed like a
+        rendering failure, not propagate out of the handler."""
+        mock_post.return_value.status_code = 200
+        mock_get_tokens.side_effect = AttributeError("lookup boom")
+
+        with mock.patch("logging.Logger.warning") as mock_log:
+            g = self._make_g()
+            builder = EnvironBuilder(method='POST', data={'serial': "SPASS01"}, headers={})
+            req = Request(builder.get_environ())
+            req.all_data = {"serial": "SPASS01"}
+
+            data = '{"user": "{logged_in_user}"}'
+            opts = self._make_options(g, data=data, replace=True, request=req)
+            res, _ = self._do_webhook(opts)
+            self.assertTrue(res)
+            mock_log.assert_any_call(
+                "Unable to replace placeholder: (lookup boom)!"
+                " Please check the webhooks data option.")
+        # The unformatted data is still sent — the webhook call itself is not aborted
+        posted = mock_post.call_args.kwargs["data"]
+        self.assertEqual(posted, data)
