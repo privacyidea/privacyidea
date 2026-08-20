@@ -37,6 +37,11 @@ from privacyidea.models.utils import MethodsMixin, utc_now
 log = logging.getLogger(__name__)
 
 
+# Must match privacyidea.lib.usersetting.SUBJECT_LOCAL_ADMIN. Duplicated as a
+# literal (rather than imported) because lib.usersetting imports this module.
+_SUBJECT_LOCAL_ADMIN = "local_admin"
+
+
 def _compute_subject_hash(subject_type: str, username: str | None, user_id: str | None,
                           resolver: str | None, realm_id: int | None) -> str:
     """SHA-256 hex digest identifying a principal, for ``uq_usersetting_subject``.
@@ -44,20 +49,32 @@ def _compute_subject_hash(subject_type: str, username: str | None, user_id: str 
     A raw composite UNIQUE constraint over the five identity columns is 3124
     bytes wide under utf8mb4 (username/user_id alone are Unicode(320) each) --
     over MySQL's 3072-byte index-key limit, and MySQL rejects the CREATE TABLE
-    outright. Hashing the tuple keeps the constraint at a fixed 64 bytes
-    regardless of column widths. It also, as a side effect, makes the
-    constraint fire for local admins (realm_id NULL) too: NULL is only
-    "distinct from itself" in SQL when it appears as a raw column value, not
-    once folded into this hash.
+    outright. Hashing keeps the constraint at a fixed 64 bytes regardless of
+    column widths, and (since a hash is never NULL) makes it fire for local
+    admins too: a raw NULL realm_id is "distinct from itself" in SQL, a hashed
+    one is not.
+
+    Only the fields that actually identify each subject type go into the
+    hash: ``username`` for a local admin, ``(user_id, resolver, realm_id)``
+    for a resolver user. ``username`` is deliberately excluded for resolver
+    users -- it is a convenience copy of the login the principal used to
+    authenticate, not their identity, and a resolver may expose more than one
+    login name for the same uid (see ``UserIdResolver.has_multiple_loginnames``
+    and ``User._get_user_from_userstore``). Hashing it in would let two writes
+    through two different aliases of the same user hash differently and race
+    past this constraint instead of colliding into one row.
+
+    Each field is length-prefixed before joining, so no combination of field
+    values (e.g. one containing what looks like a separator) can serialize to
+    the same string as a different tuple.
     """
-    identity = "\x1f".join([
-        subject_type or "",
-        username or "",
-        user_id or "",
-        resolver or "",
-        str(realm_id) if realm_id is not None else "",
-    ])
-    return hashlib.sha256(identity.encode("utf-8")).hexdigest()
+    if subject_type == _SUBJECT_LOCAL_ADMIN:
+        fields = [subject_type, username or ""]
+    else:
+        fields = [subject_type, user_id or "", resolver or "",
+                  str(realm_id) if realm_id is not None else ""]
+    encoded = "".join(f"{len(field)}:{field}" for field in fields)
+    return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
 
 
 class UserSetting(MethodsMixin, db.Model):
@@ -106,9 +123,9 @@ class UserSetting(MethodsMixin, db.Model):
     user_id: Mapped[str | None] = mapped_column(Unicode(320), default='')
     resolver: Mapped[str | None] = mapped_column(Unicode(120), default='')
     realm_id: Mapped[int | None] = mapped_column(Integer, ForeignKey('realm.id', ondelete='CASCADE'))
-    # SHA-256 hex digest of the five columns above, computed in __init__. See
-    # _compute_subject_hash for why the unique constraint is on this instead
-    # of the raw columns.
+    # SHA-256 hex digest of the identity fields above, computed in __init__.
+    # See _compute_subject_hash for exactly which fields per subject_type, and
+    # why the unique constraint is on this instead of the raw columns.
     subject_hash: Mapped[str] = mapped_column(Unicode(64), nullable=False)
     settings: Mapped[Any | None] = mapped_column(JSON, nullable=True)
     last_modified: Mapped[datetime | None] = mapped_column(

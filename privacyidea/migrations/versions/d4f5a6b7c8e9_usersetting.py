@@ -35,11 +35,12 @@ def upgrade():
             sa.Column('user_id', sa.Unicode(length=320), nullable=True),
             sa.Column('resolver', sa.Unicode(length=120), nullable=True),
             sa.Column('realm_id', sa.Integer(), nullable=True),
-            # SHA-256 hex digest of the five columns above (see
-            # privacyidea.models.usersetting._compute_subject_hash). A raw
-            # composite UNIQUE constraint over them is 3124 bytes under
-            # utf8mb4 -- over MySQL's 3072-byte index-key limit -- so the
-            # constraint below is on this fixed-width hash instead.
+            # SHA-256 hex digest of a subset of the columns above, per
+            # subject_type (see privacyidea.models.usersetting.
+            # _compute_subject_hash). A raw composite UNIQUE constraint over
+            # all five columns is 3124 bytes under utf8mb4 -- over MySQL's
+            # 3072-byte index-key limit -- so the constraint below is on this
+            # fixed-width hash instead.
             sa.Column('subject_hash', sa.Unicode(length=64), nullable=False),
             sa.Column('settings', sa.JSON(), nullable=True),
             sa.Column('last_modified', sa.DateTime(), nullable=True),
