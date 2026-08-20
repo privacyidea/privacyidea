@@ -5,7 +5,7 @@
 import logging
 import traceback
 from collections.abc import Iterator
-from typing import Any
+from typing import Any, NamedTuple
 
 from flask_sqlalchemy.session import Session
 from sqlalchemy import and_, false, func, or_, select
@@ -425,8 +425,17 @@ def _get_container_serial_by_token_id(token_ids: list[int]) -> dict[int, str]:
     return container_serial_by_token_id
 
 
-def _resolve_owner_logins(owners: list[TokenOwner]) -> tuple[dict[tuple[str, str], str], dict[str, bool],
-                                                             set[tuple[str, str]]]:
+class ResolvedOwnerLogins(NamedTuple):
+    """The result of resolving the login names of a page of token owners."""
+    #: login name keyed by (resolver name, user ID)
+    login_by_owner: dict[tuple[str, str], str]
+    #: whether the resolver is editable, keyed by resolver name
+    editable_by_resolver: dict[str, bool]
+    #: (resolver name, user ID) keys whose login name could not be resolved
+    unresolvable_owners: set[tuple[str, str]]
+
+
+def _resolve_owner_logins(owners: list[TokenOwner]) -> ResolvedOwnerLogins:
     """
     Resolve the login names of the given token owners with one batch lookup per resolver, instead
     of one user store lookup per owner.
@@ -435,8 +444,7 @@ def _resolve_owner_logins(owners: list[TokenOwner]) -> tuple[dict[tuple[str, str
     can mark that single token while the rest of the page still renders.
 
     :param owners: The token owners of the page
-    :return: a tuple of the login names keyed by resolver name and user ID, whether each resolver is
-             editable, and the set of the keys that could not be resolved
+    :return: the resolved logins, editable flags and unresolvable owners of the page
     """
     user_ids_by_resolver = {}
     login_by_owner = {}
@@ -486,7 +494,7 @@ def _resolve_owner_logins(owners: list[TokenOwner]) -> tuple[dict[tuple[str, str
         for user_id in user_ids:
             login_by_owner[(resolver_name, user_id)] = login_map.get(user_id) or ""
 
-    return login_by_owner, editable_by_resolver, unresolvable_owners
+    return ResolvedOwnerLogins(login_by_owner, editable_by_resolver, unresolvable_owners)
 
 
 def _build_token_dicts(tokens: list[TokenClass], hidden_token_info: list[str] | None = None) -> list[dict]:
