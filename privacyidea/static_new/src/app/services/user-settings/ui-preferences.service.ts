@@ -17,6 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { computed, inject, Injectable, LOCALE_ID, Signal, signal } from "@angular/core";
+import { Observable, catchError, of, shareReplay } from "rxjs";
 import {
   clearLocaleAttempt,
   isKnownLocale,
@@ -38,7 +39,7 @@ export interface UiPreferencesServiceInterface {
 
   readonly showLoadingUrls: Signal<boolean>;
 
-  setShowLoadingUrls(show: boolean): void;
+  setShowLoadingUrls(show: boolean): Observable<unknown>;
 
   normalizeLocaleUrl(): void;
 
@@ -88,9 +89,18 @@ export class UiPreferencesService implements UiPreferencesServiceInterface {
   /** Whether the endpoints in flight are listed on screen while the loading bar shows. */
   public readonly showLoadingUrls: Signal<boolean> = this._showLoadingUrls.asReadonly();
 
-  public setShowLoadingUrls(show: boolean): void {
+  /**
+   * Reports once the write has settled, so a caller that also navigates away -- switching
+   * locale is a full-page load, which would abort a write mid-flight -- can wait for it first.
+   */
+  public setShowLoadingUrls(show: boolean): Observable<unknown> {
     this._showLoadingUrls.set(show);
-    this.userSettingsService.setSetting("show_loading_urls", show).subscribe({ error: () => undefined });
+    const write$ = this.userSettingsService.setSetting("show_loading_urls", show).pipe(
+      catchError(() => of(null)),
+      shareReplay(1)
+    );
+    write$.subscribe();
+    return write$;
   }
 
   /**

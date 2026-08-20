@@ -19,7 +19,8 @@ $nav-active-end: #f7f7f7;
 $nav-active-first-dark: #404040;
 $nav-active-start-dark: #414141;
 $nav-active-end-dark: #444444;
-// One per section, plus the overflow "More" tab.
+// Ceiling for the interpolation loop below, not the count that actually renders -- rights
+// filtering and the overflow "More" tab both shrink it. One per section, plus "More".
 $nav-item-count: 10;
 
 // The bar the tabs and the util group sit on runs the same ramp they are stepped from, so the
@@ -159,10 +160,18 @@ $bar-gradient-end-dark: #464646;
     border-top-left-radius: var(--border-radius);
   }
 
-  // Every tab after the first steps evenly from $nav-active-start to $nav-active-end.
-  @for $i from 2 through $nav-item-count {
-    &:nth-child(#{$i}).active {
-      $weight: math.div($i - 2, $nav-item-count - 2) * 100%;
+  // Every tab but the first steps evenly from $nav-active-start to $nav-active-end, anchored to
+  // the LAST tab rather than counted from the first: how many tabs actually render varies (rights
+  // filter which sections exist, and a narrow window pushes some into the overflow "More" tab), so
+  // a fixed count from the front would strand the last visible tab short of $nav-active-end -- and
+  // .utils-group, right after it, carries a fixed end-of-ramp tone of its own to match. Counting
+  // from the end instead means whichever tab is actually last always lands exactly on that tone.
+  // :not(:first-child) keeps this from re-tinting tab 1 on a short bar, where nth-last-child could
+  // otherwise reach all the way back to it -- tab 1 always keeps $nav-active-first from the .active
+  // rule above.
+  @for $i from 1 through ($nav-item-count - 1) {
+    &:nth-last-child(#{$i}):not(:first-child).active {
+      $weight: math.div($nav-item-count - 1 - $i, $nav-item-count - 2) * 100%;
 
       background: light-dark(
         color.mix($nav-active-end, $nav-active-start, $weight),

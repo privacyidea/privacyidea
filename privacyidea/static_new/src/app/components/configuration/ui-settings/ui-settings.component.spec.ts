@@ -18,6 +18,7 @@
  **/
 import { provideZonelessChangeDetection, signal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { Subject, of } from "rxjs";
 import {
   AppearanceService,
   CornerLevel,
@@ -65,12 +66,12 @@ describe("UISettingsComponent", () => {
   const testable = (): TestableSettings => component as unknown as TestableSettings;
 
   beforeEach(async () => {
-    themeService = { visualTheme: signal<"light" | "dark">("light"), setTheme: jest.fn() };
+    themeService = { visualTheme: signal<"light" | "dark">("light"), setTheme: jest.fn(() => of(null)) };
     appearanceService = {
       depth: signal<DepthLevel>("default"),
       lightSource: signal<LightSourceLevel>(DEFAULT_LIGHT_SOURCE),
       corners: signal<CornerLevel>("default"),
-      resetToDefaults: jest.fn(),
+      resetToDefaults: jest.fn(() => of(null)),
       setDepth: jest.fn((level: DepthLevel) => appearanceService.depth.set(level)),
       setLightSource: jest.fn((level: LightSourceLevel) => appearanceService.lightSource.set(level)),
       setCorners: jest.fn((level: CornerLevel) => appearanceService.corners.set(level))
@@ -104,8 +105,24 @@ describe("UISettingsComponent", () => {
     testable().resetSettings();
 
     expect(appearanceService.resetToDefaults).toHaveBeenCalled();
-    expect(themeService.setTheme).toHaveBeenCalledWith("light");
+    expect(themeService.setTheme).toHaveBeenCalledWith("system");
     expect(uiPreferencesService.setShowLoadingUrls).toHaveBeenCalledWith(false);
+    expect(uiPreferencesService.switchLocale).toHaveBeenCalledWith("en");
+  });
+
+  // Locale switching is a full-page navigation that would abort the other writes if they were
+  // still in flight, so it must not fire until all three have settled.
+  it("should not switch locale until the other resets have settled", () => {
+    const depthWrite = new Subject<unknown>();
+    appearanceService.resetToDefaults.mockReturnValue(depthWrite.asObservable());
+
+    testable().resetSettings();
+
+    expect(uiPreferencesService.switchLocale).not.toHaveBeenCalled();
+
+    depthWrite.next(null);
+    depthWrite.complete();
+
     expect(uiPreferencesService.switchLocale).toHaveBeenCalledWith("en");
   });
 

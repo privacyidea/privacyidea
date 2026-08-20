@@ -40,6 +40,7 @@ describe("AppearanceWidgetComponent", () => {
     setDepth: jest.Mock;
     setLightSource: jest.Mock;
     setCorners: jest.Mock;
+    setPreset: jest.Mock;
     resetToDefaults: jest.Mock;
   };
   let themeService: { visualTheme: ReturnType<typeof signal<"light" | "dark">>; setTheme: jest.Mock };
@@ -56,6 +57,11 @@ describe("AppearanceWidgetComponent", () => {
       setDepth: jest.fn((level: DepthLevel) => appearanceService.depth.set(level)),
       setLightSource: jest.fn((level: LightSourceLevel) => appearanceService.lightSource.set(level)),
       setCorners: jest.fn((level: CornerLevel) => appearanceService.corners.set(level)),
+      setPreset: jest.fn((depth: DepthLevel, corner: CornerLevel, lightSource: LightSourceLevel) => {
+        appearanceService.depth.set(depth);
+        appearanceService.corners.set(corner);
+        appearanceService.lightSource.set(lightSource);
+      }),
       resetToDefaults: jest.fn()
     };
     themeService = { visualTheme: signal<"light" | "dark">("light"), setTheme: jest.fn() };
@@ -130,16 +136,16 @@ describe("AppearanceWidgetComponent", () => {
     expect(host().querySelector(".dial__slot input:checked")).toBeNull();
   });
 
-  it("should apply the preset's depth, corners and light source together on selection", () => {
+  it("should apply the preset's depth, corners and light source together in one write", () => {
     // First in generation order: flat depth, square corners, seven stops before the default one.
     const radios = host().querySelectorAll<HTMLInputElement>(".dial__slot input");
 
     radios[0].checked = true;
     radios[0].dispatchEvent(new Event("change"));
 
-    expect(appearanceService.setDepth).toHaveBeenCalledWith("flat");
-    expect(appearanceService.setCorners).toHaveBeenCalledWith("square");
-    expect(appearanceService.setLightSource).toHaveBeenCalledWith("8");
+    // One batched call rather than setDepth/setCorners/setLightSource separately: three
+    // independent writes would race as three separate POSTs to the same settings document.
+    expect(appearanceService.setPreset).toHaveBeenCalledWith("flat", "square", "8");
   });
 
   it("should sit the all-defaults preset on the default light source", () => {
@@ -164,7 +170,7 @@ describe("AppearanceWidgetComponent", () => {
     reset?.click();
 
     expect(appearanceService.resetToDefaults).toHaveBeenCalled();
-    expect(themeService.setTheme).toHaveBeenCalledWith("light");
+    expect(themeService.setTheme).toHaveBeenCalledWith("system");
   });
 
   it("should never apply very-strong or flat with the corners they read wrong at", () => {
@@ -175,8 +181,7 @@ describe("AppearanceWidgetComponent", () => {
       radio.checked = true;
       radio.dispatchEvent(new Event("change"));
 
-      const depth = appearanceService.setDepth.mock.lastCall?.[0];
-      const corner = appearanceService.setCorners.mock.lastCall?.[0];
+      const [depth, corner] = appearanceService.setPreset.mock.lastCall ?? [];
       expect(excluded).not.toContain(`${depth}:${corner}`);
     }
   });

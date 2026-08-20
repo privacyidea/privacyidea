@@ -46,6 +46,8 @@ export interface UserSettingsServiceInterface {
 
   setSetting<T>(key: UserSettingKey, value: T): Observable<UserSettings>;
 
+  setSettings(values: Partial<Record<UserSettingKey, unknown>>): Observable<UserSettings>;
+
   deleteSetting(key: UserSettingKey): Observable<UserSettings>;
 
   clearCache(): void;
@@ -107,6 +109,20 @@ export class UserSettingsService implements UserSettingsServiceInterface {
       .post<
         PiResponse<UserSettings>
       >(this.baseUrl, { settings: { [key]: value } }, { headers: this.authService.getHeaders() })
+      .pipe(
+        map((response) => response.result?.value ?? {}),
+        tap((settings) => this.store(settings)),
+        catchError((error) => this.fail(error, "Failed to save the user settings."))
+      );
+  }
+
+  /** Merges several keys in one request, so a caller setting more than one avoids one POST per key. */
+  public setSettings(values: Partial<Record<UserSettingKey, unknown>>): Observable<UserSettings> {
+    if (!this.available()) {
+      return of({});
+    }
+    return this.http
+      .post<PiResponse<UserSettings>>(this.baseUrl, { settings: values }, { headers: this.authService.getHeaders() })
       .pipe(
         map((response) => response.result?.value ?? {}),
         tap((settings) => this.store(settings)),

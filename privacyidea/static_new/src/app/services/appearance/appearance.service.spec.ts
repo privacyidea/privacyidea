@@ -18,6 +18,7 @@
  **/
 import { Renderer2, RendererFactory2 } from "@angular/core";
 import { TestBed } from "@angular/core/testing";
+import { throwError } from "rxjs";
 import { APP_APPEARANCE_COOKIE_NAME } from "@core/constants";
 import { readCookie, writeCookie } from "@core/cookie";
 import { AuthService } from "@services/auth/auth.service";
@@ -154,6 +155,58 @@ describe("AppearanceService", () => {
 
     expect(html().classList.contains("depth-strong")).toBe(true);
     expect(userSettingsService.settings()?.depth).toBeUndefined();
+  });
+
+  it("should report reset as settled once every write has completed", (done) => {
+    service.resetToDefaults().subscribe(() => {
+      expect(userSettingsService.settings()?.depth).toBe("default");
+      expect(userSettingsService.settings()?.light_source).toBe(DEFAULT_LIGHT_SOURCE);
+      expect(userSettingsService.settings()?.corner_radius).toBe("default");
+      done();
+    });
+  });
+
+  it("should still report reset as settled when the write fails", (done) => {
+    jest.spyOn(userSettingsService, "setSettings").mockReturnValue(throwError(() => new Error("network error")));
+
+    service.resetToDefaults().subscribe(() => done());
+  });
+
+  it("should write depth, corners and light source together in one request", () => {
+    const setSettingsSpy = jest.spyOn(userSettingsService, "setSettings");
+
+    service.setPreset("flat", "square", "8");
+
+    expect(setSettingsSpy).toHaveBeenCalledTimes(1);
+    expect(setSettingsSpy).toHaveBeenCalledWith({ depth: "flat", corner_radius: "square", light_source: "8" });
+    expect(service.depth()).toBe("flat");
+    expect(service.corners()).toBe("square");
+    expect(service.lightSource()).toBe("8");
+  });
+
+  it("should report the preset write as settled once it completes", (done) => {
+    service.setPreset("strong", "round", "4").subscribe(() => {
+      expect(userSettingsService.settings()?.depth).toBe("strong");
+      expect(userSettingsService.settings()?.corner_radius).toBe("round");
+      expect(userSettingsService.settings()?.light_source).toBe("4");
+      done();
+    });
+  });
+
+  it("should still report the preset write as settled when it fails", (done) => {
+    jest.spyOn(userSettingsService, "setSettings").mockReturnValue(throwError(() => new Error("network error")));
+
+    service.setPreset("strong", "round", "4").subscribe(() => done());
+  });
+
+  it("should not write a preset while nobody is logged in", () => {
+    authService.isAuthenticated.set(false);
+    const setSettingsSpy = jest.spyOn(userSettingsService, "setSettings");
+
+    service.setPreset("flat", "square", "8");
+
+    expect(setSettingsSpy).not.toHaveBeenCalled();
+    expect(service.depth()).toBe("flat");
   });
 
   it("should fall back to the default for an unknown level", () => {

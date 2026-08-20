@@ -144,7 +144,7 @@ export class AppearanceWidgetComponent extends DashboardWidget {
   // Only what this widget controls; the language and the pending-request list are left alone.
   protected resetAppearance(): void {
     this.appearanceService.resetToDefaults();
-    this.themeService.setTheme("light");
+    this.themeService.setTheme("system");
   }
 
   protected selectPreset(lightSource: string): void {
@@ -152,8 +152,6 @@ export class AppearanceWidgetComponent extends DashboardWidget {
     if (!preset) {
       return;
     }
-    this.appearanceService.setDepth(preset.depth);
-    this.appearanceService.setCorners(preset.corner);
-    this.appearanceService.setLightSource(preset.lightSource);
+    this.appearanceService.setPreset(preset.depth, preset.corner, preset.lightSource);
   }
 }

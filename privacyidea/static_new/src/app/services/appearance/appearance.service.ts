@@ -28,6 +28,7 @@ import {
 } from "@angular/core";
 import { APP_APPEARANCE_COOKIE_NAME } from "@core/constants";
 import { readCookie, writeCookie } from "@core/cookie";
+import { Observable, catchError, of, shareReplay } from "rxjs";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import {
   UserSettingKey,
@@ -136,6 +137,21 @@ export class AppearanceService {
     this.set(this.cornerGroup, level);
   }
 
+  /**
+   * Applies and stores depth, corners and light source together in one request, for callers
+   * that change all three at once (e.g. an appearance preset) -- three separate setDepth /
+   * setCorners / setLightSource calls would be three racing POSTs, and whichever response
+   * lands last would overwrite the settings document with a stale value for the other two.
+   */
+  public setPreset(depth: DepthLevel, corner: CornerLevel, lightSource: LightSourceLevel): Observable<unknown> {
+    this.apply(this.depthGroup, depth);
+    this.apply(this.cornerGroup, corner);
+    this.apply(this.lightSourceGroup, lightSource);
+    const written$ = this.storeAll([this.depthGroup, this.cornerGroup, this.lightSourceGroup]);
+    this.cacheAppearance();
+    return written$;
+  }
+
   /** Applies a stored level (user setting or cookie) without writing it back; unknown values fall back. */
   public applyStoredDepth(level: unknown): void {
     this.apply(this.depthGroup, level);
@@ -152,15 +168,20 @@ export class AppearanceService {
     this.cacheAppearance();
   }
 
-  public resetToDefaults(): void {
+  /**
+   * Resets every group to its default and reports once all three writes have settled, so a
+   * caller that also navigates away (switching locale is a full-page load) can wait for them
+   * first -- otherwise the navigation would abort them mid-flight and the reset would only
+   * half stick.
+   */
+  public resetToDefaults(): Observable<unknown> {
     this.apply(this.depthGroup, this.depthGroup.fallback);
     this.apply(this.lightSourceGroup, this.lightSourceGroup.fallback);
     this.apply(this.cornerGroup, this.cornerGroup.fallback);
-    this.store(this.depthGroup);
-    this.store(this.lightSourceGroup);
-    this.store(this.cornerGroup);
+    const written$ = this.storeAll([this.depthGroup, this.lightSourceGroup, this.cornerGroup]);
     // One write for all three groups: caching per group would persist half-updated intermediate states.
     this.cacheAppearance();
+    return written$;
   }
 
   private set<T extends string>(group: LevelGroup<T>, level: T): void {
@@ -169,11 +190,42 @@ export class AppearanceService {
     this.cacheAppearance();
   }
 
-  /** Persists a group's current level for an authenticated principal; anonymous ones keep the cookie only. */
-  private store<T extends string>(group: LevelGroup<T>): void {
-    if (this.authService.isAuthenticated()) {
-      this.userSettingsService.setSetting(group.settingKey, group.level()).subscribe({ error: () => undefined });
+  /**
+   * Persists a group's current level for an authenticated principal; anonymous ones keep the
+   * cookie only. Fires the write immediately regardless of whether the caller uses the returned
+   * Observable -- shareReplay lets it also be awaited without triggering a second request, and
+   * a failed write still resolves so waiting on it never hangs.
+   */
+  private store<T extends string>(group: LevelGroup<T>): Observable<unknown> {
+    if (!this.authService.isAuthenticated()) {
+      return of(null);
     }
+    const write$ = this.userSettingsService.setSetting(group.settingKey, group.level()).pipe(
+      catchError(() => of(null)),
+      shareReplay(1)
+    );
+    write$.subscribe();
+    return write$;
+  }
+
+  /**
+   * Persists several groups' current levels in one request instead of one POST per group --
+   * separate writes would race, and whichever response lands last would overwrite the settings
+   * document with a stale value for the others. Same fire-immediately / shareReplay / never-hang
+   * contract as store().
+   */
+  private storeAll(groups: LevelGroup<string>[]): Observable<unknown> {
+    if (!this.authService.isAuthenticated()) {
+      return of(null);
+    }
+    const values: Record<string, unknown> = {};
+    groups.forEach((group) => (values[group.settingKey] = group.level()));
+    const write$ = this.userSettingsService.setSettings(values).pipe(
+      catchError(() => of(null)),
+      shareReplay(1)
+    );
+    write$.subscribe();
+    return write$;
   }
 
   private apply<T extends string>(group: LevelGroup<T>, level: unknown): void {

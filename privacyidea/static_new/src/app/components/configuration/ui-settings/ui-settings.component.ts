@@ -17,6 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, inject } from "@angular/core";
+import { forkJoin } from "rxjs";
 import { MatButtonModule } from "@angular/material/button";
 import { MatButtonToggleModule } from "@angular/material/button-toggle";
 import { MatExpansionModule } from "@angular/material/expansion";
@@ -94,11 +95,13 @@ export class UISettingsComponent {
   protected readonly appearanceHint = $localize`Changes how the interface looks: corner rounding, shadow depth and the direction the light comes from. Saved for your account.`;
 
   protected resetSettings(): void {
-    this.appearanceService.resetToDefaults();
-    this.themeService.setTheme("light");
-    this.uiPreferencesService.setShowLoadingUrls(false);
-    // Last: switching locale is a full-page navigation, which would cancel the requests above.
-    this.uiPreferencesService.switchLocale("en");
+    // Switching locale is a full-page navigation, which would abort the other writes if they
+    // were still in flight, so it only runs once they have all settled.
+    forkJoin([
+      this.appearanceService.resetToDefaults(),
+      this.themeService.setTheme("system"),
+      this.uiPreferencesService.setShowLoadingUrls(false)
+    ]).subscribe(() => this.uiPreferencesService.switchLocale("en"));
   }
 
   protected selectDepth(level: DepthLevel): void {

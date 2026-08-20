@@ -18,11 +18,15 @@
  **/
 import { signal } from "@angular/core";
 import { UiPreferencesServiceInterface } from "@services/user-settings/ui-preferences.service";
+import { of } from "rxjs";
 
 export class MockUiPreferencesService implements UiPreferencesServiceInterface {
   readonly preferredLocale = signal("en");
   readonly showLoadingUrls = signal(false);
-  setShowLoadingUrls = jest.fn((show: boolean) => this.showLoadingUrls.set(show));
+  setShowLoadingUrls = jest.fn((show: boolean) => {
+    this.showLoadingUrls.set(show);
+    return of(null);
+  });
   normalizeLocaleUrl = jest.fn();
   sync = jest.fn();
   switchLocale = jest.fn();

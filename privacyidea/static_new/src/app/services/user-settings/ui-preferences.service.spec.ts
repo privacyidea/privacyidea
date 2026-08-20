@@ -123,6 +123,22 @@ describe("UiPreferencesService", () => {
     expect(userSettingsService.settings()?.show_loading_urls).toBe(true);
   });
 
+  it("should report the pending-request write as settled once it completes", (done) => {
+    create("en");
+
+    service.setShowLoadingUrls(true).subscribe(() => {
+      expect(userSettingsService.settings()?.show_loading_urls).toBe(true);
+      done();
+    });
+  });
+
+  it("should still report the pending-request write as settled when it fails", (done) => {
+    create("en");
+    jest.spyOn(userSettingsService, "setSetting").mockReturnValue(throwError(() => new Error("network error")));
+
+    service.setShowLoadingUrls(true).subscribe(() => done());
+  });
+
   it("should apply the stored appearance levels", () => {
     create("en");
     userSettingsService.settings.set({ depth: "flat", light_source: "8", corner_radius: "square" });
