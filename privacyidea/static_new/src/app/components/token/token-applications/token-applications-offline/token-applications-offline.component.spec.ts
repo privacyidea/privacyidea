@@ -35,6 +35,9 @@ import {
 } from "@testing/mock-services";
 import { TokenApplicationsOfflineComponent } from "./token-applications-offline.component";
 import { ContentService } from "@services/content/content.service";
+import { AuthService } from "@services/auth/auth.service";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { expectsTableStateGating } from "@testing/table-state-gating";
 
 describe("TokenApplicationsOfflineComponent (Jest)", () => {
   let fixture: ComponentFixture<TokenApplicationsOfflineComponent>;
@@ -47,6 +50,7 @@ describe("TokenApplicationsOfflineComponent (Jest)", () => {
     await TestBed.configureTestingModule({
       imports: [TokenApplicationsOfflineComponent, MatTabsModule, CopyButtonComponent],
       providers: [
+        { provide: AuthService, useClass: MockAuthService },
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: MachineService, useClass: MockMachineService },
@@ -63,6 +67,22 @@ describe("TokenApplicationsOfflineComponent (Jest)", () => {
     machineServiceMock = TestBed.inject(MachineService) as unknown as MockMachineService;
     component = fixture.componentInstance;
     fixture.detectChanges();
+  });
+
+  it("empties the table while the first page loads and after an error", () => {
+    machineServiceMock.tokenApplications.set(undefined as never);
+    machineServiceMock.tokenApplicationResource.value.set(undefined as never);
+    expect(component.dataSource().data).toEqual([]);
+
+    machineServiceMock.tokenApplicationResource.error.set(new Error("boom"));
+    expect(component.dataSource().data).toEqual([]);
+  });
+
+  it("gates the table on its read right, row count and filter", () => {
+    expectsTableStateGating({
+      state: component.tableState,
+      right: "manage_machine_tokens"
+    });
   });
 
   it("should create", () => {

@@ -22,7 +22,7 @@
   aria-label="Token Table"
   class="token-table-layout"
   i18n-aria-label>
-  @if (authService.actionAllowed("tokenlist")) {
+  @if (tableState.showTable()) {
     <div class="filter-paginator-container">
       <mat-form-field
         class="token-table-filter"
@@ -101,7 +101,6 @@
             } @else {
               <th
                 *matHeaderCellDef
-                attr.aria-label="{{ column.label }} Header"
                 mat-header-cell>
                 <div class="flex ali-center">
                   {{ column.label }}
@@ -164,7 +163,6 @@
                 'width-300': column.key === 'description',
                 'container_serial-width': column.key === 'container_serial'
               }"
-              attr.aria-label="{{ column.label }} Cell"
               class="max-width-300"
               mat-cell>
               <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
@@ -282,32 +280,41 @@
         }
         <tr
           *matHeaderRowDef="columnKeys; sticky: true"
-          aria-label="Header Row"
-          i18n-aria-label
           mat-header-row></tr>
 
         <tr
           *matRowDef="let row; columns: columnKeys"
-          aria-label="Data Row"
-          i18n-aria-label
           mat-row></tr>
 
-        <tr
-          *matNoDataRow
-          aria-label="No Data Row"
-          i18n-aria-label>
-          <td
-            [attr.colspan]="columnKeys.length"
-            aria-label="No Data Cell"
-            i18n
-            i18n-aria-label>
-            No data matching the filter.
+        <tr *matNoDataRow>
+          <td [attr.colspan]="columnKeys.length">
+            <app-table-state
+              [status]="tableState.rowStatus()"
+              [table]="tableState" />
           </td>
         </tr>
       </table>
     </div>
   } @else {
-    <div i18n>You do not have the permission to view the token list.</div>
+    <app-table-state
+      [hint]="emptyHint()"
+      [table]="tableState"
+      heading="No tokens yet"
+      i18n-heading
+      icon="shield">
+      @if (authService.tokenEnrollmentAllowed()) {
+        <button
+          [routerLink]="[ROUTE_PATHS.TOKENS_ENROLLMENT]"
+          class="action-button-primary button-width-m"
+          mat-stroked-button>
+          <span class="icon-badge">
+            <mat-icon class="padding-right-3">shield</mat-icon>
+            <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+          </span>
+          <span i18n>Enroll Token</span>
+        </button>
+      }
+    </app-table-state>
   }
 </div>
 

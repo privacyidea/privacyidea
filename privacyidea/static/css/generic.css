@@ -7,6 +7,49 @@
     padding: 0px 5px 0px 0px;
 }
 
+/* Dashboard panel flow: on large screens let the top panels wrap and fill the
+   space beside the (narrow) compact Subscriptions panel; when it expands, the
+   neighbouring panels reflow to the next line. Below lg, Bootstrap stacks the
+   columns full width as usual, so we only switch to flex at the lg breakpoint.
+   flex-start keeps each panel at its natural height instead of stretching. */
+@media (min-width: 1200px) {
+    .dashboard-flow {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+    }
+    /* Bootstrap's .row clearfix pseudo-elements would become stray flex items. */
+    .dashboard-flow::before,
+    .dashboard-flow::after {
+        content: none;
+    }
+}
+
+/* Usage / Subscription status dots. The compact view shows only the dot, so
+   it is enlarged there; the detailed view shows the dot next to its label. */
+.subscription-table .status-dot {
+    font-size: 1.2em;
+    line-height: 1;
+}
+.subscription-table.subscription-compact .status-dot {
+    font-size: 1.7em;
+}
+/* Bootstrap's .text-warning is a muted brown; use a bright yellow for the
+   traffic-light dots (expiring / exceeded). Scoped to the dots only. */
+.subscription-table .status-dot.text-warning {
+    color: #f5b800;
+}
+.subscription-table .status-text {
+    margin-left: 6px;
+}
+
+/* Keep the Versions cell from stretching the column: cap its width and wrap a
+   long list of versions onto multiple lines inside the cell. */
+.subscription-table .subscription-versions {
+    max-width: 130px;
+    white-space: normal;
+}
+
 .table-capitalize-header > thead > tr > th {
     text-transform: capitalize;
 }

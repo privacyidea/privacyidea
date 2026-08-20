@@ -8,6 +8,7 @@
   flex-direction: column;
   overflow: hidden;
   max-height: var(--table-max-height);
+  @include table.page-table-state-size;
 
   :host-context(body.self-service-layout) & {
     height: auto;

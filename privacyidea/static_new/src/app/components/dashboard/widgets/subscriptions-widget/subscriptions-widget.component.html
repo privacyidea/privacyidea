@@ -17,19 +17,195 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 
+<!-- Handed to the widget frame, which renders it in the header next to the reload button.
+     Declared outside app-widget-state so the frame can read it before the data arrives,
+     and held back until there is something to copy or expand. -->
+<ng-template #headerActions>
+  @if (state() === "ready") {
+    <app-copy-button
+      class="widget-header-action"
+      [copyText]="statusJson()"
+      matTooltip="Copy subscription info as JSON"
+      i18n-matTooltip
+      aria-label="Copy subscription info as JSON"
+      i18n-aria-label />
+    <button
+      mat-icon-button
+      class="widget-header-action subscription-detail-toggle"
+      (click)="toggleDetailed()"
+      [matTooltip]="detailToggleTooltip()"
+      [attr.aria-pressed]="detailed()"
+      aria-label="Toggle detailed view"
+      i18n-aria-label>
+      <mat-icon>{{ detailed() ? "close_fullscreen" : "open_in_full" }}</mat-icon>
+    </button>
+  }
+</ng-template>
+
 <app-widget-state [state]="state()">
-  <table class="subscriptions-table">
-    <tbody>
-      @for (subscription of subscriptions(); track subscription.application) {
+  <div class="table-container">
+    <table
+      class="subscription-table"
+      [class.detailed]="detailed()">
+      <thead>
         <tr>
-          <td>
-            <a [routerLink]="routePaths.SUBSCRIPTION">{{ subscription.application }}</a>
-            ({{ subscription.level }})
-          </td>
-          <td>{{ subscription.active_users }}/{{ subscription.num_users }}</td>
-          <td>{{ subscription.date_till }}</td>
+          <th
+            class="application-cell"
+            i18n>
+            Application
+          </th>
+          @if (!detailed()) {
+            <th
+              class="dot-column"
+              i18n>
+              Usage
+            </th>
+            <th
+              class="dot-column"
+              i18n>
+              Subscription
+            </th>
+          } @else {
+            <th
+              class="expires-cell"
+              i18n>
+              Expires
+            </th>
+            <th
+              class="versions-cell"
+              i18n>
+              Versions
+            </th>
+            <th
+              class="current-version-cell"
+              i18n>
+              Current version
+            </th>
+          }
         </tr>
-      }
-    </tbody>
-  </table>
+      </thead>
+      <tbody>
+        @for (row of rows(); track row.label ?? row.application ?? row.kind) {
+          @if (row.kind === "label") {
+            <tr class="section-row">
+              <td
+                [attr.colspan]="detailed() ? 4 : 3"
+                [style.padding-left.px]="row.indent * 16">
+                {{ row.label }}
+              </td>
+            </tr>
+          } @else if (row.status; as status) {
+            <tr [class.server-row]="row.kind === 'server'">
+              <td
+                class="application-cell"
+                [appTruncationTooltip]="displayName(status.application)"
+                [style.padding-left.px]="row.indent * 16">
+                @if (componentLink(status); as link) {
+                  <a
+                    [href]="link"
+                    target="_blank"
+                    rel="noopener"
+                    >{{ displayName(status.application) }}</a
+                  >
+                } @else {
+                  {{ displayName(status.application) }}
+                }
+              </td>
+
+              <!-- The two status dots are the compact view; each tooltip explains the
+                   colour. The detailed view drops them for the dates and versions: the
+                   expiry says most of what the subscription dot says, and both values
+                   stay in the copied JSON. -->
+              @if (!detailed()) {
+                <!-- Each dot backs its colour with a glyph, so the state does not rest on
+                     hue alone, and with an accessible name, since the tooltip is the only
+                     other place the state is spelled out. -->
+                @let usageDot = usageDotClass(status.in_use);
+                <td class="dot-column">
+                  <span
+                    class="status-cell"
+                    role="img"
+                    [attr.aria-label]="usageReason(status)"
+                    [matTooltip]="usageReason(status)">
+                    <span
+                      class="status-dot"
+                      [class]="usageDot"
+                      aria-hidden="true"
+                      >{{ dotGlyph(usageDot) }}</span
+                    >
+                  </span>
+                </td>
+
+                @let subscriptionDot = subscriptionDotClass(status.subscription);
+                <td class="dot-column">
+                  <span
+                    class="status-cell"
+                    role="img"
+                    [attr.aria-label]="subscriptionReason(status.subscription)"
+                    [matTooltip]="subscriptionReason(status.subscription)">
+                    <span
+                      class="status-dot"
+                      [class]="subscriptionDot"
+                      aria-hidden="true"
+                      >{{ dotGlyph(subscriptionDot) }}</span
+                    >
+                  </span>
+                </td>
+              } @else {
+                <!-- Carries the subscription state in its tooltip, for what the date alone
+                     does not say (a valid subscription can still be exceeded). -->
+                <td
+                  class="expires-cell"
+                  [matTooltip]="subscriptionReason(status.subscription)">
+                  @if (status.date_till) {
+                    <!-- date_till is a calendar date from the subscription file; the time
+                         of day in the serialized value is not one. Formatting it in UTC
+                         keeps the date the file names, instead of the day before it for
+                         admins west of UTC. -->
+                    {{ status.date_till | date: "yyyy-MM-dd" : "UTC" }}
+                    <span class="muted">({{ expiryNote(status) }})</span>
+                  } @else {
+                    <span class="muted">—</span>
+                  }
+                </td>
+                <!-- Versions can be a long list. The cell keeps its width and one line of
+                     height and scrolls inside, so a client with many versions in use does
+                     not make the whole row taller. -->
+                <td class="versions-cell">
+                  @if (status.versions.length) {
+                    <div
+                      class="versions-scroll"
+                      [matTooltip]="status.versions.join(', ')">
+                      {{ status.versions.join(", ") }}
+                    </div>
+                  } @else {
+                    <span class="muted">—</span>
+                  }
+                </td>
+                <td class="current-version-cell">
+                  @if (status.current_version) {
+                    @if (status.current_version_url) {
+                      <a
+                        [href]="status.current_version_url"
+                        target="_blank"
+                        rel="noopener">
+                        {{ status.current_version }}
+                      </a>
+                    } @else {
+                      {{ status.current_version }}
+                    }
+                    @if (status.current_version_date) {
+                      <span class="muted">({{ status.current_version_date }})</span>
+                    }
+                  } @else {
+                    <span class="muted">—</span>
+                  }
+                </td>
+              }
+            </tr>
+          }
+        }
+      </tbody>
+    </table>
+  </div>
 </app-widget-state>

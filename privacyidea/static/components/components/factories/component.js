@@ -116,6 +116,17 @@ myApp.factory("SubscriptionFactory", ["AuthFactory", "$http", "$state",
             }).then(function(response) { callback(response.data) },
                 function(error) { AuthFactory.authError(error.data) });
 
+        },
+        getStatus: function(callback, errorCallback) {
+            $http.get(subscriptionsUrl + "/status", {
+                headers: {'PI-Authorization': AuthFactory.getAuthToken()}
+            }).then(function(response) { callback(response.data) },
+                function(error) {
+                    // Report to the caller first: authError raises on a response without a
+                    // JSON body, which would otherwise leave the caller waiting forever.
+                    if (errorCallback) { errorCallback(error); }
+                    AuthFactory.authError(error.data);
+                });
         }
     }
 }]);
