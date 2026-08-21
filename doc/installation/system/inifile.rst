@@ -578,16 +578,28 @@ secret file with ``PI_REDIS_URL_FILE`` (see above). Credentials embedded in the
 URL are redacted from the privacyIDEA log (only ``***@host`` is ever written),
 so they do not leak into log files on connect or on error.
 
-**Data sensitivity.** When challenge caching is enabled, challenge data is
-stored in Redis as plaintext - exactly the same content, and the same lack of
-encryption, as the SQL ``challenge`` table it replaces. Redis therefore needs
-the **same protection level as your database**: restrict it to a private
-network, require authentication, prefer ``rediss://``, and use at-rest
-encryption (encrypted volume, or a managed Redis with encryption) if your
-threat model requires it. Do not expose the Redis instance on a public
-interface. The exposure window is small (entries carry the challenge validity
-TTL, typically a few minutes), but the data is no less sensitive than a
+**Data sensitivity.** When challenge caching is enabled, Redis holds exactly
+the content the SQL ``challenge`` table would have held, with the same
+protection: the ``data`` field is encrypted with the privacyIDEA encryption
+key, just as the ``data`` column is. That field is the one that can carry a
+secret - the OTP value itself for Email and SMS tokens when
+``email.concurrent_challenges`` / ``sms.concurrent_challenges`` is enabled, or
+the display code for Push code-to-phone.
+
+The remaining fields (transaction ID, token serial, the challenge nonce,
+session and counters) are stored in the clear, again matching the database.
+Redis therefore needs the **same protection level as your database**: restrict
+it to a private network, require authentication, prefer ``rediss://``, and use
+at-rest encryption (encrypted volume, or a managed Redis with encryption) if
+your threat model requires it. Do not expose the Redis instance on a public
+interface. The exposure window is small - entries carry the challenge validity
+TTL, typically a few minutes - but the data is no less sensitive than a
 challenge row in the database.
+
+Because the encryption uses the privacyIDEA encryption key, cached entries
+written before an encryption key rotation can no longer be read afterwards.
+Such entries are treated as a cache miss and the affected users simply repeat
+the authentication; the condition clears within one challenge-validity TTL.
 
 .. _redis_cache_upgrades:
 
