@@ -24,6 +24,7 @@ import hashlib
 import json
 import logging
 import time
+import traceback
 
 from sqlalchemy import case, select, delete, update
 from sqlalchemy.exc import IntegrityError
@@ -270,7 +271,8 @@ def _write_observations(observations: dict) -> None:
                     _apply_aggregate(session, name, _labels_key(dict(label_items)), node, window,
                                      observations[key])
             except Exception as error:
-                log.debug(f"metrics: could not apply the observation for {key!r}: {error!r}")
+                log.error(f"metrics: could not apply the observation for {key!r}: {error!r}")
+                log.debug(traceback.format_exc())
         session.commit()
     finally:
         session.close()
