@@ -167,16 +167,23 @@ jobs:
         run: |
           python -b -m pytest -v --tb=short -m migration tests/test_migrations.py tests/test_migration_*.py
 
-      # pi-manage backup shells out to mysqldump/mysql, which applies to both
-      # MariaDB and real MySQL. Install MariaDB's client (which provides the
-      # mysqldump compat name and talks to both) and fail loudly if it is
-      # missing, so the round-trip below runs for real instead of self-skipping.
+      # pi-manage backup shells out to mysqldump/mysql. mariadb-client and Ubuntu's
+      # mysql-client-core-8.0 (preinstalled on the runner) both provide/conflict on the
+      # same virtual package, so installing mariadb-client on the MySQL row would remove
+      # the real MySQL client and silently replace mysqldump with MariaDB's build --
+      # testing MariaDB's dumper against a MySQL server instead of MySQL's own tooling.
+      # Only install for MariaDB; the MySQL row already has its own client preinstalled.
       - name: Install MariaDB client for backup round-trip
-        if: startsWith(matrix.db.label, 'MariaDB') || startsWith(matrix.db.label, 'MySQL')
+        if: startsWith(matrix.db.label, 'MariaDB')
         run: |
           sudo apt-get update
           sudo apt-get install -y mariadb-client
-          mysqldump --version
+
+      # Fail loudly if a dump client is missing, so the round-trip below runs for real
+      # instead of self-skipping.
+      - name: Verify a dump client is present
+        if: startsWith(matrix.db.label, 'MariaDB') || startsWith(matrix.db.label, 'MySQL')
+        run: mysqldump --version
 
       - name: Run backup/restore round-trip test
         if: startsWith(matrix.db.label, 'MariaDB') || startsWith(matrix.db.label, 'MySQL')
