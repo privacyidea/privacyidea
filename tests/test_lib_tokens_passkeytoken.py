@@ -600,18 +600,25 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
     def test_17_authenticate_restrict_authenticator_device_type(self):
         """
         The fixture credential is single_device. The SCOPE.AUTH policy is independent of the SCOPE.ENROLL one:
-        it is evaluated fresh, cryptographically, on every authentication.
+        it is evaluated fresh, cryptographically, on every authentication. A policy-denied response returns -1
+        rather than raising, since passkey check_otp can also be reached through the passkey_trigger_by_pin /
+        check_token_list path, which does not catch exceptions and would abort evaluation of other tokens.
         """
         token = self._create_token()
         challenge = self._initialize_authentication()
         authentication_response = dict(self.authentication_response_no_uv)
         authentication_response["HTTP_ORIGIN"] = self.expected_origin
         authentication_response[PasskeyAction.AllowedAuthenticatorDeviceTypes] = ["multi_device"]
-        with self.assertRaises(PolicyError):
-            verify_fido2_challenge(challenge["transaction_id"], token, authentication_response)
+        verification_result = verify_fido2_challenge(challenge["transaction_id"], token, authentication_response)
+        self.assertEqual(-1, verification_result.success)
 
-        challenge = self._initialize_authentication()
-        authentication_response = dict(self.authentication_response_no_uv)
+        # A different, higher-sign-count fixture is used here: the sign count of a cryptographically valid
+        # response is persisted even when a policy above then still denies it (it is genuine proof of possession,
+        # not evidence of a replay), so the "no_uv" fixture's sign count has already been consumed.
+        with patch('privacyidea.lib.fido2.challenge.get_fido2_nonce') as get_nonce:
+            get_nonce.return_value = self.authentication_challenge_uv
+            challenge = create_fido2_challenge(self.rp_id)
+        authentication_response = dict(self.authentication_response_uv)
         authentication_response["HTTP_ORIGIN"] = self.expected_origin
         authentication_response[PasskeyAction.AllowedAuthenticatorDeviceTypes] = ["single_device"]
         verification_result = verify_fido2_challenge(challenge["transaction_id"], token, authentication_response)
@@ -623,7 +630,9 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
         With PasskeyAction.EnforceUserHandle enabled, authentication must fail if the userHandle returned by the
         authenticator does not match the FIDO2 user ID recorded for the token's assigned user (e.g. after the
         token was unassigned and re-assigned to a different user), and must succeed if it matches - even though
-        the two are encoded with different base64 alphabets/padding on the wire.
+        the two are encoded with different base64 alphabets/padding on the wire. The default/off behavior
+        (mismatches are not checked at all) is already covered by every other authentication test in this file
+        that never sets this policy.
         """
         token = self._create_token()
 
@@ -633,19 +642,12 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
         authentication_response = dict(self.authentication_response_no_uv)
         authentication_response["HTTP_ORIGIN"] = self.expected_origin
         authentication_response[PasskeyAction.EnforceUserHandle] = True
-        with self.assertRaises(PolicyError):
-            verify_fido2_challenge(challenge["transaction_id"], token, authentication_response)
-
-        # Without the policy enabled, the same mismatch is not checked at all (default/off)
-        challenge = self._initialize_authentication()
-        authentication_response = dict(self.authentication_response_no_uv)
-        authentication_response["HTTP_ORIGIN"] = self.expected_origin
         verification_result = verify_fido2_challenge(challenge["transaction_id"], token, authentication_response)
-        self.assertEqual(1, verification_result.success)
+        self.assertEqual(-1, verification_result.success)
 
         # Match: self.user_handle is standard base64 (with padding), the stored value is base64url (unpadded) -
         # same bytes, different alphabet. Uses the "uv" fixture (higher sign count) since the "no_uv" fixture's
-        # sign count was already consumed by the previous (successful) authentication above.
+        # sign count was already consumed by the (cryptographically valid, if policy-denied) attempt above.
         self.user.set_internal_attribute(FIDO2TokenInfo.USER_ID, bytes_to_base64url(
             base64url_to_bytes(self.user_handle)))
         with patch('privacyidea.lib.fido2.challenge.get_fido2_nonce') as get_nonce:

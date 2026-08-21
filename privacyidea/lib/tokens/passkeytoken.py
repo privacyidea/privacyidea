@@ -477,6 +477,10 @@ class PasskeyTokenClass(TokenClass):
                         The following keys are optional:
                         - "webauthn_user_verification_requirement" (FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT),
                           defaults to preferred
+                        - PasskeyAction.AllowedAuthenticatorDeviceTypes, a list of allowed values for
+                          credential_device_type ("single_device"/"multi_device"). Unset/empty means no restriction.
+                        - PasskeyAction.EnforceUserHandle, if truthy, requires the userHandle to match the FIDO2
+                          user ID recorded for the token's assigned user at enrollment.
 
         :type options: dict
         :return: A numerical value where values larger than zero indicate success.
@@ -518,15 +522,25 @@ class PasskeyTokenClass(TokenClass):
             log.error(f"Passkey authentication failed: {ex}")
             return -1
 
+        # The signature and sign count are valid proof that this authenticator (not a clone or a replay) produced
+        # this response, independent of whether a policy below then still refuses the login - so the new sign
+        # count is persisted right away. Deferring this until after the policy checks would leave the stored sign
+        # count stale, letting the very same valid response be re-verified again (e.g. after a policy change)
+        # instead of being consumed on its first, legitimate use.
+        self.add_tokeninfo("sign_count", verified_authentication.new_sign_count)
+
         # Checking policy scope=SCOPE.AUTH, action=PasskeyAction.AllowedAuthenticatorDeviceTypes.
         # Unlike an AAGUID or attachment recorded at enrollment, the device type is derived from the signed
         # backup-eligible flag in authenticatorData, so it is re-verified cryptographically on every single
         # authentication instead of being trusted from a (possibly outdated) value stored at enrollment.
+        # This returns -1 rather than raising: passkeys can also reach check_otp through the passkey_trigger_by_pin
+        # / check_token_list path, which does not catch PolicyError and would abort evaluation of any other
+        # pending challenge-response token for the same request.
         allowed_device_types = get_optional(options, PasskeyAction.AllowedAuthenticatorDeviceTypes)
         if allowed_device_types and verified_authentication.credential_device_type not in allowed_device_types:
             log.warning(f"Passkey {self.token.serial} is not allowed to authenticate due to policy restriction "
                         f"{PasskeyAction.AllowedAuthenticatorDeviceTypes!s}")
-            raise PolicyError("This passkey is not allowed to authenticate due to a policy restriction.")
+            return -1
 
         # Checking policy scope=SCOPE.AUTH, action=PasskeyAction.EnforceUserHandle.
         # privacyIDEA otherwise resolves the user purely via the credential ID's assignment in the database,
@@ -548,9 +562,8 @@ class PasskeyTokenClass(TokenClass):
                 log.warning(f"Passkey {self.token.serial} userHandle does not match the FIDO2 user ID recorded "
                             f"for its assigned user; refusing authentication due to policy restriction "
                             f"{PasskeyAction.EnforceUserHandle!s}")
-                raise PolicyError("This passkey's userHandle does not match its assigned user.")
+                return -1
 
-        self.add_tokeninfo("sign_count", verified_authentication.new_sign_count)
         return 1
 
     @classmethod
