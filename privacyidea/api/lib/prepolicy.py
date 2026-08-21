@@ -2201,6 +2201,26 @@ def fido2_auth(request, action):
                                          user_object=user_object).any())
     request.all_data[PasskeyAction.EnableTriggerByPIN] = passkey_trigger_by_pin
 
+    # Checking policy scope=SCOPE.AUTH, action=PasskeyAction.AllowedAuthenticatorDeviceTypes. Independent of the
+    # same-named ENROLL scope policy: an admin may allow enrolling both device types but only allow authentication
+    # with one of them, or vice versa.
+    allowed_device_types_pols = (Match.user(g,
+                                            scope=SCOPE.AUTH,
+                                            action=PasskeyAction.AllowedAuthenticatorDeviceTypes,
+                                            user_object=user_object)
+                                 .action_values(unique=False, allow_white_space_in_action=True))
+    allowed_device_types = set(
+        device_type
+        for allowed_device_types_pol in allowed_device_types_pols
+        for device_type in allowed_device_types_pol.split()
+    )
+    request.all_data[PasskeyAction.AllowedAuthenticatorDeviceTypes] = list(allowed_device_types)
+
+    request.all_data[PasskeyAction.EnforceUserHandle] = (Match.user(g,
+                                                                     scope=SCOPE.AUTH,
+                                                                     action=PasskeyAction.EnforceUserHandle,
+                                                                     user_object=user_object).any())
+
     return True
 
 
@@ -2356,6 +2376,23 @@ def fido2_enroll(request, action):
 
     request.all_data[PasskeyAction.UserLabel] = get_first_policy_value(
         PasskeyAction.UserLabel, default=DEFAULT_USER_LABEL, scope=SCOPE.ENROLL, user=user_object)
+
+    # Checking policy scope=SCOPE.ENROLL, action=PasskeyAction.AllowedAuthenticatorDeviceTypes. The device type
+    # cannot be requested up front (unlike resident_key/user_verification), it is only known once the
+    # authenticator has responded, so PasskeyTokenClass.update() rejects the registration after the fact if it
+    # does not match.
+    allowed_device_types_pols = (Match.user(g,
+                                            scope=SCOPE.ENROLL,
+                                            action=PasskeyAction.AllowedAuthenticatorDeviceTypes,
+                                            user_object=user_object)
+                                 .action_values(unique=False, allow_white_space_in_action=True))
+    allowed_device_types = set(
+        device_type
+        for allowed_device_types_pol in allowed_device_types_pols
+        for device_type in allowed_device_types_pol.split()
+    )
+    request.all_data[PasskeyAction.AllowedAuthenticatorDeviceTypes] = list(allowed_device_types)
+
     if request and hasattr(request, "environ"):
         request.all_data['HTTP_ORIGIN'] = request.environ.get('HTTP_ORIGIN')
     else:
