@@ -380,6 +380,12 @@ def _chunked(items: list, size: int = PAGE_QUERY_CHUNK_SIZE) -> Iterator[list]:
         yield items[start:start + size]
 
 
+def _select_owners(token_ids: list[int]) -> list[TokenOwner]:
+    return db.session.scalars(
+        select(TokenOwner).where(TokenOwner.token_id.in_(token_ids)).order_by(TokenOwner.id)
+    ).unique().all()
+
+
 def _get_owner_by_token_id(token_ids: list[int]) -> dict[int, TokenOwner]:
     """
     Return the owner of each of the given tokens, with one query for the whole page.
@@ -387,14 +393,38 @@ def _get_owner_by_token_id(token_ids: list[int]) -> dict[int, TokenOwner]:
     A token can have several owners, in which case the first one is returned, just like
     ``Token.first_owner`` does for a single token.
 
+    A chunk whose page-wide query fails (a transient DB error, e.g. a lock-wait timeout)
+    is retried once after a rollback, since most such failures clear on retry. A chunk
+    that fails twice falls back to looking its tokens up one by one, so that a failure
+    which does not clear marks only the tokens it actually affects instead of failing the
+    whole page -- mirroring how ``_resolve_owner_logins`` recovers from a failed resolver
+    batch lookup.
+
     :param token_ids: The database IDs of the tokens
-    :return: dictionary mapping a token ID to its owner. Tokens without an owner are not contained.
+    :return: dictionary mapping a token ID to its owner. Tokens without an owner (or whose
+             owner could not be read even one by one) are not contained.
     """
     owner_by_token_id = {}
     for chunk in _chunked(token_ids):
-        owners = db.session.scalars(
-            select(TokenOwner).where(TokenOwner.token_id.in_(chunk)).order_by(TokenOwner.id)
-        ).unique().all()
+        try:
+            owners = _select_owners(chunk)
+        except Exception as chunk_error:
+            log.error(f"Could not read the owners of a page of tokens in one query: {chunk_error!s}")
+            log.debug(traceback.format_exc())
+            db.session.rollback()
+            try:
+                owners = _select_owners(chunk)
+            except Exception as retry_error:
+                log.error(f"Retrying the page of tokens in one query failed again: {retry_error!s}")
+                log.debug(traceback.format_exc())
+                db.session.rollback()
+                owners = []
+                for token_id in chunk:
+                    try:
+                        owners.extend(_select_owners([token_id]))
+                    except Exception as token_error:
+                        log.error(f"Could not read the owner of token {token_id}: {token_error!s}")
+                        db.session.rollback()
         for owner in owners:
             owner_by_token_id.setdefault(owner.token_id, owner)
     return owner_by_token_id
