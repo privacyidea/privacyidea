@@ -118,8 +118,8 @@ def _retry_cooldown_seconds() -> int:
 # challenges, which are looked up by transaction_id only). A token never
 # creates two challenges in one transaction, so serial uniquely identifies a
 # challenge within the hash.
-_TXN_KEY = "pi:challenge:txn:{}"  # pi:challenge:txn:<transaction_id> -> HASH {serial -> JSON}
-_SERIAL_KEY = "pi:challenge:serial:{}"  # pi:challenge:serial:<serial>       -> SET of txn ids
+_TXN_KEY = "pi:challenge:v1:txn:{}"  # pi:challenge:v1:txn:<transaction_id> -> HASH {serial -> JSON}
+_SERIAL_KEY = "pi:challenge:v1:serial:{}"  # pi:challenge:v1:serial:<serial>       -> SET of txn ids
 
 # Keep Redis keys a bit beyond validitytime so we don't evict just before the
 # DB expiry check fires, and to absorb minor clock skew between nodes.

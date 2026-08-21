@@ -601,6 +601,12 @@ dependent on the clients IP address and the user agent.
 
    It may make sense to create a cronjob that periodically cleans up old authentication cache entries.
 
+.. note:: With :ref:`redis_auth_cache` enabled, cache entries live in Redis
+   instead of the ``authcache`` table. They then carry the lifetime this policy
+   grants and expire on their own, so neither the cleanup command nor a cronjob
+   for it is needed - and the authentication path stops writing to the database
+   altogether.
+
 .. note:: The AuthCache only works for user authentication, not for
    authentication with serials.
 
