@@ -1,0 +1,155 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+
+<div
+  aria-label="UI Settings"
+  class="settings-container"
+  i18n-aria-label>
+  <div class="settings-header">
+    <h3
+      class="margin-8"
+      i18n>
+      UI Settings
+    </h3>
+    <button
+      (click)="resetSettings()"
+      [attr.aria-label]="resetTooltip"
+      [matTooltip]="resetTooltip"
+      mat-icon-button
+      type="button">
+      <mat-icon>restart_alt</mat-icon>
+    </button>
+  </div>
+
+  <div class="details-cards-grid">
+    <app-details-card
+      class="settings-card-xs"
+      i18n-title
+      title="Theme">
+      <div class="settings-row">
+        <app-theme-toggle />
+      </div>
+    </app-details-card>
+
+    <app-details-card
+      class="settings-card-s"
+      i18n-title
+      title="Language">
+      <div class="settings-row">
+        <mat-form-field
+          class="input-width-m language-field"
+          subscriptSizing="dynamic">
+          <mat-select
+            (selectionChange)="selectLocale($event.value)"
+            [value]="preferredLocale()"
+            aria-label="Language"
+            i18n-aria-label>
+            @for (locale of locales; track locale.code) {
+              <mat-option [value]="locale.code">
+                {{ locale.label }}
+              </mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      </div>
+    </app-details-card>
+
+    <app-details-card
+      class="settings-card-m"
+      i18n-title
+      title="Pending Requests">
+      <div class="settings-row">
+        <mat-slide-toggle
+          (change)="setShowLoadingUrls($event.checked)"
+          [checked]="showLoadingUrls()"
+          i18n>
+          Show endpoints being requested
+        </mat-slide-toggle>
+      </div>
+    </app-details-card>
+
+  </div>
+
+  <mat-expansion-panel class="settings-appearance-panel">
+    <mat-expansion-panel-header>
+      <mat-panel-title i18n>Appearance</mat-panel-title>
+      <mat-panel-description>
+        <mat-icon
+          [attr.aria-label]="appearanceHint"
+          [matTooltip]="appearanceHint"
+          class="settings-appearance-hint"
+          >info_outline</mat-icon
+        >
+      </mat-panel-description>
+    </mat-expansion-panel-header>
+
+    <div class="details-cards-grid">
+      <app-details-card
+        class="settings-card-m"
+        i18n-title
+        title="Corners">
+        <div class="settings-row">
+          <mat-button-toggle-group
+            (change)="selectCorners($event.value)"
+            [hideSingleSelectionIndicator]="true"
+            [value]="corners()"
+            aria-label="Corners"
+            i18n-aria-label>
+            @for (level of cornerLevels; track level.value) {
+              <mat-button-toggle [value]="level.value">{{ level.label }}</mat-button-toggle>
+            }
+          </mat-button-toggle-group>
+        </div>
+      </app-details-card>
+
+      <app-details-card
+        class="settings-card-m"
+        i18n-title
+        title="Depth">
+        <div class="settings-row">
+          <mat-button-toggle-group
+            (change)="selectDepth($event.value)"
+            [hideSingleSelectionIndicator]="true"
+            [value]="depth()"
+            aria-label="Depth"
+            i18n-aria-label>
+            @for (level of depthLevels; track level.value) {
+              <mat-button-toggle [value]="level.value">{{ level.label }}</mat-button-toggle>
+            }
+          </mat-button-toggle-group>
+        </div>
+      </app-details-card>
+
+      <app-details-card
+        class="settings-card-m"
+        i18n-title
+        title="Light Source">
+        <div class="settings-row">
+          <app-light-source-dial
+            [items]="lightSourceDialItems"
+            [selected]="lightSource()"
+            groupName="light-source"
+            legend="Light source"
+            i18n-legend
+            (pick)="selectLightSource($event)" />
+        </div>
+      </app-details-card>
+    </div>
+  </mat-expansion-panel>
+</div>

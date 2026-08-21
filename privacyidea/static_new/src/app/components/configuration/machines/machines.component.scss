@@ -5,7 +5,6 @@
 .machines-container {
   @include styles.main-component-style;
   @include table.base-table-structure(".machines-table", ".table-filter", ".table-scroll-container");
-  max-height: var(--table-max-height) !important;
   @include table.page-table-state-size;
 }
 

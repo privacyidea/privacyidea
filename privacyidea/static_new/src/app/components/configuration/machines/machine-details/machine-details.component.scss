@@ -3,8 +3,6 @@
 
 .machine-details-layout {
   @include styles.main-component-style();
-  // Shared detail/edit-page cap. See --detail-max-height in styles.scss.
-  max-height: var(--detail-max-height);
 }
 
 .machine-title {
@@ -20,14 +18,12 @@
 }
 
 .details-section {
+  @include styles.card-recessed(3);
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
   margin-bottom: 16px;
   padding: 16px;
-  background: var(--mat-sys-surface-container-low);
-  border-radius: var(--border-radius);
-  border: solid 1px var(--mat-sys-surface-container-highest);
 }
 
 .detail-row {

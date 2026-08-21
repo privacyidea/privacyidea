@@ -8,7 +8,6 @@
     ".container-templates-table-filter",
     ".container-templates-scroll-container"
   );
-  max-height: var(--table-max-height);
   @include table.page-table-state-size;
 
   & {
@@ -18,7 +17,7 @@
 
   th,
   td {
-    padding: 0 var(--half-global-padding);
+    padding: 0 8px;
     text-align: left;
     max-width: unset !important;
   }
@@ -26,7 +25,7 @@
   .table-header-container {
     display: flex;
     align-items: center;
-    gap: var(--half-global-gap);
+    gap: 8px;
     white-space: nowrap;
 
     > div {
@@ -42,8 +41,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: var(--global-gap);
-    padding: var(--global-padding);
+    gap: 16px;
+    padding: 16px;
     min-height: 64px;
   }
 

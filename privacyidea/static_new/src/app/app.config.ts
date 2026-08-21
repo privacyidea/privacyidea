@@ -35,6 +35,7 @@ import { loadingInterceptor } from "./interceptor/loading/loading.interceptor";
 import { userAgentInterceptor } from "./interceptor/user-agent/user-agent.interceptor";
 import { AuthService } from "./services/auth/auth.service";
 import { ConfigService } from "./services/config/config.service";
+import { AppearanceService } from "./services/appearance/appearance.service";
 import { ThemeService } from "./services/theme/theme.service";
 
 export function baseHrefFactory(): string {
@@ -65,6 +66,7 @@ export const appConfig: ApplicationConfig = {
     provideAppInitializer(() => {
       const themeService = inject(ThemeService);
       themeService.initializeTheme();
+      inject(AppearanceService).initializeAppearance();
     })
   ]
 };
