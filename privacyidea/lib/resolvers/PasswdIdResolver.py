@@ -45,6 +45,7 @@ import codecs
 
 from passlib.context import CryptContext
 
+from privacyidea.lib.error import ParameterError
 from privacyidea.lib.metrics import track_resolver_op
 from privacyidea.lib.utils import convert_column_to_unicode
 from .UserIdResolver import UserIdResolver
@@ -324,20 +325,23 @@ class IdResolver (UserIdResolver):
 
         :param search_dict: dict of search expressions
         :param attributes: list of attributes to be returned for each user
+        :raises ParameterError: when a search key is not one of ``search_fields``
         """
         ret = []
         search_dict = search_dict or {}
+
+        unknown_search_keys = [key for key in search_dict if key not in self.search_fields]
+        if unknown_search_keys:
+            log.error(f"Could not find search key(s) {unknown_search_keys} in "
+                      f"the search fields {list(self.search_fields.keys())}.")
+            raise ParameterError(f"Search parameter ({unknown_search_keys}) not available "
+                                 f"in search fields.")
 
         #  first check if the searches are in the searchDict
         for _id, line in self.description_dict.items():
             ok = True
 
             for search in search_dict:
-
-                if search not in self.search_fields:
-                    ok = False
-                    break
-
                 pattern = search_dict.get(search)
 
                 log.debug("searching for %s:%s", search, pattern)
