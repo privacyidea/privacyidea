@@ -796,8 +796,8 @@ privacyIDEA does not support rolling upgrades on the SQL side (the schema
 migration step expects a single writer), so the Redis cache does not need to
 clear a higher bar. The policy below applies whenever the cache is enabled.
 
-**Within a single key prefix** (today: ``pi:challenge:``), the payload may grow
-over time. Older workers ignore unknown fields; newer workers read older
+**Within a single key prefix** (today: ``pi:challenge:v1:``), the payload may
+grow over time. Older workers ignore unknown fields; newer workers read older
 entries via ``dict.get(field, default)``. No operator action is needed for
 this kind of change.
 

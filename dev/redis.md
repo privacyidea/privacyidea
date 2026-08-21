@@ -164,12 +164,12 @@ functions use.
 
 ## 4. Data structures in Redis
 
-Two key families, both namespaced under `pi:challenge:`.
+Two key families, both namespaced under `pi:challenge:v1:`.
 
 ### 4.1 Transaction hash (authoritative store)
 
 ```
-pi:challenge:txn:<transaction_id>   →  HASH  { <serial> : <JSON payload>, ... }
+pi:challenge:v1:txn:<transaction_id>   →  HASH  { <serial> : <JSON payload>, ... }
 ```
 
 * **Why a hash, not a string.** One authentication request can trigger **several
@@ -192,7 +192,7 @@ expiration, received_count, otp_valid`.
 ### 4.2 Serial index (reverse lookup)
 
 ```
-pi:challenge:serial:<serial>   →  SET  { <transaction_id>, ... }
+pi:challenge:v1:serial:<serial>   →  SET  { <transaction_id>, ... }
 ```
 
 * Lets "get all challenges for this token serial" resolve without scanning keys.
@@ -423,10 +423,10 @@ that exercises `lib/cache/redis.py`.
 ### Inspecting Redis by hand
 ```bash
 redis-cli
-> KEYS pi:challenge:*
-> HGETALL pi:challenge:txn:<transaction_id>
-> SMEMBERS pi:challenge:serial:<serial>
-> TTL    pi:challenge:txn:<transaction_id>
+> KEYS pi:challenge:v1:*
+> HGETALL pi:challenge:v1:txn:<transaction_id>
+> SMEMBERS pi:challenge:v1:serial:<serial>
+> TTL    pi:challenge:v1:txn:<transaction_id>
 ```
 
 ---
