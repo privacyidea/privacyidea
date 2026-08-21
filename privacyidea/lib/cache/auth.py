@@ -148,7 +148,7 @@ def _naive(value: datetime) -> datetime:
     return value
 
 
-def _read_entries(client, key: str) -> dict | None:
+def _read_entries(client: redis_lib.Redis, key: str) -> dict | None:
     """
     Return the cached authentications under ``key`` as ``{id: record}``.
 
@@ -194,7 +194,7 @@ def _read_entries(client, key: str) -> dict | None:
     return entries
 
 
-def _forget(client, key: str, entry_ids: list) -> None:
+def _forget(client: redis_lib.Redis, key: str, entry_ids: list) -> None:
     """Remove the given entries, both the record and its counter."""
     if not entry_ids:
         return
@@ -329,7 +329,7 @@ def verify_in_cache(username: str, realm: str, resolver: str, password: str,
     return False
 
 
-def _use(client, key: str, entry_id: str, record: dict) -> None:
+def _use(client: redis_lib.Redis, key: str, entry_id: str, record: dict) -> None:
     """
     Record that an entry was just used.
 

@@ -152,7 +152,7 @@ def _segment(value) -> str:
     return quote(f"{value}", safe="")
 
 
-def _keys_of_user(resolver_name: str, login: str = None, user_id=None) -> list[str]:
+def _keys_of_user(resolver_name: str, login: str = None, user_id: str = None) -> list[str]:
     """Return the key names that hold what is cached about one user."""
     keys = []
     if login:
@@ -287,7 +287,7 @@ def cached_user_id(resolver, resolver_name: str, login: str):
     return user_id
 
 
-def cached_username(resolver, resolver_name: str, user_id) -> str:
+def cached_username(resolver, resolver_name: str, user_id: str) -> str:
     """
     Return the login name of ``user_id`` in the given resolver, from the cache
     if it is there.
@@ -313,7 +313,7 @@ def cached_username(resolver, resolver_name: str, user_id) -> str:
     return login
 
 
-def cached_user_info(resolver, resolver_name: str, user_id, attributes: list[str] = None) -> dict:
+def cached_user_info(resolver, resolver_name: str, user_id: str, attributes: list[str] = None) -> dict:
     """
     Return the attributes of ``user_id`` in the given resolver, from the cache
     if the cached entry covers the requested attributes.
@@ -399,7 +399,7 @@ def _covered_user_info(cached: str, attributes: list[str] = None) -> dict | None
     return {key: value for key, value in user_info.items() if key in attributes}
 
 
-def invalidate_user(resolver_name: str, login: str = None, user_id=None) -> None:
+def invalidate_user(resolver_name: str, login: str = None, user_id: str = None) -> None:
     """
     Drop what is cached about one user.
 
@@ -434,10 +434,13 @@ def invalidate_resolver(resolver_name: str) -> bool:
              they may still be there. Callers that report what they dropped have
              to be able to tell those apart.
     """
-    client = _cache_client()
-    if client is None:
-        # Nothing is cached for this resolver, so there is nothing left behind
+    if not _ttl_seconds():
+        # Caching is off outright, so nothing was ever written
         return True
+    client = redis_client_for_feature(USER_CACHE_FEATURE)
+    if client is None:
+        # Caching is on but Redis could not be reached: entries may still be there
+        return False
     index_key = _INDEX_KEY.format(_segment(resolver_name))
     dropped = 0
     try:

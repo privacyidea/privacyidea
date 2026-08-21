@@ -54,7 +54,7 @@ def add_to_cache(username: str, realm: str, resolver: str, password: str,
         has no row to identify
     """
     auth_hash = _hash_password(password)
-    log.debug(f'Adding record to auth cache: ({username!r}, {realm!r}, {resolver!r}, {auth_hash!r})')
+    log.debug(f'Adding record to auth cache: ({username!r}, {realm!r}, {resolver!r})')
     if redis_auth_cache.add_to_cache(username, realm, resolver, auth_hash, max_age_seconds):
         return 0
     # Can not store timezone aware timestamps!

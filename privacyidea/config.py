@@ -132,6 +132,17 @@ def _random_password(size):
     return "".join(passwd)
 
 
+def _env_flag(name: str) -> bool:
+    """
+    Parse a boolean-ish environment variable, defaulting to False.
+
+    A local stand-in for ``lib.utils.is_true``: this module cannot import
+    from ``privacyidea.lib`` without creating a circular import, since
+    ``lib.framework`` imports ``ConfigKey`` from here.
+    """
+    return os.environ.get(name, "false").strip().lower() in ("true", "1", "yes", "on")
+
+
 class Config:
     SECRET_KEY = os.environ.get(ConfigKey.SECRET_KEY)
     PI_ENCFILE = os.path.join(basedir, "tests/testdata/enckey")
@@ -174,14 +185,10 @@ class TestingConfig(Config):
     # CI job can run the whole suite against Redis while the default run stays
     # DB-only (PI_REDIS_URL unset -> the cache feature is off).
     PI_REDIS_URL = os.environ.get(ConfigKey.REDIS_URL)
-    PI_REDIS_CACHE_CHALLENGES = (os.environ.get(ConfigKey.REDIS_CACHE_CHALLENGES, "false").lower()
-                                 in ("true", "1", "yes", "on"))
-    PI_REDIS_CACHE_USERS = (os.environ.get(ConfigKey.REDIS_CACHE_USERS, "false").lower()
-                            in ("true", "1", "yes", "on"))
-    PI_REDIS_CACHE_AUTH = (os.environ.get(ConfigKey.REDIS_CACHE_AUTH, "false").lower()
-                           in ("true", "1", "yes", "on"))
-    PI_REDIS_CACHE_HEALTH = (os.environ.get(ConfigKey.REDIS_CACHE_HEALTH, "false").lower()
-                             in ("true", "1", "yes", "on"))
+    PI_REDIS_CACHE_CHALLENGES = _env_flag(ConfigKey.REDIS_CACHE_CHALLENGES)
+    PI_REDIS_CACHE_USERS = _env_flag(ConfigKey.REDIS_CACHE_USERS)
+    PI_REDIS_CACHE_AUTH = _env_flag(ConfigKey.REDIS_CACHE_AUTH)
+    PI_REDIS_CACHE_HEALTH = _env_flag(ConfigKey.REDIS_CACHE_HEALTH)
     # This is used to encrypt the admin passwords
     PI_PEPPER = ""
     # This is only for testing encrypted files

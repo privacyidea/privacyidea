@@ -783,8 +783,8 @@ def delete_user_cache_api():
          "version": "privacyIDEA unknown"
        }
     """
-    row_count = delete_user_cache()
-    flushed_resolvers = flush_user_cache()
+    row_count = delete_user_cache()  # rows removed from the SQL usercache table
+    flushed_resolvers = flush_user_cache()  # resolvers flushed from the Redis user cache
     g.audit_object.log({"success": True,
                         "info": f"Deleted {row_count} entries from user cache, "
                                 f"flushed {flushed_resolvers} resolvers from the Redis user cache"})
