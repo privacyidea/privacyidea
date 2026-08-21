@@ -39,9 +39,13 @@
       </p>
     }
   } @else {
-    <app-news-list
-      [items]="infoService.newsItems()"
-      [maxAgeDays]="authService.rssAge()"
-      [showSummary]="true" />
+    <app-widget-state
+      [state]="pageState()"
+      [errorMessage]="newsFetchErrorMessage">
+      <app-news-list
+        [items]="infoService.newsItems()"
+        [maxAgeDays]="authService.rssAge()"
+        [showSummary]="true" />
+    </app-widget-state>
   }
 </div>

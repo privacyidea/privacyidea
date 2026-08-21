@@ -20,13 +20,15 @@ import { Component, computed, inject } from "@angular/core";
 import { Router, RouterLink } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { WidgetStateComponent } from "@components/dashboard/widgets/widget-state/widget-state.component";
 import { NewsListComponent } from "@components/shared/news-list/news-list.component";
+import { WidgetState } from "@models/dashboard";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { InfoService, InfoServiceInterface } from "@services/info/info.service";
 
 @Component({
   selector: "app-news",
-  imports: [NewsListComponent, RouterLink, ScrollToTopDirective],
+  imports: [NewsListComponent, RouterLink, ScrollToTopDirective, WidgetStateComponent],
   templateUrl: "./news.component.html",
   styleUrl: "./news.component.scss"
 })
@@ -42,6 +44,19 @@ export class NewsComponent {
   protected readonly canReadPolicies = computed(() => this.authService.actionAllowed("policyread"));
 
   protected readonly newsDisabled = computed(() => this.authService.rssAge() <= 0);
+
+  protected readonly newsFetchErrorMessage = $localize`Failed to fetch news.`;
+
+  protected readonly pageState = computed<WidgetState>(() => {
+    const resource = this.infoService.newsResource;
+    if (resource.isLoading()) {
+      return "loading";
+    }
+    if (resource.error() !== undefined) {
+      return "error";
+    }
+    return "ready";
+  });
 
   constructor() {
     this.infoService.requestNewsFeed();

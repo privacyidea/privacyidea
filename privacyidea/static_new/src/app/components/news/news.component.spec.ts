@@ -97,6 +97,22 @@ describe("NewsComponent", () => {
     expect(titles[0].textContent).toContain("Single entry");
   });
 
+  it("should show a spinner while the feed is loading", () => {
+    infoMock.newsResource.isLoading.set(true);
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector("mat-progress-spinner")).not.toBeNull();
+    expect(fixture.debugElement.query(By.directive(NewsListComponent))).toBeNull();
+  });
+
+  it("should show a distinct message when the feed fails to load", () => {
+    infoMock.newsResource.error.set(new Error("boom"));
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain("Failed to fetch news.");
+    expect(fixture.debugElement.query(By.directive(NewsListComponent))).toBeNull();
+  });
+
   it("should render the empty state when the info service has no items", () => {
     infoMock.newsItems.set([]);
     fixture.detectChanges();

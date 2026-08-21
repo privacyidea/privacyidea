@@ -95,6 +95,24 @@ describe("DashboardLayoutService", () => {
       expect(subscriptions).toMatchObject({ x: 0, y: 0 });
     });
 
+    it("should not overlap any two widgets in the default layout", () => {
+      build();
+      const widgets = service.widgets();
+      for (let i = 0; i < widgets.length; i++) {
+        for (let j = i + 1; j < widgets.length; j++) {
+          expect(overlaps(widgets[i], widgets[j])).toBe(false);
+        }
+      }
+    });
+
+    it("should widen news and events past their default size in the default layout", () => {
+      build();
+      const news = service.widgets().find((widget) => widget.type === "news");
+      const events = service.widgets().find((widget) => widget.type === "events");
+      expect(news?.cols).toBe(9);
+      expect(events?.cols).toBe(7);
+    });
+
     it("should start in view mode", () => {
       build();
       expect(service.editMode()).toBe(false);
