@@ -688,7 +688,8 @@ describe("UserDetailsComponent", () => {
       permanent: false,
       lock_expires_at: "2030-01-01T10:00:00Z",
       seconds_remaining: 120,
-      locked_at: "2030-01-01T09:58:00Z"
+      locked_at: "2030-01-01T09:58:00Z",
+      error_message: null
     });
     dialogServiceMock.openDialog = jest.fn().mockReturnValue({
       afterClosed: () => of(true)
@@ -716,7 +717,8 @@ describe("UserDetailsComponent", () => {
       permanent: true,
       lock_expires_at: null,
       seconds_remaining: null,
-      locked_at: "2030-01-01T09:58:00Z"
+      locked_at: "2030-01-01T09:58:00Z",
+      error_message: null
     });
     expect(component.lockoutStatusText()).toBe("Locked permanently");
   });
@@ -730,7 +732,8 @@ describe("UserDetailsComponent", () => {
       permanent: false,
       lock_expires_at: null,
       seconds_remaining: null,
-      locked_at: "2030-01-01T09:58:00Z"
+      locked_at: "2030-01-01T09:58:00Z",
+      error_message: null
     });
     expect(component.lockoutStatusText()).toBe("Locked");
   });
@@ -754,7 +757,8 @@ describe("UserDetailsComponent", () => {
       permanent: false,
       lock_expires_at: "2030-01-01T10:00:00Z",
       seconds_remaining: 120,
-      locked_at: "2030-01-01T09:58:00Z"
+      locked_at: "2030-01-01T09:58:00Z",
+      error_message: null
     });
     dialogServiceMock.openDialog = jest.fn().mockReturnValue({ afterClosed: () => of(true) });
     (conditionalAccessStateServiceMock.resetUserLockout as jest.Mock).mockReturnValue(of(false));
@@ -773,7 +777,8 @@ describe("UserDetailsComponent", () => {
       permanent: false,
       lock_expires_at: "2030-01-01T10:00:00Z",
       seconds_remaining: 120,
-      locked_at: "2030-01-01T09:58:00Z"
+      locked_at: "2030-01-01T09:58:00Z",
+      error_message: null
     });
     dialogServiceMock.openDialog = jest.fn().mockReturnValue({ afterClosed: () => of(false) });
 
