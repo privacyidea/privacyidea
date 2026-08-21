@@ -5,6 +5,7 @@ See tests/README.md for the full guide on when a per-migration test is
 required and how to write one.
 """
 
+import functools
 import os
 import pathlib
 
@@ -29,6 +30,23 @@ def is_oracle(db_url: str = DB_URL) -> bool:
     return db_url.startswith("oracle")
 
 
+@functools.cache
+def is_mariadb(db_url: str = DB_URL) -> bool:
+    """Tell MariaDB apart from real MySQL behind a shared mysql+pymysql:// URL.
+
+    Both engines connect through the identical URL scheme, so the connection
+    string alone cannot distinguish them — the server's own version string
+    (inspected by SQLAlchemy on first connect) is the only reliable signal.
+    Cached because callers (get_seed_path) run once per test.
+    """
+    engine = create_engine(db_url)
+    try:
+        with engine.connect() as conn:
+            return bool(conn.dialect.is_mariadb)
+    finally:
+        engine.dispose()
+
+
 def get_alembic_cfg(db_url: str = DB_URL) -> AlembicConfig:
     migrations_dir = str(pathlib.Path(__file__).parent.parent / "privacyidea" / "migrations")
     cfg = AlembicConfig(str(pathlib.Path(migrations_dir) / "alembic.ini"))
@@ -43,8 +61,10 @@ def get_seed_path(revision: str = START_REVISION, db_url: str = DB_URL) -> pathl
         dialect = "postgresql"
     elif is_oracle(db_url):
         dialect = "oracle"
-    else:
+    elif is_mariadb(db_url):
         dialect = "mariadb"
+    else:
+        dialect = "mysql"
     # Seeds follow the naming convention:  seed_v<ver>_<revision>_<dialect>.sql
     # Glob for any file that matches the revision + dialect regardless of version tag.
     matches = list(SEED_SQL_DIR.glob(f"*_{revision}_{dialect}.sql"))

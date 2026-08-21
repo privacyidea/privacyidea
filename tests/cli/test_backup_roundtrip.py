@@ -54,16 +54,22 @@ def _run_pimanage(args, config_file):
 
 def test_backup_restore_roundtrip(tmp_path):
     engine = create_engine(DB_URL)
+    # Real MySQL has no CREATE SEQUENCE at all, unlike MariaDB 10.3+ -- so the
+    # Galera-specific sequence checks below only apply where the dialect
+    # actually supports them. The table/row round trip still runs everywhere.
+    with engine.connect() as conn:
+        has_sequences = conn.dialect.supports_sequences
 
-    # 1. Seed a sentinel table plus a sequence. INCREMENT BY 0 is required to
-    #    create a cached sequence on a Galera cluster (and behaves like the
-    #    default increment on a standalone server), so the seed loads on both —
-    #    and the sequence is exactly what made mysqldump's default LOCK TABLES
-    #    fail on Galera.
+    # 1. Seed a sentinel table plus, on MariaDB, a sequence. INCREMENT BY 0 is
+    #    required to create a cached sequence on a Galera cluster (and behaves
+    #    like the default increment on a standalone server), so the seed loads
+    #    on both -- and the sequence is exactly what made mysqldump's default
+    #    LOCK TABLES fail on Galera.
     with engine.begin() as conn:
         conn.execute(text("DROP TABLE IF EXISTS backup_roundtrip"))
-        conn.execute(text("DROP SEQUENCE IF EXISTS backup_rt_seq"))
-        conn.execute(text("CREATE SEQUENCE backup_rt_seq START WITH 7 INCREMENT BY 0"))
+        if has_sequences:
+            conn.execute(text("DROP SEQUENCE IF EXISTS backup_rt_seq"))
+            conn.execute(text("CREATE SEQUENCE backup_rt_seq START WITH 7 INCREMENT BY 0"))
         conn.execute(text("CREATE TABLE backup_roundtrip (id INTEGER PRIMARY KEY, val VARCHAR(50))"))
         conn.execute(text("INSERT INTO backup_roundtrip (id, val) VALUES (1, 'sentinel')"))
 
@@ -93,7 +99,8 @@ def test_backup_restore_roundtrip(tmp_path):
         # 4. Disaster: drop the seeded objects.
         with engine.begin() as conn:
             conn.execute(text("DROP TABLE backup_roundtrip"))
-            conn.execute(text("DROP SEQUENCE backup_rt_seq"))
+            if has_sequences:
+                conn.execute(text("DROP SEQUENCE backup_rt_seq"))
 
         # 5. Restore. --keep-db-uri keeps the (identical) live URI, which also
         #    avoids depending on the absolute paths baked into the archived pi.cfg.
@@ -101,18 +108,21 @@ def test_backup_restore_roundtrip(tmp_path):
             ["backup", "restore", "--keep-db-uri", str(archives[0])], pi_cfg)
         assert result.returncode == 0, result.stdout + result.stderr
 
-        # 6. Verify the row and the sequence are back.
+        # 6. Verify the row (and, on MariaDB, the sequence) are back.
         with engine.connect() as conn:
             val = conn.execute(
                 text("SELECT val FROM backup_roundtrip WHERE id = 1")).scalar()
-            seq_count = conn.execute(text(
-                "SELECT COUNT(*) FROM information_schema.tables "
-                "WHERE table_schema = DATABASE() AND table_type = 'SEQUENCE' "
-                "AND table_name = 'backup_rt_seq'")).scalar()
+            if has_sequences:
+                seq_count = conn.execute(text(
+                    "SELECT COUNT(*) FROM information_schema.tables "
+                    "WHERE table_schema = DATABASE() AND table_type = 'SEQUENCE' "
+                    "AND table_name = 'backup_rt_seq'")).scalar()
         assert val == "sentinel", f"sentinel row was not restored (got {val!r})"
-        assert seq_count == 1, "sequence backup_rt_seq was not restored"
+        if has_sequences:
+            assert seq_count == 1, "sequence backup_rt_seq was not restored"
     finally:
         with engine.begin() as conn:
             conn.execute(text("DROP TABLE IF EXISTS backup_roundtrip"))
-            conn.execute(text("DROP SEQUENCE IF EXISTS backup_rt_seq"))
+            if has_sequences:
+                conn.execute(text("DROP SEQUENCE IF EXISTS backup_rt_seq"))
         engine.dispose()
