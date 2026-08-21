@@ -29,7 +29,7 @@ from privacyidea.api.lib.postpolicy import (check_serial, check_tokentype,
                                             mangle_challenge_response, is_authorized,
                                             check_verify_enrollment, preferred_client_mode,
                                             multichallenge_enroll_via_validate,
-                                            postpolicy)
+                                            postpolicy, postrequest)
 from privacyidea.api.lib.prepolicy import (init_token_defaults, verify_enrollment)
 from privacyidea.lib.config import set_privacyidea_config, SYSCONF
 from privacyidea.lib.container import (init_container, find_container_by_serial, create_container_template,
@@ -140,6 +140,12 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         # user/realm-scoped policy condition of the wrapped function.
         self.assertRaises(ValueError, postpolicy, check_tokentype)
         self.assertRaises(ValueError, postpolicy, check_tokentype, None)
+
+    def test_01b_postrequest_requires_a_request(self):
+        # postrequest has the same request.User matching as postpolicy, so it must fail
+        # loudly at definition time too when a call site omits request=.
+        self.assertRaises(ValueError, postrequest, sign_response)
+        self.assertRaises(ValueError, postrequest, sign_response, None)
 
     def test_01_check_undetermined_tokentype(self):
         # If there is a tokentype policy but the type can not be

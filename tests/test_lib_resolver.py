@@ -670,6 +670,20 @@ class SQLResolverTestCase(MyTestCase):
         self.assertEqual("fred@artists.com", user_info.get("email"))
         self.assertEqual(2, user_info.get("id"))
 
+    def test_10a_get_user_info_error_handling(self):
+        resolver = SQLResolver()
+        resolver.loadConfig(self.parameters)
+
+        # A user ID the userid column can not hold is not an error, just an empty result --
+        # same as get_user_info_batch
+        self.assertDictEqual({}, resolver.get_user_info("not-a-number"))
+
+        # A DB error must propagate rather than being logged and swallowed: getUsername()
+        # relies on it to tell "the user does not exist" (an empty result) apart from "the
+        # backend could not be reached" (an exception).
+        with mock.patch.object(resolver.session, "execute", side_effect=Exception("the database is not reachable")):
+            self.assertRaises(Exception, resolver.get_user_info, "1")
+
     def test_11_getUserList(self):
         resolver = SQLResolver()
         resolver.loadConfig(self.parameters)

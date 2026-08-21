@@ -65,6 +65,7 @@ from privacyidea.lib.token import (create_tokenclass_object,
                                    import_token, get_one_token, get_tokens_from_serial_or_user,
                                    get_tokens_paginated_generator)
 from privacyidea.lib.token import log as token_log
+from privacyidea.lib.token import query as token_query
 from privacyidea.lib.token import weigh_token_type, import_tokens, export_tokens
 from privacyidea.lib.tokenclass import (TokenClass, Tokenkind)
 from privacyidea.lib.tokenrolloutstate import RolloutState
@@ -376,6 +377,50 @@ class TokenTestCase(MyTestCase):
                          get_token_owner("hotptoken"))
         self.assertFalse(is_token_owner(self.serials[1], user),
                          get_token_owner(self.serials[1]))
+
+    def test_08a_get_owner_by_token_id_retries_once_after_a_transient_failure(self):
+        # A page-wide owner query that fails once (e.g. a lock-wait timeout) is retried
+        # after a rollback, and the retry recovers the owner in one go.
+        token_id = get_tokens(serial="hotptoken")[0].token.id
+        expected_owner = token_query._get_owner_by_token_id([token_id])[token_id]
+        real_select_owners = token_query._select_owners
+        calls = []
+
+        def flaky_select_owners(token_ids: list[int]) -> list[TokenOwner]:
+            calls.append(list(token_ids))
+            if len(calls) == 1:
+                raise Exception("simulated transient DB error")
+            return real_select_owners(token_ids)
+
+        with mock.patch("privacyidea.lib.token.query._select_owners", side_effect=flaky_select_owners):
+            owner_by_token_id = token_query._get_owner_by_token_id([token_id])
+
+        self.assertEqual(2, len(calls))
+        self.assertEqual(expected_owner.resolver, owner_by_token_id[token_id].resolver)
+        self.assertEqual(expected_owner.user_id, owner_by_token_id[token_id].user_id)
+
+    def test_08b_get_owner_by_token_id_falls_back_per_token_after_two_failures(self):
+        # A page-wide owner query that keeps failing even after the retry falls back to
+        # resolving each token's owner individually, so only the tokens that keep
+        # failing (whether they have no owner or the per-token query itself keeps
+        # failing) are left without an owner.
+        token_id = get_tokens(serial="hotptoken")[0].token.id
+        expected_owner = token_query._get_owner_by_token_id([token_id])[token_id]
+        real_select_owners = token_query._select_owners
+        poison_id = -1
+
+        def flaky_select_owners(token_ids: list[int]) -> list[TokenOwner]:
+            if len(token_ids) > 1 or token_ids == [poison_id]:
+                raise Exception("simulated persistent DB error")
+            return real_select_owners(token_ids)
+
+        with mock.patch("privacyidea.lib.token.query._select_owners", side_effect=flaky_select_owners):
+            owner_by_token_id = token_query._get_owner_by_token_id([token_id, 999999999, poison_id])
+
+        self.assertEqual(expected_owner.resolver, owner_by_token_id[token_id].resolver)
+        self.assertEqual(expected_owner.user_id, owner_by_token_id[token_id].user_id)
+        self.assertNotIn(999999999, owner_by_token_id)
+        self.assertNotIn(poison_id, owner_by_token_id)
 
     def test_09_get_tokenclass_info(self):
         info = get_tokenclass_info("hotp")
