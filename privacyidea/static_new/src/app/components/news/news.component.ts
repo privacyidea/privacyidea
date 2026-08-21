@@ -42,4 +42,8 @@ export class NewsComponent {
   protected readonly canReadPolicies = computed(() => this.authService.actionAllowed("policyread"));
 
   protected readonly newsDisabled = computed(() => this.authService.rssAge() <= 0);
+
+  constructor() {
+    this.infoService.requestNewsFeed();
+  }
 }

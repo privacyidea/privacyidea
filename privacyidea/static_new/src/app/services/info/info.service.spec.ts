@@ -157,8 +157,17 @@ describe("InfoService", () => {
   });
 
   describe("newsResource", () => {
+    it("should not request the feed merely from being injected, even when authenticated and enabled", () => {
+      enableNews();
+      infoService = TestBed.inject(InfoService);
+      TestBed.tick();
+
+      httpMock.expectNone(newsUrl);
+    });
+
     it("should not request the feed while the news feed is disabled", () => {
       infoService = TestBed.inject(InfoService);
+      infoService.requestNewsFeed();
       TestBed.tick();
 
       httpMock.expectNone(newsUrl);
@@ -168,14 +177,16 @@ describe("InfoService", () => {
       enableNews();
       authMock.isAuthenticated.set(false);
       infoService = TestBed.inject(InfoService);
+      infoService.requestNewsFeed();
       TestBed.tick();
 
       httpMock.expectNone(newsUrl);
     });
 
-    it("should request the feed when authenticated and enabled", () => {
+    it("should request the feed once requested, while authenticated and enabled", () => {
       enableNews();
       infoService = TestBed.inject(InfoService);
+      infoService.requestNewsFeed();
       TestBed.tick();
 
       const req = httpMock.expectOne(newsUrl);
@@ -185,6 +196,7 @@ describe("InfoService", () => {
     it("should expose the loaded response", async () => {
       enableNews();
       infoService = TestBed.inject(InfoService);
+      infoService.requestNewsFeed();
       TestBed.tick();
       httpMock.expectOne(newsUrl).flush(MockPiResponse.fromValue<NewsChannels>(channels));
       await Promise.resolve();
@@ -202,6 +214,7 @@ describe("InfoService", () => {
     it("should expose the sorted items of the loaded feed", async () => {
       enableNews();
       infoService = TestBed.inject(InfoService);
+      infoService.requestNewsFeed();
       TestBed.tick();
       httpMock.expectOne(newsUrl).flush(MockPiResponse.fromValue<NewsChannels>(channels));
       await Promise.resolve();
@@ -213,6 +226,7 @@ describe("InfoService", () => {
     it("should be empty when the response carries no value", async () => {
       enableNews();
       infoService = TestBed.inject(InfoService);
+      infoService.requestNewsFeed();
       TestBed.tick();
       httpMock.expectOne(newsUrl).flush(new MockPiResponse<NewsChannels>({ result: { status: true } }));
       await Promise.resolve();

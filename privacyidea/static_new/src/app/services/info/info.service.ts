@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
-import { computed, inject, Injectable, Signal } from "@angular/core";
+import { computed, inject, Injectable, signal, Signal } from "@angular/core";
 import { PiResponse } from "@app/app.component";
 import { environment } from "@env/environment";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
@@ -80,6 +80,8 @@ export interface InfoServiceInterface {
   readonly newsEnabled: Signal<boolean>;
 
   getNews(channel?: string): Observable<PiResponse<NewsChannels>>;
+
+  requestNewsFeed(): void;
 }
 
 @Injectable({ providedIn: "root" })
@@ -91,8 +93,16 @@ export class InfoService implements InfoServiceInterface {
 
   readonly newsEnabled = computed(() => this.authService.rssAge() > 0);
 
+  /**
+   * Merely injecting InfoService (e.g. the dashboard widget, for getNews()) must not by
+   * itself start fetching the reactive feed - only the /news page, via requestNewsFeed(),
+   * actually needs it. Otherwise the widget's injection alone would arm newsResource's
+   * eager internal effect and cause a second, uncoordinated GET of the same endpoint.
+   */
+  private readonly newsFeedRequested = signal(false);
+
   readonly newsResource = httpResource<PiResponse<NewsChannels>>(() => {
-    if (!this.authService.isAuthenticated() || !this.newsEnabled()) {
+    if (!this.newsFeedRequested() || !this.authService.isAuthenticated() || !this.newsEnabled()) {
       return undefined;
     }
     return {
@@ -103,6 +113,10 @@ export class InfoService implements InfoServiceInterface {
   });
 
   readonly newsItems = computed(() => sortNewsItems(this.newsResource.value()?.result?.value ?? {}));
+
+  requestNewsFeed(): void {
+    this.newsFeedRequested.set(true);
+  }
 
   getNews(channel?: string): Observable<PiResponse<NewsChannels>> {
     return this.http.get<PiResponse<NewsChannels>>(`${this.infoBaseUrl}/rss`, {

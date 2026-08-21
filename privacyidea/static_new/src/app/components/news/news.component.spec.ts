@@ -61,6 +61,10 @@ describe("NewsComponent", () => {
     expect(component).toBeTruthy();
   });
 
+  it("should request the reactive news feed on creation", () => {
+    expect(infoMock.requestNewsFeed).toHaveBeenCalled();
+  });
+
   it("should pass the items of the info service to the news list", () => {
     const list = fixture.debugElement.query(By.directive(NewsListComponent)).componentInstance as NewsListComponent;
     expect(list.items()).toEqual(infoMock.newsItems());

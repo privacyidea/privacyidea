@@ -66,4 +66,6 @@ export class MockInfoService implements InfoServiceInterface {
   ]);
 
   getNews = jest.fn().mockReturnValue(of(MockPiResponse.fromValue<NewsChannels>(MockInfoService.MOCK_NEWS_CHANNELS)));
+
+  requestNewsFeed = jest.fn();
 }

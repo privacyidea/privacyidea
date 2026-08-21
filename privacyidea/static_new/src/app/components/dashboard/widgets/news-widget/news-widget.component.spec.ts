@@ -196,6 +196,18 @@ describe("NewsWidgetComponent", () => {
       expect(component.state()).toBe("ready");
       expect(component.items().map((item) => item.title)).toEqual(["Newer entry", "Older entry"]);
     });
+
+    it("should flag the failure when a reload fails", () => {
+      const subject = new Subject();
+      infoMock.getNews.mockReturnValue(subject.asObservable());
+
+      expect(component.refreshFailed()).toBe(false);
+      component.reload();
+      subject.error(new Error("boom"));
+      fixture.detectChanges();
+
+      expect(component.refreshFailed()).toBe(true);
+    });
   });
 
   describe("disabled news feed", () => {

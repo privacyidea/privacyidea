@@ -60,6 +60,10 @@ export class NewsWidgetComponent extends DashboardWidget implements OnInit {
 
   private readonly dataRef = signal<DashboardDataRef<PiResponse<NewsChannels>> | null>(null);
   override readonly partialLoading = computed(() => this.dataRef()?.revalidating() ?? false);
+  override readonly refreshFailed = computed(() => {
+    const ref = this.dataRef();
+    return !!ref && ref.error() && ref.value() !== undefined;
+  });
 
   readonly items = computed(() => sortNewsItems(this.dataRef()?.value()?.result?.value ?? {}));
 
