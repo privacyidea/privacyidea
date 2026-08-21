@@ -32,8 +32,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column
 
 from privacyidea.lib.challenge_types import is_challenge_open
-from privacyidea.lib.crypto import (FAILED_TO_DECRYPT_PASSWORD, get_rand_digit_str, encryptPassword,
-                                    decryptPassword)
+from privacyidea.lib.crypto import get_rand_digit_str, encryptPassword, decryptPassword
 from privacyidea.lib.log import log_with
 from privacyidea.lib.utils import convert_column_to_unicode
 from privacyidea.models import db
@@ -65,14 +64,7 @@ class Challenge(MethodsMixin, db.Model):
         raw = self._data
         if not raw:
             return raw
-        decrypted = decryptPassword(raw)
-        # decryptPassword() returns the sentinel verbatim on failure, so compare
-        # for equality: a prefix match would also discard a legitimately
-        # decrypted value that happens to start with that text.
-        if decrypted and decrypted != FAILED_TO_DECRYPT_PASSWORD:
-            return decrypted
-        # Legacy unencrypted data or decryption failure - return as-is
-        return raw
+        return decryptPassword(raw)
 
     @data.setter
     def data(self, value):
