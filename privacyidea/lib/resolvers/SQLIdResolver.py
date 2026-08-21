@@ -299,17 +299,21 @@ class IdResolver (UserIdResolver):
 
         try:
             conditions = [self._get_userid_filter(user_id)]
-            conditions = self._append_where_filter(conditions, self.TABLE,
-                                                   self.where)
-            filter_condition = and_(*conditions)
-            result = self.session.execute(select(self.TABLE).filter(filter_condition))
+        except ValueError as error:
+            # e.g. a non-numeric ID against an integer column -- same as get_user_info_batch
+            log.info(f"Could not look up user id {user_id!r}: {error}")
+            return userinfo
+        conditions = self._append_where_filter(conditions, self.TABLE, self.where)
+        filter_condition = and_(*conditions)
+        # A DB error here must propagate rather than being logged and swallowed: callers
+        # like getUsername() rely on it to tell "the user does not exist" (an empty
+        # result) apart from "the backend could not be reached" (an exception).
+        result = self.session.execute(select(self.TABLE).filter(filter_condition))
 
-            for r in result.mappings():
-                if userinfo:  # pragma: no cover
-                    raise Exception(f"More than one user with userid {user_id!s} found!")
-                userinfo = self._get_user_from_mapped_object(r, attributes)
-        except Exception as exx:  # pragma: no cover
-            log.error(f"Could not get the user information: {exx!r}")
+        for r in result.mappings():
+            if userinfo:  # pragma: no cover
+                raise Exception(f"More than one user with userid {user_id!s} found!")
+            userinfo = self._get_user_from_mapped_object(r, attributes)
 
         return userinfo
 
