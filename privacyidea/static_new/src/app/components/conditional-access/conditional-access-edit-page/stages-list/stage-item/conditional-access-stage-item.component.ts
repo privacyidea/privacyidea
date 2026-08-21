@@ -91,11 +91,13 @@ has none, so it would be shown to the user as written - remove the tag, or add a
 including on later attempts while a lock or block from it is still in force. It applies to this stage only. Left \
 empty, the standard error response is sent, so a rejection cannot be told apart from any other failed authentication.`;
 
-  // Whether this stage carries a message at all: absent or null means the admin has not turned it on, an
-  // empty string means turned on but not written yet. Read off the stage rather than kept in a signal here,
-  // because the stages list tracks by $index and reuses this component for a different stage when one is
-  // removed - local state would outlive the stage it belongs to and describe the next one.
-  readonly showErrorMessage = computed(
+  // Whether this stage carries wording of its own: absent or null means the admin has not turned it on, an
+  // empty string means turned on but not written yet. The field itself is always rendered - disabled rather
+  // than hidden, so the stage's shape does not change as the box is ticked - and this drives that disabling.
+  // Read off the stage rather than kept in a signal here, because the stages list tracks by $index and reuses
+  // this component for a different stage when one is removed: local state would outlive the stage it belongs
+  // to and describe the next one.
+  readonly hasCustomErrorMessage = computed(
     () => this.stage().error_message !== null && this.stage().error_message !== undefined
   );
 

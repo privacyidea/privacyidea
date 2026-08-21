@@ -18,7 +18,11 @@
 -->
 <div class="ca-stage-item">
   <div class="ca-stage-header margin-left-8">
-    <span class="ca-stage-number" i18n>Stage {{ stageNumber() }}</span>
+    <span
+      class="ca-stage-number"
+      i18n>
+      Stage {{ stageNumber() }}
+    </span>
     <div class="ca-stage-name">
       @if (!stage().id || editingName()) {
         <mat-form-field
@@ -48,7 +52,11 @@
         @if (stage().name) {
           <span class="ca-stage-title-name">{{ stage().name }}</span>
         } @else {
-          <span class="ca-stage-title-name ca-stage-title-name--empty" i18n>Unnamed stage</span>
+          <span
+            class="ca-stage-title-name ca-stage-title-name--empty"
+            i18n
+            >Unnamed stage</span
+          >
         }
         <button
           mat-icon-button
@@ -92,7 +100,7 @@
     <div class="ca-stage-error-message">
       <div class="ca-stage-error-message-toggle padding-top-8">
         <mat-checkbox
-          [checked]="showErrorMessage()"
+          [checked]="hasCustomErrorMessage()"
           (change)="toggleErrorMessage($event.checked)"
           i18n>
           Show specific error message
@@ -103,45 +111,44 @@
           i18n-ariaLabel />
       </div>
 
-      @if (showErrorMessage()) {
-        <div class="ca-stage-error-message-row">
-          <mat-form-field
-            appearance="fill"
-            subscriptSizing="dynamic"
-            class="input-width-xl">
-            <mat-label i18n>Error Message</mat-label>
-            <textarea
-              matInput
-              rows="1"
-              [attr.maxlength]="maxErrorMessageLength"
-              [value]="stage().error_message ?? ''"
-              (input)="onErrorMessageInput($any($event.target).value)"></textarea>
-            <mat-hint>
-              <span i18n>{{ durationTag }} is replaced with the remaining time for temporary lock/block actions.</span>
-              @if (unknownTags().length) {
-                <span
-                  class="ca-stage-message-warning"
-                  i18n>
-                  {{ unknownTags().join(", ") }} is an unknown tag and will be shown as written.
-                </span>
-              }
-              @if (durationTagUnusable()) {
-                <span class="ca-stage-message-warning">{{ durationTagUnusableHint }}</span>
-              }
-            </mat-hint>
-            <mat-hint align="end">{{ errorMessageLength() }}/{{ maxErrorMessageLength }}</mat-hint>
-          </mat-form-field>
-          <button
-            class="margin-top-8"
-            mat-icon-button
-            [disabled]="!canResetErrorMessage()"
-            [matTooltip]="resetErrorMessageLabel"
-            [attr.aria-label]="resetErrorMessageLabel"
-            (click)="resetErrorMessageToSuggestion()">
-            <mat-icon>refresh</mat-icon>
-          </button>
-        </div>
-      }
+      <div class="ca-stage-error-message-row">
+        <mat-form-field
+          appearance="fill"
+          subscriptSizing="dynamic"
+          class="input-width-xl">
+          <mat-label i18n>Error Message</mat-label>
+          <textarea
+            matInput
+            rows="1"
+            [attr.maxlength]="maxErrorMessageLength"
+            [disabled]="!hasCustomErrorMessage()"
+            [value]="stage().error_message ?? ''"
+            (input)="onErrorMessageInput($any($event.target).value)"></textarea>
+          <mat-hint>
+            <span i18n>{{ durationTag }} is replaced with the remaining time for temporary lock/block actions.</span>
+            @if (unknownTags().length) {
+              <span
+                class="ca-stage-message-warning"
+                i18n>
+                {{ unknownTags().join(", ") }} is an unknown tag and will be shown as written.
+              </span>
+            }
+            @if (durationTagUnusable()) {
+              <span class="ca-stage-message-warning">{{ durationTagUnusableHint }}</span>
+            }
+          </mat-hint>
+          <mat-hint align="end">{{ errorMessageLength() }}/{{ maxErrorMessageLength }}</mat-hint>
+        </mat-form-field>
+        <button
+          class="margin-top-8"
+          mat-icon-button
+          [disabled]="!canResetErrorMessage() || !hasCustomErrorMessage()"
+          [matTooltip]="resetErrorMessageLabel"
+          [attr.aria-label]="resetErrorMessageLabel"
+          (click)="resetErrorMessageToSuggestion()">
+          <mat-icon>refresh</mat-icon>
+        </button>
+      </div>
     </div>
   </div>
 

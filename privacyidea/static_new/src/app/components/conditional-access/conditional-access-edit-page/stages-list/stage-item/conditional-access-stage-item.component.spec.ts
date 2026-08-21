@@ -138,20 +138,20 @@ describe("ConditionalAccessStageItemComponent", () => {
       expect(spy).toHaveBeenCalledWith({ error_message: "   " });
     });
 
-    it("should be off for a stage with no message and on for one that has it", () => {
+    it("should be unticked for a stage with no message and ticked for one that has it", () => {
       withStage({ error_message: null });
-      expect(component.showErrorMessage()).toBe(false);
+      expect(component.hasCustomErrorMessage()).toBe(false);
       withStage({ error_message: "Locked." });
-      expect(component.showErrorMessage()).toBe(true);
+      expect(component.hasCustomErrorMessage()).toBe(true);
     });
 
-    it("should stay visible while the field is cleared mid-edit", () => {
-      // Clearing the textarea leaves an empty message, not an absent one, so the field does not derive
-      // itself away the moment the admin selects-all-and-deletes.
+    it("should stay enabled while the field is cleared mid-edit", () => {
+      // Clearing the textarea leaves an empty message, not an absent one, so the field does not disable
+      // itself out from under the admin the moment they select-all-and-delete.
       withStage({ error_message: "Locked." });
       component.onErrorMessageInput("");
       withStage({ error_message: "" });
-      expect(component.showErrorMessage()).toBe(true);
+      expect(component.hasCustomErrorMessage()).toBe(true);
     });
 
     it("should emit an empty message rather than null while the field is being cleared", () => {
@@ -161,11 +161,29 @@ describe("ConditionalAccessStageItemComponent", () => {
       expect(spy).toHaveBeenCalledWith({ error_message: "" });
     });
 
-    it("should hide the field only when the stage carries no message at all", () => {
+    it("should count the stage as having no wording only when the field is absent entirely", () => {
       withStage({ error_message: null });
-      expect(component.showErrorMessage()).toBe(false);
+      expect(component.hasCustomErrorMessage()).toBe(false);
       withStage({});
-      expect(component.showErrorMessage()).toBe(false);
+      expect(component.hasCustomErrorMessage()).toBe(false);
+    });
+
+    it("should render the message field always, disabled until the box is ticked", () => {
+      // Always present, so ticking the box does not change the stage's shape on screen - only whether the
+      // field can be typed into. mat-form-field has no disabled input, so this has to sit on the control.
+      // withStage only sets the input; the other tests read computeds, so this one has to render as well.
+      const render = (override: Partial<LockoutPolicyStage>) => {
+        withStage(override);
+        fixture.detectChanges();
+      };
+      const textarea = () => fixture.nativeElement.querySelector("textarea");
+
+      render({ error_message: null });
+      expect(textarea()).toBeTruthy();
+      expect(textarea().disabled).toBe(true);
+
+      render({ error_message: "Locked." });
+      expect(textarea().disabled).toBe(false);
     });
 
     it("should fill in the suggestion when switched on", () => {
@@ -233,10 +251,10 @@ describe("ConditionalAccessStageItemComponent", () => {
       const spy = jest.spyOn(component.updateStage, "emit");
       component.toggleErrorMessage(false);
       expect(spy).toHaveBeenCalledWith({ error_message: null });
-      // Visibility follows the stage, so it turns off once the parent has applied that emit - this
+      // The checkbox follows the stage, so it unticks once the parent has applied that emit - this
       // component keeps no copy of the answer that could disagree with the data.
       withStage({ error_message: null });
-      expect(component.showErrorMessage()).toBe(false);
+      expect(component.hasCustomErrorMessage()).toBe(false);
     });
 
     it("should not carry a message across the stage it was written for", () => {
