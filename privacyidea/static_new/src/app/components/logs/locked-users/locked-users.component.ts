@@ -27,6 +27,7 @@ import { MatInput } from "@angular/material/input";
 import { MatPaginatorModule, PageEvent } from "@angular/material/paginator";
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
 import { MatTooltipModule } from "@angular/material/tooltip";
+import { ExpandableMessageComponent } from "@components/shared/expandable-message/expandable-message.component";
 import { RouterLink } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { FilterValue } from "@core/models/filter_value/filter_value";
@@ -67,6 +68,7 @@ import { concatMap, reduce } from "rxjs/operators";
     MatButtonModule,
     MatIconModule,
     MatTooltipModule,
+    ExpandableMessageComponent,
     MatCheckboxModule,
     MatPaginatorModule,
     MatFormField,
@@ -104,7 +106,8 @@ export class LockedUsersComponent {
     "resolver",
     "state",
     "lock_expires_at",
-    "locked_at"
+    "locked_at",
+    "error_message"
   ];
 
   // Alias for the template (sort icon + sort handler fallback).
