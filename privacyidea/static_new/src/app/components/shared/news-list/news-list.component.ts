@@ -16,19 +16,20 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { DatePipe } from "@angular/common";
 import { Component, input } from "@angular/core";
-import { MatProgressSpinner } from "@angular/material/progress-spinner";
-import { WidgetState } from "@models/dashboard";
+import { MatIcon } from "@angular/material/icon";
+import { NewsListItem } from "@services/info/info.service";
 
 @Component({
-  selector: "app-widget-state",
+  selector: "app-news-list",
   standalone: true,
-  imports: [MatProgressSpinner],
-  templateUrl: "./widget-state.component.html",
-  styleUrl: "./widget-state.component.scss"
+  imports: [DatePipe, MatIcon],
+  templateUrl: "./news-list.component.html",
+  styleUrl: "./news-list.component.scss"
 })
-export class WidgetStateComponent {
-  readonly state = input.required<WidgetState>();
-  /** Overrides the default "Could not load data." text shown in the "error" state. */
-  readonly errorMessage = input<string>();
+export class NewsListComponent {
+  readonly items = input.required<NewsListItem[]>();
+  readonly showSummary = input(false);
+  readonly maxAgeDays = input(0);
 }
