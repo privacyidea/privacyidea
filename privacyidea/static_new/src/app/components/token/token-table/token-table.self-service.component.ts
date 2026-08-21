@@ -18,7 +18,7 @@
  **/
 import { NgClass } from "@angular/common";
 import { Component, computed, inject } from "@angular/core";
-import { MatIconButton } from "@angular/material/button";
+import { MatButton, MatIconButton } from "@angular/material/button";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatDialog } from "@angular/material/dialog";
 import { MatFormFieldModule } from "@angular/material/form-field";
@@ -27,11 +27,14 @@ import { MatInputModule } from "@angular/material/input";
 import { MatPaginatorModule } from "@angular/material/paginator";
 import { MatTableModule } from "@angular/material/table";
 import { MatTooltip } from "@angular/material/tooltip";
+import { RouterLink } from "@angular/router";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
+import { TableStateComponent } from "@components/shared/table-state/table-state.component";
+import { TableState } from "@core/models/table_state/table-state";
 import { ContainerService, ContainerServiceInterface } from "@services/container/container.service";
 import { TokenTableComponent } from "./token-table.component";
 
@@ -46,12 +49,15 @@ import { TokenTableComponent } from "./token-table.component";
     NgClass,
     CopyableComponent,
     MatCheckboxModule,
+    MatButton,
     MatIconButton,
     MatIcon,
     MatTooltip,
     ScrollToTopDirective,
     StickyHeaderDirective,
-    ScrollEdgesDirective
+    ScrollEdgesDirective,
+    TableStateComponent,
+    RouterLink
   ],
   templateUrl: "./token-table.self-service.component.html",
   styleUrl: "./token-table.component.scss"
@@ -59,6 +65,12 @@ import { TokenTableComponent } from "./token-table.component";
 export class TokenTableSelfServiceComponent extends TokenTableComponent {
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
   private dialog = inject(MatDialog);
+  override readonly tableState = new TableState({
+    resource: this.tokenResource,
+    count: () => this.totalLength(),
+    filterActive: () => !this.activeFilter().isEmpty,
+    resetFilter: () => this.tokenService.clearFilter()
+  });
   columnKeysMapSelfService = computed(() => {
     const columnKeys = [
       { key: "serial", label: $localize`Serial` },
@@ -91,13 +103,11 @@ export class TokenTableSelfServiceComponent extends TokenTableComponent {
       .afterClosed()
       .subscribe({
         next: (result) => {
-          this.tokenService.revokeToken(serial).subscribe({
-            next: () => {
-              if (result) {
-                this.tokenService.tokenResource.reload();
-              }
-            }
-          });
+          if (result) {
+            this.tokenService.revokeToken(serial).subscribe({
+              next: () => this.tokenService.tokenResource.reload()
+            });
+          }
         }
       });
   }
@@ -116,13 +126,11 @@ export class TokenTableSelfServiceComponent extends TokenTableComponent {
       .afterClosed()
       .subscribe({
         next: (result) => {
-          this.tokenService.deleteToken(serial).subscribe({
-            next: () => {
-              if (result) {
-                this.tokenService.tokenResource.reload();
-              }
-            }
-          });
+          if (result) {
+            this.tokenService.deleteToken(serial).subscribe({
+              next: () => this.tokenService.tokenResource.reload()
+            });
+          }
         }
       });
   }

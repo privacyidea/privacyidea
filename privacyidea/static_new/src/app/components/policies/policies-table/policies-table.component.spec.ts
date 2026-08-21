@@ -38,6 +38,7 @@ import {
   MockRouter,
   MockTableUtilsService
 } from "@testing/mock-services";
+import { expectsTableStateGating } from "@testing/table-state-gating";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { of } from "rxjs";
 
@@ -86,6 +87,11 @@ describe("PoliciesTableComponent", () => {
     mockDialogService = TestBed.inject(DialogService) as unknown as MockDialogService;
     router = TestBed.inject(Router) as unknown as MockRouter;
 
+    const mockAuthService = TestBed.inject(AuthService) as unknown as MockAuthService;
+    // Through the rights signal rather than by pinning actionAllowed: a constant answer reads no
+    // signal, so anything computed from it caches its first verdict and never re-evaluates.
+    mockAuthService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["policyread"] });
+
     mockPolicyService.allPolicies.set(mockPolicies);
 
     fixture = TestBed.createComponent(PoliciesTableComponent);
@@ -93,26 +99,28 @@ describe("PoliciesTableComponent", () => {
     fixture.detectChanges();
   });
 
+  it("gates the table on its read right, row count and filter", () => {
+    expectsTableStateGating({
+      state: component.tableState,
+      right: "policyread"
+    });
+  });
+
   it("should create", () => {
     expect(component).toBeTruthy();
   });
 
-  it("should show skeleton rows when service returns no policies", () => {
+  it("stands the state panel in for the table while the policies are still loading", () => {
+    // A table of placeholder rows is shaped like data, so ending the load on the empty panel reads
+    // as rows arriving and then being taken away. The panel speaks for the load instead.
     mockPolicyService.allPolicies.set([]);
+    mockPolicyService.allPoliciesResource.value.set(undefined);
     fixture.detectChanges();
 
-    const rows = fixture.debugElement.queryAll(By.css("tr[mat-row]"));
-
-    expect(rows.length).toBe(component.skeletonRowCount);
-    expect(rows[0].classes["skeleton-row"]).toBeTruthy();
-  });
-
-  it("should disable header checkbox when in skeleton state", () => {
-    mockPolicyService.allPolicies.set([]);
-    fixture.detectChanges();
-
-    const headerCheckbox = fixture.debugElement.query(By.css("th.mat-column-select mat-checkbox"));
-    expect(headerCheckbox.componentInstance.disabled).toBeTruthy();
+    expect(component.tableState.status()).toBe("loading");
+    expect(component.tableState.showTable()).toBe(false);
+    expect(fixture.debugElement.queryAll(By.css("tr[mat-row]")).length).toBe(0);
+    expect(fixture.debugElement.query(By.css("mat-progress-spinner"))).toBeTruthy();
   });
 
   it("should display all rows when policies are present", () => {
@@ -165,7 +173,7 @@ describe("PoliciesTableComponent", () => {
 
     const noDataRow = fixture.debugElement.query(By.css("tr.mat-mdc-no-data-row"));
     expect(noDataRow).toBeTruthy();
-    expect(noDataRow.nativeElement.textContent).toContain($localize`No data matching the filter.`);
+    expect(noDataRow.nativeElement.textContent).toContain($localize`No entries match the filter`);
   });
 
   it("should toggle filter keys when clicking header filter buttons", () => {

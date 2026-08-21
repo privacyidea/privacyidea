@@ -11,6 +11,7 @@
   @include table.base-table-structure(".user-sources-table", ".table-filter", ".table-scroll-container");
   min-width: 616px;
   max-height: var(--table-max-height);
+  @include table.page-table-state-size;
 }
 
 .new-resolver-footer-row {

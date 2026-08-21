@@ -26,7 +26,9 @@ import { MockHttpResourceRef, MockPiResponse } from "./mock-utils";
 export class MockResolverService implements ResolverServiceInterface {
   private _resolversValue = signal<Resolver[]>([]);
   private _resolverOptionsValue = signal<string[]>([]);
-  resolversResource = new MockHttpResourceRef<PiResponse<Resolvers> | undefined>(undefined);
+  resolversResource = new MockHttpResourceRef<PiResponse<Resolvers> | undefined>(
+    MockPiResponse.fromValue<Resolvers>({})
+  );
   selectedResolverName = signal("");
   selectedResolverResource = new MockHttpResourceRef<PiResponse<Resolvers> | undefined>(undefined);
   resolvers: Signal<Resolver[]> = this._resolversValue.asReadonly();

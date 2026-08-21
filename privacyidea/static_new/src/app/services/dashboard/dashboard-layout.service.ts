@@ -246,14 +246,17 @@ export class DashboardLayoutService implements DashboardLayoutServiceInterface {
   }
 
   private defaultWidgets(): WidgetInstance[] {
+    // The subscription overview opens the layout in the top left corner (8 columns,
+    // 11 rows), so the widgets next to it start to its right and continue below it.
     const positions: { type: WidgetTypeId; x: number; y: number; cols?: number }[] = [
-      { type: "news", x: 0, y: 0, cols: 9 },
-      { type: "events", x: 9, y: 0, cols: 7 },
-      { type: "tokens", x: 0, y: 3 },
-      { type: "policies", x: 6, y: 3 },
-      { type: "token-types", x: 0, y: 8 },
-      { type: "administration", x: 6, y: 8 },
-      { type: "authentications", x: 16, y: 5 }
+      { type: "subscriptions", x: 0, y: 0 },
+      { type: "policies", x: 8, y: 0 },
+      { type: "tokens", x: 18, y: 0 },
+      { type: "authentications", x: 8, y: 5 },
+      { type: "news", x: 16, y: 5 },
+      { type: "events", x: 16, y: 8 },
+      { type: "token-types", x: 8, y: 11 },
+      { type: "administration", x: 14, y: 11 }
     ];
     return positions.reduce<WidgetInstance[]>((result, { type, x, y, cols }) => {
       const widgetType = this.registry.get(type);

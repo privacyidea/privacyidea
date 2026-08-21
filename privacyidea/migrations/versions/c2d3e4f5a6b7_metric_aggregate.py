@@ -49,8 +49,11 @@ def upgrade():
         sa.Column("id", sa.Integer(), primary_key=True, autoincrement=True),
         sa.Column("metric_name", sa.Unicode(length=128), nullable=False),
         # Full label payload: JSON blob with sorted keys; can be arbitrarily
-        # long (resolver names + types + ops + identifiers etc).
-        sa.Column("labels_key", sa.Text(), nullable=False, server_default=""),
+        # long (resolver names + types + ops + identifiers etc). No
+        # server_default: real MySQL rejects a literal default on a TEXT
+        # column outright (ERROR 1101), and every caller (_apply_aggregate)
+        # always supplies labels_key explicitly.
+        sa.Column("labels_key", sa.Text(), nullable=False),
         # Fixed-size hex digest (SHA-256) of labels_key, used by the unique
         # constraint so the composite index stays under MySQL's 3072-byte
         # limit regardless of how long labels_key grows.

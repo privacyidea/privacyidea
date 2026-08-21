@@ -13,7 +13,15 @@ USAGE
   Directory (current split-package layout, e.g. privacyidea/models/):
     python tools/generate_seed_sql.py <path/to/models/> <dialect> [out.sql]
 
-  dialect: mariadb | postgresql | oracle
+  dialect: mariadb | mysql | postgresql | oracle
+
+  mariadb and mysql render byte-identical CREATE TABLE DDL here (both compile
+  against the generic, non-live mysql+pymysql dialect, which conservatively
+  over-quotes identifiers that are only reserved on one of the two engines —
+  safe on both). They diverge only in the hand-extended data section: MariaDB
+  supports CREATE SEQUENCE (10.3+) and TEXT/BLOB columns with a literal
+  DEFAULT; real MySQL supports neither, ever. See
+  tests/testdata/migrations/README.md.
 
 ────────────────────────────────────────────────────────────────────────────
 EXTRACTING A HISTORICAL VERSION FROM GIT
@@ -28,9 +36,12 @@ EXTRACTING A HISTORICAL VERSION FROM GIT
     # Export the single-file models from a specific tag
     git show v3.9.3:privacyidea/models.py > /tmp/models_v3.9.py
 
-    # Generate seeds for both dialects
+    # Generate seeds for all dialects
     python tools/generate_seed_sql.py /tmp/models_v3.9.py mariadb \\
         tests/testdata/migrations/seed_v3.9_5cb310101a1f_mariadb.sql
+
+    python tools/generate_seed_sql.py /tmp/models_v3.9.py mysql \\
+        tests/testdata/migrations/seed_v3.9_5cb310101a1f_mysql.sql
 
     python tools/generate_seed_sql.py /tmp/models_v3.9.py postgresql \\
         tests/testdata/migrations/seed_v3.9_5cb310101a1f_postgresql.sql
@@ -285,7 +296,19 @@ def _load_package_directory(models_dir: Path):
 
 
 
-def _render_mariadb(metadata) -> str:
+def _render_mysql_family(metadata, dialect: str) -> str:
+    """Render CREATE TABLE DDL for the mariadb/mysql dialect choices.
+
+    Both compile against the generic, non-live mysql+pymysql dialect
+    (is_mariadb=False, since there is no live connection to probe the server
+    version). That dialect quotes more identifiers than strictly necessary on
+    MariaDB — safe on both engines, since quoting a non-reserved identifier is
+    a no-op — so the two choices render byte-identical schema DDL here and
+    only need a different header comment. MariaDB and real MySQL genuinely
+    diverge only in the hand-extended data section (CREATE SEQUENCE support,
+    literal defaults on TEXT/BLOB columns) — see
+    tests/testdata/migrations/README.md.
+    """
     from sqlalchemy import create_engine
     from sqlalchemy.schema import CreateTable
 
@@ -295,8 +318,9 @@ def _render_mariadb(metadata) -> str:
         pool_pre_ping=False,
     )
 
+    label = "MariaDB" if dialect == "mariadb" else "MySQL"
     lines = [
-        "-- Auto-generated MariaDB seed SQL",
+        f"-- Auto-generated {label} seed SQL",
         "-- Source: SQLAlchemy metadata",
         "--",
         "SET FOREIGN_KEY_CHECKS = 0;",
@@ -423,7 +447,7 @@ def main() -> None:
         help="Path to models.py (single file) or models/ directory (package)",
     )
     parser.add_argument(
-        "dialect", choices=["mariadb", "postgresql", "oracle"],
+        "dialect", choices=["mariadb", "mysql", "postgresql", "oracle"],
         help="Target SQL dialect",
     )
     parser.add_argument(
@@ -454,8 +478,8 @@ def main() -> None:
         file=sys.stderr,
     )
 
-    if args.dialect == "mariadb":
-        sql = _render_mariadb(metadata)
+    if args.dialect in ("mariadb", "mysql"):
+        sql = _render_mysql_family(metadata, args.dialect)
     elif args.dialect == "oracle":
         sql = _render_oracle(metadata)
     else:
