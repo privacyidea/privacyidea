@@ -89,7 +89,7 @@ describe("NewsListComponent", () => {
   it("should render the date of items that have one", () => {
     const dates: Element[] = Array.from(fixture.nativeElement.querySelectorAll(".news-date"));
     expect(dates).toHaveLength(1);
-    expect(dates[0].textContent!.trim()).toBe(formatDate(items[0].date!, "shortDate", "en-US"));
+    expect(dates[0].textContent!.trim()).toBe(formatDate(items[0].date!, "yyyy-MM-dd", "en-US"));
   });
 
   it("should not render summaries while showSummary is false", () => {

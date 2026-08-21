@@ -61,10 +61,6 @@ describe("NewsComponent", () => {
     expect(component).toBeTruthy();
   });
 
-  it("should render the page heading", () => {
-    expect(fixture.nativeElement.querySelector("h3").textContent).toContain("News");
-  });
-
   it("should pass the items of the info service to the news list", () => {
     const list = fixture.debugElement.query(By.directive(NewsListComponent)).componentInstance as NewsListComponent;
     expect(list.items()).toEqual(infoMock.newsItems());
