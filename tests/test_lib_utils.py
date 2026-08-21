@@ -777,9 +777,20 @@ class UtilsTestCase(MyTestCase):
             # A spoofed Host header must never end up in the {url} tag (CWE-640).
             url_root = "http://attacker.example/"
 
+        class PluginUserAgentMock:
+            string = "privacyidea-keycloak/1.2.3"
+            # Werkzeug does not recognize a plugin as a browser
+            browser = None
+
+        class PluginRequestMock:
+            user_agent = PluginUserAgentMock()
+            path = "/validate/check"
+            url_root = "http://pi.example.com/"
+
         recipient = {"givenname": "<b>Sömeone</b>"}
         dict1 = create_tag_dict(request=RequestMock(), recipient=recipient)
         self.assertEqual(dict1["ua_string"], "<b>hello world</b>")
+        self.assertEqual(dict1["ua_browser"], "browser")
         self.assertEqual(dict1["action"], "/validate/check")
         self.assertEqual(dict1["recipient_givenname"], "<b>Sömeone</b>")
         dict2 = create_tag_dict(request=RequestMock(), recipient=recipient, escape_html=True)
@@ -796,6 +807,13 @@ class UtilsTestCase(MyTestCase):
             self.assertEqual(create_tag_dict(request=RequestMock())["url"], "https://pi.example.com")
         finally:
             self.app.config.pop("PI_BASE_URL", None)
+
+        # The name of a client application that is no browser is taken from the user agent
+        plugin_tags = create_tag_dict(request=PluginRequestMock())
+        self.assertEqual(plugin_tags["ua_browser"], "privacyidea-keycloak")
+        self.assertEqual(plugin_tags["ua_string"], "privacyidea-keycloak/1.2.3")
+        # Without a request there is no client application
+        self.assertEqual(create_tag_dict()["ua_browser"], "")
 
     def test_32_allowed_serial_numbers(self):
         self.assertTrue(check_serial_valid("TOTP12345"))

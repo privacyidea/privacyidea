@@ -1347,7 +1347,7 @@ def create_tag_dict(logged_in_user=None,
                 date=date,
                 client_ip=client_ip,
                 pin=pin,
-                ua_browser=request.user_agent.browser if request else "",
+                ua_browser=get_useragent_name(request),
                 ua_string=request.user_agent.string if request else "",
                 challenge=challenge if challenge else "",
                 container_serial=container_serial,
@@ -1496,6 +1496,21 @@ def get_plugin_info_from_useragent(useragent):
     else:
         log.info(f"Could not match user-agent string: {useragent}")
         return "", None, None
+
+
+def get_useragent_name(request) -> str:
+    """
+    Return the name of the client application that sent the request.
+
+    Werkzeug only recognizes the name of well-known browsers. Clients like the privacyIDEA
+    plugins send their own name in the user agent string, which is used in that case.
+
+    :param request: The HTTP request object or None
+    :return: The name of the browser or of the client application, "" if it is unknown
+    """
+    if not request or not request.user_agent.string:
+        return ""
+    return request.user_agent.browser or get_plugin_info_from_useragent(request.user_agent.string)[0]
 
 
 def get_computer_name_from_user_agent(user_agent: str) -> str | None:

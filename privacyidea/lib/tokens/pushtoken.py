@@ -303,8 +303,10 @@ def _build_smartphone_data(token: TokenClass, challenge: str, registration_url: 
                            challenge=options.get("challenge"))
     try:
         message_on_mobile = message_on_mobile.format(**tags)
-    except KeyError as e:
-        log.warning(f"Could not format the message: {e}. Using default message.")
+    except (KeyError, IndexError, ValueError) as e:
+        # An unknown tag, a positional field or an unbalanced brace in the policy value must not
+        # fail the authentication, so fall back to the default message.
+        log.warning(f"Could not format the message: {e!r}. Using default message.")
         message_on_mobile = default_message
     log.debug(f"Sending to mobile: {message_on_mobile}")
 
