@@ -758,12 +758,15 @@ instance on a public interface.
 
 What is stored differs per workload:
 
-* Challenge data is stored as plaintext, and here Redis is **less** protected
-  than the table it replaces: the SQL ``challenge.data`` column is encrypted with
-  the server's encryption key, the Redis copy is not. The field can carry the OTP
-  itself for email and SMS tokens, or a push token's display code. The exposure
-  window is small - entries only live for the challenge validity time, typically
-  a few minutes - but do not read this as "the same as the database".
+* Challenge data: the ``data`` field is encrypted with the privacyIDEA
+  encryption key before it is written, just as the SQL ``challenge.data``
+  column is. That field is the one that can carry a secret - the OTP value
+  itself for Email and SMS tokens when ``email.concurrent_challenges`` /
+  ``sms.concurrent_challenges`` is enabled, or the display code for Push
+  code-to-phone. The remaining fields (transaction ID, token serial, the
+  challenge nonce, session and counters) are stored in the clear, again
+  matching the database. The exposure window is small - entries carry the
+  challenge validity TTL, typically a few minutes.
 * User cache values are **encrypted** with the server's encryption key before
   they are written, so a dump of the Redis database is not a dump of your
   directory. The keys are not encrypted: a key contains a login name or a user
@@ -778,6 +781,11 @@ What is stored differs per workload:
 * Certificate health results are stored as plaintext. They hold no credentials,
   but they do name your internal LDAP and Keycloak hosts and their certificate
   subjects, which is one more reason not to expose the Redis instance.
+
+Because the encryption uses the privacyIDEA encryption key, cached entries
+written before an encryption key rotation can no longer be read afterwards.
+Such entries are treated as a cache miss and the affected users simply repeat
+the authentication; the condition clears within one challenge-validity TTL.
 
 .. _redis_cache_upgrades:
 
