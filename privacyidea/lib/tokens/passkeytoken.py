@@ -41,7 +41,7 @@ from privacyidea.lib import _, fido2
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.decorators import check_token_locked
-from privacyidea.lib.error import EnrollmentError, ParameterError, Error
+from privacyidea.lib.error import EnrollmentError, ParameterError, Error, PolicyError
 from privacyidea.lib.fido2.config import FIDO2ConfigOptions
 from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction, PasskeyAction
 from privacyidea.lib.fido2.token_info import FIDO2TokenInfo
@@ -125,6 +125,26 @@ class PasskeyTokenClass(TokenClass):
                                   "/validate/triggerchallenge endpoint. For privacyIDEA plugins, "
                                   "this is not recommended. It is advised to use a condition, for example on a "
                                   "user-agent, with this policy."),
+                    },
+                    PasskeyAction.AllowedAuthenticatorDeviceTypes: {
+                        'type': 'str',
+                        'desc': _("Only allow authentication with passkeys reporting a specific device type, given "
+                                  "as a space-separated list of 'single_device' and/or 'multi_device'. A "
+                                  "single_device credential is not backed up (typically a hardware security key or "
+                                  "a non-syncing platform authenticator), a multi_device credential is backed up "
+                                  "and can be used on several devices (a synced/cloud passkey). This is verified "
+                                  "cryptographically on every authentication, not just at enrollment. By default "
+                                  "both types are accepted."),
+                    },
+                    PasskeyAction.EnforceUserHandle: {
+                        'type': 'bool',
+                        'desc': _("Require that the userHandle returned by the authenticator matches the FIDO2 "
+                                  "user ID that was recorded for the user when the passkey was enrolled. By "
+                                  "default, privacyIDEA identifies the user solely via the credential ID and its "
+                                  "assignment to a user in privacyIDEA, so a passkey that is unassigned and then "
+                                  "assigned to a different user will authenticate as that different user. "
+                                  "Enabling this closes that gap, at the cost of the authentication failing for "
+                                  "any passkey that was enrolled before this attribute was recorded."),
                     }
                 },
                 SCOPE.ENROLL: {
@@ -145,6 +165,18 @@ class PasskeyTokenClass(TokenClass):
                                   "'{user}@{realm}'. The resolved value is also used as the display name. Unknown tags "
                                   "resolve to an empty string and the result is limited to 64 bytes. If the value is "
                                   "empty or the policy is not set, the login name of the user is used."),
+                        'group': 'WebAuthn'
+                    },
+                    PasskeyAction.AllowedAuthenticatorDeviceTypes: {
+                        'type': 'str',
+                        'desc': _("Restrict passkey enrollment to authenticators reporting a specific device type, "
+                                  "given as a space-separated list of 'single_device' and/or 'multi_device'. A "
+                                  "single_device credential is not backed up (typically a hardware security key or "
+                                  "a non-syncing platform authenticator), a multi_device credential is backed up "
+                                  "and can be used on several devices (a synced/cloud passkey). The device type is "
+                                  "reported by the browser/authenticator and cannot be requested up front, so "
+                                  "enrollment is rejected afterwards if it does not match. By default both types "
+                                  "are accepted."),
                         'group': 'WebAuthn'
                     }
                 }
@@ -366,6 +398,17 @@ class PasskeyTokenClass(TokenClass):
                 log.error(f"Invalid JSON structure: {ex}")
                 raise EnrollmentError(f"Invalid JSON structure: {ex}")
 
+            # Checking policy scope=SCOPE.ENROLL, action=PasskeyAction.AllowedAuthenticatorDeviceTypes.
+            # The device type (single_device/multi_device) is derived from the backup-eligible flag in the
+            # signed authenticatorData, it can only be known once the authenticator has responded, not requested
+            # up front like resident_key or user_verification, so a non-matching registration is rejected here.
+            allowed_device_types = get_optional(param, PasskeyAction.AllowedAuthenticatorDeviceTypes)
+            if allowed_device_types and registration_verification.credential_device_type not in allowed_device_types:
+                log.warning(f"The passkey {serial!s} is not allowed to be registered due to policy restriction "
+                            f"{PasskeyAction.AllowedAuthenticatorDeviceTypes!s}")
+                raise PolicyError("This authenticator is not allowed to be registered as a passkey due to a "
+                                  "policy restriction.")
+
             # Return info if this enroll_via_multichallenge or not
             evm_value = False
             data = challenge.get_data()
@@ -434,6 +477,10 @@ class PasskeyTokenClass(TokenClass):
                         The following keys are optional:
                         - "webauthn_user_verification_requirement" (FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT),
                           defaults to preferred
+                        - PasskeyAction.AllowedAuthenticatorDeviceTypes, a list of allowed values for
+                          credential_device_type ("single_device"/"multi_device"). Unset/empty means no restriction.
+                        - PasskeyAction.EnforceUserHandle, if truthy, requires the userHandle to match the FIDO2
+                          user ID recorded for the token's assigned user at enrollment.
 
         :type options: dict
         :return: A numerical value where values larger than zero indicate success.
@@ -475,7 +522,48 @@ class PasskeyTokenClass(TokenClass):
             log.error(f"Passkey authentication failed: {ex}")
             return -1
 
+        # The signature and sign count are valid proof that this authenticator (not a clone or a replay) produced
+        # this response, independent of whether a policy below then still refuses the login - so the new sign
+        # count is persisted right away. Deferring this until after the policy checks would leave the stored sign
+        # count stale, letting the very same valid response be re-verified again (e.g. after a policy change)
+        # instead of being consumed on its first, legitimate use.
         self.add_tokeninfo("sign_count", verified_authentication.new_sign_count)
+
+        # Checking policy scope=SCOPE.AUTH, action=PasskeyAction.AllowedAuthenticatorDeviceTypes.
+        # Unlike an AAGUID or attachment recorded at enrollment, the device type is derived from the signed
+        # backup-eligible flag in authenticatorData, so it is re-verified cryptographically on every single
+        # authentication instead of being trusted from a (possibly outdated) value stored at enrollment.
+        # This returns -1 rather than raising: passkeys can also reach check_otp through the passkey_trigger_by_pin
+        # / check_token_list path, which does not catch PolicyError and would abort evaluation of any other
+        # pending challenge-response token for the same request.
+        allowed_device_types = get_optional(options, PasskeyAction.AllowedAuthenticatorDeviceTypes)
+        if allowed_device_types and verified_authentication.credential_device_type not in allowed_device_types:
+            log.warning(f"Passkey {self.token.serial} is not allowed to authenticate due to policy restriction "
+                        f"{PasskeyAction.AllowedAuthenticatorDeviceTypes!s}")
+            return -1
+
+        # Checking policy scope=SCOPE.AUTH, action=PasskeyAction.EnforceUserHandle.
+        # privacyIDEA otherwise resolves the user purely via the credential ID's assignment in the database,
+        # never re-checking it against the FIDO2 user ID that was recorded at enrollment. This is opt-in
+        # because it breaks authentication for passkeys enrolled before the user ID was recorded, and because
+        # reassigning a passkey token to a different user is an established (if narrow) admin workflow.
+        if get_optional(options, PasskeyAction.EnforceUserHandle):
+            stored_user_handle = self.user.internal_attributes.get(FIDO2TokenInfo.USER_ID) if self.user else None
+            # Compare decoded bytes, not the raw strings: the client encodes userHandle with plain base64
+            # (RFC 4648 alphabet, padded), while the stored value is base64url (unpadded). Both decode to the
+            # same bytes for a real match, but the encoded strings themselves would not be equal.
+            handles_match = False
+            if stored_user_handle and user_handle:
+                try:
+                    handles_match = base64url_to_bytes(user_handle) == base64url_to_bytes(stored_user_handle)
+                except Exception as ex:
+                    log.warning(f"Could not decode userHandle for passkey {self.token.serial}: {ex}")
+            if not handles_match:
+                log.warning(f"Passkey {self.token.serial} userHandle does not match the FIDO2 user ID recorded "
+                            f"for its assigned user; refusing authentication due to policy restriction "
+                            f"{PasskeyAction.EnforceUserHandle!s}")
+                return -1
+
         return 1
 
     @classmethod
