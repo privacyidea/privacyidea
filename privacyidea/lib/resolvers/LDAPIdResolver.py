@@ -750,7 +750,6 @@ class IdResolver(UserIdResolver):
             # The uid an entry carries is not necessarily the string we searched for: an objectGUID
             # may come with curly braces, and most uid attributes match case-insensitively. Map the
             # results back over the same normalization _get_uid applies, and only then over case.
-            requested_ids = {}
             requested_ids_lower = {}
             id_filter = ""
             for user_id in chunk:
@@ -765,7 +764,6 @@ class IdResolver(UserIdResolver):
                     returned_id = user_id
                 else:
                     returned_id = user_id.strip("{").strip("}")
-                requested_ids[returned_id] = user_id
                 # Several requested IDs can lowercase to the same key -- two case variants of a
                 # login that a case-insensitively-matching uid attribute treats as one entry -- so
                 # this keeps every one of them, not just the first, or a later alias would never get
@@ -790,9 +788,6 @@ class IdResolver(UserIdResolver):
                 # variants of it, so two aliases of one user (see requested_ids_lower above) both
                 # get a result from the single entry the server returned for them.
                 matched_user_ids = set(requested_ids_lower.get(returned_id.lower(), ()))
-                exact_user_id = requested_ids.get(returned_id)
-                if exact_user_id is not None:
-                    matched_user_ids.add(exact_user_id)
                 if not matched_user_ids:  # pragma: no cover
                     log.info(f"Ignoring LDAP object with uid {returned_id!r}, which was not searched for.")
                     continue
@@ -800,8 +795,10 @@ class IdResolver(UserIdResolver):
                 # unless the group attribute is not among the requested attributes.
                 user_info = self._ldap_attributes_to_user_object(entry.get("attributes"), attributes)
                 for user_id in matched_user_ids:
-                    user_info_map[user_id] = user_info
-                    cache_store(self, "get_user_info", user_id, user_info)
+                    # Each alias gets its own dict, so mutating one alias's entry later can not
+                    # corrupt the others even though they came from the same LDAP object.
+                    user_info_map[user_id] = dict(user_info)
+                    cache_store(self, "get_user_info", user_id, dict(user_info))
 
             last_result = getattr(getattr(self, "connection", None), "result", None) or {}
             if last_result.get("result") == RESULT_SIZE_LIMIT_EXCEEDED:
