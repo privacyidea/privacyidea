@@ -32,12 +32,6 @@
   width: 100%;
 }
 
-.dashboard-actions {
-  display: flex;
-  gap: var(--half-global-gap);
-  padding: 0 var(--global-padding) var(--half-global-padding);
-}
-
 .dashboard-scroll-wrapper {
   flex: 1;
   min-height: 0;

@@ -18,36 +18,6 @@
 -->
 
 <div class="dashboard-page">
-  <div class="dashboard-actions">
-    @if (layoutService.editMode()) {
-      <button
-        mat-stroked-button
-        type="button"
-        class="action-button-primary button-width-s"
-        (click)="saveDashboard()">
-        <mat-icon>save</mat-icon>
-        <span i18n>Save</span>
-      </button>
-      <button
-        mat-stroked-button
-        type="button"
-        class="action-button-delete-secondary button-width-s"
-        (click)="cancelDashboard()">
-        <mat-icon>cancel</mat-icon>
-        <span i18n>Cancel</span>
-      </button>
-      <app-widget-palette />
-    } @else {
-      <button
-        mat-stroked-button
-        type="button"
-        class="action-button-primary button-width-m"
-        (click)="enterDashboardEdit()">
-        <mat-icon>edit</mat-icon>
-        <span i18n>Edit Dashboard</span>
-      </button>
-    }
-  </div>
   <div class="dashboard-scroll-wrapper">
     <div
       class="dashboard-field-scroll"
