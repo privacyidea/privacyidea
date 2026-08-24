@@ -1679,7 +1679,7 @@ def get_sshkey_api(serial=None):
 
     user = request.User
     toks = get_tokens(serial=serial, user=user if user and not user.is_empty() else None,
-                      tokentype="sshkey")
+                      tokentype="sshkey", active=True)
     if not toks:
         raise ResourceNotFoundError(f"No SSH key token with serial {serial!s} found.")
     token = toks[0]
