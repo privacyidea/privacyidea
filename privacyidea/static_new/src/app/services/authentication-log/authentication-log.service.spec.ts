@@ -65,10 +65,12 @@ describe("AuthenticationLogService", () => {
     httpMock.verify();
   });
 
-  // The event-types resource loads under the same gate as the log page, so flush it where a test only asserts the
-  // page request (keeps httpMock.verify() clean).
-  const flushEventTypes = () =>
+  // The event-types and reasons resources load under the same gate as the log page, so flush them where a test only
+  // asserts the page request (keeps httpMock.verify() clean).
+  const flushEventTypes = () => {
     httpMock.match((r) => r.url.endsWith("/eventtypes")).forEach((r) => r.flush(MockPiResponse.fromValue([])));
+    httpMock.match((r) => r.url.endsWith("/reasons")).forEach((r) => r.flush(MockPiResponse.fromValue([])));
+  };
 
   // The oldest-entry resource (page_size=1, timestamp asc) loads under the same gate as the log page; flush it where a
   // test only asserts the page request.
@@ -219,12 +221,34 @@ describe("AuthenticationLogService", () => {
     TestBed.tick();
     httpMock.match(isPageRequest).forEach((r) => r.flush(emptyPage()));
     flushOldest();
+    httpMock.match((r) => r.url.endsWith("/reasons")).forEach((r) => r.flush(MockPiResponse.fromValue([])));
     httpMock
       .match((r) => r.url.endsWith("/eventtypes"))
       .forEach((r) => r.flush(MockPiResponse.fromValue(["LOGIN_SUCCESS", "AUTHENTICATION_FAIL"])));
     await Promise.resolve();
     TestBed.tick();
     expect(service.eventTypes()).toEqual(["LOGIN_SUCCESS", "AUTHENTICATION_FAIL"]);
+  });
+
+  it("reasons is empty before load and reflects the loaded vocabulary", async () => {
+    // The reason vocabulary comes from the backend for the same reason the event types do: the column filters by it.
+    expect(service.reasons()).toEqual([]);
+    service.authenticationLogResource.reload();
+    TestBed.tick();
+    httpMock.match(isPageRequest).forEach((r) => r.flush(emptyPage()));
+    flushOldest();
+    httpMock.match((r) => r.url.endsWith("/eventtypes")).forEach((r) => r.flush(MockPiResponse.fromValue([])));
+    httpMock
+      .match((r) => r.url.endsWith("/reasons"))
+      .forEach((r) => r.flush(MockPiResponse.fromValue(["TOKEN_DISABLED", "WRONG_OTP"])));
+    await Promise.resolve();
+    TestBed.tick();
+    expect(service.reasons()).toEqual(["TOKEN_DISABLED", "WRONG_OTP"]);
+  });
+
+  it("forwards the reason filter as the plural reasons parameter", () => {
+    service.authenticationLogFilter.set(new FilterValue({ value: "reason: TOKEN_DISABLED,TOKEN_REVOKED" }));
+    expect(service.filterParams()).toEqual({ reasons: "TOKEN_DISABLED,TOKEN_REVOKED" });
   });
 
   it("oldestTimestamp is null before load and reflects the oldest entry after", async () => {

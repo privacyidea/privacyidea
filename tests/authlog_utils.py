@@ -29,6 +29,7 @@ from flask import Response
 from privacyidea.lib.cache import redis_feature_enabled
 from privacyidea.lib.cache.redis import redis_client_for_feature, _TXN_KEY
 from privacyidea.lib.challenge import get_challenges
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventReason, REASON_DETAIL_INFO_KEY
 from privacyidea.lib.conditional_access.authentication_log import get_authentication_logs, AuthLogUserRole
 from privacyidea.lib.policy import set_policy, SCOPE, PolicyAction
 from privacyidea.lib.token import init_token, remove_token, get_tokens
@@ -182,7 +183,9 @@ def assert_authentication_log_entry(entry: AuthenticationLog, user: User = None,
                                     serials: set[str] = None,
                                     client_label: str = None, endpoint: str = None, other_info: dict = None,
                                     transaction_id: str = None,
-                                    source_ip: str = None, user_role: AuthLogUserRole = AuthLogUserRole.USER):
+                                    source_ip: str = None, user_role: AuthLogUserRole = AuthLogUserRole.USER,
+                                    reason: AuthEventReason = None, reasons: dict = None,
+                                    policies: list = None):
     """
     Assert a single authentication-log entry carries the expected attributes.
 
@@ -191,11 +194,15 @@ def assert_authentication_log_entry(entry: AuthenticationLog, user: User = None,
 
     Every other column of the authentication_log table is checked. The nullable columns default to their database default
     (None), so a column that is not passed is asserted to be empty — this enforces that a row carries *only* the data
-    it should and no leftover values. ``endpoint`` is the one exception: every row written from a view carries the
-    request path, which says nothing about the outcome under test, so it is only compared when a caller passes it (the
-    endpoint contract itself is asserted in ValidateCheckAuthLogTestCase / AuthEndpointAuthLogTestCase). The
-    auto-populated id and timestamp are checked for presence. The non-nullable event_type is covered by the ordered
-    list in :func:`assert_authentication_log`.
+    it should and no leftover values. ``endpoint`` and the two reason arguments are the exceptions: every row written
+    from a view carries the request path, and nearly every failed one carries a reason, neither of which says anything
+    about the outcome under test - so they are only compared when a caller passes them. Their own contracts are
+    asserted where they are the subject (the endpoint in ValidateCheckAuthLogTestCase / AuthEndpointAuthLogTestCase,
+    the reasons in AuthReasonTestCase). For the same reason the ``other_info`` comparison ignores the per-serial reason
+    map: it is checked via ``reasons``, so a test about token info is not rewritten every time a reason is added.
+
+    The auto-populated id and timestamp are checked for presence. The non-nullable event_type is covered by the
+    ordered list in :func:`assert_authentication_log`.
 
     :param entry: an AuthenticationLog entry (e.g. one returned by :func:`assert_authentication_log`)
     :param user: the expected identity. All four fields — resolver, uid, realm, and username (login) — are read from
@@ -206,6 +213,10 @@ def assert_authentication_log_entry(entry: AuthenticationLog, user: User = None,
     :param serials: the entry must carry a comma separated list of these serials (default None: no serial)
     :param client_label: the entry must carry this client_label (default None: no client_label)
     :param endpoint: if given, the entry must carry this endpoint; not checked when omitted (see above)
+    :param reason: if given, the entry's ``reason`` column must be this AuthEventReason; not checked when omitted
+    :param reasons: if given, the ``{serial: reason}`` map in the reason detail must equal this; not checked when
+        omitted
+    :param policies: if given, the policy names in the reason detail must equal this; not checked when omitted
     :param other_info: the entry must carry this other_info (default None: no other_info)
     :param transaction_id: the entry must carry this transaction_id (default None: no transaction_id)
     :param source_ip: the entry must carry this source_ip (default None: no source_ip)
@@ -221,7 +232,15 @@ def assert_authentication_log_entry(entry: AuthenticationLog, user: User = None,
     assert entry.client_label == client_label
     if endpoint is not None:
         assert entry.endpoint == endpoint
-    assert entry.other_info == other_info
+    if reason is not None:
+        assert entry.reason == str(reason)
+    stored_info = dict(entry.other_info or {})
+    stored_detail = stored_info.pop(REASON_DETAIL_INFO_KEY, None) or {}
+    if reasons is not None:
+        assert stored_detail.get("reasons") == {serial: str(value) for serial, value in reasons.items()}
+    if policies is not None:
+        assert stored_detail.get("policies") == policies
+    assert (stored_info or None) == other_info
     assert entry.transaction_id == transaction_id
     assert entry.source_ip == source_ip
     entry_serials = entry.serial

@@ -24,7 +24,7 @@ import datetime
 
 import mock
 
-from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, AuthEventReason
 from privacyidea.lib.conditional_access.authentication_log import log_authentication_event, AuthLogUserRole
 from privacyidea.lib.conditional_access.outcome_log import record_outcomes
 from privacyidea.lib.policy import set_policy, delete_policy, SCOPE, PolicyAction
@@ -336,6 +336,27 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
         self.assertEqual(1, value["count"])
         self.assertEqual("vpn", value["auth_logs"][0]["client_label"])
 
+    def test_filter_by_reason(self):
+        log_authentication_event(event_type=AuthEventType.NO_USABLE_TOKEN, resolver="res", uid="1", realm=self.realm1,
+                                 reason=AuthEventReason.TOKEN_DISABLED)
+        log_authentication_event(event_type=AuthEventType.NO_USABLE_TOKEN, resolver="res", uid="2", realm=self.realm1,
+                                 reason=AuthEventReason.TOKEN_FAILCOUNT_EXCEEDED)
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res", uid="3", realm=self.realm1)
+        db.session.commit()
+
+        # The point of the column: one event type, several causes, each filterable on its own.
+        value = self._get({"reasons": str(AuthEventReason.TOKEN_DISABLED)})["result"]["value"]
+        self.assertEqual(1, value["count"])
+        self.assertEqual(str(AuthEventReason.TOKEN_DISABLED), value["auth_logs"][0]["reason"])
+        self.assertEqual(2, self._get({"reasons": f"{AuthEventReason.TOKEN_DISABLED},"
+                                                  f"{AuthEventReason.TOKEN_FAILCOUNT_EXCEEDED}"})
+                         ["result"]["value"]["count"])
+        # A wildcard groups a family of reasons - every token-state one, here.
+        self.assertEqual(2, self._get({"reasons": "TOKEN_*"})["result"]["value"]["count"])
+        # The successful row has no reason at all, so no reason filter matches it.
+        self.assertIsNone(self._get({"event_types": str(AuthEventType.LOGIN_SUCCESS)})
+                          ["result"]["value"]["auth_logs"][0]["reason"])
+
     def test_filter_by_endpoint(self):
         log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res", uid="1", realm=self.realm1,
                                  endpoint="/validate/check")
@@ -394,6 +415,18 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
         self.assertEqual("failure", by_name["USER_LOCKED"])
         self.assertEqual("failure", by_name["IP_BLOCKED"])
         self.assertEqual("failure", by_name["ACCESS_DENIED"])
+
+    def test_reasons_lists_the_whole_vocabulary(self):
+        # Served for the same reason the event types are: the WebUI filters by reason and must not keep its own
+        # copy.
+        with self.app.test_request_context("/authenticationlog/reasons", method="GET",
+                                           headers={"Authorization": self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+        value = res.json["result"]["value"]
+        self.assertListEqual([str(reason) for reason in AuthEventReason], value)
+        self.assertIn("TOKEN_DISABLED", value)
+        self.assertIn("AUTHORIZATION_POLICY", value)
 
     def test_event_types_accessible_to_user(self):
         self.authenticate_selfservice_user()

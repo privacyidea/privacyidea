@@ -36,7 +36,10 @@ import jwt
 from flask import jsonify, current_app, Response, Request, request, g, has_request_context
 from flask_babel import _
 
-from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
+from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType,
+                                                                          AUTH_EVENT_REASON_KEY,
+                                                                          AUTH_EVENT_REASON_DETAIL_KEY,
+                                                                          REASON_DETAIL_INFO_KEY)
 from privacyidea.lib.conditional_access.authentication_log import AuthLogUserRole, PendingAuthEvent
 from privacyidea.lib.conditional_access.request_context import AuthPrincipal, get_ca_context
 from privacyidea.lib.user import User
@@ -299,11 +302,31 @@ def request_endpoint() -> str | None:
     return request.path.rstrip("/") or request.path
 
 
+def pop_auth_event_reason(details: dict | None) -> tuple[str | None, dict | None]:
+    """
+    Take the classified reason and its detail dict off *details*, the way the event type itself is taken off it.
+
+    Both are internal keys the lib layer sets alongside the event type (see
+    :data:`~privacyidea.lib.conditional_access.authentication_event_types.AUTH_EVENT_REASON_KEY`) and neither may
+    reach the client, so they are popped rather than read.
+
+    :param details: the reply/details dict a lib call returned, or None
+    :return: ``(reason, reason_detail)``, each None when the layer below classified none
+    """
+    if not details:
+        return None, None
+    reason = details.pop(AUTH_EVENT_REASON_KEY, None)
+    detail = details.pop(AUTH_EVENT_REASON_DETAIL_KEY, None)
+    return (str(reason) if reason else None), (detail or None)
+
+
 def log_authentication(event_type: AuthEventType | None, request: Request | None = None, user: User | None = None,
                        serial: str | None = None, transaction_id: str | None = None,
                        username: str | None = None,
                        internal_admin: bool = False,
-                       immediate: bool = False) -> "PendingAuthEvent | None":
+                       immediate: bool = False,
+                       reason: str | None = None,
+                       reason_detail: dict | None = None) -> "PendingAuthEvent | None":
     """
     Record one authentication_log entry for the current request.
 
@@ -340,6 +363,12 @@ def log_authentication(event_type: AuthEventType | None, request: Request | None
     request context, so the lib layer can record an event from outside a view (e.g. push_wait). Worst case those
     columns are empty; the event itself is never lost. ``endpoint`` comes from :func:`request_endpoint`, the same
     reading an ``ENDPOINT`` conditional-access condition is evaluated against.
+
+    ``reason`` says *why* the event came out this way (an
+    :class:`~privacyidea.lib.conditional_access.authentication_event_types.AuthEventReason` value), and
+    ``reason_detail`` carries what is specific to this request - the deciding policies, the per-serial reasons - into
+    ``other_info`` under its own :data:`REASON_DETAIL_INFO_KEY` key. Both are optional: an event nobody found a
+    reason for is logged without one.
 
     ``user_role`` records whether the principal is a regular user or an admin (see :class:`AuthLogUserRole`). Pass
     ``internal_admin=True`` for a local database admin (``/auth`` only); an admin-realm admin is detected from the
@@ -397,6 +426,8 @@ def log_authentication(event_type: AuthEventType | None, request: Request | None
     context.source_ip = source_ip
     event = PendingAuthEvent(
         event_type=event_type,
+        reason=reason,
+        other_info={REASON_DETAIL_INFO_KEY: reason_detail} if reason_detail else None,
         transaction_id=transaction_id,
         resolver=user.resolver if resolved else None,
         uid=user.uid if resolved else None,

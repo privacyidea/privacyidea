@@ -94,6 +94,16 @@ describe("AuthenticationLog", () => {
     expect(component.visibleColumnKeys().length).toBe(component.columnKeysMap.length);
   });
 
+  it("offers the reason as a column with the backend's vocabulary as its value picker", () => {
+    const reason = component.columnKeysMap.find((column) => column.key === "reason");
+    expect(reason).toEqual(expect.objectContaining({ filterable: true, sortable: true }));
+    // The options come from the service (i.e. the backend), not from a list held here.
+    expect(component.reasonOptions()).toEqual(service.reasons());
+    expect(component.reasonOptions()).toContain("TOKEN_DISABLED");
+    component.setFilterValues("reason", ["TOKEN_DISABLED", "TOKEN_REVOKED"]);
+    expect(component.selectedFilterValues("reason")).toEqual(["TOKEN_DISABLED", "TOKEN_REVOKED"]);
+  });
+
   it("offers the endpoint as a filterable, sortable column with its own filter tooltip", () => {
     const endpoint = component.columnKeysMap.find((column) => column.key === "endpoint");
     expect(endpoint).toEqual(expect.objectContaining({ filterable: true, sortable: true }));

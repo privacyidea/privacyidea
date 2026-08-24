@@ -41,6 +41,8 @@ authentication_log_column_length = {
     "username": 255,
     "user_role": 30,
     "event_type": 40,
+    # An AuthEventReason value; sized like event_type, which the longest member stays well inside.
+    "reason": 40,
     "source_ip": 50,
     "client_label": 1024,
     # The request path of the authenticating endpoint ("/auth", "/validate/check", ...). Sized well past the longest
@@ -81,6 +83,12 @@ class AuthenticationLog(MethodsMixin, db.Model):
         case_sensitive_unicode(authentication_log_column_length["user_role"]))
     event_type: Mapped[str] = mapped_column(
         case_sensitive_unicode(authentication_log_column_length["event_type"]), nullable=False)
+    # Why the event came out the way it did: an AuthEventReason value, or NULL when nothing classified one (a success
+    # needs no reason). Deliberately a column rather than a key in other_info: "every NO_USABLE_TOKEN caused by the
+    # failcounter" has to be a plain indexed predicate, and JSON predicates differ per backend. What is specific to
+    # one request - the deciding policy's name, which serial failed for which reason - stays in other_info.
+    reason: Mapped[str | None] = mapped_column(
+        case_sensitive_unicode(authentication_log_column_length["reason"]))
     timestamp: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
     source_ip: Mapped[str | None] = mapped_column(
         case_sensitive_unicode(authentication_log_column_length["source_ip"]))

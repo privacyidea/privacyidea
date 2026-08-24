@@ -52,6 +52,8 @@ from dateutil.tz import tzlocal
 
 from privacyidea.lib.authcache import verify_in_cache, add_to_cache
 from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType, AUTH_EVENT_TYPE_KEY,
+                                                                           AuthEventReason, AUTH_EVENT_REASON_KEY,
+                                                                           AUTH_EVENT_REASON_DETAIL_KEY,
                                                                            NO_FIRST_FACTOR_KEY)
 from privacyidea.lib.error import PolicyError, UserError, AuthError, Error
 from privacyidea.lib.policies.actions import PolicyAction
@@ -465,6 +467,8 @@ def auth_lastauth(wrapped_function, user_or_serial, passw, options=None):
                     reply_dict["message"] = (f"The last successful authentication was "
                                              f"{token.get_tokeninfo(PolicyAction.LASTAUTH)}. It is too long ago.")
                     reply_dict[AUTH_EVENT_TYPE_KEY] = AuthEventType.NOT_AUTHORIZED
+                    reply_dict[AUTH_EVENT_REASON_KEY] = AuthEventReason.LAST_AUTH_TOO_OLD
+                    reply_dict[AUTH_EVENT_REASON_DETAIL_KEY] = {"policies": next(iter(last_auth_dict.values()))}
                     g.audit_object.add_policy(next(iter(last_auth_dict.values())))
 
             # Set the last successful authentication, if res still true
@@ -567,6 +571,7 @@ def auth_otppin(wrapped_function, *args, **kwds):
 
                 if authenticated_user is None and token:
                     token.auth_details[AUTH_EVENT_TYPE_KEY] = AuthEventType.PASSWORD_FAIL
+                    token.auth_details[AUTH_EVENT_REASON_KEY] = AuthEventReason.WRONG_USERSTORE_PASSWORD
                 return authenticated_user is not None
 
     # Call and return the original check_pin function

@@ -22,6 +22,9 @@ from typing import TYPE_CHECKING
 
 from flask import g
 
+from privacyidea.lib.conditional_access.authentication_event_types import (AUTH_EVENT_REASON_KEY,
+                                                                           AUTH_EVENT_REASON_DETAIL_KEY,
+                                                                           AuthEventReason)
 from privacyidea.lib.policy import Match, SCOPE
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.user import User
@@ -68,6 +71,8 @@ def check_max_auth_fail(user: User, user_search_dict: dict, check_validate_check
     if fail_count >= policy_count:
         result = False
         reply_dict["message"] = f"Only {policy_count} failed authentications per {time_delta} allowed."
+        reply_dict[AUTH_EVENT_REASON_KEY] = AuthEventReason.AUTH_MAX_FAIL
+        reply_dict[AUTH_EVENT_REASON_DETAIL_KEY] = {"policies": next(iter(max_fail_dict.values()))}
         g.audit_object.add_policy(next(iter(max_fail_dict.values())))
 
     return result, reply_dict
@@ -107,6 +112,8 @@ def check_max_auth_success(user: User, user_search_dict: dict, check_validate_ch
     if success_count >= policy_count:
         result = False
         reply_dict["message"] = f"Only {policy_count} successful authentications per {time_delta} allowed."
+        reply_dict[AUTH_EVENT_REASON_KEY] = AuthEventReason.AUTH_MAX_SUCCESS
+        reply_dict[AUTH_EVENT_REASON_DETAIL_KEY] = {"policies": next(iter(max_success_dict.values()))}
 
     return result, reply_dict
 

@@ -36,6 +36,7 @@ export interface AuthenticationLogEntry {
   username?: string | null;
   user_role?: string | null;
   event_type: string;
+  reason?: string | null;
   timestamp: string;
   source_ip?: string | null;
   client_label?: string | null;
@@ -76,6 +77,7 @@ const apiFilter = [
   "realm",
   "username",
   "event_type",
+  "reason",
   "source_ip",
   "serial",
   "transaction_id",
@@ -112,6 +114,8 @@ export interface AuthenticationLogServiceInterface {
   authenticationLogResource: HttpResourceRef<PiResponse<AuthenticationLogPage> | undefined>;
   eventTypesResource: HttpResourceRef<PiResponse<AuthenticationLogEventType[]> | undefined>;
   eventTypes: () => AuthenticationLogEventType[];
+  reasonsResource: HttpResourceRef<PiResponse<string[]> | undefined>;
+  reasons: () => string[];
   oldestTimestamp: () => string | null;
 
   clearFilter(): void;
@@ -212,6 +216,24 @@ export class AuthenticationLogService implements AuthenticationLogServiceInterfa
   eventTypes = computed<AuthenticationLogEventType[]>(() => {
     if (!this.eventTypesResource.hasValue()) return [];
     return this.eventTypesResource.value()?.result?.value ?? [];
+  });
+
+  // Why an event came out the way it did: the reason vocabulary, served by the backend for the same reason the event
+  // types are - the WebUI filters by it and must not keep a second copy of the list. Gated like the log itself.
+  reasonsResource = httpResource<PiResponse<string[]>>(() => {
+    if (!this.contentService.onAuthenticationLog() || !this.canRead()) {
+      return undefined;
+    }
+    return {
+      url: this.authenticationLogBaseUrl + "reasons",
+      method: "GET",
+      headers: this.authService.getHeaders()
+    };
+  });
+
+  reasons = computed<string[]>(() => {
+    if (!this.reasonsResource.hasValue()) return [];
+    return this.reasonsResource.value()?.result?.value ?? [];
   });
 
   // The single oldest entry (timestamp ascending), used to size the time slider's default window down to the first

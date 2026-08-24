@@ -52,6 +52,7 @@ def upgrade():
             sa.Column('username', _unicode_case_sensitive(255), nullable=True),
             sa.Column('user_role', _unicode_case_sensitive(30), nullable=True),
             sa.Column('event_type', _unicode_case_sensitive(40), nullable=False),
+            sa.Column('reason', _unicode_case_sensitive(40), nullable=True),
             sa.Column('timestamp', sa.DateTime(), nullable=False),
             sa.Column('source_ip', _unicode_case_sensitive(50), nullable=True),
             sa.Column('client_label', _unicode_case_sensitive(1024), nullable=True),

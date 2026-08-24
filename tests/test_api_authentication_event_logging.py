@@ -28,7 +28,8 @@ from typing import TYPE_CHECKING
 
 from flask import Response
 
-from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, AUTH_EVENT_TYPE_KEY
+from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType, AUTH_EVENT_TYPE_KEY,
+                                                                          AuthEventReason)
 from privacyidea.lib.auth import create_db_admin, delete_db_admin
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.conditional_access.authentication_log import get_authentication_logs, AuthLogUserRole
@@ -127,7 +128,11 @@ class _AuthLogContractTests(_ContractHost):
         get_one_token(serial=self.serial).enable(False)
         self._assert_failed(self._authenticate(f"{self.pin}123456"))
         entries = assert_authentication_log([AuthEventType.NO_USABLE_TOKEN])
-        assert_authentication_log_entry(entries[AuthEventType.NO_USABLE_TOKEN], user=self.user)
+        # NO_USABLE_TOKEN is the same event for five different token states, so the reason is what makes the row
+        # actionable - and it is recorded per serial as well, for a user whose tokens failed differently.
+        assert_authentication_log_entry(entries[AuthEventType.NO_USABLE_TOKEN], user=self.user,
+                                        reason=AuthEventReason.TOKEN_DISABLED,
+                                        reasons={self.serial: AuthEventReason.TOKEN_DISABLED})
 
     def test_maxfail_token_logs_no_usable_token(self):
         # The user's only token has its fail counter exceeded, so it cannot be used -> NO_USABLE_TOKEN.
@@ -136,7 +141,9 @@ class _AuthLogContractTests(_ContractHost):
             token.inc_failcount()
         self._assert_failed(self._authenticate(f"{self.pin}123456"))
         entries = assert_authentication_log([AuthEventType.NO_USABLE_TOKEN])
-        assert_authentication_log_entry(entries[AuthEventType.NO_USABLE_TOKEN], user=self.user)
+        assert_authentication_log_entry(entries[AuthEventType.NO_USABLE_TOKEN], user=self.user,
+                                        reason=AuthEventReason.TOKEN_FAILCOUNT_EXCEEDED,
+                                        reasons={self.serial: AuthEventReason.TOKEN_FAILCOUNT_EXCEEDED})
 
     def test_pass_on_no_token_logs_login_success(self):
         # A user with no tokens accepted by PASSONNOTOKEN is a successful login.
@@ -177,20 +184,22 @@ class _AuthLogContractTests(_ContractHost):
         finally:
             delete_policy("authlog_otppin")
         entries = assert_authentication_log([AuthEventType.PASSWORD_FAIL])
-        assert_authentication_log_entry(entries[AuthEventType.PASSWORD_FAIL], user=self.user)
+        assert_authentication_log_entry(entries[AuthEventType.PASSWORD_FAIL], user=self.user,
+                                        reason=AuthEventReason.WRONG_USERSTORE_PASSWORD)
 
     def test_pin_fail(self):
         # Wrong token PIN (otppin=token, the default) -> PIN_FAIL
         self._assert_failed(self._authenticate("wrongpin755224"))
         entries = assert_authentication_log([AuthEventType.PIN_FAIL])
-        assert_authentication_log_entry(entries[AuthEventType.PIN_FAIL], user=self.user)
+        assert_authentication_log_entry(entries[AuthEventType.PIN_FAIL], user=self.user,
+                                        reason=AuthEventReason.WRONG_TOKEN_PIN)
 
     def test_wrong_otp_is_mfa_fail(self):
         # PIN correct, OTP wrong
         self._assert_failed(self._authenticate(f"{self.pin}000000"))
         entries = assert_authentication_log([AuthEventType.MFA_FAIL])
         assert_authentication_log_entry(entries[AuthEventType.MFA_FAIL], user=self.user,
-                                        serials={self.serial})
+                                        serials={self.serial}, reason=AuthEventReason.WRONG_OTP)
 
     # --- otppin=none: only the token is verified, no first factor (end-to-end through check_user_pass) ---
 
@@ -203,7 +212,7 @@ class _AuthLogContractTests(_ContractHost):
             delete_policy("authlog_otppin")
         entries = assert_authentication_log([AuthEventType.TOKEN_ONLY_FAIL])
         assert_authentication_log_entry(entries[AuthEventType.TOKEN_ONLY_FAIL], user=self.user,
-                                        serials={self.serial})
+                                        serials={self.serial}, reason=AuthEventReason.WRONG_OTP)
 
     def test_otppin_none_correct_otp_is_login_success(self):
         # otppin=none: the correct OTP (empty PIN) succeeds -> LOGIN_SUCCESS, with no stale token-only failure.
@@ -254,9 +263,12 @@ class _AuthLogContractTests(_ContractHost):
         assert_authentication_log_entry(entries[AuthEventType.CHALLENGE_TRIGGERED],
                                         user=self.user, serials={self.serial},
                                         transaction_id=transaction_id)
+        # The challenge was there, the answer was not right: distinct from a transaction that holds no challenge.
         assert_authentication_log_entry(entries[AuthEventType.CHALLENGE_ANSWERED_FAIL],
                                         user=self.user, serials={self.serial},
-                                        transaction_id=transaction_id)
+                                        transaction_id=transaction_id,
+                                        reason=AuthEventReason.CHALLENGE_WRONG_RESPONSE,
+                                        reasons={self.serial: AuthEventReason.CHALLENGE_WRONG_RESPONSE})
 
     def test_challenge_expired_answered_fail(self):
         # Trigger, expire the challenge in the DB, then answer with the correct OTP -> CHALLENGE_ANSWERED_FAIL
@@ -272,9 +284,13 @@ class _AuthLogContractTests(_ContractHost):
         assert_authentication_log_entry(entries[AuthEventType.CHALLENGE_TRIGGERED],
                                         user=self.user, serials={self.serial},
                                         transaction_id=transaction_id)
+        # The OTP was right and the challenge was still stored, only lapsed: a timeout, not a wrong answer and not
+        # an unknown transaction.
         assert_authentication_log_entry(entries[AuthEventType.CHALLENGE_ANSWERED_FAIL],
                                         user=self.user, serials={self.serial},
-                                        transaction_id=transaction_id)
+                                        transaction_id=transaction_id,
+                                        reason=AuthEventReason.CHALLENGE_EXPIRED,
+                                        reasons={self.serial: AuthEventReason.CHALLENGE_EXPIRED})
 
     def test_challenge_stale_transaction_answered_fail(self):
         # A transaction_id with no live challenge for the token (expired, cleaned up or for another token) is still a
@@ -283,7 +299,9 @@ class _AuthLogContractTests(_ContractHost):
         entries = assert_authentication_log([AuthEventType.CHALLENGE_ANSWERED_FAIL])
         # TODO: Should we have the serial here in the log?
         assert_authentication_log_entry(entries[AuthEventType.CHALLENGE_ANSWERED_FAIL],
-                                        user=self.user, transaction_id="9" * 20)
+                                        user=self.user, transaction_id="9" * 20,
+                                        reason=AuthEventReason.CHALLENGE_UNKNOWN_TRANSACTION,
+                                        reasons={self.serial: AuthEventReason.CHALLENGE_UNKNOWN_TRANSACTION})
 
     def test_challenge_answered_correct_logs_success(self):
         # Trigger, then answer with the correct OTP -> LOGIN_SUCCESS
@@ -376,7 +394,10 @@ class _AuthLogContractTests(_ContractHost):
         finally:
             delete_policy("authlog_maxfail")
         entries = assert_authentication_log([AuthEventType.NOT_AUTHORIZED])
-        assert_authentication_log_entry(entries[AuthEventType.NOT_AUTHORIZED], user=self.user)
+        # The reason names which limit was hit, and the detail the policy that set it: with several authorization
+        # policies in play, that is the whole question the log has to answer.
+        assert_authentication_log_entry(entries[AuthEventType.NOT_AUTHORIZED], user=self.user,
+                                        reason=AuthEventReason.AUTH_MAX_FAIL, policies=["authlog_maxfail"])
 
     def test_authmaxsuccess_logs_not_authorized(self):
         # AUTHMAXSUCCESS=1/1m: after 1 successful auth the next request is blocked before credentials are checked.
@@ -388,7 +409,8 @@ class _AuthLogContractTests(_ContractHost):
         finally:
             delete_policy("authlog_maxsuccess")
         entries = assert_authentication_log([AuthEventType.NOT_AUTHORIZED])
-        assert_authentication_log_entry(entries[AuthEventType.NOT_AUTHORIZED], user=self.user)
+        assert_authentication_log_entry(entries[AuthEventType.NOT_AUTHORIZED], user=self.user,
+                                        reason=AuthEventReason.AUTH_MAX_SUCCESS, policies=["authlog_maxsuccess"])
 
     def test_lastauth_exceeded_logs_not_authorized(self):
         # LASTAUTH=1d: a token whose last successful auth was 2 days ago is blocked -> NOT_AUTHORIZED.
@@ -402,7 +424,8 @@ class _AuthLogContractTests(_ContractHost):
             delete_policy("authlog_lastauth")
         entries = assert_authentication_log([AuthEventType.NOT_AUTHORIZED])
         assert_authentication_log_entry(entries[AuthEventType.NOT_AUTHORIZED], user=self.user,
-                                        serials={self.serial})
+                                        serials={self.serial}, reason=AuthEventReason.LAST_AUTH_TOO_OLD,
+                                        policies=["authlog_lastauth"])
 
     # --- Multiple tokens for one user ---
 
@@ -427,6 +450,59 @@ class _AuthLogContractTests(_ContractHost):
         entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED], transaction_id=transaction_id)
         assert_authentication_log_entry(entries[AuthEventType.CHALLENGE_TRIGGERED], user=self.user,
                                         serials={self.serial, self.second_serial}, transaction_id=transaction_id)
+
+    def test_reason_of_the_row_is_reduced_while_every_token_keeps_its_own(self):
+        # Two tokens, unusable for two different reasons. The row is classified by one of them - the permanent state
+        # outranks the transient one, see REASON_PRECEDENCE - but neither is lost: the whole per-serial map is
+        # recorded, which is the point of keeping the detail out of the column.
+        self._add_second_token(pin=self.pin)
+        first = get_one_token(serial=self.serial)
+        first.enable(False)
+        # enable() only assigns; the second token's failcount writes below would otherwise be the only thing saved.
+        first.save()
+        second = get_one_token(serial=self.second_serial)
+        for _ in range(second.get_max_failcount() + 1):
+            second.inc_failcount()
+
+        self._assert_failed(self._authenticate(f"{self.pin}755224"))
+
+        entries = assert_authentication_log([AuthEventType.NO_USABLE_TOKEN])
+        assert_authentication_log_entry(
+            entries[AuthEventType.NO_USABLE_TOKEN], user=self.user,
+            reason=AuthEventReason.TOKEN_DISABLED,
+            reasons={self.serial: AuthEventReason.TOKEN_DISABLED,
+                     self.second_serial: AuthEventReason.TOKEN_FAILCOUNT_EXCEEDED})
+
+    def test_reason_explains_the_event_the_row_carries(self):
+        # An unrelated token past its failcounter must not become the reason of a request that failed on a wrong PIN:
+        # the row is classified PIN_FAIL, so its reason has to be the wrong PIN. The exhausted token is still in the
+        # per-serial map, where it belongs.
+        self._add_second_token(pin=self.pin)
+        second = get_one_token(serial=self.second_serial)
+        for _ in range(second.get_max_failcount() + 1):
+            second.inc_failcount()
+
+        self._assert_failed(self._authenticate("wrongpin755224"))
+
+        entries = assert_authentication_log([AuthEventType.PIN_FAIL])
+        assert_authentication_log_entry(
+            entries[AuthEventType.PIN_FAIL], user=self.user,
+            reason=AuthEventReason.WRONG_TOKEN_PIN,
+            reasons={self.serial: AuthEventReason.WRONG_TOKEN_PIN,
+                     self.second_serial: AuthEventReason.TOKEN_FAILCOUNT_EXCEEDED})
+
+    def test_a_successful_login_carries_no_reason(self):
+        # A second, unusable token must not put a reason on the row of a login that succeeded: the reason explains a
+        # failure, and the finding of a token that lost to a succeeding one would only be noise there.
+        self._add_second_token(pin=self.pin)
+        get_one_token(serial=self.second_serial).enable(False)
+
+        self._assert_succeeded(self._authenticate(f"{self.pin}755224"))
+
+        entries = assert_authentication_log([AuthEventType.LOGIN_SUCCESS])
+        entry = entries[AuthEventType.LOGIN_SUCCESS]
+        self.assertIsNone(entry.reason, entry.reason)
+        self.assertIsNone(entry.other_info, entry.other_info)
 
     # --- multichallenge correlation: a challenge answer that immediately triggers a fresh challenge (a new
     #     transaction_id) still belongs to one logical attempt. All of its rows share one attempt_id (recovered
@@ -617,7 +693,9 @@ class ValidateCheckAuthLogTestCase(_AuthLogContractTests, AuthLogTestCase):
         self.assertEqual(400, res.status_code, res.json)
         self.assertEqual(1007, res.json["result"]["error"]["code"], res.json)
         entries = assert_authentication_log([AuthEventType.NO_USABLE_TOKEN])
-        assert_authentication_log_entry(entries[AuthEventType.NO_USABLE_TOKEN], user=self.user)
+        # The raise happens before check_token_list can classify, so the reason is recorded where the event is.
+        assert_authentication_log_entry(entries[AuthEventType.NO_USABLE_TOKEN], user=self.user,
+                                        reason=AuthEventReason.TOKEN_REVOKED)
 
     def test_unknown_user_logs_user_unknown(self):
         # An unknown user is rejected by the auth_user_does_not_exist policy decorator;
@@ -785,6 +863,21 @@ class ValidateCheckAuthLogTestCase(_AuthLogContractTests, AuthLogTestCase):
         entries = assert_authentication_log([AuthEventType.LOGIN_SUCCESS])
         assert_authentication_log_entry(entries[AuthEventType.LOGIN_SUCCESS],
                                         user=self.user, serials={self.serial})
+
+    def test_serial_addressed_request_carries_the_reason(self):
+        # The serial path classifies the event itself rather than through the shared details handling, so it has to
+        # carry the reason too - it silently dropped it once.
+        token = get_one_token(serial=self.serial)
+        for _ in range(token.get_max_failcount() + 1):
+            token.inc_failcount()
+
+        body = self._check({"serial": self.serial, "pass": f"{self.pin}755224"})
+        self.assertFalse(body["result"]["value"], body)
+
+        entries = assert_authentication_log([AuthEventType.NO_USABLE_TOKEN])
+        assert_authentication_log_entry(entries[AuthEventType.NO_USABLE_TOKEN], user=self.user,
+                                        reason=AuthEventReason.TOKEN_FAILCOUNT_EXCEEDED,
+                                        reasons={self.serial: AuthEventReason.TOKEN_FAILCOUNT_EXCEEDED})
 
     def test_serial_pass_wrong_otp_is_mfa_fail(self):
         # serial + correct PIN, wrong OTP -> MFA_FAIL (same matrix as the standard path).

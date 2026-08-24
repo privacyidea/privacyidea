@@ -176,6 +176,12 @@
                         [options]="eventTypeOptions()"
                         [selected]="selectedFilterValues('event_type')"
                         (selectionChange)="setFilterValues('event_type', $event)" />
+                    } @else if (column.key === "reason") {
+                      <app-multi-select-filter
+                        [label]="column.label"
+                        [options]="reasonOptions()"
+                        [selected]="selectedFilterValues('reason')"
+                        (selectionChange)="setFilterValues('reason', $event)" />
                     } @else if (column.key === "realm") {
                       <app-multi-select-filter
                         [label]="column.label"

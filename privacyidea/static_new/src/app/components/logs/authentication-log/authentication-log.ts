@@ -136,6 +136,8 @@ const columnKeysMap: { key: string; label: string; filterable: boolean; sortable
   // locating a row rather than as a detail of it.
   { key: "attempt_id", label: $localize`Attempt ID`, filterable: true, sortable: true },
   { key: "event_type", label: $localize`Event Type`, filterable: true, sortable: true },
+  // Why that event: several causes share one event type, and the cause is what an admin acts on.
+  { key: "reason", label: $localize`Reason`, filterable: true, sortable: true },
   { key: "username", label: $localize`User`, filterable: true, sortable: true },
   { key: "realm", label: $localize`Realm`, filterable: true, sortable: true },
   { key: "source_ip", label: $localize`Source IP`, filterable: true, sortable: true },
@@ -241,7 +243,8 @@ const FILTER_TOOLTIPS: Record<string, string> = {
   serial: $localize`Filter by this serial`,
   transaction_id: $localize`Filter by this transaction ID`,
   attempt_id: $localize`Filter by this attempt ID`,
-  endpoint: $localize`Filter by this endpoint`
+  endpoint: $localize`Filter by this endpoint`,
+  reason: $localize`Filter by this reason`
 };
 
 // Columns whose value is clipped instead of widening the table: the full value stays available in the truncation
@@ -327,6 +330,7 @@ export class AuthenticationLog {
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   sort = this.authenticationLogService.sort;
 
+  readonly reasonOptions = computed<string[]>(() => this.authenticationLogService.reasons());
   readonly eventTypeOptions = computed<string[]>(() =>
     this.authenticationLogService.eventTypes().map((entry) => entry.name)
   );

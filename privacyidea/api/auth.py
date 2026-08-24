@@ -81,7 +81,8 @@ from privacyidea.api.lib.prepolicy import (is_remote_user_allowed, prepolicy,
                                            disabled_token_types, auth_timelimit, load_challenge_text)
 from privacyidea.api.lib.utils import (send_result, get_all_params, INTERNAL_OPTION_KEYS,
                                        verify_auth_token, get_optional, get_required, log_authentication,
-                                       get_auth_token_from_request, logged_in_user_from_token)
+                                       get_auth_token_from_request, logged_in_user_from_token,
+                                       pop_auth_event_reason)
 from privacyidea.lib.audit import getAudit
 from privacyidea.lib.auth import (check_webui_user, ROLE, verify_db_admin,
                                   db_admin_exists)
@@ -300,6 +301,10 @@ def get_auth_token():
     realm_param = get_optional(request.all_data, "realm")
     details = {}
     auth_event_type = None
+    # Why that event, classified by the layer below (see AuthEventReason). Only the user-login path can produce one;
+    # an admin login leaves them None, so they are initialised here rather than in that branch.
+    auth_reason = None
+    auth_reason_detail = None
     # A token can deliberately suppress its terminal event (push_wait timeout)
     terminal_event_suppressed = False
     serials = None
@@ -511,6 +516,8 @@ def get_auth_token():
             # terminal event (push_wait timeout); absent means nothing classified the request.
             terminal_event_suppressed = AUTH_EVENT_TYPE_KEY in details and details[AUTH_EVENT_TYPE_KEY] is None
             auth_event_type = details.pop(AUTH_EVENT_TYPE_KEY, None)
+            # Why it came out that way, classified alongside the event (see AuthEventReason).
+            auth_reason, auth_reason_detail = pop_auth_event_reason(details)
             # Pop the log-only transaction_id (push_wait success) so it is never returned to the client, mirroring
             # /validate/check. It stands in for the challenge transaction_id the response does not carry.
             log_transaction_id = details.pop(LOG_TRANSACTION_ID_KEY, None)
@@ -558,7 +565,8 @@ def get_auth_token():
                 # in validate.py).
                 g.audit_object.log({"authentication": AUTH_RESPONSE.CHALLENGE})
                 log_authentication(auth_event_type, request, user=user, serial=serials,
-                                   transaction_id=details.get("transaction_id"))
+                                   transaction_id=details.get("transaction_id"),
+                                   reason=auth_reason, reason_detail=auth_reason_detail)
                 return send_result(False, rid=2, details=details)
 
     # Authentication log
@@ -575,7 +583,8 @@ def get_auth_token():
                        transaction_id=(get_optional(request.all_data, "transaction_id")
                                        or details.get("transaction_id") or log_transaction_id),
                        username=login_name,
-                       internal_admin=internal_admin)
+                       internal_admin=internal_admin,
+                       reason=auth_reason, reason_detail=auth_reason_detail)
 
     # Feed the classified outcome to the lockout engine. Unlike the other endpoints this cannot wait for request
     # teardown: the engine's notices (e.g. "an email was sent") are surfaced on the rejection below, and the

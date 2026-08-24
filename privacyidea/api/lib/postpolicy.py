@@ -57,7 +57,8 @@ from flask import g, current_app, make_response, Request
 from flask_babel import _, lazy_gettext
 
 from privacyidea.api.lib.utils import get_all_params, log_authentication, hardening_action_active
-from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
+from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType, AuthEventReason,
+                                                                           REASON_DETAIL_INFO_KEY)
 from privacyidea.lib.conditional_access.request_context import get_ca_context
 from privacyidea.config import ConfigKey
 from privacyidea.lib.auth import ROLE
@@ -1278,11 +1279,19 @@ def is_authorized(request, response):
             # its rejection row records why, and a NOT_AUTHORIZED row of our own would bury that reason and hand the
             # lockout counters an attempt the lock itself produced.
             if not context.rejected_by_conditional_access:
+                # Name the policy that denied it: with several authorization policies in play, "which rule do I
+                # have to change" is the whole question the log has to answer.
+                deciding_policies = next(iter(authorized_pol.values()), None)
+                reason_detail = {"policies": deciding_policies} if deciding_policies else None
                 if context.amendable is not None:
                     # Correcting the staged event
-                    context.reclassify(AuthEventType.NOT_AUTHORIZED)
+                    context.reclassify(AuthEventType.NOT_AUTHORIZED,
+                                       reason=str(AuthEventReason.AUTHORIZATION_POLICY),
+                                       other_info={REASON_DETAIL_INFO_KEY: reason_detail} if reason_detail else None)
                 else:
-                    log_authentication(AuthEventType.NOT_AUTHORIZED, request, user=request.User)
+                    log_authentication(AuthEventType.NOT_AUTHORIZED, request, user=request.User,
+                                       reason=str(AuthEventReason.AUTHORIZATION_POLICY),
+                                       reason_detail=reason_detail)
             raise ValidateError("User is not authorized to authenticate under these conditions.")
 
     return response

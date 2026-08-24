@@ -11,7 +11,11 @@ from privacyidea.lib import _
 from privacyidea.lib.challengeresponsedecorators import (generic_challenge_response_reset_pin,
                                                          generic_challenge_response_resync)
 from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType, AUTH_EVENT_TYPE_KEY,
+                                                                           AuthEventReason, AUTH_EVENT_REASON_KEY,
+                                                                           AUTH_EVENT_REASON_DETAIL_KEY,
                                                                            NO_FIRST_FACTOR_KEY, reduce_request_events,
+                                                                           reduce_request_reasons, outcome_of,
+                                                                           AuthEventOutcome,
                                                                            SUPPRESS_TERMINAL_EVENT_KEY)
 from privacyidea.lib.config import (get_from_config,
                                     get_inc_fail_count_on_false_pin, SYSCONF)
@@ -290,6 +294,64 @@ def _token_event(token: TokenClass, default_event: AuthEventType) -> AuthEventTy
     return token.auth_details.get(AUTH_EVENT_TYPE_KEY) or default_event
 
 
+def _challenge_lapsed(transaction_id, serial: str) -> bool:
+    """
+    Whether *serial* has a challenge in *transaction_id* that exists but has expired.
+
+Answering too late is a different finding from answering wrongly, so it has to be asked **before** the answer is
+    checked: ``check_challenge_response`` ends in ``challenge_janitor()``, which deletes exactly the expired
+    challenges, so afterwards a lapsed challenge is indistinguishable from one that never existed. A transaction that
+    holds no challenge to begin with is not this - that is ``CHALLENGE_UNKNOWN_TRANSACTION``, recorded where the
+    answer finds nothing to check against.
+
+    Never raises: a failure to read the challenges leaves the caller with its generic reason.
+    """
+    if not transaction_id:
+        return False
+    try:
+        from privacyidea.lib.challenge import get_challenges
+        challenges = get_challenges(serial=serial, transaction_id=str(transaction_id))
+        return bool(challenges) and all(not challenge.is_valid() for challenge in challenges)
+    except Exception as ex:
+        log.debug(f"Could not tell whether the challenge of {serial} has expired: {ex!r}")
+        return False
+
+
+def _note_event(request_events: list, event_serials: dict[str, set[str]], event: AuthEventType,
+                token: TokenClass) -> None:
+    """
+    Record *event* as one of this request's per-token outcomes, remembering which token produced it.
+
+    The serial is what lets the row's reason agree with the row's event: a request where one token's PIN was wrong
+    while two unrelated tokens sat past their failcounter is classified PIN_FAIL, and its reason has to be the wrong
+    PIN - not the failcounter of tokens that had no part in the outcome. Without this the reason would be whichever
+    token's reason ranks highest, which is only correct when no token produced an event at all (NO_USABLE_TOKEN).
+    """
+    request_events.append(event)
+    event_serials.setdefault(str(event), set()).add(token.get_serial())
+
+
+def _record_reason(token_reasons: dict[str, str], token: TokenClass,
+                   default_reason: AuthEventReason | None = None, overwrite: bool = True) -> None:
+    """
+    Record why *token* could not authenticate, in ``token_reasons`` keyed by serial.
+
+    The reason a check recorded on the token itself wins over *default_reason*: ``check_all`` names the state that
+    made the token unusable, and ``auth_otppin`` names a wrong user store password where the orchestrator only knows
+    "the first factor did not match". This mirrors :func:`_token_event`, which does the same for the event type - the
+    token knows the specific answer, the caller only the generic one.
+
+    With *overwrite* false an already recorded reason is kept, for a pass that revisits tokens an earlier one
+    classified more precisely.
+    """
+    reason = token.auth_details.get(AUTH_EVENT_REASON_KEY) or default_reason
+    if reason is None:
+        return
+    serial = token.get_serial()
+    if overwrite or serial not in token_reasons:
+        token_reasons[serial] = str(reason)
+
+
 @log_with(log, hide_args=[1])
 @libpolicy(reset_all_user_tokens)
 @libpolicy(generic_challenge_response_reset_pin)
@@ -335,12 +397,23 @@ def check_token_list(token_object_list: list[TokenClass], passw: str, user: User
     messages = []
     # Per-token outcomes for the authentication log
     request_events: list[AuthEventType] = []
+    # Why each token could not authenticate, by serial: the row's "reason" is reduced from these, and the whole map is
+    # recorded in other_info so a request whose tokens failed differently keeps every reason (see AuthEventReason).
+    token_reasons: dict[str, str] = {}
+    # Serials whose challenge had already lapsed when the answer arrived (see _challenge_lapsed).
+    lapsed_challenge_serials: set[str] = set()
+    # Which token produced which of the events above, so the row's reason can be taken from the token whose event
+    # won the reduction rather than from whichever token happened to have the highest-ranked reason.
+    event_serials: dict[str, set[str]] = {}
     # Set when a token logged its own outcome and no terminal event should be added (push_wait timeout).
     terminal_event_suppressed = False
     num_all_tokens = len(token_object_list)
 
     # Remove locked tokens from token_object_list
     if len(token_object_list) > 0:
+        for token in token_object_list:
+            if token.is_revoked():
+                token_reasons[token.get_serial()] = str(AuthEventReason.TOKEN_REVOKED)
         token_object_list = [token for token in token_object_list if not token.is_revoked()]
 
         if len(token_object_list) == 0:
@@ -350,11 +423,17 @@ def check_token_list(token_object_list: list[TokenClass], passw: str, user: User
 
     # Remove disabled token types from token_object_list
     if PolicyAction.DISABLED_TOKEN_TYPES in options and options[PolicyAction.DISABLED_TOKEN_TYPES]:
+        for token in token_object_list:
+            if token.type in options[PolicyAction.DISABLED_TOKEN_TYPES]:
+                token_reasons[token.get_serial()] = str(AuthEventReason.TOKEN_TYPE_DISABLED)
         token_object_list = [token for token in token_object_list if
                              token.type not in options[PolicyAction.DISABLED_TOKEN_TYPES]]
 
     # Remove certain disabled tokens from token_object_list
     if len(token_object_list) > 0:
+        for token in token_object_list:
+            if not token.use_for_authentication(options):
+                token_reasons[token.get_serial()] = str(AuthEventReason.TOKEN_NOT_APPLICABLE)
         token_object_list = [token for token in token_object_list if token.use_for_authentication(options)]
 
     for token_object in sorted(token_object_list, key=weigh_token_type):
@@ -366,17 +445,24 @@ def check_token_list(token_object_list: list[TokenClass], passw: str, user: User
         token_object.check_reset_failcount()
 
         if not token_object.check_all(messages):
-            # token can not be used for authentication (e.g. maxfail exceeded, disabled, not within validity period)
-            pass
+            # token can not be used for authentication (e.g. maxfail exceeded, disabled, not within validity period).
+            # check_all recorded which of those it was on the token's auth_details.
+            _record_reason(token_reasons, token_object)
         elif token_object.is_challenge_response(passw, user=user, options=options):
             # This is a challenge response, and it still has a challenge DB entry
             if token_object.has_db_challenge_response(passw, user=user, options=options):
                 challenge_response_token_list.append(token_object)
+                # Asked here and not in the failure branch below: the answer check ends in challenge_janitor(),
+                # which deletes the expired challenge this would look for.
+                if _challenge_lapsed(options.get("transaction_id") or options.get("state"),
+                                     token_object.token.serial):
+                    lapsed_challenge_serials.add(token_object.token.serial)
             else:
                 # This is a transaction_id, that either never existed or has expired or is not for this token.
                 # We add this to the invalid_token_list
                 invalid_token_list.append(token_object)
-                request_events.append(AuthEventType.CHALLENGE_ANSWERED_FAIL)
+                _note_event(request_events, event_serials, AuthEventType.CHALLENGE_ANSWERED_FAIL, token_object)
+                token_reasons[token_object.get_serial()] = str(AuthEventReason.CHALLENGE_UNKNOWN_TRANSACTION)
         elif token_object.is_challenge_request(passw, user=user, options=options):
             # This is a challenge request
             challenge_request_token_list.append(token_object)
@@ -413,15 +499,21 @@ def check_token_list(token_object_list: list[TokenClass], passw: str, user: User
                         default_event = (AuthEventType.TOKEN_ONLY_FAIL
                                          if token_object.auth_details.get(NO_FIRST_FACTOR_KEY)
                                          else AuthEventType.MFA_FAIL)
-                        request_events.append(_token_event(token_object, default_event))
+                        _note_event(request_events, event_serials, _token_event(token_object, default_event),
+                                    token_object)
+                        _record_reason(token_reasons, token_object, AuthEventReason.WRONG_OTP)
                 else:
                     # Nothing matches at all: a wrong first factor (PIN_FAIL, or PASSWORD_FAIL with otppin=userstore).
                     # This stays PIN_FAIL even with otppin=none, if a pin was given unexpectedly
                     invalid_token_list.append(token_object)
-                    request_events.append(_token_event(token_object, AuthEventType.PIN_FAIL))
+                    _note_event(request_events, event_serials,
+                                _token_event(token_object, AuthEventType.PIN_FAIL), token_object)
+                    # auth_otppin records WRONG_USERSTORE_PASSWORD for otppin=userstore; otherwise it is the PIN.
+                    _record_reason(token_reasons, token_object, AuthEventReason.WRONG_TOKEN_PIN)
             else:
                 invalid_token_list.append(token_object)
-                request_events.append(AuthEventType.PIN_FAIL)
+                _note_event(request_events, event_serials, AuthEventType.PIN_FAIL, token_object)
+                token_reasons[token_object.get_serial()] = str(AuthEventReason.WRONG_TOKEN_PIN)
                 log.info(f"Skipping authentication try for token {token_object.get_serial()}"
                          f" because policy force_challenge_response is set.")
 
@@ -506,6 +598,7 @@ def check_token_list(token_object_list: list[TokenClass], passw: str, user: User
                 messages = []
                 if not token_object.is_fit_for_challenge(messages, options=options):
                     messages.insert(0, _("Challenge matches, but token is not fit for challenge"))
+                    token_reasons[token_object.get_serial()] = str(AuthEventReason.TOKEN_NOT_FIT_FOR_CHALLENGE)
                     reply_dict["message"] = ". ".join(messages)
                     log.info("Received a valid response to a "
                              "challenge for a non-fit token {!s}. {!s}".format(token_object.token.serial,
@@ -553,7 +646,14 @@ def check_token_list(token_object_list: list[TokenClass], passw: str, user: User
             for token_obj in challenge_response_token_list:
                 if not token_obj.is_outofband():
                     token_obj.inc_failcount()
-                request_events.append(AuthEventType.CHALLENGE_ANSWERED_FAIL)
+                _note_event(request_events, event_serials, AuthEventType.CHALLENGE_ANSWERED_FAIL, token_obj)
+                # Not fit for challenge is recorded above, where the response *did* match; anything left here is
+                # either a lapsed challenge or a response that did not match.
+                _record_reason(token_reasons, token_obj,
+                               AuthEventReason.CHALLENGE_EXPIRED
+                               if token_obj.token.serial in lapsed_challenge_serials
+                               else AuthEventReason.CHALLENGE_WRONG_RESPONSE,
+                               overwrite=False)
             if not matching_challenge:
                 if len(challenge_response_token_list) == 1:
                     reply_dict["serial"] = challenge_response_token_list[0].token.serial
@@ -629,6 +729,22 @@ def check_token_list(token_object_list: list[TokenClass], passw: str, user: User
     if reduced_event is None and not terminal_event_suppressed:
         reduced_event = AuthEventType.NO_USABLE_TOKEN if num_all_tokens else AuthEventType.NO_TOKEN
     reply_dict[AUTH_EVENT_TYPE_KEY] = reduced_event
+
+    # Why, alongside what: the row carries one reason, reduced by REASON_PRECEDENCE, while other_info keeps the whole
+    # per-serial map so a request whose tokens failed differently does not lose the ones that lost the reduction.
+    # Only a failed request gets one - a success needs no reason, and the finding of a token that lost to a
+    # succeeding one would be noise on that row. Read after the fallback above, so a NO_USABLE_TOKEN (where no token
+    # contributed an event at all) is included rather than skipped.
+    # Read from the tokens that produced the winning event, so the reason explains that event (see _note_event).
+    # Only when no token produced it - NO_USABLE_TOKEN, where every token was turned away before it could - does the
+    # whole set decide, which is exactly the case that reduction was written for.
+    deciding_serials = event_serials.get(str(reduced_event), set()) & token_reasons.keys()
+    deciding_reasons = ([token_reasons[serial] for serial in deciding_serials] if deciding_serials
+                        else list(token_reasons.values()))
+    reduced_reason = reduce_request_reasons(AuthEventReason(reason) for reason in deciding_reasons)
+    if reduced_reason and reduced_event and outcome_of(reduced_event) == AuthEventOutcome.FAILURE:
+        reply_dict[AUTH_EVENT_REASON_KEY] = reduced_reason
+        reply_dict[AUTH_EVENT_REASON_DETAIL_KEY] = {"reasons": dict(token_reasons)}
 
     return res, reply_dict
 

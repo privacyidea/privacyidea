@@ -41,6 +41,7 @@ SORTABLE_COLUMNS: dict[str, InstrumentedAttribute] = {
     "id": AuthenticationLog.id,
     "timestamp": AuthenticationLog.timestamp,
     "event_type": AuthenticationLog.event_type,
+    "reason": AuthenticationLog.reason,
     "resolver": AuthenticationLog.resolver,
     "uid": AuthenticationLog.uid,
     "realm": AuthenticationLog.realm,
@@ -199,6 +200,8 @@ class PendingAuthEvent:
     into.
     """
     event_type: AuthEventType
+    # Why this event came out the way it did (see AuthEventReason); None when nothing classified a reason.
+    reason: str | None = None
     transaction_id: str | None = None
     resolver: str | None = None
     uid: str | None = None
@@ -245,6 +248,7 @@ class PendingAuthEvent:
 # The columns of an entry that are truncated to their column length, and the separator to cut on (see _truncate).
 _TRUNCATED_COLUMNS = {
     "event_type": None,
+    "reason": None,
     "transaction_id": None,
     "resolver": None,
     "uid": None,
@@ -347,6 +351,7 @@ def update_authentication_events(events: Sequence[PendingAuthEvent]) -> bool:
 
 
 def log_authentication_event(event_type: AuthEventType,
+                             reason: str | None = None,
                              transaction_id: str | None = None,
                              resolver: str | None = None,
                              uid: str | None = None,
@@ -365,7 +370,8 @@ def log_authentication_event(event_type: AuthEventType,
     The single-event convenience wrapper over :func:`write_authentication_events`, for callers that have no request
     context to collect on (the CLI, tests, and lib code outside a view).
     """
-    event = PendingAuthEvent(event_type=event_type, transaction_id=transaction_id, resolver=resolver, uid=uid,
+    event = PendingAuthEvent(event_type=event_type, reason=reason, transaction_id=transaction_id, resolver=resolver,
+                             uid=uid,
                              realm=realm, username=username, user_role=user_role, source_ip=source_ip,
                              client_label=client_label, endpoint=endpoint, serial=serial, attempt_id=attempt_id,
                              other_info=other_info)
@@ -441,6 +447,7 @@ def _filter_conditions(resolver: str | list[str] | None = None,
                        username: str | list[str] | None = None,
                        user_role: str | list[str] | None = None,
                        event_type: str | list[str] | None = None,
+                       reason: str | list[str] | None = None,
                        source_ip: str | list[str] | None = None,
                        serial: str | list[str] | None = None,
                        transaction_id: str | list[str] | None = None,
@@ -466,6 +473,7 @@ def _filter_conditions(resolver: str | list[str] | None = None,
         AuthenticationLog.username: username,
         AuthenticationLog.user_role: user_role,
         AuthenticationLog.event_type: event_type,
+        AuthenticationLog.reason: reason,
         AuthenticationLog.source_ip: source_ip,
         AuthenticationLog.serial: serial,
         AuthenticationLog.transaction_id: transaction_id,
@@ -572,6 +580,7 @@ def get_authentication_logs(resolver: str | list[str] | None = None,
                             username: str | list[str] | None = None,
                             user_role: str | list[str] | None = None,
                             event_type: str | list[str] | None = None,
+                            reason: str | list[str] | None = None,
                             source_ip: str | list[str] | None = None,
                             serial: str | list[str] | None = None,
                             transaction_id: str | list[str] | None = None,
@@ -587,7 +596,7 @@ def get_authentication_logs(resolver: str | list[str] | None = None,
     value containing a ``*`` wildcard) matches it with a ``LIKE``. timestamp filters are inclusive on both ends.
     """
     conditions = _filter_conditions(resolver=resolver, uid=uid, realm=realm, username=username, user_role=user_role,
-                                    event_type=event_type,
+                                    event_type=event_type, reason=reason,
                                     source_ip=source_ip, serial=serial, transaction_id=transaction_id,
                                     attempt_id=attempt_id,
                                     client_label=client_label, endpoint=endpoint,
@@ -602,6 +611,7 @@ def get_authentication_logs_paginate(resolver: str | list[str] | None = None,
                                      username: str | list[str] | None = None,
                                      user_role: str | list[str] | None = None,
                                      event_type: str | list[str] | None = None,
+                                     reason: str | list[str] | None = None,
                                      source_ip: str | list[str] | None = None,
                                      serial: str | list[str] | None = None,
                                      transaction_id: str | list[str] | None = None,
@@ -623,7 +633,7 @@ def get_authentication_logs_paginate(resolver: str | list[str] | None = None,
     Return a single page of authentication log entries matching the given filters.
 
     The filter parameters -- ``resolver``, ``uid``, ``realm``, ``username``, ``user_role``, ``event_type``,
-    ``source_ip``, ``serial``, ``transaction_id``, ``attempt_id``, ``client_label``, ``endpoint``,
+    ``reason``, ``source_ip``, ``serial``, ``transaction_id``, ``attempt_id``, ``client_label``, ``endpoint``,
     ``start_time`` and
     ``end_time`` -- behave
     exactly like :func:`get_authentication_logs`. The ``ca_*`` parameters filter on what conditional access *did* to the
@@ -646,7 +656,7 @@ def get_authentication_logs_paginate(resolver: str | list[str] | None = None,
     :return: an :class:`AuthenticationLogPage` with the page's entries and the pagination metadata
     """
     conditions = _filter_conditions(resolver=resolver, uid=uid, realm=realm, username=username, user_role=user_role,
-                                    event_type=event_type,
+                                    event_type=event_type, reason=reason,
                                     source_ip=source_ip, serial=serial, transaction_id=transaction_id,
                                     attempt_id=attempt_id,
                                     client_label=client_label, endpoint=endpoint,
@@ -747,6 +757,7 @@ def delete_authentication_logs(resolver: str | list[str] | None = None,
                                username: str | list[str] | None = None,
                                user_role: str | list[str] | None = None,
                                event_type: str | list[str] | None = None,
+                               reason: str | list[str] | None = None,
                                source_ip: str | list[str] | None = None,
                                serial: str | list[str] | None = None,
                                transaction_id: str | list[str] | None = None,
@@ -761,7 +772,7 @@ def delete_authentication_logs(resolver: str | list[str] | None = None,
     Delete all authentication log entries matching the given filters and return the number deleted.
 
     The filter parameters -- ``resolver``, ``uid``, ``realm``, ``username``, ``user_role``, ``event_type``,
-    ``source_ip``, ``serial``, ``transaction_id``, ``attempt_id``, ``client_label``, ``endpoint``,
+    ``reason``, ``source_ip``, ``serial``, ``transaction_id``, ``attempt_id``, ``client_label``, ``endpoint``,
     ``start_time`` and
     ``end_time`` -- behave exactly like :func:`get_authentication_logs` (to delete entries older than a point in time,
     pass ``end_time``). The caller must pass at least one filter: with no filter this would delete the entire log,
@@ -773,7 +784,7 @@ def delete_authentication_logs(resolver: str | list[str] | None = None,
     :return: the number of deleted entries
     """
     conditions = _filter_conditions(resolver=resolver, uid=uid, realm=realm, username=username, user_role=user_role,
-                                    event_type=event_type,
+                                    event_type=event_type, reason=reason,
                                     source_ip=source_ip, serial=serial, transaction_id=transaction_id,
                                     attempt_id=attempt_id,
                                     client_label=client_label, endpoint=endpoint,

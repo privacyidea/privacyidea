@@ -142,8 +142,10 @@ from privacyidea.lib.utils import get_plugin_info_from_useragent, AUTH_RESPONSE
 from privacyidea.lib.utils import is_true, get_computer_name_from_user_agent
 from .lib.policyhelper import check_last_auth_policy, get_realm_for_authentication
 from .lib.utils import (get_required, get_auth_error_status_code, send_error, send_result,
-                        log_authentication)
-from ..lib.conditional_access.authentication_event_types import (AuthEventType, AUTH_EVENT_TYPE_KEY,
+                        log_authentication, pop_auth_event_reason)
+from ..lib.conditional_access.authentication_event_types import (AuthEventType, AuthEventReason,
+                                                                AUTH_EVENT_TYPE_KEY, AUTH_EVENT_REASON_KEY,
+                                                                AUTH_EVENT_REASON_DETAIL_KEY,
                                                                  LOG_TRANSACTION_ID_KEY)
 from ..lib.conditional_access.request_context import continue_attempt
 from ..lib.decorators import (check_user_serial_or_cred_id_in_request)
@@ -558,6 +560,8 @@ def check():
         "serial_list": [],
         "is_container_challenge": False,
         AUTH_EVENT_TYPE_KEY: None,
+        AUTH_EVENT_REASON_KEY: None,
+        AUTH_EVENT_REASON_DETAIL_KEY: None,
         # Build the token options from the request, but strip the internal keys
         "options": {k: v for k, v in request.all_data.items() if k not in INTERNAL_OPTION_KEYS}
     }
@@ -581,6 +585,8 @@ def check():
         # classify locked token which raises an error and hence can not be classified on lib layer
         if error.id == Error.TOKEN_LOCKED:
             context[AUTH_EVENT_TYPE_KEY] = AuthEventType.NO_USABLE_TOKEN
+            # TOKEN_LOCKED is raised only for a revoked token: check_token_list drops those before any other check.
+            context[AUTH_EVENT_REASON_KEY] = str(AuthEventReason.TOKEN_REVOKED)
         raise
     finally:
         # Stage the single authentication-log row for this request. It is written at request teardown, which then
@@ -792,6 +798,7 @@ def _handle_serial_auth(context: dict, serial: str):
     if not otp_only:
         success, details = check_serial_pass(serial, password, options=context["options"])
         context[AUTH_EVENT_TYPE_KEY] = details.pop(AUTH_EVENT_TYPE_KEY, None)
+        context[AUTH_EVENT_REASON_KEY], context[AUTH_EVENT_REASON_DETAIL_KEY] = pop_auth_event_reason(details)
         context[LOG_TRANSACTION_ID_KEY] = details.pop(LOG_TRANSACTION_ID_KEY, None)
     else:
         success, details = check_otp(serial, password)
@@ -847,6 +854,8 @@ def _handle_standard_auth(context: dict):
 
     event_type = details.pop(AUTH_EVENT_TYPE_KEY, None)
     context[AUTH_EVENT_TYPE_KEY] = event_type
+    # Why it came out that way, classified by the token layer alongside the event itself.
+    context[AUTH_EVENT_REASON_KEY], context[AUTH_EVENT_REASON_DETAIL_KEY] = pop_auth_event_reason(details)
     # Log-only transaction_id (push_wait): correlate the terminal row without exposing it in the response.
     context[LOG_TRANSACTION_ID_KEY] = details.pop(LOG_TRANSACTION_ID_KEY, None)
 
@@ -945,6 +954,8 @@ def _log_authentication_event(context):
         user=context["user"],
         serial=",".join(context["serial_list"]) or None,
         transaction_id=logged_txn,
+        reason=context.get(AUTH_EVENT_REASON_KEY),
+        reason_detail=context.get(AUTH_EVENT_REASON_DETAIL_KEY),
     )
 
 

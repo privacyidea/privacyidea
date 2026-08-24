@@ -24,7 +24,8 @@ from privacyidea.api.auth import user_required
 from privacyidea.api.lib.prepolicy import prepolicy, check_base_action
 from privacyidea.api.lib.utils import send_result
 from privacyidea.lib.auth import ROLE
-from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, outcome_of
+from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType, AuthEventReason,
+                                                                           outcome_of)
 from privacyidea.lib.conditional_access.authentication_log import (get_authentication_logs_paginate,
                                                                    AuthenticationLogVisibilityScope,
                                                                    AuthLogUserRole,
@@ -44,7 +45,8 @@ authentication_log_blueprint = Blueprint("authentication_log_blueprint", __name_
 # single field it matches. The ca_* ones filter on the entry's conditional-access outcomes rather than on a column of
 # its own row; ca_dry_run is parsed separately because it is a boolean, not a list of values.
 _FILTER_PARAMS = {"resolvers": "resolver", "uids": "uid", "realms": "realm", "usernames": "username",
-                  "user_roles": "user_role", "event_types": "event_type", "source_ips": "source_ip",
+                  "user_roles": "user_role", "event_types": "event_type", "reasons": "reason",
+                  "source_ips": "source_ip",
                   "serials": "serial", "transaction_ids": "transaction_id", "attempt_ids": "attempt_id",
                   "client_labels": "client_label", "endpoints": "endpoint",
                   "ca_action_types": "ca_action_type",
@@ -87,16 +89,17 @@ def get_authentication_log():
     scope may read the log; if the policy is scoped to realms, resolvers and/or users, only entries matching that
     scope are returned. A **user** with the action set in the user scope may read only their own entries.
 
-    Each of ``resolvers``, ``uids``, ``realms``, ``usernames``, ``user_roles``, ``event_types``, ``source_ips``,
-    ``serials``, ``transaction_ids``, ``attempt_ids``, ``client_labels`` and ``endpoints`` may be passed as a query
+    Each of ``resolvers``, ``uids``, ``realms``, ``usernames``, ``user_roles``, ``event_types``, ``reasons``,
+    ``source_ips``, ``serials``, ``transaction_ids``, ``attempt_ids``, ``client_labels`` and ``endpoints`` may be
+    passed as a query
     parameter to filter on it. A value may be a comma-separated list (e.g. ``event_types=MFA_FAIL,PIN_FAIL``), matching
     entries that equal any of the values. A value may contain a ``*`` wildcard (e.g. ``serials=TOTP*``) to match by
     prefix/pattern instead of exactly. Note, using wildcards filtering is always case-insensitive.
 
     :query page: page number, 1-indexed (default 1).
     :query page_size: entries per page (default 15).
-    :query sort_column: column to sort by (id, timestamp, event_type, resolver, uid, realm, username, source_ip,
-        client_label, endpoint, serial, transaction_id, attempt_id).
+    :query sort_column: column to sort by (id, timestamp, event_type, reason, resolver, uid, realm, username,
+        source_ip, client_label, endpoint, serial, transaction_id, attempt_id).
     :query sort_order: ``asc`` or ``desc`` (default ``desc``).
     :query start_time: only entries at/after this ISO 8601 timestamp.
     :query end_time: only entries at/before this ISO 8601 timestamp.
@@ -151,6 +154,26 @@ def get_authentication_log():
 
     g.audit_object.log({"success": True})
     return send_result(result.to_dict())
+
+
+@authentication_log_blueprint.route("/reasons", methods=["GET"])
+@user_required
+@prepolicy(check_base_action, request, PolicyAction.AUTHENTICATION_LOG_READ)
+@log_with(log)
+def get_authentication_log_reasons():
+    """
+    Return the list of all defined authentication-log reasons.
+
+    Requires the policy action :ref:`policy_authentication_log_read`, like the log read endpoint. The list is the
+    authoritative set of :class:`AuthEventReason` values - why an event came out the way it did - exposed for the same
+    reason the event types are: so the WebUI offers the vocabulary it can filter on instead of redefining it. It does
+    not depend on the caller or on any logged data.
+
+    :status 200: ``result.value`` is a list of reason names, in definition order.
+    """
+    reasons = [str(reason) for reason in AuthEventReason]
+    g.audit_object.log({"success": True})
+    return send_result(reasons)
 
 
 @authentication_log_blueprint.route("/eventtypes", methods=["GET"])

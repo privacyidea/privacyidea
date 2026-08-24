@@ -26,6 +26,16 @@ AUTH_EVENT_TYPE_KEY = "authentication_event_type"
 # Key set on token.auth_details when the token is verified without a first factor (knowledge factor), i.e. otppin=none.
 NO_FIRST_FACTOR_KEY = "no_first_factor"
 
+# Keys carrying the classified AuthEventReason (and its detail dict) from lib to api, alongside AUTH_EVENT_TYPE_KEY.
+# The reason travels the same three routes the event type does: token.auth_details for a per-token finding, the
+# reply_dict for the request's classification, and the view's own context dict.
+AUTH_EVENT_REASON_KEY = "authentication_event_reason"
+AUTH_EVENT_REASON_DETAIL_KEY = "authentication_event_reason_detail"
+
+# The key the reason's detail dict is stored under inside the row's ``other_info``. One namespace of its own, so the
+# rest of other_info stays what a token reported about itself and neither has to know about the other.
+REASON_DETAIL_INFO_KEY = "reason_detail"
+
 # Key set on token.auth_details when the token logged its own outcome and no terminal event should be added on top.
 # A push_wait timeout sets this: the unanswered challenge is recorded only as CHALLENGE_TRIGGERED, not an MFA_FAIL.
 SUPPRESS_TERMINAL_EVENT_KEY = "suppress_terminal_authentication_event"
@@ -105,6 +115,137 @@ class AuthEventType(str, Enum):
 
     def __str__(self) -> str:
         return self.value
+
+
+class AuthEventReason(str, Enum):
+    """
+    Why an :class:`AuthEventType` came out the way it did.
+
+    The event type answers *what* happened to a request; several distinct causes share one of them, and the cause is
+    what an admin has to act on. ``NO_USABLE_TOKEN`` is the clearest case: it is the same event whether every token is
+    disabled, past its failcount, outside its validity period or simply not yet enrolled -- four different pieces of
+    advice for the person reading the log. Recording the reason separately keeps the event vocabulary small (a row is
+    still classified by exactly one event) while making the log answer "why".
+
+    A reason is **machine-readable and low-cardinality**, so it can be filtered on like an event type. Anything
+    specific to one request -- which policy denied it, which serial failed for which reason -- goes in the row's
+    ``other_info`` instead; see :data:`AUTH_EVENT_REASON_DETAIL_KEY`.
+
+    Not every event has a reason: ``LOGIN_SUCCESS`` needs none, and a reason nobody classified is simply ``None``. The
+    column is nullable for exactly that, and no code path is obliged to fill it.
+
+    ``str``/``Enum`` (not ``StrEnum``) for Python 3.10, like :class:`AuthEventType`.
+    """
+    # --- the token's own state (see TokenClass.check_all and the filters ahead of it) -----------------------------
+    # The token is disabled.
+    TOKEN_DISABLED = "TOKEN_DISABLED"
+    # The token is revoked, which is permanent - unlike being disabled.
+    TOKEN_REVOKED = "TOKEN_REVOKED"
+    # The token's failcounter is at or past its maximum.
+    TOKEN_FAILCOUNT_EXCEEDED = "TOKEN_FAILCOUNT_EXCEEDED"
+    # The token's own success/failure auth counter is exhausted (count_auth_max / count_auth_success_max).
+    TOKEN_AUTH_COUNTER_EXCEEDED = "TOKEN_AUTH_COUNTER_EXCEEDED"
+    # Now is outside the token's validity period.
+    TOKEN_OUTSIDE_VALIDITY_PERIOD = "TOKEN_OUTSIDE_VALIDITY_PERIOD"
+    # The token's enrollment was never completed (rollout state clientwait / verify_pending).
+    TOKEN_NOT_YET_ENROLLED = "TOKEN_NOT_YET_ENROLLED"
+    # A policy disabled this token's whole type for the request (PolicyAction.DISABLED_TOKEN_TYPES).
+    TOKEN_TYPE_DISABLED = "TOKEN_TYPE_DISABLED"
+    # The token type excluded itself from *this* request (TokenClass.use_for_authentication) - e.g. an
+    # application-specific password whose service_id does not match the one the request names.
+    TOKEN_NOT_APPLICABLE = "TOKEN_NOT_APPLICABLE"
+
+    # --- authorization, i.e. a policy refusing an otherwise valid authentication ---------------------------------
+    # An authorization policy denied the request outright (PolicyAction.AUTHORIZED = deny).
+    AUTHORIZATION_POLICY = "AUTHORIZATION_POLICY"
+    # The user made too many failed attempts inside the policy's time limit (auth_max_fail).
+    AUTH_MAX_FAIL = "AUTH_MAX_FAIL"
+    # The user made too many *successful* authentications inside the policy's time limit (auth_max_success).
+    AUTH_MAX_SUCCESS = "AUTH_MAX_SUCCESS"
+    # The token's last successful authentication is too long ago (last_auth).
+    LAST_AUTH_TOO_OLD = "LAST_AUTH_TOO_OLD"
+
+    # --- the credentials themselves ------------------------------------------------------------------------------
+    # The first factor is the user store password (otppin=userstore) and it was wrong.
+    WRONG_USERSTORE_PASSWORD = "WRONG_USERSTORE_PASSWORD"
+    # The token PIN was wrong. Also covers a PIN supplied where none was expected (otppin=none), which is a
+    # mismatch just the same.
+    WRONG_TOKEN_PIN = "WRONG_TOKEN_PIN"
+    # The first factor was right (or not required) but the OTP was not.
+    WRONG_OTP = "WRONG_OTP"
+
+    # --- challenge-response --------------------------------------------------------------------------------------
+    # The response did not match the challenge.
+    CHALLENGE_WRONG_RESPONSE = "CHALLENGE_WRONG_RESPONSE"
+    # The transaction the response names holds no challenge for this token: already consumed, belonging to another
+    # token, or never issued. An *expired* challenge is not this - it is still stored, so it gets its own reason below.
+    CHALLENGE_UNKNOWN_TRANSACTION = "CHALLENGE_UNKNOWN_TRANSACTION"
+    # The challenge existed but had lapsed by the time the response arrived. Worth telling apart from a wrong
+    # response: the user answered correctly, only too late, which is a timeout to raise rather than an attack.
+    CHALLENGE_EXPIRED = "CHALLENGE_EXPIRED"
+    # The response matched, but the token may not complete a challenge (its state changed since the trigger).
+    TOKEN_NOT_FIT_FOR_CHALLENGE = "TOKEN_NOT_FIT_FOR_CHALLENGE"
+    # The challenge was explicitly rejected on the device.
+    CHALLENGE_DECLINED_ON_DEVICE = "CHALLENGE_DECLINED_ON_DEVICE"
+
+    def __str__(self) -> str:
+        return self.value
+
+
+# Request-level precedence of the reasons, highest signal first, used when the tokens of one request failed for
+# different reasons (see reduce_request_reasons). The order follows how much the reason narrows down what the admin
+# must do: a policy decision outranks any token state, because it applies whatever the tokens look like; a permanent
+# token state (revoked) outranks a transient one (failcount, which a reset clears); and a wrong credential ranks below
+# every state, since a state is the thing that made the credential moot.
+REASON_PRECEDENCE: list[AuthEventReason] = [
+    AuthEventReason.AUTHORIZATION_POLICY,
+    AuthEventReason.AUTH_MAX_FAIL,
+    AuthEventReason.AUTH_MAX_SUCCESS,
+    AuthEventReason.LAST_AUTH_TOO_OLD,
+    AuthEventReason.TOKEN_TYPE_DISABLED,
+    AuthEventReason.TOKEN_REVOKED,
+    AuthEventReason.TOKEN_DISABLED,
+    AuthEventReason.TOKEN_OUTSIDE_VALIDITY_PERIOD,
+    AuthEventReason.TOKEN_NOT_YET_ENROLLED,
+    AuthEventReason.TOKEN_AUTH_COUNTER_EXCEEDED,
+    AuthEventReason.TOKEN_FAILCOUNT_EXCEEDED,
+    AuthEventReason.TOKEN_NOT_APPLICABLE,
+    AuthEventReason.TOKEN_NOT_FIT_FOR_CHALLENGE,
+    AuthEventReason.CHALLENGE_UNKNOWN_TRANSACTION,
+    AuthEventReason.CHALLENGE_EXPIRED,
+    AuthEventReason.CHALLENGE_DECLINED_ON_DEVICE,
+    AuthEventReason.CHALLENGE_WRONG_RESPONSE,
+    AuthEventReason.WRONG_USERSTORE_PASSWORD,
+    AuthEventReason.WRONG_TOKEN_PIN,
+    AuthEventReason.WRONG_OTP,
+]
+
+_REASON_RANK: dict[AuthEventReason, int] = {reason: rank for rank, reason in enumerate(REASON_PRECEDENCE)}
+
+
+def reduce_request_reasons(reasons) -> AuthEventReason | None:
+    """
+    Reduce the per-token reasons of one request to the single one that goes in the row's ``reason`` column, by the
+    fixed :data:`REASON_PRECEDENCE`. The per-token detail is not lost - it is recorded in ``other_info`` (see
+    :data:`AUTH_EVENT_REASON_DETAIL_KEY`) - so this only decides what the column is filterable by.
+
+    Reasons without a defined precedence are logged and ignored, so a new member that was not ranked degrades the
+    classification rather than breaking the authentication (mirrors :func:`reduce_request_events`).
+
+    :param reasons: an iterable of :class:`AuthEventReason` members
+    :return: the highest-precedence known reason, or ``None`` if *reasons* holds none
+    """
+    winner = None
+    winner_rank: int | None = None
+    for reason in reasons:
+        rank = _REASON_RANK.get(reason)
+        if rank is None:
+            log.debug(f"Ignoring authentication reason {reason!r} without a defined precedence in REASON_PRECEDENCE.")
+            continue
+        if winner_rank is None or rank < winner_rank:
+            winner = reason
+            winner_rank = rank
+    return winner
 
 
 class AuthEventOutcome(str, Enum):
