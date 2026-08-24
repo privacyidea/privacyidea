@@ -166,6 +166,24 @@ class MyTestCase(unittest.TestCase):
         for key in list(iter(self.app_context.g)):
             self.app_context.g.pop(key)
 
+    def pin_to_database(self, *features: str) -> None:
+        """Keep the named Redis workloads off for this test class.
+
+        Some tests are *about* the database representation - they assert rows,
+        or they mock the user store the cache sits in front of - and a cache
+        that answers before the database or the mock is reached makes them
+        assert the cache instead of what they were written for. Those tests say
+        so here, and the dedicated cache tests cover the Redis side.
+
+        Call from ``setUp``. The app is built per test class, so this stays
+        within the class that asks for it.
+
+        :param features: workload names as used in ``PI_REDIS_CACHE_<NAME>``,
+            e.g. ``"auth"`` or ``"users"``
+        """
+        for feature in features:
+            self.app.config[f"PI_REDIS_CACHE_{feature.upper()}"] = False
+
     def tearDown(self):
         # Rollback uncommitted changes to the DB and close the session to
         # avoid breaking following tests due to unfinished transactions

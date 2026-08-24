@@ -1,10 +1,11 @@
 # SPDX-FileCopyrightText: (C) 2014 NetKnights GmbH <https://netknights.it>
 # SPDX-License-Identifier: CC0-1.0
 #
-# Runs the full unit test suite against MariaDB with a live Redis as the real
-# challenge backend (PI_REDIS_URL + PI_REDIS_CACHE_CHALLENGES). This is the only
-# job that exercises the Redis storage path end-to-end: every challenge created
-# anywhere in the suite goes through Redis, so any DB/Redis behavioural
+# Runs the full unit test suite against MariaDB with a live Redis backing every
+# workload that can use it (PI_REDIS_URL plus one flag per workload). This is
+# the only job that exercises the Redis storage paths end-to-end: every
+# challenge, user store lookup, cached authentication and certificate health
+# result in the suite goes through Redis, so any DB/Redis behavioural
 # divergence surfaces here. A single Python version is enough - the Redis path
 # is independent of the Python version, so a per-version matrix would only add
 # redundant runs. The DB-only matrix lives in the MariaDB/Postgres workflows.
@@ -132,11 +133,19 @@ jobs:
       id: pytest_run
       env:
         TEST_DATABASE_URL: "mysql+pymysql://privacyidea:privacyidea@127.0.0.1:3306/privacyidea_test"
-        # Real challenge backend: the app stores challenges in Redis for the
-        # whole suite. TEST_REDIS_URL additionally enables the white-box cache
-        # tests (TTL/EXPIRE NX-GT/hash structure/cooldown).
+        # Real Redis backend for every workload that has one, so the whole suite
+        # runs against Redis rather than only the dedicated cache tests.
+        # TEST_REDIS_URL additionally enables the white-box cache tests
+        # (TTL/EXPIRE NX-GT/hash structure/cooldown).
+        #
+        # A test that is *about* the database representation, or that mocks the
+        # user store one of these caches sits in front of, keeps its own backend
+        # with MyTestCase.pin_to_database() rather than being skipped here.
         PI_REDIS_URL: "redis://127.0.0.1:6379/0"
         PI_REDIS_CACHE_CHALLENGES: "true"
+        PI_REDIS_CACHE_USERS: "true"
+        PI_REDIS_CACHE_AUTH: "true"
+        PI_REDIS_CACHE_HEALTH: "true"
         TEST_REDIS_URL: "redis://127.0.0.1:6379/0"
         PYTHONWARNINGS: "once::DeprecationWarning"
       run: |

@@ -23,6 +23,12 @@ class AuthCacheTestCase(MyTestCase):
     realm = "realm"
     resolver = "resolver"
 
+    def setUp(self):
+        super().setUp()
+        # These tests read and write the authcache table directly, which is empty
+        # when Redis holds the cached authentications instead
+        self.pin_to_database("auth")
+
     def test_01_write_update_delete_cache(self):
         teststart = datetime.datetime.utcnow()
 
