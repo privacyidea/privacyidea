@@ -219,9 +219,10 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/notify-nightly-failure
         with:
-          title: Nightly WebUI i18n extraction failed on master
+          title: Nightly WebUI i18n extraction failed on ${{ github.event.repository.default_branch }}
           body: |
-            The nightly WebUI i18n extraction (npm run i18n:extract) failed on master,
+            The nightly WebUI i18n extraction (npm run i18n:extract) failed on
+            ${{ github.event.repository.default_branch }},
             so the translation files were not updated.
 
             Commit: ${{ github.sha }}

@@ -21,14 +21,14 @@
   @if (selectedAdminrealm().length > 0) {
     <app-view-condition-section
       [highlightTerms]="highlightTerms()"
-      [label]="'Admin Realms'"
+      [label]="conditionLabels.adminRealms"
       [values]="selectedAdminrealm()">
     </app-view-condition-section>
   }
   @if (selectedAdmins().length > 0) {
     <app-view-condition-section
       [highlightTerms]="highlightTerms()"
-      [label]="'Admins'"
+      [label]="conditionLabels.admins"
       [values]="selectedAdmins()">
     </app-view-condition-section>
   }
@@ -37,21 +37,21 @@
   @if (selectedRealms().length > 0) {
     <app-view-condition-section
       [highlightTerms]="highlightTerms()"
-      [label]="'Realms'"
+      [label]="conditionLabels.realms"
       [values]="selectedRealms()">
     </app-view-condition-section>
   }
   @if (selectedResolvers().length > 0) {
     <app-view-condition-section
       [highlightTerms]="highlightTerms()"
-      [label]="'Resolvers'"
+      [label]="conditionLabels.resolvers"
       [values]="selectedResolvers()">
     </app-view-condition-section>
   }
   @if (selectedUsers().length > 0) {
     <app-view-condition-section
       [highlightTerms]="highlightTerms()"
-      [label]="'Users'"
+      [label]="conditionLabels.users"
       [values]="selectedUsers()"
       [marker]="userCaseInsensitive() ? 'case-insensitive' : 'case-sensitive'">
     </app-view-condition-section>
@@ -61,28 +61,28 @@
   @if (selectedPinodes().length > 0) {
     <app-view-condition-section
       [highlightTerms]="highlightTerms()"
-      [label]="'privacyIDEA Nodes'"
+      [label]="conditionLabels.piNodes"
       [values]="selectedPinodes()">
     </app-view-condition-section>
   }
   @if (selectedValidTime() !== "") {
     <app-view-condition-section
       [highlightTerms]="highlightTerms()"
-      [label]="'Valid time'"
+      [label]="conditionLabels.validTime"
       [values]="[selectedValidTime()]">
     </app-view-condition-section>
   }
   @if (selectedClient() && selectedClient().length > 0) {
     <app-view-condition-section
       [highlightTerms]="highlightTerms()"
-      [label]="'Client'"
+      [label]="conditionLabels.client"
       [values]="selectedClient()">
     </app-view-condition-section>
   }
   @if (selectedUserAgents().length > 0) {
     <app-view-condition-section
       [highlightTerms]="highlightTerms()"
-      [label]="'User Agents'"
+      [label]="conditionLabels.userAgents"
       [values]="selectedUserAgents()">
     </app-view-condition-section>
   }

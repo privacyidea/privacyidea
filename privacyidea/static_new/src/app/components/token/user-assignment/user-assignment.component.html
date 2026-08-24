@@ -63,7 +63,7 @@
       }
     </mat-autocomplete>
     @if (!userService.selectedUserRealm() && !onlyAddToRealm()) {
-      <mat-hint i18n="@@token.selectRealmFirst"> Select a realm first to enable user selection.</mat-hint>
+      <mat-hint i18n="@@token.selectRealmFirst">Select a realm first to enable user selection.</mat-hint>
     }
     @if (required() && !userService.selectedUser()) {
       <mat-error i18n="@@token.userRequired">User is <strong>required</strong></mat-error>
