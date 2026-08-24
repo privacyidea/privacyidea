@@ -26,7 +26,6 @@ It can be bound to each event and can perform the action:
 The module is tested in tests/test_lib_eventhandler_logging.py
 """
 from privacyidea.lib.eventhandler.base import BaseEventHandler
-from privacyidea.lib.token import get_tokens
 from privacyidea.lib.utils import create_tag_dict, to_unicode
 from privacyidea.lib import _
 import logging
@@ -120,7 +119,6 @@ class LoggingEventHandler(BaseEventHandler):
         ret = False
 
         if action.lower() == 'logging':
-            tokentype = None
             g = options.get("g")
             handler_def = options.get("handler_def")
             handler_options = handler_def.get("options", {})
@@ -132,20 +130,15 @@ class LoggingEventHandler(BaseEventHandler):
             serial = (request.all_data.get("serial")
                       or content.get("detail", {}).get("serial")
                       or g.audit_object.audit_data.get("serial"))
-            if serial:
-                tokens = get_tokens(serial=serial)
-                if tokens:
-                    tokentype = tokens[0].get_tokentype()
-            else:
-                token_objects = get_tokens(user=tokenowner)
-                serial = ','.join([tok.get_serial() for tok in token_objects])
+            serial, tokentype, tokendescription = self._get_token_data(serial, tokenowner)
 
             tags = create_tag_dict(logged_in_user=logged_in_user,
                                    request=request,
                                    client_ip=g.client_ip,
                                    tokenowner=tokenowner,
                                    serial=serial,
-                                   tokentype=tokentype)
+                                   tokentype=tokentype,
+                                   tokendescription=tokendescription)
 
             logger_name = handler_options.get('name', DEFAULT_LOGGER_NAME)
             log_action = logging.getLogger(logger_name)

@@ -55,7 +55,6 @@ from privacyidea.lib.smsprovider.SMSProvider import get_smsgateway
 from privacyidea.lib.smsprovider.SMSProvider import send_sms_identifier
 from privacyidea.lib.smtpserver import get_smtpservers
 from privacyidea.lib.smtpserver import send_email_identifier
-from privacyidea.lib.token import get_tokens
 from privacyidea.lib.user import User, get_user_list, is_attribute_at_all
 from privacyidea.lib.utils import create_tag_dict, to_unicode, is_true
 
@@ -449,16 +448,7 @@ class UserNotificationEventHandler(BaseEventHandler):
             if isinstance(container_content, dict):
                 container_url_value = container_content.get("container_url", {}).get("value")
                 container_url_img = container_content.get("container_url", {}).get("img")
-            tokentype = None
-            tokendescription = None
-            if serial:
-                tokens = get_tokens(serial=serial)
-                if tokens:
-                    tokentype = tokens[0].get_tokentype()
-                    tokendescription = tokens[0].token.description
-            else:
-                token_objects = get_tokens(user=tokenowner)
-                serial = ','.join([tok.get_serial() for tok in token_objects])
+            serial, tokentype, tokendescription = self._get_token_data(serial, tokenowner)
 
             tags = create_tag_dict(logged_in_user=logged_in_user,
                                    request=request,
