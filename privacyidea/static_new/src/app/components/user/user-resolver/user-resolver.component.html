@@ -23,116 +23,151 @@
   <div
     appScrollToTop
     class="user-sources-table-container">
-    <div class="filter-paginator-container input-width-xl">
-      <mat-form-field
-        class="table-filter"
-        subscriptSizing="dynamic">
-        <mat-label i18n="@@resolver.filterResolvers">Filter Resolvers...</mat-label>
-        <app-clearable-input
-          (clearButtonClick)="resetFilter()"
-          [showClearButton]="filterString().length > 0">
-          <input
-            #filterHTMLInputElement
-            (input)="onFilterInput(filterHTMLInputElement.value)"
-            [value]="filterString()"
-            aria-label="Filter Input"
-            i18n-aria-label="@@common.filterInput"
-            i18n-placeholder="@@common.filterByNameType"
-            matInput
-            placeholder="Filter by name or type" />
-        </app-clearable-input>
-      </mat-form-field>
-    </div>
-    <app-resolver-table-actions />
-    <table
-      [dataSource]="resolversDataSource()"
-      i18n-aria-label="@@resolver.tableLabel"
-      aria-label="Resolvers Table"
-      class="user-sources-table"
-      mat-table
-      matSort>
-      <ng-container matColumnDef="resolvername">
-        <th
-          *matHeaderCellDef
-          mat-header-cell
-          mat-sort-header>
-          <span i18n="@@common.name">Name</span>
-        </th>
-        <td
-          *matCellDef="let element"
-          mat-cell>
-          <div class="name-actions-container">
-            <a
-              (click)="onEditResolver(element)"
-              (keydown.enter)="onEditResolver(element)"
-              role="button"
-              tabindex="0">
-              {{ element.resolvername }}
-            </a>
-            <div class="actions-buttons">
+    @if (tableState.showTable()) {
+      <div class="filter-paginator-container input-width-xl">
+        <mat-form-field
+          class="table-filter"
+          subscriptSizing="dynamic">
+          <mat-label i18n="@@resolver.filterResolvers">Filter Resolvers...</mat-label>
+          <app-clearable-input
+            (clearButtonClick)="resetFilter()"
+            [showClearButton]="filterString().length > 0">
+            <input
+              #filterHTMLInputElement
+              (input)="onFilterInput(filterHTMLInputElement.value)"
+              [value]="filterString()"
+              aria-label="Filter Input"
+              i18n-aria-label="@@common.filterInput"
+              i18n-placeholder="@@common.filterByNameType"
+              matInput
+              placeholder="Filter by name or type" />
+          </app-clearable-input>
+        </mat-form-field>
+      </div>
+      <app-resolver-table-actions />
+      <table
+        [dataSource]="resolversDataSource()"
+        i18n-aria-label="@@resolver.tableLabel"
+        aria-label="Resolvers Table"
+        class="user-sources-table"
+        mat-table
+        matSort>
+        <ng-container matColumnDef="resolvername">
+          <th
+            *matHeaderCellDef
+            mat-header-cell
+            mat-sort-header>
+            <span i18n="@@common.name">Name</span>
+          </th>
+          <td
+            *matCellDef="let element"
+            mat-cell>
+            <div class="name-actions-container">
+              <a
+                (click)="onEditResolver(element)"
+                (keydown.enter)="onEditResolver(element)"
+                role="button"
+                tabindex="0">
+                {{ element.resolvername }}
+              </a>
+              <div class="actions-buttons">
+                @if (authService.actionAllowed("resolverwrite")) {
+                  <button
+                    (click)="onEditResolver(element)"
+                    aria-label="Edit resolver"
+                    i18n-aria-label="@@resolver.editResolver"
+                    i18n-matTooltip="@@resolver.editResolver"
+                    mat-icon-button
+                    matTooltip="Edit resolver"
+                    type="button">
+                    <mat-icon>edit</mat-icon>
+                  </button>
+                }
+                @if (authService.actionAllowed("resolverdelete")) {
+                  <button
+                    (click)="onDeleteResolver(element)"
+                    aria-label="Delete resolver"
+                    color="warn"
+                    i18n-aria-label="@@resolver.deleteResolverAction"
+                    i18n-matTooltip="@@resolver.deleteResolverAction"
+                    mat-icon-button
+                    matTooltip="Delete resolver"
+                    type="button">
+                    <mat-icon>delete</mat-icon>
+                  </button>
+                }
+              </div>
+            </div>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="type">
+          <th
+            *matHeaderCellDef
+            mat-header-cell
+            mat-sort-header>
+            <span i18n="@@common.type">Type</span>
+          </th>
+          <td
+            *matCellDef="let element"
+            mat-cell>
+            {{ element.type }}
+          </td>
+        </ng-container>
+
+        <tr
+          *matHeaderRowDef="columnKeys"
+          mat-header-row></tr>
+
+        <tr
+          *matRowDef="let row; columns: columnKeys"
+          mat-row></tr>
+
+        <tr *matNoDataRow>
+          <td [attr.colspan]="columnKeys.length">
+            <app-table-state
+              [hint]="emptyHint()"
+              [status]="tableState.rowStatus()"
+              [table]="tableState"
+              heading="No resolvers yet"
+              i18n-heading="@@resolver.noResolversYet"
+              icon="storage">
               @if (authService.actionAllowed("resolverwrite")) {
                 <button
-                  (click)="onEditResolver(element)"
-                  aria-label="Edit resolver"
-                  i18n-aria-label="@@resolver.editResolver"
-                  i18n-matTooltip="@@resolver.editResolver"
-                  mat-icon-button
-                  matTooltip="Edit resolver"
-                  type="button">
-                  <mat-icon>edit</mat-icon>
+                  [routerLink]="[ROUTE_PATHS.USERS_RESOLVERS, 'new']"
+                  class="action-button-primary button-width-m"
+                  mat-stroked-button>
+                  <span class="icon-badge">
+                    <mat-icon class="ms--database padding-right-3"></mat-icon>
+                    <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+                  </span>
+                  <span i18n="@@resolver.newResolver">New Resolver</span>
                 </button>
               }
-              @if (authService.actionAllowed("resolverdelete")) {
-                <button
-                  (click)="onDeleteResolver(element)"
-                  aria-label="Delete resolver"
-                  color="warn"
-                  i18n-aria-label="@@resolver.deleteResolverAction"
-                  i18n-matTooltip="@@resolver.deleteResolverAction"
-                  mat-icon-button
-                  matTooltip="Delete resolver"
-                  type="button">
-                  <mat-icon>delete</mat-icon>
-                </button>
-              }
-            </div>
-          </div>
-        </td>
-      </ng-container>
-
-      <ng-container matColumnDef="type">
-        <th
-          *matHeaderCellDef
-          mat-header-cell
-          mat-sort-header>
-          <span i18n="@@common.type">Type</span>
-        </th>
-        <td
-          *matCellDef="let element"
-          mat-cell>
-          {{ element.type }}
-        </td>
-      </ng-container>
-
-      <tr
-        *matHeaderRowDef="columnKeys"
-        mat-header-row></tr>
-
-      <tr
-        *matRowDef="let row; columns: columnKeys"
-        mat-row></tr>
-
-      <tr
-        *matNoDataRow
-        mat-no-data-row>
-        <td
-          [attr.colspan]="columnKeys.length"
-          aria-label="No Data Cell"
-          i18n="@@common.noDataMatching"
-          i18n-aria-label="@@common.noDataCell">
-          No data matching the filter.
-        </td>
-      </tr>
-    </table>
+            </app-table-state>
+          </td>
+        </tr>
+      </table>
+    } @else {
+      <app-table-state
+        [hint]="emptyHint()"
+        [table]="tableState"
+        heading="No resolvers yet"
+        i18n-heading="@@resolver.noResolversYet"
+        icon="storage">
+        @if (authService.actionAllowed("resolverwrite")) {
+          <button
+            [routerLink]="[ROUTE_PATHS.USERS_RESOLVERS, 'new']"
+            class="action-button-primary button-width-m"
+            mat-stroked-button>
+            <span class="icon-badge">
+              <mat-icon class="ms--database padding-right-3"></mat-icon>
+              <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+            </span>
+            <span i18n="@@resolver.newResolver">New Resolver</span>
+          </button>
+        }
+      </app-table-state>
+    }
   </div>
 </div>

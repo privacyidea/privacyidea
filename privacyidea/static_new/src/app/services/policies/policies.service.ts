@@ -164,9 +164,11 @@ export interface UserAgentOption {
 export const USER_AGENT_OPTIONS: UserAgentOption[] = [
   { key: "privacyidea-cp", label: "Credential Provider" },
   { key: "privacyIDEA-Keycloak", label: "Keycloak" },
+  { key: "entraid-via-keycloak", label: "EntraID via Keycloak" },
   { key: "PrivacyIDEA-ADFS", label: "AD FS" },
   { key: "simpleSAMLphp", label: "SimpleSAMLphp" },
-  { key: "PAM", label: "PAM" },
+  { key: "PAM", label: "PAM OTP & Push" },
+  { key: "pam-passkey", label: "PAM Passkey" },
   { key: "privacyIDEA-Shibboleth", label: "Shibboleth" },
   { key: "privacyidea-nextcloud", label: "Nextcloud" },
   { key: "FreeRADIUS", label: "FreeRADIUS" },
@@ -176,7 +178,10 @@ export const USER_AGENT_OPTIONS: UserAgentOption[] = [
 ];
 
 export function getUserAgentLabel(identifier: string): string {
-  return USER_AGENT_OPTIONS.find((o) => o.key === identifier)?.label ?? identifier;
+  // The server matches user agents case-insensitively, so a hand-typed identifier
+  // still gets the label of the preset it means
+  const normalized = identifier.toLowerCase();
+  return USER_AGENT_OPTIONS.find((o) => o.key.toLowerCase() === normalized)?.label ?? identifier;
 }
 
 export interface PolicyServiceInterface {

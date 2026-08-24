@@ -19,25 +19,31 @@ $font-size-default: 14px;
 }
 
 .utils-group {
+  height: 42px;
   display: flex;
   flex-direction: row;
   align-items: center;
   gap: 4px;
   padding: 12px;
-  background-color: var(--table-color);
-  box-shadow:
-    -8px 0 8px -8px var(--nav-item-border),
-    8px 0 8px -8px var(--nav-item-border);
+  // Flat, not --surface-raised: the gradient is sized to the element, so this group would run the
+  // whole ramp instead of the slice of the toolbar's it sits on. It stands at the right end, past
+  // the last nav tab (see $nav-active-* in navigation.component.scss).
+  background: light-dark(#f8f8f8, #454545);
+  box-shadow: var(--side-glow);
+  // --side-glow drops the vertical offset but keeps its blur, so it would bleed above and below.
+  // Clipping confines it to the sides; the bottom is cut a pixel short of the edge, so it stops
+  // at the bar rather than reaching into the toolbar below.
+  clip-path: inset(0 -40px 1px);
   border-top-right-radius: var(--border-radius);
   border-top-left-radius: var(--border-radius);
 }
 
+// Unlike .utils-group above, this one is a card of its own on the self-service rail rather than a
+// slice of the toolbar, so the raised gradient is sized to it and applies.
 .utils-group-self-service {
+  @include styles.card-raised(3);
   width: 12rem;
   min-height: 48px;
-  background-color: var(--mat-sys-surface-container-low);
-  border-radius: var(--border-radius);
-  box-shadow: var(--elevation-3);
 
   &.utils {
     display: flex;
@@ -80,4 +86,11 @@ $font-size-default: 14px;
   @include text-label;
   padding: 2px 6px;
   border-radius: var(--border-radius);
+  // The countdown changes on every tick and changes shape at the hour and ten-minute marks. Even
+  // digits of differing width would shove the buttons beside it around, so it holds one width and
+  // its digits all take the same space.
+  display: inline-block;
+  min-width: 5.5rem;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
 }

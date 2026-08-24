@@ -16,7 +16,7 @@
 
 .progress-bar {
   margin-bottom: 24px;
-  border-radius: 4px;
+  border-radius: var(--border-radius);
 }
 
 .enrollment-data {

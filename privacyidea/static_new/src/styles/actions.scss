@@ -2,194 +2,22 @@
 This file contains all styles for actions as used e.g. in policies, event handlers, periodic tasks, etc.
 */
 
-.action-selector-container {
-  background-color: var(--mat-sys-surface-container);
-  border-radius: var(--border-radius);
-  box-shadow: var(--mat-sys-level2);
-  color: var(--mat-sys-on-surface);
-  display: flex;
-  flex-direction: column;
-  gap: calc(var(--global-gap) / 2);
-  min-width: 0;
-  overflow: auto;
-  padding: var(--three-quarters-global-padding);
-}
-
 .selected-actions-container {
   display: flex;
   flex-direction: column;
-  gap: calc(var(--global-gap) / 4);
+  gap: calc(16px / 4);
   min-width: 0;
   flex: 1;
 }
 
-.action-card {
-  padding: var(--half-global-padding) var(--global-padding);
-  border-radius: var(--border-radius);
-  background-color: var(--mat-sys-surface-container);
-  color: var(--mat-sys-on-surface);
-  box-shadow: var(--mat-sys-level2);
-}
-
-.action-card:not(.no-hover):hover {
-  background-color: var(--mat-sys-primary-light);
-  color: var(--mat-sys-on-primary) !important;
-  --mat-icon-button-icon-color: currentColor;
-  cursor: pointer;
-}
-
-.action-card-selected {
-  background-color: var(--mat-sys-primary-base);
-  color: var(--mat-sys-on-primary) !important;
-  --mat-icon-button-icon-color: currentColor;
-}
-
-// The row inside an action card showing label and value
-.action-card-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.action-card-row:not(:last-child) {
-  padding-bottom: var(--half-global-padding);
-}
-
-.action-card-row:not(:first-child) {
-  padding-top: var(--half-global-padding);
-}
-
-// Label and value inside an action card row
 .action-label {
-  padding: var(--quarter-global-padding) 0px;
+  padding: 4px 0px;
 }
 
 .action-value {
-  padding: var(--quarter-global-padding) 0px;
+  padding: 4px 0px;
   text-align: right;
   flex-grow: 1;
-}
-
-.action-detail-column {
-  background-color: var(--mat-sys-surface-container);
-  border-radius: var(--border-radius);
-  box-shadow: var(--mat-sys-level2);
-  color: var(--mat-sys-on-surface);
-  display: flex;
-  flex-direction: column;
-  gap: var(--global-gap);
-  min-width: 0;
-  padding: var(--three-quarters-global-padding);
-}
-
-.action-detail-title {
-  display: flex;
-  align-items: center;
-  gap: var(--global-gap);
-}
-
-.action-detail-title h3 {
-  margin: 0;
-  padding: 0.25rem 0;
-}
-
-.action-detail-title-buttons {
-  flex-grow: 1;
-  display: flex;
-  justify-content: flex-end;
-  gap: var(--half-global-gap);
-}
-
-.action-detail-title-buttons button[mat-icon-button] {
-  padding: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-}
-
-.action-docu,
-.action-notes {
-  padding: 1rem;
-  border-radius: 0.25rem;
-  border: 1px solid;
-}
-
-.action-docu code,
-.action-notes code,
-.action-detail-card code {
-  display: inline-block;
-  background-color: rgba(0, 0, 0, 0.08);
-  padding: 0.2em 0.4em;
-  margin: 0;
-  font-size: 85%;
-  border-radius: 3px;
-  font-family: "Courier New", Courier, monospace;
-}
-
-.action-docu em,
-.action-notes em,
-.action-detail-card em {
-  display: inline;
-  font-style: italic;
-}
-
-.action-docu p,
-.action-notes p,
-.action-detail-card p {
-  margin-block-start: 1em;
-  margin-block-end: 1em;
-}
-
-.action-docu a,
-.action-notes a,
-.action-detail-card a {
-  color: var(--mat-sys-primary);
-  text-decoration: underline;
-}
-
-.action-docu strong,
-.action-docu b,
-.action-notes strong,
-.action-notes b,
-.action-detail-card strong,
-.action-detail-card b {
-  font-weight: bold;
-}
-
-.action-docu ul,
-.action-docu ol,
-.action-notes ul,
-.action-notes ol,
-.action-detail-card ul,
-.action-detail-card ol {
-  padding-inline-start: 40px;
-}
-
-.action-docu li,
-.action-notes li,
-.action-detail-card li {
-  margin-bottom: 0.5em;
-}
-
-.action-docu {
-  background-color: #e7f3fe;
-  border-color: #d0e5fc;
-  color: #31708f;
-}
-
-.action-notes {
-  background-color: #fef3e7;
-  border-color: #fce8d3;
-  color: #8a6d3b;
-}
-
-.action-detail-card {
-  background-color: var(--mat-sys-surface-container-high);
-  border-radius: var(--border-radius);
-  box-shadow: var(--mat-sys-level2);
-  padding: var(--global-padding);
 }
 
 .action-value-input {
@@ -199,7 +27,7 @@ This file contains all styles for actions as used e.g. in policies, event handle
   border-radius: 0;
   box-sizing: border-box;
   font-size: 1rem;
-  padding: var(--half-global-padding) 0;
+  padding: 8px 0;
   width: 100%;
 }
 
@@ -211,7 +39,7 @@ This file contains all styles for actions as used e.g. in policies, event handle
   box-sizing: border-box;
   font-size: 1rem;
   min-height: 80px;
-  padding: var(--half-global-padding) 0;
+  padding: 8px 0;
   resize: vertical;
   width: 100%;
 }
@@ -219,4 +47,28 @@ This file contains all styles for actions as used e.g. in policies, event handle
 .action-value-input:focus {
   border-bottom-color: var(--mat-sys-primary);
   outline: none;
+}
+
+// Call-to-action group projected into an app-table-state panel. Global rather than scoped to that
+// component, because the element is declared in the template of whichever component projects it and
+// so carries that component's encapsulation attribute.
+.table-state-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+
+  // A field sized as a percentage of this row would be squeezed by whatever sits beside it, ending
+  // up far narrower than the same field outside the panel. Giving it the full row keeps the width
+  // the .input-width-* class asked for and pushes the buttons onto their own line. This has to match
+  // the direct child, which is often a wrapper around the field rather than the field itself: the
+  // percentage resolves against the flex item, so sizing anything deeper leaves it at the mercy of
+  // the wrapper's own shrink-to-fit width.
+  > mat-form-field,
+  > :has(mat-form-field) {
+    flex: 1 0 100%;
+    // The row is spaced by the gap; a wrapper's own stacking margin would double it up here.
+    margin-top: 0;
+  }
 }

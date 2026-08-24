@@ -21,7 +21,7 @@
   aria-label="Container Table"
   class="container-table-container"
   i18n-aria-label="@@container.containerTable">
-  @if (authService.actionAllowed("container_list")) {
+  @if (tableState.showTable()) {
     <div class="filter-paginator-container">
       <mat-form-field
         class="container-table-filter"
@@ -306,16 +306,34 @@
           mat-row></tr>
 
         <tr *matNoDataRow>
-          <td
-            [attr.colspan]="columnKeys.length"
-            i18n="@@common.noDataMatching">
-            No data matching the filter.
+          <td [attr.colspan]="columnKeys.length">
+            <app-table-state
+              [status]="tableState.rowStatus()"
+              [table]="tableState" />
           </td>
         </tr>
       </table>
     </div>
   } @else {
-    <div i18n="@@container.youDoNotHavePermission">You do not have the permission to view the container list.</div>
+    <app-table-state
+      [hint]="emptyHint()"
+      [table]="tableState"
+      heading="No containers yet"
+      i18n-heading="@@container.noContainersYet"
+      icon="folder">
+      @if (authService.actionAllowed("container_create")) {
+        <button
+          [routerLink]="[ROUTE_PATHS.CONTAINERS_CREATE]"
+          class="action-button-primary button-width-m"
+          mat-stroked-button>
+          <span class="icon-badge">
+            <mat-icon class="padding-right-3">folder</mat-icon>
+            <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+          </span>
+          <span i18n="@@common.createContainer">Create Container</span>
+        </button>
+      }
+    </app-table-state>
   }
 </div>
 

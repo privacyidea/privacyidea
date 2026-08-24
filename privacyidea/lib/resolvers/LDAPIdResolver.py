@@ -36,6 +36,7 @@ import threading
 import traceback
 import uuid
 from operator import itemgetter
+from typing import Any
 
 import ldap3
 import yaml
@@ -69,6 +70,11 @@ SERVERPOOL_SKIP = 30
 # The pooling strategy for the ldap servers
 LDAP_STRATEGY = {"ROUND_ROBIN": ldap3.ROUND_ROBIN, "FIRST": ldap3.FIRST, "RANDOM": ldap3.RANDOM}
 SERVERPOOL_STRATEGY = "ROUND_ROBIN"
+
+# The number of user IDs that go into one search filter in get_user_info_batch. Active Directory
+# limits both the size and the complexity of a filter, so an unbounded OR filter would trade the
+# lookup per user for an occasional hard failure on a large page.
+BATCH_SEARCH_CHUNK_SIZE = 100
 
 # 1 sec == 10^9 nano secs == 10^7 * (100 nano secs)
 MS_AD_MULTIPLYER = 10 ** 7
@@ -194,6 +200,90 @@ def ignore_sizelimit_exception(conn, generator):
                 raise
 
 
+#: Returned by ``cache_lookup`` when there is no usable entry. A cached value can itself be falsy
+#: (an unknown user is cached as an empty dict), so ``None`` would not do as the miss marker.
+CACHE_MISS = object()
+
+
+def _get_cache_bucket(resolver: "IdResolver", func_name: str) -> dict:
+    """
+    Return the cache dict of this resolver for the given function, after evicting expired entries.
+    """
+    resolver_id = resolver.getResolverId()
+    now = datetime.datetime.now(tz=datetime.timezone.utc)
+    tdelta = datetime.timedelta(seconds=resolver.cache_timeout)
+    if resolver_id not in CACHE:
+        CACHE[resolver_id] = {"getUserId": {},
+                              "get_user_info": {},
+                              "_getDN": {}}
+    else:
+        # Clean up the cache in the current resolver and the current function
+        _to_be_deleted = []
+        try:
+            for user, cached_result in CACHE[resolver_id].get(func_name, {}).items():
+                if now > cached_result.get("timestamp") + tdelta:
+                    _to_be_deleted.append(user)
+        except RuntimeError:  # pragma: no cover
+            # This might happen if thread A evicts an expired
+            # cache entry while thread B looks for expired cache entries
+            pass
+        for user in _to_be_deleted:
+            try:
+                del CACHE[resolver_id][func_name][user]
+            except KeyError:  # pragma: no cover
+                # Another thread evicted the same entry in the meantime
+                pass
+
+    return CACHE[resolver_id].setdefault(func_name, {})
+
+
+def cache_lookup(resolver: "IdResolver", func_name: str, key: str, attributes: list[str] = None) -> Any:
+    """
+    Return the cached result of ``func_name`` for ``key``, or ``CACHE_MISS`` if there is none.
+
+    For ``get_user_info`` an entry only counts as a hit if it holds every requested attribute;
+    surplus attributes are stripped from the returned value.
+
+    :param resolver: The LDAP resolver instance the cache belongs to
+    :param func_name: Name of the cached function
+    :param key: The user ID or login name the entry is stored under
+    :param attributes: The attributes the caller needs, for ``get_user_info`` entries
+    """
+    if resolver.cache_timeout <= 0:
+        return CACHE_MISS
+
+    entry = _get_cache_bucket(resolver, func_name).get(key)
+    if not entry:
+        return CACHE_MISS
+    now = datetime.datetime.now(tz=datetime.timezone.utc)
+    if now >= entry.get("timestamp") + datetime.timedelta(seconds=resolver.cache_timeout):
+        return CACHE_MISS
+
+    result = entry.get("value")
+    if func_name == "get_user_info":
+        requested_attributes = set(attributes if attributes else resolver.get_available_info_keys())
+        cached_attributes = set(result.keys())
+        if not requested_attributes.issubset(cached_attributes):
+            return CACHE_MISS
+        if cached_attributes > requested_attributes:
+            # extract only requested attributes from the cache
+            result = {k: v for k, v in result.items() if k in requested_attributes}
+
+    log.debug(f"Reading {key!r} from cache for {func_name!r}")
+    return result
+
+
+def cache_store(resolver: "IdResolver", func_name: str, key: str, value: dict | str) -> None:
+    """
+    Write a result into the per-process cache, if caching is enabled for this resolver.
+    """
+    if resolver.cache_timeout <= 0:
+        return
+    _get_cache_bucket(resolver, func_name)[key] = {
+        "value": value,
+        "timestamp": datetime.datetime.now(tz=datetime.timezone.utc)}
+
+
 def cache(func):
     """
     cache the user with his loginname, resolver and UID in a local
@@ -203,61 +293,13 @@ def cache(func):
 
     @functools.wraps(func)
     def cache_wrapper(self, *args, **kwds):
-        # Only run the code in case we have a configured cache!
-        if self.cache_timeout > 0:
-            # If it does not exist, create the node for this instance
-            resolver_id = self.getResolverId()
-            now = datetime.datetime.now(tz=datetime.timezone.utc)
-            tdelta = datetime.timedelta(seconds=self.cache_timeout)
-            if resolver_id not in CACHE:
-                CACHE[resolver_id] = {"getUserId": {},
-                                      "get_user_info": {},
-                                      "_getDN": {}}
-            else:
-                # Clean up the cache in the current resolver and the current function
-                _to_be_deleted = []
-                try:
-                    for user, cached_result in CACHE[resolver_id].get(func.__name__).items():
-                        if now > cached_result.get("timestamp") + tdelta:
-                            _to_be_deleted.append(user)
-                except RuntimeError:
-                    # This might happen if thread A evicts an expired
-                    # cache entry while thread B looks for expired cache entries
-                    pass
-                for user in _to_be_deleted:
-                    try:
-                        del CACHE[resolver_id][func.__name__][user]
-                    except KeyError:
-                        pass
-                del _to_be_deleted
-
-            # get the portion of the cache for this very LDAP resolver
-            r_cache = CACHE.get(resolver_id).get(func.__name__)
-            entry = r_cache.get(args[0])
-            if entry and now < entry.get("timestamp") + tdelta:
-                valid_cache_entry = True
-                result = entry.get("value")
-                if func.__name__ == "get_user_info":
-                    # Check if requested attributes are available in the cache
-                    requested_attributes = set(kwds.get("attributes", self.get_available_info_keys()))
-                    cached_attributes = set(entry.get("value").keys())
-                    if not requested_attributes.issubset(cached_attributes):
-                        valid_cache_entry = False
-                    if set(cached_attributes) > set(requested_attributes):
-                        # extract only requested attributes from the cache
-                        result = {k: v for k, v in entry.get("value").items() if k in requested_attributes}
-                if valid_cache_entry:
-                    log.debug(f"Reading {args[0]!r} from cache for {func.__name__!r}")
-                    return result
+        attributes = kwds.get("attributes", args[1] if len(args) > 1 else None)
+        result = cache_lookup(self, func.__name__, args[0], attributes)
+        if result is not CACHE_MISS:
+            return result
 
         f_result = func(self, *args, **kwds)
-
-        if self.cache_timeout > 0:
-            # now we cache the result
-            CACHE[resolver_id][func.__name__][args[0]] = {
-                "value": f_result,
-                "timestamp": now}
-
+        cache_store(self, func.__name__, args[0], f_result)
         return f_result
 
     return cache_wrapper
@@ -665,6 +707,118 @@ class IdResolver(UserIdResolver):
             user_info = self._ldap_attributes_to_user_object(ldap_user, attributes)
 
         return user_info
+
+    @track_resolver_op("get_user_info_batch")
+    def get_user_info_batch(self, user_ids: list, attributes: list[str] = None) -> dict:
+        """
+        Return the user information for several user IDs with one LDAP search per chunk of IDs,
+        instead of one search per ID.
+
+        IDs that the per-process cache already holds are answered from there, only the remaining
+        ones go into a search. IDs without a matching LDAP object are omitted from the result.
+
+        A ``dn`` uidtype falls back to looking the users up one by one: the DN is the search base of
+        a single-object read, and the attribute that holds it is not the same on every server.
+
+        :param user_ids: The user IDs in this resolver
+        :param attributes: list of attribute names to be returned for each user. If None, all attributes are returned.
+        :return: dictionary mapping each resolved user ID to its user information
+        """
+        if self.uidtype.lower() == "dn":
+            return super().get_user_info_batch(user_ids, attributes=attributes)
+
+        user_info_map = {}
+        ids_to_search = []
+        # dict.fromkeys de-duplicates the IDs while keeping their order
+        for user_id in dict.fromkeys(user_ids):
+            cached_info = cache_lookup(self, "get_user_info", user_id, attributes)
+            if cached_info is CACHE_MISS:
+                ids_to_search.append(user_id)
+            elif cached_info:
+                user_info_map[user_id] = cached_info
+
+        # Request every mapped attribute and reduce afterwards, exactly like get_user_info does: a
+        # recursive group search substitutes the user's attributes into the configured group filter,
+        # so asking for less than the full mapping would leave placeholders in that filter.
+        ldap_attributes = list(self.userinfo.values())
+        if str(self.uidtype) not in ldap_attributes:
+            # the search results are mapped back to the requested IDs via the uid attribute
+            ldap_attributes.append(str(self.uidtype))
+
+        for chunk_start in range(0, len(ids_to_search), BATCH_SEARCH_CHUNK_SIZE):
+            chunk = ids_to_search[chunk_start:chunk_start + BATCH_SEARCH_CHUNK_SIZE]
+            # The uid an entry carries is not necessarily the string we searched for: an objectGUID
+            # may come with curly braces, and most uid attributes match case-insensitively. Map the
+            # results back over the same normalization _get_uid applies, and only then over case.
+            requested_ids = {}
+            requested_ids_lower = {}
+            id_filter = ""
+            for user_id in chunk:
+                try:
+                    search_uid = to_unicode(self._trim_user_id(user_id))
+                except ValueError as error:
+                    log.info(f"Skipping user id {user_id!r} in batch lookup: {error}")
+                    continue
+                # RFC4515-escape the user id (see _getDN); objectGUID is already byte-escaped.
+                if self.uidtype != "objectGUID":
+                    search_uid = self._escape_filter_value(search_uid)
+                    returned_id = user_id
+                else:
+                    returned_id = user_id.strip("{").strip("}")
+                requested_ids[returned_id] = user_id
+                requested_ids_lower.setdefault(returned_id.lower(), user_id)
+                id_filter += f"({self.uidtype}={search_uid})"
+            if not id_filter:
+                continue
+
+            search_filter = f"(&{self.searchfilter}(|{id_filter}))"
+            result = self._search(search_base=self.basedn, search_filter=search_filter,
+                                  attributes=ldap_attributes)
+            for entry in result:
+                if entry.get("type") == "searchResRef":
+                    # A referral carries no attributes to read the uid from
+                    continue
+                returned_id = self._get_uid(entry, self.uidtype)
+                if not returned_id:  # pragma: no cover
+                    log.info("Ignoring an LDAP object that carries no value for the uid attribute.")
+                    continue
+                user_id = requested_ids.get(returned_id)
+                if user_id is None:
+                    user_id = requested_ids_lower.get(returned_id.lower())
+                if user_id is None:  # pragma: no cover
+                    log.info(f"Ignoring LDAP object with uid {returned_id!r}, which was not searched for.")
+                    continue
+                # Note that with a recursive group search this maps to one extra search per user,
+                # unless the group attribute is not among the requested attributes.
+                user_info = self._ldap_attributes_to_user_object(entry.get("attributes"), attributes)
+                user_info_map[user_id] = user_info
+                cache_store(self, "get_user_info", user_id, user_info)
+
+            last_result = getattr(getattr(self, "connection", None), "result", None) or {}
+            if last_result.get("result") == RESULT_SIZE_LIMIT_EXCEEDED:
+                # The server cut the result set short without raising, so the IDs that fell off it
+                # would be indistinguishable from users that do not exist. Fetch those one by one.
+                log.warning(f"The LDAP server applied a size limit to a search for {len(chunk)} user ids. "
+                            f"Looking the remaining ids up one by one.")
+                for user_id in chunk:
+                    if user_id not in user_info_map:
+                        user_info = self.get_user_info(user_id, attributes=attributes)
+                        if user_info:
+                            user_info_map[user_id] = user_info
+
+        return user_info_map
+
+    @track_resolver_op("get_usernames_batch")
+    def get_usernames_batch(self, user_ids: list) -> dict:
+        """
+        Return the login names of several users with one LDAP search per chunk of IDs.
+
+        :param user_ids: The user IDs in this resolver
+        :return: dictionary mapping each user ID to its login name. IDs without a matching LDAP
+                 object are mapped to an empty string, as getUsername does for a single user.
+        """
+        user_info_map = self.get_user_info_batch(user_ids, attributes=["username"])
+        return {user_id: user_info_map.get(user_id, {}).get("username", "") for user_id in user_ids}
 
     def get_available_info_keys(self) -> list[str]:
         """

@@ -108,7 +108,7 @@ from .config import (get_from_config, get_prepend_pin)
 from .decorators import check_token_locked
 from .error import (TokenAdminError,
                     ParameterError, ResourceNotFoundError)
-from .log import HIDDEN, is_sensitive_key, log_with, redact
+from .log import log_with, redacted_attributes
 from .policies.actions import PolicyAction
 from .policydecorators import libpolicy, auth_otppin, challenge_response_allowed
 from .user import (User)
@@ -1589,18 +1589,7 @@ class TokenClass:
         :return: token state as string representation
         :rtype:  string
         """
-        ldict = {}
-        for attr in self.__dict__:
-            key = f"{attr!r}"
-            if is_sensitive_key(attr):
-                val = f"{HIDDEN!r}"
-            else:
-                # An attribute that is not sensitive itself can still carry a secret inside it,
-                # for example the enrollment key in init_details.
-                val = f"{redact(getattr(self, attr))!r}"
-            ldict[key] = val
-        res = f"<{self.__class__!r} {ldict!r}>"
-        return res
+        return f"<{self.__class__!r} {redacted_attributes(self)!r}>"
 
     def get_init_detail(self, params=None, user=None):
         """

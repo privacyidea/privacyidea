@@ -90,11 +90,11 @@
           <app-clearable-input
             (clearButtonClick)="serviceIdModel.update(m => ({...m, description: ''}))"
             [showClearButton]="!!serviceIdModel().description">
-            <input
+            <textarea
               [formField]="serviceIdForm.description"
               matInput
-              i18n-placeholder="@@common.someWiseWords"
-              placeholder="some wise words" />
+              placeholder="some wise words"
+              rows="3"></textarea>
           </app-clearable-input>
         </mat-form-field>
       </div>

@@ -694,6 +694,12 @@ export class TokenService extends FilterableTableService implements TokenService
   readonly defaultSizeOptions = [5, 10, 25, 50];
 
   tokenResource = httpResource<PiResponse<Tokens>>(() => {
+    // Do not load tokens if the action is not allowed. tokenlist only exists in the admin
+    // policy scope, so self-service users must not be gated on it.
+    if (this.authService.role() === "admin" && !this.authService.actionAllowed("tokenlist")) {
+      return undefined;
+    }
+
     // Only load tokens on routes with a token list or selection.
     const onAllowedRoute =
       this.contentService.onTokens() ||

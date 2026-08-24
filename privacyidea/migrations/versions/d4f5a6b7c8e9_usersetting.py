@@ -35,13 +35,22 @@ def upgrade():
             sa.Column('user_id', sa.Unicode(length=320), nullable=True),
             sa.Column('resolver', sa.Unicode(length=120), nullable=True),
             sa.Column('realm_id', sa.Integer(), nullable=True),
+            # SHA-256 hex digest of a subset of the columns above, per
+            # subject_type (see privacyidea.models.usersetting.
+            # _compute_subject_hash). A raw composite UNIQUE constraint over
+            # all five columns is 3124 bytes under utf8mb4 -- over MySQL's
+            # 3072-byte index-key limit -- so the constraint below is on this
+            # fixed-width hash instead.
+            sa.Column('subject_hash', sa.Unicode(length=64), nullable=False),
             sa.Column('settings', sa.JSON(), nullable=True),
             sa.Column('last_modified', sa.DateTime(), nullable=True),
             sa.Column('node', sa.Unicode(length=120), nullable=True),
             sa.ForeignKeyConstraint(['realm_id'], ['realm.id'], ondelete='CASCADE'),
             sa.PrimaryKeyConstraint('id'),
-            sa.UniqueConstraint('subject_type', 'username', 'user_id', 'resolver', 'realm_id',
-                                name='uq_usersetting_subject'),
+            sa.UniqueConstraint('subject_hash', name='uq_usersetting_subject'),
+            # Serves the local-admin lookup on (subject_type, username), which
+            # subject_hash is not a prefix of.
+            sa.Index('ix_usersetting_subject_type_username', 'subject_type', 'username'),
             # Serves the resolver-user lookup, which keys on
             # (user_id, resolver, realm_id) and is not a prefix of the unique key.
             sa.Index('ix_usersetting_user', 'user_id', 'resolver', 'realm_id'),

@@ -49,6 +49,32 @@ export interface Subscription {
   by_phone: string;
 }
 
+/** State of the subscription record itself, independent of whether the client is used. */
+export type SubscriptionState = "none" | "valid" | "expiring" | "exceeded" | "expired";
+
+/**
+ * One row of the dashboard subscription overview, as returned by GET /subscriptions/status.
+ * The server itself is reported as an entry with is_server set.
+ */
+export interface SubscriptionStatus {
+  application: string;
+  is_server?: boolean;
+  /** Whether the component is actively used: it has a subscription or was seen recently. */
+  in_use: boolean;
+  subscription: SubscriptionState;
+  /** Last time a client of this component was seen, null if never. */
+  last_seen: string | null;
+  date_till: string | null;
+  /** Days until date_till; negative once it has passed. */
+  days_left: number | null;
+  /** Versions seen in the clients' user agents, newest first. */
+  versions: string[];
+  /** Latest released version of this component, null if it could not be determined. */
+  current_version: string | null;
+  current_version_date: string | null;
+  current_version_url: string | null;
+}
+
 @Injectable()
 export class SubscriptionService {
   private readonly authService = inject(AuthService);
@@ -82,6 +108,12 @@ export class SubscriptionService {
 
   getSubscriptions(): Observable<PiResponse<Record<string, Subscription>>> {
     return this.http.get<PiResponse<Record<string, Subscription>>>(`${this.baseUrl}/`, {
+      headers: this.authService.getHeaders()
+    });
+  }
+
+  getSubscriptionStatus(): Observable<PiResponse<SubscriptionStatus[]>> {
+    return this.http.get<PiResponse<SubscriptionStatus[]>>(`${this.baseUrl}/status`, {
       headers: this.authService.getHeaders()
     });
   }

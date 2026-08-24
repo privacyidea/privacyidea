@@ -16,16 +16,18 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { NgClass } from "@angular/common";
+import { NgClass, NgTemplateOutlet } from "@angular/common";
 import {
-  AfterViewInit,
   Component,
+  computed,
   effect,
   inject,
+  input,
   linkedSignal,
+  LOCALE_ID,
   signal,
-  WritableSignal,
-  LOCALE_ID
+  TemplateRef,
+  WritableSignal
 } from "@angular/core";
 import { toSignal } from "@angular/core/rxjs-interop";
 import { MatButton, MatIconButton } from "@angular/material/button";
@@ -48,6 +50,8 @@ import {
 } from "@angular/material/table";
 import { MatTooltip } from "@angular/material/tooltip";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
+import { TableStateComponent } from "@components/shared/table-state/table-state.component";
+import { TableState } from "@core/models/table_state/table-state";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContainerDetailToken } from "@services/container/container.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
@@ -85,17 +89,28 @@ type BulkAction = "unassign" | "toggleActive" | "resetFailCount";
     MatTable,
     MatTooltip,
     NgClass,
+    NgTemplateOutlet,
     MatHeaderCellDef,
-    MatNoDataRow
+    MatNoDataRow,
+    TableStateComponent
   ],
   templateUrl: "./user-details-token-table.component.html",
   styleUrl: "./user-details-token-table.component.scss"
 })
-export class UserDetailsTokenTableComponent implements AfterViewInit {
+export class UserDetailsTokenTableComponent {
   private readonly localeId: string = inject(LOCALE_ID);
+
   protected linkLabel(label: string): string {
     return $localize`:@@common.linkLabel:${label}:LABEL: link`;
   }
+
+  /**
+   * The two ways out of the empty state. They are passed as templates rather than projected content
+   * because this component renders them in a different place depending on the table's state, and a
+   * single ng-content slot can only ever be rendered once.
+   */
+  readonly enrollAction = input<TemplateRef<unknown> | undefined>(undefined);
+  readonly assignAction = input<TemplateRef<unknown> | undefined>(undefined);
 
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
@@ -140,9 +155,35 @@ export class UserDetailsTokenTableComponent implements AfterViewInit {
     visibleRows: this.renderedRows
   });
 
+  readonly tableState = new TableState({
+    resource: this.tokenService.userTokenResource,
+    count: () => this.userTokenData().data.length,
+    allowed: () => this.authService.actionAllowed("tokenlist")
+  });
+
+  /** Both routes out of the empty state are rights-gated, so the hint only offers the ones this admin has. */
+  readonly emptyHint = computed(() => {
+    const canEnroll = this.authService.tokenEnrollmentAllowed();
+    const canAssign = this.authService.actionAllowed("assign");
+    if (canEnroll && canAssign) {
+      return $localize`:@@user.enrollNewToken:Enroll a new token for this user, or assign an existing one.`;
+    }
+    if (canEnroll) {
+      return $localize`:@@user.enrollNewTokenOnly:Enroll a new token for this user.`;
+    }
+    if (canAssign) {
+      return $localize`:@@user.assignExistingToken:Assign an existing token to this user.`;
+    }
+    return "";
+  });
+
   constructor() {
     effect(() => {
       if (!this.userTokenData) {
+        return;
+      }
+      if (!this.tokenService.userTokenResource.hasValue()) {
+        this.dataSource.data = [];
         return;
       }
       const base = this.userTokenData().data ?? [];
@@ -156,10 +197,6 @@ export class UserDetailsTokenTableComponent implements AfterViewInit {
       const s = this.sort();
       this.dataSource.data = this.tableUtilsService.clientsideSortTokenData([...this.dataSource.data], s);
     });
-  }
-
-  ngAfterViewInit(): void {
-    (this.dataSource as unknown as { _sort: WritableSignal<Sort> })._sort = this.sort;
   }
 
   deleteSelected(): void {

@@ -43,6 +43,8 @@ import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { HighlightPipe } from "@components/shared/pipes/highlight.pipe";
+import { TableStateComponent } from "@components/shared/table-state/table-state.component";
+import { TableState } from "@core/models/table_state/table-state";
 import { AuthService } from "@services/auth/auth.service";
 import { EMPTY_EVENT, EventHandler, EventService } from "@services/event/event.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
@@ -63,7 +65,8 @@ import { of } from "rxjs";
     MatLabel,
     MatPaginator,
     HighlightPipe,
-    MatTooltip
+    MatTooltip,
+    TableStateComponent
   ],
   standalone: true,
   templateUrl: "./event.component.html",
@@ -110,6 +113,12 @@ export class EventComponent {
       }
       return previous?.value ?? 0;
     }
+  });
+  readonly tableState = new TableState({
+    resource: this.eventService.allEventsResource,
+    count: () => this.eventService.eventHandlers()?.length ?? 0,
+    allowed: () => this.authService.actionAllowed("eventhandling_read"),
+    resetFilter: () => this.onClearFilter()
   });
   eventHandlerDataSource: WritableSignal<MatTableDataSource<EventHandler>> = linkedSignal({
     source: () => ({

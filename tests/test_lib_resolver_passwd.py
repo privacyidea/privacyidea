@@ -14,6 +14,7 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
+from privacyidea.lib.error import ParameterError
 from privacyidea.lib.resolvers.PasswdIdResolver import IdResolver
 from tests.base import MyTestCase, PWFILE
 
@@ -51,9 +52,8 @@ class PasswdResolverTest(MyTestCase):
         ulist = self.resolver.getUserList({"username": "hans"})
         self.assertEqual(1, len(ulist), ulist)
 
-        # unknown search fields. We get an empty userlist
-        users = self.resolver.getUserList({"blabla": "something"})
-        self.assertListEqual([], users)
+        # unknown search fields raise, consistent with SQLIdResolver/LDAPIdResolver
+        self.assertRaises(ParameterError, self.resolver.getUserList, {"blabla": "something"})
         # list exactly one user
         users = self.resolver.getUserList({"userid": "=1000"})
         self.assertEqual(1, len(users), users)

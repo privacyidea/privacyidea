@@ -8619,7 +8619,7 @@
         <target state="translated"><x id="START_LIST_ITEM" ctype="x-li" equiv-text="&lt;li&gt;"/> ການຊ່ວຍເຫຼືອ ແລະ <x id="START_LINK" ctype="x-a" equiv-text="&lt;a             href=&quot;https://netknights.it/en/leistungen/service-level-agreements/&quot;             target=&quot;_blank&quot;             &gt;"/>ຂໍ້ຕົກລົງລະດັບການບໍລິການ (SLAs) ໂດຍ NetKnights <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/>, ປະເທດເຢຍລະມັນ. <x id="CLOSE_LIST_ITEM" ctype="x-li" equiv-text="&lt;/li&gt;"/><x id="START_LIST_ITEM" ctype="x-li" equiv-text="&lt;li&gt;"/>ແພັກເກດລະດັບວິສາຫະກິດທີ່ມີຄວາມສະຖຽນສຳລັບ Ubuntu ແລະ RHEL ເພື່ອການອັບເດດທີ່ງ່າຍ ແລະ ການເຮັດວຽກທີ່ປອດໄພ.<x id="CLOSE_LIST_ITEM" ctype="x-li" equiv-text="&lt;/li&gt;"/><x id="START_LIST_ITEM" ctype="x-li" equiv-text="&lt;li&gt;"/> ເຄື່ອງມື <x id="START_BOLD_TEXT" ctype="x-b" equiv-text="&lt;b&gt;"/>Appliance<x id="CLOSE_BOLD_TEXT" ctype="x-b" equiv-text="&lt;/b&gt;"/> ພິເສດ, ເຊິ່ງຊ່ວຍໃຫ້ການຕັ້ງຄ່າ RADIUS clients, MySQL replications, ການສຳຮອງຂໍ້ມູນ ແລະ ການກູ້ຄືນເປັນເລື່ອງງ່າຍ... <x id="CLOSE_LIST_ITEM" ctype="x-li" equiv-text="&lt;/li&gt;"/><x id="START_LIST_ITEM" ctype="x-li" equiv-text="&lt;li&gt;"/>ຂ່າວສານພິເສດ ແລະ ລາຍງານຂໍ້ຜິດພາດ (Bug) ທີ່ທັນເວລາ.<x id="CLOSE_LIST_ITEM" ctype="x-li" equiv-text="&lt;/li&gt;"/><x id="START_LIST_ITEM" ctype="x-li" equiv-text="&lt;li&gt;"/>ອີງຕາມລະດັບການຊ່ວຍເຫຼືອ ເຈົ້າຈະໄດ້ຮັບການຊ່ວຍເຫຼືອໃນການອັບເດດ ແລະ ຄຳປຶກສາລາຍປີ.<x id="CLOSE_LIST_ITEM" ctype="x-li" equiv-text="&lt;/li&gt;"/><x id="START_LIST_ITEM" ctype="x-li" equiv-text="&lt;li&gt;"/> ໂດຍການຊື້ <x id="START_LINK_1" equiv-text="&lt;a             href=&quot;https://netknights.it/en/produkte/privacyidea/&quot;             target=&quot;_blank&quot;             &gt;"/>privacyIDEA Enterprise Edition <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/> ເຈົ້າຈະຊ່ວຍໃຫ້ທີມພັດທະນາມືອາຊີບສາມາດເຮັດວຽກເຕັມເວລາໃຫ້ກັບ privacyIDEA, ເພີ່ມຄຸນສົມບັດໃໝ່ ແລະ ແກ້ໄຂ Bug ໄດ້ທັນເວລາ. ນອກຈາກນັ້ນ, ເຈົ້າຍັງຊ່ວຍໃຫ້ມີບໍລິການພາຍນອກ ເຊັ່ນ: ການກວດສອບລະຫັດຊອບແວ (Code audit). <x id="CLOSE_LIST_ITEM" ctype="x-li" equiv-text="&lt;/li&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/shared/welcome-dialog/welcome-dialog.component.html</context>
-          <context context-type="linenumber">94,120</context>
+          <context context-type="linenumber">94,119</context>
         </context-group>
       </trans-unit>
       <trans-unit id="welcome.askPrivacyidea" datatype="html" xml:space="preserve">
@@ -8627,7 +8627,7 @@
         <target state="translated"><x id="START_LINK" ctype="x-a" equiv-text="&lt;a           href=&quot;https://netknights.it/en/unternehmen/kontakt/&quot;           target=&quot;_blank&quot;           &gt;"/>ສອບຖາມກ່ຽວກັບ privacyIDEA Enterprise Edition ໄດ້ແລ້ວຕອນນີ້! <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/shared/welcome-dialog/welcome-dialog.component.html</context>
-          <context context-type="linenumber">122,127</context>
+          <context context-type="linenumber">121,126</context>
         </context-group>
       </trans-unit>
       <trans-unit id="welcome.thankYouImproving" datatype="html" xml:space="preserve">
@@ -8667,7 +8667,7 @@
         <target state="translated"><x id="START_PARAGRAPH" ctype="x-p" equiv-text="&lt;p&gt;"/><x id="START_BOLD_TEXT" ctype="x-b" equiv-text="&lt;b&gt;"/>ທ່ານກຳລັງໃຊ້ privacyIDEA ທີ່ມີຜູ້ໃຊ້ຫຼາຍກວ່າ 50 ຄົນ.<x id="CLOSE_BOLD_TEXT" ctype="x-b" equiv-text="&lt;/b&gt;"/><x id="CLOSE_PARAGRAPH" ctype="x-p" equiv-text="&lt;/p&gt;"/><x id="START_PARAGRAPH" ctype="x-p" equiv-text="&lt;p&gt;"/>ຂອບໃຈທີ່ທ່ານໄວ້ວາງໃຈ!<x id="CLOSE_PARAGRAPH" ctype="x-p" equiv-text="&lt;/p&gt;"/><x id="START_PARAGRAPH" ctype="x-p" equiv-text="&lt;p&gt;"/> ສຳລັບການນຳໃຊ້ໃນລະດັບວິສາຫະກິດ, ພວກເຮົາຂໍແນະນຳ <x id="START_LINK" ctype="x-a" equiv-text="&lt;a           href=&quot;https://netknights.it/en/produkte/privacyidea/&quot;           target=&quot;_blank&quot;           &gt;"/>privacyIDEA Enterprise Edition. <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/><x id="CLOSE_PARAGRAPH" ctype="x-p" equiv-text="&lt;/p&gt;"/><x id="START_PARAGRAPH" ctype="x-p" equiv-text="&lt;p&gt;"/> NetKnights ໃຫ້ບໍລິການ <x id="START_LINK" ctype="x-a" equiv-text="&lt;a           href=&quot;https://netknights.it/en/produkte/privacyidea/&quot;           target=&quot;_blank&quot;           &gt;"/>privacyIDEA Enterprise Edition <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/> ເຊິ່ງລວມມີ <x id="START_BOLD_TEXT" ctype="x-b" equiv-text="&lt;b&gt;"/>ການຊ່ວຍເຫຼືອ ແລະ ຂໍ້ຕົກລົງລະດັບການບໍລິການ<x id="CLOSE_BOLD_TEXT" ctype="x-b" equiv-text="&lt;/b&gt;"/>. ນອກຈາກນັ້ນ, NetKnights ຍັງໃຫ້ບໍລິການໃຫ້ຄຳປຶກສາ ແລະ ການພັດທະນາຄຸນສົມບັດໃໝ່ແບບມີຄ່າໃຊ້ຈ່າຍ. <x id="CLOSE_PARAGRAPH" ctype="x-p" equiv-text="&lt;/p&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/shared/welcome-dialog/welcome-dialog.component.html</context>
-          <context context-type="linenumber">167,188</context>
+          <context context-type="linenumber">166,187</context>
         </context-group>
       </trans-unit>
       <trans-unit id="welcome.okay" datatype="html" xml:space="preserve">

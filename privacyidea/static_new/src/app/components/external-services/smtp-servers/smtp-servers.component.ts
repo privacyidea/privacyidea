@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, ElementRef, inject, signal, ViewChild, WritableSignal } from "@angular/core";
+import { Component, computed, ElementRef, inject, signal, ViewChild, viewChild, WritableSignal } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatIconModule } from "@angular/material/icon";
@@ -35,6 +35,8 @@ import { ClearableInputComponent } from "@components/shared/clearable-input/clea
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { TableStateComponent } from "@components/shared/table-state/table-state.component";
+import { TableState } from "@core/models/table_state/table-state";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { renderedRows, RowSelector } from "@services/table-utils/row-selector";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
@@ -55,7 +57,8 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
     MatLabel,
     ClearableInputComponent,
     MatInput,
-    CopyableComponent
+    CopyableComponent,
+    TableStateComponent
   ],
   templateUrl: "./smtp-servers.component.html",
   styleUrl: "./smtp-servers.component.scss"
@@ -71,8 +74,14 @@ export class SmtpServersComponent {
   filterString = signal<string>("");
   pageSizeOptions = this.tableUtilsService.pageSizeOptions;
   totalLength: WritableSignal<number> = computed(() => this.smtpService.smtpServers().length) as WritableSignal<number>;
+  readonly tableState = new TableState({
+    resource: this.smtpService.smtpServerResource,
+    count: () => this.smtpService.smtpServers().length,
+    allowed: () => this.authService.actionAllowed("smtpserver_read"),
+    resetFilter: () => this.resetFilter()
+  });
 
-  @ViewChild(MatPaginator) paginator!: MatPaginator;
+  readonly paginator = viewChild(MatPaginator);
   @ViewChild(MatSort) sort!: MatSort;
   @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: ElementRef<HTMLInputElement>;
 
@@ -81,7 +90,7 @@ export class SmtpServersComponent {
   smtpDataSource = computed(() => {
     const servers = this.smtpService.smtpServers();
     const dataSource = new MatTableDataSource(servers);
-    dataSource.paginator = this.paginator;
+    dataSource.paginator = this.paginator() ?? null;
     dataSource.sort = this.sort;
     return dataSource;
   });

@@ -31,6 +31,8 @@ import { ClearableInputComponent } from "@components/shared/clearable-input/clea
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { TableStateComponent } from "@components/shared/table-state/table-state.component";
+import { TableState } from "@core/models/table_state/table-state";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { NotificationService } from "@services/notification/notification.service";
@@ -60,7 +62,8 @@ import { firstValueFrom, lastValueFrom } from "rxjs";
     MatInput,
     ClearableInputComponent,
     CopyableComponent,
-    ScrollToTopDirective
+    ScrollToTopDirective,
+    TableStateComponent
   ],
   templateUrl: "./periodic-task.component.html",
   styleUrls: ["./periodic-task.component.scss"]
@@ -103,6 +106,13 @@ export class PeriodicTaskComponent implements OnInit {
     const resource = this.periodicTaskService.periodicTasksResource;
     if (!resource.hasValue()) return [];
     return resource.value()?.result?.value ?? [];
+  });
+
+  readonly tableState = new TableState({
+    resource: this.periodicTaskService.periodicTasksResource,
+    count: () => this.periodicTasks().length,
+    allowed: () => this.authService.actionAllowed("periodictask_read"),
+    resetFilter: () => this.resetFilter()
   });
 
   periodicTasksDataSource = computed(() => {

@@ -21,189 +21,220 @@
   aria-label="Event Handlers"
   class="events-table-container"
   i18n-aria-label="@@event.eventHandlers">
-  <div class="filter-paginator-container">
-    <mat-form-field
-      class="event-handler-table-filter"
-      subscriptSizing="dynamic">
-      <mat-label i18n="@@event.filterEventHandlers">Filter Event Handlers ...</mat-label>
-      <app-clearable-input
-        (clearButtonClick)="onClearFilter()"
-        [showClearButton]="filterHTMLInputElement.value.length > 0">
-        <input
-          #filterHTMLInputElement
-          (input)="onFilterInput(filterHTMLInputElement.value)"
-          [value]="filterString()"
-          aria-label="Filter Input"
-          i18n-aria-label="@@common.filterInput"
-          i18n-placeholder="@@common.exampleQueryUsername"
-          matInput
-          placeholder="Example query: 'username: root'" />
-      </app-clearable-input>
-    </mat-form-field>
-    <mat-paginator
-      [length]="eventHandlerDataSource().data.length"
-      [pageSizeOptions]="pageSizeOptions()"
-      [pageSize]="pageSizeOptions()[1]"
-      showFirstLastButtons></mat-paginator>
-  </div>
+  @if (tableState.showTable()) {
+    <div class="filter-paginator-container">
+      <mat-form-field
+        class="event-handler-table-filter"
+        subscriptSizing="dynamic">
+        <mat-label i18n="@@event.filterEventHandlers">Filter Event Handlers ...</mat-label>
+        <app-clearable-input
+          (clearButtonClick)="onClearFilter()"
+          [showClearButton]="filterHTMLInputElement.value.length > 0">
+          <input
+            #filterHTMLInputElement
+            (input)="onFilterInput(filterHTMLInputElement.value)"
+            [value]="filterString()"
+            aria-label="Filter Input"
+            i18n-aria-label="@@common.filterInput"
+            i18n-placeholder="@@common.exampleQueryUsername"
+            matInput
+            placeholder="Example query: 'username: root'" />
+        </app-clearable-input>
+      </mat-form-field>
+      <mat-paginator
+        [length]="eventHandlerDataSource().data.length"
+        [pageSizeOptions]="pageSizeOptions()"
+        [pageSize]="pageSizeOptions()[1]"
+        showFirstLastButtons></mat-paginator>
+    </div>
 
-  <div class="actions-container">
-    @if (authService.actionAllowed("eventhandling_write")) {
-      <button
-        (click)="onCreateNewEventHandler()"
-        class="action-button-primary button-width-xl"
-        mat-stroked-button>
-        <span class="icon-badge">
-          <mat-icon class="padding-right-3">flag</mat-icon>
-          <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
-        </span>
-        <span i18n="@@event.createNewEvent">Create New Event Handler</span>
-      </button>
-    }
-    <mat-slide-toggle
-      (change)="toggleDetailedView()"
-      [checked]="detailedView()"
-      i18n="@@common.detailedView"
-      >Detailed View
-    </mat-slide-toggle>
-  </div>
+    <div class="actions-container">
+      @if (authService.actionAllowed("eventhandling_write")) {
+        <button
+          (click)="onCreateNewEventHandler()"
+          class="action-button-primary button-width-xl"
+          mat-stroked-button>
+          <span class="icon-badge">
+            <mat-icon class="padding-right-3">flag</mat-icon>
+            <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+          </span>
+          <span i18n="@@event.createNewEvent">Create New Event Handler</span>
+        </button>
+      }
+      <mat-slide-toggle
+        (change)="toggleDetailedView()"
+        [checked]="detailedView()"
+        i18n="@@common.detailedView"
+        >Detailed View
+      </mat-slide-toggle>
+    </div>
 
-  <table
-    [dataSource]="eventHandlerDataSource()"
-    class="event-handler-table"
-    mat-table>
-    @for (column of Object.keys(columnKeysMap); track column) {
-      @if (column !== "delete" || authService.actionAllowed("eventhandling_write")) {
-        <ng-container [matColumnDef]="column">
-          <th
-            *matHeaderCellDef
-            mat-header-cell>
-            <div class="flex ali-center">
-              {{ columnKeysMap[column] }}
-              @if (column !== "delete") {
-                <div class="margin-left-16 flex">
-                  <button
-                    (click)="tableUtilsService.onSortButtonClick(column, sort)"
-                    class="sort-button"
-                    mat-icon-button
-                    type="button">
-                    <mat-icon>{{ tableUtilsService.getSortIcon(column, sort()) }}</mat-icon>
-                  </button>
-                </div>
-              }
-            </div>
-          </th>
-          <td
-            *matCellDef="let element; let row"
-            class="column-max-width"
-            mat-cell>
-            @switch (column) {
-              @case ("name") {
-                <div
-                  [attr.title]="element.name"
-                  [ngClass]="detailedView() ? 'break-words' : 'event-table-cell'">
-                  @if (authService.actionAllowed("eventhandling_write")) {
-                    <a
-                      (click)="onEditEventHandler(element)"
-                      (keydown.enter)="onEditEventHandler(element)"
-                      (keydown.space)="onEditEventHandler(element); $event.preventDefault()"
-                      [innerHTML]="element.name | highlight: filterString()"
-                      role="button"
-                      tabindex="0"></a>
+    <table
+      [dataSource]="eventHandlerDataSource()"
+      class="event-handler-table"
+      mat-table>
+      @for (column of Object.keys(columnKeysMap); track column) {
+        @if (column !== "delete" || authService.actionAllowed("eventhandling_write")) {
+          <ng-container [matColumnDef]="column">
+            <th
+              *matHeaderCellDef
+              mat-header-cell>
+              <div class="flex ali-center">
+                {{ columnKeysMap[column] }}
+                @if (column !== "delete") {
+                  <div class="margin-left-16 flex">
+                    <button
+                      (click)="tableUtilsService.onSortButtonClick(column, sort)"
+                      class="sort-button"
+                      mat-icon-button
+                      type="button">
+                      <mat-icon>{{ tableUtilsService.getSortIcon(column, sort()) }}</mat-icon>
+                    </button>
+                  </div>
+                }
+              </div>
+            </th>
+            <td
+              *matCellDef="let element; let row"
+              class="column-max-width"
+              mat-cell>
+              @switch (column) {
+                @case ("name") {
+                  <div
+                    [attr.title]="element.name"
+                    [ngClass]="detailedView() ? 'break-words' : 'event-table-cell'">
+                    @if (authService.actionAllowed("eventhandling_write")) {
+                      <a
+                        (click)="onEditEventHandler(element)"
+                        (keydown.enter)="onEditEventHandler(element)"
+                        (keydown.space)="onEditEventHandler(element); $event.preventDefault()"
+                        [innerHTML]="element.name | highlight: filterString()"
+                        role="button"
+                        tabindex="0"></a>
+                    } @else {
+                      <span [innerHTML]="element.name | highlight: filterString()"></span>
+                    }
+                  </div>
+                }
+                @case ("event") {
+                  @if (detailedView()) {
+                    <div class="detailed-cell-container">
+                      <ul class="no-indention margin-0">
+                        @for (event of getEventArray(element.event); track event) {
+                          <li [innerHTML]="event | highlight: filterString()"></li>
+                        }
+                      </ul>
+                    </div>
                   } @else {
-                    <span [innerHTML]="element.name | highlight: filterString()"></span>
+                    <div class="event-table-cell">
+                      <span [innerHTML]="element.event?.join(', ') | highlight: filterString()"></span>
+                    </div>
                   }
-                </div>
-              }
-              @case ("event") {
-                @if (detailedView()) {
-                  <div class="detailed-cell-container">
-                    <ul class="no-indention margin-0">
-                      @for (event of getEventArray(element.event); track event) {
-                        <li [innerHTML]="event | highlight: filterString()"></li>
-                      }
-                    </ul>
-                  </div>
-                } @else {
-                  <div class="event-table-cell">
-                    <span [innerHTML]="element.event?.join(', ') | highlight: filterString()"></span>
-                  </div>
                 }
-              }
-              @case ("conditions") {
-                @if (detailedView()) {
-                  <div class="detailed-cell-container">
-                    <ul class="no-indention margin-0">
-                      @for (condition of Object.entries(element.conditions); track condition[0]) {
-                        <li [innerHTML]="condition[0] + ': ' + condition[1] | highlight: filterString()"></li>
-                      }
-                    </ul>
-                  </div>
-                } @else {
-                  <div class="event-table-cell">
-                    <span [innerHTML]="formatConditions(element.conditions) | highlight: filterString()"></span>
-                  </div>
+                @case ("conditions") {
+                  @if (detailedView()) {
+                    <div class="detailed-cell-container">
+                      <ul class="no-indention margin-0">
+                        @for (condition of Object.entries(element.conditions); track condition[0]) {
+                          <li [innerHTML]="condition[0] + ': ' + condition[1] | highlight: filterString()"></li>
+                        }
+                      </ul>
+                    </div>
+                  } @else {
+                    <div class="event-table-cell">
+                      <span [innerHTML]="formatConditions(element.conditions) | highlight: filterString()"></span>
+                    </div>
+                  }
                 }
-              }
-              @case ("action") {
-                @if (detailedView()) {
-                  <div class="detailed-cell-container">
-                    <div class="break-words">
+                @case ("action") {
+                  @if (detailedView()) {
+                    <div class="detailed-cell-container">
+                      <div class="break-words">
+                        <span [innerHTML]="element.action | highlight: filterString()"></span>
+                      </div>
+                      <ul class="no-indention margin-top-0">
+                        @for (option of Object.entries(element.options); track option[0]) {
+                          <li [innerHTML]="option[0] + ': ' + option[1] | highlight: filterString()"></li>
+                        }
+                      </ul>
+                    </div>
+                  } @else {
+                    <div
+                      [attr.title]="element.action"
+                      class="event-table-cell">
                       <span [innerHTML]="element.action | highlight: filterString()"></span>
                     </div>
-                    <ul class="no-indention margin-top-0">
-                      @for (option of Object.entries(element.options); track option[0]) {
-                        <li [innerHTML]="option[0] + ': ' + option[1] | highlight: filterString()"></li>
-                      }
-                    </ul>
-                  </div>
-                } @else {
-                  <div
-                    [attr.title]="element.action"
-                    class="event-table-cell">
-                    <span [innerHTML]="element.action | highlight: filterString()"></span>
-                  </div>
+                  }
+                }
+                @case ("active") {
+                  <mat-slide-toggle
+                    (click)="toggleActive(element); $event.stopPropagation()"
+                    [checked]="element.active"
+                    [disableRipple]="true"
+                    [disabled]="!authService.actionAllowed('eventhandling_write')"
+                    i18n-matTooltip="@@common.toggleActiveStatus"
+                    matTooltip="Toggle Active Status"></mat-slide-toggle>
+                }
+                @case ("delete") {
+                  <button
+                    (click)="onDeleteEventHandler(element); $event.stopPropagation()"
+                    i18n-matTooltip="@@event.deleteEventHandler"
+                    mat-icon-button
+                    matTooltip="Delete Event Handler">
+                    <mat-icon>delete</mat-icon>
+                  </button>
+                }
+                @case ("ordering") {
+                  {{ element.ordering }}
+                }
+                @default {
+                  <span
+                    [innerHTML]="element[column] | highlight: filterString()"
+                    [ngClass]="detailedView() ? 'break-words' : 'text-overflow-ellipsis'"></span>
                 }
               }
-              @case ("active") {
-                <mat-slide-toggle
-                  (click)="toggleActive(element); $event.stopPropagation()"
-                  [checked]="element.active"
-                  [disableRipple]="true"
-                  [disabled]="!authService.actionAllowed('eventhandling_write')"
-                  i18n-matTooltip="@@common.toggleActiveStatus"
-                  matTooltip="Toggle Active Status"></mat-slide-toggle>
-              }
-              @case ("delete") {
-                <button
-                  (click)="onDeleteEventHandler(element); $event.stopPropagation()"
-                  i18n-matTooltip="@@event.deleteEventHandler"
-                  mat-icon-button
-                  matTooltip="Delete Event Handler">
-                  <mat-icon>delete</mat-icon>
-                </button>
-              }
-              @case ("ordering") {
-                {{ element.ordering }}
-              }
-              @default {
-                <span
-                  [innerHTML]="element[column] | highlight: filterString()"
-                  [ngClass]="detailedView() ? 'break-words' : 'text-overflow-ellipsis'"></span>
-              }
-            }
-          </td>
-        </ng-container>
+            </td>
+          </ng-container>
+        }
       }
-    }
 
-    <tr
-      *matHeaderRowDef="columnKeys()"
-      mat-header-row></tr>
-    <tr
-      *matRowDef="let row; columns: columnKeys()"
-      [ngClass]="detailedView() ? 'detailed-row' : 'compact-row'"
-      class="example-element-row"
-      mat-row></tr>
-  </table>
+      <tr
+        *matHeaderRowDef="columnKeys()"
+        mat-header-row></tr>
+      <tr
+        *matRowDef="let row; columns: columnKeys()"
+        [ngClass]="detailedView() ? 'detailed-row' : 'compact-row'"
+        class="example-element-row"
+        mat-row></tr>
+
+      <tr *matNoDataRow>
+        <td [attr.colspan]="columnKeys().length">
+          <app-table-state
+            [status]="tableState.rowStatus()"
+            [table]="tableState" />
+        </td>
+      </tr>
+    </table>
+  } @else {
+    <app-table-state
+      [table]="tableState"
+      heading="No event handlers yet"
+      hint="Create an event handler to react to events, for example to notify a user after an enrollment."
+      i18n-heading="@@event.noEventHandlers"
+      i18n-hint="@@event.createEventHandler"
+      icon="flag">
+      @if (authService.actionAllowed("eventhandling_write")) {
+        <button
+          (click)="onCreateNewEventHandler()"
+          class="action-button-primary button-width-xl"
+          mat-stroked-button>
+          <span class="icon-badge">
+            <mat-icon class="padding-right-3">flag</mat-icon>
+            <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+          </span>
+          <span i18n="@@event.createNewEvent">Create New Event Handler</span>
+        </button>
+      }
+    </app-table-state>
+  }
 </div>

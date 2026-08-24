@@ -7,14 +7,14 @@
   width: fit-content;
 }
 
+// Sits on the token-details page container, beside the details cards, so the shallow raise.
 .set-pin-panel {
+  @include styles.card-raised(3);
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 8px;
   padding: 8px 12px 12px;
-  border: 1px solid var(--mat-sys-outline-variant);
-  border-radius: var(--border-radius);
   box-sizing: border-box;
   width: fit-content;
 }

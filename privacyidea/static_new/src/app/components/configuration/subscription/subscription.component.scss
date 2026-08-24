@@ -4,7 +4,7 @@
 .subscription-layout {
   @include styles.main-component-style;
   @include table.base-table-structure(".token-table", ".token-table-filter", ".table-scroll-container");
-  max-height: var(--table-max-height);
+  @include table.page-table-state-size;
 }
 
 .application-color {
@@ -12,8 +12,7 @@
 }
 
 .subscription-details {
-  border-radius: var(--border-radius);
-  border: solid 1px var(--mat-sys-surface-container-highest);
+  @include styles.card-recessed(3);
   display: flex;
   flex-direction: column;
   gap: 1rem;
@@ -43,14 +42,18 @@
   flex-wrap: wrap;
 
   mat-card {
+    @include styles.card-raised(3);
     flex: 1;
     min-width: 300px;
-    border-radius: var(--border-radius);
   }
 
   mat-card-header {
-    background-color: var(--grey-100);
     padding: 8px 16px;
+    font-weight: 500;
+  }
+
+  mat-card-title {
+    font: var(--mat-sys-title-medium);
     font-weight: 500;
   }
 
@@ -61,7 +64,7 @@
 
 .alert {
   padding: 8px 12px;
-  border-radius: 4px;
+  border-radius: var(--border-radius);
   margin-bottom: 1rem;
   font-weight: 500;
 }

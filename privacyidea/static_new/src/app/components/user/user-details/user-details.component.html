@@ -284,7 +284,13 @@
     </div>
 
     <app-details-card class="details-card--tokens">
-      <app-user-details-token-table>
+      <!-- Handed over as templates: the table places them by its own state, next to the rows or
+           inside the empty-state panel. -->
+      <app-user-details-token-table
+        [assignAction]="assignTokenAction"
+        [enrollAction]="enrollTokenAction" />
+
+      <ng-template #enrollTokenAction>
         @if (authService.tokenEnrollmentAllowed()) {
           <button
             (click)="enrollNewToken()"
@@ -294,57 +300,63 @@
             <span i18n="@@user.enrollNewToken">Enroll New Token</span>
           </button>
         }
-      </app-user-details-token-table>
+      </ng-template>
 
-      <div class="flex-row margin-top-16">
-        <mat-form-field
-          class="input-width-xl"
-          subscriptSizing="dynamic">
-          <mat-label i18n="@@user.assignTokenUser">Assign Token to User</mat-label>
-          <app-clearable-input
-            (clearButtonClick)="tokenService.clearFilter()"
-            [showClearButton]="tokenService.filterDraft().isNotEmpty">
-            <input
-              #filterHTMLInputElement
-              #tokenAutoTrigger="matAutocompleteTrigger"
-              (input)="tokenService.handleFilterInput($event)"
-              [matAutocomplete]="tokenAuto"
-              [value]="tokenService.filterDraft().filterString"
-              i18n-placeholder="@@common.exampleQueryType"
-              matInput
-              placeholder="Example query: 'type: hotp serial: 123'" />
-          </app-clearable-input>
-          <mat-autocomplete #tokenAuto="matAutocomplete">
-            @for (option of tokenDataSource().data; track option) {
-              <mat-option
-                (click)="assignUserToToken(option)"
-                class="token-option">
-                <span class="token-option-span">{{ option["serial"] }}</span>
-                <span class="token-option-span">
-                  {{ option["tokentype"] }}
-                </span>
-                <span
-                  [ngClass]="option['active'] ? 'highlight-true' : 'highlight-false'"
-                  class="token-option-span">
-                  @if (option["active"]) {
-                    <ng-container i18n="@@common.activeState">active</ng-container>
-                  } @else {
-                    <ng-container i18n="@@common.deactivated">deactivated</ng-container>
-                  }
-                </span>
-                <span class="token-option-span">
-                  {{ option["username"] }}
-                </span>
-                <mat-icon>add</mat-icon>
-              </mat-option>
-            }
-          </mat-autocomplete>
-        </mat-form-field>
-      </div>
+      <ng-template #assignTokenAction>
+        @if (authService.actionAllowed("assign")) {
+          <div class="flex-row margin-top-16">
+            <mat-form-field
+              class="input-width-xl"
+              subscriptSizing="dynamic">
+              <mat-label i18n="@@user.assignTokenUser">Assign Token to User</mat-label>
+              <app-clearable-input
+                (clearButtonClick)="tokenService.clearFilter()"
+                [showClearButton]="tokenService.filterDraft().isNotEmpty">
+                <input
+                  #filterHTMLInputElement
+                  #tokenAutoTrigger="matAutocompleteTrigger"
+                  (input)="tokenService.handleFilterInput($event)"
+                  [matAutocomplete]="tokenAuto"
+                  [value]="tokenService.filterDraft().filterString"
+                  i18n-placeholder="@@common.exampleQueryType"
+                  matInput
+                  placeholder="Example query: 'type: hotp serial: 123'" />
+              </app-clearable-input>
+              <mat-autocomplete #tokenAuto="matAutocomplete">
+                @for (option of tokenDataSource().data; track option) {
+                  <mat-option
+                    (click)="assignUserToToken(option)"
+                    class="token-option">
+                    <span class="token-option-span">{{ option["serial"] }}</span>
+                    <span class="token-option-span">
+                      {{ option["tokentype"] }}
+                    </span>
+                    <span
+                      [ngClass]="option['active'] ? 'highlight-true' : 'highlight-false'"
+                      class="token-option-span">
+                      @if (option["active"]) {
+                        <ng-container i18n="@@common.activeState">active</ng-container>
+                      } @else {
+                        <ng-container i18n="@@common.deactivated">deactivated</ng-container>
+                      }
+                    </span>
+                    <span class="token-option-span">
+                      {{ option["username"] }}
+                    </span>
+                    <mat-icon>add</mat-icon>
+                  </mat-option>
+                }
+              </mat-autocomplete>
+            </mat-form-field>
+          </div>
+        }
+      </ng-template>
     </app-details-card>
 
     <app-details-card class="details-card--containers">
-      <app-user-details-container-table>
+      <app-user-details-container-table [createAction]="createContainerAction" />
+
+      <ng-template #createContainerAction>
         @if (authService.actionAllowed("container_create")) {
           <button
             (click)="createNewContainer()"
@@ -357,7 +369,7 @@
             <span i18n="@@user.createNewContainer">Create New Container</span>
           </button>
         }
-      </app-user-details-container-table>
+      </ng-template>
     </app-details-card>
   </div>
 </div>

@@ -22,7 +22,7 @@
   aria-label="Token Table"
   class="token-table-layout"
   i18n-aria-label="@@token.tokenTable">
-  @if (authService.actionAllowed("tokenlist")) {
+  @if (tableState.showTable()) {
     <div class="filter-paginator-container">
       <mat-form-field
         class="token-table-filter"
@@ -280,32 +280,41 @@
         }
         <tr
           *matHeaderRowDef="columnKeys; sticky: true"
-          aria-label="Header Row"
-          i18n-aria-label="@@common.headerRow"
           mat-header-row></tr>
 
         <tr
           *matRowDef="let row; columns: columnKeys"
-          aria-label="Data Row"
-          i18n-aria-label="@@common.dataRow"
           mat-row></tr>
 
-        <tr
-          *matNoDataRow
-          aria-label="No Data Row"
-          i18n-aria-label="@@common.noDataRow">
-          <td
-            [attr.colspan]="columnKeys.length"
-            aria-label="No Data Cell"
-            i18n="@@common.noDataMatching"
-            i18n-aria-label="@@common.noDataCell">
-            No data matching the filter.
+        <tr *matNoDataRow>
+          <td [attr.colspan]="columnKeys.length">
+            <app-table-state
+              [status]="tableState.rowStatus()"
+              [table]="tableState" />
           </td>
         </tr>
       </table>
     </div>
   } @else {
-    <div i18n="@@token.youDoNotHavePermission">You do not have the permission to view the token list.</div>
+    <app-table-state
+      [hint]="emptyHint()"
+      [table]="tableState"
+      heading="No tokens yet"
+      i18n-heading="@@token.noTokensYet"
+      icon="shield">
+      @if (authService.tokenEnrollmentAllowed()) {
+        <button
+          [routerLink]="[ROUTE_PATHS.TOKENS_ENROLLMENT]"
+          class="action-button-primary button-width-m"
+          mat-stroked-button>
+          <span class="icon-badge">
+            <mat-icon class="padding-right-3">shield</mat-icon>
+            <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+          </span>
+          <span i18n="@@common.enrollToken">Enroll Token</span>
+        </button>
+      }
+    </app-table-state>
   }
 </div>
 
@@ -334,10 +343,7 @@
   @for (keyword of advancedApiFilterKeys; track keyword) {
     <button
       (click)="onKeywordClick(keyword)"
-      [matTooltip]="filterColumnTooltip(keyword, keyword)"
-      mat-menu-item
-      matTooltipClass="filter-hint-tooltip"
-      matTooltipPosition="right">
+      mat-menu-item>
       <mat-icon class="margin-right-16">{{ getFilterIconName(keyword) }}</mat-icon>
       {{ keyword }}
     </button>

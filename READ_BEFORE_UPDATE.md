@@ -27,6 +27,30 @@
   user - same expectation we already set for the SQL schema upgrade. See the "Redis cache" section of the documentation
   for the full payload-compatibility policy.
 
+* Three further optional Redis caches are new in this release, each behind its own flag and **off by default**:
+  `PI_REDIS_CACHE_USERS` (user store lookups), `PI_REDIS_CACHE_AUTH` (the entries of the `auth_cache` policy) and
+  `PI_REDIS_CACHE_HEALTH` (the certificate health results behind the dashboard panel). Enabling them changes where the
+  data lives, not what it means. Two consequences are worth knowing before you switch them on: with
+  `PI_REDIS_CACHE_AUTH` the `authcache` table stays empty and `pi-manage config authcache cleanup` has nothing left to
+  do, and with `PI_REDIS_CACHE_USERS` a resolver's own `CACHE_TIMEOUT` still bounds how quickly a user change is
+  noticed, because that per-process cache sits in front of the shared one. See the "Redis cache" section of the
+  documentation.
+
+* **`clientapplication.lastseen` is written again.** Since 3.13 the column was only ever set when a client's row was
+  first created: the update path assigned an attribute that is not the column, so the client list in the WebUI and the
+  metering of plugin traffic showed when each client was *first* seen rather than last. This is fixed. Expect the
+  timestamps in that list to start moving again, which may look like new activity where there is none.
+
+* **Two write reductions are active by default** and change behaviour without any configuration. Both are intervals in
+  seconds that can be set to `0` in `pi.cfg` to restore the previous per-request behaviour:
+
+  * `PI_CLIENTAPPLICATION_WRITE_INTERVAL` (default `60`) - a client's `lastseen` is refreshed at most once per interval
+    per worker process instead of on every request, so it can be up to a minute behind.
+  * `PI_SUBSCRIPTION_COUNT_INTERVAL` (default `60`) - the number of users with active tokens is reused between
+    subscription checks, so a user who is given a token may take up to a minute to count towards the subscription. The
+    number is always recounted before a subscription can be declared exceeded, so no authentication is ever refused on
+    the strength of a stale count, and the subscription overview and the statistics task keep counting exactly.
+
 * **HTTP API change** - `GET /token/challenges/...` no longer returns the `id` field for each challenge. The integer ID
   was the SQL primary key, never a stable cross-deployment identifier, and it was incompatible with the new Redis-backed
   challenges which have no SQL row. Use
@@ -114,6 +138,14 @@
   instead. You can find affected event handlers in the WebUI under *Config -> Events*
   by reviewing handlers whose conditions reference `rollout_state`.
 
+* `GET /user/` now honours the `resolver` parameter. Previously, combining `realm` and `resolver`
+  ignored the resolver and returned every user of the realm, and a `resolver`-only query fanned out
+  to every sibling resolver in the realms containing it (so the `resolver` field of a returned user
+  could be a different, higher-priority resolver). Now `realm` + `resolver` returns only that
+  resolver's users within the realm (an empty result if the resolver is not part of the realm), and
+  a `resolver`-only query returns only that resolver's users. If you have scripts or integrations
+  that call `GET /user/` with a `resolver` parameter and relied on the old behaviour, review them.
+
 * Realm-restricted admins with the `userlist` right now see users from **all** realms granted to them, not just one.
   Previously, when such an admin called `GET /user/` without an explicit `realm`
   parameter, only the users of a single realm were returned (the first realm of the first matching
@@ -179,6 +211,40 @@
   endpoint (including `tokenrealm`) already behaves. A `user` that can not be resolved to a user id is still rejected
   with a 400, because the request would otherwise be filtered by the realm and the resolver alone and return the tokens
   of other users.
+
+* **Policies with a User Agent condition are no longer dropped when no user agent is known.** Listing the policies
+  without a user agent - which is the case for `pi-manage config export`, for the configuration report of
+  `GET /system/documentation`, and for the internal check whether a scope contains any policy at all - previously
+  omitted every policy that carries a `User Agent` condition. Such a policy was therefore missing from a configuration
+  export (#5683), and a scope whose policies all carry a User Agent condition was treated as if it had no policies.
+  All of these now see the complete set of policies.
+
+  **This changes who is allowed what** in the `admin` and `user` scopes. Those scopes allow everything as long as they
+  contain no policy at all, and deny everything that is not explicitly granted as soon as they contain one. A scope
+  whose only policies carry a User Agent condition was therefore treated as empty and allowed everything; it now counts
+  as configured, and a request arriving with a different user agent is denied unless a policy grants the action to it.
+  For example, if your only `user` scope policy grants `enrollpin` limited to `privacyIDEA-WebUI`, users can still set
+  their PIN through the WebUI, but a request from another client is refused.
+
+  **WARNING**: in the `admin` scope this can lock you out. If **every** policy in your `admin` scope carries a User
+  Agent condition, then before the update administrators kept full rights no matter which client they used, and after
+  the update they only have the rights of the policies that match their user agent - none, if no policy names it. An
+  admin policy limited to, say, `privacyIDEA-CP` will leave you unable to administrate through the WebUI, including
+  unable to edit the very policy causing it.
+
+  **Before updating**, check your `admin` scope policies under *Config -> Policies* for a User Agent condition. If any
+  are present, make sure that at least one **active** `admin` policy grants your administrators their rights either
+  with no User Agent condition at all or with a condition that includes the client they administrate with
+  (`privacyIDEA-WebUI` for the WebUI). The same review applies to the `user` scope, where the consequence is users
+  losing self-service rights rather than a lockout.
+
+  If you are already locked out after the update, the policy can be disabled from the command line on the server, which
+  does not go through the policy check:
+
+      pi-manage config policy list
+      pi-manage config policy disable <name>
+
+  Installations that do not use the User Agent condition are unaffected.
 
 ## Update from 3.12 to 3.13
 

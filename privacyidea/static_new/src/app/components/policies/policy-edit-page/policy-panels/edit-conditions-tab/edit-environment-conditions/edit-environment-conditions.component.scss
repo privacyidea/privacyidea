@@ -13,7 +13,7 @@
 .user-agent-list-wrapper {
   align-items: center;
   display: flex;
-  gap: var(--half-global-gap);
+  gap: 8px;
   width: 100%;
 }
 
@@ -21,7 +21,7 @@
   display: flex;
   flex-grow: 1;
   flex-wrap: wrap;
-  gap: var(--quarter-global-gap);
+  gap: 4px;
   scrollbar-width: thin;
 }
 
@@ -33,7 +33,7 @@
 .user-agent-input-container {
   align-items: center;
   display: flex;
-  gap: var(--global-gap);
+  gap: 16px;
 }
 
 .remove-user-agent-btn {
@@ -41,7 +41,7 @@
   display: flex;
   height: 18px;
   justify-content: center;
-  margin-left: var(--quarter-global-padding);
+  margin-left: 4px;
   padding: 0;
   width: 18px;
 }
@@ -54,14 +54,14 @@
 
 .flex-row-stretch {
   display: flex;
-  gap: var(--global-gap);
-  margin-top: var(--half-global-padding);
+  gap: 16px;
+  margin-top: 8px;
 }
 
 .select-search-header {
   background-color: var(--mat-sys-surface-container);
   border-bottom: 1px solid var(--mat-sys-outline-variant);
-  padding: var(--half-global-padding) var(--global-padding);
+  padding: 8px 16px;
   position: sticky;
   top: 0;
   z-index: 10;

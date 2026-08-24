@@ -62,7 +62,7 @@
         ? 'red-light'
         : sessionTimerService.remainingTime()! < 60000
           ? 'yellow-light'
-          : 'surface-highest'
+          : 'on-surface-variant'
     ]"
     class="session-timer"
     i18n-matTooltip="@@nav.timeUntilSession"
@@ -70,7 +70,7 @@
     @if (sessionOverOneDay()) {
       {{ sessionDaysText() }}
     } @else {
-      {{ sessionTimerService.remainingTime() | date: sessionTimeFormat() : "UTC" }}
+      {{ displayedTime() | date: sessionTimeFormat() : "UTC" }}
     }
   </div>
   <button

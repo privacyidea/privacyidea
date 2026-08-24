@@ -7,12 +7,7 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  max-height: var(--table-max-height);
-
-  :host-context(body.self-service-layout) & {
-    height: auto;
-    max-height: var(--table-max-height);
-  }
+  @include table.page-table-state-size;
 
   .realm-break {
     margin-top: 3px;

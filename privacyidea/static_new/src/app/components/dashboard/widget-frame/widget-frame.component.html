@@ -41,6 +41,12 @@
     </span>
 
     <div class="widget-actions">
+      <!-- What the widget itself contributes, ahead of the frame's own controls so those
+           stay in the same place in every widget. -->
+      @if (headerActions(); as actions) {
+        <ng-container [ngTemplateOutlet]="actions" />
+      }
+
       @if (showHeaderSpinner()) {
         <mat-progress-spinner
           class="widget-action widget-loading"

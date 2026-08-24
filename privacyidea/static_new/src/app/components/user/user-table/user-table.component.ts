@@ -25,6 +25,7 @@ import {
   linkedSignal,
   OnDestroy,
   ViewChild,
+  viewChild,
   WritableSignal
 } from "@angular/core";
 import {
@@ -41,6 +42,7 @@ import {
   MatTable,
   MatTableDataSource
 } from "@angular/material/table";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { UserData, UserService, UserServiceInterface } from "@services/user/user.service";
@@ -59,6 +61,8 @@ import { CopyableComponent } from "@components/shared/copyable/copyable.componen
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { FilterAutocompleteDirective } from "@components/shared/directives/filter-autocomplete.directive";
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
+import { TableStateComponent } from "@components/shared/table-state/table-state.component";
+import { TableState } from "@core/models/table_state/table-state";
 import { UserNewResolverComponent } from "@components/user/user-new-resolver/user-new-resolver.component";
 import { FilterOption } from "@core/models/filter_value_generic/filter-option";
 import { FilterValueGeneric, keywordlessTerms } from "@core/models/filter_value_generic/filter-value-generic";
@@ -119,7 +123,8 @@ const userFilterOptions: FilterOption<UserData>[] = columnKeysMap.map(
     RouterLink,
     MatIcon,
     MatIconButton,
-    ScrollEdgesDirective
+    ScrollEdgesDirective,
+    TableStateComponent
   ],
   templateUrl: "./user-table.component.html",
   styleUrl: "./user-table.component.scss"
@@ -135,11 +140,12 @@ export class UserTableComponent implements OnDestroy {
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly userService: UserServiceInterface = inject(UserService);
   protected readonly resolverService = inject(ResolverService);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly dialog = inject(MatDialog);
   readonly apiFilterKeys = this.userService.apiFilterKeys;
   readonly filterHint = inlineFilterHint();
   private basePageSizeOptions = [...this.tableUtilsService.pageSizeOptions()];
-  @ViewChild(MatPaginator) paginator!: MatPaginator;
+  readonly paginator = viewChild(MatPaginator);
   @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: ElementRef<HTMLInputElement>;
   pageSizeOptions = computed(() => {
     if (!this.basePageSizeOptions.includes(this.userService.pageSize())) {
@@ -170,24 +176,25 @@ export class UserTableComponent implements OnDestroy {
     source: () => this.filteredUsers(),
     computation: (filtered, previous) => (filtered ? filtered.length : (previous?.value ?? 0))
   });
-  emptyResource: WritableSignal<UserData[]> = linkedSignal({
-    source: this.userService.pageSize,
-    computation: (pageSize: number) =>
-      Array.from({ length: pageSize }, () =>
-        Object.fromEntries(this.columnKeysMap.map((c) => [{ key: c.key, username: "" }]))
-      )
+  readonly tableState = new TableState({
+    resource: this.userService.usersResource,
+    count: () => this.totalLength(),
+    filterActive: () => !this.userService.activeFilter().isEmpty,
+    allowed: () => this.authService.actionAllowed("userlist"),
+    resetFilter: () => this.userService.clearFilter()
   });
   usersDataSource: WritableSignal<MatTableDataSource<UserData>> = linkedSignal({
     source: () => ({
       filtered: this.filteredUsers(),
-      sort: this.userService.sort()
+      sort: this.userService.sort(),
+      paginator: this.paginator()
     }),
     computation: (src, prev) => {
-      // Skeleton rows (emptyResource) are shown while loading and must not be filtered.
-      const data = src.filtered ?? prev?.value?.data ?? this.emptyResource();
+      // While a reload is in flight the rows already on screen stay, rather than blanking the table.
+      const data = src.filtered ?? prev?.value?.data ?? [];
       const sorted = this.clientsideSortUserData([...data], src.sort);
       const ds = new MatTableDataSource(sorted);
-      ds.paginator = this.paginator;
+      ds.paginator = src.paginator ?? null;
       return ds;
     }
   });

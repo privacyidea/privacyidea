@@ -3,10 +3,8 @@
 
 .container-create-container {
   @include styles.main-component-style;
-  // Shared detail/edit-page cap. See --detail-max-height in styles.scss.
-  max-height: var(--table-max-height);
   display: grid;
-  min-width: 616px;
+  min-width: calc(616px + 2 * 16px);
 }
 
 .container-type-hint {
@@ -15,13 +13,13 @@
 }
 
 .type-select {
-  flex: 0 0 calc(2 * 308px + var(--third-global-padding) + 2 * var(--three-quarters-global-padding));
-  width: calc(2 * 308px + var(--third-global-padding) + 2 * var(--three-quarters-global-padding));
+  flex: 0 0 calc(2 * 308px + 16px / 3 + 2 * 12px);
+  width: calc(2 * 308px + 16px / 3 + 2 * 12px);
 }
 
 @media (max-width: 996px) {
   .type-select {
-    flex: 0 0 calc(308px + 2 * var(--three-quarters-global-padding));
-    width: calc(308px + 2 * var(--three-quarters-global-padding));
+    flex: 0 0 calc(308px + 2 * 12px);
+    width: calc(308px + 2 * 12px);
   }
 }

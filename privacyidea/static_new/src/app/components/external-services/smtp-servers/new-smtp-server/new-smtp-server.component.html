@@ -185,11 +185,11 @@
           <app-clearable-input
             (clearButtonClick)="smtpModel.update(m => ({...m, description: ''}))"
             [showClearButton]="!!smtpModel().description">
-            <input
+            <textarea
               [formField]="smtpForm.description"
               matInput
-              i18n-placeholder="@@common.someWiseWords"
-              placeholder="some wise words" />
+              placeholder="some wise words"
+              rows="3"></textarea>
           </app-clearable-input>
         </mat-form-field>
 

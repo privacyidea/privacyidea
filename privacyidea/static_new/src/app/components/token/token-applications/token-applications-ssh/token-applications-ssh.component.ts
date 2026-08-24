@@ -29,7 +29,10 @@ import { MatCell, MatCellDef, MatTableDataSource, MatTableModule } from "@angula
 import { MatTabsModule } from "@angular/material/tabs";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
+import { TableStateComponent } from "@components/shared/table-state/table-state.component";
+import { TableState } from "@core/models/table_state/table-state";
 import { TokenApplicationsActionsComponent } from "@components/token/token-applications/token-applications-actions/token-applications-actions.component";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { MachineService, MachineServiceInterface, TokenApplication } from "@services/machine/machine.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
@@ -53,7 +56,8 @@ import { inlineFilterHint } from "@utils/filter-hint.utils";
     ClearableInputComponent,
     MatIconModule,
     MatButtonModule,
-    TokenApplicationsActionsComponent
+    TokenApplicationsActionsComponent,
+    TableStateComponent
   ],
   templateUrl: "./token-applications-ssh.component.html",
   styleUrls: ["./token-applications-ssh.component.scss"]
@@ -67,6 +71,7 @@ export class TokenApplicationsSshComponent {
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
 
   readonly columnsKeyMap = this.tableUtilsService.pickColumns("serial", "service_id", "user");
   readonly columnKeys = [...this.tableUtilsService.getColumnKeys(this.columnsKeyMap)];
@@ -81,7 +86,14 @@ export class TokenApplicationsSshComponent {
     if (data) {
       return new MatTableDataSource<TokenApplication>(data);
     }
-    return this.tableUtilsService.emptyDataSource(this.machineService.pageSize(), [...this.columnsKeyMap]);
+    return new MatTableDataSource<TokenApplication>([]);
+  });
+  readonly tableState = new TableState({
+    resource: this.machineService.tokenApplicationResource,
+    count: () => this.length(),
+    filterActive: () => !this.machineService.activeFilter().isEmpty,
+    allowed: () => this.authService.actionAllowed("manage_machine_tokens"),
+    resetFilter: () => this.machineService.clearFilter()
   });
   @ViewChild("filterInput", { static: false })
   filterInput!: ElementRef<HTMLInputElement>;

@@ -18,7 +18,7 @@
  **/
 
 import { NgClass } from "@angular/common";
-import { Component, inject } from "@angular/core";
+import { Component, computed, inject } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatFormFieldModule } from "@angular/material/form-field";
@@ -33,6 +33,8 @@ import { CopyableComponent } from "@components/shared/copyable/copyable.componen
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { TableStateComponent } from "@components/shared/table-state/table-state.component";
+import { TableState } from "@core/models/table_state/table-state";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContainerService, ContainerServiceInterface } from "@services/container/container.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
@@ -55,7 +57,8 @@ import { TokenService, TokenServiceInterface } from "@services/token/token.servi
     MatIcon,
     MatButtonModule,
     ScrollToTopDirective,
-    ScrollEdgesDirective
+    ScrollEdgesDirective,
+    TableStateComponent
   ],
   templateUrl: "./container-table.self-service.component.html",
   styleUrl: "./container-table.component.scss"
@@ -69,7 +72,18 @@ export class ContainerTableSelfServiceComponent extends ContainerTableComponent 
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
   protected override readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly router = inject(Router);
-  protected readonly ROUTE_PATHS = ROUTE_PATHS;
+  override readonly tableState = new TableState({
+    resource: this.containerResource,
+    count: () => this.total(),
+    filterActive: () => !this.containerService.activeFilter().isEmpty,
+    allowed: () => this.authService.actionAllowed("container_list"),
+    resetFilter: () => this.containerService.clearFilter()
+  });
+  override readonly emptyHint = computed(() =>
+    this.authService.rights().includes("container_create")
+      ? $localize`Create your first container to group the tokens you use.`
+      : ""
+  );
 
   navigateToCreate(): void {
     this.router.navigateByUrl(ROUTE_PATHS.CONTAINERS_CREATE);
