@@ -107,8 +107,6 @@ class ConfigKey:
     NO_RESPONSE_SIGN = "PI_NO_RESPONSE_SIGN"
     RESPONSE_NO_PRIVATE_KEY_CHECK = "PI_RESPONSE_NO_PRIVATE_KEY_CHECK"
 
-    # Additional SSH key types (beside the built-in ones) that may be enrolled
-    # with the SSH key token. Either a list or a comma separated string.
     ALLOWED_SSH_KEY_TYPES = "PI_ALLOWED_SSH_KEY_TYPES"
 
 

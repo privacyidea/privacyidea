@@ -269,8 +269,30 @@ class SSHTokenTestCase(MyTestCase):
         self._set_tokeninfo_value(token_a.token.id, "ssh_key", old_ciphertext)
         self.assertEqual(self.sshkey, token_a.get_sshkey())
 
+        # A corrupt encrypted ssh_key that cannot be decrypted must raise a
+        # TokenAdminError instead of handing out the decryption sentinel as the
+        # public key.
+        old_ciphertext = self._set_tokeninfo_value(token_a.token.id, "ssh_key", "not-a-valid-ciphertext")
+        self.assertRaises(TokenAdminError, token_a.get_sshkey)
+        self._set_tokeninfo_value(token_a.token.id, "ssh_key", old_ciphertext)
+        self.assertEqual(self.sshkey, token_a.get_sshkey())
+
         # A missing checksum is not accepted either
         token_a.token.set_otpkey("")
+        token_a.token.save()
+        self.assertRaises(TokenAdminError, token_a.get_sshkey)
+
+        # Unreadable OTP key material (e.g. a token the migration skipped, whose
+        # key_enc/key_iv stay NULL) must map to the integrity TokenAdminError,
+        # not to a low-level decoding error.
+        token_a.token.key_enc = None
+        token_a.token.key_iv = None
+        token_a.token.save()
+        self.assertRaises(TokenAdminError, token_a.get_sshkey)
+
+        # Malformed (non-hex) OTP key material must be handled the same way.
+        token_a.token.key_enc = "not-hex!"
+        token_a.token.key_iv = "not-hex!"
         token_a.token.save()
         self.assertRaises(TokenAdminError, token_a.get_sshkey)
 

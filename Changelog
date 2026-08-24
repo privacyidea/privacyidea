@@ -15,9 +15,7 @@ Version 3.14dev1
 
   Enhancements:
   * The decrypted public SSH key of an SSH key token can be retrieved via the new endpoint `GET /token/sshkey/<serial>`,
-    guarded by the new policy action `sshkey_read` (admin and user scope). Encrypted token info (value type
-    `password`, e.g. the SSH public key) is no longer returned in clear text or as ciphertext in the token list, but
-    replaced by the `__CENSORED__` placeholder
+    guarded by the new policy action `sshkey_read` (admin and user scope).
   * SSH key tokens now store an integrity checksum of the SSH key data in the encrypted OTP key field. Manipulations
     of the database entries (e.g. a database admin changing the public key to gain access to SSH servers) are
     detected when the key is fetched. The migration adds the checksum to existing tokens

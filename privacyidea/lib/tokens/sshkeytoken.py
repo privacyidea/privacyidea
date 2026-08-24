@@ -28,7 +28,7 @@ import logging
 
 from privacyidea.config import ConfigKey
 from privacyidea.lib import _
-from privacyidea.lib.crypto import safe_compare, decryptPassword
+from privacyidea.lib.crypto import safe_compare, decryptPassword, FAILED_TO_DECRYPT_PASSWORD
 from privacyidea.lib.error import TokenAdminError
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.log import log_with
@@ -217,7 +217,37 @@ class SSHkeyTokenClass(TokenClass):
         sshkey = ti.get("ssh_key") or ""
         if ti.get("ssh_key.type") == "password":
             sshkey = decryptPassword(sshkey)
+            # decryptPassword() returns a sentinel instead of raising. If we
+            # returned it as the key, a checksum could be stored over the
+            # sentinel and get_sshkey() would later hand it out as the public
+            # key. Treat a failed decryption as an integrity failure.
+            if sshkey == FAILED_TO_DECRYPT_PASSWORD:
+                log.error(f"Could not decrypt the SSH key of token {self.token.serial!s}. "
+                          "The database entries might have been manipulated!")
+                raise TokenAdminError(f"Could not decrypt the SSH key of token {self.token.serial!s}.")
         return key_type, sshkey, key_comment
+
+    def _get_stored_checksum(self) -> str:
+        """
+        Return the integrity checksum stored in the encrypted OTP key field.
+
+        The OTP key material (``key_enc``/``key_iv``) may be missing or
+        unreadable, e.g. for tokens that the integrity migration skipped
+        (NULL key fields) or if the columns were manipulated to malformed
+        values. In that case an empty string is returned so the caller can
+        treat it as a missing checksum and raise the documented
+        ``TokenAdminError`` instead of a low-level decoding/decryption error.
+
+        :return: the stored checksum, or an empty string if it is unreadable
+        """
+        if not self.token.key_enc or not self.token.key_iv:
+            return ""
+        try:
+            return to_unicode(self.token.get_otpkey().getKey())
+        except Exception as exx:
+            log.warning(f"Could not read the SSH key integrity checksum of token "
+                        f"{self.token.serial!s}: {exx!r}")
+            return ""
 
     @log_with(log)
     def get_sshkey(self):
@@ -234,7 +264,7 @@ class SSHkeyTokenClass(TokenClass):
         """
         key_type, sshkey, key_comment = self._get_ssh_key_parts()
         # Verify the integrity checksum
-        stored_checksum = to_unicode(self.token.get_otpkey().getKey())
+        stored_checksum = self._get_stored_checksum()
         if not stored_checksum:
             log.error(f"Token {self.token.serial!s} is missing the SSH key integrity checksum. "
                       "Please run the database migration to add the checksum to existing tokens.")
