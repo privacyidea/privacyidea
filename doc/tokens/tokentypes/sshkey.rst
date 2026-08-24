@@ -32,8 +32,8 @@ Reading the public key
 
 .. versionadded:: 3.14
 
-The public SSH key is stored encrypted in the database and is therefore not
-contained in the token list (it is replaced by ``__CENSORED__`` there). To
+The public SSH key is stored encrypted in the database and is therefore only
+contained in encrypted form in the token list. To
 retrieve the assembled public key (``<type> <key> [<comment>]``), use the
 endpoint ``GET /token/sshkey/<serial>``. Access is guarded by the policy
 action ``sshkey_read`` in the scopes ``admin`` and ``user``. A user may only
