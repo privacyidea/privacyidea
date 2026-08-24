@@ -46,7 +46,7 @@
             matInput
             placeholder="Enter OTP key" />
           @if (otpKeyForm().errors().some(e => e.kind === 'required') && otpKeyForm().touched()) {
-            <mat-error i18n="@@token.otpKeyRequired"> OTP key is <strong>required</strong></mat-error>
+            <mat-error i18n="@@token.otpKeyRequired">OTP key is <strong>required</strong></mat-error>
           }
           @if (otpKeyForm().errors().some(e => e.kind === 'minlength') && otpKeyForm().touched()) {
             <mat-error i18n="@@token.otpKeyMustLeast">OTP key must be at least 16 characters</mat-error>
@@ -83,7 +83,7 @@
           }
         </mat-select>
         <mat-error i18n="@@token.hashAlgorithmRequired">Hash algorithm is <strong>required</strong></mat-error>
-        <mat-hint i18n="@@token.someAuthenticator"> Some Authenticator Apps only support the SHA1 algorithm.</mat-hint>
+        <mat-hint i18n="@@token.someAuthenticator">Some Authenticator Apps only support the SHA1 algorithm.</mat-hint>
       </mat-form-field>
     </div>
   </div>

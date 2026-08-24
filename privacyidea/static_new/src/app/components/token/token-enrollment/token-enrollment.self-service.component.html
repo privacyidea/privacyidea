@@ -49,7 +49,7 @@
           rows="3"></textarea>
         <mat-hint align="end">{{ description().length }} / {{ tokenService.maxDescriptionLength }} </mat-hint>
         @if (descriptionForm().errors().some(e => e.kind === 'required') && descriptionForm().touched()) {
-          <mat-error i18n="@@token.descriptionRequired"> Description is <strong>required</strong>. </mat-error>
+          <mat-error i18n="@@token.descriptionRequired">Description is <strong>required</strong>.</mat-error>
         }
         @if (descriptionForm().errors().some(e => e.kind === 'maxlength') && descriptionForm().touched()) {
           <mat-error i18n="@@token.descriptionMust">

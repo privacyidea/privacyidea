@@ -32,7 +32,7 @@
               placeholder="mysql+pymysql" />
           </app-clearable-input>
           @if (sqlForm.Driver().errors().some(e => e.kind === 'required') && sqlForm.Driver().touched()) {
-            <mat-error i18n="@@resolver.driverRequired"> Driver is <strong>required</strong> . </mat-error>
+            <mat-error i18n="@@resolver.driverRequired">Driver is <strong>required</strong> .</mat-error>
           }
         </mat-form-field>
 
@@ -61,7 +61,7 @@
               placeholder="127.0.0.1" />
           </app-clearable-input>
           @if (sqlForm.Server().errors().some(e => e.kind === 'required') && sqlForm.Server().touched()) {
-            <mat-error i18n="@@resolver.serverRequired"> Server is <strong>required</strong> . </mat-error>
+            <mat-error i18n="@@resolver.serverRequired">Server is <strong>required</strong> .</mat-error>
           }
         </mat-form-field>
 
@@ -183,7 +183,7 @@
               placeholder="Users" />
           </app-clearable-input>
           @if (sqlForm.Table().errors().some(e => e.kind === 'required') && sqlForm.Table().touched()) {
-            <mat-error i18n="@@resolver.tableRequired"> Table is <strong>required</strong> . </mat-error>
+            <mat-error i18n="@@resolver.tableRequired">Table is <strong>required</strong> .</mat-error>
           }
         </mat-form-field>
 
@@ -195,7 +195,7 @@
             placeholder="500"
             type="number" />
           @if (sqlForm.Limit().errors().some(e => e.kind === 'required') && sqlForm.Limit().touched()) {
-            <mat-error i18n="@@resolver.limitRequired"> Limit is <strong>required</strong> . </mat-error>
+            <mat-error i18n="@@resolver.limitRequired">Limit is <strong>required</strong> .</mat-error>
           }
         </mat-form-field>
       </div>
@@ -207,7 +207,7 @@
           matInput
           placeholder='{"userid":"id","username":"user","phone":"telephoneNumber","mobile":"mobile","email":"mail","surname":"sn","givenname":"givenName","password":"password"}'></textarea>
         @if (sqlForm.Map().errors().some(e => e.kind === 'required') && sqlForm.Map().touched()) {
-          <mat-error i18n="@@resolver.mappingRequired"> Mapping is <strong>required</strong> . </mat-error>
+          <mat-error i18n="@@resolver.mappingRequired">Mapping is <strong>required</strong> .</mat-error>
         }
       </mat-form-field>
 

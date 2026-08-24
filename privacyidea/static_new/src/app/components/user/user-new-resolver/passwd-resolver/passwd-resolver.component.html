@@ -31,7 +31,7 @@
       </app-clearable-input>
 
       @if (passwdForm.fileName().errors().some(e => e.kind === 'required') && passwdForm.fileName().touched()) {
-        <mat-error i18n="@@resolver.filenameRequired"> Filename is <strong>required</strong> . </mat-error>
+        <mat-error i18n="@@resolver.filenameRequired">Filename is <strong>required</strong> .</mat-error>
       }
     </mat-form-field>
   </div>

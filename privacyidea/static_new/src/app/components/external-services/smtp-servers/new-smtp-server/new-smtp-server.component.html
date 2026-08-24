@@ -73,7 +73,7 @@
             >The unique identifying name of the SMTP server definition.</mat-hint
           >
           @if (smtpForm.identifier().errors().some(e => e.kind === 'required')) {
-            <mat-error i18n="@@common.identifierRequired">Identifier is <strong>required</strong> </mat-error>
+            <mat-error i18n="@@common.identifierRequired">Identifier is <strong>required</strong></mat-error>
           }
           @if (smtpForm.identifier().errors().some(e => e.kind === 'pattern')) {
             <mat-error i18n="@@common.identifierContains"
@@ -97,7 +97,7 @@
                 placeholder="smtp://mail.example.com" />
             </app-clearable-input>
             @if (smtpForm.server().errors().some(e => e.kind === 'required')) {
-              <mat-error i18n="@@common.serverRequired">Server is <strong>required</strong> </mat-error>
+              <mat-error i18n="@@common.serverRequired">Server is <strong>required</strong></mat-error>
             }
           </mat-form-field>
 
@@ -127,10 +127,10 @@
                 placeholder="privacyidea@example.com" />
             </app-clearable-input>
             @if (smtpForm.sender().errors().some(e => e.kind === 'required')) {
-              <mat-error i18n="@@smtpServer.senderEmailRequired">Sender email is <strong>required</strong> </mat-error>
+              <mat-error i18n="@@smtpServer.senderEmailRequired">Sender email is <strong>required</strong></mat-error>
             }
             @if (smtpForm.sender().errors().some(e => e.kind === 'email')) {
-              <mat-error i18n="@@smtpServer.invalidEmailFormat">Invalid email format </mat-error>
+              <mat-error i18n="@@smtpServer.invalidEmailFormat">Invalid email format</mat-error>
             }
           </mat-form-field>
 

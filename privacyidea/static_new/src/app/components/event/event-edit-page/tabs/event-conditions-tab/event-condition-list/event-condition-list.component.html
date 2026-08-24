@@ -72,7 +72,7 @@
                   <mat-option [value]="option">{{ option }}</mat-option>
                 }
               </mat-select>
-              <mat-error i18n="@@event.selectLeastOne"> Select at least one value or remove the condition.</mat-error>
+              <mat-error i18n="@@event.selectLeastOne">Select at least one value or remove the condition.</mat-error>
             </mat-form-field>
           } @else {
             <!-- Needs to be a separate selection as multiple state can not be changed during runtime -->
@@ -91,7 +91,7 @@
                   <mat-option [value]="option">{{ option }}</mat-option>
                 }
               </mat-select>
-              <mat-error i18n="@@event.selectValueRemove"> Select a value or remove the condition.</mat-error>
+              <mat-error i18n="@@event.selectValueRemove">Select a value or remove the condition.</mat-error>
             </mat-form-field>
           }
         } @else {
@@ -133,7 +133,7 @@
                 (clearButtonClick)="clearConditionValue(conditionName)"
                 matSuffix></app-clear-button>
             }
-            <mat-error i18n="@@event.enterValueRemove"> Enter a value or remove the condition.</mat-error>
+            <mat-error i18n="@@event.enterValueRemove">Enter a value or remove the condition.</mat-error>
           </mat-form-field>
         }
         <button
