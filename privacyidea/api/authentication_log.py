@@ -39,11 +39,16 @@ log = logging.getLogger(__name__)
 
 authentication_log_blueprint = Blueprint("authentication_log_blueprint", __name__)
 
-# Filter parameters that map 1:1 to a get_authentication_logs_paginate keyword argument. The ca_* ones filter on the
-# entry's conditional-access outcomes rather than on a column of its own row; ca_dry_run is parsed separately because
-# it is a boolean, not a list of values.
-_FILTER_PARAMS = ["resolver", "uid", "realm", "username", "user_role", "event_type", "source_ip", "serial",
-                  "transaction_id", "attempt_id", "client_label", "ca_action_type", "ca_policy_name"]
+# The list-valued filter query parameters, mapped to the get_authentication_logs_paginate keyword argument each one
+# feeds. Every one of them takes a list of values, so the query parameter is plural while the library keyword names the
+# single field it matches. The ca_* ones filter on the entry's conditional-access outcomes rather than on a column of
+# its own row; ca_dry_run is parsed separately because it is a boolean, not a list of values.
+_FILTER_PARAMS = {"resolvers": "resolver", "uids": "uid", "realms": "realm", "usernames": "username",
+                  "user_roles": "user_role", "event_types": "event_type", "source_ips": "source_ip",
+                  "serials": "serial", "transaction_ids": "transaction_id", "attempt_ids": "attempt_id",
+                  "client_labels": "client_label", "endpoints": "endpoint",
+                  "ca_action_types": "ca_action_type",
+                  "ca_policy_names": "ca_policy_name"}
 
 
 def _split_csv(value: str | None) -> list[str] | None:
@@ -82,32 +87,32 @@ def get_authentication_log():
     scope may read the log; if the policy is scoped to realms, resolvers and/or users, only entries matching that
     scope are returned. A **user** with the action set in the user scope may read only their own entries.
 
-    Each of ``resolver``, ``uid``, ``realm``, ``username``, ``user_role``, ``event_type``, ``source_ip``, ``serial``,
-    ``transaction_id``, ``attempt_id`` and ``client_label`` may be passed as a query
-    parameter to filter on it. A value may be a comma-separated list (e.g. ``event_type=MFA_FAIL,PIN_FAIL``), matching
-    entries that equal any of the values. A value may contain a ``*`` wildcard (e.g. ``serial=TOTP*``) to match by
+    Each of ``resolvers``, ``uids``, ``realms``, ``usernames``, ``user_roles``, ``event_types``, ``source_ips``,
+    ``serials``, ``transaction_ids``, ``attempt_ids``, ``client_labels`` and ``endpoints`` may be passed as a query
+    parameter to filter on it. A value may be a comma-separated list (e.g. ``event_types=MFA_FAIL,PIN_FAIL``), matching
+    entries that equal any of the values. A value may contain a ``*`` wildcard (e.g. ``serials=TOTP*``) to match by
     prefix/pattern instead of exactly. Note, using wildcards filtering is always case-insensitive.
 
     :query page: page number, 1-indexed (default 1).
     :query page_size: entries per page (default 15).
     :query sort_column: column to sort by (id, timestamp, event_type, resolver, uid, realm, username, source_ip,
-        client_label, serial, transaction_id, attempt_id).
+        client_label, endpoint, serial, transaction_id, attempt_id).
     :query sort_order: ``asc`` or ``desc`` (default ``desc``).
     :query start_time: only entries at/after this ISO 8601 timestamp.
     :query end_time: only entries at/before this ISO 8601 timestamp.
     :query case_insensitive: if set, plain (non-wildcard) filter values match case-insensitively (wildcard values
         always match case-insensitively).
-    :query ca_action_type: only entries with a conditional-access outcome of this action type (e.g. ``LOCK_USER``).
-        Takes a list and a wildcard like the other filters, so ``ca_action_type=*`` means "conditional access acted on
-        this request at all".
-    :query ca_policy_name: only entries with an outcome recorded for this conditional-access policy name.
+    :query ca_action_types: only entries with a conditional-access outcome of one of these action types
+        (e.g. ``LOCK_USER_TEMPORARY``). Takes a list and a wildcard like the other filters, so ``ca_action_types=*``
+        means "conditional access acted on this request at all".
+    :query ca_policy_names: only entries with an outcome recorded for one of these conditional-access policy names.
     :query ca_dry_run: ``true`` for only entries with a dry-run outcome, ``false`` for only entries with an enforced
         one; omit it to get both. The three ``ca_*`` filters apply to the *same* outcome, so an entry matches when one
         of its outcomes satisfies all of them.
     :status 200: paginated result in ``result.value`` with ``auth_logs``, ``count``, ``current``, ``prev``, ``next``.
     """
     params = request.all_data
-    filters = {name: _split_csv(get_optional(params, name)) for name in _FILTER_PARAMS}
+    filters = {keyword: _split_csv(get_optional(params, param)) for param, keyword in _FILTER_PARAMS.items()}
     # A tri-state: absent (or empty) does not filter, so that "both" needs no value of its own.
     ca_dry_run = get_optional(params, "ca_dry_run")
     filters["ca_dry_run"] = is_true(ca_dry_run) if ca_dry_run not in (None, "") else None

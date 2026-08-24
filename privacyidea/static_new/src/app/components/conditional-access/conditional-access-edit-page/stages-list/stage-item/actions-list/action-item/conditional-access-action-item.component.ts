@@ -38,10 +38,10 @@ import { InfoHintComponent } from "@components/shared/info-hint/info-hint.compon
 
 // One-line explanation of what each action does, shown under the action select.
 const ACTION_DESCRIPTIONS: Record<LockoutActionType, string> = {
-  LOCK_USER: $localize`Temporarily lock the user out for the duration below.`,
-  PERMANENT_LOCK_USER: $localize`Lock the user out until an administrator unlocks them.`,
+  LOCK_USER_TEMPORARY: $localize`Temporarily lock the user out for the duration below.`,
+  LOCK_USER_PERMANENT: $localize`Lock the user out until an administrator unlocks them.`,
   BLOCK_IP: $localize`Temporarily block the request's source IP for the duration below.`,
-  PERMANENT_BLOCK_IP: $localize`Block the request's source IP until an administrator unblocks it.`,
+  BLOCK_IP_PERMANENT: $localize`Block the request's source IP until an administrator unblocks it.`,
   EMAIL_ADMIN: $localize`Send a notification email to an admin recipient group.`,
   EMAIL_USER: $localize`Send a notification email to the affected user.`,
   ALLOW: $localize`Allow the request and skip any lower-priority policies.`,
@@ -184,7 +184,7 @@ export class ConditionalAccessActionItemComponent {
   });
 
   // Whether the selected action is valid for the current target. Changing the
-  // target can leave a stale, now-incompatible action (e.g. LOCK_USER after
+  // target can leave a stale, now-incompatible action (e.g. LOCK_USER_TEMPORARY after
   // switching to source_ip); flag it so it's fixed before the backend 400s. While
   // the allowed list is still loading (empty) we cannot judge, so treat as valid.
   readonly isActionAllowedForTarget = computed<boolean>(() => {
@@ -249,7 +249,7 @@ export class ConditionalAccessActionItemComponent {
   });
 
   private static modeFor(actionType: LockoutActionType): ActionValueMode {
-    if (actionType === "LOCK_USER" || actionType === "BLOCK_IP") {
+    if (actionType === "LOCK_USER_TEMPORARY" || actionType === "BLOCK_IP") {
       return "duration";
     }
     if (actionType === "EMAIL_ADMIN" || actionType === "EMAIL_USER") {

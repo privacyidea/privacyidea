@@ -95,7 +95,7 @@ class AuthEventType(str, Enum):
     # request, like USER_UNKNOWN or NO_TOKEN above.
     #
     # A user lock in force turned the request away. Note the word order: USER_LOCKED is the rejection, while the
-    # LOCK_USER action (in conditional_access_outcome.action_type) is the lock being created.
+    # LOCK_USER_TEMPORARY action (in conditional_access_outcome.action_type) is the lock being created.
     USER_LOCKED = "USER_LOCKED"
     # A source-IP block in force turned the request away.
     IP_BLOCKED = "IP_BLOCKED"
@@ -156,7 +156,7 @@ EVENT_TYPE_OUTCOME: dict[AuthEventType, AuthEventOutcome] = {
 # The event types conditional access writes itself, when its pre-check rejects a request before any credential check.
 #
 # They are deliberately **not trackable** by a policy. Counting them would let a lock feed itself: a locked user's
-# rejected requests would keep the count at or above the threshold, so a timed LOCK_USER with
+# rejected requests would keep the count at or above the threshold, so a timed LOCK_USER_TEMPORARY with
 # retrigger_above_threshold would refresh itself on every rejection and never expire. A successful login cannot clear
 # it either (since_last_success is unreachable for a locked user, so the count only ever grows), and a DENY policy
 # tracking ACCESS_DENIED would be judging its own prior denials. The legitimate use case - escalate to an IP block

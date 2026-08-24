@@ -47,6 +47,7 @@ SORTABLE_COLUMNS: dict[str, InstrumentedAttribute] = {
     "username": AuthenticationLog.username,
     "source_ip": AuthenticationLog.source_ip,
     "client_label": AuthenticationLog.client_label,
+    "endpoint": AuthenticationLog.endpoint,
     "serial": AuthenticationLog.serial,
     "transaction_id": AuthenticationLog.transaction_id,
     "attempt_id": AuthenticationLog.attempt_id,
@@ -206,6 +207,7 @@ class PendingAuthEvent:
     user_role: str | None = None
     source_ip: str | None = None
     client_label: str | None = None
+    endpoint: str | None = None
     serial: str | None = None
     attempt_id: str | None = None
     other_info: dict | None = None
@@ -251,6 +253,7 @@ _TRUNCATED_COLUMNS = {
     "user_role": None,
     "source_ip": None,
     "client_label": None,
+    "endpoint": None,
     # A comma-joined serial list: cut on the last whole serial that fits.
     "serial": ",",
     "attempt_id": None,
@@ -352,6 +355,7 @@ def log_authentication_event(event_type: AuthEventType,
                              user_role: str | None = None,
                              source_ip: str | None = None,
                              client_label: str | None = None,
+                             endpoint: str | None = None,
                              serial: str | None = None,
                              attempt_id: str | None = None,
                              other_info: dict | None = None) -> int | None:
@@ -363,7 +367,8 @@ def log_authentication_event(event_type: AuthEventType,
     """
     event = PendingAuthEvent(event_type=event_type, transaction_id=transaction_id, resolver=resolver, uid=uid,
                              realm=realm, username=username, user_role=user_role, source_ip=source_ip,
-                             client_label=client_label, serial=serial, attempt_id=attempt_id, other_info=other_info)
+                             client_label=client_label, endpoint=endpoint, serial=serial, attempt_id=attempt_id,
+                             other_info=other_info)
     write_authentication_events([event])
     return event.row_id
 
@@ -441,6 +446,7 @@ def _filter_conditions(resolver: str | list[str] | None = None,
                        transaction_id: str | list[str] | None = None,
                        attempt_id: str | list[str] | None = None,
                        client_label: str | list[str] | None = None,
+                       endpoint: str | list[str] | None = None,
                        start_time: datetime | None = None,
                        end_time: datetime | None = None,
                        case_insensitive: bool = False) -> list:
@@ -465,6 +471,7 @@ def _filter_conditions(resolver: str | list[str] | None = None,
         AuthenticationLog.transaction_id: transaction_id,
         AuthenticationLog.attempt_id: attempt_id,
         AuthenticationLog.client_label: client_label,
+        AuthenticationLog.endpoint: endpoint,
     }
     conditions = [condition for column, value in match_filters.items()
                   if (condition := match_condition(column, value, case_insensitive)) is not None]
@@ -489,8 +496,8 @@ def _outcome_condition(ca_action_type: str | list[str] | None = None,
     acted on at all".
 
     **All conditions apply to the same outcome row.** An entry matches when *one* of its outcomes satisfies all of
-    them, which is what the filter says: ``ca_action_type=LOCK_USER`` with ``ca_policy_name=Notify`` must not match a
-    request where *Notify* sent an email and some other policy locked the user.
+    them, which is what the filter says: ``ca_action_type=LOCK_USER_TEMPORARY`` with ``ca_policy_name=Notify`` must
+    not match a request where *Notify* sent an email and some other policy locked the user.
 
     An ``EXISTS`` rather than a join, for the reason the listing reads the outcomes with ``selectinload``
     (:func:`get_authentication_logs_paginate`): a join multiplies an entry by its outcomes, which would break both the
@@ -570,6 +577,7 @@ def get_authentication_logs(resolver: str | list[str] | None = None,
                             transaction_id: str | list[str] | None = None,
                             attempt_id: str | list[str] | None = None,
                             client_label: str | list[str] | None = None,
+                            endpoint: str | list[str] | None = None,
                             start_time: datetime | None = None,
                             end_time: datetime | None = None) -> Sequence[AuthenticationLog]:
     """
@@ -582,7 +590,7 @@ def get_authentication_logs(resolver: str | list[str] | None = None,
                                     event_type=event_type,
                                     source_ip=source_ip, serial=serial, transaction_id=transaction_id,
                                     attempt_id=attempt_id,
-                                    client_label=client_label,
+                                    client_label=client_label, endpoint=endpoint,
                                     start_time=start_time, end_time=end_time)
     stmt = select(AuthenticationLog).where(*conditions).order_by(AuthenticationLog.id)
     return get_ca_session().scalars(stmt).all()
@@ -599,6 +607,7 @@ def get_authentication_logs_paginate(resolver: str | list[str] | None = None,
                                      transaction_id: str | list[str] | None = None,
                                      attempt_id: str | list[str] | None = None,
                                      client_label: str | list[str] | None = None,
+                                     endpoint: str | list[str] | None = None,
                                      ca_action_type: str | list[str] | None = None,
                                      ca_policy_name: str | list[str] | None = None,
                                      ca_dry_run: bool | None = None,
@@ -614,7 +623,7 @@ def get_authentication_logs_paginate(resolver: str | list[str] | None = None,
     Return a single page of authentication log entries matching the given filters.
 
     The filter parameters -- ``resolver``, ``uid``, ``realm``, ``username``, ``user_role``, ``event_type``,
-    ``source_ip``, ``serial``, ``transaction_id``, ``attempt_id``, ``client_label``,
+    ``source_ip``, ``serial``, ``transaction_id``, ``attempt_id``, ``client_label``, ``endpoint``,
     ``start_time`` and
     ``end_time`` -- behave
     exactly like :func:`get_authentication_logs`. The ``ca_*`` parameters filter on what conditional access *did* to the
@@ -640,7 +649,7 @@ def get_authentication_logs_paginate(resolver: str | list[str] | None = None,
                                     event_type=event_type,
                                     source_ip=source_ip, serial=serial, transaction_id=transaction_id,
                                     attempt_id=attempt_id,
-                                    client_label=client_label,
+                                    client_label=client_label, endpoint=endpoint,
                                     start_time=start_time, end_time=end_time,
                                     case_insensitive=case_insensitive)
     # An EXISTS over the outcome table, kept out of _filter_conditions: those conditions are also applied to DELETE
@@ -743,6 +752,7 @@ def delete_authentication_logs(resolver: str | list[str] | None = None,
                                transaction_id: str | list[str] | None = None,
                                attempt_id: str | list[str] | None = None,
                                client_label: str | list[str] | None = None,
+                               endpoint: str | list[str] | None = None,
                                start_time: datetime | None = None,
                                end_time: datetime | None = None,
                                visibility_scopes: list[AuthenticationLogVisibilityScope] | None = None,
@@ -751,7 +761,7 @@ def delete_authentication_logs(resolver: str | list[str] | None = None,
     Delete all authentication log entries matching the given filters and return the number deleted.
 
     The filter parameters -- ``resolver``, ``uid``, ``realm``, ``username``, ``user_role``, ``event_type``,
-    ``source_ip``, ``serial``, ``transaction_id``, ``attempt_id``, ``client_label``,
+    ``source_ip``, ``serial``, ``transaction_id``, ``attempt_id``, ``client_label``, ``endpoint``,
     ``start_time`` and
     ``end_time`` -- behave exactly like :func:`get_authentication_logs` (to delete entries older than a point in time,
     pass ``end_time``). The caller must pass at least one filter: with no filter this would delete the entire log,
@@ -766,7 +776,7 @@ def delete_authentication_logs(resolver: str | list[str] | None = None,
                                     event_type=event_type,
                                     source_ip=source_ip, serial=serial, transaction_id=transaction_id,
                                     attempt_id=attempt_id,
-                                    client_label=client_label,
+                                    client_label=client_label, endpoint=endpoint,
                                     start_time=start_time, end_time=end_time)
     # Guard on the caller's filters before adding the visibility restriction, so a scoped admin also cannot wipe a
     # whole scope with an unfiltered request.

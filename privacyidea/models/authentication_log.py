@@ -43,6 +43,9 @@ authentication_log_column_length = {
     "event_type": 40,
     "source_ip": 50,
     "client_label": 1024,
+    # The request path of the authenticating endpoint ("/auth", "/validate/check", ...). Sized well past the longest
+    # route privacyIDEA registers, so a value is never actually cut.
+    "endpoint": 255,
     "serial": 1024,
     # transaction_id (and attempt_id) originate in the challenge table, whose transaction_id is Unicode(64), so a real
     # value never exceeds 64 here either.
@@ -83,6 +86,11 @@ class AuthenticationLog(MethodsMixin, db.Model):
         case_sensitive_unicode(authentication_log_column_length["source_ip"]))
     client_label: Mapped[str | None] = mapped_column(
         case_sensitive_unicode(authentication_log_column_length["client_label"]))
+    # The endpoint the request authenticated against, as its request path ("/auth", "/validate/check", "/ttype/push").
+    # Nullable like the other request-scoped columns: an event recorded outside a request context (the CLI, the
+    # push_wait flow) has no endpoint to name.
+    endpoint: Mapped[str | None] = mapped_column(
+        case_sensitive_unicode(authentication_log_column_length["endpoint"]))
     serial: Mapped[str | None] = mapped_column(case_sensitive_unicode(authentication_log_column_length["serial"]))
     transaction_id: Mapped[str | None] = mapped_column(
         case_sensitive_unicode(authentication_log_column_length["transaction_id"]))

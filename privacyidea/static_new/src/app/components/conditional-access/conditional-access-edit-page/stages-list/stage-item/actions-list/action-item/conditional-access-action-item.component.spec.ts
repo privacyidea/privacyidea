@@ -74,7 +74,7 @@ describe("ConditionalAccessActionItemComponent", () => {
     component = fixture.componentInstance;
     authService = TestBed.inject(AuthService) as unknown as MockAuthService;
     smtpService = TestBed.inject(SmtpService) as unknown as MockSmtpService;
-    setAction({ action_type: "LOCK_USER", action_value: 600 });
+    setAction({ action_type: "LOCK_USER_TEMPORARY", action_value: 600 });
     // The rights of a default install, where no admin policy narrows them.
     setRights(["smtpserver_read"]);
   });
@@ -84,14 +84,14 @@ describe("ConditionalAccessActionItemComponent", () => {
   });
 
   it("should describe every action type", () => {
-    for (const type of ["LOCK_USER", "PERMANENT_LOCK_USER", "BLOCK_IP", "ALLOW", "DENY", "EMAIL_USER"] as const) {
+    for (const type of ["LOCK_USER_TEMPORARY", "LOCK_USER_PERMANENT", "BLOCK_IP", "ALLOW", "DENY", "EMAIL_USER"] as const) {
       setAction({ action_type: type, action_value: null });
       expect(component.actionDescription().length).toBeGreaterThan(0);
     }
   });
 
   it("should classify the value mode from the action type", () => {
-    setAction({ action_type: "LOCK_USER", action_value: 600 });
+    setAction({ action_type: "LOCK_USER_TEMPORARY", action_value: 600 });
     expect(component.valueMode()).toBe("duration");
     setAction({ action_type: "EMAIL_ADMIN", action_value: {} });
     expect(component.valueMode()).toBe("email");
@@ -107,17 +107,17 @@ describe("ConditionalAccessActionItemComponent", () => {
         ConditionalAccessPolicyService
       ) as unknown as MockConditionalAccessPolicyService;
       policyServiceMock.actionsByTarget.set({
-        user: ["LOCK_USER", "PERMANENT_LOCK_USER", "EMAIL_ADMIN", "EMAIL_USER", "ALLOW", "DENY"],
-        source_ip: ["BLOCK_IP", "PERMANENT_BLOCK_IP", "EMAIL_ADMIN", "ALLOW", "DENY"]
+        user: ["LOCK_USER_TEMPORARY", "LOCK_USER_PERMANENT", "EMAIL_ADMIN", "EMAIL_USER", "ALLOW", "DENY"],
+        source_ip: ["BLOCK_IP", "BLOCK_IP_PERMANENT", "EMAIL_ADMIN", "ALLOW", "DENY"]
       });
     });
 
     it("flags an action that is not allowed for the current target", () => {
       fixture.componentRef.setInput("target", "source_ip");
-      setAction({ action_type: "LOCK_USER", action_value: 600 });
+      setAction({ action_type: "LOCK_USER_TEMPORARY", action_value: 600 });
       expect(component.isActionAllowedForTarget()).toBe(false);
       // the stale type stays selectable so the user can change it
-      expect(component.allowedActionTypes()).toContain("LOCK_USER");
+      expect(component.allowedActionTypes()).toContain("LOCK_USER_TEMPORARY");
     });
 
     it("accepts an action that is allowed for the current target", () => {
@@ -130,19 +130,19 @@ describe("ConditionalAccessActionItemComponent", () => {
       policyServiceMock.actionsByTarget.set({} as Record<LockoutTarget, LockoutActionType[]>);
       policyServiceMock.actionTypes.set([]);
       fixture.componentRef.setInput("target", "source_ip");
-      setAction({ action_type: "LOCK_USER", action_value: 600 });
+      setAction({ action_type: "LOCK_USER_TEMPORARY", action_value: 600 });
       expect(component.isActionAllowedForTarget()).toBe(true);
     });
   });
 
   describe("duration", () => {
     it("should read a plain-number duration", () => {
-      setAction({ action_type: "LOCK_USER", action_value: 600 });
+      setAction({ action_type: "LOCK_USER_TEMPORARY", action_value: 600 });
       expect(component.durationValue()).toBe("600");
     });
 
     it("should read a nested duration_seconds", () => {
-      setAction({ action_type: "LOCK_USER", action_value: { duration_seconds: 30 } });
+      setAction({ action_type: "LOCK_USER_TEMPORARY", action_value: { duration_seconds: 30 } });
       expect(component.durationValue()).toBe("30");
     });
 
@@ -155,7 +155,7 @@ describe("ConditionalAccessActionItemComponent", () => {
     });
 
     it("should convert the entered value to seconds using the selected unit", () => {
-      setAction({ action_type: "LOCK_USER", action_value: null });
+      setAction({ action_type: "LOCK_USER_TEMPORARY", action_value: null });
       const spy = jest.spyOn(component.updateAction, "emit");
       component.durationUnit.set("minutes");
       component.onDurationInput("5");
@@ -163,13 +163,13 @@ describe("ConditionalAccessActionItemComponent", () => {
     });
 
     it("should display the stored seconds in the selected unit", () => {
-      setAction({ action_type: "LOCK_USER", action_value: 3600 });
+      setAction({ action_type: "LOCK_USER_TEMPORARY", action_value: 3600 });
       component.durationUnit.set("hours");
       expect(component.durationValue()).toBe("1");
     });
 
     it("should keep the entered number and re-scale to seconds on unit change", () => {
-      setAction({ action_type: "LOCK_USER", action_value: 120 });
+      setAction({ action_type: "LOCK_USER_TEMPORARY", action_value: 120 });
       const spy = jest.spyOn(component.updateAction, "emit");
       component.onDurationUnitChange("minutes");
       expect(component.durationUnit()).toBe("minutes");
@@ -178,7 +178,7 @@ describe("ConditionalAccessActionItemComponent", () => {
     });
 
     it("should not emit on unit change when there is no value", () => {
-      setAction({ action_type: "LOCK_USER", action_value: null });
+      setAction({ action_type: "LOCK_USER_TEMPORARY", action_value: null });
       const spy = jest.spyOn(component.updateAction, "emit");
       component.onDurationUnitChange("hours");
       expect(spy).not.toHaveBeenCalled();
@@ -254,18 +254,18 @@ describe("ConditionalAccessActionItemComponent", () => {
         ConditionalAccessPolicyService
       ) as unknown as MockConditionalAccessPolicyService;
       policyServiceMock.actionsByTarget.set({
-        user: ["LOCK_USER", "PERMANENT_LOCK_USER", "EMAIL_ADMIN", "EMAIL_USER", "ALLOW", "DENY"],
-        source_ip: ["BLOCK_IP", "PERMANENT_BLOCK_IP", "EMAIL_ADMIN", "ALLOW", "DENY"]
+        user: ["LOCK_USER_TEMPORARY", "LOCK_USER_PERMANENT", "EMAIL_ADMIN", "EMAIL_USER", "ALLOW", "DENY"],
+        source_ip: ["BLOCK_IP", "BLOCK_IP_PERMANENT", "EMAIL_ADMIN", "ALLOW", "DENY"]
       });
       setRights([]);
     });
 
     it("still offers them, only without the server list", () => {
-      setAction({ action_type: "LOCK_USER", action_value: 600 });
+      setAction({ action_type: "LOCK_USER_TEMPORARY", action_value: 600 });
       expect(component.smtpServersListable()).toBe(false);
       expect(component.allowedActionTypes()).toContain("EMAIL_ADMIN");
       expect(component.allowedActionTypes()).toContain("EMAIL_USER");
-      expect(component.allowedActionTypes()).toContain("LOCK_USER");
+      expect(component.allowedActionTypes()).toContain("LOCK_USER_TEMPORARY");
     });
 
     it("keeps one the policy already carries valid for its target", () => {
@@ -280,13 +280,13 @@ describe("ConditionalAccessActionItemComponent", () => {
   it("should reset the value when the type changes to another mode", () => {
     const spy = jest.spyOn(component.updateAction, "emit");
     setAction({ action_type: "EMAIL_ADMIN", action_value: { subject: "Hi" } });
-    component.onActionTypeChange("LOCK_USER");
-    expect(spy).toHaveBeenCalledWith({ action_type: "LOCK_USER", action_value: null });
+    component.onActionTypeChange("LOCK_USER_TEMPORARY");
+    expect(spy).toHaveBeenCalledWith({ action_type: "LOCK_USER_TEMPORARY", action_value: null });
   });
 
   it("should keep the value when the type stays in the same mode", () => {
     const spy = jest.spyOn(component.updateAction, "emit");
-    setAction({ action_type: "LOCK_USER", action_value: 600 });
+    setAction({ action_type: "LOCK_USER_TEMPORARY", action_value: 600 });
     component.onActionTypeChange("BLOCK_IP");
     expect(spy).toHaveBeenCalledWith({ action_type: "BLOCK_IP" });
   });
@@ -307,8 +307,8 @@ describe("ConditionalAccessActionItemComponent", () => {
     });
 
     it("should default the checkbox by action type when unset", () => {
-      // LOCK_USER defaults to fire-once (unchecked).
-      setAction({ action_type: "LOCK_USER", action_value: 600 });
+      // LOCK_USER_TEMPORARY defaults to fire-once (unchecked).
+      setAction({ action_type: "LOCK_USER_TEMPORARY", action_value: 600 });
       expect(component.retriggerChecked()).toBe(false);
       // DENY defaults to re-trigger (checked).
       setAction({ action_type: "DENY", action_value: null });
@@ -318,7 +318,7 @@ describe("ConditionalAccessActionItemComponent", () => {
     it("should honor an explicit value over the action-type default", () => {
       setAction({ action_type: "DENY", action_value: null, retrigger_above_threshold: false });
       expect(component.retriggerChecked()).toBe(false);
-      setAction({ action_type: "LOCK_USER", action_value: 600, retrigger_above_threshold: true });
+      setAction({ action_type: "LOCK_USER_TEMPORARY", action_value: 600, retrigger_above_threshold: true });
       expect(component.retriggerChecked()).toBe(true);
     });
   });

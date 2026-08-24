@@ -588,7 +588,7 @@ class AuthenticationLogDBTestCase(MyTestCase):
             event_id = log_authentication_event(
                 event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="user1", realm="realm1",
                 username="testuser", user_role=AuthLogUserRole.ADMIN_EXTERNAL, source_ip="192.168.1.1",
-                client_label="vpn",
+                client_label="vpn", endpoint="/validate/check",
                 serial="TOK001", transaction_id="txn-123",
                 attempt_id="attempt-123",
                 other_info={"key": "value"}
@@ -598,7 +598,7 @@ class AuthenticationLogDBTestCase(MyTestCase):
         auth_log_dict = entry.to_dict()
 
         expected_keys = {"id", "resolver", "uid", "realm", "username", "user_role", "event_type", "timestamp",
-                         "source_ip", "client_label", "serial", "transaction_id",
+                         "source_ip", "client_label", "endpoint", "serial", "transaction_id",
                          "attempt_id", "other_info"}
         self.assertSetEqual(expected_keys, set(auth_log_dict.keys()))
         self.assertEqual(event_id, auth_log_dict["id"])
@@ -612,6 +612,7 @@ class AuthenticationLogDBTestCase(MyTestCase):
         self.assertEqual(log_time_tz_aware.isoformat(), auth_log_dict["timestamp"])
         self.assertEqual("192.168.1.1", auth_log_dict["source_ip"])
         self.assertEqual("vpn", auth_log_dict["client_label"])
+        self.assertEqual("/validate/check", auth_log_dict["endpoint"])
         self.assertEqual("TOK001", auth_log_dict["serial"])
         self.assertEqual("txn-123", auth_log_dict["transaction_id"])
         self.assertEqual("attempt-123", auth_log_dict["attempt_id"])
@@ -822,7 +823,7 @@ class AuthenticationLogOutcomeJoinTestCase(MyTestCase):
         """Write one authentication-log row plus *count* conditional-access outcomes, and return the row id."""
         event_id = log_authentication_event(event_type=AuthEventType.MFA_FAIL, resolver="res1", uid="u1",
                                             realm="realm1", **kwargs)
-        record_outcomes([ConditionalAccessOutcome(action_type="LOCK_USER", policy_name="p",
+        record_outcomes([ConditionalAccessOutcome(action_type="LOCK_USER_TEMPORARY", policy_name="p",
                                                  threshold=3, event_count=3) for _ in range(count)], event_id)
         return event_id
 
@@ -850,7 +851,7 @@ class AuthenticationLogOutcomeJoinTestCase(MyTestCase):
         self.assertEqual(2, len(entry.outcomes))
         # to_dict of the *page* opts in, so a client sees them alongside the entry.
         self.assertEqual(2, len(page.to_dict()["auth_logs"][0]["conditional_access_outcomes"]))
-        self.assertEqual("LOCK_USER", page.to_dict()["auth_logs"][0]["conditional_access_outcomes"][0]["action_type"])
+        self.assertEqual("LOCK_USER_TEMPORARY", page.to_dict()["auth_logs"][0]["conditional_access_outcomes"][0]["action_type"])
 
     def test_an_entry_without_outcomes_carries_an_empty_list(self):
         log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="realm1")

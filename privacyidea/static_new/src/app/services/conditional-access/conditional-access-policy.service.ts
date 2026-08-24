@@ -55,12 +55,12 @@ export type AuthEventType =
   | "UNKNOWN_FAIL_REASON";
 
 export type LockoutActionType =
-  | "LOCK_USER"
-  | "PERMANENT_LOCK_USER"
+  | "LOCK_USER_TEMPORARY"
+  | "LOCK_USER_PERMANENT"
   | "EMAIL_ADMIN"
   | "EMAIL_USER"
   | "BLOCK_IP"
-  | "PERMANENT_BLOCK_IP"
+  | "BLOCK_IP_PERMANENT"
   | "ALLOW"
   | "DENY";
 
@@ -108,7 +108,7 @@ export interface LockoutPolicyStage {
 // claims to support. KnownConditionOperator keyed over a full (non-Partial) Record is what makes
 // "every operator rendered with bespoke copy has that copy" a compile-time rule; KnownConditionType
 // keys the copy table so a mistyped key is caught rather than silently never matching.
-export type KnownConditionType = "USER_REALM" | "USER_ROLE";
+export type KnownConditionType = "USER_REALM" | "USER_ROLE" | "ENDPOINT";
 export type KnownConditionOperator = "IN" | "NOT_IN";
 
 // One comparison a condition type permits, with the label the backend has already translated.

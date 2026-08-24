@@ -453,7 +453,7 @@ class ConditionalAccessContextTestCase(MyTestCase):
     # --- conditional-access outcomes: the outcomes a request produces ----------
 
     @staticmethod
-    def _make_outcome(action_type: str = LockoutAction.LOCK_USER) -> ConditionalAccessOutcome:
+    def _make_outcome(action_type: str = LockoutAction.LOCK_USER_TEMPORARY) -> ConditionalAccessOutcome:
         return ConditionalAccessOutcome(action_type=str(action_type), policy_name="p", threshold=3,
                                         event_count=3)
 
@@ -469,7 +469,7 @@ class ConditionalAccessContextTestCase(MyTestCase):
         self.assertEqual(1, len(event.outcomes))
 
         self.assertTrue(context.flush())
-        self.assertListEqual([str(LockoutAction.LOCK_USER)],
+        self.assertListEqual([str(LockoutAction.LOCK_USER_TEMPORARY)],
                              [outcome.action_type for outcome in get_outcomes(event.row_id)])
 
     def test_31_recorded_outcomes_are_not_written_twice(self):
@@ -522,11 +522,11 @@ class ConditionalAccessContextTestCase(MyTestCase):
         context.flush()
         with mock.patch("privacyidea.lib.conditional_access.engine.evaluate_lockout_policies") as evaluate:
             evaluate.return_value = LockoutEvaluation(notices=["a notice"],
-                                                      outcomes=[self._make_outcome(LockoutAction.PERMANENT_LOCK_USER)])
+                                                      outcomes=[self._make_outcome(LockoutAction.LOCK_USER_PERMANENT)])
             self.assertListEqual(["a notice"], context.run_post_eval())
 
         outcomes = get_outcomes(event.row_id)
-        self.assertListEqual([str(LockoutAction.PERMANENT_LOCK_USER)], [outcome.action_type for outcome in outcomes])
+        self.assertListEqual([str(LockoutAction.LOCK_USER_PERMANENT)], [outcome.action_type for outcome in outcomes])
 
     def test_40_an_unreadable_challenge_leaves_the_attempt_unresolved(self):
         # Correlating an attempt must never break the authentication it describes. A challenge store that raises leaves

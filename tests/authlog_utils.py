@@ -180,7 +180,7 @@ def assert_authentication_log(event_types, transaction_id=None, same_attempt=Tru
 
 def assert_authentication_log_entry(entry: AuthenticationLog, user: User = None,
                                     serials: set[str] = None,
-                                    client_label: str = None, other_info: dict = None,
+                                    client_label: str = None, endpoint: str = None, other_info: dict = None,
                                     transaction_id: str = None,
                                     source_ip: str = None, user_role: AuthLogUserRole = AuthLogUserRole.USER):
     """
@@ -191,8 +191,11 @@ def assert_authentication_log_entry(entry: AuthenticationLog, user: User = None,
 
     Every other column of the authentication_log table is checked. The nullable columns default to their database default
     (None), so a column that is not passed is asserted to be empty — this enforces that a row carries *only* the data
-    it should and no leftover values. The auto-populated id and timestamp are checked for presence. The non-nullable
-    event_type is covered by the ordered list in :func:`assert_authentication_log`.
+    it should and no leftover values. ``endpoint`` is the one exception: every row written from a view carries the
+    request path, which says nothing about the outcome under test, so it is only compared when a caller passes it (the
+    endpoint contract itself is asserted in ValidateCheckAuthLogTestCase / AuthEndpointAuthLogTestCase). The
+    auto-populated id and timestamp are checked for presence. The non-nullable event_type is covered by the ordered
+    list in :func:`assert_authentication_log`.
 
     :param entry: an AuthenticationLog entry (e.g. one returned by :func:`assert_authentication_log`)
     :param user: the expected identity. All four fields — resolver, uid, realm, and username (login) — are read from
@@ -202,6 +205,7 @@ def assert_authentication_log_entry(entry: AuthenticationLog, user: User = None,
         expected (e.g. userless challenges or local-admin logins).
     :param serials: the entry must carry a comma separated list of these serials (default None: no serial)
     :param client_label: the entry must carry this client_label (default None: no client_label)
+    :param endpoint: if given, the entry must carry this endpoint; not checked when omitted (see above)
     :param other_info: the entry must carry this other_info (default None: no other_info)
     :param transaction_id: the entry must carry this transaction_id (default None: no transaction_id)
     :param source_ip: the entry must carry this source_ip (default None: no source_ip)
@@ -215,6 +219,8 @@ def assert_authentication_log_entry(entry: AuthenticationLog, user: User = None,
     assert entry.username == expected_username
     assert entry.user_role == user_role
     assert entry.client_label == client_label
+    if endpoint is not None:
+        assert entry.endpoint == endpoint
     assert entry.other_info == other_info
     assert entry.transaction_id == transaction_id
     assert entry.source_ip == source_ip

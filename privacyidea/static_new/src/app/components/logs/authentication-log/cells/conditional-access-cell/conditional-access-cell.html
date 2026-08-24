@@ -36,7 +36,11 @@
               class="info-key info-group-prefix"
               i18n>Dry Run:</span>
           }
-          {{ outcome.action }}
+          @if (outcome.policyLink) {
+            <a [routerLink]="outcome.policyLink">{{ outcome.policy }}</a>
+          } @else {
+            {{ outcome.policy }}
+          }
         </span>
       </div>
       @if (isExpanded(outcome.key)) {
@@ -46,12 +50,8 @@
           <div class="info-group-row">
             <span
               class="info-key"
-              i18n>Policy:</span>
-            @if (outcome.policyLink) {
-              <a [routerLink]="outcome.policyLink">{{ outcome.policy }}</a>
-            } @else {
-              {{ outcome.policy }}
-            }
+              i18n>Action:</span>
+            {{ outcome.action }}
           </div>
           @if (outcome.stage) {
             <div class="info-group-row">

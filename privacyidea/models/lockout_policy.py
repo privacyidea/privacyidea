@@ -229,7 +229,7 @@ class LockoutStageAction(MethodsMixin, db.Model):
     can have multiple actions (e.g. lock the user *and* email the admin).
 
     ``action_value`` is the action-specific payload, stored as JSON:
-    e.g. the lock duration in seconds for ``LOCK_USER``/``BLOCK_IP`` or
+    e.g. the lock duration in seconds for ``LOCK_USER_TEMPORARY``/``BLOCK_IP`` or
     an email template ID for ``EMAIL_ADMIN``/``EMAIL_USER``.
 
     ``retrigger_above_threshold`` controls how this action fires as the failure

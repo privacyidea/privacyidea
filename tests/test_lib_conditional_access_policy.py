@@ -26,7 +26,7 @@ from privacyidea.lib.conditional_access import lockout_policy as lockout_policy_
 from privacyidea.lib.conditional_access.authentication_event_types import CA_ENFORCEMENT_EVENT_TYPES  # noqa: F401
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, CountMode
 from privacyidea.lib.conditional_access.authentication_log import AuthLogUserRole
-from privacyidea.lib.conditional_access.conditions import (ConditionOperator, ConditionType,
+from privacyidea.lib.conditional_access.conditions import (_ENDPOINT_CHOICES, ConditionOperator, ConditionType,
                                                            get_condition_types)
 from privacyidea.lib.conditional_access.engine import LockoutAction, LockoutTarget
 from privacyidea.lib.conditional_access.lockout_policy import (
@@ -57,7 +57,7 @@ from .base import MyTestCase
 
 def _stage(threshold=5, priority=1, actions=None, retrigger=False):
     if actions is None:
-        actions = [{"action_type": "LOCK_USER", "action_value": {"lock_duration_seconds": 600}}]
+        actions = [{"action_type": "LOCK_USER_TEMPORARY", "action_value": {"lock_duration_seconds": 600}}]
     # retrigger is per action; apply it to each action of this stage.
     actions = [{**action, "retrigger_above_threshold": retrigger} for action in actions]
     return {"failure_threshold": threshold, "priority": priority, "actions": actions}
@@ -87,7 +87,7 @@ class LockoutPolicyCrudTestCase(MyTestCase):
             "Brute Force", 600, ["PIN_FAIL", "MFA_FAIL"],
             stages=[_stage(5),
                     _stage(10, priority=2,
-                           actions=[{"action_type": "PERMANENT_LOCK_USER", "action_value": None},
+                           actions=[{"action_type": "LOCK_USER_PERMANENT", "action_value": None},
                                     {"action_type": "EMAIL_ADMIN",
                                      "action_value": {"smtp_identifier": "mock"}}])],
             target=LockoutTarget.USER, priority=3)
@@ -114,7 +114,7 @@ class LockoutPolicyCrudTestCase(MyTestCase):
         policy_id = create_lockout_policy(
             "Retrig", 600, ["PIN_FAIL"],
             stages=[{"failure_threshold": 8,
-                     "actions": [{"action_type": "LOCK_USER",
+                     "actions": [{"action_type": "LOCK_USER_TEMPORARY",
                                   "action_value": {"lock_duration_seconds": 300},
                                   "retrigger_above_threshold": True},
                                  {"action_type": "EMAIL_ADMIN",
@@ -123,7 +123,7 @@ class LockoutPolicyCrudTestCase(MyTestCase):
             target=LockoutTarget.USER, priority=1)
         policy = get_lockout_policy(policy_id)
         by_type = {action["action_type"]: action for action in policy["stages"][0]["actions"]}
-        self.assertTrue(by_type["LOCK_USER"]["retrigger_above_threshold"])
+        self.assertTrue(by_type["LOCK_USER_TEMPORARY"]["retrigger_above_threshold"])
         self.assertFalse(by_type["EMAIL_ADMIN"]["retrigger_above_threshold"])
 
     def test_01c_retrigger_default_is_action_aware(self):
@@ -133,13 +133,13 @@ class LockoutPolicyCrudTestCase(MyTestCase):
             "Defaults", 600, ["PIN_FAIL"],
             stages=[{"failure_threshold": 3, "actions": [{"action_type": "DENY"}]},
                     {"failure_threshold": 5,
-                     "actions": [{"action_type": "LOCK_USER",
+                     "actions": [{"action_type": "LOCK_USER_TEMPORARY",
                                   "action_value": {"lock_duration_seconds": 60}}]}],
             target=LockoutTarget.USER, priority=1)
         policy = get_lockout_policy(policy_id)
         by_threshold = {stage["failure_threshold"]: stage for stage in policy["stages"]}
         self.assertTrue(by_threshold[3]["actions"][0]["retrigger_above_threshold"])  # DENY
-        self.assertFalse(by_threshold[5]["actions"][0]["retrigger_above_threshold"])  # LOCK_USER
+        self.assertFalse(by_threshold[5]["actions"][0]["retrigger_above_threshold"])  # LOCK_USER_TEMPORARY
 
     def test_02_create_validation_errors(self):
         valid = dict(
@@ -195,7 +195,7 @@ class LockoutPolicyCrudTestCase(MyTestCase):
         self.assertRaises(ParameterError, create_lockout_policy, "P", 600, ["PIN_FAIL"],
                           [_stage(actions=[{"action_type": "NOT_AN_ACTION"}])], target=usr, priority=2)
         self.assertRaises(ParameterError, create_lockout_policy, "P", 600, ["PIN_FAIL"],
-                          [_stage(actions=[{"action_type": "LOCK_USER", "bogus": 1}])], target=usr, priority=2)
+                          [_stage(actions=[{"action_type": "LOCK_USER_TEMPORARY", "bogus": 1}])], target=usr, priority=2)
         # nothing invalid was persisted
         self.assertEqual(1, db.session.query(LockoutPolicy).count())
 
@@ -292,7 +292,7 @@ class LockoutPolicyCrudTestCase(MyTestCase):
             "Reject", 300, ["PASSWORD_FAIL"], [self._ip_stage()], target=LockoutTarget.SOURCE_IP, priority=1
         )
         # Assert on the message so a stage/action-compatibility error cannot masquerade as the count_mode rejection
-        # (the stages here are deliberately LOCK_USER, i.e. already target-compatible, so only count_mode can fail).
+        # (the stages here are deliberately LOCK_USER_TEMPORARY, i.e. already target-compatible, so only count_mode can fail).
         self.assertRaisesRegex(
             ParameterError,
             "count_mode 'DISTINCT_USERS' is not allowed for target 'user'",
@@ -332,7 +332,7 @@ class LockoutPolicyCrudTestCase(MyTestCase):
             )
 
     def test_02j_target_action_compatibility(self):
-        # BLOCK_IP only makes sense on a source_ip target; LOCK_USER only on a user target.
+        # BLOCK_IP only makes sense on a source_ip target; LOCK_USER_TEMPORARY only on a user target.
         self.assertRaises(
             ParameterError,
             create_lockout_policy,
@@ -349,7 +349,7 @@ class LockoutPolicyCrudTestCase(MyTestCase):
             "P",
             600,
             ["PIN_FAIL"],
-            [_stage(actions=[{"action_type": "LOCK_USER"}])],
+            [_stage(actions=[{"action_type": "LOCK_USER_TEMPORARY"}])],
             target=LockoutTarget.SOURCE_IP,
             priority=2,
         )
@@ -508,7 +508,7 @@ class LockoutPolicyCrudTestCase(MyTestCase):
             constraints[LockoutTarget.SOURCE_IP.value]["count_modes"],
         )
         self.assertIn(LockoutAction.BLOCK_IP.value, constraints[LockoutTarget.SOURCE_IP.value]["actions"])
-        self.assertIn(LockoutAction.LOCK_USER.value, constraints[LockoutTarget.USER.value]["actions"])
+        self.assertIn(LockoutAction.LOCK_USER_TEMPORARY.value, constraints[LockoutTarget.USER.value]["actions"])
 
     def test_11_duplicate_priority_rejected(self):
         # priority must be unique across policies: a second policy reusing a
@@ -838,3 +838,25 @@ class LockoutPolicyCrudTestCase(MyTestCase):
         self.assertIn(self.realm1, realm_entry["choices"])
         self.assertListEqual(sorted(role.value for role in AuthLogUserRole),
                              metadata[ConditionType.USER_ROLE.value]["choices"])
+        self.assertListEqual(sorted(_ENDPOINT_CHOICES), metadata[ConditionType.ENDPOINT.value]["choices"])
+
+    def test_43_endpoint_condition_values_come_from_the_endpoint_vocabulary(self):
+        policy_id = self._create_with_conditions(
+            "Endpoint scoped", [self._condition(ConditionType.ENDPOINT, value=["/auth"])])
+        self.assertListEqual(["/auth"], get_lockout_policy(policy_id)["conditions"][0]["value"])
+        # A path outside the vocabulary is a typo, and a typo'd endpoint condition would silently never
+        # match - so it is reported at write time like an unknown realm or role.
+        self.assertRaises(ParameterError, self._create_with_conditions,
+                          "Bad endpoint", [self._condition(ConditionType.ENDPOINT, value=["/validate/chekc"])])
+
+
+class EndpointConditionChoicesTestCase(MyTestCase):
+    """The ENDPOINT condition's vocabulary against the routes this app actually serves."""
+
+    def test_every_offered_endpoint_is_a_route(self):
+        # The list is hand-maintained (nothing records which routes authenticate), so at least a rename
+        # or typo must not survive: every path offered has to be one this app can dispatch.
+        adapter = self.app.url_map.bind("localhost")
+        for path in _ENDPOINT_CHOICES:
+            with self.subTest(path=path):
+                adapter.match(path, method="POST")

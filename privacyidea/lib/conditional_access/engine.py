@@ -56,16 +56,17 @@ class LockoutAction(str, Enum):
     Action types a :class:`~privacyidea.models.lockout_policy.LockoutPolicyStage`
     can execute when its failure threshold is met.
 
-    :attr:`LOCK_USER`, :attr:`PERMANENT_LOCK_USER`, :attr:`EMAIL_ADMIN`,
-    :attr:`EMAIL_USER`, :attr:`BLOCK_IP` and :attr:`PERMANENT_BLOCK_IP` are
+    :attr:`LOCK_USER_TEMPORARY`, :attr:`LOCK_USER_PERMANENT`, :attr:`EMAIL_ADMIN`,
+    :attr:`EMAIL_USER`, :attr:`BLOCK_IP` and :attr:`BLOCK_IP_PERMANENT` are
     post-response side effects executed by :func:`evaluate_lockout_policies`.
     :attr:`ALLOW` and :attr:`DENY` decide the *current* request and are therefore
     handled by the pre-auth decision step (:func:`evaluate_access_decision`)
     instead. The action table stores the string value, so the enum can grow
     without a schema change.
 
-    The ``PERMANENT_*`` variants ignore ``action_value`` and never expire (only an
-    admin reset clears them); the timed :attr:`LOCK_USER` / :attr:`BLOCK_IP` read
+    The permanent variants (:attr:`LOCK_USER_PERMANENT`, :attr:`BLOCK_IP_PERMANENT`)
+    ignore ``action_value`` and never expire (only an
+    admin reset clears them); the timed :attr:`LOCK_USER_TEMPORARY` / :attr:`BLOCK_IP` read
     a duration from ``action_value`` and a missing/invalid one is a skipped
     misconfiguration (never silently permanent).
 
@@ -73,12 +74,12 @@ class LockoutAction(str, Enum):
     3.10, mirroring
     :class:`~privacyidea.lib.conditional_access.authentication_event_types.AuthEventType`.
     """
-    LOCK_USER = "LOCK_USER"
-    PERMANENT_LOCK_USER = "PERMANENT_LOCK_USER"
+    LOCK_USER_TEMPORARY = "LOCK_USER_TEMPORARY"
+    LOCK_USER_PERMANENT = "LOCK_USER_PERMANENT"
     EMAIL_ADMIN = "EMAIL_ADMIN"
     EMAIL_USER = "EMAIL_USER"
     BLOCK_IP = "BLOCK_IP"
-    PERMANENT_BLOCK_IP = "PERMANENT_BLOCK_IP"
+    BLOCK_IP_PERMANENT = "BLOCK_IP_PERMANENT"
     ALLOW = "ALLOW"
     DENY = "DENY"
 
@@ -821,7 +822,7 @@ def evaluate_access_decision(context: CAContext, now: datetime | None = None) ->
     ALLOW/DENY action supplies the decision. A
     ``DENY`` action therefore rejects this single request without persisting any
     state — a stateless, self-healing reject that lifts on its own as the
-    failures age out of the window (contrast the durable :attr:`LockoutAction.LOCK_USER`).
+    failures age out of the window (contrast the durable :attr:`LockoutAction.LOCK_USER_TEMPORARY`).
     Because ALLOW/DENY actions default to re-triggering (``count >= threshold``), a
     stage with ``failure_threshold`` 0 always matches, so an ``ALLOW`` action at
     threshold 0 acts as a default-allow / allowlist exception.
@@ -1148,8 +1149,9 @@ def _evaluate_policy(policy: LockoutPolicy, context: CAContext, event_type: str,
                  f"(threshold {triggered_stage.failure_threshold}) for {subject_label}: "
                  f"{count} event(s) of {_types_label(policy.counter_types_to_track)} in {window}s.")
         # One outcome per action that would have run, carrying the expiry it would have written - which is the whole
-        # point of dry run: the history shows what enforcing this policy would have done to real traffic. A LOCK_USER
-        # or BLOCK_IP whose duration is misconfigured records no expiry, so dry run surfaces that too.
+        # point of dry run: the history shows what enforcing this policy would have done to real traffic. A
+        # LOCK_USER_TEMPORARY or BLOCK_IP whose duration is misconfigured records no expiry, so dry run surfaces that
+        # too.
         # ALLOW/DENY are left out: they decide the request pre-auth and are recorded there (_policy_access_decision),
         # so recording them again here would double-count the same decision.
         outcomes = [outcome_for_stage(policy, triggered_stage, action.action_type, count, dry_run=True,
@@ -1169,12 +1171,12 @@ def _action_expiry(stage_action: LockoutStageAction, now: datetime) -> datetime 
     """
     When the restriction written by *stage_action* ends, or ``None`` when there is nothing to expire.
 
-    ``None`` covers three different cases, which the action type tells apart: a ``PERMANENT_*`` action (never expires),
+    ``None`` covers three different cases, which the action type tells apart: a permanent action (never expires),
     an action that creates no restriction at all (``EMAIL_*``, ``ALLOW``/``DENY``), and a timed action whose configured
     duration is missing or invalid - which is a misconfiguration the enforced path skips and logs, and which a dry-run
     outcome surfaces as "would have locked, but for how long is not configured".
     """
-    if stage_action.action_type not in (LockoutAction.LOCK_USER, LockoutAction.BLOCK_IP):
+    if stage_action.action_type not in (LockoutAction.LOCK_USER_TEMPORARY, LockoutAction.BLOCK_IP):
         return None
     duration = _lock_duration_seconds(stage_action.action_value)
     return now + timedelta(seconds=duration) if duration is not None else None
@@ -1182,7 +1184,7 @@ def _action_expiry(stage_action: LockoutStageAction, now: datetime) -> datetime 
 
 def _lock_duration_seconds(action_value: Any) -> int | None:
     """
-    Parse the ``LOCK_USER`` lock duration (in seconds) from a stage action's
+    Parse the ``LOCK_USER_TEMPORARY`` lock duration (in seconds) from a stage action's
     JSON ``action_value``. Accepts a plain integer, a numeric string, or a dict
     carrying ``duration_seconds`` / ``duration``. Returns ``None`` for anything
     that is not a positive integer number of seconds.
@@ -1392,16 +1394,16 @@ def _execute_stage_actions(policy: LockoutPolicy, stage: LockoutPolicyStage,
             continue
 
         try:
-            if action_type == LockoutAction.LOCK_USER:
+            if action_type == LockoutAction.LOCK_USER_TEMPORARY:
                 duration = _lock_duration_seconds(action.action_value)
                 if duration is None:
-                    log.warning(f"LOCK_USER action {action.id} on stage {stage.id} has no valid duration "
+                    log.warning(f"LOCK_USER_TEMPORARY action {action.id} on stage {stage.id} has no valid duration "
                                 f"({action.action_value!r}); skipping.")
                     continue
                 lock_expires_at = now + timedelta(seconds=duration)
                 if _upsert_user_lockout_state(user, lock_expires_at=lock_expires_at):
                     record(action_type, expires_at=lock_expires_at)
-            elif action_type == LockoutAction.PERMANENT_LOCK_USER:
+            elif action_type == LockoutAction.LOCK_USER_PERMANENT:
                 if _upsert_user_lockout_state(user, lock_expires_at=None):
                     record(action_type)
             elif action_type in (LockoutAction.EMAIL_ADMIN, LockoutAction.EMAIL_USER):
@@ -1410,7 +1412,7 @@ def _execute_stage_actions(policy: LockoutPolicy, stage: LockoutPolicyStage,
                     # A notice is returned exactly when the mail was accepted, so it doubles as "this action ran".
                     notices.append(notice)
                     record(action_type)
-            elif action_type in (LockoutAction.BLOCK_IP, LockoutAction.PERMANENT_BLOCK_IP):
+            elif action_type in (LockoutAction.BLOCK_IP, LockoutAction.BLOCK_IP_PERMANENT):
                 # Failures are counted per user, so this blocks the source IP
                 # of the request that tripped a *per-user* policy. It does not
                 # detect password spraying (failures from one IP across many
@@ -1419,8 +1421,8 @@ def _execute_stage_actions(policy: LockoutPolicy, stage: LockoutPolicyStage,
                     log.warning(f"{action_type} action {action.id} on stage {stage.id}: this request "
                                 f"has no source IP; skipping.")
                     continue
-                if action_type == LockoutAction.PERMANENT_BLOCK_IP:
-                    # Permanent block; action_value is ignored (mirrors PERMANENT_LOCK_USER).
+                if action_type == LockoutAction.BLOCK_IP_PERMANENT:
+                    # Permanent block; action_value is ignored (mirrors LOCK_USER_PERMANENT).
                     block_expires_at = None
                 else:
                     duration = _lock_duration_seconds(action.action_value)

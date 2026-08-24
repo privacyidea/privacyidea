@@ -137,7 +137,7 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
             name="ca_lock", time_window_seconds=window,
             counter_types_to_track=_counter_types(counter_type),
             stages=[{"failure_threshold": threshold, "priority": 1,
-                     "actions": [{"action_type": str(LockoutAction.LOCK_USER), "action_value": duration}]}],
+                     "actions": [{"action_type": str(LockoutAction.LOCK_USER_TEMPORARY), "action_value": duration}]}],
             target=LockoutTarget.USER, dry_run=dry_run, priority=priority)
 
     @staticmethod
@@ -223,7 +223,7 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         assert_authentication_log_entry(entries.all[-1], user=self.user)
 
     def test_dry_run_lock_policy_persists_outcome_but_never_locks(self):
-        # A dry-run LOCK_USER policy never locks the user, but the triggering request's own
+        # A dry-run LOCK_USER_TEMPORARY policy never locks the user, but the triggering request's own
         # authentication_log row records what the policy would have done.
         self._make_lock_policy(counter_type=AuthEventType.MFA_FAIL, threshold=3, duration=600, dry_run=True)
 
@@ -245,7 +245,7 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         self.assertEqual("ca_lock", outcome.policy_name)
         self.assertEqual(3, outcome.threshold)
         self.assertEqual(3, outcome.event_count)
-        self.assertEqual(str(LockoutAction.LOCK_USER), outcome.action_type)
+        self.assertEqual(str(LockoutAction.LOCK_USER_TEMPORARY), outcome.action_type)
         # The expiry the lock would have had, so a dry run reads like the enforced one.
         self.assertIn("expires_at", outcome.info)
         # The earlier rows, which did not trip the threshold, carry nothing.
@@ -399,7 +399,7 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
 
     def test_escalation_to_permanent_lock_after_lock_expiry(self):
         # Escalation across two user policies: a temp lock at threshold 2, then a
-        # PERMANENT_LOCK_USER at the higher threshold 3. This pins the INTENTIONAL
+        # LOCK_USER_PERMANENT at the higher threshold 3. This pins the INTENTIONAL
         # behaviour (per the chosen design): attempts made WHILE the user is
         # temp-locked are rejected at the pre-check and never counted, so the
         # escalation only happens once the lock expires and the user fails again.
@@ -410,7 +410,7 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
             name="ca_permlock", time_window_seconds=3600,
             counter_types_to_track=_counter_types(AuthEventType.MFA_FAIL),
             stages=[{"failure_threshold": 3, "priority": 1,
-                     "actions": [{"action_type": str(LockoutAction.PERMANENT_LOCK_USER), "action_value": None}]}],
+                     "actions": [{"action_type": str(LockoutAction.LOCK_USER_PERMANENT), "action_value": None}]}],
             target=LockoutTarget.USER, priority=99)
         key = (self.user.resolver, self.user.uid, self.user.realm)
 
@@ -488,7 +488,7 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
     # first, the persistent IP block second, the stateless ALLOW/DENY decision
     # last. Consequences pinned here: an ALLOW exception can never override an
     # already-persisted lock or block, and a DENY whose threshold is lower than a
-    # LOCK_USER threshold shadows the lock (DENY'd requests write no log row, so
+    # LOCK_USER_TEMPORARY threshold shadows the lock (DENY'd requests write no log row, so
     # the failure count freezes below the lock threshold).
 
     def test_allow_cannot_override_existing_lock(self):
@@ -517,7 +517,7 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         assert_authentication_log_entry(entries[AuthEventType.IP_BLOCKED], user=self.user, source_ip="203.0.113.7")
 
     def test_deny_with_lower_threshold_shadows_lock_policy(self):
-        # A DENY threshold below a LOCK_USER threshold catches first: once met,
+        # A DENY threshold below a LOCK_USER_TEMPORARY threshold catches first: once met,
         # every further request is rejected pre-auth without writing a log row,
         # so the failure count freezes at the DENY threshold and the persistent
         # lock never engages. Intentional: the stateless DENY self-heals as the
@@ -532,7 +532,7 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         self.assertEqual(3, len(get_authentication_logs()))
 
         # Further failing attempts are denied by the pre-check. They are logged as ACCESS_DENIED, which no policy
-        # may track, so the tracked MFA_FAIL count stays at 3 and the LOCK_USER threshold of 5 is never reached.
+        # may track, so the tracked MFA_FAIL count stays at 3 and the LOCK_USER_TEMPORARY threshold of 5 is never reached.
         logs_before = len(get_authentication_logs())
         for _ in range(3):
             body = self._check({"user": "cornelius", "pass": "pin000000"})
@@ -811,7 +811,7 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
             name="ca_on_success", time_window_seconds=3600,
             counter_types_to_track=_counter_types(AuthEventType.LOGIN_SUCCESS),
             stages=[{"failure_threshold": 1, "priority": 1,
-                     "actions": [{"action_type": str(LockoutAction.PERMANENT_LOCK_USER), "action_value": None}]}],
+                     "actions": [{"action_type": str(LockoutAction.LOCK_USER_PERMANENT), "action_value": None}]}],
             target=LockoutTarget.USER, priority=1)
         set_policy("authz_deny", scope=SCOPE.AUTHZ, action=f"{PolicyAction.AUTHORIZED}={AUTHORIZED.DENY}")
         try:
@@ -882,7 +882,7 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
             name="ca_pw", time_window_seconds=window,
             counter_types_to_track=_counter_types(AuthEventType.PASSWORD_FAIL),
             stages=[{"failure_threshold": threshold, "priority": 1,
-                     "actions": [{"action_type": str(LockoutAction.LOCK_USER), "action_value": duration}]}],
+                     "actions": [{"action_type": str(LockoutAction.LOCK_USER_TEMPORARY), "action_value": duration}]}],
             target=LockoutTarget.USER, priority=priority)
 
     @staticmethod
@@ -891,7 +891,7 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
             name="ca_pw_dry", time_window_seconds=window,
             counter_types_to_track=_counter_types(AuthEventType.PASSWORD_FAIL),
             stages=[{"failure_threshold": threshold, "priority": 1,
-                     "actions": [{"action_type": str(LockoutAction.LOCK_USER), "action_value": duration}]}],
+                     "actions": [{"action_type": str(LockoutAction.LOCK_USER_TEMPORARY), "action_value": duration}]}],
             target=LockoutTarget.USER, dry_run=True, priority=priority)
 
     def test_dry_run_outcome_persisted_on_auth_login(self):
@@ -916,7 +916,7 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
         self.assertTrue(outcomes[0].dry_run)
         self.assertEqual("ca_pw_dry", outcomes[0].policy_name)
         self.assertEqual(2, outcomes[0].threshold)
-        self.assertEqual(str(LockoutAction.LOCK_USER), outcomes[0].action_type)
+        self.assertEqual(str(LockoutAction.LOCK_USER_TEMPORARY), outcomes[0].action_type)
 
     @staticmethod
     def _make_decision_policy(*, name, threshold, action, priority=1, window=3600):
@@ -1263,7 +1263,7 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
                 name="ca_lockmail", time_window_seconds=3600,
                 counter_types_to_track=_counter_types(AuthEventType.PASSWORD_FAIL),
                 stages=[{"failure_threshold": 2, "priority": 1,
-                         "actions": [{"action_type": str(LockoutAction.LOCK_USER), "action_value": 600},
+                         "actions": [{"action_type": str(LockoutAction.LOCK_USER_TEMPORARY), "action_value": 600},
                                      {"action_type": str(LockoutAction.EMAIL_ADMIN),
                                       "action_value": {"smtp_identifier": "lockoutmail",
                                                        "recipient_group": "soc@example.com",
@@ -1283,6 +1283,33 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
             self.assertTrue(is_user_locked(self.user))
         finally:
             delete_smtpserver("lockoutmail")
+
+    def test_endpoint_condition_confines_a_pre_auth_deny_to_one_endpoint(self):
+        # An ENDPOINT condition is only worth anything if the endpoint reaches the engine on every way
+        # in, so this asserts it end to end: a blanket source-IP DENY conditioned on /auth turns the
+        # WebUI login away while the same IP's /validate/check traffic is untouched.
+        create_lockout_policy(
+            name="ca_deny_auth_only", time_window_seconds=3600,
+            counter_types_to_track=_counter_types(AuthEventType.PASSWORD_FAIL),
+            stages=[{"failure_threshold": 0, "priority": 1,
+                     "actions": [{"action_type": str(LockoutAction.DENY), "action_value": None}]}],
+            conditions=[{"condition_type": str(ConditionType.ENDPOINT),
+                         "operator": str(ConditionOperator.IN),
+                         "value": ["/auth"]}],
+            target=LockoutTarget.SOURCE_IP, priority=1)
+
+        res = self._auth("cornelius", "test", remote_addr="10.0.0.6")
+        self.assertEqual(401, res.status_code, res.json)
+        self.assertIn("conditional-access", res.json["result"]["error"]["message"])
+
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "cornelius", "pass": "test"},
+                                           environ_base={"REMOTE_ADDR": "10.0.0.6"}):
+            response = self.app.full_dispatch_request()
+        # The policy does not apply here, so the request is answered on its own merits (no token, hence
+        # a plain failure) rather than turned away by conditional access.
+        self.assertEqual(200, response.status_code, response.json)
+        self.assertFalse(response.json["result"]["value"], response.json)
 
     def test_break_glass_local_admin_is_exempt_from_pre_auth_deny(self):
         # A blanket source-IP DENY that exempts local admins, written the obvious

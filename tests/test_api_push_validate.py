@@ -1030,8 +1030,9 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
             self.assertTrue(res.json.get("result").get("status"), res.json)
             self.assertTrue(res.json.get("result").get("value"), res.json)
         auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_ANSWERED_OUT_OF_BAND])
+        # The out-of-band answer is recorded against the endpoint the smartphone called, not the one the user waits on.
         assert_authentication_log_entry(auth_log_entries.all[0], user=user, serials={self.serial_push},
-                                        transaction_id=transaction_id)
+                                        transaction_id=transaction_id, endpoint="/ttype/push")
 
         # Finalize now succeeds -> LOGIN_SUCCESS
         clear_log()

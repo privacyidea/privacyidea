@@ -86,7 +86,7 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
                 "priority": 1,
                 "counter_types_to_track": [str(AuthEventType.PIN_FAIL)],
                 "stages": [{"failure_threshold": 5,
-                            "actions": [{"action_type": str(LockoutAction.LOCK_USER),
+                            "actions": [{"action_type": str(LockoutAction.LOCK_USER_TEMPORARY),
                                          "action_value": {"lock_duration_seconds": 300}}]}]}
         body.update(overrides)
         return body
@@ -178,7 +178,7 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
         self.assertEqual(200, res.status_code, res.json)
 
     def test_create_incompatible_action_for_target_is_400(self):
-        # LOCK_USER (the default body's action) is not allowed under a source_ip policy.
+        # LOCK_USER_TEMPORARY (the default body's action) is not allowed under a source_ip policy.
         body = self._policy_body(name="Bad", target="source_ip",
                                  counter_types_to_track=[str(AuthEventType.PASSWORD_FAIL)])
         res = self._request("policy", method="POST", json_data=body)
@@ -209,7 +209,7 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
         self.assertEqual(str(CountMode.DISTINCT_USERS), result["count_mode"])
 
     def test_patch_change_target_incompatible_with_stages_is_400(self):
-        # flipping to source_ip while the existing LOCK_USER stage remains is rejected
+        # flipping to source_ip while the existing LOCK_USER_TEMPORARY stage remains is rejected
         policy_id = self._create_policy()
         res = self._request(f"policy/{policy_id}", method="PATCH", json_data={"target": "source_ip"})
         self.assertEqual(400, res.status_code, res.json)
@@ -257,7 +257,7 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
         self.assertEqual("API Policy", policy["name"])
         self.assertListEqual([str(AuthEventType.PIN_FAIL)], policy["counter_types_to_track"])
         self.assertEqual(5, policy["stages"][0]["failure_threshold"])
-        self.assertEqual(str(LockoutAction.LOCK_USER), policy["stages"][0]["actions"][0]["action_type"])
+        self.assertEqual(str(LockoutAction.LOCK_USER_TEMPORARY), policy["stages"][0]["actions"][0]["action_type"])
         # retrigger_above_threshold defaults to False on a lock action when omitted.
         self.assertFalse(policy["stages"][0]["actions"][0]["retrigger_above_threshold"])
 
@@ -267,7 +267,7 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
         body = self._policy_body(
             name="Retrig",
             stages=[{"failure_threshold": 8,
-                     "actions": [{"action_type": str(LockoutAction.LOCK_USER),
+                     "actions": [{"action_type": str(LockoutAction.LOCK_USER_TEMPORARY),
                                   "action_value": {"lock_duration_seconds": 300},
                                   "retrigger_above_threshold": True},
                                  {"action_type": str(LockoutAction.EMAIL_ADMIN),
@@ -277,7 +277,7 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
         self.assertEqual(200, res.status_code, res.json)
         policy = self._request(f"policy/{res.json['result']['value']}").json["result"]["value"]
         by_type = {action["action_type"]: action for action in policy["stages"][0]["actions"]}
-        self.assertTrue(by_type[str(LockoutAction.LOCK_USER)]["retrigger_above_threshold"])
+        self.assertTrue(by_type[str(LockoutAction.LOCK_USER_TEMPORARY)]["retrigger_above_threshold"])
         self.assertFalse(by_type[str(LockoutAction.EMAIL_ADMIN)]["retrigger_above_threshold"])
 
     def test_get_unknown_id_is_404(self):
@@ -319,7 +319,7 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
         self.assertEqual(200, res.status_code, res.json)
         values = res.json["result"]["value"]
         self.assertListEqual([action.value for action in LockoutAction], values)
-        self.assertIn(str(LockoutAction.LOCK_USER), values)
+        self.assertIn(str(LockoutAction.LOCK_USER_TEMPORARY), values)
 
     def test_list_targets(self):
         res = self._request("targets")
@@ -327,8 +327,8 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
         constraints = res.json["result"]["value"]
         self.assertSetEqual({"user", "source_ip"}, set(constraints))
         # Each target carries its allowed actions and supported count modes.
-        self.assertIn(str(LockoutAction.LOCK_USER), constraints["user"]["actions"])
-        self.assertNotIn(str(LockoutAction.LOCK_USER), constraints["source_ip"]["actions"])
+        self.assertIn(str(LockoutAction.LOCK_USER_TEMPORARY), constraints["user"]["actions"])
+        self.assertNotIn(str(LockoutAction.LOCK_USER_TEMPORARY), constraints["source_ip"]["actions"])
         self.assertIn(str(LockoutAction.BLOCK_IP), constraints["source_ip"]["actions"])
         self.assertNotIn(str(LockoutAction.BLOCK_IP), constraints["user"]["actions"])
         # Volume modes are valid for both; DISTINCT_USERS is source_ip-only.
@@ -416,7 +416,7 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
                 "priority": "1",
                 "counter_types_to_track": json.dumps(["PIN_FAIL"]),
                 "stages": json.dumps([{"failure_threshold": 5,
-                                       "actions": [{"action_type": "LOCK_USER",
+                                       "actions": [{"action_type": "LOCK_USER_TEMPORARY",
                                                     "action_value": {"lock_duration_seconds": 60}}]}])}
         with self.app.test_request_context("/conditionalaccess/policy", method="POST", data=data,
                                            headers={"Authorization": self.at}):
@@ -450,7 +450,7 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
             name=f"P{priority}", time_window_seconds=600,
             counter_types_to_track=[str(AuthEventType.PIN_FAIL)],
             stages=[{"failure_threshold": 5,
-                     "actions": [{"action_type": str(LockoutAction.LOCK_USER),
+                     "actions": [{"action_type": str(LockoutAction.LOCK_USER_TEMPORARY),
                                   "action_value": {"lock_duration_seconds": 300}}]}],
             target="user", priority=priority) for priority in priorities]
 
@@ -617,7 +617,7 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
         res = self._request("conditiontypes")
         self.assertEqual(200, res.status_code, res.json)
         metadata = res.json["result"]["value"]
-        self.assertSetEqual({str(ConditionType.USER_REALM), str(ConditionType.USER_ROLE)}, set(metadata))
+        self.assertSetEqual({str(condition_type) for condition_type in ConditionType}, set(metadata))
         realm_entry = metadata[str(ConditionType.USER_REALM)]
         self.assertListEqual([str(ConditionOperator.IN), str(ConditionOperator.NOT_IN)],
                              [operator["name"] for operator in realm_entry["operators"]])

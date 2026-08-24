@@ -29,8 +29,8 @@ import { AuthenticationLogEntry } from "@services/authentication-log/authenticat
 // column answers "which policy did what" - and picking fields rather than hiding them means a new column on the table
 // cannot leak into the UI by accident.
 //
-// Only `action` and `dryRun` are shown right away, because that is the answer to "what happened to this request"; the
-// remaining fields explain *why* and are revealed by the expand toggle. Twelve columns share this table, so a four-line
+// Only `policy` and `dryRun` are shown right away, because the policy is what the admin recognizes an outcome by; the
+// remaining fields - the action it ran and why - are revealed by the expand toggle. Twelve columns share this table, so a four-line
 // cell per outcome would push everything else off-screen for a detail most readers do not want.
 export interface OutcomeView {
   // Identifies this outcome for the expand toggle and the aria-controls of its details. The row's own id when the
@@ -44,7 +44,7 @@ export interface OutcomeView {
   dryRun: boolean;
   action: string;
   // When the action created a timed restriction: the ISO-8601 timestamp it lapses at. This is the only remaining record
-  // of how long a lock or block lasted once the state row has expired - and its absence is what a PERMANENT_* action (or
+  // of how long a lock or block lasted once the state row has expired - and its absence is what a permanent action (or
   // one that restricts nothing) is recognized by. The one field read out of `info`.
   expiresAt?: string;
   stage?: string;
@@ -132,8 +132,8 @@ export class ConditionalAccessCell {
   // belongs to - there is one button per outcome, and "expand" alone would leave them indistinguishable.
   toggleLabel(outcome: OutcomeView): string {
     return this.isExpanded(outcome.key)
-      ? $localize`Hide the details of ${outcome.action}`
-      : $localize`Show the details of ${outcome.action}`;
+      ? $localize`Hide the details of ${outcome.policy}`
+      : $localize`Show the details of ${outcome.policy}`;
   }
 
   // The expiry an action recorded in its `info`, or undefined when it created no timed restriction. Validated here

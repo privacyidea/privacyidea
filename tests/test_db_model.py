@@ -794,7 +794,7 @@ class LockoutPolicyTestCase(MyTestCase):
         self.assertEqual(policy_id, stage5.policy.id)
 
         # Add actions to a stage
-        LockoutStageAction(stage_id=stage15.id, action_type="LOCK_USER",
+        LockoutStageAction(stage_id=stage15.id, action_type="LOCK_USER_TEMPORARY",
                            action_value=600).save()
         LockoutStageAction(stage_id=stage15.id, action_type="EMAIL_ADMIN",
                            action_value={"template_id": 4}).save()
@@ -902,7 +902,7 @@ class ConditionalAccessOutcomeTestCase(MyTestCase):
 
     def _make_outcome(self, auth_log_id: int, **overrides: Any) -> ConditionalAccessOutcome:
         """An outcome carrying everything the engine always knows, so a test only states what it is about."""
-        fields = {"auth_log_id": auth_log_id, "action_type": "LOCK_USER",
+        fields = {"auth_log_id": auth_log_id, "action_type": "LOCK_USER_TEMPORARY",
                   "policy_name": "Brute Force PIN Lockout", "threshold": 5, "event_count": 6}
         return ConditionalAccessOutcome(**{**fields, **overrides})
 
@@ -922,7 +922,7 @@ class ConditionalAccessOutcomeTestCase(MyTestCase):
 
         outcome = ConditionalAccessOutcome.query.filter_by(id=outcome_id).one()
         self.assertEqual(auth_log_id, outcome.auth_log_id)
-        self.assertEqual("LOCK_USER", outcome.action_type)
+        self.assertEqual("LOCK_USER_TEMPORARY", outcome.action_type)
         # An enforced action unless flagged otherwise.
         self.assertFalse(outcome.dry_run)
         # The only two columns that may be empty: an unnamed stage, and an action with nothing of its own to record.

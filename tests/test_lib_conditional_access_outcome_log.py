@@ -39,7 +39,7 @@ from .base import MyTestCase
 
 def _outcome(**overrides: Any) -> ConditionalAccessOutcome:
     """An outcome carrying everything the engine always knows, so a test only states what it is about."""
-    fields = {"action_type": str(LockoutAction.LOCK_USER), "policy_name": "Brute Force PIN Lockout",
+    fields = {"action_type": str(LockoutAction.LOCK_USER_TEMPORARY), "policy_name": "Brute Force PIN Lockout",
               "threshold": 5, "event_count": 6}
     return ConditionalAccessOutcome(**{**fields, **overrides})
 
@@ -69,7 +69,7 @@ class OutcomeLogTestCase(MyTestCase):
         self.assertTrue(record_outcomes([_outcome(), _outcome(action_type=str(LockoutAction.EMAIL_ADMIN))], event_id))
 
         outcomes = get_outcomes(event_id)
-        self.assertListEqual([str(LockoutAction.LOCK_USER), str(LockoutAction.EMAIL_ADMIN)],
+        self.assertListEqual([str(LockoutAction.LOCK_USER_TEMPORARY), str(LockoutAction.EMAIL_ADMIN)],
                          [outcome.action_type for outcome in outcomes])
         self.assertListEqual([event_id, event_id], [outcome.auth_log_id for outcome in outcomes])
 
@@ -79,7 +79,7 @@ class OutcomeLogTestCase(MyTestCase):
         record_outcomes([_outcome(dry_run=True, stage_name="Second strike", info=info)], event_id)
 
         outcome = get_outcomes(event_id)[0]
-        self.assertEqual(str(LockoutAction.LOCK_USER), outcome.action_type)
+        self.assertEqual(str(LockoutAction.LOCK_USER_TEMPORARY), outcome.action_type)
         self.assertTrue(outcome.dry_run)
         self.assertEqual("Brute Force PIN Lockout", outcome.policy_name)
         self.assertEqual(5, outcome.threshold)
@@ -93,7 +93,7 @@ class OutcomeLogTestCase(MyTestCase):
         policy, stage = self._policy_and_stage()
         expires_at = utc_now() + timedelta(seconds=600)
 
-        outcome = outcome_for_stage(policy, stage, LockoutAction.LOCK_USER, 6, expires_at=expires_at)
+        outcome = outcome_for_stage(policy, stage, LockoutAction.LOCK_USER_TEMPORARY, 6, expires_at=expires_at)
         self.assertDictEqual({"expires_at": expires_at.replace(tzinfo=timezone.utc).isoformat()}, outcome.info)
         # An aware value is left as it is rather than re-stamped.
         aware = expires_at.replace(tzinfo=timezone.utc)
@@ -112,7 +112,7 @@ class OutcomeLogTestCase(MyTestCase):
         # deletion; the threshold identifies the stage. The policy's *id* is deliberately not copied: it can be handed
         # to a different policy after a deletion (SQLite, MySQL/MariaDB), which would misattribute the history.
         policy, stage = self._policy_and_stage()
-        outcome = outcome_for_stage(policy, stage, LockoutAction.LOCK_USER, 6, dry_run=True)
+        outcome = outcome_for_stage(policy, stage, LockoutAction.LOCK_USER_TEMPORARY, 6, dry_run=True)
 
         self.assertEqual(policy.name, outcome.policy_name)
         self.assertFalse(hasattr(outcome, "policy_id"), "the outcome must not carry a policy id")
@@ -134,9 +134,9 @@ class OutcomeLogTestCase(MyTestCase):
         # and the history of the first evaluation must survive the second.
         event_id = self._auth_log_row()
         record_outcomes([_outcome()], event_id)
-        record_outcomes([_outcome(action_type=str(LockoutAction.PERMANENT_LOCK_USER))], event_id)
+        record_outcomes([_outcome(action_type=str(LockoutAction.LOCK_USER_PERMANENT))], event_id)
 
-        self.assertListEqual([str(LockoutAction.LOCK_USER), str(LockoutAction.PERMANENT_LOCK_USER)],
+        self.assertListEqual([str(LockoutAction.LOCK_USER_TEMPORARY), str(LockoutAction.LOCK_USER_PERMANENT)],
                          [outcome.action_type for outcome in get_outcomes(event_id)])
 
     def test_no_outcomes_is_a_successful_no_op(self):
@@ -169,7 +169,7 @@ class OutcomeLogTestCase(MyTestCase):
             self.assertFalse(record_outcomes(outcomes, event_id))
 
         self.assertTrue(record_outcomes(outcomes, event_id))
-        self.assertListEqual([str(LockoutAction.LOCK_USER)],
+        self.assertListEqual([str(LockoutAction.LOCK_USER_TEMPORARY)],
                              [outcome.action_type for outcome in get_outcomes(event_id)])
 
     def test_recording_the_same_outcome_object_twice_stores_it_once(self):
@@ -186,7 +186,7 @@ class OutcomeLogTestCase(MyTestCase):
         record_outcomes([_outcome()], first)
         record_outcomes([_outcome(action_type=str(LockoutAction.BLOCK_IP))], second)
 
-        self.assertListEqual([str(LockoutAction.LOCK_USER)], [outcome.action_type for outcome in get_outcomes(first)])
+        self.assertListEqual([str(LockoutAction.LOCK_USER_TEMPORARY)], [outcome.action_type for outcome in get_outcomes(first)])
         self.assertListEqual([str(LockoutAction.BLOCK_IP)], [outcome.action_type for outcome in get_outcomes(second)])
 
     def test_column_lengths_mirror_the_columns_they_copy(self):

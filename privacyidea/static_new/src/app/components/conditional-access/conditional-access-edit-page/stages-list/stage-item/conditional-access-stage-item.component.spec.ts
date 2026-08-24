@@ -35,7 +35,7 @@ describe("ConditionalAccessStageItemComponent", () => {
   const stage: LockoutPolicyStage = {
     failure_threshold: 5,
     priority: 1,
-    actions: [{ action_type: "LOCK_USER", action_value: { lock_duration_seconds: 600 } }]
+    actions: [{ action_type: "LOCK_USER_TEMPORARY", action_value: { lock_duration_seconds: 600 } }]
   };
 
   beforeEach(async () => {

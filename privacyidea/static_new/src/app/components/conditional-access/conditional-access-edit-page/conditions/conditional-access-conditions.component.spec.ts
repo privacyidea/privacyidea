@@ -42,6 +42,14 @@ const CONDITION_TYPE_META: Record<string, ConditionTypeMeta> = {
       { name: "NOT_IN", label: "is not one of" }
     ],
     choices: ["admin-external", "admin-internal", "user"]
+  },
+  ENDPOINT: {
+    label: "Endpoint",
+    operators: [
+      { name: "IN", label: "is one of" },
+      { name: "NOT_IN", label: "is not one of" }
+    ],
+    choices: ["/auth", "/validate/check"]
   }
 };
 
@@ -80,7 +88,7 @@ describe("ConditionalAccessConditionsComponent", () => {
     );
 
   it("should render a row per served condition type, labelled by the backend", () => {
-    expect(renderedLabels()).toEqual(["User realm", "User role"]);
+    expect(renderedLabels()).toEqual(["User realm", "User role", "Endpoint"]);
   });
 
   // The point of driving the rows off the endpoint: the backend registry is designed so a new
@@ -91,9 +99,9 @@ describe("ConditionalAccessConditionsComponent", () => {
       CLIENT_LABEL: { label: "Client label", operators: [{ name: "IN", label: "is one of" }], choices: ["kiosk"] }
     });
     fixture.detectChanges();
-    expect(renderedLabels()).toEqual(["User realm", "User role", "Client label"]);
+    expect(renderedLabels()).toEqual(["User realm", "User role", "Endpoint", "Client label"]);
 
-    const unknownRow = component.rows()[2];
+    const unknownRow = component.rows()[3];
     expect(unknownRow.valuesLabel).toBe("Client label");
     expect(component.hintFor(unknownRow)).toBe("Restrict the values this policy is applied to.");
   });
@@ -119,7 +127,7 @@ describe("ConditionalAccessConditionsComponent", () => {
 
   it("should not render a type twice when the policy carries one the endpoint also offers", () => {
     setConditions([{ condition_type: "USER_ROLE", operator: "IN", value: ["user"] }]);
-    expect(renderedLabels()).toEqual(["User realm", "User role"]);
+    expect(renderedLabels()).toEqual(["User realm", "User role", "Endpoint"]);
   });
 
   it("should default a type without a condition to IN and no selected values", () => {
@@ -307,5 +315,13 @@ describe("ConditionalAccessConditionsComponent", () => {
     const [realmRow, roleRow] = component.rows();
     expect(component.valueLabel(realmRow, "sales")).toBe("sales");
     expect(component.valueLabel(roleRow, "admin-internal")).toBe("Administrator (internal)");
+  });
+
+  it("should render the endpoint row with its own copy and the paths verbatim", () => {
+    const endpointRow = component.rows().find((row) => row.type === "ENDPOINT")!;
+    expect(endpointRow.valuesLabel).toBe("Endpoints");
+    expect(component.hintFor(endpointRow)).toBe("Restrict the endpoints this policy is applied to.");
+    // A path is what an admin recognizes an endpoint by, so it is not relabelled.
+    expect(component.valueLabel(endpointRow, "/validate/check")).toBe("/validate/check");
   });
 });

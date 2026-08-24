@@ -140,14 +140,14 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
     def test_entry_carries_its_conditional_access_outcomes(self):
         event_id = log_authentication_event(event_type=AuthEventType.MFA_FAIL, resolver="res1", uid="u1",
                                             realm=self.realm1)
-        record_outcomes([ConditionalAccessOutcome(action_type="LOCK_USER", policy_name="Brute force",
+        record_outcomes([ConditionalAccessOutcome(action_type="LOCK_USER_TEMPORARY", policy_name="Brute force",
                                                  threshold=3, event_count=3, stage_name="Second strike",
                                                  info={"expires_at": "2026-08-07T12:00:00+00:00"})], event_id)
         try:
             entry = next(e for e in self._get({"page_size": 50})["result"]["value"]["auth_logs"]
                          if e["id"] == event_id)
             outcome = entry["conditional_access_outcomes"][0]
-            self.assertEqual("LOCK_USER", outcome["action_type"])
+            self.assertEqual("LOCK_USER_TEMPORARY", outcome["action_type"])
             self.assertEqual("Brute force", outcome["policy_name"])
             self.assertEqual("Second strike", outcome["stage_name"])
             self.assertEqual(3, outcome["threshold"])
@@ -179,9 +179,9 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
                                                   realm=self.realm1),
         }
         db.session.commit()
-        record_outcomes([self._make_outcome("LOCK_USER", "Brute force")], ids["locked"])
+        record_outcomes([self._make_outcome("LOCK_USER_TEMPORARY", "Brute force")], ids["locked"])
         record_outcomes([self._make_outcome("EMAIL_ADMIN", "Notify")], ids["notified"])
-        record_outcomes([self._make_outcome("LOCK_USER", "Notify", dry_run=True)], ids["simulated"])
+        record_outcomes([self._make_outcome("LOCK_USER_TEMPORARY", "Notify", dry_run=True)], ids["simulated"])
         return ids
 
     @staticmethod
@@ -196,28 +196,28 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
     def test_filter_by_outcome_action_type(self):
         ids = self._seed_outcomes()
         try:
-            value = self._get({"ca_action_type": "LOCK_USER"})["result"]["value"]
+            value = self._get({"ca_action_types": "LOCK_USER_TEMPORARY"})["result"]["value"]
             self.assertEqual(2, value["count"])
             self.assertSetEqual({ids["locked"], ids["simulated"]}, self._returned_ids(value))
             # A list and a wildcard work as for every other filter, and "*" means "acted on at all".
             self.assertSetEqual({ids["locked"], ids["notified"], ids["simulated"]},
-                                self._returned_ids(self._get({"ca_action_type": "LOCK_USER,EMAIL_ADMIN"})
+                                self._returned_ids(self._get({"ca_action_types": "LOCK_USER_TEMPORARY,EMAIL_ADMIN"})
                                                    ["result"]["value"]))
             self.assertSetEqual({ids["notified"]},
-                                self._returned_ids(self._get({"ca_action_type": "EMAIL*"})["result"]["value"]))
+                                self._returned_ids(self._get({"ca_action_types": "EMAIL*"})["result"]["value"]))
             self.assertSetEqual({ids["locked"], ids["notified"], ids["simulated"]},
-                                self._returned_ids(self._get({"ca_action_type": "*"})["result"]["value"]))
+                                self._returned_ids(self._get({"ca_action_types": "*"})["result"]["value"]))
         finally:
             self._clear_outcomes()
 
     def test_filter_by_outcome_policy_name(self):
         ids = self._seed_outcomes()
         try:
-            value = self._get({"ca_policy_name": "Notify"})["result"]["value"]
+            value = self._get({"ca_policy_names": "Notify"})["result"]["value"]
             self.assertSetEqual({ids["notified"], ids["simulated"]}, self._returned_ids(value))
             # The outcome columns use the same case-sensitive collation as the log, so the flag is needed here too.
-            self.assertEqual(0, self._get({"ca_policy_name": "notify"})["result"]["value"]["count"])
-            self.assertEqual(2, self._get({"ca_policy_name": "notify", "case_insensitive": "1"})
+            self.assertEqual(0, self._get({"ca_policy_names": "notify"})["result"]["value"]["count"])
+            self.assertEqual(2, self._get({"ca_policy_names": "notify", "case_insensitive": "1"})
                              ["result"]["value"]["count"])
         finally:
             self._clear_outcomes()
@@ -236,17 +236,18 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
             self._clear_outcomes()
 
     def test_outcome_filters_apply_to_one_and_the_same_outcome(self):
-        # The entry has two outcomes: LOCK_USER by "Brute force" and EMAIL_ADMIN by "Notify". Asking for a LOCK_USER
-        # *by Notify* must not match it, even though each half is true of a different outcome of the same entry.
+        # The entry has two outcomes: LOCK_USER_TEMPORARY by "Brute force" and EMAIL_ADMIN by "Notify". Asking for
+        # a LOCK_USER_TEMPORARY *by Notify* must not match it, even though each half is true of a different outcome of
+        # the same entry.
         event_id = log_authentication_event(event_type=AuthEventType.MFA_FAIL, resolver="res", uid="9",
                                             realm=self.realm1)
         db.session.commit()
-        record_outcomes([self._make_outcome("LOCK_USER", "Brute force"),
+        record_outcomes([self._make_outcome("LOCK_USER_TEMPORARY", "Brute force"),
                          self._make_outcome("EMAIL_ADMIN", "Notify")], event_id)
         try:
-            self.assertEqual(0, self._get({"ca_action_type": "LOCK_USER", "ca_policy_name": "Notify"})
+            self.assertEqual(0, self._get({"ca_action_types": "LOCK_USER_TEMPORARY", "ca_policy_names": "Notify"})
                              ["result"]["value"]["count"])
-            self.assertEqual(1, self._get({"ca_action_type": "LOCK_USER", "ca_policy_name": "Brute force"})
+            self.assertEqual(1, self._get({"ca_action_types": "LOCK_USER_TEMPORARY", "ca_policy_names": "Brute force"})
                              ["result"]["value"]["count"])
         finally:
             self._clear_outcomes()
@@ -256,10 +257,11 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
         event_id = log_authentication_event(event_type=AuthEventType.MFA_FAIL, resolver="res", uid="8",
                                             realm=self.realm1)
         db.session.commit()
-        record_outcomes([self._make_outcome("LOCK_USER", "P1"), self._make_outcome("LOCK_USER", "P2"),
-                         self._make_outcome("LOCK_USER", "P3")], event_id)
+        record_outcomes([self._make_outcome("LOCK_USER_TEMPORARY", "P1"),
+                         self._make_outcome("LOCK_USER_TEMPORARY", "P2"),
+                         self._make_outcome("LOCK_USER_TEMPORARY", "P3")], event_id)
         try:
-            value = self._get({"ca_action_type": "LOCK_USER"})["result"]["value"]
+            value = self._get({"ca_action_types": "LOCK_USER_TEMPORARY"})["result"]["value"]
             self.assertEqual(1, value["count"])
             self.assertListEqual([event_id], [entry["id"] for entry in value["auth_logs"]])
         finally:
@@ -269,22 +271,22 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
         ids = self._seed_outcomes()
         try:
             self.assertSetEqual({ids["locked"]},
-                                self._returned_ids(self._get({"ca_action_type": "LOCK_USER", "uid": "1"})
+                                self._returned_ids(self._get({"ca_action_types": "LOCK_USER_TEMPORARY", "uids": "1"})
                                                    ["result"]["value"]))
-            self.assertEqual(0, self._get({"ca_action_type": "LOCK_USER",
-                                           "event_type": AuthEventType.LOGIN_SUCCESS})["result"]["value"]["count"])
+            self.assertEqual(0, self._get({"ca_action_types": "LOCK_USER_TEMPORARY",
+                                           "event_types": AuthEventType.LOGIN_SUCCESS})["result"]["value"]["count"])
         finally:
             self._clear_outcomes()
 
     def test_filter_by_event_type(self):
         self._seed(include_no_realm=True)
-        value = self._get({"event_type": AuthEventType.MFA_FAIL})["result"]["value"]
+        value = self._get({"event_types": AuthEventType.MFA_FAIL})["result"]["value"]
         self.assertEqual(1, value["count"])
         self.assertEqual(AuthEventType.MFA_FAIL, value["auth_logs"][0]["event_type"])
 
     def test_filter_by_event_type_csv_list(self):
         self._seed(include_no_realm=True)
-        value = self._get({"event_type": f"{AuthEventType.MFA_FAIL},{AuthEventType.USER_UNKNOWN}"})["result"]["value"]
+        value = self._get({"event_types": f"{AuthEventType.MFA_FAIL},{AuthEventType.USER_UNKNOWN}"})["result"]["value"]
         self.assertEqual(2, value["count"])
         self.assertSetEqual({AuthEventType.MFA_FAIL, AuthEventType.USER_UNKNOWN},
                             {entry["event_type"] for entry in value["auth_logs"]})
@@ -292,7 +294,7 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
     def test_filter_by_event_type_wildcard(self):
         self._seed(include_no_realm=True)
         # the two LOGIN_SUCCESS rows match the LOGIN* prefix; MFA_FAIL and USER_UNKNOWN do not
-        value = self._get({"event_type": "LOGIN*"})["result"]["value"]
+        value = self._get({"event_types": "LOGIN*"})["result"]["value"]
         self.assertEqual(2, value["count"])
         self.assertSetEqual({AuthEventType.LOGIN_SUCCESS}, {entry["event_type"] for entry in value["auth_logs"]})
 
@@ -305,9 +307,9 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
                                  user_role=AuthLogUserRole.ADMIN_EXTERNAL)
         db.session.commit()
 
-        self.assertEqual(1, self._get({"user_role": AuthLogUserRole.USER})["result"]["value"]["count"])
+        self.assertEqual(1, self._get({"user_roles": AuthLogUserRole.USER})["result"]["value"]["count"])
         # The shared 'admin-' prefix lets one wildcard filter match either admin kind.
-        value = self._get({"user_role": "admin*"})["result"]["value"]
+        value = self._get({"user_roles": "admin*"})["result"]["value"]
         self.assertEqual(2, value["count"])
         self.assertSetEqual({AuthLogUserRole.ADMIN_INTERNAL, AuthLogUserRole.ADMIN_EXTERNAL},
                             {entry["user_role"] for entry in value["auth_logs"]})
@@ -319,9 +321,9 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
 
         # The log's string columns use a case-sensitive collation, so the unflagged default is case-sensitive on every
         # backend: "alice" does not match the stored "Alice" without the flag, and does with it.
-        self.assertEqual(0, self._get({"username": "alice"})["result"]["value"]["count"])
-        self.assertEqual(1, self._get({"username": "alice", "case_insensitive": "1"})["result"]["value"]["count"])
-        self.assertEqual(1, self._get({"username": "Alice"})["result"]["value"]["count"])
+        self.assertEqual(0, self._get({"usernames": "alice"})["result"]["value"]["count"])
+        self.assertEqual(1, self._get({"usernames": "alice", "case_insensitive": "1"})["result"]["value"]["count"])
+        self.assertEqual(1, self._get({"usernames": "Alice"})["result"]["value"]["count"])
 
     def test_filter_by_client_label(self):
         log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res", uid="1", realm=self.realm1,
@@ -330,9 +332,25 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
                                  client_label="webui")
         db.session.commit()
 
-        value = self._get({"client_label": "vpn"})["result"]["value"]
+        value = self._get({"client_labels": "vpn"})["result"]["value"]
         self.assertEqual(1, value["count"])
         self.assertEqual("vpn", value["auth_logs"][0]["client_label"])
+
+    def test_filter_by_endpoint(self):
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res", uid="1", realm=self.realm1,
+                                 endpoint="/validate/check")
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res", uid="2", realm=self.realm1,
+                                 endpoint="/auth")
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res", uid="3", realm=self.realm1,
+                                 endpoint="/ttype/push")
+        db.session.commit()
+
+        value = self._get({"endpoints": "/auth"})["result"]["value"]
+        self.assertEqual(1, value["count"])
+        self.assertEqual("/auth", value["auth_logs"][0]["endpoint"])
+        # A list matches either endpoint, a wildcard the whole group below a prefix.
+        self.assertEqual(2, self._get({"endpoints": "/auth,/ttype/push"})["result"]["value"]["count"])
+        self.assertEqual(1, self._get({"endpoints": "/validate/*"})["result"]["value"]["count"])
 
     def test_filter_by_attempt_id(self):
         log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res", uid="1", realm=self.realm1,
@@ -341,7 +359,7 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
                                  attempt_id="att-y")
         db.session.commit()
 
-        value = self._get({"attempt_id": "att-x"})["result"]["value"]
+        value = self._get({"attempt_ids": "att-x"})["result"]["value"]
         self.assertEqual(1, value["count"])
         self.assertEqual("att-x", value["auth_logs"][0]["attempt_id"])
 

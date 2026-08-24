@@ -283,6 +283,22 @@ def _determine_user_role(user: User | None, internal_admin: bool) -> AuthLogUser
     return AuthLogUserRole.USER
 
 
+def request_endpoint() -> str | None:
+    """
+    The endpoint of the current request, as its path with a trailing slash removed (``/auth``,
+    ``/validate/check``, ``/ttype/push``) - or ``None`` outside a request context.
+
+    The path rather than the Flask endpoint or the matched URL rule: the rule would read ``/ttype/<ttype>`` where
+    the path names the token type that authenticated, and every route that authenticates has a static path anyway.
+    Normalizing the trailing slash keeps one endpoint one value however it was called - which matters twice over,
+    since this is both what the authentication log stores and what an ``ENDPOINT`` conditional-access condition
+    compares against.
+    """
+    if not has_request_context():
+        return None
+    return request.path.rstrip("/") or request.path
+
+
 def log_authentication(event_type: AuthEventType | None, request: Request | None = None, user: User | None = None,
                        serial: str | None = None, transaction_id: str | None = None,
                        username: str | None = None,
@@ -294,7 +310,9 @@ def log_authentication(event_type: AuthEventType | None, request: Request | None
     This is the single API-layer persistence point: the lib layer classifies
     the outcome and the views call this to record it. ``source_ip`` uses the
     same client-IP resolution as the audit log; ``client_label`` is the
-    ``client_id`` parameter if supplied, otherwise the User-Agent header.
+    ``client_id`` parameter if supplied, otherwise the User-Agent header;
+    ``endpoint`` is the request path that authenticated (``/auth``,
+    ``/validate/check``, ``/ttype/push``, ...).
 
     The entry is **staged**, not written: it goes into this request's conditional-access buffer and is written once,
     with everything else the request staged, at request teardown. A later stage can therefore still amend it (a
@@ -318,9 +336,10 @@ def log_authentication(event_type: AuthEventType | None, request: Request | None
     serial). In that case the token owner is resolved from the serial, so a row that names a single token always also
     records that token's user, keeping the log symmetric.
 
-    ``source_ip`` (from ``g``) and ``client_label`` (from ``request``) are only read inside a request context, so the
-    lib layer can record an event from outside a view (e.g. push_wait). Worst case those two columns are empty; the
-    event itself is never lost.
+    ``source_ip`` (from ``g``) as well as ``client_label`` and ``endpoint`` (from ``request``) are only read inside a
+    request context, so the lib layer can record an event from outside a view (e.g. push_wait). Worst case those
+    columns are empty; the event itself is never lost. ``endpoint`` comes from :func:`request_endpoint`, the same
+    reading an ``ENDPOINT`` conditional-access condition is evaluated against.
 
     ``user_role`` records whether the principal is a regular user or an admin (see :class:`AuthLogUserRole`). Pass
     ``internal_admin=True`` for a local database admin (``/auth`` only); an admin-realm admin is detected from the
@@ -336,10 +355,12 @@ def log_authentication(event_type: AuthEventType | None, request: Request | None
         return
     client_label = None
     source_ip = None
+    endpoint = None
     if has_request_context():
         source_ip = g.client_ip
         if request is not None:
             client_label = get_optional(request.all_data, "client_id") or (request.user_agent.string or None)
+            endpoint = request_endpoint()
     # TODO: replace by user function (after related PR is merged)
     resolved = bool(user and user.resolver)
     if not resolved and serial and "," not in serial:
@@ -384,6 +405,7 @@ def log_authentication(event_type: AuthEventType | None, request: Request | None
         user_role=_determine_user_role(user, internal_admin),
         source_ip=source_ip,
         client_label=client_label,
+        endpoint=endpoint,
         serial=serial,
         attempt_id=context.attempt_id,
         immediate=immediate,
@@ -429,6 +451,7 @@ def build_ca_context(user, internal_admin: bool | None = None) -> "CAContext":
     """
     from privacyidea.lib.conditional_access.context import CAContext
     source_ip = None
+    endpoint = request_endpoint()
     if has_request_context():
         # g.get, not g.client_ip: a request context is not a guarantee that before_request got as far
         # as setting it (an AuthError raised early leaves it unset, which is why
@@ -437,7 +460,7 @@ def build_ca_context(user, internal_admin: bool | None = None) -> "CAContext":
         source_ip = g.get("client_ip")
         if internal_admin is None:
             internal_admin = g.get("resolved_user", {}).get("is_local_admin", False)
-    return CAContext(user=user or None, source_ip=source_ip,
+    return CAContext(user=user or None, source_ip=source_ip, endpoint=endpoint,
                      user_role=str(_determine_user_role(user, bool(internal_admin))))
 
 

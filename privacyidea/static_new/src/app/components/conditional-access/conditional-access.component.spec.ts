@@ -150,7 +150,7 @@ describe("ConditionalAccessComponent", () => {
     const policy: LockoutPolicy = {
       ...samplePolicy,
       stages: [
-        { failure_threshold: 3, priority: 1, actions: [{ action_type: "LOCK_USER", action_value: 60 }] },
+        { failure_threshold: 3, priority: 1, actions: [{ action_type: "LOCK_USER_TEMPORARY", action_value: 60 }] },
         {
           failure_threshold: 5,
           priority: 2,
@@ -161,7 +161,7 @@ describe("ConditionalAccessComponent", () => {
         }
       ]
     };
-    expect(component.actionsDisplay(policy)).toBe("LOCK_USER, EMAIL_ADMIN, BLOCK_IP");
+    expect(component.actionsDisplay(policy)).toBe("LOCK_USER_TEMPORARY, EMAIL_ADMIN, BLOCK_IP");
   });
 
   describe("selection", () => {

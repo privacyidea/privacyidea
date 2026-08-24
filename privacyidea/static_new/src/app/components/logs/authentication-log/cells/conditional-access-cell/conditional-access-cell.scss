@@ -1,6 +1,6 @@
 @use "../info-list";
 
-// One outcome collapsed to its one visible line: the expand toggle and what the action was.
+// One outcome collapsed to its one visible line: the expand toggle and the policy that acted.
 .outcome-summary {
   display: flex;
   align-items: flex-start;
@@ -25,7 +25,7 @@
   }
 }
 
-// The revealed fields of one outcome, indented past the expand toggle so they line up with the action they explain
+// The revealed fields of one outcome, indented past the expand toggle so they line up with the policy they explain
 // rather than with the icon.
 .outcome-details {
   padding-left: 20px;

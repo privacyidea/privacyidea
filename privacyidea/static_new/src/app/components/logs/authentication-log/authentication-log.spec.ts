@@ -94,6 +94,14 @@ describe("AuthenticationLog", () => {
     expect(component.visibleColumnKeys().length).toBe(component.columnKeysMap.length);
   });
 
+  it("offers the endpoint as a filterable, sortable column with its own filter tooltip", () => {
+    const endpoint = component.columnKeysMap.find((column) => column.key === "endpoint");
+    expect(endpoint).toEqual(expect.objectContaining({ filterable: true, sortable: true }));
+    // No header value picker, so the cell keeps its inline "filter by this value" button.
+    expect(component.showInlineCellFilter("endpoint")).toBe(true);
+    expect(component.filterTooltip("endpoint")).toBe("Filter by this endpoint");
+  });
+
   it("hides the user-identifying columns in self-service", () => {
     authService.role.set("user");
     const keys = component.visibleColumnKeys();
@@ -375,7 +383,7 @@ describe("AuthenticationLog", () => {
 
   it("offers the action vocabulary and the policy names the backend serves, not a hardcoded list", () => {
     expect(component.outcomeActionOptions()).toEqual([]);
-    policyService.actionTypes.set(["LOCK_USER", "BLOCK_IP"] as never);
+    policyService.actionTypes.set(["LOCK_USER_TEMPORARY", "BLOCK_IP"] as never);
     policyService.policies.set([
       { id: 2, name: "Notify" },
       { id: 1, name: "Brute force" },
@@ -383,7 +391,7 @@ describe("AuthenticationLog", () => {
       { id: 3, name: "Notify" }
     ] as never);
 
-    expect(component.outcomeActionOptions()).toEqual(["LOCK_USER", "BLOCK_IP"]);
+    expect(component.outcomeActionOptions()).toEqual(["LOCK_USER_TEMPORARY", "BLOCK_IP"]);
     expect(component.outcomePolicyOptions()).toEqual(["Brute force", "Notify"]);
   });
 
@@ -398,7 +406,7 @@ describe("AuthenticationLog", () => {
   });
 
   it("clearing the Conditional access filter drops all three of its keys at once", () => {
-    component.setFilterValues("ca_action_type", ["LOCK_USER"]);
+    component.setFilterValues("ca_action_type", ["LOCK_USER_TEMPORARY"]);
     component.setFilterValues("ca_policy_name", ["Brute force"]);
     component.setDryRunFilter("false");
     // A filter on another column is not part of this menu and must survive.
@@ -433,18 +441,18 @@ describe("AuthenticationLog", () => {
   it("stores the outcome filters as ordinary filter entries", () => {
     // Which is what makes them typeable in the main filter input too; the service turns them into query params (see
     // its own spec).
-    component.setFilterValues("ca_action_type", ["LOCK_USER", "BLOCK_IP"]);
+    component.setFilterValues("ca_action_type", ["LOCK_USER_TEMPORARY", "BLOCK_IP"]);
     component.setFilterValues("ca_policy_name", ["Brute force"]);
     component.setDryRunFilter("false");
 
     const filter = service.authenticationLogFilter();
-    expect(filter.getValueOfKey("ca_action_type")).toBe("LOCK_USER,BLOCK_IP");
+    expect(filter.getValueOfKey("ca_action_type")).toBe("LOCK_USER_TEMPORARY,BLOCK_IP");
     expect(filter.getValueOfKey("ca_policy_name")).toBe("Brute force");
     expect(filter.getValueOfKey("ca_dry_run")).toBe("false");
   });
 
   it("renders the Conditional access filter as one menu of its three keys, behind the shared filter icon", () => {
-    policyService.actionTypes.set(["LOCK_USER"] as never);
+    policyService.actionTypes.set(["LOCK_USER_TEMPORARY"] as never);
     fixture.detectChanges();
     const header: HTMLElement = fixture.nativeElement.querySelector("th.mat-column-conditional_access_outcomes");
     const trigger: HTMLButtonElement = header.querySelector("button.filter-button")!;

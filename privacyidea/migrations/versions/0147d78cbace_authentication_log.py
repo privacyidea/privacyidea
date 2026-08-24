@@ -41,7 +41,8 @@ def upgrade():
         # The columns in the composite index below (resolver, uid, realm, event_type) are kept small enough that the
         # index stays below the 3072-byte InnoDB key limit of MySQL/MariaDB with utf8mb4:
         # (120+320+255+40)*4 + 8 (timestamp) = 2948 bytes. The non-indexed columns (client_label, serial) are sized
-        # generously to avoid truncation. transaction_id matches the challenge table's 64 chars.
+        # generously to avoid truncation. transaction_id matches the challenge table's 64 chars, and endpoint is sized
+        # past the longest route privacyIDEA registers.
         op.create_table(
             'authentication_log',
             sa.Column('id', BigIntegerType, sa.Identity(always=False), nullable=False),
@@ -54,6 +55,7 @@ def upgrade():
             sa.Column('timestamp', sa.DateTime(), nullable=False),
             sa.Column('source_ip', _unicode_case_sensitive(50), nullable=True),
             sa.Column('client_label', _unicode_case_sensitive(1024), nullable=True),
+            sa.Column('endpoint', _unicode_case_sensitive(255), nullable=True),
             sa.Column('serial', _unicode_case_sensitive(1024), nullable=True),
             sa.Column('transaction_id', _unicode_case_sensitive(64), nullable=True),
             sa.Column('attempt_id', _unicode_case_sensitive(64), nullable=True),

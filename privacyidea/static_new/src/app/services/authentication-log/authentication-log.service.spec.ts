@@ -81,32 +81,40 @@ describe("AuthenticationLogService", () => {
   const isPageRequest = (r: { url: string; params: { get(k: string): string | null } }) =>
     r.url.endsWith("/authenticationlog/") && r.params.get("page_size") !== "1";
 
-  it("filterParams keeps known keys verbatim and drops unknown/empty ones", () => {
+  it("filterParams sends known keys as their plural query parameter and drops unknown/empty ones", () => {
     expect(service.filterParams()).toEqual({});
 
     service.authenticationLogFilter.set(
       new FilterValue({ value: "foo: bar username: alice event_type: LOGIN_SUCCESS serial:    " })
     );
     expect(service.filterParams()).toEqual({
-      username: "alice",
-      event_type: "LOGIN_SUCCESS"
+      usernames: "alice",
+      event_types: "LOGIN_SUCCESS"
     });
+  });
+
+  it("forwards the endpoint filter as the plural endpoints parameter", () => {
+    // Which endpoint authenticated is a column like any other; the wildcard is what makes "/validate/*" one filter.
+    service.authenticationLogFilter.set(new FilterValue({ value: "endpoint: /validate/*" }));
+    expect(service.filterParams()).toEqual({ endpoints: "/validate/*" });
   });
 
   it("forwards the advanced user_role filter (no column, reached via the more-filters control)", () => {
     service.authenticationLogFilter.set(new FilterValue({ value: "user_role: admin-internal,admin-external" }));
-    expect(service.filterParams()).toEqual({ user_role: "admin-internal,admin-external" });
+    expect(service.filterParams()).toEqual({ user_roles: "admin-internal,admin-external" });
   });
 
   it("forwards the conditional-access outcome filters as flat params", () => {
-    // Three advanced keys, sent as they are typed: the backend filters on the entry's outcomes with them (ca_dry_run is
-    // a tri-state there, so its absence means "both").
+    // Three advanced keys: the backend filters on the entry's outcomes with them. The two list filters go out in the
+    // plural like every other list filter; ca_dry_run is a single tri-state boolean, so its absence means "both".
     service.authenticationLogFilter.set(
-      new FilterValue({ value: "ca_action_type: LOCK_USER,BLOCK_IP ca_policy_name: Brute* ca_dry_run: false" })
+      new FilterValue({
+        value: "ca_action_type: LOCK_USER_TEMPORARY,BLOCK_IP ca_policy_name: Brute* ca_dry_run: false"
+      })
     );
     expect(service.filterParams()).toEqual({
-      ca_action_type: "LOCK_USER,BLOCK_IP",
-      ca_policy_name: "Brute*",
+      ca_action_types: "LOCK_USER_TEMPORARY,BLOCK_IP",
+      ca_policy_names: "Brute*",
       ca_dry_run: "false"
     });
   });
@@ -152,7 +160,7 @@ describe("AuthenticationLogService", () => {
     expect(req.request.params.get("sort_column")).toBe("timestamp");
     expect(req.request.params.get("sort_order")).toBe("desc");
     expect(req.request.params.get("case_insensitive")).toBe("true");
-    expect(req.request.params.get("serial")).toBe("PISP0001");
+    expect(req.request.params.get("serials")).toBe("PISP0001");
 
     req.flush(emptyPage());
     flushOldest();
@@ -245,7 +253,7 @@ describe("AuthenticationLogService", () => {
 
   it("handleFilterInput sets, and clearFilter empties, the shared filter", () => {
     service.handleFilterInput({ target: { value: "serial: PISP0001" } } as unknown as Event);
-    expect(service.filterParams()).toEqual({ serial: "PISP0001" });
+    expect(service.filterParams()).toEqual({ serials: "PISP0001" });
     service.clearFilter();
     expect(service.filterParams()).toEqual({});
   });

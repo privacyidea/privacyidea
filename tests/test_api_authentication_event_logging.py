@@ -65,6 +65,9 @@ class _AuthLogContractTests(_ContractHost):
     Flask :class:`~flask.Response`. This is a plain mixin, not a TestCase, so it is not collected on its own.
     """
 
+    # The request path :meth:`_authenticate` posts to, i.e. the endpoint the log must name.
+    endpoint_path: str
+
     def _authenticate(self, password: str, headers: dict | None = None, **params) -> Response:
         """Authenticate ``self.user`` with *password*, optional request *headers* (e.g. a User-Agent) and any extra
         request *params* (e.g. ``transaction_id``, ``client_id``), and return the response for
@@ -96,6 +99,13 @@ class _AuthLogContractTests(_ContractHost):
         entries = assert_authentication_log([AuthEventType.LOGIN_SUCCESS])
         assert_authentication_log_entry(entries[AuthEventType.LOGIN_SUCCESS], user=self.user,
                                         serials={self.serial}, client_label="myapp")
+
+    def test_endpoint_records_the_request_path(self):
+        # Which endpoint authenticated is a column of its own, so a row can be read (and filtered) by it.
+        self._assert_succeeded(self._authenticate(f"{self.pin}755224"))
+        entries = assert_authentication_log([AuthEventType.LOGIN_SUCCESS])
+        assert_authentication_log_entry(entries[AuthEventType.LOGIN_SUCCESS], user=self.user,
+                                        serials={self.serial}, endpoint=self.endpoint_path)
 
     def test_classification_key_not_leaked(self):
         # The internal classification key must never reach the client.
@@ -580,6 +590,8 @@ class ValidateCheckAuthLogTestCase(_AuthLogContractTests, AuthLogTestCase):
 
     # --- contract hooks ---
 
+    endpoint_path = "/validate/check"
+
     def _authenticate(self, password: str, headers: dict | None = None, **params) -> Response:
         return self._post('/validate/check', {"user": self.username, "pass": password, **params}, headers)
 
@@ -816,6 +828,8 @@ class AuthEndpointAuthLogTestCase(_AuthLogContractTests, AuthLogTestCase):
         return response
 
     # --- contract hooks ---
+
+    endpoint_path = "/auth"
 
     def _authenticate(self, password: str, headers: dict | None = None, **params) -> Response:
         # /auth only runs the check_user_pass classification matrix when LOGINMODE=privacyIDEA; enable it per call.

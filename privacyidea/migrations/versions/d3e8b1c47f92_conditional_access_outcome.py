@@ -1,7 +1,7 @@
 """v3.14: Add conditional_access_outcome table
 
 Create the conditional_access_outcome table: the history of what conditional
-access did. One row per action the engine executed for a request (LOCK_USER,
+access did. One row per action the engine executed for a request (LOCK_USER_TEMPORARY,
 BLOCK_IP, EMAIL_*, and the pre-auth DENY decision), plus dry-run rows recording
 what a dry-run policy would have done.
 
@@ -42,8 +42,9 @@ def _unicode_case_sensitive(length: int) -> sa.Unicode:
 
     MySQL/MariaDB's server-default collation is typically case-insensitive (*_ci) while SQLite, PostgreSQL and Oracle
     compare case-sensitively, so an unpinned column would match differently per backend -- e.g. action_type ==
-    'lock_user' hitting a 'LOCK_USER' row on one database only. Pinning to utf8mb4_bin gives one uniform rule
-    everywhere. Kept self-contained here (not imported from the model) so the migration stays a stable snapshot.
+    'lock_user_temporary' hitting a 'LOCK_USER_TEMPORARY' row on one database only. Pinning to utf8mb4_bin gives one
+    uniform rule everywhere. Kept self-contained here (not imported from the model) so the migration stays a stable
+    snapshot.
     """
     return sa.Unicode(length).with_variant(mysql.VARCHAR(length, charset="utf8mb4", collation="utf8mb4_bin"),
                                            "mysql", "mariadb")

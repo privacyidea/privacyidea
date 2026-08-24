@@ -71,7 +71,7 @@ PASSWORD_BRUTEFORCE = LockoutPolicyTemplate(
                                    AuthEventType.PIN_FAIL],
         "stages": [
             {"failure_threshold": 10, "priority": 1,
-             "actions": [{"action_type": LockoutAction.LOCK_USER,
+             "actions": [{"action_type": LockoutAction.LOCK_USER_TEMPORARY,
                           "action_value": {"duration_seconds": 900}}]},
         ],
     })
@@ -90,11 +90,11 @@ MFA_BRUTEFORCE = LockoutPolicyTemplate(
         "counter_types_to_track": [AuthEventType.MFA_FAIL],
         "stages": [
             {"failure_threshold": 3, "priority": 1,
-             "actions": [{"action_type": LockoutAction.LOCK_USER,
+             "actions": [{"action_type": LockoutAction.LOCK_USER_TEMPORARY,
                           "action_value": {"duration_seconds": 600}}]},
             {"failure_threshold": 5, "priority": 2,
              "actions": [
-                 {"action_type": LockoutAction.LOCK_USER,
+                 {"action_type": LockoutAction.LOCK_USER_TEMPORARY,
                   "action_value": {"duration_seconds": 1800}},
                  {"action_type": LockoutAction.EMAIL_ADMIN,
                   "action_value": {
@@ -108,7 +108,7 @@ MFA_BRUTEFORCE = LockoutPolicyTemplate(
 
             {"failure_threshold": 10, "priority": 3,
              "actions": [
-                 {"action_type": LockoutAction.PERMANENT_LOCK_USER},
+                 {"action_type": LockoutAction.LOCK_USER_PERMANENT},
                  {"action_type": LockoutAction.EMAIL_ADMIN,
                   "action_value": {
                       "smtp_identifier": "",

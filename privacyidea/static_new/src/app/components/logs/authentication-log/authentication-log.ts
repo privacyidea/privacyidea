@@ -140,6 +140,9 @@ const columnKeysMap: { key: string; label: string; filterable: boolean; sortable
   { key: "realm", label: $localize`Realm`, filterable: true, sortable: true },
   { key: "source_ip", label: $localize`Source IP`, filterable: true, sortable: true },
   { key: "client_label", label: $localize`Client`, filterable: true, sortable: true },
+  // Which endpoint the request authenticated against ("/auth", "/validate/check", ...). Next to the client: both
+  // describe the caller rather than the outcome.
+  { key: "endpoint", label: $localize`Endpoint`, filterable: true, sortable: true },
   { key: "serial", label: $localize`Serial`, filterable: true, sortable: true },
   { key: "transaction_id", label: $localize`Transaction ID`, filterable: true, sortable: true },
   // Neither is backed by a sortable column: other_info is JSON, and the conditional-access outcomes live in their own
@@ -237,7 +240,8 @@ const FILTER_TOOLTIPS: Record<string, string> = {
   source_ip: $localize`Filter by this source IP`,
   serial: $localize`Filter by this serial`,
   transaction_id: $localize`Filter by this transaction ID`,
-  attempt_id: $localize`Filter by this attempt ID`
+  attempt_id: $localize`Filter by this attempt ID`,
+  endpoint: $localize`Filter by this endpoint`
 };
 
 // Columns whose value is clipped instead of widening the table: the full value stays available in the truncation

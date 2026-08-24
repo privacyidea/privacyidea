@@ -61,7 +61,7 @@ const mockPolicy: LockoutPolicy = {
   target: "user",
   count_mode: "PER_REQUEST",
   counter_types_to_track: ["PIN_FAIL"],
-  stages: [{ failure_threshold: 5, priority: 1, actions: [{ action_type: "LOCK_USER", action_value: null }] }],
+  stages: [{ failure_threshold: 5, priority: 1, actions: [{ action_type: "LOCK_USER_TEMPORARY", action_value: null }] }],
   conditions: []
 };
 
@@ -75,7 +75,7 @@ const EMPTY_TEMPLATE_POLICY: LockoutPolicySaveParams = {
   target: "user",
   count_mode: "PER_REQUEST",
   counter_types_to_track: ["PASSWORD_FAIL"],
-  stages: [{ failure_threshold: 10, priority: 1, actions: [{ action_type: "LOCK_USER", action_value: null }] }]
+  stages: [{ failure_threshold: 10, priority: 1, actions: [{ action_type: "LOCK_USER_TEMPORARY", action_value: null }] }]
 };
 
 describe("ConditionalAccessEditPageComponent — edit mode", () => {
@@ -540,7 +540,7 @@ describe("ConditionalAccessEditPageComponent — new mode", () => {
           target: "user",
           count_mode: "PER_REQUEST",
           counter_types_to_track: ["PASSWORD_FAIL"],
-          stages: [{ failure_threshold: 10, priority: 1, actions: [{ action_type: "LOCK_USER", action_value: null }] }]
+          stages: [{ failure_threshold: 10, priority: 1, actions: [{ action_type: "LOCK_USER_TEMPORARY", action_value: null }] }]
         }
       }
     ]);
@@ -576,7 +576,7 @@ describe("ConditionalAccessEditPageComponent — new mode", () => {
                 failure_threshold: 5,
                 priority: 1,
                 actions: [
-                  { action_type: "LOCK_USER", action_value: 600 },
+                  { action_type: "LOCK_USER_TEMPORARY", action_value: 600 },
                   { action_type: "EMAIL_ADMIN", action_value: { smtp_identifier: "" } }
                 ]
               }
@@ -594,13 +594,13 @@ describe("ConditionalAccessEditPageComponent — new mode", () => {
     };
 
     it("prefills it for an admin who may read the SMTP configuration", () => {
-      expect(applyAndReadActionTypes(["smtpserver_read"])).toEqual(["LOCK_USER", "EMAIL_ADMIN"]);
+      expect(applyAndReadActionTypes(["smtpserver_read"])).toEqual(["LOCK_USER_TEMPORARY", "EMAIL_ADMIN"]);
     });
 
     // The email action stays offered without the right; the identifier field just becomes a free-text
     // input explaining why the configured servers cannot be listed.
     it("prefills it for one who may not, too", () => {
-      expect(applyAndReadActionTypes([])).toEqual(["LOCK_USER", "EMAIL_ADMIN"]);
+      expect(applyAndReadActionTypes([])).toEqual(["LOCK_USER_TEMPORARY", "EMAIL_ADMIN"]);
       expect(component.editPolicy().name).toBe("MFA Brute-Force");
     });
   });
@@ -649,20 +649,20 @@ describe("ConditionalAccessEditPageComponent — new mode", () => {
 
     beforeEach(() => {
       policyServiceMock.actionsByTarget.set({
-        user: ["LOCK_USER", "ALLOW", "DENY"],
+        user: ["LOCK_USER_TEMPORARY", "ALLOW", "DENY"],
         source_ip: ["BLOCK_IP", "ALLOW", "DENY"]
       });
     });
 
     it("should be valid when every stage action is allowed for the target", () => {
       component.onTargetChange("user");
-      component.onStagesChange(stageWith("LOCK_USER"));
+      component.onStagesChange(stageWith("LOCK_USER_TEMPORARY"));
       expect(component.targetActionsValid()).toBe(true);
     });
 
     it("should be invalid when a stage action is not allowed for the target", () => {
       component.onTargetChange("source_ip");
-      component.onStagesChange(stageWith("LOCK_USER"));
+      component.onStagesChange(stageWith("LOCK_USER_TEMPORARY"));
       expect(component.targetActionsValid()).toBe(false);
       expect(component.canSave()).toBe(false);
     });
@@ -671,7 +671,7 @@ describe("ConditionalAccessEditPageComponent — new mode", () => {
       policyServiceMock.actionsByTarget.set({} as Record<LockoutTarget, LockoutActionType[]>);
       policyServiceMock.actionTypes.set([]);
       component.onTargetChange("source_ip");
-      component.onStagesChange(stageWith("LOCK_USER"));
+      component.onStagesChange(stageWith("LOCK_USER_TEMPORARY"));
       expect(component.targetActionsValid()).toBe(true);
     });
   });

@@ -19,7 +19,7 @@ The request context the conditional-access engine evaluates against.
 
 :class:`CAContext` is the single parameter object carrying everything the engine
 knows about the request under evaluation. It exists so that a new evaluation
-input - an API-key status, a request header, the endpoint - is a new *field*
+input - an API-key status, a request header - is a new *field*
 rather than a new parameter on every entry point and every internal helper along
 the way. The engine's two entry points
 (:func:`~privacyidea.lib.conditional_access.engine.evaluate_access_decision` and
@@ -61,6 +61,13 @@ class CAContext:
         regardless of it.
     :ivar source_ip: the resolved client IP, as used by the audit log.
         ``source_ip``-target policies count and block on it.
+    :ivar endpoint: the endpoint the request authenticates against, as its path
+        (``/auth``, ``/validate/check``, ``/ttype/push``). An ``ENDPOINT``
+        condition compares against it, so a policy can restrict itself to - or
+        exempt - one way in; it is the same value the authentication log's
+        ``endpoint`` column stores, which is what lets such a condition also scope
+        the counting query. See
+        :func:`~privacyidea.api.lib.utils.request_endpoint`.
     :ivar user_role: the principal's role
         (:class:`~privacyidea.lib.conditional_access.authentication_log.AuthLogUserRole`),
         as recorded in the authentication log. Pre-auth this is the *claimed*
@@ -79,4 +86,5 @@ class CAContext:
     """
     user: "User | None" = None
     source_ip: str | None = None
+    endpoint: str | None = None
     user_role: str | None = None

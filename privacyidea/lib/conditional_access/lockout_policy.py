@@ -42,7 +42,7 @@ A policy is passed around as a plain dict::
                 "failure_threshold": 5,
                 "priority": 1,
                 "actions": [
-                    {"action_type": "LOCK_USER", "action_value": {"lock_duration_seconds": 600},
+                    {"action_type": "LOCK_USER_TEMPORARY", "action_value": {"lock_duration_seconds": 600},
                      "retrigger_above_threshold": True},
                     {"action_type": "EMAIL_ADMIN", "action_value": {"smtp_identifier": "..."},
                      "retrigger_above_threshold": False},
@@ -267,13 +267,13 @@ def _validate_stage_name(name) -> str | None:
 
 
 # The actions each target may carry. A user-targeted policy locks/notifies the
-# user; a source-IP policy blocks the IP or alerts the admin - LOCK_USER /
+# user; a source-IP policy blocks the IP or alerts the admin - LOCK_USER_TEMPORARY /
 # EMAIL_USER would have no user to act on. Both targets may decide the request
 # pre-auth via ALLOW/DENY (keyed on the user, resp. the source IP).
 _ACTIONS_BY_TARGET = {
     LockoutTarget.USER: {
-        LockoutAction.LOCK_USER,
-        LockoutAction.PERMANENT_LOCK_USER,
+        LockoutAction.LOCK_USER_TEMPORARY,
+        LockoutAction.LOCK_USER_PERMANENT,
         LockoutAction.EMAIL_USER,
         LockoutAction.EMAIL_ADMIN,
         LockoutAction.DENY,
@@ -281,7 +281,7 @@ _ACTIONS_BY_TARGET = {
     },
     LockoutTarget.SOURCE_IP: {
         LockoutAction.BLOCK_IP,
-        LockoutAction.PERMANENT_BLOCK_IP,
+        LockoutAction.BLOCK_IP_PERMANENT,
         LockoutAction.EMAIL_ADMIN,
         LockoutAction.DENY,
         LockoutAction.ALLOW,
@@ -330,7 +330,7 @@ def _validate_target(target) -> "LockoutTarget":
 def _validate_target_actions(stage_defs: list["StageDefinition"], target: "LockoutTarget") -> None:
     """
     Reject any stage action that is not allowed for *target* (see
-    :data:`_ACTIONS_BY_TARGET`) - e.g. ``LOCK_USER`` on a ``source_ip`` policy.
+    :data:`_ACTIONS_BY_TARGET`) - e.g. ``LOCK_USER_TEMPORARY`` on a ``source_ip`` policy.
     """
     allowed = _ACTIONS_BY_TARGET[target]
     invalid = sorted(
@@ -744,7 +744,7 @@ def update_lockout_policy(
 
     ``target`` may be changed, but the resulting ``(target, stages)`` combination
     must stay action-compatible (e.g. a ``source_ip`` policy cannot carry
-    ``LOCK_USER``); an incompatible change raises :class:`ParameterError`.
+    ``LOCK_USER_TEMPORARY``); an incompatible change raises :class:`ParameterError`.
     Existing locks/blocks written before the change are timed and expire on their
     own, so no stale state is left enforced.
 
