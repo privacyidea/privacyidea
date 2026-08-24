@@ -343,10 +343,7 @@
   @for (keyword of advancedApiFilterKeys; track keyword) {
     <button
       (click)="onKeywordClick(keyword)"
-      [matTooltip]="filterColumnTooltip(keyword, keyword)"
-      mat-menu-item
-      matTooltipClass="filter-hint-tooltip"
-      matTooltipPosition="right">
+      mat-menu-item>
       <mat-icon class="margin-right-16">{{ getFilterIconName(keyword) }}</mat-icon>
       {{ keyword }}
     </button>

@@ -13,6 +13,7 @@ from flask import Request, Response
 from werkzeug.test import EnvironBuilder
 
 from privacyidea.lib.audit import getAudit
+from privacyidea.lib.error import ResolverError
 from privacyidea.lib.eventhandler.base import CONDITION
 from privacyidea.lib.eventhandler.usernotification import (UserNotificationEventHandler,
                                                            NOTIFY_TYPE)
@@ -27,7 +28,8 @@ from privacyidea.lib.user import User, create_user
 from privacyidea.lib.utils import to_unicode, AUTH_RESPONSE
 from privacyidea.models import TokenOwner
 from . import smtpmock
-from .base import MyTestCase, FakeFlaskG, FakeAudit, PristineSqliteFixtures
+from .base import MyTestCase, FakeFlaskG, FakeAudit, PristineSqliteFixtures, PWFILE2
+from .test_lib_user import patch_resolver_to_raise
 
 PNG_IMAGE = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAeoAAAHqAQAAAADjFj" \
             "CXAAAD+UlEQVR4nO2dTYrkSAxGn8aGWtowB6ij2Dcb5khzA/soeYABe9lgo1mE4q" \
@@ -1952,3 +1954,29 @@ class UserNotificationTestCase(PristineSqliteFixtures, MyTestCase):
         # Reply-To must contain the realm user's email, NOT the sender fallback
         self.assertIn("user@localhost.localdomain", reply_to_val)
         self.assertNotEqual(reply_to_val, smtp_sender)
+
+    def test_27_get_admin_realm_emails_warns_on_skipped_resolver(self):
+        # A resolver that raises while listing users must not empty out the
+        # whole recipient list; other resolvers in the realm still contribute
+        # their users' emails, and the caller is warned the list may be
+        # incomplete.
+        self.setUp_user_realms()
+        flaky = "notification_flaky_resolver"
+        save_resolver({"resolver": flaky, "type": "passwdresolver", "fileName": PWFILE2})
+        self.addCleanup(delete_resolver, flaky)
+        self.addCleanup(set_realm, self.realm1, [{"name": self.resolvername1}])
+        (added, failed) = set_realm(self.realm1,
+                                    [{"name": self.resolvername1}, {"name": flaky}])
+        self.assertEqual(0, len(failed))
+        self.assertEqual(2, len(added))
+
+        with patch_resolver_to_raise(flaky, ResolverError("simulated outage")):
+            with mock.patch("privacyidea.lib.eventhandler.usernotification.log") as mock_log:
+                emails = UserNotificationEventHandler.get_admin_realm_emails(self.realm1)
+
+        # resolvername1 still works, so its user's email is still returned.
+        self.assertIn("user@localhost.localdomain", emails)
+        self.assertTrue(mock_log.warning.called)
+        warned_realm = mock_log.warning.call_args[0][0]
+        self.assertIn(self.realm1, warned_realm)
+        self.assertIn(flaky, warned_realm)

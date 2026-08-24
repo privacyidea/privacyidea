@@ -1,13 +1,13 @@
 @use "styles";
 @use "table";
 
-$margin-bottom-main: calc(var(--global-padding) * 8);
+$margin-bottom-main: calc(16px * 8);
 
 .user-layout {
   display: flex;
 
   .main-margin-overflow {
-    margin: 0 var(--double-global-padding) $margin-bottom-main 0;
+    margin: 0 32px $margin-bottom-main 0;
   }
 
   .mat-drawer {
@@ -24,8 +24,8 @@ $margin-bottom-main: calc(var(--global-padding) * 8);
 
   .drawer-button-div {
     display: flex;
-    margin-top: calc(var(--global-padding) * 18);
-    margin-left: var(--global-padding);
+    margin-top: calc(16px * 18);
+    margin-left: 16px;
     height: 100%;
     position: fixed;
   }
@@ -33,7 +33,7 @@ $margin-bottom-main: calc(var(--global-padding) * 8);
   .drawer-content-div {
     display: flex;
     flex-direction: row;
-    gap: var(--global-gap);
+    gap: 16px;
   }
 
   .tile-header {
@@ -42,21 +42,21 @@ $margin-bottom-main: calc(var(--global-padding) * 8);
 
   .user-details-grid {
     display: flex;
-    gap: calc(var(--global-gap) * 2);
-    margin-top: var(--double-global-padding);
+    gap: calc(16px * 2);
+    margin-top: 32px;
   }
 
   .user-details-column {
     display: grid;
     grid-template-columns: auto 1fr;
-    row-gap: var(--global-gap);
-    column-gap: var(--global-gap);
+    row-gap: 16px;
+    column-gap: 16px;
   }
 
   .user-self-service-card {
     border-radius: var(--border-radius);
     border: solid 3px var(--mat-sys-outline-variant);
-    padding: var(--global-padding);
+    padding: 16px;
     background: var(--mat-sys-surface-container-lowest);
   }
 

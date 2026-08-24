@@ -10,7 +10,6 @@
 .events-table-container {
   @include styles.main-component-style;
   @include table.base-table-structure(".event-handler-table", ".event-handler-table-filter", ".table-scroll-container");
-  max-height: var(--table-max-height);
   @include table.page-table-state-size;
 }
 

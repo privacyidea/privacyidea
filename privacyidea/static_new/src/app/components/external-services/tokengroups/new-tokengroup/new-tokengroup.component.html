@@ -82,10 +82,11 @@
           <app-clearable-input
             (clearButtonClick)="tokengroupModel.update(m => ({...m, description: ''}))"
             [showClearButton]="!!tokengroupModel().description">
-            <input
+            <textarea
               [formField]="tokengroupForm.description"
               matInput
-              placeholder="some wise words" />
+              placeholder="some wise words"
+              rows="3"></textarea>
           </app-clearable-input>
         </mat-form-field>
       </div>

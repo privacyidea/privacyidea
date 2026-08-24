@@ -13,15 +13,13 @@
 }
 
 .actions-status-row {
+  @include styles.card-raised(3);
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
   gap: 8px;
   align-items: center;
   padding: 12px 14px;
-  border: 1px solid var(--mat-sys-outline-variant);
-  border-radius: var(--border-radius);
-  background: var(--mat-sys-surface-container-low);
 }
 
 // display:contents so the sections below become direct participants of the
@@ -51,13 +49,12 @@
 .test-sync-section {
   app-resync-token-action,
   app-test-otp-pin-action {
+    @include styles.card-raised(3);
     display: flex;
     flex-direction: column;
     align-items: stretch;
     gap: 8px;
     padding: 8px 12px 12px;
-    border: 1px solid var(--mat-sys-outline-variant);
-    border-radius: var(--border-radius);
     box-sizing: border-box;
 
     .actions-pin-input,
@@ -82,13 +79,12 @@
 }
 
 .passkey-test-panel {
+  @include styles.card-raised(3);
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 8px;
   padding: 8px 12px 12px;
-  border: 1px solid var(--mat-sys-outline-variant);
-  border-radius: var(--border-radius);
   box-sizing: border-box;
 }
 

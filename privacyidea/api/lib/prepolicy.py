@@ -292,9 +292,9 @@ def realmadmin(request=None, action=None):
     """
     This decorator adds the realm(s) to the parameters if the administrator
     calling this API is a realm admin.
-    This way, if the admin calls e.g. GET /user without realm parameter,
-    he will not see all users, but only users in the realms granted by
-    matching policies.
+    This way, if the admin calls e.g. GET /user without a realm parameter
+    (or with an empty one), he will not see all users, but only users in
+    the realms granted by matching policies.
 
     All realms from all matching policies are collected (union).
     If any matching policy lists no realms (i.e. "all realms"), the realm
@@ -311,7 +311,10 @@ def realmadmin(request=None, action=None):
     # This decorator is only valid for admins
     if g.logged_in_user.get("role") == ROLE.ADMIN:
         params = request.all_data
-        if "realm" not in params:
+        if not params.get("realm"):
+            # An empty realm (e.g. "?realm=") is treated the same as an absent one:
+            # otherwise a realm-restricted admin would be evaluated against an
+            # empty realm instead of falling back to their granted realm(s).
             # Collect the union of realms from every matching policy.
             matching_policies = Match.admin(g, action=action).policies()
             if matching_policies:
