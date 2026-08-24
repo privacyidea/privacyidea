@@ -4,9 +4,9 @@
 .flex-column {
   display: flex;
   flex-direction: column;
-  gap: var(--global-gap);
+  gap: 16px;
   width: 500px;
-  padding: var(--half-global-padding) 0;
+  padding: 8px 0;
 }
 
 mat-form-field {
@@ -18,7 +18,7 @@ mat-form-field {
   flex: 0 0 auto;
   display: flex;
   flex-direction: column;
-  gap: var(--global-gap);
+  gap: 16px;
 }
 
 mat-card {
@@ -26,7 +26,7 @@ mat-card {
   background-color: var(--mat-sys-surface-container-low);
 
   mat-card-content {
-    padding: var(--global-padding) !important;
+    padding: 16px !important;
 
     small {
       color: var(--mat-sys-on-surface-variant);
@@ -37,5 +37,5 @@ mat-card {
 }
 
 .margin-top-1 {
-  margin-top: var(--global-gap);
+  margin-top: 16px;
 }

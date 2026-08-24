@@ -34,7 +34,8 @@ export type WidgetTypeId =
   | "subscriptions"
   | "certificate-health"
   | "resolver-timing"
-  | "notification-delivery";
+  | "notification-delivery"
+  | "appearance";
 
 export interface WidgetSize {
   cols: number;

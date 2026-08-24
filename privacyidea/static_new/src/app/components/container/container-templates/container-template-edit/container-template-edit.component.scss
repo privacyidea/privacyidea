@@ -5,14 +5,14 @@
 .flex-column {
   display: flex;
   flex-direction: column;
-  gap: var(--global-gap);
+  gap: 16px;
   width: 100%;
 }
 
 .default-template-card-row {
   display: flex;
   flex-direction: row;
-  padding: 0 var(--global-padding);
+  padding: 0 16px;
   border-radius: var(--border-radius);
 
   mat-form-field {
@@ -59,13 +59,13 @@
   flex: 0 0 auto;
   display: flex;
   flex-direction: column;
-  gap: var(--global-gap);
+  gap: 16px;
 }
 
 .added-tokens-list {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: var(--half-global-gap);
-  padding: var(--half-global-padding);
+  gap: 8px;
+  padding: 8px;
 }

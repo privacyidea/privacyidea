@@ -125,6 +125,17 @@ describe("UserSettingsService", () => {
     expect(service.settings()).toEqual({ theme: "dark" });
   });
 
+  it("should post several settings together in one request", () => {
+    service.setSettings({ depth: "flat", corner_radius: "square" }).subscribe();
+
+    const request = httpMock.expectOne("/user/settings");
+    expect(request.request.method).toBe("POST");
+    expect(request.request.body).toEqual({ settings: { depth: "flat", corner_radius: "square" } });
+    request.flush({ result: { status: true, value: { depth: "flat", corner_radius: "square" } } });
+
+    expect(service.settings()).toEqual({ depth: "flat", corner_radius: "square" });
+  });
+
   it("should update the cache from the stored document", () => {
     service.getSettings().subscribe();
     respondWith({ theme: "dark" });

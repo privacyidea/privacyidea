@@ -22,7 +22,7 @@
   flex-grow: 1;
   flex-wrap: wrap;
   gap: 6px;
-  padding-bottom: var(--half-global-padding);
+  padding-bottom: 8px;
 }
 
 .user-buttons-container {
@@ -31,13 +31,13 @@
   flex-shrink: 0;
   gap: 8px;
   margin-left: auto;
-  padding-bottom: var(--half-global-padding);
+  padding-bottom: 8px;
 }
 
 .user-input-container {
   align-items: center;
   display: flex;
-  gap: var(--half-global-gap);
+  gap: 8px;
 }
 
 .remove-user-btn {

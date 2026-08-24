@@ -17,13 +17,9 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-@use "styles";
-
-.settings-container {
-  @include styles.main-component-style;
-  display: flex;
-  flex-direction: column;
-  gap: var(--global-gap);
+:host {
+  display: inline-block;
+  flex: none;
 }
 
 .theme-toggle {
@@ -51,6 +47,7 @@
     width: 56px;
     margin-left: -28px;
     margin-top: -28px;
+    // Circular, so it does not follow --border-radius.
     border-radius: 50%;
     background: var(--mat-sys-surface-container-lowest);
     box-shadow: var(--elevation-5);
@@ -83,13 +80,4 @@
     outline: 2px solid var(--mat-sys-primary);
     outline-offset: 2px;
   }
-}
-
-.settings-row {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 16px;
 }

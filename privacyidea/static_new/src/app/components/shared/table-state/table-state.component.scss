@@ -28,8 +28,8 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: var(--half-global-gap);
-  padding: var(--double-global-padding) var(--global-padding);
+  gap: 8px;
+  padding: 32px 16px;
   text-align: center;
 }
 
@@ -41,7 +41,7 @@
   justify-content: center;
   width: var(--table-state-icon-frame-size, 3.5rem);
   height: var(--table-state-icon-frame-size, 3.5rem);
-  margin-bottom: var(--half-global-gap);
+  margin-bottom: 8px;
   border-radius: 50%;
   background-color: var(--mat-sys-primary-container);
   color: var(--mat-sys-on-primary-container);
@@ -54,7 +54,7 @@
   justify-content: center;
   width: var(--table-state-icon-frame-size, 3.5rem);
   height: var(--table-state-icon-frame-size, 3.5rem);
-  margin-bottom: var(--half-global-gap);
+  margin-bottom: 8px;
 }
 
 .table-state-icon-frame-error {
@@ -83,7 +83,7 @@
 // their encapsulation attribute and cannot be styled from here. It lives in styles/actions.scss.
 
 .table-state-hint {
-  margin: 0 0 var(--half-global-gap);
+  margin: 0 0 8px;
   max-width: 40rem;
   font: var(--mat-sys-body-medium);
   color: var(--mat-sys-on-surface-variant);

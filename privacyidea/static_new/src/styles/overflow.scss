@@ -63,7 +63,7 @@
 .overflow-dropdown {
   background: var(--mat-sys-surface-container, #fff);
   border-radius: var(--border-radius, 8px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--elevation-3);
   min-width: 160px;
   padding: 4px 0;
   overflow: visible;
