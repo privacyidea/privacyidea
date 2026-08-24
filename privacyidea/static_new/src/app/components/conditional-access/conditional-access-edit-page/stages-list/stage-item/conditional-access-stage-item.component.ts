@@ -90,7 +90,9 @@ has none, so it would be shown to the user as written - remove the tag, or add a
 
   readonly errorMessageHint = $localize`Shown to the user when authentication fails while this stage applies, \
 including on later attempts while a lock or block from it is still in force. It applies to this stage only. Left \
-empty, the standard error response is sent, so a rejection cannot be told apart from any other failed authentication.`;
+empty, the user is told only "Authentication failed.", so a rejection cannot be told apart from any other failed \
+authentication - unless the "show_default_ca_error_message" policy is set, which fills in the default wording for this \
+stage's actions.`;
 
   // Whether this stage carries wording of its own: absent or null means the admin has not turned it on, an
   // empty string means turned on but not written yet. The field itself is always rendered - disabled rather

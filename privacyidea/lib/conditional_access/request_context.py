@@ -102,10 +102,10 @@ class ConditionalAccessContext:
         self._evaluated_as = None
         # Whether the message this response carries is conditional access's own (see carries_own_message).
         self.carries_own_message = False
-        # Whether a rejection with no error message of its own falls back to the standard error message for what it did.
-        # Resolved once by the gate, where policies can be matched, and read again at post-response evaluation
-        # so both halves of one request answer the same way.
-        self.use_generic_error_message = False
+        # Whether a rejection with no error message of its own falls back to the default wording for what it did
+        # (see CAContext). Resolved once by the gate, where policies can be matched, and read again at
+        # post-response evaluation so both halves of one request answer the same way.
+        self.use_default_error_message = False
 
     @property
     def has_data(self) -> bool:
@@ -376,7 +376,7 @@ class ConditionalAccessContext:
         # import-order cycle during app startup.
         from privacyidea.lib.conditional_access.engine import evaluate_lockout_policies
         context = CAContext(user=self.principal.user or None, source_ip=self.source_ip,
-                            user_role=event.user_role, use_generic_error_message=self.use_generic_error_message)
+                            user_role=event.user_role, use_default_error_message=self.use_default_error_message)
         try:
             evaluation = evaluate_lockout_policies(context, event.event_type)
         except Exception as ex:

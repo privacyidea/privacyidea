@@ -108,8 +108,8 @@ def _evaluate_rejection(user: User) -> "Rejection | None":
     """
     # Resolved once, here, and carried from here on: the pre-check answers with it, and the context takes it to
     # the post-response evaluation, so both halves of one request word a rejection the same way.
-    use_generic_error_message = show_ca_error_message(user)
-    get_ca_context().use_generic_error_message = use_generic_error_message
+    use_default_error_message = show_default_ca_error_message(user)
+    get_ca_context().use_default_error_message = use_default_error_message
     lockout = get_user_lockout(user, clear_expired=True)
     ip_block = get_ip_block(g.client_ip, clear_expired=True)
     binding = _binding_event_type(lockout, ip_block)
@@ -120,11 +120,11 @@ def _evaluate_rejection(user: User) -> "Rejection | None":
         # account lock and an address block are independent facts, resolved differently, so telling the user
         # about one leaves them to discover the other by failing again. Worded the same on both, it is said once
         # (restriction_messages de-duplicates).
-        messages = restriction_messages(lockout, ip_block, use_generic_error_message=use_generic_error_message)
+        messages = restriction_messages(lockout, ip_block, use_default_error_message=use_default_error_message)
         return Rejection(binding, _audit_reason(lockout, ip_block),
                          " ".join(message.text for message in messages) or None,
                          _additional_event_types(binding, lockout, ip_block))
-    decision = evaluate_access_decision(build_ca_context(user, use_generic_error_message=use_generic_error_message))
+    decision = evaluate_access_decision(build_ca_context(user, use_default_error_message=use_default_error_message))
     # A DENY decision is part of this request's history, but no authentication-log row exists yet to record it against
     # (and a dry-run DENY lets the request continue, so its row comes later). The context holds the outcomes until the
     # request stages the event they belong to - which, for an enforced DENY, is the row the caller writes next.
@@ -132,9 +132,9 @@ def _evaluate_rejection(user: User) -> "Rejection | None":
     if decision.decision == AccessDecision.DENY:
         log.info(f"Denying {request.path} for {user!r} by conditional-access policy.")
         # A DENY persists nothing, so its error message comes straight off the deciding stage - or, with none, off
-        # the standard error message for a denial.
+        # the default error message for a denial.
         template = decision.error_message
-        if not template and use_generic_error_message:
+        if not template and use_default_error_message:
             template = default_error_message(LockoutAction.DENY)
         return Rejection(AuthEventType.ACCESS_DENIED, "Rejected: denied by conditional-access policy",
                          render_error_message(template))
@@ -364,12 +364,12 @@ def _additional_event_types(binding: AuthEventType, lockout: RestrictionStatus |
     return {"additional_event_types": [str(other)]}
 
 
-def show_ca_error_message(user: User) -> bool:
+def show_default_ca_error_message(user: User) -> bool:
     """
     Whether this request may be told what conditional access did to it, when no stage wrote one of its own.
 
-    The ``show_ca_error_message`` policy is the simplified form of writing the standard error message onto every stage
-    by hand, so a stage's own message still wins over it.
+    The ``show_default_ca_error_message`` policy is the simplified form of writing the default error message
+    onto every stage by hand, so a stage's own message still wins over it.
 
     A source-IP block refuses requests before any user is resolved, so this matches against an empty user rather
     than ``None``: ``None`` tells the matcher to *ignore* the user, realm and resolver attributes, which would
@@ -379,7 +379,7 @@ def show_ca_error_message(user: User) -> bool:
     The client IP is matched either way - :meth:`Match.user` passes ``g.client_ip`` itself - so a policy scoped
     to a client still applies to a rejection that has no user.
     """
-    return Match.user(g, scope=SCOPE.CONDITIONAL_ACCESS, action=PolicyAction.SHOW_CA_ERROR_MESSAGE,
+    return Match.user(g, scope=SCOPE.CONDITIONAL_ACCESS, action=PolicyAction.SHOW_DEFAULT_CA_ERROR_MESSAGE,
                       user_object=user if user and user.login else User()).any()
 
 
@@ -392,10 +392,10 @@ def _reject_restricted_login(user: User) -> None:
 
     The decision is :func:`_evaluate_rejection`; this renders it for a human at the login screen. The rejection says
     whatever error message the admin configured for the restrictions in force - every one of them, so a user
-    facing both a lock and a block is not left to discover the second by failing again. With none it falls back
-    to the generic
-    failure, so a locked account is indistinguishable from a wrong password: an ``AuthError`` has to carry some message,
-    which is the one thing this path cannot borrow from ``/validate``, where the rejection simply carries no detail.
+    facing both a lock and a block is not left to discover the second by failing again. With none it falls back to
+    the generic failure, so a locked account is indistinguishable from a wrong password: an ``AuthError`` has to
+    carry some message, which is the one thing this path cannot borrow from ``/validate``, where the rejection
+    simply carries no detail.
 
     An unresolved user / local DB admin has no ``(resolver, uid, realm)`` identity tuple and is therefore never locked.
     ``internal_admin`` comes from the flag ``before_request`` already resolved, so a blocked local admin is recorded as

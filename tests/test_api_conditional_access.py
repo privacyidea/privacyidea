@@ -313,7 +313,7 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         self.assertEqual(str(GENERIC_AUTH_FAILURE), without["detail"]["message"], without)
 
         set_policy(name="ca_show", scope=SCOPE.CONDITIONAL_ACCESS,
-                   action=f"{PolicyAction.SHOW_CA_ERROR_MESSAGE}")
+                   action=f"{PolicyAction.SHOW_DEFAULT_CA_ERROR_MESSAGE}")
         try:
             body = self._check({"user": "cornelius", "pass": "pin755224"})
             self.assertEqual(str(default_error_message(LockoutAction.LOCK_USER)).replace(
@@ -327,7 +327,7 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         from privacyidea.lib.policies.actions import PolicyAction
         self._lock_user(utc_now() + timedelta(seconds=600), error_message="MSG-OWN")
         set_policy(name="ca_show", scope=SCOPE.CONDITIONAL_ACCESS,
-                   action=f"{PolicyAction.SHOW_CA_ERROR_MESSAGE}")
+                   action=f"{PolicyAction.SHOW_DEFAULT_CA_ERROR_MESSAGE}")
         try:
             body = self._check({"user": "cornelius", "pass": "pin755224"})
             self.assertEqual("MSG-OWN", body["detail"]["message"], body)
@@ -341,7 +341,7 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         from privacyidea.lib.policies.actions import PolicyAction
         self._make_lock_policy(counter_type=AuthEventType.PIN_FAIL, threshold=2, duration=600)
         set_policy(name="ca_show", scope=SCOPE.CONDITIONAL_ACCESS,
-                   action=f"{PolicyAction.SHOW_CA_ERROR_MESSAGE}")
+                   action=f"{PolicyAction.SHOW_DEFAULT_CA_ERROR_MESSAGE}")
         try:
             self._check({"user": "cornelius", "pass": "wrongpin123456"})
             tripping = self._check({"user": "cornelius", "pass": "wrongpin123456"})
@@ -359,7 +359,7 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         db.session.add(BlockList(ip="203.0.113.7", block_expires_at=utc_now() + timedelta(seconds=600)))
         db.session.commit()
         set_policy(name="ca_show", scope=SCOPE.CONDITIONAL_ACCESS,
-                   action=f"{PolicyAction.SHOW_CA_ERROR_MESSAGE}")
+                   action=f"{PolicyAction.SHOW_DEFAULT_CA_ERROR_MESSAGE}")
         try:
             body = self._check({"user": "cornelius", "pass": "pin755224"}, remote_addr="203.0.113.7")
             self.assertFalse(body["result"]["value"], body)
@@ -379,7 +379,7 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         db.session.add(BlockList(ip="203.0.113.7", block_expires_at=utc_now() + timedelta(seconds=600)))
         db.session.commit()
         set_policy(name="ca_show", scope=SCOPE.CONDITIONAL_ACCESS,
-                   action=f"{PolicyAction.SHOW_CA_ERROR_MESSAGE}")
+                   action=f"{PolicyAction.SHOW_DEFAULT_CA_ERROR_MESSAGE}")
         try:
             body = self._check({"serial": "CA_ORPHAN", "pass": "pin755224"}, remote_addr="203.0.113.7")
             self.assertFalse(body["result"]["value"], body)
@@ -1563,7 +1563,7 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
         smtpmock.setdata(response={})
         add_smtpserver(identifier="lockoutmail", server="1.2.3.4", tls=False)
         set_policy(name="ca_show", scope=SCOPE.CONDITIONAL_ACCESS,
-                   action=f"{PolicyAction.SHOW_CA_ERROR_MESSAGE}")
+                   action=f"{PolicyAction.SHOW_DEFAULT_CA_ERROR_MESSAGE}")
         try:
             create_lockout_policy(
                 name="ca_mail_generic", time_window_seconds=3600,
@@ -1631,7 +1631,7 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
         smtpmock.setdata(response={})
         add_smtpserver(identifier="lockoutmail", server="1.2.3.4", tls=False)
         set_policy(name="ca_show", scope=SCOPE.CONDITIONAL_ACCESS,
-                   action=f"{PolicyAction.SHOW_CA_ERROR_MESSAGE}")
+                   action=f"{PolicyAction.SHOW_DEFAULT_CA_ERROR_MESSAGE}")
         try:
             create_lockout_policy(
                 name="ca_lockmail_generic", time_window_seconds=3600,

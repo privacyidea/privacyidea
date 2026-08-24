@@ -3252,14 +3252,14 @@ def get_static_policy_definitions(scope=None):
             }
         },
         SCOPE.CONDITIONAL_ACCESS: {
-            PolicyAction.SHOW_CA_ERROR_MESSAGE: {
+            PolicyAction.SHOW_DEFAULT_CA_ERROR_MESSAGE: {
                 'type': 'bool',
-                'desc': _('Tell the user why conditional access turned their request away, using the standard '
+                'desc': _('Tell the user why conditional access turned their request away, using the default '
                           'wording for the action that did it. Without this, a rejection says only what a stage '
-                          'was given its own error message to say, and nothing at all where none was written. '
-                          'A stage\'s own error message always takes precedence over this. Note: this is '
-                          'independent of "hide_specific_error_message" (in the authentication scope), which '
-                          'never applies to conditional-access wording.'),
+                          'was given its own error message to say, and the generic "Authentication failed." '
+                          'where none was written. A stage\'s own error message always takes precedence over '
+                          'this. Note: this is independent of "hide_specific_error_message" (in the '
+                          'authentication scope), which never applies to conditional-access wording.'),
                 'group': GROUP.GENERAL,
             }
         }

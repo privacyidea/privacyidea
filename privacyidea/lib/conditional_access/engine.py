@@ -195,7 +195,7 @@ class RestrictionStatus:
     :ivar seconds_remaining: whole seconds until a timed restriction expires
         (``>= 0``), or ``None`` when permanent.
     :ivar target: whose restriction it is. Part of describing one, and what lets a row with no error message of its
-        own be described by the standard error message for its shape: the row does not record which action wrote it,
+        own be described by the default error message for its shape: the row does not record which action wrote it,
         but target and :attr:`permanent` together name that action exactly.
     :ivar error_message: the message template stored on the restriction when it was applied, or
         ``None`` to say nothing. Rendered with :func:`render_error_message`; kept as the template
@@ -306,15 +306,17 @@ def rank_and_deduplicate(messages: list["StageMessage"]) -> list["StageMessage"]
 
 
 def restriction_messages(*restrictions: "RestrictionStatus | None",
-                         use_generic_error_message: bool = False) -> list["StageMessage"]:
+                         use_default_error_message: bool = False) -> list["StageMessage"]:
     """
     The error message of each of *restrictions* that carries any, ranked and de-duplicated.
 
     Silent by default: a restriction carrying no error message produces none, and ``None`` (nothing in force)
-    contributes nothing at all. With *use_generic_error_message* the standard error message for the
-    restriction's shape stands in for a missing one, which is what the ``show_ca_error_message`` policy buys -
-    an admin gets the same
-    sentence they would have got by writing the suggestion onto every stage by hand.
+    contributes nothing at all. With *use_default_error_message* the wording for the restriction's shape stands
+    in for a missing one, which is what the ``show_default_ca_error_message`` policy buys - an admin gets the same
+    sentence they would have got by writing the suggestion onto every stage by hand. Silent is still not
+    generic: the rejection carrying no message at all is what leaves it indistinguishable from any other
+    failure, which is a separate question the caller answers (:data:`~privacyidea.api.lib.utils.
+    GENERIC_AUTH_FAILURE`).
 
     Both paths that describe a restriction come through here, so the error message cannot depend on which one
     answered: the pre-check that refuses a request already restricted, and the evaluation that just restricted
@@ -331,7 +333,7 @@ def restriction_messages(*restrictions: "RestrictionStatus | None",
         # The row records what is in force, not which action put it there - and those two facts name it exactly.
         action = RESTRICTION_ACTIONS[(restriction.target, restriction.permanent)]
         template = restriction.error_message
-        if not template and use_generic_error_message:
+        if not template and use_default_error_message:
             template = default_error_message(action)
         text = render_error_message(template, restriction)
         if text:
@@ -1187,7 +1189,7 @@ def _restrictions_in_force(context: CAContext, targets: set[LockoutTarget]) -> l
         statuses.append(get_user_lockout(context.user))
     if LockoutTarget.SOURCE_IP in targets and context.source_ip:
         statuses.append(get_ip_block(context.source_ip))
-    return restriction_messages(*statuses, use_generic_error_message=context.use_generic_error_message)
+    return restriction_messages(*statuses, use_default_error_message=context.use_default_error_message)
 
 
 def evaluate_lockout_policies(context: CAContext, event_type: AuthEventType | None,
@@ -1681,8 +1683,8 @@ def _execute_stage_actions(policy: LockoutPolicy, stage: LockoutPolicyStage,
         # that makes it. Either way, repeating it here would tell the user twice - or tell them about a denial
         # that did not turn this request away.
         rendered = None if enforced or decides else render_error_message(stage.error_message)
-    elif context.use_generic_error_message:
-        # The standard error message is per action rather than per stage, so nothing is described twice and no
+    elif context.use_default_error_message:
+        # The default error message is per action rather than per stage, so nothing is described twice and no
         # such rule is needed: compose_default_error_message carries only what reports something, and leaves any
         # restriction to its row. That is what lets a stage that locks *and* emails describe both.
         # Deferred for the same reason as in restriction_messages: lockout_policy imports this module.

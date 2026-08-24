@@ -231,7 +231,7 @@ class PolicyAction:
     FORCE_SERVER_GENERATE = "force_server_generate"
     SET_REALM = "set_realm"
     HIDE_SPECIFIC_ERROR_MESSAGE = "hide_specific_error_message"
-    SHOW_CA_ERROR_MESSAGE = "show_ca_error_message"
+    SHOW_DEFAULT_CA_ERROR_MESSAGE = "show_default_ca_error_message"
     HIDE_SPECIFIC_ERROR_MESSAGE_FOR_OFFLINE_REFILL = "hide_specific_error_message_for_offline_refill"
     HIDE_SPECIFIC_ERROR_MESSAGE_FOR_TTYPE = "hide_specific_error_message_for_ttype"
     HIDE_AUTH_ERROR_STATUS = "hide_auth_error_status"

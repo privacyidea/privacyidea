@@ -64,8 +64,10 @@ must be :class:`~privacyidea.lib.conditional_access.engine.LockoutAction` names;
 matches or an action that never fires).
 
 A stage's optional ``error_message`` is the text an end user sees when a request is turned away by that stage. It is
-opt-in and there is no default: without one the rejection stays generic, so privacyIDEA never volunteers that an
-account is locked or an IP blocked unless an admin chose to say so. ``{duration}`` is substituted with the remaining
+opt-in: without one the rejection carries only the generic "Authentication failed.", so privacyIDEA never volunteers
+that an account is locked or an IP blocked unless an admin chose to say so - either by writing this field, or by
+setting the ``show_default_ca_error_message`` policy, which fills in the default wording for the stage's actions
+(:data:`DEFAULT_ERROR_MESSAGES`). ``{duration}`` is substituted with the remaining
 time at rejection, and only where there is one: on a permanent lock, a ``DENY`` or a notify-only stage it
 is left as written, like any other tag that is not substituted. Every other brace expression is left exactly
 as written - braces in prose need no escaping - so only the length is validated here.
@@ -334,11 +336,12 @@ _ACTIONS_BY_TARGET = {
 }
 
 
-# The standard error message for a stage's ``error_message``, per action. Used for two things, which is the point
+# The default error message for a stage's ``error_message``, per action. Used for two things, which is the point
 # of having one table: the policy editor suggests from it, and the runtime falls back to it for a stage that
-# carries no error message of its own when the ``show_ca_error_message`` policy is on. So an action reads the same
-# wherever it is met, and an admin who edits the suggestion is editing the thing they would otherwise have got by
-# default. The severity order is not repeated here - it is ``ACTION_SEVERITY``, the one ordering there is.
+# carries no error message of its own when the ``show_default_ca_error_message`` policy is on. So an action reads
+# the same wherever it is met, and an admin who edits the suggestion is editing the thing they would otherwise
+# have got by default. The severity order is not repeated here - it is ``ACTION_SEVERITY``, the one ordering
+# there is.
 #
 # lazy_gettext, not _(): module-level constants are evaluated at import, long before a request and its
 # locale exist; ``str()`` at serialization resolves them per admin. That only decides what an admin starts
@@ -363,7 +366,7 @@ DEFAULT_ERROR_MESSAGES: dict[str, object] = {
 
 def default_error_message(action: str) -> str | None:
     """
-    The standard error message for *action*, translated against the request locale, or ``None`` where it has none.
+    The default error message for *action*, translated against the request locale, or ``None`` where it has none.
 
     ``None`` covers any action without error message - one that turns nobody away, or one added later - so a caller
     falling back to this never has to know which actions are covered.
@@ -374,7 +377,7 @@ def default_error_message(action: str) -> str | None:
 
 def compose_default_error_message(action_types: Sequence[str]) -> str | None:
     """
-    The standard error message for a stage that only reported something, given the *action_types* that ran:
+    The default error message for a stage that only reported something, given the *action_types* that ran:
     one sentence per action, most severe first.
 
     Notifications only. A restriction is described from the row it left behind (see
@@ -399,7 +402,7 @@ def get_default_error_messages() -> list[dict[str, str]]:
     reports one sentence per thing that happened to it, ranked the same way - so the wording the editor offers is
     the wording a user would be shown, and the client needs no rule of its own beyond the order it is given.
 
-    The same table backs the runtime fallback under ``show_ca_error_message`` (:func:`default_error_message`,
+    The same table backs the runtime fallback under ``show_default_ca_error_message`` (:func:`default_error_message`,
     :func:`compose_default_error_message`), so an admin who edits a suggestion is editing the thing they would
     otherwise have got by default.
 

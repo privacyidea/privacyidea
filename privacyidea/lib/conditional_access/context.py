@@ -69,10 +69,11 @@ class CAContext:
         exempt an emergency admin from a pre-auth DENY. See
         :func:`~privacyidea.api.lib.utils.build_ca_context` for where it comes
         from.
-    :ivar use_generic_error_message: Whether a rejection with no error message of its own falls back to the
-        standard error message for what it did (the ``show_ca_error_message`` policy). Resolved in the API
-        layer and carried here, because matching a
-        policy needs Flask and this package deliberately does not.
+    :ivar use_default_error_message: Whether a rejection with no error message of its own falls back to the
+        default wording for what it did (the ``show_default_ca_error_message`` policy), rather than saying nothing.
+        Not about the generic "Authentication failed." - that is what a rejection with nothing to say ends up
+        carrying, decided in the API layer. Resolved there too, because matching a policy needs Flask and this
+        package deliberately does not.
     Note what is deliberately *absent*: the authentication log's ``client_label``
     (the ``client_id`` parameter, falling back to the User-Agent header). It
     identifies the calling application well enough to be worth recording
@@ -84,4 +85,4 @@ class CAContext:
     user: "User | None" = None
     source_ip: str | None = None
     user_role: str | None = None
-    use_generic_error_message: bool = False
+    use_default_error_message: bool = False

@@ -162,10 +162,10 @@ def list_default_error_messages():
     same way - so a client needs nothing beyond this list to offer the wording a user would be shown. An action
     that rejects nothing has no entry, there being nothing to say for it.
 
-    The same wording is what the ``show_ca_error_message`` policy falls back to at runtime for a stage that carries
-    no ``error_message`` of its own, so an admin who edits a suggestion is editing the thing they would otherwise
-    have got by default. Without that policy a stage without an ``error_message`` still reveals nothing to the
-    user, whatever its actions.
+    The same wording is what the ``show_default_ca_error_message`` policy falls back to at runtime for a stage
+    that carries no ``error_message`` of its own, so an admin who edits a suggestion is editing the thing they
+    would otherwise have got by default. Without that policy a stage without an ``error_message`` reveals
+    nothing to the user, whatever its actions.
 
     Requires the admin policy action :ref:`policy_lockout_policy_read`.
 
