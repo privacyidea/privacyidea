@@ -42,14 +42,18 @@
   flex-wrap: wrap;
 
   mat-card {
+    @include styles.card-raised(3);
     flex: 1;
     min-width: 300px;
-    border-radius: var(--border-radius);
   }
 
   mat-card-header {
-    background-color: var(--grey-100);
     padding: 8px 16px;
+    font-weight: 500;
+  }
+
+  mat-card-title {
+    font: var(--mat-sys-title-medium);
     font-weight: 500;
   }
 
