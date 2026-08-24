@@ -17,31 +17,35 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 
-@switch (state()) {
-  @case ("ready") {
-    <ng-content />
+<div
+  appScrollToTop
+  aria-label="News"
+  class="news-page"
+  i18n-aria-label>
+  @if (newsDisabled()) {
+    @if (canReadPolicies()) {
+      <p
+        class="news-hint margin-8"
+        i18n>
+        The news feed is disabled by the
+        <a [routerLink]="rssAgePolicyLink">rss_age</a>
+        policy.
+      </p>
+    } @else {
+      <p
+        class="news-hint margin-8"
+        i18n>
+        The news feed is disabled.
+      </p>
+    }
+  } @else {
+    <app-widget-state
+      [state]="pageState()"
+      [errorMessage]="newsFetchErrorMessage">
+      <app-news-list
+        [items]="infoService.newsItems()"
+        [maxAgeDays]="authService.rssAge()"
+        [showSummary]="true" />
+    </app-widget-state>
   }
-  @case ("loading") {
-    <div class="widget-state-status">
-      <mat-progress-spinner
-        mode="indeterminate"
-        [diameter]="40"
-        aria-label="Loading widget data"
-        i18n-aria-label />
-    </div>
-  }
-  @case ("denied") {
-    <div class="widget-state-status">
-      <p i18n>You are not allowed to view this widget.</p>
-    </div>
-  }
-  @case ("error") {
-    <div class="widget-state-status">
-      @if (errorMessage(); as message) {
-        <p>{{ message }}</p>
-      } @else {
-        <p i18n>Could not load data.</p>
-      }
-    </div>
-  }
-}
+</div>
