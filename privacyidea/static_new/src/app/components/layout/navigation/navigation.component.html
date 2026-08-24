@@ -212,36 +212,54 @@
     class="secondary-toolbar"
     appOverflowNav>
     <ng-container *ngTemplateOutlet="footerText"></ng-container>
-    <div class="flex gap-8 margin-left-4">
-      @if (dashboardLayoutService.editMode()) {
-        <button
-          mat-stroked-button
-          type="button"
-          class="action-button-secondary button-width-s"
-          (click)="saveDashboard()">
-          <mat-icon>save</mat-icon>
-          <span i18n>Save</span>
-        </button>
-        <button
-          mat-stroked-button
-          type="button"
-          class="action-button-delete-secondary button-width-s"
-          (click)="cancelDashboard()">
-          <mat-icon>cancel</mat-icon>
-          <span i18n>Cancel</span>
-        </button>
-        <app-widget-palette />
-      } @else {
-        <button
-          mat-stroked-button
-          type="button"
-          class="action-button-secondary button-width-m"
-          (click)="enterDashboardEdit()">
-          <mat-icon>edit</mat-icon>
-          <span i18n>Edit Dashboard</span>
-        </button>
-      }
-    </div>
+    @if (authService.adminDashboard()) {
+      <a
+        [ngClass]="contentService.onDashboard() ? 'sub-nav-active' : ''"
+        [routerLink]="[ROUTE_PATHS.DASHBOARD]">
+        <mat-icon>dashboard</mat-icon>
+        <span i18n>Dashboard</span>
+      </a>
+    }
+    @if (authService.rssAge() > 0) {
+      <a
+        [ngClass]="contentService.onNews() ? 'sub-nav-active' : ''"
+        [routerLink]="[ROUTE_PATHS.NEWS]">
+        <mat-icon>campaign</mat-icon>
+        <span i18n>News</span>
+      </a>
+    }
+    @if (contentService.onDashboard()) {
+      <div class="flex gap-8 margin-left-4">
+        @if (dashboardLayoutService.editMode()) {
+          <button
+            mat-stroked-button
+            type="button"
+            class="action-button-secondary button-width-s"
+            (click)="saveDashboard()">
+            <mat-icon>save</mat-icon>
+            <span i18n>Save</span>
+          </button>
+          <button
+            mat-stroked-button
+            type="button"
+            class="action-button-delete-secondary button-width-s"
+            (click)="cancelDashboard()">
+            <mat-icon>cancel</mat-icon>
+            <span i18n>Cancel</span>
+          </button>
+          <app-widget-palette />
+        } @else {
+          <button
+            mat-stroked-button
+            type="button"
+            class="action-button-secondary button-width-m"
+            (click)="enterDashboardEdit()">
+            <mat-icon>edit</mat-icon>
+            <span i18n>Edit Dashboard</span>
+          </button>
+        }
+      </div>
+    }
     <ng-container *ngTemplateOutlet="supportDocs"></ng-container>
   </mat-toolbar>
 }

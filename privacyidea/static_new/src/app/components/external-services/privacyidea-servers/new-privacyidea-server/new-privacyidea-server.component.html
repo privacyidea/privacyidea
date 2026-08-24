@@ -123,9 +123,10 @@
         <app-clearable-input
           (clearButtonClick)="privacyideaModel.update(m => ({...m, description: ''}))"
           [showClearButton]="!!privacyideaModel().description">
-          <input
+          <textarea
             [formField]="privacyideaForm.description"
-            matInput />
+            matInput
+            rows="3"></textarea>
         </app-clearable-input>
       </mat-form-field>
 

@@ -374,7 +374,7 @@ def _poll_transaction_identity() -> User:
 
 @validate_blueprint.route('/check', methods=['POST', 'GET'])
 @validate_blueprint.route('/radiuscheck', methods=['POST', 'GET'])
-@postpolicy(hide_specific_error_message)
+@postpolicy(hide_specific_error_message, request=request)
 @postpolicy(construct_radius_response, request=request)
 @postpolicy(is_authorized, request=request)
 @postpolicy(multichallenge_enroll_via_validate, request=request)

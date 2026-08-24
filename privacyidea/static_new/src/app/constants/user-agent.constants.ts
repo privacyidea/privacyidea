@@ -29,9 +29,11 @@ export interface UserAgentPreset {
 export const USER_AGENT_PRESETS: readonly UserAgentPreset[] = [
   { displayName: "Credential Provider", identifier: "privacyidea-cp" },
   { displayName: "Keycloak", identifier: "privacyIDEA-Keycloak" },
+  { displayName: "EntraID via Keycloak", identifier: "entraid-via-keycloak" },
   { displayName: "AD FS", identifier: "PrivacyIDEA-ADFS" },
   { displayName: "SimpleSAMLphp", identifier: "simpleSAMLphp" },
-  { displayName: "PAM", identifier: "PAM" },
+  { displayName: "PAM OTP & Push", identifier: "PAM" },
+  { displayName: "PAM Passkey", identifier: "pam-passkey" },
   { displayName: "Shibboleth", identifier: "privacyIDEA-Shibboleth" },
   { displayName: "Nextcloud", identifier: "privacyidea-nextcloud" },
   { displayName: "FreeRADIUS", identifier: "FreeRADIUS" },
@@ -42,5 +44,8 @@ export const USER_AGENT_PRESETS: readonly UserAgentPreset[] = [
 
 // Resolves a user-agent identifier to its friendly display name, falling back to the raw identifier if unknown.
 export function getUserAgentLabel(identifier: string): string {
-  return USER_AGENT_PRESETS.find((preset) => preset.identifier === identifier)?.displayName ?? identifier;
+  // The server matches user agents case-insensitively, so a hand-typed identifier still gets the label of the
+  // preset it means.
+  const normalized = identifier.toLowerCase();
+  return USER_AGENT_PRESETS.find((preset) => preset.identifier.toLowerCase() === normalized)?.displayName ?? identifier;
 }

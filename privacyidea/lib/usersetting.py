@@ -69,6 +69,11 @@ USER_SETTINGS_ALLOWED_KEYS_CONFIG = "PI_USER_SETTINGS_ALLOWED_KEYS"
 # frontend team defines the real set; do not treat them as a committed API yet.
 KNOWN_SETTING_KEYS = {
     "theme",
+    "locale",
+    "show_loading_urls",
+    "depth",
+    "light_source",
+    "corner_radius",
     "starting_page",
     "token_columns",
     "dashboard",
@@ -105,10 +110,9 @@ class SettingsSubject:
 
         A local admin needs a username; a resolver user needs both a user_id
         and a realm_id. An unresolved user has an empty user_id (and possibly a
-        NULL realm_id), and since SQL treats NULLs in the unique key as
-        distinct, keying a row on those empty values would make every
-        unresolved principal share one row (cross-user leak). Mirrors
-        ``User._require_resolved_for_write``.
+        NULL realm_id); keying a row on those empty values would make every
+        unresolved principal hash to the same ``subject_hash`` and share one
+        row (cross-user leak). Mirrors ``User._require_resolved_for_write``.
         """
         if self.subject_type == SUBJECT_LOCAL_ADMIN:
             return bool(self.username)
@@ -242,9 +246,8 @@ def set_user_settings(subject: SettingsSubject, settings: dict, replace: bool = 
         row.save()
     except IntegrityError:
         # A concurrent request created the row between our SELECT and INSERT
-        # (the unique constraint fires for resolver users; for local admins the
-        # NULL realm_id makes the key non-unique, so that race can still leave a
-        # duplicate row). Recover by re-reading and applying the update.
+        # (uq_usersetting_subject fires for both local admins and resolver
+        # users). Recover by re-reading and applying the update.
         db.session.rollback()
         row = db.session.scalars(_select_for_subject(subject).with_for_update()).first()
         if row is None:

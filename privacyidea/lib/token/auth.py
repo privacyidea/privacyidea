@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 """Authentication and validation against tokens (the check_* family)."""
 
+import json
 import logging
 from collections import defaultdict
 from typing import TYPE_CHECKING
@@ -731,7 +732,15 @@ def create_challenge(serial: str, transaction_id: str = None, challenge: str = '
             serial=db_challenge.serial,
             transaction_id=db_challenge.transaction_id,
             challenge=db_challenge.challenge,
-            data=db_challenge.data,
+            # Serialise the caller's dict the same way Challenge.set_data does
+            # rather than reading it back through the decrypting ``.data``
+            # property, and hand over the ciphertext the Challenge above already
+            # produced. Both avoid an HSM round trip on the authentication hot
+            # path: going through the property would decrypt only to re-encrypt,
+            # and without the ciphertext the cache layer would encrypt the same
+            # value a second time.
+            data=json.dumps(data) if data else '',
+            data_ciphertext=db_challenge.encrypted_data,
             session=db_challenge.session,
             timestamp=db_challenge.timestamp,
             expiration=db_challenge.expiration,

@@ -19,7 +19,7 @@
   margin: 0;
   min-width: 0;
   overflow: hidden;
-  padding: var(--half-global-padding) var(--quarter-global-padding);
+  padding: 8px 4px;
   text-align: center;
 
   &:first-child {
@@ -58,7 +58,7 @@
 
 .button-icon {
   flex: 0 0 auto;
-  margin-right: var(--quarter-global-gap);
+  margin-right: 4px;
 }
 
 .button-label {

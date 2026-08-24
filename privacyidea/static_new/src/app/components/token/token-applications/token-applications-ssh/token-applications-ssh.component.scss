@@ -2,13 +2,9 @@
 @use "table";
 
 .application-table-container {
-  @include table.table-container-styles;
+  // Sits inside the raised token-applications page container, so the shallow recess.
+  @include styles.card-recessed(3);
   @include table.base-table-structure(".token-table", ".token-table-filter", ".table-scroll-container");
-
-  & {
-    padding: unset;
-    box-shadow: unset;
-  }
 
   .application-table-filter {
     width: 32.7rem;
