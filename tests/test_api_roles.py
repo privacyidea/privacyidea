@@ -257,6 +257,28 @@ class APIAuthTestCase(MyApiTestCase):
 
         delete_policy("realmadmin_all")
 
+    def test_03e_realmadmin_empty_realm_param_treated_as_absent(self):
+        # A literal empty ``realm=`` query parameter must be treated the same as
+        # omitting it entirely, so a realm-restricted admin still falls back to
+        # their granted realm(s) instead of being evaluated against realm "".
+        self.setUp_user_realms()
+        self.setUp_user_realm3()
+        set_policy(name="realmadmin_empty", scope=SCOPE.ADMIN,
+                   action=PolicyAction.USERLIST, realm=self.realm3, user="testadmin")
+
+        with self.app.test_request_context('/user/',
+                                           method='GET',
+                                           data={"realm": ""},
+                                           headers={'Authorization':
+                                                        self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res)
+            result = res.json.get("result")
+            for user in result.get("value"):
+                self.assertEqual(user.get("resolver"), self.resolvername3)
+
+        delete_policy("realmadmin_empty")
+
     def test_04_auth_timelimit_maxfail(self):
         # Test with local admin
         set_policy(name="policy", scope=SCOPE.AUTHZ, action=f"{PolicyAction.AUTHMAXFAIL}=2/20s")

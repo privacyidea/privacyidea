@@ -50,7 +50,7 @@
   font-weight: 600;
   color: var(--mat-sys-secondary);
   border: 1px solid var(--mat-sys-outline-variant);
-  border-radius: 4px;
+  border-radius: var(--border-radius);
 
   &:hover {
     background-color: var(--mat-sys-secondary-container) !important;

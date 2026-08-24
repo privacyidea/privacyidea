@@ -4,9 +4,9 @@
 .conditions-grid-container {
   align-items: baseline;
   display: grid;
-  gap: var(--half-global-padding);
+  gap: 8px;
   grid-template-columns: auto minmax(0, 1fr);
-  padding: var(--quarter-global-padding) 0;
+  padding: 4px 0;
 
   .conditions-label {
     color: var(--mat-sys-on-surface-variant);

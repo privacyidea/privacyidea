@@ -23,6 +23,8 @@ import { AuthService } from "@services/auth/auth.service";
 import { UserSettingsService } from "@services/user-settings/user-settings.service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockUserSettingsService } from "@testing/mock-services/mock-user-settings-service";
+import { WidgetComponentType } from "@models/dashboard";
+import { WidgetRegistryService } from "./widget-registry.service";
 import { DashboardLayoutService } from "./dashboard-layout.service";
 import { DashboardPersistenceService } from "./dashboard-persistence.service";
 
@@ -67,11 +69,12 @@ describe("DashboardLayoutService", () => {
   describe("initialisation", () => {
     it("should fall back to the default layout when persistence is empty", () => {
       build();
-      expect(service.widgets()).toHaveLength(7);
+      expect(service.widgets()).toHaveLength(8);
       expect(service.widgets().map((widget) => widget.type).sort()).toEqual([
         "administration",
         "authentications",
         "events",
+        "news",
         "policies",
         "subscriptions",
         "token-types",
@@ -86,10 +89,28 @@ describe("DashboardLayoutService", () => {
       expect(service.widgets()).toContainEqual(stored[0]);
     });
 
-    it("should always include the pinned widget at its fixed position", () => {
+    it("should open the default layout with the subscription overview in the corner", () => {
       build();
-      const pinned = service.widgets().find((widget) => widget.type === "subscriptions");
-      expect(pinned).toMatchObject({ x: 16, y: 0 });
+      const subscriptions = service.widgets().find((widget) => widget.type === "subscriptions");
+      expect(subscriptions).toMatchObject({ x: 0, y: 0 });
+    });
+
+    it("should not overlap any two widgets in the default layout", () => {
+      build();
+      const widgets = service.widgets();
+      for (let i = 0; i < widgets.length; i++) {
+        for (let j = i + 1; j < widgets.length; j++) {
+          expect(overlaps(widgets[i], widgets[j])).toBe(false);
+        }
+      }
+    });
+
+    it("should widen news and events past their default size in the default layout", () => {
+      build();
+      const news = service.widgets().find((widget) => widget.type === "news");
+      const events = service.widgets().find((widget) => widget.type === "events");
+      expect(news?.cols).toBe(9);
+      expect(events?.cols).toBe(7);
     });
 
     it("should start in view mode", () => {
@@ -221,9 +242,17 @@ describe("DashboardLayoutService", () => {
     });
 
     it("should not remove a pinned widget", () => {
-      const pinned = service.widgets().find((widget) => widget.type === "subscriptions")!;
+      // No shipped widget is pinned, so report one type as pinned to cover the branch.
+      const registry = TestBed.inject(WidgetRegistryService);
+      const realGet = registry.get.bind(registry);
+      jest.spyOn(registry, "get").mockImplementation((type: string) =>
+        type === "events" ? ({ ...realGet(type), pinned: true } as unknown as WidgetComponentType) : realGet(type)
+      );
+      const pinned = service.widgets().find((widget) => widget.type === "events")!;
+
       service.removeWidget(pinned.id);
-      expect(service.widgets().some((widget) => widget.type === "subscriptions")).toBe(true);
+
+      expect(service.widgets().some((widget) => widget.type === "events")).toBe(true);
     });
 
     it("should leave the layout untouched for an unknown id", () => {
@@ -297,11 +326,12 @@ describe("DashboardLayoutService", () => {
       service.removeWidget(service.widgets().find((widget) => widget.type === "events")!.id);
       service.resetLayout();
 
-      expect(service.widgets()).toHaveLength(7);
+      expect(service.widgets()).toHaveLength(8);
       expect(service.widgets().map((widget) => widget.type).sort()).toEqual([
         "administration",
         "authentications",
         "events",
+        "news",
         "policies",
         "subscriptions",
         "token-types",
@@ -312,7 +342,7 @@ describe("DashboardLayoutService", () => {
     it("should persist the reset layout", () => {
       service.removeWidget(service.widgets().find((widget) => widget.type === "events")!.id);
       service.resetLayout();
-      expect(stored()).toHaveLength(7);
+      expect(stored()).toHaveLength(8);
     });
   });
 
@@ -355,7 +385,7 @@ describe("DashboardLayoutService", () => {
       expect(stored()?.some((widget) => widget.type === "tokens")).toBe(false);
     });
 
-    it("should keep allowed and pinned widgets when pruning", () => {
+    it("should keep the allowed widgets when pruning", () => {
       build();
       auth.actionAllowed.mockImplementation((action: string) => action !== "tokenlist");
 

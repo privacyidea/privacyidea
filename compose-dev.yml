@@ -17,6 +17,24 @@ services:
       timeout: 5s
       retries: 10
 
+  mysql-test:
+    # DB URI: mysql+pymysql://privacyidea:privacyidea@127.0.0.1:3308/privacyidea_test
+    image: mysql:8.4
+    container_name: pi-mysql-test
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: privacyidea_test
+      MYSQL_USER: privacyidea
+      MYSQL_PASSWORD: privacyidea
+    ports:
+      - "3308:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping"]
+      start_period: 5s
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   openldap-test:
     # ldap://127.0.0.1:1389 / ldaps://127.0.0.1:1636 (self-signed cert, auto-generated)
     # Bind DN: cn=admin,dc=example,dc=org   Password: admin

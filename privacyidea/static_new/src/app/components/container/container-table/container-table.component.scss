@@ -7,16 +7,11 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  max-height: var(--table-max-height);
   @include table.page-table-state-size;
 
-  :host-context(body.self-service-layout) & {
-    height: auto;
-    max-height: var(--table-max-height);
-
-    .table-scroll-region {
-      flex: 0 1 auto;
-    }
+  // In the self-service layout the scroll region takes its content height, not the full container.
+  :host-context(body.self-service-layout) & .table-scroll-region {
+    flex: 0 1 auto;
   }
 }
 
@@ -68,14 +63,12 @@ tr.example-detail-row td {
 }
 
 .token-item {
+  @include styles.card-recessed(3);
   display: flex;
   flex-direction: row;
   align-items: center;
   gap: 8px;
   padding: 8px;
-  border: solid 1px var(--mat-sys-outline-variant);
-  border-radius: var(--border-radius);
-  background: var(--mat-sys-surface-container-low);
 }
 
 .realm-break {

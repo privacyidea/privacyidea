@@ -578,16 +578,28 @@ secret file with ``PI_REDIS_URL_FILE`` (see above). Credentials embedded in the
 URL are redacted from the privacyIDEA log (only ``***@host`` is ever written),
 so they do not leak into log files on connect or on error.
 
-**Data sensitivity.** When challenge caching is enabled, challenge data is
-stored in Redis as plaintext - exactly the same content, and the same lack of
-encryption, as the SQL ``challenge`` table it replaces. Redis therefore needs
-the **same protection level as your database**: restrict it to a private
-network, require authentication, prefer ``rediss://``, and use at-rest
-encryption (encrypted volume, or a managed Redis with encryption) if your
-threat model requires it. Do not expose the Redis instance on a public
-interface. The exposure window is small (entries carry the challenge validity
-TTL, typically a few minutes), but the data is no less sensitive than a
+**Data sensitivity.** When challenge caching is enabled, Redis holds exactly
+the content the SQL ``challenge`` table would have held, with the same
+protection: the ``data`` field is encrypted with the privacyIDEA encryption
+key, just as the ``data`` column is. That field is the one that can carry a
+secret - the OTP value itself for Email and SMS tokens when
+``email.concurrent_challenges`` / ``sms.concurrent_challenges`` is enabled, or
+the display code for Push code-to-phone.
+
+The remaining fields (transaction ID, token serial, the challenge nonce,
+session and counters) are stored in the clear, again matching the database.
+Redis therefore needs the **same protection level as your database**: restrict
+it to a private network, require authentication, prefer ``rediss://``, and use
+at-rest encryption (encrypted volume, or a managed Redis with encryption) if
+your threat model requires it. Do not expose the Redis instance on a public
+interface. The exposure window is small - entries carry the challenge validity
+TTL, typically a few minutes - but the data is no less sensitive than a
 challenge row in the database.
+
+Because the encryption uses the privacyIDEA encryption key, cached entries
+written before an encryption key rotation can no longer be read afterwards.
+Such entries are treated as a cache miss and the affected users simply repeat
+the authentication; the condition clears within one challenge-validity TTL.
 
 .. _redis_cache_upgrades:
 
@@ -677,5 +689,28 @@ so keeps presenting the previous counter) is therefore tolerated only for this
 many seconds and is then treated as theft, forcing the device to re-register.
 This is intentional — refreshing the window on every stale request would keep a
 never-rotating (or stolen) cookie alive indefinitely and defeat the rotation.
+
+.. versionadded:: 3.14
+
+.. _ini_subscription_version_check:
+
+Subscription version check
+--------------------------
+
+.. index:: subscription, air-gapped
+
+The subscription overview on the dashboard shows the latest released version of
+each privacyIDEA component next to the version actually in use. These releases
+are looked up on GitHub, cached for six hours and requested with a short timeout;
+an unreachable repository simply leaves the column empty.
+
+In an installation without internet access the lookup can never succeed, and
+paying the timeout for it is pointless. Switch it off with::
+
+    PI_SUBSCRIPTION_VERSION_CHECK = False
+
+The overview still lists every component with its usage and subscription state,
+only the latest-release column stays empty. This is the only outbound request the
+subscription overview makes.
 
 .. versionadded:: 3.14
