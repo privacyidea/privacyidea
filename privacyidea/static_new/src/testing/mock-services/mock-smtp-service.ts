@@ -23,7 +23,9 @@ import { MockHttpResourceRef, MockPiResponse } from "./mock-utils";
 import { of } from "rxjs";
 
 export class MockSmtpService {
-  smtpServerResource = new MockHttpResourceRef<PiResponse<SmtpServers> | undefined>(undefined);
+  smtpServerResource = new MockHttpResourceRef<PiResponse<SmtpServers> | undefined>(
+    MockPiResponse.fromValue<SmtpServers>({})
+  );
   smtpServers = signal<SmtpServer[]>([]);
   postSmtpServer = jest.fn(async (): Promise<void> => Promise.resolve());
   testSmtpServer = jest.fn(async (): Promise<boolean> => Promise.resolve(true));

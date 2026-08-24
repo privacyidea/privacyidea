@@ -18,13 +18,20 @@
  **/
 
 import { signal } from "@angular/core";
-import { MachineResolver, MachineResolverServiceInterface } from "@services/machine-resolver/machine-resolver.service";
-import { MockHttpResourceRef } from "@testing/mock-services";
+import { PiResponse } from "@app/app.component";
+import {
+  MachineResolver,
+  MachineResolvers,
+  MachineResolverServiceInterface
+} from "@services/machine-resolver/machine-resolver.service";
+import { MockHttpResourceRef, MockPiResponse } from "@testing/mock-services";
 
 export class MockMachineResolverService implements MachineResolverServiceInterface {
   allMachineResolverTypes = ["hosts", "ldap"];
   machineResolvers = signal<MachineResolver[]>([]);
-  machineResolverResource = new MockHttpResourceRef(undefined);
+  machineResolverResource = new MockHttpResourceRef<PiResponse<MachineResolvers> | undefined>(
+    MockPiResponse.fromValue<MachineResolvers>({})
+  );
   postMachineResolver = jest.fn().mockResolvedValue(null);
   postTestMachineResolver = jest.fn().mockResolvedValue(null);
   deleteMachineResolver = jest.fn().mockResolvedValue(null);

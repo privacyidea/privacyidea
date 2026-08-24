@@ -9,6 +9,7 @@
     ".container-templates-scroll-container"
   );
   max-height: var(--table-max-height);
+  @include table.page-table-state-size;
 
   & {
     display: flex;

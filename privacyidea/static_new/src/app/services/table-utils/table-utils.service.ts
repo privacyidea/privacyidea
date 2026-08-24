@@ -18,7 +18,6 @@
  **/
 import { inject, Injectable, signal, WritableSignal } from "@angular/core";
 import { Sort } from "@angular/material/sort";
-import { MatTableDataSource } from "@angular/material/table";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContainerDetailToken } from "@services/container/container.service";
@@ -91,8 +90,6 @@ type KeysOfColumns<C extends readonly ColumnDef[]> = {
 export interface TableUtilsServiceInterface {
   pageSizeOptions: WritableSignal<number[]>;
 
-  emptyDataSource<T>(pageSize: number, columnsKeyMap: { key: string; label: string }[]): MatTableDataSource<T>;
-
   toggleKeywordInFilter(args: { keyword: string; currentValue: FilterValue }): FilterValue;
 
   toggleBooleanInFilter(args: { keyword: string; currentValue: FilterValue }): FilterValue;
@@ -137,18 +134,6 @@ export class TableUtilsService implements TableUtilsServiceInterface {
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly tokenService: TokenServiceInterface = inject(TokenService);
   pageSizeOptions = signal([5, 10, 25, 50]);
-
-  emptyDataSource<T>(pageSize: number, columnsKeyMap: { key: string; label: string }[]): MatTableDataSource<T> {
-    return new MatTableDataSource(
-      Array.from({ length: pageSize }, () => {
-        const emptyRow: Record<string, string> = {};
-        columnsKeyMap.forEach((column) => {
-          emptyRow[column.key] = "";
-        });
-        return emptyRow as T;
-      })
-    );
-  }
 
   // A keyword such as "machineid & resolver" is a label for two keys that are filtered together.
   toggleKeywordInFilter(args: { keyword: string; currentValue: FilterValue }): FilterValue {
@@ -380,7 +365,11 @@ export class TableUtilsService implements TableUtilsServiceInterface {
     return sort.direction === "asc" ? "keyboard_arrow_upward" : "keyboard_arrow_downward";
   }
 
-  onSortButtonClick(columnKey: string, sort: WritableSignal<Sort>, fallback: Sort = { active: "serial", direction: "asc" }): void {
+  onSortButtonClick(
+    columnKey: string,
+    sort: WritableSignal<Sort>,
+    fallback: Sort = { active: "serial", direction: "asc" }
+  ): void {
     const current = sort();
     let direction: Sort["direction"] = "asc";
 

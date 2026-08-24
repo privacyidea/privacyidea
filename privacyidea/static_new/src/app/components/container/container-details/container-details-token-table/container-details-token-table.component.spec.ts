@@ -32,6 +32,7 @@ import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import { TokenService } from "@services/token/token.service";
 import { UserService } from "@services/user/user.service";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
+import { expectsTableStateGating } from "@testing/table-state-gating";
 import {
   MockContainerService,
   MockContentService,
@@ -111,6 +112,31 @@ describe("ContainerDetailsTokenTableComponent", () => {
 
   afterEach(() => jest.clearAllMocks());
 
+  it("leaves the empty state once rows appear on the kept data source", () => {
+    // The data source is mutated in place and the same reference returned, so the table state can
+    // only see new rows if that signal still reports a change.
+    (TestBed.inject(AuthService) as unknown as MockAuthService).authData.set({
+      ...MockAuthService.MOCK_AUTH_DATA,
+      rights: ["container_list"]
+    });
+    fixture.componentRef.setInput("containerTokenData", new MatTableDataSource([] as never[]));
+    fixture.detectChanges();
+    expect(component.tableState.status()).toBe("empty");
+
+    fixture.componentRef.setInput("containerTokenData", new MatTableDataSource([{ serial: "T-NEW" }] as never[]));
+    fixture.detectChanges();
+
+    expect(component.dataSource().data.length).toBe(1);
+    expect(component.tableState.status()).toBe("ready");
+  });
+
+  it("gates the table on its read right, row count and filter", () => {
+    expectsTableStateGating({
+      state: component.tableState,
+      right: "container_list"
+    });
+  });
+
   it("creates the component", () => {
     expect(component).toBeTruthy();
   });
@@ -125,10 +151,15 @@ describe("ContainerDetailsTokenTableComponent", () => {
     expect(cmp.displayedColumns).toEqual(expect.arrayContaining(["actions"]));
   });
 
-  it("sets paginator and sort on both internal and external data sources", () => {
+  it("sets the paginator but leaves sort unset on both internal and external data sources", () => {
+    // MatTableDataSource reads _sort.sortChange/_sort.initialized whenever the table reconnects.
+    // Anything that is not a MatSort there makes that a merge() over undefined, which throws and
+    // leaves the data source unable to render. Ordering is done by this component, not by the
+    // data source, so the seat stays empty.
     const ds = component.containerTokenData();
     expect(ds.paginator).toBe(component.paginator);
-    expect(ds.sort).toBe(component.sort);
+    expect(ds.sort).toBeFalsy();
+    expect(component.dataSource().sort).toBeFalsy();
   });
 
   it("updates filterValue & sets filter on both internal and external data sources", () => {

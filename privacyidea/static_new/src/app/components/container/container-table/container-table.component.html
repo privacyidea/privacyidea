@@ -21,7 +21,7 @@
   aria-label="Container Table"
   class="container-table-container"
   i18n-aria-label>
-  @if (authService.actionAllowed("container_list")) {
+  @if (tableState.showTable()) {
     <div class="filter-paginator-container">
       <mat-form-field
         class="container-table-filter"
@@ -97,13 +97,13 @@
             } @else {
               <th
                 *matHeaderCellDef
-                attr.aria-label="{{ column.label }} Header"
                 mat-header-cell>
                 <div class="flex ali-center">
                   {{ column.label }}
                   <div class="margin-left-16 flex">
                     @if (
-                      apiFilterKeyMap[column.key] && containerService.apiFilterKeys.includes(apiFilterKeyMap[column.key])
+                      apiFilterKeyMap[column.key] &&
+                      containerService.apiFilterKeys.includes(apiFilterKeyMap[column.key])
                     ) {
                       @if (apiFilterKeyMap[column.key] === "type") {
                         <button
@@ -160,7 +160,6 @@
                 'max-width-300': column.key === 'description',
                 'table-checkbox': column.key === 'select'
               }"
-              attr.aria-label="{{ column.label }} Cell"
               mat-cell>
               <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
                 @switch (column.key) {
@@ -307,16 +306,34 @@
           mat-row></tr>
 
         <tr *matNoDataRow>
-          <td
-            [attr.colspan]="columnKeys.length"
-            i18n>
-            No data matching the filter.
+          <td [attr.colspan]="columnKeys.length">
+            <app-table-state
+              [status]="tableState.rowStatus()"
+              [table]="tableState" />
           </td>
         </tr>
       </table>
     </div>
   } @else {
-    <div i18n>You do not have the permission to view the container list.</div>
+    <app-table-state
+      [hint]="emptyHint()"
+      [table]="tableState"
+      heading="No containers yet"
+      i18n-heading
+      icon="folder">
+      @if (authService.actionAllowed("container_create")) {
+        <button
+          [routerLink]="[ROUTE_PATHS.CONTAINERS_CREATE]"
+          class="action-button-primary button-width-m"
+          mat-stroked-button>
+          <span class="icon-badge">
+            <mat-icon class="padding-right-3">folder</mat-icon>
+            <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+          </span>
+          <span i18n>Create Container</span>
+        </button>
+      }
+    </app-table-state>
   }
 </div>
 

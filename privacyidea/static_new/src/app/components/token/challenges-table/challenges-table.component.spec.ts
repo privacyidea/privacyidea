@@ -33,6 +33,9 @@ import { ChallengesTableComponent } from "./challenges-table.component";
 import { TokenService } from "@services/token/token.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import { ContentService } from "@services/content/content.service";
+import { AuthService } from "@services/auth/auth.service";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { expectsTableStateGating } from "@testing/table-state-gating";
 
 describe("ChallengesTableComponent", () => {
   let component: ChallengesTableComponent;
@@ -41,6 +44,7 @@ describe("ChallengesTableComponent", () => {
     await TestBed.configureTestingModule({
       imports: [ChallengesTableComponent],
       providers: [
+        { provide: AuthService, useClass: MockAuthService },
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: NotificationService, useClass: MockNotificationService },
@@ -54,6 +58,13 @@ describe("ChallengesTableComponent", () => {
     fixture = TestBed.createComponent(ChallengesTableComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
+  });
+
+  it("gates the table on its read right, row count and filter", () => {
+    expectsTableStateGating({
+      state: component.tableState,
+      right: "getchallenges"
+    });
   });
 
   it("should create", () => {

@@ -26,6 +26,7 @@ import { DialogService } from "@services/dialog/dialog.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { EMPTY_PERIODIC_TASK, PeriodicTask, PeriodicTaskService } from "@services/periodic-task/periodic-task.service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { expectsTableStateGating } from "@testing/table-state-gating";
 import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
 import { MockNotificationService } from "@testing/mock-services/mock-notification-service";
 import { MockPeriodicTaskService } from "@testing/mock-services/mock-periodic-task-service";
@@ -59,6 +60,13 @@ describe("PeriodicTaskComponent", () => {
     dialogService = TestBed.inject(DialogService) as unknown as MockDialogService;
     notificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;
     periodicTaskService = TestBed.inject(PeriodicTaskService) as unknown as MockPeriodicTaskService;
+  });
+
+  it("gates the table on its read right, row count and filter", () => {
+    expectsTableStateGating({
+      state: component.tableState,
+      right: "periodictask_read"
+    });
   });
 
   it("should create", () => {
