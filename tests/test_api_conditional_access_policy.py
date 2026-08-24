@@ -341,7 +341,7 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
 
     def test_list_default_error_messages(self):
         # Only the transport seam here: that the endpoint serves the catalog in the documented shape, and
-        # that the lazy_gettext wording survives JSON encoding. Its ordering, categories and tag placement
+        # that the lazy_gettext error message survives JSON encoding. Its ordering, categories and tag placement
         # are contracts of the catalog itself and are asserted in test_lib_conditional_access_policy.
         res = self._request("defaulterrormessages")
         self.assertEqual(200, res.status_code, res.json)

@@ -30,12 +30,15 @@ from privacyidea.lib.conditional_access.conditions import (ConditionOperator, Co
                                                            get_condition_types)
 from privacyidea.lib.conditional_access.engine import LockoutAction, LockoutTarget
 from privacyidea.lib.conditional_access.lockout_policy import (
+    DEFAULT_ERROR_MESSAGES,
     _ACTIONS_BY_TARGET,
     _COUNT_MODES_BY_TARGET,
     _DEFAULT_COUNT_MODE_BY_TARGET,
-    DEFAULT_ERROR_MESSAGES,
     MAX_ERROR_MESSAGE_LENGTH,
+    compose_default_error_message,
     create_lockout_policy,
+    default_error_message,
+    default_restriction_message,
     delete_lockout_policy,
     enable_lockout_policy,
     get_default_error_messages,
@@ -540,6 +543,54 @@ class LockoutPolicyCrudTestCase(MyTestCase):
             self.assertEqual("restriction", by_action[action.value], action)
         for action in (LockoutAction.EMAIL_USER, LockoutAction.EMAIL_ADMIN):
             self.assertEqual("notification", by_action[action.value], action)
+
+    def test_10a4_a_restriction_row_finds_its_error_message_by_shape(self):
+        # A stored restriction remembers its expiry and its subject, not which action wrote it. Those two
+        # facts name the action exactly, which is what lets a row be described without reading the policy.
+        by_action = {entry.action: str(entry.message) for entry in DEFAULT_ERROR_MESSAGES}
+        self.assertEqual(by_action[LockoutAction.LOCK_USER],
+                         default_restriction_message(LockoutTarget.USER, permanent=False))
+        self.assertEqual(by_action[LockoutAction.PERMANENT_LOCK_USER],
+                         default_restriction_message(LockoutTarget.USER, permanent=True))
+        self.assertEqual(by_action[LockoutAction.BLOCK_IP],
+                         default_restriction_message(LockoutTarget.SOURCE_IP, permanent=False))
+        self.assertEqual(by_action[LockoutAction.PERMANENT_BLOCK_IP],
+                         default_restriction_message(LockoutTarget.SOURCE_IP, permanent=True))
+
+    def test_10a5_an_action_without_an_error_message_falls_back_to_nothing(self):
+        # An action the table does not cover has nothing to say, and a caller must not have to know which
+        # those are - so the lookup answers for any action, not only the ones with error message.
+        self.assertIsNone(default_error_message("SOME_FUTURE_ACTION"))
+        self.assertIsNone(compose_default_error_message(["SOME_FUTURE_ACTION"]))
+        self.assertIsNone(compose_default_error_message([]))
+
+    def test_10a6_a_stage_composes_its_restriction_then_its_notifications(self):
+        # The same composition the editor suggests, so a stage falling back to the default reads like the
+        # one next to it that had the suggestion written in.
+        by_action = {entry.action: str(entry.message) for entry in DEFAULT_ERROR_MESSAGES}
+        composed = compose_default_error_message([LockoutAction.EMAIL_ADMIN, LockoutAction.LOCK_USER,
+                                                  LockoutAction.EMAIL_USER])
+        self.assertEqual(" ".join([by_action[LockoutAction.LOCK_USER], by_action[LockoutAction.EMAIL_USER],
+                                   by_action[LockoutAction.EMAIL_ADMIN]]), composed)
+
+    def test_10a6b_the_restriction_can_be_left_to_the_row_that_holds_it(self):
+        # A stage that restricted is described from its row, so composing its fallback must be able to leave
+        # that sentence out - otherwise the user reads the restriction twice, once per source.
+        by_action = {entry.action: str(entry.message) for entry in DEFAULT_ERROR_MESSAGES}
+        actions = [LockoutAction.LOCK_USER, LockoutAction.EMAIL_USER]
+        self.assertEqual(" ".join([by_action[LockoutAction.LOCK_USER], by_action[LockoutAction.EMAIL_USER]]),
+                         compose_default_error_message(actions))
+        self.assertEqual(by_action[LockoutAction.EMAIL_USER],
+                         compose_default_error_message(actions, include_restriction=False))
+        # Nothing but a restriction leaves nothing to say once it is left out.
+        self.assertIsNone(compose_default_error_message([LockoutAction.LOCK_USER], include_restriction=False))
+
+    def test_10a7_only_the_most_severe_restriction_of_a_stage_is_described(self):
+        # Restrictions are mutually exclusive - one row survives them - so a stage carrying two describes
+        # the one that outlasts the other, whichever order its actions were added in.
+        by_action = {entry.action: str(entry.message) for entry in DEFAULT_ERROR_MESSAGES}
+        composed = compose_default_error_message([LockoutAction.LOCK_USER, LockoutAction.PERMANENT_LOCK_USER])
+        self.assertEqual(by_action[LockoutAction.PERMANENT_LOCK_USER], composed)
 
     def test_10b_only_timed_restrictions_suggest_the_duration_tag(self):
         # A permanent lock has no remaining time, and DENY is not a restriction at all, so

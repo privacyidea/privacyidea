@@ -51,6 +51,8 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
+
+
 class LockoutAction(str, Enum):
     """
     Action types a :class:`~privacyidea.models.lockout_policy.LockoutPolicyStage`
@@ -93,6 +95,7 @@ ENFORCING_ACTIONS = frozenset({LockoutAction.LOCK_USER, LockoutAction.PERMANENT_
                                LockoutAction.DENY})
 
 
+
 class AccessDecision(str, Enum):
     """
     The verdict of the pre-auth conditional-access decision step
@@ -113,6 +116,8 @@ class AccessDecision(str, Enum):
 
     def __str__(self) -> str:
         return self.value
+
+
 
 
 class LockoutTarget(str, Enum):
@@ -150,6 +155,9 @@ class RestrictionStatus:
         permanent.
     :ivar seconds_remaining: whole seconds until a timed restriction expires
         (``>= 0``), or ``None`` when permanent.
+    :ivar target: whose restriction it is. Part of describing one, and what lets a row with no error message of its
+        own be described by the standard error message for its shape: the row does not record which action wrote it,
+        but target and :attr:`permanent` together name that action exactly.
     :ivar error_message: the message template stored on the restriction when it was applied, or
         ``None`` to say nothing. Rendered with :func:`render_error_message`; kept as the template
         rather than finished text so ``{duration}`` reflects the time left *now*, not at lock time.
@@ -158,6 +166,7 @@ class RestrictionStatus:
     permanent: bool
     expires_at: "datetime | None"
     seconds_remaining: "int | None"
+    target: "LockoutTarget"
     error_message: "str | None" = None
 
 
@@ -262,7 +271,7 @@ def rank_and_deduplicate(messages: list["StageMessage"]) -> list["StageMessage"]
     The messages to show, ordered by :class:`MessageKind` and with each distinct sentence kept once.
 
     Ranked before de-duplicating, so the strongest meaning of a given sentence is the one kept. An admin can
-    configure the same wording on a notify-only stage and on a locking one; keeping the notification would have
+    configure the same error message on a notify-only stage and on a locking one; keeping the notification would have
     :func:`~privacyidea.api.lib.conditional_access.compose_failure_message` append it to the generic failure rather
     than replace it, and the user would read "wrong credentials" for an account that is locked. The sort is stable,
     so messages of equal kind stay in the order they were collected in.
@@ -279,16 +288,33 @@ def rank_and_deduplicate(messages: list["StageMessage"]) -> list["StageMessage"]
     return unique
 
 
-def restriction_messages(*restrictions: "RestrictionStatus | None") -> list["StageMessage"]:
+def restriction_messages(*restrictions: "RestrictionStatus | None",
+                         use_generic_error_message: bool = False) -> list["StageMessage"]:
     """
-    The wording of each of *restrictions* that carries any, ranked and de-duplicated.
+    The error message of each of *restrictions* that carries any, ranked and de-duplicated.
 
-    Silent by default holds here as everywhere: a restriction carrying no wording produces no message, and
-    ``None`` (nothing in force) contributes nothing at all.
+    Silent by default: a restriction carrying no error message produces none, and ``None`` (nothing in force)
+    contributes nothing at all. With *use_generic_error_message* the standard error message for the
+    restriction's shape stands in for a missing one, which is what the ``show_ca_error_message`` policy buys -
+    an admin gets the same
+    sentence they would have got by writing the suggestion onto every stage by hand.
+
+    Both paths that describe a restriction come through here, so the error message cannot depend on which one
+    answered: the pre-check that refuses a request already restricted, and the evaluation that just restricted
+    it.
     """
+    # Deferred: lockout_policy imports the action/target enums from here, so importing it at module level
+    # would close a cycle. Same reason as run_post_eval's import of this module.
+    from privacyidea.lib.conditional_access.lockout_policy import default_restriction_message
+
     messages = []
     for restriction in restrictions:
-        text = render_error_message(restriction.error_message, restriction) if restriction else None
+        if not restriction:
+            continue
+        template = restriction.error_message
+        if not template and use_generic_error_message:
+            template = default_restriction_message(restriction.target, restriction.permanent)
+        text = render_error_message(template, restriction)
         if text:
             messages.append(StageMessage(text, _message_kind(restriction)))
     return rank_and_deduplicate(messages)
@@ -303,7 +329,7 @@ class LockoutEvaluation:
     Each message is a :class:`StageMessage`, already rendered and ordered by :class:`MessageKind` so a caller
     showing several leads with the one the user can do least about. Wording for a restriction is rendered from the
     row now in force, not by the stage that wrote it: several policies can restrict the same subject in one request
-    and only one row survives them. Notification wording comes from the stage, the only place it exists.
+    and only one row survives them. Notification error message comes from the stage, the only place it exists.
 
     The engine returns these instead of writing the history itself. It has no access to the id of the
     authentication-log row (it runs before the row exists on the pre-auth path, and never sees it on the other), and
@@ -334,7 +360,7 @@ class AccessDecisionResult:
     """
     decision: AccessDecision = AccessDecision.CONTINUE
     outcomes: list[ConditionalAccessOutcome] = field(default_factory=list)
-    # The wording of the stage that denied, read straight off it: a DENY decides this one request and
+    # The error message of the stage that denied, read straight off it: a DENY decides this one request and
     # persists nothing, so unlike a lock there is no state row to copy it to and nothing to go stale.
     # None for ALLOW and CONTINUE, which turn no request away.
     error_message: "str | None" = None
@@ -820,7 +846,7 @@ def get_user_lockout(user: "User", now: datetime | None = None, *,
     if state.lock_expires_at is None:
         # Permanent lock; only an admin reset clears it.
         return RestrictionStatus(permanent=True, expires_at=None, seconds_remaining=None,
-                                 error_message=state.error_message)
+                                 target=LockoutTarget.USER, error_message=state.error_message)
     now = _naive_utc(now) if now is not None else utc_now()
     if state.lock_expires_at <= now:
         # If explicitly requested, drop expired rows
@@ -829,7 +855,8 @@ def get_user_lockout(user: "User", now: datetime | None = None, *,
         return None
     remaining = int((state.lock_expires_at - now).total_seconds())
     return RestrictionStatus(permanent=False, expires_at=state.lock_expires_at,
-                             seconds_remaining=remaining, error_message=state.error_message)
+                             seconds_remaining=remaining, target=LockoutTarget.USER,
+                             error_message=state.error_message)
 
 
 def is_user_locked(user: "User", now: datetime | None = None, *, clear_expired: bool = False) -> bool:
@@ -934,7 +961,7 @@ def get_ip_block(source_ip: str | None, now: datetime | None = None, *,
     if state.block_expires_at is None:
         # Permanent block; only an admin reset clears it.
         return RestrictionStatus(permanent=True, expires_at=None, seconds_remaining=None,
-                                 error_message=state.error_message)
+                                 target=LockoutTarget.SOURCE_IP, error_message=state.error_message)
     now = _naive_utc(now) if now is not None else utc_now()
     if state.block_expires_at <= now:
         if clear_expired:
@@ -942,7 +969,8 @@ def get_ip_block(source_ip: str | None, now: datetime | None = None, *,
         return None
     remaining = int((state.block_expires_at - now).total_seconds())
     return RestrictionStatus(permanent=False, expires_at=state.block_expires_at,
-                             seconds_remaining=remaining, error_message=state.error_message)
+                             seconds_remaining=remaining, target=LockoutTarget.SOURCE_IP,
+                             error_message=state.error_message)
 
 
 def is_ip_blocked(source_ip: str | None, now: datetime | None = None, *, clear_expired: bool = False) -> bool:
@@ -1119,7 +1147,7 @@ def _stage_access_decision(stage: LockoutPolicyStage, count: int) -> "AccessDeci
 
 def _restrictions_in_force(context: CAContext, targets: set[LockoutTarget]) -> list[StageMessage]:
     """
-    The wording of the restrictions an evaluation left in force, one message per restricted row.
+    The error message of the restrictions an evaluation left in force, one message per restricted row.
 
     Read back rather than rendered by the stage that wrote it. Several policies can restrict the same subject in
     one request and a stage can carry several restricting actions, but only one row survives them all - so the
@@ -1127,7 +1155,7 @@ def _restrictions_in_force(context: CAContext, targets: set[LockoutTarget]) -> l
     policies locking the same user would tell the user twice. Reading the row also means ``{duration}`` counts
     down the expiry that actually stands, whatever the upserts decided to keep.
 
-    Silent by default holds here as everywhere: a row carrying no wording produces no message.
+    Silent by default holds here as everywhere: a row carrying no error message produces none.
 
     :param targets: the targets this evaluation restricted, so an untouched row is never read or described
     """
@@ -1136,7 +1164,7 @@ def _restrictions_in_force(context: CAContext, targets: set[LockoutTarget]) -> l
         statuses.append(get_user_lockout(context.user))
     if LockoutTarget.SOURCE_IP in targets and context.source_ip:
         statuses.append(get_ip_block(context.source_ip))
-    return restriction_messages(*statuses)
+    return restriction_messages(*statuses, use_generic_error_message=context.use_generic_error_message)
 
 
 def evaluate_lockout_policies(context: CAContext, event_type: AuthEventType | None,
@@ -1158,7 +1186,7 @@ def evaluate_lockout_policies(context: CAContext, event_type: AuthEventType | No
     actions too.
 
     The persistent side effects (lock state) are consulted by the *next* inbound
-    request via the pre-check, which reads the wording back off the row they wrote. A stage that only
+    request via the pre-check, which reads the error message back off the row they wrote. A stage that only
     notified leaves no such row, so its message is returned here instead, for the caller to surface on
     the response this evaluation belongs to. Any error is the caller's to swallow; this
     function itself only guards individual DB writes (see
@@ -1542,12 +1570,12 @@ def _execute_stage_actions(policy: LockoutPolicy, stage: LockoutPolicyStage,
         that ran, and the targets it restricted (all empty if every action was skipped).
     """
     outcomes: list[ConditionalAccessOutcome] = []
-    # Which rows this stage wrote a restriction to. Their wording is rendered by the caller from the row that
+    # Which rows this stage wrote a restriction to. Their error message is rendered by the caller from the row that
     # survives the whole evaluation, so a stage that restricts carries no message of its own from here.
     restricted: set[LockoutTarget] = set()
     # Whether any action set out to enforce something, which is not the same as having enforced it: a write can be
     # declined as weakening or fail outright, and a DENY decides the request pre-auth rather than here. Either way
-    # the stage's wording describes that enforcement, so it must not leave here as a notification.
+    # the stage's error message describes that enforcement, so it must not leave here as a notification.
     attempted_enforcement = False
 
     user = context.user
@@ -1622,12 +1650,24 @@ def _execute_stage_actions(policy: LockoutPolicy, stage: LockoutPolicyStage,
     if stage.error_message and outcomes and attempted_enforcement and not restricted:
         log.info(f"Not showing the error message of stage {stage.id} (policy {policy.name!r}): it describes an "
                  "enforcement that was (partially) declined, could not be written, or does not decide this request.")
-    # A stage that restricted is described from its row, by the caller; only a notify-only stage carries its
-    # wording from here, since it wrote nothing to read back. A stage that enforced nothing after setting out to is
-    # not notify-only either: rendering its wording here would leave a ``{duration}`` unsubstituted and rank it as a
-    # notification, so it stays silent and whatever did take effect speaks for the request - the row that survived,
-    # or the DENY on the request it actually turns away.
-    rendered = render_error_message(stage.error_message) if outcomes and not attempted_enforcement else None
+    if stage.error_message:
+        # One error message covers whatever the stage did, so it is carried once. A stage that restricted has
+        # its row to be described from (see restriction_messages), and a stage that set out to enforce and did
+        # not is described by nothing: its error message would name an enforcement that never happened, leaving
+        # a ``{duration}`` unsubstituted and ranking as a notification.
+        rendered = render_error_message(stage.error_message) if outcomes and not attempted_enforcement else None
+    elif outcomes and context.use_generic_error_message:
+        # Falling back to the standard error message, which is per action rather than per stage - so a stage
+        # that restricted takes only its notifications from here and leaves the restriction to its row, while a
+        # notify-only stage takes everything it ran. Without that split a locking stage that also emails would
+        # describe the lock and say nothing about the email.
+        # Deferred for the same reason as in restriction_messages: lockout_policy imports this module.
+        from privacyidea.lib.conditional_access.lockout_policy import compose_default_error_message
+        rendered = render_error_message(
+            compose_default_error_message([outcome.action_type for outcome in outcomes],
+                                          include_restriction=not attempted_enforcement))
+    else:
+        rendered = None
     messages = [StageMessage(rendered, _message_kind(None))] if rendered else []
     return LockoutEvaluation(messages=messages, outcomes=outcomes, restricted_targets=restricted)
 
@@ -1694,8 +1734,8 @@ def _upsert_user_lockout_state(user: "User", *, lock_expires_at: datetime | None
         if not weakening_declined:
             state.username = user.login
             state.lock_expires_at = lock_expires_at
-            # Written together with the expiry, so the wording always describes the lock now in force. A write
-            # that would weaken the lock is declined above, its wording with it.
+            # Written together with the expiry, so the error message always describes the lock now in force. A write
+            # that would weaken the lock is declined above, its error message with it.
             state.error_message = error_message
     return write.succeeded and not weakening_declined
 

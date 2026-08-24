@@ -25,8 +25,8 @@ from sqlalchemy import select
 
 from privacyidea.lib.challenge import delete_challenges
 from privacyidea.lib.conditional_access.authentication_event_types import (CA_ENFORCEMENT_EVENT_TYPES, AuthEventType)
-from privacyidea.lib.conditional_access.engine import (LockoutAction, LockoutEvaluation, MessageKind,
-                                                       StageMessage)
+from privacyidea.lib.conditional_access.engine import LockoutEvaluation, MessageKind, StageMessage
+from privacyidea.lib.conditional_access.engine import LockoutAction
 from privacyidea.lib.conditional_access.outcome_log import get_outcomes
 from privacyidea.lib.conditional_access.authentication_log import (AuthLogUserRole, PendingAuthEvent,
                                                                   get_authentication_logs,

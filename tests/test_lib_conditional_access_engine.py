@@ -1152,12 +1152,12 @@ class LockoutEngineTestCase(LockoutTestCase):
                                                   error_message="MSG-SHORT"),))
         self._seed_events(AuthEventType.MFA_FAIL, 3)
         evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
-        # The wording is declined with the expiry: it would otherwise describe a lock that is not in force.
+        # The error message is declined with the expiry: it would otherwise describe a lock that is not in force.
         self.assertAlmostEqual(3600, (self._state().lock_expires_at - utc_now()).total_seconds(), delta=5)
         self.assertEqual("MSG-LONG", self._state().error_message)
 
     def test_a_longer_lock_replaces_a_shorter_one(self):
-        # The other direction is an escalation and must go through, wording included.
+        # The other direction is an escalation and must go through, error message and all.
         db.session.add(UserLockoutState(resolver=self.user.resolver, uid=self.user.uid, realm=self.user.realm,
                                         lock_expires_at=utc_now() + timedelta(seconds=600),
                                         error_message="MSG-SHORT"))
@@ -1784,7 +1784,7 @@ class LockoutEngineTestCase(LockoutTestCase):
 
     @smtpmock.activate
     def test_notify_only_stage_returns_its_message(self):
-        # A stage that only notified leaves no lock or block to carry its wording, so the evaluation
+        # A stage that only notified leaves no lock or block to carry its error message, so the evaluation
         # returns it for the caller to surface on this response.
         smtpmock.setdata(response={})
         add_smtpserver(identifier="lockoutmail", server="1.2.3.4", tls=False)
@@ -1846,7 +1846,7 @@ class LockoutEngineTestCase(LockoutTestCase):
     @smtpmock.activate
     def test_a_declined_restriction_does_not_speak_as_a_notification(self):
         # The lower-priority stage restricts nothing - its timed lock would weaken the permanent one written just
-        # before it - but its mail goes out, so the stage did something. That must not turn its wording into a
+        # before it - but its mail goes out, so the stage did something. That must not turn its error message into a
         # notification: it describes a lock, and rendering it here would append it to the failure with the
         # {duration} it has no restriction to substitute against.
         smtpmock.setdata(response={})
@@ -1875,9 +1875,9 @@ class LockoutEngineTestCase(LockoutTestCase):
 
     @smtpmock.activate
     def test_a_deny_stage_does_not_speak_from_the_post_response_engine(self):
-        # A DENY decides the request pre-auth, where its wording is rendered (_evaluate_rejection). Here it is a
+        # A DENY decides the request pre-auth, where its error message is rendered (_evaluate_rejection). Here it is a
         # no-op - the count only reaches the threshold once this request's own event is written - so the mail is
-        # the whole of what this stage did, and the wording that describes the denial must not be appended to a
+        # the whole of what this stage did, and the error message that describes the denial must not be appended to a
         # request the denial did not turn away.
         smtpmock.setdata(response={})
         add_smtpserver(identifier="lockoutmail", server="1.2.3.4", tls=False)
@@ -2324,7 +2324,7 @@ class LockoutEngineTestCase(LockoutTestCase):
     # --- the error message a restriction carries ------------------------------
 
     def test_lock_stores_the_triggering_stage_error_message(self):
-        # The row is the whole truth about the lock: the wording is copied in when it is applied, so it
+        # The row is the whole truth about the lock: the error message is copied in when it is applied, so it
         # survives the policy being edited or deleted and costs no join on the authentication path.
         message = "Locked. Try again in about {duration}."
         lock = [StageActionDefinition(LockoutAction.LOCK_USER, {"duration_seconds": 600})]
@@ -2360,7 +2360,7 @@ class LockoutEngineTestCase(LockoutTestCase):
         self.assertEqual("Second.", self._state().error_message)
 
     def test_declined_downgrade_keeps_the_permanent_lock_message(self):
-        # A permanent lock is never downgraded to a timed one, so the timed stage's wording must not
+        # A permanent lock is never downgraded to a timed one, so the timed stage's error message must not
         # overwrite the permanent one's either - the message would then describe a lock not in force.
         self._make_policy(name="permanent", counter_type=AuthEventType.MFA_FAIL, priority=1,
                           stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.PERMANENT_LOCK_USER)],
@@ -2388,36 +2388,39 @@ class LockoutEngineTestCase(LockoutTestCase):
 
     def test_render_error_message_substitutes_only_the_duration_tag(self):
         template = "Locked. Retry in about {duration}. Braces {} and {other} stay."
-        rendered = render_error_message(template, RestrictionStatus(False, None, 90))
+        rendered = render_error_message(template, RestrictionStatus(False, None, 90, LockoutTarget.USER))
         self.assertEqual("Locked. Retry in about 2 minute(s). Braces {} and {other} stay.", rendered)
 
     def test_render_error_message_switches_to_hours(self):
         self.assertEqual("Retry in about 2 hour(s).",
-                         render_error_message("Retry in about {duration}.", RestrictionStatus(False, None, 5400)))
+                         render_error_message("Retry in about {duration}.",
+                                              RestrictionStatus(False, None, 5400, LockoutTarget.USER)))
 
     def test_duration_tag_is_left_as_written_where_there_is_no_remaining_time(self):
         # A countdown configured for something that does not count down is a misconfiguration, so the tag
         # is left visible exactly like any other tag we do not substitute - quietly dropping the message
-        # would leave an admin wondering why their wording never appears.
+        # would leave an admin wondering why their error message never appears.
         template = "Retry in about {duration}."
-        self.assertEqual(template, render_error_message(template, RestrictionStatus(True, None, None)))
+        self.assertEqual(template,
+                         render_error_message(template, RestrictionStatus(True, None, None, LockoutTarget.USER)))
         # A DENY or a notify-only stage leaves no restriction behind at all, so it behaves the same.
         self.assertEqual(template, render_error_message(template))
 
     def test_a_message_without_the_tag_is_shown_wherever_it_applies(self):
-        # Only the tag needs a duration; wording that does not use it is shown everywhere.
+        # Only the tag needs a duration; error message that does not use it is shown everywhere.
         message = "Your account has been locked. Please contact your administrator."
-        self.assertEqual(message, render_error_message(message, RestrictionStatus(True, None, None)))
-        self.assertEqual(message, render_error_message(message, RestrictionStatus(False, None, 90)))
+        self.assertEqual(message,
+                         render_error_message(message, RestrictionStatus(True, None, None, LockoutTarget.USER)))
+        self.assertEqual(message, render_error_message(message, RestrictionStatus(False, None, 90, LockoutTarget.USER)))
         self.assertEqual(message, render_error_message(message))
 
     def test_render_error_message_is_none_without_a_message(self):
-        # Nothing stored means the caller stays generic rather than inventing wording.
-        self.assertIsNone(render_error_message(None, RestrictionStatus(False, None, 60)))
-        self.assertIsNone(render_error_message("", RestrictionStatus(False, None, 60)))
+        # Nothing stored means the caller stays generic rather than inventing error message.
+        self.assertIsNone(render_error_message(None, RestrictionStatus(False, None, 60, LockoutTarget.USER)))
+        self.assertIsNone(render_error_message("", RestrictionStatus(False, None, 60, LockoutTarget.USER)))
 
     def test_deny_decision_carries_the_stage_message(self):
-        # A DENY decides this one request and persists nothing, so its wording is read live off the
+        # A DENY decides this one request and persists nothing, so its error message is read live off the
         # deciding stage rather than copied to a state row.
         self._make_policy(name="deny msg", counter_type=AuthEventType.MFA_FAIL,
                           stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.DENY)],
@@ -2428,7 +2431,7 @@ class LockoutEngineTestCase(LockoutTestCase):
         self.assertEqual("Access denied.", result.error_message)
 
     def test_allow_carries_no_message(self):
-        # An ALLOW turns nothing away, so it has nothing to tell the user even with wording configured.
+        # An ALLOW turns nothing away, so it has nothing to tell the user even with an error message configured.
         self._make_policy(name="allow msg", counter_type=AuthEventType.MFA_FAIL,
                           stages=(StageDefinition(0, 1, [StageActionDefinition(LockoutAction.ALLOW)],
                                                   error_message="Should never be shown."),))
@@ -2437,7 +2440,7 @@ class LockoutEngineTestCase(LockoutTestCase):
         self.assertIsNone(allowed.error_message)
 
     def test_undecided_request_carries_no_message(self):
-        # Below the threshold no stage decides, so the configured wording stays unused.
+        # Below the threshold no stage decides, so the configured error message stays unused.
         self._make_policy(name="deny high", counter_type=AuthEventType.MFA_FAIL,
                           stages=(StageDefinition(99, 1, [StageActionDefinition(LockoutAction.DENY)],
                                                   error_message="Not reached."),))
@@ -2470,13 +2473,13 @@ class LockoutEngineTestCase(LockoutTestCase):
                                                   error_message="Locked for a short while."),))
         self._seed_events(AuthEventType.MFA_FAIL, 3)
         evaluation = evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
-        # The hour-long lock is the one in force, so its wording - and its duration - is what the user reads.
+        # The hour-long lock is the one in force, so its error message - and its duration - is what the user reads.
         self.assertListEqual([StageMessage("Locked for 1 hour(s).", MessageKind.TIMED_RESTRICTION)],
                              evaluation.messages)
 
     def test_a_notification_from_a_second_policy_survives_alongside_the_lock(self):
         # Only restrictions collapse onto one row. A notify-only policy describes something else that happened,
-        # so its wording is still carried, after the restriction.
+        # so its error message is still carried, after the restriction.
         self._make_policy(name="lock", counter_type=AuthEventType.MFA_FAIL, priority=1,
                           stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.LOCK_USER,
                                                                                {"duration_seconds": 600})],
@@ -2491,7 +2494,7 @@ class LockoutEngineTestCase(LockoutTestCase):
                               StageMessage("We emailed you.", MessageKind.NOTIFICATION)],
                              evaluation.messages)
 
-    def test_shared_wording_is_kept_as_the_restriction_it_also_describes(self):
+    def test_shared_error_message_is_kept_as_the_restriction_it_also_describes(self):
         # The same sentence configured on a notify-only stage and on a locking one. It is shown once, and as
         # the restriction: kept as a notification, compose_failure_message would append it to the generic
         # failure instead of replacing it, so the user would read "wrong credentials" for a locked account.
@@ -2509,7 +2512,7 @@ class LockoutEngineTestCase(LockoutTestCase):
                              evaluation.messages)
 
     def test_a_permanent_action_sets_the_rank_whatever_the_order(self):
-        # The permanent lock is written second here, and still decides both the rank and the wording.
+        # The permanent lock is written second here, and still decides both the rank and the error message.
         actions = [StageActionDefinition(LockoutAction.LOCK_USER, {"duration_seconds": 600}),
                    StageActionDefinition(LockoutAction.PERMANENT_LOCK_USER)]
         self._make_policy(name="mixed", counter_type=AuthEventType.MFA_FAIL,

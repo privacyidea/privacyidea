@@ -102,6 +102,10 @@ class ConditionalAccessContext:
         self._evaluated_as = None
         # Whether the message this response carries is conditional access's own (see carries_own_message).
         self.carries_own_message = False
+        # Whether a rejection with no error message of its own falls back to the standard error message for what it did.
+        # Resolved once by the gate, where policies can be matched, and read again at post-response evaluation
+        # so both halves of one request answer the same way.
+        self.use_generic_error_message = False
 
     @property
     def has_data(self) -> bool:
@@ -372,7 +376,7 @@ class ConditionalAccessContext:
         # import-order cycle during app startup.
         from privacyidea.lib.conditional_access.engine import evaluate_lockout_policies
         context = CAContext(user=self.principal.user or None, source_ip=self.source_ip,
-                            user_role=event.user_role)
+                            user_role=event.user_role, use_generic_error_message=self.use_generic_error_message)
         try:
             evaluation = evaluate_lockout_policies(context, event.event_type)
         except Exception as ex:
@@ -439,10 +443,10 @@ def response_carries_ca_message() -> bool:
     """
     Whether the message this response (or ``AuthError``) carries was written by conditional access.
 
-    ``hide_specific_error_message`` exists to suppress the wording privacyIDEA volunteers *by default* - which
+    ``hide_specific_error_message`` exists to suppress the error message privacyIDEA volunteers *by default* - which
     factor failed, why the token refused. A conditional-access message is the opposite: an admin either wrote it
     on the stage or turned it on by policy. The two are separate concerns, so that policy does not rewrite this
-    wording. It is only about the message; whether a failure carries *details* is ``no_detail_on_fail``'s
+    error message. It is only about the message; whether a failure carries *details* is ``no_detail_on_fail``'s
     question, and conditional access answers it for itself by never putting anything but the message there.
 
     Read with :func:`peek_ca_context`, so asking the question on a request that never touched conditional access

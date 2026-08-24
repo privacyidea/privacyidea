@@ -43,8 +43,8 @@ from privacyidea.lib.conditional_access.lockout_policy import (list_lockout_poli
                                                                update_lockout_policy,
                                                                delete_lockout_policy,
                                                                reorder_lockout_policies,
-                                                               get_default_error_messages,
-                                                               get_target_constraints)
+                                                               get_target_constraints,
+                                                               get_default_error_messages)
 from privacyidea.lib.conditional_access.conditions import get_condition_types
 from privacyidea.lib.conditional_access.lockout_policy_template import list_lockout_policy_templates
 from privacyidea.lib.conditional_access.lockout_state import (list_locked_users_paginate, DEFAULT_PAGE_SIZE,
@@ -152,15 +152,15 @@ def list_action_types():
 @log_with(log)
 def list_default_error_messages():
     """
-    Return the suggested wording for a stage's ``error_message``, per stage action, as
+    Return the suggested error message for a stage's ``error_message``, per stage action, as
     ``[{"action_type": ..., "message": ...}]`` **ordered most severe first** (see
     :func:`~privacyidea.lib.conditional_access.lockout_policy.get_default_error_messages`).
 
     The order is the composition rule: a stage can lock *and* block *and* notify at once, but only one message is ever
     shown, so a client takes the first entry whose action the stage carries instead of joining several sentences it
     would never all show. The ``EMAIL_*`` entries come last, so a stage that both locks and notifies describes the
-    lock while a notify-only stage still has wording to offer. ``ALLOW`` has no entry - it rejects nothing, so there
-    is never anything to say.
+    lock while a notify-only stage still has an error message to offer. ``ALLOW`` has no entry - it rejects
+    nothing, so there is never anything to say.
 
     This is an authoring aid for the policy editor only. Nothing here is applied at runtime: a stage without an
     ``error_message`` reveals nothing to the user, whatever its actions.
@@ -458,7 +458,7 @@ def get_locked_users():
     :query realms: realm(s) to filter by
     :query resolvers: resolver(s) to filter by
     :query usernames: login(s) to filter by
-    :query error_messages: message text to filter by - the wording stored on the lock, i.e. what those users
+    :query error_messages: message text to filter by - the error message stored on the lock, i.e. what those users
         are actually shown
     :query states: lock state(s) to include — any of ``permanent``, ``temporary``,
         ``expired`` (comma-separated). Any other value is a ``ParameterError``.

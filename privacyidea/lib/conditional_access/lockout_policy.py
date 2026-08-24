@@ -78,6 +78,7 @@ unknown realm or a misspelled role would otherwise silently never match.
 """
 
 import logging
+from collections.abc import Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 
@@ -335,12 +336,12 @@ _ACTIONS_BY_TARGET = {
 @dataclass(frozen=True)
 class DefaultErrorMessage:
     """
-    One suggested wording for a stage's ``error_message`` (see :data:`DEFAULT_ERROR_MESSAGES`).
+    One suggested error message for a stage's ``error_message`` (see :data:`DEFAULT_ERROR_MESSAGES`).
 
-    :ivar action: the stage action this wording describes
+    :ivar action: the stage action this error message describes
     :ivar message: a ``lazy_gettext`` string, translated when serialized
-    :ivar category: ``"restriction"`` for wording that competes with other restrictions (only one is ever
-        shown), ``"notification"`` for wording that is appended to it. Defaults to the common case, so only
+    :ivar category: ``"restriction"`` for error message that competes with other restrictions (only one is ever
+        shown), ``"notification"`` for error message that is appended to it. Defaults to the common case, so only
         the notifying actions spell it out.
     """
     action: LockoutAction
@@ -348,15 +349,17 @@ class DefaultErrorMessage:
     category: str = "restriction"
 
 
-# Suggested wording for a stage's ``error_message``, per action, ordered most severe first. Purely an
-# authoring aid for the policy editor: nothing here is applied at runtime, and a stage without an
-# ``error_message`` stays silent.
+# The standard error message for a stage's ``error_message``, per action, ordered most severe first. Used for two
+# things, which is the point of having one table: the policy editor suggests from it, and the runtime falls
+# back to it for a stage that carries no error message of its own when the ``show_ca_error_message`` policy is on.
+# So an action reads the same wherever it is met, and an admin who edits the suggestion is editing the thing
+# they would otherwise have got by default.
 #
 # A stage carrying several actions composes them the way the runtime reports: one restriction - they are
 # mutually exclusive, and a stage's message describes the longest-lasting one it wrote (see
 # ``_execute_stage_actions``) - followed by any notifications, which are separate facts. Hence, the order:
 # restrictions by severity, then the EMAIL_* pair with the user's own notification first, as the one the
-# reader can act on. ALLOW has no entry, having nothing to reject and so nothing to say.
+# reader can act on. An action that turns nobody away has no entry, having nothing to say.
 #
 # lazy_gettext, not _(): module-level constants are evaluated at import, long before a request and its
 # locale exist; ``str()`` at serialization resolves them per admin. That only decides what an admin starts
@@ -383,6 +386,66 @@ DEFAULT_ERROR_MESSAGES: list[DefaultErrorMessage] = [
 ]
 
 
+# The action whose error message describes a restriction of a given shape. A stored restriction remembers its expiry
+# and its subject but not which action wrote it - it does not need to, because those two facts identify the
+# action exactly.
+_RESTRICTION_ACTIONS: dict[tuple[str, bool], LockoutAction] = {
+    (LockoutTarget.USER, False): LockoutAction.LOCK_USER,
+    (LockoutTarget.USER, True): LockoutAction.PERMANENT_LOCK_USER,
+    (LockoutTarget.SOURCE_IP, False): LockoutAction.BLOCK_IP,
+    (LockoutTarget.SOURCE_IP, True): LockoutAction.PERMANENT_BLOCK_IP,
+}
+
+_DEFAULT_BY_ACTION: dict[str, DefaultErrorMessage] = {entry.action: entry for entry in DEFAULT_ERROR_MESSAGES}
+
+
+def default_error_message(action: str) -> str | None:
+    """
+    The standard error message for *action*, translated against the request locale, or ``None`` where it has none.
+
+    ``None`` covers any action without error message - one that turns nobody away, or one added later - so a caller
+    falling back to this never has to know which actions are covered.
+    """
+    entry = _DEFAULT_BY_ACTION.get(action)
+    return str(entry.message) if entry else None
+
+
+def default_restriction_message(target: str, permanent: bool) -> str | None:
+    """
+    The standard error message for a restriction of this shape, translated against the request locale.
+
+    Written for a restriction read back from its row, which is why it takes the shape rather than an action: the
+    row records what is in force, not which of the four restricting actions put it there, and those two facts
+    name that action exactly (see :data:`_RESTRICTION_ACTIONS`).
+
+    :param target: whose restriction it is - a :class:`LockoutTarget` value
+    :param permanent: whether it has no expiry
+    """
+    action = _RESTRICTION_ACTIONS.get((target, permanent))
+    return default_error_message(action) if action else None
+
+
+def compose_default_error_message(action_types: Sequence[str], include_restriction: bool = True) -> str | None:
+    """
+    The standard error message for a stage carrying *action_types*: the most severe restriction it carries, then
+    every notification it also triggers.
+
+    The same composition the policy editor offers as a suggestion, so a stage falling back to the default reads
+    as the stage next to it that had the suggestion written into it. ``None`` when nothing it carries has an
+    error message, which keeps such a stage silent.
+
+    :param include_restriction: leave out the restriction sentence. A restriction that was actually written is
+        described from the row it left behind, so a stage that both restricts and notifies takes only its
+        notifications from here - otherwise the user reads the restriction twice, once per source.
+    """
+    carried = [entry for entry in DEFAULT_ERROR_MESSAGES if entry.action in set(action_types)]
+    restriction = next((entry for entry in carried if entry.category == "restriction"), None)
+    notifications = [entry for entry in carried if entry.category == "notification"]
+    leading = [restriction] if restriction and include_restriction else []
+    sentences = [str(entry.message) for entry in leading + notifications]
+    return " ".join(sentences) if sentences else None
+
+
 def get_default_error_messages() -> list[dict[str, str]]:
     """
     The suggested stage error messages, most severe first, as
@@ -394,7 +457,7 @@ def get_default_error_messages() -> list[dict[str, str]]:
     ``notification`` entries are appended to it.
 
     Deliberately not scoped by target: the binding is action to message, and a client picks the entry
-    whose action the stage actually carries, so wording for an action a target cannot hold simply never
+    whose action the stage actually carries, so error message for an action a target cannot hold simply never
     matches.
     """
     return [{"action_type": entry.action.value, "category": entry.category, "message": str(entry.message)}
