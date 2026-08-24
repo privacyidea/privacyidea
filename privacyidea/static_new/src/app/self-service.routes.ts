@@ -25,6 +25,7 @@ import { ContainerCreateSelfServiceComponent } from "./components/container/cont
 import { ContainerCreateWizardComponent } from "./components/container/container-create/container-create.wizard.component";
 import { ContainerDetailsComponent } from "./components/container/container-details/container-details.component";
 import { ContainerTableSelfServiceComponent } from "./components/container/container-table/container-table.self-service.component";
+import { NewsComponent } from "./components/news/news.component";
 import { TokenDetailsSelfServiceComponent } from "./components/token/token-details/token-details.self-service.component";
 import { TokenEnrollmentSelfServiceComponent } from "./components/token/token-enrollment/token-enrollment.self-service.component";
 import { TokenEnrollmentWizardComponent } from "./components/token/token-enrollment/token-enrollment.wizard.component";
@@ -69,5 +70,9 @@ export const routes: Routes = [
   {
     path: "audit",
     component: AuditSelfServiceComponent
+  },
+  {
+    path: "news",
+    component: NewsComponent
   }
 ];

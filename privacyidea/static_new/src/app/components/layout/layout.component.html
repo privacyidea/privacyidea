@@ -27,7 +27,9 @@
     @if (authService.role() === "admin") {
       <div class="admin-layout">
         <app-navigation />
-        <div class="admin-content">
+        <div
+          class="admin-content"
+          [class.admin-content-flush]="contentService.onDashboard()">
           <router-outlet></router-outlet>
         </div>
       </div>

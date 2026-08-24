@@ -106,4 +106,26 @@ describe("LayoutComponent", () => {
     const main = fixture.nativeElement.querySelector('main[aria-label="Main Router Outlet"]');
     expect(main).toBeTruthy();
   });
+
+  describe("admin content padding", () => {
+    let contentService: MockContentService;
+
+    beforeEach(() => {
+      contentService = TestBed.inject(ContentService) as unknown as MockContentService;
+    });
+
+    it("should flush the content padding on the dashboard route", () => {
+      contentService.onDashboard.set(true);
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.querySelector(".admin-content.admin-content-flush")).not.toBeNull();
+    });
+
+    it("should keep the content padding off the dashboard route", () => {
+      contentService.onDashboard.set(false);
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.querySelector(".admin-content.admin-content-flush")).toBeNull();
+    });
+  });
 });

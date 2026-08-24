@@ -18,7 +18,7 @@
  **/
 
 import { CommonModule, KeyValuePipe } from "@angular/common";
-import { Component, computed, inject, signal, viewChild } from "@angular/core";
+import { Component, computed, inject, linkedSignal, signal, viewChild } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatIconModule } from "@angular/material/icon";
@@ -37,6 +37,7 @@ import { TableState } from "@core/models/table_state/table-state";
 import { FilterOption } from "@core/models/filter_value_generic/filter-option";
 import { FilterValueGeneric } from "@core/models/filter_value_generic/filter-value-generic";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { PolicyDetail, PolicyService, PolicyServiceInterface } from "@services/policies/policies.service";
 import { RowSelector } from "@services/table-utils/row-selector";
@@ -78,6 +79,7 @@ export class PoliciesTableComponent {
   readonly authService: AuthServiceInterface = inject(AuthService);
   readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   private readonly router = inject(Router);
+  private readonly contentService: ContentServiceInterface = inject(ContentService);
 
   readonly filterComponent = viewChild<PolicyFilterComponent>("filterComponent");
 
@@ -94,9 +96,13 @@ export class PoliciesTableComponent {
   readonly columnKeys = computed(() => ["select", ...Object.keys(this.columns)]);
 
   readonly sort = signal<Sort>({ active: "priority", direction: "asc" });
-  readonly filter = signal<FilterValueGeneric<PolicyDetail>>(
-    new FilterValueGeneric({ availableFilters: policyFilterOptions })
-  );
+  readonly filter = linkedSignal<string, FilterValueGeneric<PolicyDetail>>({
+    source: () => (this.contentService.queryParams()["filter"] ?? "").replace(/^"(.*)"$/s, "$1"),
+    computation: (raw) => {
+      const filter = new FilterValueGeneric<PolicyDetail>({ availableFilters: policyFilterOptions });
+      return raw ? filter.setByString(raw) : filter;
+    }
+  });
 
   readonly ROUTE_PATHS = ROUTE_PATHS;
   readonly tableState = new TableState({

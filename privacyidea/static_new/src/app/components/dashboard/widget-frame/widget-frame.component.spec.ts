@@ -19,16 +19,18 @@
 import { Component, provideZonelessChangeDetection, TemplateRef, viewChild } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { provideRouter } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
 import { TokensWidgetComponent } from "@components/dashboard/widgets/tokens-widget/tokens-widget.component";
 import { DashboardWidget, WidgetInstance } from "@models/dashboard";
 import { AuthService } from "@services/auth/auth.service";
 import { DashboardLayoutService } from "@services/dashboard/dashboard-layout.service";
+import { WidgetRegistryService } from "@services/dashboard/widget-registry.service";
+import { InfoService } from "@services/info/info.service";
 import { ResolverService } from "@services/resolver/resolver.service";
 import { SubscriptionService } from "@services/subscription/subscription.service";
 import { SystemService } from "@services/system/system.service";
 import { TokenService } from "@services/token/token.service";
-import { WidgetRegistryService } from "@services/dashboard/widget-registry.service";
-import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { MockAuthService, MockInfoService } from "@testing/mock-services";
 import { MockResolverService } from "@testing/mock-services/mock-resolver-service";
 import { MockSubscriptionService } from "@testing/mock-services/mock-subscription-service";
 import { MockSystemService } from "@testing/mock-services/mock-system-service";
@@ -91,6 +93,7 @@ describe("WidgetFrameComponent", () => {
         { provide: AuthService, useClass: MockAuthService },
         { provide: TokenService, useClass: MockTokenService },
         { provide: SubscriptionService, useClass: MockSubscriptionService },
+        { provide: InfoService, useClass: MockInfoService },
         { provide: SystemService, useClass: MockSystemService },
         { provide: ResolverService, useClass: MockResolverService }
       ]
@@ -250,6 +253,40 @@ describe("WidgetFrameComponent", () => {
     fixture.nativeElement.querySelector(".widget-remove").click();
 
     expect(removeSpy).toHaveBeenCalledWith("w1");
+  });
+
+  describe("widget with a title route", () => {
+    const newsInstance: WidgetInstance = { id: "n1", type: "news", x: 0, y: 0, cols: 9, rows: 3 };
+
+    beforeEach(() => {
+      const authMock = TestBed.inject(AuthService) as unknown as MockAuthService;
+      authMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rss_age: 30 });
+
+      fixture = TestBed.createComponent(WidgetFrameComponent);
+      component = fixture.componentInstance;
+      fixture.componentRef.setInput("instance", newsInstance);
+      fixture.detectChanges();
+    });
+
+    it("should expose the title route of the widget instance in view mode", () => {
+      expect(component["titleLink"]()).toBe(ROUTE_PATHS.NEWS);
+    });
+
+    it("should render the title as a link to that route", () => {
+      const link: HTMLAnchorElement = fixture.nativeElement.querySelector("a.widget-title");
+      expect(link).not.toBeNull();
+      expect(link.getAttribute("href")).toBe(ROUTE_PATHS.NEWS);
+      expect(link.textContent).toContain("News");
+    });
+
+    it("should not link the title in edit mode", () => {
+      layoutService.editMode.set(true);
+      fixture.detectChanges();
+
+      expect(component["titleLink"]()).toBeNull();
+      expect(fixture.nativeElement.querySelector("a.widget-title")).toBeNull();
+      expect(fixture.nativeElement.querySelector("span.widget-title").textContent).toContain("News");
+    });
   });
 
   describe("pinned widget", () => {

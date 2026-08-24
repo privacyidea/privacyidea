@@ -16,19 +16,16 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, input } from "@angular/core";
-import { MatProgressSpinner } from "@angular/material/progress-spinner";
-import { WidgetState } from "@models/dashboard";
 
-@Component({
-  selector: "app-widget-state",
-  standalone: true,
-  imports: [MatProgressSpinner],
-  templateUrl: "./widget-state.component.html",
-  styleUrl: "./widget-state.component.scss"
-})
-export class WidgetStateComponent {
-  readonly state = input.required<WidgetState>();
-  /** Overrides the default "Could not load data." text shown in the "error" state. */
-  readonly errorMessage = input<string>();
+@use "styles";
+
+.news-page {
+  @include styles.main-component-style;
+  box-sizing: border-box;
+  height: 100%;
+  width: 100%;
+}
+
+.news-hint {
+  color: var(--mat-sys-outline);
 }

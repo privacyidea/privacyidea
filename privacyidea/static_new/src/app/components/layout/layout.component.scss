@@ -65,6 +65,12 @@
   padding: 16px;
   overflow: hidden;
   container-type: size;
+
+  // The dashboard is a scrollable canvas, not a centered content card, so it
+  // stretches to the full space below the toolbar(s) instead of being inset.
+  &.admin-content-flush {
+    padding: 0;
+  }
 }
 
 // NOTE: the routed host is styled from global styles (styles.scss), not here —
