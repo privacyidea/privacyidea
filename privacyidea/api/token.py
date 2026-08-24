@@ -1647,6 +1647,50 @@ def get_serial_by_otp_api(otp=None):
                         "count": count})
 
 
+@token_blueprint.route('/sshkey/<serial>', methods=['GET'])
+@prepolicy(check_token_action, request, action=PolicyAction.SSHKEY_READ)
+@event("token_sshkey", request, g)
+@log_with(log)
+def get_sshkey_api(serial=None):
+    """
+    Return the decrypted public SSH key of an SSH key token.
+
+    The public key of an SSH key token is stored encrypted in the database
+    and is therefore not returned in the token list. This endpoint returns
+    the assembled public key (``<type> <key> [<comment>]``) so that it can
+    be imported into an ``authorized_keys`` file.
+
+    Before returning, the integrity checksum of the token is verified, so a
+    manipulation of the SSH key data in the database is detected.
+
+    Requires authentication and the policy action ``sshkey_read``. Admins
+    are restricted by the realms of their policies, users can only read the
+    SSH key of their own tokens.
+
+    :param serial: path component, the serial of the SSH key token.
+    :status 200: ``{"sshkey": "<type> <key> <comment>"}`` in
+        ``result.value``.
+    """
+    # check_token_action removes tokens the caller may not access and reports
+    # them in "not_authorized_serials". If our serial ended up there, deny.
+    not_authorized_serials = get_optional(request.all_data, "not_authorized_serials", [])
+    if serial in not_authorized_serials:
+        raise PolicyError(f"You are not allowed to read the SSH key of token {serial!s}.")
+
+    user = request.User
+    toks = get_tokens(serial=serial, user=user if user and not user.is_empty() else None,
+                      tokentype="sshkey")
+    if not toks:
+        raise ResourceNotFoundError(f"No SSH key token with serial {serial!s} found.")
+    token = toks[0]
+
+    sshkey = token.get_sshkey()
+    g.audit_object.log({"serial": serial,
+                        "token_type": "sshkey",
+                        "success": True})
+    return send_result({"sshkey": sshkey})
+
+
 @token_blueprint.route('/info/<serial>/<key>', methods=['POST'])
 @admin_required
 @prepolicy(check_token_action, request, action=PolicyAction.SETTOKENINFO)

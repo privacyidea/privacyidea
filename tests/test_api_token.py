@@ -4881,3 +4881,128 @@ class APITokengroupTestCase(MyApiTestCase):
             self.assertEqual('Tokengroup gaga does not exist.', result.get("error").get("message"))
 
         remove_token(serial)
+
+
+class APISSHKeyReadTestCase(MyApiTestCase):
+    """Tests for the GET /token/sshkey/<serial> endpoint and the masking of
+    encrypted token info in the token list."""
+    sshkey = ("ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIC38dIb3tM6nPrT"
+              "3j1UfsQxOCBbf3JogwsKeVPM893Pi cornelius@puck")
+
+    def _init_sshkey_token(self, serial, user=None):
+        param = {"type": "sshkey", "serial": serial, "sshkey": self.sshkey}
+        if user:
+            param.update({"user": user.login, "realm": user.realm})
+        return init_token(param, user=user)
+
+    def test_01_admin_reads_sshkey(self):
+        serial = "SSHREAD1"
+        self._init_sshkey_token(serial)
+        with self.app.test_request_context(f'/token/sshkey/{serial}',
+                                           method="GET",
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            value = res.json["result"]["value"]
+            self.assertEqual(self.sshkey, value.get("sshkey"))
+        remove_token(serial)
+
+    def test_02_token_list_returns_encrypted_tokeninfo(self):
+        serial = "SSHREAD2"
+        self._init_sshkey_token(serial)
+        with self.app.test_request_context('/token/',
+                                           method="GET",
+                                           data={"serial": serial},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            tokens = res.json["result"]["value"]["tokens"]
+            self.assertEqual(1, len(tokens), tokens)
+            info = tokens[0]["info"]
+            # The ssh_key is returned as its encrypted value, marked as a password
+            self.assertEqual("password", info.get("ssh_key.type"))
+            # It is stored/returned encrypted, so it must not equal the clear text key
+            key_part = self.sshkey.split()[1]
+            self.assertNotEqual(key_part, info.get("ssh_key"))
+            self.assertIsNotNone(info.get("ssh_key"))
+            # The plaintext type and comment are still visible
+            self.assertEqual("ssh-ed25519", info.get("ssh_type"))
+        remove_token(serial)
+
+    def test_03_non_existing_token(self):
+        with self.app.test_request_context('/token/sshkey/DOESNOTEXIST',
+                                           method="GET",
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(404, res.status_code, res)
+
+    def test_04_wrong_token_type(self):
+        serial = "SSHREAD_HOTP"
+        init_token({"type": "hotp", "serial": serial, "otpkey": OTPKEY})
+        with self.app.test_request_context(f'/token/sshkey/{serial}',
+                                           method="GET",
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            # Not an sshkey token -> not found
+            self.assertEqual(404, res.status_code, res)
+        remove_token(serial)
+
+    def test_05_admin_policy_denies(self):
+        serial = "SSHREAD5"
+        self._init_sshkey_token(serial)
+        # An admin policy that only grants a different action -> sshkey_read denied
+        set_policy("adminX", scope=SCOPE.ADMIN, action=PolicyAction.TOKENLIST)
+        with self.app.test_request_context(f'/token/sshkey/{serial}',
+                                           method="GET",
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(403, res.status_code, res)
+        # Granting the action allows access again
+        set_policy("adminX", scope=SCOPE.ADMIN,
+                   action=f"{PolicyAction.TOKENLIST},{PolicyAction.SSHKEY_READ}")
+        with self.app.test_request_context(f'/token/sshkey/{serial}',
+                                           method="GET",
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            self.assertEqual(self.sshkey, res.json["result"]["value"]["sshkey"])
+        delete_policy("adminX")
+        remove_token(serial)
+
+    def test_06_user_reads_own_sshkey(self):
+        self.setUp_user_realms()
+        self.authenticate_selfservice_user()
+        user = User("selfservice", self.realm1)
+        serial = "SSHREAD_USER"
+        self._init_sshkey_token(serial, user=user)
+        # Without a user policy the user is not allowed to read the key
+        set_policy("userX", scope=SCOPE.USER, action=PolicyAction.DELETE)
+        with self.app.test_request_context(f'/token/sshkey/{serial}',
+                                           method="GET",
+                                           headers={'Authorization': self.at_user}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(403, res.status_code, res)
+        # With the policy the user can read the key
+        set_policy("userX", scope=SCOPE.USER,
+                   action=f"{PolicyAction.DELETE},{PolicyAction.SSHKEY_READ}")
+        with self.app.test_request_context(f'/token/sshkey/{serial}',
+                                           method="GET",
+                                           headers={'Authorization': self.at_user}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            self.assertEqual(self.sshkey, res.json["result"]["value"]["sshkey"])
+        delete_policy("userX")
+        remove_token(serial)
+
+    def test_07_integrity_failure_is_reported(self):
+        serial = "SSHREAD7"
+        token = self._init_sshkey_token(serial)
+        # Simulate a database admin tampering with the plaintext key type
+        token.add_tokeninfo("ssh_type", "ssh-rsa")
+        with self.app.test_request_context(f'/token/sshkey/{serial}',
+                                           method="GET",
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertFalse(res.json["result"]["status"])
+            self.assertIn("integrity", res.json["result"]["error"]["message"].lower())
+        remove_token(serial)

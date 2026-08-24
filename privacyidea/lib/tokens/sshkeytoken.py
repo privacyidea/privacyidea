@@ -23,10 +23,12 @@ to import it to authorized keys files.
 The code is tested in tests/test_lib_tokens_ssh
 """
 
+import hashlib
 import logging
 
 from privacyidea.config import ConfigKey
 from privacyidea.lib import _
+from privacyidea.lib.crypto import safe_compare, decryptPassword
 from privacyidea.lib.error import TokenAdminError
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.log import log_with
@@ -35,13 +37,33 @@ from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import SCOPE, GROUP
 from privacyidea.lib.tokenclass import TokenClass, AuthenticationMode
 from privacyidea.lib.tokenrolloutstate import RolloutState
-from privacyidea.lib.utils import to_list
+from privacyidea.lib.utils import to_list, to_unicode
 
 log = logging.getLogger(__name__)
 
 #: SSH key types which are always allowed to be enrolled.
 DEFAULT_ALLOWED_SSH_KEY_TYPES = ["ssh-rsa", "ssh-ed25519", "ecdsa-sha2-nistp256",
                                  "sk-ecdsa-sha2-nistp256@openssh.com", "sk-ssh-ed25519@openssh.com"]
+
+
+def compute_ssh_key_checksum(serial: str, key_type: str, key: str, comment: str) -> str:
+    """
+    Compute the integrity checksum of an SSH key token.
+
+    The checksum is stored in the encrypted OTP key field of the token.
+    Since a database administrator can neither create the encrypted value of
+    a chosen checksum nor copy the value from another token (the serial is
+    part of the checksum), any manipulation of the SSH key data in the
+    database can be detected.
+
+    :param serial: The serial of the token
+    :param key_type: The SSH key type, e.g. "ssh-rsa"
+    :param key: The decrypted base64 encoded public key blob
+    :param comment: The SSH key comment
+    :return: hexlified SHA256 checksum
+    """
+    data = "\n".join([serial or "", key_type or "", key or "", comment or ""])
+    return hashlib.sha256(data.encode("utf-8")).hexdigest()
 
 
 def get_allowed_ssh_key_types() -> list[str]:
@@ -63,11 +85,6 @@ def get_allowed_ssh_key_types() -> list[str]:
         if key_type and key_type not in allowed_key_types:
             allowed_key_types.append(key_type)
     return allowed_key_types
-
-
-##TODO: We should save a fingerprint of the SSH Key in the encrypted OTP
-# field, so that we can be sure, that the public ssh key was not changed in
-# the database!
 
 
 class SSHkeyTokenClass(TokenClass):
@@ -146,9 +163,7 @@ class SSHkeyTokenClass(TokenClass):
         # be missing the token.id
         self.token.save()
 
-        get_required(param, "sshkey")
-
-        key_elem = param.get("sshkey").split(" ", 2)
+        key_elem = get_required(param, "sshkey").split(" ", 2)
         allowed_key_types = get_allowed_ssh_key_types()
         if key_elem[0] not in allowed_key_types:
             self.token.rollout_state = RolloutState.BROKEN
@@ -163,12 +178,8 @@ class SSHkeyTokenClass(TokenClass):
 
         key_type = key_elem[0]
         key = key_elem[1]
-        if len(key_elem) > 2:
-            key_comment = key_elem[2]
-        else:
-            key_comment = ""
+        key_comment = key_elem[2] if len(key_elem) > 2 else ""
 
-        # convert key to hex
         self.add_tokeninfo("ssh_key", key, value_type="password")
         self.add_tokeninfo("ssh_type", key_type)
         self.add_tokeninfo("ssh_comment", key_comment)
@@ -176,19 +187,63 @@ class SSHkeyTokenClass(TokenClass):
         # call the parents function
         TokenClass.update(self, param)
 
+        # Store an integrity checksum of the SSH key data in the encrypted
+        # OTP key field, so that a manipulation of the database entries can
+        # be detected in get_sshkey().
+        self.token.set_otpkey(compute_ssh_key_checksum(self.token.serial, key_type, key, key_comment))
+        self.token.save()
+
+    def import_token(self, token_information: dict):
+        """
+        Import a given SSH key token and store the integrity checksum of the
+        imported SSH key data in the encrypted OTP key field.
+        """
+        TokenClass.import_token(self, token_information)
+        key_type, sshkey, key_comment = self._get_ssh_key_parts()
+        self.token.set_otpkey(compute_ssh_key_checksum(self.token.serial, key_type, sshkey, key_comment))
+        self.token.save()
+
+    def _get_ssh_key_parts(self) -> tuple[str, str, str]:
+        """
+        Return the SSH key parts (type, decrypted public key, comment) of the
+        token. The whole token info is fetched only once and the encrypted
+        public key is decrypted directly from it.
+
+        :return: (key_type, key, comment)
+        """
+        ti = self.get_tokeninfo()
+        key_type = ti.get("ssh_type") or ""
+        key_comment = ti.get("ssh_comment") or ""
+        sshkey = ti.get("ssh_key") or ""
+        if ti.get("ssh_key.type") == "password":
+            sshkey = decryptPassword(sshkey)
+        return key_type, sshkey, key_comment
+
     @log_with(log)
     def get_sshkey(self):
         """
         returns the public SSH key
 
+        Before returning the key, the integrity checksum stored in the
+        encrypted OTP key field is verified. If the SSH key data in the
+        database was manipulated or the checksum is missing, a
+        TokenAdminError is raised.
+
         :return: SSH pub key
         :rtype: string
         """
-        ti = self.get_tokeninfo()
-        key_type = ti.get("ssh_type")
-        key_comment = ti.get("ssh_comment")
-        # get the ssh key directly, otherwise it will not be decrypted
-        sshkey = self.get_tokeninfo("ssh_key")
+        key_type, sshkey, key_comment = self._get_ssh_key_parts()
+        # Verify the integrity checksum
+        stored_checksum = to_unicode(self.token.get_otpkey().getKey())
+        if not stored_checksum:
+            log.error(f"Token {self.token.serial!s} is missing the SSH key integrity checksum. "
+                      "Please run the database migration to add the checksum to existing tokens.")
+            raise TokenAdminError(f"Missing SSH key integrity checksum for token {self.token.serial!s}.")
+        expected_checksum = compute_ssh_key_checksum(self.token.serial, key_type, sshkey, key_comment)
+        if not safe_compare(stored_checksum, expected_checksum):
+            log.error(f"Integrity check of the SSH key of token {self.token.serial!s} failed. "
+                      "The database entries might have been manipulated!")
+            raise TokenAdminError(f"The SSH key of token {self.token.serial!s} failed the integrity check.")
         r = f"{key_type!s} {sshkey!s}"
         if key_comment:
             r += " " + key_comment

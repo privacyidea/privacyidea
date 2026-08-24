@@ -2,14 +2,22 @@
 This test file tests the lib.tokens.sshkeytoken
 This depends on lib.tokenclass
 """
+import importlib.util
+import os
+
 from privacyidea.config import ConfigKey
 from privacyidea.lib.error import TokenAdminError
 from privacyidea.lib.token import init_token, import_tokens, get_tokens
 from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.tokens.sshkeytoken import (SSHkeyTokenClass, get_allowed_ssh_key_types,
-                                                DEFAULT_ALLOWED_SSH_KEY_TYPES)
-from privacyidea.models import Token
+                                                DEFAULT_ALLOWED_SSH_KEY_TYPES,
+                                                compute_ssh_key_checksum)
+from privacyidea.models import Token, TokenInfo, db
 from .base import MyTestCase
+
+MIGRATION_FILE = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                              "privacyidea", "migrations", "versions",
+                              "b8c9d0e1f2a3_sshkey_integrity_checksum.py")
 
 
 class SSHTokenTestCase(MyTestCase):
@@ -188,6 +196,8 @@ class SSHTokenTestCase(MyTestCase):
         self.assertEqual(token.get_tokeninfo("tokenkind"), "software")
         self.assertEqual(token.get_tokeninfo("ssh_key"), self.sshkey[8:-28])
         self.assertEqual(token.get_tokeninfo("ssh_type"), "ssh-rsa")
+        # The integrity checksum was computed on import, so the key can be fetched
+        self.assertEqual(self.sshkey, token.get_sshkey())
 
         # Clean up
         token.delete_token()
@@ -220,3 +230,96 @@ class SSHTokenTestCase(MyTestCase):
                            "sshkey": self.unsupported_keytype})
         for broken_token in get_tokens(serial="SSHKCONF2"):
             broken_token.delete_token()
+
+    @staticmethod
+    def _set_tokeninfo_value(token_id, key, value):
+        """Simulate a database admin changing a tokeninfo entry directly in the DB."""
+        info = TokenInfo.query.filter_by(token_id=token_id, Key=key).first()
+        old_value = info.Value
+        info.Value = value
+        db.session.commit()
+        return old_value
+
+    def test_07_integrity_checksum_detects_manipulation(self):
+        token_a = init_token({"type": "sshkey", "serial": "SSHTAMPER1", "sshkey": self.sshkey})
+        token_b = init_token({"type": "sshkey", "serial": "SSHTAMPER2", "sshkey": self.sshkey_ed25519})
+        # Sanity check: the keys can be fetched
+        self.assertEqual(self.sshkey, token_a.get_sshkey())
+        self.assertEqual(self.sshkey_ed25519, token_b.get_sshkey())
+
+        # A database admin changes the plaintext key type in the database
+        old_type = self._set_tokeninfo_value(token_a.token.id, "ssh_type", "ssh-dss")
+        self.assertRaises(TokenAdminError, token_a.get_sshkey)
+        # Restore the original value: the key can be fetched again
+        self._set_tokeninfo_value(token_a.token.id, "ssh_type", old_type)
+        self.assertEqual(self.sshkey, token_a.get_sshkey())
+
+        # A database admin changes the plaintext comment in the database
+        old_comment = self._set_tokeninfo_value(token_a.token.id, "ssh_comment", "root@evil")
+        self.assertRaises(TokenAdminError, token_a.get_sshkey)
+        self._set_tokeninfo_value(token_a.token.id, "ssh_comment", old_comment)
+        self.assertEqual(self.sshkey, token_a.get_sshkey())
+
+        # A database admin copies the encrypted ssh_key of another token
+        # (substitution attack): they cannot decrypt it, but they can copy the
+        # ciphertext. This is detected as well.
+        ciphertext_b = TokenInfo.query.filter_by(token_id=token_b.token.id, Key="ssh_key").first().Value
+        old_ciphertext = self._set_tokeninfo_value(token_a.token.id, "ssh_key", ciphertext_b)
+        self.assertRaises(TokenAdminError, token_a.get_sshkey)
+        self._set_tokeninfo_value(token_a.token.id, "ssh_key", old_ciphertext)
+        self.assertEqual(self.sshkey, token_a.get_sshkey())
+
+        # A missing checksum is not accepted either
+        token_a.token.set_otpkey("")
+        token_a.token.save()
+        self.assertRaises(TokenAdminError, token_a.get_sshkey)
+
+        token_a.delete_token()
+        token_b.delete_token()
+
+    def test_08_migration_backfills_checksum(self):
+        # Create "legacy" tokens: enrolled tokens whose OTP key field does not
+        # contain the integrity checksum, like tokens enrolled before the update.
+        token_a = init_token({"type": "sshkey", "serial": "SSHMIG1", "sshkey": self.sshkey})
+        token_b = init_token({"type": "sshkey", "serial": "SSHMIG2", "sshkey": self.sshkey_ecdsa})
+        for token in (token_a, token_b):
+            token.token.set_otpkey("")
+            token.token.save()
+            self.assertRaises(TokenAdminError, token.get_sshkey)
+        # A non-sshkey token must not be touched by the migration
+        spass = init_token({"type": "spass", "serial": "SSHMIG3"})
+        spass_key_enc = spass.token.key_enc
+
+        # Load the migration module and run the backfill
+        spec = importlib.util.spec_from_file_location("sshkey_checksum_migration", MIGRATION_FILE)
+        migration = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(migration)
+        count = migration.backfill_ssh_key_checksums(db.session.connection())
+        db.session.commit()
+        # All sshkey tokens in the DB are migrated (previous tests may have left some)
+        self.assertGreaterEqual(count, 2)
+
+        # Now the keys can be fetched again
+        token_a = get_tokens(serial="SSHMIG1")[0]
+        token_b = get_tokens(serial="SSHMIG2")[0]
+        self.assertEqual(self.sshkey, token_a.get_sshkey())
+        self.assertEqual(self.sshkey_ecdsa, token_b.get_sshkey())
+        # The migration is idempotent
+        second_count = migration.backfill_ssh_key_checksums(db.session.connection())
+        db.session.commit()
+        self.assertEqual(count, second_count)
+        self.assertEqual(self.sshkey, get_tokens(serial="SSHMIG1")[0].get_sshkey())
+        # The spass token was not modified
+        self.assertEqual(spass_key_enc, get_tokens(serial="SSHMIG3")[0].token.key_enc)
+
+        # The downgrade removes the checksums again
+        checksum = compute_ssh_key_checksum("SSHMIG1", "ssh-rsa", self.sshkey[8:-28],
+                                            "NetKnights GmbH Descröption")
+        self.assertEqual(checksum, token_a.token.get_otpkey().getKey().decode())
+        migration._set_token_otpkey(db.session.connection(), token_a.token.id, "")
+        db.session.commit()
+        self.assertRaises(TokenAdminError, get_tokens(serial="SSHMIG1")[0].get_sshkey)
+
+        token_a.delete_token()
+        token_b.delete_token()
+        spass.delete_token()
