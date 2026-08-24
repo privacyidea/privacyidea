@@ -36,7 +36,8 @@ $corner-size-stacked: 132px;
   text-align: center;
   font-weight: bold;
   text-transform: uppercase;
-  box-shadow: var(--elevation-8);
+  // The pre-baked Material shadow, not the tunable --elevation-8: the depth setting cannot flatten it.
+  box-shadow: var(--mat-elevation-8);
   pointer-events: auto;
   border: none;
   cursor: pointer;

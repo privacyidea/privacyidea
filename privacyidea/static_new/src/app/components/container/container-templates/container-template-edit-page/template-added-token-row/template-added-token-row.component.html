@@ -37,11 +37,13 @@
     </div>
   </mat-expansion-panel-header>
 
-  <div class="margin-bottom-16">
-    {{ tokenTypeDescription() }}
-  </div>
+  <div class="expansion-well">
+    <div class="margin-bottom-16">
+      {{ tokenTypeDescription() }}
+    </div>
 
-  <app-enroll-token-type-switch
-    [tokenTypeKey]="tokenEnrollmentPayload().type"
-    [enrollmentData]="$any(tokenEnrollmentData())" />
+    <app-enroll-token-type-switch
+      [tokenTypeKey]="tokenEnrollmentPayload().type"
+      [enrollmentData]="$any(tokenEnrollmentData())" />
+  </div>
 </mat-expansion-panel>

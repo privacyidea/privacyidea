@@ -819,28 +819,43 @@ def get_user_from_param(param: dict, optional_or_required: bool = True) -> User:
 
 
 @log_with(log)
-def get_user_list(param: dict = None, user: User = None, include_custom_attributes: bool = False,
-                  requested_attributes: list[str] = None) -> list[dict]:
+def get_user_list(param: dict | None = None, user: User | None = None,
+                  include_custom_attributes: bool = False,
+                  requested_attributes: list[str] | None = None,
+                  failures: list[str] | None = None) -> list[dict]:
     """
     This function returns a list of user dictionaries. The user dict contains the resolver and custom user attributes,
     if requested.
+
     The ``realm`` parameter may be a single realm name, a comma-separated string of realm names, or a list of
-    realm names (surrounding whitespace is ignored); users from all given realms are returned. If neither a
-    realm nor a resolver is given, the users from all realms are returned.
+    realm names (surrounding whitespace is ignored). Scoping by ``realm`` / ``resolver`` in ``param``:
+
+    * ``realm`` only: query every resolver in each given realm.
+    * ``resolver`` only: query only that resolver, in every realm that
+      contains it.
+    * ``realm`` and ``resolver``: query only that resolver, and only
+      within each given realm. If the resolver is not part of a realm, that
+      realm contributes no results.
+    * neither: query every resolver in every realm.
+
+    An empty ``realm`` or ``resolver`` value is treated as if it were not
+    supplied and therefore does not restrict the scope. When a ``user`` object
+    is passed as well, its resolver narrows only the user's own realm, not a
+    separately requested ``realm``.
+
     The ``realm``, ``resolver`` and ``editable`` keys are added on the lib layer and are only included in the
     returned user dictionaries when ``requested_attributes`` is None/empty or explicitly lists them.
-    If only a resolver is given (no realm), the function looks up all realms containing that resolver and
-    iterates through them, so users are always returned in a realm context with proper masking.
-
-    Fixme: Please note: If a realm and a resolver is given, the resolver is currently ignored. So all users
-    of this realm are returned. This is the old/current behaviour. When filtering for a resolver in a realm, we
-    should probably take care, that masked users (in low priority resolvers) are not returned.
 
     :param param: search parameters
     :param user:  a specific user object to return
     :param include_custom_attributes:  Set to True, if you want to receive custom attributes of external users.
     :param requested_attributes: A list of attributes to return for each user. If None or empty, all
         attributes are returned.
+    :param failures: optional list. When provided, the name of every resolver that could not be
+        queried is appended once (deduplicated). This covers resolvers that raised ``ResolverError``
+        or ``ParameterError`` as well as resolvers that are assigned to a realm in scope but pinned to
+        a different node and could therefore not be queried here. Callers that want to surface partial
+        failures can pass an empty list and inspect it after the call.
     :return: list of user info as dictionaries
     """
     # The user dictionary, what we use to avoid duplicates in realms, while searching for users. The key will be the
@@ -885,41 +900,50 @@ def get_user_list(param: dict = None, user: User = None, include_custom_attribut
         param_realms = []
     user_resolver = None
     user_realm = None
-    # list of realms to iterate through
-    realm_iteration = []
     if user is not None:
         user_resolver = user.resolver
         user_realm = user.realm
 
-    # Determine the realms to iterate through. Dedupe while preserving order in case param_realm == user_realm.
-    for r in param_realms:
-        realm_iteration.append(r)
+    # Map each realm we will query to the resolver that should narrow it (or None
+    # for "every resolver in the realm"). A resolver narrows only the realm(s) it was
+    # supplied with: param_resolver narrows every realm in param_realms, user_resolver
+    # narrows only the user's realm. Realms are deduped; if a realm is named by both
+    # sources, a resolver from either source narrows it.
+    realm_filters = {}
+    for realm in param_realms:
+        realm_filters[realm] = param_resolver
+    if not realm_filters and param_resolver:
+        # A resolver was given without an explicit realm: seed its own scope (every
+        # realm containing it) before folding in the user's realm below, so a
+        # user object passed alongside a resolver-only query narrows/extends that
+        # scope instead of silently replacing it with just the user's own realm.
+        realm_filters = {realm: param_resolver for realm in get_realms_of_resolver(param_resolver)}
     if user_realm:
-        realm_iteration.append(user_realm)
-    realm_iteration = list(dict.fromkeys(realm_iteration))
+        realm_filters[user_realm] = realm_filters.get(user_realm) or user_resolver
 
     if not (param_resolver or user_resolver or param_realm_raw or user_realm):
-        # if no realm or resolver was specified, we search the resolvers in all realms
+        # Neither realm nor resolver was specified: search every resolver in all realms.
         # Note: we test param_realm_raw (not the normalised param_realms) so that a
         # non-empty realm filter which normalises to no valid realms (e.g. ",") does
         # not fall through to searching every realm.
         log.debug("Seldom event: Calling get_user_list with absolutely no information on realms or resolvers!")
-        all_realms = get_realms()
-        realm_iteration = list(all_realms)
+        realm_filters = {realm: None for realm in get_realms()}
 
-    if not realm_iteration:
+    if not realm_filters:
+        # A realm filter was given but normalised to no valid realm names (e.g. "," or
+        # " , "), or a resolver was given without a realm.
         resolver_name = param_resolver or user_resolver
         if not resolver_name:
-            # A realm filter was given but normalised to no valid realm names
-            # (e.g. "," or " , "), and no resolver was provided. Nothing to search.
             return []
-        # No realm given but a resolver is given. Find all realms that contain this resolver.
-        realm_iteration = get_realms_of_resolver(resolver_name)
-        if not realm_iteration:
+        # No realm given but a resolver is given: query it in every realm that contains it.
+        realm_filters = {realm: resolver_name for realm in get_realms_of_resolver(resolver_name)}
+        if not realm_filters:
             log.warning(f"Resolver '{resolver_name}' is not assigned to any realm.")
             return []
 
-    # Determine some display values.
+    # Determine some display values. Work on a local copy of requested_attributes
+    # so the caller's list is never mutated as a side effect of this call.
+    requested_attributes = list(requested_attributes) if requested_attributes is not None else None
     remove_user_id = False
     if include_custom_attributes and requested_attributes and "userid" not in requested_attributes:
         # user id is required to later get the custom attributes for the user
@@ -938,8 +962,26 @@ def get_user_list(param: dict = None, user: User = None, include_custom_attribut
     if requested_attributes and "username" not in requested_user_store_attributes:
         requested_user_store_attributes.append("username")
 
-    for realm in realm_iteration:
-        resolvers = get_ordered_resolvers(realm)
+    succeeded_resolvers = set()
+
+    for realm, resolver_filter in realm_filters.items():
+        realm_config = get_realms(realm)
+        resolvers = get_ordered_resolvers(realm, realm_config=realm_config)
+        # A resolver assigned to this realm but pinned to a different node is filtered
+        # out of get_ordered_resolvers() before we ever see it, whether or not the
+        # caller asked for a specific resolver. Record it here so a plain realm (or
+        # all-realms) query does not silently report incomplete data as complete.
+        if failures is not None:
+            assigned_resolvers = {entry.get("name")
+                                  for entry in realm_config.get(realm, {}).get("resolver", [])}
+            for missing_name in assigned_resolvers - set(resolvers):
+                if missing_name not in failures:
+                    failures.append(missing_name)
+        if resolver_filter:
+            if resolver_filter not in resolvers:
+                log.info(f"Resolver {resolver_filter!r} is not queryable in realm {realm!r}, skipping.")
+                continue
+            resolvers = [resolver_filter]
         realm_id = get_realm_id(realm)
 
         for resolver_name in resolvers:
@@ -953,6 +995,7 @@ def get_user_list(param: dict = None, user: User = None, include_custom_attribut
                 # Pass a copy of the attribute list: some resolvers (e.g. SQLIdResolver) append to it in place,
                 # which would otherwise leak attributes like "userid" into the results of subsequent resolvers.
                 user_list = resolver.getUserList(search_dict, list(requested_user_store_attributes))
+                succeeded_resolvers.add(resolver_name)
                 for user_info in user_list:
                     if not requested_attributes or "realm" in requested_pi_user_attributes:
                         user_info["realm"] = realm
@@ -984,12 +1027,22 @@ def get_user_list(param: dict = None, user: User = None, include_custom_attribut
                 log.debug(f"Found this userlist: {user_list!r}")
 
             except (ResolverError, ParameterError) as ex:
-                # In case of wrong search parameters or broken resolver we continue
-                # All other errors will be passed down.
-                # TODO: Reflect the broken resolver/query in the result data
+                # In case of wrong search parameters or broken resolver we continue.
+                # All other errors will be passed down. The skipped resolver name is
+                # recorded once in the optional ``failures`` list so callers can surface
+                # partial failures.
                 log.warning(f"Unable to get user list for resolver '{resolver_name}': {ex!r}")
                 log.debug(f"{traceback.format_exc()!s}")
+                if failures is not None and resolver_name not in failures:
+                    failures.append(resolver_name)
                 continue
+
+    # A resolver can be queried in several realms (resolver-only queries iterate
+    # every realm containing it). If it failed in one realm but returned a user
+    # list in another, it is not a skipped resolver overall, so drop it: callers
+    # should only see resolvers that could not be queried anywhere.
+    if failures is not None and succeeded_resolvers:
+        failures[:] = [name for name in failures if name not in succeeded_resolvers]
 
     users = list(users_dict.values())
     return users

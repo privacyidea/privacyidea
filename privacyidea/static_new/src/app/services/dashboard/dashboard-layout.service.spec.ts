@@ -69,11 +69,12 @@ describe("DashboardLayoutService", () => {
   describe("initialisation", () => {
     it("should fall back to the default layout when persistence is empty", () => {
       build();
-      expect(service.widgets()).toHaveLength(7);
+      expect(service.widgets()).toHaveLength(8);
       expect(service.widgets().map((widget) => widget.type).sort()).toEqual([
         "administration",
         "authentications",
         "events",
+        "news",
         "policies",
         "subscriptions",
         "token-types",
@@ -92,6 +93,24 @@ describe("DashboardLayoutService", () => {
       build();
       const subscriptions = service.widgets().find((widget) => widget.type === "subscriptions");
       expect(subscriptions).toMatchObject({ x: 0, y: 0 });
+    });
+
+    it("should not overlap any two widgets in the default layout", () => {
+      build();
+      const widgets = service.widgets();
+      for (let i = 0; i < widgets.length; i++) {
+        for (let j = i + 1; j < widgets.length; j++) {
+          expect(overlaps(widgets[i], widgets[j])).toBe(false);
+        }
+      }
+    });
+
+    it("should widen news and events past their default size in the default layout", () => {
+      build();
+      const news = service.widgets().find((widget) => widget.type === "news");
+      const events = service.widgets().find((widget) => widget.type === "events");
+      expect(news?.cols).toBe(9);
+      expect(events?.cols).toBe(7);
     });
 
     it("should start in view mode", () => {
@@ -307,11 +326,12 @@ describe("DashboardLayoutService", () => {
       service.removeWidget(service.widgets().find((widget) => widget.type === "events")!.id);
       service.resetLayout();
 
-      expect(service.widgets()).toHaveLength(7);
+      expect(service.widgets()).toHaveLength(8);
       expect(service.widgets().map((widget) => widget.type).sort()).toEqual([
         "administration",
         "authentications",
         "events",
+        "news",
         "policies",
         "subscriptions",
         "token-types",
@@ -322,7 +342,7 @@ describe("DashboardLayoutService", () => {
     it("should persist the reset layout", () => {
       service.removeWidget(service.widgets().find((widget) => widget.type === "events")!.id);
       service.resetLayout();
-      expect(stored()).toHaveLength(7);
+      expect(stored()).toHaveLength(8);
     });
   });
 

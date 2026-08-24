@@ -20,6 +20,12 @@ import { HttpEvent } from "@angular/common/http";
 import { Injectable } from "@angular/core";
 import { Observable, Subscription } from "rxjs";
 
+/** The requests in flight against one endpoint, collapsed into a single counted entry. */
+export interface LoadingGroup {
+  endpoint: string;
+  count: number;
+}
+
 export interface LoadingServiceInterface {
   addListener(id: string, listener: (isLoading: boolean) => void): void;
 
@@ -29,7 +35,7 @@ export interface LoadingServiceInterface {
 
   addLoading(loading: { key: string; observable: Observable<HttpEvent<unknown>>; url: string }): void;
 
-  getLoadingUrls(): { key: string; url: string }[];
+  getLoadingGroups(): LoadingGroup[];
 
   clearAllLoadings(): void;
 
@@ -70,10 +76,19 @@ export class LoadingService implements LoadingServiceInterface {
     this.notifyListeners();
   }
 
-  getLoadingUrls(): { key: string; url: string }[] {
-    return this.loadings.map((l) => {
-      return { key: l.key, url: l.url };
+  /** Grouped by the URL before the query string; ordered by the first request to each endpoint. */
+  getLoadingGroups(): LoadingGroup[] {
+    const groups = new Map<string, LoadingGroup>();
+    this.loadings.forEach((loading) => {
+      const endpoint = this.endpointOf(loading.url);
+      const group = groups.get(endpoint);
+      if (group) {
+        group.count++;
+      } else {
+        groups.set(endpoint, { endpoint, count: 1 });
+      }
     });
+    return [...groups.values()];
   }
 
   clearAllLoadings(): void {
@@ -91,5 +106,9 @@ export class LoadingService implements LoadingServiceInterface {
   removeLoading(key: string): void {
     this.loadings = this.loadings.filter((l) => l.key !== key);
     this.notifyListeners();
+  }
+
+  private endpointOf(url: string): string {
+    return url.split("?")[0];
   }
 }

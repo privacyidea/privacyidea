@@ -24,7 +24,14 @@ import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { catchError, map, Observable, of, shareReplay, tap, throwError } from "rxjs";
 
-export type UserSettingKey = "theme" | "locale" | "dashboard";
+export type UserSettingKey =
+  | "theme"
+  | "locale"
+  | "show_loading_urls"
+  | "depth"
+  | "light_source"
+  | "corner_radius"
+  | "dashboard";
 
 export type UserSettings = Partial<Record<UserSettingKey, unknown>>;
 
@@ -38,6 +45,8 @@ export interface UserSettingsServiceInterface {
   getSetting<T>(key: UserSettingKey): Observable<T | null>;
 
   setSetting<T>(key: UserSettingKey, value: T): Observable<UserSettings>;
+
+  setSettings(values: Partial<Record<UserSettingKey, unknown>>): Observable<UserSettings>;
 
   deleteSetting(key: UserSettingKey): Observable<UserSettings>;
 
@@ -100,6 +109,20 @@ export class UserSettingsService implements UserSettingsServiceInterface {
       .post<
         PiResponse<UserSettings>
       >(this.baseUrl, { settings: { [key]: value } }, { headers: this.authService.getHeaders() })
+      .pipe(
+        map((response) => response.result?.value ?? {}),
+        tap((settings) => this.store(settings)),
+        catchError((error) => this.fail(error, "Failed to save the user settings."))
+      );
+  }
+
+  /** Merges several keys in one request, so a caller setting more than one avoids one POST per key. */
+  public setSettings(values: Partial<Record<UserSettingKey, unknown>>): Observable<UserSettings> {
+    if (!this.available()) {
+      return of({});
+    }
+    return this.http
+      .post<PiResponse<UserSettings>>(this.baseUrl, { settings: values }, { headers: this.authService.getHeaders() })
       .pipe(
         map((response) => response.result?.value ?? {}),
         tap((settings) => this.store(settings)),

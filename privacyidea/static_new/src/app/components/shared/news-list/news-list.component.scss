@@ -1,0 +1,118 @@
+/**
+ * (c) NetKnights GmbH 2026,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ **/
+
+:host {
+  display: block;
+  width: 100%;
+}
+
+.news-list {
+  display: grid;
+  grid-template-columns: minmax(0, 14ch) minmax(0, 1fr) max-content;
+  column-gap: var(--global-gap);
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.news-item {
+  display: grid;
+  grid-template-columns: subgrid;
+  grid-column: 1 / -1;
+  align-items: baseline;
+  padding: var(--quarter-global-padding) 0;
+
+  &:not(:last-child) {
+    border-bottom: 1px solid var(--mat-sys-outline-variant);
+  }
+}
+
+.news-channel {
+  overflow: hidden;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 0 var(--half-global-padding);
+  border-radius: var(--border-radius);
+  background: var(--mat-sys-surface-container-high);
+  color: var(--mat-sys-on-surface-variant);
+  font-size: 0.8em;
+}
+
+.news-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.news-list:has(.news-summary) {
+  grid-template-columns: minmax(0, 16ch) minmax(0, 1fr) max-content;
+}
+
+.news-item:has(.news-summary) {
+  .news-title {
+    font-size: 1.35em;
+    font-weight: 600;
+  }
+
+  .news-channel,
+  .news-date {
+    font-size: 0.9em;
+  }
+}
+
+.news-date {
+  color: var(--mat-sys-outline);
+  font-size: 0.85em;
+}
+
+.news-summary {
+  grid-column: 1 / -1;
+  padding: var(--half-global-padding) 0;
+  color: var(--mat-sys-on-surface-variant);
+
+  :first-child {
+    margin-top: 0;
+  }
+
+  :last-child {
+    margin-bottom: 0;
+  }
+
+  img {
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+.news-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--half-global-gap);
+  padding: var(--global-padding) 0;
+  color: var(--mat-sys-outline);
+}
+
+.news-empty-icon {
+  flex: none;
+  opacity: 0.7;
+}

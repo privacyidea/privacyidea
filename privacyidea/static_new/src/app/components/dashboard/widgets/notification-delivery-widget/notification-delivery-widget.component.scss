@@ -33,7 +33,7 @@
 }
 
 h4 {
-  margin: var(--global-padding) 0 calc(var(--global-padding) / 2);
+  margin: 16px 0 calc(16px / 2);
   opacity: 0.7;
 
   &:first-child {
@@ -50,7 +50,7 @@ h4 {
   th,
   td {
     text-align: left;
-    padding: calc(var(--global-padding) / 2) var(--global-padding);
+    padding: calc(16px / 2) 16px;
     border-bottom: 1px solid color-mix(in srgb, currentColor 12%, transparent);
     white-space: nowrap;
     overflow: hidden;

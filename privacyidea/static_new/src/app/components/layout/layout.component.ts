@@ -26,7 +26,11 @@ import { NavigationSelfServiceWizardComponent } from "@components/layout/navigat
 import { NavigationComponent } from "@components/layout/navigation/navigation.component";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
-import { LoadingService, LoadingServiceInterface } from "@services/loading/loading-service";
+import { LoadingGroup, LoadingService, LoadingServiceInterface } from "@services/loading/loading-service";
+import {
+  UiPreferencesService,
+  UiPreferencesServiceInterface
+} from "@services/user-settings/ui-preferences.service";
 
 @Component({
   selector: "app-layout",
@@ -45,11 +49,13 @@ import { LoadingService, LoadingServiceInterface } from "@services/loading/loadi
 export class LayoutComponent implements OnInit, OnDestroy {
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly loadingService: LoadingServiceInterface = inject(LoadingService);
+  private readonly uiPreferencesService: UiPreferencesServiceInterface = inject(UiPreferencesService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly renderer = inject(Renderer2);
   private readonly document = inject(DOCUMENT);
   showProgressBar = signal(false);
-  loadingUrls = signal<{ key: string; url: string }[]>([]);
+  loadingGroups = signal<LoadingGroup[]>([]);
+  showLoadingUrls = this.uiPreferencesService.showLoadingUrls;
   protected readonly hasSecondaryToolbar = computed(() => this.authService.role() === "admin");
 
   constructor() {
@@ -72,7 +78,7 @@ export class LayoutComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.loadingService.addListener("layout", () => {
       this.showProgressBar.set(this.loadingService.isLoading());
-      this.loadingUrls.set(this.loadingService.getLoadingUrls());
+      this.loadingGroups.set(this.loadingService.getLoadingGroups());
     });
   }
 

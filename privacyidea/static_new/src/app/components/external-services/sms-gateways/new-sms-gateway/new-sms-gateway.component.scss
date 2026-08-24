@@ -8,14 +8,13 @@
 
 .sms-gateway-page-container {
   @include styles.main-component-style;
-  // Shared detail/edit-page cap. See --detail-max-height in styles.scss.
-  max-height: var(--table-max-height);
+  min-width: calc(var(--config-form-width) + 32px);
   display: grid;
   position: relative;
 }
 
 .sms-gateway-content {
-  width: 664px;
+  width: var(--config-form-width);
 }
 
 .parameters-form {
@@ -40,7 +39,7 @@
   gap: 16px;
   padding: 8px;
   background-color: var(--mat-sys-surface-container);
-  border-radius: 4px;
+  border-radius: var(--border-radius);
 
   .key {
     flex: 1;
@@ -63,10 +62,9 @@
 }
 
 .table-wrapper {
+  @include styles.card-recessed(3);
   margin-top: 8px;
   overflow: auto;
-  border: 1px solid var(--mat-sys-outline-variant);
-  background-color: var(--mat-sys-surface-container);
 }
 
 .actions-cell {
