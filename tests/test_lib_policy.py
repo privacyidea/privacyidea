@@ -626,6 +626,12 @@ class PolicyTestCase(MyTestCase):
         p = get_static_policy_definitions(scope="admin")
         self.assertTrue("enable" in p, p)
 
+    def test_11a_conditional_access_scope_is_offered(self):
+        self.assertIn(SCOPE.CONDITIONAL_ACCESS, SCOPE.get_all_scopes())
+        definitions = get_static_policy_definitions(scope=SCOPE.CONDITIONAL_ACCESS)
+        self.assertIn(PolicyAction.SHOW_CA_ERROR_MESSAGE, definitions)
+        self.assertEqual("bool", definitions[PolicyAction.SHOW_CA_ERROR_MESSAGE]["type"])
+
     def test_12_get_allowed_tokentypes(self):
         set_policy(name="tt1", scope=SCOPE.AUTHZ, action=f"{PolicyAction.TOKENTYPE}=hotp totp, {PolicyAction.APIKEY}")
         set_policy(name="tt2", scope=SCOPE.AUTHZ, action=f"{PolicyAction.TOKENTYPE}=motp")
