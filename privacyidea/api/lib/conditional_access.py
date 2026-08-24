@@ -157,6 +157,9 @@ def conditional_access_precheck(user: User, log_rejection: bool = True) -> Respo
         # Staged like any other event, so request teardown writes it.
         log_authentication(rejection.event_type, request, user=user, other_info=rejection.other_info,
                            transaction_id=_rejected_transaction_id())
+    if rejection.message:
+        # Claimed before the post-policies run, so hide_specific_error_message leaves this wording alone.
+        get_ca_context().carries_own_message = True
     # Without a configured message the response keeps its empty detail, byte for byte what it has always been, so
     # a rejected request is indistinguishable from any other failure.
     return send_result(False, rid=2, details={"message": rejection.message} if rejection.message else {})
@@ -174,9 +177,24 @@ def compose_failure_message(existing: str | None, messages: list[StageMessage]) 
     if not messages:
         return None
     joined = " ".join(message.text for message in messages)
-    if any(message.kind is not MessageKind.NOTIFICATION for message in messages):
+    if replaces_failure_reason(messages):
         return joined
     return f"{existing.rstrip('.')}. {joined}" if existing else joined
+
+
+def replaces_failure_reason(messages: list[StageMessage]) -> bool:
+    """
+    Whether these messages *replace* the failure's own reason rather than adding to it.
+
+    True once any of them describes a restriction: the request was turned away by conditional access, so what
+    the token made of the credential no longer decides anything. Callers use this to drop the failure's details
+    as well - they describe an attempt that has been overtaken, and conditional access has nothing of its own to
+    put there, so a rejection carries the wording and nothing else.
+
+    False for notification-only wording, which is appended to a failure conditional access did not cause; that
+    failure is still the reason, and its details are still its own.
+    """
+    return any(message.kind is not MessageKind.NOTIFICATION for message in messages)
 
 
 def surface_conditional_access_message(request, response):
@@ -215,12 +233,18 @@ def surface_conditional_access_message(request, response):
         # be read back. A request the pre-check did refuse still passes through here, since it returns rather
         # than raises and this hook wraps it; run_post_eval declines to evaluate its own rejections, so there
         # is nothing to compose and the gate's wording is left alone.
-        message = compose_failure_message(content.get("detail", {}).get("message"), context.run_post_eval())
+        stage_messages = context.run_post_eval()
+        message = compose_failure_message(content.get("detail", {}).get("message"), stage_messages)
         if message:
             detail = content.get("detail") or {}
+            if replaces_failure_reason(stage_messages):
+                # Everything else in the detail describes the token attempt this rejection overtook. The
+                # threadid is kept: it identifies the request rather than saying anything about it.
+                detail = {"threadid": detail["threadid"]} if "threadid" in detail else {}
             detail["message"] = message
             content["detail"] = detail
             response.set_data(json.dumps(content))
+            context.carries_own_message = True
     except Exception as ex:
         # Never break an authentication response over the wording of its own rejection.
         log.warning(f"Could not surface the conditional-access message on this response: {ex!r}")
@@ -360,6 +384,10 @@ def _reject_restricted_login(user: User) -> None:
     log_authentication(rejection.event_type, request, user=user, other_info=rejection.other_info,
                        transaction_id=_rejected_transaction_id(),
                        internal_admin=g.get("resolved_user", {}).get("is_local_admin", False))
+    if rejection.message:
+        # Only when there is wording of our own: a generic rejection is the ordinary failure and should be
+        # masked with every other one.
+        get_ca_context().carries_own_message = True
     raise AuthError(rejection.message or GENERIC_AUTH_FAILURE, id=Error.AUTHENTICATE_WRONG_CREDENTIALS)
 
 

@@ -70,8 +70,8 @@ import jwt
 from flask import (Blueprint, request, current_app, g)
 from flask_babel import _
 
-from privacyidea.api.lib.conditional_access import (compose_failure_message,
-                                                    conditional_access_login_gate)
+from privacyidea.api.lib.conditional_access import (compose_failure_message, conditional_access_login_gate,
+                                                    replaces_failure_reason)
 from privacyidea.api.lib.policyhelper import check_last_auth_policy, get_realm_for_authentication
 from privacyidea.api.lib.postpolicy import (postpolicy, add_user_detail_to_response, check_tokentype,
                                             check_tokeninfo, check_serial, no_detail_on_success,
@@ -594,8 +594,16 @@ def get_auth_token():
         # With no wording at all the failure is the ordinary one, which is what keeps a locked account
         # indistinguishable from a wrong password.
         details = details or {}
-        message = compose_failure_message(str(GENERIC_AUTH_FAILURE), stage_messages) or str(GENERIC_AUTH_FAILURE)
-        raise AuthError(message, id=Error.AUTHENTICATE_WRONG_CREDENTIALS,
+        composed = compose_failure_message(str(GENERIC_AUTH_FAILURE), stage_messages)
+        if composed:
+            # Claimed so hide_specific_error_message leaves this wording alone.
+            context.carries_own_message = True
+            if replaces_failure_reason(stage_messages):
+                # A restriction was written, so this login is refused by conditional access rather than by the
+                # credential it happened to carry. The details describe that overtaken attempt - "wrong otp pin"
+                # and the token it was aimed at - and a rejection carries the wording and nothing else.
+                details = {}
+        raise AuthError(composed or str(GENERIC_AUTH_FAILURE), id=Error.AUTHENTICATE_WRONG_CREDENTIALS,
                         details=details)
     else:
         g.audit_object.log({"success": True, "authentication": AUTH_RESPONSE.ACCEPT})

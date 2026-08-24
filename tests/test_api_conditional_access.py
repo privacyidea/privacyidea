@@ -267,6 +267,42 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         self.assertEqual(str(AuthEventType.USER_LOCKED), entries[0].event_type, entries[0])
         self.assertNotIn("additional_event_types", entries[0].other_info or {}, entries[0])
 
+    def test_hide_specific_error_message_leaves_the_wording_alone_on_validate_check(self):
+        # The /validate mirror: the postpolicy replaces the whole detail, but not this wording.
+        from privacyidea.lib.policy import set_policy, delete_policy, SCOPE
+        from privacyidea.lib.policies.actions import PolicyAction
+        self._lock_user(utc_now() + timedelta(seconds=600), error_message="Locked. Try again later.")
+        set_policy(name="ca_hide", scope=SCOPE.AUTH, action=f"{PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE}")
+        try:
+            body = self._check({"user": "cornelius", "pass": "pin755224"})
+            self.assertFalse(body["result"]["value"], body)
+            self.assertEqual("Locked. Try again later.", body["detail"]["message"], body)
+        finally:
+            delete_policy("ca_hide")
+
+    def test_a_stage_with_no_wording_leaves_the_failure_untouched(self):
+        # Nothing to say means nothing is changed: the response keeps the token's own message and detail, so a
+        # stage that trips silently is not detectable by a failure that suddenly stopped explaining itself.
+        self._make_lock_policy(counter_type=AuthEventType.PIN_FAIL, threshold=2, duration=600)
+        first = self._check({"user": "cornelius", "pass": "wrongpin123456"})
+        tripping = self._check({"user": "cornelius", "pass": "wrongpin123456"})
+        self.assertTrue(is_user_locked(self.user))
+        self.assertEqual(first["detail"]["message"], tripping["detail"]["message"], tripping)
+        self.assertEqual(sorted(first["detail"].keys()), sorted(tripping["detail"].keys()), tripping)
+
+    def test_hide_specific_error_message_still_masks_an_ordinary_token_failure(self):
+        # The policy keeps doing its job on everything that is not conditional access's: a wrong PIN is still
+        # generic, so keeping the lock wording does not widen what else the endpoint discloses.
+        from privacyidea.lib.policy import set_policy, delete_policy, SCOPE
+        from privacyidea.lib.policies.actions import PolicyAction
+        set_policy(name="ca_hide", scope=SCOPE.AUTH, action=f"{PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE}")
+        try:
+            body = self._check({"user": "cornelius", "pass": "wrongpin123456"})
+            self.assertFalse(body["result"]["value"], body)
+            self.assertEqual("Authentication failed.", body["detail"]["message"], body)
+        finally:
+            delete_policy("ca_hide")
+
     def test_expired_lock_does_not_reject(self):
         self._lock_user(utc_now() - timedelta(seconds=10))
         # An expired lock is not a lock: a valid authentication still succeeds.
@@ -1076,7 +1112,7 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
         # {duration} is rendered against the time left now, not stored pre-rendered.
         self.assertIn("minute", message.lower(), message)
         self.assertNotIn("{duration}", message, message)
-        self.assertNotIn("Wrong credentials", message, message)
+        self.assertNotIn(str(GENERIC_AUTH_FAILURE), message, message)
         # No severity hint: the wording is the only thing the user is told.
         self.assertNotIn("restriction", res.json.get("detail") or {}, res.json)
         # The login is classified by its rejection, so the log says why it failed even though no credential was checked.
@@ -1141,7 +1177,7 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
         self.assertIn("Your address is blocked. Try again in about", message, message)
         self.assertIn("minute", message.lower(), message)
         self.assertNotIn("account", message.lower(), message)
-        self.assertNotIn("Wrong credentials", message, message)
+        self.assertNotIn(str(GENERIC_AUTH_FAILURE), message, message)
         entries = assert_authentication_log([AuthEventType.IP_BLOCKED])
         assert_authentication_log_entry(entries[AuthEventType.IP_BLOCKED], user=self.user,
                                         source_ip="203.0.113.7")
@@ -1174,9 +1210,9 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
         message = res.json["result"]["error"]["message"]
         self.assertEqual(custom_error_message, message)
 
-    def test_hide_specific_error_message_masks_the_configured_wording(self):
-        # With hide_specific_error_message a configured message becomes the generic failure, so nothing in
-        # the response leaks that the account is (permanently) locked.
+    def test_hide_specific_error_message_leaves_the_configured_wording_alone(self):
+        # The two are separate concerns: that policy suppresses what privacyIDEA volunteers by default, while
+        # this wording is something an admin wrote. So it is not the policy's to rewrite.
         from privacyidea.lib.policy import set_policy, delete_policy, SCOPE
         from privacyidea.lib.policies.actions import PolicyAction
         db.session.add(UserLockoutState(resolver=self.user.resolver, uid=self.user.uid,
@@ -1187,11 +1223,51 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
         try:
             res = self._auth("cornelius", "test")
             self.assertEqual(401, res.status_code, res)
-            message = res.json["result"]["error"]["message"]
-            self.assertNotIn("MSG-ALPHA", message, message)
-            self.assertNotIn("MSG-ALPHA", str(res.json.get("detail") or {}), res.json)
+            self.assertEqual("MSG-ALPHA", res.json["result"]["error"]["message"], res.json)
         finally:
             delete_policy("ca_hide")
+
+    def test_hide_specific_error_message_still_masks_a_silent_lock(self):
+        # Nothing was configured, so there is no conditional-access wording to keep and the rejection is
+        # masked with every other failed login.
+        from privacyidea.lib.policy import set_policy, delete_policy, SCOPE
+        from privacyidea.lib.policies.actions import PolicyAction
+        self._lock_user()
+        set_policy(name="ca_hide", scope=SCOPE.AUTH, action=f"{PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE}")
+        try:
+            res = self._auth("cornelius", "test")
+            self.assertEqual(401, res.status_code, res)
+            self.assertEqual("Authentication failed.", res.json["result"]["error"]["message"], res.json)
+        finally:
+            delete_policy("ca_hide")
+
+    def test_the_tripping_request_at_auth_carries_no_details(self):
+        # What the token made of the credential no longer decides anything once a restriction is written, so
+        # those details describe an overtaken attempt. The rejection carries the wording and nothing else.
+        # Logging in against privacyIDEA rather than the resolver, so the failure carries the token layer's
+        # own detail - the reason it refused, and what it refused with - for the restriction to overtake.
+        from privacyidea.lib.policy import set_policy, delete_policy, SCOPE
+        from privacyidea.lib.policies.actions import PolicyAction
+        set_policy("ca_pi_login", scope=SCOPE.WEBUI, action=f"{PolicyAction.LOGINMODE}=privacyIDEA")
+        create_lockout_policy(
+            name="ca_otp_msg", time_window_seconds=3600,
+            counter_types_to_track=_counter_types(AuthEventType.NO_TOKEN),
+            stages=[{"failure_threshold": 2, "priority": 1, "error_message": "MSG-ALPHA",
+                     "actions": [{"action_type": str(LockoutAction.LOCK_USER), "action_value": 600}]}],
+            target=LockoutTarget.USER, priority=1)
+        try:
+            first = self._auth("cornelius", "wrongpin123456")
+            self.assertEqual(401, first.status_code, first)
+            # The ordinary failure says what the token layer made of it.
+            self.assertIn("message", first.json.get("detail") or {}, first.json)
+
+            tripping = self._auth("cornelius", "wrongpin123456")
+            self.assertEqual(401, tripping.status_code, tripping)
+            self.assertEqual("MSG-ALPHA", tripping.json["result"]["error"]["message"], tripping.json)
+            self.assertFalse(tripping.json.get("detail"), tripping.json)
+            self.assertTrue(is_user_locked(self.user))
+        finally:
+            delete_policy("ca_pi_login")
 
     def test_ip_block_trip_message_at_auth(self):
         # The failure that trips the BLOCK_IP stage (by crossing the distinct-user
@@ -1202,7 +1278,7 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
         # Below the threshold, a failure is just a plain wrong-credentials rejection.
         res = self._auth("cornelius", "wrongpass", remote_addr=ip)
         self.assertEqual(401, res.status_code, res)
-        self.assertIn("Wrong credentials", res.json["result"]["error"]["message"], res.json)
+        self.assertEqual(str(GENERIC_AUTH_FAILURE), res.json["result"]["error"]["message"], res.json)
         # Two other users spray the same IP: with cornelius that is 3 distinct users.
         _seed_ip_spray(self.user, AuthEventType.PASSWORD_FAIL, ip, n_users=2)
         # cornelius's next failure crosses the distinct-user threshold -> IP blocked.
@@ -1211,7 +1287,7 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
         message = res.json["result"]["error"]["message"]
         self.assertIn("Blocked. Try again in about", message, message)
         self.assertIn("minute", message.lower(), message)
-        self.assertNotIn("Wrong credentials", message, message)
+        self.assertNotIn(str(GENERIC_AUTH_FAILURE), message, message)
         # The user themselves is not locked - only the IP was blocked.
         self.assertFalse(is_user_locked(self.user))
 
@@ -1374,7 +1450,10 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
             res = self._auth("cornelius", "wrongpass")
             self.assertEqual(401, res.status_code, res)
             # Appended to the ordinary failure, not replacing it: the credential failure is still the reason.
-            self.assertEqual(f"{GENERIC_AUTH_FAILURE}. MSG-DELTA", res.json["result"]["error"]["message"])
+            # compose_failure_message strips the reason's own full stop before joining, so the two sentences
+            # are separated by exactly one.
+            self.assertEqual(f"{str(GENERIC_AUTH_FAILURE).rstrip('.')}. MSG-DELTA",
+                             res.json["result"]["error"]["message"])
             self.assertEqual(["soc@example.com"], smtpmock.get_sent_recipient())
             # An EMAIL-only stage writes no lock state, so the pre-check still lets the user in.
             self.assertFalse(is_user_locked(self.user))
@@ -1409,7 +1488,7 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
             self.assertIn("Locked for", message, message)
             self.assertIn("minute", message.lower(), message)
             self.assertEqual(1, message.count("administrator has been notified"), message)
-            self.assertNotIn("Wrong credentials", message, message)
+            self.assertNotIn(str(GENERIC_AUTH_FAILURE), message, message)
             self.assertTrue(is_user_locked(self.user))
         finally:
             delete_smtpserver("lockoutmail")

@@ -100,6 +100,8 @@ class ConditionalAccessContext:
         # The classification the engine has already been run for, so a repeated call is skipped but a *corrected*
         # outcome is not (see run_post_eval).
         self._evaluated_as = None
+        # Whether the message this response carries is conditional access's own (see carries_own_message).
+        self.carries_own_message = False
 
     @property
     def has_data(self) -> bool:
@@ -431,6 +433,23 @@ def current_attempt_id() -> str | None:
     if not has_request_context():
         return None
     return get_ca_context().attempt_id
+
+
+def response_carries_ca_message() -> bool:
+    """
+    Whether the message this response (or ``AuthError``) carries was written by conditional access.
+
+    ``hide_specific_error_message`` exists to suppress the wording privacyIDEA volunteers *by default* - which
+    factor failed, why the token refused. A conditional-access message is the opposite: an admin either wrote it
+    on the stage or turned it on by policy. The two are separate concerns, so that policy does not rewrite this
+    wording. It is only about the message; whether a failure carries *details* is ``no_detail_on_fail``'s
+    question, and conditional access answers it for itself by never putting anything but the message there.
+
+    Read with :func:`peek_ca_context`, so asking the question on a request that never touched conditional access
+    does not bring a buffer into existence.
+    """
+    context = peek_ca_context()
+    return bool(context and context.carries_own_message)
 
 
 def peek_ca_context() -> ConditionalAccessContext | None:

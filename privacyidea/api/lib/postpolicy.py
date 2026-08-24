@@ -56,9 +56,9 @@ from urllib.parse import quote
 from flask import g, current_app, make_response, Request
 from flask_babel import _, lazy_gettext
 
-from privacyidea.api.lib.utils import get_all_params, log_authentication, hardening_action_active
+from privacyidea.api.lib.utils import get_all_params, log_authentication, hardening_action_active, GENERIC_AUTH_FAILURE
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
-from privacyidea.lib.conditional_access.request_context import get_ca_context
+from privacyidea.lib.conditional_access.request_context import get_ca_context, response_carries_ca_message
 from privacyidea.config import ConfigKey
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.config import (get_multichallenge_enrollable_types, get_token_class, get_privacyidea_node)
@@ -1032,7 +1032,11 @@ def hide_specific_error_message(request, response):
         if hide_message:
             content = response.json
             threadid = content.get("detail", {}).get("threadid")
-            detail = {"message": str(_("Authentication failed."))}
+            # A conditional-access message is kept: an admin either wrote it on the stage or turned it on by
+            # policy, so it is not what this action is here to suppress.
+            message = (content.get("detail", {}).get("message") if response_carries_ca_message()
+                       else str(GENERIC_AUTH_FAILURE))
+            detail = {"message": message}
             if threadid:
                 detail["threadid"] = threadid
             # Overwrite the whole detail object so that it always has the same content

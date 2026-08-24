@@ -30,14 +30,22 @@ It also contains the error handlers.
 
 import copy
 
-from flask_babel import _
-
-from .lib.utils import (get_all_params, get_before_request_config, get_optional, map_error_to_code,
-                        get_auth_error_status_code, send_error, verify_auth_token, get_auth_token_from_request,
-                        logged_in_user_from_token)
+from .lib.utils import (
+    get_all_params,
+    get_before_request_config,
+    get_optional,
+    map_error_to_code,
+    get_auth_error_status_code,
+    send_error,
+    verify_auth_token,
+    get_auth_token_from_request,
+    logged_in_user_from_token,
+    GENERIC_AUTH_FAILURE,
+)
 from .container import container_blueprint
 from ..lib.container import find_container_for_token, find_container_by_serial
-from ..lib.conditional_access.request_context import peek_ca_context, reset_ca_context
+from ..lib.conditional_access.request_context import (peek_ca_context, reset_ca_context,
+                                                      response_carries_ca_message)
 from ..lib.framework import get_app_config_value
 from ..lib.clients import identify_client_by_key, touch_client
 from ..models import ClientStatus, db
@@ -613,10 +621,11 @@ def auth_error(error):
             hide_message = Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE,
                                       user_object=request.User if hasattr(request, 'User') else None).any()
             if hide_message:
-                error.message = _("Authentication failed.")
-                # Remap to the generic AUTHENTICATE id, so a masked failure is
-                # indistinguishable from any other unspecified auth failure.
-                error.id = Error.AUTHENTICATE
+                if not response_carries_ca_message():
+                    error.message = GENERIC_AUTH_FAILURE
+                    # Remap to the generic AUTHENTICATE id, so a masked failure is
+                    # indistinguishable from any other unspecified auth failure.
+                    error.id = Error.AUTHENTICATE
                 # Replace the details completely, so future additions to the
                 # details cannot accidentally leak information either.
                 error.details = {"message": error.message}
