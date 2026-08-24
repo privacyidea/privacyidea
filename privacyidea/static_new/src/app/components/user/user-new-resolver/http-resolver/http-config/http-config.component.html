@@ -53,7 +53,7 @@
   </div>
 
   <mat-form-field class="input-width-xl margin-bottom-16">
-    <mat-label i18n="@@resolver.headersJsonFormat2">Headers (JSON format)</mat-label>
+    <mat-label i18n="@@resolver.headersJson">Headers (JSON format)</mat-label>
     <textarea
       (input)="model.update(m => ({ ...m, headers: $any($event.target).value }))"
       [value]="model().headers"

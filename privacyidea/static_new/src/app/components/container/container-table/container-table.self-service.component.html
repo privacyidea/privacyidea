@@ -77,7 +77,6 @@
           } @else {
             <th
               *matHeaderCellDef
-              attr.aria-label="{{ column.label }} Header"
               mat-header-cell>
               <div class="flex ali-center">
                 {{ column.label }}
@@ -101,7 +100,6 @@
               'input-width-l': column.key === 'description',
               'table-checkbox': column.key === 'select'
             }"
-            attr.aria-label="{{ column.label }} Cell"
             mat-cell>
             <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
               @switch (column.key) {
@@ -109,7 +107,7 @@
                   <mat-checkbox
                     (change)="containerSelection.setRowSelected(row, $event.checked)"
                     (click)="$event.stopPropagation()"
-                    attr.aria-label="Select container {{ element.serial }}"
+                    [attr.aria-label]="selectRowLabel(element.serial)"
                     [checked]="containerSelection.isRowSelected(row)"
                     [disabled]="!containerSelection.hasVisibleRows()" />
                 }
@@ -118,7 +116,7 @@
                     <a
                       (click)="contentService.navigateContainerDetails(element.serial)"
                       (keydown.enter)="contentService.navigateContainerDetails(element.serial)"
-                      attr.aria-label="{{ column.label }} Link"
+                      [attr.aria-label]="linkLabel(column.label)"
                       role="button"
                       tabindex="0">
                       {{ element[column.key] }}
@@ -129,7 +127,7 @@
                   <div [ngClass]="(element[column.key]?.length || 0) > 1 ? 'realm-list' : 'realm'">
                     @for (realm of element[column.key]; track realm; let idx = $index) {
                       <a
-                        attr.aria-label="{{ column.label }} Link"
+                        [attr.aria-label]="linkLabel(column.label)"
                         href="#">
                         {{ realm }}
                       </a>
@@ -159,7 +157,7 @@
                 @default {
                   @if (tableUtilsService.isLink(column.key)) {
                     <a
-                      attr.aria-label="{{ column.label }} Link"
+                      [attr.aria-label]="linkLabel(column.label)"
                       href="#">
                       {{ element[column.key] }}
                     </a>
@@ -199,7 +197,7 @@
                       }
                       @if (token.tokentype) {
                         [
-                        <span i18n> {{ token.tokentype }} </span>]
+                        <span> {{ token.tokentype }} </span>]
                       }
                     </div>
                   }

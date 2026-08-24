@@ -90,7 +90,7 @@ const cellRenderTypeByKey: Record<string, AuditCellRenderType> = {
 const columnKeysMap = [
   { key: "number", label: $localize`:@@audit.number:Number` },
   { key: "action", label: $localize`:@@common.action:Action` },
-  { key: "success", label: $localize`:@@common.success2:Success` },
+  { key: "success", label: $localize`:@@common.successLabel:Success` },
   { key: "authentication", label: $localize`:@@audit.authentication:Authentication` },
   { key: "serial", label: $localize`:@@common.serial:Serial` },
   { key: "container_serial", label: $localize`:@@common.containerSerial:Container Serial` },
@@ -153,6 +153,10 @@ const columnKeysMap = [
   styleUrl: "./audit.component.scss"
 })
 export class AuditComponent {
+  protected linkLabel(label: string): string {
+    return $localize`:@@common.linkLabel:${label}:LABEL: link`;
+  }
+
   readonly columnKeysMap = columnKeysMap;
   readonly columnKeys: string[] = this.columnKeysMap.map((column) => column.key);
   protected readonly auditService: AuditServiceInterface = inject(AuditService);

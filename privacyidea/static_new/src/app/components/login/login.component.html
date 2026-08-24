@@ -27,7 +27,7 @@
         aria-label="Logo"
         class="custom-logo"
         height="307"
-        i18n-alt="@@login.logo2"
+        i18n-alt="@@login.logoAlt"
         i18n-aria-label="@@login.logo"
         ngSrc="{{ customLogo() }}"
         ngSrcset="1x"
@@ -38,7 +38,7 @@
         aria-label="Logo"
         class="logo"
         height="307"
-        i18n-alt="@@login.logo2"
+        i18n-alt="@@login.logoAlt"
         i18n-aria-label="@@login.logo"
         ngSrc="assets/privacyIDEA1.png"
         ngSrcset="1x"
@@ -50,7 +50,7 @@
         aria-label="Logo Text"
         class="logo-text"
         height="109"
-        i18n-alt="@@login.logoText2"
+        i18n-alt="@@login.logoTextAlt"
         i18n-aria-label="@@login.logoText"
         ngSrc="assets/logo-text.png"
         ngSrcset="1x"
@@ -165,8 +165,7 @@
               matInput />
             <button
               (click)="hidePassword.set(!hidePassword())"
-              [aria-label]="hidePassword() ? 'Show password' : 'Hide password'"
-              i18n-aria-label
+              [attr.aria-label]="hidePassword() ? showPasswordLabel : hidePasswordLabel"
               mat-icon-button
               matSuffix
               type="button">

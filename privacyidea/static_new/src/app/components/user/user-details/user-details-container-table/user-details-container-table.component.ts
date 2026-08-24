@@ -78,6 +78,10 @@ import { forkJoin } from "rxjs";
   styleUrl: "./user-details-container-table.component.scss"
 })
 export class UserDetailsContainerTableComponent {
+  protected linkLabel(label: string): string {
+    return $localize`:@@common.linkLabel:${label}:LABEL: link`;
+  }
+
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);

@@ -17,7 +17,8 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { HttpErrorResponse } from "@angular/common/http";
-import { ElementRef, inject, Injectable } from "@angular/core";
+import { ElementRef, inject, Injectable, LOCALE_ID } from "@angular/core";
+import { pluralize } from "@utils/i18n.utils";
 import { MatSnackBar, MatSnackBarRef } from "@angular/material/snack-bar";
 import { Subscription, timer } from "rxjs";
 
@@ -47,6 +48,7 @@ export interface NotificationServiceInterface {
   providedIn: "root"
 })
 export class NotificationService implements NotificationServiceInterface {
+  private readonly localeId: string = inject(LOCALE_ID);
   private readonly snackBar = inject(MatSnackBar);
   private readonly _debounceMs = 200;
   private readonly _maxBatchedDuration = 15000;
@@ -122,12 +124,21 @@ export class NotificationService implements NotificationServiceInterface {
 
   private _headerFor(severity: NotificationSeverity, count: number): string {
     if (severity === "error") {
-      return count === 1 ? $localize`:@@common.error:1 error:` : $localize`:@@common.errors:${count} errors:`;
+      return pluralize(this.localeId, count, {
+        one: $localize`:@@common.error:1 error:`,
+        other: $localize`:@@common.errors:${count}:COUNT: errors:`
+      });
     }
     if (severity === "warning") {
-      return count === 1 ? $localize`:@@common.warning:1 warning:` : $localize`:@@common.warnings:${count} warnings:`;
+      return pluralize(this.localeId, count, {
+        one: $localize`:@@common.warning:1 warning:`,
+        other: $localize`:@@common.warnings:${count}:COUNT: warnings:`
+      });
     }
-    return count === 1 ? $localize`:@@common.success:1 success:` : $localize`:@@common.successes:${count} successes:`;
+    return pluralize(this.localeId, count, {
+      one: $localize`:@@common.success:1 success:`,
+      other: $localize`:@@common.successes:${count}:COUNT: successes:`
+    });
   }
 
   private _open(message: string, panelClass: string, duration?: number): void {

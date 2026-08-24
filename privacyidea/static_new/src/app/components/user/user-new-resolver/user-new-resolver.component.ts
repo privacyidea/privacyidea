@@ -262,8 +262,8 @@ export class UserNewResolverComponent implements OnDestroy {
             if (res.result?.status === true && (res.result.value ?? 0) >= 0) {
               this._notificationService.success(
                 this.isEditMode()
-                  ? $localize`:@@resolver.resolverUpdated:Resolver "${name}" updated.`
-                  : $localize`:@@resolver.resolverCreated:Resolver "${name}" created.`
+                  ? $localize`:@@resolver.resolverUpdated:Resolver "${name}:NAME:" updated.`
+                  : $localize`:@@resolver.resolverCreated:Resolver "${name}:NAME:" created.`
               );
               this._resolverService.resolversResource.reload?.();
               this._closeOrReset();
@@ -362,7 +362,7 @@ export class UserNewResolverComponent implements OnDestroy {
           if (res.result?.status === true && res.result.value === true) {
             const detail = res.detail?.description || "";
             this._notificationService.success(
-              $localize`:@@resolver.resolverTestExecuted:Resolver test executed: ${detail}`,
+              $localize`:@@resolver.resolverTestExecuted:Resolver test executed: ${detail}:DETAIL:`,
               { duration: 20000 }
             );
           } else {

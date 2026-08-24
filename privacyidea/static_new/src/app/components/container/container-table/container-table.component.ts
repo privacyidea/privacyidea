@@ -83,6 +83,14 @@ import { inlineFilterHint } from "@utils/filter-hint.utils";
   styleUrl: "./container-table.component.scss"
 })
 export class ContainerTableComponent implements OnDestroy {
+  protected selectRowLabel(serial: string): string {
+    return $localize`:@@container.selectContainerNamed:Select container ${serial}:SERIAL:`;
+  }
+
+  protected linkLabel(label: string): string {
+    return $localize`:@@common.linkLabel:${label}:LABEL: link`;
+  }
+
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);

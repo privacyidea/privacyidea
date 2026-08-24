@@ -106,7 +106,9 @@ export class MachineResolverService implements MachineResolverServiceInterface {
       return undefined;
     }
     if (!this.authService.actionAllowed("mresolverread")) {
-      this.notificationService.error("You are not allowed to read Machine Resolvers.");
+      this.notificationService.error(
+        $localize`:@@machineResolver.youAreNotAllowedTo:You are not allowed to read Machine Resolvers.`
+      );
       return undefined;
     }
     return {
@@ -126,7 +128,9 @@ export class MachineResolverService implements MachineResolverServiceInterface {
 
   async postMachineResolver(resolver: MachineResolver): Promise<void> {
     if (!this.authService.actionAllowed("mresolverwrite")) {
-      this.notificationService.error("You are not allowed to update Machine Resolvers.");
+      this.notificationService.error(
+        $localize`:@@machineResolver.youAreNotAllowedTo2:You are not allowed to update Machine Resolvers.`
+      );
       throw new Error("not-allowed");
     }
     const url = `${this.machineResolverBaseUrl}${encodeURIComponent(resolver.resolvername)}`;
@@ -134,20 +138,26 @@ export class MachineResolverService implements MachineResolverServiceInterface {
 
     return lastValueFrom(request)
       .then(() => {
-        this.notificationService.success(`Successfully updated machineResolver.`);
+        this.notificationService.success(
+          $localize`:@@machineResolver.successfullyUpdatedMachineresolver:Successfully updated machineResolver.`
+        );
         this.machineResolverResource.reload();
       })
       .catch((error) => {
         console.warn("Failed to update machineResolver:", error);
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.error("Failed to update machineResolver. " + message);
+        this.notificationService.error(
+          $localize`:@@machineResolver.failedToUpdateMachineresolver:Failed to update machineResolver. ${message}:MESSAGE:`
+        );
         throw new Error("post-failed");
       });
   }
 
   async postTestMachineResolver(resolver: MachineResolver): Promise<void> {
     if (!this.authService.actionAllowed("mresolverwrite")) {
-      this.notificationService.error("You are not allowed to update Machine Resolvers.");
+      this.notificationService.error(
+        $localize`:@@machineResolver.youAreNotAllowedTo3:You are not allowed to update Machine Resolvers.`
+      );
       throw new Error("not-allowed");
     }
     const url = `${this.machineResolverBaseUrl}test`;
@@ -156,14 +166,18 @@ export class MachineResolverService implements MachineResolverServiceInterface {
       .then(() => undefined)
       .catch((error) => {
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.error("Failed to update machineResolver. " + message);
+        this.notificationService.error(
+          $localize`:@@machineResolver.failedToUpdateMachineresolver2:Failed to update machineResolver. ${message}:MESSAGE:`
+        );
         throw new Error("post-failed");
       });
   }
 
   async deleteMachineResolver(name: string): Promise<void> {
     if (!this.authService.actionAllowed("mresolverdelete")) {
-      this.notificationService.error("You are not allowed to delete Machine Resolvers.");
+      this.notificationService.error(
+        $localize`:@@machineResolver.youAreNotAllowedTo4:You are not allowed to delete Machine Resolvers.`
+      );
       throw new Error("not-allowed");
     }
     const request = this.http.delete<PiResponse<number>>(`${this.machineResolverBaseUrl}${encodeURIComponent(name)}`, {
@@ -171,13 +185,17 @@ export class MachineResolverService implements MachineResolverServiceInterface {
     });
     return lastValueFrom(request)
       .then(() => {
-        this.notificationService.success(`Successfully deleted machineResolver: ${name}.`);
+        this.notificationService.success(
+          $localize`:@@machineResolver.successfullyDeletedMachineresolverName:Successfully deleted machineResolver: ${name}:NAME:.`
+        );
         this.machineResolverResource.reload();
       })
       .catch((error) => {
         console.warn("Failed to delete machineResolver:", error);
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.error("Failed to delete machineResolver. " + message);
+        this.notificationService.error(
+          $localize`:@@machineResolver.failedToDeleteMachineresolver:Failed to delete machineResolver. ${message}:MESSAGE:`
+        );
         throw new Error("delete-failed");
       });
   }

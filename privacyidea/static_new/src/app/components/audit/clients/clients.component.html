@@ -56,7 +56,6 @@
         <th
           *matHeaderCellDef
           [ngClass]="{ 'col-even': colIdx % 2 === 0, 'col-odd': colIdx % 2 !== 0 }"
-          attr.aria-label="{{ column.label }} Header"
           mat-header-cell
           mat-sort-header>
           {{ column.label }}

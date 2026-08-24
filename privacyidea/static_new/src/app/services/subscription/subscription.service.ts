@@ -94,7 +94,9 @@ export class SubscriptionService {
         catchError((error) => {
           console.error("Failed to delete subscription.", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.error("Failed to delete subscription. " + message);
+          this.notificationService.error(
+            $localize`:@@subscription.failedToDeleteSubscription:Failed to delete subscription. ${message}:MESSAGE:`
+          );
           return throwError(() => error);
         })
       );
@@ -109,7 +111,9 @@ export class SubscriptionService {
       catchError((error) => {
         console.error("Failed to upload subscription file.", error);
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.error("Failed to upload subscription file. " + message);
+        this.notificationService.error(
+          $localize`:@@subscription.failedToUploadSubscriptionFile:Failed to upload subscription file. ${message}:MESSAGE:`
+        );
         return throwError(() => error);
       })
     );

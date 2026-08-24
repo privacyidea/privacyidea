@@ -137,7 +137,9 @@ export class MachineResolverDetailsComponent implements OnInit, OnDestroy {
         this.currentMachineResolver.set(deepCopy(resolver));
         this._loadedName = name;
       } else {
-        this.notificationService.error($localize`:@@machine.machineResolverNot:Machine resolver "${name}" not found.`);
+        this.notificationService.error(
+          $localize`:@@machine.machineResolverNot:Machine resolver "${name}:NAME:" not found.`
+        );
         this.navigateBack();
       }
     });

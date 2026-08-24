@@ -135,6 +135,10 @@ const columnKeysMap = [
   styleUrl: "./realm-table.component.scss"
 })
 export class RealmTableComponent implements OnDestroy, OnInit {
+  protected linkLabel(label: string): string {
+    return $localize`:@@common.linkLabel:${label}:LABEL: link`;
+  }
+
   // Services
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
@@ -415,7 +419,7 @@ export class RealmTableComponent implements OnDestroy, OnInit {
     } catch (err) {
       const httpErr = err as HttpErrorResponse;
       const message = httpErr.error?.result?.error?.message || httpErr.message;
-      this._notificationService.error($localize`:@@user.failedCreateRealm:Failed to create realm. ${message}`);
+      this._notificationService.error($localize`:@@user.failedCreateRealm:Failed to create realm. ${message}:MESSAGE:`);
       return false;
     } finally {
       this.isCreatingRealm.set(false);
@@ -529,13 +533,15 @@ export class RealmTableComponent implements OnDestroy, OnInit {
       .pipe(last())
       .subscribe({
         next: () => {
-          this._notificationService.success($localize`:@@user.realmUpdated:Realm "${realmName}" updated.`);
+          this._notificationService.success($localize`:@@user.realmUpdated:Realm "${realmName}:REALM:" updated.`);
           this.cancelEditRealm();
           this.realmService.realmResource.reload?.();
         },
         error: (err: HttpErrorResponse) => {
           const message = err.error?.result?.error?.message || err.message;
-          this._notificationService.error($localize`:@@user.failedUpdateRealm:Failed to update realm. ${message}`);
+          this._notificationService.error(
+            $localize`:@@user.failedUpdateRealm:Failed to update realm. ${message}:MESSAGE:`
+          );
         }
       })
       .add(() => this.isSavingEditedRealm.set(false));
@@ -572,13 +578,17 @@ export class RealmTableComponent implements OnDestroy, OnInit {
       .pipe(take(1))
       .subscribe({
         next: () => {
-          this._notificationService.success($localize`:@@user.realmSetAsDefault:Realm "${row.name}" set as default.`);
+          this._notificationService.success(
+            $localize`:@@user.realmSetAsDefault:Realm "${row.name}:NAME:" set as default.`
+          );
           this.realmService.realmResource.reload?.();
           this.realmService.defaultRealmResource.reload?.();
         },
         error: (err: HttpErrorResponse) => {
           const message = err.error?.result?.error?.message || err.message;
-          this._notificationService.error($localize`:@@user.failedSetDefault:Failed to set default realm. ${message}`);
+          this._notificationService.error(
+            $localize`:@@user.failedSetDefault:Failed to set default realm. ${message}:MESSAGE:`
+          );
         }
       });
   }
@@ -595,7 +605,7 @@ export class RealmTableComponent implements OnDestroy, OnInit {
   private _deleteRealm(realmName: string, deleteCustomAttributes = false): void {
     this.realmService.deleteRealm(realmName, deleteCustomAttributes).subscribe({
       next: () => {
-        this._notificationService.success($localize`:@@user.realmDeleted:Realm "${realmName}" deleted.`);
+        this._notificationService.success($localize`:@@user.realmDeleted:Realm "${realmName}:REALM:" deleted.`);
         this.realmService.realmResource.reload?.();
       },
       error: (err: HttpErrorResponse) => {
@@ -605,7 +615,9 @@ export class RealmTableComponent implements OnDestroy, OnInit {
           return;
         }
         const message = error?.message || err.message;
-        this._notificationService.error($localize`:@@user.failedDeleteRealm:Failed to delete realm. ${message}`);
+        this._notificationService.error(
+          $localize`:@@user.failedDeleteRealm:Failed to delete realm. ${message}:MESSAGE:`
+        );
       }
     });
   }

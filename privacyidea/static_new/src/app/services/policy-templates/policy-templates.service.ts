@@ -94,7 +94,7 @@ export class PolicyTemplatesService implements PolicyTemplatesServiceInterface {
       catchError(() => {
         this.templateCache.delete(templateName);
         this.notificationService.error(
-          $localize`:@@policy.errorFetching:Error fetching policy template ${templateName}.`
+          $localize`:@@policy.errorFetching:Error fetching policy template ${templateName}:TEMPLATE:.`
         );
         return of(undefined);
       }),

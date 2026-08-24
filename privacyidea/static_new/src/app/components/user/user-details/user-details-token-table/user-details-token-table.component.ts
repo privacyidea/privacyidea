@@ -17,7 +17,16 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { NgClass } from "@angular/common";
-import { AfterViewInit, Component, effect, inject, linkedSignal, signal, WritableSignal } from "@angular/core";
+import {
+  AfterViewInit,
+  Component,
+  effect,
+  inject,
+  linkedSignal,
+  signal,
+  WritableSignal,
+  LOCALE_ID
+} from "@angular/core";
 import { toSignal } from "@angular/core/rxjs-interop";
 import { MatButton, MatIconButton } from "@angular/material/button";
 import { MatCheckbox } from "@angular/material/checkbox";
@@ -48,11 +57,14 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
 import { TokenDetails, TokenService, TokenServiceInterface } from "@services/token/token.service";
 import { UserService, UserServiceInterface } from "@services/user/user.service";
 import { catchError, forkJoin, map, Observable, of } from "rxjs";
+import { formatList } from "@utils/i18n.utils";
 
 interface BulkActionResult {
   serial: string;
   ok: boolean;
 }
+
+type BulkAction = "unassign" | "toggleActive" | "resetFailCount";
 
 @Component({
   selector: "app-user-details-token-table",
@@ -80,6 +92,11 @@ interface BulkActionResult {
   styleUrl: "./user-details-token-table.component.scss"
 })
 export class UserDetailsTokenTableComponent implements AfterViewInit {
+  private readonly localeId: string = inject(LOCALE_ID);
+  protected linkLabel(label: string): string {
+    return $localize`:@@common.linkLabel:${label}:LABEL: link`;
+  }
+
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
@@ -162,14 +179,14 @@ export class UserDetailsTokenTableComponent implements AfterViewInit {
     forkJoin(
       rows.map((r) => this.runBulkAction(r.serial, this.tokenService.toggleActive(r.serial, r.active, false)))
     ).subscribe({
-      next: (results) => this.finishBulkAction("toggle active", results)
+      next: (results) => this.finishBulkAction("toggleActive", results)
     });
   }
 
   resetFailcountSelected(): void {
     const serials = this.selector.selectedRows().map((r) => r.serial);
     forkJoin(serials.map((s) => this.runBulkAction(s, this.tokenService.resetFailCount(s, false)))).subscribe({
-      next: (results) => this.finishBulkAction("reset fail count", results)
+      next: (results) => this.finishBulkAction("resetFailCount", results)
     });
   }
 
@@ -201,11 +218,23 @@ export class UserDetailsTokenTableComponent implements AfterViewInit {
     );
   }
 
-  private finishBulkAction(action: string, results: BulkActionResult[]): void {
+  private finishBulkAction(action: BulkAction, results: BulkActionResult[]): void {
     this.tokenService.userTokenResource.reload();
     const failed = results.filter((r) => !r.ok).map((r) => r.serial);
     if (failed.length > 0) {
-      this.notificationService.error(`${failed.length}/${results.length} ${action} failed: ${failed.join(", ")}`);
+      this.notificationService.error(this.bulkFailureMessage(action, failed, results.length));
+    }
+  }
+
+  private bulkFailureMessage(action: BulkAction, failed: string[], total: number): string {
+    const serials = formatList(this.localeId, failed);
+    switch (action) {
+      case "unassign":
+        return $localize`:@@user.bulkUnassignFailed:Failed to unassign ${failed.length}:COUNT: of ${total}:TOTAL: tokens: ${serials}:SERIALS:`;
+      case "toggleActive":
+        return $localize`:@@user.bulkToggleActiveFailed:Failed to toggle ${failed.length}:COUNT: of ${total}:TOTAL: tokens: ${serials}:SERIALS:`;
+      default:
+        return $localize`:@@user.bulkResetFailCountFailed:Failed to reset the fail counter for ${failed.length}:COUNT: of ${total}:TOTAL: tokens: ${serials}:SERIALS:`;
     }
   }
 }

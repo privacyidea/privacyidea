@@ -325,9 +325,12 @@
                 </span>
                 <span
                   [ngClass]="option['active'] ? 'highlight-true' : 'highlight-false'"
-                  class="token-option-span"
-                  i18n>
-                  {{ option["active"] ? "active" : "deactivated" }}
+                  class="token-option-span">
+                  @if (option["active"]) {
+                    <ng-container i18n="@@common.activeState">active</ng-container>
+                  } @else {
+                    <ng-container i18n="@@common.deactivated">deactivated</ng-container>
+                  }
                 </span>
                 <span class="token-option-span">
                   {{ option["username"] }}

@@ -74,7 +74,6 @@
         <ng-container [matColumnDef]="column.key">
           <th
             *matHeaderCellDef
-            attr.aria-label="{{ column.label }} Header"
             mat-header-cell>
             <div class="flex ali-center">
               {{ column.label }}
@@ -103,7 +102,6 @@
             [ngClass]="{
               'table-checkbox': column.key === 'select'
             }"
-            attr.aria-label="{{ column.label }} Cell"
             mat-cell>
             <div>
               @switch (getCellRenderType(column.key)) {
@@ -141,7 +139,7 @@
                   <app-copyable [copyText]="element.serial">
                     <a
                       (click)="contentService.tokenSelected(element.serial)"
-                      attr.aria-label="{{ column.label }} Link"
+                      [attr.aria-label]="linkLabel(column.label)"
                       routerLink="/token">
                       {{ element[column.key] }}
                     </a>
@@ -151,7 +149,7 @@
                   <app-copyable [copyText]="element.container_serial">
                     <a
                       (click)="contentService.navigateContainerDetails(element.container_serial)"
-                      attr.aria-label="{{ column.label }} Link"
+                      [attr.aria-label]="linkLabel(column.label)"
                       routerLink="/token">
                       {{ element[column.key] }}
                     </a>
@@ -165,7 +163,7 @@
                       (keydown.space)="
                         $event.preventDefault(); contentService.userSelected(element[column.key], element['user_realm'])
                       "
-                      attr.aria-label="{{ column.label }} Link"
+                      [attr.aria-label]="linkLabel(column.label)"
                       role="button"
                       tabindex="0">
                       {{ element[column.key] }}

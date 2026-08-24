@@ -111,7 +111,7 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
 
   readonly labels: Record<string, string> = {
     username: $localize`:@@common.username:Username`,
-    givenname: $localize`:@@user.givenName2:Given name`,
+    givenname: $localize`:@@user.givenNameLabel:Given name`,
     surname: $localize`:@@user.surname:Surname`,
     email: $localize`:@@common.email:Email`,
     phone: $localize`:@@user.phone:Phone`,
@@ -231,7 +231,9 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
     } catch (error) {
       console.error("Failed to save user edits", error);
       const message = error instanceof Error ? error.message : String(error);
-      this.notificationService.error("Failed to save user edits. " + message);
+      this.notificationService.error(
+        $localize`:@@user.failedToSaveUserEdits:Failed to save user edits. ${message}:MESSAGE:`
+      );
       return false;
     }
   }

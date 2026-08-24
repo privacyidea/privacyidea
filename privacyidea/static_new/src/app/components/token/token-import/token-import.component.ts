@@ -127,7 +127,7 @@ export class TokenImportComponent implements OnDestroy, OnInit {
           const failed = result.result?.value?.n_not_imported || 0;
           const total = success + failed;
           this.notificationService.success(
-            $localize`:@@token.tokensImported:${success}/${total} tokens imported successfully.`
+            $localize`:@@token.tokensImported:${success}:SUCCESS:/${total}:TOTAL: tokens imported successfully.`
           );
         },
         error: () => {

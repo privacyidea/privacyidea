@@ -73,7 +73,7 @@
                       (click)="contentService.userSelected(element.value, userRealm())"
                       (keydown.enter)="contentService.userSelected(element.value, userRealm())"
                       (keydown.space)="$event.preventDefault(); contentService.userSelected(element.value, userRealm())"
-                      i18n-aria-label="{{ element.keyMap.label }} Link"
+                      [attr.aria-label]="linkLabel(element.keyMap.label)"
                       role="button"
                       tabindex="0">
                       {{ element.value }}
@@ -97,7 +97,7 @@
                   </mat-form-field>
                 } @else {
                   <app-copyable [copyText]="element.value">
-                    <span i18n-aria-label="{{ element.keyMap.label }} Link">
+                    <span [attr.aria-label]="linkLabel(element.keyMap.label)">
                       {{ element.value }}
                     </span>
                   </app-copyable>
@@ -116,8 +116,9 @@
                     @if (authService.actionAllowed("unassign")) {
                       <button
                         (click)="unassignUser()"
+                        aria-label="Unassign User"
                         class="yellow"
-                        i18n-aria-label="Unassign User"
+                        i18n-aria-label="@@container.unassignUser"
                         mat-icon-button>
                         <mat-icon>person_remove</mat-icon>
                       </button>
@@ -135,7 +136,8 @@
                     } @else {
                       <button
                         (click)="toggleUserEdit()"
-                        i18n-aria-label="Assign User"
+                        aria-label="Assign User"
+                        i18n-aria-label="@@container.assignUser"
                         mat-icon-button>
                         <mat-icon>person_add</mat-icon>
                       </button>

@@ -32,7 +32,7 @@ export class RealmDeleteAttributesDialogComponent extends AbstractDialogComponen
   RealmDeleteAttributesDialogData,
   boolean
 > {
-  protected readonly title = $localize`:@@user.deleteRealm2:Delete Realm "${this.data.realmName}"`;
+  protected readonly title = $localize`:@@user.deleteRealmDialogTitle:Delete Realm "${this.data.realmName}:REALM:"`;
   actions: DialogAction<boolean>[] = [
     { type: "destruct", label: $localize`:@@user.deleteAnyway:Delete anyway`, value: true, primary: true }
   ];

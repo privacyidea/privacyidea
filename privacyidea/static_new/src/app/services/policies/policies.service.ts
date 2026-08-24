@@ -588,14 +588,16 @@ export class PolicyService implements PolicyServiceInterface {
           return true;
         } else {
           const error = response.result?.error?.message || "";
-          this.notificationService.error($localize`:@@policy.creatingPolicy:Creating policy failed: ${error}`);
+          this.notificationService.error($localize`:@@policy.creatingPolicy:Creating policy failed: ${error}:DETAIL:`);
           return false;
         }
       })
       .catch((error) => {
         console.error("Error creating policy: ", error);
         const errorMessage = error.error?.result?.error?.message || "";
-        this.notificationService.error($localize`:@@policy.creatingPolicy:Creating policy failed: ${errorMessage}`);
+        this.notificationService.error(
+          $localize`:@@policy.creatingPolicy:Creating policy failed: ${errorMessage}:DETAIL:`
+        );
         this.allPoliciesResource.reload();
         return false;
       });
@@ -704,7 +706,9 @@ export class PolicyService implements PolicyServiceInterface {
       const httpError = error as HttpErrorResponse;
       let errorMessage = httpError?.error?.result?.error?.message || "";
       errorMessage = errorMessage ? `: ${errorMessage}` : "";
-      this.notificationService.error($localize`:@@policy.savingPolicyFailed:Saving policy failed` + errorMessage);
+      this.notificationService.error(
+        $localize`:@@policy.savingPolicyFailed:Saving policy failed${errorMessage}:DETAIL:`
+      );
       return false;
     }
   }

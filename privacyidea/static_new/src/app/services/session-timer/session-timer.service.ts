@@ -78,7 +78,9 @@ export class SessionTimerService implements SessionTimerServiceInterface {
     effect(() => {
       const remainingTime = this.remainingTime();
       if (remainingTime && remainingTime > 30_000 && remainingTime < 31_000) {
-        this.notificationService.warning("Session will expire in 30 seconds.");
+        this.notificationService.warning(
+          $localize`:@@session.sessionWillExpireIn30:Session will expire in 30 seconds.`
+        );
       }
     });
   }

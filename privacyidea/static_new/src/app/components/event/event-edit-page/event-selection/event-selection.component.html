@@ -27,7 +27,7 @@
         @if (selectedEvents().length > 0) {
           <mat-chip-set
             aria-label="Selected events"
-            i18n-aria-label="@@event.selectedEvents2">
+            i18n-aria-label="@@event.selectedEventsAria">
             @for (event of selectedEvents(); track $index) {
               <mat-chip (removed)="removeEvent(event)">
                 {{ event }}

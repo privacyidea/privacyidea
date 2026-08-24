@@ -86,7 +86,7 @@ export class TokenTableSelfServiceComponent extends TokenTableComponent {
         data: {
           title: $localize`:@@token.revokeToken:Revoke Token`,
           items: [serial],
-          itemType: $localize`:@@common.token2:token`,
+          itemType: $localize`:@@common.itemTypeToken:token`,
           confirmAction: { label: $localize`:@@token.revoke:Revoke`, value: true, type: "destruct" }
         }
       })
@@ -111,7 +111,7 @@ export class TokenTableSelfServiceComponent extends TokenTableComponent {
         data: {
           title: $localize`:@@common.deleteToken:Delete Token`,
           items: [serial],
-          itemType: $localize`:@@common.token2:token`,
+          itemType: $localize`:@@common.itemTypeToken:token`,
           confirmAction: { label: $localize`:@@common.delete:Delete`, value: true, type: "destruct" }
         }
       })

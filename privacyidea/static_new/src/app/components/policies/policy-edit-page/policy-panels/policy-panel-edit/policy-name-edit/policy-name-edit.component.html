@@ -31,7 +31,7 @@
         placeholder="Enter policy name..." />
     </app-clearable-input>
     @if (nameField().errors().some(e => e.kind === 'required')) {
-      <mat-error i18n="@@policy.policyNameRequired2">Policy name is <strong>required</strong>.</mat-error>
+      <mat-error i18n="@@policy.nameRequiredError">Policy name is <strong>required</strong>.</mat-error>
     }
     @if (nameField().errors().some(e => e.kind === 'pattern')) {
       <mat-error i18n="@@policy.policyNameContains"

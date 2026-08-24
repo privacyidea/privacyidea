@@ -102,7 +102,7 @@ export class RadiusServerService implements RadiusServerServiceInterface {
         const body = error.error as PiResponse<boolean> | undefined;
         const message = body?.result?.error?.message || "";
         this.notificationService.error(
-          $localize`:@@radiusServer.failedSaveRadius:Failed to save RADIUS server. ` + message
+          $localize`:@@radiusServer.failedSaveRadius:Failed to save RADIUS server. ${message}:MESSAGE:`
         );
         throw new Error("post-failed");
       });
@@ -127,7 +127,7 @@ export class RadiusServerService implements RadiusServerServiceInterface {
       const body = httpError.error as PiResponse<boolean> | undefined;
       const message = body?.result?.error?.message || "";
       this.notificationService.error(
-        $localize`:@@radiusServer.failedSendRadius:Failed to send RADIUS test request. ` + message
+        $localize`:@@radiusServer.failedSendRadius:Failed to send RADIUS test request. ${message}:MESSAGE:`
       );
       return false;
     }
@@ -143,7 +143,7 @@ export class RadiusServerService implements RadiusServerServiceInterface {
     return lastValueFrom(request)
       .then(() => {
         this.notificationService.success(
-          $localize`:@@radiusServer.successfullyDeleted:Successfully deleted RADIUS server: ${identifier}.`
+          $localize`:@@radiusServer.successfullyDeleted:Successfully deleted RADIUS server: ${identifier}:IDENTIFIER:.`
         );
         this.radiusServerResource.reload();
       })
@@ -151,7 +151,7 @@ export class RadiusServerService implements RadiusServerServiceInterface {
         const body = error.error as PiResponse<boolean> | undefined;
         const message = body?.result?.error?.message || "";
         this.notificationService.error(
-          $localize`:@@radiusServer.failedDeleteRadius:Failed to delete RADIUS server. ` + message
+          $localize`:@@radiusServer.failedDeleteRadius:Failed to delete RADIUS server. ${message}:MESSAGE:`
         );
         throw new Error("delete-failed");
       });

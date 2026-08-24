@@ -90,9 +90,7 @@
           i18n-placeholder="@@token.specifyAssignment"
           placeholder="Specify assignment state">
           @for (assignment of assignmentStates; track assignment) {
-            <mat-option
-              [value]="assignment.key"
-              i18n>
+            <mat-option [value]="assignment.key">
               {{ assignment.info }}
             </mat-option>
           }

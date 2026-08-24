@@ -106,7 +106,7 @@ export class PrivacyideaServerService implements PrivacyideaServerServiceInterfa
       .catch((error) => {
         const message = error.error?.result?.error?.message || "";
         this.notificationService.error(
-          $localize`:@@piServer.failedSavePrivacyidea:Failed to save privacyIDEA server. ` + message
+          $localize`:@@piServer.failedSavePrivacyidea:Failed to save privacyIDEA server. ${message}:MESSAGE:`
         );
         throw new Error("post-failed");
       });
@@ -122,14 +122,14 @@ export class PrivacyideaServerService implements PrivacyideaServerServiceInterfa
     return lastValueFrom(request)
       .then(() => {
         this.notificationService.success(
-          $localize`:@@piServer.successfullyDeleted:Successfully deleted privacyIDEA server: ${identifier}.`
+          $localize`:@@piServer.successfullyDeleted:Successfully deleted privacyIDEA server: ${identifier}:IDENTIFIER:.`
         );
         this.remoteServerResource.reload();
       })
       .catch((error) => {
         const message = error.error?.result?.error?.message || "";
         this.notificationService.error(
-          $localize`:@@piServer.failedDeletePrivacyidea:Failed to delete privacyIDEA server. ` + message
+          $localize`:@@piServer.failedDeletePrivacyidea:Failed to delete privacyIDEA server. ${message}:MESSAGE:`
         );
         throw new Error("delete-failed");
       });
@@ -149,7 +149,9 @@ export class PrivacyideaServerService implements PrivacyideaServerServiceInterfa
       })
       .catch((error) => {
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.error($localize`:@@piServer.failedSendTest:Failed to send test request. ` + message);
+        this.notificationService.error(
+          $localize`:@@piServer.failedSendTest:Failed to send test request. ${message}:MESSAGE:`
+        );
         return false;
       });
   }

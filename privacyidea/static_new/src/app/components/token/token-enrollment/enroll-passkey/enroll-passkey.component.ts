@@ -180,7 +180,7 @@ export class EnrollPasskeyComponent extends EnrollTokenBase<PasskeyEnrollmentDat
       .create({ publicKey: publicKeyOptions })
       .catch((browserOrCredentialError) => {
         this.notificationService.error(
-          $localize`:@@token.passkeyCredential:Passkey credential creation failed: ${browserOrCredentialError.message}`
+          $localize`:@@token.passkeyCredential:Passkey credential creation failed: ${browserOrCredentialError.message}:MESSAGE:`
         );
         return null;
       })
@@ -225,12 +225,12 @@ export class EnrollPasskeyComponent extends EnrollTokenBase<PasskeyEnrollmentDat
         );
         await lastValueFrom(this.tokenService.deleteToken(detail.serial)).catch(() => {
           this.notificationService.error(
-            $localize`:@@token.failedDeleteToken:Failed to delete token ${detail.serial} after registration error. Please check manually.`
+            $localize`:@@token.failedDeleteToken:Failed to delete token ${detail.serial}:SERIAL: after registration error. Please check manually.`
           );
           throw new Error(errorStep3);
         });
         this.notificationService.error(
-          $localize`:@@token.tokenDeletedDue:Token ${detail.serial} deleted due to registration error.`
+          $localize`:@@token.tokenDeletedDue:Token ${detail.serial}:SERIAL: deleted due to registration error.`
         );
         throw Error(errorStep3);
       })

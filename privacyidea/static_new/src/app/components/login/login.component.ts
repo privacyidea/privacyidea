@@ -75,6 +75,8 @@ const NO_REALM_SENTINEL = "-";
   styleUrl: "./login.component.scss"
 })
 export class LoginComponent implements OnDestroy, AfterViewInit {
+  protected readonly showPasswordLabel = $localize`:@@login.showPassword:Show password`;
+  protected readonly hidePasswordLabel = $localize`:@@login.hidePassword:Hide password`;
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly router = inject(Router);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);

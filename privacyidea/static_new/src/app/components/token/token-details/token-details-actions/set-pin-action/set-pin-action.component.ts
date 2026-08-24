@@ -46,12 +46,12 @@ export class SetPinActionComponent {
   setPin() {
     if (this.setPinValue() !== this.repeatPinValue()) {
       console.error("PINs do not match.");
-      this.notificationService.warning($localize`:@@common.pinsDoNotMatch2:PINs do not match.`);
+      this.notificationService.warning($localize`:@@common.pinsDoNotMatchError:PINs do not match.`);
       return;
     }
     this.tokenService.setPin(this.tokenService.tokenSerial(), this.setPinValue()).subscribe({
       next: () => {
-        this.notificationService.success($localize`:@@token.pinSetSuccessfully2:PIN set successfully.`);
+        this.notificationService.success($localize`:@@token.pinSetSuccess:PIN set successfully.`);
         this.setPinValue.set("");
         this.repeatPinValue.set("");
       }

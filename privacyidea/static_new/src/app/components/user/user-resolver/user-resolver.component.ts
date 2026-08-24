@@ -143,19 +143,19 @@ export class UserResolversComponent {
           next: (res) => {
             if (res.result?.status === true && (res.result.value ?? -1) >= 0) {
               this.notificationService.success(
-                $localize`:@@resolver.resolverDeleted:Resolver "${resolver.resolvername}" deleted.`
+                $localize`:@@resolver.resolverDeleted:Resolver "${resolver.resolvername}:RESOLVER:" deleted.`
               );
               this.resolverService.resolversResource.reload?.();
             } else {
               this.notificationService.error(
-                $localize`:@@resolver.resolverNotFound:Resolver "${resolver.resolvername}" not found.`
+                $localize`:@@resolver.resolverNotFound:Resolver "${resolver.resolvername}:RESOLVER:" not found.`
               );
             }
           },
           error: (err) => {
             const message = err.error?.result?.error?.message || err.message;
             this.notificationService.error(
-              $localize`:@@resolver.failedDeleteResolver:Failed to delete resolver. ${message}`
+              $localize`:@@resolver.failedDeleteResolver:Failed to delete resolver. ${message}:MESSAGE:`
             );
           }
         });

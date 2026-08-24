@@ -95,6 +95,10 @@ interface ContainerDetailTokenData {
   styleUrl: "./container-details-token-table.component.scss"
 })
 export class ContainerDetailsTokenTableComponent implements AfterViewInit {
+  protected linkLabel(label: string): string {
+    return $localize`:@@common.linkLabel:${label}:LABEL: link`;
+  }
+
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);

@@ -110,7 +110,7 @@
         <mat-checkbox
           (change)="model.update(m => ({ ...m, Editable: $event.checked }))"
           [checked]="model().Editable"
-          i18n="@@resolver.editUserStore2">
+          i18n="@@resolver.editUserStoreSql">
           Edit user store
         </mat-checkbox>
         <span
@@ -126,46 +126,14 @@
               (selectionChange)="model.update(m => ({ ...m, Password_Hash_Type: $event.value }))"
               [value]="model().Password_Hash_Type"
               placeholder="">
-              <mat-option
-                i18n="@@resolver.phpass"
-                value="PHPASS">
-                PHPASS
-              </mat-option>
-              <mat-option
-                i18n="@@resolver.sha"
-                value="SHA">
-                SHA
-              </mat-option>
-              <mat-option
-                i18n="@@resolver.ssha"
-                value="SSHA">
-                SSHA
-              </mat-option>
-              <mat-option
-                i18n="@@resolver.ssha256"
-                value="SSHA256">
-                SSHA256
-              </mat-option>
-              <mat-option
-                i18n="@@resolver.ssha512"
-                value="SSHA512">
-                SSHA512
-              </mat-option>
-              <mat-option
-                i18n="@@resolver.otrs"
-                value="OTRS">
-                OTRS
-              </mat-option>
-              <mat-option
-                i18n="@@resolver.sha512crypt"
-                value="SHA512CRYPT">
-                SHA512CRYPT
-              </mat-option>
-              <mat-option
-                i18n="@@resolver.md5crypt"
-                value="MD5CRYPT">
-                MD5CRYPT
-              </mat-option>
+              <mat-option value="PHPASS"> PHPASS </mat-option>
+              <mat-option value="SHA"> SHA </mat-option>
+              <mat-option value="SSHA"> SSHA </mat-option>
+              <mat-option value="SSHA256"> SSHA256 </mat-option>
+              <mat-option value="SSHA512"> SSHA512 </mat-option>
+              <mat-option value="OTRS"> OTRS </mat-option>
+              <mat-option value="SHA512CRYPT"> SHA512CRYPT </mat-option>
+              <mat-option value="MD5CRYPT"> MD5CRYPT </mat-option>
             </mat-select>
             <mat-hint i18n="@@resolver.hashingAlgorithm">
               The hashing algorithm for the passwords of newly created users. Can be PHPASS, SHA, SSHA, SSHA256, SHA512,

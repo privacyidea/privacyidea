@@ -17,7 +17,17 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { HttpClient, HttpErrorResponse, HttpParams, httpResource, HttpResourceRef } from "@angular/common/http";
-import { computed, effect, inject, Injectable, linkedSignal, Signal, signal, WritableSignal } from "@angular/core";
+import {
+  computed,
+  effect,
+  inject,
+  Injectable,
+  linkedSignal,
+  LOCALE_ID,
+  Signal,
+  signal,
+  WritableSignal
+} from "@angular/core";
 import { Sort } from "@angular/material/sort";
 import { PiResponse } from "@app/app.component";
 import {
@@ -29,6 +39,7 @@ import {
 } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { FilterValue } from "@core/models/filter_value/filter_value";
+import { formatList, pluralize } from "@utils/i18n.utils";
 import { environment } from "@env/environment";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContentService, ContentServiceInterface, DetailsUser } from "@services/content/content.service";
@@ -424,6 +435,7 @@ export interface TokenServiceInterface extends FilterableTableServiceInterface {
 
 @Injectable()
 export class TokenService extends FilterableTableService implements TokenServiceInterface {
+  private readonly localeId: string = inject(LOCALE_ID);
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
@@ -750,7 +762,9 @@ export class TokenService extends FilterableTableService implements TokenService
         catchError((error) => {
           console.error("Failed to unassign tokens.", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.error("Failed to unassign tokens. " + message);
+          this.notificationService.error(
+            $localize`:@@token.failedToUnassignTokens:Failed to unassign tokens. ${message}:MESSAGE:`
+          );
           return throwError(() => error);
         })
       );
@@ -764,7 +778,9 @@ export class TokenService extends FilterableTableService implements TokenService
       catchError((error) => {
         console.error("Failed to delete tokens.", error);
         const message = error.result?.error?.message || "";
-        this.notificationService.error("Failed to delete tokens. " + message);
+        this.notificationService.error(
+          $localize`:@@token.failedToDeleteTokens:Failed to delete tokens. ${message}:MESSAGE:`
+        );
         return throwError(() => error);
       })
     );
@@ -798,16 +814,23 @@ export class TokenService extends FilterableTableService implements TokenService
               const count_success = response.result?.value?.count_success || 0;
               const messages: string[] = [];
               if (count_success) {
-                messages.push(`Successfully deleted ${count_success} token${count_success === 1 ? "" : "s"}.`);
+                messages.push(
+                  pluralize(this.localeId, count_success, {
+                    one: $localize`:@@token.successfullyDeletedOne:Successfully deleted 1 token.`,
+                    other: $localize`:@@token.successfullyDeletedOther:Successfully deleted ${count_success}:COUNT: tokens.`
+                  })
+                );
               }
 
               if (failedTokens.length > 0) {
-                messages.push(`The following tokens failed to delete: ${failedTokens.join(", ")}`);
+                messages.push(
+                  $localize`:@@token.followingTokensFailedDelete:The following tokens failed to delete: ${formatList(this.localeId, failedTokens)}:TOKENS:`
+                );
               }
 
               if (unauthorizedTokens.length > 0) {
                 messages.push(
-                  `You are not authorized to delete the following tokens: ${unauthorizedTokens.join(", ")}`
+                  $localize`:@@token.notAuthorizedDelete:You are not authorized to delete the following tokens: ${formatList(this.localeId, unauthorizedTokens)}:TOKENS:`
                 );
               }
 
@@ -841,7 +864,9 @@ export class TokenService extends FilterableTableService implements TokenService
           console.error("Failed to toggle active.", error);
           if (notify) {
             const message = error.error?.result?.error?.message || "";
-            this.notificationService.error("Failed to toggle active. " + message);
+            this.notificationService.error(
+              $localize`:@@token.failedToToggleActive:Failed to toggle active. ${message}:MESSAGE:`
+            );
           }
           return throwError(() => error);
         })
@@ -855,7 +880,9 @@ export class TokenService extends FilterableTableService implements TokenService
         console.error("Failed to reset fail count.", error);
         if (notify) {
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.error("Failed to reset fail count. " + message);
+          this.notificationService.error(
+            $localize`:@@token.failedToResetFailCount:Failed to reset fail count. ${message}:MESSAGE:`
+          );
         }
         return throwError(() => error);
       })
@@ -882,7 +909,9 @@ export class TokenService extends FilterableTableService implements TokenService
       catchError((error) => {
         console.error("Failed to set token detail.", error);
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.error("Failed to set token detail. " + message);
+        this.notificationService.error(
+          $localize`:@@token.failedToSetTokenDetail:Failed to set token detail. ${message}:MESSAGE:`
+        );
         return throwError(() => error);
       })
     );
@@ -902,7 +931,7 @@ export class TokenService extends FilterableTableService implements TokenService
         catchError((error) => {
           console.error("Failed to get count.", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.error("Failed to get count. " + message);
+          this.notificationService.error($localize`:@@token.failedToGetCount:Failed to get count. ${message}:MESSAGE:`);
           return throwError(() => error);
         })
       );
@@ -918,7 +947,9 @@ export class TokenService extends FilterableTableService implements TokenService
         catchError((error) => {
           console.error("Failed to set token info.", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.error("Failed to set token info. " + message);
+          this.notificationService.error(
+            $localize`:@@token.failedToSetTokenInfo:Failed to set token info. ${message}:MESSAGE:`
+          );
           return throwError(() => error);
         })
       );
@@ -957,7 +988,9 @@ export class TokenService extends FilterableTableService implements TokenService
       catchError((error) => {
         console.error("Failed to revoke token.", error);
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.error("Failed to revoke token. " + message);
+        this.notificationService.error(
+          $localize`:@@token.failedToRevokeToken:Failed to revoke token. ${message}:MESSAGE:`
+        );
         return throwError(() => error);
       })
     );
@@ -976,7 +1009,9 @@ export class TokenService extends FilterableTableService implements TokenService
         catchError((error) => {
           console.error("Failed to delete token info.", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.error("Failed to delete token info. " + message);
+          this.notificationService.error(
+            $localize`:@@token.failedToDeleteTokenInfo:Failed to delete token info. ${message}:MESSAGE:`
+          );
           return throwError(() => error);
         })
       );
@@ -994,7 +1029,9 @@ export class TokenService extends FilterableTableService implements TokenService
       catchError((error) => {
         console.error("Failed to unassign user from all tokens.", error);
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.error("Failed to unassign user from all tokens. " + message);
+        this.notificationService.error(
+          $localize`:@@token.failedToUnassignUserFrom:Failed to unassign user from all tokens. ${message}:MESSAGE:`
+        );
         return throwError(() => error);
       })
     );
@@ -1009,7 +1046,9 @@ export class TokenService extends FilterableTableService implements TokenService
           console.error("Failed to unassign user.", error);
           if (notify) {
             const message = error.error?.result?.error?.message || "";
-            this.notificationService.error("Failed to unassign user. " + message);
+            this.notificationService.error(
+              $localize`:@@token.failedToUnassignUser:Failed to unassign user. ${message}:MESSAGE:`
+            );
           }
           return throwError(() => error);
         })
@@ -1035,7 +1074,9 @@ export class TokenService extends FilterableTableService implements TokenService
       catchError((error) => {
         console.error("Failed to assign user to all tokens.", error);
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.error("Failed to assign user to all tokens. " + message);
+        this.notificationService.error(
+          $localize`:@@token.failedToAssignUserTo:Failed to assign user to all tokens. ${message}:MESSAGE:`
+        );
         return throwError(() => error);
       })
     );
@@ -1064,7 +1105,9 @@ export class TokenService extends FilterableTableService implements TokenService
         catchError((error) => {
           console.error("Failed to assign user.", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.error("Failed to assign user. " + message);
+          this.notificationService.error(
+            $localize`:@@token.failedToAssignUser:Failed to assign user. ${message}:MESSAGE:`
+          );
           return throwError(() => error);
         })
       );
@@ -1085,7 +1128,7 @@ export class TokenService extends FilterableTableService implements TokenService
         catchError((error) => {
           console.error("Failed to set PIN.", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.error("Failed to set PIN. " + message);
+          this.notificationService.error($localize`:@@token.failedToSetPin:Failed to set PIN. ${message}:MESSAGE:`);
           return throwError(() => error);
         })
       );
@@ -1105,7 +1148,9 @@ export class TokenService extends FilterableTableService implements TokenService
         catchError((error) => {
           console.error("Failed to set random PIN.", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.error("Failed to set random PIN. " + message);
+          this.notificationService.error(
+            $localize`:@@token.failedToSetRandomPin:Failed to set random PIN. ${message}:MESSAGE:`
+          );
           return throwError(() => error);
         })
       );
@@ -1127,7 +1172,9 @@ export class TokenService extends FilterableTableService implements TokenService
         catchError((error) => {
           console.error("Failed to resync OTP token.", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.error("Failed to resync OTP token. " + message);
+          this.notificationService.error(
+            $localize`:@@token.failedToResyncOtpToken:Failed to resync OTP token. ${message}:MESSAGE:`
+          );
           return throwError(() => error);
         })
       );
@@ -1166,7 +1213,9 @@ export class TokenService extends FilterableTableService implements TokenService
         catchError((error) => {
           console.error("Failed to enroll token.", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.error("Failed to enroll token. " + message);
+          this.notificationService.error(
+            $localize`:@@token.failedToEnrollToken:Failed to enroll token. ${message}:MESSAGE:`
+          );
           return throwError(() => error);
         })
       );
@@ -1180,7 +1229,9 @@ export class TokenService extends FilterableTableService implements TokenService
         catchError((error) => {
           console.error("Failed to verify token.", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.error("Failed to verify token. " + message);
+          this.notificationService.error(
+            $localize`:@@token.failedToVerifyToken:Failed to verify token. ${message}:MESSAGE:`
+          );
           return throwError(() => error);
         })
       );
@@ -1194,7 +1245,9 @@ export class TokenService extends FilterableTableService implements TokenService
         catchError((error) => {
           console.error("Failed to mark token as lost.", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.error("Failed to mark token as lost. " + message);
+          this.notificationService.error(
+            $localize`:@@token.failedToMarkTokenAs:Failed to mark token as lost. ${message}:MESSAGE:`
+          );
           return throwError(() => error);
         })
       );
@@ -1219,7 +1272,9 @@ export class TokenService extends FilterableTableService implements TokenService
       catchError((error) => {
         console.error("Failed to poll token state.", error);
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.error("Failed to poll token state. " + message);
+        this.notificationService.error(
+          $localize`:@@token.failedToPollTokenState:Failed to poll token state. ${message}:MESSAGE:`
+        );
         return throwError(() => error);
       }),
       shareReplay({ bufferSize: 1, refCount: true })
@@ -1241,7 +1296,9 @@ export class TokenService extends FilterableTableService implements TokenService
         catchError((error) => {
           console.error("Failed to set token realm.", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.error("Failed to set token realm. " + message);
+          this.notificationService.error(
+            $localize`:@@token.failedToSetTokenRealm:Failed to set token realm. ${message}:MESSAGE:`
+          );
           return throwError(() => error);
         })
       );
@@ -1253,7 +1310,9 @@ export class TokenService extends FilterableTableService implements TokenService
       catchError((error) => {
         console.error("Failed to get token groups.", error);
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.error("Failed to get tokengroups. " + message);
+        this.notificationService.error(
+          $localize`:@@token.failedToGetTokengroups:Failed to get tokengroups. ${message}:MESSAGE:`
+        );
         return throwError(() => error);
       })
     );
@@ -1275,7 +1334,9 @@ export class TokenService extends FilterableTableService implements TokenService
         catchError((error) => {
           console.error("Failed to set token group.", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.error("Failed to set token group. " + message);
+          this.notificationService.error(
+            $localize`:@@token.failedToSetTokenGroup:Failed to set token group. ${message}:MESSAGE:`
+          );
           return throwError(() => error);
         })
       );
@@ -1291,7 +1352,9 @@ export class TokenService extends FilterableTableService implements TokenService
         catchError((error) => {
           console.error("Failed to import tokens.", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.error("Failed to import tokens. " + message);
+          this.notificationService.error(
+            $localize`:@@token.failedToImportTokens:Failed to import tokens. ${message}:MESSAGE:`
+          );
           return throwError(() => error);
         })
       );

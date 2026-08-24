@@ -130,7 +130,7 @@ export class TokenFindSerialComponent {
 
   countTokens(): void {
     if (this.currentStep() !== "init" && this.currentStep() !== "found") {
-      this.notificationService.warning("Invalid action.");
+      this.notificationService.warning($localize`:@@token.invalidAction:Invalid action.`);
       return;
     }
     let params = this.getParams();
@@ -168,7 +168,7 @@ export class TokenFindSerialComponent {
 
   findSerial(): void {
     if (this.currentStep() !== "countDone") {
-      this.notificationService.warning("Invalid action.");
+      this.notificationService.warning($localize`:@@token.invalidAction2:Invalid action.`);
       return;
     }
     let params = this.getParams();

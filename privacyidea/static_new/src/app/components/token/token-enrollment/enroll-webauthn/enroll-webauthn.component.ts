@@ -153,7 +153,7 @@ export class EnrollWebauthnComponent extends EnrollTokenBase<WebAuthnEnrollmentD
       const message =
         browserOrCredentialError instanceof Error ? browserOrCredentialError.message : String(browserOrCredentialError);
       this.notificationService.error(
-        $localize`:@@token.webauthnCredential:WebAuthn credential creation failed: ${message || "Unknown error"}`
+        $localize`:@@token.webauthnCredential:WebAuthn credential creation failed: ${message || "Unknown error"}:MESSAGE:`
       );
       publicKeyCred = null;
     } finally {
@@ -248,7 +248,7 @@ export class EnrollWebauthnComponent extends EnrollTokenBase<WebAuthnEnrollmentD
       return { ...response };
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      const errMsg = $localize`:@@token.webauthnFinalization:WebAuthn finalization failed: ${message || error}`;
+      const errMsg = $localize`:@@token.webauthnFinalization:WebAuthn finalization failed: ${message || error}:MESSAGE:`;
       this.notificationService.error(errMsg);
       return null;
     }

@@ -93,26 +93,10 @@
               (selectionChange)="model.update(m => ({ ...m, TLS_VERSION: $event.value }))"
               [disabled]="tlsVersionDisabled()"
               [value]="model().TLS_VERSION">
-              <mat-option
-                i18n="@@resolver.tlsV10"
-                value="TLSv1">
-                TLS v1.0
-              </mat-option>
-              <mat-option
-                i18n="@@resolver.tlsV11"
-                value="TLSv1_1">
-                TLS v1.1
-              </mat-option>
-              <mat-option
-                i18n="@@resolver.tlsV12"
-                value="TLSv1_2">
-                TLS v1.2
-              </mat-option>
-              <mat-option
-                i18n="@@resolver.tlsV13"
-                value="TLSv1_3">
-                TLS v1.3
-              </mat-option>
+              <mat-option value="TLSv1"> TLS v1.0 </mat-option>
+              <mat-option value="TLSv1_1"> TLS v1.1 </mat-option>
+              <mat-option value="TLSv1_2"> TLS v1.2 </mat-option>
+              <mat-option value="TLSv1_3"> TLS v1.3 </mat-option>
             </mat-select>
           </mat-form-field>
         </div>
@@ -161,39 +145,21 @@
           <mat-select
             (selectionChange)="model.update(m => ({ ...m, AUTHTYPE: $event.value }))"
             [value]="model().AUTHTYPE">
-            <mat-option
-              i18n="@@resolver.simple"
-              value="Simple">
-              Simple
-            </mat-option>
-            <mat-option
-              i18n="@@resolver.anonymous"
-              value="Anonymous">
-              Anonymous
-            </mat-option>
-            <mat-option
-              i18n="@@resolver.saslDigestMd5"
-              value="SASL Digest-MD5">
-              SASL Digest-MD5
-            </mat-option>
-            <mat-option
-              i18n="@@resolver.ntlm"
-              value="NTLM">
-              NTLM
-            </mat-option>
-            <mat-option
-              i18n="@@resolver.saslKerberos"
-              value="SASL Kerberos">
-              SASL Kerberos
-            </mat-option>
+            <mat-option value="Simple"> Simple </mat-option>
+            <mat-option value="Anonymous"> Anonymous </mat-option>
+            <mat-option value="SASL Digest-MD5"> SASL Digest-MD5 </mat-option>
+            <mat-option value="NTLM"> NTLM </mat-option>
+            <mat-option value="SASL Kerberos"> SASL Kerberos </mat-option>
           </mat-select>
         </mat-form-field>
 
         @if (model().AUTHTYPE !== "Anonymous") {
           <mat-form-field class="input-width-l">
-            <mat-label i18n>
-              {{ model().AUTHTYPE === "SASL Kerberos" ? "Keyfile Path" : "Bind password" }}
-            </mat-label>
+            @if (model().AUTHTYPE === "SASL Kerberos") {
+              <mat-label i18n="@@resolver.keyfilePath">Keyfile Path</mat-label>
+            } @else {
+              <mat-label i18n="@@resolver.bindPassword">Bind password</mat-label>
+            }
             <app-clearable-input
               (clearButtonClick)="model.update(m => ({ ...m, BINDPW: '' }))"
               [showClearButton]="!!model().BINDPW">

@@ -125,6 +125,10 @@ const userFilterOptions: FilterOption<UserData>[] = columnKeysMap.map(
   styleUrl: "./user-table.component.scss"
 })
 export class UserTableComponent implements OnDestroy {
+  protected linkLabel(label: string): string {
+    return $localize`:@@common.linkLabel:${label}:LABEL: link`;
+  }
+
   protected readonly columnKeysMap = columnKeysMap;
   readonly columnKeys: string[] = this.columnKeysMap.map((column) => column.key);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);

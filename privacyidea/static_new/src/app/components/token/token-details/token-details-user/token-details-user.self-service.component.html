@@ -65,8 +65,9 @@
                     @if (authService.actionAllowed("unassign")) {
                       <button
                         (click)="unassignUser()"
+                        aria-label="Unassign User"
                         class="yellow"
-                        i18n-aria-label="Unassign User"
+                        i18n-aria-label="@@container.unassignUser"
                         mat-icon-button>
                         <mat-icon>person_remove</mat-icon>
                       </button>
@@ -74,7 +75,8 @@
                   } @else if (authService.actionAllowed("assign")) {
                     <button
                       (click)="assignToSelf()"
-                      i18n-aria-label="Assign token to me"
+                      aria-label="Assign this token to me"
+                      i18n-aria-label="@@token.assignTokenMe"
                       i18n-matTooltip="@@token.assignTokenMe"
                       matTooltip="Assign this token to me"
                       mat-icon-button>

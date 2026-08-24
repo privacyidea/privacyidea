@@ -169,7 +169,9 @@ export class PeriodicTaskService implements PeriodicTaskServiceInterface {
         .pipe(
           catchError(() => {
             this.periodicTasksResource.reload();
-            this.notificationService.error("Failed to enable periodic task!");
+            this.notificationService.error(
+              $localize`:@@periodicTask.failedToEnablePeriodicTask:Failed to enable periodic task!`
+            );
             return of(undefined);
           })
         )
@@ -185,7 +187,9 @@ export class PeriodicTaskService implements PeriodicTaskServiceInterface {
       .pipe(
         catchError(() => {
           this.periodicTasksResource.reload();
-          this.notificationService.error("Failed to disable periodic task!");
+          this.notificationService.error(
+            $localize`:@@periodicTask.failedToDisablePeriodicTask:Failed to disable periodic task!`
+          );
           return of(undefined);
         })
       );
@@ -201,7 +205,9 @@ export class PeriodicTaskService implements PeriodicTaskServiceInterface {
         catchError((error) => {
           console.error("Failed to delete periodic task.", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.error("Failed to delete periodic task. " + message);
+          this.notificationService.error(
+            $localize`:@@periodicTask.failedToDeletePeriodicTask:Failed to delete periodic task. ${message}:MESSAGE:`
+          );
           return throwError(() => error);
         })
       );
@@ -227,7 +233,9 @@ export class PeriodicTaskService implements PeriodicTaskServiceInterface {
     try {
       const response = await lastValueFrom(this.deletePeriodicTask(task.id));
       if (response?.result?.value !== undefined) {
-        this.notificationService.success("Successfully deleted periodic task.");
+        this.notificationService.success(
+          $localize`:@@periodicTask.successfullyDeletedPeriodicTask:Successfully deleted periodic task.`
+        );
       }
       return response;
     } catch {
@@ -248,7 +256,9 @@ export class PeriodicTaskService implements PeriodicTaskServiceInterface {
       catchError((error) => {
         console.error("Failed to save periodic task.", error.error);
         const message = error.error.result?.error?.message || "";
-        this.notificationService.error("Failed to save periodic task. " + message);
+        this.notificationService.error(
+          $localize`:@@periodicTask.failedToSavePeriodicTask:Failed to save periodic task. ${message}:MESSAGE:`
+        );
         return of(undefined);
       })
     );
@@ -280,7 +290,9 @@ export class PeriodicTaskService implements PeriodicTaskServiceInterface {
         this.moduleOptions.update((existing) => ({ ...existing, ...newOptions }));
       },
       error: () => {
-        this.notificationService.error("Failed to fetch module options.");
+        this.notificationService.error(
+          $localize`:@@periodicTask.failedToFetchModuleOptions:Failed to fetch module options.`
+        );
       }
     });
   }

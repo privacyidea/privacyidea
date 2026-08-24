@@ -120,7 +120,9 @@ export class SmsGatewayService implements SmsGatewayServiceInterface {
       })
       .catch((error) => {
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.error($localize`:@@smsGateway.failedSaveSms:Failed to save SMS gateway. ` + message);
+        this.notificationService.error(
+          $localize`:@@smsGateway.failedSaveSms:Failed to save SMS gateway. ${message}:MESSAGE:`
+        );
         throw new Error("post-failed");
       });
   }
@@ -132,14 +134,14 @@ export class SmsGatewayService implements SmsGatewayServiceInterface {
     return lastValueFrom(request)
       .then(() => {
         this.notificationService.success(
-          $localize`:@@smsGateway.successfullyDeleted:Successfully deleted SMS gateway: ${name}.`
+          $localize`:@@smsGateway.successfullyDeleted:Successfully deleted SMS gateway: ${name}:NAME:.`
         );
         this.smsGatewayResource.reload();
       })
       .catch((error) => {
         const message = error.error?.result?.error?.message || "";
         this.notificationService.error(
-          $localize`:@@smsGateway.failedDeleteSms:Failed to delete SMS gateway. ` + message
+          $localize`:@@smsGateway.failedDeleteSms:Failed to delete SMS gateway. ${message}:MESSAGE:`
         );
         throw new Error("delete-failed");
       });

@@ -36,8 +36,7 @@
       matInput />
     <button
       (click)="hide = !hide"
-      [attr.aria-label]="hide ? 'Show value' : 'Hide value'"
-      i18n-attr.aria-label
+      [attr.aria-label]="hide ? showValueLabel : hideValueLabel"
       mat-icon-button
       matSuffix
       type="button">

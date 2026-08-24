@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, DOCUMENT, inject } from "@angular/core";
+import { Component, DOCUMENT, inject, LOCALE_ID } from "@angular/core";
 
 import { MatButtonModule } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
@@ -41,6 +41,7 @@ import { Router, RouterLink } from "@angular/router";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { DocumentationService, DocumentationServiceInterface } from "@services/documentation/documentation.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
+import { formatList, pluralize } from "@utils/i18n.utils";
 import { OverflowNavDirective } from "../../../shared/directives/overflow-nav/overflow-nav.directive";
 
 @Component({
@@ -50,6 +51,7 @@ import { OverflowNavDirective } from "../../../shared/directives/overflow-nav/ov
   styleUrl: "./token-table-actions.component.scss"
 })
 export class TokenTableActionsComponent {
+  private readonly localeId: string = inject(LOCALE_ID);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
@@ -83,7 +85,7 @@ export class TokenTableActionsComponent {
         data: {
           title: $localize`:@@token.revokeToken:Revoke Token`,
           items: [this.tokenSerial()],
-          itemType: $localize`:@@common.token2:token`,
+          itemType: $localize`:@@common.itemTypeToken:token`,
           confirmAction: { label: $localize`:@@token.revoke:Revoke`, value: true, type: "destruct" }
         }
       })
@@ -111,7 +113,7 @@ export class TokenTableActionsComponent {
         data: {
           title: $localize`:@@common.deleteToken:Delete Token`,
           items: [this.tokenSerial()],
-          itemType: $localize`:@@common.token2:token`,
+          itemType: $localize`:@@common.itemTypeToken:token`,
           confirmAction: { label: $localize`:@@common.delete:Delete`, value: true, type: "destruct" }
         }
       })
@@ -170,15 +172,7 @@ export class TokenTableActionsComponent {
             )
             .subscribe({
               next: () => {
-                const actionLabel =
-                  action === "activate"
-                    ? $localize`:@@token.activated:activated`
-                    : action === "deactivate"
-                      ? $localize`:@@common.deactivated:deactivated`
-                      : $localize`:@@token.toggled:toggled`;
-                this.notificationService.success(
-                  $localize`:@@token.successfullyToken:Successfully ${actionLabel} ${tokensToProcess.length} token(s).`
-                );
+                this.notificationService.success(this.toggleSuccessMessage(action, tokensToProcess.length));
                 this.tokenService.tokenResource.reload();
               },
               error: (err) => {
@@ -203,7 +197,7 @@ export class TokenTableActionsComponent {
         data: {
           title: $localize`:@@token.resetFailcounter:Reset Failcounter for Selected Tokens`,
           items: selectedTokens.map((token) => token.serial),
-          itemType: $localize`:@@common.token2:token`,
+          itemType: $localize`:@@common.itemTypeToken:token`,
           confirmAction: { label: $localize`:@@common.reset:Reset`, value: true, type: "confirm" }
         }
       })
@@ -219,7 +213,10 @@ export class TokenTableActionsComponent {
               .subscribe({
                 next: () => {
                   this.notificationService.success(
-                    $localize`:@@token.successfullyReset:Successfully reset failcounter for ${selectedTokens.length} token(s).`
+                    pluralize(this.localeId, selectedTokens.length, {
+                      one: $localize`:@@token.successfullyResetOne:Successfully reset the failcounter for 1 token.`,
+                      other: $localize`:@@token.successfullyResetOther:Successfully reset the failcounter for ${selectedTokens.length}:COUNT: tokens.`
+                    })
                   );
                   this.tokenService.tokenResource.reload();
                   this.tokenService.tokenDetailResource.reload();
@@ -281,7 +278,7 @@ export class TokenTableActionsComponent {
         data: {
           title: $localize`:@@token.unassignSelected:Unassign Selected Tokens`,
           items: selectedTokens.map((token) => token.serial),
-          itemType: $localize`:@@common.token2:token`,
+          itemType: $localize`:@@common.itemTypeToken:token`,
           confirmAction: { label: $localize`:@@common.unassign:Unassign`, value: true, type: "destruct" }
         }
       })
@@ -298,19 +295,22 @@ export class TokenTableActionsComponent {
 
                 if (count_success) {
                   messages.push(
-                    $localize`:@@token.successfullyUnassigned:Successfully unassigned ${count_success} token${count_success === 1 ? "" : "s"}.`
+                    pluralize(this.localeId, count_success, {
+                      one: $localize`:@@token.successfullyUnassignedOne:Successfully unassigned 1 token.`,
+                      other: $localize`:@@token.successfullyUnassignedOther:Successfully unassigned ${count_success}:COUNT: tokens.`
+                    })
                   );
                 }
 
                 if (failedTokens.length > 0) {
                   messages.push(
-                    $localize`:@@token.followingTokensFailed:The following tokens failed to unassign: ${failedTokens.join(", ")}`
+                    $localize`:@@token.followingTokensFailed:The following tokens failed to unassign: ${formatList(this.localeId, failedTokens)}:TOKENS:`
                   );
                 }
 
                 if (unauthorizedTokens.length > 0) {
                   messages.push(
-                    $localize`:@@token.youNotAuthorized:You are not authorized to unassign the following tokens: ${unauthorizedTokens.join(", ")}`
+                    $localize`:@@token.youNotAuthorized:You are not authorized to unassign the following tokens: ${formatList(this.localeId, unauthorizedTokens)}:TOKENS:`
                   );
                 }
 
@@ -412,5 +412,25 @@ export class TokenTableActionsComponent {
       });
     }
     return newValue;
+  }
+
+  private toggleSuccessMessage(action: ToggleActiveAction, count: number): string {
+    switch (action) {
+      case "activate":
+        return pluralize(this.localeId, count, {
+          one: $localize`:@@token.successfullyActivatedOne:Successfully activated 1 token.`,
+          other: $localize`:@@token.successfullyActivatedOther:Successfully activated ${count}:COUNT: tokens.`
+        });
+      case "deactivate":
+        return pluralize(this.localeId, count, {
+          one: $localize`:@@token.successfullyDeactivatedOne:Successfully deactivated 1 token.`,
+          other: $localize`:@@token.successfullyDeactivatedOther:Successfully deactivated ${count}:COUNT: tokens.`
+        });
+      default:
+        return pluralize(this.localeId, count, {
+          one: $localize`:@@token.successfullyToggledOne:Successfully toggled 1 token.`,
+          other: $localize`:@@token.successfullyToggledOther:Successfully toggled ${count}:COUNT: tokens.`
+        });
+    }
   }
 }

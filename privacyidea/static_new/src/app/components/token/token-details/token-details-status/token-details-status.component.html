@@ -43,7 +43,8 @@
               type="button"
               class="status-toggle"
               (click)="toggleActive()"
-              i18n-aria-label="Toggle Status">
+              aria-label="Toggle Status"
+              i18n-aria-label="@@token.toggleStatus">
               <span
                 [ngClass]="[
                   tableUtilsService.getSpanClassForKey({ key: 'active', value: tokenIsActive(), maxfail: maxfail() })
@@ -92,7 +93,8 @@
           <button
             mat-icon-button
             (click)="resetFailCount()"
-            i18n-aria-label="Reset Fail Count">
+            aria-label="Reset Fail Count"
+            i18n-aria-label="@@token.resetFailCount">
             <mat-icon>lock_reset</mat-icon>
           </button>
         }

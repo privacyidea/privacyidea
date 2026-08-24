@@ -32,6 +32,8 @@ import { ValidateService, ValidateServiceInterface } from "@services/validate/va
   styleUrl: "./test-otp-pin-action.component.scss"
 })
 export class TestOtpPinActionComponent {
+  protected readonly showValueLabel = $localize`:@@common.showValue:Show value`;
+  protected readonly hideValueLabel = $localize`:@@common.hideValue:Hide value`;
   private readonly validateService: ValidateServiceInterface = inject(ValidateService);
   private readonly tokenService: TokenServiceInterface = inject(TokenService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);

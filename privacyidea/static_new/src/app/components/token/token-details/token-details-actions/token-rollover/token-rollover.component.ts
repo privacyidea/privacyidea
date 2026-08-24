@@ -57,7 +57,7 @@ export class TokenRolloverComponent extends AbstractDialogComponent<
   protected readonly userService: UserServiceInterface = inject(UserService);
 
   token: WritableSignal<TokenEnrollmentData | null> = signal(null);
-  title = computed(() => $localize`:@@token.rolloverToken:Rollover Token` + " " + (this.token()?.serial || ""));
+  title = computed(() => $localize`:@@token.rolloverToken:Rollover Token ${this.token()?.serial || ""}:SERIAL:`);
   serial = signal<string | null | undefined>(null);
   enrolledDialogData: WritableSignal<TokenEnrollmentDialogData | null> = signal(null);
 
@@ -124,7 +124,7 @@ export class TokenRolloverComponent extends AbstractDialogComponent<
     enrollPromise.catch((error) => {
       const message = error.error?.result?.error?.message || "";
       this.notificationService.error(
-        $localize`:@@token.failedEnrollToken:Failed to enroll token: ${message || error.message || error}`
+        $localize`:@@token.failedEnrollToken:Failed to enroll token: ${message || error.message || error}:MESSAGE:`
       );
     });
     let enrollmentResponse: EnrollmentResponse | null = await enrollPromise;

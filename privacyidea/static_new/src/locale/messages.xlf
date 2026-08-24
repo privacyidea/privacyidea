@@ -464,7 +464,7 @@
           <context context-type="linenumber">87</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="common.success2" datatype="html">
+      <trans-unit id="common.successLabel" datatype="html">
         <source>Success</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/audit/audit.component.ts</context>
@@ -981,7 +981,7 @@
           <context context-type="linenumber">247</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="machine.eGPihotp000001" datatype="html">
+      <trans-unit id="machine.serialExample" datatype="html">
         <source>e.g. PIHOTP000001</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/machines/machine-details/machine-details.component.html</context>
@@ -1002,7 +1002,7 @@
           <context context-type="linenumber">181</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="common.token2" datatype="html">
+      <trans-unit id="common.itemTypeToken" datatype="html">
         <source>token</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/machines/machine-details/machine-details.component.ts</context>
@@ -1181,7 +1181,7 @@
           <context context-type="linenumber">100</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="periodicTask.lastRuns2" datatype="html">
+      <trans-unit id="periodicTask.lastRunsLabel" datatype="html">
         <source>Last runs:</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/periodic-task/periodic-task-edit/periodic-task-edit.component.html</context>
@@ -4252,7 +4252,7 @@
           <context context-type="linenumber">182</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="container.assignUser2" datatype="html">
+      <trans-unit id="container.assignToUser" datatype="html">
         <source> Assign to user </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/container/container-templates/container-template-edit-page/template-added-token-row/template-added-token-row.component.html</context>
@@ -4730,7 +4730,7 @@
           <context context-type="linenumber">23</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="event.selectedEvents2" datatype="html">
+      <trans-unit id="event.selectedEventsAria" datatype="html">
         <source>Selected events</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/event/event-edit-page/event-selection/event-selection.component.html</context>
@@ -5905,7 +5905,7 @@
           <context context-type="linenumber">715</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="common.ipFqdn2" datatype="html">
+      <trans-unit id="common.ipFqdnColumn" datatype="html">
         <source> IP/FQDN </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/radius-servers/radius-servers.component.html</context>
@@ -5966,7 +5966,7 @@
           <context context-type="linenumber">69</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="common.identifierRequired2" datatype="html">
+      <trans-unit id="common.identifierRequiredError" datatype="html">
         <source>Identifier is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/service-ids/new-service-id/new-service-id.component.html</context>
@@ -6002,7 +6002,7 @@
           <context context-type="linenumber">71</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="common.id2" datatype="html">
+      <trans-unit id="common.idColumn" datatype="html">
         <source> Id </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/service-ids/service-ids.component.html</context>
@@ -6991,7 +6991,7 @@
           <context context-type="linenumber">20</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="login.logo2" datatype="html">
+      <trans-unit id="login.logoAlt" datatype="html">
         <source>logo</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/login/login.component.html</context>
@@ -7013,7 +7013,7 @@
           <context context-type="linenumber">39</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="login.logoText2" datatype="html">
+      <trans-unit id="login.logoTextAlt" datatype="html">
         <source>logo-text</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/login/login.component.html</context>
@@ -7876,7 +7876,7 @@
           <context context-type="linenumber">31</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="policy.policyNameRequired2" datatype="html">
+      <trans-unit id="policy.nameRequiredError" datatype="html">
         <source>Policy name is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policy-edit-page/policy-panels/policy-panel-edit/policy-name-edit/policy-name-edit.component.html</context>
@@ -8079,7 +8079,7 @@
           <context context-type="linenumber">42</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="common.pinsDoNotMatch2" datatype="html">
+      <trans-unit id="common.pinsDoNotMatchError" datatype="html">
         <source>PINs do not match.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/shared/enrollment-pin/enrollment-pin.component.ts</context>
@@ -8593,7 +8593,7 @@
           <context context-type="linenumber">67</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="token.pinSetSuccessfully2" datatype="html">
+      <trans-unit id="token.pinSetSuccess" datatype="html">
         <source>PIN set successfully.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details-actions/set-pin-action/set-pin-action.component.ts</context>
@@ -9151,14 +9151,14 @@
           <context context-type="linenumber">45</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="token.serviceIdRequired2" datatype="html">
+      <trans-unit id="token.serviceIdRequiredError" datatype="html">
         <source> Service ID is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-machine-attach-dialog/token-ssh-machine-attach-dialog/token-ssh-machine-attach-dialog.component.html</context>
           <context context-type="linenumber">62</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="token.userRequired2" datatype="html">
+      <trans-unit id="token.userRequiredError" datatype="html">
         <source> User is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-machine-attach-dialog/token-ssh-machine-attach-dialog/token-ssh-machine-attach-dialog.component.html</context>
@@ -11077,7 +11077,7 @@
           <context context-type="linenumber">43</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="common.active2" datatype="html">
+      <trans-unit id="common.activeState" datatype="html">
         <source>active</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-table/token-table-actions/toggle-active-dialog/toggle-active-dialog.component.ts</context>
@@ -11503,7 +11503,7 @@
           <context context-type="linenumber">229</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="user.deleteRealm3" datatype="html">
+      <trans-unit id="user.deleteRealmAction" datatype="html">
         <source>Delete realm</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/realm-table/realm-table.component.html</context>
@@ -11898,7 +11898,7 @@
           <context context-type="linenumber">67</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="resolver.headersJsonFormat2" datatype="html">
+      <trans-unit id="resolver.headersJson" datatype="html">
         <source>Headers (JSON format)</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/http-resolver/http-config/http-config.component.html</context>
@@ -12992,7 +12992,7 @@
           <context context-type="linenumber">80</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="resolver.editUserStore2" datatype="html">
+      <trans-unit id="resolver.editUserStoreSql" datatype="html">
         <source> Edit user store </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/sql-resolver/sql-resolver.component.html</context>
@@ -13334,7 +13334,7 @@
           <context context-type="linenumber">79</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="resolver.deleteResolver2" datatype="html">
+      <trans-unit id="resolver.deleteResolverAction" datatype="html">
         <source>Delete resolver</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-resolver/user-resolver.component.html</context>
@@ -13444,7 +13444,7 @@
           <context context-type="linenumber">35</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="user.givenName2" datatype="html">
+      <trans-unit id="user.givenNameLabel" datatype="html">
         <source>Given name</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-details/user-details.component.ts</context>
@@ -13581,7 +13581,7 @@
           <context context-type="linenumber">35</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="nav.of2" datatype="html">
+      <trans-unit id="nav.pageRange" datatype="html">
         <source><x id="PH" equiv-text="startIndex + 1"/> – <x id="PH_1" equiv-text="endIndex"/> of <x id="PH_2" equiv-text="length"/></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/paginator-intl.ts</context>
@@ -15143,7 +15143,7 @@
           <context context-type="linenumber">354</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="user.createNewContainer2" datatype="html">
+      <trans-unit id="user.createNewContainerLink" datatype="html">
         <source>Create new container</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-details/user-details.self-service.component.html</context>
@@ -15164,7 +15164,7 @@
           <context context-type="linenumber">139</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="user.deleteRealm2" datatype="html">
+      <trans-unit id="user.deleteRealmDialogTitle" datatype="html">
         <source>Delete Realm &quot;<x id="PH" equiv-text="this.data.realmName"/>&quot;</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/realm-table/realm-delete-attributes-dialog/realm-delete-attributes-dialog.component.ts</context>
@@ -15178,7 +15178,7 @@
           <context context-type="linenumber">294</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="user.enrollNewToken2" datatype="html">
+      <trans-unit id="user.enrollNewTokenLink" datatype="html">
         <source>Enroll new token</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-details/user-details.self-service.component.html</context>

@@ -334,7 +334,9 @@ export class EventService implements EventServiceInterface {
       catchError((error) => {
         console.error("Failed to save event handler.", error.error);
         const message = error.error.result?.error?.message || "";
-        this.notificationService.error("Failed to save event handler. " + message);
+        this.notificationService.error(
+          $localize`:@@event.failedToSaveEventHandler:Failed to save event handler. ${message}:MESSAGE:`
+        );
         return of(undefined);
       })
     );
@@ -342,7 +344,9 @@ export class EventService implements EventServiceInterface {
 
   enableEvent(eventId: number | null) {
     if (eventId === null) {
-      this.notificationService.error("Can not enable event handler due to missing ID");
+      this.notificationService.error(
+        $localize`:@@event.canNotEnableEventHandler:Can not enable event handler due to missing ID`
+      );
       return Promise.resolve(undefined);
     }
     const headers = this.authService.getHeaders();
@@ -351,7 +355,9 @@ export class EventService implements EventServiceInterface {
         catchError((error) => {
           console.log("Failed to enable event handler:", error);
           this.allEventsResource.reload();
-          this.notificationService.error("Failed to enable event handler!");
+          this.notificationService.error(
+            $localize`:@@event.failedToEnableEventHandler:Failed to enable event handler!`
+          );
           return of(undefined);
         })
       )
@@ -360,7 +366,9 @@ export class EventService implements EventServiceInterface {
 
   disableEvent(eventId: number | null) {
     if (eventId === null) {
-      this.notificationService.warning("Can not disable event handler due to missing ID");
+      this.notificationService.warning(
+        $localize`:@@event.canNotDisableEventHandler:Can not disable event handler due to missing ID`
+      );
       return Promise.resolve(undefined);
     }
     const headers = this.authService.getHeaders();
@@ -369,7 +377,9 @@ export class EventService implements EventServiceInterface {
         catchError((error) => {
           console.log("Failed to disable event handler:", error);
           this.allEventsResource.reload();
-          this.notificationService.error("Failed to disable event handler!");
+          this.notificationService.error(
+            $localize`:@@event.failedToDisableEventHandler:Failed to disable event handler!`
+          );
           return of(undefined);
         })
       )
@@ -385,7 +395,9 @@ export class EventService implements EventServiceInterface {
         catchError((error) => {
           console.error("Failed to delete event handler.", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.error("Failed to delete event handler. " + message);
+          this.notificationService.error(
+            $localize`:@@event.failedToDeleteEventHandler:Failed to delete event handler. ${message}:MESSAGE:`
+          );
           return throwError(() => error);
         })
       );
@@ -410,12 +422,16 @@ export class EventService implements EventServiceInterface {
     }
     try {
       if (event.id == null) {
-        this.notificationService.error("Failed to delete event handler: Missing ID.");
+        this.notificationService.error(
+          $localize`:@@event.failedToDeleteEventHandler2:Failed to delete event handler: Missing ID.`
+        );
         return;
       }
       const result = await lastValueFrom(this.deleteEvent(event.id));
 
-      this.notificationService.success("Successfully deleted event handler.");
+      this.notificationService.success(
+        $localize`:@@event.successfullyDeletedEventHandler:Successfully deleted event handler.`
+      );
       return result;
     } catch {
       // error already handled in deleteEvent

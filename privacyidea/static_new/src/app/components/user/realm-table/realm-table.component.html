@@ -49,6 +49,7 @@
       class="table-scroll-region">
       <table
         [dataSource]="realmsDataSource()"
+        i18n-aria-label="@@user.realmTableLabel"
         aria-label="Realm Data Table"
         class="token-table"
         mat-table>
@@ -56,7 +57,6 @@
           <ng-container [matColumnDef]="column.key">
             <th
               *matHeaderCellDef
-              attr.aria-label="{{ column.label }} Header"
               mat-header-cell>
               <div
                 [ngClass]="{ 'just-center': column.key === 'actions' }"
@@ -82,7 +82,6 @@
                 'width-100': column.key === 'resolvers',
                 'actions-cell': column.key === 'actions'
               }"
-              attr.aria-label="{{ column.label }} Cell"
               mat-cell>
               @switch (column.key) {
                 @case ("name") {
@@ -175,7 +174,7 @@
                                   <a
                                     (click)="onClickResolver(res.name); $event.preventDefault()"
                                     (keydown.enter)="onClickResolver(res.name); $event.preventDefault()"
-                                    attr.aria-label="{{ column.label }} Link"
+                                    [attr.aria-label]="linkLabel(column.label)"
                                     class="resolver-name"
                                     role="button"
                                     tabindex="0">
@@ -236,8 +235,8 @@
                           (click)="onDeleteRealm(element)"
                           aria-label="Delete realm"
                           color="warn"
-                          i18n-aria-label="@@user.deleteRealm3"
-                          i18n-matTooltip="@@user.deleteRealm3"
+                          i18n-aria-label="@@user.deleteRealmAction"
+                          i18n-matTooltip="@@user.deleteRealmAction"
                           mat-icon-button
                           matTooltip="Delete realm"
                           type="button">
@@ -356,23 +355,19 @@
 
         <tr
           *matHeaderRowDef="columnKeys; sticky: true"
-          aria-label="Header Row"
           mat-header-row></tr>
 
         <tr
           *matRowDef="let row; columns: columnKeys"
-          aria-label="Data Row"
           mat-row></tr>
 
         <tr
           *matFooterRowDef="columnKeys"
-          aria-label="Create Realm Footer Row"
           class="new-realm-footer-row"
           mat-footer-row></tr>
 
         <tr
           *matNoDataRow
-          aria-label="No Data Row"
           mat-no-data-row>
           <td
             [attr.colspan]="columnKeys.length"

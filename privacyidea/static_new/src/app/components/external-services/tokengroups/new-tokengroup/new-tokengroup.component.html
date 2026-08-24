@@ -67,7 +67,7 @@
             >This is the unique identifying name for this group definition.</mat-hint
           >
           @if (tokengroupForm.groupname().errors().some(e => e.kind === 'required')) {
-            <mat-error i18n="@@common.identifierRequired2">Identifier is <strong>required</strong>.</mat-error>
+            <mat-error i18n="@@common.identifierRequiredError">Identifier is <strong>required</strong>.</mat-error>
           }
           @if (tokengroupForm.groupname().errors().some(e => e.kind === 'pattern')) {
             <mat-error i18n="@@common.identifierContains"
@@ -87,6 +87,7 @@
             <input
               [formField]="tokengroupForm.description"
               matInput
+              i18n-placeholder="@@common.someWiseWords"
               placeholder="some wise words" />
           </app-clearable-input>
         </mat-form-field>

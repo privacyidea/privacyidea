@@ -61,7 +61,7 @@ const exactMatchKeys = new Set(["user", "realm", "type", "state", "assigned"]);
 const CONTAINER_TYPE_FILTER_KEYS = new Set<string>(["type", "types"]);
 
 export const CONTAINER_STATE_OPTIONS = [
-  { value: "active", label: $localize`:@@common.active2:active` },
+  { value: "active", label: $localize`:@@common.activeState:active` },
   { value: "disabled", label: $localize`:@@common.deactivated:deactivated` },
   { value: "lost", label: $localize`:@@container.lost:lost` },
   { value: "damaged", label: $localize`:@@container.damaged:damaged` }
@@ -357,9 +357,13 @@ export class ContainerService extends FilterableTableService implements Containe
       } else {
         const isRollover = this.isRolloverPolling();
         if (isRollover) {
-          this.notificationService.success("Container rollover completed successfully.");
+          this.notificationService.success(
+            $localize`:@@container.containerRolloverCompletedSuccessfully:Container rollover completed successfully.`
+          );
         } else if (!this.contentService.onContainersCreate()) {
-          this.notificationService.success("Container registered successfully.");
+          this.notificationService.success(
+            $localize`:@@container.containerRegisteredSuccessfully:Container registered successfully.`
+          );
         }
         this.isPollingActive.set(false);
         this.isRolloverPolling.set(false);
@@ -650,7 +654,9 @@ export class ContainerService extends FilterableTableService implements Containe
         catchError((error) => {
           console.error("Failed to assign container.", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.error("Failed to assign container. " + message);
+          this.notificationService.error(
+            $localize`:@@container.failedToAssignContainer:Failed to assign container. ${message}:MESSAGE:`
+          );
           return throwError(() => error);
         })
       );
@@ -666,7 +672,9 @@ export class ContainerService extends FilterableTableService implements Containe
         catchError((error) => {
           console.error("Failed to unassign container.", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.error("Failed to unassign container. " + message);
+          this.notificationService.error(
+            $localize`:@@container.failedToUnassignContainer:Failed to unassign container. ${message}:MESSAGE:`
+          );
           return throwError(() => error);
         })
       );
@@ -683,7 +691,9 @@ export class ContainerService extends FilterableTableService implements Containe
         catchError((error) => {
           console.error("Failed to set container realm.", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.error("Failed to set container realm. " + message);
+          this.notificationService.error(
+            $localize`:@@container.failedToSetContainerRealm:Failed to set container realm. ${message}:MESSAGE:`
+          );
           return throwError(() => error);
         })
       );
@@ -699,7 +709,9 @@ export class ContainerService extends FilterableTableService implements Containe
         catchError((error) => {
           console.error("Failed to set container description.", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.error("Failed to set container description. " + message);
+          this.notificationService.error(
+            $localize`:@@container.failedToSetContainerDescription:Failed to set container description. ${message}:MESSAGE:`
+          );
           return throwError(() => error);
         })
       );
@@ -732,7 +744,9 @@ export class ContainerService extends FilterableTableService implements Containe
         catchError((error) => {
           console.error("Failed to toggle active.", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.error("Failed to toggle active. " + message);
+          this.notificationService.error(
+            $localize`:@@container.failedToToggleActive:Failed to toggle active. ${message}:MESSAGE:`
+          );
           return throwError(() => error);
         })
       );
@@ -740,7 +754,9 @@ export class ContainerService extends FilterableTableService implements Containe
 
   setStates(containerSerial: string, states: string[]) {
     if (states.length === 0) {
-      this.notificationService.error("Cannot save container states: at least one state must be selected.");
+      this.notificationService.error(
+        $localize`:@@container.cannotSaveContainerStatesAt:Cannot save container states: at least one state must be selected.`
+      );
       return throwError(() => new Error("setStates called with empty states array"));
     }
     const headers = this.authService.getHeaders();
@@ -752,7 +768,9 @@ export class ContainerService extends FilterableTableService implements Containe
         catchError((error) => {
           console.error("Failed to set container states.", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.error("Failed to set container states. " + message);
+          this.notificationService.error(
+            $localize`:@@container.failedToSetContainerStates:Failed to set container states. ${message}:MESSAGE:`
+          );
           return throwError(() => error);
         })
       );
@@ -773,7 +791,9 @@ export class ContainerService extends FilterableTableService implements Containe
         catchError((error) => {
           console.error("Failed to unassign user.", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.error("Failed to unassign user. " + message);
+          this.notificationService.error(
+            $localize`:@@container.failedToUnassignUser:Failed to unassign user. ${message}:MESSAGE:`
+          );
           return throwError(() => error);
         })
       );
@@ -794,7 +814,9 @@ export class ContainerService extends FilterableTableService implements Containe
         catchError((error) => {
           console.error("Failed to assign user.", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.error("Failed to assign user. " + message);
+          this.notificationService.error(
+            $localize`:@@container.failedToAssignUser:Failed to assign user. ${message}:MESSAGE:`
+          );
           return throwError(() => error);
         })
       );
@@ -811,7 +833,9 @@ export class ContainerService extends FilterableTableService implements Containe
           catchError((error) => {
             console.error("Failed to save container infos.", error);
             const message = error.error?.result?.error?.message || "";
-            this.notificationService.error("Failed to save container infos. " + message);
+            this.notificationService.error(
+              $localize`:@@container.failedToSaveContainerInfos:Failed to save container infos. ${message}:MESSAGE:`
+            );
             return throwError(() => error);
           })
         );
@@ -828,7 +852,9 @@ export class ContainerService extends FilterableTableService implements Containe
         catchError((error) => {
           console.error("Failed to delete info.", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.error("Failed to delete info. " + message);
+          this.notificationService.error(
+            $localize`:@@container.failedToDeleteInfo:Failed to delete info. ${message}:MESSAGE:`
+          );
           return throwError(() => error);
         })
       );
@@ -844,7 +870,9 @@ export class ContainerService extends FilterableTableService implements Containe
         catchError((error) => {
           console.error("Failed to add token to container.", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.error("Failed to add token to container. " + message);
+          this.notificationService.error(
+            $localize`:@@container.failedToAddTokenTo:Failed to add token to container. ${message}:MESSAGE:`
+          );
           return throwError(() => error);
         })
       );
@@ -860,7 +888,9 @@ export class ContainerService extends FilterableTableService implements Containe
         catchError((error) => {
           console.error("Failed to remove token from container.", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.error("Failed to remove token from container. " + message);
+          this.notificationService.error(
+            $localize`:@@container.failedToRemoveTokenFrom:Failed to remove token from container. ${message}:MESSAGE:`
+          );
           return throwError(() => error);
         })
       );
@@ -870,7 +900,9 @@ export class ContainerService extends FilterableTableService implements Containe
     const data = this.containerDetails();
 
     if (!data || !Array.isArray(data.containers[0].tokens)) {
-      this.notificationService.warning("No valid tokens array found in data.");
+      this.notificationService.warning(
+        $localize`:@@container.noValidTokensArrayFound:No valid tokens array found in data.`
+      );
       return of(null);
     }
 
@@ -880,7 +912,7 @@ export class ContainerService extends FilterableTableService implements Containe
         : data.containers[0].tokens.filter((token) => token.active);
 
     if (tokensForAction.length === 0) {
-      this.notificationService.warning("No tokens for action.");
+      this.notificationService.warning($localize`:@@container.noTokensForAction:No tokens for action.`);
       return of(null);
     }
     return forkJoin(
@@ -891,7 +923,9 @@ export class ContainerService extends FilterableTableService implements Containe
       catchError((error) => {
         console.error("Failed to toggle all.", error);
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.error("Failed to toggle all. " + message);
+        this.notificationService.error(
+          $localize`:@@container.failedToToggleAll:Failed to toggle all. ${message}:MESSAGE:`
+        );
         return throwError(() => error);
       })
     );
@@ -902,7 +936,9 @@ export class ContainerService extends FilterableTableService implements Containe
 
     if (!data || !Array.isArray(data.containers[0].tokens)) {
       console.error("No valid tokens array found in data.", data);
-      this.notificationService.warning("No valid tokens array found in data.");
+      this.notificationService.warning(
+        $localize`:@@container.noValidTokensArrayFound2:No valid tokens array found in data.`
+      );
       return of(null);
     }
 
@@ -910,7 +946,7 @@ export class ContainerService extends FilterableTableService implements Containe
 
     if (tokensForAction.length === 0) {
       console.error("No tokens to remove. Returning []");
-      this.notificationService.warning("No tokens to remove.");
+      this.notificationService.warning($localize`:@@container.noTokensToRemove:No tokens to remove.`);
       return of(null);
     }
 
@@ -924,7 +960,9 @@ export class ContainerService extends FilterableTableService implements Containe
         catchError((error) => {
           console.error("Failed to remove all.", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.error("Failed to remove all. " + message);
+          this.notificationService.error(
+            $localize`:@@container.failedToRemoveAll:Failed to remove all. ${message}:MESSAGE:`
+          );
           return throwError(() => error);
         })
       );
@@ -938,7 +976,9 @@ export class ContainerService extends FilterableTableService implements Containe
         catchError((error) => {
           console.error("Failed to delete container.", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.error("Failed to delete container. " + message);
+          this.notificationService.error(
+            $localize`:@@container.failedToDeleteContainer:Failed to delete container. ${message}:MESSAGE:`
+          );
           return throwError(() => error);
         })
       );
@@ -954,7 +994,9 @@ export class ContainerService extends FilterableTableService implements Containe
         catchError((error) => {
           console.error("Failed to delete all tokens.", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.error("Failed to delete all tokens. " + message);
+          this.notificationService.error(
+            $localize`:@@container.failedToDeleteAllTokens:Failed to delete all tokens. ${message}:MESSAGE:`
+          );
           return throwError(() => error);
         })
       );
@@ -974,7 +1016,9 @@ export class ContainerService extends FilterableTableService implements Containe
         catchError((error) => {
           console.error("Failed to register container.", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.error("Failed to register container. " + message);
+          this.notificationService.error(
+            $localize`:@@container.failedToRegisterContainer:Failed to register container. ${message}:MESSAGE:`
+          );
           return throwError(() => error);
         })
       );
@@ -991,7 +1035,9 @@ export class ContainerService extends FilterableTableService implements Containe
         catchError((error) => {
           console.error("Failed to unregister container.", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.error("Failed to unregister container. " + message);
+          this.notificationService.error(
+            $localize`:@@container.failedToUnregisterContainer:Failed to unregister container. ${message}:MESSAGE:`
+          );
           return throwError(() => error);
         })
       );
@@ -1020,7 +1066,9 @@ export class ContainerService extends FilterableTableService implements Containe
         catchError((error) => {
           console.error("Failed to create container.", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.error("Failed to create container. " + message);
+          this.notificationService.error(
+            $localize`:@@container.failedToCreateContainer:Failed to create container. ${message}:MESSAGE:`
+          );
           return throwError(() => error);
         })
       );
@@ -1056,7 +1104,9 @@ export class ContainerService extends FilterableTableService implements Containe
       .pipe(
         catchError((error) => {
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.error("Failed to compare: " + message);
+          this.notificationService.error(
+            $localize`:@@container.failedToCompare:Failed to compare: ${message}:MESSAGE:`
+          );
           return of(null);
         })
       );

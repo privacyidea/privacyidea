@@ -60,9 +60,9 @@ export interface FilterKeywordSemantics {
 }
 
 export function filterColumnHint(label: string, semantics: FilterKeywordSemantics): string {
-  const title = $localize`:@@common.filterBy:Filter by ${label}`;
+  const title = $localize`:@@common.filterBy:Filter by ${label}:LABEL:`;
   if (semantics.isBoolean) {
-    return `${title}\n` + $localize`:@@common.trueFalse:true or false`;
+    return `${title}\n${$localize`:@@common.trueFalse:true or false`}`;
   }
   const parts: string[] = [];
   parts.push(

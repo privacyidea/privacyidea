@@ -51,7 +51,6 @@
         <ng-container [matColumnDef]="column.key">
           <th
             *matHeaderCellDef
-            attr.aria-label="{{ column.label }} Header"
             mat-header-cell>
             <div class="flex ali-center">
               {{ column.label }}
@@ -70,7 +69,6 @@
           </th>
           <td
             *matCellDef="let element; let row"
-            attr.aria-label="{{ column.label }} Cell"
             class="max-width-300"
             mat-cell>
             <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
@@ -81,7 +79,7 @@
                       (click)="contentService.tokenSelected(element.serial)"
                       (keydown.enter)="contentService.tokenSelected(element.serial)"
                       (keydown.space)="$event.preventDefault(); contentService.tokenSelected(element.serial)"
-                      attr.aria-label="{{ column.label }} Link"
+                      [attr.aria-label]="linkLabel(column.label)"
                       role="button"
                       tabindex="0">
                       {{ element[column.key] }}
@@ -97,7 +95,7 @@
                         (keydown.space)="
                           $event.preventDefault(); contentService.navigateContainerDetails(element.container_serial)
                         "
-                        attr.aria-label="{{ column.label }} Link"
+                        [attr.aria-label]="linkLabel(column.label)"
                         role="button"
                         tabindex="0">
                         {{ element[column.key] }}
@@ -169,7 +167,7 @@
                 @default {
                   @if (tableUtilsService.isLink(column.key)) {
                     <a
-                      attr.aria-label="{{ column.label }} Link"
+                      [attr.aria-label]="linkLabel(column.label)"
                       href="#">
                       {{ element[column.key] }}
                     </a>

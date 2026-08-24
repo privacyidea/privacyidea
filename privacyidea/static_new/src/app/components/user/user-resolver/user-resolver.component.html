@@ -46,6 +46,7 @@
     <app-resolver-table-actions />
     <table
       [dataSource]="resolversDataSource()"
+      i18n-aria-label="@@resolver.tableLabel"
       aria-label="Resolvers Table"
       class="user-sources-table"
       mat-table
@@ -86,8 +87,8 @@
                   (click)="onDeleteResolver(element)"
                   aria-label="Delete resolver"
                   color="warn"
-                  i18n-aria-label="@@resolver.deleteResolver2"
-                  i18n-matTooltip="@@resolver.deleteResolver2"
+                  i18n-aria-label="@@resolver.deleteResolverAction"
+                  i18n-matTooltip="@@resolver.deleteResolverAction"
                   mat-icon-button
                   matTooltip="Delete resolver"
                   type="button">

@@ -79,7 +79,7 @@ export class ContainerTableActionsComponent {
             ).subscribe({
               next: () => {
                 this.notificationService.success(
-                  $localize`:@@container.successfullyDeleted:Successfully deleted ${selectedContainers.length} containers.`
+                  $localize`:@@container.successfullyDeleted:Successfully deleted ${selectedContainers.length}:COUNT: containers.`
                 );
                 this.containerSelection.deselectAllRows();
                 this.containerService.containerResource.reload();

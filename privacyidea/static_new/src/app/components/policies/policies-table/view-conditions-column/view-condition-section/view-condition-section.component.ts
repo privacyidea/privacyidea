@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, input } from "@angular/core";
+import { Component, computed, input } from "@angular/core";
 import { HighlightPipe } from "@components/shared/pipes/highlight.pipe";
 
 @Component({
@@ -32,4 +32,5 @@ export class ViewConditionSectionComponent {
   readonly values = input.required<string[]>();
   readonly marker = input<string>();
   readonly highlightTerms = input<string[]>([]);
+  readonly displayLabel = computed(() => `:@@common.withColon:${this.label()}:LABEL::`);
 }

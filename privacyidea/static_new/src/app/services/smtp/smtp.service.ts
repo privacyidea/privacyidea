@@ -109,7 +109,9 @@ export class SmtpService implements SmtpServiceInterface {
       this.smtpServerResource.reload();
     } catch (error) {
       const message = (error as HttpErrorResponse).error?.result?.error?.message || "";
-      this.notificationService.error($localize`:@@smtpServer.failedSaveSmtp:Failed to save SMTP server. ` + message);
+      this.notificationService.error(
+        $localize`:@@smtpServer.failedSaveSmtp:Failed to save SMTP server. ${message}:MESSAGE:`
+      );
       throw new Error("post-failed", { cause: error });
     }
   }
@@ -126,7 +128,9 @@ export class SmtpService implements SmtpServiceInterface {
       return false;
     } catch (error) {
       const message = (error as HttpErrorResponse).error?.result?.error?.message || "";
-      this.notificationService.error($localize`:@@smtpServer.failedSendTest:Failed to send test email. ` + message);
+      this.notificationService.error(
+        $localize`:@@smtpServer.failedSendTest:Failed to send test email. ${message}:MESSAGE:`
+      );
       return false;
     }
   }
@@ -141,13 +145,13 @@ export class SmtpService implements SmtpServiceInterface {
     try {
       await lastValueFrom(request);
       this.notificationService.success(
-        $localize`:@@smtpServer.successfullyDeleted:Successfully deleted SMTP server: ${identifier}.`
+        $localize`:@@smtpServer.successfullyDeleted:Successfully deleted SMTP server: ${identifier}:IDENTIFIER:.`
       );
       this.smtpServerResource.reload();
     } catch (error) {
       const message = (error as HttpErrorResponse).error?.result?.error?.message || "";
       this.notificationService.error(
-        $localize`:@@smtpServer.failedDeleteSmtp:Failed to delete SMTP server. ` + message
+        $localize`:@@smtpServer.failedDeleteSmtp:Failed to delete SMTP server. ${message}:MESSAGE:`
       );
       throw new Error("delete-failed", { cause: error });
     }

@@ -73,7 +73,7 @@
                       (click)="contentService.userSelected(element.value, userRealm())"
                       (keydown.enter)="contentService.userSelected(element.value, userRealm())"
                       (keydown.space)="$event.preventDefault(); contentService.userSelected(element.value, userRealm())"
-                      i18n-aria-label="{{ element.keyMap.label }} Link"
+                      [attr.aria-label]="linkLabel(element.keyMap.label)"
                       role="button"
                       tabindex="0">
                       {{ element.value }}

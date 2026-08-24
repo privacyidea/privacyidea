@@ -376,7 +376,7 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
     enrollPromise.catch((error) => {
       const message = error.error?.result?.error?.message || "";
       this.notificationService.error(
-        $localize`:@@token.failedEnrollToken:Failed to enroll token: ${message || error.message || error}`
+        $localize`:@@token.failedEnrollToken:Failed to enroll token: ${message || error.message || error}:MESSAGE:`
       );
     });
     let enrollmentResponse: EnrollmentResponse | null = await enrollPromise;

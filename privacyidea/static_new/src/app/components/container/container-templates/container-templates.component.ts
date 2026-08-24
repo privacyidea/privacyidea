@@ -100,6 +100,18 @@ const containerTemplateFilterOptions: FilterOption<ContainerTemplate>[] = [
   styleUrl: "./container-templates.component.scss"
 })
 export class ContainerTemplatesComponent {
+  protected selectTemplateLabel(name?: string): string {
+    return name
+      ? $localize`:@@container.selectTemplateNamed:Select template ${name}:NAME:`
+      : $localize`:@@container.selectTemplate:Select template`;
+  }
+
+  protected editTemplateLabel(name?: string): string {
+    return name
+      ? $localize`:@@container.editTemplateNamed:Edit template ${name}:NAME:`
+      : $localize`:@@container.editTemplate:Edit template`;
+  }
+
   readonly containerTemplateService: ContainerTemplateServiceInterface = inject(ContainerTemplateService);
   readonly authService: AuthServiceInterface = inject(AuthService);
   readonly dialogService: DialogServiceInterface = inject(DialogService);

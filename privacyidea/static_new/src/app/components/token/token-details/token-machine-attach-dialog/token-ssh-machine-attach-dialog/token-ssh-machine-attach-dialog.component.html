@@ -59,7 +59,7 @@
       }
     </mat-select>
     @if (selectedServiceIdForm().touched() && !selectedServiceIdForm().valid()) {
-      <mat-error i18n="@@token.serviceIdRequired2"> Service ID is <strong>required</strong>.</mat-error>
+      <mat-error i18n="@@token.serviceIdRequiredError"> Service ID is <strong>required</strong>.</mat-error>
     }
   </mat-form-field>
 
@@ -81,7 +81,7 @@
       }
     </mat-autocomplete>
     @if (selectedUserForm().touched() && !selectedUserForm().valid()) {
-      <mat-error i18n="@@token.userRequired2"> User is <strong>required</strong>.</mat-error>
+      <mat-error i18n="@@token.userRequiredError"> User is <strong>required</strong>.</mat-error>
     }
   </mat-form-field>
 </app-dialog-wrapper>

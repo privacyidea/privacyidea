@@ -62,7 +62,6 @@
         <ng-container [matColumnDef]="column.key">
           <th
             *matHeaderCellDef
-            attr.aria-label="{{ column.label }} Header"
             mat-header-cell>
             <div class="flex ali-center">
               {{ column.label }}
@@ -94,7 +93,6 @@
           </th>
           <td
             *matCellDef="let element"
-            attr.aria-label="{{ column.label }} Cell"
             mat-cell>
             <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
               @switch (column.key) {

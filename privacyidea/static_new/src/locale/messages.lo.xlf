@@ -482,7 +482,7 @@
           <context context-type="linenumber">85</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="common.success2" datatype="html" xml:space="preserve">
+      <trans-unit id="common.successLabel" datatype="html" xml:space="preserve">
         <source>Success</source>
         <target state="translated">ສຳເລັດ</target>
         <context-group purpose="location">
@@ -1022,7 +1022,7 @@
           <context context-type="linenumber">246</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="machine.eGPihotp000001" datatype="html" xml:space="preserve">
+      <trans-unit id="machine.serialExample" datatype="html" xml:space="preserve">
         <source>e.g. PIHOTP000001</source>
         <target state="translated">ຕົວຢ່າງ: PIHOTP000001</target>
         <context-group purpose="location">
@@ -1046,7 +1046,7 @@
           <context context-type="linenumber">181</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="common.token2" datatype="html" xml:space="preserve">
+      <trans-unit id="common.itemTypeToken" datatype="html" xml:space="preserve">
         <source>token</source>
         <target state="translated">ໂທເຄັນ</target>
         <context-group purpose="location">
@@ -1234,7 +1234,7 @@
           <context context-type="linenumber">100,101</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="periodicTask.lastRuns2" datatype="html" xml:space="preserve">
+      <trans-unit id="periodicTask.lastRunsLabel" datatype="html" xml:space="preserve">
         <source>Last runs:</source>
         <target state="translated">ການເຮັດວຽກຄັ້ງລ່າສຸດ:</target>
         <context-group purpose="location">
@@ -4482,7 +4482,7 @@
           <context context-type="linenumber">181</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="container.assignUser2" datatype="html" xml:space="preserve">
+      <trans-unit id="container.assignToUser" datatype="html" xml:space="preserve">
         <source>Assign to user</source>
         <target state="translated">ກຳນົດໃຫ້ຜູ້ໃຊ້</target>
         <context-group purpose="location">
@@ -5006,7 +5006,7 @@
           <context context-type="linenumber">23</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="event.selectedEvents2" datatype="html" xml:space="preserve">
+      <trans-unit id="event.selectedEventsAria" datatype="html" xml:space="preserve">
         <source>Selected events</source>
         <target state="translated">ເຫດການທີ່ເລືອກ</target>
         <context-group purpose="location">
@@ -6126,7 +6126,7 @@
           <context context-type="linenumber">658,659</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="common.ipFqdn2" datatype="html" xml:space="preserve">
+      <trans-unit id="common.ipFqdnColumn" datatype="html" xml:space="preserve">
         <source>IP/FQDN</source>
         <target state="translated">IP/FQDN</target>
         <context-group purpose="location">
@@ -6186,7 +6186,7 @@
           <context context-type="linenumber">68</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="common.identifierRequired2" datatype="html" xml:space="preserve">
+      <trans-unit id="common.identifierRequiredError" datatype="html" xml:space="preserve">
         <source>Identifier is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target state="translated">ຈຳເປັນຕ້ອງມີ <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>ຕົວລະບຸ<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
         <context-group purpose="location">
@@ -6226,7 +6226,7 @@
           <context context-type="linenumber">60,65</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="common.id2" datatype="html" xml:space="preserve">
+      <trans-unit id="common.idColumn" datatype="html" xml:space="preserve">
         <source>Id</source>
         <target state="translated">ໄອດີ</target>
         <context-group purpose="location">
@@ -7326,7 +7326,7 @@
           <context context-type="linenumber">20,21</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="login.logo2" datatype="html" xml:space="preserve">
+      <trans-unit id="login.logoAlt" datatype="html" xml:space="preserve">
         <source>logo</source>
         <target state="translated">ໂລໂກ້</target>
         <context-group purpose="location">
@@ -7350,7 +7350,7 @@
           <context context-type="linenumber">39</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="login.logoText2" datatype="html" xml:space="preserve">
+      <trans-unit id="login.logoTextAlt" datatype="html" xml:space="preserve">
         <source>logo-text</source>
         <target state="translated">ຂໍ້ຄວາມໂລໂກ້</target>
         <context-group purpose="location">
@@ -8210,7 +8210,7 @@
           <context context-type="linenumber">31,32</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="policy.policyNameRequired2" datatype="html" xml:space="preserve">
+      <trans-unit id="policy.nameRequiredError" datatype="html" xml:space="preserve">
         <source>Policy name is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target state="translated">ຈຳເປັນຕ້ອງມີ <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>ຊື່ນະໂຍບາຍ<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
         <context-group purpose="location">
@@ -8462,7 +8462,7 @@
           <context context-type="linenumber">42</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="common.pinsDoNotMatch2" datatype="html" xml:space="preserve">
+      <trans-unit id="common.pinsDoNotMatchError" datatype="html" xml:space="preserve">
         <source>PINs do not match.</source>
         <target state="translated">ລະຫັດ PIN ບໍ່ກົງກັນ.</target>
         <context-group purpose="location">
@@ -9046,7 +9046,7 @@
           <context context-type="linenumber">67,68</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="token.pinSetSuccessfully2" datatype="html" xml:space="preserve">
+      <trans-unit id="token.pinSetSuccess" datatype="html" xml:space="preserve">
         <source>PIN set successfully.</source>
         <target state="translated">ຕັ້ງຄ່າ PIN ສຳເລັດແລ້ວ.</target>
         <context-group purpose="location">
@@ -9598,7 +9598,7 @@
           <context context-type="linenumber">45,47</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="token.serviceIdRequired2" datatype="html" xml:space="preserve">
+      <trans-unit id="token.serviceIdRequiredError" datatype="html" xml:space="preserve">
         <source>Service ID is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target state="translated">ຈຳເປັນຕ້ອງມີ <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>Service ID<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
         <context-group purpose="location">
@@ -9606,7 +9606,7 @@
           <context context-type="linenumber">62,64</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="token.userRequired2" datatype="html" xml:space="preserve">
+      <trans-unit id="token.userRequiredError" datatype="html" xml:space="preserve">
         <source>User is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target state="translated">ຈຳເປັນຕ້ອງມີ <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>ຜູ້ໃຊ້<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
         <context-group purpose="location">
@@ -11662,7 +11662,7 @@
           <context context-type="linenumber">43,44</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="common.active2" datatype="html" xml:space="preserve">
+      <trans-unit id="common.activeState" datatype="html" xml:space="preserve">
         <source>active</source>
         <target state="translated">ເປີດໃຊ້ງານ</target>
         <context-group purpose="location">
@@ -12054,7 +12054,7 @@
           <context context-type="linenumber">226,227</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="user.deleteRealm3" datatype="html" xml:space="preserve">
+      <trans-unit id="user.deleteRealmAction" datatype="html" xml:space="preserve">
         <source>Delete realm</source>
         <target state="translated">ລຶບ realm</target>
         <context-group purpose="location">
@@ -12542,7 +12542,7 @@
           <context context-type="linenumber">71</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="resolver.headersJsonFormat2" datatype="html" xml:space="preserve">
+      <trans-unit id="resolver.headersJson" datatype="html" xml:space="preserve">
         <source>Headers (JSON format)</source>
         <target state="translated">Headers (ຮູບແບບ JSON)</target>
         <context-group purpose="location">
@@ -14198,7 +14198,7 @@
           <context context-type="linenumber">88,89</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="resolver.editUserStore2" datatype="html" xml:space="preserve">
+      <trans-unit id="resolver.editUserStoreSql" datatype="html" xml:space="preserve">
         <source>Edit user store</source>
         <target state="translated">ແກ້ໄຂ user store</target>
         <context-group purpose="location">
@@ -14586,7 +14586,7 @@
           <context context-type="linenumber">78,79</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="resolver.deleteResolver2" datatype="html" xml:space="preserve">
+      <trans-unit id="resolver.deleteResolverAction" datatype="html" xml:space="preserve">
         <source>Delete resolver</source>
         <target state="translated">ລຶບຣີໂຊວເວີ</target>
         <context-group purpose="location">
@@ -14674,7 +14674,7 @@
           <context context-type="linenumber">35</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="user.givenName2" datatype="html" xml:space="preserve">
+      <trans-unit id="user.givenNameLabel" datatype="html" xml:space="preserve">
         <source>Given name</source>
         <target state="translated">ຊື່ແທ້</target>
         <context-group purpose="location">
@@ -14762,7 +14762,7 @@
           <context context-type="linenumber">35</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="nav.of2" datatype="html" xml:space="preserve">
+      <trans-unit id="nav.pageRange" datatype="html" xml:space="preserve">
         <source><x id="PH" equiv-text="startIndex + 1"/> – <x id="PH_1" equiv-text="endIndex"/> of <x id="PH_2" equiv-text="length"/></source>
         <target state="translated"><x id="PH" equiv-text="startIndex + 1"/> – <x id="PH_1" equiv-text="endIndex"/> ຈາກ <x id="PH_2" equiv-text="length"/></target>
         <context-group purpose="location">

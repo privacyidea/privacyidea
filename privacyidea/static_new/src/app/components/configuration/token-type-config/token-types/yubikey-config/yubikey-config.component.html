@@ -79,6 +79,7 @@
           [value]="newYubikeyApiId()"
           matInput
           pattern="^[a-zA-Z0-9._-]*$"
+          i18n-placeholder="@@tokenTypeConfig.clientIdPlaceholder"
           placeholder="Client ID"
           required />
         @if (apiIdInput.validity.valueMissing) {
@@ -100,6 +101,7 @@
           [value]="newYubikeyApiKey()"
           [disabled]="newYubikeyGenKey()"
           matInput
+          i18n-placeholder="@@tokenTypeConfig.apiKeyPlaceholder"
           placeholder="API Key" />
       </mat-form-field>
 

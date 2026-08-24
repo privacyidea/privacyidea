@@ -100,6 +100,14 @@ const columnKeysMap = [
   styleUrl: "./token-table.component.scss"
 })
 export class TokenTableComponent implements OnDestroy {
+  protected selectRowLabel(serial: string): string {
+    return $localize`:@@token.selectTokenNamed:Select token ${serial}:SERIAL:`;
+  }
+
+  protected linkLabel(label: string): string {
+    return $localize`:@@common.linkLabel:${label}:LABEL: link`;
+  }
+
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);

@@ -478,7 +478,7 @@
           <context context-type="linenumber">87</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="common.success2" datatype="html">
+      <trans-unit id="common.successLabel" datatype="html">
         <source>Success</source>
         <target>Succès</target>
         <context-group purpose="location">
@@ -1042,7 +1042,7 @@
           <context context-type="linenumber">247</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="machine.eGPihotp000001" datatype="html">
+      <trans-unit id="machine.serialExample" datatype="html">
         <source>e.g. PIHOTP000001</source>
         <target>p. ex. PIHOTP000001</target>
         <context-group purpose="location">
@@ -1066,7 +1066,7 @@
           <context context-type="linenumber">181</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="common.token2" datatype="html">
+      <trans-unit id="common.itemTypeToken" datatype="html">
         <source>token</source>
         <target>jeton</target>
         <context-group purpose="location">
@@ -1254,7 +1254,7 @@
           <context context-type="linenumber">100</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="periodicTask.lastRuns2" datatype="html">
+      <trans-unit id="periodicTask.lastRunsLabel" datatype="html">
         <source>Last runs:</source>
         <target>Dernières exécutions :</target>
         <context-group purpose="location">
@@ -4490,7 +4490,7 @@
           <context context-type="linenumber">182</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="container.assignUser2" datatype="html">
+      <trans-unit id="container.assignToUser" datatype="html">
         <source> Assign to user </source>
         <target> Assigner à un utilisateur </target>
         <context-group purpose="location">
@@ -6034,7 +6034,7 @@
           <context context-type="linenumber">27</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="common.ipFqdn2" datatype="html">
+      <trans-unit id="common.ipFqdnColumn" datatype="html">
         <source> IP/FQDN </source>
         <target> IP/FQDN </target>
         <context-group purpose="location">
@@ -6102,7 +6102,7 @@
           <context context-type="linenumber">69</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="common.identifierRequired2" datatype="html">
+      <trans-unit id="common.identifierRequiredError" datatype="html">
         <source>Identifier is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target>L&apos;identifiant est <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>obligatoire<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
         <context-group purpose="location">
@@ -6142,7 +6142,7 @@
           <context context-type="linenumber">71</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="common.id2" datatype="html">
+      <trans-unit id="common.idColumn" datatype="html">
         <source> Id </source>
         <target> Id </target>
         <context-group purpose="location">
@@ -7234,7 +7234,7 @@
           <context context-type="linenumber">20</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="login.logo2" datatype="html">
+      <trans-unit id="login.logoAlt" datatype="html">
         <source>logo</source>
         <target>logo</target>
         <context-group purpose="location">
@@ -7258,7 +7258,7 @@
           <context context-type="linenumber">39</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="login.logoText2" datatype="html">
+      <trans-unit id="login.logoTextAlt" datatype="html">
         <source>logo-text</source>
         <target>logo-text</target>
         <context-group purpose="location">
@@ -8217,7 +8217,7 @@
           <context context-type="linenumber">31</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="policy.policyNameRequired2" datatype="html">
+      <trans-unit id="policy.nameRequiredError" datatype="html">
         <source>Policy name is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target>Le nom de la politique est <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>obligatoire<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
         <context-group purpose="location">
@@ -8445,7 +8445,7 @@
           <context context-type="linenumber">42</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="common.pinsDoNotMatch2" datatype="html">
+      <trans-unit id="common.pinsDoNotMatchError" datatype="html">
         <source>PINs do not match.</source>
         <target>Les PIN ne correspondent pas.</target>
         <context-group purpose="location">
@@ -9001,7 +9001,7 @@
           <context context-type="linenumber">33</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="token.pinSetSuccessfully2" datatype="html">
+      <trans-unit id="token.pinSetSuccess" datatype="html">
         <source>PIN set successfully.</source>
         <target>Code PIN défini avec succès.</target>
         <context-group purpose="location">
@@ -9549,7 +9549,7 @@
           <context context-type="linenumber">45</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="token.serviceIdRequired2" datatype="html">
+      <trans-unit id="token.serviceIdRequiredError" datatype="html">
         <source> Service ID is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target> L&apos;ID de service est <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>obligatoire<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
         <context-group purpose="location">
@@ -9557,7 +9557,7 @@
           <context context-type="linenumber">62</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="token.userRequired2" datatype="html">
+      <trans-unit id="token.userRequiredError" datatype="html">
         <source> User is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target> L&apos;utilisateur est <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>obligatoire<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
         <context-group purpose="location">
@@ -11693,7 +11693,7 @@
           <context context-type="linenumber">43</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="common.active2" datatype="html">
+      <trans-unit id="common.activeState" datatype="html">
         <source>active</source>
         <target>actif</target>
         <context-group purpose="location">
@@ -12133,7 +12133,7 @@
           <context context-type="linenumber">229</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="user.deleteRealm3" datatype="html">
+      <trans-unit id="user.deleteRealmAction" datatype="html">
         <source>Delete realm</source>
         <target>Supprimer le domaine</target>
         <context-group purpose="location">
@@ -12559,7 +12559,7 @@
           <context context-type="linenumber">67</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="resolver.headersJsonFormat2" datatype="html">
+      <trans-unit id="resolver.headersJson" datatype="html">
         <source>Headers (JSON format)</source>
         <target>En-têtes (format JSON)</target>
         <context-group purpose="location">
@@ -13795,7 +13795,7 @@
           <context context-type="linenumber">80</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="resolver.editUserStore2" datatype="html">
+      <trans-unit id="resolver.editUserStoreSql" datatype="html">
         <source> Edit user store </source>
         <target> Modifier la source utilisateur </target>
         <context-group purpose="location">
@@ -14183,7 +14183,7 @@
           <context context-type="linenumber">79</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="resolver.deleteResolver2" datatype="html">
+      <trans-unit id="resolver.deleteResolverAction" datatype="html">
         <source>Delete resolver</source>
         <target>Supprimer l&apos;interpréteur</target>
         <context-group purpose="location">
@@ -14303,7 +14303,7 @@
           <context context-type="linenumber">35</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="user.givenName2" datatype="html">
+      <trans-unit id="user.givenNameLabel" datatype="html">
         <source>Given name</source>
         <target>Prénom</target>
         <context-group purpose="location">
@@ -14451,7 +14451,7 @@
           <context context-type="linenumber">35</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="nav.of2" datatype="html">
+      <trans-unit id="nav.pageRange" datatype="html">
         <source><x id="PH" equiv-text="startIndex + 1"/> – <x id="PH_1" equiv-text="endIndex"/> of <x id="PH_2" equiv-text="length"/></source>
         <target><x id="PH" equiv-text="startIndex + 1"/> – <x id="PH_1" equiv-text="endIndex"/> sur <x id="PH_2" equiv-text="length"/></target>
         <context-group purpose="location">
@@ -16379,7 +16379,7 @@
           <context context-type="linenumber">23</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="event.selectedEvents2" datatype="html">
+      <trans-unit id="event.selectedEventsAria" datatype="html">
         <source>Selected events</source>
         <target state="new">Selected events</target>
         <context-group purpose="location">
@@ -16703,7 +16703,7 @@
           <context context-type="linenumber">43</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="user.deleteRealm2" datatype="html">
+      <trans-unit id="user.deleteRealmDialogTitle" datatype="html">
         <source>Delete Realm &quot;<x id="PH" equiv-text="this.data.realmName"/>&quot;</source>
         <target state="new">Delete Realm &quot;<x id="PH" equiv-text="this.data.realmName"/>&quot;</target>
         <context-group purpose="location">
@@ -16783,7 +16783,7 @@
           <context context-type="linenumber">354</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="user.enrollNewToken2" datatype="html">
+      <trans-unit id="user.enrollNewTokenLink" datatype="html">
         <source>Enroll new token</source>
         <target state="new">Enroll new token</target>
         <context-group purpose="location">
@@ -16791,7 +16791,7 @@
           <context context-type="linenumber">80</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="user.createNewContainer2" datatype="html">
+      <trans-unit id="user.createNewContainerLink" datatype="html">
         <source>Create new container</source>
         <target state="new">Create new container</target>
         <context-group purpose="location">

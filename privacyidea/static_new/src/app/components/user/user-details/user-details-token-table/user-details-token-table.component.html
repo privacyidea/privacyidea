@@ -102,7 +102,6 @@
           <ng-container [matColumnDef]="column.key">
             <th
               *matHeaderCellDef
-              attr.aria-label="{{ column.label }} Header"
               mat-header-cell>
               <div class="flex ali-center">
                 {{ column.label }}
@@ -120,7 +119,6 @@
             <td
               *matCellDef="let element"
               [ngClass]="{ 'input-width-l': column.key === 'description' }"
-              attr.aria-label="{{ column.label }} Cell"
               mat-cell>
               <ng-container>
                 <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
@@ -130,7 +128,7 @@
                         <a
                           (click)="contentService.tokenSelected(element.serial)"
                           (keydown.enter)="contentService.tokenSelected(element.serial)"
-                          attr.aria-label="{{ column.label }} Link"
+                          [attr.aria-label]="linkLabel(column.label)"
                           role="button"
                           tabindex="0">
                           {{ element[column.key] }}
@@ -170,7 +168,7 @@
                           <a
                             (click)="contentService.navigateContainerDetails(element[column.key])"
                             (keydown.enter)="contentService.navigateContainerDetails(element[column.key])"
-                            attr.aria-label="{{ column.label }} Link"
+                            [attr.aria-label]="linkLabel(column.label)"
                             role="button"
                             tabindex="0">
                             {{ element[column.key] }}

@@ -32,12 +32,12 @@ export function createPaginatorIntl(): MatPaginatorIntl {
   intl.lastPageLabel = $localize`:@@nav.lastPage:Last page`;
   intl.getRangeLabel = (page: number, pageSize: number, length: number): string => {
     if (length === 0 || pageSize === 0) {
-      return $localize`:@@nav.of:0 of ${length}`;
+      return $localize`:@@nav.of:0 of ${length}:LENGTH:`;
     }
     length = Math.max(length, 0);
     const startIndex = page * pageSize;
     const endIndex = startIndex < length ? Math.min(startIndex + pageSize, length) : startIndex + pageSize;
-    return $localize`:@@nav.of2:${startIndex + 1} – ${endIndex} of ${length}`;
+    return $localize`:@@nav.pageRange:${startIndex + 1}:START: – ${endIndex}:END: of ${length}:LENGTH:`;
   };
   return intl;
 }

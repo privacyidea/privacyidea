@@ -31,7 +31,7 @@
           class="link"
           role="button"
           tabindex="0"
-          attr.aria-label="{{ data.foundSerial }} Link"
+          [attr.aria-label]="linkLabel(data.foundSerial)"
           (click)="onClickSerial()"
           (keydown.enter)="onClickSerial()"
           (keydown.space)="$event.preventDefault(); onClickSerial()">

@@ -159,8 +159,9 @@
         @if (!isAnyEditingOrRevoked() && containerSerial() && containerCanRemove()) {
           <button
             (click)="removeContainer()"
+            aria-label="Delete Container"
             class="red"
-            i18n-aria-label="Delete Container"
+            i18n-aria-label="@@container.deleteContainer"
             mat-icon-button>
             <mat-icon>folder_delete</mat-icon>
           </button>

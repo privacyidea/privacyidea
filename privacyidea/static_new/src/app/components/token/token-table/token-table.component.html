@@ -101,7 +101,6 @@
             } @else {
               <th
                 *matHeaderCellDef
-                attr.aria-label="{{ column.label }} Header"
                 mat-header-cell>
                 <div class="flex ali-center">
                   {{ column.label }}
@@ -164,7 +163,6 @@
                 'width-300': column.key === 'description',
                 'container_serial-width': column.key === 'container_serial'
               }"
-              attr.aria-label="{{ column.label }} Cell"
               class="max-width-300"
               mat-cell>
               <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
@@ -173,7 +171,7 @@
                     <mat-checkbox
                       (change)="tokenSelection.setRowSelected(tokenDetails, $event.checked)"
                       (click)="$event.stopPropagation()"
-                      attr.aria-label="Select token {{ tokenDetails.serial }}"
+                      [attr.aria-label]="selectRowLabel(tokenDetails.serial)"
                       [checked]="tokenSelection.isRowSelected(tokenDetails)"
                       [disabled]="!tokenSelection.hasVisibleRows()" />
                   }
@@ -183,7 +181,7 @@
                         (click)="contentService.tokenSelected(tokenDetails.serial)"
                         (keydown.enter)="contentService.tokenSelected(tokenDetails.serial)"
                         (keydown.space)="$event.preventDefault(); contentService.tokenSelected(tokenDetails.serial)"
-                        attr.aria-label="{{ column.label }} Link"
+                        [attr.aria-label]="linkLabel(column.label)"
                         class="flex ali-center"
                         role="button"
                         tabindex="0">
@@ -221,7 +219,7 @@
                     <div [ngClass]="{ 'realm-list': (tokenDetails[column.key]?.length || 0) > 1 }">
                       @for (realm of tokenDetails[column.key]; track realm; let idx = $index) {
                         <app-copyable [copyText]="realm">
-                          <span attr.aria-label="{{ column.label }} Link">
+                          <span [attr.aria-label]="linkLabel(column.label)">
                             {{ realm }}
                           </span>
                         </app-copyable>
@@ -237,7 +235,7 @@
                           $event.preventDefault();
                           contentService.navigateContainerDetails(tokenDetails.container_serial)
                         "
-                        attr.aria-label="{{ column.label }} Link"
+                        [attr.aria-label]="linkLabel(column.label)"
                         role="button"
                         tabindex="0">
                         {{ tokenDetails[column.key] }}
@@ -255,7 +253,7 @@
                           $event.preventDefault();
                           contentService.userSelected(tokenDetails[column.key], tokenDetails['user_realm'])
                         "
-                        attr.aria-label="{{ column.label }} Link"
+                        [attr.aria-label]="linkLabel(column.label)"
                         role="button"
                         tabindex="0">
                         {{ tokenDetails[column.key] }}
@@ -265,7 +263,7 @@
                   @default {
                     @if (tableUtilsService.isLink(column.key)) {
                       <a
-                        attr.aria-label="{{ column.label }} Link"
+                        [attr.aria-label]="linkLabel(column.label)"
                         href="#">
                         {{ tokenDetails[column.key] }}
                       </a>

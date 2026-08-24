@@ -109,7 +109,7 @@ export class CaConnectorService implements CaConnectorServiceInterface {
       .catch((error) => {
         const message = error.error?.result?.error?.message || "";
         this.notificationService.error(
-          $localize`:@@caConnector.failedSaveCaConnector:Failed to save CA connector. ` + message
+          $localize`:@@caConnector.failedSaveCaConnector:Failed to save CA connector. ${message}:MESSAGE:`
         );
         throw new Error("post-failed");
       });
@@ -125,14 +125,14 @@ export class CaConnectorService implements CaConnectorServiceInterface {
     return lastValueFrom(request)
       .then(() => {
         this.notificationService.success(
-          $localize`:@@caConnector.successfullyDeleted:Successfully deleted CA connector: ${connectorname}.`
+          $localize`:@@caConnector.successfullyDeleted:Successfully deleted CA connector: ${connectorname}:CONNECTOR:.`
         );
         this.caConnectorResource.reload();
       })
       .catch((error) => {
         const message = error.error?.result?.error?.message || "";
         this.notificationService.error(
-          $localize`:@@caConnector.failedDeleteCa:Failed to delete CA connector. ` + message
+          $localize`:@@caConnector.failedDeleteCa:Failed to delete CA connector. ${message}:MESSAGE:`
         );
         throw new Error("delete-failed");
       });
@@ -150,7 +150,7 @@ export class CaConnectorService implements CaConnectorServiceInterface {
       .catch((error) => {
         const message = error.error?.result?.error?.message || "";
         this.notificationService.error(
-          $localize`:@@caConnector.failedFetchCa:Failed to fetch CA specific options. ` + message
+          $localize`:@@caConnector.failedFetchCa:Failed to fetch CA specific options. ${message}:MESSAGE:`
         );
         throw new Error("fetch-failed");
       });

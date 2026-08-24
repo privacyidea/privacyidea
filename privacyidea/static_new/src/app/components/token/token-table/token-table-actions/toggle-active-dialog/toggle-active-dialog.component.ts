@@ -34,13 +34,13 @@ export interface ToggleActiveDialogData {
   template: `
     <app-dialog-wrapper
       title="(De)activate Selected Tokens"
-      i18n-title
+      i18n-title="@@token.deactivateSelectedTokens"
       (wrapperClose)="close()"
       [actions]="actions"
       [showCancelButton]="true"
       (actionTriggered)="onAction($event)">
       <div class="margin-right-16">
-        <p i18n>The following tokens will be toggled:</p>
+        <p i18n="@@token.followingTokensToggled">The following tokens will be toggled:</p>
         <ul>
           @for (item of data.items; track item.serial) {
             <li>{{ item.serial }} ({{ item.active ? activeToInactive : inactiveToActive }})</li>
@@ -51,8 +51,8 @@ export interface ToggleActiveDialogData {
   `
 })
 export class ToggleActiveDialogComponent extends AbstractDialogComponent<ToggleActiveDialogData, ToggleActiveAction> {
-  activeToInactive = $localize`:@@common.active2:active` + " → " + $localize`:@@token.inactive:inactive`;
-  inactiveToActive = $localize`:@@token.inactive:inactive` + " → " + $localize`:@@common.active2:active`;
+  activeToInactive = $localize`:@@token.activeToInactive:active → inactive`;
+  inactiveToActive = $localize`:@@token.inactiveToActive:inactive → active`;
   actions: DialogAction<ToggleActiveAction>[] = [
     { label: $localize`:@@token.activate:Activate`, value: "activate", type: "confirm", primary: false },
     { label: $localize`:@@token.deactivate:Deactivate`, value: "deactivate", type: "destruct", primary: false },

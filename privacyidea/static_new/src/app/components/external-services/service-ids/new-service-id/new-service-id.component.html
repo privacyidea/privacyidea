@@ -71,7 +71,7 @@
           @if (
             serviceIdForm.servicename().errors().some(e => e.kind === 'required') && serviceIdForm.servicename().touched()
           ) {
-            <mat-error i18n="@@common.identifierRequired2">Identifier is <strong>required</strong>.</mat-error>
+            <mat-error i18n="@@common.identifierRequiredError">Identifier is <strong>required</strong>.</mat-error>
           }
           @if (
             serviceIdForm.servicename().errors().some(e => e.kind === 'pattern') && serviceIdForm.servicename().touched()
@@ -93,6 +93,7 @@
             <input
               [formField]="serviceIdForm.description"
               matInput
+              i18n-placeholder="@@common.someWiseWords"
               placeholder="some wise words" />
           </app-clearable-input>
         </mat-form-field>
