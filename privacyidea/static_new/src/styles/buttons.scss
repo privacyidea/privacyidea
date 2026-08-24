@@ -280,31 +280,6 @@ $button-low-contrast-variant: linear-gradient(
   }
 }
 
-.theme-mode-button {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background: var(--mat-sys-surface-container-lowest);
-  margin: var(--the-mode-button-margin-px);
-  height: calc(var(--header-height) / 3);
-  width: calc(var(--header-height) / 3);
-  color: var(--mat-sys-on-surface);
-  border-radius: var(--border-radius);
-  box-shadow: var(--elevation-5);
-
-  &:hover {
-    box-shadow: var(--elevation-8);
-    background: var(--mat-sys-surface-container-low);
-    color: var(--mat-sys-on-surface-variant);
-  }
-
-  &:active {
-    transform: scale(0.98);
-    background: var(--mat-sys-surface-container-lowest);
-    color: var(--mat-sys-on-surface);
-  }
-}
-
 .mat-mdc-outlined-button {
   --mat-button-outlined-container-shape: var(--border-radius);
   border-radius: var(--border-radius);
@@ -429,7 +404,7 @@ $button-low-contrast-variant: linear-gradient(
   @include action-button(
     var(--mat-sys-surface-container-lowest),
     var(--mat-sys-primary),
-    var(--sky-blue),
+    var(--sky-bg),
     $ripple-mdc: var(--sky-bg)
   );
 }

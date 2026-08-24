@@ -42,9 +42,9 @@
   display: flex;
   align-items: center;
   // The title and its info hint stay side by side; anything else in the row (the in-range count) is pushed right.
-  gap: var(--quarter-global-gap);
-  margin: var(--half-global-padding) 0;
-  padding-inline: var(--global-padding);
+  gap: 4px;
+  margin: 8px 0;
+  padding-inline: 16px;
   font-size: 0.75rem;
   text-transform: uppercase;
   color: var(--mat-sys-on-surface-variant);
@@ -59,14 +59,14 @@ td.ca-highlight-cell {
 .ca-highlight-subject {
   display: inline-flex;
   align-items: center;
-  gap: var(--quarter-global-gap);
+  gap: 4px;
 }
 
 // The row's glyph is smaller than the navigation's, so the letters are scaled up to keep the same weight. The gap to
 // the label belongs to the stack: an inner margin would widen its box and push the centered text off the glyph.
 .icon-block-ip {
   --icon-block-ip-text-size: 10px;
-  margin-right: var(--quarter-global-padding);
+  margin-right: 4px;
 
   .ca-kind-icon {
     margin-right: 0;
@@ -91,8 +91,8 @@ td.ca-highlight-cell {
 .ca-range {
   display: flex;
   align-items: center;
-  gap: var(--quarter-global-gap);
-  padding-inline: var(--half-global-padding);
+  gap: 4px;
+  padding-inline: 8px;
 }
 
 .ca-slider-with-histogram {
@@ -151,6 +151,6 @@ td.ca-highlight-cell {
 
 .ca-more {
   margin: 0;
-  padding: var(--quarter-global-padding) var(--global-padding);
+  padding: 4px 16px;
   text-align: right;
 }
