@@ -94,12 +94,16 @@ def backfill_ssh_key_checksums(conn):
     for token_id, serial in serial_by_id.items():
         info = info_by_token.get(token_id, {})
         ssh_key, ssh_key_type = info.get('ssh_key', ('', None))
-        if ssh_key and ssh_key_type == 'password':
-            ssh_key = decryptPassword(ssh_key)
-            if ssh_key == FAILED_TO_DECRYPT_PASSWORD:
-                log.warning(f"Could not decrypt the SSH key of token {serial}. Skipping this token. "
-                            "It will refuse to hand out the SSH key until it is re-enrolled.")
-                continue
+        if not ssh_key or ssh_key_type != 'password':
+            log.warning(f"SSH key token {serial} has no valid encrypted SSH key "
+                        "(missing key or not marked as password). Skipping this token. "
+                        "It will refuse to hand out the SSH key until it is re-enrolled.")
+            continue
+        ssh_key = decryptPassword(ssh_key)
+        if ssh_key == FAILED_TO_DECRYPT_PASSWORD:
+            log.warning(f"Could not decrypt the SSH key of token {serial}. Skipping this token. "
+                        "It will refuse to hand out the SSH key until it is re-enrolled.")
+            continue
         ssh_type = info.get('ssh_type', ('', None))[0]
         ssh_comment = info.get('ssh_comment', ('', None))[0]
         checksum = compute_ssh_key_checksum(serial, ssh_type, ssh_key, ssh_comment)
