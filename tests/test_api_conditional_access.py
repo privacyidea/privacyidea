@@ -29,9 +29,7 @@ from privacyidea.lib.conditional_access.authentication_event_types import AuthEv
 from privacyidea.lib.conditional_access.authentication_log import AuthLogUserRole, get_authentication_logs
 from privacyidea.lib.conditional_access.engine import is_user_locked, is_ip_blocked
 from privacyidea.lib.conditional_access.engine import LockoutAction, LockoutTarget
-from privacyidea.lib.conditional_access.lockout_policy import (create_lockout_policy,
-                                                               default_error_message,
-                                                               default_restriction_message)
+from privacyidea.lib.conditional_access.lockout_policy import create_lockout_policy, default_error_message
 from privacyidea.lib.conditional_access.outcome_log import get_outcomes
 from privacyidea.lib.conditional_access.session import get_ca_session
 from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction
@@ -318,7 +316,7 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
                    action=f"{PolicyAction.SHOW_CA_ERROR_MESSAGE}")
         try:
             body = self._check({"user": "cornelius", "pass": "pin755224"})
-            self.assertEqual(str(default_restriction_message(LockoutTarget.USER, permanent=False)).replace(
+            self.assertEqual(str(default_error_message(LockoutAction.LOCK_USER)).replace(
                 "{duration}", "10 minute(s)"), body["detail"]["message"], body)
         finally:
             delete_policy("ca_show")
@@ -348,7 +346,7 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
             self._check({"user": "cornelius", "pass": "wrongpin123456"})
             tripping = self._check({"user": "cornelius", "pass": "wrongpin123456"})
             self.assertTrue(is_user_locked(self.user))
-            self.assertEqual(str(default_restriction_message(LockoutTarget.USER, permanent=False)).replace(
+            self.assertEqual(str(default_error_message(LockoutAction.LOCK_USER)).replace(
                 "{duration}", "10 minute(s)"), tripping["detail"]["message"], tripping)
         finally:
             delete_policy("ca_show")
@@ -365,7 +363,7 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         try:
             body = self._check({"user": "cornelius", "pass": "pin755224"}, remote_addr="203.0.113.7")
             self.assertFalse(body["result"]["value"], body)
-            self.assertEqual(str(default_restriction_message(LockoutTarget.SOURCE_IP, permanent=False)).replace(
+            self.assertEqual(str(default_error_message(LockoutAction.BLOCK_IP)).replace(
                 "{duration}", "10 minute(s)"), body["detail"]["message"], body)
         finally:
             delete_policy("ca_show")
@@ -385,7 +383,7 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         try:
             body = self._check({"serial": "CA_ORPHAN", "pass": "pin755224"}, remote_addr="203.0.113.7")
             self.assertFalse(body["result"]["value"], body)
-            self.assertEqual(str(default_restriction_message(LockoutTarget.SOURCE_IP, permanent=False)).replace(
+            self.assertEqual(str(default_error_message(LockoutAction.BLOCK_IP)).replace(
                 "{duration}", "10 minute(s)"), body["detail"]["message"], body)
             # The rejection really did belong to nobody: the row it wrote names no user to match against.
             entries = get_authentication_logs()

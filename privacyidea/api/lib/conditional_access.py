@@ -53,7 +53,8 @@ from privacyidea.api.lib.utils import (GENERIC_AUTH_FAILURE, log_authentication,
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
 from privacyidea.lib.conditional_access.engine import (get_user_lockout, get_ip_block, evaluate_access_decision,
                                                        render_error_message, restriction_messages, AccessDecision,
-                                                       LockoutAction, RestrictionStatus, MessageKind, StageMessage)
+                                                       LockoutAction, NOTIFYING_ACTIONS, RestrictionStatus,
+                                                       StageMessage)
 from privacyidea.lib.conditional_access.lockout_policy import default_error_message
 from privacyidea.lib.conditional_access.request_context import get_ca_context
 from privacyidea.lib.error import AuthError, Error
@@ -115,9 +116,13 @@ def _evaluate_rejection(user: User) -> "Rejection | None":
     if binding:
         subject = f"locked user {user!r}" if binding is AuthEventType.USER_LOCKED else f"blocked IP {g.client_ip!r}"
         log.info(f"Rejecting {request.path} for {subject}.")
-        messages = _restriction_messages(lockout, ip_block,
-                                         use_generic_error_message=use_generic_error_message)
-        return Rejection(binding, _audit_reason(lockout, ip_block), " ".join(messages) or None,
+        # Every restriction in force that carries an error message is reported, not only the binding one: an
+        # account lock and an address block are independent facts, resolved differently, so telling the user
+        # about one leaves them to discover the other by failing again. Worded the same on both, it is said once
+        # (restriction_messages de-duplicates).
+        messages = restriction_messages(lockout, ip_block, use_generic_error_message=use_generic_error_message)
+        return Rejection(binding, _audit_reason(lockout, ip_block),
+                         " ".join(message.text for message in messages) or None,
                          _additional_event_types(binding, lockout, ip_block))
     decision = evaluate_access_decision(build_ca_context(user, use_generic_error_message=use_generic_error_message))
     # A DENY decision is part of this request's history, but no authentication-log row exists yet to record it against
@@ -209,7 +214,7 @@ def replaces_failure_reason(messages: list[StageMessage]) -> bool:
     False for notification-only error message, which is appended to a failure conditional access did not cause; that
     failure is still the reason, and its details are still its own.
     """
-    return any(message.kind is not MessageKind.NOTIFICATION for message in messages)
+    return any(message.action not in NOTIFYING_ACTIONS for message in messages)
 
 
 def surface_conditional_access_message(request, response):
@@ -305,7 +310,7 @@ def _binding_event_type(lockout: RestrictionStatus | None,
 
     Needed because the authentication log records one ``event_type`` per request - the value an admin filters
     on - so one of the two has to stand for the rejection. What the *user* is told is a separate question with a
-    separate answer: every restriction that carries one is reported (:func:`_restriction_messages`).
+    separate answer: every restriction that carries one is reported (see :func:`_evaluate_rejection`).
 
     :param lockout: the :class:`RestrictionStatus` from :func:`get_user_lockout`, or ``None``
     :param ip_block: the :class:`RestrictionStatus` from :func:`get_ip_block`, or ``None``
@@ -376,22 +381,6 @@ def show_ca_error_message(user: User) -> bool:
     """
     return Match.user(g, scope=SCOPE.CONDITIONAL_ACCESS, action=PolicyAction.SHOW_CA_ERROR_MESSAGE,
                       user_object=user if user and user.login else User()).any()
-
-
-def _restriction_messages(lockout: RestrictionStatus | None,
-                          ip_block: RestrictionStatus | None,
-                          use_generic_error_message: bool = False) -> list[str]:
-    """
-    The error message of every restriction in force, most severe first, skipping those that carry none.
-
-    Both are reported rather than only the binding one. They are independent facts - an account lock and an
-    address block are resolved differently - so telling the user about one leaves them to discover the other by
-    failing again. Unless they are worded the same: :func:`~privacyidea.lib.conditional_access.engine.
-    restriction_messages` keeps each sentence once, so an admin who wrote one generic line on a user stage and on
-    a source-IP stage does not have the user read it twice for the request both refuse.
-    """
-    messages = restriction_messages(lockout, ip_block, use_generic_error_message=use_generic_error_message)
-    return [message.text for message in messages]
 
 
 # --- /auth: raise the rejection as an AuthError ---------------------------------------------------------------------

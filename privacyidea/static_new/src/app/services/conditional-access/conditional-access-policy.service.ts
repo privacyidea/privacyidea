@@ -73,16 +73,26 @@ export type LockoutTarget = "user" | "source_ip";
 export type CountMode = "PER_REQUEST" | "PER_ATTEMPT" | "DISTINCT_USERS";
 
 // Suggested wording for a stage's error_message, bound to the action it describes and served by
-// /conditionalaccess/defaulterrormessages, most severe first. A stage may lock and notify at once, so "category"
-// says how to combine them: the "restriction" entries are mutually exclusive, since only one restriction is ever
-// reported to the user, so the editor takes the first of those the stage carries; the "notification" entries are
-// orthogonal facts and are appended to it. Not scoped by target - an entry for an action a target cannot hold
-// simply never matches. Authoring aid only, never applied at runtime.
+// /conditionalaccess/defaulterrormessages, most severe first. Composing a suggestion for a stage is one sentence
+// per action it carries, kept in this order - the same concatenation the server performs at runtime, so what the
+// editor offers reads as what a user would actually be shown (ACTION_SEVERITY in
+// privacyidea.lib.conditional_access.engine is the one ordering behind both). Not scoped by target - an entry for
+// an action a target cannot hold simply never matches.
 export interface DefaultErrorMessage {
   action_type: LockoutActionType;
-  category: "restriction" | "notification";
   message: string;
 }
+
+// Timed actions paired with the permanent action that writes the same row. Configuring both is redundant: a
+// restriction is never weakened, so the permanent one wins whichever order they run in - which is why the timed
+// half is both warned about and left out of a composed suggestion. Listed as explicit pairs rather than derived
+// from "any timed action plus any permanent one", which would only be equivalent while a stage's actions are
+// confined to a single target - true today (_ACTIONS_BY_TARGET on the server), but it would silently mis-flag a
+// timed user lock beside a permanent IP block if that ever changes.
+export const REDUNDANT_RESTRICTION_PAIRS: readonly (readonly [LockoutActionType, LockoutActionType])[] = [
+  ["LOCK_USER", "PERMANENT_LOCK_USER"],
+  ["BLOCK_IP", "PERMANENT_BLOCK_IP"]
+];
 
 // Everything the backend constrains by target, served per target by /conditionalaccess/targets: the stage actions
 // it allows and the count modes it supports (both sorted; the UI treats the first count mode as the default).

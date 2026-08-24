@@ -91,7 +91,8 @@ from privacyidea.lib.conditional_access.authentication_event_types import (
     CountMode,
 )
 from privacyidea.lib.conditional_access.conditions import CONDITION_TYPES
-from privacyidea.lib.conditional_access.engine import LockoutAction, LockoutTarget
+from privacyidea.lib.conditional_access.engine import (ACTION_SEVERITY, LockoutAction, LockoutTarget,
+                                                       NOTIFYING_ACTIONS)
 from privacyidea.lib.error import ConflictError, ParameterError, ResourceNotFoundError
 from privacyidea.lib.log import log_with
 from privacyidea.models import db
@@ -333,70 +334,31 @@ _ACTIONS_BY_TARGET = {
 }
 
 
-@dataclass(frozen=True)
-class DefaultErrorMessage:
-    """
-    One suggested error message for a stage's ``error_message`` (see :data:`DEFAULT_ERROR_MESSAGES`).
-
-    :ivar action: the stage action this error message describes
-    :ivar message: a ``lazy_gettext`` string, translated when serialized
-    :ivar category: ``"restriction"`` for error message that competes with other restrictions (only one is ever
-        shown), ``"notification"`` for error message that is appended to it. Defaults to the common case, so only
-        the notifying actions spell it out.
-    """
-    action: LockoutAction
-    message: object
-    category: str = "restriction"
-
-
-# The standard error message for a stage's ``error_message``, per action, ordered most severe first. Used for two
-# things, which is the point of having one table: the policy editor suggests from it, and the runtime falls
-# back to it for a stage that carries no error message of its own when the ``show_ca_error_message`` policy is on.
-# So an action reads the same wherever it is met, and an admin who edits the suggestion is editing the thing
-# they would otherwise have got by default.
-#
-# A stage carrying several actions composes them the way the runtime reports: one restriction - they are
-# mutually exclusive, and a stage's message describes the longest-lasting one it wrote (see
-# ``_execute_stage_actions``) - followed by any notifications, which are separate facts. Hence, the order:
-# restrictions by severity, then the EMAIL_* pair with the user's own notification first, as the one the
-# reader can act on. An action that turns nobody away has no entry, having nothing to say.
+# The standard error message for a stage's ``error_message``, per action. Used for two things, which is the point
+# of having one table: the policy editor suggests from it, and the runtime falls back to it for a stage that
+# carries no error message of its own when the ``show_ca_error_message`` policy is on. So an action reads the same
+# wherever it is met, and an admin who edits the suggestion is editing the thing they would otherwise have got by
+# default. The severity order is not repeated here - it is ``ACTION_SEVERITY``, the one ordering there is.
 #
 # lazy_gettext, not _(): module-level constants are evaluated at import, long before a request and its
 # locale exist; ``str()`` at serialization resolves them per admin. That only decides what an admin starts
 # editing from - the stored message is a literal shown to the end user in whatever language it was written.
-DEFAULT_ERROR_MESSAGES: list[DefaultErrorMessage] = [
-    DefaultErrorMessage(LockoutAction.PERMANENT_LOCK_USER,
-                        lazy_gettext("Your account has been locked. Please contact your administrator.")),
-    DefaultErrorMessage(LockoutAction.PERMANENT_BLOCK_IP,
-                        lazy_gettext("Access from your IP address has been blocked. "
-                                     "Please contact your administrator.")),
-    DefaultErrorMessage(LockoutAction.LOCK_USER,
-                        lazy_gettext("Your account is temporarily locked. Please try again in about {duration}.")),
-    DefaultErrorMessage(LockoutAction.BLOCK_IP,
-                        lazy_gettext("Access from your IP address is temporarily blocked. "
-                                     "Please try again in about {duration}.")),
-    DefaultErrorMessage(LockoutAction.DENY,
-                        lazy_gettext("Access has been denied.")),
-    DefaultErrorMessage(LockoutAction.EMAIL_USER,
-                        lazy_gettext("A notification email has been sent to your email address."),
-                        category="notification"),
-    DefaultErrorMessage(LockoutAction.EMAIL_ADMIN,
-                        lazy_gettext("Your administrator has been notified by email."),
-                        category="notification"),
-]
-
-
-# The action whose error message describes a restriction of a given shape. A stored restriction remembers its expiry
-# and its subject but not which action wrote it - it does not need to, because those two facts identify the
-# action exactly.
-_RESTRICTION_ACTIONS: dict[tuple[str, bool], LockoutAction] = {
-    (LockoutTarget.USER, False): LockoutAction.LOCK_USER,
-    (LockoutTarget.USER, True): LockoutAction.PERMANENT_LOCK_USER,
-    (LockoutTarget.SOURCE_IP, False): LockoutAction.BLOCK_IP,
-    (LockoutTarget.SOURCE_IP, True): LockoutAction.PERMANENT_BLOCK_IP,
+DEFAULT_ERROR_MESSAGES: dict[str, object] = {
+    LockoutAction.PERMANENT_LOCK_USER:
+        lazy_gettext("Your account has been locked. Please contact your administrator."),
+    LockoutAction.PERMANENT_BLOCK_IP:
+        lazy_gettext("Access from your IP address has been blocked. Please contact your administrator."),
+    LockoutAction.LOCK_USER:
+        lazy_gettext("Your account is temporarily locked. Please try again in about {duration}."),
+    LockoutAction.BLOCK_IP:
+        lazy_gettext("Access from your IP address is temporarily blocked. Please try again in about {duration}."),
+    LockoutAction.DENY:
+        lazy_gettext("Access has been denied."),
+    LockoutAction.EMAIL_USER:
+        lazy_gettext("A notification email has been sent to your email address."),
+    LockoutAction.EMAIL_ADMIN:
+        lazy_gettext("Your administrator has been notified by email."),
 }
-
-_DEFAULT_BY_ACTION: dict[str, DefaultErrorMessage] = {entry.action: entry for entry in DEFAULT_ERROR_MESSAGES}
 
 
 def default_error_message(action: str) -> str | None:
@@ -406,62 +368,47 @@ def default_error_message(action: str) -> str | None:
     ``None`` covers any action without error message - one that turns nobody away, or one added later - so a caller
     falling back to this never has to know which actions are covered.
     """
-    entry = _DEFAULT_BY_ACTION.get(action)
-    return str(entry.message) if entry else None
+    message = DEFAULT_ERROR_MESSAGES.get(action)
+    return str(message) if message else None
 
 
-def default_restriction_message(target: str, permanent: bool) -> str | None:
+def compose_default_error_message(action_types: Sequence[str]) -> str | None:
     """
-    The standard error message for a restriction of this shape, translated against the request locale.
+    The standard error message for a stage that only reported something, given the *action_types* that ran:
+    one sentence per action, most severe first.
 
-    Written for a restriction read back from its row, which is why it takes the shape rather than an action: the
-    row records what is in force, not which of the four restricting actions put it there, and those two facts
-    name that action exactly (see :data:`_RESTRICTION_ACTIONS`).
-
-    :param target: whose restriction it is - a :class:`LockoutTarget` value
-    :param permanent: whether it has no expiry
+    Notifications only. A restriction is described from the row it left behind (see
+    :func:`~privacyidea.lib.conditional_access.engine._restrictions_in_force`), so composing one here would tell
+    the user twice - and with a ``{duration}`` this side cannot substitute. ``None`` when none of the actions has
+    an error message, which keeps such a stage silent.
     """
-    action = _RESTRICTION_ACTIONS.get((target, permanent))
-    return default_error_message(action) if action else None
-
-
-def compose_default_error_message(action_types: Sequence[str], include_restriction: bool = True) -> str | None:
-    """
-    The standard error message for a stage carrying *action_types*: the most severe restriction it carries, then
-    every notification it also triggers.
-
-    The same composition the policy editor offers as a suggestion, so a stage falling back to the default reads
-    as the stage next to it that had the suggestion written into it. ``None`` when nothing it carries has an
-    error message, which keeps such a stage silent.
-
-    :param include_restriction: leave out the restriction sentence. A restriction that was actually written is
-        described from the row it left behind, so a stage that both restricts and notifies takes only its
-        notifications from here - otherwise the user reads the restriction twice, once per source.
-    """
-    carried = [entry for entry in DEFAULT_ERROR_MESSAGES if entry.action in set(action_types)]
-    restriction = next((entry for entry in carried if entry.category == "restriction"), None)
-    notifications = [entry for entry in carried if entry.category == "notification"]
-    leading = [restriction] if restriction and include_restriction else []
-    sentences = [str(entry.message) for entry in leading + notifications]
+    carried = set(action_types)
+    sentences = [default_error_message(action) for action in ACTION_SEVERITY
+                 if action in NOTIFYING_ACTIONS and action in carried]
     return " ".join(sentences) if sentences else None
 
 
 def get_default_error_messages() -> list[dict[str, str]]:
     """
-    The suggested stage error messages, most severe first, as
-    ``[{"action_type": ..., "category": ..., "message": ...}]`` (see :data:`DEFAULT_ERROR_MESSAGES`). Translated on
-    each call against the request locale.
+    The suggested stage error messages, ordered by :data:`~privacyidea.lib.conditional_access.engine.
+    ACTION_SEVERITY`, as ``[{"action_type": ..., "message": ...}]``. Translated on each call against the
+    request locale.
 
-    ``category`` tells a client how to combine them for a stage with several actions: the ``restriction`` entries are
-    mutually exclusive (only one restriction is ever reported), so it takes the first one the stage carries, while the
-    ``notification`` entries are appended to it.
+    An authoring aid for the policy editor, which composes one suggestion for a stage carrying several actions:
+    one sentence per action, kept in this order. That is the concatenation the runtime performs too - a request
+    reports one sentence per thing that happened to it, ranked the same way - so the wording the editor offers is
+    the wording a user would be shown, and the client needs no rule of its own beyond the order it is given.
+
+    The same table backs the runtime fallback under ``show_ca_error_message`` (:func:`default_error_message`,
+    :func:`compose_default_error_message`), so an admin who edits a suggestion is editing the thing they would
+    otherwise have got by default.
 
     Deliberately not scoped by target: the binding is action to message, and a client picks the entry
     whose action the stage actually carries, so error message for an action a target cannot hold simply never
     matches.
     """
-    return [{"action_type": entry.action.value, "category": entry.category, "message": str(entry.message)}
-            for entry in DEFAULT_ERROR_MESSAGES]
+    return [{"action_type": action.value, "message": default_error_message(action)}
+            for action in ACTION_SEVERITY if action in DEFAULT_ERROR_MESSAGES]
 
 
 def get_target_constraints() -> dict[str, dict[str, list[str]]]:

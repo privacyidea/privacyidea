@@ -110,12 +110,14 @@ describe("ConditionalAccessStageItemComponent", () => {
   });
 
   describe("error message", () => {
+    // Served most severe first, the way /conditionalaccess/defaulterrormessages orders them: the composition
+    // is "join the ones this stage carries", so the order is the only rule under test here.
     const SUGGESTIONS: DefaultErrorMessage[] = [
-      { action_type: "PERMANENT_LOCK_USER", category: "restriction", message: "Your account has been locked." },
-      { action_type: "LOCK_USER", category: "restriction", message: "Locked. Try again in about {duration}." },
-      { action_type: "DENY", category: "restriction", message: "Access has been denied." },
-      { action_type: "EMAIL_USER", category: "notification", message: "An email has been sent to you." },
-      { action_type: "EMAIL_ADMIN", category: "notification", message: "Your administrator has been notified." }
+      { action_type: "PERMANENT_LOCK_USER", message: "Your account has been locked." },
+      { action_type: "LOCK_USER", message: "Locked. Try again in about {duration}." },
+      { action_type: "DENY", message: "Access has been denied." },
+      { action_type: "EMAIL_USER", message: "An email has been sent to you." },
+      { action_type: "EMAIL_ADMIN", message: "Your administrator has been notified." }
     ];
 
     let policyService: MockConditionalAccessPolicyService;
@@ -193,9 +195,10 @@ describe("ConditionalAccessStageItemComponent", () => {
       expect(spy).toHaveBeenCalledWith({ error_message: "Locked. Try again in about {duration}." });
     });
 
-    it("should suggest one restriction by severity, never two", () => {
-      // Restrictions are mutually exclusive - only the longest-lasting one is ever reported - so the
-      // most severe wins regardless of the order the actions were added in.
+    it("should leave out the timed half of a redundant pair", () => {
+      // The only action the suggestion drops. A restriction is never weakened, so the permanent lock is the
+      // row that ends up in force and the timed one could never be reported - the same reason the actions
+      // list flags the pair as redundant. Order of configuration is irrelevant.
       withStage({
         error_message: null,
         actions: [
@@ -204,6 +207,22 @@ describe("ConditionalAccessStageItemComponent", () => {
         ]
       });
       expect(component.suggestedErrorMessage()).toBe("Your account has been locked.");
+    });
+
+    it("should join every other action the stage carries, in the order served", () => {
+      // No rule beyond the order: a stage that denies, locks and notifies is described by one sentence per
+      // action, which is what the engine reports for it too.
+      withStage({
+        error_message: null,
+        actions: [
+          { action_type: "EMAIL_USER", action_value: null },
+          { action_type: "DENY", action_value: null },
+          { action_type: "PERMANENT_LOCK_USER", action_value: null }
+        ]
+      });
+      expect(component.suggestedErrorMessage()).toBe(
+        "Your account has been locked. Access has been denied. An email has been sent to you."
+      );
     });
 
     it("should suggest nothing for an action that has no wording", () => {
@@ -219,8 +238,8 @@ describe("ConditionalAccessStageItemComponent", () => {
     });
 
     it("should lead with the restriction and append the notification when the stage does both", () => {
-      // Being emailed about is a separate fact from being locked out, so the user is told both -
-      // matching the notice the engine appends today.
+      // Being emailed about is a separate fact from being locked out, so the user is told both - and in
+      // severity order rather than the order the actions were added, matching what the engine reports.
       withStage({
         error_message: null,
         actions: [

@@ -24,21 +24,11 @@ import { MatIconModule } from "@angular/material/icon";
 import {
   ConditionalAccessPolicyService,
   ConditionalAccessPolicyServiceInterface,
-  LockoutActionType,
   LockoutStageAction,
-  LockoutTarget
+  LockoutTarget,
+  REDUNDANT_RESTRICTION_PAIRS
 } from "@services/conditional-access/conditional-access-policy.service";
 import { ConditionalAccessActionItemComponent } from "./action-item/conditional-access-action-item.component";
-
-// Timed actions paired with the permanent action that writes the same row. Configuring both is redundant:
-// a restriction is never weakened, so the permanent one wins whichever order they run in. Listed as explicit
-// pairs rather than derived from "any timed action plus any permanent one", which would only be equivalent
-// while a stage's actions are confined to a single target - true today (_ACTIONS_BY_TARGET on the server),
-// but it would silently mis-flag a timed user lock beside a permanent IP block if that ever changes.
-const REDUNDANT_RESTRICTION_PAIRS: readonly (readonly [LockoutActionType, LockoutActionType])[] = [
-  ["LOCK_USER", "PERMANENT_LOCK_USER"],
-  ["BLOCK_IP", "PERMANENT_BLOCK_IP"]
-];
 
 @Component({
   selector: "app-conditional-access-actions-list",

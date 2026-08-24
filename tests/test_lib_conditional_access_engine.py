@@ -52,7 +52,8 @@ from privacyidea.lib.conditional_access.engine import (
     is_ip_never_block,
     get_ip_block,
     render_error_message,
-    MessageKind,
+    most_severe_action,
+    ACTION_SEVERITY,
     StageMessage,
     RestrictionStatus,
     _lock_duration_seconds,
@@ -1799,7 +1800,7 @@ class LockoutEngineTestCase(LockoutTestCase):
             self._seed_events(AuthEventType.MFA_FAIL, 3)
             messages = evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL).messages
             # Rank 2: it states an extra fact rather than the reason, so a caller appends it to the failure.
-            self.assertListEqual([StageMessage("Your administrator has been notified.", MessageKind.NOTIFICATION)],
+            self.assertListEqual([StageMessage("Your administrator has been notified.", LockoutAction.EMAIL_ADMIN)],
                                  messages)
         finally:
             delete_smtpserver("lockoutmail")
@@ -1829,7 +1830,7 @@ class LockoutEngineTestCase(LockoutTestCase):
                           stages=(StageDefinition(3, 1, lock, error_message="Locked for {duration}."),))
         self._seed_events(AuthEventType.MFA_FAIL, 3)
         evaluation = evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
-        self.assertListEqual([StageMessage("Locked for 10 minute(s).", MessageKind.TIMED_RESTRICTION)],
+        self.assertListEqual([StageMessage("Locked for 10 minute(s).", LockoutAction.LOCK_USER)],
                              evaluation.messages)
         self.assertTrue(is_user_locked(self.user))
         self.assertEqual("Locked for {duration}.", self._state().error_message)
@@ -1841,7 +1842,7 @@ class LockoutEngineTestCase(LockoutTestCase):
                                                   error_message="Permanent."),))
         self._seed_events(AuthEventType.MFA_FAIL, 3)
         evaluation = evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
-        self.assertListEqual([StageMessage("Permanent.", MessageKind.PERMANENT_RESTRICTION)], evaluation.messages)
+        self.assertListEqual([StageMessage("Permanent.", LockoutAction.PERMANENT_LOCK_USER)], evaluation.messages)
 
     @smtpmock.activate
     def test_a_declined_restriction_does_not_speak_as_a_notification(self):
@@ -1865,7 +1866,7 @@ class LockoutEngineTestCase(LockoutTestCase):
                                         error_message="Locked for {duration}."),))
             self._seed_events(AuthEventType.MFA_FAIL, 3)
             evaluation = evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
-            self.assertListEqual([StageMessage("Permanent.", MessageKind.PERMANENT_RESTRICTION)],
+            self.assertListEqual([StageMessage("Permanent.", LockoutAction.PERMANENT_LOCK_USER)],
                                  evaluation.messages)
             # The declined lock recorded nothing, the mail that did go out did.
             self.assertEqual([str(LockoutAction.PERMANENT_LOCK_USER), str(LockoutAction.EMAIL_ADMIN)],
@@ -2448,6 +2449,20 @@ class LockoutEngineTestCase(LockoutTestCase):
         self.assertEqual(AccessDecision.CONTINUE, undecided.decision)
         self.assertIsNone(undecided.error_message)
 
+    def test_every_action_that_can_report_something_has_a_severity_rank(self):
+        # ACTION_SEVERITY has to cover the enum, not merely agree with the message table.
+        # A member added without a rank fails silently:
+        # most_severe_action answers None for it, and _execute_stage_actions drops the stage's error message
+        # rather than showing it out of order - so the admin's wording disappears with nothing to say why.
+        #
+        # The exemption is for an action that decides a request without turning anyone away, having nothing to
+        # tell a user. ALLOW is the only one, and it is being removed; this set then empties.
+        decides_only = {LockoutAction.ALLOW}
+        self.assertSetEqual(set(LockoutAction) - decides_only, set(ACTION_SEVERITY))
+        # And the rank is what a stage's message hangs on, so every covered action has to answer.
+        for action in ACTION_SEVERITY:
+            self.assertEqual(action, most_severe_action([action.value]), action)
+
     def test_a_stage_message_describes_its_longest_restriction(self):
         # One message covers however many actions a stage runs, and the row keeps the last expiry written, so
         # the message describes the longest restriction the stage produced - the one in force.
@@ -2457,7 +2472,7 @@ class LockoutEngineTestCase(LockoutTestCase):
                           stages=(StageDefinition(3, 1, actions, error_message="Locked for {duration}."),))
         self._seed_events(AuthEventType.MFA_FAIL, 3)
         evaluation = evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
-        self.assertListEqual([StageMessage("Locked for 1 hour(s).", MessageKind.TIMED_RESTRICTION)],
+        self.assertListEqual([StageMessage("Locked for 1 hour(s).", LockoutAction.LOCK_USER)],
                              evaluation.messages)
 
     def test_two_policies_locking_the_same_user_produce_one_message(self):
@@ -2474,7 +2489,7 @@ class LockoutEngineTestCase(LockoutTestCase):
         self._seed_events(AuthEventType.MFA_FAIL, 3)
         evaluation = evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
         # The hour-long lock is the one in force, so its error message - and its duration - is what the user reads.
-        self.assertListEqual([StageMessage("Locked for 1 hour(s).", MessageKind.TIMED_RESTRICTION)],
+        self.assertListEqual([StageMessage("Locked for 1 hour(s).", LockoutAction.LOCK_USER)],
                              evaluation.messages)
 
     def test_a_notification_from_a_second_policy_survives_alongside_the_lock(self):
@@ -2490,8 +2505,8 @@ class LockoutEngineTestCase(LockoutTestCase):
         self._seed_events(AuthEventType.MFA_FAIL, 3)
         with mock.patch("privacyidea.lib.conditional_access.engine._send_lockout_email", return_value=True):
             evaluation = evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
-        self.assertListEqual([StageMessage("Locked for 10 minute(s).", MessageKind.TIMED_RESTRICTION),
-                              StageMessage("We emailed you.", MessageKind.NOTIFICATION)],
+        self.assertListEqual([StageMessage("Locked for 10 minute(s).", LockoutAction.LOCK_USER),
+                              StageMessage("We emailed you.", LockoutAction.EMAIL_USER)],
                              evaluation.messages)
 
     def test_shared_error_message_is_kept_as_the_restriction_it_also_describes(self):
@@ -2508,8 +2523,27 @@ class LockoutEngineTestCase(LockoutTestCase):
         self._seed_events(AuthEventType.MFA_FAIL, 3)
         with mock.patch("privacyidea.lib.conditional_access.engine._send_lockout_email", return_value=True):
             evaluation = evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
-        self.assertListEqual([StageMessage("Contact your administrator.", MessageKind.TIMED_RESTRICTION)],
+        self.assertListEqual([StageMessage("Contact your administrator.", LockoutAction.LOCK_USER)],
                              evaluation.messages)
+
+    def test_a_stage_whose_lock_was_declined_describes_the_lock_that_stands(self):
+        # The permanent lock from the first policy wins, so the second policy's timed write is declined as
+        # weakening and records no outcome. The user is still told about the lock in force - the row is what
+        # describes a restriction, not the stage that aimed at it - rather than being told nothing at all.
+        self._make_policy(name="permanent", counter_type=AuthEventType.MFA_FAIL, priority=1,
+                          stages=(StageDefinition(3, 1, [StageActionDefinition(
+                              LockoutAction.PERMANENT_LOCK_USER)], error_message="Permanently locked."),))
+        self._make_policy(name="timed", counter_type=AuthEventType.MFA_FAIL, priority=2,
+                          stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.LOCK_USER,
+                                                                               {"duration_seconds": 600})],
+                                                  error_message="Locked for a short while."),))
+        self._seed_events(AuthEventType.MFA_FAIL, 3)
+        evaluation = evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+        self.assertListEqual([StageMessage("Permanently locked.", LockoutAction.PERMANENT_LOCK_USER)],
+                             evaluation.messages)
+        # And the declined write is left out of the history, since nothing happened.
+        self.assertListEqual([str(LockoutAction.PERMANENT_LOCK_USER)],
+                             [outcome.action_type for outcome in evaluation.outcomes])
 
     def test_a_permanent_action_sets_the_rank_whatever_the_order(self):
         # The permanent lock is written second here, and still decides both the rank and the error message.
@@ -2520,5 +2554,5 @@ class LockoutEngineTestCase(LockoutTestCase):
         self._seed_events(AuthEventType.MFA_FAIL, 3)
         evaluation = evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
         # No remaining time to substitute, so the tag is left as written - and the rank is the permanent one.
-        self.assertListEqual([StageMessage("Locked for {duration}.", MessageKind.PERMANENT_RESTRICTION)],
+        self.assertListEqual([StageMessage("Locked for {duration}.", LockoutAction.PERMANENT_LOCK_USER)],
                              evaluation.messages)

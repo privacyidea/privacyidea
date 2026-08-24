@@ -30,7 +30,8 @@ import {
   ConditionalAccessPolicyServiceInterface,
   LockoutPolicyStage,
   LockoutStageAction,
-  LockoutTarget
+  LockoutTarget,
+  REDUNDANT_RESTRICTION_PAIRS
 } from "@services/conditional-access/conditional-access-policy.service";
 import { ConditionalAccessActionsListComponent } from "./actions-list/conditional-access-actions-list.component";
 
@@ -103,17 +104,21 @@ empty, the standard error response is sent, so a rejection cannot be told apart 
 
   readonly errorMessageLength = computed(() => (this.stage().error_message ?? "").length);
 
-  // The suggestion for this stage as it stands, composed the way the runtime actually reports: one
-  // restriction (the first the stage carries - the server orders them most severe first, and only one
-  // restriction is ever shown) followed by every notification it also triggers, since being emailed
-  // about is a separate fact from being locked out. Null when the stage carries neither, e.g. an
-  // allow-only stage, which has nothing to tell the user.
+  // The suggestion for this stage as it stands: one sentence per action it carries, in the order the server
+  // serves them (most severe first). That is the same concatenation the runtime performs, so the wording the
+  // editor offers is the wording a user would be shown - being emailed about is a separate fact from being
+  // locked out, and both are said. The only thing left out is the timed half of a redundant pair, which the
+  // runtime cannot show either: a restriction is never weakened, so the permanent action's row is the one in
+  // force. Null when the stage carries no action the server offers wording for.
   readonly suggestedErrorMessage = computed(() => {
     const present = new Set(this.stage().actions.map((action) => action.action_type));
-    const offered = this.policyService.defaultErrorMessages().filter((entry) => present.has(entry.action_type));
-    const restriction = offered.find((entry) => entry.category === "restriction");
-    const notifications = offered.filter((entry) => entry.category === "notification");
-    const sentences = [...(restriction ? [restriction] : []), ...notifications].map((entry) => entry.message);
+    const superseded = new Set(
+      REDUNDANT_RESTRICTION_PAIRS.filter(([, permanent]) => present.has(permanent)).map(([timed]) => timed)
+    );
+    const sentences = this.policyService
+      .defaultErrorMessages()
+      .filter((entry) => present.has(entry.action_type) && !superseded.has(entry.action_type))
+      .map((entry) => entry.message);
     return sentences.length ? sentences.join(" ") : null;
   });
 

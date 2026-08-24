@@ -156,14 +156,16 @@ def list_default_error_messages():
     ``[{"action_type": ..., "message": ...}]`` **ordered most severe first** (see
     :func:`~privacyidea.lib.conditional_access.lockout_policy.get_default_error_messages`).
 
-    The order is the composition rule: a stage can lock *and* block *and* notify at once, but only one message is ever
-    shown, so a client takes the first entry whose action the stage carries instead of joining several sentences it
-    would never all show. The ``EMAIL_*`` entries come last, so a stage that both locks and notifies describes the
-    lock while a notify-only stage still has an error message to offer. ``ALLOW`` has no entry - it rejects
-    nothing, so there is never anything to say.
+    An authoring aid for the policy editor, which composes one suggestion for a stage carrying several actions:
+    one sentence per action, kept in the order given. The order is the whole rule, because it is the same
+    concatenation the runtime performs - a request reports one sentence per thing that happened to it, ranked the
+    same way - so a client needs nothing beyond this list to offer the wording a user would be shown. An action
+    that rejects nothing has no entry, there being nothing to say for it.
 
-    This is an authoring aid for the policy editor only. Nothing here is applied at runtime: a stage without an
-    ``error_message`` reveals nothing to the user, whatever its actions.
+    The same wording is what the ``show_ca_error_message`` policy falls back to at runtime for a stage that carries
+    no ``error_message`` of its own, so an admin who edits a suggestion is editing the thing they would otherwise
+    have got by default. Without that policy a stage without an ``error_message`` still reveals nothing to the
+    user, whatever its actions.
 
     Requires the admin policy action :ref:`policy_lockout_policy_read`.
 
