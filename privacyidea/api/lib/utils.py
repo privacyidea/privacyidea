@@ -71,7 +71,7 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 # The wording of an ordinary failed authentication
-GENERIC_AUTH_FAILURE = lazy_gettext("Authentication failure. Wrong credentials")
+GENERIC_AUTH_FAILURE = lazy_gettext("Authentication failed.")
 ENCODING = "utf-8"
 TRUSTED_JWT_ALGOS = ["ES256", "ES384", "ES512",
                      "RS256", "RS384", "RS512",

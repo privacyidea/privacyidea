@@ -61,7 +61,7 @@ class AuthApiTestCase(MyApiTestCase):
             result = res.json.get("result")
             self.assertFalse(result.get("status"), result)
             self.assertEqual(4031, result['error']['code'], result)
-            self.assertEqual('Authentication failure. Wrong credentials',
+            self.assertEqual('Authentication failed.',
                              result['error']['message'], result)
         aentry = self.find_most_recent_audit_entry(action='POST /auth')
         self.assertEqual(aentry['action'], 'POST /auth', aentry)
@@ -192,7 +192,7 @@ class AuthApiTestCase(MyApiTestCase):
                 result = res.json.get("result")
                 self.assertFalse(result.get("status"), result)
                 self.assertEqual(4031, result['error']['code'], result)
-                self.assertEqual('Authentication failure. Wrong credentials',
+                self.assertEqual('Authentication failed.',
                                  result['error']['message'], result)
             # the realm will be split from the login name
             expected = "The user User(login='selfservice', " \
@@ -224,7 +224,7 @@ class AuthApiTestCase(MyApiTestCase):
             result = res.json.get("result")
             self.assertFalse(result.get("status"), result)
             self.assertEqual(4031, result['error']['code'], result)
-            self.assertEqual('Authentication failure. Wrong credentials',
+            self.assertEqual('Authentication failed.',
                              result['error']['message'], result)
 
         # test failed auth no password
@@ -236,7 +236,7 @@ class AuthApiTestCase(MyApiTestCase):
             result = res.json.get("result")
             self.assertFalse(result.get("status"), result)
             self.assertEqual(4031, result['error']['code'], result)
-            self.assertEqual('Authentication failure. Wrong credentials',
+            self.assertEqual('Authentication failed.',
                              result['error']['message'], result)
 
         # test with realm added to user. This fails since we do not split
@@ -250,7 +250,7 @@ class AuthApiTestCase(MyApiTestCase):
                 result = res.json.get("result")
                 self.assertFalse(result.get("status"), result)
                 self.assertEqual(4031, result['error']['code'], result)
-                self.assertEqual('Authentication failure. Wrong credentials',
+                self.assertEqual('Authentication failed.',
                                  result['error']['message'], result)
             expected = "The user User(login='cornelius@realm1', " \
                        "realm='realm1', resolver='') exists in NO resolver."
@@ -370,7 +370,7 @@ class AuthApiTestCase(MyApiTestCase):
                 result = res.json.get("result")
                 self.assertFalse(result.get("status"), result)
                 self.assertEqual(4031, result['error']['code'], result)
-                self.assertEqual('Authentication failure. Wrong credentials',
+                self.assertEqual('Authentication failed.',
                                  result['error']['message'], result)
             # the realm will be split from the login name
             expected = "The user User(login='selfservice@realm1', " \
@@ -453,7 +453,7 @@ class AuthApiTestCase(MyApiTestCase):
             self.assertFalse(result.get("status"), result)
             self.assertEqual(result.get("error").get('code'), 4031, result)
             self.assertEqual(result.get("error").get('message'),
-                             'Authentication failure. Wrong credentials', result)
+                             'Authentication failed.', result)
         aentry = self.find_most_recent_audit_entry(action='POST /auth')
         self.assertEqual(aentry['action'], 'POST /auth', aentry)
         self.assertEqual(aentry['success'], 0, aentry)
@@ -471,7 +471,7 @@ class AuthApiTestCase(MyApiTestCase):
             self.assertFalse(result.get("status"), result)
             self.assertEqual(result.get("error").get('code'), 4031, result)
             self.assertEqual(result.get("error").get('message'),
-                             'Authentication failure. Wrong credentials', result)
+                             'Authentication failed.', result)
         aentry = self.find_most_recent_audit_entry(action='POST /auth')
         self.assertEqual(aentry['action'], 'POST /auth', aentry)
         self.assertEqual(aentry['success'], 0, aentry)
@@ -704,7 +704,7 @@ class AuthApiTestCase(MyApiTestCase):
             self.assertFalse(result.get("status"), result)
             error = result.get("error")
             self.assertEqual(4031, error.get("code"))
-            self.assertEqual("Authentication failure. Wrong credentials", error.get("message"))
+            self.assertEqual("Authentication failed.", error.get("message"))
 
         # set a policy to authenticate against privacyIDEA
         set_policy("piLogin", scope=SCOPE.WEBUI, action="{0!s}=privacyIDEA".format(PolicyAction.LOGINMODE))
@@ -720,7 +720,7 @@ class AuthApiTestCase(MyApiTestCase):
             self.assertFalse(result.get("status"), result)
             error = result.get("error")
             self.assertEqual(4031, error.get("code"))
-            self.assertEqual("Authentication failure. Wrong credentials", error.get("message"))
+            self.assertEqual("Authentication failed.", error.get("message"))
 
         # cleanup
         delete_policy("piLogin")
@@ -772,7 +772,7 @@ class AuthApiTestCase(MyApiTestCase):
             result = res.json.get("result")
             self.assertFalse(result.get("status"), result)
             self.assertEqual(4031, result['error']['code'], result)
-            self.assertEqual('Authentication failure. Wrong credentials',
+            self.assertEqual('Authentication failed.',
                              result['error']['message'], result)
 
         # Clean-up
@@ -817,7 +817,7 @@ class AuthApiTestCase(MyApiTestCase):
             self.assertEqual(401, res.status_code, res.json)
             error = res.json.get("result").get("error")
             self.assertEqual(4031, error.get("code"), error)
-            self.assertEqual("Authentication failure. Wrong credentials", error.get("message"), error)
+            self.assertEqual("Authentication failed.", error.get("message"), error)
             details = res.json.get("detail")
             self.assertEqual("The user has no tokens assigned", details.get("message"), details)
 
@@ -831,7 +831,7 @@ class AuthApiTestCase(MyApiTestCase):
                 self.assertEqual(401, res.status_code, res.json)
                 error = res.json.get("result").get("error")
                 self.assertEqual(4031, error.get("code"), error)
-                self.assertEqual("Authentication failure. Wrong credentials", error.get("message"), error)
+                self.assertEqual("Authentication failed.", error.get("message"), error)
             log_msg = ("Error authenticating user against privacyIDEA: UserError(description='User <hans@realm3> does "
                        "not exist.', id=904)")
             capture.check_present(("privacyidea.lib.auth", "DEBUG", log_msg))
@@ -1256,7 +1256,7 @@ class AuthApiTestCase(MyApiTestCase):
             result = res.json.get("result")
             error = result.get("error")
             self.assertEqual(4031, error.get("code"))
-            self.assertEqual("Authentication failure. Wrong credentials", error.get("message"))
+            self.assertEqual("Authentication failed.", error.get("message"))
 
         # With the hide_specific_error_message_policy set, the response contains the fields defined
         # in _assert_unspecific_message. It should be the same for every wrong input param
@@ -1676,7 +1676,7 @@ class DuplicateUserApiTestCase(MyApiTestCase):
                 self.assertFalse(result.get("status"), result)
                 self.assertEqual(result.get("error").get('code'), 4031, result)
                 self.assertEqual(result.get("error").get('message'),
-                                 'Authentication failure. Wrong credentials', result)
+                                 'Authentication failed.', result)
             # check if we have the correct log entry
             mock_log.assert_called_with("user uid 1004 failed to authenticate")
 
