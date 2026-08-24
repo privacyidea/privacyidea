@@ -17,12 +17,24 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { CdkDrag, CdkDragEnd, CdkDragMove, CdkDragStart } from "@angular/cdk/drag-drop";
-import { afterRenderEffect, Component, computed, ElementRef, inject, OnDestroy, signal, viewChild } from "@angular/core";
+import {
+  afterRenderEffect,
+  Component,
+  computed,
+  ElementRef,
+  inject,
+  OnDestroy,
+  signal,
+  viewChild
+} from "@angular/core";
 import { WidgetFrameComponent } from "@components/dashboard/widget-frame/widget-frame.component";
 import { DASHBOARD_COLUMNS, DashboardWidget, WidgetInstance, WidgetSize } from "@models/dashboard";
 import { DashboardLayoutService, DashboardLayoutServiceInterface } from "@services/dashboard/dashboard-layout.service";
 import { WidgetRegistryService, WidgetRegistryServiceInterface } from "@services/dashboard/widget-registry.service";
-import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+import {
+  PendingChangesService,
+  PendingChangesServiceInterface
+} from "@services/pending-changes/pending-changes.service";
 
 interface FieldRect {
   x: number;
@@ -71,7 +83,7 @@ type DragTarget = FieldRect & { valid: boolean };
 export class DashboardComponent implements OnDestroy {
   protected readonly layoutService: DashboardLayoutServiceInterface = inject(DashboardLayoutService);
   private readonly registry: WidgetRegistryServiceInterface = inject(WidgetRegistryService);
-  private readonly pendingChanges = inject(PendingChangesService);
+  private readonly pendingChanges: PendingChangesServiceInterface = inject(PendingChangesService);
   protected readonly widgets = this.layoutService.widgets;
 
   private resizeState: ResizeState | null = null;

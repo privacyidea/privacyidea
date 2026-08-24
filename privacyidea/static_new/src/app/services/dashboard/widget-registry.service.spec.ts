@@ -37,7 +37,11 @@ describe("WidgetRegistryService", () => {
 
   it("should expose the built-in widget types", () => {
     const types = service.widgetTypes.map((widget) => widget.type);
-    expect(types).toEqual(expect.arrayContaining(["tokens", "subscriptions"]));
+    expect(types).toEqual(expect.arrayContaining(["news", "tokens", "subscriptions"]));
+  });
+
+  it("should offer the news widget first in the palette order", () => {
+    expect(service.widgetTypes[0].type).toBe("news");
   });
 
   it("should give every widget type a title, icon and positive default size", () => {
@@ -59,6 +63,7 @@ describe("WidgetRegistryService", () => {
   it("should return the widget class for a known type", () => {
     expect(service.get("tokens")?.type).toBe("tokens");
     expect(service.get("subscriptions")?.type).toBe("subscriptions");
+    expect(service.get("news")?.type).toBe("news");
   });
 
   it("should return undefined for an unknown type", () => {

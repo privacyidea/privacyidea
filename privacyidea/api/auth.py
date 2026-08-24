@@ -192,7 +192,7 @@ def before_request():
 @prepolicy(disabled_token_types, request=request)
 @prepolicy(load_challenge_text, request=request)
 @prepolicy(fido2_auth, request=request)
-@postpolicy(hide_specific_error_message)
+@postpolicy(hide_specific_error_message, request=request)
 @postpolicy(get_webui_settings, request=request)
 @postpolicy(no_detail_on_success, request=request)
 @postpolicy(add_user_detail_to_response, request=request)

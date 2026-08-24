@@ -22,11 +22,11 @@
 myApp.controller("dashboardController", ["ConfigFactory", "TokenFactory",
                                          "SubscriptionFactory", "AuditFactory",
                                          "$scope", "$location", "AuthFactory", "$timeout",
-                                         "InfoFactory",
+                                         "InfoFactory", "inform", "gettextCatalog",
                                          function (ConfigFactory, TokenFactory,
                                                    SubscriptionFactory, AuditFactory,
                                                    $scope, $location, AuthFactory, $timeout,
-                                                   InfoFactory) {
+                                                   InfoFactory, inform, gettextCatalog) {
 
     $scope.tokens = {"total": 0, "hardware": 0};
     $scope.certificates = {"entries": [], "summary": {"ok": 0, "warning": 0,
@@ -44,7 +44,164 @@ myApp.controller("dashboardController", ["ConfigFactory", "TokenFactory",
                        "inactive": [], "num_inactive": 0};
     $scope.events = {"active": [], "num_active": 0,
                      "inactive": [], "num_inactive": 0};
-    $scope.subscriptions = {};
+    // Flat, sectioned rows for the subscription overview (see buildSubscriptionRows).
+    $scope.subscriptionRows = [];
+    // null = still loading, "ok" = loaded, "error" = request failed
+    $scope.pluginStatusLoadState = null;
+    // The overview has two independent axes, each rendered as a coloured dot.
+    // The maps below give the bootstrap text-color class and the label per
+    // value. `gettext()` is the angular-gettext no-op marker so the extractor
+    // picks the strings up; the template applies the `translate` filter so the
+    // rendered label reacts to language changes.
+    // Usage: is the plugin actively used / covered? (backend sends a boolean)
+    $scope.usageDotClass = function (status) {
+        return status.in_use ? "text-success" : "text-danger";  // green / red
+    };
+    $scope.usageText = function (status) {
+        return status.in_use ? gettext("Yes") : gettext("No");
+    };
+    // Subscription: state of the subscription record itself.
+    $scope.subscriptionDot = {
+        "none": "text-muted",      // grey
+        "valid": "text-success",   // green
+        "expiring": "text-warning",// yellow
+        "exceeded": "text-warning",// yellow
+        "expired": "text-danger"   // red
+    };
+    $scope.subscriptionText = {
+        "none": gettext("None"),
+        "valid": gettext("Valid"),
+        "expiring": gettext("Expiring"),
+        "exceeded": gettext("Exceeded"),
+        "expired": gettext("Expired")
+    };
+    // Tooltip explaining the concrete reason for a dot's colour. For the usage
+    // "OR" rule we state which branch actually applies (subscription vs. recent
+    // activity), rather than making the admin guess. Returned strings are the
+    // gettext() source; the template applies the `translate` filter.
+    $scope.usageReasonText = function (status) {
+        if (status.is_server) {
+            return gettext("In use: this is the privacyIDEA server itself.");
+        }
+        if (status.in_use) {
+            return status.subscription !== "none"
+                ? gettext("In use: covered by a subscription.")
+                : gettext("In use: seen within the last 7 days.");
+        }
+        return gettext("Not in use: no subscription, and not seen in the last 7 days.");
+    };
+    $scope.subscriptionReasonText = function (status) {
+        return {
+            "none": gettext("No subscription. Get a subscription for enterprise support."),
+            "valid": gettext("Valid: subscription in place and no other condition applies."),
+            "expiring": gettext("Expiring: the subscription ends in less than 60 days."),
+            "exceeded": gettext("Exceeded: subscription is valid, but more tokens are in use than it allows."),
+            "expired": gettext("Expired: the subscription's end date has passed.")
+        }[status.subscription] || "";
+    };
+    // Display name per plugin application key. The privacyidea- prefix is
+    // dropped — context already makes it obvious. Unknown keys fall back to
+    // the raw application identifier in the view.
+    $scope.pluginDisplayName = {
+        "privacyidea": "privacyIDEA Server",
+        "privacyidea-app": "privacyIDEA Authenticator App",
+        "freeradius": "FreeRADIUS",
+        "privacyidea-nextcloud": "Nextcloud",
+        "privacyidea-cp": "Windows Credential Provider",
+        "pam": "PAM OTP & Push",
+        "pam-passkey": "PAM Passkey",
+        "privacyidea-keycloak": "Keycloak",
+        "entraid-via-keycloak": "EntraID Integration",
+        "privacyidea-adfs": "AD FS",
+        "privacyidea-shibboleth": "Shibboleth"
+    };
+    // Slug of each component's product landing page. The page itself is picked
+    // by language and subscription state, see componentLinkTarget below.
+    var PTL_BASE_URL = "https://netknights.it/plugin-traffic-light";
+    $scope.componentPtlSlug = {
+        "privacyidea": "privacyidea-server",
+        "privacyidea-app": "privacyidea-authenticator-app",
+        "freeradius": "privacyidea-freeradius",
+        "privacyidea-nextcloud": "privacyidea-nextcloud",
+        "privacyidea-cp": "privacyidea-windows-credential-provider",
+        "pam": "privacyidea-pam-otp-push",
+        "pam-passkey": "privacyidea-pam-passkey",
+        "privacyidea-keycloak": "privacyidea-keycloak",
+        "entraid-via-keycloak": "privacyidea-entraid-integration",
+        "privacyidea-adfs": "privacyidea-adfs",
+        "privacyidea-shibboleth": "privacyidea-shibboleth"
+    };
+    // Build the landing page URL for a row as
+    // <base>/<language>/<sla|non-sla|expired>/<component slug>. Only German is
+    // served in its own language, every other locale gets the English page.
+    // Returns "" for components without a slug, which the view then renders as
+    // plain text.
+    $scope.componentLinkTarget = function (status) {
+        var slug = $scope.componentPtlSlug[status.application];
+        if (!slug) { return ""; }
+        var language = (gettextCatalog.getCurrentLanguage() || "").indexOf("de") === 0 ? "de" : "en";
+        return PTL_BASE_URL + "/" + language + "/" + subscriptionSegment(status) + "/" + slug;
+    };
+    // Which of the three landing pages a row points at: none on file, one that has
+    // expired, or a subscription that still covers the component (valid, expiring or
+    // exceeded - all three are subscribers).
+    function subscriptionSegment(status) {
+        if (status.subscription === "none") { return "non-sla"; }
+        if (status.subscription === "expired") { return "expired"; }
+        return "sla";
+    }
+    // Subscription overview view mode. Start compact; the "Show details" button
+    // switches to the detailed view, which adds the Expires, Versions and Current
+    // version columns.
+    $scope.subscriptionDetailed = false;
+    $scope.toggleSubscriptionDetail = function () {
+        $scope.subscriptionDetailed = !$scope.subscriptionDetailed;
+    };
+    // Copy the panel's data (server + component rows, without the section
+    // labels) as a JSON string to the clipboard.
+    $scope.copySubscriptionInfo = function () {
+        // Normalize the timestamp fields to ISO 8601 so the copied JSON is
+        // uniform (last_seen arrives as an RFC-1123 string, date_till as a
+        // Date). Copy each status so the displayed rows are not mutated.
+        var toIso = function (value) {
+            if (!value) { return value; }
+            var date = (value instanceof Date) ? value : new Date(value);
+            return isNaN(date.getTime()) ? value : date.toISOString();
+        };
+        var data = $scope.subscriptionRows
+            .filter(function (row) { return row.kind !== "label"; })
+            .map(function (row) {
+                return angular.extend({}, row.status, {
+                    last_seen: toIso(row.status.last_seen),
+                    date_till: toIso(row.status.date_till)
+                });
+            });
+        var json = JSON.stringify(data, null, 2);
+        var ok = function () {
+            inform.add(gettext("Subscription info copied to clipboard."),
+                       {type: "info", ttl: 3000});
+        };
+        var fail = function () {
+            inform.add(gettext("Could not copy to the clipboard."),
+                       {type: "danger", ttl: 5000});
+        };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(json).then(ok, fail);
+        } else {
+            // Fallback for non-secure contexts where navigator.clipboard is absent.
+            try {
+                var textarea = document.createElement("textarea");
+                textarea.value = json;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand("copy");
+                document.body.removeChild(textarea);
+                ok();
+            } catch (e) {
+                fail();
+            }
+        }
+    };
     $scope.authentications = {"success": 0, "fail": 0};
     $scope.latestNews = null;
 
@@ -136,9 +293,77 @@ myApp.controller("dashboardController", ["ConfigFactory", "TokenFactory",
     };
 
 
-     $scope.getSubscriptions = function() {
-        SubscriptionFactory.get(function (data) {
-            $scope.subscriptions = data.result.value;
+     // Hierarchy of the subscription overview. The server is the base component
+     // and is rendered on its own at the top. Everything else is a "use case",
+     // some grouped under sub-labels. Labels are pure headers; plugin nodes pull
+     // their status from the backend by `application`. This tree is flattened
+     // into rows with an `indent` level for rendering (see buildSubscriptionRows).
+     var SUBSCRIPTION_SECTIONS = [
+         {kind: "label", label: gettext("Use Cases"), children: [
+             {kind: "plugin", application: "privacyidea-app"},
+             {kind: "plugin", application: "freeradius"},
+             {kind: "plugin", application: "privacyidea-nextcloud"},
+             {kind: "label", label: gettext("System Login"), children: [
+                 {kind: "plugin", application: "privacyidea-cp"},
+                 {kind: "plugin", application: "pam"},
+                 {kind: "plugin", application: "pam-passkey"}
+             ]},
+             {kind: "label", label: gettext("Single Sign On"), children: [
+                 {kind: "plugin", application: "privacyidea-keycloak"},
+                 {kind: "plugin", application: "entraid-via-keycloak"},
+                 {kind: "plugin", application: "privacyidea-adfs"},
+                 {kind: "plugin", application: "privacyidea-shibboleth"}
+             ]}
+         ]}
+     ];
+
+     // Default status for a section plugin the backend did not report.
+     function unusedStatus(application) {
+         return {application: application, in_use: false, subscription: "none",
+                 date_till: null, days_left: null, last_seen: null,
+                 versions: [], current_version: null,
+                 current_version_date: null, current_version_url: null};
+     }
+
+     function flattenSections(nodes, depth, rows, statusByApp) {
+         nodes.forEach(function (node) {
+             if (node.kind === "label") {
+                 rows.push({kind: "label", label: node.label, indent: depth});
+                 flattenSections(node.children || [], depth + 1, rows, statusByApp);
+             } else {
+                 rows.push({kind: "plugin", indent: depth, application: node.application,
+                            status: statusByApp[node.application] || unusedStatus(node.application)});
+             }
+         });
+         return rows;
+     }
+
+     // Turn the backend status list into the flat, sectioned row list the
+     // template renders: server row first, then the flattened use-case tree.
+     function buildSubscriptionRows(entries) {
+         var statusByApp = {};
+         var serverEntry = null;
+         (entries || []).forEach(function (entry) {
+             // date_till arrives as an RFC-1123 string; parse it to a Date so
+             // the `date` filter can format it (otherwise it renders verbatim
+             // with the time and timezone).
+             if (entry.date_till) { entry.date_till = new Date(entry.date_till); }
+             if (entry.is_server) { serverEntry = entry; }
+             statusByApp[entry.application] = entry;
+         });
+         var rows = [{kind: "server", indent: 0,
+                      status: serverEntry || unusedStatus("privacyidea")}];
+         return flattenSections(SUBSCRIPTION_SECTIONS, 0, rows, statusByApp);
+     }
+
+     $scope.getPluginStatus = function() {
+        $scope.pluginStatusLoadState = null;
+        SubscriptionFactory.getStatus(function (data) {
+            $scope.subscriptionRows = buildSubscriptionRows(data.result.value);
+            $scope.pluginStatusLoadState = "ok";
+        }, function () {
+            $scope.subscriptionRows = [];
+            $scope.pluginStatusLoadState = "error";
         });
      };
 
@@ -417,7 +642,7 @@ $scope.getAuthentication = function () {
         $scope.get_events();
     }
     if (AuthFactory.checkRight('managesubscription')) {
-        $scope.getSubscriptions();
+        $scope.getPluginStatus();
     }
     if (AuthFactory.checkRight('auditlog')) {
         $scope.getAuthentication();
@@ -444,7 +669,7 @@ $scope.getAuthentication = function () {
             $scope.get_events();
         }
         if (AuthFactory.checkRight('managesubscription')) {
-            $scope.getSubscriptions();
+            $scope.getPluginStatus();
         }
         if (AuthFactory.checkRight('auditlog')) {
             $scope.getAuthentication();

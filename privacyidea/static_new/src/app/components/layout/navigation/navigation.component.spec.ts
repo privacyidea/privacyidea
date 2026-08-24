@@ -52,6 +52,8 @@ import { PeriodicTaskService } from "@services/periodic-task/periodic-task.servi
 import { MockEventService } from "@testing/mock-services/mock-event-service";
 import { EventService } from "@services/event/event.service";
 import { SystemService } from "@services/system/system.service";
+import { UserSettingsService } from "@services/user-settings/user-settings.service";
+import { MockUserSettingsService } from "@testing/mock-services/mock-user-settings-service";
 
 interface NavigationComponentPrivate {
   getFilteredNavItems: () => NavItem[];
@@ -102,6 +104,7 @@ describe("NavigationComponent (async, no RouterTestingModule, no MatSnackBar)", 
         { provide: PeriodicTaskService, useClass: MockPeriodicTaskService },
         { provide: EventService, useClass: MockEventService },
         { provide: SystemService, UseClass: MockSystemService },
+        { provide: UserSettingsService, useClass: MockUserSettingsService },
         PendingChangesService,
         MockLocalService
       ]
@@ -324,6 +327,16 @@ describe("NavigationComponent (async, no RouterTestingModule, no MatSnackBar)", 
       contentService.routeUrl.set(ROUTE_PATHS.TOKENS);
       expect(component.activeSection()).toBe("token");
     });
+
+    it("should detect 'dashboard' for dashboard route", () => {
+      contentService.routeUrl.set(ROUTE_PATHS.DASHBOARD);
+      expect(component.activeSection()).toBe("dashboard");
+    });
+
+    it("should keep 'dashboard' active for the news route", () => {
+      contentService.routeUrl.set(ROUTE_PATHS.NEWS);
+      expect(component.activeSection()).toBe("dashboard");
+    });
   });
 
   describe("dashboard toolbar actions", () => {
@@ -336,40 +349,34 @@ describe("NavigationComponent (async, no RouterTestingModule, no MatSnackBar)", 
 
     it("should begin a staged edit when entering edit mode", () => {
       const beginSpy = jest.spyOn(layoutService, "beginEdit");
-      component.enterDashboardEdit();
+      component["enterDashboardEdit"]();
       expect(beginSpy).toHaveBeenCalled();
       expect(layoutService.editMode()).toBe(true);
     });
 
     it("should commit the staged edit on save", () => {
       const saveSpy = jest.spyOn(layoutService, "saveEdit");
-      component.enterDashboardEdit();
-      component.saveDashboard();
+      component["enterDashboardEdit"]();
+      component["saveDashboard"]();
       expect(saveSpy).toHaveBeenCalled();
       expect(layoutService.editMode()).toBe(false);
     });
 
     it("should discard the staged edit on cancel", () => {
       const cancelSpy = jest.spyOn(layoutService, "cancelEdit");
-      component.enterDashboardEdit();
-      component.cancelDashboard();
+      component["enterDashboardEdit"]();
+      component["cancelDashboard"]();
       expect(cancelSpy).toHaveBeenCalled();
       expect(layoutService.editMode()).toBe(false);
     });
 
     it("should register the pending-changes save hook while editing", () => {
       const pendingChanges = TestBed.inject(PendingChangesService);
-      component.enterDashboardEdit();
+      component["enterDashboardEdit"]();
       expect(pendingChanges.hasSaveFn).toBe(true);
 
-      component.saveDashboard();
+      component["saveDashboard"]();
       expect(pendingChanges.hasSaveFn).toBe(false);
-    });
-
-    it("should detect 'dashboard' for dashboard route", () => {
-      const contentService = TestBed.inject(ContentService) as unknown as MockContentService;
-      contentService.routeUrl.set(ROUTE_PATHS.DASHBOARD);
-      expect(component.activeSection()).toBe("dashboard");
     });
   });
 });

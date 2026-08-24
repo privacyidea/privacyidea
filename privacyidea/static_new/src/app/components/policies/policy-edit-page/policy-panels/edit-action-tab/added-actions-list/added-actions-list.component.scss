@@ -1,3 +1,5 @@
+@use "styles";
+
 .added-actions-list-container {
   .gap-div-8px {
     width: 8px;
@@ -23,21 +25,15 @@
     height: 36px;
   }
 
-  .action-card {
-    padding: 0px var(--global-padding);
-  }
-
   --mat-expansion-container-background-color: transparent;
   --mat-expansion-container-elevation-shadow: none;
-  --expansion-panel-border: 1px solid var(--mat-sys-outline-variant);
-  --expansion-panel-header-padding: var(--half-global-padding) var(--three-quarters-global-padding);
+  --expansion-panel-header-padding: 8px 12px;
 
+  // The panel above is flattened by the tokens above; this card carries the recess instead.
   .action-card-in-panel {
-    border-radius: var(--border-radius);
-    box-shadow: var(--elevation-3);
+    @include styles.card-recessed(3);
     font-weight: 500;
-    padding: 0 var(--global-padding);
-    background-color: var(--mat-sys-surface-container-low);
+    padding: 0 16px;
   }
 
   .action-card-in-panel-selected {
@@ -49,6 +45,6 @@
   .policy-action-list {
     display: flex;
     flex-direction: column;
-    gap: var(--half-global-gap);
+    gap: 8px;
   }
 }

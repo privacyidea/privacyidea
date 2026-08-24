@@ -17,7 +17,7 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div class="input-container">
-  <ng-content select="input"></ng-content>
+  <ng-content select="input, textarea"></ng-content>
   @if (showClearButton()) {
     <app-clear-button
       (clearButtonClick)="clearInput()"

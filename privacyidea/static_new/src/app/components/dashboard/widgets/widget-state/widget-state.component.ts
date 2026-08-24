@@ -29,4 +29,6 @@ import { WidgetState } from "@models/dashboard";
 })
 export class WidgetStateComponent {
   readonly state = input.required<WidgetState>();
+  /** Overrides the default "Could not load data." text shown in the "error" state. */
+  readonly errorMessage = input<string>();
 }

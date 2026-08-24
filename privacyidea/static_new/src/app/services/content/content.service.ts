@@ -38,6 +38,8 @@ export interface ContentServiceInterface {
   containerSerial: WritableSignal<string>;
 
   onLogin: Signal<boolean>;
+  onDashboard: Signal<boolean>;
+  onNews: Signal<boolean>;
   onAudit: Signal<boolean>;
   onAuthenticationLog: Signal<boolean>;
   onClients: Signal<boolean>;
@@ -132,6 +134,8 @@ export class ContentService implements ContentServiceInterface {
     }
   });
   onLogin = computed(() => this.matchesPath(ROUTE_PATHS.LOGIN));
+  onDashboard = computed(() => this.matchesPath(ROUTE_PATHS.DASHBOARD));
+  onNews = computed(() => this.matchesPath(ROUTE_PATHS.NEWS));
   onAudit = computed(() => this.matchesPath(ROUTE_PATHS.AUDIT));
   onAuthenticationLog = computed(() => this.matchesPath(ROUTE_PATHS.AUTHENTICATION_LOG));
   onClients = computed(() => this.matchesPath(ROUTE_PATHS.CLIENTS));
