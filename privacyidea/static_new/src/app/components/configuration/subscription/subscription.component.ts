@@ -63,7 +63,9 @@ export class SubscriptionComponent {
     const fileList: FileList | null = element.files;
     if (fileList && fileList.length > 0) {
       this.subscriptionService.uploadSubscriptionFile(fileList[0]).subscribe(() => {
-        this.notificationService.success($localize`File uploaded successfully.`);
+        this.notificationService.success(
+          $localize`:@@subscription.fileUploadedSuccessfully:File uploaded successfully.`
+        );
         this.subscriptionService.reload();
       });
     }
@@ -74,17 +76,19 @@ export class SubscriptionComponent {
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: $localize`Delete Subscription`,
+          title: $localize`:@@subscription.deleteSubscription:Delete Subscription`,
           items: [application],
-          itemType: $localize`subscription`,
-          confirmAction: { label: $localize`Delete`, value: true, type: "destruct" }
+          itemType: $localize`:@@subscription.subscription:subscription`,
+          confirmAction: { label: $localize`:@@common.delete:Delete`, value: true, type: "destruct" }
         }
       })
       .afterClosed()
       .subscribe((result) => {
         if (result) {
           this.subscriptionService.deleteSubscription(application).subscribe(() => {
-            this.notificationService.success($localize`Subscription deleted successfully.`);
+            this.notificationService.success(
+              $localize`:@@subscription.subscriptionDeleted:Subscription deleted successfully.`
+            );
             this.subscriptionService.reload();
           });
         }

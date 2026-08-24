@@ -23,24 +23,24 @@
     [hideSingleSelectionIndicator]="true"
     class="button-toggle-group">
     <mat-button-toggle
-      i18n
+      i18n="@@token.generateRequest"
       value="generate">
       Generate Request
     </mat-button-toggle>
     <mat-button-toggle
-      i18n
+      i18n="@@token.uploadRequest"
       value="uploadRequest">
       Upload Request
     </mat-button-toggle>
     <mat-button-toggle
-      i18n
+      i18n="@@token.uploadCertificate"
       value="uploadCert">
       Upload Certificate
     </mat-button-toggle>
   </mat-button-toggle-group>
   <div class="flex-row gap-16">
     <mat-form-field class="input-width-l">
-      <mat-label i18n>CA Connector</mat-label>
+      <mat-label i18n="@@token.caConnector">CA Connector</mat-label>
       <mat-select
         [value]="caConnector()"
         (selectionChange)="caConnector.set($event.value); caConnectorTouched.set(true)"
@@ -51,11 +51,11 @@
         }
       </mat-select>
       @if (!caConnector() && caConnectorTouched()) {
-        <mat-error i18n>CA Connector is <strong>required</strong></mat-error>
+        <mat-error i18n="@@token.caConnectorRequired">CA Connector is <strong>required</strong></mat-error>
       }
     </mat-form-field>
     <mat-form-field class="input-width-l">
-      <mat-label i18n>Certificate Template</mat-label>
+      <mat-label i18n="@@token.certificateTemplate">Certificate Template</mat-label>
       <mat-select
         [value]="certTemplate()"
         (selectionChange)="certTemplate.set($event.value); certTemplateTouched.set(true)"
@@ -66,7 +66,9 @@
         }
       </mat-select>
       @if (!certTemplate() && certTemplateTouched()) {
-        <mat-error i18n>Certificate Template is <strong>required</strong></mat-error>
+        <mat-error i18n="@@token.certificateTemplateRequired"
+          >Certificate Template is <strong>required</strong></mat-error
+        >
       }
       @if (certTemplate()) {
         <app-clear-button
@@ -80,33 +82,35 @@
     @case ("generate") {
       <span
         class="margin-bottom-16"
-        i18n>
+        i18n="@@token.serverCreatePrivate">
         The server will create the private RSA key and store it in the database. <br />
         You can later download the PKCS#12 file.</span
       >
     }
     @case ("uploadRequest") {
       <mat-form-field class="width-100">
-        <mat-label i18n> Certificate Signing Request (PEM)</mat-label>
+        <mat-label i18n="@@token.certificateSigning"> Certificate Signing Request (PEM)</mat-label>
         <textarea
           [formField]="pemForm"
-          i18n-placeholder
+          i18n-placeholder="@@token.pasteCertificateSigning"
           matInput
           placeholder="Paste the Certificate Signing Request here"
           rows="3"></textarea>
-        <mat-error i18n>Certificate Signing Request is <strong>required</strong></mat-error>
+        <mat-error i18n="@@token.certificateSigningRequest"
+          >Certificate Signing Request is <strong>required</strong></mat-error
+        >
       </mat-form-field>
     }
     @case ("uploadCert") {
       <mat-form-field class="width-100">
-        <mat-label i18n> Certificate (PEM)</mat-label>
+        <mat-label i18n="@@token.certificatePem"> Certificate (PEM)</mat-label>
         <textarea
           [formField]="pemForm"
-          i18n-placeholder
+          i18n-placeholder="@@token.pasteCertificate"
           matInput
           placeholder="Paste the Certificate here"
           rows="3"></textarea>
-        <mat-error i18n>Certificate is <strong>required</strong></mat-error>
+        <mat-error i18n="@@token.certificateRequired">Certificate is <strong>required</strong></mat-error>
       </mat-form-field>
     }
   }

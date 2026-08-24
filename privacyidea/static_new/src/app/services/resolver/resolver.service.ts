@@ -256,9 +256,9 @@ export class ResolverService implements ResolverServiceInterface {
     const resolvers = this.resolverResourceValue();
     return resolvers
       ? Object.entries(resolvers).map(([name, data]) => ({
-        ...data,
-        resolvername: data.resolvername || name
-      }))
+          ...data,
+          resolvername: data.resolvername || name
+        }))
       : [];
   });
   resolverOptions = computed(() => {
@@ -304,7 +304,11 @@ export class ResolverService implements ResolverServiceInterface {
       try {
         userInfo = JSON.parse(userInfo);
       } catch (error) {
-        console.warn($localize`Failed to parse user info for resolver ${this.selectedResolverName()}` + ": ", error);
+        console.warn(
+          $localize`:@@resolver.failedParseUser:Failed to parse user info for resolver ${this.selectedResolverName()}` +
+            ": ",
+          error
+        );
         userInfo = {};
       }
     }

@@ -19,7 +19,7 @@
 
 <app-dialog-wrapper
   title="Assign SSH Machine"
-  i18n-title
+  i18n-title="@@token.assignSshMachine"
   (wrapperClose)="close()"
   (actionTriggered)="onAction($event)"
   [actions]="[assignAction]"
@@ -27,7 +27,7 @@
   <mat-form-field
     appearance="fill"
     class="input-width-l">
-    <mat-label i18n>Machine</mat-label>
+    <mat-label i18n="@@token.machine">Machine</mat-label>
     <input
       [formField]="selectedMachineForm"
       [matAutocomplete]="machineAuto"
@@ -42,7 +42,7 @@
       }
     </mat-autocomplete>
     @if (selectedMachineForm().touched() && !selectedMachineForm().valid()) {
-      <mat-error i18n>Machine is <strong>required</strong>.</mat-error>
+      <mat-error i18n="@@token.machineRequired">Machine is <strong>required</strong>.</mat-error>
     }
   </mat-form-field>
 
@@ -50,7 +50,7 @@
   <mat-form-field
     appearance="fill"
     class="input-width-l">
-    <mat-label i18n>Service ID</mat-label>
+    <mat-label i18n="@@common.serviceId">Service ID</mat-label>
     <mat-select
       [value]="selectedServiceIdValue()"
       (selectionChange)="selectedServiceIdValue.set($event.value)">
@@ -59,14 +59,14 @@
       }
     </mat-select>
     @if (selectedServiceIdForm().touched() && !selectedServiceIdForm().valid()) {
-      <mat-error i18n> Service ID is <strong>required</strong>.</mat-error>
+      <mat-error i18n="@@token.serviceIdRequired2"> Service ID is <strong>required</strong>.</mat-error>
     }
   </mat-form-field>
 
   <mat-form-field
     appearance="fill"
     class="input-width-l">
-    <mat-label i18n>User</mat-label>
+    <mat-label i18n="@@common.user">User</mat-label>
     <input
       matInput
       type="text"
@@ -81,7 +81,7 @@
       }
     </mat-autocomplete>
     @if (selectedUserForm().touched() && !selectedUserForm().valid()) {
-      <mat-error i18n> User is <strong>required</strong>.</mat-error>
+      <mat-error i18n="@@token.userRequired2"> User is <strong>required</strong>.</mat-error>
     }
   </mat-form-field>
 </app-dialog-wrapper>

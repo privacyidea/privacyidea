@@ -98,12 +98,16 @@ export class PrivacyideaServerService implements PrivacyideaServerServiceInterfa
 
     return lastValueFrom(request)
       .then(() => {
-        this.notificationService.success($localize`Successfully saved privacyIDEA server.`);
+        this.notificationService.success(
+          $localize`:@@piServer.successfullySaved:Successfully saved privacyIDEA server.`
+        );
         this.remoteServerResource.reload();
       })
       .catch((error) => {
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.error($localize`Failed to save privacyIDEA server. ` + message);
+        this.notificationService.error(
+          $localize`:@@piServer.failedSavePrivacyidea:Failed to save privacyIDEA server. ` + message
+        );
         throw new Error("post-failed");
       });
   }
@@ -117,12 +121,16 @@ export class PrivacyideaServerService implements PrivacyideaServerServiceInterfa
     );
     return lastValueFrom(request)
       .then(() => {
-        this.notificationService.success($localize`Successfully deleted privacyIDEA server: ${identifier}.`);
+        this.notificationService.success(
+          $localize`:@@piServer.successfullyDeleted:Successfully deleted privacyIDEA server: ${identifier}.`
+        );
         this.remoteServerResource.reload();
       })
       .catch((error) => {
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.error($localize`Failed to delete privacyIDEA server. ` + message);
+        this.notificationService.error(
+          $localize`:@@piServer.failedDeletePrivacyidea:Failed to delete privacyIDEA server. ` + message
+        );
         throw new Error("delete-failed");
       });
   }
@@ -133,18 +141,16 @@ export class PrivacyideaServerService implements PrivacyideaServerServiceInterfa
     return lastValueFrom(request)
       .then((res) => {
         if (res?.result?.value) {
-          this.notificationService.success($localize`Test request successful.`);
+          this.notificationService.success($localize`:@@piServer.testRequestSuccessful:Test request successful.`);
           return true;
         }
-        this.notificationService.error($localize`Test request failed.`);
+        this.notificationService.error($localize`:@@piServer.testRequestFailed:Test request failed.`);
         return false;
       })
       .catch((error) => {
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.error($localize`Failed to send test request. ` + message);
+        this.notificationService.error($localize`:@@piServer.failedSendTest:Failed to send test request. ` + message);
         return false;
       });
   }
-
 }
-

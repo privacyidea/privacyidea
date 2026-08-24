@@ -106,7 +106,7 @@ export class OverflowNavDirective implements AfterViewInit, OnDestroy {
     this.renderer.appendChild(this.moreButton, this.createMatIcon("more_horiz"));
 
     const label = this.renderer.createElement("span");
-    label.textContent = $localize`:@@overflowNavMoreLabel:More`;
+    label.textContent = $localize`:@@common.more:More`;
     this.renderer.appendChild(this.moreButton, label);
 
     this.menuContainer = this.renderer.createElement("div");

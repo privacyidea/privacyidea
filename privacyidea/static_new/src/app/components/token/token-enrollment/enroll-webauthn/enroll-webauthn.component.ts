@@ -19,10 +19,7 @@
 
 import { Component, forwardRef, inject } from "@angular/core";
 import { MatDialogRef } from "@angular/material/dialog";
-import {
-  EnrollmentResponse,
-  TokenEnrollmentData
-} from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { EnrollmentResponse, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import {
   WebAuthnApiPayloadMapper,
   WebAuthnEnrollmentData,
@@ -32,10 +29,7 @@ import {
 } from "@app/mappers/token-api-payload/webauthn-token-api-payload.mapper";
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
 import { TokenEnrollmentFirstStepDialogComponent } from "@components/token/token-enrollment/token-enrollment-firtst-step-dialog/token-enrollment-first-step-dialog.component";
-import {
-  EnrollmentArgs,
-  EnrollTokenBase
-} from "@components/token/token-enrollment/enroll-token-base";
+import { EnrollmentArgs, EnrollTokenBase } from "@components/token/token-enrollment/enroll-token-base";
 import { Base64Service, Base64ServiceInterface } from "@services/base64/base64.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
@@ -48,9 +42,7 @@ import { firstValueFrom } from "rxjs";
   imports: [],
   templateUrl: "./enroll-webauthn.component.html",
   styleUrl: "./enroll-webauthn.component.scss",
-  providers: [
-    { provide: EnrollTokenBase, useExisting: forwardRef(() => EnrollWebauthnComponent) }
-  ]
+  providers: [{ provide: EnrollTokenBase, useExisting: forwardRef(() => EnrollWebauthnComponent) }]
 })
 export class EnrollWebauthnComponent extends EnrollTokenBase<WebAuthnEnrollmentData> {
   protected readonly enrollmentMapper: WebAuthnApiPayloadMapper = inject(WebAuthnApiPayloadMapper);
@@ -64,7 +56,7 @@ export class EnrollWebauthnComponent extends EnrollTokenBase<WebAuthnEnrollmentD
 
   buildEnrollmentArgs(basicEnrollmentData: TokenEnrollmentData): EnrollmentArgs<WebAuthnEnrollmentData> | null {
     if (!navigator.credentials?.create) {
-      const errorMsg = $localize`WebAuthn is not supported by this browser.`;
+      const errorMsg = $localize`:@@token.webauthnNotSupported:WebAuthn is not supported by this browser.`;
       this.notificationService.error(errorMsg);
       return null;
     }
@@ -86,12 +78,12 @@ export class EnrollWebauthnComponent extends EnrollTokenBase<WebAuthnEnrollmentD
   ): Promise<EnrollmentResponse | null> {
     if (!enrollmentResponse?.detail) {
       this.notificationService.error(
-        $localize`Failed to initiate WebAuthn registration: Invalid server response or missing details.`
+        $localize`:@@token.failedInitiateWebauthn:Failed to initiate WebAuthn registration: Invalid server response or missing details.`
       );
       return null;
     } else if (!enrollmentResponse?.detail?.["webAuthnRegisterRequest"]) {
       this.notificationService.error(
-        $localize`Failed to initiate WebAuthn registration: Missing WebAuthn registration request data.`
+        $localize`:@@token.failedInitiateWebauthnRegistration:Failed to initiate WebAuthn registration: Missing WebAuthn registration request data.`
       );
       return null;
     } else if (enrollmentData.type !== "webauthn") {
@@ -123,7 +115,7 @@ export class EnrollWebauthnComponent extends EnrollTokenBase<WebAuthnEnrollmentD
     const request = enrollmentResponse.detail?.webAuthnRegisterRequest;
 
     if (!request) {
-      this.notificationService.warning($localize`Invalid WebAuthn registration request data.`);
+      this.notificationService.warning($localize`:@@token.invalidWebauthn:Invalid WebAuthn registration request data.`);
       return null;
     }
 
@@ -160,7 +152,9 @@ export class EnrollWebauthnComponent extends EnrollTokenBase<WebAuthnEnrollmentD
     } catch (browserOrCredentialError) {
       const message =
         browserOrCredentialError instanceof Error ? browserOrCredentialError.message : String(browserOrCredentialError);
-      this.notificationService.error($localize`WebAuthn credential creation failed: ${message || "Unknown error"}`);
+      this.notificationService.error(
+        $localize`:@@token.webauthnCredential:WebAuthn credential creation failed: ${message || "Unknown error"}`
+      );
       publicKeyCred = null;
     } finally {
       this.closeStepOneDialog();
@@ -205,7 +199,9 @@ export class EnrollWebauthnComponent extends EnrollTokenBase<WebAuthnEnrollmentD
     const { webauthnEnrollmentData, webauthnEnrollmentResponse } = args;
 
     if (!webauthnEnrollmentResponse || !webauthnEnrollmentResponse.detail) {
-      this.notificationService.warning($localize`Enrollment response or its detail is missing for finalization.`);
+      this.notificationService.warning(
+        $localize`:@@token.enrollmentResponse:Enrollment response or its detail is missing for finalization.`
+      );
       return null;
     }
 
@@ -214,7 +210,7 @@ export class EnrollWebauthnComponent extends EnrollTokenBase<WebAuthnEnrollmentD
 
     if (!webAuthnRegisterRequest || !webAuthnRegisterRequest.transaction_id || !detail.serial) {
       this.notificationService.warning(
-        $localize`Invalid transaction ID or serial number in enrollment detail for finalization.`
+        $localize`:@@token.invalidTransaction:Invalid transaction ID or serial number in enrollment detail for finalization.`
       );
       return null;
     }
@@ -252,7 +248,7 @@ export class EnrollWebauthnComponent extends EnrollTokenBase<WebAuthnEnrollmentD
       return { ...response };
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      const errMsg = $localize`WebAuthn finalization failed: ${message || error}`;
+      const errMsg = $localize`:@@token.webauthnFinalization:WebAuthn finalization failed: ${message || error}`;
       this.notificationService.error(errMsg);
       return null;
     }

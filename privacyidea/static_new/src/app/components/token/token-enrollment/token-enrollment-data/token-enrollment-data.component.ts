@@ -101,13 +101,15 @@ export class TokenEnrollmentDataComponent {
   showRegenerateButton = computed(() => !NO_REGENERATE_TOKEN_TYPES.includes(this.tokenType()));
   regenerateButtonText = computed(() =>
     REGENERATE_AS_VALUES_TOKEN_TYPES.includes(this.tokenType())
-      ? $localize`Regenerate Values`
-      : $localize`Regenerate QR Code`
+      ? $localize`:@@token.regenerateValues:Regenerate Values`
+      : $localize`:@@common.regenerateQrCode:Regenerate QR Code`
   );
 
   regenerateQRCode() {
     if (!this.enrollmentParameters()) {
-      this.notificationService.warning($localize`Enrollment parameters are missing. Cannot regenerate token.`);
+      this.notificationService.warning(
+        $localize`:@@token.enrollmentParameters:Enrollment parameters are missing. Cannot regenerate token.`
+      );
       return;
     }
     const newEnrollmentData: TokenEnrollmentData = {

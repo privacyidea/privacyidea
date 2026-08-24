@@ -23,16 +23,32 @@
       <thead>
         <tr>
           <th>
-            <app-table-sort-header key="source" [sortState]="sort" label="Source" i18n-label />
+            <app-table-sort-header
+              key="source"
+              [sortState]="sort"
+              label="Source"
+              i18n-label="@@dashboard.source" />
           </th>
           <th>
-            <app-table-sort-header key="name" [sortState]="sort" label="Name" i18n-label />
+            <app-table-sort-header
+              key="name"
+              [sortState]="sort"
+              label="Name"
+              i18n-label="@@common.name" />
           </th>
           <th>
-            <app-table-sort-header key="daysRemaining" [sortState]="sort" label="Days left" i18n-label />
+            <app-table-sort-header
+              key="daysRemaining"
+              [sortState]="sort"
+              label="Days left"
+              i18n-label="@@dashboard.daysLeft" />
           </th>
           <th>
-            <app-table-sort-header key="status" [sortState]="sort" label="Status" i18n-label />
+            <app-table-sort-header
+              key="status"
+              [sortState]="sort"
+              label="Status"
+              i18n-label="@@common.status" />
           </th>
         </tr>
       </thead>
@@ -49,8 +65,7 @@
             </td>
             <td
               [matTooltip]="entry.not_after ? (entry.not_after | date: 'medium') : ''"
-              [matTooltipDisabled]="!entry.not_after"
-            >
+              [matTooltipDisabled]="!entry.not_after">
               {{ entry.days_remaining !== null ? entry.days_remaining : "—" }}
             </td>
             <td>
@@ -59,7 +74,11 @@
           </tr>
         } @empty {
           <tr>
-            <td colspan="4" i18n>No certificates to monitor.</td>
+            <td
+              colspan="4"
+              i18n="@@dashboard.noCertificates">
+              No certificates to monitor.
+            </td>
           </tr>
         }
       </tbody>

@@ -51,12 +51,12 @@ export interface ToggleActiveDialogData {
   `
 })
 export class ToggleActiveDialogComponent extends AbstractDialogComponent<ToggleActiveDialogData, ToggleActiveAction> {
-  activeToInactive = $localize`active` + " → " + $localize`inactive`;
-  inactiveToActive = $localize`inactive` + " → " + $localize`active`;
+  activeToInactive = $localize`:@@common.active2:active` + " → " + $localize`:@@token.inactive:inactive`;
+  inactiveToActive = $localize`:@@token.inactive:inactive` + " → " + $localize`:@@common.active2:active`;
   actions: DialogAction<ToggleActiveAction>[] = [
-    { label: $localize`Activate`, value: "activate", type: "confirm", primary: false },
-    { label: $localize`Deactivate`, value: "deactivate", type: "destruct", primary: false },
-    { label: $localize`Toggle`, value: "toggle", type: "confirm", primary: true }
+    { label: $localize`:@@token.activate:Activate`, value: "activate", type: "confirm", primary: false },
+    { label: $localize`:@@token.deactivate:Deactivate`, value: "deactivate", type: "destruct", primary: false },
+    { label: $localize`:@@token.toggle:Toggle`, value: "toggle", type: "confirm", primary: true }
   ];
 
   onAction(value: ToggleActiveAction): void {

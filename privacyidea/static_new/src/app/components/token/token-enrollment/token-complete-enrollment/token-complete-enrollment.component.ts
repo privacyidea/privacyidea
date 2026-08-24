@@ -35,7 +35,10 @@ import { TokenEnrollmentDialogData, TokenService, TokenServiceInterface } from "
   templateUrl: "./token-complete-enrollment.component.html",
   styleUrl: "./token-complete-enrollment.component.scss"
 })
-export class TokenCompleteEnrollmentComponent extends AbstractDialogComponent<TokenEnrollmentDialogData, EnrollmentResponse> {
+export class TokenCompleteEnrollmentComponent extends AbstractDialogComponent<
+  TokenEnrollmentDialogData,
+  EnrollmentResponse
+> {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
 
@@ -58,7 +61,7 @@ export class TokenCompleteEnrollmentComponent extends AbstractDialogComponent<To
 
   readonly dialogActions = computed<DialogAction<string>[]>(() => [
     {
-      label: $localize`Enroll`,
+      label: $localize`:@@token.enroll:Enroll`,
       type: "confirm",
       value: "enroll",
       disabled: this.invalidInputSignal()

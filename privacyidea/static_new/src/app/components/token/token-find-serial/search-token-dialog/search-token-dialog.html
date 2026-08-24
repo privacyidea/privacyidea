@@ -1,12 +1,12 @@
 <app-dialog-wrapper
   title="Find Serial"
-  i18n-title="@@DialogTitleFindSerial"
+  i18n-title="@@token.findSerial"
   [actions]="[action]"
   [showCancelButton]="true"
   (wrapperClose)="close()"
   (actionTriggered)="onAction($event)">
   <div>
-    <p i18n>
+    <p i18n="@@token.searchRequest">
       This search request will check {{ data }} tokens in the system for the given OTP value.
       <br />
       This could take a lot of time and could even time out.

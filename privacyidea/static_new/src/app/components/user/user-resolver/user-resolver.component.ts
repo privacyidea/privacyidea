@@ -40,8 +40,8 @@ import { Resolver, ResolverService } from "@services/resolver/resolver.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
 
 const columnKeysMap = [
-  { key: "resolvername", label: $localize`Name` },
-  { key: "type", label: $localize`Type` }
+  { key: "resolvername", label: $localize`:@@common.name:Name` },
+  { key: "type", label: $localize`:@@common.type:Type` }
 ];
 
 @Component({
@@ -128,10 +128,10 @@ export class UserResolversComponent {
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: $localize`Delete Resolver`,
+          title: $localize`:@@resolver.deleteResolver:Delete Resolver`,
           items: [resolver.resolvername],
           itemType: "resolver",
-          confirmAction: { label: $localize`Delete`, value: true, type: "destruct" }
+          confirmAction: { label: $localize`:@@common.delete:Delete`, value: true, type: "destruct" }
         }
       })
       .afterClosed()
@@ -142,15 +142,21 @@ export class UserResolversComponent {
         this.resolverService.deleteResolver(resolver.resolvername).subscribe({
           next: (res) => {
             if (res.result?.status === true && (res.result.value ?? -1) >= 0) {
-              this.notificationService.success($localize`Resolver "${resolver.resolvername}" deleted.`);
+              this.notificationService.success(
+                $localize`:@@resolver.resolverDeleted:Resolver "${resolver.resolvername}" deleted.`
+              );
               this.resolverService.resolversResource.reload?.();
             } else {
-              this.notificationService.error($localize`Resolver "${resolver.resolvername}" not found.`);
+              this.notificationService.error(
+                $localize`:@@resolver.resolverNotFound:Resolver "${resolver.resolvername}" not found.`
+              );
             }
           },
           error: (err) => {
             const message = err.error?.result?.error?.message || err.message;
-            this.notificationService.error($localize`Failed to delete resolver. ${message}`);
+            this.notificationService.error(
+              $localize`:@@resolver.failedDeleteResolver:Failed to delete resolver. ${message}`
+            );
           }
         });
       });

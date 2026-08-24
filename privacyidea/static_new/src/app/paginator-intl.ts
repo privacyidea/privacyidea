@@ -25,19 +25,19 @@ import { MatPaginatorIntl } from "@angular/material/paginator";
  */
 export function createPaginatorIntl(): MatPaginatorIntl {
   const intl = new MatPaginatorIntl();
-  intl.itemsPerPageLabel = $localize`Items per page:`;
-  intl.nextPageLabel = $localize`Next page`;
-  intl.previousPageLabel = $localize`Previous page`;
-  intl.firstPageLabel = $localize`First page`;
-  intl.lastPageLabel = $localize`Last page`;
+  intl.itemsPerPageLabel = $localize`:@@nav.itemsPerPage:Items per page:`;
+  intl.nextPageLabel = $localize`:@@nav.nextPage:Next page`;
+  intl.previousPageLabel = $localize`:@@nav.previousPage:Previous page`;
+  intl.firstPageLabel = $localize`:@@nav.firstPage:First page`;
+  intl.lastPageLabel = $localize`:@@nav.lastPage:Last page`;
   intl.getRangeLabel = (page: number, pageSize: number, length: number): string => {
     if (length === 0 || pageSize === 0) {
-      return $localize`0 of ${length}`;
+      return $localize`:@@nav.of:0 of ${length}`;
     }
     length = Math.max(length, 0);
     const startIndex = page * pageSize;
     const endIndex = startIndex < length ? Math.min(startIndex + pageSize, length) : startIndex + pageSize;
-    return $localize`${startIndex + 1} – ${endIndex} of ${length}`;
+    return $localize`:@@nav.of2:${startIndex + 1} – ${endIndex} of ${length}`;
   };
   return intl;
 }

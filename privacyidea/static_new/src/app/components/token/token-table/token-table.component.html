@@ -21,13 +21,13 @@
   appScrollToTop
   aria-label="Token Table"
   class="token-table-layout"
-  i18n-aria-label>
+  i18n-aria-label="@@token.tokenTable">
   @if (authService.actionAllowed("tokenlist")) {
     <div class="filter-paginator-container">
       <mat-form-field
         class="token-table-filter"
         subscriptSizing="dynamic">
-        <mat-label i18n>Filter Tokens...</mat-label>
+        <mat-label i18n="@@common.filterTokens">Filter Tokens...</mat-label>
         <app-clearable-input
           (clearButtonClick)="tokenService.clearFilter()"
           [showClearButton]="tokenService.filterDraft().isNotEmpty">
@@ -38,8 +38,8 @@
             (keyup.enter)="tokenService.applyFilterInput($event)"
             [value]="tokenService.filterDraft().filterString"
             aria-label="Filter Input"
-            i18n-aria-label
-            i18n-placeholder
+            i18n-aria-label="@@common.filterInput"
+            i18n-placeholder="@@token.exampleQueryType"
             id="token-filter-input"
             matInput
             placeholder="Example query: 'type: hotp userid: 1000'" />
@@ -48,7 +48,7 @@
         @if (showFilterHint()) {
           <mat-hint
             align="end"
-            i18n>
+            i18n="@@common.pressEnterApply">
             Press enter to apply the filter
           </mat-hint>
         }
@@ -57,8 +57,8 @@
         [matMenuTriggerFor]="advancedFilterMenu"
         aria-label="More Filter"
         class="margin-left-8"
-        i18n-aria-label
-        i18n-matTooltip
+        i18n-aria-label="@@common.moreFilter"
+        i18n-matTooltip="@@common.moreFilter"
         mat-icon-button
         matTooltip="More Filter">
         <mat-icon>filter_list</mat-icon>
@@ -81,7 +81,7 @@
         [dataSource]="tokenDataSource()"
         aria-label="Token Data Table"
         class="token-table"
-        i18n-aria-label
+        i18n-aria-label="@@token.tokenDataTable"
         mat-table>
         @for (column of columnKeysMap; track column) {
           <ng-container [matColumnDef]="column.key">
@@ -93,7 +93,7 @@
                 <mat-checkbox
                   (change)="$event.checked ? tokenSelection.selectAllRows() : tokenSelection.deselectAllRows()"
                   aria-label="Select all tokens"
-                  i18n-aria-label
+                  i18n-aria-label="@@token.selectAllTokens"
                   [checked]="tokenSelection.allRowsSelected()"
                   [disabled]="!tokenSelection.hasVisibleRows()"
                   [indeterminate]="tokenSelection.someRowsSelected()" />
@@ -126,7 +126,7 @@
                           [matMenuTriggerData]="{ keyword: apiFilterKeyMap[column.key] }"
                           [matMenuTriggerFor]="realmMenu"
                           aria-label="Filter by {{ column.label }}"
-                          i18n-aria-label
+                          i18n-aria-label="@@common.filterBy"
                           class="filter-button"
                           mat-icon-button>
                           <mat-icon class="keyword-button-icon margin-left-0"> filter_list</mat-icon>
@@ -135,7 +135,7 @@
                         <button
                           (click)="onKeywordClick(apiFilterKeyMap[column.key])"
                           aria-label="Filter by {{ column.label }}"
-                          i18n-aria-label
+                          i18n-aria-label="@@common.filterBy"
                           class="filter-button"
                           mat-icon-button>
                           <mat-icon class="keyword-button-icon margin-left-0">
@@ -147,7 +147,7 @@
                     <button
                       (click)="tableUtilsService.onSortButtonClick(column.key, sort)"
                       aria-label="Sort by {{ column.label }}"
-                      i18n-aria-label
+                      i18n-aria-label="@@common.sortBy"
                       class="sort-button"
                       mat-icon-button
                       type="button">
@@ -283,31 +283,31 @@
         <tr
           *matHeaderRowDef="columnKeys; sticky: true"
           aria-label="Header Row"
-          i18n-aria-label
+          i18n-aria-label="@@common.headerRow"
           mat-header-row></tr>
 
         <tr
           *matRowDef="let row; columns: columnKeys"
           aria-label="Data Row"
-          i18n-aria-label
+          i18n-aria-label="@@common.dataRow"
           mat-row></tr>
 
         <tr
           *matNoDataRow
           aria-label="No Data Row"
-          i18n-aria-label>
+          i18n-aria-label="@@common.noDataRow">
           <td
             [attr.colspan]="columnKeys.length"
             aria-label="No Data Cell"
-            i18n
-            i18n-aria-label>
+            i18n="@@common.noDataMatching"
+            i18n-aria-label="@@common.noDataCell">
             No data matching the filter.
           </td>
         </tr>
       </table>
     </div>
   } @else {
-    <div i18n>You do not have the permission to view the token list.</div>
+    <div i18n="@@token.youDoNotHavePermission">You do not have the permission to view the token list.</div>
   }
 </div>
 
@@ -319,7 +319,7 @@
       (click)="onItemSelected(keyword, '')"
       mat-menu-item>
       <mat-icon>filter_alt_off</mat-icon>
-      <span i18n>Clear Filter</span>
+      <span i18n="@@common.clearFilter">Clear Filter</span>
     </button>
     <mat-divider />
     @for (realm of realmService.realmOptions(); track realm) {

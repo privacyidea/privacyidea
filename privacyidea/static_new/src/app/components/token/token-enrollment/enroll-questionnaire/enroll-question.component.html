@@ -20,14 +20,14 @@
   @if (configQuestions().length === 0) {
     @if (authService.role() === "admin") {
       <span
-        i18n
+        i18n="@@token.enableQuestionnaire"
         class="inline-warning">
         To enable questionnaire token enrollment, you need to set up the
         <a
           role="button"
           tabindex="0"
           aria-label="Go to Questionnaire token configuration"
-          i18n-aria-label
+          i18n-aria-label="@@token.goQuestionnaire"
           (click)="goToQuestionConfig()"
           (keydown)="onQuestionConfigKeydown($event)">
           Questionnaire Token Configuration </a
@@ -35,13 +35,15 @@
       </span>
     } @else {
       <span
-        i18n
+        i18n="@@token.questionnaireToken"
         class="inline-warning">
         The questionnaire token enrollment is not completely configured. Please contact your administrator.
       </span>
     }
   } @else {
-    <span i18n> Please answer at least {{ configMinNumberOfAnswers() }} of the following questions: </span>
+    <span i18n="@@token.pleaseAnswerLeast">
+      Please answer at least {{ configMinNumberOfAnswers() }} of the following questions:
+    </span>
   }
   <div class="margin-top-16 flex-column gap-16">
     @for (question of configQuestions(); track question) {
@@ -57,6 +59,8 @@
     }
   </div>
   @if (answeredCount() < configMinNumberOfAnswers() && formTouched()) {
-    <mat-error i18n>At least {{ configMinNumberOfAnswers() }} answers are <strong>required</strong>.</mat-error>
+    <mat-error i18n="@@token.leastAnswersRequired"
+      >At least {{ configMinNumberOfAnswers() }} answers are <strong>required</strong>.</mat-error
+    >
   }
 </div>

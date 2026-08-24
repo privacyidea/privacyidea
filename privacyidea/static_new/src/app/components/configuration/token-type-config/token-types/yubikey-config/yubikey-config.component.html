@@ -18,12 +18,14 @@
 -->
 <mat-expansion-panel>
   <mat-expansion-panel-header>
-    <mat-panel-title i18n>Yubikey</mat-panel-title>
+    <mat-panel-title i18n="@@tokenTypeConfig.yubikey">Yubikey</mat-panel-title>
   </mat-expansion-panel-header>
   <div class="panel-content expansion-well">
-    <p i18n>This is a Yubikey in the Yubico Mode authenticated against privacyIDEA.</p>
-    <p i18n>The Yubikey emits a 44 character on time password.</p>
-    <p i18n>
+    <p i18n="@@tokenTypeConfig.yubikeyYubico">
+      This is a Yubikey in the Yubico Mode authenticated against privacyIDEA.
+    </p>
+    <p i18n="@@tokenTypeConfig.yubikeyEmits44">The Yubikey emits a 44 character on time password.</p>
+    <p i18n="@@tokenTypeConfig.authenticationRequestHandled">
       The authentication request can be handled by the default privacyIDEA
       <a
         href="https://privacyidea.readthedocs.io/en/latest/modules/api/validate.html"
@@ -41,7 +43,7 @@
     <table class="table margin-bottom-16">
       <thead>
         <tr>
-          <th i18n>Client ID API Key</th>
+          <th i18n="@@tokenTypeConfig.clientIdApiKey">Client ID API Key</th>
         </tr>
       </thead>
       <tbody>
@@ -70,7 +72,7 @@
       <mat-form-field
         appearance="fill"
         class="input-width-m">
-        <mat-label i18n>Client ID</mat-label>
+        <mat-label i18n="@@common.clientId">Client ID</mat-label>
         <input
           #apiIdInput
           (input)="newYubikeyApiId.set($any($event.target).value)"
@@ -80,17 +82,19 @@
           placeholder="Client ID"
           required />
         @if (apiIdInput.validity.valueMissing) {
-          <mat-error i18n>Client ID is <strong>required</strong></mat-error>
+          <mat-error i18n="@@tokenTypeConfig.clientIdRequired">Client ID is <strong>required</strong></mat-error>
         }
         @if (apiIdInput.validity.patternMismatch) {
-          <mat-error i18n>Invalid characters. Only alphanumeric, dots, underscores and hyphens are allowed.</mat-error>
+          <mat-error i18n="@@tokenTypeConfig.invalidCharacters"
+            >Invalid characters. Only alphanumeric, dots, underscores and hyphens are allowed.</mat-error
+          >
         }
       </mat-form-field>
 
       <mat-form-field
         appearance="fill"
         class="input-width-l">
-        <mat-label i18n>API Key</mat-label>
+        <mat-label i18n="@@tokenTypeConfig.apiKey">API Key</mat-label>
         <input
           (input)="newYubikeyApiKey.set($any($event.target).value)"
           [value]="newYubikeyApiKey()"
@@ -103,7 +107,7 @@
         (change)="newYubikeyGenKey.set($event.checked)"
         [checked]="newYubikeyGenKey()"
         class="genkey-spacing"
-        i18n>
+        i18n="@@tokenTypeConfig.generateApiKey">
         Generate API Key
       </mat-checkbox>
     </div>
@@ -113,7 +117,7 @@
       class="action-button-secondary button-width-m margin-top-16"
       mat-stroked-button>
       <mat-icon>add</mat-icon>
-      <span i18n>Add</span>
+      <span i18n="@@tokenTypeConfig.add">Add</span>
     </button>
   </div>
 </mat-expansion-panel>

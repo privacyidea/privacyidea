@@ -27,7 +27,7 @@
   <mat-form-field
     class="input-width-m"
     subscriptSizing="dynamic">
-    <mat-label i18n>PIN and/or OTP</mat-label>
+    <mat-label i18n="@@token.pinOtp">PIN and/or OTP</mat-label>
     <input
       [value]="otpOrPinToTest()"
       (input)="otpOrPinToTest.set($any($event.target).value)"
@@ -51,13 +51,13 @@
     class="action-button-secondary button-width-l"
     mat-stroked-button>
     <mat-icon>help_outline</mat-icon>
-    <span i18n>Test Token</span>
+    <span i18n="@@token.testToken">Test Token</span>
   </button>
   <button
     (click)="verifyOTPValue()"
     class="action-button-secondary button-width-l"
     mat-stroked-button>
     <mat-icon>help_outline</mat-icon>
-    <span i18n>Verify OTP Value</span>
+    <span i18n="@@token.verifyOtpValue">Verify OTP Value</span>
   </button>
 </div>

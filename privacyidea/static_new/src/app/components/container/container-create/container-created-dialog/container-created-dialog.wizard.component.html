@@ -26,11 +26,11 @@
     <div class="margin-bottom-16">
       <h3
         class="margin-8"
-        i18n>
+        i18n="@@container.containerSuccessfully">
         Container Successfully Created
       </h3>
     </div>
-    <span i18n
+    <span i18n="@@container.containerWasSuccessfullyCreated"
       >The container was successfully created with serial number
       <a
         (click)="navigateContainerDetails(data()!.containerSerial())"
@@ -48,13 +48,13 @@
         alt="QR Code"
         class="qr-code"
         height="300px"
-        i18n-alt
+        i18n-alt="@@common.qrCode"
         src="{{ data()?.response?.result?.value?.container_url?.img }}"
         width="300px" />
     }
     @if (!postTopHtml?.hasContent && data()?.response?.result?.value?.container_url?.value) {
       <div class="flex-column gap-16">
-        <p i18n>
+        <p i18n="@@container.pleaseScanQrCode">
           Please scan the QR code with the privacyIDEA Authenticator App or click this
           <a href="{{ data()?.response?.result?.value?.container_url?.value }}">link</a>
           on your smartphone to register your container. It will send the missing registration data to the configured
@@ -75,7 +75,7 @@
     class="action-button-primary button-width-s"
     mat-button
     mat-dialog-close
-    i18n>
+    i18n="@@common.logout">
     Logout
   </button>
 </mat-dialog-actions>

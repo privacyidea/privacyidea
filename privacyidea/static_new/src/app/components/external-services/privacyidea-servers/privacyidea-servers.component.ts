@@ -113,10 +113,10 @@ export class PrivacyideaServersComponent {
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: $localize`Delete privacyIDEA Servers`,
+          title: $localize`:@@piServer.deletePrivacyideaServers:Delete privacyIDEA Servers`,
           items: selected.map((row) => row.identifier),
           itemType: "privacyidea-server",
-          confirmAction: { label: $localize`Delete`, value: true, type: "destruct" }
+          confirmAction: { label: $localize`:@@common.delete:Delete`, value: true, type: "destruct" }
         }
       })
       .afterClosed()

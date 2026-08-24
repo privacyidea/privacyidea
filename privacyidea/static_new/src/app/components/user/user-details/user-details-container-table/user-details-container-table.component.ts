@@ -136,10 +136,10 @@ export class UserDetailsContainerTableComponent {
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: $localize`Delete Containers`,
+          title: $localize`:@@user.deleteContainers:Delete Containers`,
           items: selected.map((container) => container.serial),
           itemType: "container",
-          confirmAction: { label: $localize`Delete`, value: true, type: "destruct" }
+          confirmAction: { label: $localize`:@@common.delete:Delete`, value: true, type: "destruct" }
         }
       })
       .afterClosed()

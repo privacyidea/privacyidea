@@ -19,16 +19,16 @@
 <div
   appScrollToTop
   class="clients-layout">
-  <h3 i18n>Known Clients</h3>
+  <h3 i18n="@@common.knownClients">Known Clients</h3>
 
   <div
     class="margin-bottom-16"
-    i18n>
+    i18n="@@audit.listClientsHave">
     This is a list of clients that have used the <i>/validate/check</i> endpoint for authentication.
   </div>
 
   <mat-form-field class="width-100">
-    <mat-label i18n>Filter Clients ...</mat-label>
+    <mat-label i18n="@@audit.filterClients">Filter Clients ...</mat-label>
     <app-clearable-input
       (clearButtonClick)="clearFilter()"
       [showClearButton]="filterValue !== ''">
@@ -36,8 +36,8 @@
         (input)="handleFilterInput($event)"
         [value]="filterValue"
         aria-label="Filter Input"
-        i18n-aria-label
-        i18n-placeholder
+        i18n-aria-label="@@common.filterInput"
+        i18n-placeholder="@@common.filterAcrossAll"
         matInput
         placeholder="Filter across all columns." />
     </app-clearable-input>
@@ -48,7 +48,7 @@
     [dataSource]="clientDataSource()"
     aria-label="Client Data Table"
     class="clients-table"
-    i18n-aria-label
+    i18n-aria-label="@@audit.clientDataTable"
     mat-table
     matSort>
     @for (column of columnKeysMap; let colIdx = $index; track column) {
@@ -80,7 +80,7 @@
                       (click)="showInAuditLog(column.key, client[column.key])"
                       [routerLink]="[ROUTE_PATHS.AUDIT]"
                       class="ml-4 small-icon-button"
-                      i18n-matTooltip
+                      i18n-matTooltip="@@audit.showAuditLog"
                       mat-icon-button
                       matTooltip="Show in audit log">
                       <mat-icon>receipt_long</mat-icon>
@@ -103,12 +103,12 @@
     <tr
       *matNoDataRow
       aria-label="No Data Row"
-      i18n-aria-label>
+      i18n-aria-label="@@common.noDataRow">
       <td
         [attr.colspan]="columnKeys.length"
         aria-label="No Data Cell"
-        i18n
-        i18n-aria-label>
+        i18n="@@common.noDataMatching"
+        i18n-aria-label="@@common.noDataCell">
         No data matching the filter.
       </td>
     </tr>

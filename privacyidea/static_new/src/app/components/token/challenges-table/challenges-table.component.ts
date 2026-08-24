@@ -44,11 +44,11 @@ import { inlineFilterHint } from "@utils/filter-hint.utils";
 import { ChallengesTableActionsComponent } from "./challenges-table-actions/challenges-table-actions.component";
 
 const columnKeysMap = [
-  { key: "timestamp", label: $localize`Timestamp` },
-  { key: "serial", label: $localize`Serial` },
-  { key: "transaction_id", label: $localize`Transaction ID` },
-  { key: "expiration", label: $localize`Expiration` },
-  { key: "otp_received", label: $localize`Received` }
+  { key: "timestamp", label: $localize`:@@token.timestamp:Timestamp` },
+  { key: "serial", label: $localize`:@@common.serial:Serial` },
+  { key: "transaction_id", label: $localize`:@@token.transactionId:Transaction ID` },
+  { key: "expiration", label: $localize`:@@token.expiration:Expiration` },
+  { key: "otp_received", label: $localize`:@@token.received:Received` }
 ];
 
 @Component({

@@ -19,17 +19,17 @@
 <app-details-card
   class="details-card--assignment"
   title="Assignments"
-  i18n-title>
+  i18n-title="@@token.assignments">
   <div class="details-field-list">
     <app-detail-field-row
       label="Token Realms"
-      i18n-label
+      i18n-label="@@token.tokenRealms"
       [isEditing]="realmsField.isEditing()">
       <ng-container fieldValue>
         @if (realmsField.isEditing()) {
           <app-details-multi-select-cell
             selectLabel="Select Realms"
-            i18n-selectLabel
+            i18n-selectLabel="@@common.selectRealms"
             [options]="realmOptions()"
             [selected]="realmService.selectedRealms()"
             (selectionChange)="realmService.selectedRealms.set($event)" />
@@ -53,13 +53,13 @@
 
     <app-detail-field-row
       label="Token Groups"
-      i18n-label
+      i18n-label="@@token.tokenGroups"
       [isEditing]="tokengroupField.isEditing()">
       <ng-container fieldValue>
         @if (tokengroupField.isEditing()) {
           <app-details-multi-select-cell
             selectLabel="Select Token Group"
-            i18n-selectLabel
+            i18n-selectLabel="@@token.selectTokenGroup"
             [options]="tokengroupSelectOptions()"
             [selected]="selectedTokengroup()"
             (selectionChange)="selectedTokengroup.set($event)" />
@@ -83,7 +83,7 @@
 
     <app-detail-field-row
       label="Container Serial"
-      i18n-label
+      i18n-label="@@common.containerSerial"
       [isEditing]="containerField.isEditing()">
       <ng-container fieldValue>
         <div class="container-serial-row">
@@ -91,7 +91,7 @@
             <mat-form-field
               class="input-width-m height-52"
               subscriptSizing="dynamic">
-              <mat-label i18n>Enter Container</mat-label>
+              <mat-label i18n="@@token.enterContainer">Enter Container</mat-label>
               <app-clearable-input
                 (clearButtonClick)="containerService.selectedContainerSerial.set('')"
                 [showClearButton]="containerService.selectedContainerSerial() !== ''">
@@ -115,7 +115,7 @@
                 [checked]="containerService.filterContainersByTokenOwner()"
                 (change)="containerService.filterContainersByTokenOwner.set($event.checked)"
                 [disabled]="!tokenDetails().username"
-                i18n>
+                i18n="@@token.filterByToken">
                 Filter by token owner
               </mat-checkbox>
             }
@@ -127,7 +127,7 @@
                   (keydown.enter)="contentService.navigateContainerDetails(containerSerial())"
                   (keydown.space)="$event.preventDefault(); contentService.navigateContainerDetails(containerSerial())"
                   aria-label="Container Serial Link"
-                  i18n-aria-label
+                  i18n-aria-label="@@token.containerSerial"
                   role="button"
                   tabindex="0">
                   {{ containerSerial() }}
@@ -143,7 +143,7 @@
                 (keydown.enter)="contentService.navigateContainerDetails(containerSerial())"
                 (keydown.space)="$event.preventDefault(); contentService.navigateContainerDetails(containerSerial())"
                 aria-label="Container Serial Link"
-                i18n-aria-label
+                i18n-aria-label="@@token.containerSerial"
                 role="button"
                 tabindex="0">
                 {{ containerSerial() }}

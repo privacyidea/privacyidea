@@ -26,12 +26,18 @@ export interface FilterInputHintOptions {
 
 export function filterInputHint(options: FilterInputHintOptions = {}): string {
   const lines: string[] = [];
-  lines.push($localize`Use * as a wildcard.`);
+  lines.push($localize`:@@common.useAsWildcard:Use * as a wildcard.`);
   if (options.supportsKeywords ?? true) {
-    lines.push($localize`Quote values that contain spaces or a colon, e.g. description: "my note".`);
+    lines.push(
+      $localize`:@@common.quoteValuesContain:Quote values that contain spaces or a colon, e.g. description: "my note".`
+    );
   }
   if (options.includeCaseNote ?? true) {
-    lines.push(options.mayBeCaseSensitive ? $localize`Mostly case-insensitive` : $localize`Case-insensitive`);
+    lines.push(
+      options.mayBeCaseSensitive
+        ? $localize`:@@common.mostlyCaseInsensitive:Mostly case-insensitive`
+        : $localize`:@@common.caseInsensitive:Case-insensitive`
+    );
   }
   return lines.join(options.separator ?? "\n");
 }
@@ -54,12 +60,14 @@ export interface FilterKeywordSemantics {
 }
 
 export function filterColumnHint(label: string, semantics: FilterKeywordSemantics): string {
-  const title = $localize`Filter by ${label}`;
+  const title = $localize`:@@common.filterBy:Filter by ${label}`;
   if (semantics.isBoolean) {
-    return `${title}\n` + $localize`true or false`;
+    return `${title}\n` + $localize`:@@common.trueFalse:true or false`;
   }
   const parts: string[] = [];
-  parts.push(semantics.exactMatch ? $localize`exact match` : $localize`partial match`);
+  parts.push(
+    semantics.exactMatch ? $localize`:@@common.exactMatch:exact match` : $localize`:@@common.partialMatch:partial match`
+  );
   if (semantics.caseNote) {
     parts.push(caseNoteText(semantics.caseNote));
   }
@@ -69,10 +77,10 @@ export function filterColumnHint(label: string, semantics: FilterKeywordSemantic
 function caseNoteText(note: FilterCaseNote): string {
   switch (note) {
     case "sensitive":
-      return $localize`case-sensitive`;
+      return $localize`:@@common.caseSensitive:case-sensitive`;
     case "usually-sensitive":
-      return $localize`usually case-sensitive`;
+      return $localize`:@@common.usuallyCaseSensitive:usually case-sensitive`;
     default:
-      return $localize`usually case-insensitive`;
+      return $localize`:@@common.usuallyCaseInsensitive:usually case-insensitive`;
   }
 }

@@ -161,10 +161,10 @@ export class PeriodicTaskComponent implements OnInit {
         .openDialog({
           component: SimpleConfirmationDialogComponent,
           data: {
-            title: $localize`Delete Periodic Tasks`,
+            title: $localize`:@@periodicTask.deletePeriodicTasks:Delete Periodic Tasks`,
             items: selectedTasks.map((t) => t.name),
-            itemType: $localize`Periodic Tasks`,
-            confirmAction: { label: $localize`Delete`, value: true, type: "destruct" }
+            itemType: $localize`:@@common.periodicTasks:Periodic Tasks`,
+            confirmAction: { label: $localize`:@@common.delete:Delete`, value: true, type: "destruct" }
           }
         })
         .afterClosed()
@@ -173,7 +173,9 @@ export class PeriodicTaskComponent implements OnInit {
     for (const task of selectedTasks) {
       try {
         await firstValueFrom(this.periodicTaskService.deletePeriodicTask(task.id));
-        this.notificationService.success($localize`Successfully deleted periodic task.`);
+        this.notificationService.success(
+          $localize`:@@periodicTask.successfullyDeleted:Successfully deleted periodic task.`
+        );
       } catch {
         // error notification already surfaced by deletePeriodicTask
       }

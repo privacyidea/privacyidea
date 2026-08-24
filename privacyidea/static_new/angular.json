@@ -206,7 +206,29 @@
           "defaultConfiguration": "development"
         },
         "extract-i18n": {
-          "builder": "@angular-devkit/build-angular:extract-i18n"
+          "builder": "ng-extract-i18n-merge:ng-extract-i18n-merge",
+          "options": {
+            "buildTarget": "privacyidea-webui:build",
+            "format": "xlf",
+            "outputPath": "src/locale",
+            "sourceFile": "messages.xlf",
+            "targetFiles": [
+              "messages.cs.xlf",
+              "messages.de.xlf",
+              "messages.es.xlf",
+              "messages.fr.xlf",
+              "messages.it.xlf",
+              "messages.nl.xlf",
+              "messages.pt.xlf",
+              "messages.ru.xlf",
+              "messages.ta.xlf",
+              "messages.tr.xlf",
+              "messages.uk.xlf",
+              "messages.zh-Hant.xlf"
+            ],
+            "includeContext": true,
+            "sort": "stableAppendNew"
+          }
         },
         "test": {
           "builder": "@angular-builders/jest:run",

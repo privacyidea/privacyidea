@@ -20,7 +20,7 @@
 <div class="conditions-container">
   <h2
     class="conditions-title"
-    i18n>
+    i18n="@@policy.environmentConditions">
     Environment Conditions
   </h2>
 
@@ -37,14 +37,14 @@
     <mat-form-field
       appearance="outline"
       class="input-width-l margin-bottom-16">
-      <mat-label i18n>Valid time</mat-label>
+      <mat-label i18n="@@policy.validTime">Valid time</mat-label>
       <input
         matInput
         [formField]="validTimeField"
-        i18n-placeholder
+        i18n-placeholder="@@policy.monFri918Sat"
         placeholder="Mon-Fri: 9-18, Sat: 10-15" />
       @if (validTimeField().errors().some(e => e.kind === 'invalidValidTime')) {
-        <mat-error i18n>Please enter a valid time format</mat-error>
+        <mat-error i18n="@@policy.pleaseEnterValidTime">Please enter a valid time format</mat-error>
       }
       @if (validTimeSignal() !== "") {
         <app-clear-button
@@ -56,7 +56,7 @@
     <mat-form-field
       appearance="outline"
       class="input-width-l margin-bottom-16">
-      <mat-label i18n>Client</mat-label>
+      <mat-label i18n="@@common.client">Client</mat-label>
       <input
         matInput
         [formField]="clientField"
@@ -90,7 +90,7 @@
         }
       </mat-autocomplete>
       @if (clientField().errors().some(e => e.kind === 'invalidClient')) {
-        <mat-error i18n>Please enter a valid client format</mat-error>
+        <mat-error i18n="@@policy.pleaseEnterValid">Please enter a valid client format</mat-error>
       }
       @if (clientSignal() !== "") {
         <app-clear-button
@@ -121,7 +121,7 @@
           class="action-button-secondary button-width-m"
           (click)="clearUserAgents()">
           <mat-icon>clear_all</mat-icon>
-          <span i18n>Clear User Agents</span>
+          <span i18n="@@policy.clearUserAgents">Clear User Agents</span>
         </button>
       </div>
     }
@@ -132,7 +132,7 @@
       subscriptSizing="dynamic"
       appearance="outline"
       class="input-width-l">
-      <mat-label i18n>User Agent</mat-label>
+      <mat-label i18n="@@common.userAgent">User Agent</mat-label>
       <mat-select
         #uaSelect
         [value]="null"
@@ -141,7 +141,7 @@
         <div class="select-search-header">
           <input
             matInput
-            i18n-placeholder
+            i18n-placeholder="@@policy.search"
             placeholder="Search..."
             [value]="userAgentSearch()"
             (input)="userAgentSearch.set($any($event.target).value)"
@@ -157,7 +157,7 @@
         @if (filteredUserAgentPresets().length === 0) {
           <mat-option
             disabled
-            i18n
+            i18n="@@policy.noAgentsFound"
             >No agents found</mat-option
           >
         }
@@ -167,13 +167,13 @@
       subscriptSizing="dynamic"
       appearance="outline"
       class="add-user-agent-input input-width-l">
-      <mat-label i18n>Add Custom User Agent</mat-label>
+      <mat-label i18n="@@policy.addCustomUser">Add Custom User Agent</mat-label>
       <input
         matInput
         [formField]="addUserAgentField"
         (keyup.enter)="addUserAgent()" />
       @if (addUserAgentField().errors().some(e => e.kind === 'includesComma')) {
-        <mat-error i18n>User Agent must not contain commas.</mat-error>
+        <mat-error i18n="@@policy.userAgentMust">User Agent must not contain commas.</mat-error>
       }
     </mat-form-field>
 

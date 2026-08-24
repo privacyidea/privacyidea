@@ -34,20 +34,20 @@
               @if (type.count === null) {
                 <span
                   class="count-unknown"
-                  i18n>
+                  i18n="@@dashboard.unknown">
                   unknown
                 </span>
               } @else if (type.stale) {
                 <span
                   class="count-stale"
                   matTooltip="Could not be refreshed, showing the previous value."
-                  i18n-matTooltip>
+                  i18n-matTooltip="@@dashboard.couldNotRefreshed">
                   {{ type.count }}
                   <sup
                     class="stale-marker"
                     role="img"
                     aria-label="Could not be refreshed, showing the previous value."
-                    i18n-aria-label>
+                    i18n-aria-label="@@dashboard.couldNotRefreshed">
                     *
                   </sup>
                 </span>
@@ -62,7 +62,7 @@
   } @else if (!loadingMore()) {
     <p
       class="empty-hint"
-      i18n>
+      i18n="@@dashboard.noTokens">
       No tokens
     </p>
   }

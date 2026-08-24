@@ -19,30 +19,32 @@
 <div class="flex-column">
   <div class="flex-row gap-16">
     <mat-form-field class="input-width-l">
-      <mat-label i18n>Test Yubikey</mat-label>
+      <mat-label i18n="@@token.testYubikey">Test Yubikey</mat-label>
       <input
         [value]="testYubiKey()"
         (input)="testYubiKey.set($event.target.value)"
-        i18n-placeholder
+        i18n-placeholder="@@token.pushYubikeyButton"
         matInput
         placeholder="Push Yubikey button here" />
     </mat-form-field>
     <mat-form-field class="input-width-l">
-      <mat-label i18n>OTP length</mat-label>
+      <mat-label i18n="@@token.otpLength">OTP length</mat-label>
       <input
         [formField]="otpLengthForm"
         matInput
         type="number" />
-      <mat-error i18n>OTP length is <strong>required</strong></mat-error>
+      <mat-error i18n="@@token.otpLengthRequired">OTP length is <strong>required</strong></mat-error>
     </mat-form-field>
     <mat-form-field class="input-width-l">
-      <mat-label i18n>OTP Key</mat-label>
+      <mat-label i18n="@@token.otpKey">OTP Key</mat-label>
       <input
         [formField]="otpKeyForm"
-        i18n-placeholder
+        i18n-placeholder="@@token.enterOtpKey"
         matInput
         placeholder="Enter OTP key" />
-      <mat-error i18n>OTP key is <strong>required</strong> and must be 32 characters long</mat-error>
+      <mat-error i18n="@@token.otpKeyRequiredMust"
+        >OTP key is <strong>required</strong> and must be 32 characters long</mat-error
+      >
     </mat-form-field>
   </div>
 </div>

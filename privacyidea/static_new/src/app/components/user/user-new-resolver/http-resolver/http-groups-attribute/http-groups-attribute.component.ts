@@ -41,7 +41,9 @@ export interface UserGroupsModel {
 export class HttpGroupsAttributeComponent {
   model = model.required<UserGroupsModel>();
   readonly slideToggleTooltipSignal = computed(() =>
-    this.model().active ? $localize`Disable user groups retrieval` : $localize`Enable user groups retrieval`
+    this.model().active
+      ? $localize`:@@resolver.disableUserGroups:Disable user groups retrieval`
+      : $localize`:@@resolver.enableUserGroups:Enable user groups retrieval`
   );
   resolverType = input.required<string>();
 }

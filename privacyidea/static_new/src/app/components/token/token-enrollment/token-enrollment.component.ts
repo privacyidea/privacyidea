@@ -51,10 +51,7 @@ import { MatError, MatFormField, MatHint, MatLabel, MatSuffix } from "@angular/m
 import { MatInput } from "@angular/material/input";
 import { MatOption, MatSelect } from "@angular/material/select";
 import { MAT_TOOLTIP_DEFAULT_OPTIONS, MatTooltipModule } from "@angular/material/tooltip";
-import {
-  EnrollmentResponse,
-  TokenEnrollmentData
-} from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { EnrollmentResponse, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { EnrollTokenTypeSwitchComponent } from "@components/shared/enroll-token-type-switch/enroll-token-type-switch.component";
@@ -310,7 +307,7 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
     const currentTokenType = this.tokenService.selectedTokenType();
     let everythingIsValid = true;
     if (!currentTokenType) {
-      this.notificationService.warning($localize`Please select a token type.`);
+      this.notificationService.warning($localize`:@@token.pleaseSelectToken:Please select a token type.`);
       return false;
     }
 
@@ -326,13 +323,17 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
     }
 
     if (!everythingIsValid) {
-      this.notificationService.warning($localize`Please fill in all required fields or correct invalid entries.`);
+      this.notificationService.warning(
+        $localize`:@@token.pleaseFillAll:Please fill in all required fields or correct invalid entries.`
+      );
       return false;
     }
 
     const strategy: EnrollTokenBase | undefined = this.enrollSwitch()?.currentStrategy();
     if (!strategy) {
-      this.notificationService.warning($localize`Enrollment action is not available for the selected token type.`);
+      this.notificationService.warning(
+        $localize`:@@token.enrollmentAction:Enrollment action is not available for the selected token type.`
+      );
       return false;
     }
 
@@ -374,7 +375,9 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
 
     enrollPromise.catch((error) => {
       const message = error.error?.result?.error?.message || "";
-      this.notificationService.error($localize`Failed to enroll token: ${message || error.message || error}`);
+      this.notificationService.error(
+        $localize`:@@token.failedEnrollToken:Failed to enroll token: ${message || error.message || error}`
+      );
     });
     let enrollmentResponse: EnrollmentResponse | null = await enrollPromise;
 
@@ -462,7 +465,7 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
 
   protected openLastStepDialog(response: EnrollmentResponse | null): void {
     if (!response) {
-      this.notificationService.warning($localize`No enrollment response available.`);
+      this.notificationService.warning($localize`:@@token.noEnrollmentResponse:No enrollment response available.`);
       return;
     }
 
@@ -486,7 +489,9 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
     }
 
     if (this.isUserRequired() && !this.userService.selectedUser() && !this.enrolledDialogData()?.rollover) {
-      this.notificationService.warning($localize`User is required for this token type, but no user was provided.`);
+      this.notificationService.warning(
+        $localize`:@@token.userRequiredToken:User is required for this token type, but no user was provided.`
+      );
       return;
     }
 

@@ -92,12 +92,12 @@ export class ServiceIdService implements ServiceIdServiceInterface {
 
     return lastValueFrom(request)
       .then(() => {
-        this.notificationService.success($localize`Successfully saved service ID.`);
+        this.notificationService.success($localize`:@@serviceId.successfullySaved:Successfully saved service ID.`);
         this.serviceIdResource.reload();
       })
       .catch((error) => {
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.error($localize`Failed to save service ID. ` + message);
+        this.notificationService.error($localize`:@@serviceId.failedSaveService:Failed to save service ID. ` + message);
         throw new Error("post-failed");
       });
   }
@@ -108,12 +108,16 @@ export class ServiceIdService implements ServiceIdServiceInterface {
     });
     return lastValueFrom(request)
       .then(() => {
-        this.notificationService.success($localize`Successfully deleted service ID: ${servicename}.`);
+        this.notificationService.success(
+          $localize`:@@serviceId.successfullyDeleted:Successfully deleted service ID: ${servicename}.`
+        );
         this.serviceIdResource.reload();
       })
       .catch((error) => {
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.error($localize`Failed to delete service ID. ` + message);
+        this.notificationService.error(
+          $localize`:@@serviceId.failedDeleteService:Failed to delete service ID. ` + message
+        );
         throw new Error("delete-failed");
       });
   }

@@ -23,13 +23,13 @@
     @if (isEditMode()) {
       <h3
         class="margin-8"
-        i18n>
+        i18n="@@smsGateway.editSmsGateway">
         Edit SMS Gateway
       </h3>
     } @else {
       <h3
         class="margin-8"
-        i18n>
+        i18n="@@common.createSmsGateway">
         Create SMS Gateway
       </h3>
     }
@@ -42,7 +42,7 @@
           (click)="onCancel()"
           class="action-button-secondary button-width-s"
           mat-stroked-button>
-          <span i18n>Cancel</span>
+          <span i18n="@@common.cancel">Cancel</span>
         </button>
         <button
           (click)="save()"
@@ -50,7 +50,7 @@
           class="action-button-primary button-width-s"
           mat-stroked-button>
           <mat-icon>save</mat-icon>
-          <span i18n>Save</span>
+          <span i18n="@@common.save">Save</span>
         </button>
       </div>
     </div>
@@ -61,7 +61,7 @@
           <mat-form-field
             appearance="fill"
             class="input-width-l">
-            <mat-label i18n>Name</mat-label>
+            <mat-label i18n="@@common.name">Name</mat-label>
             <app-clearable-input
               (clearButtonClick)="smsModel.update(m => ({...m, name: ''}))"
               [showClearButton]="!isEditMode() && !!smsModel().name">
@@ -71,12 +71,12 @@
                 placeholder="mySmsGateway" />
             </app-clearable-input>
             @if (smsForm.name().errors().some(e => e.kind === 'required')) {
-              <mat-error i18n>Name is <strong>required</strong></mat-error>
+              <mat-error i18n="@@smsGateway.nameRequired">Name is <strong>required</strong></mat-error>
             }
             @if (smsForm.name().errors().some(e => e.kind === 'pattern')) {
-              <mat-error
-                i18n>Name contains <strong>invalid characters</strong>. Only alphanumeric characters, dots, underscores
-                     and hyphens are allowed.
+              <mat-error i18n="@@common.nameContainsInvalid"
+                >Name contains <strong>invalid characters</strong>. Only alphanumeric characters, dots, underscores and
+                hyphens are allowed.
               </mat-error>
             }
           </mat-form-field>
@@ -84,7 +84,7 @@
           <mat-form-field
             appearance="fill"
             class="input-width-l">
-            <mat-label i18n>Provider Module</mat-label>
+            <mat-label i18n="@@smsGateway.providerModule">Provider Module</mat-label>
             <mat-select
               [value]="smsModel().providermodule"
               (selectionChange)="smsModel.update(m => ({...m, providermodule: $event.value}))"
@@ -96,7 +96,9 @@
               }
             </mat-select>
             @if (smsForm.providermodule().errors().some(e => e.kind === 'required')) {
-              <mat-error i18n>Provider Module is <strong>required</strong></mat-error>
+              <mat-error i18n="@@smsGateway.providerModuleRequired"
+                >Provider Module is <strong>required</strong></mat-error
+              >
             }
           </mat-form-field>
         </div>
@@ -104,7 +106,7 @@
         <mat-form-field
           appearance="fill"
           class="input-width-xl">
-          <mat-label i18n>Description</mat-label>
+          <mat-label i18n="@@common.description">Description</mat-label>
           <app-clearable-input
             (clearButtonClick)="smsModel.update(m => ({...m, description: ''}))"
             [showClearButton]="!!smsModel().description">
@@ -117,7 +119,7 @@
       </div>
 
       @if (selectedProvider()) {
-        <h3 i18n>Parameters</h3>
+        <h3 i18n="@@smsGateway.parameters">Parameters</h3>
         <div class="parameters-form">
           @for (param of parameterEntries(); track param.key) {
             <mat-form-field
@@ -168,7 +170,7 @@
               <mat-hint>{{ param.value.description }}</mat-hint>
 
               @if (param.value.required && !parametersModel()[param.key]) {
-                <mat-error i18n>{{ param.key }} is <strong>required</strong></mat-error>
+                <mat-error i18n="@@smsGateway.isRequired">{{ param.key }} is <strong>required</strong></mat-error>
               }
             </mat-form-field>
           }
@@ -176,7 +178,7 @@
       }
 
       @if (selectedProvider()?.options_allowed) {
-        <h3 i18n>Options</h3>
+        <h3 i18n="@@common.options">Options</h3>
 
         <div class="table-wrapper">
           <table
@@ -186,7 +188,7 @@
             <ng-container matColumnDef="key">
               <th
                 *matHeaderCellDef
-                i18n
+                i18n="@@common.key"
                 mat-header-cell>
                 Key
               </th>
@@ -200,7 +202,7 @@
             <ng-container matColumnDef="value">
               <th
                 *matHeaderCellDef
-                i18n
+                i18n="@@common.value"
                 mat-header-cell>
                 Value
               </th>
@@ -214,7 +216,7 @@
             <ng-container matColumnDef="actions">
               <th
                 *matHeaderCellDef
-                i18n
+                i18n="@@common.actions"
                 mat-header-cell>
                 Actions
               </th>
@@ -234,7 +236,7 @@
             <ng-container matColumnDef="secret">
               <th
                 *matHeaderCellDef
-                i18n
+                i18n="@@common.secret"
                 mat-header-cell>
                 Secret
               </th>
@@ -261,7 +263,7 @@
                 <mat-form-field
                   appearance="fill"
                   class="input-width-m">
-                  <mat-label i18n>Option Name</mat-label>
+                  <mat-label i18n="@@smsGateway.optionName">Option Name</mat-label>
                   <app-clearable-input
                     (clearButtonClick)="newOptionKey.set('')"
                     [showClearButton]="!!newOptionKey()">
@@ -281,7 +283,7 @@
                 <mat-form-field
                   appearance="fill"
                   class="input-width-m">
-                  <mat-label i18n>Value</mat-label>
+                  <mat-label i18n="@@common.value">Value</mat-label>
                   <app-clearable-input
                     (clearButtonClick)="newOptionValue.set('')"
                     [showClearButton]="!!newOptionValue()">
@@ -302,7 +304,7 @@
                   (change)="newOptionSecret.set(!newOptionSecret())"
                   [checked]="newOptionSecret()"
                   aria-label="Secret"
-                  i18n-aria-label></mat-checkbox>
+                  i18n-aria-label="@@common.secret"></mat-checkbox>
               </td>
             </ng-container>
 
@@ -331,7 +333,7 @@
       }
 
       @if (selectedProvider()?.headers_allowed) {
-        <h3 i18n>Headers</h3>
+        <h3 i18n="@@smsGateway.headers">Headers</h3>
 
         <div class="table-wrapper margin-bottom-16">
           <table
@@ -341,7 +343,7 @@
             <ng-container matColumnDef="key">
               <th
                 *matHeaderCellDef
-                i18n
+                i18n="@@common.key"
                 mat-header-cell>
                 Key
               </th>
@@ -355,7 +357,7 @@
             <ng-container matColumnDef="value">
               <th
                 *matHeaderCellDef
-                i18n
+                i18n="@@common.value"
                 mat-header-cell>
                 Value
               </th>
@@ -369,7 +371,7 @@
             <ng-container matColumnDef="actions">
               <th
                 *matHeaderCellDef
-                i18n
+                i18n="@@common.actions"
                 mat-header-cell>
                 Actions
               </th>
@@ -389,7 +391,7 @@
             <ng-container matColumnDef="secret">
               <th
                 *matHeaderCellDef
-                i18n
+                i18n="@@common.secret"
                 mat-header-cell>
                 Secret
               </th>
@@ -416,7 +418,7 @@
                 <mat-form-field
                   appearance="fill"
                   class="input-width-m">
-                  <mat-label i18n>Header Name</mat-label>
+                  <mat-label i18n="@@smsGateway.headerName">Header Name</mat-label>
                   <app-clearable-input
                     (clearButtonClick)="newHeaderKey.set('')"
                     [showClearButton]="!!newHeaderKey()">
@@ -436,7 +438,7 @@
                 <mat-form-field
                   appearance="fill"
                   class="input-width-m">
-                  <mat-label i18n>Value</mat-label>
+                  <mat-label i18n="@@common.value">Value</mat-label>
                   <app-clearable-input
                     (clearButtonClick)="newHeaderValue.set('')"
                     [showClearButton]="!!newHeaderValue()">
@@ -457,7 +459,7 @@
                   (change)="newHeaderSecret.set(!newHeaderSecret())"
                   [checked]="newHeaderSecret()"
                   aria-label="Secret"
-                  i18n-aria-label></mat-checkbox>
+                  i18n-aria-label="@@common.secret"></mat-checkbox>
               </td>
             </ng-container>
 

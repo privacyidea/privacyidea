@@ -120,7 +120,7 @@ export class SessionTimerService implements SessionTimerServiceInterface {
 
   private handleSessionTimeout(): void {
     this.notificationService.warning(
-      $localize`Your session has expired. You will be logged out and redirected to the login page.`
+      $localize`:@@common.yourSessionHas:Your session has expired. You will be logged out and redirected to the login page.`
     );
     // Keep notification visible for 1.5s before logging out to ensure the user sees it
     setTimeout(() => {

@@ -21,7 +21,7 @@
   appScrollToTop
   aria-label="Token Enrollment"
   class="token-enrollment-container"
-  i18n-aria-label>
+  i18n-aria-label="@@common.tokenEnrollment">
   @let preTopHtml = preTopHtml$ | async;
   @if (preTopHtml?.hasContent) {
     <div
@@ -30,7 +30,7 @@
   } @else {
     <h3
       class="margin-8"
-      i18n>
+      i18n="@@token.enrollToken">
       Enroll {{ tokenType().name }} Token
     </h3>
   }
@@ -44,12 +44,12 @@
         mat-stroked-button
         type="submit">
         <mat-icon>add_moderator</mat-icon>
-        <span i18n>Enroll Token</span>
+        <span i18n="@@common.enrollToken">Enroll Token</span>
       </button>
       <button
         (click)="reopenEnrollmentDialog()"
         matTooltip="Reopen enrollment dialog"
-        i18n-matTooltip
+        i18n-matTooltip="@@common.reopenEnrollment"
         [ngClass]="{ hidden: !canReopenEnrollmentDialog() }"
         mat-icon-button
         type="button">
@@ -61,18 +61,20 @@
       [wizard]="wizard" />
     @if (descriptionRequired()) {
       <mat-form-field class="input-width-l description-form">
-        <mat-label i18n>Description</mat-label>
+        <mat-label i18n="@@common.description">Description</mat-label>
         <textarea
           [formField]="descriptionForm"
-          i18n-placeholder
+          i18n-placeholder="@@common.enterDescription"
           matInput
           placeholder="Enter description"
           rows="3"></textarea>
         <mat-hint align="end">{{ description().length }} / {{ tokenService.maxDescriptionLength }} </mat-hint>
         @if (descriptionForm().errors().some(e => e.kind === 'required') && descriptionForm().touched()) {
-          <mat-error i18n> Description is <strong>required</strong>. </mat-error>
+          <mat-error i18n="@@token.descriptionRequired"> Description is <strong>required</strong>. </mat-error>
         } @else if (descriptionForm().errors().some(e => e.kind === 'maxlength') && descriptionForm().touched()) {
-          <mat-error i18n> Description cannot exceed <strong>80 characters</strong>. </mat-error>
+          <mat-error i18n="@@token.descriptionCannot">
+            Description cannot exceed <strong>80 characters</strong>.
+          </mat-error>
         }
       </mat-form-field>
     }

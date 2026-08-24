@@ -19,12 +19,12 @@
 
 <app-dialog-wrapper
   title="Verify Token Enrollment"
-  i18n-title="@@tokenEnrollVerifyTitle"
+  i18n-title="@@token.verifyTokenEnrollment"
   [showCancelButton]="true"
   [actions]="dialogActions()"
   (actionTriggered)="onDialogAction($event)"
   cancelButtonLabel="Close"
-  i18n-cancelButtonLabel="@@closeButtonLabel"
+  i18n-cancelButtonLabel="@@common.close"
   (wrapperClose)="close()">
   <app-token-enrolled-text
     [serial]="responseDetails?.serial"
@@ -37,7 +37,7 @@
 
   <span
     class="margin-bottom-16"
-    i18n
+    i18n="@@token.howeverActivate"
     >However, to activate your token you still need to verify the enrollment.</span
   >
 
@@ -49,10 +49,10 @@
   }
 
   <div class="margin-top-16">
-    <h3 i18n>Verify Enrollment</h3>
+    <h3 i18n="@@token.verifyEnrollment">Verify Enrollment</h3>
   </div>
   <mat-form-field class="width-100">
-    <mat-label i18n>OTP</mat-label>
+    <mat-label i18n="@@token.otp">OTP</mat-label>
     <input
       [formField]="verifyOTPForm"
       matInput />

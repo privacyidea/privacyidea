@@ -19,7 +19,7 @@
 <div
   class="container-templates-layout"
   aria-label="Container Templates Layout"
-  i18n-aria-label>
+  i18n-aria-label="@@container.containerTemplates">
   <div class="filter-paginator-container">
     <app-container-templates-filter
       class="container-templates-table-filter"
@@ -54,7 +54,7 @@
           [indeterminate]="selector.someRowsSelected()"
           [disabled]="!selector.hasVisibleRows()"
           aria-label="Select all templates"
-          i18n-aria-label>
+          i18n-aria-label="@@container.selectAllTemplates">
         </mat-checkbox>
       </th>
       <td
@@ -145,12 +145,12 @@
     <tr
       *matNoDataRow
       aria-label="No Data Row"
-      i18n-aria-label>
+      i18n-aria-label="@@common.noDataRow">
       <td
         [attr.colspan]="columnKeys().length"
         aria-label="No Data Cell"
-        i18n
-        i18n-aria-label>
+        i18n="@@common.noDataMatching"
+        i18n-aria-label="@@common.noDataCell">
         No data matching the filter.
       </td>
     </tr>

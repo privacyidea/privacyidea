@@ -21,7 +21,7 @@
   appScrollToTop
   aria-label="Policy Table"
   class="policies-table-layout"
-  i18n-aria-label>
+  i18n-aria-label="@@policy.policyTable">
   @if (authService.actionAllowed("policyread")) {
     <app-policy-filter
       #filterComponent
@@ -51,7 +51,7 @@
           [disabled]="!selector.hasVisibleRows()"
           [indeterminate]="selector.someRowsSelected()"
           aria-label="Select all policies"
-          i18n-aria-label></mat-checkbox>
+          i18n-aria-label="@@policy.selectAllPolicies"></mat-checkbox>
       </th>
       <td
         *matCellDef="let policy"
@@ -62,7 +62,7 @@
           [checked]="selector.isRowSelected(policy)"
           [disabled]="!policy.name"
           aria-label="Select policy"
-          i18n-aria-label></mat-checkbox>
+          i18n-aria-label="@@policy.selectPolicy"></mat-checkbox>
       </td>
     </ng-container>
 
@@ -173,12 +173,12 @@
       *matNoDataRow
       aria-label="No Data Row"
       class="mat-mdc-no-data-row"
-      i18n-aria-label>
+      i18n-aria-label="@@common.noDataRow">
       <td
         [attr.colspan]="columnKeys().length"
         aria-label="No Data Cell"
-        i18n
-        i18n-aria-label>
+        i18n="@@common.noDataMatching"
+        i18n-aria-label="@@common.noDataCell">
         No data matching the filter.
       </td>
     </tr>

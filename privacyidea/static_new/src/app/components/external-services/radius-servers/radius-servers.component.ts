@@ -113,10 +113,10 @@ export class RadiusServersComponent {
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: $localize`Delete RADIUS Servers`,
+          title: $localize`:@@radiusServer.deleteRadiusServers:Delete RADIUS Servers`,
           items: selected.map((row) => row.identifier),
           itemType: "radius-server",
-          confirmAction: { label: $localize`Delete`, value: true, type: "destruct" }
+          confirmAction: { label: $localize`:@@common.delete:Delete`, value: true, type: "destruct" }
         }
       })
       .afterClosed()

@@ -37,8 +37,10 @@ export class EnrollmentPinComponent {
   repeatPinControl = input.required<FieldTree<string>>();
 
   pinMismatchError = computed(() => {
-    const mismatch = this.repeatPinControl()().errors().some((e) => e.kind === "pinMismatch");
+    const mismatch = this.repeatPinControl()()
+      .errors()
+      .some((e) => e.kind === "pinMismatch");
     const touched = this.setPinControl()().touched() || this.repeatPinControl()().touched();
-    return mismatch && touched ? $localize`PINs do not match.` : "";
+    return mismatch && touched ? $localize`:@@common.pinsDoNotMatch2:PINs do not match.` : "";
   });
 }

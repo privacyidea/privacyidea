@@ -21,12 +21,12 @@
   appScrollToTop
   aria-label="System Configuration"
   class="system-config-container"
-  i18n-aria-label>
+  i18n-aria-label="@@systemConfig.systemConfiguration">
   <div class="system-config-scroll-container">
     <div class="system-config-form">
       <h3
         class="margin-8"
-        i18n>
+        i18n="@@systemConfig.systemConfiguration">
         System Configuration
       </h3>
       <div class="flex-row gap-16">
@@ -36,7 +36,7 @@
             class="action-button-secondary button-width-xl"
             mat-stroked-button>
             <mat-icon>summarize</mat-icon>
-            <span i18n>Generate System Documentation</span>
+            <span i18n="@@systemConfig.generateSystem">Generate System Documentation</span>
           </button>
           @if (hasConfigWritePermission()) {
             <button
@@ -45,7 +45,7 @@
               mat-stroked-button
               (click)="saveSystemConfig()">
               <mat-icon>save</mat-icon>
-              <span i18n>Save</span>
+              <span i18n="@@common.save">Save</span>
             </button>
           }
         </div>
@@ -55,7 +55,7 @@
         <mat-checkbox
           [checked]="params().splitAtSign"
           (change)="updateParam('splitAtSign', $event.checked)"
-          i18n>
+          i18n="@@systemConfig.useSignSplitUsername">
           Use &#64; sign to split the username and the realm
         </mat-checkbox>
       </div>
@@ -65,7 +65,7 @@
           <mat-checkbox
             [checked]="params().IncFailCountOnFalsePin"
             (change)="updateParam('IncFailCountOnFalsePin', $event.checked)"
-            i18n>
+            i18n="@@systemConfig.increaseFailcounter">
             Increase the failcounter
             <br />
             if the wrong PIN was entered
@@ -73,13 +73,13 @@
         </div>
 
         <mat-form-field class="margin-left-auto input-width-s">
-          <mat-label i18n>Clear Failcounter</mat-label>
+          <mat-label i18n="@@systemConfig.clearFailcounter">Clear Failcounter</mat-label>
           <input
             [value]="params().failcounter_clear_timeout ?? ''"
             (input)="updateParam('failcounter_clear_timeout', $any($event.target).value)"
             matInput
             placeholder="0" />
-          <mat-hint i18n>Time in minutes.</mat-hint>
+          <mat-hint i18n="@@systemConfig.timeMinutes">Time in minutes.</mat-hint>
         </mat-form-field>
       </div>
 
@@ -87,7 +87,7 @@
         <mat-checkbox
           [checked]="params().no_auth_counter"
           (change)="updateParam('no_auth_counter', $event.checked)"
-          i18n>
+          i18n="@@systemConfig.doNotUseAuthentication">
           Do not use an authentication counter per token
         </mat-checkbox>
       </div>
@@ -96,7 +96,7 @@
         <mat-checkbox
           [checked]="params().PrependPin"
           (change)="updateParam('PrependPin', $event.checked)"
-          i18n>
+          i18n="@@systemConfig.prependPinFront">
           Prepend the PIN in front of the OTP value. Otherwise it will be post pended
         </mat-checkbox>
       </div>
@@ -106,33 +106,33 @@
           <mat-checkbox
             [checked]="params().AutoResync"
             (change)="updateParam('AutoResync', $event.checked)"
-            i18n>
+            i18n="@@systemConfig.automaticResync">
             Automatic resync during authentication
           </mat-checkbox>
         </div>
 
         <mat-form-field class="margin-left-auto input-width-s">
-          <mat-label i18n>Auto Resync</mat-label>
+          <mat-label i18n="@@systemConfig.autoResync">Auto Resync</mat-label>
           <input
             [value]="params().AutoResyncTimeout ?? ''"
             [disabled]="!params().AutoResync"
             (input)="updateParam('AutoResyncTimeout', $any($event.target).value)"
             matInput
             placeholder="300" />
-          <mat-hint i18n>Timeout in seconds.</mat-hint>
+          <mat-hint i18n="@@systemConfig.timeoutSeconds">Timeout in seconds.</mat-hint>
         </mat-form-field>
       </div>
 
       <div class="flex-column gap-16">
         <div class="flex-row just-space-between ali-center">
           <mat-form-field class="input-width-l">
-            <mat-label i18n>User Cache Expiration</mat-label>
+            <mat-label i18n="@@systemConfig.userCacheExpiration">User Cache Expiration</mat-label>
             <input
               [value]="params().UserCacheExpiration ?? ''"
               (input)="updateParam('UserCacheExpiration', $any($event.target).value)"
               matInput
               placeholder="0" />
-            <mat-hint i18n> Time in seconds. </mat-hint>
+            <mat-hint i18n="@@systemConfig.timeSeconds"> Time in seconds. </mat-hint>
           </mat-form-field>
 
           <button
@@ -140,13 +140,13 @@
             class="action-button-delete-secondary button-width-l margin-bottom-16 margin-left-auto"
             mat-stroked-button>
             <mat-icon>delete</mat-icon>
-            <span i18n>Delete User Cache</span>
+            <span i18n="@@systemConfig.deleteUserCache">Delete User Cache</span>
           </button>
         </div>
 
         <div class="flex-row gap-16">
           <mat-form-field class="input-width-l">
-            <mat-label i18n>Override Authorization Clients</mat-label>
+            <mat-label i18n="@@systemConfig.overrideAuthorization">Override Authorization Clients</mat-label>
             <app-clearable-input
               (clearButtonClick)="updateParam('OverrideAuthorizationClient', '')"
               [showClearButton]="!!params().OverrideAuthorizationClient">
@@ -157,24 +157,26 @@
                 name="OverrideAuthorizationClient"
                 placeholder="127.0.0.1, 10.0.0.8" />
             </app-clearable-input>
-            <mat-hint i18n> These client IP addresses or subnets are allowed to masquerade as another client </mat-hint>
+            <mat-hint i18n="@@systemConfig.theseClientIp">
+              These client IP addresses or subnets are allowed to masquerade as another client
+            </mat-hint>
           </mat-form-field>
 
           <mat-form-field class="input-width-l">
-            <mat-label i18n>SMTP Server for Password Recovery</mat-label>
+            <mat-label i18n="@@systemConfig.smtpServerPassword">SMTP Server for Password Recovery</mat-label>
             <mat-select
               [value]="params()['recovery.identifier']"
               (selectionChange)="updateParam('recovery.identifier', $event.value)">
               <mat-option
                 [value]="''"
-                i18n
+                i18n="@@systemConfig.none"
                 >None
               </mat-option>
               @for (identifier of smtpIdentifiers; track identifier) {
                 <mat-option [value]="identifier">{{ identifier }}</mat-option>
               }
             </mat-select>
-            <mat-hint i18n>
+            <mat-hint i18n="@@systemConfig.selectPredefined">
               Select a predefined
               <a [routerLink]="[ROUTE_PATHS.EXTERNAL_SERVICES_SMTP]"><strong>SMTP server configuration</strong></a>
             </mat-hint>
@@ -186,13 +188,13 @@
         <div class="flex-column">
           <h4
             class="margin-bottom-16"
-            i18n>
+            i18n="@@systemConfig.defaultSettings">
             Default Settings for New Enrolled Tokens
           </h4>
 
           <div class="flex-row gap-16">
             <mat-form-field class="input-width-s">
-              <mat-label i18n>OTP Length</mat-label>
+              <mat-label i18n="@@common.otpLength">OTP Length</mat-label>
               <input
                 [value]="params()['DefaultOtpLen']"
                 (input)="updateParam('DefaultOtpLen', $any($event.target).value)"
@@ -201,7 +203,7 @@
             </mat-form-field>
 
             <mat-form-field class="input-width-s">
-              <mat-label i18n>Count Window</mat-label>
+              <mat-label i18n="@@common.countWindow">Count Window</mat-label>
               <input
                 [value]="params()['DefaultCountWindow']"
                 (input)="updateParam('DefaultCountWindow', $any($event.target).value)"
@@ -210,7 +212,7 @@
             </mat-form-field>
 
             <mat-form-field class="input-width-s">
-              <mat-label i18n>Max Failcount</mat-label>
+              <mat-label i18n="@@systemConfig.maxFailcount">Max Failcount</mat-label>
               <input
                 [value]="params()['DefaultMaxFailCount']"
                 (input)="updateParam('DefaultMaxFailCount', $any($event.target).value)"
@@ -221,7 +223,7 @@
 
           <div class="flex-row gap-16">
             <mat-form-field class="input-width-s">
-              <mat-label i18n>Sync Window</mat-label>
+              <mat-label i18n="@@common.syncWindow">Sync Window</mat-label>
               <input
                 [value]="params()['DefaultSyncWindow']"
                 (input)="updateParam('DefaultSyncWindow', $any($event.target).value)"
@@ -230,13 +232,13 @@
             </mat-form-field>
 
             <mat-form-field class="input-width-s">
-              <mat-label i18n>Challenge Validity</mat-label>
+              <mat-label i18n="@@systemConfig.challengeValidity">Challenge Validity</mat-label>
               <input
                 [value]="params()['DefaultChallengeValidityTime']"
                 (input)="updateParam('DefaultChallengeValidityTime', $any($event.target).value)"
                 matInput
                 placeholder="120" />
-              <mat-hint i18n>Time in seconds.</mat-hint>
+              <mat-hint i18n="@@systemConfig.timeSeconds">Time in seconds.</mat-hint>
             </mat-form-field>
           </div>
         </div>

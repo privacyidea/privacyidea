@@ -122,12 +122,12 @@ export class NotificationService implements NotificationServiceInterface {
 
   private _headerFor(severity: NotificationSeverity, count: number): string {
     if (severity === "error") {
-      return count === 1 ? $localize`1 error:` : $localize`${count} errors:`;
+      return count === 1 ? $localize`:@@common.error:1 error:` : $localize`:@@common.errors:${count} errors:`;
     }
     if (severity === "warning") {
-      return count === 1 ? $localize`1 warning:` : $localize`${count} warnings:`;
+      return count === 1 ? $localize`:@@common.warning:1 warning:` : $localize`:@@common.warnings:${count} warnings:`;
     }
-    return count === 1 ? $localize`1 success:` : $localize`${count} successes:`;
+    return count === 1 ? $localize`:@@common.success:1 success:` : $localize`:@@common.successes:${count} successes:`;
   }
 
   private _open(message: string, panelClass: string, duration?: number): void {

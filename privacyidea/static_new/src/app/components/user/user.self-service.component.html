@@ -17,35 +17,42 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div
-  aria-label="User Layout" class="user-layout" i18n-aria-label>
+  aria-label="User Layout"
+  class="user-layout"
+  i18n-aria-label="@@user.userLayout">
   <mat-card
-    appearance="outlined" class="user-self-service-card">
+    appearance="outlined"
+    class="user-self-service-card">
     <mat-card-header>
-      <mat-card-title i18n>Your Details</mat-card-title>
+      <mat-card-title i18n="@@user.yourDetails">Your Details</mat-card-title>
     </mat-card-header>
     <mat-card-content>
       <div class="user-details-grid">
         <div class="user-details-column">
           <div
-            class="label" i18n>
+            class="label"
+            i18n="@@common.username">
             Username
           </div>
           <div class="value">{{ userData().username || "-" }}</div>
 
           <div
-            class="label" i18n>
+            class="label"
+            i18n="@@user.givenName2">
             Given name
           </div>
           <div class="value">{{ userData().givenname || "-" }}</div>
 
           <div
-            class="label" i18n>
+            class="label"
+            i18n="@@user.surname">
             Surname
           </div>
           <div class="value">{{ userData().surname || "-" }}</div>
 
           <div
-            class="label" i18n>
+            class="label"
+            i18n="@@common.description">
             Description
           </div>
           <div class="value">{{ userData().description || "-" }}</div>
@@ -53,19 +60,22 @@
 
         <div class="user-details-column">
           <div
-            class="label" i18n>
+            class="label"
+            i18n="@@common.email">
             Email
           </div>
           <div class="value">{{ userData().email || "-" }}</div>
 
           <div
-            class="label" i18n>
+            class="label"
+            i18n="@@user.phone">
             Phone
           </div>
           <div class="value">{{ userData().phone || "-" }}</div>
 
           <div
-            class="label" i18n>
+            class="label"
+            i18n="@@user.mobile">
             Mobile
           </div>
           <div class="value">{{ userData().mobile || "-" }}</div>

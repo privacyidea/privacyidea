@@ -20,12 +20,16 @@
 <div
   aria-label="UI Settings"
   class="settings-container"
-  i18n-aria-label>
-  <h3 class="margin-8" i18n>UI Settings</h3>
+  i18n-aria-label="@@common.uiSettings">
+  <h3
+    class="margin-8"
+    i18n="@@common.uiSettings">
+    UI Settings
+  </h3>
 
   <div class="details-cards-grid">
     <app-details-card
-      i18n-title
+      i18n-title="@@common.theme"
       title="Theme">
       <div class="settings-row">
         <label class="theme-toggle">
@@ -43,7 +47,7 @@
     </app-details-card>
 
     <app-details-card
-      i18n-title
+      i18n-title="@@common.language"
       title="Language">
       <div class="settings-row">
         <mat-form-field
@@ -53,7 +57,7 @@
             (selectionChange)="selectLocale($event.value)"
             [value]="preferredLocale()"
             aria-label="Language"
-            i18n-aria-label>
+            i18n-aria-label="@@common.language">
             @for (locale of locales; track locale.code) {
               <mat-option [value]="locale.code">
                 {{ locale.label }}

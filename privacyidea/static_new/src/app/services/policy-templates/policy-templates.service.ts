@@ -93,7 +93,9 @@ export class PolicyTemplatesService implements PolicyTemplatesServiceInterface {
       map((template) => ({ ...template, name: template.name ?? templateName })),
       catchError(() => {
         this.templateCache.delete(templateName);
-        this.notificationService.error($localize`Error fetching policy template ${templateName}.`);
+        this.notificationService.error(
+          $localize`:@@policy.errorFetching:Error fetching policy template ${templateName}.`
+        );
         return of(undefined);
       }),
       shareReplay(1)
@@ -114,7 +116,7 @@ export class PolicyTemplatesService implements PolicyTemplatesServiceInterface {
         }),
         catchError(() => {
           if (this.lastBaseUrl !== baseUrl) return of(null);
-          this.notificationService.error($localize`Error fetching policy templates.`);
+          this.notificationService.error($localize`:@@policy.errorFetchingPolicy:Error fetching policy templates.`);
           this._index.set(EMPTY_INDEX);
           return of(null);
         })

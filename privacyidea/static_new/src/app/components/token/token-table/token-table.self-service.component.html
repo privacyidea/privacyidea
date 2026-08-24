@@ -21,13 +21,13 @@
   appScrollToTop
   aria-label="Token Table"
   class="token-table-layout"
-  i18n-aria-label>
+  i18n-aria-label="@@token.tokenTable">
   <div
     [appStickyHeader]="scrollContainer"
     class="filter-paginator-container sticky-header">
     <h3
       class="selfservice-paginator-label"
-      i18n>
+      i18n="@@token.yourTokens">
       Your Tokens
     </h3>
     <mat-paginator
@@ -45,7 +45,7 @@
       [dataSource]="tokenDataSource()"
       aria-label="Token Data Table"
       class="token-table"
-      i18n-aria-label
+      i18n-aria-label="@@token.tokenDataTable"
       mat-table>
       @for (column of columnKeysMapSelfService(); track column) {
         <ng-container [matColumnDef]="column.key">
@@ -59,7 +59,7 @@
                 <button
                   (click)="tableUtilsService.onSortButtonClick(column.key, sort)"
                   aria-label="Sort by {{ column.label }}"
-                  i18n-aria-label
+                  i18n-aria-label="@@common.sortBy"
                   class="sort-button"
                   mat-icon-button
                   type="button">
@@ -147,8 +147,8 @@
                     <button
                       (click)="revokeToken(element.serial)"
                       aria-label="Revoke Token"
-                      i18n-aria-label
-                      i18n-matTooltip
+                      i18n-aria-label="@@token.revokeToken"
+                      i18n-matTooltip="@@token.revokeToken"
                       mat-icon-button
                       matTooltip="Revoke Token">
                       <mat-icon> undo</mat-icon>
@@ -159,8 +159,8 @@
                   <button
                     (click)="deleteToken(element.serial)"
                     aria-label="Delete Token"
-                    i18n-aria-label
-                    i18n-matTooltip
+                    i18n-aria-label="@@common.deleteToken"
+                    i18n-matTooltip="@@common.deleteToken"
                     mat-icon-button
                     matTooltip="Delete Token">
                     <mat-icon> delete</mat-icon>
@@ -187,22 +187,22 @@
       <tr
         *matHeaderRowDef="columnKeysSelfService; sticky: true"
         aria-label="Header Row"
-        i18n-aria-label
+        i18n-aria-label="@@common.headerRow"
         mat-header-row></tr>
       <tr
         *matRowDef="let row; columns: columnKeysSelfService"
         aria-label="Data Row"
-        i18n-aria-label
+        i18n-aria-label="@@common.dataRow"
         mat-row></tr>
       <tr
         *matNoDataRow
         aria-label="No Data Row"
-        i18n-aria-label>
+        i18n-aria-label="@@common.noDataRow">
         <td
           [attr.colspan]="columnKeysSelfService.length"
           aria-label="No Data Cell"
-          i18n
-          i18n-aria-label>
+          i18n="@@common.noDataMatching"
+          i18n-aria-label="@@common.noDataCell">
           No data matching the filter.
         </td>
       </tr>

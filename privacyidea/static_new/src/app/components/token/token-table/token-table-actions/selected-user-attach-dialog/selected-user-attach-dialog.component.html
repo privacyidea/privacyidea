@@ -21,11 +21,12 @@
   (wrapperClose)="onCancel()"
   [actions]="actions()"
   [showCancelButton]="true"
-  i18n-title
+  i18n-title="@@token.assignSelectedToken"
   title="Assign Selected Token to User">
   @if (selectionContainsAssignedToken()) {
     <p
-      class="inline-warning" i18n>
+      class="inline-warning"
+      i18n="@@token.someTokenAlready">
       Some token are already assigned to a user.
       <br />
       Assigning a token to a user will remove the previous assignment.
@@ -33,21 +34,24 @@
   }
   <div class="selected-user-attach-container">
     <mat-form-field class="input-width-l">
-      <mat-label i18n>Select Realm of User</mat-label>
+      <mat-label i18n="@@common.selectRealmUser">Select Realm of User</mat-label>
       <mat-select
-        (selectionChange)="onRealmChange($event.value)" [value]="selectedRealm()" required>
+        (selectionChange)="onRealmChange($event.value)"
+        [value]="selectedRealm()"
+        required>
         @for (option of realmService.realmOptions(); track option) {
           <mat-option [value]="option">{{ option }}</mat-option>
         }
       </mat-select>
       @if (realmInvalid()) {
-        <mat-error i18n>User Realm is <strong>required</strong></mat-error>
+        <mat-error i18n="@@token.userRealmRequired">User Realm is <strong>required</strong></mat-error>
       }
     </mat-form-field>
     <mat-form-field class="input-width-l">
-      <mat-label i18n>Enter User</mat-label>
+      <mat-label i18n="@@common.enterUser">Enter User</mat-label>
       <app-clearable-input
-        (clearButtonClick)="onUserFilterInput('')" [showClearButton]="userFilter() !== ''">
+        (clearButtonClick)="onUserFilterInput('')"
+        [showClearButton]="userFilter() !== ''">
         <input
           (input)="onUserFilterInput($any($event.target).value)"
           [matAutocomplete]="userAuto"
@@ -64,19 +68,22 @@
         </mat-autocomplete>
       </app-clearable-input>
       @if (userInvalid()) {
-        <mat-error i18n>User is <strong>required</strong></mat-error>
+        <mat-error i18n="@@token.userRequired">User is <strong>required</strong></mat-error>
       }
     </mat-form-field>
   </div>
   @if (authService.actionAllowed("setpin")) {
     <div class="selected-user-attach-container">
       <mat-form-field
-        appearance="fill" class="input-width-l margin-bottom-16">
+        appearance="fill"
+        class="input-width-l margin-bottom-16">
         <input
-          class="hidden-input" type="text" />
+          class="hidden-input"
+          type="text" />
         <input
-          class="hidden-input" type="password" />
-        <mat-label i18n>PIN (optional)</mat-label>
+          class="hidden-input"
+          type="password" />
+        <mat-label i18n="@@common.pinOptional">PIN (optional)</mat-label>
         <input
           (input)="pin.set($any($event.target).value)"
           [type]="hidePin() ? 'password' : 'text'"
@@ -87,7 +94,7 @@
           (click)="togglePinVisibility()"
           [attr.aria-pressed]="!hidePin()"
           aria-label="Show PIN"
-          i18n-aria-label
+          i18n-aria-label="@@common.showPin"
           mat-icon-button
           matSuffix
           type="button">
@@ -95,8 +102,9 @@
         </button>
       </mat-form-field>
       <mat-form-field
-        appearance="fill" class="input-width-l margin-bottom-16">
-        <mat-label i18n>PIN (repeat)</mat-label>
+        appearance="fill"
+        class="input-width-l margin-bottom-16">
+        <mat-label i18n="@@common.pinRepeat">PIN (repeat)</mat-label>
         <input
           (input)="pinRepeat.set($any($event.target).value)"
           [type]="hidePin() ? 'password' : 'text'"
@@ -107,14 +115,14 @@
           (click)="togglePinVisibility()"
           [attr.aria-pressed]="!hidePin()"
           aria-label="Show PIN Repeat"
-          i18n-aria-label
+          i18n-aria-label="@@token.showPinRepeat"
           mat-icon-button
           matSuffix
           type="button">
           <mat-icon>{{ hidePin() ? "visibility_off" : "visibility" }}</mat-icon>
         </button>
         @if (pinRepeat() && !pinsMatch()) {
-          <mat-error i18n>PINs do not match</mat-error>
+          <mat-error i18n="@@common.pinsDoNotMatch">PINs do not match</mat-error>
         }
       </mat-form-field>
     </div>

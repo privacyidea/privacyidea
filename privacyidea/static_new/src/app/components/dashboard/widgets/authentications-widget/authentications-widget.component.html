@@ -20,22 +20,22 @@
 <app-widget-state [state]="state()">
   <p
     class="auth-subtitle margin-left-8 margin-top-8"
-    i18n>
+    i18n="@@dashboard.authenticationsLast">
     Authentications in the last 24 hours
   </p>
   <div class="auth-table-scroll">
     <table class="auth-table">
       <tbody>
         <tr>
-          <td i18n>Success</td>
+          <td i18n="@@common.success2">Success</td>
           <td>{{ counts().success }}</td>
         </tr>
         <tr>
-          <td i18n>Failures</td>
+          <td i18n="@@dashboard.failures">Failures</td>
           <td>{{ counts().fail }}</td>
         </tr>
         <tr>
-          <td i18n>Users / Tokens with Failures</td>
+          <td i18n="@@dashboard.usersTokensFailures">Users / Tokens with Failures</td>
           <td class="auth-failed-cell">
             @for (userobj of counts().users; track userobj.user + userobj.realm) {
               <a

@@ -192,7 +192,9 @@ export class LoginComponent implements OnDestroy, AfterViewInit {
 
   remoteLogin(): void {
     if (!this.remoteUser()) {
-      this.notificationService.warning($localize`Remote user not available. Remote Login not possible.`);
+      this.notificationService.warning(
+        $localize`:@@login.remoteUserNot:Remote user not available. Remote Login not possible.`
+      );
       return;
     }
     const params = { username: this.remoteUser() };

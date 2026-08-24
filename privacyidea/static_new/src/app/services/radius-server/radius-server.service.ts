@@ -93,13 +93,17 @@ export class RadiusServerService implements RadiusServerServiceInterface {
 
     return lastValueFrom(request)
       .then(() => {
-        this.notificationService.success($localize`Successfully saved RADIUS server.`);
+        this.notificationService.success(
+          $localize`:@@radiusServer.successfullySaved:Successfully saved RADIUS server.`
+        );
         this.radiusServerResource.reload();
       })
       .catch((error: HttpErrorResponse) => {
         const body = error.error as PiResponse<boolean> | undefined;
         const message = body?.result?.error?.message || "";
-        this.notificationService.error($localize`Failed to save RADIUS server. ` + message);
+        this.notificationService.error(
+          $localize`:@@radiusServer.failedSaveRadius:Failed to save RADIUS server. ` + message
+        );
         throw new Error("post-failed");
       });
   }
@@ -112,17 +116,19 @@ export class RadiusServerService implements RadiusServerServiceInterface {
       const res = await lastValueFrom(request);
 
       if (res?.result?.value) {
-        this.notificationService.success($localize`RADIUS request successful.`);
+        this.notificationService.success($localize`:@@radiusServer.radiusRequestSuccessful:RADIUS request successful.`);
         return true;
       }
 
-      this.notificationService.error($localize`RADIUS request failed!`);
+      this.notificationService.error($localize`:@@radiusServer.radiusRequest:RADIUS request failed!`);
       return false;
     } catch (error) {
       const httpError = error as HttpErrorResponse;
       const body = httpError.error as PiResponse<boolean> | undefined;
       const message = body?.result?.error?.message || "";
-      this.notificationService.error($localize`Failed to send RADIUS test request. ` + message);
+      this.notificationService.error(
+        $localize`:@@radiusServer.failedSendRadius:Failed to send RADIUS test request. ` + message
+      );
       return false;
     }
   }
@@ -136,13 +142,17 @@ export class RadiusServerService implements RadiusServerServiceInterface {
     );
     return lastValueFrom(request)
       .then(() => {
-        this.notificationService.success($localize`Successfully deleted RADIUS server: ${identifier}.`);
+        this.notificationService.success(
+          $localize`:@@radiusServer.successfullyDeleted:Successfully deleted RADIUS server: ${identifier}.`
+        );
         this.radiusServerResource.reload();
       })
       .catch((error: HttpErrorResponse) => {
         const body = error.error as PiResponse<boolean> | undefined;
         const message = body?.result?.error?.message || "";
-        this.notificationService.error($localize`Failed to delete RADIUS server. ` + message);
+        this.notificationService.error(
+          $localize`:@@radiusServer.failedDeleteRadius:Failed to delete RADIUS server. ` + message
+        );
         throw new Error("delete-failed");
       });
   }

@@ -49,7 +49,9 @@ export class ChallengesTableActionsComponent {
         this.challengesService.challengesResource.reload();
       },
       error: (err) => {
-        const message = err?.error?.result?.error?.message ?? $localize`Failed to delete expired challenges.`;
+        const message =
+          err?.error?.result?.error?.message ??
+          $localize`:@@token.failedDeleteExpired:Failed to delete expired challenges.`;
         this.notificationService.error(message);
       }
     });

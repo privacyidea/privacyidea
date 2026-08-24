@@ -48,7 +48,7 @@
             <button
               (click)="deleteInfo(key)"
               aria-label="Delete Information"
-              i18n-aria-label
+              i18n-aria-label="@@container.deleteInformation"
               mat-icon-button>
               <mat-icon>delete_outlined</mat-icon>
             </button>
@@ -68,7 +68,7 @@
         <input
           [value]="newInfo().key"
           (input)="newInfo.set({ key: $any($event.target).value, value: newInfo().value })"
-          i18n-placeholder
+          i18n-placeholder="@@common.addNewKey"
           matInput
           placeholder="Add new key" />
       </mat-form-field>
@@ -79,7 +79,7 @@
         <textarea
           [value]="newInfo().value"
           (input)="newInfo.set({ key: newInfo().key, value: $any($event.target).value })"
-          i18n-placeholder
+          i18n-placeholder="@@common.addNewInfo"
           matInput
           placeholder="Add new info"
           rows="1"></textarea>

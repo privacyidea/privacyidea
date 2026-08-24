@@ -20,7 +20,7 @@
   <div class="flex-column width-100">
     <h4
       class="details-card-title"
-      i18n>
+      i18n="@@container.addToken">
       Add Token
     </h4>
     <div class="flex-row margin-bottom-16">
@@ -28,12 +28,12 @@
         <mat-checkbox
           [checked]="showOnlyTokenInContainer()"
           (change)="showOnlyTokenInContainer.set($event.checked)">
-          <span i18n> Include tokens that are in a container </span>
+          <span i18n="@@container.includeTokens"> Include tokens that are in a container </span>
         </mat-checkbox>
       </section>
     </div>
     <mat-form-field class="add-token-filter-field width-100">
-      <mat-label i18n>Add Token to Container</mat-label>
+      <mat-label i18n="@@container.addTokenContainer">Add Token to Container</mat-label>
       <app-clearable-input
         (clearButtonClick)="clearFilter()"
         [showClearButton]="filterDraft().isNotEmpty">
@@ -43,7 +43,7 @@
           (input)="tokenService.handleFilterInput($event)"
           [matAutocomplete]="tokenAuto"
           [value]="filterDraft().filterString"
-          i18n-placeholder
+          i18n-placeholder="@@common.exampleQueryType"
           matInput
           placeholder="Example query: 'type: hotp serial: 123'" />
       </app-clearable-input>
@@ -59,7 +59,9 @@
           [pageSize]="pageSize()"></mat-paginator>
       </div>
       @if (showOnlyTokenInContainer()) {
-        <mat-hint i18n> Adding a token removes it from its previous container</mat-hint>
+        <mat-hint i18n="@@container.addingTokenRemoves">
+          Adding a token removes it from its previous container</mat-hint
+        >
       }
       <mat-autocomplete
         #tokenAuto="matAutocomplete"
@@ -68,7 +70,7 @@
         @if (tokenOptions().length === 0) {
           <mat-option
             [disabled]="true"
-            i18n>
+            i18n="@@container.noMatchingTokens">
             No matching tokens
           </mat-option>
         }

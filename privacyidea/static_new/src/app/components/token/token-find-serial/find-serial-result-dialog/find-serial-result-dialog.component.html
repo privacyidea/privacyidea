@@ -19,13 +19,13 @@
 
 <app-dialog-wrapper
   title="Search for Token"
-  i18n-title
+  i18n-title="@@token.searchToken"
   [actions]="[action]"
   (wrapperClose)="close()"
   (actionTriggered)="onAction($event)">
   @if (data.foundSerial) {
     <div class="alert alert-success">
-      <span i18n>
+      <span i18n="@@token.serialNumberOtp">
         The Serial number for the OTP value {{ data.otpValue }} is
         <a
           class="link"
@@ -41,7 +41,7 @@
     </div>
   } @else {
     <div class="alert alert-warning">
-      <span i18n> No Serial number could be found for OTP value {{ data.otpValue }}. </span>
+      <span i18n="@@token.noSerialNumber"> No Serial number could be found for OTP value {{ data.otpValue }}. </span>
     </div>
   }
 </app-dialog-wrapper>

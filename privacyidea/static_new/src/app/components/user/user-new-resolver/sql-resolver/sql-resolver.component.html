@@ -18,131 +18,156 @@
 -->
 <div class="type-sections-container">
   <div class="margin-left-16">
-    <h4 i18n>Database Connection</h4>
+    <h4 i18n="@@resolver.databaseConnection">Database Connection</h4>
     <div class="flex-column">
       <div class="flex-row gap-16 margin-bottom-16">
         <mat-form-field class="input-width-l">
-          <mat-label i18n>Driver</mat-label>
+          <mat-label i18n="@@resolver.driver">Driver</mat-label>
           <app-clearable-input
-            (clearButtonClick)="model.update(m => ({ ...m, Driver: '' }))" [showClearButton]="!!model().Driver">
+            (clearButtonClick)="model.update(m => ({ ...m, Driver: '' }))"
+            [showClearButton]="!!model().Driver">
             <input
-              [formField]="sqlForm.Driver" matInput placeholder="mysql+pymysql" />
+              [formField]="sqlForm.Driver"
+              matInput
+              placeholder="mysql+pymysql" />
           </app-clearable-input>
           @if (sqlForm.Driver().errors().some(e => e.kind === 'required') && sqlForm.Driver().touched()) {
-            <mat-error i18n>
-              Driver is <strong>required</strong> .
-            </mat-error>
+            <mat-error i18n="@@resolver.driverRequired"> Driver is <strong>required</strong> . </mat-error>
           }
         </mat-form-field>
 
         <mat-form-field class="input-width-l">
-          <mat-label i18n>Database</mat-label>
+          <mat-label i18n="@@resolver.database">Database</mat-label>
           <app-clearable-input
-            (clearButtonClick)="model.update(m => ({ ...m, Database: '' }))" [showClearButton]="!!model().Database">
+            (clearButtonClick)="model.update(m => ({ ...m, Database: '' }))"
+            [showClearButton]="!!model().Database">
             <input
-              [formField]="sqlForm.Database" matInput placeholder="YourDatabase" />
+              [formField]="sqlForm.Database"
+              matInput
+              placeholder="YourDatabase" />
           </app-clearable-input>
         </mat-form-field>
       </div>
 
       <div class="flex-row gap-16">
         <mat-form-field class="input-width-l">
-          <mat-label i18n>Server</mat-label>
+          <mat-label i18n="@@resolver.server">Server</mat-label>
           <app-clearable-input
-            (clearButtonClick)="model.update(m => ({ ...m, Server: '' }))" [showClearButton]="!!model().Server">
+            (clearButtonClick)="model.update(m => ({ ...m, Server: '' }))"
+            [showClearButton]="!!model().Server">
             <input
-              [formField]="sqlForm.Server" matInput placeholder="127.0.0.1" />
+              [formField]="sqlForm.Server"
+              matInput
+              placeholder="127.0.0.1" />
           </app-clearable-input>
           @if (sqlForm.Server().errors().some(e => e.kind === 'required') && sqlForm.Server().touched()) {
-            <mat-error i18n>
-              Server is <strong>required</strong> .
-            </mat-error>
+            <mat-error i18n="@@resolver.serverRequired"> Server is <strong>required</strong> . </mat-error>
           }
         </mat-form-field>
 
         <mat-form-field class="input-width-s">
-          <mat-label i18n>Port</mat-label>
+          <mat-label i18n="@@common.port">Port</mat-label>
           <input
-            [formField]="sqlForm.Port" matInput placeholder="3306" />
+            [formField]="sqlForm.Port"
+            matInput
+            placeholder="3306" />
         </mat-form-field>
       </div>
     </div>
   </div>
 
   <div class="margin-left-16">
-    <h4 i18n>Authentication & Params</h4>
+    <h4 i18n="@@resolver.authenticationParams">Authentication & Params</h4>
     <div class="flex-column">
       <div class="flex-row gap-16">
         <mat-form-field class="input-width-l">
-          <mat-label i18n>User</mat-label>
+          <mat-label i18n="@@common.user">User</mat-label>
           <app-clearable-input
-            (clearButtonClick)="model.update(m => ({ ...m, User: '' }))" [showClearButton]="!!model().User">
+            (clearButtonClick)="model.update(m => ({ ...m, User: '' }))"
+            [showClearButton]="!!model().User">
             <input
-              [formField]="sqlForm.User" matInput placeholder="user" />
+              [formField]="sqlForm.User"
+              matInput
+              placeholder="user" />
           </app-clearable-input>
         </mat-form-field>
 
         <mat-form-field class="input-width-l">
-          <mat-label i18n>Password</mat-label>
+          <mat-label i18n="@@common.password">Password</mat-label>
           <app-clearable-input
-            (clearButtonClick)="model.update(m => ({ ...m, Password: '' }))" [showClearButton]="!!model().Password">
+            (clearButtonClick)="model.update(m => ({ ...m, Password: '' }))"
+            [showClearButton]="!!model().Password">
             <input
-              [formField]="sqlForm.Password" matInput placeholder="topsecret" type="password" />
+              [formField]="sqlForm.Password"
+              matInput
+              placeholder="topsecret"
+              type="password" />
           </app-clearable-input>
         </mat-form-field>
       </div>
 
       <div class="flex-column">
         <mat-checkbox
-          (change)="model.update(m => ({ ...m, Editable: $event.checked }))" [checked]="model().Editable" i18n>
+          (change)="model.update(m => ({ ...m, Editable: $event.checked }))"
+          [checked]="model().Editable"
+          i18n="@@resolver.editUserStore2">
           Edit user store
         </mat-checkbox>
         <span
-          class="hint margin-bottom-16" i18n>
+          class="hint margin-bottom-16"
+          i18n="@@resolver.userDataDatabase">
           The user data in this database can be modified from within privacyIDEA.
         </span>
 
         @if (model().Editable) {
           <mat-form-field class="input-width-xl margin-bottom-16">
-            <mat-label i18n>Password Hash for Editable Users</mat-label>
+            <mat-label i18n="@@resolver.passwordHashEditable">Password Hash for Editable Users</mat-label>
             <mat-select
               (selectionChange)="model.update(m => ({ ...m, Password_Hash_Type: $event.value }))"
               [value]="model().Password_Hash_Type"
               placeholder="">
               <mat-option
-                i18n value="PHPASS">
+                i18n="@@resolver.phpass"
+                value="PHPASS">
                 PHPASS
               </mat-option>
               <mat-option
-                i18n value="SHA">
+                i18n="@@resolver.sha"
+                value="SHA">
                 SHA
               </mat-option>
               <mat-option
-                i18n value="SSHA">
+                i18n="@@resolver.ssha"
+                value="SSHA">
                 SSHA
               </mat-option>
               <mat-option
-                i18n value="SSHA256">
+                i18n="@@resolver.ssha256"
+                value="SSHA256">
                 SSHA256
               </mat-option>
               <mat-option
-                i18n value="SSHA512">
+                i18n="@@resolver.ssha512"
+                value="SSHA512">
                 SSHA512
               </mat-option>
               <mat-option
-                i18n value="OTRS">
+                i18n="@@resolver.otrs"
+                value="OTRS">
                 OTRS
               </mat-option>
               <mat-option
-                i18n value="SHA512CRYPT">
+                i18n="@@resolver.sha512crypt"
+                value="SHA512CRYPT">
                 SHA512CRYPT
               </mat-option>
               <mat-option
-                i18n value="MD5CRYPT">
+                i18n="@@resolver.md5crypt"
+                value="MD5CRYPT">
                 MD5CRYPT
               </mat-option>
             </mat-select>
-            <mat-hint i18n>
+            <mat-hint i18n="@@resolver.hashingAlgorithm">
               The hashing algorithm for the passwords of newly created users. Can be PHPASS, SHA, SSHA, SSHA256, SHA512,
               OTRS.
             </mat-hint>
@@ -155,7 +180,8 @@
 
 @if (!isEditMode()) {
   <h4
-    class="margin-left-16" i18n>
+    class="margin-left-16"
+    i18n="@@resolver.presets">
     Presets:
   </h4>
   <div class="preset-buttons-container margin-bottom-16 margin-left-16">
@@ -175,94 +201,106 @@
 
 <div class="type-sections-container">
   <div class="margin-left-16">
-    <h4 i18n>Table, Mapping, Pool & Editable</h4>
+    <h4 i18n="@@resolver.tableMappingPool">Table, Mapping, Pool & Editable</h4>
     <div class="flex-column">
       <div class="flex-row gap-16 margin-bottom-16">
         <mat-form-field class="input-width-l">
-          <mat-label i18n>Table</mat-label>
+          <mat-label i18n="@@resolver.table">Table</mat-label>
           <app-clearable-input
-            (clearButtonClick)="model.update(m => ({ ...m, Table: '' }))" [showClearButton]="!!model().Table">
+            (clearButtonClick)="model.update(m => ({ ...m, Table: '' }))"
+            [showClearButton]="!!model().Table">
             <input
-              [formField]="sqlForm.Table" matInput placeholder="Users" />
+              [formField]="sqlForm.Table"
+              matInput
+              placeholder="Users" />
           </app-clearable-input>
           @if (sqlForm.Table().errors().some(e => e.kind === 'required') && sqlForm.Table().touched()) {
-            <mat-error i18n>
-              Table is <strong>required</strong> .
-            </mat-error>
+            <mat-error i18n="@@resolver.tableRequired"> Table is <strong>required</strong> . </mat-error>
           }
         </mat-form-field>
 
         <mat-form-field class="input-width-s">
-          <mat-label i18n>Limit</mat-label>
+          <mat-label i18n="@@resolver.limit">Limit</mat-label>
           <input
-            [formField]="sqlForm.Limit" matInput placeholder="500" type="number" />
+            [formField]="sqlForm.Limit"
+            matInput
+            placeholder="500"
+            type="number" />
           @if (sqlForm.Limit().errors().some(e => e.kind === 'required') && sqlForm.Limit().touched()) {
-            <mat-error i18n>
-              Limit is <strong>required</strong> .
-            </mat-error>
+            <mat-error i18n="@@resolver.limitRequired"> Limit is <strong>required</strong> . </mat-error>
           }
         </mat-form-field>
       </div>
 
       <mat-form-field class="input-width-xl margin-bottom-16">
-        <mat-label i18n>Mapping</mat-label>
+        <mat-label i18n="@@resolver.mapping">Mapping</mat-label>
         <textarea
           [formField]="sqlForm.Map"
           matInput
           placeholder='{"userid":"id","username":"user","phone":"telephoneNumber","mobile":"mobile","email":"mail","surname":"sn","givenname":"givenName","password":"password"}'></textarea>
         @if (sqlForm.Map().errors().some(e => e.kind === 'required') && sqlForm.Map().touched()) {
-          <mat-error i18n>
-            Mapping is <strong>required</strong> .
-          </mat-error>
+          <mat-error i18n="@@resolver.mappingRequired"> Mapping is <strong>required</strong> . </mat-error>
         }
       </mat-form-field>
 
       <div class="flex-row gap-16">
         <mat-form-field class="input-width-l">
-          <mat-label i18n>Connection Parameters</mat-label>
+          <mat-label i18n="@@resolver.connectionParameters">Connection Parameters</mat-label>
           <app-clearable-input
-            (clearButtonClick)="model.update(m => ({ ...m, conParams: '' }))" [showClearButton]="!!model().conParams">
+            (clearButtonClick)="model.update(m => ({ ...m, conParams: '' }))"
+            [showClearButton]="!!model().conParams">
             <input
-              [formField]="sqlForm.conParams" matInput />
+              [formField]="sqlForm.conParams"
+              matInput />
           </app-clearable-input>
         </mat-form-field>
 
         <mat-form-field class="input-width-l">
-          <mat-label i18n>Database Encoding</mat-label>
+          <mat-label i18n="@@resolver.databaseEncoding">Database Encoding</mat-label>
           <app-clearable-input
-            (clearButtonClick)="model.update(m => ({ ...m, Encoding: '' }))" [showClearButton]="!!model().Encoding">
+            (clearButtonClick)="model.update(m => ({ ...m, Encoding: '' }))"
+            [showClearButton]="!!model().Encoding">
             <input
-              [formField]="sqlForm.Encoding" matInput />
+              [formField]="sqlForm.Encoding"
+              matInput />
           </app-clearable-input>
         </mat-form-field>
       </div>
 
       <mat-form-field class="input-width-xl">
-        <mat-label i18n>Where Statement</mat-label>
+        <mat-label i18n="@@resolver.whereStatement">Where Statement</mat-label>
         <app-clearable-input
-          (clearButtonClick)="model.update(m => ({ ...m, Where: '' }))" [showClearButton]="!!model().Where">
+          (clearButtonClick)="model.update(m => ({ ...m, Where: '' }))"
+          [showClearButton]="!!model().Where">
           <input
-            [formField]="sqlForm.Where" matInput />
+            [formField]="sqlForm.Where"
+            matInput />
         </app-clearable-input>
       </mat-form-field>
 
       <div class="flex-row gap-16">
         <mat-form-field class="input-width-s">
-          <mat-label i18n>Pool Size</mat-label>
+          <mat-label i18n="@@resolver.poolSize">Pool Size</mat-label>
           <input
-            [formField]="sqlForm.poolSize" matInput type="number" />
+            [formField]="sqlForm.poolSize"
+            matInput
+            type="number" />
         </mat-form-field>
 
         <mat-form-field class="input-width-s">
-          <mat-label i18n>Pool Timeout</mat-label>
+          <mat-label i18n="@@resolver.poolTimeout">Pool Timeout</mat-label>
           <input
-            [formField]="sqlForm.poolTimeout" matInput type="number" />
+            [formField]="sqlForm.poolTimeout"
+            matInput
+            type="number" />
         </mat-form-field>
 
         <mat-form-field class="input-width-s">
-          <mat-label i18n>Pool Recycle Timeout</mat-label>
+          <mat-label i18n="@@resolver.poolRecycleTimeout">Pool Recycle Timeout</mat-label>
           <input
-            [formField]="sqlForm.poolRecycle" matInput type="number" />
+            [formField]="sqlForm.poolRecycle"
+            matInput
+            type="number" />
         </mat-form-field>
       </div>
     </div>

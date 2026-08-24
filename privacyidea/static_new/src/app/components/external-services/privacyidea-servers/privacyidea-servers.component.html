@@ -24,7 +24,7 @@
       appearance="fill"
       class="table-filter"
       subscriptSizing="dynamic">
-      <mat-label i18n>Filter privacyIDEA Servers...</mat-label>
+      <mat-label i18n="@@piServer.filterPrivacyidea">Filter privacyIDEA Servers...</mat-label>
       <app-clearable-input
         (clearButtonClick)="resetFilter()"
         [showClearButton]="filterString().length > 0">
@@ -33,8 +33,8 @@
           (input)="onFilterInput(filterHTMLInputElement.value)"
           [value]="filterString()"
           aria-label="Filter Input"
-          i18n-aria-label
-          i18n-placeholder
+          i18n-aria-label="@@common.filterInput"
+          i18n-placeholder="@@piServer.filterByIdentifier"
           matInput
           placeholder="Filter by identifier or URL" />
       </app-clearable-input>
@@ -54,7 +54,7 @@
         <mat-icon class="mdi--pi-logo padding-right-3"></mat-icon>
         <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
       </span>
-      <span i18n>Create PrivacyIDEA Server</span>
+      <span i18n="@@common.createPrivacyidea">Create PrivacyIDEA Server</span>
     </button>
     <button
       (click)="deleteSelected()"
@@ -62,9 +62,8 @@
       class="action-button-delete-secondary button-width-l"
       mat-stroked-button>
       <mat-icon>delete_sweep</mat-icon>
-      <span i18n>Delete</span>
+      <span i18n="@@common.delete">Delete</span>
     </button>
-
   </div>
   <table
     [dataSource]="privacyideaDataSource()"
@@ -96,7 +95,7 @@
     <ng-container matColumnDef="identifier">
       <th
         *matHeaderCellDef
-        i18n
+        i18n="@@common.identifier"
         mat-header-cell
         mat-sort-header>
         Identifier
@@ -120,7 +119,7 @@
     <ng-container matColumnDef="url">
       <th
         *matHeaderCellDef
-        i18n
+        i18n="@@piServer.url"
         mat-header-cell
         mat-sort-header>
         URL
@@ -135,7 +134,7 @@
     <ng-container matColumnDef="tls">
       <th
         *matHeaderCellDef
-        i18n
+        i18n="@@piServer.verifyTls"
         mat-header-cell
         mat-sort-header>
         Verify TLS
@@ -156,7 +155,7 @@
     <ng-container matColumnDef="description">
       <th
         *matHeaderCellDef
-        i18n
+        i18n="@@common.description"
         mat-header-cell
         mat-sort-header>
         Description
@@ -181,7 +180,7 @@
       <td
         class="mat-cell"
         colspan="5"
-        i18n>
+        i18n="@@piServer.noPrivacyidea">
         No privacyIDEA servers found.
       </td>
     </tr>

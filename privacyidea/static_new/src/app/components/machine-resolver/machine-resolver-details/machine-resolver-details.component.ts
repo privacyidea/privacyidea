@@ -137,7 +137,7 @@ export class MachineResolverDetailsComponent implements OnInit, OnDestroy {
         this.currentMachineResolver.set(deepCopy(resolver));
         this._loadedName = name;
       } else {
-        this.notificationService.error($localize`Machine resolver "${name}" not found.`);
+        this.notificationService.error($localize`:@@machine.machineResolverNot:Machine resolver "${name}" not found.`);
         this.navigateBack();
       }
     });
@@ -190,9 +190,9 @@ export class MachineResolverDetailsComponent implements OnInit, OnDestroy {
             .openDialog({
               component: SimpleConfirmationDialogComponent,
               data: {
-                title: $localize`Save machine resolver despite test failure?`,
-                confirmAction: { label: $localize`Proceed`, value: true, type: "destruct" },
-                items: [current.resolvername || $localize`New Machine Resolver`],
+                title: $localize`:@@machine.saveMachineResolver:Save machine resolver despite test failure?`,
+                confirmAction: { label: $localize`:@@common.proceed:Proceed`, value: true, type: "destruct" },
+                items: [current.resolvername || $localize`:@@machine.newMachineResolver:New Machine Resolver`],
                 itemType: "machine resolver"
               }
             })
@@ -224,7 +224,7 @@ export class MachineResolverDetailsComponent implements OnInit, OnDestroy {
           .openDialog({
             component: SaveAndExitDialogComponent,
             data: {
-              title: $localize`Discard changes`,
+              title: $localize`:@@common.discardChanges:Discard changes`,
               allowSaveExit: this.canSaveMachineResolver(),
               saveExitDisabled: !this.canSaveMachineResolver()
             }

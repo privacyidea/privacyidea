@@ -24,7 +24,7 @@
       appearance="fill"
       class="table-filter"
       subscriptSizing="dynamic">
-      <mat-label i18n>Filter CA Connectors...</mat-label>
+      <mat-label i18n="@@caConnector.filterCaConnectors">Filter CA Connectors...</mat-label>
       <app-clearable-input
         (clearButtonClick)="resetFilter()"
         [showClearButton]="filterString().length > 0">
@@ -33,8 +33,8 @@
           (input)="onFilterInput(filterHTMLInputElement.value)"
           [value]="filterString()"
           aria-label="Filter Input"
-          i18n-aria-label
-          i18n-placeholder
+          i18n-aria-label="@@common.filterInput"
+          i18n-placeholder="@@common.filterByNameType"
           matInput
           placeholder="Filter by name or type" />
       </app-clearable-input>
@@ -54,7 +54,7 @@
         <mat-icon class="padding-right-3">assured_workload</mat-icon>
         <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
       </span>
-      <span i18n>Create CA Connector</span>
+      <span i18n="@@common.createCaConnector">Create CA Connector</span>
     </button>
     <button
       (click)="deleteSelected()"
@@ -62,9 +62,8 @@
       class="action-button-delete-secondary button-width-l"
       mat-stroked-button>
       <mat-icon>delete_sweep</mat-icon>
-      <span i18n>Delete</span>
+      <span i18n="@@common.delete">Delete</span>
     </button>
-
   </div>
   <table
     [dataSource]="caConnectorDataSource()"
@@ -96,7 +95,7 @@
     <ng-container matColumnDef="connectorname">
       <th
         *matHeaderCellDef
-        i18n
+        i18n="@@caConnector.caConnectorName"
         mat-header-cell
         mat-sort-header>
         CA Connector Name
@@ -120,7 +119,7 @@
     <ng-container matColumnDef="type">
       <th
         *matHeaderCellDef
-        i18n
+        i18n="@@common.type"
         mat-header-cell
         mat-sort-header>
         Type
@@ -145,7 +144,7 @@
       <td
         class="mat-cell"
         colspan="3"
-        i18n>
+        i18n="@@caConnector.noCaConnectors">
         No CA connectors found.
       </td>
     </tr>

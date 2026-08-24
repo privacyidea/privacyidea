@@ -24,13 +24,13 @@
     @if (isEditMode()) {
       <h3
         class="margin-8"
-        i18n>
+        i18n="@@piServer.editPrivacyidea">
         Edit privacyIDEA Server
       </h3>
     } @else {
       <h3
         class="margin-8"
-        i18n>
+        i18n="@@piServer.createPrivacyidea">
         Create privacyIDEA Server
       </h3>
     }
@@ -43,7 +43,7 @@
           (click)="onCancel()"
           class="action-button-secondary button-width-s"
           mat-stroked-button>
-          <span i18n>Cancel</span>
+          <span i18n="@@common.cancel">Cancel</span>
         </button>
         <button
           (click)="save()"
@@ -51,7 +51,7 @@
           class="action-button-primary button-width-s"
           mat-stroked-button>
           <mat-icon>save</mat-icon>
-          <span i18n>Save</span>
+          <span i18n="@@common.save">Save</span>
         </button>
       </div>
     </div>
@@ -61,7 +61,7 @@
         <mat-form-field
           appearance="fill"
           class="input-width-l">
-          <mat-label i18n>Identifier</mat-label>
+          <mat-label i18n="@@common.identifier">Identifier</mat-label>
           <app-clearable-input
             (clearButtonClick)="privacyideaModel.update(m => ({...m, identifier: ''}))"
             [showClearButton]="!isEditMode() && !!privacyideaModel().identifier">
@@ -71,21 +71,23 @@
               placeholder="myRemotePrivacyIDEAServer" />
           </app-clearable-input>
           @if (privacyideaForm.identifier().errors().some(e => e.kind === 'required')) {
-            <mat-error i18n>Identifier is <strong>required</strong></mat-error>
+            <mat-error i18n="@@common.identifierRequired">Identifier is <strong>required</strong></mat-error>
           }
           @if (privacyideaForm.identifier().errors().some(e => e.kind === 'pattern')) {
-            <mat-error i18n
+            <mat-error i18n="@@common.identifierContains"
               >Identifier contains <strong>invalid characters</strong>. Only alphanumeric characters, dots, underscores
               and hyphens are allowed.
             </mat-error>
           }
-          <mat-hint i18n>This is the unique identifying name of the privacyIDEA server definition.</mat-hint>
+          <mat-hint i18n="@@piServer.uniqueIdentifying"
+            >This is the unique identifying name of the privacyIDEA server definition.</mat-hint
+          >
         </mat-form-field>
 
         <mat-form-field
           appearance="fill"
           class="input-width-l">
-          <mat-label i18n>URL of the privacyIDEA Server</mat-label>
+          <mat-label i18n="@@piServer.urlPrivacyidea">URL of the privacyIDEA Server</mat-label>
           <app-clearable-input
             (clearButtonClick)="privacyideaModel.update(m => ({...m, url: ''}))"
             [showClearButton]="!!privacyideaModel().url">
@@ -95,9 +97,11 @@
               placeholder="https://pi17.example.com/" />
           </app-clearable-input>
           @if (privacyideaForm.url().errors().some(e => e.kind === 'required')) {
-            <mat-error i18n>URL of the privacyIDEA Server is <strong>required</strong></mat-error>
+            <mat-error i18n="@@piServer.urlPrivacyideaServer"
+              >URL of the privacyIDEA Server is <strong>required</strong></mat-error
+            >
           }
-          <mat-hint i18n>Please provide the base URL of the privacyIDEA server.</mat-hint>
+          <mat-hint i18n="@@piServer.pleaseProvide">Please provide the base URL of the privacyIDEA server.</mat-hint>
         </mat-form-field>
       </div>
 
@@ -105,11 +109,11 @@
         <mat-checkbox
           [checked]="privacyideaModel().tls"
           (change)="privacyideaModel.update(m => ({...m, tls: $event.checked}))">
-          <span i18n>Verify the Certificate</span>
+          <span i18n="@@piServer.verifyCertificate">Verify the Certificate</span>
         </mat-checkbox>
         <p
           class="mat-hint"
-          i18n>
+          i18n="@@piServer.certificateChecked">
           The certificate will be checked for a valid hostname and for a trusted certificate.
           <br />
           Do not uncheck this in productive use!
@@ -119,7 +123,7 @@
       <mat-form-field
         appearance="fill"
         class="input-width-xl margin-top-16">
-        <mat-label i18n>Description</mat-label>
+        <mat-label i18n="@@common.description">Description</mat-label>
         <app-clearable-input
           (clearButtonClick)="privacyideaModel.update(m => ({...m, description: ''}))"
           [showClearButton]="!!privacyideaModel().description">
@@ -134,7 +138,7 @@
           <mat-form-field
             appearance="fill"
             class="input-width-l">
-            <mat-label i18n>User</mat-label>
+            <mat-label i18n="@@common.user">User</mat-label>
             <app-clearable-input
               (clearButtonClick)="privacyideaModel.update(m => ({...m, username: ''}))"
               [showClearButton]="!!privacyideaModel().username">
@@ -147,7 +151,7 @@
           <mat-form-field
             appearance="fill"
             class="input-width-l">
-            <mat-label i18n>Password</mat-label>
+            <mat-label i18n="@@common.password">Password</mat-label>
             <app-clearable-input
               (clearButtonClick)="privacyideaModel.update(m => ({...m, password: ''}))"
               [showClearButton]="!!privacyideaModel().password">
@@ -167,7 +171,7 @@
           mat-stroked-button
           type="button">
           <mat-icon>send</mat-icon>
-          <span i18n>Send Test Request</span>
+          <span i18n="@@piServer.sendTestRequest">Send Test Request</span>
         </button>
       </div>
     </div>

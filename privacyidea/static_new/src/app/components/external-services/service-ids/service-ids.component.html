@@ -24,7 +24,7 @@
       appearance="fill"
       class="table-filter"
       subscriptSizing="dynamic">
-      <mat-label i18n>Filter Service IDs...</mat-label>
+      <mat-label i18n="@@serviceId.filterService">Filter Service IDs...</mat-label>
       <app-clearable-input
         (clearButtonClick)="resetFilter()"
         [showClearButton]="filterString().length > 0">
@@ -33,8 +33,8 @@
           (input)="onFilterInput(filterHTMLInputElement.value)"
           [value]="filterString()"
           aria-label="Filter Input"
-          i18n-aria-label
-          i18n-placeholder
+          i18n-aria-label="@@common.filterInput"
+          i18n-placeholder="@@common.filterByNameDescription"
           matInput
           placeholder="Filter by name or description" />
       </app-clearable-input>
@@ -54,7 +54,7 @@
         <mat-icon class="padding-right-3">storage</mat-icon>
         <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
       </span>
-      <span i18n>Create Service ID</span>
+      <span i18n="@@common.createService">Create Service ID</span>
     </button>
     <button
       (click)="deleteSelected()"
@@ -62,13 +62,12 @@
       class="action-button-delete-secondary button-width-l"
       mat-stroked-button>
       <mat-icon>delete_sweep</mat-icon>
-      <span i18n>Delete</span>
+      <span i18n="@@common.delete">Delete</span>
     </button>
-
 
     <p
       class="margin-bottom-0 margin-top-0"
-      i18n>
+      i18n="@@serviceId.serviceIdsUsed">
       Service IDs can be used to attach e.g. SSH keys to certain machines and services.
       <br />
       To view attached tokens go to
@@ -106,7 +105,7 @@
     <ng-container matColumnDef="id">
       <th
         *matHeaderCellDef
-        i18n
+        i18n="@@common.id2"
         mat-header-cell
         mat-sort-header>
         Id
@@ -121,7 +120,7 @@
     <ng-container matColumnDef="servicename">
       <th
         *matHeaderCellDef
-        i18n
+        i18n="@@common.name"
         mat-header-cell
         mat-sort-header>
         Name
@@ -145,7 +144,7 @@
     <ng-container matColumnDef="description">
       <th
         *matHeaderCellDef
-        i18n
+        i18n="@@common.description"
         mat-header-cell
         mat-sort-header>
         Description
@@ -170,7 +169,7 @@
       <td
         class="mat-cell"
         colspan="4"
-        i18n>
+        i18n="@@serviceId.noServiceIdsFound">
         No service IDs found.
       </td>
     </tr>

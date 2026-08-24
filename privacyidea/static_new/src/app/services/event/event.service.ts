@@ -397,10 +397,10 @@ export class EventService implements EventServiceInterface {
         .openDialog({
           component: SimpleConfirmationDialogComponent,
           data: {
-            title: $localize`Delete Event Handler`,
+            title: $localize`:@@event.deleteEventHandler:Delete Event Handler`,
             items: [event.name],
-            itemType: $localize`event handler`,
-            confirmAction: { label: $localize`Delete`, value: true, type: "destruct" }
+            itemType: $localize`:@@event.eventHandler:event handler`,
+            confirmAction: { label: $localize`:@@common.delete:Delete`, value: true, type: "destruct" }
           }
         })
         .afterClosed()
@@ -422,6 +422,4 @@ export class EventService implements EventServiceInterface {
       return;
     }
   }
-
 }
-

@@ -20,7 +20,7 @@
   (wrapperClose)="close()"
   (actionTriggered)="onAction($event)"
   [actions]="actions()"
-  i18n-title="@@tokenEnrolledTitle"
+  i18n-title="@@token.tokenSuccessfully"
   title="Token Successfully Enrolled">
   <mat-dialog-content>
     @let postTopHtml = postTopHtml$ | async;
@@ -40,7 +40,7 @@
           alt="QR Code"
           class="qr-code"
           height="300px"
-          i18n-alt="@@qrCodeAlt"
+          i18n-alt="@@common.qrCode"
           src="{{ qrCode }}"
           width="300px" />
       }
@@ -48,7 +48,7 @@
       @if (data.showEnrollData !== false) {
         <div class="flex-column gap-16">
           @if (data.response?.detail?.["password"]) {
-            <p i18n>
+            <p i18n="@@token.yourPassword">
               Your Password: <strong>{{ data.response?.detail?.["password"] }}</strong
               >.
             </p>

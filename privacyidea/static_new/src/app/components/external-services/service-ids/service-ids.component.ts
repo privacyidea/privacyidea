@@ -109,10 +109,10 @@ export class ServiceIdsComponent {
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: $localize`Delete Service IDs`,
+          title: $localize`:@@serviceId.deleteServiceIds:Delete Service IDs`,
           items: selected.map((row) => row.servicename),
           itemType: "service-id",
-          confirmAction: { label: $localize`Delete`, value: true, type: "destruct" }
+          confirmAction: { label: $localize`:@@common.delete:Delete`, value: true, type: "destruct" }
         }
       })
       .afterClosed()

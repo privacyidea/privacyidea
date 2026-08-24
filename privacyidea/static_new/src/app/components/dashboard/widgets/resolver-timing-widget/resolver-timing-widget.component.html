@@ -27,23 +27,23 @@
               key="resolver"
               [sortState]="sort"
               label="Resolver"
-              i18n-label />
+              i18n-label="@@common.resolver" />
           </th>
           <th>
             <app-table-sort-header
               key="op"
               [sortState]="sort"
               label="Operation"
-              i18n-label />
+              i18n-label="@@dashboard.operation" />
           </th>
           <th
             matTooltip="Number of requests within the last hour."
-            i18n-matTooltip>
+            i18n-matTooltip="@@dashboard.numberRequests">
             <app-table-sort-header
               key="count"
               [sortState]="sort"
               label="Requests"
-              i18n-label
+              i18n-label="@@dashboard.requests"
               [hasHintTooltip]="true" />
           </th>
           <th>
@@ -51,16 +51,16 @@
               key="avgMs"
               [sortState]="sort"
               label="Avg (ms)"
-              i18n-label />
+              i18n-label="@@dashboard.avgMs" />
           </th>
           <th
             matTooltip="95% of requests within the last hour completed within this time."
-            i18n-matTooltip>
+            i18n-matTooltip="@@dashboard.requestsWithin">
             <app-table-sort-header
               key="p95Ms"
               [sortState]="sort"
               label="P95 (ms)"
-              i18n-label
+              i18n-label="@@dashboard.p95Ms"
               [hasHintTooltip]="true" />
           </th>
           <th>
@@ -68,7 +68,7 @@
               key="maxMs"
               [sortState]="sort"
               label="Max (ms)"
-              i18n-label />
+              i18n-label="@@dashboard.maxMs" />
           </th>
         </tr>
       </thead>
@@ -94,7 +94,7 @@
           <tr>
             <td
               colspan="6"
-              i18n>
+              i18n="@@dashboard.noResolverActivity">
               No resolver activity in the last hour.
             </td>
           </tr>

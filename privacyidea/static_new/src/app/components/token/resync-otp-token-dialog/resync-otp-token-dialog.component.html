@@ -21,14 +21,16 @@
   [title]="data ? 'Token Resync Successful' : 'Token Resync Failed'"
   [showCancelButton]="true"
   cancelButtonLabel="Close"
-  i18n-cancelButtonLabel="@@closeButtonLabel"
+  i18n-cancelButtonLabel="@@common.close"
   (wrapperClose)="close()">
   <mat-dialog-content>
     <div class="text-center">
       @if (data) {
-        <p i18n>The token was successfully synchronized.</p>
+        <p i18n="@@token.tokenWasSuccessfully">The token was successfully synchronized.</p>
       } @else {
-        <p i18n>The token could not be synchronized. Please check the OTP values and try again.</p>
+        <p i18n="@@token.tokenCouldNot">
+          The token could not be synchronized. Please check the OTP values and try again.
+        </p>
       }
     </div>
   </mat-dialog-content>

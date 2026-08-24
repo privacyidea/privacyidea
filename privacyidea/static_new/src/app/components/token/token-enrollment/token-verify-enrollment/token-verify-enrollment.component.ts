@@ -45,7 +45,10 @@ import { TokenEnrollmentDialogData, TokenService, TokenServiceInterface } from "
   templateUrl: "./token-verify-enrollment.component.html",
   styleUrl: "./token-verify-enrollment.component.scss"
 })
-export class TokenVerifyEnrollmentComponent extends AbstractDialogComponent<TokenEnrollmentDialogData, EnrollmentResponse> {
+export class TokenVerifyEnrollmentComponent extends AbstractDialogComponent<
+  TokenEnrollmentDialogData,
+  EnrollmentResponse
+> {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
 
@@ -63,7 +66,7 @@ export class TokenVerifyEnrollmentComponent extends AbstractDialogComponent<Toke
 
   readonly dialogActions = computed<DialogAction<string>[]>(() => [
     {
-      label: $localize`Verify`,
+      label: $localize`:@@token.verify:Verify`,
       type: "confirm",
       value: "verify",
       disabled: this.invalidInputSignal()

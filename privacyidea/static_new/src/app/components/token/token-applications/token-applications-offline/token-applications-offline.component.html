@@ -19,10 +19,10 @@
 <div
   aria-label="Token Applications Offline"
   class="token-applications-offline"
-  i18n-aria-label>
+  i18n-aria-label="@@token.tokenApplicationsOffline">
   <div class="details-flex-layout flex-column">
     <div class="margin-left-16 margin-bottom-16">
-      <p i18n>HOTP tokens can be attached with offline to e.g. notebooks.</p>
+      <p i18n="@@token.hotpTokensAttached">HOTP tokens can be attached with offline to e.g. notebooks.</p>
     </div>
   </div>
 </div>
@@ -33,7 +33,7 @@
     <mat-form-field
       subscriptSizing="dynamic"
       class="application-table-filter">
-      <mat-label i18n>Filter Offline Applications...</mat-label>
+      <mat-label i18n="@@token.filterOffline">Filter Offline Applications...</mat-label>
       <app-clearable-input
         (clearButtonClick)="machineService.clearFilter()"
         [showClearButton]="machineService.filterDraft().isNotEmpty">
@@ -42,8 +42,8 @@
           (input)="machineService.handleFilterInput($event)"
           [value]="machineService.filterDraft().filterString"
           aria-label="Filter Input"
-          i18n-aria-label
-          i18n-placeholder
+          i18n-aria-label="@@common.filterInput"
+          i18n-placeholder="@@token.exampleQuerySerial"
           id="offline-filter-input"
           matInput
           placeholder="Example query: 'serial: OATH0001'" />
@@ -65,7 +65,7 @@
     [dataSource]="dataSource()"
     aria-label="Token Applications Table"
     class="token-table"
-    i18n-aria-label
+    i18n-aria-label="@@token.tokenApplicationsTable"
     mat-table>
     @for (column of columnsKeyMap; track column) {
       <ng-container [matColumnDef]="column.key">
@@ -80,7 +80,7 @@
                 <button
                   (click)="onKeywordClick(column.key)"
                   aria-label="Filter by {{ column.label }}"
-                  i18n-aria-label
+                  i18n-aria-label="@@common.filterBy"
                   class="filter-button"
                   mat-icon-button
                   type="button">
@@ -92,7 +92,7 @@
               <button
                 (click)="tableUtilsService.onSortButtonClick(column.key, sort)"
                 aria-label="Sort by {{ column.label }}"
-                i18n-aria-label
+                i18n-aria-label="@@common.sortBy"
                 class="sort-button"
                 mat-icon-button
                 type="button">
@@ -141,22 +141,22 @@
     <tr
       *matHeaderRowDef="displayedColumns"
       aria-label="Header Row"
-      i18n-aria-label
+      i18n-aria-label="@@common.headerRow"
       mat-header-row></tr>
     <tr
       *matRowDef="let row; columns: displayedColumns"
       aria-label="Data Row"
-      i18n-aria-label
+      i18n-aria-label="@@common.dataRow"
       mat-row></tr>
     <tr
       *matNoDataRow
       aria-label="No Data Row"
-      i18n-aria-label>
+      i18n-aria-label="@@common.noDataRow">
       <td
         [attr.colspan]="displayedColumns.length"
         aria-label="No Data Cell"
-        i18n
-        i18n-aria-label>
+        i18n="@@common.noDataMatching"
+        i18n-aria-label="@@common.noDataCell">
         No data matching the filter.
       </td>
     </tr>

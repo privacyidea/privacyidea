@@ -61,17 +61,17 @@ export const EMPTY_PERIODIC_TASK: PeriodicTaskEdit = {
 };
 
 export const TASK_KEY_MAPPING: Record<string, string> = {
-  id: $localize`ID`,
-  name: $localize`Name`,
-  active: $localize`Active`,
-  interval: $localize`Interval`,
-  nodes: $localize`Nodes`,
-  taskmodule: $localize`Task Module`,
-  retry_if_failed: $localize`Retry If Failed`,
-  last_update: $localize`Last Update`,
-  ordering: $localize`Ordering`,
-  options: $localize`Options`,
-  last_runs: $localize`Last Runs`
+  id: $localize`:@@common.id:ID`,
+  name: $localize`:@@common.name:Name`,
+  active: $localize`:@@common.active:Active`,
+  interval: $localize`:@@periodicTask.interval:Interval`,
+  nodes: $localize`:@@periodicTask.nodes:Nodes`,
+  taskmodule: $localize`:@@periodicTask.taskModule:Task Module`,
+  retry_if_failed: $localize`:@@periodicTask.retryIfFailed:Retry If Failed`,
+  last_update: $localize`:@@periodicTask.lastUpdate:Last Update`,
+  ordering: $localize`:@@common.ordering:Ordering`,
+  options: $localize`:@@common.options:Options`,
+  last_runs: $localize`:@@periodicTask.lastRuns:Last Runs`
 };
 
 export interface PeriodicTaskOption {
@@ -92,8 +92,8 @@ export const EMPTY_PERIODIC_TASK_OPTION: PeriodicTaskOption = {
 export type PeriodicTaskModule = "SimpleStats" | "EventCounter";
 export const PERIODIC_TASK_MODULES: PeriodicTaskModule[] = ["SimpleStats", "EventCounter"];
 export const PERIODIC_TASK_MODULE_MAPPING: Record<PeriodicTaskModule, string> = {
-  SimpleStats: $localize`Simple Statistics`,
-  EventCounter: $localize`Event Counter`
+  SimpleStats: $localize`:@@periodicTask.simpleStatistics:Simple Statistics`,
+  EventCounter: $localize`:@@periodicTask.eventCounter:Event Counter`
 };
 
 export interface PeriodicTaskServiceInterface {
@@ -213,10 +213,10 @@ export class PeriodicTaskService implements PeriodicTaskServiceInterface {
         .openDialog({
           component: SimpleConfirmationDialogComponent,
           data: {
-            title: $localize`Delete Periodic Task`,
+            title: $localize`:@@periodicTask.deletePeriodic:Delete Periodic Task`,
             items: [task.name],
-            itemType: $localize`periodic task`,
-            confirmAction: { label: $localize`Delete`, value: true, type: "destruct" }
+            itemType: $localize`:@@periodicTask.periodicTask:periodic task`,
+            confirmAction: { label: $localize`:@@common.delete:Delete`, value: true, type: "destruct" }
           }
         })
         .afterClosed()

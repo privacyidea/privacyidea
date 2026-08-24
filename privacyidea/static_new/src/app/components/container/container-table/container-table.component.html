@@ -20,13 +20,13 @@
   appScrollToTop
   aria-label="Container Table"
   class="container-table-container"
-  i18n-aria-label>
+  i18n-aria-label="@@container.containerTable">
   @if (authService.actionAllowed("container_list")) {
     <div class="filter-paginator-container">
       <mat-form-field
         class="container-table-filter"
         subscriptSizing="dynamic">
-        <mat-label i18n>Filter Containers...</mat-label>
+        <mat-label i18n="@@common.filterContainers">Filter Containers...</mat-label>
         <app-clearable-input
           (clearButtonClick)="containerService.clearFilter()"
           [showClearButton]="containerService.filterDraft().isNotEmpty">
@@ -37,8 +37,8 @@
             (keyup.enter)="containerService.applyFilterInput($event)"
             [value]="containerService.filterDraft().filterString"
             aria-label="Filter Input"
-            i18n-aria-label
-            i18n-placeholder
+            i18n-aria-label="@@common.filterInput"
+            i18n-placeholder="@@container.exampleQueryType"
             id="container-filter-input"
             matInput
             placeholder="Example query: 'type: generic'" />
@@ -47,7 +47,7 @@
         @if (showFilterHint()) {
           <mat-hint
             align="end"
-            i18n
+            i18n="@@common.pressEnterApply"
             >Press enter to apply the filter</mat-hint
           >
         }
@@ -55,7 +55,7 @@
       <button
         [matMenuTriggerFor]="advancedFilterMenu"
         class="margin-left-8"
-        i18n-matTooltip
+        i18n-matTooltip="@@common.moreFilter"
         mat-icon-button
         matTooltip="More Filter">
         <mat-icon>filter_list</mat-icon>
@@ -76,7 +76,7 @@
         [dataSource]="containerDataSource()"
         aria-label="Container Data Table"
         class="container-table"
-        i18n-aria-label
+        i18n-aria-label="@@container.containerData"
         mat-table
         multiTemplateDataRows>
         @for (column of columnsKeyMap; track column) {
@@ -89,7 +89,7 @@
                 <mat-checkbox
                   (change)="$event.checked ? containerSelection.selectAllRows() : containerSelection.deselectAllRows()"
                   aria-label="Select all containers"
-                  i18n-aria-label
+                  i18n-aria-label="@@container.selectAllContainers"
                   [checked]="containerSelection.allRowsSelected()"
                   [disabled]="!containerSelection.hasVisibleRows()"
                   [indeterminate]="containerSelection.someRowsSelected()"></mat-checkbox>
@@ -103,14 +103,15 @@
                   {{ column.label }}
                   <div class="margin-left-16 flex">
                     @if (
-                      apiFilterKeyMap[column.key] && containerService.apiFilterKeys.includes(apiFilterKeyMap[column.key])
+                      apiFilterKeyMap[column.key] &&
+                      containerService.apiFilterKeys.includes(apiFilterKeyMap[column.key])
                     ) {
                       @if (apiFilterKeyMap[column.key] === "type") {
                         <button
                           [matMenuTriggerData]="{ keyword: apiFilterKeyMap[column.key] }"
                           [matMenuTriggerFor]="typeMenu"
                           aria-label="Filter by {{ column.label }}"
-                          i18n-aria-label
+                          i18n-aria-label="@@common.filterBy"
                           class="filter-button"
                           mat-icon-button
                           type="button">
@@ -121,7 +122,7 @@
                           [matMenuTriggerData]="{ keyword: apiFilterKeyMap[column.key] }"
                           [matMenuTriggerFor]="statesMenu"
                           aria-label="Filter by {{ column.label }}"
-                          i18n-aria-label
+                          i18n-aria-label="@@common.filterBy"
                           class="filter-button"
                           mat-icon-button
                           type="button">
@@ -131,7 +132,7 @@
                         <button
                           (click)="onKeywordClick(apiFilterKeyMap[column.key])"
                           aria-label="Filter by {{ column.label }}"
-                          i18n-aria-label
+                          i18n-aria-label="@@common.filterBy"
                           class="filter-button"
                           mat-icon-button
                           type="button">
@@ -144,7 +145,7 @@
                     <button
                       (click)="tableUtilsService.onSortButtonClick(column.key, sort)"
                       aria-label="Sort by {{ column.label }}"
-                      i18n-aria-label
+                      i18n-aria-label="@@common.sortBy"
                       class="sort-button"
                       mat-icon-button
                       type="button">
@@ -280,7 +281,7 @@
                     @if (element.tokens?.length === 0) {
                       <div
                         class="flex ali-center"
-                        i18n>
+                        i18n="@@container.containerHasNo">
                         Container has no tokens.
                       </div>
                     }
@@ -309,14 +310,14 @@
         <tr *matNoDataRow>
           <td
             [attr.colspan]="columnKeys.length"
-            i18n>
+            i18n="@@common.noDataMatching">
             No data matching the filter.
           </td>
         </tr>
       </table>
     </div>
   } @else {
-    <div i18n>You do not have the permission to view the container list.</div>
+    <div i18n="@@container.youDoNotHavePermission">You do not have the permission to view the container list.</div>
   }
 </div>
 
@@ -341,7 +342,7 @@
       (click)="onItemSelected(keyword, undefined)"
       mat-menu-item>
       <mat-icon>filter_alt_off</mat-icon>
-      <span i18n>Clear Filter</span>
+      <span i18n="@@common.clearFilter">Clear Filter</span>
     </button>
     <mat-divider />
     @for (option of containerStateOptions; track option.value) {
@@ -362,7 +363,7 @@
       (click)="onItemSelected(keyword, undefined)"
       mat-menu-item>
       <mat-icon>filter_alt_off</mat-icon>
-      <span i18n>Clear Filter</span>
+      <span i18n="@@common.clearFilter">Clear Filter</span>
     </button>
     <mat-divider />
     @for (type of containerService.containerTypeOptions(); track type.containerType) {

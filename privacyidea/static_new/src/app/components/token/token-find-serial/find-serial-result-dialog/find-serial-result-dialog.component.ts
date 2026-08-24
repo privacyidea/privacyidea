@@ -47,7 +47,7 @@ export class FindSerialResultDialogComponent extends AbstractDialogComponent<
 
   action: DialogAction<GetSerialResultDialogReturn> = {
     type: "confirm",
-    label: $localize`OK`,
+    label: $localize`:@@common.ok:OK`,
     value: "reset"
   };
 

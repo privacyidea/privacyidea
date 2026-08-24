@@ -20,10 +20,10 @@
   aria-label="Layout"
   class="layout"
   [class.with-secondary-toolbar]="hasSecondaryToolbar()"
-  i18n-aria-label>
+  i18n-aria-label="@@nav.layout">
   <main
     aria-label="Main Router Outlet"
-    i18n-aria-label>
+    i18n-aria-label="@@nav.mainRouterOutlet">
     @if (authService.role() === "admin") {
       <div class="admin-layout">
         <app-navigation />

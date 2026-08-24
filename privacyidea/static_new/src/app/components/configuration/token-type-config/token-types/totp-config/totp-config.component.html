@@ -18,10 +18,10 @@
 -->
 <mat-expansion-panel>
   <mat-expansion-panel-header>
-    <mat-panel-title i18n>TOTP</mat-panel-title>
+    <mat-panel-title i18n="@@tokenTypeConfig.totp">TOTP</mat-panel-title>
   </mat-expansion-panel-header>
   <div class="panel-content expansion-well">
-    <p i18n>
+    <p i18n="@@tokenTypeConfig.totpTokenTime">
       The TOTP Token is a time based one time password token. It is described in
       <a
         href="https://datatracker.ietf.org/doc/html/rfc6238"
@@ -29,8 +29,10 @@
         >RFC 6238.
       </a>
     </p>
-    <p i18n>Here you can define settings, that will be set as default values, when enrolling a TOTP token.</p>
-    <p i18n>
+    <p i18n="@@tokenTypeConfig.hereYouDefineSettingsSetAs">
+      Here you can define settings, that will be set as default values, when enrolling a TOTP token.
+    </p>
+    <p i18n="@@tokenTypeConfig.noteUserAdminPoliciesTotp">
       Note that the user/admin policies
       <span class="policy-highlight">totp_hashlib</span>
       and
@@ -42,7 +44,7 @@
       <mat-form-field
         appearance="fill"
         class="input-width-s">
-        <mat-label i18n>Default Time Step</mat-label>
+        <mat-label i18n="@@tokenTypeConfig.defaultTimeStep">Default Time Step</mat-label>
         <mat-select
           [value]="formData()[TOTP_TIME_STEP]"
           (valueChange)="updateFormData(TOTP_TIME_STEP, $event)">
@@ -58,7 +60,7 @@
       <mat-form-field
         appearance="fill"
         class="input-width-s">
-        <mat-label i18n>Default Time Window</mat-label>
+        <mat-label i18n="@@tokenTypeConfig.defaultTimeWindow">Default Time Window</mat-label>
         <input
           [value]="formData()[TOTP_TIME_WINDOW]"
           (input)="updateFormData(TOTP_TIME_WINDOW, $any($event.target).valueAsNumber)"
@@ -72,7 +74,7 @@
       <mat-form-field
         appearance="fill"
         class="input-width-s">
-        <mat-label i18n>Default Hashlib</mat-label>
+        <mat-label i18n="@@tokenTypeConfig.defaultHashlib">Default Hashlib</mat-label>
         <mat-select
           [value]="formData()[TOTP_HASHLIB]"
           (valueChange)="updateFormData(TOTP_HASHLIB, $event)">
@@ -88,7 +90,7 @@
       <mat-form-field
         appearance="fill"
         class="input-width-s">
-        <mat-label i18n>Default Time Shift</mat-label>
+        <mat-label i18n="@@tokenTypeConfig.defaultTimeShift">Default Time Shift</mat-label>
         <input
           [value]="formData()[TOTP_TIME_SHIFT]"
           (input)="updateFormData(TOTP_TIME_SHIFT, $any($event.target).valueAsNumber)"

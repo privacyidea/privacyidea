@@ -110,15 +110,15 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
   private readonly renderer = inject(Renderer2);
 
   readonly labels: Record<string, string> = {
-    username: $localize`Username`,
-    givenname: $localize`Given name`,
-    surname: $localize`Surname`,
-    email: $localize`Email`,
-    phone: $localize`Phone`,
-    mobile: $localize`Mobile`,
-    description: $localize`Description`,
-    userid: $localize`User ID`,
-    resolver: $localize`Resolver`
+    username: $localize`:@@common.username:Username`,
+    givenname: $localize`:@@user.givenName2:Given name`,
+    surname: $localize`:@@user.surname:Surname`,
+    email: $localize`:@@common.email:Email`,
+    phone: $localize`:@@user.phone:Phone`,
+    mobile: $localize`:@@user.mobile:Mobile`,
+    description: $localize`:@@common.description:Description`,
+    userid: $localize`:@@common.userId:User ID`,
+    resolver: $localize`:@@common.resolver:Resolver`
   };
   readonly excludedKeys = new Set(["editable"]);
 
@@ -387,10 +387,10 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: $localize`Delete User`,
+          title: $localize`:@@common.deleteUser:Delete User`,
           items: [this.userData().username],
           itemType: "user",
-          confirmAction: { label: $localize`Delete`, value: true, type: "destruct" }
+          confirmAction: { label: $localize`:@@common.delete:Delete`, value: true, type: "destruct" }
         }
       })
       .afterClosed()

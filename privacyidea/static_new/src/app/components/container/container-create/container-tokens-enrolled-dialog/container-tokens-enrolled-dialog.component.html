@@ -18,13 +18,13 @@
 -->
 <app-dialog-wrapper
   title="Container Successfully Created"
-  i18n-title
+  i18n-title="@@container.containerSuccessfully"
   [actions]="dialogActions()"
   (actionTriggered)="onDialogAction($event)">
   <div class="progress-header">
     <span
       class="progress-label"
-      i18n>
+      i18n="@@container.token">
       Token {{ currentIndex() + 1 }} / {{ total() }}
     </span>
     <span class="token-type">{{ currentToken().type | titlecase }}</span>
@@ -34,7 +34,7 @@
     mode="determinate"
     class="progress-bar" />
   <div class="enrollment-data">
-    <p i18n>
+    <p i18n="@@container.tokenSuccessfully">
       Token <strong>{{ currentToken().serial }}</strong> successfully enrolled.
     </p>
     <app-token-enrollment-data

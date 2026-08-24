@@ -20,34 +20,34 @@
   appScrollToTop
   aria-label="Find Token Serial"
   class="find-token-serial"
-  i18n-aria-label>
+  i18n-aria-label="@@token.findTokenSerial">
   <h3
     class="margin-8"
-    i18n>
+    i18n="@@token.findTokenSerialNumber">
     Find Token Serial Number
   </h3>
   <p
     class="margin-left-16 margin-bottom-16 input-width-xl"
-    i18n>
+    i18n="@@token.byEnteringOtp">
     By entering an OTP value you can get the serial number of the token. You can also enter additional optional
     parameters, to narrow down the search for the token. So you can only search within certain token types or in
     assigned or unassigned tokens.
   </p>
   <div class="flex-row gap-16 ali-center margin-left-16">
     <mat-form-field class="input-width-l">
-      <mat-label i18n>OTP Value</mat-label>
+      <mat-label i18n="@@token.otpValue">OTP Value</mat-label>
       <input
         #otpValueInput
         [value]="otpValue()"
         (input)="otpValue.set($any($event.target).value)"
         [disabled]="currentStep() !== 'init'"
-        i18n-placeholder
+        i18n-placeholder="@@token.enterSomeOtpValue"
         id="otpValue"
         matInput
         name="otpValue"
         placeholder="Enter some OTP value"
         required />
-      <mat-error i18n>OTP value is <strong>required</strong></mat-error>
+      <mat-error i18n="@@token.otpValueRequired">OTP value is <strong>required</strong></mat-error>
     </mat-form-field>
     <button
       (click)="onClickRunSearch()"
@@ -56,26 +56,26 @@
       mat-stroked-button>
       <mat-icon>{{ currentStep() !== "searching" ? "play_arrow" : "stop" }}</mat-icon>
       <span
-        i18n
+        i18n="@@token.runSearch"
         [hidden]="currentStep() === 'searching'"
         >Run Search</span
       >
       <span
-        i18n
+        i18n="@@token.stopSearch"
         [hidden]="currentStep() !== 'searching'"
         >Stop Search</span
       >
     </button>
   </div>
   <div class="margin-left-16">
-    <h4 i18n>Search Configuration</h4>
+    <h4 i18n="@@token.searchConfiguration">Search Configuration</h4>
     <div class="flex-row gap-16">
       <mat-form-field class="input-width-l">
-        <mat-label i18n>Token Type</mat-label>
+        <mat-label i18n="@@common.tokenType">Token Type</mat-label>
         <mat-select
           (selectionChange)="tokenType.set($event.value)"
           [value]="tokenType()"
-          i18n-placeholder
+          i18n-placeholder="@@token.selectTokenType"
           placeholder="Select token type">
           @for (type of tokenTypesWithOTP(); track type) {
             <mat-option [value]="type['key']">{{ type["info"].split(":")[0] }}</mat-option>
@@ -83,11 +83,11 @@
         </mat-select>
       </mat-form-field>
       <mat-form-field class="input-width-l">
-        <mat-label i18n>Assignment State</mat-label>
+        <mat-label i18n="@@token.assignmentState">Assignment State</mat-label>
         <mat-select
           (selectionChange)="assignmentState.set($event.value)"
           [value]="assignmentState()"
-          i18n-placeholder
+          i18n-placeholder="@@token.specifyAssignment"
           placeholder="Specify assignment state">
           @for (assignment of assignmentStates; track assignment) {
             <mat-option
@@ -102,11 +102,11 @@
 
     <div class="flex-row gap-16">
       <mat-form-field class="input-width-l">
-        <mat-label i18n>Serial Substring</mat-label>
+        <mat-label i18n="@@token.serialSubstring">Serial Substring</mat-label>
         <input
           [value]="serialSubstring()"
           (input)="serialSubstring.set($any($event.target).value)"
-          i18n-placeholder
+          i18n-placeholder="@@token.enterOptional"
           id="serialSubstring"
           matInput
           name="serialSubstring"
@@ -114,17 +114,17 @@
       </mat-form-field>
       <div class="flex-column width-32 hint-spacer">
         <mat-form-field class="input-width-s">
-          <mat-label i18n>Count Window</mat-label>
+          <mat-label i18n="@@common.countWindow">Count Window</mat-label>
           <input
             [value]="countWindow()"
             (input)="countWindow.set(+$any($event.target).value)"
-            i18n-placeholder
+            i18n-placeholder="@@token.lookaheadOtpValues"
             id="countWindow"
             matInput
             name="countWindow"
             placeholder="Lookahead OTP values"
             type="number" />
-          <mat-hint i18n>Set number of lookahead OTP values.</mat-hint>
+          <mat-hint i18n="@@token.setNumberLookahead">Set number of lookahead OTP values.</mat-hint>
         </mat-form-field>
       </div>
     </div>

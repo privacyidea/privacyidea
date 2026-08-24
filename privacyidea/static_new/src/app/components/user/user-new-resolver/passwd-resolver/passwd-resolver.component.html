@@ -17,20 +17,21 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div class="margin-left-16">
-  <h4 i18n>Passwd settings</h4>
+  <h4 i18n="@@resolver.passwdSettings">Passwd settings</h4>
   <div class="form">
     <mat-form-field class="input-width-l">
-      <mat-label i18n>Filename</mat-label>
+      <mat-label i18n="@@resolver.filename">Filename</mat-label>
       <app-clearable-input
-        (clearButtonClick)="model.update(m => ({ ...m, fileName: '' }))" [showClearButton]="!!model().fileName">
+        (clearButtonClick)="model.update(m => ({ ...m, fileName: '' }))"
+        [showClearButton]="!!model().fileName">
         <input
-          [formField]="passwdForm.fileName" matInput placeholder="/etc/passwd" />
+          [formField]="passwdForm.fileName"
+          matInput
+          placeholder="/etc/passwd" />
       </app-clearable-input>
 
       @if (passwdForm.fileName().errors().some(e => e.kind === 'required') && passwdForm.fileName().touched()) {
-        <mat-error i18n>
-          Filename is <strong>required</strong> .
-        </mat-error>
+        <mat-error i18n="@@resolver.filenameRequired"> Filename is <strong>required</strong> . </mat-error>
       }
     </mat-form-field>
   </div>

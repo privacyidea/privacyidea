@@ -1,7 +1,7 @@
 <div
   aria-label="Realm Layout"
   class="realm-layout"
-  i18n-aria-label>
+  i18n-aria-label="@@user.realmLayout">
   <div
     appScrollToTop
     class="realm-table-container">
@@ -9,7 +9,7 @@
       <mat-form-field
         class="token-table-filter"
         subscriptSizing="dynamic">
-        <mat-label i18n>Filter Realms...</mat-label>
+        <mat-label i18n="@@user.filterRealms">Filter Realms...</mat-label>
         <app-clearable-input
           (clearButtonClick)="resetFilter()"
           [showClearButton]="filterString().length > 0">
@@ -18,8 +18,8 @@
             (input)="onFilterInput(filterHTMLInputElement.value)"
             [value]="filterString()"
             aria-label="Filter Input"
-            i18n-aria-label
-            i18n-placeholder
+            i18n-aria-label="@@common.filterInput"
+            i18n-placeholder="@@common.filterAcrossAll"
             matInput
             placeholder="Filter across all columns." />
         </app-clearable-input>
@@ -30,7 +30,7 @@
       <mat-form-field
         class="input-width-m"
         subscriptSizing="dynamic">
-        <mat-label i18n>Node</mat-label>
+        <mat-label i18n="@@user.node">Node</mat-label>
 
         <mat-select
           (selectionChange)="selectedNode.set($event.value)"
@@ -123,7 +123,7 @@
                           </div>
 
                           <mat-form-field class="node-resolvers-select">
-                            <mat-label i18n>Resolvers</mat-label>
+                            <mat-label i18n="@@common.resolvers">Resolvers</mat-label>
                             <mat-select
                               (selectionChange)="onEditNodeResolversChange(group.id, $event.value)"
                               [value]="getEditNodeResolverNames(group.id)"
@@ -156,7 +156,7 @@
                   } @else {
                     <div class="resolver-cell">
                       @if (element.resolverGroups.length === 0) {
-                        <span i18n>No Resolvers</span>
+                        <span i18n="@@user.noResolvers">No Resolvers</span>
                       } @else {
                         @for (group of element.resolverGroups; track group.nodeLabel) {
                           <div class="resolver-node-group">
@@ -203,7 +203,7 @@
                           [disabled]="!canSaveEditedRealm(element)"
                           aria-label="Save realm"
                           color="primary"
-                          i18n-aria-label
+                          i18n-aria-label="@@user.saveRealm"
                           mat-icon-button
                           type="button">
                           <mat-icon>save</mat-icon>
@@ -212,7 +212,7 @@
                           (click)="cancelEditRealm()"
                           aria-label="Cancel edit"
                           class="red"
-                          i18n-aria-label
+                          i18n-aria-label="@@user.cancelEdit"
                           mat-icon-button
                           type="button">
                           <mat-icon>cancel</mat-icon>
@@ -223,8 +223,8 @@
                         <button
                           (click)="startEditRealm(element)"
                           aria-label="Edit realm"
-                          i18n-aria-label
-                          i18n-matTooltip
+                          i18n-aria-label="@@user.editRealm"
+                          i18n-matTooltip="@@user.editRealm"
                           mat-icon-button
                           matTooltip="Edit realm"
                           type="button">
@@ -236,8 +236,8 @@
                           (click)="onDeleteRealm(element)"
                           aria-label="Delete realm"
                           color="warn"
-                          i18n-aria-label
-                          i18n-matTooltip
+                          i18n-aria-label="@@user.deleteRealm3"
+                          i18n-matTooltip="@@user.deleteRealm3"
                           mat-icon-button
                           matTooltip="Delete realm"
                           type="button">
@@ -261,13 +261,13 @@
                   <mat-form-field
                     class="input-width-l margin-top-16"
                     subscriptSizing="dynamic">
-                    <mat-label i18n>Realm Name</mat-label>
+                    <mat-label i18n="@@user.realmName">Realm Name</mat-label>
                     <input
                       (input)="newRealmName.set($any($event.target).value)"
                       [value]="newRealmName()"
                       matInput />
                     @if (newRealmNameHasPatternError()) {
-                      <mat-error i18n>Invalid characters.</mat-error>
+                      <mat-error i18n="@@common.invalidCharacters">Invalid characters.</mat-error>
                     }
                   </mat-form-field>
                 }
@@ -287,7 +287,7 @@
                         <mat-form-field
                           class="input-width-l"
                           subscriptSizing="dynamic">
-                          <mat-label i18n>Resolvers</mat-label>
+                          <mat-label i18n="@@common.resolvers">Resolvers</mat-label>
                           <mat-select
                             (selectionChange)="onNewRealmNodeResolversChange(group.id, $event.value)"
                             [value]="getCreateNodeResolverNames(group.id)"
@@ -331,18 +331,18 @@
                       mat-stroked-button
                       type="button">
                       <mat-icon>add</mat-icon>
-                      <span i18n>Create</span>
+                      <span i18n="@@common.create">Create</span>
                     </button>
                     <button
                       (click)="resetCreateForm()"
                       [disabled]="isCreatingRealm()"
                       class="action-button-secondary button-width-m"
-                      i18n-matTooltip
+                      i18n-matTooltip="@@user.resetForm"
                       mat-stroked-button
                       matTooltip="Reset form"
                       type="button">
                       <mat-icon>redo</mat-icon>
-                      <span i18n>Reset</span>
+                      <span i18n="@@common.reset">Reset</span>
                     </button>
                   </div>
                 }
@@ -377,8 +377,8 @@
           <td
             [attr.colspan]="columnKeys.length"
             aria-label="No Data Cell"
-            i18n
-            i18n-aria-label>
+            i18n="@@common.noDataMatching"
+            i18n-aria-label="@@common.noDataCell">
             No data matching the filter.
           </td>
         </tr>

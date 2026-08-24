@@ -47,16 +47,16 @@
           mode="indeterminate"
           [diameter]="18"
           aria-label="Loading widget"
-          i18n-aria-label />
+          i18n-aria-label="@@dashboard.loadingWidget" />
       }
 
       @if (refreshFailed()) {
         <mat-icon
           class="widget-action widget-stale"
           matTooltip="Refresh failed"
-          i18n-matTooltip
+          i18n-matTooltip="@@dashboard.refreshFailed"
           aria-label="Refresh failed"
-          i18n-aria-label>
+          i18n-aria-label="@@dashboard.refreshFailed">
           warning
         </mat-icon>
       }
@@ -67,7 +67,7 @@
           class="widget-action widget-reload"
           (click)="reload()"
           aria-label="Reload widget"
-          i18n-aria-label>
+          i18n-aria-label="@@dashboard.reloadWidget">
           <mat-icon>refresh</mat-icon>
         </button>
       }
@@ -78,7 +78,7 @@
           class="widget-action widget-remove"
           (click)="remove()"
           aria-label="Remove widget"
-          i18n-aria-label>
+          i18n-aria-label="@@dashboard.removeWidget">
           <mat-icon>close</mat-icon>
         </button>
       }

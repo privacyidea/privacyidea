@@ -19,12 +19,12 @@
 <div
   aria-label="Container Details Token Table"
   class="container-details-token-table-layout"
-  i18n-aria-label>
+  i18n-aria-label="@@container.containerDetailsToken">
   <div class="flex-column">
     <div class="flex-row ali-center gap-8">
       <h4
         class="details-card-title"
-        i18n>
+        i18n="@@container.tokensContainer">
         Tokens in Container
       </h4>
       <app-container-details-token-actions
@@ -37,7 +37,7 @@
         <mat-form-field
           class="container-details-token-table-filter width-50"
           subscriptSizing="dynamic">
-          <mat-label i18n>Filter Token...</mat-label>
+          <mat-label i18n="@@container.filterToken">Filter Token...</mat-label>
           <app-clearable-input
             (clearButtonClick)="clearFilter()"
             [showClearButton]="filterInput.value !== ''">
@@ -45,8 +45,8 @@
               #filterInput
               (keyup)="handleFilterInput($event)"
               aria-label="Filter Input"
-              i18n-aria-label
-              i18n-placeholder
+              i18n-aria-label="@@common.filterInput"
+              i18n-placeholder="@@common.filterAcrossAll"
               matInput
               placeholder="Filter across all columns." />
           </app-clearable-input>
@@ -66,14 +66,14 @@
       [dataSource]="dataSource()"
       aria-label="Token of Container Data Table"
       class="container-details-token-table"
-      i18n-aria-label
+      i18n-aria-label="@@container.tokenContainer"
       mat-table>
       @for (column of columnsKeyMap; track column) {
         <ng-container [matColumnDef]="column.key">
           <th
             *matHeaderCellDef
             attr.aria-label="{{ column.label }} Header"
-            i18n-attr.aria-label
+            i18n-attr.aria-label="@@container.header"
             mat-header-cell>
             <div class="flex ali-center">
               {{ column.label }}
@@ -91,19 +91,21 @@
           <td
             *matCellDef="let element"
             attr.aria-label="{{ column.label }} Cell"
-            i18n-attr.aria-label
+            i18n-attr.aria-label="@@container.cell"
             mat-cell>
             <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
               @switch (column.key) {
                 @case ("serial") {
                   <app-copyable [copyText]="element.status !== 'missing' ? element.token.serial : ''">
-                    @if (element.status !== "missing" &&
-                    (element.token.username === authService.username() || authService.role() === "admin")) {
+                    @if (
+                      element.status !== "missing" &&
+                      (element.token.username === authService.username() || authService.role() === "admin")
+                    ) {
                       <a
                         (click)="contentService.tokenSelected(element.token.serial)"
                         (keydown.enter)="contentService.tokenSelected(element.token.serial)"
                         attr.aria-label="{{ column.label }} Link"
-                        i18n-attr.aria-label
+                        i18n-attr.aria-label="@@container.link"
                         class="cursor-pointer"
                         role="button"
                         tabindex="0">
@@ -137,7 +139,7 @@
                             contentService.userSelected(element.token[column.key], element.token['user_realm'])
                           "
                           attr.aria-label="{{ column.label }} Link"
-                          i18n-attr.aria-label
+                          i18n-attr.aria-label="@@container.link"
                           class="cursor-pointer"
                           role="button"
                           tabindex="0">
@@ -149,7 +151,7 @@
                           color="primary"
                           (click)="assignUserToToken(element.token)"
                           matTooltip="Assign Owner"
-                          i18n-matTooltip>
+                          i18n-matTooltip="@@container.assignOwner">
                           <mat-icon>person_add</mat-icon>
                         </button>
                       }
@@ -161,7 +163,7 @@
                     @if (tableUtilsService.isLink(column.key)) {
                       <a
                         attr.aria-label="{{ column.label }} Link"
-                        i18n-attr.aria-label
+                        i18n-attr.aria-label="@@container.link"
                         href="#">
                         {{ element.token[column.key] }}
                       </a>
@@ -182,25 +184,25 @@
         <th
           *matHeaderCellDef
           aria-label="Actions Column Header"
-          i18n-aria-label
+          i18n-aria-label="@@container.actionsColumn"
           mat-header-cell>
           <div
             class="flex just-center"
-            i18n>
+            i18n="@@common.actions">
             Actions
           </div>
         </th>
         <td
           *matCellDef="let element"
           aria-label="Actions Button Cell"
-          i18n-aria-label
+          i18n-aria-label="@@container.actionsButton"
           mat-cell>
           <div class="flex-row just-center">
             @if (element.status !== "missing") {
               @if (authService.actionAllowed("container_remove_token")) {
                 <button
                   (click)="removeTokenFromContainer(containerSerial(), element.token.serial)"
-                  i18n-matTooltip
+                  i18n-matTooltip="@@common.removeTokenFrom"
                   mat-icon-button
                   matTooltip="Remove Token from Container">
                   <mat-icon>remove_circle_outline</mat-icon>
@@ -209,7 +211,7 @@
               @if (authService.actionAllowed("delete")) {
                 <button
                   (click)="deleteTokenFromContainer(element.token.serial)"
-                  i18n-matTooltip
+                  i18n-matTooltip="@@common.deleteToken"
                   mat-icon-button
                   matTooltip="Delete Token">
                   <mat-icon>delete</mat-icon>
@@ -223,23 +225,23 @@
       <tr
         *matHeaderRowDef="displayedColumns"
         aria-label="Header Row"
-        i18n-aria-label
+        i18n-aria-label="@@common.headerRow"
         mat-header-row></tr>
       <tr
         *matRowDef="let row; columns: displayedColumns"
         [ngClass]="'comparison-status-' + row.status"
         aria-label="Data Row"
-        i18n-aria-label
+        i18n-aria-label="@@common.dataRow"
         mat-row></tr>
       <tr
         *matNoDataRow
         aria-label="No Data Row"
-        i18n-aria-label>
+        i18n-aria-label="@@common.noDataRow">
         <td
           [attr.colspan]="displayedColumns.length"
           aria-label="No Data Cell"
-          i18n
-          i18n-aria-label>
+          i18n="@@common.noDataMatching"
+          i18n-aria-label="@@common.noDataCell">
           No data matching the filter.
         </td>
       </tr>

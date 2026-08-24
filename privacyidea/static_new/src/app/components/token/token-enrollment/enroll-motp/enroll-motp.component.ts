@@ -25,10 +25,7 @@ import { TokenService, TokenServiceInterface } from "@services/token/token.servi
 
 import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { MotpApiPayloadMapper, MotpEnrollmentData } from "@app/mappers/token-api-payload/motp-token-api-payload.mapper";
-import {
-  EnrollmentArgs,
-  EnrollTokenBase
-} from "@components/token/token-enrollment/enroll-token-base";
+import { EnrollmentArgs, EnrollTokenBase } from "@components/token/token-enrollment/enroll-token-base";
 import { MaskedInputComponent } from "@components/shared/masked-input/masked-input.component";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 
@@ -45,9 +42,7 @@ export interface MotpEnrollmentOptions extends TokenEnrollmentData {
   imports: [FormField, MatFormField, MatInput, MatLabel, MatCheckbox, MatError, MaskedInputComponent],
   templateUrl: "./enroll-motp.component.html",
   styleUrl: "./enroll-motp.component.scss",
-  providers: [
-    { provide: EnrollTokenBase, useExisting: forwardRef(() => EnrollMotpComponent) }
-  ]
+  providers: [{ provide: EnrollTokenBase, useExisting: forwardRef(() => EnrollMotpComponent) }]
 })
 export class EnrollMotpComponent extends EnrollTokenBase<MotpEnrollmentData> {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
@@ -64,7 +59,10 @@ export class EnrollMotpComponent extends EnrollTokenBase<MotpEnrollmentData> {
 
   otpKeyForm = form(this.otpKey, (f) => {
     required(f);
-    disabled(f, () => this.disabled() || this.generateOnServer() || this.authService.checkForceServerGenerateOTPKey("motp"));
+    disabled(
+      f,
+      () => this.disabled() || this.generateOnServer() || this.authService.checkForceServerGenerateOTPKey("motp")
+    );
   });
 
   motpPinForm = form(this.motpPin, (f) => {
@@ -84,17 +82,21 @@ export class EnrollMotpComponent extends EnrollTokenBase<MotpEnrollmentData> {
     }
     const errors = this.motpPinForm().errors();
     if (errors.some((e) => e.kind === "required")) {
-      return $localize`Password is required`;
+      return $localize`:@@token.passwordRequired:Password is required`;
     }
     if (errors.some((e) => e.kind === "minlength")) {
-      return $localize`Password must be at least 4 characters long`;
+      return $localize`:@@token.passwordMustLeast:Password must be at least 4 characters long`;
     }
     return "";
   });
 
   repeatMotpPinError = computed(() => {
-    const mismatch = this.repeatMotpPinForm().errors().some((e) => e.kind === "motpPinMismatch");
-    return mismatch && this.repeatMotpPinForm().touched() ? $localize`mOTP PINs do not match.` : "";
+    const mismatch = this.repeatMotpPinForm()
+      .errors()
+      .some((e) => e.kind === "motpPinMismatch");
+    return mismatch && this.repeatMotpPinForm().touched()
+      ? $localize`:@@token.motpPinsDoNot:mOTP PINs do not match.`
+      : "";
   });
 
   buildEnrollmentArgs(basicOptions: TokenEnrollmentData): EnrollmentArgs<MotpEnrollmentData> | null {

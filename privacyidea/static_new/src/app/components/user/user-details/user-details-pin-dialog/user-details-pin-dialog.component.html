@@ -20,11 +20,12 @@
   (actionTriggered)="onAction($event)"
   (wrapperClose)="close()"
   [actions]="dialogActions()"
-  i18n-title="@@tokenAssignmentTitle"
+  i18n-title="@@user.tokenAssignment"
   title="Token Assignment">
   <mat-form-field
-    appearance="fill" class="pin-field">
-    <mat-label i18n>PIN (optional)</mat-label>
+    appearance="fill"
+    class="pin-field">
+    <mat-label i18n="@@common.pinOptional">PIN (optional)</mat-label>
     <input
       (input)="pin.set($event.target['value'])"
       [type]="hidePin() ? 'password' : 'text'"
@@ -33,15 +34,22 @@
       matInput />
 
     <button
-      (click)="togglePinVisibility()" mat-icon-button matSuffix type="button">
+      (click)="togglePinVisibility()"
+      mat-icon-button
+      matSuffix
+      type="button">
       @if (hidePin()) {
         <mat-icon
-          aria-hidden="false" aria-label="Show PIN" i18n-aria-label="@@ariaShowPin">
+          aria-hidden="false"
+          aria-label="Show PIN"
+          i18n-aria-label="@@common.showPin">
           visibility_off
         </mat-icon>
       } @else {
         <mat-icon
-          aria-hidden="false" aria-label="Hide PIN" i18n-aria-label="@@ariaHidePin">
+          aria-hidden="false"
+          aria-label="Hide PIN"
+          i18n-aria-label="@@user.hidePin">
           visibility
         </mat-icon>
       }
@@ -49,8 +57,9 @@
   </mat-form-field>
 
   <mat-form-field
-    appearance="fill" class="pin-field">
-    <mat-label i18n>PIN (repeat)</mat-label>
+    appearance="fill"
+    class="pin-field">
+    <mat-label i18n="@@common.pinRepeat">PIN (repeat)</mat-label>
     <input
       (input)="pinRepeat.set($event.target['value'])"
       [type]="hidePin() ? 'password' : 'text'"
@@ -59,22 +68,29 @@
       matInput />
 
     <button
-      (click)="togglePinVisibility()" mat-icon-button matSuffix type="button">
+      (click)="togglePinVisibility()"
+      mat-icon-button
+      matSuffix
+      type="button">
       @if (hidePin()) {
         <mat-icon
-          aria-hidden="false" aria-label="Show PIN" i18n-aria-label="@@ariaShowPin">
+          aria-hidden="false"
+          aria-label="Show PIN"
+          i18n-aria-label="@@common.showPin">
           visibility_off
         </mat-icon>
       } @else {
         <mat-icon
-          aria-hidden="false" aria-label="Hide PIN" i18n-aria-label="@@ariaHidePin">
+          aria-hidden="false"
+          aria-label="Hide PIN"
+          i18n-aria-label="@@user.hidePin">
           visibility
         </mat-icon>
       }
     </button>
 
     @if (pinRepeat() && !pinsMatch()) {
-      <mat-error i18n>PINs do not match</mat-error>
+      <mat-error i18n="@@common.pinsDoNotMatch">PINs do not match</mat-error>
     }
   </mat-form-field>
 </app-dialog-wrapper>

@@ -79,15 +79,15 @@ export class EventComponent {
   protected readonly of = of;
   protected readonly Array = Array;
   columnKeysMap: Record<string, string> = {
-    ordering: $localize`Ordering`,
-    name: $localize`Name`,
-    handlermodule: $localize`Handler Module`,
-    position: $localize`Position`,
-    event: $localize`Events`,
-    action: $localize`Action`,
-    conditions: $localize`Conditions`,
-    active: $localize`Active`,
-    delete: $localize`Delete`
+    ordering: $localize`:@@common.ordering:Ordering`,
+    name: $localize`:@@common.name:Name`,
+    handlermodule: $localize`:@@event.handlerModule:Handler Module`,
+    position: $localize`:@@event.position:Position`,
+    event: $localize`:@@common.events:Events`,
+    action: $localize`:@@common.action:Action`,
+    conditions: $localize`:@@common.conditions:Conditions`,
+    active: $localize`:@@common.active:Active`,
+    delete: $localize`:@@common.delete:Delete`
   };
   columnKeys = computed(() => {
     let keys = Object.keys(this.columnKeysMap);

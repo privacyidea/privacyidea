@@ -17,33 +17,40 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div class="margin-left-16">
-  <h4 i18n>SCIM settings</h4>
+  <h4 i18n="@@resolver.scimSettings">SCIM settings</h4>
   <div class="flex-column">
     <div class="flex-row gap-16 margin-bottom-16">
       <mat-form-field class="input-width-l">
-        <mat-label i18n>Authentication Server URI</mat-label>
+        <mat-label i18n="@@resolver.authenticationServer">Authentication Server URI</mat-label>
         <app-clearable-input
-          (clearButtonClick)="model.update(m => ({ ...m, Authserver: '' }))" [showClearButton]="!!model().Authserver">
+          (clearButtonClick)="model.update(m => ({ ...m, Authserver: '' }))"
+          [showClearButton]="!!model().Authserver">
           <input
-            [formField]="scimForm.Authserver" matInput placeholder="http://localhost:8080/osiam-auth-server" />
+            [formField]="scimForm.Authserver"
+            matInput
+            placeholder="http://localhost:8080/osiam-auth-server" />
         </app-clearable-input>
         @if (scimForm.Authserver().errors().some(e => e.kind === 'required') && scimForm.Authserver().touched()) {
-          <mat-error i18n>
+          <mat-error i18n="@@resolver.authenticationServerUri">
             Authentication server URI is <strong>required</strong> .
           </mat-error>
         }
       </mat-form-field>
 
       <mat-form-field class="input-width-l">
-        <mat-label i18n>Resource Server Uri</mat-label>
+        <mat-label i18n="@@resolver.resourceServer">Resource Server Uri</mat-label>
         <app-clearable-input
           (clearButtonClick)="model.update(m => ({ ...m, Resourceserver: '' }))"
           [showClearButton]="!!model().Resourceserver">
           <input
-            [formField]="scimForm.Resourceserver" matInput placeholder="http://localhost:8080/osiam-resource-server" />
+            [formField]="scimForm.Resourceserver"
+            matInput
+            placeholder="http://localhost:8080/osiam-resource-server" />
         </app-clearable-input>
-        @if (scimForm.Resourceserver().errors().some(e => e.kind === 'required') && scimForm.Resourceserver().touched()) {
-          <mat-error i18n>
+        @if (
+          scimForm.Resourceserver().errors().some(e => e.kind === 'required') && scimForm.Resourceserver().touched()
+        ) {
+          <mat-error i18n="@@resolver.resourceServerUri">
             Resource server URI is <strong>required</strong> .
           </mat-error>
         }
@@ -52,44 +59,45 @@
 
     <div class="flex-row gap-16 margin-bottom-16">
       <mat-form-field class="input-width-l">
-        <mat-label i18n>Client</mat-label>
+        <mat-label i18n="@@common.client">Client</mat-label>
         <app-clearable-input
-          (clearButtonClick)="model.update(m => ({ ...m, Client: '' }))" [showClearButton]="!!model().Client">
+          (clearButtonClick)="model.update(m => ({ ...m, Client: '' }))"
+          [showClearButton]="!!model().Client">
           <input
-            [formField]="scimForm.Client" matInput placeholder="hostname" />
+            [formField]="scimForm.Client"
+            matInput
+            placeholder="hostname" />
         </app-clearable-input>
         @if (scimForm.Client().errors().some(e => e.kind === 'required') && scimForm.Client().touched()) {
-          <mat-error i18n>
-            Client is <strong>required</strong> .
-          </mat-error>
+          <mat-error i18n="@@resolver.clientRequired"> Client is <strong>required</strong> . </mat-error>
         }
       </mat-form-field>
 
       <mat-form-field class="input-width-l">
-        <mat-label i18n>Secret</mat-label>
+        <mat-label i18n="@@common.secret">Secret</mat-label>
         <app-clearable-input
-          (clearButtonClick)="model.update(m => ({ ...m, Secret: '' }))" [showClearButton]="!!model().Secret">
+          (clearButtonClick)="model.update(m => ({ ...m, Secret: '' }))"
+          [showClearButton]="!!model().Secret">
           <input
-            [formField]="scimForm.Secret" matInput placeholder="d81c31e4-9f65-4805-b5ba-6edf0761f954" type="password" />
+            [formField]="scimForm.Secret"
+            matInput
+            placeholder="d81c31e4-9f65-4805-b5ba-6edf0761f954"
+            type="password" />
         </app-clearable-input>
         @if (scimForm.Secret().errors().some(e => e.kind === 'required') && scimForm.Secret().touched()) {
-          <mat-error i18n>
-            Secret is <strong>required</strong> .
-          </mat-error>
+          <mat-error i18n="@@resolver.secretRequired"> Secret is <strong>required</strong> . </mat-error>
         }
       </mat-form-field>
     </div>
 
     <mat-form-field class="input-width-xl">
-      <mat-label i18n>Mapping</mat-label>
+      <mat-label i18n="@@resolver.mapping">Mapping</mat-label>
       <textarea
         [formField]="scimForm.Mapping"
         matInput
         placeholder='{"userName": "username", "id": "userid", "emails.0.value": "email"}'></textarea>
       @if (scimForm.Mapping().errors().some(e => e.kind === 'required') && scimForm.Mapping().touched()) {
-        <mat-error i18n>
-          Mapping is <strong>required</strong> .
-        </mat-error>
+        <mat-error i18n="@@resolver.mappingRequired"> Mapping is <strong>required</strong> . </mat-error>
       }
     </mat-form-field>
   </div>

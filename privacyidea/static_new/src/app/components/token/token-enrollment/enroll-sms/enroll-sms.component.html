@@ -19,32 +19,31 @@
 <div class="flex-column">
   @if (!defaultSMSGatewayIsSet() && authService.role() === "admin") {
     <span
-      i18n
+      i18n="@@token.easeEnrollment"
       class="inline-hint">
       To ease the enrollment you can set default values in the
       <a
         role="button"
         tabindex="0"
         aria-label="Go to SMS token configuration"
-        i18n-aria-label
+        i18n-aria-label="@@token.goSmsTokenConfiguration"
         (click)="goToSmsConfig()"
         (keydown)="onSmsConfigKeydown($event)">
-          SMS Token Configuration
-        </a>!
+        SMS Token Configuration </a
+      >!
     </span>
   }
   <mat-checkbox
     [checked]="readNumberDynamically()"
     (change)="readNumberDynamically.set($event.checked)"
-    i18n>
+    i18n="@@token.readNumberDynamically">
     Read number dynamically from user source on each request.
   </mat-checkbox>
   <div class="flex-row gap-16 margin-bottom-16">
     @if (!wizard() || !defaultSMSGatewayIsSet()) {
-      <mat-form-field
-        class="input-width-xl">
-        <mat-label i18n> A token specific SMS gateway</mat-label>
-        <mat-hint i18n>
+      <mat-form-field class="input-width-xl">
+        <mat-label i18n="@@token.tokenSpecific"> A token specific SMS gateway</mat-label>
+        <mat-hint i18n="@@token.ifTokenShould">
           If this token should not use the system wide SMS gateway but an individual SMS gateway, you can select the
           gateway here.
         </mat-hint>
@@ -56,16 +55,16 @@
             <mat-option [value]="option">{{ option }}</mat-option>
           }
         </mat-select>
-        <mat-error i18n>SMS Gateway is <strong>required</strong></mat-error>
+        <mat-error i18n="@@token.smsGatewayRequired">SMS Gateway is <strong>required</strong></mat-error>
       </mat-form-field>
     }
 
     <mat-form-field class="input-width-l">
-      <mat-label i18n>Phone number</mat-label>
+      <mat-label i18n="@@token.phoneNumber">Phone number</mat-label>
       <input
         [formField]="phoneNumberForm"
         matInput />
-      <mat-error i18n>Phone number is <strong>required</strong></mat-error>
+      <mat-error i18n="@@token.phoneNumberRequired">Phone number is <strong>required</strong></mat-error>
     </mat-form-field>
   </div>
 </div>

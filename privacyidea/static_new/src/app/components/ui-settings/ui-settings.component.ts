@@ -38,7 +38,9 @@ export class UISettingsComponent {
   protected readonly preferredLocale = this.uiPreferencesService.preferredLocale;
   protected readonly theme = this.themeService.visualTheme;
   protected readonly themeToggleLabel = computed(() =>
-    this.theme() === "dark" ? $localize`Switch to light theme` : $localize`Switch to dark theme`
+    this.theme() === "dark"
+      ? $localize`:@@common.switchLightTheme:Switch to light theme`
+      : $localize`:@@common.switchDarkTheme:Switch to dark theme`
   );
 
   protected toggleTheme(): void {

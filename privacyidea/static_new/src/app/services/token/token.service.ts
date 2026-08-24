@@ -780,7 +780,7 @@ export class TokenService extends FilterableTableService implements TokenService
           itemType: "token",
           confirmAction: {
             type: "destruct",
-            label: $localize`Delete`,
+            label: $localize`:@@common.delete:Delete`,
             value: true
           }
         }

@@ -23,7 +23,7 @@
     <mat-form-field
       class="audit-table-filter"
       subscriptSizing="dynamic">
-      <mat-label i18n>Filter Audit Log...</mat-label>
+      <mat-label i18n="@@audit.filterAuditLog">Filter Audit Log...</mat-label>
       <app-clearable-input
         (clearButtonClick)="auditService.clearFilter()"
         [showClearButton]="auditService.filterDraft().isNotEmpty">
@@ -33,8 +33,8 @@
           (input)="auditService.handleFilterInput($event)"
           [value]="auditService.filterDraft().value"
           aria-label="Filter Input"
-          i18n-aria-label
-          i18n-placeholder
+          i18n-aria-label="@@common.filterInput"
+          i18n-placeholder="@@audit.exampleQueryAction"
           matInput
           placeholder="Example query: 'action: GET success: false'" />
       </app-clearable-input>
@@ -46,8 +46,8 @@
         [disabled]="auditService.isDownloading()"
         aria-label="Download Audit Log"
         class="filter-action-button"
-        i18n-aria-label
-        i18n-matTooltip
+        i18n-aria-label="@@audit.downloadAudit"
+        i18n-matTooltip="@@audit.downloadAudit"
         mat-icon-button
         matTooltip="Download Audit Log">
         <mat-icon>download</mat-icon>
@@ -68,7 +68,7 @@
       [dataSource]="auditDataSource()"
       aria-label="Audit Data Table"
       class="audit-table"
-      i18n-aria-label
+      i18n-aria-label="@@audit.auditDataTable"
       mat-table>
       @for (column of columnKeysMap; track column) {
         <ng-container [matColumnDef]="column.key">
@@ -87,7 +87,7 @@
                   <button
                     (click)="onKeywordClick(apiFilterKeyMap[column.key])"
                     aria-label="Filter by {{ column.label }}"
-                    i18n-aria-label
+                    i18n-aria-label="@@common.filterBy"
                     class="filter-button"
                     mat-icon-button>
                     <mat-icon class="keyword-button-icon margin-left-0">
@@ -190,22 +190,22 @@
       <tr
         *matHeaderRowDef="columnKeys; sticky: true"
         aria-label="Header Row"
-        i18n-aria-label
+        i18n-aria-label="@@common.headerRow"
         mat-header-row></tr>
       <tr
         *matRowDef="let row; columns: columnKeys"
         aria-label="Data Row"
-        i18n-aria-label
+        i18n-aria-label="@@common.dataRow"
         mat-row></tr>
       <tr
         *matNoDataRow
         aria-label="No Data Row"
-        i18n-aria-label>
+        i18n-aria-label="@@common.noDataRow">
         <td
           [attr.colspan]="columnKeys.length"
           aria-label="No Data Cell"
-          i18n
-          i18n-aria-label>
+          i18n="@@common.noDataMatching"
+          i18n-aria-label="@@common.noDataCell">
           No data matching the filter.
         </td>
       </tr>

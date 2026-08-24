@@ -24,7 +24,7 @@
       subscriptSizing="dynamic"
       appearance="fill"
       class="challenges-table-filter">
-      <mat-label i18n>Filter Challenges...</mat-label>
+      <mat-label i18n="@@token.filterChallenges">Filter Challenges...</mat-label>
       <app-clearable-input
         (clearButtonClick)="challengesService.clearFilter()"
         [showClearButton]="challengesService.filterDraft().isNotEmpty">
@@ -32,7 +32,7 @@
           #filterHTMLInputElement
           (input)="challengesService.handleFilterInput($event)"
           [value]="challengesService.filterDraft().filterString"
-          i18n-placeholder
+          i18n-placeholder="@@token.exampleQueryTransaction"
           matInput
           placeholder="Example query: 'transaction_id: 00000000000000000001'" />
       </app-clearable-input>
@@ -56,7 +56,7 @@
       [dataSource]="challengesDataSource()"
       aria-label="Token Challenges Table"
       class="challenges-table"
-      i18n-aria-label
+      i18n-aria-label="@@token.tokenChallenges"
       mat-table>
       @for (column of columnsKeyMap; track column) {
         <ng-container [matColumnDef]="column.key">
@@ -71,7 +71,7 @@
                   <button
                     (click)="onKeywordClick(column.key)"
                     aria-label="Filter by {{ column.label }}"
-                    i18n-aria-label
+                    i18n-aria-label="@@common.filterBy"
                     class="filter-button"
                     mat-icon-button
                     type="button">
@@ -83,7 +83,7 @@
                 <button
                   (click)="tableUtilsService.onSortButtonClick(column.key, sort)"
                   aria-label="Sort by {{ column.label }}"
-                  i18n-aria-label
+                  i18n-aria-label="@@common.sortBy"
                   class="sort-button"
                   mat-icon-button
                   type="button">
@@ -129,22 +129,22 @@
       <tr
         *matHeaderRowDef="displayedColumns; sticky: true"
         aria-label="Header Row"
-        i18n-aria-label
+        i18n-aria-label="@@common.headerRow"
         mat-header-row></tr>
       <tr
         *matRowDef="let row; columns: displayedColumns"
         aria-label="Data Row"
-        i18n-aria-label
+        i18n-aria-label="@@common.dataRow"
         mat-row></tr>
       <tr
         *matNoDataRow
         aria-label="No Data Row"
-        i18n-aria-label>
+        i18n-aria-label="@@common.noDataRow">
         <td
           [attr.colspan]="displayedColumns.length"
           aria-label="No Data Cell"
-          i18n
-          i18n-aria-label>
+          i18n="@@common.noDataMatching"
+          i18n-aria-label="@@common.noDataCell">
           No data matching the filter.
         </td>
       </tr>

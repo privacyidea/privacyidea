@@ -24,7 +24,7 @@
       appearance="fill"
       class="table-filter"
       subscriptSizing="dynamic">
-      <mat-label i18n>Filter SMS Gateways...</mat-label>
+      <mat-label i18n="@@smsGateway.filterSmsGateways">Filter SMS Gateways...</mat-label>
       <app-clearable-input
         (clearButtonClick)="resetFilter()"
         [showClearButton]="filterString().length > 0">
@@ -33,8 +33,8 @@
           (input)="onFilterInput(filterHTMLInputElement.value)"
           [value]="filterString()"
           aria-label="Filter Input"
-          i18n-aria-label
-          i18n-placeholder
+          i18n-aria-label="@@common.filterInput"
+          i18n-placeholder="@@smsGateway.filterByNameProvider"
           matInput
           placeholder="Filter by name or provider" />
       </app-clearable-input>
@@ -54,7 +54,7 @@
         <mat-icon class="padding-right-3">sms</mat-icon>
         <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
       </span>
-      <span i18n>Create SMS Gateway</span>
+      <span i18n="@@common.createSmsGateway">Create SMS Gateway</span>
     </button>
     <button
       (click)="deleteSelected()"
@@ -62,7 +62,7 @@
       class="action-button-delete-secondary button-width-l"
       mat-stroked-button>
       <mat-icon>delete_sweep</mat-icon>
-      <span i18n>Delete</span>
+      <span i18n="@@common.delete">Delete</span>
     </button>
   </div>
   <table
@@ -95,7 +95,7 @@
     <ng-container matColumnDef="name">
       <th
         *matHeaderCellDef
-        i18n
+        i18n="@@common.name"
         mat-header-cell
         mat-sort-header>
         Name
@@ -119,7 +119,7 @@
     <ng-container matColumnDef="description">
       <th
         *matHeaderCellDef
-        i18n
+        i18n="@@common.description"
         mat-header-cell
         mat-sort-header>
         Description
@@ -134,7 +134,7 @@
     <ng-container matColumnDef="providermodule">
       <th
         *matHeaderCellDef
-        i18n
+        i18n="@@smsGateway.providerModule"
         mat-header-cell
         mat-sort-header>
         Provider Module
@@ -159,7 +159,7 @@
       <td
         class="mat-cell"
         colspan="4"
-        i18n>
+        i18n="@@smsGateway.noSmsGateways">
         No SMS gateways found.
       </td>
     </tr>

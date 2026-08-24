@@ -21,14 +21,14 @@
   appScrollToTop
   aria-label="Assign Token Self-Service"
   class="assign-token-self-service-container"
-  i18n-aria-label>
+  i18n-aria-label="@@token.assignTokenSelf">
   <div
     class="sticky-header"
     [appStickyHeader]="scrollContainer">
     <div class="sticky-controls ali-center">
       <h3
         class="margin-8"
-        i18n>
+        i18n="@@common.assignToken">
         Assign Token
       </h3>
 
@@ -38,7 +38,7 @@
           class="action-button-primary button-width-m margin-left-auto"
           mat-stroked-button>
           <mat-icon>person_add</mat-icon>
-          <span i18n>Assign Token</span>
+          <span i18n="@@common.assignToken">Assign Token</span>
         </button>
       </div>
     </div>
@@ -46,23 +46,23 @@
 
   <div class="margin-left-16">
     <div class="width-948 margin-bottom-0">
-      <p i18n>
+      <p i18n="@@token.ifYouWereHanded">
         If you were handed a token device, you may connect this device to your account. Turn over the token, you may
         find a serial number printed on the token. Please enter this serial number and make up a token pin.
       </p>
     </div>
     <mat-form-field class="input-width-l">
-      <mat-label i18n>Enter Serial</mat-label>
+      <mat-label i18n="@@token.enterSerial">Enter Serial</mat-label>
       <input
         [value]="selectedToken()"
         (input)="selectedToken.set($any($event.target).value)"
         matInput
         required />
-      <mat-error i18n>Serial is <strong>required</strong></mat-error>
+      <mat-error i18n="@@token.serialRequired">Serial is <strong>required</strong></mat-error>
     </mat-form-field>
 
     <div class="flex-column gap-8">
-      <h4 i18n>Set PIN</h4>
+      <h4 i18n="@@common.setPin">Set PIN</h4>
       <input
         class="hidden-input"
         type="text" />
@@ -71,7 +71,7 @@
         type="password" />
       <div class="flex-column">
         <mat-form-field class="input-width-s">
-          <mat-label i18n>PIN</mat-label>
+          <mat-label i18n="@@common.pin">PIN</mat-label>
           <input
             [value]="setPinValue()"
             (input)="setPinValue.set($any($event.target).value)"
@@ -80,7 +80,7 @@
         </mat-form-field>
 
         <mat-form-field class="input-width-s">
-          <mat-label i18n>Repeat PIN</mat-label>
+          <mat-label i18n="@@common.repeatPin">Repeat PIN</mat-label>
           <input
             [value]="repeatPinValue()"
             (input)="repeatPinValue.set($any($event.target).value)"

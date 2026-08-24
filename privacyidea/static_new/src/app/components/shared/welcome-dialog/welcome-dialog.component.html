@@ -1,9 +1,9 @@
 <div class="welcome-container">
   @if (step() === 0) {
-    <h2 i18n>Welcome</h2>
+    <h2 i18n="@@welcome.welcome">Welcome</h2>
     <div
       class="content"
-      i18n>
+      i18n="@@welcome.firstWeWouldLike">
       <p>First, we would like to give you some background information on privacyIDEA.</p>
       <p>
         privacyIDEA is an <b>Enterprise Level</b> Multi Factor Authentication System. It is open source. The core
@@ -20,7 +20,7 @@
     <div class="actions">
       <button
         (click)="nextWelcome()"
-        i18n
+        i18n="@@common.next"
         mat-stroked-button>
         Next
       </button>
@@ -28,10 +28,10 @@
   }
 
   @if (step() === 1) {
-    <h2 i18n>The value of open source</h2>
+    <h2 i18n="@@welcome.valueOpenSource">The value of open source</h2>
     <div
       class="content"
-      i18n>
+      i18n="@@welcome.youReadingBooks">
       <p>
         You are reading books, which do not belong to you anymore. Your ebook reader only provides them for the time of
         reading. You are using software as a service and you do not have any control, when the software will be updated,
@@ -57,7 +57,7 @@
     <div class="actions">
       <button
         (click)="nextWelcome()"
-        i18n
+        i18n="@@common.next"
         mat-stroked-button>
         Next
       </button>
@@ -65,9 +65,9 @@
   }
 
   @if (step() === 2) {
-    <h2 i18n>The added value of privacyIDEA Enterprise Edition</h2>
+    <h2 i18n="@@welcome.addedValuePrivacyidea">The added value of privacyIDEA Enterprise Edition</h2>
     <div class="content">
-      <p i18n>
+      <p i18n="@@welcome.accordingAgplv3">
         According to the
         <a
           href="https://github.com/privacyidea/privacyidea/blob/master/LICENSE"
@@ -77,10 +77,10 @@
       </p>
       <p
         class="text-center"
-        i18n>
+        i18n="@@welcome.softwareComes">
         <b>THIS SOFTWARE COMES WITHOUT ANY WARRANTY!</b>
       </p>
-      <p i18n>
+      <p i18n="@@welcome.addedValuesPrivacyidea">
         The added values of the
         <a
           href="https://netknights.it/en/produkte/privacyidea/"
@@ -89,7 +89,7 @@
         </a>
         are:
       </p>
-      <ul i18n>
+      <ul i18n="@@welcome.supportService">
         <li>
           Support and
           <a
@@ -117,7 +117,7 @@
           timely manner. In addition, you allow for external services like code audits.
         </li>
       </ul>
-      <p i18n>
+      <p i18n="@@welcome.askPrivacyidea">
         <a
           href="https://netknights.it/en/unternehmen/kontakt/"
           target="_blank"
@@ -128,7 +128,7 @@
     <div class="actions">
       <button
         (click)="nextWelcome()"
-        i18n
+        i18n="@@common.next"
         mat-stroked-button>
         Next
       </button>
@@ -136,10 +136,10 @@
   }
 
   @if (step() === 3) {
-    <h2 i18n>Thank you for improving your security!</h2>
+    <h2 i18n="@@welcome.thankYouImproving">Thank you for improving your security!</h2>
     <div
       class="content"
-      i18n>
+      i18n="@@welcome.thankYouUsing">
       <p>Thank you for using privacyIDEA and making your network and thus this world a more secure place!</p>
       <p>Have fun using privacyIDEA!</p>
     </div>
@@ -148,14 +148,14 @@
         (click)="resetWelcome()"
         mat-stroked-button>
         <mat-icon>replay</mat-icon>
-        <span i18n>Read again</span>
+        <span i18n="@@welcome.readAgain">Read again</span>
       </button>
       <button
         (click)="nextWelcome()"
         class="action-button-secondary"
         mat-stroked-button>
         <mat-icon>keyboard_arrow_right</mat-icon>
-        <span i18n>Dive In!</span>
+        <span i18n="@@welcome.diveIn">Dive In!</span>
       </button>
     </div>
   }
@@ -163,7 +163,7 @@
   @if (step() === 4) {
     <div
       class="content"
-      i18n>
+      i18n="@@welcome.youUsingPrivacyidea">
       <p><b>You are using privacyIDEA with more than 50 users.</b></p>
       <p>Thank you for your trust!</p>
       <p>
@@ -191,7 +191,7 @@
         class="action-button-secondary"
         mat-stroked-button>
         <mat-icon>done</mat-icon>
-        <span i18n>Okay</span>
+        <span i18n="@@welcome.okay">Okay</span>
       </button>
     </div>
   }

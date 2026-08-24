@@ -76,11 +76,11 @@ export class ContainerTableSelfServiceComponent extends ContainerTableComponent 
   }
 
   readonly columnKeysMapSelfService = [
-    { key: "serial", label: $localize`Serial` },
-    { key: "type", label: $localize`Type` },
-    { key: "states", label: $localize`Status` },
-    { key: "description", label: $localize`Description` },
-    { key: "delete", label: $localize`Delete` }
+    { key: "serial", label: $localize`:@@common.serial:Serial` },
+    { key: "type", label: $localize`:@@common.type:Type` },
+    { key: "states", label: $localize`:@@common.status:Status` },
+    { key: "description", label: $localize`:@@common.description:Description` },
+    { key: "delete", label: $localize`:@@common.delete:Delete` }
   ];
   readonly columnKeysSelfService: string[] = this.columnKeysMapSelfService.map(
     (column: { key: string; label: string }) => column.key
@@ -95,10 +95,10 @@ export class ContainerTableSelfServiceComponent extends ContainerTableComponent 
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: $localize`Delete Container`,
+          title: $localize`:@@container.deleteContainer:Delete Container`,
           items: [serial],
           itemType: "container",
-          confirmAction: { label: $localize`Delete`, value: true, type: "destruct" }
+          confirmAction: { label: $localize`:@@common.delete:Delete`, value: true, type: "destruct" }
         }
       })
       .afterClosed()
@@ -107,7 +107,9 @@ export class ContainerTableSelfServiceComponent extends ContainerTableComponent 
           if (result) {
             this.containerService.deleteContainer(serial).subscribe({
               next: () => {
-                this.notificationService.success($localize`Container deleted successfully.`);
+                this.notificationService.success(
+                  $localize`:@@container.containerDeleted:Container deleted successfully.`
+                );
                 this.containerService.containerResource.reload();
               }
             });

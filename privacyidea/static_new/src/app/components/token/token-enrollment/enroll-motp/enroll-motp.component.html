@@ -22,40 +22,40 @@
       [checked]="generateOnServer()"
       (change)="generateOnServer.set($event.checked)"
       class="server-checkbox"
-      i18n>
+      i18n="@@token.generateOtpKey">
       Generate the OTP key on the server and show a QR code to scan.
     </mat-checkbox>
     <div class="flex-row gap-16">
       @if (!this.authService.checkForceServerGenerateOTPKey("motp")) {
         <mat-form-field class="input-width-l">
-          <mat-label i18n>OTP Key</mat-label>
+          <mat-label i18n="@@token.otpKey">OTP Key</mat-label>
           <input
             [formField]="otpKeyForm"
-            i18n-placeholder
+            i18n-placeholder="@@token.enterOtpKey"
             matInput
             placeholder="Enter OTP key" />
-          <mat-error i18n>OTP key is <strong>required</strong></mat-error>
+          <mat-error i18n="@@token.otpKeyRequired">OTP key is <strong>required</strong></mat-error>
         </mat-form-field>
       }
     </div>
   }
 </div>
 <div class="flex-column">
-  <h4 i18n>mOTP PIN</h4>
-  <span i18n>The mOTP PIN is the PIN that needs to be entered on the mobile device.</span>
+  <h4 i18n="@@token.motpPin">mOTP PIN</h4>
+  <span i18n="@@token.motpPinPinNeeds">The mOTP PIN is the PIN that needs to be entered on the mobile device.</span>
   <div class="motp-pin-input">
     <app-masked-input
       [error]="motpPinError()"
       [field]="motpPinForm"
       class="input-width-l"
-      i18n-label
+      i18n-label="@@token.enterPassword"
       label="Enter Password" />
     <app-masked-input
       [error]="repeatMotpPinError()"
       [field]="repeatMotpPinForm"
       class="input-width-l"
-      i18n-label
-      i18n-placeholder
+      i18n-label="@@token.repeatPassword"
+      i18n-placeholder="@@token.repeatPassword"
       label="Repeat Password"
       placeholder="Repeat Password" />
   </div>

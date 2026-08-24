@@ -18,7 +18,7 @@
 -->
 <app-dialog-wrapper
   title="Delete Container Template"
-  i18n-title
+  i18n-title="@@container.deleteContainerTemplate"
   [showCancelButton]="true"
   [actions]="actions()"
   (actionTriggered)="onAction($event)">
@@ -26,12 +26,12 @@
     <mat-icon class="warn-icon">warning</mat-icon>
     <div class="message-content">
       @if (data.length === 1) {
-        <p i18n>
+        <p i18n="@@container.youSureYouWant">
           Are you sure you want to delete the template <b>{{ data[0].name }}</b
           >?
         </p>
       } @else {
-        <p i18n>Are you sure you want to delete the following templates?</p>
+        <p i18n="@@container.youSureYouWantDelete">Are you sure you want to delete the following templates?</p>
         <ul class="template-list">
           @for (template of data; track template.name) {
             <li>
@@ -42,7 +42,7 @@
       }
       <p
         class="sub-message"
-        i18n>
+        i18n="@@container.actionCannotUndone">
         This action cannot be undone.
       </p>
     </div>

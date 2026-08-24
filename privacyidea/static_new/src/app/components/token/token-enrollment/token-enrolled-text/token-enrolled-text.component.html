@@ -19,7 +19,7 @@
 
 @if (!rollover()) {
   <div class="margin-bottom-16">
-    <span i18n>
+    <span i18n="@@token.tokenWasSuccessfullyEnrolled">
       The token was successfully enrolled with serial number
       <a
         role="button"
@@ -31,7 +31,7 @@
       >.
     </span>
     @if (containerSerial()) {
-      <div i18n>
+      <div i18n="@@token.hasBeenEnrolled">
         It has been enrolled in the container
         <a
           role="button"
@@ -45,7 +45,7 @@
       </div>
     }
     @if (username() && userRealm() !== "" && !onlyAddToRealm()) {
-      <div i18n>
+      <div i18n="@@token.userRealmWasAssigned">
         The user
         @if (authService.actionAllowed("userlist")) {
           <a
@@ -77,7 +77,7 @@
         was assigned to the token.
       </div>
     } @else if (userRealm() && onlyAddToRealm()) {
-      <div i18n>
+      <div i18n="@@token.tokenWasAssigned">
         The token was assigned to the realm
         @if (authService.role() === "admin") {
           <a
@@ -98,7 +98,7 @@
   </div>
 } @else {
   <div class="margin-bottom-16">
-    <span i18n>
+    <span i18n="@@token.tokenSerialNumber">
       The token with serial number
       <a
         role="button"

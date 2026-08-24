@@ -19,20 +19,20 @@
 
 <app-dialog-wrapper
   title="Copy Container Template"
-  i18n-title
+  i18n-title="@@container.copyContainer"
   [showCancelButton]="true"
   [handleCloseExternally]="true"
   (wrapperClose)="close()"
   [actions]="actions()"
   (actionTriggered)="onAction($event)">
   <div class="flex-column">
-    <p i18n>
+    <p i18n="@@container.pleaseEnterUnique">
       Please enter a unique name for the new copy of <b>{{ data }}</b
       >.
     </p>
 
     <mat-form-field>
-      <mat-label i18n>New Template Name</mat-label>
+      <mat-label i18n="@@container.newTemplateName">New Template Name</mat-label>
       <input
         matInput
         type="text"
@@ -41,13 +41,13 @@
         [errorStateMatcher]="nameErrorMatcher"
         (keydown.enter)="canSave() && onAction('copy')"
         aria-label="New Template Name"
-        i18n-aria-label />
+        i18n-aria-label="@@container.newTemplateName" />
 
       @if (nameConflict()) {
-        <mat-error i18n>A template with this name already exists.</mat-error>
+        <mat-error i18n="@@container.templateNameAlready">A template with this name already exists.</mat-error>
       }
       @if (isNameDirty() && template().name.length > 0 && nameInvalidPattern()) {
-        <mat-error i18n
+        <mat-error i18n="@@container.templateNameContains"
           >Template name contains <strong>invalid characters</strong>. Only alphanumeric characters, dots, underscores
           and hyphens are allowed.
         </mat-error>

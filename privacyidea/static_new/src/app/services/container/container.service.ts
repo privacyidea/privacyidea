@@ -61,10 +61,10 @@ const exactMatchKeys = new Set(["user", "realm", "type", "state", "assigned"]);
 const CONTAINER_TYPE_FILTER_KEYS = new Set<string>(["type", "types"]);
 
 export const CONTAINER_STATE_OPTIONS = [
-  { value: "active", label: $localize`active` },
-  { value: "disabled", label: $localize`deactivated` },
-  { value: "lost", label: $localize`lost` },
-  { value: "damaged", label: $localize`damaged` }
+  { value: "active", label: $localize`:@@common.active2:active` },
+  { value: "disabled", label: $localize`:@@common.deactivated:deactivated` },
+  { value: "lost", label: $localize`:@@container.lost:lost` },
+  { value: "damaged", label: $localize`:@@container.damaged:damaged` }
 ] as const;
 
 export type TemplateComparisonResult = Record<

@@ -36,28 +36,28 @@
 
   @if (!authService.tokenWizard() && !authService.containerWizard().enabled) {
     <app-navigation-self-service-button
-      i18n-title
+      i18n-title="@@nav.tokenOverview"
       key="{{ this.ROUTE_PATHS.TOKENS }}"
       matIconClass="ms--shield-list"
       matIconSize="tile-icon-x-large"
       title="Token Overview" />
     @if (authService.tokenEnrollmentAllowed()) {
       <app-navigation-self-service-button
-        i18n-title
+        i18n-title="@@common.tokenEnrollment"
         key="{{ this.ROUTE_PATHS.TOKENS_ENROLLMENT }}"
         matIconName="add_moderator"
         title="Token Enrollment" />
     }
     @if (authService.tokenWizard2nd()) {
       <app-navigation-self-service-button
-        i18n-title
+        i18n-title="@@nav.tokenEnrollment"
         key="{{ this.ROUTE_PATHS.TOKENS_WIZARD }}"
         matIconName="auto_awesome"
         title="Token Enrollment Wizard" />
     }
     @if (authService.rights().includes("assign")) {
       <app-navigation-self-service-button
-        i18n-title
+        i18n-title="@@common.assignToken"
         key="{{ this.ROUTE_PATHS.TOKENS_ASSIGN_TOKEN }}"
         matIconName="admin_panel_settings"
         matIconSize="tile-icon-large"
@@ -65,14 +65,14 @@
     }
     @if (authService.actionAllowed("userlist")) {
       <app-navigation-self-service-button
-        i18n-title
+        i18n-title="@@common.userDetails"
         key="{{ this.ROUTE_PATHS.USERS_DETAILS }}"
         matIconName="manage_accounts"
         title="User Details" />
     }
     @if (authService.rights().includes("container_list")) {
       <app-navigation-self-service-button
-        i18n-title
+        i18n-title="@@nav.containerOverview"
         key="{{ this.ROUTE_PATHS.CONTAINERS }}"
         matIconClass="mdi--folder-list"
         matIconSize="tile-icon-x-large"
@@ -80,14 +80,14 @@
     }
     @if (authService.rights().includes("container_create") && authService.containerWizard().enabled) {
       <app-navigation-self-service-button
-        i18n-title
+        i18n-title="@@common.createContainer"
         key="{{ this.ROUTE_PATHS.CONTAINERS_CREATE }}"
         matIconName="create_new_folder"
         title="Create Container" />
     }
     @if (authService.rights().includes("auditlog")) {
       <app-navigation-self-service-button
-        i18n-title
+        i18n-title="@@nav.auditLog"
         key="{{ this.ROUTE_PATHS.AUDIT }}"
         matIconName="receipt_long"
         title="Audit Log" />

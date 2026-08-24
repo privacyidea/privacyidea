@@ -24,7 +24,7 @@
     style="display: none"
     type="password" />
   <mat-form-field class="input-width-l">
-    <mat-label i18n>Select Realm of User</mat-label>
+    <mat-label i18n="@@common.selectRealmUser">Select Realm of User</mat-label>
     <mat-select
       (selectionChange)="onSelectedRealmChange($event.value)"
       [value]="userService.selectedUserRealm()"
@@ -34,11 +34,11 @@
       }
     </mat-select>
     @if (required() && !userService.selectedUserRealm()) {
-      <mat-error i18n>User Realm is <strong>required</strong></mat-error>
+      <mat-error i18n="@@token.userRealmRequired">User Realm is <strong>required</strong></mat-error>
     }
   </mat-form-field>
   <mat-form-field class="input-width-l">
-    <mat-label i18n>Enter User</mat-label>
+    <mat-label i18n="@@common.enterUser">Enter User</mat-label>
     <app-clearable-input
       (clearButtonClick)="clearUser()"
       [showClearButton]="userFilter() !== ''">
@@ -63,10 +63,10 @@
       }
     </mat-autocomplete>
     @if (!userService.selectedUserRealm() && !onlyAddToRealm()) {
-      <mat-hint i18n> Select a realm first to enable user selection.</mat-hint>
+      <mat-hint i18n="@@token.selectRealmFirst"> Select a realm first to enable user selection.</mat-hint>
     }
     @if (required() && !userService.selectedUser()) {
-      <mat-error i18n>User is <strong>required</strong></mat-error>
+      <mat-error i18n="@@token.userRequired">User is <strong>required</strong></mat-error>
     }
   </mat-form-field>
   @if (showOnlyAddToRealm()) {
@@ -75,7 +75,7 @@
         [checked]="onlyAddToRealm()"
         [disabled]="!!userFilter()"
         (change)="onlyAddToRealmChange($event.checked)"
-        i18n>
+        i18n="@@token.onlyAddRealmNo">
         Only add to the realm (no user assignment)
       </mat-checkbox>
     </div>

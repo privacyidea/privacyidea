@@ -66,15 +66,15 @@ import { ResolverService } from "@services/resolver/resolver.service";
 import { UserTableActionsComponent } from "./user-table-actions/user-table-actions.component";
 
 const columnKeysMap = [
-  { key: "username", label: $localize`Username` },
-  { key: "userid", label: $localize`User ID` },
-  { key: "givenname", label: $localize`Given Name` },
-  { key: "surname", label: $localize`Surname` },
-  { key: "email", label: $localize`Email` },
-  { key: "phone", label: $localize`Phone` },
-  { key: "mobile", label: $localize`Mobile` },
-  { key: "description", label: $localize`Description` },
-  { key: "resolver", label: $localize`Resolver` }
+  { key: "username", label: $localize`:@@common.username:Username` },
+  { key: "userid", label: $localize`:@@common.userId:User ID` },
+  { key: "givenname", label: $localize`:@@user.givenName:Given Name` },
+  { key: "surname", label: $localize`:@@user.surname:Surname` },
+  { key: "email", label: $localize`:@@common.email:Email` },
+  { key: "phone", label: $localize`:@@user.phone:Phone` },
+  { key: "mobile", label: $localize`:@@user.mobile:Mobile` },
+  { key: "description", label: $localize`:@@common.description:Description` },
+  { key: "resolver", label: $localize`:@@common.resolver:Resolver` }
 ];
 
 // Per-column predicates for the free-text search: a term matches if it is a substring of any column.

@@ -25,7 +25,7 @@
         <mat-form-field
           subscriptSizing="dynamic"
           class="table-filter">
-          <mat-label i18n>Filter Machines...</mat-label>
+          <mat-label i18n="@@machine.filterMachines">Filter Machines...</mat-label>
           <app-clearable-input
             (clearButtonClick)="resetFilter()"
             [showClearButton]="filterString().length > 0">
@@ -34,8 +34,8 @@
               (input)="onFilterInput(filterHTMLInputElement.value)"
               [value]="filterString()"
               aria-label="Filter Input"
-              i18n-aria-label
-              i18n-placeholder
+              i18n-aria-label="@@common.filterInput"
+              i18n-placeholder="@@machine.filterByHostname"
               matInput
               placeholder="Filter by hostname, IP or resolver" />
           </app-clearable-input>
@@ -56,7 +56,7 @@
     <ng-container matColumnDef="hostname">
       <th
         *matHeaderCellDef
-        i18n
+        i18n="@@common.hostname"
         mat-header-cell
         mat-sort-header>
         Hostname
@@ -81,7 +81,7 @@
     <ng-container matColumnDef="ip">
       <th
         *matHeaderCellDef
-        i18n
+        i18n="@@common.ipAddress"
         mat-header-cell
         mat-sort-header>
         IP Address
@@ -98,7 +98,7 @@
     <ng-container matColumnDef="id">
       <th
         *matHeaderCellDef
-        i18n
+        i18n="@@common.id"
         mat-header-cell
         mat-sort-header>
         ID
@@ -113,7 +113,7 @@
     <ng-container matColumnDef="resolver_name">
       <th
         *matHeaderCellDef
-        i18n
+        i18n="@@common.machineResolver"
         mat-header-cell
         mat-sort-header>
         Machine Resolver
@@ -140,7 +140,7 @@
       <td
         class="mat-cell"
         colspan="5"
-        i18n>
+        i18n="@@machine.noMachinesFound">
         No machines found.
       </td>
     </tr>

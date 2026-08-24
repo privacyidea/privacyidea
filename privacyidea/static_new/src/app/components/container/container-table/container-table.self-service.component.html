@@ -20,11 +20,11 @@
   appScrollToTop
   aria-label="Container Table"
   class="container-table-container"
-  i18n-aria-label>
+  i18n-aria-label="@@container.containerTable">
   <div class="filter-paginator-container">
     <h3
       class="selfservice-paginator-label"
-      i18n>
+      i18n="@@container.yourContainers">
       Your Containers
     </h3>
     @if (authService.rights().includes("container_create")) {
@@ -33,12 +33,12 @@
         class="action-button-primary button-width-m"
         (click)="navigateToCreate()"
         aria-label="Create Container"
-        i18n-aria-label>
+        i18n-aria-label="@@common.createContainer">
         <span class="icon-badge">
           <mat-icon class="padding-right-3">folder</mat-icon>
           <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
         </span>
-        <span i18n>Create Container</span>
+        <span i18n="@@common.createContainer">Create Container</span>
       </button>
     }
     <mat-paginator
@@ -56,7 +56,7 @@
       [dataSource]="containerDataSource()"
       aria-label="Container Data Table"
       class="container-table"
-      i18n-aria-label
+      i18n-aria-label="@@container.containerData"
       mat-table
       multiTemplateDataRows>
       @for (column of columnKeysMapSelfService; track column) {
@@ -69,7 +69,7 @@
               <mat-checkbox
                 (change)="$event.checked ? containerSelection.selectAllRows() : containerSelection.deselectAllRows()"
                 aria-label="Select all containers"
-                i18n-aria-label
+                i18n-aria-label="@@container.selectAllContainers"
                 [checked]="containerSelection.allRowsSelected()"
                 [disabled]="!containerSelection.hasVisibleRows()"
                 [indeterminate]="containerSelection.someRowsSelected()" />
@@ -85,7 +85,7 @@
                   <button
                     (click)="tableUtilsService.onSortButtonClick(column.key, sort)"
                     aria-label="Sort by {{ column.label }}"
-                    i18n-aria-label
+                    i18n-aria-label="@@common.sortBy"
                     class="sort-button"
                     mat-icon-button
                     type="button">
@@ -151,7 +151,7 @@
                   <button
                     (click)="deleteContainer(element.serial)"
                     aria-label="Delete Container"
-                    i18n-aria-label
+                    i18n-aria-label="@@container.deleteContainer"
                     mat-icon-button>
                     <mat-icon> delete</mat-icon>
                   </button>
@@ -206,7 +206,7 @@
                   @if (element.tokens?.length === 0) {
                     <div
                       class="flex ali-center"
-                      i18n>
+                      i18n="@@container.containerHasNo">
                       Container has no tokens.
                     </div>
                   }
@@ -236,7 +236,7 @@
       <tr *matNoDataRow>
         <td
           [attr.colspan]="columnKeysSelfService.length"
-          i18n>
+          i18n="@@common.noDataMatching">
           No data matching the filter.
         </td>
       </tr>
