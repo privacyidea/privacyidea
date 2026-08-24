@@ -86,7 +86,7 @@ from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action, check_t
                                            check_container_action, check_user_params,
                                            force_server_generate_key)
 from privacyidea.lib.challenge import (cancel_challenge, get_challenges, get_challenges_for_user,
-                                        get_challenges_paginate, cleanup_expired_challenges)
+                                       get_challenges_paginate, cleanup_expired_challenges)
 from privacyidea.lib.error import (ParameterError, TokenAdminError,
                                    ResourceNotFoundError, PolicyError, Error)
 from privacyidea.lib.event import event
@@ -1679,7 +1679,7 @@ def get_sshkey_api(serial=None):
 
     user = request.User
     toks = get_tokens(serial=serial, user=user if user and not user.is_empty() else None,
-                      tokentype="sshkey", active=True)
+                      tokentype="sshkey")
     if not toks:
         raise ResourceNotFoundError(f"No SSH key token with serial {serial!s} found.")
     token = toks[0]
