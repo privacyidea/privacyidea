@@ -1,9 +1,11 @@
+@use "sass:math";
 @use "sass:meta";
 @use "@angular/material" as mat;
 @use "@angular/material/core/style/elevation" as mat-elevation;
 @use "theme";
 @use "material-icons/iconfont/material-icons.scss";
 @forward "table" show base-table-structure;
+@forward "cards";
 
 @include meta.load-css("mixins.scss");
 @include meta.load-css("buttons.scss");
@@ -18,6 +20,22 @@
 @include meta.load-css("overflow.scss");
 @include meta.load-css("snackbar.scss");
 @include meta.load-css("animations.scss");
+
+// Stops of the light-source dial, shared with light-source-dial.component.scss.
+$light-source-steps: 18;
+$light-source-step-angle: math.div(360, $light-source-steps);
+// Must stay in step with AppearanceService's DEFAULT_LIGHT_SOURCE.
+$default-light-source: 16;
+
+// A direction component reduced to -1, 0 or 1, for offsets that must land on whole pixels.
+@function sign-of($value) {
+  @if $value > 0 {
+    @return 1;
+  } @else if $value < 0 {
+    @return -1;
+  }
+  @return 0;
+}
 
 html,
 body {
@@ -42,37 +60,22 @@ body {
 }
 
 :root {
+  // Points at the light, 0deg due right and growing clockwise. The html.light-source-* class wins
+  // over :root and carries the level in effect; this is only what holds before one is applied.
+  --dial-angle: #{$default-light-source * $light-source-step-angle}deg;
   --overlay-margin: 297px;
   --blur: 4px;
   --border-radius: 4px;
   --light-distance: -4px;
   --shadow-distance: 2px;
 
-  // Max height for the main content container of a routed component. Viewport-
-  // relative rather than `100%` so it doesn't depend on the parent height chain
-  // resolving, and the `min(vh, calc(100vh - fixed-chrome))` shape stays on-
-  // screen through 200% zoom (the vh wins at normal zoom, the calc takes over
-  // once zoom shrinks the viewport enough that the fixed toolbar would push the
-  // content off the bottom). Both are overridden for self-service in
-  // `body.self-service-layout` below (side drawer, no top toolbar → less chrome).
-  //
-  // General components (short forms, config landings, …): admin chrome ~120px
-  // (toolbar + content padding), the mixin default.
-  --content-max-height: min(88vh, calc(100vh - 120px));
-  // Table list pages carry an internal filter row + paginator, so their scroll
-  // region needs more headroom — heavier chrome (~190px, measured 81vh @100% →
-  // ~62vh @200%). The 9 table components opt into this explicitly.
-  --table-max-height: min(81vh, calc(100vh - 190px));
-  // Detail & edit pages (token/container/user details, enrollment, policy and
-  // other edit/new forms): tall content, same 190px admin chrome as the tables.
-  // 81vh at ~100% zoom, shrinking to ≈62vh at 200%. SS override below (flat 88vh).
-  --detail-max-height: min(86vh, calc(100vh - 160px));
-
-  // Standardized detail-card widths, applied via the card-width() mixin.
-  --card-width-s: 400px;
-  --card-width-m: 585px;
-  --card-width-l: 728px;
-  --card-width-xl: 932px;
+  // Card widths, applied via the card-width() mixin: n * 162px + (n - 1) * 16px for n = 1..5, so
+  // cards of different sizes line up on the same grid however they wrap.
+  --card-width-xs: 162px;
+  --card-width-s: 340px;
+  --card-width-m: 518px;
+  --card-width-l: 696px;
+  --card-width-xl: 874px;
 
   // Pre-baked Material elevation shadows (0..24) as CSS variables.
   // Generated at build time so that elevation can be re-skinned at runtime
@@ -81,40 +84,104 @@ body {
     --mat-elevation-#{$z}: #{mat-elevation.get-box-shadow($z)};
   }
 
+  // Shadow geometry: a dark shadow toward one corner, a light highlight mirrored to the opposite
+  // one, blur roughly twice the offset. --mat-sys-shadow and --mat-sys-light are the theme's two
+  // tones, so the pair inverts in dark mode. --depth-scale (how far the shadows reach) and
+  // --depth-dir-x/-y (which corner the light comes from) are set by the html.depth-* and
+  // html.light-source-* blocks below.
+  --depth-scale: 1;
+  --depth-dir-x: 1;
+  --depth-dir-y: 1;
+  --depth-sign-x: 1;
+  --depth-sign-y: 1;
+
+  // Strength of the surface tints and the inset tones, defaulting to the shadow scale. Every
+  // html.depth-* level sets its own value.
+  --depth-tone-scale: var(--depth-scale);
+
+  // --depth-dir-x/-y are unit-vector components, so a diagonal light splits the offset 0.7071
+  // per axis.
+  --depth-x-3: calc(3px * var(--depth-scale) * var(--depth-dir-x));
+  --depth-y-3: calc(3px * var(--depth-scale) * var(--depth-dir-y));
+  --depth-blur-3: calc(6px * var(--depth-scale));
+  --depth-x-5: calc(6px * var(--depth-scale) * var(--depth-dir-x));
+  --depth-y-5: calc(6px * var(--depth-scale) * var(--depth-dir-y));
+  --depth-blur-5: calc(12px * var(--depth-scale));
+  --depth-x-8: calc(10px * var(--depth-scale) * var(--depth-dir-x));
+  --depth-y-8: calc(10px * var(--depth-scale) * var(--depth-dir-y));
+  --depth-blur-8: calc(21px * var(--depth-scale));
+
   // User-tunable "current" elevations. Override at runtime to change look & feel.
-  --elevation-3: var(--mat-elevation-3);
-  --elevation-5: var(--mat-elevation-5);
-  --elevation-8: var(--mat-elevation-8);
+  --elevation-3:
+    var(--depth-x-3) var(--depth-y-3) var(--depth-blur-3) var(--mat-sys-shadow),
+    calc(-1 * var(--depth-x-3)) calc(-1 * var(--depth-y-3)) var(--depth-blur-3) var(--mat-sys-light);
+  --elevation-5:
+    var(--depth-x-5) var(--depth-y-5) var(--depth-blur-5) var(--mat-sys-shadow),
+    calc(-1 * var(--depth-x-5)) calc(-1 * var(--depth-y-5)) var(--depth-blur-5) var(--mat-sys-light);
+  --elevation-8:
+    var(--depth-x-8) var(--depth-y-8) var(--depth-blur-8) var(--mat-sys-shadow),
+    calc(-1 * var(--depth-x-8)) calc(-1 * var(--depth-y-8)) var(--depth-blur-8) var(--mat-sys-light);
 
-  // Inset-shadow scale for recessed "well" surfaces, the inward counterpart of the
-  // --elevation-* scale (higher number = deeper recess). --inset-shadow-5 is the
-  // deep dashboard recess; --inset-shadow-3 is a shallower step between it and flat.
-  // Each level pairs with an --inset-surface-* background tone that sits between the
-  // surrounding grey and a card's white, so the recess reads correctly.
+  // The same pairs turned inward, for surfaces sunk into the page. The slots are the nesting
+  // levels a card can sit at: 3 for a group on the page container, 5 for a group inside a group,
+  // 8 for one deeper again. Each pairs with the matching --inset-surface-* tone.
+  --inset-shadow-8:
+    inset var(--depth-x-8) var(--depth-y-8) var(--depth-blur-8) var(--mat-sys-shadow),
+    inset calc(-1 * var(--depth-x-8)) calc(-1 * var(--depth-y-8)) var(--depth-blur-8) var(--mat-sys-light);
   --inset-shadow-5:
-    inset 0 3px 5px -1px var(--dashboard-shadow-color),
-    inset 0 5px 8px 0 var(--dashboard-shadow-color),
-    inset 0 1px 14px 0 var(--dashboard-shadow-color);
+    inset var(--depth-x-5) var(--depth-y-5) var(--depth-blur-5) var(--mat-sys-shadow),
+    inset calc(-1 * var(--depth-x-5)) calc(-1 * var(--depth-y-5)) var(--depth-blur-5) var(--mat-sys-light);
   --inset-shadow-3:
-    inset 0 2px 4px -1px var(--dashboard-shadow-color),
-    inset 0 1px 6px 0 var(--dashboard-shadow-color);
-  --inset-surface-5: var(--mat-sys-surface-container-low);
-  // Midpoint of the surrounding grey (surface-container, #e6e6e6 in light mode) and
-  // the card white (surface-container-lowest, #fafafa): #f0f0f0.
-  --inset-surface-3: color-mix(in srgb, var(--mat-sys-surface-container) 50%,
-    var(--mat-sys-surface-container-lowest) 50%);
+    inset var(--depth-x-3) var(--depth-y-3) var(--depth-blur-3) var(--mat-sys-shadow),
+    inset calc(-1 * var(--depth-x-3)) calc(-1 * var(--depth-y-3)) var(--depth-blur-3) var(--mat-sys-light);
+  // --elevation-5 with the vertical offset dropped, for surfaces whose bottom edge meets a bar
+  // (the active toolbar tab, the util groups). With the light straight up or down there is no
+  // horizontal component left and the glow disappears.
+  --side-glow:
+    var(--depth-x-5) 0 var(--depth-blur-5) var(--mat-sys-shadow),
+    calc(-1 * var(--depth-x-5)) 0 var(--depth-blur-5) var(--mat-sys-light);
+  // Surface shading: a gradient running light to dark when raised and dark to light when
+  // recessed. 90deg behind the dial angle puts its light end on the corner the light comes from.
+  --depth-gradient-angle: calc(var(--dial-angle) - 90deg);
+  --depth-tint: clamp(0%, calc(12% * var(--depth-tone-scale)), 100%);
+  --surface-raised: linear-gradient(
+    var(--depth-gradient-angle),
+    color-mix(in srgb, var(--mat-sys-light) var(--depth-tint), var(--table-color)),
+    color-mix(in srgb, var(--mat-sys-shadow) var(--depth-tint), var(--table-color))
+  );
 
-  --double-global-padding: calc(var(--global-padding) * 2);
-  --global-padding: 16px;
-  --three-quarters-global-padding: calc(var(--global-padding) * 0.75);
-  --half-global-padding: calc(var(--global-padding) / 2);
-  --third-global-padding: calc(var(--global-padding) / 3);
-  --quarter-global-padding: calc(var(--global-padding) / 4);
-  --eighth-global-padding: calc(var(--global-padding) / 8);
-
-  --global-gap: 16px;
-  --half-global-gap: calc(var(--global-gap) / 2);
-  --quarter-global-gap: calc(var(--global-gap) / 4);
+  // Each step mixes more of the surrounding container tone into the card white, so nesting stays
+  // legible where the shadows are soft. The clamp stops a deep step overshooting that tone.
+  --inset-tone-8: color-mix(
+    in srgb,
+    var(--mat-sys-surface-container-highest) clamp(0%, calc(45% * var(--depth-tone-scale)), 100%),
+    var(--mat-sys-surface-container-lowest)
+  );
+  --inset-tone-5: color-mix(
+    in srgb,
+    var(--mat-sys-surface-container-high) clamp(0%, calc(40% * var(--depth-tone-scale)), 100%),
+    var(--mat-sys-surface-container-lowest)
+  );
+  --inset-tone-3: color-mix(
+    in srgb,
+    var(--mat-sys-surface-container) clamp(0%, calc(50% * var(--depth-tone-scale)), 100%),
+    var(--mat-sys-surface-container-lowest)
+  );
+  --inset-surface-8: linear-gradient(
+    var(--depth-gradient-angle),
+    color-mix(in srgb, var(--mat-sys-shadow) var(--depth-tint), var(--inset-tone-8)),
+    color-mix(in srgb, var(--mat-sys-light) var(--depth-tint), var(--inset-tone-8))
+  );
+  --inset-surface-5: linear-gradient(
+    var(--depth-gradient-angle),
+    color-mix(in srgb, var(--mat-sys-shadow) var(--depth-tint), var(--inset-tone-5)),
+    color-mix(in srgb, var(--mat-sys-light) var(--depth-tint), var(--inset-tone-5))
+  );
+  --inset-surface-3: linear-gradient(
+    var(--depth-gradient-angle),
+    color-mix(in srgb, var(--mat-sys-shadow) var(--depth-tint), var(--inset-tone-3)),
+    color-mix(in srgb, var(--mat-sys-light) var(--depth-tint), var(--inset-tone-3))
+  );
 
   // Standardized input/field widths. Used by the .input-width-* helper classes
   // and referenced in layout width calculations so they stay in sync.
@@ -123,6 +190,9 @@ body {
   --input-width-l: 300px;
   --input-width-xl: 616px;
   --input-width-xxl: 932px;
+
+  // Width of a config form body: one input-width-xl field plus its leading inset.
+  --config-form-width: calc(var(--input-width-xl) + 16px);
 
   --button-width-xs: 40px;
   --button-width-s: 120px;
@@ -187,7 +257,6 @@ body {
     inset var(--light-distance) var(--light-distance) var(--blur) var(--grey-light-active);
 
   --box-shadow-header: 4px 2px var(--blur) var(--mat-sys-shadow);
-  --box-dialog-shadow: 0px 4px 20px var(--mat-sys-shadow-color-high);
   --table-color: var(--mat-sys-surface-container-lowest);
 
   --mat-form-field-filled-container-color: var(surface-container-low);
@@ -204,25 +273,139 @@ body {
   --mat-menu-container-color: var(--mat-sys-surface-container-low);
 }
 
+// Appearance levels the user picks in UI Settings. AppearanceService stamps one class per group
+// on <html>: it outranks the :root defaults above, and the CDK overlay container inherits it so
+// Material panels follow along. Every value stays a var() reference, so a level cannot freeze
+// one theme's tone into the other.
+
+// --depth-scale drives --elevation-*, --inset-shadow-*, --side-glow and, through --depth-tint,
+// the --surface-raised / --inset-surface-* gradients. "flat" overrides the shadow slots with a
+// 1px two-tone border, one pair per slot, so all three collapse onto the same edge and the inset tones alone say how deep a
+// surface sits.
+html.depth-flat {
+  --depth-scale: 0;
+  // Tone alone separates the levels here: the ladder at full strength, the tint at nothing, so
+  // every surface is one flat colour and each inset level a step darker than the one above.
+  --depth-tone-scale: 1;
+  --depth-tint: 0%;
+
+  // The border keeps the two tones of a shadow pair, so an edge still reads as lit from one side
+  // even with no shadow to cast: the darker tone on the two sides the light falls away from, the
+  // lighter one on the two it reaches. Three pairs, one per depth slot, off the ladders in
+  // theme.scss — see the note there for why the border cannot borrow the shadow pair's own tones
+  // or a step of the container ladder. The shallowest slot (3) gets the lightest pair and the
+  // deepest (8) the boldest, same as the elevation shadows below scale with --depth-scale.
+  @each $slot, $step in (3: 3, 5: 2, 8: 1) {
+    // Three bands, each an unspread 1px so the edge is an even 1px the whole way round. The two
+    // mirrored offsets reach only their own two sides, leaving one pixel bare at the two corners
+    // between them; the uniform ring is listed last, so it paints under both and fills exactly
+    // those corners.
+    --flat-pair-#{$slot}:
+      calc(1px * var(--depth-sign-x)) calc(1px * var(--depth-sign-y)) 0 0 var(--flat-border-shadow-#{$step}),
+      calc(-1px * var(--depth-sign-x)) calc(-1px * var(--depth-sign-y)) 0 0 var(--flat-border-light-#{$step}),
+      0 0 0 1px var(--flat-border-shadow-#{$step});
+    // The same three, inset: an inset band lands on the side its offset moves away from, so the
+    // mirrored pair covers all four edges inside the padding box.
+    --flat-inset-pair-#{$slot}:
+      inset calc(1px * var(--depth-sign-x)) calc(1px * var(--depth-sign-y)) 0 0 var(--flat-border-shadow-#{$step}),
+      inset calc(-1px * var(--depth-sign-x)) calc(-1px * var(--depth-sign-y)) 0 0 var(--flat-border-light-#{$step}),
+      inset 0 0 0 1px var(--flat-border-shadow-#{$step});
+
+    --elevation-#{$slot}: var(--flat-pair-#{$slot});
+    --inset-shadow-#{$slot}: var(--flat-inset-pair-#{$slot});
+  }
+  // The same border, horizontal only, at the slot-5 tone: these surfaces hang off a bar, and the
+  // ring the other slots use would draw a line along the bottom edge they share with it. Two
+  // mirrored bands run the full height, so no corner is left bare and no filler ring is needed.
+  --side-glow:
+    calc(1px * var(--depth-sign-x)) 0 0 0 var(--flat-border-shadow-2),
+    calc(-1px * var(--depth-sign-x)) 0 0 0 var(--flat-border-light-2);
+}
+
+// Each level's tone scale is the next level's shadow scale; very-strong tops the ladder out with
+// a tone step of its own.
+html.depth-subtle {
+  --depth-scale: 0.3;
+  --depth-tone-scale: 0.6;
+}
+
+html.depth-default {
+  --depth-scale: 0.6;
+  --depth-tone-scale: 0.9;
+}
+
+html.depth-strong {
+  --depth-scale: 0.9;
+  --depth-tone-scale: 1.2;
+}
+
+html.depth-very-strong {
+  --depth-scale: 1.2;
+  --depth-tone-scale: 1.5;
+}
+
+// One stop of the light-source dial: --dial-angle points at the light (0deg due right, growing
+// clockwise) and the shadow falls the opposite way, hence the negated unit vector.
+// $light-source-steps must stay in step with AppearanceService's LIGHT_SOURCE_STEPS.
+@for $i from 0 through $light-source-steps - 1 {
+  $angle: $i * $light-source-step-angle;
+
+  // 0 and 180 are skipped, matching LIGHT_SOURCE_LEVELS: a purely horizontal light leaves the
+  // shadows no vertical offset at all.
+  @if $angle != 0 and $angle != 180 {
+    $dir-x: -1 * math.cos($angle * 1deg);
+    $dir-y: -1 * math.sin($angle * 1deg);
+
+    html.light-source-#{$i} {
+      --dial-angle: #{$angle}deg;
+      --depth-dir-x: #{$dir-x};
+      --depth-dir-y: #{$dir-y};
+      // The same directions as -1, 0 or 1. Blurred shadows take the fractional ones; the flat
+      // border takes these, so its offsets stay whole pixels and every edge rasterizes to the same
+      // width wherever the box happens to land on the pixel grid.
+      --depth-sign-x: #{sign-of($dir-x)};
+      --depth-sign-y: #{sign-of($dir-y)};
+    }
+  }
+}
+
+// Capped at 12px: --border-radius feeds --mat-sys-corner-extra-small, and above that Material's
+// outlined form fields widen their notch gap and padding, shifting the input text instead of
+// rounding a corner. "square" is 0px, not a bare 0, because the value lands inside Material's
+// max() calls, where a unitless zero is not a length.
+$corner-radii: (
+  "square": 0px,
+  "default": 4px,
+  "round": 8px,
+  "extra-round": 12px
+);
+
+@each $name, $radius in $corner-radii {
+  html.corner-#{$name} {
+    --border-radius: #{$radius};
+  }
+}
+
+// The outer container of a routed page. `.admin-content` / `.selfservice-content-container`
+// (layout.component.scss) are size containers, so 100cq* is whatever the toolbars, the
+// self-service drawer and the region's own padding leave over. With border-box the caps measure
+// the padded box, so a page sizing its container to a content width must add this mixin's own
+// 16px padding on both sides, i.e. 32px.
 @mixin main-component-style {
-  padding: var(--global-padding);
+  box-sizing: border-box;
+  padding: 16px;
   border-radius: var(--border-radius);
   box-shadow: var(--elevation-5);
-  background-color: var(--table-color);
-  max-width: var(--max-width);
-  // Cap at the viewport-aware content height (see --content-max-height) and
-  // scroll internally when taller. Viewport-relative rather than `100%` so it
-  // doesn't depend on the parent height chain resolving, and stays on-screen
-  // through 200% zoom. Applies to every component that uses this mixin.
-  max-height: var(--content-max-height);
+  background: var(--surface-raised);
+  max-width: 100cqw;
+  max-height: 100cqh;
   overflow: auto;
 }
 
-// Global (unencapsulated) so it can match the router-outlet's dynamically
-// inserted component. Gives the routed host a definite height so components
-// that fill via `height: 100%` (e.g. token-details, dashboard) can stretch to
-// the bottom. Note main-component-style no longer relies on this — it caps via
-// the viewport-relative --content-max-height directly.
+// Global (unencapsulated) so it can match the router-outlet's dynamically inserted component.
+// Gives the routed host a definite height, so components that fill via `height: 100%` (e.g.
+// token-details, dashboard) reach the bottom. main-component-style's cap does not depend on this
+// chain: it measures the content region itself, so any number of wrappers may sit in between.
 .admin-content > *:not(router-outlet) {
   height: 100%;
   min-height: 0;
@@ -236,17 +419,6 @@ body {
 
 body.self-service-layout {
   --overlay-margin: var(--drawer-width-self-service);
-  // Self-service has a side drawer, no top toolbar — less fixed chrome than
-  // admin. General components: just the 32px top/bottom content padding.
-  --content-max-height: min(96vh, calc(100vh - 2 * var(--global-padding)));
-  // Tables: + ~30px for their filter/paginator (≈62px total), calibrated from
-  // the measured perfect-fit at 100%/200% zoom (~94vh → ~88vh). A single vh base
-  // can't hold across zoom (measured drop ~6vh > what a fixed vh base gives), so
-  // the fixed-px offset reproduces both zooms; the calc() guards high zoom.
-  --table-max-height: min(94vh, calc(100vh - 2 * var(--global-padding) - 30px));
-  // Detail & edit pages: little chrome in self-service, so a flat 88vh fits at
-  // every zoom (matches the enrollment page Henrik tuned).
-  --detail-max-height: 88vh;
 }
 
 .shadow {
@@ -255,6 +427,10 @@ body.self-service-layout {
 
 .on-surface {
   color: var(--mat-sys-on-surface);
+}
+
+.on-surface-variant {
+  color: var(--mat-sys-on-surface-variant);
 }
 
 .surface-highest {
@@ -717,9 +893,9 @@ body.self-service-layout {
   display: grid;
   grid-template-columns: repeat(2, minmax(260px, 308px));
   max-height: unset;
-  column-gap: var(--third-global-padding);
-  padding: var(--three-quarters-global-padding);
-  padding-bottom: var(--global-padding);
+  column-gap: calc(16px / 3);
+  padding: 12px;
+  padding-bottom: 16px;
   overflow-y: auto;
 }
 
@@ -733,22 +909,24 @@ body.self-service-layout {
 
 .single-column-panel.mat-mdc-select-panel {
   max-height: unset;
-  padding: var(--three-quarters-global-padding);
-  padding-bottom: var(--global-padding);
+  padding: 12px;
+  padding-bottom: 16px;
   overflow-y: auto;
 }
 
 .select-option {
   box-shadow: var(--elevation-3);
   border-radius: var(--border-radius);
-  margin: 0 0 var(--third-global-padding) 0;
+  margin: 0 0 calc(16px / 3) 0;
 }
 
+// The raised step arrives with .is-sticky and is faded in by the transition; unpinned the header
+// carries the page container's own shading and is flush with it.
 .sticky-header {
   position: sticky;
   top: 0;
   z-index: 100;
-  background-color: var(--mat-sys-surface-container-lowest);
+  background: var(--surface-raised);
   padding: 16px;
   transition: box-shadow 0.3s ease-in-out;
   border-radius: var(--border-radius);
@@ -762,7 +940,7 @@ body.self-service-layout {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: var(--global-gap);
+  gap: 16px;
 }
 
 .sticky-controls .mat-mdc-form-field-subscript-wrapper {
@@ -772,7 +950,7 @@ body.self-service-layout {
 .flex-row-stretch {
   display: flex;
   align-items: stretch;
-  gap: var(--global-gap);
+  gap: 16px;
 }
 
 .flex-column {
@@ -873,6 +1051,12 @@ body.self-service-layout {
 
 .mat-mdc-menu-content {
   max-height: 400px;
+}
+
+// Tooltips sit on the overlay container, so they are styled globally rather than per component. The border is derived
+// from the text color so it stays subtle in both themes without depending on a theme-scoped variable.
+.mat-mdc-tooltip .mdc-tooltip__surface {
+  border: 1px solid color-mix(in srgb, var(--mat-sys-on-surface, currentColor) 25%, transparent);
 }
 
 .filter-hint-tooltip {

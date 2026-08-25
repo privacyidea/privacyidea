@@ -17,6 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { TestBed } from "@angular/core/testing";
+import { throwError } from "rxjs";
 
 import { ThemeMode, ThemeService } from "./theme.service";
 
@@ -121,6 +122,31 @@ describe("ThemeService", () => {
 
     expect(setSpy).not.toHaveBeenCalled();
     expect(service.currentTheme()).toBe("dark");
+  });
+
+  it("setTheme() reports settled once the write has completed", (done) => {
+    setupMatchMedia(false);
+    authService.isAuthenticated.set(true);
+
+    service.setTheme("dark").subscribe(() => {
+      expect(userSettingsService.settings()?.["theme"]).toBe("dark");
+      done();
+    });
+  });
+
+  it("setTheme() still reports settled when the write fails", (done) => {
+    setupMatchMedia(false);
+    authService.isAuthenticated.set(true);
+    jest.spyOn(userSettingsService, "setSetting").mockReturnValue(throwError(() => new Error("network error")));
+
+    service.setTheme("dark").subscribe(() => done());
+  });
+
+  it("setTheme() reports settled immediately while nobody is logged in", (done) => {
+    setupMatchMedia(false);
+    authService.isAuthenticated.set(false);
+
+    service.setTheme("dark").subscribe(() => done());
   });
 
   it("applyStoredTheme() applies the theme without storing it back", () => {

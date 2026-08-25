@@ -7,12 +7,11 @@
   --tile-height: calc(var(--tile-width) / 1.618); // Golden ratio
 }
 
+// A tile is its own card, raised off the rail it sits in.
 .tile-size-scope .tile-button {
+  @include styles.card-raised(3);
   width: var(--tile-width);
   height: var(--tile-height);
-  border-radius: var(--border-radius);
-  background-color: var(--mat-sys-surface-container-low);
-  box-shadow: var(--elevation-3);
 
   &:hover {
     box-shadow: var(--elevation-5);
@@ -65,7 +64,7 @@
   align-items: flex-start;
 
   font-weight: bold;
-  font-size: min(calc(var(--tile-height) / 7.5), calc(var(--tile-max-width) / 4));
+  font-size: calc(var(--tile-height) / 7.5);
   text-align: center;
 }
 
@@ -75,11 +74,13 @@
 }
 
 .tile-size-scope .tile-button.selected {
-  background-color: var(--mat-sys-primary);
+  // `background`, not `background-color`: the base tile paints its raised tone as a gradient, and
+  // a colour alone would sit under that image and never show.
+  background: var(--mat-sys-primary);
   color: var(--mat-sys-on-primary);
-  box-shadow:
-    -8px 0 8px -8px var(--nav-item-border),
-    8px 0 8px -8px var(--nav-item-border);
+  // The same glow the active tab in the admin navigation carries, so the selected tile follows the
+  // light source and the depth setting instead of a fixed pair.
+  box-shadow: var(--side-glow);
 
   .mat-icon {
     color: var(--mat-sys-on-primary);
@@ -91,7 +92,7 @@
   }
 
   &:hover {
-    background-color: var(--mat-sys-primary-light);
+    background: var(--mat-sys-primary-light);
     box-shadow: var(--elevation-5);
     transform: translateY(-5px);
   }

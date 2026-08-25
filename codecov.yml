@@ -40,7 +40,15 @@ coverage:
       backend:
         flags:
           - backend
+        # Same reasoning as for the frontend below. Two things make a bare
+        # `target: auto` bite here: a patch that adds error branches and guard
+        # clauses is held to the average of code that has few of them, and the
+        # import-time lines of a module that is imported before coverage starts
+        # in the test worker are reported as missed however well the patch is
+        # tested. Neither says the new code is untested, so allow some slack
+        # while the target still keeps new code at the level of the existing.
         target: auto
+        threshold: 5%
       frontend:
         flags:
           - frontend

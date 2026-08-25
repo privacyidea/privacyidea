@@ -19,6 +19,7 @@
 import { LOCALE_ID, provideZonelessChangeDetection } from "@angular/core";
 import { TestBed } from "@angular/core/testing";
 import { LOCALE_COOKIE_NAME } from "@core/locale";
+import { AppearanceService } from "@services/appearance/appearance.service";
 import { AuthService } from "@services/auth/auth.service";
 import { ThemeService } from "@services/theme/theme.service";
 import { UserSettingsService } from "@services/user-settings/user-settings.service";
@@ -32,11 +33,21 @@ describe("UiPreferencesService", () => {
   let authService: MockAuthService;
   let userSettingsService: MockUserSettingsService;
   let themeService: { applyStoredTheme: jest.Mock };
+  let appearanceService: {
+    applyStoredDepth: jest.Mock;
+    applyStoredLightSource: jest.Mock;
+    applyStoredCorners: jest.Mock;
+  };
   let navigateSpy: jest.SpyInstance;
 
   const create = (locale: string): void => {
     TestBed.resetTestingModule();
     themeService = { applyStoredTheme: jest.fn() };
+    appearanceService = {
+      applyStoredDepth: jest.fn(),
+      applyStoredLightSource: jest.fn(),
+      applyStoredCorners: jest.fn()
+    };
     TestBed.configureTestingModule({
       providers: [
         provideZonelessChangeDetection(),
@@ -44,6 +55,7 @@ describe("UiPreferencesService", () => {
         { provide: AuthService, useClass: MockAuthService },
         { provide: UserSettingsService, useClass: MockUserSettingsService },
         { provide: ThemeService, useValue: themeService },
+        { provide: AppearanceService, useValue: appearanceService },
         UiPreferencesService
       ]
     });
@@ -82,6 +94,71 @@ describe("UiPreferencesService", () => {
     service.sync();
 
     expect(themeService.applyStoredTheme).not.toHaveBeenCalled();
+  });
+
+  it("should apply the stored pending-request preference", () => {
+    create("en");
+    userSettingsService.settings.set({ show_loading_urls: true });
+
+    service.sync();
+
+    expect(service.showLoadingUrls()).toBe(true);
+  });
+
+  it("should treat an absent pending-request preference as off", () => {
+    create("en");
+    userSettingsService.settings.set({});
+
+    service.sync();
+
+    expect(service.showLoadingUrls()).toBe(false);
+  });
+
+  it("should store a changed pending-request preference", () => {
+    create("en");
+
+    service.setShowLoadingUrls(true);
+
+    expect(service.showLoadingUrls()).toBe(true);
+    expect(userSettingsService.settings()?.show_loading_urls).toBe(true);
+  });
+
+  it("should report the pending-request write as settled once it completes", (done) => {
+    create("en");
+
+    service.setShowLoadingUrls(true).subscribe(() => {
+      expect(userSettingsService.settings()?.show_loading_urls).toBe(true);
+      done();
+    });
+  });
+
+  it("should still report the pending-request write as settled when it fails", (done) => {
+    create("en");
+    jest.spyOn(userSettingsService, "setSetting").mockReturnValue(throwError(() => new Error("network error")));
+
+    service.setShowLoadingUrls(true).subscribe(() => done());
+  });
+
+  it("should apply the stored appearance levels", () => {
+    create("en");
+    userSettingsService.settings.set({ depth: "flat", light_source: "8", corner_radius: "square" });
+
+    service.sync();
+
+    expect(appearanceService.applyStoredDepth).toHaveBeenCalledWith("flat");
+    expect(appearanceService.applyStoredLightSource).toHaveBeenCalledWith("8");
+    expect(appearanceService.applyStoredCorners).toHaveBeenCalledWith("square");
+  });
+
+  it("should leave the appearance alone when none is stored", () => {
+    create("en");
+    userSettingsService.settings.set({});
+
+    service.sync();
+
+    expect(appearanceService.applyStoredDepth).not.toHaveBeenCalled();
+    expect(appearanceService.applyStoredLightSource).not.toHaveBeenCalled();
+    expect(appearanceService.applyStoredCorners).not.toHaveBeenCalled();
   });
 
   it("should do nothing while nobody is logged in", () => {

@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { computed, Directive, input, signal, Type } from "@angular/core";
+import { computed, Directive, input, Signal, signal, TemplateRef, Type } from "@angular/core";
 import { PolicyAction } from "@services/auth/policy-actions";
 
 export const DASHBOARD_COLUMNS = 24;
@@ -24,6 +24,7 @@ export const DASHBOARD_COLUMNS = 24;
 export type WidgetState = "loading" | "ready" | "denied" | "error";
 
 export type WidgetTypeId =
+  | "news"
   | "tokens"
   | "token-types"
   | "authentications"
@@ -34,6 +35,7 @@ export type WidgetTypeId =
   | "certificate-health"
   | "resolver-timing"
   | "notification-delivery"
+  | "appearance"
   | "conditional-access";
 
 export interface WidgetSize {
@@ -55,6 +57,15 @@ export abstract class DashboardWidget {
   readonly loading = computed(() => this.state() === "loading");
   readonly partialLoading = computed(() => false);
   readonly refreshFailed = computed(() => false);
+  readonly canReload = computed(() => true);
+  readonly titleRoute = computed<string | null>(() => null);
+  /**
+   * Buttons the widget adds to its frame's header, in front of the reload button, so a
+   * widget does not have to spend a row of its own body on a toolbar. A template rather
+   * than a list of icons and callbacks, so a widget can hand over components that keep
+   * state of their own — the copy button and its "copied" feedback, for one.
+   */
+  readonly headerActions?: Signal<TemplateRef<unknown> | undefined>;
 
   static readonly type: WidgetTypeId;
   static readonly title: string = "";
@@ -63,13 +74,13 @@ export abstract class DashboardWidget {
   static readonly defaultSize: WidgetSize = { cols: 3, rows: 3 };
   static readonly minSize: WidgetSize = { cols: 3, rows: 3 };
   static readonly maxSize: WidgetSize = { cols: DASHBOARD_COLUMNS, rows: Number.POSITIVE_INFINITY };
-  // Where the widget's title links to, for a widget that summarizes one page. Null leaves the title as plain text.
-  static readonly titleLink: string | null = null;
   static readonly pinned: boolean = false;
   static readonly fixedPosition: { x: number; y: number } | null = null;
   // The right(s) a widget needs to be offered at all. A list means any one of them is enough, for a widget that
   // summarizes several separately-governed areas: it then shows only the parts the admin may read.
   static readonly requiredAction: PolicyAction | PolicyAction[] | null = null;
+  // Where the widget's title links to, for a widget that summarizes one page. Null leaves the title as plain text.
+  static readonly titleLink: string | null = null;
   static readonly titleLinkAction: PolicyAction | null = null;
 
   abstract reload(): void;

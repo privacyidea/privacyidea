@@ -62,6 +62,13 @@ describe("WidgetStateComponent", () => {
     expect(fixture.nativeElement.textContent).toContain("Could not load data");
   });
 
+  it("should show the overridden error message when provided", () => {
+    fixture.componentRef.setInput("errorMessage", "Failed to fetch news.");
+    render("error");
+    expect(fixture.nativeElement.textContent).toContain("Failed to fetch news.");
+    expect(fixture.nativeElement.textContent).not.toContain("Could not load data");
+  });
+
   it("should project content only when ready", () => {
     render("ready");
     expect(fixture.nativeElement.querySelector("mat-progress-spinner")).toBeNull();
