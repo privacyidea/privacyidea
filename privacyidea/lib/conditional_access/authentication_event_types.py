@@ -183,10 +183,16 @@ class AuthEventReason(str, Enum):
     # The response did not match the challenge.
     CHALLENGE_WRONG_RESPONSE = "CHALLENGE_WRONG_RESPONSE"
     # The transaction the response names holds no challenge for this token: already consumed, belonging to another
-    # token, or never issued. An *expired* challenge is not this - it is still stored, so it gets its own reason below.
+    # token, never issued - or expired and no longer stored (see CHALLENGE_EXPIRED).
     CHALLENGE_UNKNOWN_TRANSACTION = "CHALLENGE_UNKNOWN_TRANSACTION"
-    # The challenge existed but had lapsed by the time the response arrived. Worth telling apart from a wrong
+    # The challenge was still stored but had lapsed when the response arrived. Worth telling apart from a wrong
     # response: the user answered correctly, only too late, which is a timeout to raise rather than an attack.
+    #
+    # Best-effort by nature, since it depends on the lapsed challenge still being readable. It is with the database
+    # backend, which keeps the row until a janitor removes it; the Redis backend gives the key a TTL of the challenge
+    # validity plus a small buffer (``_TTL_BUFFER_SECONDS``), so an answer arriving well after the expiry finds
+    # nothing and is recorded as CHALLENGE_UNKNOWN_TRANSACTION instead. That is the honest reading of what is left to
+    # see, so the two degrade into each other rather than one being wrong.
     CHALLENGE_EXPIRED = "CHALLENGE_EXPIRED"
     # The response matched, but the token may not complete a challenge (its state changed since the trigger).
     TOKEN_NOT_FIT_FOR_CHALLENGE = "TOKEN_NOT_FIT_FOR_CHALLENGE"

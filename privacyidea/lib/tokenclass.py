@@ -1739,7 +1739,9 @@ class TokenClass:
             challenge_response = bool(chals)
             # Note whether they have all lapsed, for the authentication log: this is the last point at which they
             # exist, since checking the answer ends in challenge_janitor(), which deletes the expired ones. Recorded
-            # here rather than asked again later, so the log costs no extra challenge query.
+            # here rather than asked again later, so the log costs no extra challenge query. Nothing to note when the
+            # transaction holds none at all - with the Redis backend a long-expired challenge is already evicted, and
+            # "no challenge here" is then what the log should say.
             if chals and all(not chal.is_valid() for chal in chals):
                 self.auth_details[CHALLENGE_LAPSED_KEY] = True
 
