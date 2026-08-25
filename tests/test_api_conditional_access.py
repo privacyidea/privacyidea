@@ -443,6 +443,63 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         finally:
             delete_policy("ca_hide")
 
+    @smtpmock.activate
+    def test_hide_specific_error_message_masks_the_reason_a_notification_was_appended_to(self):
+        # A notify-only stage is *appended* to the failure's own reason, so the response reads "wrong otp pin. Your
+        # administrator has been notified." Only the second half is conditional access's to keep: keeping the whole
+        # sentence would carry the token-layer reason straight past the policy that exists to suppress it.
+        from privacyidea.lib.policy import set_policy, delete_policy, SCOPE
+        from privacyidea.lib.policies.actions import PolicyAction
+        smtpmock.setdata(response={})
+        add_smtpserver(identifier="lockoutmail", server="1.2.3.4", tls=False)
+        set_policy(name="ca_hide", scope=SCOPE.AUTH, action=f"{PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE}")
+        try:
+            create_lockout_policy(
+                name="ca_mail", time_window_seconds=3600,
+                counter_types_to_track=_counter_types(AuthEventType.PIN_FAIL),
+                stages=[{"failure_threshold": 1, "priority": 1,
+                         "error_message": "Your administrator has been notified.",
+                         "actions": [{"action_type": str(LockoutAction.EMAIL_ADMIN),
+                                      "action_value": {"smtp_identifier": "lockoutmail",
+                                                       "recipient_group": "soc@example.com",
+                                                       "subject": "s", "body": "b"}}]}],
+                target=LockoutTarget.USER, priority=1)
+
+            body = self._check({"user": "cornelius", "pass": "wrongpin123456"})
+            self.assertFalse(body["result"]["value"], body)
+            # The stage's own sentence survives; the reason it was appended to does not.
+            self.assertEqual(f"{str(GENERIC_AUTH_FAILURE).rstrip('.')}. Your administrator has been notified.",
+                             body["detail"]["message"], body)
+            self.assertNotIn("wrong otp pin", body["detail"]["message"], body)
+            self.assertListEqual(["soc@example.com"], smtpmock.get_sent_recipient())
+        finally:
+            delete_policy("ca_hide")
+            delete_smtpserver("lockoutmail")
+
+    @smtpmock.activate
+    def test_a_notification_keeps_the_failure_reason_when_nothing_masks_it(self):
+        # The counterpart: with no masking policy the credential failure is still why the request was refused, so
+        # the notification is appended to it rather than replacing it.
+        smtpmock.setdata(response={})
+        add_smtpserver(identifier="lockoutmail", server="1.2.3.4", tls=False)
+        try:
+            create_lockout_policy(
+                name="ca_mail", time_window_seconds=3600,
+                counter_types_to_track=_counter_types(AuthEventType.PIN_FAIL),
+                stages=[{"failure_threshold": 1, "priority": 1,
+                         "error_message": "Your administrator has been notified.",
+                         "actions": [{"action_type": str(LockoutAction.EMAIL_ADMIN),
+                                      "action_value": {"smtp_identifier": "lockoutmail",
+                                                       "recipient_group": "soc@example.com",
+                                                       "subject": "s", "body": "b"}}]}],
+                target=LockoutTarget.USER, priority=1)
+
+            body = self._check({"user": "cornelius", "pass": "wrongpin123456"})
+            self.assertEqual("wrong otp pin. Your administrator has been notified.",
+                             body["detail"]["message"], body)
+        finally:
+            delete_smtpserver("lockoutmail")
+
     def test_the_policy_supplies_an_error_message_a_stage_did_not(self):
         # The simplified form of writing the suggestion onto every stage: with the policy on, a lock that
         # carries no error message of its own is still described - by the standard error message for what it is.

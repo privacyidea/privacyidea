@@ -594,17 +594,18 @@ def get_auth_token():
         # With no wording at all the failure is the ordinary one, which is what keeps a locked account
         # indistinguishable from a wrong password.
         details = details or {}
-        composed = compose_failure_message(str(GENERIC_AUTH_FAILURE), stage_messages)
-        if composed:
-            # Claimed so hide_specific_error_message leaves this wording alone.
-            context.carries_own_message = True
+        message = str(GENERIC_AUTH_FAILURE)
+        if stage_messages:
+            message = compose_failure_message(message, stage_messages)
+            # Claimed so hide_specific_error_message shows this wording instead of its own. Safe to claim as
+            # composed: the base here is already the generic failure, so nothing specific rides along with it.
+            context.claim_message(message)
             if replaces_failure_reason(stage_messages):
                 # A restriction was written, so this login is refused by conditional access rather than by the
                 # credential it happened to carry. The details describe that overtaken attempt - "wrong otp pin"
                 # and the token it was aimed at - and a rejection carries the wording and nothing else.
                 details = {}
-        raise AuthError(composed or str(GENERIC_AUTH_FAILURE), id=Error.AUTHENTICATE_WRONG_CREDENTIALS,
-                        details=details)
+        raise AuthError(message, id=Error.AUTHENTICATE_WRONG_CREDENTIALS, details=details)
     else:
         g.audit_object.log({"success": True, "authentication": AUTH_RESPONSE.ACCEPT})
         request.User = user

@@ -45,7 +45,7 @@ from .lib.utils import (
 from .container import container_blueprint
 from ..lib.container import find_container_for_token, find_container_by_serial
 from ..lib.conditional_access.request_context import (peek_ca_context, reset_ca_context,
-                                                      response_carries_ca_message)
+                                                      claimed_ca_message)
 from ..lib.framework import get_app_config_value
 from ..lib.clients import identify_client_by_key, touch_client
 from ..models import ClientStatus, db
@@ -621,7 +621,10 @@ def auth_error(error):
             hide_message = Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE,
                                       user_object=request.User if hasattr(request, 'User') else None).any()
             if hide_message:
-                if not response_carries_ca_message():
+                ca_message = claimed_ca_message()
+                if ca_message:
+                    error.message = ca_message
+                else:
                     error.message = GENERIC_AUTH_FAILURE
                     # Remap to the generic AUTHENTICATE id, so a masked failure is
                     # indistinguishable from any other unspecified auth failure.
