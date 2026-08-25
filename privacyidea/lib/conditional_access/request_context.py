@@ -122,6 +122,13 @@ class ConditionalAccessContext:
         # (see CAContext). Resolved once by the gate, where policies can be matched, and read again at
         # post-response evaluation so both halves of one request answer the same way.
         self.use_default_error_message = False
+        # How this endpoint answers a request conditional access refuses, recorded by whichever gate guards it so
+        # the response hook can answer a *restricted* request the same way - even when the view raised and the
+        # body it has to replace is an error. ``rejection_value`` is what ``result.value`` says (a count on
+        # /validate/triggerchallenge, hence not simply False); ``rejects_with_error`` is set by the /auth gate,
+        # the one entry point whose failed authentication is an error response rather than a 200 carrying false.
+        self.rejection_value: Any = False
+        self.rejects_with_error = False
 
     def claim_message(self, message: str) -> None:
         """

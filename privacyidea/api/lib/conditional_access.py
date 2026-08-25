@@ -79,13 +79,14 @@ from typing import Any
 from flask import request, g, Response
 
 from privacyidea.api.lib.utils import (GENERIC_AUTH_FAILURE, log_authentication, build_ca_context,
-                                      send_result, get_optional_one_of)
+                                      send_error, send_result, get_optional_one_of)
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
 from privacyidea.lib.conditional_access.engine import (get_user_lockout, get_ip_block, evaluate_access_decision,
                                                        render_error_message, restriction_messages, AccessDecision,
                                                        LockoutAction, RestrictionStatus, StageMessage)
 from privacyidea.lib.conditional_access.lockout_policy import default_error_message
-from privacyidea.lib.conditional_access.request_context import get_ca_context
+from privacyidea.lib.conditional_access.request_context import (ConditionalAccessContext, get_ca_context,
+                                                                 peek_ca_context)
 from privacyidea.lib.error import AuthError, Error
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import Match, SCOPE
@@ -204,6 +205,9 @@ def conditional_access_precheck(user: User, log_rejection: bool = True,
         tell why it fails and would otherwise fill the log at its polling frequency.
     """
 
+    # Recorded whether or not this request is refused: should a *later* stage restrict it, the response hook has
+    # to answer with this endpoint's rejection shape, and by then the endpoint is no longer identifiable.
+    get_ca_context().rejection_value = rejection_value
     rejection = conditional_access_rejection(user, log_rejection=log_rejection)
     if rejection is None:
         return None
@@ -301,27 +305,57 @@ def compose_failure_message(existing: str | None, messages: list[StageMessage]) 
     return f"{existing.rstrip('.')}. {joined}" if existing else joined
 
 
-def surface_conditional_access_message(request, response):
+def _rejection_response(context: "ConditionalAccessContext", message: str) -> Response:
     """
-    Response hook that reports on a failed authentication what conditional access just did to it.
+    The response a refused request gets, built as the pre-check builds it - for a request whose view raised.
 
-    Registered with ``postrequest``, not ``postpolicy``: nothing here is policy-driven, it runs on every failed
-    response. That decorator lives in ``api.lib.postpolicy`` despite the name, and ``sign_response`` uses it the
-    same way - a pre-existing misfiling, not a hint that this is a policy.
+    Uses the same helpers the gates use rather than editing the error body in place, so a rejection that overtook
+    an error is shaped exactly like one the pre-check produced, down to ``result.authentication`` and the
+    ``threadid``, instead of being a third shape that merely resembles both. Nothing is carried over from the
+    error: a rejection says the wording and no more, and that error's code and detail describe the attempt the
+    rejection overtook.
 
-    Without this the engine runs at request teardown, after the body is built, so the request that *trips* a
-    stage would still be answered with the ordinary failure ("wrong otp pin") while every later one carried
-    the stage's error message. The lock is written, and any ``EMAIL_*`` action is sent, during this very request -
-    so this is the response that should say so, exactly as ``/auth`` already does.
+    :param context: this request's buffer, holding the rejection shape its gate recorded
+    :param message: the wording, or the generic failure when the restriction carries none
+    """
+    if context.rejects_with_error:
+        # /auth, the one entry point whose failed authentication is an error response - so its rejection is one
+        # too, carrying the generic authentication id and never the endpoint's own. The status stays as the error
+        # handler set it, which is the 401 every failed login there returns.
+        rejection = send_error(message, error_code=Error.AUTHENTICATE, details={})
+        rejection.status_code = 401
+        return rejection
+    return send_result(context.rejection_value, rid=2, details={"message": message})
 
-    Running the evaluation here does not duplicate the one at teardown: it is guarded per classification
-    (``ConditionalAccessContext.run_post_eval``), so whichever runs first does the work and the other returns
-    nothing. Both are needed. Only this one can shape the body, because teardown runs after the response is
-    built; and only teardown is guaranteed, because a decorator is skipped entirely when the view raises and an
-    error handler builds the response instead. The flush first is what makes this request's own event part of
-    the count. A restriction now in force replaces the message, since it is the more useful thing to say; a stage
-    that only notified is appended to whatever the failure already reported, because the credential failure is
-    still the reason it was refused.
+
+def surface_conditional_access_message(response):
+    """
+    Report on the response what conditional access just did to this request.
+
+    Called from :func:`~privacyidea.api.before_after.after_request`, which is the last point that can still shape
+    a body and - unlike a decorator - runs for a response an *error handler* built. That matters: a view that
+    raises skips every post-policy, so a stage tripped by a request ending in ``ERR1007`` used to be written and
+    then never mentioned, with the next request carrying the wording instead. It also means no endpoint can
+    forget to opt in, which the per-endpoint decorator this replaces could.
+
+    Nothing here is policy-driven, so it is not a post-policy; and it cannot be teardown either, since teardown
+    callbacks are handed the *exception*, not the response - by then the body is already a WSGI iterable.
+    Teardown still runs the same evaluation as a backstop for the one case this misses, an unhandled ``500``,
+    where Flask skips ``after_request`` entirely. Both are guarded per classification
+    (:meth:`~privacyidea.lib.conditional_access.request_context.ConditionalAccessContext.run_post_eval`), so
+    whichever runs first does the work and the other returns nothing. The flush first is what makes this
+    request's own event part of the count.
+
+    Reads the buffer with :func:`~privacyidea.lib.conditional_access.request_context.peek_ca_context` rather than
+    creating one: this runs on every response of every blueprint, and a request that never authenticated anything
+    has no buffer - which is exactly the question to ask, and answering it costs one lookup. Creating one here
+    would allocate a buffer for every administrative request and give teardown work to undo.
+
+    Running after the post-policies rather than among them is what makes ``hide_specific_error_message`` and
+    ``no_detail_on_fail`` a non-issue for this path: they have already had their say, so a notification composes
+    onto whatever survived them - the generic failure when masking is on, the token's own reason when it is not -
+    and needs no claim to protect it. The pre-check still claims, because its response is returned from inside
+    the decorator stack where those two can still reach it.
 
     A stage can be tripped by any event a policy tracks, a challenge trigger included, and a restriction written
     on such a request refuses it like any other: the response then carries the reason and nothing else. That is
@@ -335,11 +369,11 @@ def surface_conditional_access_message(request, response):
     A stage that only notified changes none of this. It refused nothing, so its message is appended and
     everything the response already carried - a challenge included - is left in place.
     """
-    if not response or not response.is_json:
+    context = peek_ca_context()
+    if context is None or not response or not response.is_json:
         return response
     content = response.json
     try:
-        context = get_ca_context()
         context.flush()
         # Everything in force was written by this request - anything already in force was refused by the
         # pre-check, which returns its own response - so the evaluation is the whole story and nothing has to
@@ -349,7 +383,19 @@ def surface_conditional_access_message(request, response):
         evaluation = context.run_post_eval()
         result = content.get("result") or {}
         detail = content.get("detail") or {}
+        # An error-shaped body means the view raised and an error handler built this response.
+        errored = "error" in result
+        if errored and not evaluation.restricted:
+            # Only a restriction overtakes an error. A notification refused nothing, so the error it merely
+            # coincided with is still the reason the request failed and is left to speak for itself.
+            return response
         if evaluation.restricted:
+            if errored:
+                # Refused by conditional access, so answered the way this endpoint answers a refusal rather than
+                # as the error it was about to be. The endpoint's own error must not survive: "ERR1007: the token
+                # is locked" states the very reason the rejection exists to withhold, and would sit next to the
+                # wording meant to replace it.
+                return _rejection_response(context, rejection_message(evaluation.messages))
             # Answered exactly as the pre-check answers every request after this one - wording and nothing else -
             # whether or not that wording exists. Keyed on the restriction rather than on having something to say,
             # because a silent lock still refuses this request: leaving the token failure in place would have the
@@ -363,6 +409,11 @@ def surface_conditional_access_message(request, response):
             # Everything else in the detail describes what this rejection overtook - the token attempt that failed,
             # or the challenge that was about to be handed out. The threadid is kept: it identifies the request
             # rather than saying anything about it.
+            if not evaluation.messages and "detail" not in content:
+                # A silent restriction on a response whose detail the policies removed (no_detail_on_fail) says
+                # nothing, rather than putting a generic message where they left none - the pre-check answers such
+                # a request with no detail either, and the two have to agree.
+                return response
             message = rejection_message(evaluation.messages)
             detail = {"threadid": detail["threadid"]} if "threadid" in detail else {}
             # The response is a refusal now, whatever it was on its way to being: a falsy value in the type this
@@ -381,13 +432,6 @@ def surface_conditional_access_message(request, response):
         content["result"] = result
         content["detail"] = detail
         response.set_data(json.dumps(content))
-        if evaluation.messages:
-            # Only wording an admin configured is claimed; a silent rejection is the ordinary failure and is
-            # masked with every other one, exactly as the pre-check leaves its own generic message unclaimed.
-            # A notification is claimed against the generic failure rather than as composed above, because it
-            # was appended to the token's own reason - which is what hide_specific_error_message suppresses.
-            context.claim_message(message if evaluation.restricted
-                                  else compose_failure_message(str(GENERIC_AUTH_FAILURE), evaluation.messages))
     except Exception as ex:
         # Never break an authentication response over the error message of its own rejection.
         log.warning(f"Could not surface the conditional-access message on this response: {ex!r}")
@@ -537,6 +581,7 @@ def _reject_restricted_login(user: User) -> None:
     ``internal_admin`` comes from the flag ``before_request`` already resolved, so a blocked local admin is recorded as
     ``admin-internal`` rather than falling back to ``user``.
     """
+    get_ca_context().rejects_with_error = True
     rejection = _evaluate_rejection(user)
     if rejection is None:
         return

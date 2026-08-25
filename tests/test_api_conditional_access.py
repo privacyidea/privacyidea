@@ -25,6 +25,7 @@ from unittest import mock
 from datetime import datetime, timedelta
 
 from privacyidea.api.lib.utils import GENERIC_AUTH_FAILURE
+from privacyidea.lib.error import Error
 from privacyidea.lib.conditional_access.conditions import ConditionOperator, ConditionType
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, CountMode
 from privacyidea.lib.conditional_access.authentication_log import AuthLogUserRole, get_authentication_logs
@@ -38,7 +39,7 @@ from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import SCOPE, AUTHORIZED, set_policy, delete_policy
 from privacyidea.lib.smtpserver import add_smtpserver, delete_smtpserver
 from privacyidea.lib.challenge import get_challenges
-from privacyidea.lib.token import init_token, remove_token, get_tokens
+from privacyidea.lib.token import init_token, remove_token, get_tokens, revoke_token
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import AUTH_RESPONSE
 from privacyidea.models import db, Challenge, ConditionalAccessOutcome
@@ -435,6 +436,59 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         entries = get_authentication_logs()
         self.assertEqual(str(AuthEventType.USER_LOCKED), entries[0].event_type, entries[0])
         self.assertNotIn("additional_event_types", entries[0].other_info or {}, entries[0])
+
+    def test_a_restriction_written_by_a_raising_request_is_still_answered_as_a_rejection(self):
+        # A view that raises skips every post-policy, so the response is built by an error handler. The engine
+        # still runs (at teardown), so the lock is written - it used to be written and then never mentioned, with
+        # the *next* request carrying the wording. Reported now, and reported as a rejection: the endpoint's own
+        # error must not survive, because "the token is locked" states the very reason a rejection withholds.
+        remove_token(self.serial)
+        init_token({"serial": self.serial, "type": "hotp", "otpkey": self.otpkey, "pin": "pin"}, user=self.user)
+        revoke_token(self.serial)
+        self._make_lock_policy(counter_type=AuthEventType.NO_USABLE_TOKEN, threshold=1, duration=600,
+                               error_message="Locked. Try again in about {duration}.")
+
+        tripping = self._check({"user": "cornelius", "pass": "pin755224"})
+        self.assertTrue(is_user_locked(self.user))
+        # The rejection shape, not the error shape: no result.error, and nothing of ERR1007 anywhere.
+        self.assertNotIn("error", tripping["result"], tripping)
+        self.assertTrue(tripping["result"]["status"], tripping)
+        self.assertFalse(tripping["result"]["value"], tripping)
+        self.assertEqual(AUTH_RESPONSE.REJECT, tripping["result"]["authentication"], tripping)
+        self.assertSetEqual({"message", "threadid"}, set(tripping["detail"]), tripping)
+        self.assertEqual("Locked. Try again in about 10 minute(s).", tripping["detail"]["message"], tripping)
+        self.assertNotIn("locked", str(tripping).replace("Locked.", ""), tripping)
+
+        # And it is the same answer the pre-check gives the requests after it.
+        after = self._check({"user": "cornelius", "pass": "pin755224"})
+        self.assertEqual(after["result"], tripping["result"], tripping)
+        self.assertEqual(after["detail"], tripping["detail"], tripping)
+
+    def test_a_raising_request_without_a_restriction_keeps_its_own_error(self):
+        # The counterpart: conditional access only overtakes a response it actually refused. With nothing
+        # restricted the endpoint's error stands exactly as it did, code and all.
+        remove_token(self.serial)
+        init_token({"serial": self.serial, "type": "hotp", "otpkey": self.otpkey, "pin": "pin"}, user=self.user)
+        revoke_token(self.serial)
+        with self.app.test_request_context("/validate/check", method="POST",
+                                           data={"user": "cornelius", "pass": "pin755224"}):
+            res = self.app.full_dispatch_request()
+        self.assertEqual(400, res.status_code, res.json)
+        self.assertEqual(Error.TOKEN_LOCKED, res.json["result"]["error"]["code"], res.json)
+
+    def test_a_silent_restriction_on_a_raising_request_answers_generically(self):
+        # Silent stays silent here too: the rejection says what every other failed authentication says, which is
+        # again exactly what the pre-check answers the following requests with.
+        remove_token(self.serial)
+        init_token({"serial": self.serial, "type": "hotp", "otpkey": self.otpkey, "pin": "pin"}, user=self.user)
+        revoke_token(self.serial)
+        self._make_lock_policy(counter_type=AuthEventType.NO_USABLE_TOKEN, threshold=1, duration=600)
+
+        tripping = self._check({"user": "cornelius", "pass": "pin755224"})
+        self.assertTrue(is_user_locked(self.user))
+        self.assertEqual(str(GENERIC_AUTH_FAILURE), tripping["detail"]["message"], tripping)
+        after = self._check({"user": "cornelius", "pass": "pin755224"})
+        self.assertEqual(after["detail"], tripping["detail"], tripping)
 
     def test_hide_specific_error_message_leaves_the_message_alone_on_validate_check(self):
         # The /validate mirror: the postpolicy replaces the whole detail, but not this error message.

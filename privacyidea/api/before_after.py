@@ -44,6 +44,7 @@ from .lib.utils import (
 )
 from .container import container_blueprint
 from ..lib.container import find_container_for_token, find_container_by_serial
+from .lib.conditional_access import surface_conditional_access_message
 from ..lib.conditional_access.request_context import (peek_ca_context, reset_ca_context,
                                                       claimed_ca_message)
 from ..lib.framework import get_app_config_value
@@ -570,6 +571,15 @@ def after_request(response):
     This function is called after a request
     :return: The response
     """
+    # Report what conditional access did to this request, if anything. Here rather than on the authenticating
+    # endpoints themselves for two reasons: this runs for a response an *error handler* built, where every
+    # post-policy is skipped, and no new gated endpoint can forget to opt in. It no-ops in one lookup for the
+    # many requests that never authenticated anything - see surface_conditional_access_message. Before
+    # sign_response, which the postrequest decorator above applies to this function's return value - and first
+    # in this function, because a restricted request gets a *replacement* response and the headers set below
+    # have to land on the one that is actually returned.
+    response = surface_conditional_access_message(response)
+
     # No caching!
     response.headers['Cache-Control'] = 'no-cache'
 
