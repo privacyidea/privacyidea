@@ -380,7 +380,7 @@ class ConditionalAccessContextTestCase(MyTestCase):
         # Staging an event is the signal to evaluate, so a request that logged nothing evaluates nothing.
         context = ConditionalAccessContext()
         with mock.patch("privacyidea.lib.conditional_access.engine.evaluate_lockout_policies") as evaluate:
-            self.assertListEqual([], context.run_post_eval())
+            self.assertListEqual([], context.run_post_eval().messages)
         evaluate.assert_not_called()
 
     def test_24_post_eval_does_not_repeat_the_same_classification(self):
@@ -389,8 +389,8 @@ class ConditionalAccessContextTestCase(MyTestCase):
         context.stage(self._event("alice"))
         with mock.patch("privacyidea.lib.conditional_access.engine.evaluate_lockout_policies") as evaluate:
             evaluate.return_value = LockoutEvaluation(messages=[StageMessage("a message", LockoutAction.EMAIL_ADMIN)])
-            self.assertListEqual([StageMessage("a message", LockoutAction.EMAIL_ADMIN)], context.run_post_eval())
-            self.assertListEqual([], context.run_post_eval())
+            self.assertListEqual([StageMessage("a message", LockoutAction.EMAIL_ADMIN)], context.run_post_eval().messages)
+            self.assertListEqual([], context.run_post_eval().messages)
         self.assertEqual(1, evaluate.call_count)
 
     def test_24b_post_eval_runs_again_for_a_corrected_classification(self):
@@ -417,7 +417,7 @@ class ConditionalAccessContextTestCase(MyTestCase):
         context.stage(self._event("alice"))
         with mock.patch("privacyidea.lib.conditional_access.engine.evaluate_lockout_policies",
                         side_effect=RuntimeError("engine boom")):
-            self.assertListEqual([], context.run_post_eval())
+            self.assertListEqual([], context.run_post_eval().messages)
 
     def test_25b_a_failed_evaluation_is_retried_at_teardown(self):
         # /auth evaluates in-view and teardown evaluates again. A classification counts as evaluated only once the
@@ -426,12 +426,12 @@ class ConditionalAccessContextTestCase(MyTestCase):
         context.stage(self._event("alice"))
         with mock.patch("privacyidea.lib.conditional_access.engine.evaluate_lockout_policies",
                         side_effect=RuntimeError("engine boom")):
-            self.assertListEqual([], context.run_post_eval())
+            self.assertListEqual([], context.run_post_eval().messages)
 
         with mock.patch("privacyidea.lib.conditional_access.engine.evaluate_lockout_policies") as evaluate:
             evaluate.return_value = LockoutEvaluation(
                 messages=[StageMessage("locked", LockoutAction.LOCK_USER)], outcomes=[])
-            self.assertListEqual([StageMessage("locked", LockoutAction.LOCK_USER)], context.run_post_eval())
+            self.assertListEqual([StageMessage("locked", LockoutAction.LOCK_USER)], context.run_post_eval().messages)
         evaluate.assert_called_once()
 
     def test_26_evaluation_counts_over_a_committed_read_view(self):
@@ -514,7 +514,7 @@ class ConditionalAccessContextTestCase(MyTestCase):
         context.flush()
 
         with mock.patch("privacyidea.lib.conditional_access.engine.evaluate_lockout_policies") as evaluate:
-            self.assertListEqual([], context.run_post_eval())
+            self.assertListEqual([], context.run_post_eval().messages)
         evaluate.assert_not_called()
 
     def test_34_post_eval_records_what_the_engine_returned(self):
@@ -524,7 +524,7 @@ class ConditionalAccessContextTestCase(MyTestCase):
         with mock.patch("privacyidea.lib.conditional_access.engine.evaluate_lockout_policies") as evaluate:
             evaluate.return_value = LockoutEvaluation(messages=[StageMessage("a message", LockoutAction.EMAIL_ADMIN)],
                                                       outcomes=[self._make_outcome(LockoutAction.PERMANENT_LOCK_USER)])
-            self.assertListEqual([StageMessage("a message", LockoutAction.EMAIL_ADMIN)], context.run_post_eval())
+            self.assertListEqual([StageMessage("a message", LockoutAction.EMAIL_ADMIN)], context.run_post_eval().messages)
 
         outcomes = get_outcomes(event.row_id)
         self.assertListEqual([str(LockoutAction.PERMANENT_LOCK_USER)], [outcome.action_type for outcome in outcomes])

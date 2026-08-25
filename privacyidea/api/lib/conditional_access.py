@@ -29,6 +29,25 @@ rejection reaches the client:
   screen renders, so a human is told what is in force instead of "Wrong credentials" for ten minutes. An ``AuthError``
   needs some message, so with no error message configured it falls back to the generic failure rather than to silence.
 
+  Its id is :attr:`~privacyidea.lib.error.Error.AUTHENTICATE` (``403``), not
+  :attr:`~privacyidea.lib.error.Error.AUTHENTICATE_WRONG_CREDENTIALS` (``4031``) as an ordinary failed login there:
+  a rejection is refused before the credential is ever checked, so calling it wrong credentials states something
+  this path cannot know and that is usually false - a locked user typing the right password gets rejected too. The
+  ``/validate`` endpoints need no such choice, since a failed authentication there is an ordinary ``200`` carrying
+  ``result.value`` false and no error object at all.
+
+  This holds whether or not a stage carried wording, and whether the restriction was already in force or written
+  by this very request: a rejection reads the same either way (see :func:`rejection_message`). A stage that only
+  *notified* is the one exception - it refused nothing, the credential really was wrong, and the failure keeps its
+  own id and its own reason, with the notification appended (see :func:`compose_failure_message`).
+
+A restriction reads the same whichever request meets it. The request that *writes* a lock is answered exactly as the
+requests the lock then refuses - the whole response, not just the wording, and whether or not a stage carried any:
+:func:`rejection_message` for what it says, and the failure's own details dropped either way, because the credential
+that request happened to carry no longer decides anything. One lock therefore cannot answer two ways depending on
+which request caught it. The cost is that a silent lock is detectable at the moment it trips, since the response
+changes shape; a stage that only notified is the exception and leaves its failure entirely intact.
+
 Both classify their rejection in the authentication log, since that row is the only thing an admin can filter for: the
 request is turned away before anything else logs an outcome for it. Both link it to the transaction the request
 carries, if any, so the rejection lands on the attempt it refused to process. ``/auth`` additionally records the
@@ -48,7 +67,7 @@ and only the appended half is conditional access's to keep - claiming the compos
 straight past the policy that exists to suppress it.
 
 Only the message, though: both still collapse the rest of the detail, which is what the policy is for and is no loss
-here - a rejection has nothing else to put there anyway (see :func:`replaces_failure_reason`).
+here - a rejection has nothing else to put there anyway (see :func:`rejection_message`).
 """
 import functools
 import json
@@ -64,8 +83,7 @@ from privacyidea.api.lib.utils import (GENERIC_AUTH_FAILURE, log_authentication,
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
 from privacyidea.lib.conditional_access.engine import (get_user_lockout, get_ip_block, evaluate_access_decision,
                                                        render_error_message, restriction_messages, AccessDecision,
-                                                       LockoutAction, NOTIFYING_ACTIONS, RestrictionStatus,
-                                                       StageMessage)
+                                                       LockoutAction, RestrictionStatus, StageMessage)
 from privacyidea.lib.conditional_access.lockout_policy import default_error_message
 from privacyidea.lib.conditional_access.request_context import get_ca_context
 from privacyidea.lib.error import AuthError, Error
@@ -198,37 +216,39 @@ def conditional_access_precheck(user: User, log_rejection: bool = True) -> Respo
     return send_result(False, rid=2, details={"message": rejection.message or str(GENERIC_AUTH_FAILURE)})
 
 
+def rejection_message(messages: list[StageMessage]) -> str:
+    """
+    What a request that has just been restricted says: the wording of the restrictions now in force, or the
+    ordinary failure when they carry none.
+
+    Deliberately the same sentence :func:`conditional_access_precheck` returns for every request after this one.
+    A restriction reads the same whether this request wrote it or an earlier one did, so the request that trips a
+    lock cannot be told apart from the requests the lock then refuses - which is the property that makes a lock
+    say one thing rather than two.
+
+    Silent restrictions are covered by the fallback rather than by staying quiet: a rejection has to say
+    *something*, and saying what every other failed authentication says is what keeps it uninformative.
+
+    :param messages: the wording the restrictions carry; empty is the normal, silent case
+    """
+    return " ".join(message.text for message in messages) or str(GENERIC_AUTH_FAILURE)
+
+
 def compose_failure_message(existing: str | None, messages: list[StageMessage]) -> str:
     """
-    What a failed authentication should say, given what conditional access just did to it.
+    What a failed authentication should say when conditional access has something to *add* to it.
 
-    A restriction *replaces* the reason: the request may well have carried a wrong password, but the lock now in
-    force is the more useful thing to tell the user. A stage that only notified is *appended* instead, because
-    the credential failure is still why the request was refused.
+    Only ever the notification case. A stage that merely notified refused nothing, so the credential failure is
+    still why the request was turned away and its own reason stays the lead; the notification follows it. A
+    restriction is the other case entirely and is not composed at all - it *is* the answer, see
+    :func:`rejection_message`.
 
     :param existing: the error message the failure already carried, if any
     :param messages: what conditional access did - **never empty**. A caller with nothing to report leaves its own
         error message alone rather than asking here, which is also what lets this always answer with a sentence.
     """
     joined = " ".join(message.text for message in messages)
-    if replaces_failure_reason(messages):
-        return joined
     return f"{existing.rstrip('.')}. {joined}" if existing else joined
-
-
-def replaces_failure_reason(messages: list[StageMessage]) -> bool:
-    """
-    Whether these messages *replace* the failure's own reason rather than adding to it.
-
-    True once any of them describes a restriction: the request was turned away by conditional access, so what
-    the token made of the credential no longer decides anything. Callers use this to drop the failure's details
-    as well - they describe an attempt that has been overtaken, and conditional access has nothing of its own to
-    put there, so a rejection carries the error message and nothing else.
-
-    False for notification-only error message, which is appended to a failure conditional access did not cause; that
-    failure is still the reason, and its details are still its own.
-    """
-    return any(message.action not in NOTIFYING_ACTIONS for message in messages)
 
 
 def surface_conditional_access_message(request, response):
@@ -279,21 +299,31 @@ def surface_conditional_access_message(request, response):
         # be read back. A request the pre-check did refuse still passes through here, since it returns rather
         # than raises and this hook wraps it; run_post_eval declines to evaluate its own rejections, so there
         # is nothing to compose and the gate's error message is left alone.
-        stage_messages = context.run_post_eval()
-        if stage_messages:
+        evaluation = context.run_post_eval()
+        if evaluation.restricted or evaluation.messages:
             detail = content.get("detail") or {}
-            message = compose_failure_message(detail.get("message"), stage_messages)
-            if replaces_failure_reason(stage_messages):
+            if evaluation.restricted:
+                # Answered exactly as the pre-check answers every request after this one - wording and nothing
+                # else - whether or not that wording exists. Keyed on the restriction rather than on having
+                # something to say, because a silent lock still refuses this request: leaving the token failure
+                # in place would have the response that *wrote* the lock disagree with the ones it then refuses.
                 # Everything else in the detail describes what this rejection overtook - the token attempt that
                 # failed, or the challenge that was about to be handed out. The threadid is kept: it identifies
                 # the request rather than saying anything about it.
+                message = rejection_message(evaluation.messages)
                 detail = {"threadid": detail["threadid"]} if "threadid" in detail else {}
+            else:
+                message = compose_failure_message(detail.get("message"), evaluation.messages)
             detail["message"] = message
             content["detail"] = detail
             response.set_data(json.dumps(content))
-            # Claimed against the generic failure rather than as composed above: a notification is appended to the
-            # token's own reason, and that reason is exactly what hide_specific_error_message is there to suppress.
-            context.claim_message(compose_failure_message(str(GENERIC_AUTH_FAILURE), stage_messages))
+            if evaluation.messages:
+                # Only wording an admin configured is claimed; a silent rejection is the ordinary failure and is
+                # masked with every other one, exactly as the pre-check leaves its own generic message unclaimed.
+                # A notification is claimed against the generic failure rather than as composed above, because it
+                # was appended to the token's own reason - which is what hide_specific_error_message suppresses.
+                context.claim_message(message if evaluation.restricted
+                                      else compose_failure_message(str(GENERIC_AUTH_FAILURE), evaluation.messages))
     except Exception as ex:
         # Never break an authentication response over the error message of its own rejection.
         log.warning(f"Could not surface the conditional-access message on this response: {ex!r}")
@@ -454,7 +484,10 @@ def _reject_restricted_login(user: User) -> None:
         # Only when there is error message of our own: a generic rejection is the ordinary failure and should be
         # masked with every other one.
         get_ca_context().claim_message(rejection.message)
-    raise AuthError(rejection.message or GENERIC_AUTH_FAILURE, id=Error.AUTHENTICATE_WRONG_CREDENTIALS)
+    # AUTHENTICATE rather than AUTHENTICATE_WRONG_CREDENTIALS: the credential this request carried may well have
+    # been correct - it was never checked. A rejection is refused for a reason of conditional access's own, so it
+    # takes the generic authentication-failure id and claims nothing about the credential.
+    raise AuthError(rejection.message or GENERIC_AUTH_FAILURE, id=Error.AUTHENTICATE)
 
 
 def conditional_access_login_gate() -> Callable[[Callable], Callable]:

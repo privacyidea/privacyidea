@@ -1271,7 +1271,11 @@ def evaluate_lockout_policies(context: CAContext, event_type: AuthEventType | No
     # Ranked and de-duplicated by rank_and_deduplicate, which is stable, so messages of equal severity stay in
     # policy-priority order. The outcomes are *not* de-duplicated - each is a distinct thing that happened, and
     # two policies locking the same user are two facts worth keeping apart.
-    return LockoutEvaluation(messages=rank_and_deduplicate(messages), outcomes=outcomes)
+    #
+    # enforced_targets is carried out of here, not just used above: it is the only thing that says this request was
+    # restricted at all, and a *silent* restriction produces no message to infer it from. The caller needs it to
+    # answer such a request as the rejection it now is.
+    return LockoutEvaluation(messages=rank_and_deduplicate(messages), outcomes=outcomes, enforced_targets=enforced)
 
 
 def _action_threshold_met(action: LockoutStageAction, threshold: int, count: int) -> bool:

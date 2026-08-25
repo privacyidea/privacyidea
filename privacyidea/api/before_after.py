@@ -621,14 +621,14 @@ def auth_error(error):
             hide_message = Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE,
                                       user_object=request.User if hasattr(request, 'User') else None).any()
             if hide_message:
-                ca_message = claimed_ca_message()
-                if ca_message:
-                    error.message = ca_message
-                else:
-                    error.message = GENERIC_AUTH_FAILURE
-                    # Remap to the generic AUTHENTICATE id, so a masked failure is
-                    # indistinguishable from any other unspecified auth failure.
-                    error.id = Error.AUTHENTICATE
+                # Only the message is conditional access's to keep. The error id says nothing about what an admin
+                # configured and everything about *why* the login failed, so it is remapped either way - otherwise a
+                # masked conditional-access rejection stayed AUTHENTICATE_WRONG_CREDENTIALS while every other masked
+                # failure became AUTHENTICATE, and the code told them apart after the message had stopped doing so.
+                error.message = claimed_ca_message() or GENERIC_AUTH_FAILURE
+                # Remap to the generic AUTHENTICATE id, so a masked failure is
+                # indistinguishable from any other unspecified auth failure.
+                error.id = Error.AUTHENTICATE
                 # Replace the details completely, so future additions to the
                 # details cannot accidentally leak information either.
                 error.details = {"message": error.message}

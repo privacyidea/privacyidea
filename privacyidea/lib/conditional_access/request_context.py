@@ -79,6 +79,21 @@ class AuthPrincipal:
     internal_admin: bool = False
 
 
+@dataclass(frozen=True)
+class PostEvaluation:
+    """
+    What the post-response evaluation left for the current response to say.
+
+    :ivar messages: the user-facing wording the triggered stages carry, most severe first. Empty when nothing was
+        triggered *and* when what was triggered carries no wording - silent by default holds here as everywhere.
+    :ivar restricted: whether this request left a restriction in force. Independent of :attr:`messages`, and that
+        is the whole reason it exists: a silent restriction produces no wording, yet the request still has to be
+        answered as the rejection it now is, exactly like every request the pre-check refuses after it.
+    """
+    messages: list["StageMessage"] = field(default_factory=list)
+    restricted: bool = False
+
+
 class ConditionalAccessContext:
     """
     The conditional-access work of one request: who is authenticating, and the authentication-log rows it will write.
@@ -330,11 +345,11 @@ class ConditionalAccessContext:
         for name, value in fields.items():
             setattr(event, name, value)
 
-    def run_post_eval(self) -> list["StageMessage"]:
+    def run_post_eval(self) -> PostEvaluation:
         """
-        Let the conditional-access engine react to what this request logged, and return the user-facing messages the
-        stages it triggered carry, ordered most severe first (see
-        :class:`~privacyidea.lib.conditional_access.engine.StageMessage`).
+        Let the conditional-access engine react to what this request logged, and report back what the current
+        response has to say about it: the wording the triggered stages carry, and whether this request left a
+        restriction in force (see :class:`PostEvaluation`).
 
         Nothing has to be scheduled: staging an authentication event *is* the signal, and everything the engine needs
         is already recorded - the classification comes from the latest staged event, the principal and source IP from
@@ -382,11 +397,11 @@ class ConditionalAccessContext:
         """
         event = self.latest
         if event is None or event.event_type == self._evaluated_as:
-            return []
+            return PostEvaluation()
         if event.event_type in CA_ENFORCEMENT_EVENT_TYPES:
             log.debug(f"Not evaluating conditional-access policies for {event.event_type}: this request was rejected "
                       f"by conditional access itself.")
-            return []
+            return PostEvaluation()
         # Deferred import: the engine pulls in the ORM models, so importing it at module level would risk an
         # import-order cycle during app startup.
         from privacyidea.lib.conditional_access.engine import evaluate_lockout_policies
@@ -396,12 +411,12 @@ class ConditionalAccessContext:
             evaluation = evaluate_lockout_policies(context, event.event_type)
         except Exception as ex:
             log.warning(f"Conditional-access policy evaluation failed: {ex!r}")
-            return []
+            return PostEvaluation()
         # Marked evaluated only now: a failure above leaves the classification unevaluated, so the teardown call is
         # the retry rather than a skipped second attempt.
         self._evaluated_as = event.event_type
         record_outcomes(evaluation.outcomes, event.row_id)
-        return evaluation.messages
+        return PostEvaluation(messages=evaluation.messages, restricted=bool(evaluation.enforced_targets))
 
     def finalize(self) -> None:
         """

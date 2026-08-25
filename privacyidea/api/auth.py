@@ -71,7 +71,7 @@ from flask import (Blueprint, request, current_app, g)
 from flask_babel import _
 
 from privacyidea.api.lib.conditional_access import (compose_failure_message, conditional_access_login_gate,
-                                                    replaces_failure_reason)
+                                                    rejection_message)
 from privacyidea.api.lib.policyhelper import check_last_auth_policy, get_realm_for_authentication
 from privacyidea.api.lib.postpolicy import (postpolicy, add_user_detail_to_response, check_tokentype,
                                             check_tokeninfo, check_serial, no_detail_on_success,
@@ -585,7 +585,7 @@ def get_auth_token():
     # internally; it must never break this login response.
     context = get_ca_context()
     context.flush()
-    stage_messages = context.run_post_eval()
+    evaluation = context.run_post_eval()
 
     if not admin_auth and not user_auth:
         # If this very request tripped a stage, the evaluation above carries its wording: a restriction replaces
@@ -595,17 +595,26 @@ def get_auth_token():
         # indistinguishable from a wrong password.
         details = details or {}
         message = str(GENERIC_AUTH_FAILURE)
-        if stage_messages:
-            message = compose_failure_message(message, stage_messages)
-            # Claimed so hide_specific_error_message shows this wording instead of its own. Safe to claim as
-            # composed: the base here is already the generic failure, so nothing specific rides along with it.
+        error_id = Error.AUTHENTICATE_WRONG_CREDENTIALS
+        if evaluation.restricted:
+            # This login is refused by conditional access rather than by the credential it happened to carry, so it
+            # is answered exactly as the pre-check answers every login after it: the restriction's wording if there
+            # is any, the ordinary failure if not, and nothing else. The details describe the overtaken attempt -
+            # "wrong otp pin" and the token it was aimed at - and a rejection carries none of that. The id drops
+            # WRONG_CREDENTIALS for the same reason: nothing here is a statement about the credential.
+            message = rejection_message(evaluation.messages)
+            details = {}
+            error_id = Error.AUTHENTICATE
+            if evaluation.messages:
+                # Only configured wording is claimed, so hide_specific_error_message shows it instead of its own; a
+                # silent rejection is the ordinary failure and is masked with every other one.
+                context.claim_message(message)
+        elif evaluation.messages:
+            # A stage that only notified refused nothing, so the credential failure is still the reason and keeps
+            # its id and its details; the notification is appended to it.
+            message = compose_failure_message(message, evaluation.messages)
             context.claim_message(message)
-            if replaces_failure_reason(stage_messages):
-                # A restriction was written, so this login is refused by conditional access rather than by the
-                # credential it happened to carry. The details describe that overtaken attempt - "wrong otp pin"
-                # and the token it was aimed at - and a rejection carries the wording and nothing else.
-                details = {}
-        raise AuthError(message, id=Error.AUTHENTICATE_WRONG_CREDENTIALS, details=details)
+        raise AuthError(message, id=error_id, details=details)
     else:
         g.audit_object.log({"success": True, "authentication": AUTH_RESPONSE.ACCEPT})
         request.User = user
