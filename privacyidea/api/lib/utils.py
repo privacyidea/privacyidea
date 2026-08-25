@@ -135,13 +135,12 @@ def send_result(obj, rid=1, details=None, **kwargs) -> Response:
     :param details: optional parameter, which allows to provide more detail
     :type  details: None or simple type like dict, list or string/unicode
 
-    :return: json rendered string result
-    :rtype: string
+    :return: the result response, a :class:`~flask.Response` with a status of ``200``
     """
     return jsonify(prepare_result(obj, rid, details, **kwargs))
 
 
-def send_error(errstring, rid=1, context=None, error_code=-311, details=None):
+def send_error(errstring, rid=1, context=None, error_code=-311, details=None) -> Response:
     """
     sendError - return a json error result document
 
@@ -164,9 +163,8 @@ def send_error(errstring, rid=1, context=None, error_code=-311, details=None):
         challenges)
     :type details: dict
 
-    :return: json rendered sting result
-    :rtype: string
-
+    :return: the error response. A :class:`~flask.Response`, not a string - it carries a status of its own, which
+        a caller building an error outside an error handler has to set (they default to ``200``).
     """
     if details:
         details["threadid"] = threading.current_thread().ident
