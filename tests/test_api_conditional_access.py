@@ -1196,31 +1196,34 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         finally:
             delete_policy("ca_cr")
 
-    def test_polltransaction_blocked_ip_rejected(self):
-        db.session.add(BlockList(ip="203.0.113.7", block_expires_at=utc_now() + timedelta(seconds=600)))
-        db.session.commit()
-        # The IP-block pre-check fires regardless of whether the transaction exists.
-        body = self._poll("9" * 20, remote_addr="203.0.113.7")
-        self.assertFalse(body["result"]["value"], body)
-        # Generic reject: the detail carries the ordinary failure, no challenge_status.
-        self.assertEqual(str(GENERIC_AUTH_FAILURE), body["detail"]["message"], body)
-        self.assertNotIn("challenge_status", body["detail"], body)
-        # And no row, unlike every other gated endpoint (log_rejection=False): a poll carries no authentication event,
-        # so a rejection row would not replace one - it would add one per poll, for a client that cannot tell from the
-        # generic response why it is failing.
-        self.assertListEqual([], _rows_since(0))
-        self.assertEqual(0, get_ca_session().query(ConditionalAccessOutcome).count())
-
-    def test_polltransaction_locked_owner_rejected(self):
+    def test_polltransaction_is_not_gated(self):
+        # The one authentication-related endpoint conditional access deliberately does not gate. A poll is a status
+        # read: it carries no authentication event, cannot advance a counter, and reveals only the challenge's own
+        # status. Gating it replaced detail.challenge_status - the field a client acts on, and the only channel that
+        # could tell a poller to stop - with a message no shipped client reads.
+        #
+        # So a locked owner and a blocked source IP both keep polling normally, and the lock is enforced where it
+        # decides something: on the /validate/check that would complete the login (asserted at the end).
         transaction_id = self._create_hotp_challenge()
         self._lock_user(utc_now() + timedelta(seconds=600))
+        db.session.add(BlockList(ip="203.0.113.7", block_expires_at=utc_now() + timedelta(seconds=600)))
+        db.session.commit()
         logs_before = len(get_authentication_logs())
-        # The poll resolves the challenge's token owner (cornelius), who is locked.
-        body = self._poll(transaction_id)
-        self.assertFalse(body["result"]["value"], body)
-        self.assertEqual(str(GENERIC_AUTH_FAILURE), body["detail"]["message"], body)
-        # Still no row: see test_polltransaction_blocked_ip_rejected.
+
+        for label, kwargs in (("locked owner", {}), ("blocked source IP", {"remote_addr": "203.0.113.7"})):
+            body = self._poll(transaction_id, **kwargs)
+            # The polling contract holds: the status the client reads, not a rejection message.
+            self.assertEqual("pending", body["detail"]["challenge_status"], f"{label}: {body}")
+            self.assertNotIn("message", body["detail"], f"{label}: {body}")
+
+        # Still no authentication-log row and no outcome: polling accumulates nothing, gated or not.
         self.assertListEqual([], _rows_since(logs_before))
+        self.assertEqual(0, get_ca_session().query(ConditionalAccessOutcome).count())
+
+        # And the lock does bite the moment the request actually authenticates something.
+        refused = self._check({"user": "cornelius", "pass": "pin755224"})
+        self.assertFalse(refused["result"]["value"], refused)
+        self.assertEqual(str(GENERIC_AUTH_FAILURE), refused["detail"]["message"], refused)
 
     def test_enforced_deny_records_its_outcome_on_the_rejection_row(self):
         # The two halves of this feature meeting: the pre-check writes the ACCESS_DENIED row, and the DENY outcome the

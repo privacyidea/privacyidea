@@ -175,8 +175,7 @@ def _evaluate_rejection(user: User) -> "Rejection | None":
 
 # --- /validate/*: return the rejection as a response ---------------------------------------------------------------
 
-def conditional_access_precheck(user: User, log_rejection: bool = True,
-                                rejection_value: Any = False) -> Response | None:
+def conditional_access_precheck(user: User, rejection_value: Any = False) -> Response | None:
     """
     Reject a request pre-auth (before any token logic and before the failcounter /
     max_auth checks) when conditional-access policies forbid it. Returns the failure
@@ -198,17 +197,12 @@ def conditional_access_precheck(user: User, log_rejection: bool = True,
         ``/validate/triggerchallenge``, where the value is the *number of challenges triggered* rather than a
         boolean - answering that endpoint with ``False`` would change the type of a field its callers may be
         reading as a number. See :func:`_rejected_value`, which keeps the same promise on the other path.
-    :param log_rejection: write that authentication-log row. A rejection row **replaces** the row the request would
-        have written anyway and must never create one where there would be none, so a caller whose endpoint logs no
-        authentication event when it succeeds passes ``False``. Exactly one does: ``/validate/polltransaction``, where
-        a poll carries no new authentication event and the response is generic - so a client polling in a loop cannot
-        tell why it fails and would otherwise fill the log at its polling frequency.
     """
 
     # Recorded whether or not this request is refused: should a *later* stage restrict it, the response hook has
     # to answer with this endpoint's rejection shape, and by then the endpoint is no longer identifiable.
     get_ca_context().rejection_value = rejection_value
-    rejection = conditional_access_rejection(user, log_rejection=log_rejection)
+    rejection = conditional_access_rejection(user)
     if rejection is None:
         return None
     # With no error message of its own the rejection still says what every other failed authentication says.
@@ -218,7 +212,7 @@ def conditional_access_precheck(user: User, log_rejection: bool = True,
     return send_result(rejection_value, rid=2, details={"message": rejection.message or str(GENERIC_AUTH_FAILURE)})
 
 
-def conditional_access_rejection(user: User, log_rejection: bool = True) -> Rejection | None:
+def conditional_access_rejection(user: User) -> Rejection | None:
     """
     Whether conditional access turns this request away, plus everything that has to happen when it does *except*
     rendering the answer: the audit entry, the authentication-log row, and claiming the error message so
@@ -236,17 +230,17 @@ def conditional_access_rejection(user: User, log_rejection: bool = True) -> Reje
     unconditionally, on both.
 
     :param user: the identity to gate on
-    :param log_rejection: see :func:`conditional_access_precheck`
     :return: the :class:`Rejection` to render, or ``None`` to continue with the normal flow
     """
     rejection = _evaluate_rejection(user)
     if rejection is None:
         return None
     g.audit_object.log({"success": False, "info": rejection.audit_info})
-    if log_rejection:
-        # Staged like any other event, so request teardown writes it.
-        log_authentication(rejection.event_type, request, user=user, other_info=rejection.other_info,
-                           transaction_id=_rejected_transaction_id())
+    # Staged like any other event, so request teardown writes it. A rejection row *replaces* the row the request
+    # would have written anyway, which is why every gated endpoint wants one: they all log an authentication event
+    # when they succeed. The one endpoint that does not - /validate/polltransaction - is not gated at all.
+    log_authentication(rejection.event_type, request, user=user, other_info=rejection.other_info,
+                       transaction_id=_rejected_transaction_id())
     if rejection.message:
         # Claimed before the post-policies run, so hide_specific_error_message shows this error message rather than
         # its own. A rejection *is* the whole message, so there is no failure reason it could carry past the mask.
@@ -439,7 +433,6 @@ def surface_conditional_access_message(response):
 
 
 def conditional_access_gate(identity_resolver: Callable[[], User] | None = None,
-                            log_rejection: bool = True,
                             rejection_value: Any = False) -> Callable[[Callable], Callable]:
     """
     View decorator that runs :func:`conditional_access_precheck` before anything else acts on the request. If the
@@ -463,15 +456,13 @@ def conditional_access_gate(identity_resolver: Callable[[], User] | None = None,
         omitted, ``request.User`` is used. Endpoints that must resolve the
         identity differently (a serial/credential-id request, or a transaction
         owner) pass their own resolver.
-    :param log_rejection: passed through to the pre-check; see there for when an
-        endpoint has to opt out.
     :param rejection_value: passed through to the pre-check; see there for the one endpoint that sets it.
     """
     def decorator(wrapped_function: Callable) -> Callable:
         @functools.wraps(wrapped_function)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
             user = identity_resolver() if identity_resolver is not None else request.User
-            rejection = conditional_access_precheck(user, log_rejection=log_rejection, rejection_value=rejection_value)
+            rejection = conditional_access_precheck(user, rejection_value=rejection_value)
             if rejection is not None:
                 return rejection
             return wrapped_function(*args, **kwargs)

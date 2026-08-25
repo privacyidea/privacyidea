@@ -356,22 +356,6 @@ def _challenge_owner(challenge) -> User:
         return User()
 
 
-def _poll_transaction_identity() -> User:
-    """
-    Resolve the identity the /validate/polltransaction conditional-access
-    pre-check must gate on: the owner of the (first valid) challenge for the
-    polled transaction. The poll carries only a transaction id, so the owner is
-    looked up from it; an empty :class:`User` (IP-block still applies) is
-    returned when the transaction has no valid challenge.
-    """
-    transaction_id = (request.view_args or {}).get("transaction_id") or get_optional(request.all_data, "transaction_id")
-    if not transaction_id:
-        return User()
-    valid_challenges = [challenge for challenge in get_challenges(transaction_id=transaction_id)
-                        if challenge.is_valid()]
-    return _challenge_owner(valid_challenges[0]) if valid_challenges else User()
-
-
 @validate_blueprint.route('/check', methods=['POST', 'GET'])
 @validate_blueprint.route('/radiuscheck', methods=['POST', 'GET'])
 @postpolicy(hide_specific_error_message, request=request)
@@ -1350,11 +1334,12 @@ def trigger_challenge():
 
 @validate_blueprint.route('/polltransaction', methods=['GET'])
 @validate_blueprint.route('/polltransaction/<transaction_id>', methods=['GET'])
-# First decorator to act on the request; see /validate/check for why it sits below the response hooks.
-# log_rejection=False: a poll carries no new authentication event, so a rejection row here would not *replace* the
-# row this request writes - it would create one where there is none, once per poll, for a client that cannot tell from
-# the generic response why it is failing. The restriction's own history is the outcome row that created it.
-@conditional_access_gate(_poll_transaction_identity, log_rejection=False)
+# Deliberately *not* gated by conditional access - the only authentication-related endpoint that is not. A poll is a
+# status read: it carries no authentication event, cannot advance any counter, and reveals nothing but the challenge's
+# own status. Gating it bought nothing and cost the contract: a rejection replaces detail.challenge_status - the one
+# field a client acts on, and the very channel that would tell a poller to stop - with a message the shipped client
+# never reads, while running a lock read, a block read and two policy queries on every poll of every pending login.
+# A lock is still enforced where it decides something: the /validate/check that completes the login is gated.
 @prepolicy(mangle, request=request)
 @CheckSubscription(request)
 @prepolicy(api_key_required, request=request)
@@ -1431,12 +1416,8 @@ def poll_transaction(transaction_id=None):
                 "realm": user.realm,
             })
 
-    # The conditional-access pre-check runs in the @conditional_access_gate
-    # decorator above (resolving the challenge owner via _poll_transaction_identity),
-    # so the poll of a locked user, a blocked source IP or a DENY decision is
-    # rejected before this body runs. The poll outcome is deliberately NOT written
-    # to the authentication log or fed to the engine — the smartphone's answer was
-    # already logged at /ttype/push, so polling only gates, it does not accumulate.
+    # The poll outcome is deliberately NOT written to the authentication log or fed to the engine: the smartphone's
+    # answer was already logged at /ttype/push, so polling would double-count what that row already records.
 
     # In any case, we log the transaction ID
     g.audit_object.log({
