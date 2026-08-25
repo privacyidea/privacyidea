@@ -240,7 +240,9 @@ def assert_authentication_log_entry(entry: AuthenticationLog, user: User = None,
         assert stored_detail.get("reasons") == {serial: str(value) for serial, value in reasons.items()}
     if policies is not None:
         assert stored_detail.get("policies") == policies
-    assert (stored_info or None) == other_info
+    # An empty dict is not None: a row that carries {} in a JSON column is a different thing from one that carries
+    # nothing, and only the reason detail is allowed to be lifted out above.
+    assert stored_info == (other_info or {})
     assert entry.transaction_id == transaction_id
     assert entry.source_ip == source_ip
     entry_serials = entry.serial

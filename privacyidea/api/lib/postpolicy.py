@@ -57,8 +57,7 @@ from flask import g, current_app, make_response, Request
 from flask_babel import _, lazy_gettext
 
 from privacyidea.api.lib.utils import get_all_params, log_authentication, hardening_action_active
-from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType, AuthEventReason,
-                                                                           REASON_DETAIL_INFO_KEY)
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, AuthEventReason
 from privacyidea.lib.conditional_access.request_context import get_ca_context
 from privacyidea.config import ConfigKey
 from privacyidea.lib.auth import ROLE
@@ -1284,10 +1283,11 @@ def is_authorized(request, response):
                 deciding_policies = next(iter(authorized_pol.values()), None)
                 reason_detail = {"policies": deciding_policies} if deciding_policies else None
                 if context.amendable is not None:
-                    # Correcting the staged event
+                    # Correcting the staged event. The detail is merged, so the per-serial reasons the token layer
+                    # recorded survive alongside the policy that overrode them.
                     context.reclassify(AuthEventType.NOT_AUTHORIZED,
                                        reason=str(AuthEventReason.AUTHORIZATION_POLICY),
-                                       other_info={REASON_DETAIL_INFO_KEY: reason_detail} if reason_detail else None)
+                                       reason_detail=reason_detail)
                 else:
                     log_authentication(AuthEventType.NOT_AUTHORIZED, request, user=request.User,
                                        reason=str(AuthEventReason.AUTHORIZATION_POLICY),

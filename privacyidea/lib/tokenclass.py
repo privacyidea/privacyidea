@@ -88,7 +88,8 @@ from flask_babel import lazy_gettext
 from sqlalchemy import select, delete
 
 from privacyidea.lib import _
-from privacyidea.lib.conditional_access.authentication_event_types import AUTH_EVENT_REASON_KEY, AuthEventReason
+from privacyidea.lib.conditional_access.authentication_event_types import (AUTH_EVENT_REASON_KEY, AuthEventReason,
+                                                                          CHALLENGE_LAPSED_KEY)
 from privacyidea.lib.crypto import (decryptPassword,
                                     generate_otpkey, encryptPassword)
 from privacyidea.lib.params import get_optional, get_required
@@ -1736,6 +1737,11 @@ class TokenClass:
             # Now we also need to check, if there is a corresponding DB entry
             chals = get_challenges(serial=self.token.serial, transaction_id=transaction_id)
             challenge_response = bool(chals)
+            # Note whether they have all lapsed, for the authentication log: this is the last point at which they
+            # exist, since checking the answer ends in challenge_janitor(), which deletes the expired ones. Recorded
+            # here rather than asked again later, so the log costs no extra challenge query.
+            if chals and all(not chal.is_valid() for chal in chals):
+                self.auth_details[CHALLENGE_LAPSED_KEY] = True
 
         return challenge_response
 

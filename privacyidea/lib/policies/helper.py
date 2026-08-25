@@ -70,10 +70,11 @@ def check_max_auth_fail(user: User, user_search_dict: dict, check_validate_check
     fail_count += fail_auth_count
     if fail_count >= policy_count:
         result = False
+        deciding_policies = next(iter(max_fail_dict.values()))
         reply_dict["message"] = f"Only {policy_count} failed authentications per {time_delta} allowed."
         reply_dict[AUTH_EVENT_REASON_KEY] = AuthEventReason.AUTH_MAX_FAIL
-        reply_dict[AUTH_EVENT_REASON_DETAIL_KEY] = {"policies": next(iter(max_fail_dict.values()))}
-        g.audit_object.add_policy(next(iter(max_fail_dict.values())))
+        reply_dict[AUTH_EVENT_REASON_DETAIL_KEY] = {"policies": deciding_policies}
+        g.audit_object.add_policy(deciding_policies)
 
     return result, reply_dict
 

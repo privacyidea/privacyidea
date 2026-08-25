@@ -16,7 +16,9 @@
 # SPDX-FileCopyrightText: 2026 NetKnights GmbH <https://netknights.it>
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType, AUTH_EVENT_TYPE_KEY,
+from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventReason, REASON_PRECEDENCE,
+                                                                          reduce_request_reasons,
+                                                                          AuthEventType, AUTH_EVENT_TYPE_KEY,
                                                                            CA_ENFORCEMENT_EVENT_TYPES,
                                                                            REQUEST_EVENT_PRECEDENCE,
                                                                            reduce_request_events,
@@ -214,3 +216,35 @@ class EventTypeOutcomeTestCase(MyTestCase):
         # A sanity check on the taxonomy: LOGIN_SUCCESS is the only success outcome.
         success = [event for event, outcome in EVENT_TYPE_OUTCOME.items() if outcome == AuthEventOutcome.SUCCESS]
         self.assertEqual([AuthEventType.LOGIN_SUCCESS], success)
+
+
+class ReasonPrecedenceTestCase(MyTestCase):
+    """Unit tests for the AuthEventReason vocabulary and its reduction."""
+
+    def test_01_precedence_covers_every_reason(self):
+        # Every reason must be ranked, so a new one cannot be added without a place in the order. Unlike the outcome
+        # map an unranked reason does not raise - it is dropped - so nothing but this test would notice.
+        self.assertSetEqual(set(AuthEventReason), set(REASON_PRECEDENCE),
+                            "Add the missing AuthEventReason to REASON_PRECEDENCE (or remove a stale entry).")
+        self.assertEqual(len(REASON_PRECEDENCE), len(set(REASON_PRECEDENCE)), "Duplicate entry in REASON_PRECEDENCE.")
+
+    def test_02_a_policy_decision_outranks_a_token_state(self):
+        # A policy applies whatever the tokens look like, and a permanent state outranks a transient one.
+        self.assertEqual(AuthEventReason.AUTHORIZATION_POLICY,
+                         reduce_request_reasons([AuthEventReason.TOKEN_DISABLED,
+                                                 AuthEventReason.AUTHORIZATION_POLICY]))
+        self.assertEqual(AuthEventReason.TOKEN_REVOKED,
+                         reduce_request_reasons([AuthEventReason.TOKEN_FAILCOUNT_EXCEEDED,
+                                                 AuthEventReason.TOKEN_REVOKED]))
+        # A state outranks a credential: the state is what made the credential moot.
+        self.assertEqual(AuthEventReason.TOKEN_DISABLED,
+                         reduce_request_reasons([AuthEventReason.WRONG_OTP, AuthEventReason.TOKEN_DISABLED]))
+
+    def test_03_an_unusable_value_is_dropped_not_raised(self):
+        # This runs on the authentication path, so a reason nobody ranked - or one recorded as a bare string by a
+        # token class - must degrade the classification rather than break the authentication.
+        self.assertEqual(AuthEventReason.WRONG_OTP, reduce_request_reasons(["NOT_A_REASON", "WRONG_OTP"]))
+        self.assertIsNone(reduce_request_reasons(["NOT_A_REASON"]))
+        self.assertIsNone(reduce_request_reasons([]))
+        # Values are accepted alongside members, since that is what auth_details carries.
+        self.assertEqual(AuthEventReason.TOKEN_DISABLED, reduce_request_reasons(["TOKEN_DISABLED"]))

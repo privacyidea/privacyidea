@@ -586,13 +586,27 @@ def check():
         if error.id == Error.TOKEN_LOCKED:
             context[AUTH_EVENT_TYPE_KEY] = AuthEventType.NO_USABLE_TOKEN
             # TOKEN_LOCKED is raised only for a revoked token: check_token_list drops those before any other check.
-            context[AUTH_EVENT_REASON_KEY] = str(AuthEventReason.TOKEN_REVOKED)
+            _record_context_reason(context, AuthEventReason.TOKEN_REVOKED)
         raise
     finally:
         # Stage the single authentication-log row for this request. It is written at request teardown, which then
         # lets the conditional-access engine react to the classified outcome.
         _log_authentication_event(context)
     return response
+
+
+def _record_context_reason(context: dict, reason: AuthEventReason, serial: str | None = None) -> None:
+    """
+    Record *reason* on the request context, for a handler that classifies an event itself instead of taking it off a
+    lib call's details.
+
+    Those handlers know exactly why they turned the request away, and a row whose reason is empty there would make
+    the column answer "no cause recorded" for a cause the code had in hand - so filtering by reason would silently
+    miss the endpoint. *serial* also puts the reason in the per-serial detail, matching what the token layer records.
+    """
+    context[AUTH_EVENT_REASON_KEY] = str(reason)
+    if serial:
+        context[AUTH_EVENT_REASON_DETAIL_KEY] = {"reasons": {serial: str(reason)}}
 
 
 def _handle_enrollment_cancellation(data: dict) -> Response:
@@ -674,6 +688,7 @@ def _handle_fido2_auth(context: dict, credential_id: str):
     if (PolicyAction.DISABLED_TOKEN_TYPES in request.all_data and
             token.get_type() in request.all_data[PolicyAction.DISABLED_TOKEN_TYPES]):
         context[AUTH_EVENT_TYPE_KEY] = AuthEventType.NO_USABLE_TOKEN
+        _record_context_reason(context, AuthEventReason.TOKEN_TYPE_DISABLED, token.get_serial())
         raise PolicyError(_("The authentication method is not available."))
 
     if not token.user:
@@ -734,6 +749,7 @@ def _handle_fido2_auth(context: dict, credential_id: str):
             })
             # Owned-but-unusable token (disabled) -> NO_USABLE_TOKEN
             context[AUTH_EVENT_TYPE_KEY] = AuthEventType.NO_USABLE_TOKEN
+            _record_context_reason(context, AuthEventReason.TOKEN_DISABLED, token.get_serial())
             return
 
         try:

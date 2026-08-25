@@ -26,6 +26,11 @@ AUTH_EVENT_TYPE_KEY = "authentication_event_type"
 # Key set on token.auth_details when the token is verified without a first factor (knowledge factor), i.e. otppin=none.
 NO_FIRST_FACTOR_KEY = "no_first_factor"
 
+# Key set on token.auth_details when the answered transaction holds only expired challenges for this token. Recorded
+# where they are read (TokenClass.has_db_challenge_response) because that is the last moment they exist: checking the
+# answer ends in challenge_janitor(), which deletes exactly those rows.
+CHALLENGE_LAPSED_KEY = "challenge_lapsed"
+
 # Keys carrying the classified AuthEventReason (and its detail dict) from lib to api, alongside AUTH_EVENT_TYPE_KEY.
 # The reason travels the same three routes the event type does: token.auth_details for a per-token finding, the
 # reply_dict for the request's classification, and the view's own context dict.
@@ -229,15 +234,23 @@ def reduce_request_reasons(reasons) -> AuthEventReason | None:
     fixed :data:`REASON_PRECEDENCE`. The per-token detail is not lost - it is recorded in ``other_info`` (see
     :data:`AUTH_EVENT_REASON_DETAIL_KEY`) - so this only decides what the column is filterable by.
 
-    Reasons without a defined precedence are logged and ignored, so a new member that was not ranked degrades the
-    classification rather than breaking the authentication (mirrors :func:`reduce_request_events`).
+    Reasons without a defined precedence, and values that are not a member at all, are logged and ignored - so a new
+    member that was not ranked, or a caller that recorded a bare string on ``token.auth_details``, degrades the
+    classification rather than breaking the authentication (mirrors :func:`reduce_request_events`). Accepting plain
+    strings is what keeps that promise: converting them in the *caller's* generator would raise ``ValueError`` past
+    this guard and turn a mislabelled reason into a failed authentication.
 
-    :param reasons: an iterable of :class:`AuthEventReason` members
+    :param reasons: an iterable of :class:`AuthEventReason` members or of their values
     :return: the highest-precedence known reason, or ``None`` if *reasons* holds none
     """
     winner = None
     winner_rank: int | None = None
     for reason in reasons:
+        try:
+            reason = AuthEventReason(reason)
+        except ValueError:
+            log.debug(f"Ignoring authentication reason {reason!r}, which is not an AuthEventReason.")
+            continue
         rank = _REASON_RANK.get(reason)
         if rank is None:
             log.debug(f"Ignoring authentication reason {reason!r} without a defined precedence in REASON_PRECEDENCE.")

@@ -100,6 +100,8 @@ describe("AuthenticationLog", () => {
     // The options come from the service (i.e. the backend), not from a list held here.
     expect(component.reasonOptions()).toEqual(service.reasons());
     expect(component.reasonOptions()).toContain("TOKEN_DISABLED");
+    // The header offers that picker, so the cells must not offer a second, competing affordance.
+    expect(component.showInlineCellFilter("reason")).toBe(false);
     component.setFilterValues("reason", ["TOKEN_DISABLED", "TOKEN_REVOKED"]);
     expect(component.selectedFilterValues("reason")).toEqual(["TOKEN_DISABLED", "TOKEN_REVOKED"]);
   });

@@ -17,7 +17,7 @@ from testfixtures import LogCapture
 
 from privacyidea.lib.cache import ChallengeDTO
 from privacyidea.lib.challenge import get_challenges, delete_challenges
-from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, AuthEventReason
 from privacyidea.lib.conditional_access.engine import is_user_locked
 from privacyidea.models.lockout_policy import (LockoutPolicy, LockoutPolicyStage, LockoutStageAction,
                                                LockoutPolicyCounterType, UserLockoutState)
@@ -1624,8 +1624,10 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
             detail = res.json.get("detail") or {}
             self.assertNotIn("display_code", detail)
         auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_DECLINED])
+        # The decline is a deliberate act on the phone, and the reason says so rather than leaving the column empty.
         assert_authentication_log_entry(auth_log_entries.all[0], user=user, serials={self.serial_push},
-                                        transaction_id=transaction_id)
+                                        transaction_id=transaction_id,
+                                        reason=AuthEventReason.CHALLENGE_DECLINED_ON_DEVICE)
 
         # Verify challenge was not confirmed
         challenge = get_challenges(serial=self.serial_push, transaction_id=transaction_id)[0]

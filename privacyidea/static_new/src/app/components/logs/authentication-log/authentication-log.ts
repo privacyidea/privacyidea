@@ -758,9 +758,10 @@ export class AuthenticationLog {
   }
 
   // Whether a @default cell shows the inline "filter by this value" button. Columns whose header already offers a
-  // value picker don't need it, which is dynamic for the client_label.
+  // value picker don't need it, which is dynamic for the client_label. (event_type and realm never reach this: they
+  // render through their own @case blocks.)
   showInlineCellFilter(columnKey: string): boolean {
-    if (columnKey === "client_label") return false;
+    if (columnKey === "client_label" || columnKey === "reason") return false;
     if (columnKey === "source_ip") return !this.showSourceIpMenu();
     return true;
   }

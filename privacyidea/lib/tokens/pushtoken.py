@@ -55,7 +55,8 @@ from privacyidea.api.lib.policyhelper import get_pushtoken_add_config, get_init_
 from privacyidea.lib import _, lazy_gettext
 from privacyidea.lib.apps import _construct_extra_parameters
 from privacyidea.lib.challenge import get_challenges, delete_challenges
-from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType,
+from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType, AuthEventReason,
+                                                                           AUTH_EVENT_REASON_KEY,
                                                                            SUPPRESS_TERMINAL_EVENT_KEY,
                                                                            LOG_TRANSACTION_ID_KEY)
 from privacyidea.lib.config import get_from_config
@@ -109,6 +110,8 @@ UPDATE_FB_TOKEN_WINDOW = 5
 POLL_ONLY = "poll only"
 # Key carrying the classified push response from the token class to the api layer
 PUSH_AUTH_EVENT = "push_auth_event"
+# Why that event (an AuthEventReason value), carried to the api layer beside it.
+PUSH_AUTH_REASON = "push_auth_reason"
 # Key carrying the transaction_id of the answered challenge from the token class to the api layer
 PUSH_AUTH_TRANSACTION_ID = "push_auth_transaction_id"
 AVAILABLE_PRESENCE_OPTIONS_ALPHABETIC = list(string.ascii_uppercase)
@@ -948,6 +951,7 @@ class PushTokenClass(TokenClass):
         if signature_verified:
             if decline:
                 details[PUSH_AUTH_EVENT] = AuthEventType.CHALLENGE_DECLINED
+                details[AUTH_EVENT_REASON_KEY] = str(AuthEventReason.CHALLENGE_DECLINED_ON_DEVICE)
             elif "display_code" in details:
                 details[PUSH_AUTH_EVENT] = AuthEventType.CHALLENGE_CONTINUED
             elif result:
@@ -1259,6 +1263,7 @@ class PushTokenClass(TokenClass):
 
         # Hand the classified auth response to the api layer for logging
         setattr(g, PUSH_AUTH_EVENT, details.pop(PUSH_AUTH_EVENT, None))
+        setattr(g, PUSH_AUTH_REASON, details.pop(AUTH_EVENT_REASON_KEY, None))
         setattr(g, PUSH_AUTH_TRANSACTION_ID, details.pop(PUSH_AUTH_TRANSACTION_ID, None))
         return "json", prepare_result(result, details=details)
 

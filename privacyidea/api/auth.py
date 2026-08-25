@@ -86,7 +86,8 @@ from privacyidea.api.lib.utils import (send_result, get_all_params, INTERNAL_OPT
 from privacyidea.lib.audit import getAudit
 from privacyidea.lib.auth import (check_webui_user, ROLE, verify_db_admin,
                                   db_admin_exists)
-from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType, AUTH_EVENT_TYPE_KEY,
+from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType, AuthEventReason,
+                                                                          AUTH_EVENT_TYPE_KEY,
                                                                            LOG_TRANSACTION_ID_KEY)
 from privacyidea.lib.conditional_access.request_context import continue_attempt, get_ca_context
 from privacyidea.lib.config import get_from_config, SYSCONF, ensure_no_config_object, get_privacyidea_node
@@ -332,7 +333,10 @@ def get_auth_token():
                                 "serial": token.get_serial(),
                                 "token_type": token.get_type()})
             # The user owns this passkey but it is disabled -> NO_USABLE_TOKEN
-            log_authentication(AuthEventType.NO_USABLE_TOKEN, request, user=token.user, transaction_id=transaction_id)
+            log_authentication(AuthEventType.NO_USABLE_TOKEN, request, user=token.user,
+                               transaction_id=transaction_id,
+                               reason=str(AuthEventReason.TOKEN_DISABLED),
+                               reason_detail={"reasons": {token.get_serial(): str(AuthEventReason.TOKEN_DISABLED)}})
             return send_result(False, rid=2, details={"message": "Token is disabled"})
 
         if not token.user:
@@ -340,7 +344,10 @@ def get_auth_token():
             raise AuthError(_("Authentication failure. Token has no user."),
                             id=Error.AUTHENTICATE_MISSING_USERNAME)
         if token.get_type() in request.all_data.get("disabled_token_types", []):
-            log_authentication(AuthEventType.NO_TOKEN, request, user=token.user, transaction_id=transaction_id)
+            log_authentication(AuthEventType.NO_TOKEN, request, user=token.user, transaction_id=transaction_id,
+                               reason=str(AuthEventReason.TOKEN_TYPE_DISABLED),
+                               reason_detail={"reasons": {
+                                   token.get_serial(): str(AuthEventReason.TOKEN_TYPE_DISABLED)}})
             raise AuthError(
                 _("Authentication failure. The token type {token_type} is disabled.").format(
                     token_type=token.get_type()),
@@ -348,7 +355,8 @@ def get_auth_token():
         if not check_last_auth_policy(g, token):
             log.debug(f"Last authentication policy check failed for token {token.get_serial()}.")
             log_authentication(AuthEventType.NOT_AUTHORIZED, request, user=token.user,
-                               transaction_id=transaction_id)
+                               transaction_id=transaction_id,
+                               reason=str(AuthEventReason.LAST_AUTH_TOO_OLD))
             raise AuthError(
                 _("Authentication failure. Last authentication policy check failed for token {serial}").format(
                     serial=token.get_serial()), id=Error.AUTHENTICATE_MISSING_RIGHT)
@@ -555,6 +563,11 @@ def get_auth_token():
             if local_admin_exist and not user_auth and not user.exist():
                 auth_event_type = AuthEventType.PASSWORD_FAIL
                 internal_admin = True
+                # The reason classified above describes the *user* attempt this turned out not to be: a local admin
+                # has no user store entry, so WRONG_USERSTORE_PASSWORD would name a credential nobody checked. The
+                # event alone says what happened here.
+                auth_reason = None
+                auth_reason_detail = None
                 # local admins do not have any user attributes, login name is logged separately
                 user = User()
 

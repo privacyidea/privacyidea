@@ -33,7 +33,8 @@ from typing import Any
 from flask import has_request_context
 
 from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType,
-                                                                           CA_ENFORCEMENT_EVENT_TYPES)
+                                                                           CA_ENFORCEMENT_EVENT_TYPES,
+                                                                           REASON_DETAIL_INFO_KEY)
 from privacyidea.lib.conditional_access.authentication_log import (PendingAuthEvent, update_authentication_events,
                                                                    write_authentication_events)
 from privacyidea.lib.conditional_access.context import CAContext
@@ -287,7 +288,7 @@ class ConditionalAccessContext:
                 recorded = False
         return recorded
 
-    def reclassify(self, event_type: AuthEventType, **fields: Any) -> None:
+    def reclassify(self, event_type: AuthEventType, reason_detail: dict | None = None, **fields: Any) -> None:
         """
         Correct the outcome of this request: assign *event_type* (and any other *fields*) to the staged event.
 
@@ -295,12 +296,21 @@ class ConditionalAccessContext:
         :meth:`run_post_eval`), so correcting the event is all there is to it. *fields* are applied only when given, so
         a post-policy that has no serial of its own does not clear the logged one.
 
+        *reason_detail* is **merged** into the event's existing detail rather than assigned, which is why it is a
+        parameter of its own instead of one more field: the detail is a namespace several layers write into (the token
+        layer records why each of the user's tokens failed, a post-policy the rule that overrode them), and assigning
+        it - as passing ``other_info`` would - drops what the layer below recorded.
+
         With nothing :attr:`amendable` this is a no-op: a caller with no event of its own must stage one instead.
         """
         event = self.amendable
         if event is None:
             return
         event.event_type = event_type
+        if reason_detail:
+            other_info = dict(event.other_info or {})
+            other_info[REASON_DETAIL_INFO_KEY] = {**other_info.get(REASON_DETAIL_INFO_KEY, {}), **reason_detail}
+            event.other_info = other_info
         for name, value in fields.items():
             setattr(event, name, value)
 

@@ -145,6 +145,21 @@ class _AuthLogContractTests(_ContractHost):
                                         reason=AuthEventReason.TOKEN_FAILCOUNT_EXCEEDED,
                                         reasons={self.serial: AuthEventReason.TOKEN_FAILCOUNT_EXCEEDED})
 
+    def test_disabled_type_that_filters_itself_still_reports_disabled(self):
+        # push and passkey express "disabled" through use_for_authentication, so they never reach check_all - which
+        # would have named the state. The generic "not applicable to this request" would misdirect the admin.
+        remove_token(self.serial)
+        init_token({"serial": "AUTHLOG_PUSH", "type": "push", "genkey": 1}, user=self.user)
+        try:
+            get_one_token(serial="AUTHLOG_PUSH").enable(False)
+            self._assert_failed(self._authenticate(f"{self.pin}123456"))
+            entries = assert_authentication_log([AuthEventType.NO_USABLE_TOKEN])
+            assert_authentication_log_entry(entries[AuthEventType.NO_USABLE_TOKEN], user=self.user,
+                                            reason=AuthEventReason.TOKEN_DISABLED,
+                                            reasons={"AUTHLOG_PUSH": AuthEventReason.TOKEN_DISABLED})
+        finally:
+            remove_token("AUTHLOG_PUSH")
+
     def test_pass_on_no_token_logs_login_success(self):
         # A user with no tokens accepted by PASSONNOTOKEN is a successful login.
         remove_token(self.serial)
@@ -183,6 +198,24 @@ class _AuthLogContractTests(_ContractHost):
             self._assert_failed(self._authenticate("wrongpassword755224"))
         finally:
             delete_policy("authlog_otppin")
+        entries = assert_authentication_log([AuthEventType.PASSWORD_FAIL])
+        assert_authentication_log_entry(entries[AuthEventType.PASSWORD_FAIL], user=self.user,
+                                        reason=AuthEventReason.WRONG_USERSTORE_PASSWORD)
+
+    def test_force_challenge_response_keeps_the_userstore_reason(self):
+        # force_challenge_response skips the authentication attempt, but is_challenge_request already ran check_pin -
+        # so auth_otppin has classified the wrong user store password. The row must not blame the token PIN.
+        # challenge_response has to be enabled too: challenge_response_allowed short-circuits is_challenge_request to
+        # False for a type that may not do challenge-response, and then check_pin never runs.
+        self._enable_challenge_response()
+        set_policy("authlog_otppin", scope=SCOPE.AUTH, action=f"{PolicyAction.OTPPIN}=userstore")
+        set_policy("authlog_force_cr", scope=SCOPE.AUTH, action=f"{PolicyAction.FORCE_CHALLENGE_RESPONSE}=hotp")
+        try:
+            self._assert_failed(self._authenticate("wrongpassword755224"))
+        finally:
+            delete_policy("authlog_cr")
+            delete_policy("authlog_otppin")
+            delete_policy("authlog_force_cr")
         entries = assert_authentication_log([AuthEventType.PASSWORD_FAIL])
         assert_authentication_log_entry(entries[AuthEventType.PASSWORD_FAIL], user=self.user,
                                         reason=AuthEventReason.WRONG_USERSTORE_PASSWORD)
@@ -302,6 +335,27 @@ class _AuthLogContractTests(_ContractHost):
                                         user=self.user, transaction_id="9" * 20,
                                         reason=AuthEventReason.CHALLENGE_UNKNOWN_TRANSACTION,
                                         reasons={self.serial: AuthEventReason.CHALLENGE_UNKNOWN_TRANSACTION})
+
+    def test_answering_a_challenge_with_a_disabled_token_reports_disabled(self):
+        # The token is dropped by check_all before the answer is even looked at, so this is NO_USABLE_TOKEN - and the
+        # reason names the state rather than the challenge. (The is_fit_for_challenge branch, which reports
+        # TOKEN_NOT_FIT_FOR_CHALLENGE, is only reachable when a token's state changes *within* one request: that
+        # method is check_all itself, with no override anywhere.)
+        self._enable_challenge_response()
+        try:
+            transaction_id = self._trigger_challenge()
+            token = get_one_token(serial=self.serial)
+            token.enable(False)
+            token.save()
+            self._assert_failed(self._authenticate("755224", transaction_id=transaction_id))
+        finally:
+            delete_policy("authlog_cr")
+        entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.NO_USABLE_TOKEN],
+                                            transaction_id=transaction_id)
+        assert_authentication_log_entry(entries[AuthEventType.NO_USABLE_TOKEN], user=self.user,
+                                        transaction_id=transaction_id,
+                                        reason=AuthEventReason.TOKEN_DISABLED,
+                                        reasons={self.serial: AuthEventReason.TOKEN_DISABLED})
 
     def test_challenge_answered_correct_logs_success(self):
         # Trigger, then answer with the correct OTP -> LOGIN_SUCCESS
@@ -902,7 +956,26 @@ class ValidateCheckAuthLogTestCase(_AuthLogContractTests, AuthLogTestCase):
         # authorized=deny runs in the AUTHZ scope, after authentication has already succeeded: the token genuinely
         # authenticated, so its serial is retained on the reclassified NOT_AUTHORIZED entry.
         assert_authentication_log_entry(entries[AuthEventType.NOT_AUTHORIZED], user=self.user,
-                                        serials={self.serial})
+                                        serials={self.serial},
+                                        reason=AuthEventReason.AUTHORIZATION_POLICY,
+                                        policies=["authlog_deny"])
+
+    def test_is_authorized_deny_keeps_the_token_reasons_it_overrode(self):
+        # The reclassification merges its detail instead of assigning it: the policy that denied the request and the
+        # per-token finding that led there both belong on the row. Assigning would silently drop the latter.
+        set_policy("authlog_deny", scope=SCOPE.AUTHZ,
+                   action=f"{PolicyAction.AUTHORIZED}={AUTHORIZED.DENY}")
+        try:
+            res = self._post('/validate/check', {"user": self.username, "pass": f"{self.pin}000000"})
+            self.assertEqual(400, res.status_code, res.json)
+        finally:
+            delete_policy("authlog_deny")
+        entries = assert_authentication_log([AuthEventType.NOT_AUTHORIZED])
+        assert_authentication_log_entry(entries[AuthEventType.NOT_AUTHORIZED], user=self.user,
+                                        serials={self.serial},
+                                        reason=AuthEventReason.AUTHORIZATION_POLICY,
+                                        policies=["authlog_deny"],
+                                        reasons={self.serial: AuthEventReason.WRONG_OTP})
 
 
 class AuthEndpointAuthLogTestCase(_AuthLogContractTests, AuthLogTestCase):
@@ -953,8 +1026,13 @@ class AuthEndpointAuthLogTestCase(_AuthLogContractTests, AuthLogTestCase):
         # admin-internal role, its login as username, no realm/resolver/uid)
         self._auth({"username": self.testadmin, "password": "wrong"}, status=401)
         entries = assert_authentication_log([AuthEventType.PASSWORD_FAIL])
-        assert_authentication_log_entry(entries[AuthEventType.PASSWORD_FAIL], user=User(self.testadmin),
+        entry = entries[AuthEventType.PASSWORD_FAIL]
+        assert_authentication_log_entry(entry, user=User(self.testadmin),
                                         user_role=AuthLogUserRole.ADMIN_INTERNAL)
+        # A local admin has no user store entry, so the reason classified for the *user* attempt this turned out not
+        # to be must not survive: WRONG_USERSTORE_PASSWORD would name a credential nobody checked.
+        self.assertIsNone(entry.reason, entry.reason)
+        self.assertIsNone(entry.other_info, entry.other_info)
 
     def test_auth_endpoint_failed_login_prefers_realm_user_over_local_admin(self):
         # Edge case: a username that is BOTH a local admin and a user in the default realm. A wrong password is
