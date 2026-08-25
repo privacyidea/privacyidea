@@ -1901,6 +1901,66 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
             remove_token(self.serial_push)
             delete_policy("push_config")
 
+    def test_18g_push_rejection_reports_a_configured_message(self):
+        """A rejected push answer is reported the way this endpoint reports any failed answer: an error message an
+        admin configured is surfaced, and a silent rejection carries no detail - because an ordinary failed answer
+        here carries none either. The opposite of /validate/*, where every failure has a detail and a silent
+        rejection therefore needs the generic message to have one too."""
+        self.setUp_user_realms()
+        user = User("selfservice", self.realm1)
+        set_policy("push_config", scope=SCOPE.ENROLL,
+                   action=f"{PushAction.FIREBASE_CONFIG}={POLL_ONLY},"
+                          f"{PushAction.REGISTRATION_URL}={REGISTRATION_URL}")
+        self._clear_ca()
+        self._enroll_push_for(user)
+        try:
+            with self.app.test_request_context('/validate/check', method='POST',
+                                               data={"user": "selfservice", "pass": "push_pin"}):
+                self.app.full_dispatch_request()
+            challenge = get_challenges(serial=self.serial_push)[0]
+            signature = self.smartphone_private_key.sign(
+                f"{challenge.challenge}|{self.serial_push}".encode("utf8"), padding.PKCS1v15(), hashes.SHA256())
+
+            # An ordinary failed answer, for the shape a silent rejection has to match.
+            with self.app.test_request_context('/ttype/push', method='POST',
+                                               data={"serial": self.serial_push,
+                                                     "signature": b32encode(b"not a signature" * 20)}):
+                ordinary = self.app.full_dispatch_request()
+            self.assertFalse(ordinary.json["result"]["value"], ordinary.json)
+            self.assertNotIn("detail", ordinary.json, ordinary.json)
+
+            # A silent lock: the valid answer is refused and says no more than the invalid one did.
+            db.session.add(UserLockoutState(resolver=user.resolver, uid=user.uid, realm=user.realm,
+                                            lock_expires_at=utc_now() + datetime.timedelta(seconds=600)))
+            db.session.commit()
+            with self.app.test_request_context('/ttype/push', method='POST',
+                                               data={"serial": self.serial_push,
+                                                     "signature": b32encode(signature)}):
+                silent = self.app.full_dispatch_request()
+            self.assertFalse(silent.json["result"]["value"], silent.json)
+            self.assertNotIn("detail", silent.json, silent.json)
+
+            # With wording configured, the smartphone is told what happened.
+            db.session.query(UserLockoutState).delete()
+            db.session.add(UserLockoutState(resolver=user.resolver, uid=user.uid, realm=user.realm,
+                                            lock_expires_at=utc_now() + datetime.timedelta(seconds=600),
+                                            error_message="Locked. Try again in about {duration}."))
+            db.session.commit()
+            with self.app.test_request_context('/ttype/push', method='POST',
+                                               data={"serial": self.serial_push,
+                                                     "signature": b32encode(signature)}):
+                worded = self.app.full_dispatch_request()
+            self.assertFalse(worded.json["result"]["value"], worded.json)
+            self.assertEqual("Locked. Try again in about 10 minute(s).",
+                             worded.json["detail"]["message"], worded.json)
+            # The answer was never processed, so the challenge is still open through all three attempts.
+            self.assertTrue(get_challenges(transaction_id=challenge.transaction_id))
+        finally:
+            self._clear_ca()
+            delete_challenges(serial=self.serial_push)
+            remove_token(self.serial_push)
+            delete_policy("push_config")
+
     def test_19_push_code_to_phone_with_require_presence(self):
         """
         Test that if both code_to_phone and require_presence are enabled, require_presence takes

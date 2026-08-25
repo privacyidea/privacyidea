@@ -1005,13 +1005,21 @@ class PushTokenClass(TokenClass):
             # Conditional-access pre-check runs ONLY here, on the authentication
             # path (the signed challenge answer), never on enrollment or firebase
             # token updates. The smartphone sends only the serial, so the token
-            # owner is resolved from it and the answer is rejected (generic
-            # failure, reason recorded only in the audit log) when that owner is
-            # locked, the source IP is blocked, or a DENY policy applies - before
-            # the signature is verified.
-            from privacyidea.api.lib.conditional_access import conditional_access_precheck
-            if conditional_access_precheck(cls._resolve_token_owner(serial)) is not None:
-                return False, {}
+            # owner is resolved from it and the answer is rejected - before the
+            # signature is verified - when that owner is locked, the source IP is
+            # blocked, or a DENY policy applies.
+            #
+            # The rejection is reported the way this endpoint reports any failed
+            # answer, so it cannot be told apart from one: an error message an
+            # admin configured is surfaced, and a silent rejection carries no
+            # detail, because an ordinary failed answer here carries none either.
+            # That is the opposite of /validate/*, where every failure has a
+            # detail and a silent rejection therefore needs the generic message
+            # to have one too.
+            from privacyidea.api.lib.conditional_access import conditional_access_rejection
+            rejection = conditional_access_rejection(cls._resolve_token_owner(serial))
+            if rejection is not None:
+                return False, ({"message": rejection.message} if rejection.message else {})
             return cls._handle_auth_response(serial, request_data)
         elif all(k in request_data for k in ('new_fb_token', 'timestamp', 'signature')):
             return cls._handle_firebase_update(serial, request_data)

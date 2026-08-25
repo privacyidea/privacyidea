@@ -198,6 +198,37 @@ def conditional_access_precheck(user: User, log_rejection: bool = True) -> Respo
         tell why it fails and would otherwise fill the log at its polling frequency.
     """
 
+    rejection = conditional_access_rejection(user, log_rejection=log_rejection)
+    if rejection is None:
+        return None
+    # With no error message of its own the rejection still says what every other failed authentication says.
+    # An empty detail would be a tell in itself: on these endpoints an ordinary failure carries one, so a
+    # response without it could only have come from conditional access. Endpoints whose ordinary failure carries
+    # no detail need the opposite - see conditional_access_rejection.
+    return send_result(False, rid=2, details={"message": rejection.message or str(GENERIC_AUTH_FAILURE)})
+
+
+def conditional_access_rejection(user: User, log_rejection: bool = True) -> Rejection | None:
+    """
+    Whether conditional access turns this request away, plus everything that has to happen when it does *except*
+    rendering the answer: the audit entry, the authentication-log row, and claiming the error message so
+    ``hide_specific_error_message`` shows it rather than its own.
+
+    For callers that cannot return a :class:`~flask.Response`. :func:`conditional_access_precheck` is the one for
+    those that can; ``/ttype/push`` is the one that cannot, since the push token hands its result back to
+    :func:`~privacyidea.api.ttype.token` as a ``(bool, dict)`` pair that ``prepare_result`` renders.
+
+    Rendering is the caller's because "what an ordinary failure looks like" differs per endpoint, and looking like
+    one is the whole requirement. On ``/validate/*`` every failure carries a ``detail``, so a silent rejection
+    carries the generic message rather than nothing. On ``/ttype/push`` an ordinary failed answer carries no
+    detail at all, so a silent rejection must carry none either - putting the generic message there would be
+    exactly the tell that including it on ``/validate`` avoids. Only wording an admin configured is surfaced
+    unconditionally, on both.
+
+    :param user: the identity to gate on
+    :param log_rejection: see :func:`conditional_access_precheck`
+    :return: the :class:`Rejection` to render, or ``None`` to continue with the normal flow
+    """
     rejection = _evaluate_rejection(user)
     if rejection is None:
         return None
@@ -210,10 +241,7 @@ def conditional_access_precheck(user: User, log_rejection: bool = True) -> Respo
         # Claimed before the post-policies run, so hide_specific_error_message shows this error message rather than
         # its own. A rejection *is* the whole message, so there is no failure reason it could carry past the mask.
         get_ca_context().claim_message(rejection.message)
-    # With no error message of its own the rejection still says what every other failed authentication says.
-    # An empty detail would be a tell in itself: an ordinary failure carries one, so a response without it
-    # could only have come from conditional access.
-    return send_result(False, rid=2, details={"message": rejection.message or str(GENERIC_AUTH_FAILURE)})
+    return rejection
 
 
 def rejection_message(messages: list[StageMessage]) -> str:
