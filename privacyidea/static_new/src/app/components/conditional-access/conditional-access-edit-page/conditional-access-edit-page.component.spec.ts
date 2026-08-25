@@ -177,6 +177,110 @@ describe("ConditionalAccessEditPageComponent — edit mode", () => {
     expect(component.saveBlockers()).toEqual([]);
   });
 
+  // Both halves of showNameError: the message waits for the field to be touched, and clears once the
+  // name is valid again.
+  it("should only show the name error once the field has been touched", () => {
+    component.editPolicy.set({ ...component.editPolicy(), name: "" });
+    expect(component.showNameError()).toBe(false);
+    component.nameTouched.set(true);
+    expect(component.showNameError()).toBe(true);
+    component.editPolicy.set({ ...component.editPolicy(), name: "Valid again" });
+    expect(component.showNameError()).toBe(false);
+  });
+
+  it("should keep the loaded form when the routed id names no known policy", () => {
+    // The list may not hold the id yet (a deep link before /policy has answered), so the editor
+    // leaves the form as it stands rather than blanking it; the effect below reloads it once the
+    // matching policy does arrive.
+    paramMap$.next(convertToParamMap({ id: "4711" }));
+    expect(component.isNewPolicy()).toBe(false);
+    expect(component.editPolicy().name).toBe(mockPolicy.name);
+
+    // A list that still lacks that id changes nothing either.
+    policyServiceMock.policies.set([{ ...mockPolicy, id: 99, name: "Someone else" }]);
+    fixture.detectChanges();
+    expect(component.editPolicy().name).toBe(mockPolicy.name);
+
+    // When it does arrive, the form picks it up.
+    policyServiceMock.policies.set([{ ...mockPolicy, id: 4711, name: "Arrived late" }]);
+    fixture.detectChanges();
+    expect(component.editPolicy().name).toBe("Arrived late");
+  });
+
+  // A stored window is displayed in the coarsest unit that divides it evenly, so 3600s reads as
+  // "1 hours" rather than "3600 seconds".
+  it.each([
+    [3600, "hours", 1],
+    [600, "minutes", 10],
+    [90, "seconds", 90]
+  ])("should show a window of %ss in the coarsest fitting unit", (seconds, unit, value) => {
+    policyServiceMock.templates.set([
+      {
+        key: "window",
+        description: "",
+        policy: { ...EMPTY_TEMPLATE_POLICY, time_window_seconds: seconds }
+      }
+    ]);
+    component.applyTemplate("window");
+    expect(component.timeWindowUnit()).toBe(unit);
+    expect(component.timeWindowValue()).toBe(value);
+  });
+
+  it("should report no priority conflict while the priority is empty", () => {
+    // An empty priority cannot collide with anything, so it is reported as "required", not as a clash.
+    policyServiceMock.policies.set([mockPolicy, { ...mockPolicy, id: 99, name: "Other", priority: 4 }]);
+    component.onPriorityInput("");
+    expect(component.priorityConflict()).toBeUndefined();
+    expect(component.priorityUnique()).toBe(true);
+    expect(component.priorityError()).toBe("required");
+  });
+
+  it("should name a name that is too long", () => {
+    component.editPolicy.set({ ...component.editPolicy(), name: "n".repeat(256) });
+    expect(component.nameTooLong()).toBe(true);
+    expect(component.saveBlockers()).toEqual(["Name must not exceed 255 characters."]);
+  });
+
+  it("should name a time window below one second", () => {
+    component.editPolicy.set({ ...component.editPolicy(), time_window_seconds: 0 });
+    expect(component.saveBlockers()).toEqual(["Time window must be at least 1 second."]);
+  });
+
+  it("should name a priority already held by another policy", () => {
+    policyServiceMock.policies.set([mockPolicy, { ...mockPolicy, id: 99, name: "Other", priority: 4 }]);
+    component.onPriorityInput("4");
+    expect(component.saveBlockers()).toEqual(["Priority must be unique across policies."]);
+  });
+
+  it("should name duplicate stage thresholds", () => {
+    component.onStagesChange([
+      { failure_threshold: 5, actions: [{ action_type: "LOCK_USER", action_value: null }] },
+      { failure_threshold: 5, actions: [{ action_type: "LOCK_USER", action_value: null }] }
+    ]);
+    expect(component.saveBlockers()).toEqual(["Each stage must have a different failure threshold."]);
+  });
+
+  it("should name an action that the target does not allow", () => {
+    policyServiceMock.actionsByTarget.set({
+      user: ["LOCK_USER", "DENY"],
+      source_ip: ["BLOCK_IP", "DENY"]
+    });
+    component.onTargetChange("source_ip");
+    component.onStagesChange([{ failure_threshold: 5, actions: [{ action_type: "LOCK_USER", action_value: null }] }]);
+    expect(component.saveBlockers()).toContain("Some actions are not allowed for the selected target.");
+  });
+
+  it("should name a count mode that the target does not support", () => {
+    policyServiceMock.countModesByTarget.set({
+      user: ["PER_ATTEMPT", "PER_REQUEST"],
+      source_ip: ["DISTINCT_USERS", "PER_ATTEMPT", "PER_REQUEST"]
+    });
+    component.onTargetChange("source_ip");
+    component.onCountModeChange("DISTINCT_USERS");
+    component.onTargetChange("user");
+    expect(component.saveBlockers()).toContain("The selected count mode is not allowed for the selected target.");
+  });
+
   it("should name every reason saving is blocked", () => {
     component.editPolicy.set({
       ...component.editPolicy(),
