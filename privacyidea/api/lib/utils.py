@@ -398,7 +398,7 @@ def log_authentication(event_type: AuthEventType | None, request: Request | None
     return event
 
 
-def build_ca_context(user, internal_admin: bool | None = None, use_default_error_message: bool = False) -> "CAContext":
+def build_ca_context(user, internal_admin: bool | None = None) -> "CAContext":
     """
     Assemble the :class:`~privacyidea.lib.conditional_access.context.CAContext`
     for the current request — the single parameter object the conditional-access
@@ -429,9 +429,6 @@ def build_ca_context(user, internal_admin: bool | None = None, use_default_error
     :param user: the authenticating user
     :param internal_admin: True for a local database admin; ``None`` to derive it
         from the request
-    :param use_default_error_message: whether a rejection with no error message of its own falls back to the
-        default wording for what it did (the ``show_default_ca_error_message`` policy, resolved by the caller) rather
-        than saying nothing
     :return: the context describing this request
     """
     from privacyidea.lib.conditional_access.context import CAContext
@@ -445,8 +442,7 @@ def build_ca_context(user, internal_admin: bool | None = None, use_default_error
         if internal_admin is None:
             internal_admin = g.get("resolved_user", {}).get("is_local_admin", False)
     return CAContext(user=user or None, source_ip=source_ip,
-                     user_role=str(_determine_user_role(user, bool(internal_admin))),
-                     use_default_error_message=use_default_error_message)
+                     user_role=str(_determine_user_role(user, bool(internal_admin))))
 
 
 def check_unquote(request, data):
