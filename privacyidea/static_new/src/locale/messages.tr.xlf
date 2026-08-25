@@ -16480,7 +16480,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-details/user-details-token-table/user-details-token-table.component.ts</context>
-          <context context-type="linenumber">104</context>
+          <context context-type="linenumber">101</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-table/user-table.component.ts</context>
@@ -16776,27 +16776,27 @@
         </context-group>
       </trans-unit>
       <trans-unit id="user.bulkUnassignFailed" datatype="html">
-        <source>Failed to unassign <x id="COUNT" equiv-text="failed.length"/> of <x id="TOTAL" equiv-text="total"/> tokens: <x id="SERIALS" equiv-text="serials"/></source>
-        <target state="new">Failed to unassign <x id="COUNT" equiv-text="failed.length"/> of <x id="TOTAL" equiv-text="total"/> tokens: <x id="SERIALS" equiv-text="serials"/></target>
+        <source><x id="COUNT" equiv-text="failed.length"/>/<x id="TOTAL" equiv-text="total"/> unassign failed: <x id="SERIALS" equiv-text="serials"/></source>
+        <target state="new"><x id="COUNT" equiv-text="failed.length"/>/<x id="TOTAL" equiv-text="total"/> unassign failed: <x id="SERIALS" equiv-text="serials"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-details/user-details-token-table/user-details-token-table.component.ts</context>
-          <context context-type="linenumber">270</context>
+          <context context-type="linenumber">267</context>
         </context-group>
       </trans-unit>
       <trans-unit id="user.bulkToggleActiveFailed" datatype="html">
-        <source>Failed to toggle <x id="COUNT" equiv-text="failed.length"/> of <x id="TOTAL" equiv-text="total"/> tokens: <x id="SERIALS" equiv-text="serials"/></source>
-        <target state="new">Failed to toggle <x id="COUNT" equiv-text="failed.length"/> of <x id="TOTAL" equiv-text="total"/> tokens: <x id="SERIALS" equiv-text="serials"/></target>
+        <source><x id="COUNT" equiv-text="failed.length"/>/<x id="TOTAL" equiv-text="total"/> toggle active failed: <x id="SERIALS" equiv-text="serials"/></source>
+        <target state="new"><x id="COUNT" equiv-text="failed.length"/>/<x id="TOTAL" equiv-text="total"/> toggle active failed: <x id="SERIALS" equiv-text="serials"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-details/user-details-token-table/user-details-token-table.component.ts</context>
-          <context context-type="linenumber">272</context>
+          <context context-type="linenumber">269</context>
         </context-group>
       </trans-unit>
       <trans-unit id="user.bulkResetFailCountFailed" datatype="html">
-        <source>Failed to reset the fail counter for <x id="COUNT" equiv-text="failed.length"/> of <x id="TOTAL" equiv-text="total"/> tokens: <x id="SERIALS" equiv-text="serials"/></source>
-        <target state="new">Failed to reset the fail counter for <x id="COUNT" equiv-text="failed.length"/> of <x id="TOTAL" equiv-text="total"/> tokens: <x id="SERIALS" equiv-text="serials"/></target>
+        <source><x id="COUNT" equiv-text="failed.length"/>/<x id="TOTAL" equiv-text="total"/> reset fail count failed: <x id="SERIALS" equiv-text="serials"/></source>
+        <target state="new"><x id="COUNT" equiv-text="failed.length"/>/<x id="TOTAL" equiv-text="total"/> reset fail count failed: <x id="SERIALS" equiv-text="serials"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-details/user-details-token-table/user-details-token-table.component.ts</context>
-          <context context-type="linenumber">274</context>
+          <context context-type="linenumber">271</context>
         </context-group>
       </trans-unit>
       <trans-unit id="user.failedToSaveUserEdits" datatype="html">
@@ -18512,7 +18512,7 @@
         <target state="new">Enroll a new token for this user.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-details/user-details-token-table/user-details-token-table.component.ts</context>
-          <context context-type="linenumber">172</context>
+          <context context-type="linenumber">169</context>
         </context-group>
       </trans-unit>
       <trans-unit id="user.assignExistingToken" datatype="html">
@@ -18520,7 +18520,7 @@
         <target state="new">Assign an existing token to this user.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-details/user-details-token-table/user-details-token-table.component.ts</context>
-          <context context-type="linenumber">175</context>
+          <context context-type="linenumber">172</context>
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.noResolversYet" datatype="html">
@@ -18784,7 +18784,7 @@
         <target state="new">Enroll a new token for this user, or assign an existing one.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-details/user-details-token-table/user-details-token-table.component.ts</context>
-          <context context-type="linenumber">169</context>
+          <context context-type="linenumber">166</context>
         </context-group>
       </trans-unit>
     </body>

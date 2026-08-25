@@ -258,7 +258,7 @@ describe("TokenTableActionsComponent", () => {
 
       expect(tokenService.toggleActive).toHaveBeenCalledWith("T1", true);
       expect(tokenService.toggleActive).toHaveBeenCalledWith("T2", false);
-      expect(notificationService.success).toHaveBeenCalledWith("Successfully toggled 2 token(s).");
+      expect(notificationService.success).toHaveBeenCalledWith("Successfully toggled 2 tokens.");
     });
 
     it("should only activate inactive tokens when dialog returns 'activate'", () => {
@@ -272,7 +272,7 @@ describe("TokenTableActionsComponent", () => {
       component.toggleActiveSelectedTokens();
 
       expect(tokenService.toggleActive).toHaveBeenCalledWith("T2", false);
-      expect(notificationService.success).toHaveBeenCalledWith("Successfully activated 1 token(s).");
+      expect(notificationService.success).toHaveBeenCalledWith("Successfully activated 1 token.");
     });
 
     it("should only deactivate active tokens when dialog returns 'deactivate'", () => {
@@ -286,7 +286,7 @@ describe("TokenTableActionsComponent", () => {
       component.toggleActiveSelectedTokens();
 
       expect(tokenService.toggleActive).toHaveBeenCalledWith("T1", true);
-      expect(notificationService.success).toHaveBeenCalledWith("Successfully deactivated 1 token(s).");
+      expect(notificationService.success).toHaveBeenCalledWith("Successfully deactivated 1 token.");
     });
 
     it("should show 'No tokens to process' when activate is chosen but all are already active", () => {
@@ -351,7 +351,7 @@ describe("TokenTableActionsComponent", () => {
 
       expect(tokenService.resetFailCount).toHaveBeenCalledWith("T1");
       expect(tokenService.resetFailCount).toHaveBeenCalledWith("T2");
-      expect(notificationService.success).toHaveBeenCalledWith("Successfully reset failcounter for 2 token(s).");
+      expect(notificationService.success).toHaveBeenCalledWith("Successfully reset the failcounter for 2 tokens.");
       expect(tokenService.tokenResource.reload).toHaveBeenCalled();
       expect(tokenService.tokenDetailResource.reload).toHaveBeenCalled();
     });

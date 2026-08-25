@@ -24,7 +24,6 @@ import {
   inject,
   input,
   linkedSignal,
-  LOCALE_ID,
   signal,
   TemplateRef,
   WritableSignal
@@ -61,7 +60,6 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
 import { TokenDetails, TokenService, TokenServiceInterface } from "@services/token/token.service";
 import { UserService, UserServiceInterface } from "@services/user/user.service";
 import { catchError, forkJoin, map, Observable, of } from "rxjs";
-import { formatList } from "@utils/i18n.utils";
 
 interface BulkActionResult {
   serial: string;
@@ -98,7 +96,6 @@ type BulkAction = "unassign" | "toggleActive" | "resetFailCount";
   styleUrl: "./user-details-token-table.component.scss"
 })
 export class UserDetailsTokenTableComponent {
-  private readonly localeId: string = inject(LOCALE_ID);
 
   protected linkLabel(label: string): string {
     return $localize`:@@common.linkLabel:${label}:LABEL: link`;
@@ -264,14 +261,14 @@ export class UserDetailsTokenTableComponent {
   }
 
   private bulkFailureMessage(action: BulkAction, failed: string[], total: number): string {
-    const serials = formatList(this.localeId, failed);
+    const serials = failed.join(", ");
     switch (action) {
       case "unassign":
-        return $localize`:@@user.bulkUnassignFailed:Failed to unassign ${failed.length}:COUNT: of ${total}:TOTAL: tokens: ${serials}:SERIALS:`;
+        return $localize`:@@user.bulkUnassignFailed:${failed.length}:COUNT:/${total}:TOTAL: unassign failed: ${serials}:SERIALS:`;
       case "toggleActive":
-        return $localize`:@@user.bulkToggleActiveFailed:Failed to toggle ${failed.length}:COUNT: of ${total}:TOTAL: tokens: ${serials}:SERIALS:`;
+        return $localize`:@@user.bulkToggleActiveFailed:${failed.length}:COUNT:/${total}:TOTAL: toggle active failed: ${serials}:SERIALS:`;
       default:
-        return $localize`:@@user.bulkResetFailCountFailed:Failed to reset the fail counter for ${failed.length}:COUNT: of ${total}:TOTAL: tokens: ${serials}:SERIALS:`;
+        return $localize`:@@user.bulkResetFailCountFailed:${failed.length}:COUNT:/${total}:TOTAL: reset fail count failed: ${serials}:SERIALS:`;
     }
   }
 }
