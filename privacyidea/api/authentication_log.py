@@ -30,6 +30,7 @@ from privacyidea.lib.conditional_access.authentication_log import (get_authentic
                                                                    AuthenticationLogVisibilityScope,
                                                                    AuthLogUserRole,
                                                                    DEFAULT_PAGE_SIZE)
+from privacyidea.lib.conditional_access.conditions import AUTHENTICATING_ENDPOINTS
 from privacyidea.lib.log import log_with
 from privacyidea.lib.params import get_optional
 from privacyidea.lib.policies.actions import PolicyAction
@@ -174,6 +175,26 @@ def get_authentication_log_reasons():
     reasons = [str(reason) for reason in AuthEventReason]
     g.audit_object.log({"success": True})
     return send_result(reasons)
+
+
+@authentication_log_blueprint.route("/endpoints", methods=["GET"])
+@user_required
+@prepolicy(check_base_action, request, PolicyAction.AUTHENTICATION_LOG_READ)
+@log_with(log)
+def get_authentication_log_endpoints():
+    """
+    Return the list of endpoints an authentication can arrive at.
+
+    Requires the policy action :ref:`policy_authentication_log_read`, like the log read endpoint. The list is
+    :data:`AUTHENTICATING_ENDPOINTS`, the request paths that record an authentication-log row, so the WebUI offers the
+    ``endpoints`` filter as a selection instead of a path typed by hand. It is not derived from the logged data: a
+    path an admin can select but that nothing has hit yet still belongs in the list, and a filter may still name a
+    value of its own (a wildcard such as ``/validate/*``, or the path of a route that has since been renamed).
+
+    :status 200: ``result.value`` is a sorted list of request paths.
+    """
+    g.audit_object.log({"success": True})
+    return send_result(sorted(AUTHENTICATING_ENDPOINTS))
 
 
 @authentication_log_blueprint.route("/eventtypes", methods=["GET"])

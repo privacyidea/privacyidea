@@ -416,6 +416,10 @@ them::
    GET /authenticationlog/?event_types=NO_USABLE_TOKEN&reasons=TOKEN_FAILCOUNT_EXCEEDED
    GET /authenticationlog/?endpoints=/validate/check,/validate/radiuscheck
 
+The *Endpoint* and *Reason* columns filter through a selection of the defined
+values, which the WebUI reads from ``GET /authenticationlog/endpoints`` and
+``GET /authenticationlog/reasons``.
+
 Filter values are matched as follows:
 
 * ``*`` is the wildcard and matches any sequence of characters, e.g.

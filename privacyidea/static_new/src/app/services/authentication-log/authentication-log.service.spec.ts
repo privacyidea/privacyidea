@@ -65,11 +65,12 @@ describe("AuthenticationLogService", () => {
     httpMock.verify();
   });
 
-  // The event-types and reasons resources load under the same gate as the log page, so flush them where a test only
-  // asserts the page request (keeps httpMock.verify() clean).
+  // The vocabulary resources (event types, reasons, endpoints) load under the same gate as the log page, so flush them
+  // where a test only asserts the page request (keeps httpMock.verify() clean).
   const flushEventTypes = () => {
     httpMock.match((r) => r.url.endsWith("/eventtypes")).forEach((r) => r.flush(MockPiResponse.fromValue([])));
     httpMock.match((r) => r.url.endsWith("/reasons")).forEach((r) => r.flush(MockPiResponse.fromValue([])));
+    httpMock.match((r) => r.url.endsWith("/endpoints")).forEach((r) => r.flush(MockPiResponse.fromValue([])));
   };
 
   // The oldest-entry resource (page_size=1, timestamp asc) loads under the same gate as the log page; flush it where a
@@ -222,6 +223,7 @@ describe("AuthenticationLogService", () => {
     httpMock.match(isPageRequest).forEach((r) => r.flush(emptyPage()));
     flushOldest();
     httpMock.match((r) => r.url.endsWith("/reasons")).forEach((r) => r.flush(MockPiResponse.fromValue([])));
+    httpMock.match((r) => r.url.endsWith("/endpoints")).forEach((r) => r.flush(MockPiResponse.fromValue([])));
     httpMock
       .match((r) => r.url.endsWith("/eventtypes"))
       .forEach((r) => r.flush(MockPiResponse.fromValue(["LOGIN_SUCCESS", "AUTHENTICATION_FAIL"])));
@@ -238,12 +240,30 @@ describe("AuthenticationLogService", () => {
     httpMock.match(isPageRequest).forEach((r) => r.flush(emptyPage()));
     flushOldest();
     httpMock.match((r) => r.url.endsWith("/eventtypes")).forEach((r) => r.flush(MockPiResponse.fromValue([])));
+    httpMock.match((r) => r.url.endsWith("/endpoints")).forEach((r) => r.flush(MockPiResponse.fromValue([])));
     httpMock
       .match((r) => r.url.endsWith("/reasons"))
       .forEach((r) => r.flush(MockPiResponse.fromValue(["TOKEN_DISABLED", "WRONG_OTP"])));
     await Promise.resolve();
     TestBed.tick();
     expect(service.reasons()).toEqual(["TOKEN_DISABLED", "WRONG_OTP"]);
+  });
+
+  it("endpoints is empty before load and reflects the loaded list", async () => {
+    // A closed list of request paths, served like the reason vocabulary so the endpoint filter can offer a selection.
+    expect(service.endpoints()).toEqual([]);
+    service.authenticationLogResource.reload();
+    TestBed.tick();
+    httpMock.match(isPageRequest).forEach((r) => r.flush(emptyPage()));
+    flushOldest();
+    httpMock.match((r) => r.url.endsWith("/eventtypes")).forEach((r) => r.flush(MockPiResponse.fromValue([])));
+    httpMock.match((r) => r.url.endsWith("/reasons")).forEach((r) => r.flush(MockPiResponse.fromValue([])));
+    httpMock
+      .match((r) => r.url.endsWith("/endpoints"))
+      .forEach((r) => r.flush(MockPiResponse.fromValue(["/auth", "/validate/check"])));
+    await Promise.resolve();
+    TestBed.tick();
+    expect(service.endpoints()).toEqual(["/auth", "/validate/check"]);
   });
 
   it("forwards the reason filter as the plural reasons parameter", () => {

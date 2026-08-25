@@ -116,6 +116,8 @@ export interface AuthenticationLogServiceInterface {
   eventTypes: () => AuthenticationLogEventType[];
   reasonsResource: HttpResourceRef<PiResponse<string[]> | undefined>;
   reasons: () => string[];
+  endpointsResource: HttpResourceRef<PiResponse<string[]> | undefined>;
+  endpoints: () => string[];
   oldestTimestamp: () => string | null;
 
   clearFilter(): void;
@@ -234,6 +236,25 @@ export class AuthenticationLogService implements AuthenticationLogServiceInterfa
   reasons = computed<string[]>(() => {
     if (!this.reasonsResource.hasValue()) return [];
     return this.reasonsResource.value()?.result?.value ?? [];
+  });
+
+  // The endpoints an authentication can arrive at, served by the backend like the two vocabularies above. A closed
+  // list of request paths, so the endpoint filter is a selection of them rather than a path typed by hand. Gated like
+  // the log itself.
+  endpointsResource = httpResource<PiResponse<string[]>>(() => {
+    if (!this.contentService.onAuthenticationLog() || !this.canRead()) {
+      return undefined;
+    }
+    return {
+      url: this.authenticationLogBaseUrl + "endpoints",
+      method: "GET",
+      headers: this.authService.getHeaders()
+    };
+  });
+
+  endpoints = computed<string[]>(() => {
+    if (!this.endpointsResource.hasValue()) return [];
+    return this.endpointsResource.value()?.result?.value ?? [];
   });
 
   // The single oldest entry (timestamp ascending), used to size the time slider's default window down to the first

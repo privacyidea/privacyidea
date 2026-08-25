@@ -26,6 +26,7 @@ import mock
 
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, AuthEventReason
 from privacyidea.lib.conditional_access.authentication_log import log_authentication_event, AuthLogUserRole
+from privacyidea.lib.conditional_access.conditions import AUTHENTICATING_ENDPOINTS
 from privacyidea.lib.conditional_access.outcome_log import record_outcomes
 from privacyidea.lib.policy import set_policy, delete_policy, SCOPE, PolicyAction
 from privacyidea.lib.realm import set_realm, delete_realm
@@ -427,6 +428,29 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
         self.assertListEqual([str(reason) for reason in AuthEventReason], value)
         self.assertIn("TOKEN_DISABLED", value)
         self.assertIn("AUTHORIZATION_POLICY", value)
+
+    def test_endpoints_lists_the_authenticating_paths(self):
+        # Served like the reason vocabulary, so the endpoint filter can offer a selection. The list is the configured
+        # one, not a distinct query over the logged rows: a path nothing has hit yet is still selectable.
+        with self.app.test_request_context("/authenticationlog/endpoints", method="GET",
+                                           headers={"Authorization": self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+        value = res.json["result"]["value"]
+        self.assertListEqual(sorted(AUTHENTICATING_ENDPOINTS), value)
+        self.assertIn("/validate/check", value)
+        self.assertIn("/auth", value)
+
+    def test_endpoints_denied_without_action(self):
+        set_policy("authlog_other", scope=SCOPE.ADMIN, action=PolicyAction.ENABLE)
+        try:
+            with self.app.test_request_context("/authenticationlog/endpoints", method="GET",
+                                               headers={"Authorization": self.at}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(403, res.status_code, res.json)
+                self.assertFalse(res.json["result"]["status"], res.json)
+        finally:
+            delete_policy("authlog_other")
 
     def test_event_types_accessible_to_user(self):
         self.authenticate_selfservice_user()

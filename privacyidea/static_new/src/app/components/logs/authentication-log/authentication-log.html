@@ -182,6 +182,12 @@
                         [options]="reasonOptions()"
                         [selected]="selectedFilterValues('reason')"
                         (selectionChange)="setFilterValues('reason', $event)" />
+                    } @else if (column.key === "endpoint") {
+                      <app-multi-select-filter
+                        [label]="column.label"
+                        [options]="endpointOptions()"
+                        [selected]="selectedFilterValues('endpoint')"
+                        (selectionChange)="setFilterValues('endpoint', $event)" />
                     } @else if (column.key === "realm") {
                       <app-multi-select-filter
                         [label]="column.label"

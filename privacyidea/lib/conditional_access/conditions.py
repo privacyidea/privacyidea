@@ -246,13 +246,14 @@ def _resolve_endpoint(context: "CAContext") -> Any:
 
 
 # The endpoints an authentication can arrive at, i.e. the paths that record an authentication-log row. The vocabulary
-# of an ENDPOINT condition, so an admin picks from a list instead of typing a path that would silently never match.
+# of an ENDPOINT condition and of the log's endpoint filter, so both offer a list instead of a path typed by hand that
+# would silently never match.
 #
 # Hard-coded because it cannot be derived: whether a route authenticates is decided by it calling
 # ``log_authentication``, which no registry records. **A new authenticating endpoint has to be added here**, and
 # EndpointConditionChoicesTestCase asserts every path listed is a route this app actually serves, so a rename cannot
 # leave a dead choice behind.
-_ENDPOINT_CHOICES: tuple[str, ...] = (
+AUTHENTICATING_ENDPOINTS: tuple[str, ...] = (
     "/auth",
     "/validate/check",
     "/validate/radiuscheck",
@@ -290,7 +291,7 @@ CONDITION_TYPES: dict[str, ConditionTypeSpec] = {
         label=lazy_gettext("Endpoint"),
         operators=frozenset({ConditionOperator.IN, ConditionOperator.NOT_IN}),
         resolve=_resolve_endpoint,
-        choices=lambda: sorted(_ENDPOINT_CHOICES),
+        choices=lambda: sorted(AUTHENTICATING_ENDPOINTS),
         log_column=AuthenticationLog.endpoint),
 }
 

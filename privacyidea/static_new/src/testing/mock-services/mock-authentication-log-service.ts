@@ -72,6 +72,9 @@ export class MockAuthenticationLogService implements AuthenticationLogServiceInt
     "WRONG_OTP"
   ]);
   reasonsResource = new MockHttpResourceRef<PiResponse<string[]> | undefined>(MockPiResponse.fromValue<string[]>([]));
+  // The authenticating request paths; tests may override via endpoints.set(...).
+  endpoints = signal<string[]>(["/auth", "/ttype/push", "/validate/check", "/validate/triggerchallenge"]);
+  endpointsResource = new MockHttpResourceRef<PiResponse<string[]> | undefined>(MockPiResponse.fromValue<string[]>([]));
 
   clearFilter = jest.fn().mockImplementation(() => {
     this.authenticationLogFilter.set(new FilterValue());

@@ -106,12 +106,17 @@ describe("AuthenticationLog", () => {
     expect(component.selectedFilterValues("reason")).toEqual(["TOKEN_DISABLED", "TOKEN_REVOKED"]);
   });
 
-  it("offers the endpoint as a filterable, sortable column with its own filter tooltip", () => {
+  it("offers the endpoint as a column with the backend's path list as its value picker", () => {
     const endpoint = component.columnKeysMap.find((column) => column.key === "endpoint");
     expect(endpoint).toEqual(expect.objectContaining({ filterable: true, sortable: true }));
-    // No header value picker, so the cell keeps its inline "filter by this value" button.
-    expect(component.showInlineCellFilter("endpoint")).toBe(true);
-    expect(component.filterTooltip("endpoint")).toBe("Filter by this endpoint");
+    // A closed list of six paths, so the options come from the service (i.e. the backend), not a copy held here.
+    expect(component.endpointOptions()).toEqual(service.endpoints());
+    expect(component.endpointOptions()).toContain("/validate/check");
+    // The header offers that picker, so the cells must not offer a second, competing affordance.
+    expect(component.showInlineCellFilter("endpoint")).toBe(false);
+    expect(component.filterTooltip("endpoint")).toBe("Filter by this value");
+    component.setFilterValues("endpoint", ["/auth", "/validate/check"]);
+    expect(component.selectedFilterValues("endpoint")).toEqual(["/auth", "/validate/check"]);
   });
 
   it("hides the user-identifying columns in self-service", () => {

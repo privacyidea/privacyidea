@@ -26,7 +26,7 @@ from privacyidea.lib.conditional_access import lockout_policy as lockout_policy_
 from privacyidea.lib.conditional_access.authentication_event_types import CA_ENFORCEMENT_EVENT_TYPES  # noqa: F401
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, CountMode
 from privacyidea.lib.conditional_access.authentication_log import AuthLogUserRole
-from privacyidea.lib.conditional_access.conditions import (_ENDPOINT_CHOICES, ConditionOperator, ConditionType,
+from privacyidea.lib.conditional_access.conditions import (AUTHENTICATING_ENDPOINTS, ConditionOperator, ConditionType,
                                                            get_condition_types)
 from privacyidea.lib.conditional_access.engine import LockoutAction, LockoutTarget
 from privacyidea.lib.conditional_access.lockout_policy import (
@@ -838,7 +838,7 @@ class LockoutPolicyCrudTestCase(MyTestCase):
         self.assertIn(self.realm1, realm_entry["choices"])
         self.assertListEqual(sorted(role.value for role in AuthLogUserRole),
                              metadata[ConditionType.USER_ROLE.value]["choices"])
-        self.assertListEqual(sorted(_ENDPOINT_CHOICES), metadata[ConditionType.ENDPOINT.value]["choices"])
+        self.assertListEqual(sorted(AUTHENTICATING_ENDPOINTS), metadata[ConditionType.ENDPOINT.value]["choices"])
 
     def test_43_endpoint_condition_values_come_from_the_endpoint_vocabulary(self):
         policy_id = self._create_with_conditions(
@@ -857,6 +857,6 @@ class EndpointConditionChoicesTestCase(MyTestCase):
         # The list is hand-maintained (nothing records which routes authenticate), so at least a rename
         # or typo must not survive: every path offered has to be one this app can dispatch.
         adapter = self.app.url_map.bind("localhost")
-        for path in _ENDPOINT_CHOICES:
+        for path in AUTHENTICATING_ENDPOINTS:
             with self.subTest(path=path):
                 adapter.match(path, method="POST")

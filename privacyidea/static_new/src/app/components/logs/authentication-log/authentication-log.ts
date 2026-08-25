@@ -242,8 +242,7 @@ const FILTER_TOOLTIPS: Record<string, string> = {
   source_ip: $localize`Filter by this source IP`,
   serial: $localize`Filter by this serial`,
   transaction_id: $localize`Filter by this transaction ID`,
-  attempt_id: $localize`Filter by this attempt ID`,
-  endpoint: $localize`Filter by this endpoint`
+  attempt_id: $localize`Filter by this attempt ID`
 };
 
 // Columns whose value is clipped instead of widening the table: the full value stays available in the truncation
@@ -330,6 +329,7 @@ export class AuthenticationLog {
   sort = this.authenticationLogService.sort;
 
   readonly reasonOptions = computed<string[]>(() => this.authenticationLogService.reasons());
+  readonly endpointOptions = computed<string[]>(() => this.authenticationLogService.endpoints());
   readonly eventTypeOptions = computed<string[]>(() =>
     this.authenticationLogService.eventTypes().map((entry) => entry.name)
   );
@@ -760,7 +760,7 @@ export class AuthenticationLog {
   // value picker don't need it, which is dynamic for the client_label. (event_type and realm never reach this: they
   // render through their own @case blocks.)
   showInlineCellFilter(columnKey: string): boolean {
-    if (columnKey === "client_label" || columnKey === "reason") return false;
+    if (columnKey === "client_label" || columnKey === "reason" || columnKey === "endpoint") return false;
     if (columnKey === "source_ip") return !this.showSourceIpMenu();
     return true;
   }
