@@ -47,6 +47,8 @@ from urllib.parse import urlparse, urlunparse
 import redis as redis_lib
 
 from privacyidea.lib.challenge_types import is_challenge_open
+from privacyidea.lib.crypto import FAILED_TO_DECRYPT_PASSWORD, decryptPassword, encryptPassword
+from privacyidea.lib.error import HSMException
 from privacyidea.lib.framework import get_app_config_value, get_app_local_store
 from privacyidea.models.utils import utc_now
 
@@ -116,8 +118,8 @@ def _retry_cooldown_seconds() -> int:
 # challenges, which are looked up by transaction_id only). A token never
 # creates two challenges in one transaction, so serial uniquely identifies a
 # challenge within the hash.
-_TXN_KEY = "pi:challenge:txn:{}"  # pi:challenge:txn:<transaction_id> -> HASH {serial -> JSON}
-_SERIAL_KEY = "pi:challenge:serial:{}"  # pi:challenge:serial:<serial>       -> SET of txn ids
+_TXN_KEY = "pi:challenge:v1:txn:{}"  # pi:challenge:v1:txn:<transaction_id> -> HASH {serial -> JSON}
+_SERIAL_KEY = "pi:challenge:v1:serial:{}"  # pi:challenge:v1:serial:<serial>       -> SET of txn ids
 
 # Keep Redis keys a bit beyond validitytime so we don't evict just before the
 # DB expiry check fires, and to absorb minor clock skew between nodes.
@@ -320,24 +322,58 @@ class ChallengeDTO:
     token classes work transparently with either backend. Challenges stored
     only in Redis have no DB row, so save() and delete() operate on Redis
     only.
+
+    ``data`` is held in plaintext on the instance and encrypted only on the
+    way into Redis (see ``to_payload``), matching the SQL model where the
+    ``data`` property is plaintext over an encrypted ``_data`` column. It can
+    carry secrets - the OTP itself for email/SMS tokens under
+    ``*.concurrent_challenges``, or the push code-to-phone display code - so
+    it must never reach the wire unencrypted.
     """
 
     def __init__(self, transaction_id: str, serial: str,
                  timestamp: datetime, expiration: datetime,
                  challenge: str = '', data: str = '', session: str = '',
-                 received_count: int = 0, otp_valid: bool = False):
+                 received_count: int = 0, otp_valid: bool = False,
+                 data_ciphertext: str | None = None):
+        """
+        :param data: the challenge data in plaintext
+        :param data_ciphertext: the ciphertext of ``data``, when the caller already
+            holds it - the payload just read from Redis, or the value the SQL model
+            encrypted for its own column. Saves re-encrypting an unchanged value.
+        """
         # timestamp and expiration are required positionals: is_valid()
         # compares them with utc_now() and would raise TypeError on None,
         # so a half-formed DTO is unsafe by construction.
         self.transaction_id = transaction_id
         self.serial = serial
         self.challenge = challenge
-        self.data = data
+        self._data_plaintext = data or ''
+        self._data_ciphertext = data_ciphertext
         self.session = session
         self.timestamp = timestamp
         self.expiration = expiration
         self.received_count = received_count
         self.otp_valid = otp_valid
+
+    @property
+    def data(self) -> str:
+        """The challenge data in plaintext, mirroring ``Challenge.data``."""
+        return self._data_plaintext
+
+    @data.setter
+    def data(self, value: str) -> None:
+        """
+        Assign the plaintext and drop any ciphertext held for the previous value.
+
+        Every write to the plaintext has to invalidate the cached ciphertext, or
+        ``to_payload`` would persist the value this DTO no longer holds. That is
+        why the plaintext lives behind a property rather than being a plain
+        attribute: an assignment from anywhere - including
+        :py:meth:`set_data` - must not be able to bypass the invalidation.
+        """
+        self._data_plaintext = value or ''
+        self._data_ciphertext = None
 
     def is_valid(self) -> bool:
         now = utc_now()
@@ -421,12 +457,27 @@ class ChallengeDTO:
 
     def to_payload(self) -> str:
         """Serialise this DTO to the JSON payload stored under the txn key.
-        Paired with ``_deserialize`` - keep the field set in sync."""
+        Paired with ``_deserialize`` - keep the field set in sync.
+
+        ``data`` is encrypted here rather than in ``set_data`` so that the
+        in-memory attribute stays plaintext, mirroring how the SQL-backed
+        ``Challenge`` keeps a plaintext ``data`` property over an encrypted
+        ``_data`` column. Every write reaches Redis through this method, so
+        this is the single place the encryption has to happen.
+
+        The ciphertext of an unchanged value is reused rather than recomputed.
+        ``save()`` runs for every mutation, including the counter-only ones that
+        a wrong answer triggers, and on a PKCS#11 setup each encryption is a
+        round trip to the device. Reusing it also matches the SQL model, whose
+        ``data`` column keeps one ciphertext until ``set_data`` replaces it.
+        """
+        if self.data and self._data_ciphertext is None:
+            self._data_ciphertext = encryptPassword(self.data)
         return json.dumps({
             'transaction_id': self.transaction_id,
             'serial': self.serial,
             'challenge': self.challenge,
-            'data': self.data or '',
+            'data': self._data_ciphertext if self.data else '',
             'session': self.session or '',
             'timestamp': self.timestamp.isoformat(),
             'expiration': self.expiration.isoformat(),
@@ -455,10 +506,15 @@ class ChallengeDTO:
 
 def cache_challenge(serial: str, transaction_id: str, challenge: str, data: str,
                     session: str, timestamp: datetime, expiration: datetime,
-                    received_count: int = 0, otp_valid: bool = False):
+                    received_count: int = 0, otp_valid: bool = False,
+                    data_ciphertext: str | None = None):
     """
     Store a newly created challenge in Redis.
     Called from create_challenge() as the primary (and only) persistence when caching is enabled.
+
+    :param data: the challenge data in plaintext
+    :param data_ciphertext: the ciphertext of ``data`` when the caller already holds
+        it, so that it is not encrypted a second time here
     """
     # TODO(metrics PR #5270): increment `pi_redis_challenge_writes_total` on
     # success and `pi_redis_challenge_write_errors_total` on the exception
@@ -478,6 +534,7 @@ def cache_challenge(serial: str, transaction_id: str, challenge: str, data: str,
             timestamp=timestamp, expiration=expiration,
             challenge=challenge, data=data or '', session=session or '',
             received_count=received_count, otp_valid=otp_valid,
+            data_ciphertext=data_ciphertext,
         ).to_payload()
         txn_key = _TXN_KEY.format(transaction_id)
         pipe = r.pipeline()
@@ -507,6 +564,12 @@ def cache_challenge(serial: str, transaction_id: str, challenge: str, data: str,
         pipe.execute()
     except redis_lib.exceptions.RedisError as e:
         _disable_redis(e)
+    # An HSMException from to_payload()'s encryption is deliberately not caught
+    # here. Swallowing it would drop the challenge entirely: create_challenge()
+    # only falls back to the database when _disable_redis() has fired, and a
+    # failing HSM says nothing about Redis. Letting it propagate matches the
+    # database path, where Challenge.__init__ raises the same exception before
+    # the row is ever written.
 
 
 def evict_challenge(transaction_id: str, serial: str):
@@ -698,11 +761,46 @@ def get_challenges_from_cache(serial: str = None, transaction_id: str = None,
 def _deserialize(raw: str) -> ChallengeDTO | None:
     try:
         d = json.loads(raw)
+        if not isinstance(d, dict):
+            # Valid JSON, but not an object - e.g. a hand-edited key or another
+            # tool writing into the same database. Raise into the handler below
+            # so it degrades to a cache miss instead of an AttributeError on the
+            # first .get() escaping all the way to the API layer.
+            raise TypeError(f"challenge payload is {type(d).__name__}, expected object")
+        ciphertext = d.get('data', '')
+        data = ciphertext
+        if data:
+            try:
+                data = decryptPassword(data)
+            except HSMException as e:
+                # decryptPassword() guards the decryption itself but fetches the
+                # security module outside that guard, and fetching it raises while
+                # it is not ready - an encrypted encryption key that nobody has
+                # unlocked since the restart. That is a server-side condition
+                # rather than a bad payload, but a caller can do no more with it
+                # than with a corrupt entry, and raising here would take the whole
+                # read down: listing or deleting challenges never needed the
+                # plaintext in the first place.
+                log.warning("Could not decrypt challenge data from Redis for transaction %s, "
+                            "the security module is unavailable: %s", d.get('transaction_id'), e)
+                return None
+            if data == FAILED_TO_DECRYPT_PASSWORD:
+                # Every stored payload is encrypted, so a decrypt failure means
+                # the ciphertext is corrupt or was written under a different
+                # encryption key. Handing back the placeholder string would let
+                # a token compare a real answer against "FAILED TO DECRYPT
+                # PASSWORD!", so treat the entry as unusable instead.
+                log.warning("Could not decrypt challenge data from Redis for transaction %s.",
+                            d.get('transaction_id'))
+                return None
         return ChallengeDTO(
             transaction_id=d['transaction_id'],
             serial=d['serial'],
             challenge=d.get('challenge', ''),
-            data=d.get('data', ''),
+            data=data,
+            # The entry we just read is the ciphertext of this plaintext, so a
+            # later status-only save can persist it again without encrypting.
+            data_ciphertext=ciphertext or None,
             session=d.get('session', ''),
             timestamp=datetime.fromisoformat(d['timestamp']),
             expiration=datetime.fromisoformat(d['expiration']),
@@ -754,3 +852,12 @@ def _update_challenge_in_cache(dto: ChallengeDTO):
         pipe.execute()
     except redis_lib.exceptions.RedisError as e:
         _disable_redis(e)
+    # An HSMException from to_payload() is deliberately not caught. It can only
+    # come from a save that changed ``data``, since to_payload() reuses the
+    # ciphertext of an unchanged value and the counter-only saves therefore reach
+    # no encryption at all. Losing a data change silently is not survivable the
+    # way losing a counter increment is: push code-to-phone persists
+    # ``smartphone_confirmed`` this way, and a dropped write leaves the challenge
+    # answerable, so a replayed confirm would hand out a second display code.
+    # Letting it propagate matches the database path, where set_data() raises
+    # before the column is written.

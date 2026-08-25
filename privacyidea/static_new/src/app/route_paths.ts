@@ -22,6 +22,7 @@ export const ROUTE_PATHS = {
   SETTINGS: "/configuration/ui-settings",
   LOGS: "/logs",
   AUDIT: "/logs/audit",
+  NEWS: "/news",
   CLIENTS: "/logs/clients",
   AUTHENTICATION_LOG: "/logs/authentication-log",
   LOCKED_USERS: "/logs/locked-users",

@@ -32,6 +32,7 @@ import { TokenTableSelfServiceComponent } from "./components/token/token-table/t
 import { UserDetailsSelfServiceComponent } from "./components/user/user-details/user-details.self-service.component";
 import { UserSelfServiceComponent } from "./components/user/user.self-service.component";
 import { AuthenticationLog } from "@components/logs/authentication-log/authentication-log";
+import { NewsComponent } from "./components/news/news.component";
 import { logsLandingRedirect } from "@app/routing/landing-redirects";
 
 export const routes: Routes = [
@@ -75,5 +76,9 @@ export const routes: Routes = [
       { path: "audit", component: AuditSelfServiceComponent },
       { path: "authentication-log", component: AuthenticationLog }
     ]
+  },
+  {
+    path: "news",
+    component: NewsComponent
   }
 ];

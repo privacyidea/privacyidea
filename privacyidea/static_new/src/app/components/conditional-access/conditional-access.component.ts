@@ -446,7 +446,7 @@ export class ConditionalAccessComponent implements OnDestroy {
           return;
         }
         selected.forEach((policy) =>
-          this.policyService.savePolicy({ ...policy, dry_run: this.resolveToggle(action, policy.dry_run) })
+          this.policyService.setDryRun(policy.id, this.resolveToggle(action, policy.dry_run))
         );
         this.policySelection.set([]);
       });
@@ -473,7 +473,7 @@ export class ConditionalAccessComponent implements OnDestroy {
   }
 
   onToggleDryRun(policy: LockoutPolicy): void {
-    this.policyService.savePolicy({ ...policy, dry_run: !policy.dry_run });
+    this.policyService.setDryRun(policy.id, !policy.dry_run);
   }
 
   onFilterInput(value: string): void {

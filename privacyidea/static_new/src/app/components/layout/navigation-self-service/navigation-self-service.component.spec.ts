@@ -291,6 +291,32 @@ describe("NavigationSelfServiceComponent", () => {
     expect(keys).not.toContain(ROUTE_PATHS.TOKENS_ASSIGN_TOKEN);
   });
 
+  it("renders the news button when rss_age is positive", () => {
+    authServiceMock.authData.set({
+      ...MockAuthService.MOCK_AUTH_DATA,
+      rss_age: 30
+    });
+    fixture.detectChanges();
+
+    const keys = fixture.debugElement
+      .queryAll(By.directive(NavigationSelfServiceButtonComponent))
+      .map((d) => (d.componentInstance as NavigationSelfServiceButtonComponent).key());
+    expect(keys).toContain(ROUTE_PATHS.NEWS);
+  });
+
+  it("does NOT render the news button when rss_age is zero", () => {
+    authServiceMock.authData.set({
+      ...MockAuthService.MOCK_AUTH_DATA,
+      rss_age: 0
+    });
+    fixture.detectChanges();
+
+    const keys = fixture.debugElement
+      .queryAll(By.directive(NavigationSelfServiceButtonComponent))
+      .map((d) => (d.componentInstance as NavigationSelfServiceButtonComponent).key());
+    expect(keys).not.toContain(ROUTE_PATHS.NEWS);
+  });
+
   it("renders audit log button only when 'auditlog' right is present", () => {
     authServiceMock.authData.set({
       ...MockAuthService.MOCK_AUTH_DATA,

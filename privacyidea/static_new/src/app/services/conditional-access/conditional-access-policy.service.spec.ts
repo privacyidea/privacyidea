@@ -531,6 +531,33 @@ describe("ConditionalAccessPolicyService", () => {
     });
   });
 
+  describe("setDryRun", () => {
+    it("should PATCH the dry-run flag alone, leaving the rest of the policy untouched", async () => {
+      const promise = service.setDryRun(1, true);
+      const req = httpMock.expectOne(`${service.baseUrl}/1`);
+      expect(req.request.method).toBe("PATCH");
+      expect(req.request.body).toEqual({ dry_run: true });
+      req.flush({});
+      await promise;
+    });
+
+    it("should PATCH dry-run off", async () => {
+      const promise = service.setDryRun(1, false);
+      const req = httpMock.expectOne(`${service.baseUrl}/1`);
+      expect(req.request.body).toEqual({ dry_run: false });
+      req.flush({});
+      await promise;
+    });
+
+    it("should notify on error", async () => {
+      const promise = service.setDryRun(1, true);
+      const req = httpMock.expectOne(`${service.baseUrl}/1`);
+      req.flush(null, { status: 500, statusText: "Internal Server Error" });
+      await promise;
+      expect(notificationServiceMock.error).toHaveBeenCalled();
+    });
+  });
+
   describe("reorderPolicies", () => {
     it("should PUT the id order to the order URL", async () => {
       const reload = jest.spyOn(service.policiesResource, "reload").mockImplementation(() => true);

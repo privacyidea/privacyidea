@@ -71,7 +71,6 @@ export interface SubNavSection {
   host: { "[class.has-custom-logo]": "customLogo()" },
   imports: [
     MatToolbar,
-    MatButton,
     MatIconButton,
     MatIconModule,
     NgOptimizedImage,
@@ -83,6 +82,7 @@ export interface SubNavSection {
     NgTemplateOutlet,
     MatMenuModule,
     OverflowNavDirective,
+    MatButton,
     WidgetPaletteComponent
   ],
   templateUrl: "./navigation.component.html",
@@ -145,7 +145,7 @@ export class NavigationComponent implements AfterViewInit, OnDestroy {
   });
   activeSection = computed(() => {
     const url = this.contentService.routeUrl();
-    if (url.startsWith(ROUTE_PATHS.DASHBOARD)) return "dashboard";
+    if (url.startsWith(ROUTE_PATHS.DASHBOARD) || url.startsWith(ROUTE_PATHS.NEWS)) return "dashboard";
     if (url.startsWith(ROUTE_PATHS.CONTAINERS)) return "container";
     if (url.startsWith(ROUTE_PATHS.USERS)) return "users";
     if (url.startsWith(ROUTE_PATHS.POLICIES)) return "policies";
@@ -204,15 +204,7 @@ export class NavigationComponent implements AfterViewInit, OnDestroy {
     this.router.navigate([route_path]);
   }
 
-  openSupport(): void {
-    window.open("https://netknights.it/support_link_admin", "_blank");
-  }
-
-  openExternalLink(url: string): void {
-    window.open(url, "_blank");
-  }
-
-  enterDashboardEdit(): void {
+  protected enterDashboardEdit(): void {
     this.dashboardLayoutService.beginEdit();
     this.pendingChanges.registerHasChanges(() => this.dashboardLayoutService.hasPendingChanges());
     this.pendingChanges.registerValidChanges(() => true);
@@ -222,14 +214,22 @@ export class NavigationComponent implements AfterViewInit, OnDestroy {
     });
   }
 
-  saveDashboard(): void {
+  protected saveDashboard(): void {
     this.dashboardLayoutService.saveEdit();
     this.pendingChanges.clearAllRegistrations();
   }
 
-  cancelDashboard(): void {
+  protected cancelDashboard(): void {
     this.dashboardLayoutService.cancelEdit();
     this.pendingChanges.clearAllRegistrations();
+  }
+
+  openSupport(): void {
+    window.open("https://netknights.it/support_link_admin", "_blank");
+  }
+
+  openExternalLink(url: string): void {
+    window.open(url, "_blank");
   }
 
   private getFilteredNavItems(): NavItem[] {

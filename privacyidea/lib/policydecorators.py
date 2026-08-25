@@ -219,8 +219,12 @@ def auth_cache(wrapped_function, user_object, passw, options=None):
     # If nothing else returned, call the wrapped function
     res, reply_dict = wrapped_function(user_object, passw, options)
     if auth_cache_policy and res:
-        # If authentication is successful, we store the password in auth_cache
-        add_to_cache(user_object.login, user_object.realm, user_object.resolver, passw)
+        # If authentication is successful, we store the password in auth_cache.
+        # The first interval of the policy is how long the entry can be used at
+        # the most, so a cache that can expire entries by itself is told to drop
+        # it exactly then instead of keeping a usable password around longer.
+        add_to_cache(user_object.login, user_object.realm, user_object.resolver, passw,
+                     max_age_seconds=int(first_offset.total_seconds()))
     return res, reply_dict
 
 

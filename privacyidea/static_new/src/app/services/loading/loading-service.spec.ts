@@ -50,18 +50,38 @@ describe("LoadingService", () => {
     expect(listener).toHaveBeenLastCalledWith(false);
   });
 
-  it("getLoadingUrls returns current list; removeLoading prunes it", () => {
+  it("getLoadingGroups returns current endpoints; removeLoading prunes them", () => {
     const subj = new Subject<HttpEvent<unknown>>();
     loadingService.addLoading({
       key: "abc",
       observable: subj.asObservable(),
       url: "/abc"
     });
-    expect(loadingService.getLoadingUrls()).toEqual([{ key: "abc", url: "/abc" }]);
+    expect(loadingService.getLoadingGroups()).toEqual([{ endpoint: "/abc", count: 1 }]);
 
     loadingService.removeLoading("abc");
-    expect(loadingService.getLoadingUrls()).toEqual([]);
+    expect(loadingService.getLoadingGroups()).toEqual([]);
     expect(loadingService.isLoading()).toBe(false);
+  });
+
+  it("groups requests to the same endpoint regardless of query parameters", () => {
+    const subj = new Subject<HttpEvent<unknown>>();
+    ["/token/?page=1", "/token/?page=2", "/token/"].forEach((url, index) =>
+      loadingService.addLoading({ key: `k${index}`, observable: subj.asObservable(), url })
+    );
+    loadingService.addLoading({ key: "other", observable: subj.asObservable(), url: "/realm/" });
+
+    expect(loadingService.getLoadingGroups()).toEqual([
+      { endpoint: "/token/", count: 3 },
+      { endpoint: "/realm/", count: 1 }
+    ]);
+
+    loadingService.removeLoading("k0");
+
+    expect(loadingService.getLoadingGroups()).toEqual([
+      { endpoint: "/token/", count: 2 },
+      { endpoint: "/realm/", count: 1 }
+    ]);
   });
 
   describe("addLoading drops entry after complete / error", () => {

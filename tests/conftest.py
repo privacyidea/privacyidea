@@ -231,6 +231,67 @@ def _flush_redis_between_tests():
     _flush_worker_redis()
 
 
+@pytest.fixture(autouse=True)
+def _clear_ldap_resolver_cache():
+    """Give every test a clean LDAP resolver cache.
+
+    ``LDAPIdResolver.CACHE`` is a module-level dictionary keyed on the resolver
+    ID, which is derived from the resolver's configuration. Two tests that
+    configure an LDAP resolver the same way therefore share one cache entry,
+    even across test files, and nothing ever empties it. Any test that asserts
+    on the cache is then order-dependent: it passes when its file runs alone and
+    fails when it runs after a file that happened to build a resolver with the
+    same configuration.
+
+    Clearing before each test makes the empty cache every such test already
+    assumes a guarantee instead of a coincidence. No test populates the cache in
+    one method and reads it in another, so there is nothing to preserve between
+    them.
+    """
+    from privacyidea.lib.resolvers.LDAPIdResolver import CACHE
+    CACHE.clear()
+    yield
+
+
+@pytest.fixture(autouse=True)
+def _clear_clientapplication_write_throttle():
+    """Let every test write a client application row again.
+
+    ``save_clientapplication`` skips rewriting a row this worker wrote moments
+    ago, remembering that in the app-local store. The store outlives a single
+    test, so a test that empties the table and then saves the same client again
+    would find no row - the write it expected was skipped as a duplicate of one
+    the previous test made.
+    """
+    from privacyidea.lib.clientapplication import _LAST_WRITE_KEY
+    from privacyidea.lib.framework import get_app_local_store
+    try:
+        get_app_local_store().pop(_LAST_WRITE_KEY, None)
+    except RuntimeError:
+        # No application context yet - nothing has been remembered either
+        pass
+    yield
+
+
+@pytest.fixture(autouse=True)
+def _clear_subscription_user_count():
+    """Let every test see the users it created itself.
+
+    The subscription check reuses the number of users with active tokens for a
+    short while instead of counting them on every authentication. The number is
+    kept in the app-local store, which outlives a single test, so a test that
+    assigns tokens and then authenticates could otherwise be judged against a
+    count taken before its users existed.
+    """
+    from privacyidea.lib.framework import get_app_local_store
+    from privacyidea.lib.subscriptions import _USER_COUNT_KEY
+    try:
+        get_app_local_store().pop(_USER_COUNT_KEY, None)
+    except RuntimeError:
+        pass
+    yield
+
+
 CAKEY = "cakey.pem"
 CACERT = "cacert.pem"
 OPENSSLCNF = "openssl.cnf"

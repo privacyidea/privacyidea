@@ -30,6 +30,7 @@ against a Redis 7 service container.
 Tests that don't need Redis at all (pure DTO unit tests, the protocol
 contract check, the version-gate behaviour) run unconditionally.
 """
+import json
 import os
 import unittest
 from contextlib import contextmanager
@@ -40,14 +41,20 @@ import pytest
 import redis as redis_lib
 
 from .base import MyTestCase
+from privacyidea.lib.cache import redis as redis_cache
 from privacyidea.lib.cache.redis import (
     ChallengeDTO,
+    _deserialize,
+    _SERIAL_KEY,
+    _TXN_KEY,
     cache_challenge,
     evict_challenge,
     get_challenges_from_cache,
     get_redis,
 )
 from privacyidea.lib.challenge import get_challenges, get_challenges_paginate
+from privacyidea.lib.crypto import decryptPassword
+from privacyidea.lib.error import HSMException
 from privacyidea.lib.framework import get_app_local_store
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.token import create_challenge, init_token, remove_token
@@ -392,18 +399,18 @@ class TestRedisCacheOperations(_RealRedisBase):
             evict_challenges_for_serial('RTXN_E')
             remaining = get_challenges_from_cache(transaction_id='txn-del')
         self.assertEqual([c.serial for c in remaining], ['RTXN_F'])
-        self.assertEqual(self._real_client.smembers('pi:challenge:serial:RTXN_E'), set())
+        self.assertEqual(self._real_client.smembers(_SERIAL_KEY.format('RTXN_E')), set())
 
     def test_serial_set_ttl_not_shrunk_by_shorter_challenge(self):
         """Writing a shorter-lived challenge after a longer-lived one for the
         same serial must not shrink the shared serial-set TTL. EXPIRE NX + GT
         guarantees the TTL only grows."""
         self._write_dto(_make_dto(serial='RCACHE_TTL', txn='txn-long', offset_seconds=600))
-        ttl_after_long = self._real_client.ttl('pi:challenge:serial:RCACHE_TTL')
+        ttl_after_long = self._real_client.ttl(_SERIAL_KEY.format('RCACHE_TTL'))
         self.assertGreaterEqual(ttl_after_long, 600)
 
         self._write_dto(_make_dto(serial='RCACHE_TTL', txn='txn-short', offset_seconds=30))
-        ttl_after_short = self._real_client.ttl('pi:challenge:serial:RCACHE_TTL')
+        ttl_after_short = self._real_client.ttl(_SERIAL_KEY.format('RCACHE_TTL'))
 
         # The shorter write must not have shrunk the set TTL.
         self.assertGreaterEqual(ttl_after_short, ttl_after_long - 5)
@@ -412,7 +419,7 @@ class TestRedisCacheOperations(_RealRedisBase):
         # Reverse order must still extend up to the longer one.
         self._write_dto(_make_dto(serial='RCACHE_TTL2', txn='txn-s', offset_seconds=30))
         self._write_dto(_make_dto(serial='RCACHE_TTL2', txn='txn-l', offset_seconds=600))
-        self.assertGreaterEqual(self._real_client.ttl('pi:challenge:serial:RCACHE_TTL2'), 600)
+        self.assertGreaterEqual(self._real_client.ttl(_SERIAL_KEY.format('RCACHE_TTL2')), 600)
 
     def test_dto_save_updates_cache(self):
         dto = _make_dto(serial='RCACHE5', txn='txn-rcache-005')
@@ -454,8 +461,8 @@ class TestRedisCacheOperations(_RealRedisBase):
                             timestamp=utc_now(), expiration=utc_now() + timedelta(seconds=120))
             evict_challenge('txn-off', 'RCACHE_OFF')
         # Nothing should have been written.
-        self.assertIsNone(self._real_client.get('pi:challenge:txn:txn-off'))
-        self.assertEqual(self._real_client.smembers('pi:challenge:serial:RCACHE_OFF'), set())
+        self.assertIsNone(self._real_client.get(_TXN_KEY.format('txn-off')))
+        self.assertEqual(self._real_client.smembers(_SERIAL_KEY.format('RCACHE_OFF')), set())
 
     def test_evict_disables_redis_on_error(self):
         with redis_in_store(self._real_client):
@@ -476,7 +483,7 @@ class TestRedisCacheOperations(_RealRedisBase):
     def test_empty_serial_does_not_create_shared_set(self):
         """Usernameless passkey auth init writes challenges with serial="".
         Those must NOT all be funneled into the single shared key
-        ``pi:challenge:serial:``, otherwise its membership grows unbounded
+        ``pi:challenge:v1:serial:``, otherwise its membership grows unbounded
         across the worker lifetime and its TTL never settles. They are
         only ever fetched by transaction_id, so the set is pointless."""
         with redis_in_store(self._real_client):
@@ -489,9 +496,9 @@ class TestRedisCacheOperations(_RealRedisBase):
 
         # Per-transaction hashes must exist (the challenge lives under field
         # "" for the empty serial), but the shared serial set must not.
-        self.assertTrue(self._real_client.exists('pi:challenge:txn:txn-empty-1'))
-        self.assertTrue(self._real_client.exists('pi:challenge:txn:txn-empty-2'))
-        self.assertEqual(self._real_client.smembers('pi:challenge:serial:'), set())
+        self.assertTrue(self._real_client.exists(_TXN_KEY.format('txn-empty-1')))
+        self.assertTrue(self._real_client.exists(_TXN_KEY.format('txn-empty-2')))
+        self.assertEqual(self._real_client.smembers(_SERIAL_KEY.format('')), set())
 
         # And txn-keyed retrieval must still work for both.
         with redis_in_store(self._real_client):
@@ -506,9 +513,9 @@ class TestRedisCacheOperations(_RealRedisBase):
             cache_challenge(serial='', transaction_id='txn-evict-empty', challenge='c',
                             data='', session='',
                             timestamp=utc_now(), expiration=utc_now() + timedelta(seconds=120))
-            self.assertTrue(self._real_client.exists('pi:challenge:txn:txn-evict-empty'))
+            self.assertTrue(self._real_client.exists(_TXN_KEY.format('txn-evict-empty')))
             evict_challenge('txn-evict-empty', '')
-        self.assertFalse(self._real_client.exists('pi:challenge:txn:txn-evict-empty'))
+        self.assertFalse(self._real_client.exists(_TXN_KEY.format('txn-evict-empty')))
 
     def test_get_from_cache_filters_by_challenge_value(self):
         """Two challenges on the same serial; query must apply the
@@ -524,7 +531,7 @@ class TestRedisCacheOperations(_RealRedisBase):
         """_update_challenge_in_cache's flag-disabled early return."""
         dto = _make_dto(serial='RCACHE_SOFF', txn='txn-soff')
         self._write_dto(dto)
-        original = self._real_client.hget('pi:challenge:txn:txn-soff', 'RCACHE_SOFF')
+        original = self._real_client.hget(_TXN_KEY.format('txn-soff'), 'RCACHE_SOFF')
         with redis_in_store(self._real_client, enable_challenges=False):
             cached_dto = ChallengeDTO(
                 transaction_id='txn-soff', serial='RCACHE_SOFF',
@@ -533,7 +540,7 @@ class TestRedisCacheOperations(_RealRedisBase):
             )
             cached_dto.set_otp_status(True)
             cached_dto.save()  # must short-circuit; field untouched
-        self.assertEqual(self._real_client.hget('pi:challenge:txn:txn-soff', 'RCACHE_SOFF'), original)
+        self.assertEqual(self._real_client.hget(_TXN_KEY.format('txn-soff'), 'RCACHE_SOFF'), original)
 
     def test_save_disables_redis_on_error(self):
         dto = _make_dto(serial='RCACHE_SAVE_ERR', txn='txn-save-err')
@@ -566,7 +573,7 @@ class TestRedisCacheOperations(_RealRedisBase):
         rather than treating the absence as authoritative-empty."""
         from privacyidea.lib.cache import CacheState
         # Manually plant a serial set whose members have no backing txn keys.
-        self._real_client.sadd('pi:challenge:serial:RCACHE_GHOST', 'gone-1', 'gone-2')
+        self._real_client.sadd(_SERIAL_KEY.format('RCACHE_GHOST'), 'gone-1', 'gone-2')
         with redis_in_store(self._real_client):
             result = get_challenges_from_cache(serial='RCACHE_GHOST')
         self.assertIs(result, CacheState.UNAVAILABLE)
@@ -574,7 +581,7 @@ class TestRedisCacheOperations(_RealRedisBase):
     def test_get_from_cache_returns_unavailable_on_corrupt_payload(self):
         """Corrupt payload -> can't trust the cache for this entry -> UNAVAILABLE."""
         from privacyidea.lib.cache import CacheState
-        self._real_client.hset('pi:challenge:txn:txn-corrupt', 'RCORRUPT',
+        self._real_client.hset(_TXN_KEY.format('txn-corrupt'), 'RCORRUPT',
                                '{"not": "a valid challenge"')  # truncated JSON
         with redis_in_store(self._real_client):
             self.assertIs(get_challenges_from_cache(transaction_id='txn-corrupt'),
@@ -600,10 +607,10 @@ class TestRedisCacheOperations(_RealRedisBase):
             # Force the DTO into the past so _update_challenge_in_cache hits
             # the "already expired" early return without re-writing the key.
             cached.expiration = utc_now() - timedelta(seconds=120)
-            existing_payload = self._real_client.hget('pi:challenge:txn:txn-rcache-exp', 'RCACHE_EXP')
+            existing_payload = self._real_client.hget(_TXN_KEY.format('txn-rcache-exp'), 'RCACHE_EXP')
             cached.set_otp_status(True)
             cached.save()
-        self.assertEqual(self._real_client.hget('pi:challenge:txn:txn-rcache-exp', 'RCACHE_EXP'),
+        self.assertEqual(self._real_client.hget(_TXN_KEY.format('txn-rcache-exp'), 'RCACHE_EXP'),
                          existing_payload)
 
     def test_redis_disabled_on_operation_error(self):
@@ -690,7 +697,7 @@ class TestCreateChallengeIntegration(_RealRedisBase):
         row = Challenge.query.filter_by(transaction_id=txn_id).first()
         self.assertIsNotNone(row, "Challenge must be written to DB when feature flag is off")
         # And nothing should have been written to Redis.
-        self.assertIsNone(self._real_client.get(f'pi:challenge:txn:{txn_id}'))
+        self.assertIsNone(self._real_client.get(_TXN_KEY.format(txn_id)))
 
     def test_get_challenges_flag_disabled_reads_from_db(self):
         """Even if a stale key happens to be in Redis, get_challenges() must
@@ -883,9 +890,9 @@ class TestCreateChallengeIntegration(_RealRedisBase):
                 remove_token(serial)
 
                 # Both the per-transaction key and the serial set must be gone.
-                self.assertIsNone(self._real_client.get(f"pi:challenge:txn:{txn_id}"))
+                self.assertIsNone(self._real_client.get(_TXN_KEY.format(txn_id)))
                 self.assertEqual(
-                    self._real_client.smembers(f"pi:challenge:serial:{serial}"), set())
+                    self._real_client.smembers(_SERIAL_KEY.format(serial)), set())
         finally:
             Challenge.query.filter_by(serial=serial).delete()
             db.session.commit()
@@ -980,11 +987,11 @@ class TestCooldownLifecycle(_RealRedisBase):
         from privacyidea.lib.cache.redis import _disable_redis
         # Pre-populate Redis with an entry - it should remain after the
         # in-cooldown evict (which is a no-op).
-        self._real_client.hset('pi:challenge:txn:txn-cooldown', 'RCOOL', '{"placeholder":1}')
+        self._real_client.hset(_TXN_KEY.format('txn-cooldown'), 'RCOOL', '{"placeholder":1}')
         with redis_in_store(self._real_client):
             _disable_redis(RuntimeError("simulated"))
             evict_challenge('txn-cooldown', 'RCOOL')
-        self.assertEqual(self._real_client.hget('pi:challenge:txn:txn-cooldown', 'RCOOL'),
+        self.assertEqual(self._real_client.hget(_TXN_KEY.format('txn-cooldown'), 'RCOOL'),
                          '{"placeholder":1}')
 
     def test_evict_after_cooldown_reaches_redis(self):
@@ -992,17 +999,17 @@ class TestCooldownLifecycle(_RealRedisBase):
         import time as _time
         from privacyidea.lib.cache.redis import _disable_redis
         from privacyidea.lib.framework import get_app_local_store
-        self._real_client.hset('pi:challenge:txn:txn-recovered', 'RREC', '{"placeholder":1}')
-        self._real_client.sadd('pi:challenge:serial:RREC', 'txn-recovered')
+        self._real_client.hset(_TXN_KEY.format('txn-recovered'), 'RREC', '{"placeholder":1}')
+        self._real_client.sadd(_SERIAL_KEY.format('RREC'), 'txn-recovered')
         with redis_in_store(self._real_client):
             _disable_redis(RuntimeError("simulated"))
             # Skip past the cooldown.
             get_app_local_store()['_redis_retry_after'] = _time.monotonic() - 1
             evict_challenge('txn-recovered', 'RREC')
         # Eviction reached Redis post-cooldown.
-        self.assertFalse(self._real_client.exists('pi:challenge:txn:txn-recovered'))
+        self.assertFalse(self._real_client.exists(_TXN_KEY.format('txn-recovered')))
         self.assertNotIn('txn-recovered',
-                         self._real_client.smembers('pi:challenge:serial:RREC'))
+                         self._real_client.smembers(_SERIAL_KEY.format('RREC')))
 
 
 # -----------------------------------------------------------------------------
@@ -1076,3 +1083,248 @@ class TestRedisVersionGate(MyTestCase):
         with patch.object(_redis_lib.Redis, "from_url", return_value=fake):
             client = _build_client("redis://anywhere:6379/0")
         self.assertIs(client, fake)
+
+
+class TestChallengeDataEncryption(_RealRedisBase):
+    """
+    The ``data`` field must be encrypted at rest in Redis, matching the
+    encrypted ``data`` column on the SQL side. It can carry the OTP value
+    itself (Email/SMS tokens under ``*.concurrent_challenges``) or the Push
+    code-to-phone display code.
+    """
+
+    def _raw_payload(self, transaction_id, serial):
+        """Return the JSON payload exactly as it sits in Redis."""
+        raw = type(self)._real_client.hget(_TXN_KEY.format(transaction_id), serial)
+        return json.loads(raw)
+
+    def _assert_encrypted(self, stored, expected_plaintext, secret):
+        """
+        Assert the stored ``data`` field is the ciphertext of ``expected_plaintext``
+        and that ``secret`` appears in no field at all.
+
+        The ciphertext is checked by decrypting it rather than by searching the
+        payload for the secret. The ciphertext is random hex, so a numeric secret
+        turns up in it by chance about once in a few hundred thousand runs - the
+        other fields, which are stored in the clear, are the ones worth searching.
+        """
+        self.assertNotEqual(expected_plaintext, stored["data"])
+        # The privacyIDEA password encryption emits "<iv>:<ciphertext>".
+        self.assertIn(":", stored["data"])
+        self.assertEqual(expected_plaintext, decryptPassword(stored["data"]))
+        plaintext_fields = {key: value for key, value in stored.items() if key != "data"}
+        self.assertNotIn(secret, json.dumps(plaintext_fields))
+
+    def test_otp_value_is_not_stored_in_the_clear(self):
+        # The shape the email and SMS tokens store under *.concurrent_challenges.
+        otp_value = "987654"
+        with redis_in_store(type(self)._real_client):
+            cache_challenge(serial="SE_ENC_1", transaction_id="txn-enc-001",
+                            challenge="", data=json.dumps({"otp": otp_value}), session="",
+                            timestamp=utc_now(), expiration=utc_now() + timedelta(seconds=120))
+
+            stored = self._raw_payload("txn-enc-001", "SE_ENC_1")
+            self._assert_encrypted(stored, json.dumps({"otp": otp_value}), otp_value)
+
+    def test_data_round_trips_back_to_plaintext(self):
+        otp_value = "987654"
+        with redis_in_store(type(self)._real_client):
+            cache_challenge(serial="SE_ENC_2", transaction_id="txn-enc-002",
+                            challenge="", data=json.dumps({"otp": otp_value}), session="",
+                            timestamp=utc_now(), expiration=utc_now() + timedelta(seconds=120))
+
+            challenges = get_challenges_from_cache(transaction_id="txn-enc-002")
+            self.assertEqual(1, len(challenges))
+            self.assertEqual({"otp": otp_value}, challenges[0].get_data())
+
+    def test_dict_data_is_encrypted_and_round_trips(self):
+        """Push code-to-phone stores a dict; get_data() must return it intact."""
+        data_dict = {"smartphone_confirmed": True, "display_code": "code-4829-xyz"}
+        with redis_in_store(type(self)._real_client):
+            cache_challenge(serial="SE_ENC_3", transaction_id="txn-enc-003",
+                            challenge="", data=json.dumps(data_dict), session="",
+                            timestamp=utc_now(), expiration=utc_now() + timedelta(seconds=120))
+
+            stored = self._raw_payload("txn-enc-003", "SE_ENC_3")
+            self._assert_encrypted(stored, json.dumps(data_dict), "code-4829-xyz")
+
+            challenges = get_challenges_from_cache(transaction_id="txn-enc-003")
+            self.assertEqual(data_dict, challenges[0].get_data())
+
+    def test_mutating_data_rewrites_it_encrypted(self):
+        """set_data() persists through save(); the new value is encrypted too."""
+        with redis_in_store(type(self)._real_client):
+            cache_challenge(serial="SE_ENC_4", transaction_id="txn-enc-004",
+                            challenge="", data="", session="",
+                            timestamp=utc_now(), expiration=utc_now() + timedelta(seconds=120))
+
+            dto = get_challenges_from_cache(transaction_id="txn-enc-004")[0]
+            dto.set_data({"display_code": "135791"})
+
+            stored = self._raw_payload("txn-enc-004", "SE_ENC_4")
+            self._assert_encrypted(stored, json.dumps({"display_code": "135791"}), "135791")
+
+            reread = get_challenges_from_cache(transaction_id="txn-enc-004")[0]
+            self.assertEqual({"display_code": "135791"}, reread.get_data())
+
+    def test_empty_data_stays_empty(self):
+        """Nothing to protect, so no ciphertext is written for an empty field."""
+        with redis_in_store(type(self)._real_client):
+            cache_challenge(serial="SE_ENC_5", transaction_id="txn-enc-005",
+                            challenge="nonce", data="", session="",
+                            timestamp=utc_now(), expiration=utc_now() + timedelta(seconds=120))
+
+            stored = self._raw_payload("txn-enc-005", "SE_ENC_5")
+            self.assertEqual("", stored["data"])
+
+            challenges = get_challenges_from_cache(transaction_id="txn-enc-005")
+            self.assertEqual("", challenges[0].data)
+            self.assertEqual({}, challenges[0].get_data())
+
+    def test_create_challenge_does_not_leak_otp_into_redis(self):
+        """The full create_challenge() path, not just the cache layer directly."""
+        otp_value = "246800"
+        with redis_in_store(type(self)._real_client):
+            challenge = create_challenge("SE_ENC_7", data={"otp": otp_value})
+
+            stored = self._raw_payload(challenge.transaction_id, "SE_ENC_7")
+            self._assert_encrypted(stored, json.dumps({"otp": otp_value}), otp_value)
+            cached = get_challenges(transaction_id=challenge.transaction_id)[0]
+            self.assertEqual({"otp": otp_value}, cached.get_data())
+
+    def test_a_status_update_keeps_the_stored_ciphertext(self):
+        """
+        A wrong answer only bumps the counter, so the entry keeps the ciphertext it
+        already had instead of encrypting the unchanged data again - with a hardware
+        security module every encryption is a round trip to the device.
+        """
+        otp_value = "864209"
+        with redis_in_store(type(self)._real_client):
+            cache_challenge(serial="SE_ENC_8", transaction_id="txn-enc-008",
+                            challenge="", data=json.dumps({"otp": otp_value}), session="",
+                            timestamp=utc_now(), expiration=utc_now() + timedelta(seconds=120))
+            before = self._raw_payload("txn-enc-008", "SE_ENC_8")
+
+            dto = get_challenges_from_cache(transaction_id="txn-enc-008")[0]
+            with patch.object(redis_cache, "encryptPassword") as encrypt:
+                dto.set_otp_status(False)
+            encrypt.assert_not_called()
+
+            after = self._raw_payload("txn-enc-008", "SE_ENC_8")
+            self.assertEqual(before["data"], after["data"])
+            self.assertEqual(1, after["received_count"])
+            # And the value is still readable, i.e. the ciphertext was really stored.
+            self.assertEqual({"otp": otp_value},
+                             get_challenges_from_cache(transaction_id="txn-enc-008")[0].get_data())
+
+    def test_changing_the_data_replaces_the_stored_ciphertext(self):
+        """The cached ciphertext must not outlive the value it belongs to."""
+        with redis_in_store(type(self)._real_client):
+            cache_challenge(serial="SE_ENC_9", transaction_id="txn-enc-009",
+                            challenge="", data=json.dumps({"mode": "code_to_phone"}), session="",
+                            timestamp=utc_now(), expiration=utc_now() + timedelta(seconds=120))
+            before = self._raw_payload("txn-enc-009", "SE_ENC_9")
+
+            dto = get_challenges_from_cache(transaction_id="txn-enc-009")[0]
+            dto.set_data({"mode": "code_to_phone", "smartphone_confirmed": True})
+
+            after = self._raw_payload("txn-enc-009", "SE_ENC_9")
+            self.assertNotEqual(before["data"], after["data"])
+            self.assertEqual({"mode": "code_to_phone", "smartphone_confirmed": True},
+                             get_challenges_from_cache(transaction_id="txn-enc-009")[0].get_data())
+
+    def test_a_failing_encryption_does_not_silently_drop_a_data_change(self):
+        """
+        Losing a ``data`` write cannot be swallowed the way a lost counter can: push
+        code-to-phone persists ``smartphone_confirmed`` this way, and a dropped write
+        would leave the challenge answerable for a replayed confirm. The database
+        path raises here too.
+        """
+        with redis_in_store(type(self)._real_client):
+            cache_challenge(serial="SE_ENC_10", transaction_id="txn-enc-010",
+                            challenge="", data=json.dumps({"mode": "code_to_phone"}), session="",
+                            timestamp=utc_now(), expiration=utc_now() + timedelta(seconds=120))
+            dto = get_challenges_from_cache(transaction_id="txn-enc-010")[0]
+
+            with patch.object(redis_cache, "encryptPassword",
+                              side_effect=HSMException("hsm not ready!")):
+                self.assertRaises(HSMException, dto.set_data, {"smartphone_confirmed": True})
+                # A counter-only save encrypts nothing, so it still goes through.
+                dto_status = get_challenges_from_cache(transaction_id="txn-enc-010")[0]
+                dto_status.set_otp_status(False)
+            self.assertEqual(1, self._raw_payload("txn-enc-010", "SE_ENC_10")["received_count"])
+
+
+class TestChallengeDataEncryptionUnit(MyTestCase):
+    """
+    Encryption behaviour that needs no Redis. Kept out of ``_RealRedisBase`` so
+    it still runs for a developer with no local Redis and in jobs that start no
+    Redis service container.
+    """
+
+    def _payload(self, data):
+        return json.dumps({
+            'transaction_id': 'txn-enc-unit',
+            'serial': 'SE_ENC_UNIT',
+            'challenge': '',
+            'data': data,
+            'session': '',
+            'timestamp': utc_now().isoformat(),
+            'expiration': (utc_now() + timedelta(seconds=120)).isoformat(),
+            'received_count': 0,
+            'otp_valid': False,
+        })
+
+    def test_undecryptable_data_is_dropped_rather_than_returned(self):
+        """
+        An entry whose ciphertext cannot be decrypted - corruption, or a
+        different encryption key - must not hand back the failure placeholder
+        as if it were the challenge data.
+        """
+        self.assertIsNone(_deserialize(self._payload('not-valid-ciphertext')))
+
+    def test_payload_round_trips_through_encryption(self):
+        plaintext = json.dumps({"otp": "424242"})
+        payload = _make_dto(data=plaintext).to_payload()
+
+        # Checked by decrypting rather than by searching the payload: the ciphertext
+        # is random hex, so a numeric needle would match it by chance now and then.
+        self.assertNotEqual(plaintext, json.loads(payload)['data'])
+        self.assertEqual(plaintext, decryptPassword(json.loads(payload)['data']))
+        self.assertEqual({"otp": "424242"}, _deserialize(payload).get_data())
+
+    def test_non_object_payload_is_a_cache_miss(self):
+        """
+        Valid JSON that is not an object must degrade to a miss rather than
+        raising out of the cache layer into the request.
+        """
+        for raw in ('null', '"a string"', '123', '[1, 2, 3]'):
+            with self.subTest(raw=raw):
+                self.assertIsNone(_deserialize(raw))
+
+    def test_an_unavailable_security_module_is_a_cache_miss(self):
+        """
+        With an encrypted encryption key that nobody has unlocked yet, fetching the
+        security module raises instead of returning it, and decryptPassword() does
+        not guard that. Reading a challenge must still not raise: listing or
+        deleting challenges works off the cache metadata and never needed the
+        plaintext.
+        """
+        payload = _make_dto(data=json.dumps({"otp": "424242"})).to_payload()
+        with patch.object(redis_cache, "decryptPassword",
+                          side_effect=HSMException("hsm not ready!")):
+            self.assertIsNone(_deserialize(payload))
+
+
+class TestRedisKeyNames(MyTestCase):
+    """
+    Pin the on-the-wire key names. Everything else builds keys from these
+    constants, so without this the format could change with a green suite -
+    and workers reading a different key name find no challenges at all.
+    """
+
+    def test_txn_key_format(self):
+        self.assertEqual('pi:challenge:v1:txn:12345', _TXN_KEY.format('12345'))
+
+    def test_serial_key_format(self):
+        self.assertEqual('pi:challenge:v1:serial:SPASS01', _SERIAL_KEY.format('SPASS01'))

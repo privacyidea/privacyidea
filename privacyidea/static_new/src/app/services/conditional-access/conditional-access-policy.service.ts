@@ -227,6 +227,8 @@ export interface ConditionalAccessPolicyServiceInterface {
   enablePolicy(id: number): Promise<void>;
 
   disablePolicy(id: number): Promise<void>;
+
+  setDryRun(id: number, dryRun: boolean): Promise<void>;
 }
 
 @Injectable()
@@ -506,26 +508,36 @@ export class ConditionalAccessPolicyService implements ConditionalAccessPolicySe
     }
   }
 
-  async enablePolicy(id: number): Promise<void> {
+  // Send the one flag rather than the whole policy: the backend validates only the fields it is
+  // given, so a policy carrying a value that is no longer valid - a deleted realm in a condition,
+  // say - can still be switched on and off instead of being frozen until it is repaired. It also
+  // cannot overwrite another admin's concurrent edit of the fields this toggle does not touch.
+  private async patchFlag(id: number, flag: { enabled: boolean } | { dry_run: boolean }, errorMessage: string) {
     const headers = this.authService.getHeaders();
     try {
-      await lastValueFrom(this.http.patch(`${this.baseUrl}/${id}`, { enabled: true }, { headers }));
-      this.policiesResource.reload();
+      await lastValueFrom(this.http.patch(`${this.baseUrl}/${id}`, flag, { headers }));
     } catch {
-      this.notificationService.error($localize`Failed to enable conditional-access policy.`);
-      this.policiesResource.reload();
+      this.notificationService.error(errorMessage);
     }
+    this.policiesResource.reload();
+  }
+
+  async enablePolicy(id: number): Promise<void> {
+    await this.patchFlag(id, { enabled: true }, $localize`Failed to enable conditional-access policy.`);
   }
 
   async disablePolicy(id: number): Promise<void> {
-    const headers = this.authService.getHeaders();
-    try {
-      await lastValueFrom(this.http.patch(`${this.baseUrl}/${id}`, { enabled: false }, { headers }));
-      this.policiesResource.reload();
-    } catch {
-      this.notificationService.error($localize`Failed to disable conditional-access policy.`);
-      this.policiesResource.reload();
-    }
+    await this.patchFlag(id, { enabled: false }, $localize`Failed to disable conditional-access policy.`);
+  }
+
+  async setDryRun(id: number, dryRun: boolean): Promise<void> {
+    await this.patchFlag(
+      id,
+      { dry_run: dryRun },
+      dryRun
+        ? $localize`Failed to switch the conditional-access policy to dry-run mode.`
+        : $localize`Failed to switch the conditional-access policy to enforcing mode.`
+    );
   }
 
   // Rearranges the evaluation order: the listed policies take over the priority values this same

@@ -31,8 +31,8 @@ $input-focus-outline: theme.$focus-outline;
     border-bottom: 1px solid var(--mat-sys-outline-variant);
     height: auto;
     line-height: var(--mat-sys-body-medium-line-height);
-    padding-bottom: var(--eighth-global-padding);
-    padding-top: var(--eighth-global-padding);
+    padding-bottom: 2px;
+    padding-top: 2px;
 
     &:last-of-type {
       border-bottom: none;
@@ -40,7 +40,7 @@ $input-focus-outline: theme.$focus-outline;
 
     .mdc-list-item__primary-text {
       align-items: flex-start;
-      column-gap: var(--half-global-gap);
+      column-gap: 8px;
       display: flex;
       white-space: normal;
       width: 100%;
@@ -58,11 +58,11 @@ $input-focus-outline: theme.$focus-outline;
 
   .known-client-details {
     align-items: flex-start;
-    column-gap: var(--half-global-gap);
+    column-gap: 8px;
     display: flex;
     flex: 1 1 auto;
     min-width: 0;
-    row-gap: var(--quarter-global-padding);
+    row-gap: 4px;
   }
 
   .known-client-hostname {
@@ -79,7 +79,7 @@ $input-focus-outline: theme.$focus-outline;
     display: flex;
     flex: 1 1 auto;
     flex-wrap: wrap;
-    gap: var(--quarter-global-padding);
+    gap: 4px;
     min-width: 0;
   }
 
@@ -91,7 +91,7 @@ $input-focus-outline: theme.$focus-outline;
     font-size: var(--mat-sys-body-small-size);
     line-height: var(--mat-sys-body-small-line-height);
     overflow: hidden;
-    padding: var(--eighth-global-padding) var(--half-global-padding);
+    padding: 2px 8px;
     text-overflow: ellipsis;
     white-space: nowrap;
   }

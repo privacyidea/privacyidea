@@ -135,6 +135,12 @@ describe("ConditionalAccessComponent", () => {
     expect(policyServiceMock.enablePolicy).toHaveBeenCalledWith(1);
   });
 
+  it("should send only the new dry-run state on toggle", () => {
+    component.onToggleDryRun({ ...samplePolicy, dry_run: false });
+    expect(policyServiceMock.setDryRun).toHaveBeenCalledWith(1, true);
+    expect(policyServiceMock.savePolicy).not.toHaveBeenCalled();
+  });
+
   it("should join all stage thresholds for display", () => {
     const multiStage: LockoutPolicy = {
       ...samplePolicy,
@@ -270,8 +276,8 @@ describe("ConditionalAccessComponent", () => {
       component.policySelection.set([dryRunOff, dryRunOn]);
       component.toggleDryRunSelected();
       emitAction("toggle");
-      expect(policyServiceMock.savePolicy).toHaveBeenCalledWith(expect.objectContaining({ id: 1, dry_run: true }));
-      expect(policyServiceMock.savePolicy).toHaveBeenCalledWith(expect.objectContaining({ id: 2, dry_run: false }));
+      expect(policyServiceMock.setDryRun).toHaveBeenCalledWith(1, true);
+      expect(policyServiceMock.setDryRun).toHaveBeenCalledWith(2, false);
       expect(component.policySelection().length).toBe(0);
     });
 
