@@ -391,6 +391,11 @@ def _poll_transaction_identity() -> User:
 @postpolicy(check_serial, request=request)
 @postpolicy(autoassign, request=request)
 @add_serial_from_response_to_g
+# The conditional-access gate is the first decorator that acts on the request: nothing may run for a locked user, a
+# blocked source IP or a denied request before it is refused. It stays below the response decorators because it
+# *returns* its rejection rather than raising one - which is what keeps a refused request shaped like every other
+# failed authentication this endpoint produces - and a returned response still travels back out through them.
+@conditional_access_gate(_conditional_access_identity)
 @prepolicy(check_application_tokentype, request=request)
 @prepolicy(pushtoken_validate, request=request)
 @prepolicy(set_realm, request=request)
@@ -406,7 +411,6 @@ def _poll_transaction_identity() -> User:
 @CheckSubscription(request)
 @prepolicy(api_key_required, request=request)
 @event("validate_check", request, g)
-@conditional_access_gate(_conditional_access_identity)
 def check():
     """
     Verify an authentication attempt.
@@ -1173,6 +1177,9 @@ def check_remember_device():
 @postpolicy(mangle_challenge_response, request=request)
 @postpolicy(preferred_client_mode, request=request)
 @add_serial_from_response_to_g
+# The conditional-access gate is the first decorator that acts on the request: nothing may run for a locked user, a
+# blocked source IP or a denied request before it is refused.
+@conditional_access_gate()
 @check_user_serial_or_cred_id_in_request(request)
 @prepolicy(check_application_tokentype, request=request)
 @prepolicy(increase_failcounter_on_challenge, request=request)
@@ -1181,7 +1188,6 @@ def check_remember_device():
 @prepolicy(load_challenge_text, request=request)
 @prepolicy(fido2_auth, request=request)
 @event("validate_triggerchallenge", request, g)
-@conditional_access_gate()
 def trigger_challenge():
     """
     Trigger a fresh challenge for every challenge-response token
@@ -1348,18 +1354,19 @@ def trigger_challenge():
 
 @validate_blueprint.route('/polltransaction', methods=['GET'])
 @validate_blueprint.route('/polltransaction/<transaction_id>', methods=['GET'])
-@prepolicy(mangle, request=request)
-@CheckSubscription(request)
-@prepolicy(api_key_required, request=request)
-@event("validate_poll_transaction", request, g)
+# First decorator to act on the request; see /validate/check for why it sits below the response hooks.
 # log_rejection=False: a poll carries no new authentication event, so a rejection row here would not *replace* the
 # row this request writes - it would create one where there is none, once per poll, for a client that cannot tell from
 # the generic response why it is failing. The restriction's own history is the outcome row that created it.
 @conditional_access_gate(_poll_transaction_identity, log_rejection=False)
+@prepolicy(mangle, request=request)
+@CheckSubscription(request)
+@prepolicy(api_key_required, request=request)
+@event("validate_poll_transaction", request, g)
 def poll_transaction(transaction_id=None):
     """
     Report whether a challenge has been answered. Out-of-band tokens
-    (push, container) poll this endpoint to learn when the user has
+    (push) poll this endpoint to learn when the user has
     interacted with the challenge so that the calling client can
     follow up with :http:post:`/validate/check`.
 
@@ -1446,10 +1453,10 @@ def poll_transaction(transaction_id=None):
 
 
 @validate_blueprint.route('/initialize', methods=['POST', 'GET'])
+@conditional_access_gate()
 @prepolicy(fido2_auth, request=request)
 @prepolicy(disabled_token_types, request=request)
 @postrequest(surface_conditional_access_message, request=request)
-@conditional_access_gate()
 def initialize():
     """
     Initialize an authentication by requesting a fresh challenge for

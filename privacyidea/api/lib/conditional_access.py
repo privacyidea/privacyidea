@@ -303,10 +303,21 @@ def surface_conditional_access_message(request, response):
 def conditional_access_gate(identity_resolver: Callable[[], User] | None = None,
                             log_rejection: bool = True) -> Callable[[Callable], Callable]:
     """
-    View decorator that runs :func:`conditional_access_precheck` before the
-    decorated endpoint body (and, when placed above them, before the endpoint's
-    pre-policies). If the pre-check rejects the request, its generic-failure
-    response is returned immediately and the endpoint never runs.
+    View decorator that runs :func:`conditional_access_precheck` before anything else acts on the request. If the
+    pre-check rejects it, that response is returned immediately and neither the pre-policies nor the endpoint run.
+
+    **Keep it listed above every pre-policy and below the response decorators**, which is where every gated
+    endpoint has it. Above the pre-policies because nothing may run for a locked user, a blocked source IP or a
+    denied request before it is refused - the same rule ``/auth`` states at
+    :func:`conditional_access_login_gate`.
+
+    Below the response decorators because this gate *returns* its rejection rather than raising one: a failed
+    authentication on ``/validate/*`` is an ordinary ``200`` carrying ``result.value`` false, not an error
+    response, so returning is what keeps a refused request shaped like every other failure these endpoints
+    produce. A returned response still has to travel back out through whatever is listed above the gate, so
+    listing it over the response decorators would skip them - on ``/validate/check`` that means
+    ``no_detail_on_fail`` never stripping the rejection, and ``construct_radius_response`` never converting a
+    ``/radiuscheck`` one into the empty-body reply every other failure there gets.
 
     :param identity_resolver: an optional zero-argument callable returning the
         :class:`~privacyidea.lib.user.User` the pre-check should gate on. When

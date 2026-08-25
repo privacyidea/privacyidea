@@ -443,6 +443,88 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         finally:
             delete_policy("ca_hide")
 
+    def test_no_detail_on_fail_keeps_the_configured_message(self):
+        # Same rule as hide_specific_error_message: the action strips what privacyIDEA volunteers about the attempt,
+        # not wording an admin opted into. Without this the pre-check answered with no detail at all while the
+        # request that *wrote* the lock answered with the message - one lock, worded two ways.
+        from privacyidea.lib.policy import set_policy, delete_policy, SCOPE
+        from privacyidea.lib.policies.actions import PolicyAction
+        self._lock_user(utc_now() + timedelta(seconds=600), error_message="Locked. Try again in about {duration}.")
+        set_policy(name="ca_nodetail", scope=SCOPE.AUTHZ, action=f"{PolicyAction.NODETAILFAIL}")
+        try:
+            body = self._check({"user": "cornelius", "pass": "pin755224"})
+            self.assertFalse(body["result"]["value"], body)
+            # The message and nothing else: the rejection has nothing else to put there anyway.
+            self.assertSetEqual({"message"}, set(body["detail"]), body)
+            self.assertEqual("Locked. Try again in about 10 minute(s).", body["detail"]["message"], body)
+        finally:
+            delete_policy("ca_nodetail")
+
+    def test_no_detail_on_fail_still_strips_an_ordinary_failure(self):
+        # The action keeps doing its job on everything that is not conditional access's, and on a silent lock:
+        # keeping a configured message does not widen what else the endpoint discloses.
+        from privacyidea.lib.policy import set_policy, delete_policy, SCOPE
+        from privacyidea.lib.policies.actions import PolicyAction
+        set_policy(name="ca_nodetail", scope=SCOPE.AUTHZ, action=f"{PolicyAction.NODETAILFAIL}")
+        try:
+            ordinary = self._check({"user": "cornelius", "pass": "wrongpin123456"})
+            self.assertFalse(ordinary["result"]["value"], ordinary)
+            self.assertNotIn("detail", ordinary, ordinary)
+
+            # A lock carrying no error message is not conditional access's to keep either, so it strips like any
+            # other failure - which is what keeps a silent lock indistinguishable from a wrong PIN.
+            self._lock_user(utc_now() + timedelta(seconds=600))
+            silent = self._check({"user": "cornelius", "pass": "pin755224"})
+            self.assertNotIn("detail", silent, silent)
+        finally:
+            delete_policy("ca_nodetail")
+
+    def test_the_request_that_trips_the_lock_reports_it_under_no_detail_on_fail(self):
+        # The other half of the pair above: the pre-check and the request that writes the lock must answer with the
+        # same wording, whichever of them the policy stack happens to reach.
+        from privacyidea.lib.policy import set_policy, delete_policy, SCOPE
+        from privacyidea.lib.policies.actions import PolicyAction
+        self._make_lock_policy(counter_type=AuthEventType.PIN_FAIL, threshold=1, duration=600,
+                               error_message="Locked. Try again in about {duration}.")
+        set_policy(name="ca_nodetail", scope=SCOPE.AUTHZ, action=f"{PolicyAction.NODETAILFAIL}")
+        try:
+            tripping = self._check({"user": "cornelius", "pass": "wrongpin123456"})
+            self.assertTrue(is_user_locked(self.user))
+            self.assertEqual("Locked. Try again in about 10 minute(s).", tripping["detail"]["message"], tripping)
+            # And the next request, refused by the pre-check, says exactly the same thing.
+            after = self._check({"user": "cornelius", "pass": "pin755224"})
+            self.assertEqual(tripping["detail"]["message"], after["detail"]["message"], after)
+        finally:
+            delete_policy("ca_nodetail")
+
+    @smtpmock.activate
+    def test_no_detail_on_fail_masks_the_reason_a_notification_was_appended_to(self):
+        # A notification is appended to the failure's own reason, and that reason is exactly what this action
+        # strips. Only the stage's own sentence may come through.
+        from privacyidea.lib.policy import set_policy, delete_policy, SCOPE
+        from privacyidea.lib.policies.actions import PolicyAction
+        smtpmock.setdata(response={})
+        add_smtpserver(identifier="lockoutmail", server="1.2.3.4", tls=False)
+        set_policy(name="ca_nodetail", scope=SCOPE.AUTHZ, action=f"{PolicyAction.NODETAILFAIL}")
+        try:
+            create_lockout_policy(
+                name="ca_mail", time_window_seconds=3600,
+                counter_types_to_track=_counter_types(AuthEventType.PIN_FAIL),
+                stages=[{"failure_threshold": 1, "priority": 1,
+                         "error_message": "Your administrator has been notified.",
+                         "actions": [{"action_type": str(LockoutAction.EMAIL_ADMIN),
+                                      "action_value": {"smtp_identifier": "lockoutmail",
+                                                       "recipient_group": "soc@example.com",
+                                                       "subject": "s", "body": "b"}}]}],
+                target=LockoutTarget.USER, priority=1)
+
+            body = self._check({"user": "cornelius", "pass": "wrongpin123456"})
+            self.assertNotIn("wrong otp pin", body["detail"]["message"], body)
+            self.assertIn("Your administrator has been notified.", body["detail"]["message"], body)
+        finally:
+            delete_policy("ca_nodetail")
+            delete_smtpserver("lockoutmail")
+
     @smtpmock.activate
     def test_hide_specific_error_message_masks_the_reason_a_notification_was_appended_to(self):
         # A notify-only stage is *appended* to the failure's own reason, so the response reads "wrong otp pin. Your

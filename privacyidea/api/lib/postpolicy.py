@@ -530,10 +530,25 @@ def no_detail_on_fail(request, response):
     the details will be stripped if
     the authentication request failed.
 
+    A conditional-access message is the one thing that survives, exactly as it survives
+    :func:`hide_specific_error_message`: this action strips what privacyIDEA volunteers about the attempt, whereas
+    that message is something an admin either wrote on a stage or turned on by policy. Without this a lock said
+    nothing on the request that refused it while saying its piece on the request that wrote it - the same lock,
+    worded two ways, depending on which half of the request answered.
+
+    Read from the claim (:func:`~privacyidea.lib.conditional_access.request_context.claimed_ca_message`) rather than
+    from the response body, which is what makes the outcome independent of where this action sits relative to the
+    hook that writes that body: the claim always holds the wording as it must read once the specific reason is
+    stripped, so a message appended to "wrong otp pin" cannot carry that reason through here.
+
     :param request:
     :param response:
     :return:
     """
+    # Guarded like hide_specific_error_message, so this is safe wherever it sits: construct_radius_response
+    # replaces the body with a non-JSON one, and Response.json is then None rather than a dict.
+    if not response or not response.json:
+        return response
     content = response.json
 
     # get the serials from a policy definition
@@ -545,7 +560,11 @@ def no_detail_on_fail(request, response):
         # TODO: this strips away possible transactions ids during a
         #  challenge-response authentication. We should consider the
         #  result->authentication entry and only strip away possible user information
-        del content["detail"]
+        ca_message = claimed_ca_message()
+        if ca_message:
+            content["detail"] = {"message": ca_message}
+        else:
+            del content["detail"]
         response.set_data(json.dumps(content))
         g.audit_object.add_policy({p.get("name") for p in detail_policy})
 
