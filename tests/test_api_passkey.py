@@ -21,6 +21,7 @@ from unittest.mock import patch
 
 from webauthn.helpers.structs import AttestationConveyancePreference
 
+from privacyidea.api.lib.utils import GENERIC_AUTH_FAILURE
 from privacyidea.config import TestingConfig
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
 from privacyidea.lib.conditional_access.authentication_log import get_authentication_logs
@@ -1615,8 +1616,10 @@ class PasskeyAPITest(PasskeyAPITestBase):
                 res = self.app.full_dispatch_request()
                 self.assertEqual(200, res.status_code, res.json)
                 self.assertFalse(res.json["result"]["value"], res.json)
-                # Generic reject: no reason leaked in the detail.
-                self.assertFalse(res.json.get("detail"), res.json)
+                # Generic reject: the detail says what any failed authentication says and nothing more. Not an
+                # empty detail - that would be a tell in itself, since every other failure carries one.
+                self.assertEqual(str(GENERIC_AUTH_FAILURE), res.json["detail"]["message"], res.json)
+                self.assertNotIn("passkey", res.json["detail"], res.json)
             # The rejection classifies the request: this row is the only place an admin can see why it failed, since
             # no token work ran to log an outcome of its own.
             self.assertListEqual([AuthEventType.USER_LOCKED],

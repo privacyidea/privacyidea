@@ -21,6 +21,7 @@ End-to-end tests for the conditional-access lockout engine at the
 before any token logic runs, and the full loop where repeated failures trip a
 policy stage and lock the user.
 """
+from unittest import mock
 from datetime import datetime, timedelta
 
 from privacyidea.api.lib.utils import GENERIC_AUTH_FAILURE
@@ -38,6 +39,7 @@ from privacyidea.lib.policy import SCOPE, AUTHORIZED, set_policy, delete_policy
 from privacyidea.lib.smtpserver import add_smtpserver, delete_smtpserver
 from privacyidea.lib.token import init_token, remove_token, get_tokens
 from privacyidea.lib.user import User
+from privacyidea.lib.utils import AUTH_RESPONSE
 from privacyidea.models import db, Challenge, ConditionalAccessOutcome
 from privacyidea.models.authentication_log import AuthenticationLog
 from privacyidea.models.lockout_policy import (
@@ -181,7 +183,10 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         body = self._check({"user": "cornelius", "pass": "pin755224"})
         self.assertTrue(body["result"]["status"], body)
         self.assertFalse(body["result"]["value"], body)
-        # Generic response: the detail says what any failed authentication says and nothing more.
+        # Generic response: the detail says what any failed authentication says and nothing more. This is the
+        # shape a rejection has, and the one a stage tripped mid-request has to match (see
+        # test_a_challenge_that_trips_a_lock_is_refused_like_any_other_request).
+        self.assertSetEqual({"message", "threadid"}, set(body["detail"]), body)
         self.assertEqual(str(GENERIC_AUTH_FAILURE), body["detail"]["message"], body)
         # No token logic ran: the fail counter did not move and no valid OTP was consumed.
         self.assertEqual(0, self._failcount())
@@ -223,6 +228,141 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         self.assertFalse(tripping["result"]["value"], tripping)
         self.assertEqual("Locked. Try again in about 10 minute(s).", tripping["detail"]["message"], tripping)
         self.assertTrue(is_user_locked(self.user))
+
+    def test_the_request_that_trips_a_lock_on_triggerchallenge_reports_it(self):
+        # /validate/triggerchallenge has the gate, so it must also report a stage it trips - otherwise the
+        # admin driving it is answered with the plain result while the *next* request carries the message.
+        # A user with no challenge-capable token logs NO_TOKEN, which a policy may count like any failure.
+        self._make_lock_policy(counter_type=AuthEventType.NO_TOKEN, threshold=1, duration=600,
+                               error_message="Locked. Try again in about {duration}.")
+        with self.app.test_request_context("/validate/triggerchallenge", method="POST",
+                                           data={"user": "selfservice", "realm": self.realm1},
+                                           headers={"PI-Authorization": self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            body = res.json
+        # No token to challenge, so nothing was triggered - and the lock this very request wrote is what the
+        # response leads with rather than the bare count.
+        self.assertEqual(0, body["result"]["value"], body)
+        self.assertSetEqual({"message", "threadid"}, set(body["detail"]), body)
+        self.assertEqual("Locked. Try again in about 10 minute(s).", body["detail"]["message"], body)
+        self.assertTrue(is_user_locked(User("selfservice", self.realm1)))
+
+    def test_triggering_a_challenge_reports_nothing(self):
+        # The counterpart: a challenge actually triggered is not a failure, so there is nothing to report on
+        # it even with a policy in place. Guards the count-as-value shape - a truthy count must read as
+        # "worked", the way a truthy boolean does on /validate/check.
+        self._make_lock_policy(counter_type=AuthEventType.CHALLENGE_TRIGGERED, threshold=1, duration=600,
+                               error_message="Should not be shown.")
+        with self.app.test_request_context("/validate/triggerchallenge", method="POST",
+                                           data={"user": "cornelius", "realm": self.realm1},
+                                           headers={"PI-Authorization": self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            body = res.json
+        self.assertEqual(1, body["result"]["value"], body)
+        self.assertNotIn("Should not be shown.", str(body["detail"]), body)
+        # Untouched: the triggered challenge is reported as it would be with no policy in place at all.
+        self.assertTrue(body["detail"]["transaction_ids"], body)
+        self.assertEqual([self.serial], [entry["serial"] for entry in body["detail"]["multi_challenge"]], body)
+
+    def test_a_challenge_that_trips_a_lock_is_refused_like_any_other_request(self):
+        # A stage can be tripped by a challenge trigger like by any other tracked event. When it restricts, this
+        # request is refused - so the response carries the reason and nothing else, the challenge it was about to
+        # hand out included.
+        set_policy(name="ca_chalresp", scope=SCOPE.AUTH,
+                   action=f"{PolicyAction.CHALLENGERESPONSE}=hotp")
+        self._make_lock_policy(counter_type=AuthEventType.CHALLENGE_TRIGGERED, threshold=1, duration=600,
+                               error_message="Locked. Try again in about {duration}.")
+        try:
+            body = self._check({"user": "cornelius", "pass": "pin"})
+        finally:
+            delete_policy("ca_chalresp")
+        self.assertFalse(body["result"]["value"], body)
+        self.assertTrue(is_user_locked(self.user))
+        # One rule for what a conditional-access rejection says, whatever the request was doing when it was
+        # refused: the reason, and nothing that describes what it overtook.
+        # The whole detail, not just the absence of the keys this test thought to name: everything else in it
+        # described the challenge, and none of it may survive a rejection. threadid identifies the request
+        # rather than saying anything about it, so it stays.
+        self.assertSetEqual({"message", "threadid"}, set(body["detail"]), body)
+        self.assertEqual("Locked. Try again in about 10 minute(s).", body["detail"]["message"], body)
+        # result.authentication is left as it stands, on purpose: hide_specific_error_message keys on it and
+        # runs after this hook, and the audit row reads it in-view, before it. Pinned so that changing it is a
+        # deliberate act with those two in view - not because CHALLENGE is the right word for this response.
+        self.assertEqual(AUTH_RESPONSE.CHALLENGE, body["result"]["authentication"], body)
+        # Writing the lock does not reclassify the request: USER_LOCKED is what the *pre-check* of a later
+        # request logs, so this one is still filed as the challenge trigger it was.
+        self.assertListEqual([AuthEventType.CHALLENGE_TRIGGERED],
+                             [entry.event_type for entry in get_authentication_logs()])
+
+    def test_the_challenge_row_is_left_alone_by_the_rejection(self):
+        # Withdrawing the challenge from the response is not invalidating it: conditional access does not reach
+        # into the challenge itself, it simply never tells the client about it, and the row expires unanswered.
+        set_policy(name="ca_chalresp", scope=SCOPE.AUTH,
+                   action=f"{PolicyAction.CHALLENGERESPONSE}=hotp")
+        self._make_lock_policy(counter_type=AuthEventType.CHALLENGE_TRIGGERED, threshold=1, duration=600,
+                               error_message="Locked.")
+        try:
+            self._check({"user": "cornelius", "pass": "pin"})
+        finally:
+            delete_policy("ca_chalresp")
+        self.assertEqual(1, db.session.query(Challenge).count())
+
+    def test_a_notification_is_appended_to_a_challenge_it_was_tripped_by(self):
+        # The other shape: a notify-only stage adds to what the response already said instead of replacing it,
+        # on a challenge exactly as on a failure. Threshold 2, so the first call is an untripped challenge to
+        # measure the second against - the detail must differ in nothing but the message.
+        set_policy(name="ca_chalresp", scope=SCOPE.AUTH,
+                   action=f"{PolicyAction.CHALLENGERESPONSE}=hotp")
+        add_smtpserver(identifier="ca_notify_mail", server="1.2.3.4", tls=False)
+        create_lockout_policy(
+            name="notify_on_challenge", time_window_seconds=3600,
+            counter_types_to_track=_counter_types(AuthEventType.CHALLENGE_TRIGGERED),
+            stages=[{"failure_threshold": 2, "priority": 1, "error_message": "Your administrator was notified.",
+                     "actions": [{"action_type": str(LockoutAction.EMAIL_ADMIN),
+                                  "action_value": {"smtp_identifier": "ca_notify_mail",
+                                                   "recipient_group": "soc@example.com",
+                                                   "subject": "s", "body": "b"}}]}],
+            target=LockoutTarget.USER, priority=1)
+        try:
+            with mock.patch("privacyidea.lib.conditional_access.engine._send_lockout_email", return_value=True):
+                untripped = self._check({"user": "cornelius", "pass": "pin"})
+                body = self._check({"user": "cornelius", "pass": "pin"})
+        finally:
+            delete_policy("ca_chalresp")
+            delete_smtpserver("ca_notify_mail")
+        self.assertNotIn("Your administrator was notified.", untripped["detail"]["message"], untripped)
+        # Appended to the challenge's own prompt, not in place of it.
+        self.assertEqual(f"{untripped['detail']['message'].rstrip('.')}. Your administrator was notified.",
+                         body["detail"]["message"], body)
+        # And nothing else moved: the same keys an untripped challenge carries, and a usable challenge in them.
+        self.assertSetEqual(set(untripped["detail"]), set(body["detail"]), body)
+        self.assertTrue(body["detail"]["transaction_id"], body)
+        self.assertEqual(self.serial, body["detail"]["serial"], body)
+        self.assertFalse(is_user_locked(self.user))
+
+    def test_a_challenge_from_before_the_lock_is_refused_when_it_is_answered(self):
+        # A challenge handed out below the threshold stays answerable, and the answer is what meets the lock:
+        # the pre-check refuses it with the same wording, so nothing is lost by not repeating it earlier.
+        set_policy(name="ca_chalresp", scope=SCOPE.AUTH,
+                   action=f"{PolicyAction.CHALLENGERESPONSE}=hotp")
+        self._make_lock_policy(counter_type=AuthEventType.CHALLENGE_TRIGGERED, threshold=2, duration=600,
+                               error_message="Locked. Try again in about {duration}.")
+        try:
+            # Below the threshold: an ordinary challenge, untouched.
+            triggered = self._check({"user": "cornelius", "pass": "pin"})
+            transaction_id = triggered["detail"]["transaction_id"]
+            self.assertEqual(AUTH_RESPONSE.CHALLENGE, triggered["result"]["authentication"], triggered)
+            self.assertFalse(is_user_locked(self.user))
+            # A second trigger reaches it and writes the lock.
+            self._check({"user": "cornelius", "pass": "pin"})
+            self.assertTrue(is_user_locked(self.user))
+            answered = self._check({"user": "cornelius", "pass": "755224", "transaction_id": transaction_id})
+        finally:
+            delete_policy("ca_chalresp")
+        self.assertFalse(answered["result"]["value"], answered)
+        self.assertEqual("Locked. Try again in about 10 minute(s).", answered["detail"]["message"], answered)
 
     def test_the_tripping_request_stays_silent_without_a_message(self):
         # The default holds on this path too: the lock is written, and the response says only what it
@@ -557,7 +697,10 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         body = self._check({"user": "cornelius", "pass": "pin755224"}, remote_addr="203.0.113.7")
         self.assertTrue(body["result"]["status"], body)
         self.assertFalse(body["result"]["value"], body)
-        # Generic response: the detail says what any failed authentication says and nothing more.
+        # Generic response: the detail says what any failed authentication says and nothing more. This is the
+        # shape a rejection has, and the one a stage tripped mid-request has to match (see
+        # test_a_challenge_that_trips_a_lock_is_refused_like_any_other_request).
+        self.assertSetEqual({"message", "threadid"}, set(body["detail"]), body)
         self.assertEqual(str(GENERIC_AUTH_FAILURE), body["detail"]["message"], body)
         # No token logic ran; the rejection itself is what the log records, with the blocked IP on the row.
         self.assertEqual(0, self._failcount())
@@ -904,6 +1047,28 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
             response = self.app.full_dispatch_request()
             self.assertEqual(200, response.status_code, response)
             return response.json
+
+    def test_initialize_that_trips_a_block_hands_out_no_challenge(self):
+        # /validate/initialize says result.value: false even on success, so it is the sharpest case for the rule
+        # that a rejection carries the reason and nothing else: a stage tripped by its own CHALLENGE_TRIGGERED
+        # event withdraws the passkey payload it was about to return. A source-IP policy, because the passkey
+        # flow resolves nobody - there is no user to lock.
+        self._set_relying_party_id()
+        create_lockout_policy(
+            name="ca_initialize_block", time_window_seconds=3600,
+            counter_types_to_track=_counter_types(AuthEventType.CHALLENGE_TRIGGERED),
+            stages=[{"failure_threshold": 1, "priority": 1,
+                     "error_message": "Blocked. Try again in about {duration}.",
+                     "actions": [{"action_type": str(LockoutAction.BLOCK_IP), "action_value": 600}]}],
+            target=LockoutTarget.SOURCE_IP, count_mode=str(CountMode.PER_REQUEST), priority=1)
+
+        body = self._initialize(remote_addr="203.0.113.7")
+        self.assertFalse(body["result"]["value"], body)
+        self.assertTrue(is_ip_blocked("203.0.113.7"))
+        self.assertEqual("Blocked. Try again in about 10 minute(s).", body["detail"]["message"], body)
+        # Refused, so the passkey challenge is not handed over: a blocked client gets the reason and nothing
+        # else, exactly as it would from the pre-check on its next attempt.
+        self.assertSetEqual({"message", "threadid"}, set(body["detail"]), body)
 
     def _set_relying_party_id(self) -> None:
         """The relying-party id the passkey challenge needs; without it the endpoint fails before creating one, which

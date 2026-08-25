@@ -1165,6 +1165,10 @@ def check_remember_device():
 
 @validate_blueprint.route('/triggerchallenge', methods=['POST', 'GET'])
 @admin_required
+# Outermost response shaper, as on /validate/check, so no post-policy can overwrite what conditional access has
+# to say. ``result.value`` is the number of challenges triggered here rather than a boolean, and zero is exactly
+# the failure worth reporting on: the request logged NO_TOKEN, which a policy may count.
+@postrequest(surface_conditional_access_message, request=request)
 @postpolicy(is_authorized, request=request)
 @postpolicy(mangle_challenge_response, request=request)
 @postpolicy(preferred_client_mode, request=request)
@@ -1444,6 +1448,7 @@ def poll_transaction(transaction_id=None):
 @validate_blueprint.route('/initialize', methods=['POST', 'GET'])
 @prepolicy(fido2_auth, request=request)
 @prepolicy(disabled_token_types, request=request)
+@postrequest(surface_conditional_access_message, request=request)
 @conditional_access_gate()
 def initialize():
     """

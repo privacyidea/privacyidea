@@ -238,6 +238,18 @@ def surface_conditional_access_message(request, response):
     the count. A restriction now in force replaces the message, since it is the more useful thing to say; a stage
     that only notified is appended to whatever the failure already reported, because the credential failure is
     still the reason it was refused.
+
+    A stage can be tripped by any event a policy tracks, a challenge trigger included, and a restriction written
+    on such a request refuses it like any other: the response then carries the reason and nothing else. That is
+    the whole rule - what a conditional-access rejection says does not depend on what the request happened to be
+    doing when it was refused.
+
+    Withdrawing the challenge from the response is not the same as invalidating it: the row is left alone and
+    simply expires unanswered, because the client is never told the ``transaction_id`` and could not use it
+    anyway - the next request carries it into the pre-check, which refuses it with the same wording.
+
+    A stage that only notified changes none of this. It refused nothing, so its message is appended and
+    everything the response already carried - a challenge included - is left in place.
     """
     if not response or not response.is_json:
         return response
@@ -258,8 +270,9 @@ def surface_conditional_access_message(request, response):
         if message:
             detail = content.get("detail") or {}
             if replaces_failure_reason(stage_messages):
-                # Everything else in the detail describes the token attempt this rejection overtook. The
-                # threadid is kept: it identifies the request rather than saying anything about it.
+                # Everything else in the detail describes what this rejection overtook - the token attempt that
+                # failed, or the challenge that was about to be handed out. The threadid is kept: it identifies
+                # the request rather than saying anything about it.
                 detail = {"threadid": detail["threadid"]} if "threadid" in detail else {}
             detail["message"] = message
             content["detail"] = detail
