@@ -45,7 +45,7 @@ export class LostTokenComponent extends AbstractDialogComponent<
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   lostTokenData?: LostTokenData;
   protected readonly dialogTitle = computed(
-    () => $localize`:@@token.tokenSerialLost:Token ${this.data.tokenSerial()}:SERIAL::serial: is lost?`
+    () => $localize`:@@token.tokenSerialLost:Token ${this.data.tokenSerial()}:SERIAL: is lost?`
   );
   protected closeAction: DialogAction<void> = {
     label: $localize`:@@common.close:Close`,

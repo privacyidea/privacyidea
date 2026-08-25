@@ -4112,7 +4112,7 @@
       </trans-unit>
       <trans-unit id="container.successfullyDeleted" datatype="html">
         <source>Successfully deleted <x id="COUNT" equiv-text="selectedContainers.length"/> containers.</source>
-        <target state="new">Успешно удалено контейнеров: <x id="PH" equiv-text="selectedContainers.length"/>.</target>
+        <target state="new">Успешно удалено контейнеров: <x id="COUNT" equiv-text="selectedContainers.length"/>.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/container/container-table/container-table-actions/container-table-actions.component.ts</context>
           <context context-type="linenumber">82</context>
@@ -8694,8 +8694,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="token.tokenSerialLost" datatype="html">
-        <source>Token <x id="SERIAL" equiv-text="this.data.tokenSerial()"/>:serial: is lost?</source>
-        <target state="new">Токен <x id="serial" equiv-text="this.data.tokenSerial()"/> утрачен?</target>
+        <source>Token <x id="SERIAL" equiv-text="this.data.tokenSerial()"/> is lost?</source>
+        <target state="new">Токен <x id="SERIAL" equiv-text="this.data.tokenSerial()"/> утрачен?</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details-actions/lost-token/lost-token.component.ts</context>
           <context context-type="linenumber">48</context>
@@ -8851,7 +8851,7 @@
       </trans-unit>
       <trans-unit id="token.failedEnrollToken" datatype="html">
         <source>Failed to enroll token: <x id="MESSAGE" equiv-text="message || error.message || error"/></source>
-        <target state="new">Не удалось зарегистрировать токен: <x id="PH" equiv-text="message || error.message || error"/></target>
+        <target state="new">Не удалось зарегистрировать токен: <x id="MESSAGE" equiv-text="message || error.message || error"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details-actions/token-rollover/token-rollover.component.ts</context>
           <context context-type="linenumber">127</context>
@@ -9823,7 +9823,7 @@
       </trans-unit>
       <trans-unit id="token.passwordRequired" datatype="html">
         <source>Password is required</source>
-        <target state="new">Пароль <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>обязателен<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
+        <target state="new">Пароль обязателен</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-motp/enroll-motp.component.ts</context>
           <context context-type="linenumber">85</context>
@@ -9879,7 +9879,7 @@
       </trans-unit>
       <trans-unit id="token.passkeyCredential" datatype="html">
         <source>Passkey credential creation failed: <x id="MESSAGE" equiv-text="browserOrCredentialError.message"/></source>
-        <target state="new">Не удалось создать учетные данные Passkey: <x id="PH" equiv-text="browserOrCredentialError.message"/></target>
+        <target state="new">Не удалось создать учетные данные Passkey: <x id="MESSAGE" equiv-text="browserOrCredentialError.message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-passkey/enroll-passkey.component.ts</context>
           <context context-type="linenumber">183</context>
@@ -9895,7 +9895,7 @@
       </trans-unit>
       <trans-unit id="token.failedDeleteToken" datatype="html">
         <source>Failed to delete token <x id="SERIAL" equiv-text="detail.serial"/> after registration error. Please check manually.</source>
-        <target state="new">Не удалось удалить токен <x id="PH" equiv-text="detail.serial"/> после ошибки регистрации. Пожалуйста, проверьте вручную.</target>
+        <target state="new">Не удалось удалить токен <x id="SERIAL" equiv-text="detail.serial"/> после ошибки регистрации. Пожалуйста, проверьте вручную.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-passkey/enroll-passkey.component.ts</context>
           <context context-type="linenumber">228</context>
@@ -9903,7 +9903,7 @@
       </trans-unit>
       <trans-unit id="token.tokenDeletedDue" datatype="html">
         <source>Token <x id="SERIAL" equiv-text="detail.serial"/> deleted due to registration error.</source>
-        <target state="new">Токен <x id="PH" equiv-text="detail.serial"/> удален из-за ошибки регистрации.</target>
+        <target state="new">Токен <x id="SERIAL" equiv-text="detail.serial"/> удален из-за ошибки регистрации.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-passkey/enroll-passkey.component.ts</context>
           <context context-type="linenumber">233</context>
@@ -10275,7 +10275,7 @@
       </trans-unit>
       <trans-unit id="token.webauthnCredential" datatype="html">
         <source>WebAuthn credential creation failed: <x id="MESSAGE" equiv-text="message || &quot;Unknown error&quot;"/></source>
-        <target state="new">Не удалось создать учетные данные WebAuthn: <x id="PH" equiv-text="message || &quot;Unknown error&quot;"/></target>
+        <target state="new">Не удалось создать учетные данные WebAuthn: <x id="MESSAGE" equiv-text="message || &quot;Unknown error&quot;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-webauthn/enroll-webauthn.component.ts</context>
           <context context-type="linenumber">156</context>
@@ -10299,7 +10299,7 @@
       </trans-unit>
       <trans-unit id="token.webauthnFinalization" datatype="html">
         <source>WebAuthn finalization failed: <x id="MESSAGE" equiv-text="message || error"/></source>
-        <target state="new">Не удалось завершить WebAuthn: <x id="PH" equiv-text="message || error"/></target>
+        <target state="new">Не удалось завершить WebAuthn: <x id="MESSAGE" equiv-text="message || error"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-webauthn/enroll-webauthn.component.ts</context>
           <context context-type="linenumber">251</context>
@@ -11307,7 +11307,7 @@
       </trans-unit>
       <trans-unit id="token.tokensImported" datatype="html">
         <source><x id="SUCCESS" equiv-text="success"/>/<x id="TOTAL" equiv-text="total"/> tokens imported successfully.</source>
-        <target state="new"><x id="PH" equiv-text="success"/>/<x id="PH_1" equiv-text="total"/> токенов успешно импортировано.</target>
+        <target state="new"><x id="SUCCESS" equiv-text="success"/>/<x id="TOTAL" equiv-text="total"/> токенов успешно импортировано.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-import/token-import.component.ts</context>
           <context context-type="linenumber">130</context>
@@ -11519,7 +11519,7 @@
       </trans-unit>
       <trans-unit id="token.successfullyResetOther" datatype="html">
         <source>Successfully reset the failcounter for <x id="COUNT" equiv-text="selectedTokens.length"/> tokens.</source>
-        <target state="new">Успешно сброшен счётчик ошибок для <x id="PH" equiv-text="selectedTokens.length"/> токенов.</target>
+        <target state="new">Успешно сброшен счётчик ошибок для <x id="COUNT" equiv-text="selectedTokens.length"/> токенов.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-table/token-table-actions/token-table-actions.component.ts</context>
           <context context-type="linenumber">218</context>
@@ -11551,7 +11551,7 @@
       </trans-unit>
       <trans-unit id="token.followingTokensFailed" datatype="html">
         <source>The following tokens failed to unassign: <x id="TOKENS" equiv-text="formatList(this.localeId, failedTokens)"/></source>
-        <target state="new">Не удалось отменить назначение следующих токенов: <x id="PH" equiv-text="failedTokens.join(&quot;, &quot;)"/></target>
+        <target state="new">Не удалось отменить назначение следующих токенов: <x id="TOKENS" equiv-text="formatList(this.localeId, failedTokens)"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-table/token-table-actions/token-table-actions.component.ts</context>
           <context context-type="linenumber">307</context>
@@ -11559,7 +11559,7 @@
       </trans-unit>
       <trans-unit id="token.youNotAuthorized" datatype="html">
         <source>You are not authorized to unassign the following tokens: <x id="TOKENS" equiv-text="formatList(this.localeId, unauthorizedTokens)"/></source>
-        <target state="new">У вас нет прав на отмену назначения следующих токенов: <x id="PH" equiv-text="unauthorizedTokens.join(&quot;, &quot;)"/></target>
+        <target state="new">У вас нет прав на отмену назначения следующих токенов: <x id="TOKENS" equiv-text="formatList(this.localeId, unauthorizedTokens)"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-table/token-table-actions/token-table-actions.component.ts</context>
           <context context-type="linenumber">313</context>
@@ -11895,7 +11895,7 @@
       </trans-unit>
       <trans-unit id="realm.failedCreateRealm" datatype="html">
         <source>Failed to create realm. <x id="MESSAGE" equiv-text="message"/></source>
-        <target state="new">Не удалось создать домен. <x id="PH" equiv-text="message"/></target>
+        <target state="new">Не удалось создать домен. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/realm-table/realm-table.component.ts</context>
           <context context-type="linenumber">431</context>
@@ -11915,7 +11915,7 @@
       </trans-unit>
       <trans-unit id="realm.realmUpdated" datatype="html">
         <source>Realm &quot;<x id="REALM" equiv-text="realmName"/>&quot; updated.</source>
-        <target state="new">Домен &quot;<x id="PH" equiv-text="realmName"/>&quot; обновлён.</target>
+        <target state="new">Домен &quot;<x id="REALM" equiv-text="realmName"/>&quot; обновлён.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/realm-table/realm-table.component.ts</context>
           <context context-type="linenumber">545</context>
@@ -11923,7 +11923,7 @@
       </trans-unit>
       <trans-unit id="realm.failedUpdateRealm" datatype="html">
         <source>Failed to update realm. <x id="MESSAGE" equiv-text="message"/></source>
-        <target state="new">Не удалось обновить домен. <x id="PH" equiv-text="message"/></target>
+        <target state="new">Не удалось обновить домен. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/realm-table/realm-table.component.ts</context>
           <context context-type="linenumber">552</context>
@@ -11939,7 +11939,7 @@
       </trans-unit>
       <trans-unit id="realm.realmDeleted" datatype="html">
         <source>Realm &quot;<x id="REALM" equiv-text="realmName"/>&quot; deleted.</source>
-        <target state="new">Домен &quot;<x id="PH" equiv-text="row.name"/>&quot; удалён.</target>
+        <target state="new">Домен &quot;<x id="REALM" equiv-text="realmName"/>&quot; удалён.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/realm-table/realm-table.component.ts</context>
           <context context-type="linenumber">617</context>
@@ -11947,7 +11947,7 @@
       </trans-unit>
       <trans-unit id="realm.failedDeleteRealm" datatype="html">
         <source>Failed to delete realm. <x id="MESSAGE" equiv-text="message"/></source>
-        <target state="new">Не удалось удалить домен. <x id="PH" equiv-text="message"/></target>
+        <target state="new">Не удалось удалить домен. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/realm-table/realm-table.component.ts</context>
           <context context-type="linenumber">628</context>
@@ -11955,7 +11955,7 @@
       </trans-unit>
       <trans-unit id="realm.realmSetAsDefault" datatype="html">
         <source>Realm &quot;<x id="NAME" equiv-text="row.name"/>&quot; set as default.</source>
-        <target state="new">Домен &quot;<x id="PH" equiv-text="row.name"/>&quot; установлен по умолчанию.</target>
+        <target state="new">Домен &quot;<x id="NAME" equiv-text="row.name"/>&quot; установлен по умолчанию.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/realm-table/realm-table.component.ts</context>
           <context context-type="linenumber">591</context>
@@ -11963,7 +11963,7 @@
       </trans-unit>
       <trans-unit id="realm.failedSetDefault" datatype="html">
         <source>Failed to set default realm. <x id="MESSAGE" equiv-text="message"/></source>
-        <target state="new">Не удалось установить домен по умолчанию. <x id="PH" equiv-text="message"/></target>
+        <target state="new">Не удалось установить домен по умолчанию. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/realm-table/realm-table.component.ts</context>
           <context context-type="linenumber">599</context>
@@ -13665,7 +13665,7 @@
       </trans-unit>
       <trans-unit id="resolver.resolverUpdated" datatype="html">
         <source>Resolver &quot;<x id="NAME" equiv-text="name"/>&quot; updated.</source>
-        <target state="new">Resolver &quot;<x id="PH" equiv-text="name"/>&quot; обновлён.</target>
+        <target state="new">Resolver &quot;<x id="NAME" equiv-text="name"/>&quot; обновлён.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/user-new-resolver.component.ts</context>
           <context context-type="linenumber">265</context>
@@ -13673,7 +13673,7 @@
       </trans-unit>
       <trans-unit id="resolver.resolverCreated" datatype="html">
         <source>Resolver &quot;<x id="NAME" equiv-text="name"/>&quot; created.</source>
-        <target state="new">Resolver &quot;<x id="PH" equiv-text="name"/>&quot; создан.</target>
+        <target state="new">Resolver &quot;<x id="NAME" equiv-text="name"/>&quot; создан.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/user-new-resolver.component.ts</context>
           <context context-type="linenumber">266</context>
@@ -13693,7 +13693,7 @@
       </trans-unit>
       <trans-unit id="resolver.resolverTestExecuted" datatype="html">
         <source>Resolver test executed: <x id="DETAIL" equiv-text="detail"/></source>
-        <target state="new">Тест resolver&apos;а выполнен: <x id="PH" equiv-text="detail"/></target>
+        <target state="new">Тест resolver&apos;а выполнен: <x id="DETAIL" equiv-text="detail"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/user-new-resolver.component.ts</context>
           <context context-type="linenumber">365</context>
@@ -13789,7 +13789,7 @@
       </trans-unit>
       <trans-unit id="resolver.resolverDeleted" datatype="html">
         <source>Resolver &quot;<x id="RESOLVER" equiv-text="resolver.resolvername"/>&quot; deleted.</source>
-        <target state="new">Resolver &quot;<x id="PH" equiv-text="resolver.resolvername"/>&quot; удалён.</target>
+        <target state="new">Resolver &quot;<x id="RESOLVER" equiv-text="resolver.resolvername"/>&quot; удалён.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-resolver/user-resolver.component.ts</context>
           <context context-type="linenumber">163</context>
@@ -13797,7 +13797,7 @@
       </trans-unit>
       <trans-unit id="resolver.resolverNotFound" datatype="html">
         <source>Resolver &quot;<x id="RESOLVER" equiv-text="resolver.resolvername"/>&quot; not found.</source>
-        <target state="new">Resolver &quot;<x id="PH" equiv-text="resolver.resolvername"/>&quot; не найден.</target>
+        <target state="new">Resolver &quot;<x id="RESOLVER" equiv-text="resolver.resolvername"/>&quot; не найден.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-resolver/user-resolver.component.ts</context>
           <context context-type="linenumber">168</context>
@@ -13805,7 +13805,7 @@
       </trans-unit>
       <trans-unit id="resolver.failedDeleteResolver" datatype="html">
         <source>Failed to delete resolver. <x id="MESSAGE" equiv-text="message"/></source>
-        <target state="new">Не удалось удалить resolver. <x id="PH" equiv-text="message"/></target>
+        <target state="new">Не удалось удалить resolver. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-resolver/user-resolver.component.ts</context>
           <context context-type="linenumber">175</context>
@@ -14033,7 +14033,7 @@
       </trans-unit>
       <trans-unit id="nav.of" datatype="html">
         <source>0 of <x id="LENGTH" equiv-text="length"/></source>
-        <target state="new">0 из <x id="PH" equiv-text="length"/></target>
+        <target state="new">0 из <x id="LENGTH" equiv-text="length"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/paginator-intl.ts</context>
           <context context-type="linenumber">35</context>
@@ -14041,7 +14041,7 @@
       </trans-unit>
       <trans-unit id="nav.pageRange" datatype="html">
         <source><x id="START" equiv-text="startIndex + 1"/> – <x id="END" equiv-text="endIndex"/> of <x id="LENGTH" equiv-text="length"/></source>
-        <target state="new"><x id="PH" equiv-text="startIndex + 1"/> – <x id="PH_1" equiv-text="endIndex"/> из <x id="PH_2" equiv-text="length"/></target>
+        <target state="new"><x id="START" equiv-text="startIndex + 1"/> – <x id="END" equiv-text="endIndex"/> из <x id="LENGTH" equiv-text="length"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/paginator-intl.ts</context>
           <context context-type="linenumber">40</context>
@@ -14073,7 +14073,7 @@
       </trans-unit>
       <trans-unit id="caConnector.successfullyDeleted" datatype="html">
         <source>Successfully deleted CA connector: <x id="CONNECTOR" equiv-text="connectorname"/>.</source>
-        <target state="new">Коннектор CA успешно удалён: <x id="PH" equiv-text="connectorname"/>.</target>
+        <target state="new">Коннектор CA успешно удалён: <x id="CONNECTOR" equiv-text="connectorname"/>.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/ca-connector/ca-connector.service.ts</context>
           <context context-type="linenumber">128</context>
@@ -14129,7 +14129,7 @@
       </trans-unit>
       <trans-unit id="common.errors" datatype="html">
         <source><x id="COUNT" equiv-text="count"/> errors:</source>
-        <target state="new">ошибок: <x id="PH" equiv-text="count"/></target>
+        <target state="new">ошибок: <x id="COUNT" equiv-text="count"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/notification/notification.service.ts</context>
           <context context-type="linenumber">129</context>
@@ -14145,7 +14145,7 @@
       </trans-unit>
       <trans-unit id="common.warnings" datatype="html">
         <source><x id="COUNT" equiv-text="count"/> warnings:</source>
-        <target state="new">предупреждений: <x id="PH" equiv-text="count"/></target>
+        <target state="new">предупреждений: <x id="COUNT" equiv-text="count"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/notification/notification.service.ts</context>
           <context context-type="linenumber">135</context>
@@ -14161,7 +14161,7 @@
       </trans-unit>
       <trans-unit id="common.successes" datatype="html">
         <source><x id="COUNT" equiv-text="count"/> successes:</source>
-        <target state="new">успешно: <x id="PH" equiv-text="count"/></target>
+        <target state="new">успешно: <x id="COUNT" equiv-text="count"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/notification/notification.service.ts</context>
           <context context-type="linenumber">140</context>
@@ -14445,7 +14445,7 @@
       </trans-unit>
       <trans-unit id="policy.creatingPolicy" datatype="html">
         <source>Creating policy failed: <x id="DETAIL" equiv-text="error"/></source>
-        <target state="new">Не удалось создать политику: <x id="PH" equiv-text="error"/></target>
+        <target state="new">Не удалось создать политику: <x id="DETAIL" equiv-text="error"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/policies/policies.service.ts</context>
           <context context-type="linenumber">596</context>
@@ -14473,7 +14473,7 @@
       </trans-unit>
       <trans-unit id="policy.errorFetching" datatype="html">
         <source>Error fetching policy template <x id="TEMPLATE" equiv-text="templateName"/>.</source>
-        <target state="new">Ошибка при получении шаблона политики <x id="PH" equiv-text="templateName"/>.</target>
+        <target state="new">Ошибка при получении шаблона политики <x id="TEMPLATE" equiv-text="templateName"/>.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/policy-templates/policy-templates.service.ts</context>
           <context context-type="linenumber">97</context>
@@ -14505,7 +14505,7 @@
       </trans-unit>
       <trans-unit id="piServer.successfullyDeleted" datatype="html">
         <source>Successfully deleted privacyIDEA server: <x id="IDENTIFIER" equiv-text="identifier"/>.</source>
-        <target state="new">Сервер privacyIDEA успешно удалён: <x id="PH" equiv-text="identifier"/>.</target>
+        <target state="new">Сервер privacyIDEA успешно удалён: <x id="IDENTIFIER" equiv-text="identifier"/>.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/privacyidea-server/privacyidea-server.service.ts</context>
           <context context-type="linenumber">125</context>
@@ -14585,7 +14585,7 @@
       </trans-unit>
       <trans-unit id="radiusServer.successfullyDeleted" datatype="html">
         <source>Successfully deleted RADIUS server: <x id="IDENTIFIER" equiv-text="identifier"/>.</source>
-        <target state="new">Сервер RADIUS успешно удалён: <x id="PH" equiv-text="identifier"/>.</target>
+        <target state="new">Сервер RADIUS успешно удалён: <x id="IDENTIFIER" equiv-text="identifier"/>.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/radius-server/radius-server.service.ts</context>
           <context context-type="linenumber">146</context>
@@ -14617,7 +14617,7 @@
       </trans-unit>
       <trans-unit id="serviceId.successfullyDeleted" datatype="html">
         <source>Successfully deleted service ID: <x id="SERVICE" equiv-text="servicename"/>.</source>
-        <target state="new">Идентификатор службы успешно удалён: <x id="PH" equiv-text="servicename"/>.</target>
+        <target state="new">Идентификатор службы успешно удалён: <x id="SERVICE" equiv-text="servicename"/>.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/service-id/service-id.service.ts</context>
           <context context-type="linenumber">114</context>
@@ -14657,7 +14657,7 @@
       </trans-unit>
       <trans-unit id="smsGateway.successfullyDeleted" datatype="html">
         <source>Successfully deleted SMS gateway: <x id="NAME" equiv-text="name"/>.</source>
-        <target state="new">SMS-шлюз успешно удалён: <x id="PH" equiv-text="name"/>.</target>
+        <target state="new">SMS-шлюз успешно удалён: <x id="NAME" equiv-text="name"/>.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/sms-gateway/sms-gateway.service.ts</context>
           <context context-type="linenumber">137</context>
@@ -14705,7 +14705,7 @@
       </trans-unit>
       <trans-unit id="smtpServer.successfullyDeleted" datatype="html">
         <source>Successfully deleted SMTP server: <x id="IDENTIFIER" equiv-text="identifier"/>.</source>
-        <target state="new">SMTP-сервер успешно удалён: <x id="PH" equiv-text="identifier"/>.</target>
+        <target state="new">SMTP-сервер успешно удалён: <x id="IDENTIFIER" equiv-text="identifier"/>.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/smtp/smtp.service.ts</context>
           <context context-type="linenumber">148</context>
@@ -14737,7 +14737,7 @@
       </trans-unit>
       <trans-unit id="tokenGroup.successfullyDeleted" datatype="html">
         <source>Successfully deleted tokengroup: <x id="GROUP" equiv-text="groupname"/>.</source>
-        <target state="new">Группа токенов успешно удалена: <x id="PH" equiv-text="groupname"/>.</target>
+        <target state="new">Группа токенов успешно удалена: <x id="GROUP" equiv-text="groupname"/>.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/tokengroup/tokengroup.service.ts</context>
           <context context-type="linenumber">117</context>
@@ -14769,7 +14769,7 @@
       </trans-unit>
       <trans-unit id="user.failedCreateUser" datatype="html">
         <source>Failed to create user <x id="USERNAME" equiv-text="userData.username"/>. <x id="MESSAGE" equiv-text="message"/></source>
-        <target state="new">Не удалось создать пользователя <x id="PH" equiv-text="userData.username"/>.</target>
+        <target state="new">Не удалось создать пользователя <x id="USERNAME" equiv-text="userData.username"/>.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/user/user.service.ts</context>
           <context context-type="linenumber">598</context>
@@ -14777,7 +14777,7 @@
       </trans-unit>
       <trans-unit id="user.failedUpdateUser" datatype="html">
         <source>Failed to update user <x id="USERNAME" equiv-text="userData.username"/>. <x id="MESSAGE" equiv-text="message"/></source>
-        <target state="new">Не удалось обновить пользователя <x id="PH" equiv-text="userData.username"/>.</target>
+        <target state="new">Не удалось обновить пользователя <x id="USERNAME" equiv-text="userData.username"/>.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/user/user.service.ts</context>
           <context context-type="linenumber">614</context>
@@ -14785,7 +14785,7 @@
       </trans-unit>
       <trans-unit id="user.failedDeleteUser" datatype="html">
         <source>Failed to delete user <x id="USERNAME" equiv-text="username"/>. <x id="MESSAGE" equiv-text="message"/></source>
-        <target state="new">Не удалось удалить пользователя <x id="PH" equiv-text="username"/>.</target>
+        <target state="new">Не удалось удалить пользователя <x id="USERNAME" equiv-text="username"/>.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/user/user.service.ts</context>
           <context context-type="linenumber">629</context>
