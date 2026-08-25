@@ -1470,7 +1470,7 @@ class LockoutEngineTestCase(LockoutTestCase):
     def test_access_decision_deny_alongside_a_post_response_action_still_denies(self):
         # A stage may mix the pre-auth DENY with a post-response effect; the decision step reads only the DENY.
         self._make_policy(name="both", counter_type=AuthEventType.PASSWORD_FAIL,
-                          stages=(StageDefinition(3, [StageActionDefinition(LockoutAction.LOCK_USER, 600),
+                          stages=(StageDefinition(3, [StageActionDefinition(LockoutAction.LOCK_USER_TEMPORARY, 600),
                                                       StageActionDefinition(LockoutAction.DENY)]),))
         self._seed_events(AuthEventType.PASSWORD_FAIL, 3)
         self.assertEqual(AccessDecision.DENY, evaluate_access_decision(CAContext(self.user)).decision)
@@ -1882,7 +1882,7 @@ class LockoutEngineTestCase(LockoutTestCase):
             target=LockoutTarget.SOURCE_IP, count_mode=CountMode.DISTINCT_USERS,
             conditions=[self._condition(condition_type, operator,
                                         values if values is not None else [self.realm1])],
-            stages=(StageDefinition(threshold, 1, [StageActionDefinition(LockoutAction.BLOCK_IP_TEMPORARY, 600)]),))
+            stages=(StageDefinition(threshold, [StageActionDefinition(LockoutAction.BLOCK_IP_TEMPORARY, 600)]),))
 
     def _seed_ip_accounts(self, ip: str, realms: Sequence[str | None], role: str | None = None,
                           endpoint: str | None = None) -> None:

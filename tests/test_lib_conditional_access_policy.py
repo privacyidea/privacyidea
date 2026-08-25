@@ -86,7 +86,7 @@ class LockoutPolicyCrudTestCase(MyTestCase):
         policy_id = create_lockout_policy(
             "Brute Force", 600, ["PIN_FAIL", "MFA_FAIL"],
             stages=[_stage(5),
-                    _stage(10, priority=2,
+                    _stage(10,
                            actions=[{"action_type": "LOCK_USER_PERMANENT", "action_value": None},
                                     {"action_type": "EMAIL_ADMIN",
                                      "action_value": {"smtp_identifier": "mock"}}])],
