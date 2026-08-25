@@ -71,6 +71,12 @@ class ValidateAPITestCase(MyApiTestCase):
     test the api.validate endpoints
     """
 
+    def setUp(self):
+        super().setUp()
+        # test_33_auth_cache asserts authcache rows, which stay empty when Redis
+        # holds the cached authentications
+        self.pin_to_database("auth")
+
     def test_00_setup(self):
         self.setUp_user_realms()
         self.setUp_user_realm2()
