@@ -81,7 +81,7 @@ def _counter_types(counter_type):
 def _seed_ip_spray(user: "User", event_type: AuthEventType, source_ip: str, n_users: int,
                    timestamp: datetime | None = None):
     """Seed *n_users* distinct users failing from *source_ip* (the spraying shape a
-    source_ip BLOCK_IP policy keys on: one IP hitting many accounts). The users are
+    source_ip BLOCK_IP_TEMPORARY policy keys on: one IP hitting many accounts). The users are
     synthetic (uid/username ``spray0``..) in *user*'s resolver/realm - only the distinct
     ``(username, realm, resolver)`` count matters, they need not resolve; the distinct
     ``username`` per user mirrors the resolved row a real request writes."""
@@ -147,7 +147,7 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
             name="ca_blockip", time_window_seconds=window,
             counter_types_to_track=_counter_types(counter_type),
             stages=[{"failure_threshold": threshold, "priority": 1,
-                     "actions": [{"action_type": str(LockoutAction.BLOCK_IP), "action_value": duration}]}],
+                     "actions": [{"action_type": str(LockoutAction.BLOCK_IP_TEMPORARY), "action_value": duration}]}],
             target=LockoutTarget.SOURCE_IP, priority=priority)
 
     @staticmethod
@@ -342,7 +342,7 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         self._check({"user": "cornelius", "pass": "pin000000"})
         self.assertTrue(is_user_locked(self.user))
 
-    # --- BLOCK_IP -------------------------------------------------------------
+    # --- BLOCK_IP_TEMPORARY -------------------------------------------------------------
 
     def test_blocked_ip_rejected_without_token_logic(self):
         db.session.add(BlockList(ip="203.0.113.7", block_expires_at=utc_now() + timedelta(seconds=600)))
@@ -377,7 +377,7 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         self.assertIsNone(db.session.get(BlockList, "203.0.113.7"))
 
     def test_ip_blocked_after_spraying_distinct_users(self):
-        # An IP that fails against many DISTINCT users (spraying) trips a BLOCK_IP
+        # An IP that fails against many DISTINCT users (spraying) trips a BLOCK_IP_TEMPORARY
         # stage and is blocked - a single user's own repeated failures never would.
         self._make_block_ip_policy(counter_type=AuthEventType.MFA_FAIL, threshold=3, duration=600)
         attacker_ip = "203.0.113.7"
@@ -738,7 +738,7 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
             name="ca_initialize_rate", time_window_seconds=3600,
             counter_types_to_track=_counter_types(AuthEventType.CHALLENGE_TRIGGERED),
             stages=[{"failure_threshold": 2, "priority": 1,
-                     "actions": [{"action_type": str(LockoutAction.BLOCK_IP), "action_value": 600}]}],
+                     "actions": [{"action_type": str(LockoutAction.BLOCK_IP_TEMPORARY), "action_value": 600}]}],
             target=LockoutTarget.SOURCE_IP, count_mode=str(CountMode.PER_REQUEST), priority=1)
 
         # The first call is counted: one trackable CHALLENGE_TRIGGERED row, below the threshold.
@@ -933,7 +933,7 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
             name="ca_block_ip", time_window_seconds=window,
             counter_types_to_track=_counter_types(AuthEventType.PASSWORD_FAIL),
             stages=[{"failure_threshold": threshold, "priority": 1,
-                     "actions": [{"action_type": str(LockoutAction.BLOCK_IP), "action_value": duration}]}],
+                     "actions": [{"action_type": str(LockoutAction.BLOCK_IP_TEMPORARY), "action_value": duration}]}],
             target=LockoutTarget.SOURCE_IP, priority=priority)
 
     def test_locked_user_rejected_at_auth(self):
@@ -1073,7 +1073,7 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
             delete_policy("ca_hide")
 
     def test_ip_block_trip_message_at_auth(self):
-        # The failure that trips the BLOCK_IP stage (by crossing the distinct-user
+        # The failure that trips the BLOCK_IP_TEMPORARY stage (by crossing the distinct-user
         # threshold) already tells the user about the block instead of "Wrong
         # credentials".
         self._make_block_ip_policy(threshold=3)

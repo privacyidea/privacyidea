@@ -2,7 +2,7 @@
 
 Create the conditional_access_outcome table: the history of what conditional
 access did. One row per action the engine executed for a request (LOCK_USER_TEMPORARY,
-BLOCK_IP, EMAIL_*, and the pre-auth DENY decision), plus dry-run rows recording
+BLOCK_IP_TEMPORARY, EMAIL_*, and the pre-auth DENY decision), plus dry-run rows recording
 what a dry-run policy would have done.
 
 This is the queryable counterpart of the live state in user_lockout_state and

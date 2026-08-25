@@ -280,7 +280,7 @@ _ACTIONS_BY_TARGET = {
         LockoutAction.ALLOW,
     },
     LockoutTarget.SOURCE_IP: {
-        LockoutAction.BLOCK_IP,
+        LockoutAction.BLOCK_IP_TEMPORARY,
         LockoutAction.BLOCK_IP_PERMANENT,
         LockoutAction.EMAIL_ADMIN,
         LockoutAction.DENY,

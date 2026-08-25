@@ -195,7 +195,7 @@ PASSWORD_SPRAYING = LockoutPolicyTemplate(
         "counter_types_to_track": [AuthEventType.PASSWORD_FAIL, AuthEventType.PIN_FAIL],
         "stages": [
             {"failure_threshold": 20, "priority": 1,
-             "actions": [{"action_type": LockoutAction.BLOCK_IP,
+             "actions": [{"action_type": LockoutAction.BLOCK_IP_TEMPORARY,
                           "action_value": {"duration_seconds": 3600}}]},
         ],
     })
@@ -216,7 +216,7 @@ USER_ENUMERATION = LockoutPolicyTemplate(
         "counter_types_to_track": [AuthEventType.USER_UNKNOWN],
         "stages": [
             {"failure_threshold": 10, "priority": 1,
-             "actions": [{"action_type": LockoutAction.BLOCK_IP,
+             "actions": [{"action_type": LockoutAction.BLOCK_IP_TEMPORARY,
                           "action_value": {"duration_seconds": 3600}}]},
         ],
     })

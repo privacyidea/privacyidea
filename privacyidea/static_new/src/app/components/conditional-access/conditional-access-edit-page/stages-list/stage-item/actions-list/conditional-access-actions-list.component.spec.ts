@@ -69,13 +69,13 @@ describe("ConditionalAccessActionsListComponent", () => {
     ) as unknown as MockConditionalAccessPolicyService;
     policyServiceMock.actionsByTarget.set({
       user: ["LOCK_USER_TEMPORARY", "ALLOW", "DENY"],
-      source_ip: ["BLOCK_IP", "ALLOW", "DENY"]
+      source_ip: ["BLOCK_IP_TEMPORARY", "ALLOW", "DENY"]
     });
     fixture.componentRef.setInput("target", "source_ip");
 
     const spy = jest.spyOn(component.actionsChange, "emit");
     component.onAddAction();
-    expect(spy).toHaveBeenCalledWith([...actions, { action_type: "BLOCK_IP", action_value: null }]);
+    expect(spy).toHaveBeenCalledWith([...actions, { action_type: "BLOCK_IP_TEMPORARY", action_value: null }]);
   });
 
   it("should emit a merged action on update by index", () => {

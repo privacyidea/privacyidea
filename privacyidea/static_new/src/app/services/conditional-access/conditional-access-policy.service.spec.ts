@@ -207,13 +207,13 @@ describe("ConditionalAccessPolicyService", () => {
     const targetConstraints = {
       user: { actions: ["LOCK_USER_TEMPORARY", "ALLOW", "DENY"], count_modes: ["PER_ATTEMPT", "PER_REQUEST"] },
       source_ip: {
-        actions: ["BLOCK_IP", "ALLOW", "DENY"],
+        actions: ["BLOCK_IP_TEMPORARY", "ALLOW", "DENY"],
         count_modes: ["DISTINCT_USERS", "PER_ATTEMPT", "PER_REQUEST"]
       }
     };
     const expectedActionsByTarget = {
       user: ["LOCK_USER_TEMPORARY", "ALLOW", "DENY"],
-      source_ip: ["BLOCK_IP", "ALLOW", "DENY"]
+      source_ip: ["BLOCK_IP_TEMPORARY", "ALLOW", "DENY"]
     };
     const expectedCountModesByTarget = {
       user: ["PER_ATTEMPT", "PER_REQUEST"],
@@ -286,7 +286,7 @@ describe("ConditionalAccessPolicyService", () => {
     it("should return the allowed actions for a known target", async () => {
       await load();
       expect(service.actionsForTarget("user")).toEqual(["LOCK_USER_TEMPORARY", "ALLOW", "DENY"]);
-      expect(service.actionsForTarget("source_ip")).toEqual(["BLOCK_IP", "ALLOW", "DENY"]);
+      expect(service.actionsForTarget("source_ip")).toEqual(["BLOCK_IP_TEMPORARY", "ALLOW", "DENY"]);
     });
 
     it("should return the supported count modes for a known target", async () => {

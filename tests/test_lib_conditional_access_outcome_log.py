@@ -98,7 +98,7 @@ class OutcomeLogTestCase(MyTestCase):
         # An aware value is left as it is rather than re-stamped.
         aware = expires_at.replace(tzinfo=timezone.utc)
         self.assertDictEqual({"expires_at": aware.isoformat()},
-                         outcome_for_stage(policy, stage, LockoutAction.BLOCK_IP, 6, expires_at=aware).info)
+                         outcome_for_stage(policy, stage, LockoutAction.BLOCK_IP_TEMPORARY, 6, expires_at=aware).info)
 
     def test_outcome_for_stage_leaves_info_empty_without_an_expiry(self):
         # An action that creates no restriction has nothing of its own to record, so the column stays NULL rather than
@@ -184,10 +184,10 @@ class OutcomeLogTestCase(MyTestCase):
     def test_get_outcomes_only_returns_the_requested_row(self):
         first, second = self._auth_log_row(), self._auth_log_row()
         record_outcomes([_outcome()], first)
-        record_outcomes([_outcome(action_type=str(LockoutAction.BLOCK_IP))], second)
+        record_outcomes([_outcome(action_type=str(LockoutAction.BLOCK_IP_TEMPORARY))], second)
 
         self.assertListEqual([str(LockoutAction.LOCK_USER_TEMPORARY)], [outcome.action_type for outcome in get_outcomes(first)])
-        self.assertListEqual([str(LockoutAction.BLOCK_IP)], [outcome.action_type for outcome in get_outcomes(second)])
+        self.assertListEqual([str(LockoutAction.BLOCK_IP_TEMPORARY)], [outcome.action_type for outcome in get_outcomes(second)])
 
     def test_column_lengths_mirror_the_columns_they_copy(self):
         # The outcome stores copies of the policy configuration, and each column is as wide as its source. That is why

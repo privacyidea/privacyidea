@@ -57,18 +57,20 @@ class LockoutAction(str, Enum):
     can execute when its failure threshold is met.
 
     :attr:`LOCK_USER_TEMPORARY`, :attr:`LOCK_USER_PERMANENT`, :attr:`EMAIL_ADMIN`,
-    :attr:`EMAIL_USER`, :attr:`BLOCK_IP` and :attr:`BLOCK_IP_PERMANENT` are
+    :attr:`EMAIL_USER`, :attr:`BLOCK_IP_TEMPORARY` and :attr:`BLOCK_IP_PERMANENT` are
     post-response side effects executed by :func:`evaluate_lockout_policies`.
     :attr:`ALLOW` and :attr:`DENY` decide the *current* request and are therefore
     handled by the pre-auth decision step (:func:`evaluate_access_decision`)
     instead. The action table stores the string value, so the enum can grow
     without a schema change.
 
-    The permanent variants (:attr:`LOCK_USER_PERMANENT`, :attr:`BLOCK_IP_PERMANENT`)
-    ignore ``action_value`` and never expire (only an
-    admin reset clears them); the timed :attr:`LOCK_USER_TEMPORARY` / :attr:`BLOCK_IP` read
-    a duration from ``action_value`` and a missing/invalid one is a skipped
-    misconfiguration (never silently permanent).
+    Each restriction comes in a pair, named subject first and duration second:
+    the permanent variants (:attr:`LOCK_USER_PERMANENT`,
+    :attr:`BLOCK_IP_PERMANENT`) ignore ``action_value`` and never expire (only an
+    admin reset clears them), while the timed ones
+    (:attr:`LOCK_USER_TEMPORARY`, :attr:`BLOCK_IP_TEMPORARY`) read a duration
+    from ``action_value`` - a missing or invalid one is a skipped
+    misconfiguration, never silently permanent.
 
     ``str`` is used instead of ``StrEnum`` (3.11+) for compatibility with Python
     3.10, mirroring
@@ -78,7 +80,7 @@ class LockoutAction(str, Enum):
     LOCK_USER_PERMANENT = "LOCK_USER_PERMANENT"
     EMAIL_ADMIN = "EMAIL_ADMIN"
     EMAIL_USER = "EMAIL_USER"
-    BLOCK_IP = "BLOCK_IP"
+    BLOCK_IP_TEMPORARY = "BLOCK_IP_TEMPORARY"
     BLOCK_IP_PERMANENT = "BLOCK_IP_PERMANENT"
     ALLOW = "ALLOW"
     DENY = "DENY"
@@ -692,7 +694,7 @@ def is_user_locked(user: "User", now: datetime | None = None, *, clear_expired: 
 
 # Built-in never-block networks: blocking loopback would lock out a same-host
 # reverse proxy — and when OVERRIDECLIENT is unset every client is seen as that
-# proxy — turning one BLOCK_IP action into a self-inflicted outage. Admins extend
+# proxy — turning one BLOCK_IP_TEMPORARY action into a self-inflicted outage. Admins extend
 # this via the CONDITIONAL_ACCESS_NEVER_BLOCK system config (proxy / load-balancer
 # / NAT / management CIDRs).
 _DEFAULT_NEVER_BLOCK_NETWORKS = ("127.0.0.0/8", "::1/128")
@@ -739,7 +741,7 @@ def is_ip_never_block(source_ip: str | None) -> bool:
 def get_ip_block(source_ip: str | None, now: datetime | None = None, *,
                  clear_expired: bool = False) -> "RestrictionStatus | None":
     """
-    Return information about *source_ip*'s **current** block by the ``BLOCK_IP``
+    Return information about *source_ip*'s **current** block by the ``BLOCK_IP_TEMPORARY``
     action, or ``None`` if the IP is not currently blocked. This is the IP
     counterpart of :func:`get_user_lockout` and is meant for the authentication
     pre-check hot path.
@@ -790,7 +792,7 @@ def get_ip_block(source_ip: str | None, now: datetime | None = None, *,
 
 def is_ip_blocked(source_ip: str | None, now: datetime | None = None, *, clear_expired: bool = False) -> bool:
     """
-    Return whether *source_ip* is currently blocked by the ``BLOCK_IP`` action.
+    Return whether *source_ip* is currently blocked by the ``BLOCK_IP_TEMPORARY`` action.
     Thin boolean wrapper over :func:`get_ip_block` for the authentication
     pre-check hot path; see that function for the expiry, permanent-block, and
     *clear_expired* semantics.
@@ -838,7 +840,7 @@ def evaluate_access_decision(context: CAContext, now: datetime | None = None) ->
     admin - is never decided by a user policy), while a ``source_ip`` policy is
     keyed on the context's source IP and therefore applies even when the user is
     unresolved (the spraying/enumeration case). A never-block source IP is exempt
-    from an IP ``DENY``, mirroring the ``BLOCK_IP`` allowlist.
+    from an IP ``DENY``, mirroring the ``BLOCK_IP_TEMPORARY`` allowlist.
 
     :param context: what is known about the request under evaluation (see
         :class:`~privacyidea.lib.conditional_access.context.CAContext`); a
@@ -896,7 +898,7 @@ def _policy_access_decision(policy: LockoutPolicy, context: CAContext,
     # different histories.
     if policy.target == LockoutTarget.SOURCE_IP:
         # IP-scoped: decide on the source IP regardless of user resolution. A
-        # never-block IP is never denied by an IP policy (mirrors the BLOCK_IP
+        # never-block IP is never denied by an IP policy (mirrors the BLOCK_IP_TEMPORARY
         # allowlist), so it contributes no decision.
         if not context.source_ip or is_ip_never_block(context.source_ip):
             return AccessDecisionResult()
@@ -991,7 +993,7 @@ def evaluate_lockout_policies(context: CAContext, event_type: AuthEventType | No
     :param context: what is known about the request under evaluation (see
         :class:`~privacyidea.lib.conditional_access.context.CAContext`);
         ``user``-target policies need its user resolved, ``source_ip``-target
-        policies act on its source IP regardless, and the ``BLOCK_IP`` action
+        policies act on its source IP regardless, and the ``BLOCK_IP_TEMPORARY`` action
         blocks that IP
     :param event_type: the classified outcome of the request
         (:class:`AuthEventType`)
@@ -1150,8 +1152,8 @@ def _evaluate_policy(policy: LockoutPolicy, context: CAContext, event_type: str,
                  f"{count} event(s) of {_types_label(policy.counter_types_to_track)} in {window}s.")
         # One outcome per action that would have run, carrying the expiry it would have written - which is the whole
         # point of dry run: the history shows what enforcing this policy would have done to real traffic. A
-        # LOCK_USER_TEMPORARY or BLOCK_IP whose duration is misconfigured records no expiry, so dry run surfaces that
-        # too.
+        # LOCK_USER_TEMPORARY or BLOCK_IP_TEMPORARY whose duration is misconfigured records no expiry, so dry run
+        # surfaces that too.
         # ALLOW/DENY are left out: they decide the request pre-auth and are recorded there (_policy_access_decision),
         # so recording them again here would double-count the same decision.
         outcomes = [outcome_for_stage(policy, triggered_stage, action.action_type, count, dry_run=True,
@@ -1176,7 +1178,7 @@ def _action_expiry(stage_action: LockoutStageAction, now: datetime) -> datetime 
     duration is missing or invalid - which is a misconfiguration the enforced path skips and logs, and which a dry-run
     outcome surfaces as "would have locked, but for how long is not configured".
     """
-    if stage_action.action_type not in (LockoutAction.LOCK_USER_TEMPORARY, LockoutAction.BLOCK_IP):
+    if stage_action.action_type not in (LockoutAction.LOCK_USER_TEMPORARY, LockoutAction.BLOCK_IP_TEMPORARY):
         return None
     duration = _lock_duration_seconds(stage_action.action_value)
     return now + timedelta(seconds=duration) if duration is not None else None
@@ -1412,7 +1414,7 @@ def _execute_stage_actions(policy: LockoutPolicy, stage: LockoutPolicyStage,
                     # A notice is returned exactly when the mail was accepted, so it doubles as "this action ran".
                     notices.append(notice)
                     record(action_type)
-            elif action_type in (LockoutAction.BLOCK_IP, LockoutAction.BLOCK_IP_PERMANENT):
+            elif action_type in (LockoutAction.BLOCK_IP_TEMPORARY, LockoutAction.BLOCK_IP_PERMANENT):
                 # Failures are counted per user, so this blocks the source IP
                 # of the request that tripped a *per-user* policy. It does not
                 # detect password spraying (failures from one IP across many
@@ -1427,7 +1429,7 @@ def _execute_stage_actions(policy: LockoutPolicy, stage: LockoutPolicyStage,
                 else:
                     duration = _lock_duration_seconds(action.action_value)
                     if duration is None:
-                        log.warning(f"BLOCK_IP action {action.id} on stage {stage.id} has no valid duration "
+                        log.warning(f"BLOCK_IP_TEMPORARY action {action.id} on stage {stage.id} has no valid duration "
                                     f"({action.action_value!r}); skipping.")
                         continue
                     block_expires_at = now + timedelta(seconds=duration)

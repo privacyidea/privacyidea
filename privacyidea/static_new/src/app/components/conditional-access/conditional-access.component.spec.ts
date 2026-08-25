@@ -162,12 +162,12 @@ describe("ConditionalAccessComponent", () => {
           priority: 2,
           actions: [
             { action_type: "EMAIL_ADMIN", action_value: null },
-            { action_type: "BLOCK_IP", action_value: 60 }
+            { action_type: "BLOCK_IP_TEMPORARY", action_value: 60 }
           ]
         }
       ]
     };
-    expect(component.actionsDisplay(policy)).toBe("LOCK_USER_TEMPORARY, EMAIL_ADMIN, BLOCK_IP");
+    expect(component.actionsDisplay(policy)).toBe("LOCK_USER_TEMPORARY, EMAIL_ADMIN, BLOCK_IP_TEMPORARY");
   });
 
   describe("selection", () => {

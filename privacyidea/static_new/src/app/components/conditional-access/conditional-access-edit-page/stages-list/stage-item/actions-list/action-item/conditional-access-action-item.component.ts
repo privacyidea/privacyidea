@@ -40,7 +40,7 @@ import { InfoHintComponent } from "@components/shared/info-hint/info-hint.compon
 const ACTION_DESCRIPTIONS: Record<LockoutActionType, string> = {
   LOCK_USER_TEMPORARY: $localize`Temporarily lock the user out for the duration below.`,
   LOCK_USER_PERMANENT: $localize`Lock the user out until an administrator unlocks them.`,
-  BLOCK_IP: $localize`Temporarily block the request's source IP for the duration below.`,
+  BLOCK_IP_TEMPORARY: $localize`Temporarily block the request's source IP for the duration below.`,
   BLOCK_IP_PERMANENT: $localize`Block the request's source IP until an administrator unblocks it.`,
   EMAIL_ADMIN: $localize`Send a notification email to an admin recipient group.`,
   EMAIL_USER: $localize`Send a notification email to the affected user.`,
@@ -249,7 +249,7 @@ export class ConditionalAccessActionItemComponent {
   });
 
   private static modeFor(actionType: LockoutActionType): ActionValueMode {
-    if (actionType === "LOCK_USER_TEMPORARY" || actionType === "BLOCK_IP") {
+    if (actionType === "LOCK_USER_TEMPORARY" || actionType === "BLOCK_IP_TEMPORARY") {
       return "duration";
     }
     if (actionType === "EMAIL_ADMIN" || actionType === "EMAIL_USER") {

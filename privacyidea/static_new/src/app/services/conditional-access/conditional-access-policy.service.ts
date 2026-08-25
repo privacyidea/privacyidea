@@ -59,7 +59,7 @@ export type LockoutActionType =
   | "LOCK_USER_PERMANENT"
   | "EMAIL_ADMIN"
   | "EMAIL_USER"
-  | "BLOCK_IP"
+  | "BLOCK_IP_TEMPORARY"
   | "BLOCK_IP_PERMANENT"
   | "ALLOW"
   | "DENY";

@@ -232,7 +232,7 @@ class LockoutEngineTestCase(LockoutTestCase):
         self._make_policy(name="ratelimit", counter_type=AuthEventType.PASSWORD_FAIL, window=300,
                           target=LockoutTarget.SOURCE_IP, count_mode=CountMode.PER_REQUEST,
                           stages=(StageDefinition(failure_threshold=5, priority=1,
-                                                  actions=[StageActionDefinition(LockoutAction.BLOCK_IP, {"duration_seconds": 3600})]),))
+                                                  actions=[StageActionDefinition(LockoutAction.BLOCK_IP_TEMPORARY, {"duration_seconds": 3600})]),))
         self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=1, per_user=5)
         self.assertFalse(is_ip_blocked(ip))
         evaluate_lockout_policies(CAContext(self.user, ip), AuthEventType.PASSWORD_FAIL)
@@ -244,7 +244,7 @@ class LockoutEngineTestCase(LockoutTestCase):
         ip = "203.0.113.7"
         self._make_policy(name="spray", counter_type=AuthEventType.PASSWORD_FAIL, window=300,
                           target=LockoutTarget.SOURCE_IP,
-                          stages=(StageDefinition(20, 1, [StageActionDefinition(LockoutAction.BLOCK_IP, {"duration_seconds": 3600})]),))
+                          stages=(StageDefinition(20, 1, [StageActionDefinition(LockoutAction.BLOCK_IP_TEMPORARY, {"duration_seconds": 3600})]),))
         self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=20)
         self.assertFalse(is_ip_blocked(ip))
         evaluate_lockout_policies(CAContext(self.user, ip), AuthEventType.PASSWORD_FAIL)
@@ -254,7 +254,7 @@ class LockoutEngineTestCase(LockoutTestCase):
         ip = "203.0.113.8"
         self._make_policy(name="spray", counter_type=AuthEventType.PASSWORD_FAIL, window=300,
                           target=LockoutTarget.SOURCE_IP,
-                          stages=(StageDefinition(20, 1, [StageActionDefinition(LockoutAction.BLOCK_IP, {"duration_seconds": 3600})]),))
+                          stages=(StageDefinition(20, 1, [StageActionDefinition(LockoutAction.BLOCK_IP_TEMPORARY, {"duration_seconds": 3600})]),))
         self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=19)
         evaluate_lockout_policies(CAContext(self.user, ip), AuthEventType.PASSWORD_FAIL)
         self.assertFalse(is_ip_blocked(ip))
@@ -262,7 +262,7 @@ class LockoutEngineTestCase(LockoutTestCase):
     def test_spraying_policy_without_source_ip_is_skipped(self):
         self._make_policy(name="spray", counter_type=AuthEventType.PASSWORD_FAIL, window=300,
                           target=LockoutTarget.SOURCE_IP,
-                          stages=(StageDefinition(1, 1, [StageActionDefinition(LockoutAction.BLOCK_IP, {"duration_seconds": 3600})]),))
+                          stages=(StageDefinition(1, 1, [StageActionDefinition(LockoutAction.BLOCK_IP_TEMPORARY, {"duration_seconds": 3600})]),))
         self._seed_ip_events("203.0.113.9", AuthEventType.PASSWORD_FAIL, n_users=5)
         # No source IP on the current request -> the IP-targeted policy cannot act.
         self.assertEqual([], evaluate_lockout_policies(CAContext(self.user, None),
@@ -895,12 +895,13 @@ class LockoutEngineTestCase(LockoutTestCase):
         ip = "10.10.0.5"
         self._make_policy(name="dry_ip", counter_type=AuthEventType.PASSWORD_FAIL, dry_run=True,
                           target=LockoutTarget.SOURCE_IP,
-                          stages=(StageDefinition(2, 1, [StageActionDefinition(LockoutAction.BLOCK_IP, 600)]),))
+                          stages=(StageDefinition(
+                              2, 1, [StageActionDefinition(LockoutAction.BLOCK_IP_TEMPORARY, 600)]),))
         self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=2, per_user=1)
         outcomes = evaluate_lockout_policies(CAContext(self.user, ip), AuthEventType.PASSWORD_FAIL).outcomes
 
         self.assertEqual("dry_ip", outcomes[0].policy_name)
-        self.assertEqual(str(LockoutAction.BLOCK_IP), outcomes[0].action_type)
+        self.assertEqual(str(LockoutAction.BLOCK_IP_TEMPORARY), outcomes[0].action_type)
         # Dry run: the IP is never actually blocked.
         self.assertIsNone(self._block(ip))
 
@@ -1013,10 +1014,11 @@ class LockoutEngineTestCase(LockoutTestCase):
         self.assertFalse(is_user_locked(self.user))
 
     def test_never_block_ip_records_nothing(self):
-        # The never-block allowlist makes BLOCK_IP a no-op, so there is nothing to record either.
+        # The never-block allowlist makes BLOCK_IP_TEMPORARY a no-op, so there is nothing to record either.
         self._make_policy(name="ip_live", counter_type=AuthEventType.PASSWORD_FAIL,
                           target=LockoutTarget.SOURCE_IP,
-                          stages=(StageDefinition(2, 1, [StageActionDefinition(LockoutAction.BLOCK_IP, 600)]),))
+                          stages=(StageDefinition(
+                              2, 1, [StageActionDefinition(LockoutAction.BLOCK_IP_TEMPORARY, 600)]),))
         self._seed_ip_events("127.0.0.1", AuthEventType.PASSWORD_FAIL, n_users=2, per_user=1)
         evaluation = evaluate_lockout_policies(CAContext(self.user, "127.0.0.1"), AuthEventType.PASSWORD_FAIL)
 
@@ -1192,10 +1194,11 @@ class LockoutEngineTestCase(LockoutTestCase):
             delete_privacyidea_config(SYSCONF.CONDITIONAL_ACCESS_NEVER_BLOCK)
 
     def test_block_ip_action_skips_never_block_ip(self):
-        # A BLOCK_IP action must never write a block for a never-block IP (loopback).
+        # A BLOCK_IP_TEMPORARY action must never write a block for a never-block IP (loopback).
         self._make_policy(name="blockloop", counter_type=AuthEventType.PASSWORD_FAIL,
                           target=LockoutTarget.SOURCE_IP,
-                          stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.BLOCK_IP, 900)]),))
+                          stages=(StageDefinition(
+                              3, 1, [StageActionDefinition(LockoutAction.BLOCK_IP_TEMPORARY, 900)]),))
         self._seed_ip_events("127.0.0.1", AuthEventType.PASSWORD_FAIL, n_users=3)
         evaluate_lockout_policies(CAContext(self.user, "127.0.0.1"), AuthEventType.PASSWORD_FAIL)
         self.assertEqual(0, db.session.query(BlockList).count())
@@ -1214,14 +1217,15 @@ class LockoutEngineTestCase(LockoutTestCase):
         finally:
             delete_privacyidea_config(SYSCONF.CONDITIONAL_ACCESS_NEVER_BLOCK)
 
-    # --- BLOCK_IP action ------------------------------------------------------
+    # --- BLOCK_IP_TEMPORARY action ------------------------------------------------------
 
     def test_block_ip_action_blocks_source_ip(self):
         ip = "203.0.113.7"
         _, stages = self._make_policy(
             name="blockip", counter_type=AuthEventType.PASSWORD_FAIL,
             target=LockoutTarget.SOURCE_IP,
-            stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.BLOCK_IP, 900)]),))
+            stages=(StageDefinition(
+                3, 1, [StageActionDefinition(LockoutAction.BLOCK_IP_TEMPORARY, 900)]),))
         self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=3)
         evaluate_lockout_policies(CAContext(self.user, ip), AuthEventType.PASSWORD_FAIL)
         block = self._block(ip)
@@ -1229,14 +1233,15 @@ class LockoutEngineTestCase(LockoutTestCase):
         self.assertIsNotNone(block.block_expires_at)
         self.assertGreater(block.block_expires_at, utc_now())
         self.assertTrue(is_ip_blocked(ip))
-        # A BLOCK_IP-only stage writes no user lock.
+        # A BLOCK_IP_TEMPORARY-only stage writes no user lock.
         self.assertIsNone(self._state())
 
     def test_block_ip_action_without_source_ip_skipped(self):
         # No source IP on the request -> the source-IP policy cannot act; skipped, not raised.
         self._make_policy(name="blocknoip", counter_type=AuthEventType.PASSWORD_FAIL,
                           target=LockoutTarget.SOURCE_IP,
-                          stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.BLOCK_IP, 900)]),))
+                          stages=(StageDefinition(
+                              3, 1, [StageActionDefinition(LockoutAction.BLOCK_IP_TEMPORARY, 900)]),))
         self._seed_ip_events("203.0.113.7", AuthEventType.PASSWORD_FAIL, n_users=3)
         evaluate_lockout_policies(CAContext(self.user, None), AuthEventType.PASSWORD_FAIL)
         self.assertEqual(0, db.session.query(BlockList).count())
@@ -1245,7 +1250,7 @@ class LockoutEngineTestCase(LockoutTestCase):
         ip = "203.0.113.7"
         self._make_policy(name="blockbaddur", counter_type=AuthEventType.PASSWORD_FAIL,
                           target=LockoutTarget.SOURCE_IP,
-                          stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.BLOCK_IP)]),))
+                          stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.BLOCK_IP_TEMPORARY)]),))
         self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=3)
         evaluate_lockout_policies(CAContext(self.user, ip), AuthEventType.PASSWORD_FAIL)
         self.assertIsNone(self._block(ip))
@@ -1257,7 +1262,8 @@ class LockoutEngineTestCase(LockoutTestCase):
         db.session.commit()
         self._make_policy(name="blocktimed", counter_type=AuthEventType.PASSWORD_FAIL,
                           target=LockoutTarget.SOURCE_IP,
-                          stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.BLOCK_IP, 900)]),))
+                          stages=(StageDefinition(
+                              3, 1, [StageActionDefinition(LockoutAction.BLOCK_IP_TEMPORARY, 900)]),))
         self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=3)
         evaluate_lockout_policies(CAContext(self.user, ip), AuthEventType.PASSWORD_FAIL)
         # The permanent block must remain permanent (block_expires_at stays None).
@@ -1290,7 +1296,7 @@ class LockoutEngineTestCase(LockoutTestCase):
         self.assertIsNone(self._block(ip).block_expires_at)
 
     def test_permanent_block_ip_without_source_ip_skipped(self):
-        # Like BLOCK_IP, a request with no source IP is logged and skipped, not raised.
+        # Like BLOCK_IP_TEMPORARY, a request with no source IP is logged and skipped, not raised.
         self._make_policy(name="permblocknoip", counter_type=AuthEventType.PASSWORD_FAIL,
                           target=LockoutTarget.SOURCE_IP,
                           stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.BLOCK_IP_PERMANENT)]),))
@@ -1303,7 +1309,8 @@ class LockoutEngineTestCase(LockoutTestCase):
         ip = "203.0.113.7"
         self._make_policy(name="blockip", counter_type=AuthEventType.PASSWORD_FAIL,
                           target=LockoutTarget.SOURCE_IP,
-                          stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.BLOCK_IP, 900)]),))
+                          stages=(StageDefinition(
+                              3, 1, [StageActionDefinition(LockoutAction.BLOCK_IP_TEMPORARY, 900)]),))
         self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=3)
         evaluate_lockout_policies(CAContext(self.user, ip), AuthEventType.PASSWORD_FAIL)
         # The block runs out while the failures are still in the window.
@@ -1322,7 +1329,7 @@ class LockoutEngineTestCase(LockoutTestCase):
         ip = "203.0.113.60"
         self._make_policy(name="spray", counter_type=AuthEventType.PASSWORD_FAIL, window=300,
                           target=LockoutTarget.SOURCE_IP, priority=1,
-                          stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.BLOCK_IP,
+                          stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.BLOCK_IP_TEMPORARY,
                                                                                {"duration_seconds": 3600})]),))
         self._make_policy(name="userlock", counter_type=AuthEventType.PASSWORD_FAIL, priority=2,
                           stages=(StageDefinition(3, 1, 
@@ -1347,7 +1354,8 @@ class LockoutEngineTestCase(LockoutTestCase):
                               [StageActionDefinition(LockoutAction.LOCK_USER_TEMPORARY, 60)]),))
         self._make_policy(name="blocktimed", counter_type=AuthEventType.PIN_FAIL, priority=10,
                           target=LockoutTarget.SOURCE_IP,
-                          stages=(StageDefinition(7, 1, [StageActionDefinition(LockoutAction.BLOCK_IP, 60)]),))
+                          stages=(StageDefinition(
+                              7, 1, [StageActionDefinition(LockoutAction.BLOCK_IP_TEMPORARY, 60)]),))
         self._make_policy(name="blockperm", counter_type=AuthEventType.PIN_FAIL, priority=4,
                           target=LockoutTarget.SOURCE_IP,
                           stages=(StageDefinition(7, 1, [StageActionDefinition(LockoutAction.BLOCK_IP_PERMANENT)]),))
@@ -1522,7 +1530,7 @@ class LockoutEngineTestCase(LockoutTestCase):
         self.assertEqual(AccessDecision.CONTINUE, evaluate_access_decision(CAContext(self.user, ip)).decision)
 
     def test_access_decision_source_ip_never_block_is_exempt(self):
-        # A never-block IP (loopback) is never denied by an IP policy, mirroring BLOCK_IP.
+        # A never-block IP (loopback) is never denied by an IP policy, mirroring BLOCK_IP_TEMPORARY.
         ip = "127.0.0.1"
         self._make_policy(name="ipdeny", counter_type=AuthEventType.PASSWORD_FAIL,
                           target=LockoutTarget.SOURCE_IP,
@@ -1881,7 +1889,7 @@ class LockoutEngineTestCase(LockoutTestCase):
         A source-IP spraying policy scoped by one condition, blocking the IP once the scoped count
         reaches *threshold* distinct accounts.
 
-        :param threshold: distinct accounts at which the BLOCK_IP stage fires
+        :param threshold: distinct accounts at which the BLOCK_IP_TEMPORARY stage fires
         :param operator: the :class:`ConditionOperator` the condition compares with
         :param values: the condition's values; defaults to ``[self.realm1]``
         :param condition_type: the :class:`ConditionType` the condition reads
@@ -1892,7 +1900,7 @@ class LockoutEngineTestCase(LockoutTestCase):
             target=LockoutTarget.SOURCE_IP, count_mode=CountMode.DISTINCT_USERS,
             conditions=[self._condition(condition_type, operator,
                                         values if values is not None else [self.realm1])],
-            stages=(StageDefinition(threshold, 1, [StageActionDefinition(LockoutAction.BLOCK_IP, 600)]),))
+            stages=(StageDefinition(threshold, 1, [StageActionDefinition(LockoutAction.BLOCK_IP_TEMPORARY, 600)]),))
 
     def _seed_ip_accounts(self, ip: str, realms: Sequence[str | None], role: str | None = None,
                           endpoint: str | None = None) -> None:
@@ -2051,7 +2059,7 @@ class LockoutEngineTestCase(LockoutTestCase):
                 name="unscopable", counter_type=AuthEventType.MFA_FAIL,
                 target=LockoutTarget.SOURCE_IP, count_mode=CountMode.DISTINCT_USERS,
                 conditions=[self._condition("CLIENT_LABEL", ConditionOperator.IN, ["kiosk"])],
-                stages=(StageDefinition(2, 1, [StageActionDefinition(LockoutAction.BLOCK_IP, 600)]),))[0]
+                stages=(StageDefinition(2, 1, [StageActionDefinition(LockoutAction.BLOCK_IP_TEMPORARY, 600)]),))[0]
             self.assertFalse(policy_conditions_are_scopable(policy))
             # Two accounts in different realms: unscoped they both count and the threshold is reached.
             self._seed_ip_accounts(ip, (self.realm1, self.realm2))
@@ -2091,7 +2099,8 @@ class LockoutEngineTestCase(LockoutTestCase):
             name="attempt scoped", counter_type=counter_type,
             target=LockoutTarget.SOURCE_IP, count_mode=CountMode.PER_ATTEMPT,
             conditions=[self._condition(ConditionType.USER_REALM, operator, values)],
-            stages=(StageDefinition(1, 1, [StageActionDefinition(LockoutAction.BLOCK_IP, 600)]),))
+            stages=(StageDefinition(
+                1, 1, [StageActionDefinition(LockoutAction.BLOCK_IP_TEMPORARY, 600)]),))
         return policy
 
     def test_a_condition_that_would_drop_a_success_does_not_turn_the_attempt_into_a_failure(self):

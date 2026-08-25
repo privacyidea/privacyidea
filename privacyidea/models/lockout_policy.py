@@ -229,7 +229,7 @@ class LockoutStageAction(MethodsMixin, db.Model):
     can have multiple actions (e.g. lock the user *and* email the admin).
 
     ``action_value`` is the action-specific payload, stored as JSON:
-    e.g. the lock duration in seconds for ``LOCK_USER_TEMPORARY``/``BLOCK_IP`` or
+    e.g. the lock duration in seconds for ``LOCK_USER_TEMPORARY``/``BLOCK_IP_TEMPORARY`` or
     an email template ID for ``EMAIL_ADMIN``/``EMAIL_USER``.
 
     ``retrigger_above_threshold`` controls how this action fires as the failure
@@ -293,7 +293,7 @@ class UserLockoutState(MethodsMixin, db.Model):
 class BlockList(MethodsMixin, db.Model):
     """
     A blocked source identity (currently a source IP), written by the
-    ``BLOCK_IP`` conditional-access action and consulted by the authentication
+    ``BLOCK_IP_TEMPORARY`` conditional-access action and consulted by the authentication
     pre-check on the *next* inbound request — exactly the live-state pattern of
     :class:`UserLockoutState`, but keyed by the request's source IP rather than
     by the user.

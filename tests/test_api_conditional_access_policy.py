@@ -143,7 +143,7 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
         body = self._policy_body(name="Spray", target="source_ip",
                                  counter_types_to_track=[str(AuthEventType.PASSWORD_FAIL)],
                                  stages=[{"failure_threshold": 20,
-                                          "actions": [{"action_type": str(LockoutAction.BLOCK_IP),
+                                          "actions": [{"action_type": str(LockoutAction.BLOCK_IP_TEMPORARY),
                                                        "action_value": {"duration_seconds": 3600}}]}])
         res = self._request("policy", method="POST", json_data=body)
         self.assertEqual(200, res.status_code, res.json)
@@ -188,20 +188,20 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
     def test_create_block_ip_under_user_target_is_400(self):
         body = self._policy_body(name="Bad2",
                                  stages=[{"failure_threshold": 5,
-                                          "actions": [{"action_type": str(LockoutAction.BLOCK_IP),
+                                          "actions": [{"action_type": str(LockoutAction.BLOCK_IP_TEMPORARY),
                                                        "action_value": {"duration_seconds": 60}}]}])
         res = self._request("policy", method="POST", json_data=body)
         self.assertEqual(400, res.status_code, res.json)
 
     def test_patch_change_target_with_compatible_stages(self):
         # target may change as long as the new target/action AND target/count_mode combinations are compatible:
-        # flip a user policy to source_ip while swapping in BLOCK_IP and the source_ip count_mode.
+        # flip a user policy to source_ip while swapping in BLOCK_IP_TEMPORARY and the source_ip count_mode.
         policy_id = self._create_policy()
         res = self._request(f"policy/{policy_id}", method="PATCH",
                             json_data={"target": "source_ip",
                                        "count_mode": str(CountMode.DISTINCT_USERS),
                                        "stages": [{"failure_threshold": 20,
-                                                   "actions": [{"action_type": str(LockoutAction.BLOCK_IP),
+                                                   "actions": [{"action_type": str(LockoutAction.BLOCK_IP_TEMPORARY),
                                                                 "action_value": {"duration_seconds": 60}}]}]})
         self.assertEqual(200, res.status_code, res.json)
         result = self._request(f"policy/{policy_id}").json["result"]["value"]
@@ -237,7 +237,7 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
         # the spraying template is source_ip-targeted and blocks the IP
         spray = catalog["password_spraying"]
         self.assertEqual("source_ip", spray["policy"]["target"])
-        self.assertEqual(str(LockoutAction.BLOCK_IP),
+        self.assertEqual(str(LockoutAction.BLOCK_IP_TEMPORARY),
                          spray["policy"]["stages"][0]["actions"][0]["action_type"])
 
     def test_template_policy_posts_verbatim(self):
@@ -329,8 +329,8 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
         # Each target carries its allowed actions and supported count modes.
         self.assertIn(str(LockoutAction.LOCK_USER_TEMPORARY), constraints["user"]["actions"])
         self.assertNotIn(str(LockoutAction.LOCK_USER_TEMPORARY), constraints["source_ip"]["actions"])
-        self.assertIn(str(LockoutAction.BLOCK_IP), constraints["source_ip"]["actions"])
-        self.assertNotIn(str(LockoutAction.BLOCK_IP), constraints["user"]["actions"])
+        self.assertIn(str(LockoutAction.BLOCK_IP_TEMPORARY), constraints["source_ip"]["actions"])
+        self.assertNotIn(str(LockoutAction.BLOCK_IP_TEMPORARY), constraints["user"]["actions"])
         # Volume modes are valid for both; DISTINCT_USERS is source_ip-only.
         self.assertListEqual([str(CountMode.PER_ATTEMPT), str(CountMode.PER_REQUEST)],
                              constraints["user"]["count_modes"])

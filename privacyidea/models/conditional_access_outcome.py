@@ -113,7 +113,7 @@ class ConditionalAccessOutcome(db.Model):
     auth_log_id: Mapped[int] = mapped_column(BigIntegerType,
                                              ForeignKey("authentication_log.id", ondelete="CASCADE"),
                                              nullable=False)
-    # A LockoutAction value: the action that ran (LOCK_USER_TEMPORARY, BLOCK_IP, EMAIL_*, ...) or the pre-auth
+    # A LockoutAction value: the action that ran (LOCK_USER_TEMPORARY, BLOCK_IP_TEMPORARY, EMAIL_*, ...) or the pre-auth
     # decision (DENY).
     action_type: Mapped[str] = mapped_column(
         case_sensitive_unicode(conditional_access_outcome_column_length["action_type"]), nullable=False)
@@ -131,9 +131,9 @@ class ConditionalAccessOutcome(db.Model):
     stage_name: Mapped[str | None] = mapped_column(
         case_sensitive_unicode(conditional_access_outcome_column_length["stage_name"]))
     # Whatever this particular action has to say about itself, or NULL when it has nothing. A timed
-    # LOCK_USER_TEMPORARY / BLOCK_IP records ``{"expires_at": "<ISO-8601 UTC>"}`` - the only record of how long the
-    # restriction lasted once the state row is gone; a permanent action has no expiry by definition, and EMAIL_* /
-    # DENY create no restriction at all.
+    # LOCK_USER_TEMPORARY / BLOCK_IP_TEMPORARY records ``{"expires_at": "<ISO-8601 UTC>"}`` - the only record of how
+    # long the restriction lasted once the state row is gone; a permanent action has no expiry by definition, and
+    # EMAIL_* / DENY create no restriction at all.
     #
     # Deliberately a JSON bag rather than one column per action type: with seven action types and more to come, a column
     # only two of them fill is mostly NULL, and every new action would otherwise need a migration to record its detail.

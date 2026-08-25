@@ -241,7 +241,7 @@ class LockoutPolicyCrudTestCase(MyTestCase):
         self.assertEqual([AuthEventType.PIN_FAIL], policy["counter_types_to_track"])
 
     def _ip_stage(self, threshold=20):
-        return _stage(threshold, actions=[{"action_type": "BLOCK_IP", "action_value": {"duration_seconds": 3600}}])
+        return _stage(threshold, actions=[{"action_type": "BLOCK_IP_TEMPORARY", "action_value": {"duration_seconds": 3600}}])
 
     def test_02f_count_mode_defaults_per_target(self):
         # No count_mode given: a user policy defaults to PER_REQUEST, a source_ip policy to DISTINCT_USERS,
@@ -332,14 +332,14 @@ class LockoutPolicyCrudTestCase(MyTestCase):
             )
 
     def test_02j_target_action_compatibility(self):
-        # BLOCK_IP only makes sense on a source_ip target; LOCK_USER_TEMPORARY only on a user target.
+        # BLOCK_IP_TEMPORARY only makes sense on a source_ip target; LOCK_USER_TEMPORARY only on a user target.
         self.assertRaises(
             ParameterError,
             create_lockout_policy,
             "P",
             600,
             ["PIN_FAIL"],
-            [_stage(actions=[{"action_type": "BLOCK_IP"}])],
+            [_stage(actions=[{"action_type": "BLOCK_IP_TEMPORARY"}])],
             target=LockoutTarget.USER,
             priority=1,
         )
@@ -358,7 +358,7 @@ class LockoutPolicyCrudTestCase(MyTestCase):
             "Spray",
             300,
             ["PIN_FAIL"],
-            [_stage(20, actions=[{"action_type": "BLOCK_IP", "action_value": {"duration_seconds": 3600}}])],
+            [_stage(20, actions=[{"action_type": "BLOCK_IP_TEMPORARY", "action_value": {"duration_seconds": 3600}}])],
             target=LockoutTarget.SOURCE_IP,
             priority=3,
         )
@@ -507,7 +507,7 @@ class LockoutPolicyCrudTestCase(MyTestCase):
             [CountMode.DISTINCT_USERS.value, CountMode.PER_ATTEMPT.value, CountMode.PER_REQUEST.value],
             constraints[LockoutTarget.SOURCE_IP.value]["count_modes"],
         )
-        self.assertIn(LockoutAction.BLOCK_IP.value, constraints[LockoutTarget.SOURCE_IP.value]["actions"])
+        self.assertIn(LockoutAction.BLOCK_IP_TEMPORARY.value, constraints[LockoutTarget.SOURCE_IP.value]["actions"])
         self.assertIn(LockoutAction.LOCK_USER_TEMPORARY.value, constraints[LockoutTarget.USER.value]["actions"])
 
     def test_11_duplicate_priority_rejected(self):

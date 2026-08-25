@@ -84,7 +84,7 @@ describe("ConditionalAccessActionItemComponent", () => {
   });
 
   it("should describe every action type", () => {
-    for (const type of ["LOCK_USER_TEMPORARY", "LOCK_USER_PERMANENT", "BLOCK_IP", "ALLOW", "DENY", "EMAIL_USER"] as const) {
+    for (const type of ["LOCK_USER_TEMPORARY", "LOCK_USER_PERMANENT", "BLOCK_IP_TEMPORARY", "ALLOW", "DENY", "EMAIL_USER"] as const) {
       setAction({ action_type: type, action_value: null });
       expect(component.actionDescription().length).toBeGreaterThan(0);
     }
@@ -108,7 +108,7 @@ describe("ConditionalAccessActionItemComponent", () => {
       ) as unknown as MockConditionalAccessPolicyService;
       policyServiceMock.actionsByTarget.set({
         user: ["LOCK_USER_TEMPORARY", "LOCK_USER_PERMANENT", "EMAIL_ADMIN", "EMAIL_USER", "ALLOW", "DENY"],
-        source_ip: ["BLOCK_IP", "BLOCK_IP_PERMANENT", "EMAIL_ADMIN", "ALLOW", "DENY"]
+        source_ip: ["BLOCK_IP_TEMPORARY", "BLOCK_IP_PERMANENT", "EMAIL_ADMIN", "ALLOW", "DENY"]
       });
     });
 
@@ -122,7 +122,7 @@ describe("ConditionalAccessActionItemComponent", () => {
 
     it("accepts an action that is allowed for the current target", () => {
       fixture.componentRef.setInput("target", "source_ip");
-      setAction({ action_type: "BLOCK_IP", action_value: 600 });
+      setAction({ action_type: "BLOCK_IP_TEMPORARY", action_value: 600 });
       expect(component.isActionAllowedForTarget()).toBe(true);
     });
 
@@ -255,7 +255,7 @@ describe("ConditionalAccessActionItemComponent", () => {
       ) as unknown as MockConditionalAccessPolicyService;
       policyServiceMock.actionsByTarget.set({
         user: ["LOCK_USER_TEMPORARY", "LOCK_USER_PERMANENT", "EMAIL_ADMIN", "EMAIL_USER", "ALLOW", "DENY"],
-        source_ip: ["BLOCK_IP", "BLOCK_IP_PERMANENT", "EMAIL_ADMIN", "ALLOW", "DENY"]
+        source_ip: ["BLOCK_IP_TEMPORARY", "BLOCK_IP_PERMANENT", "EMAIL_ADMIN", "ALLOW", "DENY"]
       });
       setRights([]);
     });
@@ -287,8 +287,8 @@ describe("ConditionalAccessActionItemComponent", () => {
   it("should keep the value when the type stays in the same mode", () => {
     const spy = jest.spyOn(component.updateAction, "emit");
     setAction({ action_type: "LOCK_USER_TEMPORARY", action_value: 600 });
-    component.onActionTypeChange("BLOCK_IP");
-    expect(spy).toHaveBeenCalledWith({ action_type: "BLOCK_IP" });
+    component.onActionTypeChange("BLOCK_IP_TEMPORARY");
+    expect(spy).toHaveBeenCalledWith({ action_type: "BLOCK_IP_TEMPORARY" });
   });
 
   it("should emit removeAction", () => {

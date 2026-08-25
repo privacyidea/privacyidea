@@ -74,7 +74,7 @@ def conditional_access_precheck(user: User, log_rejection: bool = True) -> Respo
     for the admin, as this request's authentication-log row.
 
     A currently-locked user is rejected first, then a source IP blocked by a
-    ``BLOCK_IP`` action. The pre-auth conditional-access DENY decision is evaluated
+    ``BLOCK_IP_TEMPORARY`` action. The pre-auth conditional-access DENY decision is evaluated
     last, after the lock/block pre-checks (so an ALLOW cannot override them); a
     DENY rejects this single request without persisting state, while
     ALLOW / CONTINUE fall through. ``g.client_ip`` is the source IP checked.
@@ -168,7 +168,7 @@ def _lockout_error_message(lockout: RestrictionStatus) -> str:
 def _blocked_ip_error_message(client_ip: str | None, block: RestrictionStatus) -> str:
     """
     Build the user-facing message for a login rejected because the source IP is
-    blocked by a conditional-access ``BLOCK_IP`` action. *block* is the
+    blocked by a conditional-access ``BLOCK_IP_TEMPORARY`` action. *block* is the
     :class:`RestrictionStatus` returned by
     :func:`~privacyidea.lib.conditional_access.engine.get_ip_block`:
     a permanent block points the user at the administrator, a timed block states
