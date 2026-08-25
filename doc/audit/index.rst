@@ -287,3 +287,155 @@ used. The :ref:`logger_audit` module can **not** be used for reading!
 Using the *Container Audit* module you can on the one hand send audit information
 to external services using the :ref:`logger_audit` but also keep the
 audit information visible within privacyIDEA using the :ref:`sql_audit` module.
+
+
+.. index:: Authentication log
+.. _authentication_log:
+
+Authentication log
+------------------
+
+.. versionadded:: 3.14
+
+Next to the audit log, privacyIDEA keeps an *authentication log*. Every
+request that authenticates a user or an administrator writes an entry, which
+records how the server decided about that request: the event type, why the
+event came out that way, the endpoint that served the request, the user, the
+source IP, the client, the token serial and the transaction. Entries that
+belong to one logical attempt share an ``attempt_id``, so a triggered
+challenge and the response answering it read as one authentication although
+they are separate requests.
+
+The log is shown in the WebUI under *Logs -> Authentication Log* and can be
+read through the :ref:`rest_authentication_log`. Administrators need the
+:ref:`policy_authentication_log_read` action; if that policy is scoped to
+realms, resolvers or users, the administrator only sees the entries matching
+that scope. The same action in the user scope lets a user read their own
+entries.
+
+Event types
+~~~~~~~~~~~
+
+Each entry is classified by exactly one event type, e.g. ``LOGIN_SUCCESS``,
+``PIN_FAIL``, ``MFA_FAIL``, ``NO_USABLE_TOKEN`` or ``CHALLENGE_TRIGGERED``.
+Every event type has one outcome, ``success``, ``failure`` or ``pending``, so
+entries can be grouped by result without listing each type: a *pending* event
+is an authentication still in flight, e.g. a challenge that was sent and not
+yet answered.
+
+``GET /authenticationlog/eventtypes`` returns every event type with its
+outcome, and the WebUI builds its filter from that list.
+
+Why an event happened
+~~~~~~~~~~~~~~~~~~~~~
+
+The event type says *what* happened to a request, and several different causes
+share one event type. ``NO_USABLE_TOKEN`` is the clearest case: it is the same
+event whether every token of the user is disabled, past its failcounter,
+outside its validity period or not fully enrolled, which are four findings
+calling for four different reactions. Each entry therefore also carries a
+*reason*, a short value that can be filtered on like the event type. The
+reasons fall into four groups:
+
+* **The state of a token**, e.g. ``TOKEN_DISABLED``, ``TOKEN_REVOKED``,
+  ``TOKEN_FAILCOUNT_EXCEEDED`` or ``TOKEN_OUTSIDE_VALIDITY_PERIOD``.
+* **A policy** refusing an otherwise valid authentication, e.g.
+  ``AUTHORIZATION_POLICY``, ``AUTH_MAX_FAIL`` or ``LAST_AUTH_TOO_OLD``.
+* **The credentials**, e.g. ``WRONG_USERSTORE_PASSWORD``, ``WRONG_TOKEN_PIN``
+  or ``WRONG_OTP``.
+* **Challenge-response**, e.g. ``CHALLENGE_WRONG_RESPONSE``,
+  ``CHALLENGE_EXPIRED`` or ``CHALLENGE_DECLINED_ON_DEVICE``.
+
+``GET /authenticationlog/reasons`` returns every defined reason, and the
+*Reason* column filter in the WebUI offers the same list.
+
+Only a failed or denied authentication carries a reason. A success needs none,
+and a request still in flight has nothing to explain yet. The column is also
+empty when nothing classified a cause, so an empty reason means *not
+classified*, not *no cause*.
+
+One entry, one reason
+^^^^^^^^^^^^^^^^^^^^^
+
+A request is checked against every token of the user, and those tokens can
+fail for different reasons. The entry names the most informative one, by a
+fixed precedence:
+
+* A policy decision outranks any token state, because it applies whatever the
+  tokens look like.
+* A permanent token state (revoked) outranks a transient one (a failcounter,
+  which a reset clears).
+* A wrong credential ranks below every state, since the state is what made the
+  credential moot.
+
+The reduction loses nothing: the *Info* column of the entry (``other_info`` in
+the API) keeps the finding of every token under ``reason_detail.reasons``,
+keyed by serial, and the names of the policies that decided under
+``reason_detail.policies``.
+
+.. note::
+
+   ``CHALLENGE_EXPIRED`` tells a timeout apart from a wrong answer: the user
+   answered correctly, only too late. Recognizing it depends on the lapsed
+   challenge still being readable, which is best-effort. Stored in the
+   database, a challenge stays until the janitor removes it; cached in Redis
+   (``PI_REDIS_CACHE_CHALLENGES``), the key expires shortly after the
+   challenge validity, so an answer arriving much later finds nothing and is
+   recorded as ``CHALLENGE_UNKNOWN_TRANSACTION``.
+
+Which endpoint served the request
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Each entry records the endpoint the request authenticated against, as its
+request path:
+
+* ``/auth`` - the login of a user or an administrator, e.g. from the WebUI.
+* ``/validate/check`` and ``/validate/radiuscheck`` - an authentication by an
+  application or a RADIUS client.
+* ``/validate/triggerchallenge`` - a challenge triggered by an administrator.
+* ``/validate/initialize`` - the anonymous bootstrap of a FIDO2/passkey
+  challenge before login.
+* ``/ttype/push`` - a push challenge answered on the smartphone, which reaches
+  the server out of band.
+
+The column is empty for an event recorded outside a request, e.g. from the
+command line. The same value is what an ``Endpoint`` condition of a
+conditional-access policy is matched against, so a lockout policy can be
+limited to the endpoints it should watch, e.g. counting the failed
+authentications of an application without counting WebUI logins.
+
+Searching the authentication log
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In the WebUI the filters are set through the column headers. The same filters
+are available on ``GET /authenticationlog/`` (see
+:ref:`rest_authentication_log`), where every filter parameter is plural and
+takes a comma-separated list of values. An entry matches when it equals any of
+them::
+
+   GET /authenticationlog/?event_types=NO_USABLE_TOKEN&reasons=TOKEN_FAILCOUNT_EXCEEDED
+   GET /authenticationlog/?endpoints=/validate/check,/validate/radiuscheck
+
+Filter values are matched as follows:
+
+* ``*`` is the wildcard and matches any sequence of characters, e.g.
+  ``serials=TOTP*``. A value containing a ``*`` always matches
+  case-insensitively.
+* All other characters are matched literally, ``%`` and ``_`` included. A value
+  without a ``*`` must match the column exactly, case-sensitively unless
+  ``case_insensitive`` is passed.
+
+.. index:: retention time
+
+Cleaning up entries
+~~~~~~~~~~~~~~~~~~~
+
+The authentication log grows with every authentication and is never pruned
+during logging. To enforce a retention period, call :ref:`the pi-manage script
+<pimanage>` from a cron job::
+
+   pi-manage authlog cleanup --age 365
+
+This deletes every entry older than one year. ``--chunksize`` deletes in
+chunks to avoid long transactions on a large table, and ``--dryrun`` only
+reports how many entries the run would delete.

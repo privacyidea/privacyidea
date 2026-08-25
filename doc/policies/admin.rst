@@ -865,6 +865,21 @@ For example a value ``sig_check log_level`` will hide these two columns.
 The list of available columns can be checked by examining the response of the
 request to the :ref:`rest_audit`.
 
+.. _policy_authentication_log_read:
+
+authentication_log_read
+~~~~~~~~~~~~~~~~~~~~~~~
+
+type: ``bool``
+
+The administrator is allowed to read the authentication log. If the policy is
+scoped to realms, resolvers or users, the administrator only sees the entries
+matching that scope, next to their own login attempts.
+
+To learn more about the authentication log, see :ref:`authentication_log`.
+
+.. versionadded:: 3.14
+
 .. _policy_triggerchallenge:
 
 triggerchallenge

@@ -739,18 +739,16 @@ def check_token_list(token_object_list: list[TokenClass], passw: str, user: User
 
     # Why, alongside what: the row carries one reason, reduced by REASON_PRECEDENCE, while other_info keeps the whole
     # per-serial map so a request whose tokens failed differently does not lose the ones that lost the reduction.
-    # Only a failed request gets one - a success needs no reason, and the finding of a token that lost to a
-    # succeeding one would be noise on that row. Read after the fallback above, so a NO_USABLE_TOKEN (where no token
-    # contributed an event at all) is included rather than skipped.
-    # Read from the tokens that produced the winning event, so the reason explains that event (see _note_event).
-    # Only when no token produced it - NO_USABLE_TOKEN, where every token was turned away before it could - does the
-    # whole set decide, which is exactly the case that reduction was written for.
+    # Only a failed request gets one: a success needs no reason, and the finding of a token that lost to a succeeding
+    # one would be noise on that row.
+    # The reason is read from the tokens that produced the winning event, so it explains that event (see _note_event),
+    # and only where no token produced it - a NO_USABLE_TOKEN from the fallback above, where every token was turned
+    # away before it could contribute - does the whole set decide.
     deciding_serials = event_serials.get(str(reduced_event), set()) & token_reasons.keys()
     deciding_reasons = ([token_reasons[serial] for serial in deciding_serials] if deciding_serials
                         else list(token_reasons.values()))
-    # Passed as recorded: reduce_request_reasons coerces and drops what it cannot, and converting here instead would
-    # raise past that guard - from the generator, inside its loop - and fail the authentication over a mislabelled
-    # reason.
+    # Passed as recorded: reduce_request_reasons coerces and drops what it cannot, while converting here would raise
+    # past that guard, from inside the generator, and fail the authentication over a mislabelled reason.
     reduced_reason = reduce_request_reasons(deciding_reasons)
     if reduced_reason and reduced_event and outcome_of(reduced_event) == AuthEventOutcome.FAILURE:
         reply_dict[AUTH_EVENT_REASON_KEY] = reduced_reason

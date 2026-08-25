@@ -6,7 +6,8 @@ Conditional Access Module
 .. index:: Conditional Access, Authentication Log
 
 The conditional-access package classifies each authentication request, records the
-outcome in the authentication log and feeds it to the lockout engine.
+outcome in the authentication log and feeds it to the lockout engine. See
+:ref:`authentication_log` for what an entry records and how it is searched.
 
 Authentication event types
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -128,12 +128,12 @@ class AuthEventReason(str, Enum):
 
     The event type answers *what* happened to a request; several distinct causes share one of them, and the cause is
     what an admin has to act on. ``NO_USABLE_TOKEN`` is the clearest case: it is the same event whether every token is
-    disabled, past its failcount, outside its validity period or simply not yet enrolled -- four different pieces of
-    advice for the person reading the log. Recording the reason separately keeps the event vocabulary small (a row is
-    still classified by exactly one event) while making the log answer "why".
+    disabled, past its failcount, outside its validity period or simply not yet enrolled, which are four different
+    pieces of advice for the person reading the log. Recording the reason separately keeps the event vocabulary small
+    (a row is still classified by exactly one event) while making the log answer "why".
 
     A reason is **machine-readable and low-cardinality**, so it can be filtered on like an event type. Anything
-    specific to one request -- which policy denied it, which serial failed for which reason -- goes in the row's
+    specific to one request (which policy denied it, which serial failed for which reason) goes in the row's
     ``other_info`` instead; see :data:`AUTH_EVENT_REASON_DETAIL_KEY`.
 
     Not every event has a reason: ``LOGIN_SUCCESS`` needs none, and a reason nobody classified is simply ``None``. The
@@ -188,11 +188,10 @@ class AuthEventReason(str, Enum):
     # The challenge was still stored but had lapsed when the response arrived. Worth telling apart from a wrong
     # response: the user answered correctly, only too late, which is a timeout to raise rather than an attack.
     #
-    # Best-effort by nature, since it depends on the lapsed challenge still being readable. It is with the database
-    # backend, which keeps the row until a janitor removes it; the Redis backend gives the key a TTL of the challenge
-    # validity plus a small buffer (``_TTL_BUFFER_SECONDS``), so an answer arriving well after the expiry finds
-    # nothing and is recorded as CHALLENGE_UNKNOWN_TRANSACTION instead. That is the honest reading of what is left to
-    # see, so the two degrade into each other rather than one being wrong.
+    # Best-effort, since it depends on the lapsed challenge still being readable: the database backend keeps the row
+    # until a janitor removes it, while the Redis backend gives the key a TTL of the challenge validity plus a small
+    # buffer (``_TTL_BUFFER_SECONDS``), so an answer arriving well after the expiry finds nothing and is recorded as
+    # CHALLENGE_UNKNOWN_TRANSACTION instead.
     CHALLENGE_EXPIRED = "CHALLENGE_EXPIRED"
     # The response matched, but the token may not complete a challenge (its state changed since the trigger).
     TOKEN_NOT_FIT_FOR_CHALLENGE = "TOKEN_NOT_FIT_FOR_CHALLENGE"

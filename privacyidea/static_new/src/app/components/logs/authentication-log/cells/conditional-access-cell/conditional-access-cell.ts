@@ -30,8 +30,8 @@ import { AuthenticationLogEntry } from "@services/authentication-log/authenticat
 // cannot leak into the UI by accident.
 //
 // Only `policy` and `dryRun` are shown right away, because the policy is what the admin recognizes an outcome by; the
-// remaining fields - the action it ran and why - are revealed by the expand toggle. Twelve columns share this table, so a four-line
-// cell per outcome would push everything else off-screen for a detail most readers do not want.
+// remaining fields - the action it ran and why - are revealed by the expand toggle. Twelve columns share this table,
+// so a four-line cell per outcome would push everything else off-screen for a detail most readers do not want.
 export interface OutcomeView {
   // Identifies this outcome for the expand toggle and the aria-controls of its details. The row's own id when the
   // backend sent one; otherwise the entry and the position, which is unique within the rendered page.
@@ -130,8 +130,7 @@ export class ConditionalAccessCell {
 
   // The toggle carries no visible text, so its accessible name has to say both what it does and which outcome it
   // belongs to. One outcome is one *action*, so a policy that ran two of them (the shipped brute-force template locks
-  // and mails) shows two rows under one name: the action is what tells those two buttons apart, and naming only the
-  // policy would leave them indistinguishable - which is what this label exists to prevent.
+  // and mails) shows two rows under one name, and the action is what tells those two buttons apart.
   toggleLabel(outcome: OutcomeView): string {
     return this.isExpanded(outcome.key)
       ? $localize`Hide the details of ${outcome.action} by ${outcome.policy}`

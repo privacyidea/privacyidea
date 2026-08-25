@@ -222,6 +222,18 @@ For example a value ``sig_check log_level`` will hide these two columns.
 The list of available columns can be checked by examining the response of the
 request to the :ref:`rest_audit`.
 
+authentication_log_read
+~~~~~~~~~~~~~~~~~~~~~~~
+
+type: ``bool``
+
+This action allows the user to read their own entries of the authentication
+log, i.e. how their own authentication requests were decided.
+
+To learn more about the authentication log, see :ref:`authentication_log`.
+
+.. versionadded:: 3.14
+
 updateuser
 ~~~~~~~~~~
 

@@ -58,7 +58,9 @@ authentication_log_column_length = {
 
 class AuthenticationLog(MethodsMixin, db.Model):
     """
-    Append-only log of authentication events: every authenticated HTTP request produces exactly one row.
+    Append-only log of authentication events: every authenticated HTTP request produces a row, and normally exactly
+    one (a ``push_wait`` request writes two, since it triggers the challenge and awaits the answer within the one
+    request).
     Several rows may share a ``transaction_id`` to correlate the multiple requests of one logical authentication
     attempt (e.g. a challenge trigger and its later response) at query time. Rows of one logical attempt - including a
     multi-challenge flow where answering one challenge triggers another - share an ``attempt_id``; ordering an

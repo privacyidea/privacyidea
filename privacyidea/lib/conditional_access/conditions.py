@@ -246,8 +246,7 @@ def _resolve_endpoint(context: "CAContext") -> Any:
 
 
 # The endpoints an authentication can arrive at, i.e. the paths that record an authentication-log row. The vocabulary
-# of an ENDPOINT condition, so an admin picks from a list instead of typing a path that would silently never match -
-# the same reason every other condition type has closed choices.
+# of an ENDPOINT condition, so an admin picks from a list instead of typing a path that would silently never match.
 #
 # Hard-coded because it cannot be derived: whether a route authenticates is decided by it calling
 # ``log_authentication``, which no registry records. **A new authenticating endpoint has to be added here**, and
