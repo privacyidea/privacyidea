@@ -166,7 +166,7 @@ export class UserDetailsTokenTableComponent {
     const canEnroll = this.authService.tokenEnrollmentAllowed();
     const canAssign = this.authService.actionAllowed("assign");
     if (canEnroll && canAssign) {
-      return $localize`:@@user.enrollNewToken:Enroll a new token for this user, or assign an existing one.`;
+      return $localize`:@@user.enrollNewTokenHint:Enroll a new token for this user, or assign an existing one.`;
     }
     if (canEnroll) {
       return $localize`:@@user.enrollNewTokenOnly:Enroll a new token for this user.`;

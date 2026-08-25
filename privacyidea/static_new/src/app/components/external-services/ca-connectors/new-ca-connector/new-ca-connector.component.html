@@ -24,15 +24,15 @@
     @if (isEditMode()) {
       <h3
         class="margin-8"
-        i18n="@@caConnector.editCaConnector">
-        Edit CA Connector
-      </h3>
+        i18n="@@caConnector.editCaConnector"
+        >Edit CA Connector</h3
+      >
     } @else {
       <h3
         class="margin-8"
-        i18n="@@common.createCaConnector">
-        Create CA Connector
-      </h3>
+        i18n="@@common.createCaConnector"
+        >Create CA Connector</h3
+      >
     }
 
     <div
@@ -78,8 +78,8 @@
           @if (caConnectorForm.connectorname().errors().some(e => e.kind === 'pattern')) {
             <mat-error i18n="@@caConnector.connectorNameContains"
               >Connector Name contains <strong>invalid characters</strong>. Only alphanumeric characters, dots,
-              underscores and hyphens are allowed.
-            </mat-error>
+              underscores and hyphens are allowed.</mat-error
+            >
           }
         </mat-form-field>
 
@@ -95,13 +95,13 @@
             <mat-option
               i18n="@@caConnector.local"
               value="local"
-              >Local
-            </mat-option>
+              >Local</mat-option
+            >
             <mat-option
               i18n="@@caConnector.microsoft"
               value="microsoft"
-              >Microsoft
-            </mat-option>
+              >Microsoft</mat-option
+            >
           </mat-select>
           @if (caConnectorForm.type().errors().some(e => e.kind === 'required')) {
             <mat-error i18n="@@caConnector.typeRequired">Type is <strong>required</strong></mat-error>
@@ -232,9 +232,9 @@
 
         <h4
           class="margin-top-32"
-          i18n="@@caConnector.crlConfiguration">
-          CRL Configuration
-        </h4>
+          i18n="@@caConnector.crlConfiguration"
+          >CRL Configuration</h4
+        >
         <mat-form-field
           appearance="fill"
           class="input-width-xl">
@@ -248,8 +248,9 @@
               placeholder="/opt/myCA/certs/crl.pem" />
           </app-clearable-input>
           <mat-hint i18n="@@caConnector.crlFileWhichWritten"
-            >This is the CRL file, which is written when a certificate is revoked or the CRL is created otherwise.
-          </mat-hint>
+            >This is the CRL file, which is written when a certificate is revoked or the CRL is created
+            otherwise.</mat-hint
+          >
         </mat-form-field>
 
         <div class="flex-row gap-16 margin-top-16 margin-bottom-32">
@@ -321,16 +322,16 @@
           [checked]="caConnectorModel().http_proxy"
           (change)="caConnectorModel.update(m => ({...m, http_proxy: $event.checked}))"
           i18n="@@caConnector.useHttpProxy"
-          >Use HTTP proxy
-        </mat-checkbox>
+          >Use HTTP proxy</mat-checkbox
+        >
 
         <h4 i18n="@@caConnector.sslConfig">SSL Config</h4>
         <mat-checkbox
           [checked]="caConnectorModel().use_ssl"
           (change)="caConnectorModel.update(m => ({...m, use_ssl: $event.checked}))"
           i18n="@@caConnector.useSsl"
-          >Use SSL
-        </mat-checkbox>
+          >Use SSL</mat-checkbox
+        >
 
         @if (caConnectorModel().use_ssl) {
           <div class="flex-row gap-16">

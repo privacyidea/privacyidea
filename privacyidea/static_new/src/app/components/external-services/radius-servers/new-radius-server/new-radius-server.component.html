@@ -24,15 +24,15 @@
     @if (isEditMode()) {
       <h3
         class="margin-8"
-        i18n="@@radiusServer.editRadiusServer">
-        Edit RADIUS Server
-      </h3>
+        i18n="@@radiusServer.editRadiusServer"
+        >Edit RADIUS Server</h3
+      >
     } @else {
       <h3
         class="margin-8"
-        i18n="@@common.createRadiusServer">
-        Create RADIUS Server
-      </h3>
+        i18n="@@common.createRadiusServer"
+        >Create RADIUS Server</h3
+      >
     }
 
     <div
@@ -78,8 +78,8 @@
         @if (radiusForm.identifier().errors().some(e => e.kind === 'pattern')) {
           <mat-error i18n="@@common.identifierContains"
             >Identifier contains <strong>invalid characters</strong>. Only alphanumeric characters, dots, underscores
-            and hyphens are allowed.
-          </mat-error>
+            and hyphens are allowed.</mat-error
+          >
         }
       </mat-form-field>
 
@@ -190,8 +190,8 @@
           [checked]="radiusModel().message_authenticator"
           (change)="radiusModel.update(m => ({...m, message_authenticator: $event.checked}))"
           i18n="@@radiusServer.requireMessage"
-          >Require Message-Authenticator
-        </mat-checkbox>
+          >Require Message-Authenticator</mat-checkbox
+        >
       </div>
 
       <h4 i18n="@@radiusServer.testRadiusServer">Test RADIUS Server</h4>

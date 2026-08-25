@@ -18,9 +18,9 @@
 -->
 <h2
   i18n="@@container.containerSuccessfully"
-  mat-dialog-title>
-  Container Successfully Created
-</h2>
+  mat-dialog-title
+  >Container Successfully Created</h2
+>
 <mat-dialog-content>
   <span i18n="@@container.containerWasSuccessfullyCreated"
     >The container was successfully created with serial number
@@ -43,12 +43,11 @@
         width="300px" />
     }
     <div class="flex-column gap-16">
-      <p i18n="@@container.pleaseScanQrCode">
-        Please scan the QR code with the privacyIDEA Authenticator App or click this
-        <a href="{{ data()?.response?.result?.value?.container_url?.value ?? '' }}">link</a>
-        on your smartphone to register your container. It will send the missing registration data to the configured
-        endpoint.
-      </p>
+      <p i18n="@@container.pleaseScanQrCode"
+        >Please scan the QR code with the privacyIDEA Authenticator App or click this
+        <a href="{{ data()?.response?.result?.value?.container_url?.value ?? '' }}">link</a> on your smartphone to
+        register your container. It will send the missing registration data to the configured endpoint.</p
+      >
       <button
         (click)="regenerateQRCode()"
         class="action-button-secondary button-width-l"

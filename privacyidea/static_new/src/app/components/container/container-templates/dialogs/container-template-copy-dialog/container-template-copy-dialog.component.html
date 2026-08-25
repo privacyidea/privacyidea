@@ -26,10 +26,10 @@
   [actions]="actions()"
   (actionTriggered)="onAction($event)">
   <div class="flex-column">
-    <p i18n="@@container.pleaseEnterUnique">
-      Please enter a unique name for the new copy of <b>{{ data }}</b
-      >.
-    </p>
+    <p i18n="@@container.pleaseEnterUnique"
+      >Please enter a unique name for the new copy of <b>{{ data }}</b
+      >.</p
+    >
 
     <mat-form-field>
       <mat-label i18n="@@container.newTemplateName">New Template Name</mat-label>
@@ -49,8 +49,8 @@
       @if (isNameDirty() && template().name.length > 0 && nameInvalidPattern()) {
         <mat-error i18n="@@container.templateNameContains"
           >Template name contains <strong>invalid characters</strong>. Only alphanumeric characters, dots, underscores
-          and hyphens are allowed.
-        </mat-error>
+          and hyphens are allowed.</mat-error
+        >
       }
     </mat-form-field>
   </div>

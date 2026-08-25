@@ -1,9 +1,9 @@
 <div class="expiry-container">
   <h2 i18n="@@subscription.subscriptionExpires">Subscription expires soon</h2>
   <div class="content">
-    <p i18n="@@subscription.oneMoreSubscriptions">
-      One or more subscriptions will expire within the next month. Please review your subscriptions.
-    </p>
+    <p i18n="@@subscription.oneMoreSubscriptions"
+      >One or more subscriptions will expire within the next month. Please review your subscriptions.</p
+    >
 
     <ul class="items">
       @for (item of data.items; track item.application) {
@@ -32,8 +32,8 @@
     <button
       mat-stroked-button
       matDialogClose
-      i18n="@@common.close">
-      Close
-    </button>
+      i18n="@@common.close"
+      >Close</button
+    >
   </div>
 </div>

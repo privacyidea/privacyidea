@@ -25,9 +25,9 @@
     <div class="filter-paginator-container">
       <h3
         class="selfservice-paginator-label"
-        i18n="@@container.yourContainers">
-        Your Containers
-      </h3>
+        i18n="@@container.yourContainers"
+        >Your Containers</h3
+      >
       @if (authService.rights().includes("container_create")) {
         <button
           mat-stroked-button
@@ -205,9 +205,9 @@
                     @if (element.tokens?.length === 0) {
                       <div
                         class="flex ali-center"
-                        i18n="@@container.containerHasNo">
-                        Container has no tokens.
-                      </div>
+                        i18n="@@container.containerHasNo"
+                        >Container has no tokens.</div
+                      >
                     }
                   </div>
                 </div>

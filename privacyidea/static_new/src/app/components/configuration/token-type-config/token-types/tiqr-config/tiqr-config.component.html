@@ -21,9 +21,9 @@
     <mat-panel-title i18n="@@tokenTypeConfig.tiqr">TiQR</mat-panel-title>
   </mat-expansion-panel-header>
   <div class="panel-content expansion-well">
-    <p i18n="@@tokenTypeConfig.tiqrTokenOcra">
-      The TiQR Token is an OCRA based Smartphone Token, that can be used to authenticate by just scanning a QR code.
-    </p>
+    <p i18n="@@tokenTypeConfig.tiqrTokenOcra"
+      >The TiQR Token is an OCRA based Smartphone Token, that can be used to authenticate by just scanning a QR code.</p
+    >
 
     <div class="flex-row margin-bottom-32">
       <mat-form-field
@@ -44,10 +44,9 @@
           >
         }
         <mat-hint i18n="@@tokenTypeConfig.registrationServer"
-          >The Registration Server is this privacyIDEA server.
-          <br />
-          Note that the privacyIDEA server needs to be accessible from the users smartphone.
-        </mat-hint>
+          >The Registration Server is this privacyIDEA server. <br />
+          Note that the privacyIDEA server needs to be accessible from the users smartphone.</mat-hint
+        >
       </mat-form-field>
     </div>
 
@@ -62,10 +61,9 @@
           matInput
           type="url" />
         <mat-hint i18n="@@tokenTypeConfig.authenticationServer"
-          >The Authentication Server is this privacyIDEA server.
-          <br />
-          Note that the privacyIDEA server needs to be accessible from the users smartphone.
-        </mat-hint>
+          >The Authentication Server is this privacyIDEA server. <br />
+          Note that the privacyIDEA server needs to be accessible from the users smartphone.</mat-hint
+        >
       </mat-form-field>
 
       <mat-form-field
@@ -92,10 +90,9 @@
           (input)="updateFormData(TIQR_SERVICE_IDENTIFIER, $any($event.target).value)"
           matInput />
         <mat-hint i18n="@@tokenTypeConfig.serviceIdentifier"
-          >This is the service identifier that will be passed to the TiQR app.
-          <br />
-          This should contain a reverse FQDN (defaults to org.privacyidea).
-        </mat-hint>
+          >This is the service identifier that will be passed to the TiQR app. <br />
+          This should contain a reverse FQDN (defaults to org.privacyidea).</mat-hint
+        >
       </mat-form-field>
 
       <mat-form-field
@@ -133,8 +130,8 @@
             href="https://tools.ietf.org/html/rfc6287#page-8"
             target="_blank"
             ><strong>RFC 6287</strong>.
-          </a>
-        </mat-hint>
+          </a></mat-hint
+        >
       </mat-form-field>
 
       <mat-form-field

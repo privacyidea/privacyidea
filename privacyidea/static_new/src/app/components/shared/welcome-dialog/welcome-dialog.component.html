@@ -3,8 +3,8 @@
     <h2 i18n="@@welcome.welcome">Welcome</h2>
     <div
       class="content"
-      i18n="@@welcome.firstWeWouldLike">
-      <p>First, we would like to give you some background information on privacyIDEA.</p>
+      i18n="@@welcome.firstWeWouldLike"
+      ><p>First, we would like to give you some background information on privacyIDEA.</p>
       <p>
         privacyIDEA is an <b>Enterprise Level</b> Multi Factor Authentication System. It is open source. The core
         developers are employed at NetKnights GmbH, Germany. NetKnights provides the
@@ -15,15 +15,15 @@
         >
         including <b>Support and Service Level Agreements</b>. Moreover, NetKnights provides services, consultancy and
         paid programming of new features.
-      </p>
-    </div>
+      </p></div
+    >
     <div class="actions">
       <button
         (click)="nextWelcome()"
         i18n="@@common.next"
-        mat-stroked-button>
-        Next
-      </button>
+        mat-stroked-button
+        >Next</button
+      >
     </div>
   }
 
@@ -31,8 +31,8 @@
     <h2 i18n="@@welcome.valueOpenSource">The value of open source</h2>
     <div
       class="content"
-      i18n="@@welcome.youReadingBooks">
-      <p>
+      i18n="@@welcome.youReadingBooks"
+      ><p>
         You are reading books, which do not belong to you anymore. Your ebook reader only provides them for the time of
         reading. You are using software as a service and you do not have any control, when the software will be updated,
         which features will be added or removed or if the service might even be stopped. You only get a legal right of
@@ -52,45 +52,45 @@
           >Using open source is not about spending no money, but it is about full control you get over your own system!
           Forever!</b
         >
-      </p>
-    </div>
+      </p></div
+    >
     <div class="actions">
       <button
         (click)="nextWelcome()"
         i18n="@@common.next"
-        mat-stroked-button>
-        Next
-      </button>
+        mat-stroked-button
+        >Next</button
+      >
     </div>
   }
 
   @if (step() === 2) {
     <h2 i18n="@@welcome.addedValuePrivacyidea">The added value of privacyIDEA Enterprise Edition</h2>
     <div class="content">
-      <p i18n="@@welcome.accordingAgplv3">
-        According to the
+      <p i18n="@@welcome.accordingAgplv3"
+        >According to the
         <a
           href="https://github.com/privacyidea/privacyidea/blob/master/LICENSE"
           target="_blank"
           >AGPLv3</a
-        >
-      </p>
+        ></p
+      >
       <p
         class="text-center"
-        i18n="@@welcome.softwareComes">
-        <b>THIS SOFTWARE COMES WITHOUT ANY WARRANTY!</b>
-      </p>
-      <p i18n="@@welcome.addedValuesPrivacyidea">
-        The added values of the
+        i18n="@@welcome.softwareComes"
+        ><b>THIS SOFTWARE COMES WITHOUT ANY WARRANTY!</b></p
+      >
+      <p i18n="@@welcome.addedValuesPrivacyidea"
+        >The added values of the
         <a
           href="https://netknights.it/en/produkte/privacyidea/"
           target="_blank"
           >privacyIDEA Enterprise Edition</a
         >
-        are:
-      </p>
-      <ul i18n="@@welcome.supportService">
-        <li>
+        are:</p
+      >
+      <ul i18n="@@welcome.supportService"
+        ><li>
           Support and
           <a
             href="https://netknights.it/en/leistungen/service-level-agreements/"
@@ -114,23 +114,23 @@
           >
           you ensure that professional developers can work full time on privacyIDEA, add new features and fix bugs in a
           timely manner. In addition, you allow for external services like code audits.
-        </li>
-      </ul>
-      <p i18n="@@welcome.askPrivacyidea">
-        <a
+        </li></ul
+      >
+      <p i18n="@@welcome.askPrivacyidea"
+        ><a
           href="https://netknights.it/en/unternehmen/kontakt/"
           target="_blank"
           >Ask for the privacyIDEA Enterprise Edition, now!</a
-        >
-      </p>
+        ></p
+      >
     </div>
     <div class="actions">
       <button
         (click)="nextWelcome()"
         i18n="@@common.next"
-        mat-stroked-button>
-        Next
-      </button>
+        mat-stroked-button
+        >Next</button
+      >
     </div>
   }
 
@@ -138,10 +138,10 @@
     <h2 i18n="@@welcome.thankYouImproving">Thank you for improving your security!</h2>
     <div
       class="content"
-      i18n="@@welcome.thankYouUsing">
-      <p>Thank you for using privacyIDEA and making your network and thus this world a more secure place!</p>
-      <p>Have fun using privacyIDEA!</p>
-    </div>
+      i18n="@@welcome.thankYouUsing"
+      ><p>Thank you for using privacyIDEA and making your network and thus this world a more secure place!</p>
+      <p>Have fun using privacyIDEA!</p></div
+    >
     <div class="actions">
       <button
         (click)="resetWelcome()"
@@ -162,9 +162,8 @@
   @if (step() === 4) {
     <div
       class="content"
-      i18n="@@welcome.youUsingPrivacyidea">
-      <p><b>You are using privacyIDEA with more than 50 users.</b></p>
-      <p>Thank you for your trust!</p>
+      i18n="@@welcome.youUsingPrivacyidea"
+      ><p><b>You are using privacyIDEA with more than 50 users.</b></p> <p>Thank you for your trust!</p>
       <p>
         For the productive enterprise use, we recommend the
         <a
@@ -182,8 +181,8 @@
         >
         including <b>Support and Service Level Agreements</b>. Moreover, NetKnights provides services, consultancy and
         paid programming of new features.
-      </p>
-    </div>
+      </p></div
+    >
     <div class="actions">
       <button
         (click)="nextWelcome()"

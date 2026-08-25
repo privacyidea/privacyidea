@@ -53,16 +53,16 @@
       <div class="login-form">
         <h3
           class="margin-bottom-16 text-center"
-          i18n="@@login.loginAs">
-          Login as {{ remoteUser() }}
-        </h3>
+          i18n="@@login.loginAs"
+          >Login as {{ remoteUser() }}</h3
+        >
 
         <p
           class="margin-top-0 margin-bottom-32"
-          i18n="@@login.youAuthenticated">
-          You are authenticated by the web server as user <strong>{{ remoteUser() }}</strong
-          >. You may log in as this user to privacyIDEA without any further credentials.
-        </p>
+          i18n="@@login.youAuthenticated"
+          >You are authenticated by the web server as user <strong>{{ remoteUser() }}</strong
+          >. You may log in as this user to privacyIDEA without any further credentials.</p
+        >
 
         <button
           (click)="remoteLogin()"

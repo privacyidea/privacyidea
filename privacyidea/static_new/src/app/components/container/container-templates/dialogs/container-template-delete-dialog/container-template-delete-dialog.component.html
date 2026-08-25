@@ -26,10 +26,10 @@
     <mat-icon class="warn-icon">warning</mat-icon>
     <div class="message-content">
       @if (data.length === 1) {
-        <p i18n="@@container.youSureYouWant">
-          Are you sure you want to delete the template <b>{{ data[0].name }}</b
-          >?
-        </p>
+        <p i18n="@@container.youSureYouWant"
+          >Are you sure you want to delete the template <b>{{ data[0].name }}</b
+          >?</p
+        >
       } @else {
         <p i18n="@@container.youSureYouWantDelete">Are you sure you want to delete the following templates?</p>
         <ul class="template-list">
@@ -42,9 +42,9 @@
       }
       <p
         class="sub-message"
-        i18n="@@container.actionCannotUndone">
-        This action cannot be undone.
-      </p>
+        i18n="@@container.actionCannotUndone"
+        >This action cannot be undone.</p
+      >
     </div>
   </div>
 </app-dialog-wrapper>

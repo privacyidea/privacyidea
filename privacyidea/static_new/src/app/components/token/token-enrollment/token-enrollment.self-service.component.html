@@ -24,9 +24,9 @@
   class="token-enrollment-container">
   <h3
     class="margin-8"
-    i18n="@@token.enrollNewToken">
-    Enroll a New Token
-  </h3>
+    i18n="@@token.enrollNewToken"
+    >Enroll a New Token</h3
+  >
   <form (submit)="$event.preventDefault(); enrollToken()">
     <app-token-enrollment-type-selector
       [canReopenDialog]="canReopenEnrollmentDialog()"
@@ -52,9 +52,9 @@
           <mat-error i18n="@@token.descriptionRequired">Description is <strong>required</strong>.</mat-error>
         }
         @if (descriptionForm().errors().some(e => e.kind === 'maxlength') && descriptionForm().touched()) {
-          <mat-error i18n="@@token.descriptionMust">
-            Description must not exceed {{ tokenService.maxDescriptionLength }} characters.
-          </mat-error>
+          <mat-error i18n="@@token.descriptionMust"
+            >Description must not exceed {{ tokenService.maxDescriptionLength }} characters.</mat-error
+          >
         }
       </mat-form-field>
 

@@ -60,7 +60,7 @@ export interface FilterKeywordSemantics {
 }
 
 export function filterColumnHint(label: string, semantics: FilterKeywordSemantics): string {
-  const title = $localize`:@@common.filterBy:Filter by ${label}:LABEL:`;
+  const title = $localize`:@@common.filterBy:Filter by ${label}:INTERPOLATION:`;
   if (semantics.isBoolean) {
     return `${title}\n${$localize`:@@common.trueFalse:true or false`}`;
   }

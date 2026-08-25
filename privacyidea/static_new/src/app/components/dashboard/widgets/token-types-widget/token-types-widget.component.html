@@ -34,9 +34,9 @@
               @if (type.count === null) {
                 <span
                   class="count-unknown"
-                  i18n="@@dashboard.unknown">
-                  unknown
-                </span>
+                  i18n="@@dashboard.unknown"
+                  >unknown</span
+                >
               } @else if (type.stale) {
                 <span
                   class="count-stale"
@@ -62,8 +62,8 @@
   } @else if (!loadingMore()) {
     <p
       class="empty-hint"
-      i18n="@@dashboard.noTokens">
-      No tokens
-    </p>
+      i18n="@@dashboard.noTokens"
+      >No tokens</p
+    >
   }
 </app-widget-state>

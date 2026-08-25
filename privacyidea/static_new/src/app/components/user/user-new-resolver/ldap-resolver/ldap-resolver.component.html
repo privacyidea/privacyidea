@@ -20,9 +20,9 @@
   <div class="margin-left-16 margin-bottom-16">
     <h4
       class="margin-bottom-16"
-      i18n="@@resolver.connectionDetails">
-      Connection Details
-    </h4>
+      i18n="@@resolver.connectionDetails"
+      >Connection Details</h4
+    >
     <div class="flex-column">
       <mat-form-field class="input-width-s">
         <mat-label i18n="@@common.scope">Scope</mat-label>
@@ -31,19 +31,19 @@
           [value]="model().SCOPE">
           <mat-option
             i18n="@@resolver.subtree"
-            value="SUBTREE">
-            SUBTREE
-          </mat-option>
+            value="SUBTREE"
+            >SUBTREE</mat-option
+          >
           <mat-option
             i18n="@@resolver.base"
-            value="BASE">
-            BASE
-          </mat-option>
+            value="BASE"
+            >BASE</mat-option
+          >
           <mat-option
             i18n="@@resolver.level"
-            value="LEVEL">
-            LEVEL
-          </mat-option>
+            value="LEVEL"
+            >LEVEL</mat-option
+          >
         </mat-select>
       </mat-form-field>
 
@@ -83,9 +83,9 @@
             [checked]="model().START_TLS"
             [disabled]="startTlsDisabled()"
             class="checkbox-inline input-width-l"
-            i18n="@@resolver.starttls">
-            STARTTLS
-          </mat-checkbox>
+            i18n="@@resolver.starttls"
+            >STARTTLS</mat-checkbox
+          >
 
           <mat-form-field class="input-width-s">
             <mat-label i18n="@@resolver.tlsVersion">TLS Version</mat-label>
@@ -107,9 +107,9 @@
             [checked]="model().TLS_VERIFY"
             [disabled]="tlsVerifyDisabled()"
             class="checkbox-inline input-width-l"
-            i18n="@@resolver.verifyTlsCertificate">
-            Verify TLS certificate of the server.
-          </mat-checkbox>
+            i18n="@@resolver.verifyTlsCertificate"
+            >Verify TLS certificate of the server.</mat-checkbox
+          >
 
           <mat-form-field class="margin-bottom-16 input-width-l">
             <mat-label i18n="@@common.caCertificate">CA Certificate</mat-label>
@@ -134,9 +134,9 @@
   <div class="margin-left-16">
     <h4
       class="margin-bottom-16"
-      i18n="@@resolver.credentials">
-      Credentials
-    </h4>
+      i18n="@@resolver.credentials"
+      >Credentials</h4
+    >
 
     <div class="flex-column">
       <div class="flex-row gap-16">
@@ -246,9 +246,9 @@
       <mat-checkbox
         (change)="model.update(m => ({ ...m, SERVERPOOL_PERSISTENT: $event.checked }))"
         [checked]="model().SERVERPOOL_PERSISTENT"
-        i18n="@@resolver.perProcessServer">
-        Per-Process Server Pool
-      </mat-checkbox>
+        i18n="@@resolver.perProcessServer"
+        >Per-Process Server Pool</mat-checkbox
+      >
       <span
         class="hint"
         i18n="@@resolver.settingActivates"
@@ -260,9 +260,9 @@
       <mat-checkbox
         (change)="model.update(m => ({ ...m, EDITABLE: $event.checked }))"
         [checked]="model().EDITABLE"
-        i18n="@@resolver.editUserStore">
-        Edit User Store
-      </mat-checkbox>
+        i18n="@@resolver.editUserStore"
+        >Edit User Store</mat-checkbox
+      >
       <span
         class="hint"
         i18n="@@resolver.userDataDatabase"
@@ -303,9 +303,9 @@
     @if (!isEditMode()) {
       <h4
         class="margin-bottom-8"
-        i18n="@@resolver.presets">
-        Presets:
-      </h4>
+        i18n="@@resolver.presets"
+        >Presets:</h4
+      >
       <div class="preset-buttons-container margin-bottom-16">
         <div class="preset-buttons">
           @for (preset of ldapPresets; track preset.name) {
@@ -336,9 +336,9 @@
           @if (
             ldapForm.LOGINNAMEATTRIBUTE().errors().some(e => e.kind === 'required') && ldapForm.LOGINNAMEATTRIBUTE().touched()
           ) {
-            <mat-error i18n="@@resolver.loginnameAttributeRequired">
-              Loginname attribute is <strong>required</strong> .
-            </mat-error>
+            <mat-error i18n="@@resolver.loginnameAttributeRequired"
+              >Loginname attribute is <strong>required</strong> .</mat-error
+            >
           }
         </mat-form-field>
 
@@ -380,9 +380,9 @@
           placeholder='{"phone:" : "telephoneNumber", "mobile": "mobile", "email" : "mail", "surname" : "sn",
              "givenname" : "givenName"}'></textarea>
         @if (ldapForm.USERINFO().errors().some(e => e.kind === 'required') && ldapForm.USERINFO().touched()) {
-          <mat-error i18n="@@resolver.attributeMappingRequired">
-            Attribute mapping is <strong>required</strong> .
-          </mat-error>
+          <mat-error i18n="@@resolver.attributeMappingRequired"
+            >Attribute mapping is <strong>required</strong> .</mat-error
+          >
         }
       </mat-form-field>
 
@@ -401,17 +401,17 @@
       <mat-checkbox
         (change)="model.update(m => ({ ...m, recursive_group_search: $event.checked }))"
         [checked]="model().recursive_group_search"
-        i18n="@@resolver.recursiveSearch">
-        Recursive Search of User Groups
-      </mat-checkbox>
+        i18n="@@resolver.recursiveSearch"
+        >Recursive Search of User Groups</mat-checkbox
+      >
 
       @if (model().recursive_group_search) {
         <mat-form-field class="input-width-xl margin-bottom-32">
           <mat-label i18n="@@resolver.baseDnUserGroups">Base DN of User Groups</mat-label>
-          <mat-hint i18n="@@resolver.enterBaseDnUser">
-            Enter the base DN for the user groups. Leave this field empty if the groups are located in the same base DN
-            as defined for the users above.
-          </mat-hint>
+          <mat-hint i18n="@@resolver.enterBaseDnUser"
+            >Enter the base DN for the user groups. Leave this field empty if the groups are located in the same base DN
+            as defined for the users above.</mat-hint
+          >
           <app-clearable-input
             (clearButtonClick)="model.update(m => ({ ...m, group_base_dn: '' }))"
             [showClearButton]="!!model().group_base_dn">
@@ -442,8 +442,8 @@
           <mat-form-field class="input-width-l">
             <mat-label i18n="@@resolver.groupNameAttribute">Group Name Attribute</mat-label>
             <mat-hint i18n="@@resolver.groupAttribute"
-              >Group attribute defining the group's name, which should be stored in the user info.
-            </mat-hint>
+              >Group attribute defining the group's name, which should be stored in the user info.</mat-hint
+            >
             <app-clearable-input
               (clearButtonClick)="model.update(m => ({ ...m, group_name_attribute: '' }))"
               [showClearButton]="!!model().group_name_attribute">
@@ -475,16 +475,16 @@
         <mat-checkbox
           (change)="model.update(m => ({ ...m, NOREFERRALS: $event.checked }))"
           [checked]="model().NOREFERRALS"
-          i18n="@@resolver.noAnonymousReferral">
-          No Anonymous Referral Chasing
-        </mat-checkbox>
+          i18n="@@resolver.noAnonymousReferral"
+          >No Anonymous Referral Chasing</mat-checkbox
+        >
 
         <mat-checkbox
           (change)="model.update(m => ({ ...m, NOSCHEMAS: $event.checked }))"
           [checked]="model().NOSCHEMAS"
-          i18n="@@resolver.noRetrievalSchema">
-          No Retrieval of Schema Information
-        </mat-checkbox>
+          i18n="@@resolver.noRetrievalSchema"
+          >No Retrieval of Schema Information</mat-checkbox
+        >
       </div>
     </div>
   </div>

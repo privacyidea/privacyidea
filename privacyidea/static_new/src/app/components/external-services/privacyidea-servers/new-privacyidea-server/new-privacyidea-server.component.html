@@ -24,15 +24,15 @@
     @if (isEditMode()) {
       <h3
         class="margin-8"
-        i18n="@@piServer.editPrivacyidea">
-        Edit privacyIDEA Server
-      </h3>
+        i18n="@@piServer.editPrivacyidea"
+        >Edit privacyIDEA Server</h3
+      >
     } @else {
       <h3
         class="margin-8"
-        i18n="@@piServer.createPrivacyidea">
-        Create privacyIDEA Server
-      </h3>
+        i18n="@@piServer.createPrivacyidea"
+        >Create privacyIDEA Server</h3
+      >
     }
 
     <div
@@ -76,8 +76,8 @@
           @if (privacyideaForm.identifier().errors().some(e => e.kind === 'pattern')) {
             <mat-error i18n="@@common.identifierContains"
               >Identifier contains <strong>invalid characters</strong>. Only alphanumeric characters, dots, underscores
-              and hyphens are allowed.
-            </mat-error>
+              and hyphens are allowed.</mat-error
+            >
           }
           <mat-hint i18n="@@piServer.uniqueIdentifying"
             >This is the unique identifying name of the privacyIDEA server definition.</mat-hint
@@ -113,11 +113,10 @@
         </mat-checkbox>
         <p
           class="mat-hint"
-          i18n="@@piServer.certificateChecked">
-          The certificate will be checked for a valid hostname and for a trusted certificate.
-          <br />
-          Do not uncheck this in productive use!
-        </p>
+          i18n="@@piServer.certificateChecked"
+          >The certificate will be checked for a valid hostname and for a trusted certificate. <br />
+          Do not uncheck this in productive use!</p
+        >
       </div>
 
       <mat-form-field

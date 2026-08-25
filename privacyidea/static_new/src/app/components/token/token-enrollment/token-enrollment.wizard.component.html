@@ -30,9 +30,9 @@
   } @else {
     <h3
       class="margin-8"
-      i18n="@@token.enrollToken">
-      Enroll {{ tokenType().name }} Token
-    </h3>
+      i18n="@@token.enrollToken"
+      >Enroll {{ tokenType().name }} Token</h3
+    >
   }
   <form
     class="margin-left-16"
@@ -72,9 +72,9 @@
         @if (descriptionForm().errors().some(e => e.kind === 'required') && descriptionForm().touched()) {
           <mat-error i18n="@@token.descriptionRequired">Description is <strong>required</strong>.</mat-error>
         } @else if (descriptionForm().errors().some(e => e.kind === 'maxlength') && descriptionForm().touched()) {
-          <mat-error i18n="@@token.descriptionCannot">
-            Description cannot exceed <strong>80 characters</strong>.
-          </mat-error>
+          <mat-error i18n="@@token.descriptionCannot"
+            >Description cannot exceed <strong>80 characters</strong>.</mat-error
+          >
         }
       </mat-form-field>
     }

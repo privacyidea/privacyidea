@@ -54,14 +54,14 @@
       @case ("filtered") {
         <h2
           class="table-state-heading"
-          i18n="@@common.noEntriesMatchTheFilter">
-          No entries match the filter
-        </h2>
+          i18n="@@common.noEntriesMatchTheFilter"
+          >No entries match the filter</h2
+        >
         <p
           class="table-state-hint"
-          i18n="@@common.adjustTheFilterOrReset">
-          Adjust the filter or reset it to see all entries again.
-        </p>
+          i18n="@@common.adjustTheFilterOrReset"
+          >Adjust the filter or reset it to see all entries again.</p
+        >
         @if (table().canResetFilter) {
           <button
             (click)="table().resetFilter()"
@@ -75,14 +75,14 @@
       @case ("error") {
         <h2
           class="table-state-heading"
-          i18n="@@common.theDataCouldNotBe">
-          The data could not be loaded
-        </h2>
+          i18n="@@common.theDataCouldNotBe"
+          >The data could not be loaded</h2
+        >
         <p
           class="table-state-hint"
-          i18n="@@common.theRequestFailedCheckThe">
-          The request failed. Check the connection to the privacyIDEA server and try again.
-        </p>
+          i18n="@@common.theRequestFailedCheckThe"
+          >The request failed. Check the connection to the privacyIDEA server and try again.</p
+        >
         <div class="table-state-actions">
           <button
             (click)="table().retry()"
@@ -107,14 +107,14 @@
       @case ("denied") {
         <h2
           class="table-state-heading"
-          i18n="@@common.notAllowed">
-          Not allowed
-        </h2>
+          i18n="@@common.notAllowed"
+          >Not allowed</h2
+        >
         <p
           class="table-state-hint"
-          i18n="@@common.youDoNotHaveThe">
-          You do not have the permission to view this list.
-        </p>
+          i18n="@@common.youDoNotHaveThe"
+          >You do not have the permission to view this list.</p
+        >
       }
     }
     @if (showsProjectedAction()) {

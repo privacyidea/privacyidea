@@ -32,14 +32,14 @@
       class="mode-toggle">
       <mat-button-toggle
         [value]="true"
-        i18n="@@resolver.basic">
-        Basic
-      </mat-button-toggle>
+        i18n="@@resolver.basic"
+        >Basic</mat-button-toggle
+      >
       <mat-button-toggle
         [value]="false"
-        i18n="@@resolver.advanced">
-        Advanced
-      </mat-button-toggle>
+        i18n="@@resolver.advanced"
+        >Advanced</mat-button-toggle
+      >
     </mat-button-toggle-group>
 
     <mat-divider class="margin-top-16 margin-bottom-16" />
@@ -117,9 +117,9 @@
       (change)="model.update(m => ({ ...m, Editable: $event.checked }))"
       [checked]="model().Editable"
       class="checkbox-inline"
-      i18n="@@resolver.specialErrorHandling">
-      Special Error Handling
-    </mat-checkbox>
+      i18n="@@resolver.specialErrorHandling"
+      >Special Error Handling</mat-checkbox
+    >
 
     @if (model().Editable) {
       <mat-form-field class="auth-wide input-width-xl margin-bottom-16">
@@ -161,9 +161,10 @@
             matInput
             placeholder="https://example.com/path/to/users" />
         </app-clearable-input>
-        <mat-hint i18n="@@resolver.baseUrlApiUser">
-          The base URL of the API of the user store which will be concatenated with the user endpoints defined below.
-        </mat-hint>
+        <mat-hint i18n="@@resolver.baseUrlApiUser"
+          >The base URL of the API of the user store which will be concatenated with the user endpoints defined
+          below.</mat-hint
+        >
         @if (httpForm.base_url().errors().some(e => e.kind === 'required') && httpForm.base_url().touched()) {
           <mat-error i18n="@@resolver.baseUrlRequired">Base URL is <strong>required</strong> .</mat-error>
         }
@@ -173,9 +174,9 @@
     <div class="mapping-header">
       <h4
         class="margin-0"
-        i18n="@@resolver.attributeMapping">
-        Attribute Mapping
-      </h4>
+        i18n="@@resolver.attributeMapping"
+        >Attribute Mapping</h4
+      >
     </div>
 
     <table
@@ -186,9 +187,9 @@
         <th
           *matHeaderCellDef
           i18n="@@resolver.privacyideaAttribute"
-          mat-header-cell>
-          PrivacyIDEA Attribute
-        </th>
+          mat-header-cell
+          >PrivacyIDEA Attribute</th
+        >
         <td
           *matCellDef="let row; let i = index"
           class="input-width-l"
@@ -210,9 +211,9 @@
 
                 <mat-option
                   [value]="CUSTOM_ATTR_VALUE"
-                  i18n="@@common.custom">
-                  Custom…
-                </mat-option>
+                  i18n="@@common.custom"
+                  >Custom…</mat-option
+                >
               </mat-select>
             </mat-form-field>
           }
@@ -240,9 +241,9 @@
         <th
           *matHeaderCellDef
           i18n="@@resolver.userStoreAttribute"
-          mat-header-cell>
-          User Store Attribute
-        </th>
+          mat-header-cell
+          >User Store Attribute</th
+        >
         <td
           *matCellDef="let row; let i = index"
           class="input-width-l"
@@ -268,9 +269,9 @@
         <th
           *matHeaderCellDef
           i18n="@@common.actions"
-          mat-header-cell>
-          Actions
-        </th>
+          mat-header-cell
+          >Actions</th
+        >
         <td
           *matCellDef="let row; let i = index"
           class="input-width-s text-center"
@@ -301,10 +302,10 @@
 
     <mat-hint
       class="hint"
-      i18n="@@resolver.leftColumnDefines">
-      The left column defines the user attributes used in privacyIDEA and the right column the equivalent attribute in
-      the user store.
-    </mat-hint>
+      i18n="@@resolver.leftColumnDefines"
+      >The left column defines the user attributes used in privacyIDEA and the right column the equivalent attribute in
+      the user store.</mat-hint
+    >
 
     <app-http-groups-attribute
       [(model)]="userGroupsModel"
@@ -327,14 +328,14 @@
           <mat-checkbox
             (change)="model.update(m => ({ ...m, Editable: $event.checked }))"
             [checked]="model().Editable"
-            i18n="@@resolver.editUserStore">
-            Edit User Store
-          </mat-checkbox>
+            i18n="@@resolver.editUserStore"
+            >Edit User Store</mat-checkbox
+          >
           <span
             class="hint margin-bottom-16 margin-top-16"
-            i18n="@@resolver.userDataUserStore">
-            The user data in this user store can be modified from within privacyIDEA.
-          </span>
+            i18n="@@resolver.userDataUserStore"
+            >The user data in this user store can be modified from within privacyIDEA.</span
+          >
         </div>
 
         <div class="flex-column">
@@ -348,11 +349,10 @@
           </mat-form-field>
           <span
             class="hint margin-top--16"
-            i18n="@@resolver.timeSecondsPrivacyidea">
-            Time in seconds privacyIDEA tries
-            <br />
-            to reach the user store server.
-          </span>
+            i18n="@@resolver.timeSecondsPrivacyidea"
+            >Time in seconds privacyIDEA tries <br />
+            to reach the user store server.</span
+          >
         </div>
       </div>
 
@@ -361,15 +361,15 @@
           (change)="model.update(m => ({ ...m, verify_tls: $event.checked }))"
           [checked]="model().verify_tls"
           class="input-width-l"
-          i18n="@@resolver.verifyTlsCertificate">
-          Verify TLS certificate of the server.
-        </mat-checkbox>
+          i18n="@@resolver.verifyTlsCertificate"
+          >Verify TLS certificate of the server.</mat-checkbox
+        >
 
         <mat-form-field class="input-width-l">
           <mat-label i18n="@@common.caCertificate">CA Certificate</mat-label>
-          <mat-hint i18n="@@resolver.fileContainingCa">
-            The file containing the CA certificate which signed the TLS certificate of the server.
-          </mat-hint>
+          <mat-hint i18n="@@resolver.fileContainingCa"
+            >The file containing the CA certificate which signed the TLS certificate of the server.</mat-hint
+          >
           <app-clearable-input
             (clearButtonClick)="model.update(m => ({ ...m, tls_ca_path: '' }))"
             [disabled]="!model().verify_tls"
@@ -394,11 +394,12 @@
             @if (type() === "entraidresolver") {
               <p
                 class="auth-description"
-                i18n="@@resolver.sectionAllowsConfigure">
-                This section allows to configure an endpoint to which the privacyIDEA server must authenticate in order
+                i18n="@@resolver.sectionAllowsConfigure"
+                >This section allows to configure an endpoint to which the privacyIDEA server must authenticate in order
                 to receive an access token. This token can then be used to access the user store API. You can find most
-                of these settings in the app registration in the Entra Admin Center or you also have to add them there.
-              </p>
+                of these settings in the app registration in the Entra Admin Center or you also have to add them
+                there.</p
+              >
               <div class="flex-column">
                 <mat-form-field class="input-width-xl">
                   <mat-label i18n="@@resolver.authority">Authority</mat-label>
@@ -424,9 +425,7 @@
                         placeholder="e.g. 12345678-1234-1234-1234-123456789012" />
                     </app-clearable-input>
                     @if (httpForm.tenant().errors().some(e => e.kind === 'required') && httpForm.tenant().touched()) {
-                      <mat-error i18n="@@resolver.tenantIdRequired">
-                        Tenant ID is <strong>required</strong> .
-                      </mat-error>
+                      <mat-error i18n="@@resolver.tenantIdRequired">Tenant ID is <strong>required</strong> .</mat-error>
                     }
                   </mat-form-field>
 
@@ -443,9 +442,7 @@
                     @if (
                       httpForm.client_id().errors().some(e => e.kind === 'required') && httpForm.client_id().touched()
                     ) {
-                      <mat-error i18n="@@resolver.clientIdRequired">
-                        Client ID is <strong>required</strong> .
-                      </mat-error>
+                      <mat-error i18n="@@resolver.clientIdRequired">Client ID is <strong>required</strong> .</mat-error>
                     }
                   </mat-form-field>
                 </div>
@@ -475,9 +472,9 @@
                       @if (
                         httpForm.client_secret().errors().some(e => e.kind === 'required') && httpForm.client_secret().touched()
                       ) {
-                        <mat-error i18n="@@resolver.clientSecretRequired">
-                          Client secret is <strong>required</strong> .
-                        </mat-error>
+                        <mat-error i18n="@@resolver.clientSecretRequired"
+                          >Client secret is <strong>required</strong> .</mat-error
+                        >
                       }
                     </mat-form-field>
                   }
@@ -485,14 +482,13 @@
                 @if (model().client_credential_type === "certificate") {
                   <p
                     class="auth-description"
-                    i18n="@@resolver.credentialType">
-                    This credential type does not support to check the user's password.
-                    <br />
+                    i18n="@@resolver.credentialType"
+                    >This credential type does not support to check the user's password. <br />
                     <br />
                     Specify the path to the private key file of the servers certificate. If you use an encrypted key,
                     add the password here, otherwise leave the field empty. The server certificate must be uploaded in
-                    Entra's app registration as client credential.
-                  </p>
+                    Entra's app registration as client credential.</p
+                  >
 
                   <div class="flex-column input-width-l">
                     <div class="flex-row gap-16">
@@ -541,10 +537,10 @@
             } @else {
               <p
                 class="auth-description"
-                i18n="@@resolver.sectionAllows">
-                This section allows to configure an endpoint to which the privacyIDEA server must authenticate in order
-                to receive an access token. This token can then be used to access the user store API.
-              </p>
+                i18n="@@resolver.sectionAllows"
+                >This section allows to configure an endpoint to which the privacyIDEA server must authenticate in order
+                to receive an access token. This token can then be used to access the user store API.</p
+              >
 
               <div class="flex-row gap-16">
                 <mat-form-field class="input-width-l">

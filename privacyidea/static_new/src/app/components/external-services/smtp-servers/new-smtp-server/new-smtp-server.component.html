@@ -23,15 +23,15 @@
     @if (isEditMode()) {
       <h3
         class="margin-8"
-        i18n="@@smtpServer.editSmtpServer">
-        Edit SMTP Server
-      </h3>
+        i18n="@@smtpServer.editSmtpServer"
+        >Edit SMTP Server</h3
+      >
     } @else {
       <h3
         class="margin-8"
-        i18n="@@common.createSmtpServer">
-        Create SMTP Server
-      </h3>
+        i18n="@@common.createSmtpServer"
+        >Create SMTP Server</h3
+      >
     }
 
     <div
@@ -78,8 +78,8 @@
           @if (smtpForm.identifier().errors().some(e => e.kind === 'pattern')) {
             <mat-error i18n="@@common.identifierContains"
               >Identifier contains <strong>invalid characters</strong>. Only alphanumeric characters, dots, underscores
-              and hyphens are allowed.
-            </mat-error>
+              and hyphens are allowed.</mat-error
+            >
           }
         </mat-form-field>
 
@@ -199,15 +199,15 @@
               [checked]="smtpModel().tls"
               (change)="smtpModel.update(m => ({...m, tls: $event.checked}))"
               i18n="@@smtpServer.useStarttls"
-              >Use StartTLS
-            </mat-checkbox>
+              >Use StartTLS</mat-checkbox
+            >
           }
           <mat-checkbox
             [checked]="smtpModel().enqueue_job"
             (change)="smtpModel.update(m => ({...m, enqueue_job: $event.checked}))"
             i18n="@@smtpServer.sendMailFromJob"
-            >Send mail from job queue
-          </mat-checkbox>
+            >Send mail from job queue</mat-checkbox
+          >
         </div>
 
         <mat-divider />
@@ -243,14 +243,14 @@
               [checked]="smtpModel().smime"
               (change)="smtpModel.update(m => ({...m, smime: $event.checked}))"
               i18n="@@smtpServer.sMimeSigning"
-              >S/MIME signing
-            </mat-checkbox>
+              >S/MIME signing</mat-checkbox
+            >
             <mat-checkbox
               [checked]="smtpModel().dont_send_on_error"
               (change)="smtpModel.update(m => ({...m, dont_send_on_error: $event.checked}))"
               i18n="@@smtpServer.donTSendSigning"
-              >Don't send on signing error
-            </mat-checkbox>
+              >Don't send on signing error</mat-checkbox
+            >
           </div>
 
           <div class="flex-row gap-16">

@@ -98,9 +98,9 @@
           *matHeaderCellDef
           i18n="@@common.idColumn"
           mat-header-cell
-          mat-sort-header>
-          Id
-        </th>
+          mat-sort-header
+          >Id</th
+        >
         <td
           *matCellDef="let group"
           mat-cell>
@@ -113,9 +113,9 @@
           *matHeaderCellDef
           i18n="@@common.name"
           mat-header-cell
-          mat-sort-header>
-          Name
-        </th>
+          mat-sort-header
+          >Name</th
+        >
         <td
           *matCellDef="let group"
           mat-cell>
@@ -137,9 +137,9 @@
           *matHeaderCellDef
           i18n="@@common.description"
           mat-header-cell
-          mat-sort-header>
-          Description
-        </th>
+          mat-sort-header
+          >Description</th
+        >
         <td
           *matCellDef="let group"
           mat-cell>
@@ -168,7 +168,7 @@
       heading="No token groups yet"
       hint="Create a token group to group tokens for policies and machine assignments."
       i18n-heading="@@tokenGroup.noTokenGroups"
-      i18n-hint="@@tokenGroup.createTokenGroup"
+      i18n-hint="@@tokenGroup.createTokenGroupHint"
       icon="local_police">
       <button
         (click)="onCreateNewTokengroup()"

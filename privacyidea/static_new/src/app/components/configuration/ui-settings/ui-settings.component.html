@@ -24,9 +24,9 @@
   <div class="settings-header">
     <h3
       class="margin-8"
-      i18n="@@common.uiSettings">
-      UI Settings
-    </h3>
+      i18n="@@common.uiSettings"
+      >UI Settings</h3
+    >
     <button
       (click)="resetSettings()"
       [attr.aria-label]="resetTooltip"
@@ -78,9 +78,9 @@
         <mat-slide-toggle
           (change)="setShowLoadingUrls($event.checked)"
           [checked]="showLoadingUrls()"
-          i18n="@@uiSettings.showEndpointsBeingRequested">
-          Show endpoints being requested
-        </mat-slide-toggle>
+          i18n="@@uiSettings.showEndpointsBeingRequested"
+          >Show endpoints being requested</mat-slide-toggle
+        >
       </div>
     </app-details-card>
   </div>

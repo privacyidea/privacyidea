@@ -25,8 +25,8 @@
   (actionTriggered)="onAction($event)">
   @if (data.foundSerial) {
     <div class="alert alert-success">
-      <span i18n="@@token.serialNumberOtp">
-        The Serial number for the OTP value {{ data.otpValue }} is
+      <span i18n="@@token.serialNumberOtp"
+        >The Serial number for the OTP value {{ data.otpValue }} is
         <a
           class="link"
           role="button"
@@ -36,12 +36,12 @@
           (keydown.enter)="onClickSerial()"
           (keydown.space)="$event.preventDefault(); onClickSerial()">
           {{ data.foundSerial }}.</a
-        >
-      </span>
+        ></span
+      >
     </div>
   } @else {
     <div class="alert alert-warning">
-      <span i18n="@@token.noSerialNumber"> No Serial number could be found for OTP value {{ data.otpValue }}. </span>
+      <span i18n="@@token.noSerialNumber">No Serial number could be found for OTP value {{ data.otpValue }}.</span>
     </div>
   }
 </app-dialog-wrapper>

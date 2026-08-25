@@ -24,13 +24,13 @@
   </mat-expansion-panel-header>
   <div class="panel-content expansion-well">
     <p i18n="@@tokenTypeConfig.smsTokenEvent">The SMS Token is an event based token.</p>
-    <p i18n="@@tokenTypeConfig.afterUserHasTried">
-      After the user has tried to authenticate with the OTP PIN, an SMS with an OTP value is sent to the users mobile
-      phone. Then user can authenticate with this OTP value in a second step.
-    </p>
-    <p i18n="@@tokenTypeConfig.hereYouDefine">
-      Here you can define how the SMS will be sent - via which kind of gateway.
-    </p>
+    <p i18n="@@tokenTypeConfig.afterUserHasTried"
+      >After the user has tried to authenticate with the OTP PIN, an SMS with an OTP value is sent to the users mobile
+      phone. Then user can authenticate with this OTP value in a second step.</p
+    >
+    <p i18n="@@tokenTypeConfig.hereYouDefine"
+      >Here you can define how the SMS will be sent - via which kind of gateway.</p
+    >
 
     <div class="flex-row gap-16 ali-center margin-bottom-16">
       <mat-form-field
@@ -49,8 +49,10 @@
           (clearButtonClick)="clearField(SMS_GATEWAY); $event.stopPropagation()"></app-clear-button>
         <mat-hint i18n="@@tokenTypeConfig.selectPredefinedSms"
           >Select a predefined
-          <a [routerLink]="[ROUTE_PATHS.EXTERNAL_SERVICES_SMS]"><strong>SMS Gateway configuration</strong>. </a>
-        </mat-hint>
+          <a [routerLink]="[ROUTE_PATHS.EXTERNAL_SERVICES_SMS]"
+            ><strong>SMS Gateway configuration</strong>.
+          </a></mat-hint
+        >
       </mat-form-field>
 
       <mat-form-field

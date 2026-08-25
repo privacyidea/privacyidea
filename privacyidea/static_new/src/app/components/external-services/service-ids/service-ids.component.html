@@ -68,12 +68,10 @@
 
       <p
         class="margin-bottom-0 margin-top-0"
-        i18n="@@serviceId.serviceIdsUsed">
-        Service IDs can be used to attach e.g. SSH keys to certain machines and services.
-        <br />
-        To view attached tokens go to
-        <a [routerLink]="[ROUTE_PATHS.TOKENS_APPLICATIONS]">token applications.</a>
-      </p>
+        i18n="@@serviceId.serviceIdsUsed"
+        >Service IDs can be used to attach e.g. SSH keys to certain machines and services. <br />
+        To view attached tokens go to <a [routerLink]="[ROUTE_PATHS.TOKENS_APPLICATIONS]">token applications.</a></p
+      >
     </div>
 
     <table
@@ -108,9 +106,9 @@
           *matHeaderCellDef
           i18n="@@common.idColumn"
           mat-header-cell
-          mat-sort-header>
-          Id
-        </th>
+          mat-sort-header
+          >Id</th
+        >
         <td
           *matCellDef="let service"
           mat-cell>
@@ -123,9 +121,9 @@
           *matHeaderCellDef
           i18n="@@common.name"
           mat-header-cell
-          mat-sort-header>
-          Name
-        </th>
+          mat-sort-header
+          >Name</th
+        >
         <td
           *matCellDef="let service"
           mat-cell>
@@ -147,9 +145,9 @@
           *matHeaderCellDef
           i18n="@@common.description"
           mat-header-cell
-          mat-sort-header>
-          Description
-        </th>
+          mat-sort-header
+          >Description</th
+        >
         <td
           *matCellDef="let service"
           mat-cell>

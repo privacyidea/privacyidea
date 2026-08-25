@@ -19,8 +19,8 @@
 
 @if (!rollover()) {
   <div class="margin-bottom-16">
-    <span i18n="@@token.tokenWasSuccessfullyEnrolled">
-      The token was successfully enrolled with serial number
+    <span i18n="@@token.tokenWasSuccessfullyEnrolled"
+      >The token was successfully enrolled with serial number
       <a
         role="button"
         tabindex="0"
@@ -28,11 +28,11 @@
         (keydown.enter)="tokenSelected()"
         (keydown.space)="$event.preventDefault(); tokenSelected()">
         {{ serial() }} </a
-      >.
-    </span>
+      >.</span
+    >
     @if (containerSerial()) {
-      <div i18n="@@token.hasBeenEnrolled">
-        It has been enrolled in the container
+      <div i18n="@@token.hasBeenEnrolled"
+        >It has been enrolled in the container
         <a
           role="button"
           tabindex="0"
@@ -41,12 +41,12 @@
           (keydown.space)="$event.preventDefault(); natigateContainerDetails()">
           {{ containerSerial() }}
         </a>
-        .
-      </div>
+        .</div
+      >
     }
     @if (username() && userRealm() !== "" && !onlyAddToRealm()) {
-      <div i18n="@@token.userRealmWasAssigned">
-        The user
+      <div i18n="@@token.userRealmWasAssigned"
+        >The user
         @if (authService.actionAllowed("userlist")) {
           <a
             role="button"
@@ -74,11 +74,11 @@
         } @else {
           <span>{{ userRealm() }}</span>
         }
-        was assigned to the token.
-      </div>
+        was assigned to the token.</div
+      >
     } @else if (userRealm() && onlyAddToRealm()) {
-      <div i18n="@@token.tokenWasAssigned">
-        The token was assigned to the realm
+      <div i18n="@@token.tokenWasAssigned"
+        >The token was assigned to the realm
         @if (authService.role() === "admin") {
           <a
             role="button"
@@ -92,14 +92,14 @@
         } @else {
           <span>{{ userRealm() }}</span>
         }
-        .
-      </div>
+        .</div
+      >
     }
   </div>
 } @else {
   <div class="margin-bottom-16">
-    <span i18n="@@token.tokenSerialNumber">
-      The token with serial number
+    <span i18n="@@token.tokenSerialNumber"
+      >The token with serial number
       <a
         role="button"
         tabindex="0"
@@ -108,7 +108,7 @@
         (keydown.space)="$event.preventDefault(); tokenSelected()">
         {{ serial() }}
       </a>
-      was successfully rolled over.
-    </span>
+      was successfully rolled over.</span
+    >
   </div>
 }

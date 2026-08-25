@@ -110,14 +110,14 @@
         <mat-checkbox
           (change)="model.update(m => ({ ...m, Editable: $event.checked }))"
           [checked]="model().Editable"
-          i18n="@@resolver.editUserStoreSql">
-          Edit user store
-        </mat-checkbox>
+          i18n="@@resolver.editUserStoreSql"
+          >Edit user store</mat-checkbox
+        >
         <span
           class="hint margin-bottom-16"
-          i18n="@@resolver.userDataDatabase">
-          The user data in this database can be modified from within privacyIDEA.
-        </span>
+          i18n="@@resolver.userDataDatabase"
+          >The user data in this database can be modified from within privacyIDEA.</span
+        >
 
         @if (model().Editable) {
           <mat-form-field class="input-width-xl margin-bottom-16">
@@ -135,10 +135,10 @@
               <mat-option value="SHA512CRYPT"> SHA512CRYPT </mat-option>
               <mat-option value="MD5CRYPT"> MD5CRYPT </mat-option>
             </mat-select>
-            <mat-hint i18n="@@resolver.hashingAlgorithm">
-              The hashing algorithm for the passwords of newly created users. Can be PHPASS, SHA, SSHA, SSHA256, SHA512,
-              OTRS.
-            </mat-hint>
+            <mat-hint i18n="@@resolver.hashingAlgorithm"
+              >The hashing algorithm for the passwords of newly created users. Can be PHPASS, SHA, SSHA, SSHA256,
+              SHA512, OTRS.</mat-hint
+            >
           </mat-form-field>
         }
       </div>
@@ -149,9 +149,9 @@
 @if (!isEditMode()) {
   <h4
     class="margin-left-16"
-    i18n="@@resolver.presets">
-    Presets:
-  </h4>
+    i18n="@@resolver.presets"
+    >Presets:</h4
+  >
   <div class="preset-buttons-container margin-bottom-16 margin-left-16">
     <div class="preset-buttons">
       @for (preset of sqlPresets; track preset.name) {

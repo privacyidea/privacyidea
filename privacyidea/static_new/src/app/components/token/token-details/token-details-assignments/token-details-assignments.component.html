@@ -115,9 +115,9 @@
                 [checked]="containerService.filterContainersByTokenOwner()"
                 (change)="containerService.filterContainersByTokenOwner.set($event.checked)"
                 [disabled]="!tokenDetails().username"
-                i18n="@@token.filterByToken">
-                Filter by token owner
-              </mat-checkbox>
+                i18n="@@token.filterByToken"
+                >Filter by token owner</mat-checkbox
+              >
             }
           } @else if (selfService()) {
             <app-copyable [copyText]="containerSerial()">

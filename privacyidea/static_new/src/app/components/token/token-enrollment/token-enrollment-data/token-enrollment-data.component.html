@@ -41,10 +41,10 @@
       </button>
     }
     @if (enrolledData()?.["password"]) {
-      <p i18n="@@token.yourPassword">
-        Your Password: <strong>{{ enrolledData()?.["password"] }}</strong
-        >.
-      </p>
+      <p i18n="@@token.yourPassword"
+        >Your Password: <strong>{{ enrolledData()?.["password"] }}</strong
+        >.</p
+      >
     }
     @if (enrolledData()?.otpkey?.value && !enrolledData()?.["otps"] && showQRCode()) {
       <app-otp-key

@@ -34,7 +34,7 @@
       matInput
       type="number" />
     @if (countForm().touched() && !countForm().valid()) {
-      <mat-error i18n="@@token.countMustPositive"> Count must be a positive integer.</mat-error>
+      <mat-error i18n="@@token.countMustPositive">Count must be a positive integer.</mat-error>
     }
   </mat-form-field>
   <br />
@@ -47,7 +47,7 @@
       matInput
       type="number" />
     @if (roundsForm().touched() && !roundsForm().valid()) {
-      <mat-error i18n="@@token.roundsMustPositive"> Rounds must be a positive integer.</mat-error>
+      <mat-error i18n="@@token.roundsMustPositive">Rounds must be a positive integer.</mat-error>
     }
   </mat-form-field>
 </app-dialog-wrapper>

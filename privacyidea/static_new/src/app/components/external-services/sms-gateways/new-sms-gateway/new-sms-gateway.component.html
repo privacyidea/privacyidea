@@ -23,15 +23,15 @@
     @if (isEditMode()) {
       <h3
         class="margin-8"
-        i18n="@@smsGateway.editSmsGateway">
-        Edit SMS Gateway
-      </h3>
+        i18n="@@smsGateway.editSmsGateway"
+        >Edit SMS Gateway</h3
+      >
     } @else {
       <h3
         class="margin-8"
-        i18n="@@common.createSmsGateway">
-        Create SMS Gateway
-      </h3>
+        i18n="@@common.createSmsGateway"
+        >Create SMS Gateway</h3
+      >
     }
 
     <div
@@ -76,8 +76,8 @@
             @if (smsForm.name().errors().some(e => e.kind === 'pattern')) {
               <mat-error i18n="@@common.nameContainsInvalid"
                 >Name contains <strong>invalid characters</strong>. Only alphanumeric characters, dots, underscores and
-                hyphens are allowed.
-              </mat-error>
+                hyphens are allowed.</mat-error
+              >
             }
           </mat-form-field>
 
@@ -190,9 +190,9 @@
               <th
                 *matHeaderCellDef
                 i18n="@@common.key"
-                mat-header-cell>
-                Key
-              </th>
+                mat-header-cell
+                >Key</th
+              >
               <td
                 *matCellDef="let row"
                 mat-cell>
@@ -204,9 +204,9 @@
               <th
                 *matHeaderCellDef
                 i18n="@@common.value"
-                mat-header-cell>
-                Value
-              </th>
+                mat-header-cell
+                >Value</th
+              >
               <td
                 *matCellDef="let row"
                 mat-cell>
@@ -218,9 +218,9 @@
               <th
                 *matHeaderCellDef
                 i18n="@@common.actions"
-                mat-header-cell>
-                Actions
-              </th>
+                mat-header-cell
+                >Actions</th
+              >
               <td
                 *matCellDef="let row"
                 class="actions-cell"
@@ -238,9 +238,9 @@
               <th
                 *matHeaderCellDef
                 i18n="@@common.secret"
-                mat-header-cell>
-                Secret
-              </th>
+                mat-header-cell
+                >Secret</th
+              >
               <td
                 *matCellDef="let row"
                 mat-cell>
@@ -345,9 +345,9 @@
               <th
                 *matHeaderCellDef
                 i18n="@@common.key"
-                mat-header-cell>
-                Key
-              </th>
+                mat-header-cell
+                >Key</th
+              >
               <td
                 *matCellDef="let row"
                 mat-cell>
@@ -359,9 +359,9 @@
               <th
                 *matHeaderCellDef
                 i18n="@@common.value"
-                mat-header-cell>
-                Value
-              </th>
+                mat-header-cell
+                >Value</th
+              >
               <td
                 *matCellDef="let row"
                 mat-cell>
@@ -373,9 +373,9 @@
               <th
                 *matHeaderCellDef
                 i18n="@@common.actions"
-                mat-header-cell>
-                Actions
-              </th>
+                mat-header-cell
+                >Actions</th
+              >
               <td
                 *matCellDef="let row"
                 class="actions-cell"
@@ -393,9 +393,9 @@
               <th
                 *matHeaderCellDef
                 i18n="@@common.secret"
-                mat-header-cell>
-                Secret
-              </th>
+                mat-header-cell
+                >Secret</th
+              >
               <td
                 *matCellDef="let row"
                 mat-cell>

@@ -22,9 +22,9 @@
       [checked]="generateOnServer()"
       (change)="generateOnServer.set($event.checked)"
       class="server-checkbox"
-      i18n="@@token.generateOtpKey">
-      Generate the OTP key on the server and show a QR code to scan.
-    </mat-checkbox>
+      i18n="@@token.generateOtpKey"
+      >Generate the OTP key on the server and show a QR code to scan.</mat-checkbox
+    >
     <div class="flex-row gap-16">
       @if (!this.authService.checkForceServerGenerateOTPKey("motp")) {
         <mat-form-field class="input-width-l">

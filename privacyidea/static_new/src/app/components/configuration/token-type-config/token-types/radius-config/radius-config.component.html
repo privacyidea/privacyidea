@@ -23,9 +23,9 @@
     <mat-panel-title i18n="@@tokenTypeConfig.radius">RADIUS</mat-panel-title>
   </mat-expansion-panel-header>
   <div class="panel-content expansion-well">
-    <p i18n="@@common.radiusTokenForwards">
-      The RADIUS token forwards the authentication request to another RADIUS server.
-    </p>
+    <p i18n="@@common.radiusTokenForwards"
+      >The RADIUS token forwards the authentication request to another RADIUS server.</p
+    >
 
     <div class="flex-row gap-16 ali-center margin-bottom-16">
       <mat-form-field
@@ -44,8 +44,10 @@
           (clearButtonClick)="clearField(RADIUS_SERVER); $event.stopPropagation()"></app-clear-button>
         <mat-hint i18n="@@tokenTypeConfig.selectPredefined"
           >Select a predefined
-          <a [routerLink]="[ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS]"><strong>RADIUS server configuration</strong>. </a>
-        </mat-hint>
+          <a [routerLink]="[ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS]"
+            ><strong>RADIUS server configuration</strong>.
+          </a></mat-hint
+        >
       </mat-form-field>
     </div>
   </div>

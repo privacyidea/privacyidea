@@ -20,8 +20,8 @@
   @if (!defaultSMSGatewayIsSet() && authService.role() === "admin") {
     <span
       i18n="@@token.easeEnrollment"
-      class="inline-hint">
-      To ease the enrollment you can set default values in the
+      class="inline-hint"
+      >To ease the enrollment you can set default values in the
       <a
         role="button"
         tabindex="0"
@@ -30,23 +30,23 @@
         (click)="goToSmsConfig()"
         (keydown)="onSmsConfigKeydown($event)">
         SMS Token Configuration </a
-      >!
-    </span>
+      >!</span
+    >
   }
   <mat-checkbox
     [checked]="readNumberDynamically()"
     (change)="readNumberDynamically.set($event.checked)"
-    i18n="@@token.readNumberDynamically">
-    Read number dynamically from user source on each request.
-  </mat-checkbox>
+    i18n="@@token.readNumberDynamically"
+    >Read number dynamically from user source on each request.</mat-checkbox
+  >
   <div class="flex-row gap-16 margin-bottom-16">
     @if (!wizard() || !defaultSMSGatewayIsSet()) {
       <mat-form-field class="input-width-xl">
         <mat-label i18n="@@token.tokenSpecific">A token specific SMS gateway</mat-label>
-        <mat-hint i18n="@@token.ifTokenShould">
-          If this token should not use the system wide SMS gateway but an individual SMS gateway, you can select the
-          gateway here.
-        </mat-hint>
+        <mat-hint i18n="@@token.ifTokenShould"
+          >If this token should not use the system wide SMS gateway but an individual SMS gateway, you can select the
+          gateway here.</mat-hint
+        >
         <mat-select
           [value]="smsGateway()"
           (selectionChange)="smsGateway.set($event.value)"

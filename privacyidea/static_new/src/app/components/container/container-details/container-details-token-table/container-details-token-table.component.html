@@ -26,9 +26,9 @@
     <div class="flex-row ali-center gap-8">
       <h4
         class="details-card-title"
-        i18n="@@container.tokensContainer">
-        Tokens in Container
-      </h4>
+        i18n="@@container.tokensContainer"
+        >Tokens in Container</h4
+      >
       @if (tableState.showTable()) {
         <app-container-details-token-actions
           [containerSerial]="containerSerial()"
@@ -188,9 +188,9 @@
             mat-header-cell>
             <div
               class="flex just-center"
-              i18n="@@common.actions">
-              Actions
-            </div>
+              i18n="@@common.actions"
+              >Actions</div
+            >
           </th>
           <td
             *matCellDef="let element"
@@ -235,7 +235,7 @@
               heading="No tokens in this container"
               hint="Add a token to this container to see it here."
               i18n-heading="@@container.noTokensContainer"
-              i18n-hint="@@container.addTokenContainer" />
+              i18n-hint="@@container.addTokenContainerHint" />
           </td>
         </tr>
       </table>
@@ -246,6 +246,6 @@
       heading="No tokens in this container"
       hint="Add a token to this container to see it here."
       i18n-heading="@@container.noTokensContainer"
-      i18n-hint="@@container.addTokenContainer" />
+      i18n-hint="@@container.addTokenContainerHint" />
   }
 </div>

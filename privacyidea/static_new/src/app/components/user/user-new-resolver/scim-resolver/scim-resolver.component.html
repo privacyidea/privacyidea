@@ -31,9 +31,9 @@
             placeholder="http://localhost:8080/osiam-auth-server" />
         </app-clearable-input>
         @if (scimForm.Authserver().errors().some(e => e.kind === 'required') && scimForm.Authserver().touched()) {
-          <mat-error i18n="@@resolver.authenticationServerUri">
-            Authentication server URI is <strong>required</strong> .
-          </mat-error>
+          <mat-error i18n="@@resolver.authenticationServerUri"
+            >Authentication server URI is <strong>required</strong> .</mat-error
+          >
         }
       </mat-form-field>
 
@@ -50,9 +50,7 @@
         @if (
           scimForm.Resourceserver().errors().some(e => e.kind === 'required') && scimForm.Resourceserver().touched()
         ) {
-          <mat-error i18n="@@resolver.resourceServerUri">
-            Resource server URI is <strong>required</strong> .
-          </mat-error>
+          <mat-error i18n="@@resolver.resourceServerUri">Resource server URI is <strong>required</strong> .</mat-error>
         }
       </mat-form-field>
     </div>

@@ -100,13 +100,14 @@
 @if (resolverType() === "entraidresolver") {
   <div
     class="hint margin-top-16 margin-bottom-16"
-    i18n="@@resolver.receiveUsersGroups">
-    Receive the users groups via the <code>memberOf</code> attribute.
-  </div>
+    i18n="@@resolver.receiveUsersGroups"
+    >Receive the users groups via the <code>memberOf</code> attribute.</div
+  >
 } @else {
   <div
     class="hint margin-top-16 margin-bottom-16"
-    i18n="@@resolver.userGroupsReceived">
-    User groups are received in a separate request and stored under the privacyIDEA attribute <code>groups</code> .
-  </div>
+    i18n="@@resolver.userGroupsReceived"
+    >User groups are received in a separate request and stored under the privacyIDEA attribute
+    <code>groups</code> .</div
+  >
 }

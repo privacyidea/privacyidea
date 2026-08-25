@@ -30,25 +30,24 @@
         (click)="goToRadiusConfig()"
         (keydown)="onRadiusConfigKeydown($event)">
         RADIUS Token Configuration </a
-      >!
-    </span>
+      >!</span
+    >
   }
   <mat-checkbox
     class="margin-bottom-16"
     [checked]="checkPinLocally()"
     (change)="checkPinLocally.set($event.checked)"
-    i18n="@@token.checkPinLocally">
-    Check the PIN locally
-  </mat-checkbox>
+    i18n="@@token.checkPinLocally"
+    >Check the PIN locally</mat-checkbox
+  >
   <div class="flex-row gap-16">
     @if (!wizard() || !defaultRadiusServerIsSet()) {
       <mat-form-field class="input-width-xl margin-bottom-16">
         <mat-label i18n="@@token.radiusServerConfiguration">RADIUS server configuration</mat-label>
-        <mat-hint i18n="@@token.selectPredefined">
-          Select a predefined
-          <a href="#"><strong>RADIUS server configuration.</strong></a>
-          The RADIUS request will be forwarded to this RADIUS server.
-        </mat-hint>
+        <mat-hint i18n="@@token.selectPredefined"
+          >Select a predefined <a href="#"><strong>RADIUS server configuration.</strong></a> The RADIUS request will be
+          forwarded to this RADIUS server.</mat-hint
+        >
         <mat-select
           [value]="radiusServerConfiguration()"
           (selectionChange)="radiusServerConfiguration.set($event.value)"

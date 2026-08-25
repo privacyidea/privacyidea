@@ -72,11 +72,10 @@
                 (input)="onResolvernameChange($any($event.target).value)" />
             </app-clearable-input>
             @if (nameHasPatternError()) {
-              <mat-error i18n="@@machine.machineResolverNameContains">
-                Machine resolver name contains
-                <strong>invalid characters</strong>
-                . Only alphanumeric characters, dots, underscores and hyphens are allowed.
-              </mat-error>
+              <mat-error i18n="@@machine.machineResolverNameContains"
+                >Machine resolver name contains <strong>invalid characters</strong> . Only alphanumeric characters,
+                dots, underscores and hyphens are allowed.</mat-error
+              >
             }
           </mat-form-field>
 

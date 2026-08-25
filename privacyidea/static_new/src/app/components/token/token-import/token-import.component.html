@@ -24,9 +24,9 @@
   i18n-aria-label="@@token.importTokens">
   <h3
     class="margin-8"
-    i18n="@@token.importTokens">
-    Import Tokens
-  </h3>
+    i18n="@@token.importTokens"
+    >Import Tokens</h3
+  >
   <div
     [appStickyHeader]="scrollContainer"
     class="sticky-header">
@@ -60,51 +60,51 @@
   <div class="margin-top-16 margin-left-16">
     @switch (fileType()) {
       @case ("aladdin-xml") {
-        <div i18n="@@token.hereYouUpload">
-          Here you can upload an XML file from Aladdin or SafeNet as it was used with Aladdin TMS or SafeNet SAM.
-        </div>
+        <div i18n="@@token.hereYouUpload"
+          >Here you can upload an XML file from Aladdin or SafeNet as it was used with Aladdin TMS or SafeNet SAM.</div
+        >
       }
       @case ("OATH CSV") {
         <div
           class="margin-bottom-16"
-          i18n="@@token.fileSupposedContainOne">
-          The file is supposed to contain one token per line. At least the serial number and the seed are required.
+          i18n="@@token.fileSupposedContainOne"
+          >The file is supposed to contain one token per line. At least the serial number and the seed are required.
           Other parameters are optional. If not defined, the following default values are used:
           <ul>
             <li>Type: hotp</li>
             <li>OTP length: 6</li>
             <li>Time Step: 30</li>
-          </ul>
-        </div>
+          </ul></div
+        >
 
         <div i18n="@@token.hotpTotpTokens">HOTP and TOTP tokens:</div>
         <div
           class="italic margin-bottom-16"
-          i18n="@@token.serialNumberSeedType">
-          serial number, seed, type, otp length, time step
-        </div>
+          i18n="@@token.serialNumberSeedType"
+          >serial number, seed, type, otp length, time step</div
+        >
 
         <div i18n="@@token.ocraTokens">OCRA tokens:</div>
         <div
           class="italic"
-          i18n="@@token.serialNumberSeed">
-          serial number, seed, type, ocrasuite
-        </div>
+          i18n="@@token.serialNumberSeed"
+          >serial number, seed, type, ocrasuite</div
+        >
       }
       @case ("Yubikey CSV") {
-        <div i18n="@@token.fileSupposedContain">
-          The file is supposed to contain one token per line. If you are enrolling the Yubikey in HOTP mode, you should
-          use the PSKC file format in the newer version of the Yubikey GUI.
-        </div>
+        <div i18n="@@token.fileSupposedContain"
+          >The file is supposed to contain one token per line. If you are enrolling the Yubikey in HOTP mode, you should
+          use the PSKC file format in the newer version of the Yubikey GUI.</div
+        >
       }
       @case ("pskc") {
         <div
           class="margin-bottom-32"
-          i18n="@@token.rfc6030OathCompliant">
-          This is an RFC6030 OATH compliant PSKC file. Values in the PSKC files may be unencrypted or either encrypted
+          i18n="@@token.rfc6030OathCompliant"
+          >This is an RFC6030 OATH compliant PSKC file. Values in the PSKC files may be unencrypted or either encrypted
           with a Pre Shared Key or password. If the values are encrypted, please specify the Pre Shared Key in hex
-          format or the password.
-        </div>
+          format or the password.</div
+        >
         <div>
           <mat-form-field class="input-width-xl margin-bottom-16">
             <mat-label i18n="@@token.preSharedKey">Pre Shared Key</mat-label>
@@ -115,12 +115,13 @@
               matInput
               placeholder="Pre Shared Key in hex format" />
             <mat-hint i18n="@@token.asValuesEncrypted"
-              >As the values are encrypted with AES128-CBC, you need to give a 32 characters long hex string.
-            </mat-hint>
+              >As the values are encrypted with AES128-CBC, you need to give a 32 characters long hex string.</mat-hint
+            >
             @if (!preSharedKeyValid()) {
               <mat-error i18n="@@token.asValuesEncrypted"
-                >As the values are encrypted with AES128-CBC, you need to give a 32 characters long hex string.
-              </mat-error>
+                >As the values are encrypted with AES128-CBC, you need to give a 32 characters long hex
+                string.</mat-error
+              >
             }
           </mat-form-field>
         </div>

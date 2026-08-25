@@ -21,12 +21,12 @@
     <mat-panel-title i18n="@@tokenTypeConfig.u2f">U2F</mat-panel-title>
   </mat-expansion-panel-header>
   <div class="panel-content expansion-well">
-    <p i18n="@@tokenTypeConfig.u2fTokenHardware">
-      The U2F token is a hardware token, that communicates with the browser.
-    </p>
-    <p i18n="@@tokenTypeConfig.youNeedSetCorrect">
-      You need to set the correct appId, which in fact is the URL of your privacyIDEA installation.
-    </p>
+    <p i18n="@@tokenTypeConfig.u2fTokenHardware"
+      >The U2F token is a hardware token, that communicates with the browser.</p
+    >
+    <p i18n="@@tokenTypeConfig.youNeedSetCorrect"
+      >You need to set the correct appId, which in fact is the URL of your privacyIDEA installation.</p
+    >
 
     <div class="flex-row gap-16 ali-center">
       <mat-form-field
@@ -57,16 +57,16 @@
     @if (formData()["u2f.appId"] && !formData()["u2f.appId"].startsWith("https:")) {
       <div
         class="alert alert-warning"
-        i18n="@@tokenTypeConfig.appidNeedsStart">
-        The AppID needs to start with "https".
-      </div>
+        i18n="@@tokenTypeConfig.appidNeedsStart"
+        >The AppID needs to start with "https".</div
+      >
     }
     @if (formData()["u2f.appId"] && formData()["u2f.appId"].endsWith("/")) {
       <div
         class="alert alert-warning"
-        i18n="@@tokenTypeConfig.appidMustNotEnd">
-        The AppID must not end with a "/".
-      </div>
+        i18n="@@tokenTypeConfig.appidMustNotEnd"
+        >The AppID must not end with a "/".</div
+      >
     }
   </div>
 </mat-expansion-panel>

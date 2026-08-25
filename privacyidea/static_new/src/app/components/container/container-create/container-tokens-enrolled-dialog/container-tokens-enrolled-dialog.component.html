@@ -24,9 +24,9 @@
   <div class="progress-header">
     <span
       class="progress-label"
-      i18n="@@container.token">
-      Token {{ currentIndex() + 1 }} / {{ total() }}
-    </span>
+      i18n="@@container.token"
+      >Token {{ currentIndex() + 1 }} / {{ total() }}</span
+    >
     <span class="token-type">{{ currentToken().type | titlecase }}</span>
   </div>
   <mat-progress-bar
@@ -34,9 +34,9 @@
     mode="determinate"
     class="progress-bar" />
   <div class="enrollment-data">
-    <p i18n="@@container.tokenSuccessfully">
-      Token <strong>{{ currentToken().serial }}</strong> successfully enrolled.
-    </p>
+    <p i18n="@@container.tokenSuccessfully"
+      >Token <strong>{{ currentToken().serial }}</strong> successfully enrolled.</p
+    >
     <app-token-enrollment-data
       [enrolledInputData]="currentToken()"
       [tokenType]="currentToken().type" />

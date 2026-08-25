@@ -22,9 +22,9 @@
     <div class="flex ali-center gap-8 machine-title">
       <h3
         class="margin-0"
-        i18n="@@machine.detailsMachine">
-        Details for Machine:
-      </h3>
+        i18n="@@machine.detailsMachine"
+        >Details for Machine:</h3
+      >
       <app-copyable [copyText]="machine.hostname.join(', ')">
         <h3 class="h3-color margin-0">{{ machine.hostname.join(", ") }}</h3>
       </app-copyable>
@@ -81,9 +81,9 @@
     <div class="filter-paginator-container">
       <h3
         class="margin-0"
-        i18n="@@machine.tokensApplications">
-        Tokens and Applications
-      </h3>
+        i18n="@@machine.tokensApplications"
+        >Tokens and Applications</h3
+      >
       <mat-paginator
         [pageSizeOptions]="[5, 10, 20]"
         [pageSize]="5"
@@ -99,9 +99,9 @@
           <th
             *matHeaderCellDef
             i18n="@@common.serial"
-            mat-header-cell>
-            Serial
-          </th>
+            mat-header-cell
+            >Serial</th
+          >
           <td
             *matCellDef="let token"
             mat-cell>
@@ -124,9 +124,9 @@
           <th
             *matHeaderCellDef
             i18n="@@common.application"
-            mat-header-cell>
-            Application
-          </th>
+            mat-header-cell
+            >Application</th
+          >
           <td
             *matCellDef="let token"
             mat-cell>
@@ -138,9 +138,9 @@
           <th
             *matHeaderCellDef
             i18n="@@common.options"
-            mat-header-cell>
-            Options
-          </th>
+            mat-header-cell
+            >Options</th
+          >
           <td
             *matCellDef="let token"
             mat-cell>
@@ -184,9 +184,9 @@
           <th
             *matHeaderCellDef
             i18n="@@common.actions"
-            mat-header-cell>
-            Actions
-          </th>
+            mat-header-cell
+            >Actions</th
+          >
           <td
             *matCellDef="let token"
             mat-cell>

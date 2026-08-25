@@ -214,9 +214,9 @@
       [checked]="editTask().retry_if_failed"
       (change)="editTask.set({ ...editTask(), retry_if_failed: $event.checked })"
       class="server-checkbox"
-      i18n="@@periodicTask.retryExecutePeriodic">
-      Retry to execute this periodic task if it fails.
-    </mat-checkbox>
+      i18n="@@periodicTask.retryExecutePeriodic"
+      >Retry to execute this periodic task if it fails.</mat-checkbox
+    >
   </div>
 
   <h3 i18n="@@common.options">Options</h3>
@@ -258,8 +258,8 @@
   } @else {
     <span
       class="italic"
-      i18n="@@periodicTask.noOptionsAvailable">
-      No options are available for this task module.
-    </span>
+      i18n="@@periodicTask.noOptionsAvailable"
+      >No options are available for this task module.</span
+    >
   }
 </div>

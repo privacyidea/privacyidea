@@ -26,9 +26,9 @@
     <div class="system-config-form">
       <h3
         class="margin-8"
-        i18n="@@systemConfig.systemConfiguration">
-        System Configuration
-      </h3>
+        i18n="@@systemConfig.systemConfiguration"
+        >System Configuration</h3
+      >
       <div class="flex-row gap-16">
         <div class="save-buttons">
           <button
@@ -55,9 +55,9 @@
         <mat-checkbox
           [checked]="params().splitAtSign"
           (change)="updateParam('splitAtSign', $event.checked)"
-          i18n="@@systemConfig.useSignSplitUsername">
-          Use &#64; sign to split the username and the realm
-        </mat-checkbox>
+          i18n="@@systemConfig.useSignSplitUsername"
+          >Use &#64; sign to split the username and the realm</mat-checkbox
+        >
       </div>
 
       <div class="flex-row full-width-grid-column gap-16 ali-center">
@@ -65,11 +65,10 @@
           <mat-checkbox
             [checked]="params().IncFailCountOnFalsePin"
             (change)="updateParam('IncFailCountOnFalsePin', $event.checked)"
-            i18n="@@systemConfig.increaseFailcounter">
-            Increase the failcounter
-            <br />
-            if the wrong PIN was entered
-          </mat-checkbox>
+            i18n="@@systemConfig.increaseFailcounter"
+            >Increase the failcounter <br />
+            if the wrong PIN was entered</mat-checkbox
+          >
         </div>
 
         <mat-form-field class="margin-left-auto input-width-s">
@@ -87,18 +86,18 @@
         <mat-checkbox
           [checked]="params().no_auth_counter"
           (change)="updateParam('no_auth_counter', $event.checked)"
-          i18n="@@systemConfig.doNotUseAuthentication">
-          Do not use an authentication counter per token
-        </mat-checkbox>
+          i18n="@@systemConfig.doNotUseAuthentication"
+          >Do not use an authentication counter per token</mat-checkbox
+        >
       </div>
 
       <div class="form-group margin-bottom-16">
         <mat-checkbox
           [checked]="params().PrependPin"
           (change)="updateParam('PrependPin', $event.checked)"
-          i18n="@@systemConfig.prependPinFront">
-          Prepend the PIN in front of the OTP value. Otherwise it will be post pended
-        </mat-checkbox>
+          i18n="@@systemConfig.prependPinFront"
+          >Prepend the PIN in front of the OTP value. Otherwise it will be post pended</mat-checkbox
+        >
       </div>
 
       <div class="flex-row full-width-grid-column gap-16 ali-center margin-bottom-16">
@@ -106,9 +105,9 @@
           <mat-checkbox
             [checked]="params().AutoResync"
             (change)="updateParam('AutoResync', $event.checked)"
-            i18n="@@systemConfig.automaticResync">
-            Automatic resync during authentication
-          </mat-checkbox>
+            i18n="@@systemConfig.automaticResync"
+            >Automatic resync during authentication</mat-checkbox
+          >
         </div>
 
         <mat-form-field class="margin-left-auto input-width-s">
@@ -157,9 +156,9 @@
                 name="OverrideAuthorizationClient"
                 placeholder="127.0.0.1, 10.0.0.8" />
             </app-clearable-input>
-            <mat-hint i18n="@@systemConfig.theseClientIp">
-              These client IP addresses or subnets are allowed to masquerade as another client
-            </mat-hint>
+            <mat-hint i18n="@@systemConfig.theseClientIp"
+              >These client IP addresses or subnets are allowed to masquerade as another client</mat-hint
+            >
           </mat-form-field>
 
           <mat-form-field class="input-width-l">
@@ -170,16 +169,18 @@
               <mat-option
                 [value]="''"
                 i18n="@@systemConfig.none"
-                >None
-              </mat-option>
+                >None</mat-option
+              >
               @for (identifier of smtpIdentifiers; track identifier) {
                 <mat-option [value]="identifier">{{ identifier }}</mat-option>
               }
             </mat-select>
-            <mat-hint i18n="@@systemConfig.selectPredefined">
-              Select a predefined
-              <a [routerLink]="[ROUTE_PATHS.EXTERNAL_SERVICES_SMTP]"><strong>SMTP server configuration</strong></a>
-            </mat-hint>
+            <mat-hint i18n="@@systemConfig.selectPredefined"
+              >Select a predefined
+              <a [routerLink]="[ROUTE_PATHS.EXTERNAL_SERVICES_SMTP]"
+                ><strong>SMTP server configuration</strong></a
+              ></mat-hint
+            >
           </mat-form-field>
         </div>
       </div>
@@ -188,9 +189,9 @@
         <div class="flex-column">
           <h4
             class="margin-bottom-16"
-            i18n="@@systemConfig.defaultSettings">
-            Default Settings for New Enrolled Tokens
-          </h4>
+            i18n="@@systemConfig.defaultSettings"
+            >Default Settings for New Enrolled Tokens</h4
+          >
 
           <div class="flex-row gap-16">
             <mat-form-field class="input-width-s">

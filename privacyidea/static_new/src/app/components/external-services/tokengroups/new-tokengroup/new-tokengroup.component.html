@@ -20,15 +20,15 @@
   @if (isEditMode()) {
     <h3
       class="margin-8"
-      i18n="@@tokenGroup.editTokengroup">
-      Edit Tokengroup
-    </h3>
+      i18n="@@tokenGroup.editTokengroup"
+      >Edit Tokengroup</h3
+    >
   } @else {
     <h3
       class="margin-8"
-      i18n="@@common.createTokengroup">
-      Create Tokengroup
-    </h3>
+      i18n="@@common.createTokengroup"
+      >Create Tokengroup</h3
+    >
   }
 
   <div class="header-row">
@@ -72,8 +72,8 @@
           @if (tokengroupForm.groupname().errors().some(e => e.kind === 'pattern')) {
             <mat-error i18n="@@common.identifierContains"
               >Identifier contains <strong>invalid characters</strong>. Only alphanumeric characters, dots, underscores
-              and hyphens are allowed.
-            </mat-error>
+              and hyphens are allowed.</mat-error
+            >
           }
         </mat-form-field>
 

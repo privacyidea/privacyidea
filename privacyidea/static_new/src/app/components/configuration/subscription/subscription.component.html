@@ -48,9 +48,9 @@
           <div class="margin-left-16 flex-row ali-center gap-16">
             <h4
               class="margin-0"
-              i18n="@@subscription.application">
-              Application:
-            </h4>
+              i18n="@@subscription.application"
+              >Application:</h4
+            >
             <h4 class="margin-0 application-color">{{ subscription.application }}</h4>
 
             @if (authService.actionAllowed("delete")) {
@@ -69,23 +69,23 @@
           @if (subscription.timedelta < -14) {
             <div
               class="alert alert-success"
-              i18n="@@subscription.validSubscription">
-              Valid subscription
-            </div>
+              i18n="@@subscription.validSubscription"
+              >Valid subscription</div
+            >
           }
           @if (subscription.timedelta < 0 && subscription.timedelta >= -14) {
             <div
               class="alert alert-warning"
-              i18n="@@subscription.subscriptionAbout">
-              Subscription about to expire
-            </div>
+              i18n="@@subscription.subscriptionAbout"
+              >Subscription about to expire</div
+            >
           }
           @if (subscription.timedelta >= 0) {
             <div
               class="alert alert-danger"
-              i18n="@@subscription.subscriptionExpired">
-              Subscription expired
-            </div>
+              i18n="@@subscription.subscriptionExpired"
+              >Subscription expired</div
+            >
           }
 
           <div class="subscription-info-grid">

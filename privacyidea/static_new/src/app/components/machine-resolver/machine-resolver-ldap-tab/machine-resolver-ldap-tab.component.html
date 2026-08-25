@@ -34,9 +34,9 @@
       [disabled]="!fieldsEnabled()"
       [checked]="hostsData().TLS_VERIFY"
       (change)="updateTlsVerify($event.checked)"
-      i18n="@@machine.tlsVerify">
-      TLS Verify
-    </mat-checkbox>
+      i18n="@@machine.tlsVerify"
+      >TLS Verify</mat-checkbox
+    >
   </div>
   <mat-form-field>
     <mat-label i18n="@@machine.tlsCaFile">TLS CA File</mat-label>
@@ -46,9 +46,9 @@
       [disabled]="!fieldsEnabled() || !hostsData().TLS_VERIFY"
       [value]="hostsData().TLS_CA_FILE ?? ''"
       (input)="updateData({ TLS_CA_FILE: $event.target['value'] })" />
-    <mat-hint i18n="@@machine.pathCaCertificate">
-      Path to a CA certificate file to verify the LDAP server's TLS certificate.
-    </mat-hint>
+    <mat-hint i18n="@@machine.pathCaCertificate"
+      >Path to a CA certificate file to verify the LDAP server's TLS certificate.</mat-hint
+    >
   </mat-form-field>
 
   <mat-form-field subscriptSizing="dynamic">
@@ -117,9 +117,9 @@
       [disabled]="!fieldsEnabled()"
       [checked]="hostsData().NOREFERRALS === 'True'"
       (change)="onClickNoReferrals($event.checked)"
-      i18n="@@machine.referralsNotTracked">
-      <p>Referrals are not tracked (anonymously)</p>
-    </mat-checkbox>
+      i18n="@@machine.referralsNotTracked"
+      ><p>Referrals are not tracked (anonymously)</p></mat-checkbox
+    >
   </div>
   @if (fieldsEnabled()) {
     <button

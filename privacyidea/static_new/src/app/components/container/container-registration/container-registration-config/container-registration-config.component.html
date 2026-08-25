@@ -33,10 +33,10 @@
     <mat-hint
       [class.red]="promptRequired() && !passphrasePrompt()"
       align="start"
-      i18n="@@container.enterPassphrase">
-      Enter a passphrase prompt that will be displayed to the user. This should indicate which passphrase the user
-      should enter.
-    </mat-hint>
+      i18n="@@container.enterPassphrase"
+      >Enter a passphrase prompt that will be displayed to the user. This should indicate which passphrase the user
+      should enter.</mat-hint
+    >
   </mat-form-field>
   <mat-form-field class="input-width-xl margin-top-32 margin-bottom-32">
     <mat-label i18n="@@container.passphraseResponse">Passphrase Response</mat-label>
@@ -56,9 +56,10 @@
       type="button">
       <mat-icon>{{ showPassphrase ? "visibility_off" : "visibility" }}</mat-icon>
     </button>
-    <mat-hint i18n="@@container.correctAnswer">
-      This is the correct answer to the passphrase prompt the user has to enter to successfully register the container.
-    </mat-hint>
+    <mat-hint i18n="@@container.correctAnswer"
+      >This is the correct answer to the passphrase prompt the user has to enter to successfully register the
+      container.</mat-hint
+    >
   </mat-form-field>
   <mat-form-field class="input-width-xl">
     <mat-label i18n="@@container.repeatPassphrase">Repeat Passphrase Response</mat-label>
@@ -81,9 +82,9 @@
     @if (passphraseMismatch) {
       <mat-hint
         class="red"
-        i18n="@@container.passphrasesDo">
-        Passphrases do not match.
-      </mat-hint>
+        i18n="@@container.passphrasesDo"
+        >Passphrases do not match.</mat-hint
+      >
     }
   </mat-form-field>
 </div>

@@ -86,9 +86,9 @@
     (change)="model.update(m => ({ ...m, hasSpecialErrorHandler: $event.checked }))"
     [checked]="model().hasSpecialErrorHandler"
     class="checkbox-inline"
-    i18n="@@resolver.specialErrorHandling">
-    Special Error Handling
-  </mat-checkbox>
+    i18n="@@resolver.specialErrorHandling"
+    >Special Error Handling</mat-checkbox
+  >
 
   @if (model().hasSpecialErrorHandler) {
     <mat-form-field class="input-width-xl">
