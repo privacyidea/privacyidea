@@ -142,7 +142,7 @@ export class ValidateService implements ValidateServiceInterface {
   authenticatePasskey(args?: { isTest?: boolean; onCredentialId?: (id: string) => void }): Observable<AuthResponse> {
     if (!window.PublicKeyCredential) {
       this.notificationService.error(
-        $localize`:@@validate.webauthnIsNotSupportedBy:WebAuthn is not supported by this browser.`
+        $localize`:@@token.webauthnNotSupported:WebAuthn is not supported by this browser.`
       );
       return throwError(() => new Error("WebAuthn is not supported by this browser."));
     }
@@ -200,7 +200,7 @@ export class ValidateService implements ValidateServiceInterface {
   }): Observable<AuthResponse> {
     if (!window.PublicKeyCredential) {
       this.notificationService.error(
-        $localize`:@@validate.webauthnIsNotSupportedBy2:WebAuthn is not supported by this browser.`
+        $localize`:@@token.webauthnNotSupported:WebAuthn is not supported by this browser.`
       );
       return throwError(() => new Error("WebAuthn is not supported by this browser."));
     }

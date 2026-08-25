@@ -22,7 +22,7 @@
     @if (canReadPolicies()) {
       <p
         class="news-hint"
-        i18n>
+        i18n="@@news.theNewsFeedIsDisabled">
         The news feed is disabled by the
         <a [routerLink]="rssAgePolicyLink">rss_age</a>
         policy.
@@ -30,7 +30,7 @@
     } @else {
       <p
         class="news-hint"
-        i18n>
+        i18n="@@news.theNewsFeedIsDisabled2">
         The news feed is disabled.
       </p>
     }

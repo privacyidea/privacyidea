@@ -113,7 +113,7 @@ export class PoliciesTableComponent {
   });
   readonly emptyHint = computed(() =>
     this.authService.actionAllowed("policywrite")
-      ? $localize`Create a policy to control what users and administrators are allowed to do and how the system behaves.`
+      ? $localize`:@@common.createAPolicyToControl:Create a policy to control what users and administrators are allowed to do and how the system behaves.`
       : ""
   );
 

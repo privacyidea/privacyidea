@@ -50,7 +50,7 @@
           [value]="formData()[YUBICO_SECRET]"
           (input)="updateFormData(YUBICO_SECRET, $any($event.target).value)"
           matInput
-          i18n-placeholder="@@tokenTypeConfig.apiKeyPlaceholder"
+          i18n-placeholder="@@tokenTypeConfig.apiKey"
           placeholder="API Key"
           required />
         @if (apiKeyInput.validity.valueMissing) {

@@ -20,11 +20,11 @@
 <div
   aria-label="UI Settings"
   class="settings-container"
-  i18n-aria-label>
+  i18n-aria-label="@@common.uiSettings">
   <div class="settings-header">
     <h3
       class="margin-8"
-      i18n>
+      i18n="@@common.uiSettings">
       UI Settings
     </h3>
     <button
@@ -40,7 +40,7 @@
   <div class="details-cards-grid">
     <app-details-card
       class="settings-card-xs"
-      i18n-title
+      i18n-title="@@uiSettings.theme"
       title="Theme">
       <div class="settings-row">
         <app-theme-toggle />
@@ -49,7 +49,7 @@
 
     <app-details-card
       class="settings-card-s"
-      i18n-title
+      i18n-title="@@uiSettings.language"
       title="Language">
       <div class="settings-row">
         <mat-form-field
@@ -59,7 +59,7 @@
             (selectionChange)="selectLocale($event.value)"
             [value]="preferredLocale()"
             aria-label="Language"
-            i18n-aria-label>
+            i18n-aria-label="@@uiSettings.language">
             @for (locale of locales; track locale.code) {
               <mat-option [value]="locale.code">
                 {{ locale.label }}
@@ -72,23 +72,22 @@
 
     <app-details-card
       class="settings-card-m"
-      i18n-title
+      i18n-title="@@uiSettings.pendingRequests"
       title="Pending Requests">
       <div class="settings-row">
         <mat-slide-toggle
           (change)="setShowLoadingUrls($event.checked)"
           [checked]="showLoadingUrls()"
-          i18n>
+          i18n="@@uiSettings.showEndpointsBeingRequested">
           Show endpoints being requested
         </mat-slide-toggle>
       </div>
     </app-details-card>
-
   </div>
 
   <mat-expansion-panel class="settings-appearance-panel">
     <mat-expansion-panel-header>
-      <mat-panel-title i18n>Appearance</mat-panel-title>
+      <mat-panel-title i18n="@@dashboard.appearance">Appearance</mat-panel-title>
       <mat-panel-description>
         <mat-icon
           [attr.aria-label]="appearanceHint"
@@ -102,7 +101,7 @@
     <div class="details-cards-grid">
       <app-details-card
         class="settings-card-m"
-        i18n-title
+        i18n-title="@@uiSettings.corners"
         title="Corners">
         <div class="settings-row">
           <mat-button-toggle-group
@@ -110,7 +109,7 @@
             [hideSingleSelectionIndicator]="true"
             [value]="corners()"
             aria-label="Corners"
-            i18n-aria-label>
+            i18n-aria-label="@@uiSettings.corners">
             @for (level of cornerLevels; track level.value) {
               <mat-button-toggle [value]="level.value">{{ level.label }}</mat-button-toggle>
             }
@@ -120,7 +119,7 @@
 
       <app-details-card
         class="settings-card-m"
-        i18n-title
+        i18n-title="@@uiSettings.depth"
         title="Depth">
         <div class="settings-row">
           <mat-button-toggle-group
@@ -128,7 +127,7 @@
             [hideSingleSelectionIndicator]="true"
             [value]="depth()"
             aria-label="Depth"
-            i18n-aria-label>
+            i18n-aria-label="@@uiSettings.depth">
             @for (level of depthLevels; track level.value) {
               <mat-button-toggle [value]="level.value">{{ level.label }}</mat-button-toggle>
             }
@@ -138,7 +137,7 @@
 
       <app-details-card
         class="settings-card-m"
-        i18n-title
+        i18n-title="@@uiSettings.lightSource"
         title="Light Source">
         <div class="settings-row">
           <app-light-source-dial
@@ -146,7 +145,7 @@
             [selected]="lightSource()"
             groupName="light-source"
             legend="Light source"
-            i18n-legend
+            i18n-legend="@@uiSettings.lightSource2"
             (pick)="selectLightSource($event)" />
         </div>
       </app-details-card>

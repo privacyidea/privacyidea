@@ -119,7 +119,9 @@ export class UserResolversComponent {
     resetFilter: () => this.resetFilter()
   });
   readonly emptyHint = computed(() =>
-    this.authService.actionAllowed("resolverwrite") ? $localize`Create a resolver to read users from a user store.` : ""
+    this.authService.actionAllowed("resolverwrite")
+      ? $localize`:@@resolver.createAResolverToRead:Create a resolver to read users from a user store.`
+      : ""
   );
 
   onFilterInput(value: string): void {

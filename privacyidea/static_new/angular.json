@@ -110,70 +110,90 @@
               "sourceMap": true,
               "localize": ["nl"],
               "baseHref": "/app/v2/nl/",
-              "fileReplacements": [{ "replace": "src/environments/environment.ts", "with": "src/environments/environment.development.ts" }]
+              "fileReplacements": [
+                { "replace": "src/environments/environment.ts", "with": "src/environments/environment.development.ts" }
+              ]
             },
             "zh-Hant": {
               "optimization": false,
               "sourceMap": true,
               "localize": ["zh-Hant"],
               "baseHref": "/app/v2/zh-Hant/",
-              "fileReplacements": [{ "replace": "src/environments/environment.ts", "with": "src/environments/environment.development.ts" }]
+              "fileReplacements": [
+                { "replace": "src/environments/environment.ts", "with": "src/environments/environment.development.ts" }
+              ]
             },
             "es": {
               "optimization": false,
               "sourceMap": true,
               "localize": ["es"],
               "baseHref": "/app/v2/es/",
-              "fileReplacements": [{ "replace": "src/environments/environment.ts", "with": "src/environments/environment.development.ts" }]
+              "fileReplacements": [
+                { "replace": "src/environments/environment.ts", "with": "src/environments/environment.development.ts" }
+              ]
             },
             "tr": {
               "optimization": false,
               "sourceMap": true,
               "localize": ["tr"],
               "baseHref": "/app/v2/tr/",
-              "fileReplacements": [{ "replace": "src/environments/environment.ts", "with": "src/environments/environment.development.ts" }]
+              "fileReplacements": [
+                { "replace": "src/environments/environment.ts", "with": "src/environments/environment.development.ts" }
+              ]
             },
             "cs": {
               "optimization": false,
               "sourceMap": true,
               "localize": ["cs"],
               "baseHref": "/app/v2/cs/",
-              "fileReplacements": [{ "replace": "src/environments/environment.ts", "with": "src/environments/environment.development.ts" }]
+              "fileReplacements": [
+                { "replace": "src/environments/environment.ts", "with": "src/environments/environment.development.ts" }
+              ]
             },
             "it": {
               "optimization": false,
               "sourceMap": true,
               "localize": ["it"],
               "baseHref": "/app/v2/it/",
-              "fileReplacements": [{ "replace": "src/environments/environment.ts", "with": "src/environments/environment.development.ts" }]
+              "fileReplacements": [
+                { "replace": "src/environments/environment.ts", "with": "src/environments/environment.development.ts" }
+              ]
             },
             "ta": {
               "optimization": false,
               "sourceMap": true,
               "localize": ["ta"],
               "baseHref": "/app/v2/ta/",
-              "fileReplacements": [{ "replace": "src/environments/environment.ts", "with": "src/environments/environment.development.ts" }]
+              "fileReplacements": [
+                { "replace": "src/environments/environment.ts", "with": "src/environments/environment.development.ts" }
+              ]
             },
             "pt": {
               "optimization": false,
               "sourceMap": true,
               "localize": ["pt"],
               "baseHref": "/app/v2/pt/",
-              "fileReplacements": [{ "replace": "src/environments/environment.ts", "with": "src/environments/environment.development.ts" }]
+              "fileReplacements": [
+                { "replace": "src/environments/environment.ts", "with": "src/environments/environment.development.ts" }
+              ]
             },
             "ru": {
               "optimization": false,
               "sourceMap": true,
               "localize": ["ru"],
               "baseHref": "/app/v2/ru/",
-              "fileReplacements": [{ "replace": "src/environments/environment.ts", "with": "src/environments/environment.development.ts" }]
+              "fileReplacements": [
+                { "replace": "src/environments/environment.ts", "with": "src/environments/environment.development.ts" }
+              ]
             },
             "uk": {
               "optimization": false,
               "sourceMap": true,
               "localize": ["uk"],
               "baseHref": "/app/v2/uk/",
-              "fileReplacements": [{ "replace": "src/environments/environment.ts", "with": "src/environments/environment.development.ts" }]
+              "fileReplacements": [
+                { "replace": "src/environments/environment.ts", "with": "src/environments/environment.development.ts" }
+              ]
             }
           },
           "defaultConfiguration": "production"
@@ -227,7 +247,8 @@
               "messages.zh-Hant.xlf"
             ],
             "includeContext": true,
-            "sort": "stableAppendNew"
+            "sort": "stableAppendNew",
+            "trim": true
           }
         },
         "test": {

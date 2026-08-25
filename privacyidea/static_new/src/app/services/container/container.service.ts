@@ -745,7 +745,7 @@ export class ContainerService extends FilterableTableService implements Containe
           console.error("Failed to toggle active.", error);
           const message = error.error?.result?.error?.message || "";
           this.notificationService.error(
-            $localize`:@@container.failedToToggleActive:Failed to toggle active. ${message}:MESSAGE:`
+            $localize`:@@token.failedToToggleActive:Failed to toggle active. ${message}:MESSAGE:`
           );
           return throwError(() => error);
         })
@@ -792,7 +792,7 @@ export class ContainerService extends FilterableTableService implements Containe
           console.error("Failed to unassign user.", error);
           const message = error.error?.result?.error?.message || "";
           this.notificationService.error(
-            $localize`:@@container.failedToUnassignUser:Failed to unassign user. ${message}:MESSAGE:`
+            $localize`:@@token.failedToUnassignUser:Failed to unassign user. ${message}:MESSAGE:`
           );
           return throwError(() => error);
         })
@@ -815,7 +815,7 @@ export class ContainerService extends FilterableTableService implements Containe
           console.error("Failed to assign user.", error);
           const message = error.error?.result?.error?.message || "";
           this.notificationService.error(
-            $localize`:@@container.failedToAssignUser:Failed to assign user. ${message}:MESSAGE:`
+            $localize`:@@token.failedToAssignUser:Failed to assign user. ${message}:MESSAGE:`
           );
           return throwError(() => error);
         })
@@ -937,7 +937,7 @@ export class ContainerService extends FilterableTableService implements Containe
     if (!data || !Array.isArray(data.containers[0].tokens)) {
       console.error("No valid tokens array found in data.", data);
       this.notificationService.warning(
-        $localize`:@@container.noValidTokensArrayFound2:No valid tokens array found in data.`
+        $localize`:@@container.noValidTokensArrayFound:No valid tokens array found in data.`
       );
       return of(null);
     }

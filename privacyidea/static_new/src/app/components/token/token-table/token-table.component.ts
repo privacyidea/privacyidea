@@ -139,7 +139,9 @@ export class TokenTableComponent implements OnDestroy {
   activeFilter = this.tokenService.activeFilter;
   readonly ROUTE_PATHS = ROUTE_PATHS;
   readonly emptyHint = computed(() =>
-    this.authService.tokenEnrollmentAllowed() ? $localize`Enroll your first token to get started.` : ""
+    this.authService.tokenEnrollmentAllowed()
+      ? $localize`:@@token.enrollYourFirstTokenTo:Enroll your first token to get started.`
+      : ""
   );
   pageSize = this.tokenService.pageSize;
   pageIndex = this.tokenService.pageIndex;

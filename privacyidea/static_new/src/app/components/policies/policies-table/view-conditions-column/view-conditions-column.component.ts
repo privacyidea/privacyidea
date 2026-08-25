@@ -47,12 +47,12 @@ export class ViewConditionsColumnComponent {
   readonly conditionLabels = {
     adminRealms: $localize`:@@policy.condition.adminRealms:Admin Realms`,
     admins: $localize`:@@policy.condition.admins:Admins`,
-    realms: $localize`:@@policy.condition.realms:Realms`,
-    resolvers: $localize`:@@policy.condition.resolvers:Resolvers`,
-    users: $localize`:@@policy.condition.users:Users`,
+    realms: $localize`:@@common.realms:Realms`,
+    resolvers: $localize`:@@common.resolvers:Resolvers`,
+    users: $localize`:@@nav.users:Users`,
     piNodes: $localize`:@@policy.condition.piNodes:privacyIDEA Nodes`,
-    validTime: $localize`:@@policy.condition.validTime:Valid time`,
-    client: $localize`:@@policy.condition.client:Client`,
+    validTime: $localize`:@@policy.validTime:Valid time`,
+    client: $localize`:@@common.client:Client`,
     userAgents: $localize`:@@policy.condition.userAgents:User Agents`
   };
 

@@ -234,7 +234,7 @@ export class PeriodicTaskService implements PeriodicTaskServiceInterface {
       const response = await lastValueFrom(this.deletePeriodicTask(task.id));
       if (response?.result?.value !== undefined) {
         this.notificationService.success(
-          $localize`:@@periodicTask.successfullyDeletedPeriodicTask:Successfully deleted periodic task.`
+          $localize`:@@periodicTask.successfullyDeleted:Successfully deleted periodic task.`
         );
       }
       return response;

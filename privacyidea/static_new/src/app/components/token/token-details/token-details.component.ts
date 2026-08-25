@@ -533,8 +533,7 @@ export class TokenDetailsComponent implements OnInit, AfterViewInit, OnDestroy {
           } else {
             this.passkeyTestResult.set({
               kind: "success",
-              message:
-                $localize`:@@token.authenticationSuccessful:Authentication successful. You would have been logged in as: ${username}:USERNAME:`
+              message: $localize`:@@token.authenticationSuccessful:Authentication successful. You would have been logged in as: ${username}:USERNAME:`
             });
           }
         }

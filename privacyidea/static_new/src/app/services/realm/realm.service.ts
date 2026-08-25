@@ -252,7 +252,7 @@ export class RealmService implements RealmServiceInterface {
           console.error("Failed to create realm.", error);
           const message = error.error?.result?.error?.message || "";
           this.notificationService.error(
-            $localize`:@@realm.failedToCreateRealm:Failed to create realm. ${message}:MESSAGE:`
+            $localize`:@@realm.failedCreateRealm:Failed to create realm. ${message}:MESSAGE:`
           );
           return throwError(() => error);
         })
@@ -278,7 +278,7 @@ export class RealmService implements RealmServiceInterface {
         console.error("Failed to set default realm.", error);
         const message = error.error?.result?.error?.message || "";
         this.notificationService.error(
-          $localize`:@@realm.failedToSetDefaultRealm:Failed to set default realm. ${message}:MESSAGE:`
+          $localize`:@@realm.failedSetDefault:Failed to set default realm. ${message}:MESSAGE:`
         );
         return throwError(() => error);
       })

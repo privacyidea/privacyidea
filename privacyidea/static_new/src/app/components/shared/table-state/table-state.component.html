@@ -25,7 +25,7 @@
       <mat-progress-spinner
         [diameter]="40"
         aria-label="Loading"
-        i18n-aria-label
+        i18n-aria-label="@@common.loading"
         mode="indeterminate" />
     </div>
   } @else {
@@ -54,12 +54,12 @@
       @case ("filtered") {
         <h2
           class="table-state-heading"
-          i18n>
+          i18n="@@common.noEntriesMatchTheFilter">
           No entries match the filter
         </h2>
         <p
           class="table-state-hint"
-          i18n>
+          i18n="@@common.adjustTheFilterOrReset">
           Adjust the filter or reset it to see all entries again.
         </p>
         @if (table().canResetFilter) {
@@ -68,19 +68,19 @@
             class="action-button-secondary button-width-m"
             mat-stroked-button>
             <mat-icon>filter_alt_off</mat-icon>
-            <span i18n>Reset Filter</span>
+            <span i18n="@@common.resetFilter">Reset Filter</span>
           </button>
         }
       }
       @case ("error") {
         <h2
           class="table-state-heading"
-          i18n>
+          i18n="@@common.theDataCouldNotBe">
           The data could not be loaded
         </h2>
         <p
           class="table-state-hint"
-          i18n>
+          i18n="@@common.theRequestFailedCheckThe">
           The request failed. Check the connection to the privacyIDEA server and try again.
         </p>
         <div class="table-state-actions">
@@ -89,7 +89,7 @@
             class="action-button-secondary button-width-m"
             mat-stroked-button>
             <mat-icon>refresh</mat-icon>
-            <span i18n>Try Again</span>
+            <span i18n="@@common.tryAgain">Try Again</span>
           </button>
           <!-- Where the request carries the filter, retrying alone repeats whatever failed and the
              filter itself is unreachable, since the state panel replaces the filter row. -->
@@ -99,7 +99,7 @@
               class="action-button-secondary button-width-m"
               mat-stroked-button>
               <mat-icon>filter_alt_off</mat-icon>
-              <span i18n>Reset Filter</span>
+              <span i18n="@@common.resetFilter">Reset Filter</span>
             </button>
           }
         </div>
@@ -107,12 +107,12 @@
       @case ("denied") {
         <h2
           class="table-state-heading"
-          i18n>
+          i18n="@@common.notAllowed">
           Not allowed
         </h2>
         <p
           class="table-state-hint"
-          i18n>
+          i18n="@@common.youDoNotHaveThe">
           You do not have the permission to view this list.
         </p>
       }

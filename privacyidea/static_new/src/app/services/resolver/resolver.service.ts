@@ -368,7 +368,7 @@ export class ResolverService implements ResolverServiceInterface {
           console.error(`Error during deleting resolver ${resolverName}:`, error);
           const message = error.error?.result?.error?.message || "";
           this.notificationService.error(
-            $localize`:@@resolver.failedToDeleteResolver:Failed to delete resolver. ${message}:MESSAGE:`
+            $localize`:@@resolver.failedDeleteResolver:Failed to delete resolver. ${message}:MESSAGE:`
           );
           return throwError(() => error);
         })

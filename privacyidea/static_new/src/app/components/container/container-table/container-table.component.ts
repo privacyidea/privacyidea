@@ -180,7 +180,7 @@ export class ContainerTableComponent implements OnDestroy {
   });
   readonly emptyHint = computed(() =>
     this.authService.actionAllowed("container_create")
-      ? $localize`Create your first container to assign tokens to a user or a device.`
+      ? $localize`:@@container.createYourFirstContainerTo2:Create your first container to assign tokens to a user or a device.`
       : ""
   );
 

@@ -797,7 +797,7 @@ export class TokenService extends FilterableTableService implements TokenService
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: "Delete Selected Tokens",
+          title: $localize`:@@token.deleteSelectedTokens:Delete Selected Tokens`,
           items: serialList,
           itemType: "token",
           confirmAction: {

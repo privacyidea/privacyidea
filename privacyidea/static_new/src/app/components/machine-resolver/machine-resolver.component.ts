@@ -92,7 +92,7 @@ export class MachineResolverComponent {
   });
   readonly emptyHint = computed(() =>
     this.authService.actionAllowed("mresolverwrite")
-      ? $localize`Create a machine resolver to read machines from a machine store.`
+      ? $localize`:@@machineResolver.createAMachineResolverTo:Create a machine resolver to read machines from a machine store.`
       : ""
   );
 

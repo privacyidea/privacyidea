@@ -205,7 +205,7 @@ export class ContainerTemplateService implements ContainerTemplateServiceInterfa
   async deleteTemplates(names: string[]) {
     if (!this.authService.actionAllowed("container_template_delete")) {
       this.notificationService.error(
-        $localize`:@@containerTemplate.youAreNotAllowedTo2:You are not allowed to delete container templates.`
+        $localize`:@@containerTemplate.youAreNotAllowedTo:You are not allowed to delete container templates.`
       );
       throw new Error("Permission denied");
     }

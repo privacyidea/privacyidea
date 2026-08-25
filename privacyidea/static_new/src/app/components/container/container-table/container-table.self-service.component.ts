@@ -81,7 +81,7 @@ export class ContainerTableSelfServiceComponent extends ContainerTableComponent 
   });
   override readonly emptyHint = computed(() =>
     this.authService.rights().includes("container_create")
-      ? $localize`Create your first container to group the tokens you use.`
+      ? $localize`:@@container.createYourFirstContainerTo:Create your first container to group the tokens you use.`
       : ""
   );
 

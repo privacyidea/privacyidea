@@ -22,11 +22,12 @@
   <div class="toolbar-brand">
     <a
       [routerLink]="[landingPage()]"
-      class="brand-link">
+      aria-label="Home"
+      class="brand-link"
+      i18n-aria-label="@@nav.homeLink">
       @if (customLogo()) {
         <img
-          i18n-alt="@@nav.logoAlt"
-          alt="logo"
+          alt=""
           class="toolbar-logo toolbar-logo-custom"
           height="48"
           ngSrc="{{ customLogo() }}"
@@ -34,8 +35,7 @@
           width="48" />
       } @else {
         <img
-          i18n-alt="@@nav.logoAlt"
-          alt="logo"
+          alt=""
           class="toolbar-logo"
           height="48"
           ngSrc="assets/privacyIDEA1.png"
@@ -43,8 +43,7 @@
           width="48" />
 
         <img
-          i18n-alt="@@nav.logoTextAlt"
-          alt="logo-text"
+          alt=""
           class="toolbar-logo-text margin-left-16"
           height="109"
           ngSrc="assets/logo-text.png"

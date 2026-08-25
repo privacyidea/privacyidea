@@ -7114,46 +7114,6 @@
           <context context-type="linenumber">20,21</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="login.logoAlt" datatype="html" xml:space="preserve">
-        <source>logo</source>
-        <target state="translated">logo</target>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/login/login.component.html</context>
-          <context context-type="linenumber">27</context>
-        </context-group>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/login/login.component.html</context>
-          <context context-type="linenumber">38</context>
-        </context-group>
-      </trans-unit>
-      <trans-unit id="login.logo" datatype="html" xml:space="preserve">
-        <source>Logo</source>
-        <target state="translated">Logo</target>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/login/login.component.html</context>
-          <context context-type="linenumber">28</context>
-        </context-group>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/login/login.component.html</context>
-          <context context-type="linenumber">39</context>
-        </context-group>
-      </trans-unit>
-      <trans-unit id="login.logoTextAlt" datatype="html" xml:space="preserve">
-        <source>logo-text</source>
-        <target state="translated">tekst logo</target>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/login/login.component.html</context>
-          <context context-type="linenumber">49,50</context>
-        </context-group>
-      </trans-unit>
-      <trans-unit id="login.logoText" datatype="html" xml:space="preserve">
-        <source>Logo Text</source>
-        <target state="translated">Tekst logo</target>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/login/login.component.html</context>
-          <context context-type="linenumber">50,51</context>
-        </context-group>
-      </trans-unit>
       <trans-unit id="login.loginAs" datatype="html" xml:space="preserve">
         <source>Login as <x id="INTERPOLATION" equiv-text="{{ remoteUser() }}"/> </source>
         <target state="translated">Zaloguj się jako <x id="INTERPOLATION" equiv-text="{{ remoteUser() }}"/> </target>
@@ -11654,7 +11614,7 @@
           <context context-type="linenumber">79,80</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="user.realmLayout" datatype="html" xml:space="preserve">
+      <trans-unit id="realm.realmLayout" datatype="html" xml:space="preserve">
         <source>Realm Layout</source>
         <target state="translated">Widok domen</target>
         <context-group purpose="location">
@@ -11662,7 +11622,7 @@
           <context context-type="linenumber">2,3</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="user.filterRealms" datatype="html" xml:space="preserve">
+      <trans-unit id="realm.filterRealms" datatype="html" xml:space="preserve">
         <source>Filter Realms...</source>
         <target state="translated">Filtruj domeny…</target>
         <context-group purpose="location">
@@ -11670,7 +11630,7 @@
           <context context-type="linenumber">12</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="user.node" datatype="html" xml:space="preserve">
+      <trans-unit id="realm.node" datatype="html" xml:space="preserve">
         <source>Node</source>
         <target state="translated">Węzeł</target>
         <context-group purpose="location">
@@ -11678,7 +11638,7 @@
           <context context-type="linenumber">33</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="user.noResolvers" datatype="html" xml:space="preserve">
+      <trans-unit id="realm.noResolvers" datatype="html" xml:space="preserve">
         <source>No Resolvers</source>
         <target state="translated">Brak źródeł użytkowników</target>
         <context-group purpose="location">
@@ -11686,7 +11646,7 @@
           <context context-type="linenumber">157,158</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="user.saveRealm" datatype="html" xml:space="preserve">
+      <trans-unit id="realm.saveRealm" datatype="html" xml:space="preserve">
         <source>Save realm</source>
         <target state="translated">Zapisz domenę</target>
         <context-group purpose="location">
@@ -11694,7 +11654,7 @@
           <context context-type="linenumber">202,203</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="user.cancelEdit" datatype="html" xml:space="preserve">
+      <trans-unit id="realm.cancelEdit" datatype="html" xml:space="preserve">
         <source>Cancel edit</source>
         <target state="translated">Anuluj edycję</target>
         <context-group purpose="location">
@@ -11702,7 +11662,7 @@
           <context context-type="linenumber">211,212</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="user.editRealm" datatype="html" xml:space="preserve">
+      <trans-unit id="realm.editRealm" datatype="html" xml:space="preserve">
         <source>Edit realm</source>
         <target state="translated">Edytuj domenę</target>
         <context-group purpose="location">
@@ -11714,7 +11674,7 @@
           <context context-type="linenumber">226,227</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="user.deleteRealmAction" datatype="html" xml:space="preserve">
+      <trans-unit id="realm.deleteRealmAction" datatype="html" xml:space="preserve">
         <source>Delete realm</source>
         <target state="translated">Usuń domenę</target>
         <context-group purpose="location">
@@ -11726,7 +11686,7 @@
           <context context-type="linenumber">239,240</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="user.realmName" datatype="html" xml:space="preserve">
+      <trans-unit id="realm.realmName" datatype="html" xml:space="preserve">
         <source>Realm Name</source>
         <target state="translated">Nazwa domeny</target>
         <context-group purpose="location">
@@ -11734,7 +11694,7 @@
           <context context-type="linenumber">262</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="user.resetForm" datatype="html" xml:space="preserve">
+      <trans-unit id="realm.resetForm" datatype="html" xml:space="preserve">
         <source>Reset form</source>
         <target state="translated">Wyczyść formularz</target>
         <context-group purpose="location">
@@ -11742,7 +11702,7 @@
           <context context-type="linenumber">339,340</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="user.allNodes" datatype="html" xml:space="preserve">
+      <trans-unit id="realm.allNodes" datatype="html" xml:space="preserve">
         <source>All nodes</source>
         <target state="translated">Wszystkie węzły</target>
         <context-group purpose="location">
@@ -11758,7 +11718,7 @@
           <context context-type="linenumber">222</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="user.realmCreated" datatype="html" xml:space="preserve">
+      <trans-unit id="realm.realmCreated" datatype="html" xml:space="preserve">
         <source>Realm created.</source>
         <target state="translated">Utworzono domenę.</target>
         <context-group purpose="location">
@@ -11766,7 +11726,7 @@
           <context context-type="linenumber">403</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="user.failedCreateRealm" datatype="html" xml:space="preserve">
+      <trans-unit id="realm.failedCreateRealm" datatype="html" xml:space="preserve">
         <source>Failed to create realm. <x id="PH" equiv-text="message"/></source>
         <target state="translated">Nie udało się utworzyć domeny. <x id="PH" equiv-text="message"/></target>
         <context-group purpose="location">
@@ -11774,7 +11734,7 @@
           <context context-type="linenumber">410</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="user.noResolversConfigured" datatype="html" xml:space="preserve">
+      <trans-unit id="realm.noResolversConfigured" datatype="html" xml:space="preserve">
         <source>No resolvers configured.</source>
         <target state="translated">Nie skonfigurowano źródeł użytkowników.</target>
         <context-group purpose="location">
@@ -11782,7 +11742,7 @@
           <context context-type="linenumber">497</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="user.realmUpdated" datatype="html" xml:space="preserve">
+      <trans-unit id="realm.realmUpdated" datatype="html" xml:space="preserve">
         <source>Realm "<x id="PH" equiv-text="realmName"/>" updated.</source>
         <target state="translated">Zaktualizowano domenę „<x id="PH" equiv-text="realmName"/>”.</target>
         <context-group purpose="location">
@@ -11790,7 +11750,7 @@
           <context context-type="linenumber">524</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="user.failedUpdateRealm" datatype="html" xml:space="preserve">
+      <trans-unit id="realm.failedUpdateRealm" datatype="html" xml:space="preserve">
         <source>Failed to update realm. <x id="PH" equiv-text="message"/></source>
         <target state="translated">Nie udało się zaktualizować domeny. <x id="PH" equiv-text="message"/></target>
         <context-group purpose="location">
@@ -11798,7 +11758,7 @@
           <context context-type="linenumber">530</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="user.deleteRealm" datatype="html" xml:space="preserve">
+      <trans-unit id="realm.deleteRealm" datatype="html" xml:space="preserve">
         <source>Delete Realm</source>
         <target state="translated">Usuń domenę</target>
         <context-group purpose="location">
@@ -11806,7 +11766,7 @@
           <context context-type="linenumber">544</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="user.realmDeleted" datatype="html" xml:space="preserve">
+      <trans-unit id="realm.realmDeleted" datatype="html" xml:space="preserve">
         <source>Realm "<x id="PH" equiv-text="row.name"/>" deleted.</source>
         <target state="translated">Usunięto domenę „<x id="PH" equiv-text="row.name"/>”.</target>
         <context-group purpose="location">
@@ -11814,7 +11774,7 @@
           <context context-type="linenumber">556</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="user.failedDeleteRealm" datatype="html" xml:space="preserve">
+      <trans-unit id="realm.failedDeleteRealm" datatype="html" xml:space="preserve">
         <source>Failed to delete realm. <x id="PH" equiv-text="message"/></source>
         <target state="translated">Nie udało się usunąć domeny. <x id="PH" equiv-text="message"/></target>
         <context-group purpose="location">
@@ -11822,7 +11782,7 @@
           <context context-type="linenumber">561</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="user.realmSetAsDefault" datatype="html" xml:space="preserve">
+      <trans-unit id="realm.realmSetAsDefault" datatype="html" xml:space="preserve">
         <source>Realm "<x id="PH" equiv-text="row.name"/>" set as default.</source>
         <target state="translated">Ustawiono domenę „<x id="PH" equiv-text="row.name"/>” jako domyślną.</target>
         <context-group purpose="location">
@@ -11830,7 +11790,7 @@
           <context context-type="linenumber">576</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="user.failedSetDefault" datatype="html" xml:space="preserve">
+      <trans-unit id="realm.failedSetDefault" datatype="html" xml:space="preserve">
         <source>Failed to set default realm. <x id="PH" equiv-text="message"/></source>
         <target state="translated">Nie udało się ustawić domeny domyślnej. <x id="PH" equiv-text="message"/></target>
         <context-group purpose="location">

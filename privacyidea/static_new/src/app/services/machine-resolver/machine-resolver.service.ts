@@ -156,7 +156,7 @@ export class MachineResolverService implements MachineResolverServiceInterface {
   async postTestMachineResolver(resolver: MachineResolver): Promise<void> {
     if (!this.authService.actionAllowed("mresolverwrite")) {
       this.notificationService.error(
-        $localize`:@@machineResolver.youAreNotAllowedTo3:You are not allowed to update Machine Resolvers.`
+        $localize`:@@machineResolver.youAreNotAllowedTo2:You are not allowed to update Machine Resolvers.`
       );
       throw new Error("not-allowed");
     }
@@ -167,7 +167,7 @@ export class MachineResolverService implements MachineResolverServiceInterface {
       .catch((error) => {
         const message = error.error?.result?.error?.message || "";
         this.notificationService.error(
-          $localize`:@@machineResolver.failedToUpdateMachineresolver2:Failed to update machineResolver. ${message}:MESSAGE:`
+          $localize`:@@machineResolver.failedToUpdateMachineresolver:Failed to update machineResolver. ${message}:MESSAGE:`
         );
         throw new Error("post-failed");
       });
