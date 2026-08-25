@@ -13,16 +13,20 @@
 # to extract (typically right after the PR was merged) the open PR is closed and
 # its branch deleted, which keeps "at most one open i18n PR" true.
 #
-# Every run extracts the default branch, whatever ref it was started from. To
-# see what a feature branch would extract, run `npm run i18n:extract` in
+# Scheduled runs extract the default branch. While the TEMPORARY pull_request
+# trigger below is in place, a run started from a pull request extracts that
+# pull request's head instead and stops after the validation build, so the bot
+# branch and its PR are only ever touched by a scheduled run. To see what a
+# feature branch would extract, run `npm run i18n:extract` in
 # privacyidea/static_new locally.
 name: WebUI i18n extract
 on:
   schedule:
     - cron: "0 2 * * *"
   # TEMPORARY -- remove before merging. Lets the job be exercised end to end
-  # before it can run from the default branch. It still extracts the default
-  # branch, exactly like a scheduled run.
+  # before it can run from the default branch, which does not carry the
+  # extract-i18n setup yet. Such a run extracts the pull request's head and
+  # skips every step that writes to the bot branch or its PR.
   pull_request:
 
 permissions: {}
@@ -42,13 +46,14 @@ jobs:
       LOCALE_DIR: privacyidea/static_new/src/locale
       PR_BASE: ${{ github.event.repository.default_branch }}
     steps:
-      # Always the default branch, whatever ref started the run. Extracting the
-      # starting ref instead would check that branch for drift and then act on
-      # the bot PR, which tracks the default branch -- so a run from a feature
-      # branch could close a PR whose base it never looked at.
+      # The default branch, unless a pull request started the run (TEMPORARY,
+      # see above): then its head, so the extraction setup that exists only on
+      # the pull request can be exercised at all. Acting on the bot PR after
+      # extracting anything but the default branch would let such a run close a
+      # PR whose base it never looked at, so those steps are skipped there.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.event.repository.default_branch }}
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.event.repository.default_branch }}
           persist-credentials: false
       - name: Record the extracted commit
         id: base
@@ -65,7 +70,19 @@ jobs:
         run: npm ci
         working-directory: ./privacyidea/static_new
       - name: Extract and merge translation units
-        run: npm run i18n:extract
+        # A duplicate id means two different messages share one `@@id`. Only one
+        # of them survives extraction, so the localized build renders that one
+        # in the other's place -- and the target files carry a translation that
+        # no longer matches its source. Fail here rather than commit that.
+        run: |
+          set -o pipefail
+          npm run i18n:extract 2>&1 | tee "$RUNNER_TEMP/extract.log"
+          if grep -q 'Duplicate messages with id' "$RUNNER_TEMP/extract.log"; then
+            sed -n '/Duplicate messages with id/,/^extracted translations/p' "$RUNNER_TEMP/extract.log" >&2
+            echo "::error::Duplicate i18n message ids. Give each message its own @@id, or trim the"\
+                 "edge whitespace so every occurrence extracts the same source."
+            exit 1
+          fi
         working-directory: ./privacyidea/static_new
 
       - name: Detect translation drift
@@ -100,7 +117,7 @@ jobs:
 
       - name: Commit and force-push the bot branch
         id: push
-        if: steps.drift.outputs.changed == 'true'
+        if: github.event_name != 'pull_request' && steps.drift.outputs.changed == 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -126,7 +143,7 @@ jobs:
           echo "pushed=true" >> "$GITHUB_OUTPUT"
 
       - name: Open or update the i18n pull request
-        if: steps.drift.outputs.changed == 'true'
+        if: github.event_name != 'pull_request' && steps.drift.outputs.changed == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
@@ -182,7 +199,7 @@ jobs:
           fi
 
       - name: Close the i18n pull request when nothing is left to extract
-        if: steps.drift.outputs.changed == 'false'
+        if: github.event_name != 'pull_request' && steps.drift.outputs.changed == 'false'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
