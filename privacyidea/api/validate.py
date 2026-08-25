@@ -734,6 +734,7 @@ def _handle_fido2_auth(context: dict, credential_id: str):
                 "Last authentication policy check failed for token {serial}").format(
                 serial=token.get_serial())
             context[AUTH_EVENT_TYPE_KEY] = AuthEventType.NOT_AUTHORIZED
+            _record_context_reason(context, AuthEventReason.LAST_AUTH_TOO_OLD)
             return
 
         if not token.is_active():

@@ -1284,6 +1284,26 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
         finally:
             delete_smtpserver("lockoutmail")
 
+    def test_endpoint_condition_reaches_the_post_response_lockout(self):
+        # The pre-auth decision and the post-response lockout build their CAContext in two different places, so an
+        # ENDPOINT condition working in one says nothing about the other: a field missing from the post-response
+        # context does not read as "unknown" but as *absent*, which makes an IN condition never match. This asserts
+        # the lock actually happens, i.e. the endpoint reached the engine.
+        create_lockout_policy(
+            name="ca_lock_endpoint", time_window_seconds=3600,
+            counter_types_to_track=_counter_types(AuthEventType.PASSWORD_FAIL),
+            stages=[{"failure_threshold": 2, "priority": 1,
+                     "actions": [{"action_type": str(LockoutAction.LOCK_USER_TEMPORARY), "action_value": 600}]}],
+            conditions=[{"condition_type": str(ConditionType.ENDPOINT),
+                         "operator": str(ConditionOperator.IN),
+                         "value": ["/auth"]}],
+            target=LockoutTarget.USER, priority=1)
+
+        for _ in range(2):
+            self._auth("cornelius", "wrongpass")
+
+        self.assertTrue(is_user_locked(self.user))
+
     def test_endpoint_condition_confines_a_pre_auth_deny_to_one_endpoint(self):
         # An ENDPOINT condition is only worth anything if the endpoint reaches the engine on every way
         # in, so this asserts it end to end: a blanket source-IP DENY conditioned on /auth turns the

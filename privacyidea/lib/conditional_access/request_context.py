@@ -373,8 +373,11 @@ class ConditionalAccessContext:
         # Deferred import: the engine pulls in the ORM models, so importing it at module level would risk an
         # import-order cycle during app startup.
         from privacyidea.lib.conditional_access.engine import evaluate_lockout_policies
+        # Every field the engine evaluates comes off the staged event or this context, so a field left out here is
+        # not "unknown" to a condition - it reads as *absent*, which an IN condition treats as no match and a NOT_IN
+        # as a match. Omitting the endpoint silently inverted every ENDPOINT condition on this path.
         context = CAContext(user=self.principal.user or None, source_ip=self.source_ip,
-                            user_role=event.user_role)
+                            user_role=event.user_role, endpoint=event.endpoint)
         try:
             evaluation = evaluate_lockout_policies(context, event.event_type)
         except Exception as ex:

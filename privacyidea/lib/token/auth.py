@@ -748,7 +748,10 @@ def check_token_list(token_object_list: list[TokenClass], passw: str, user: User
     deciding_serials = event_serials.get(str(reduced_event), set()) & token_reasons.keys()
     deciding_reasons = ([token_reasons[serial] for serial in deciding_serials] if deciding_serials
                         else list(token_reasons.values()))
-    reduced_reason = reduce_request_reasons(AuthEventReason(reason) for reason in deciding_reasons)
+    # Passed as recorded: reduce_request_reasons coerces and drops what it cannot, and converting here instead would
+    # raise past that guard - from the generator, inside its loop - and fail the authentication over a mislabelled
+    # reason.
+    reduced_reason = reduce_request_reasons(deciding_reasons)
     if reduced_reason and reduced_event and outcome_of(reduced_event) == AuthEventOutcome.FAILURE:
         reply_dict[AUTH_EVENT_REASON_KEY] = reduced_reason
         reply_dict[AUTH_EVENT_REASON_DETAIL_KEY] = {"reasons": dict(token_reasons)}
