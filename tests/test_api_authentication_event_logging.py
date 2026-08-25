@@ -220,6 +220,23 @@ class _AuthLogContractTests(_ContractHost):
         assert_authentication_log_entry(entries[AuthEventType.PASSWORD_FAIL], user=self.user,
                                         reason=AuthEventReason.WRONG_USERSTORE_PASSWORD)
 
+    def test_challenge_response_does_not_turn_a_wrong_otp_into_a_password_failure(self):
+        # check_pin runs twice per request with challenge-response enabled: is_challenge_request asks with the whole
+        # password+OTP string, which fails the user store, and authenticate then asks again with the split password,
+        # which passes. The first, stale failure must not outlive the second - a correct password with a wrong OTP is
+        # MFA_FAIL / WRONG_OTP, and recording PASSWORD_FAIL would also feed the wrong OTP to a lockout policy
+        # counting password failures (the shipped Password Brute-Force template does).
+        self._enable_challenge_response()
+        set_policy("authlog_otppin", scope=SCOPE.AUTH, action=f"{PolicyAction.OTPPIN}=userstore")
+        try:
+            self._assert_failed(self._authenticate("test000000"))
+        finally:
+            delete_policy("authlog_otppin")
+            delete_policy("authlog_cr")
+        entries = assert_authentication_log([AuthEventType.MFA_FAIL])
+        assert_authentication_log_entry(entries[AuthEventType.MFA_FAIL], user=self.user, serials={self.serial},
+                                        reason=AuthEventReason.WRONG_OTP)
+
     def test_pin_fail(self):
         # Wrong token PIN (otppin=token, the default) -> PIN_FAIL
         self._assert_failed(self._authenticate("wrongpin755224"))

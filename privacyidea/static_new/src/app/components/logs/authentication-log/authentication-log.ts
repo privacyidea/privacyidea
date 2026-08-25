@@ -243,8 +243,7 @@ const FILTER_TOOLTIPS: Record<string, string> = {
   serial: $localize`Filter by this serial`,
   transaction_id: $localize`Filter by this transaction ID`,
   attempt_id: $localize`Filter by this attempt ID`,
-  endpoint: $localize`Filter by this endpoint`,
-  reason: $localize`Filter by this reason`
+  endpoint: $localize`Filter by this endpoint`
 };
 
 // Columns whose value is clipped instead of widening the table: the full value stays available in the truncation

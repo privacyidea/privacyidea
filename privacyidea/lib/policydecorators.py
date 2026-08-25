@@ -573,9 +573,20 @@ def auth_otppin(wrapped_function, *args, **kwds):
             if list(otppin_dict)[0] == ACTIONVALUE.USERSTORE:
                 authenticated_user = user.check_password(pin)
 
-                if authenticated_user is None and token:
-                    token.auth_details[AUTH_EVENT_TYPE_KEY] = AuthEventType.PASSWORD_FAIL
-                    token.auth_details[AUTH_EVENT_REASON_KEY] = AuthEventReason.WRONG_USERSTORE_PASSWORD
+                if token:
+                    if authenticated_user is None:
+                        token.auth_details[AUTH_EVENT_TYPE_KEY] = AuthEventType.PASSWORD_FAIL
+                        token.auth_details[AUTH_EVENT_REASON_KEY] = AuthEventReason.WRONG_USERSTORE_PASSWORD
+                    else:
+                        # This password is right, so a failure stamped by an earlier check of the same token in this
+                        # request no longer describes the outcome and must not outlive it. check_pin runs more than
+                        # once per request: is_challenge_request asks with the whole ``password+OTP`` string, which
+                        # fails the user store, and ``authenticate`` then asks again with the split password, which
+                        # passes. Without this, a correct password with a wrong OTP was recorded as
+                        # PASSWORD_FAIL / WRONG_USERSTORE_PASSWORD - and a lockout policy counting PASSWORD_FAIL
+                        # (the shipped Password Brute-Force template) counted the wrong OTP against it.
+                        token.auth_details.pop(AUTH_EVENT_TYPE_KEY, None)
+                        token.auth_details.pop(AUTH_EVENT_REASON_KEY, None)
                 return authenticated_user is not None
 
     # Call and return the original check_pin function

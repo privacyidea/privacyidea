@@ -129,11 +129,13 @@ export class ConditionalAccessCell {
   }
 
   // The toggle carries no visible text, so its accessible name has to say both what it does and which outcome it
-  // belongs to - there is one button per outcome, and "expand" alone would leave them indistinguishable.
+  // belongs to. One outcome is one *action*, so a policy that ran two of them (the shipped brute-force template locks
+  // and mails) shows two rows under one name: the action is what tells those two buttons apart, and naming only the
+  // policy would leave them indistinguishable - which is what this label exists to prevent.
   toggleLabel(outcome: OutcomeView): string {
     return this.isExpanded(outcome.key)
-      ? $localize`Hide the details of ${outcome.policy}`
-      : $localize`Show the details of ${outcome.policy}`;
+      ? $localize`Hide the details of ${outcome.action} by ${outcome.policy}`
+      : $localize`Show the details of ${outcome.action} by ${outcome.policy}`;
   }
 
   // The expiry an action recorded in its `info`, or undefined when it created no timed restriction. Validated here

@@ -197,16 +197,29 @@ describe("ConditionalAccessCell", () => {
     component.toggle("12");
     expect(component.isExpanded("12")).toBe(true);
 
-    fixture.componentRef.setInput("outcomes", [{ id: 99, action_type: "BLOCK_IP" }]);
+    fixture.componentRef.setInput("outcomes", [{ id: 99, action_type: "BLOCK_IP_TEMPORARY" }]);
     expect(component.isExpanded("12")).toBe(false);
   });
 
-  it("names the expand toggle after the policy it belongs to, in both states", () => {
+  it("names the expand toggle after the action and its policy, in both states", () => {
     // One button per outcome and no visible text on it, so the accessible name has to say which outcome it opens.
     const [view] = viewsFor([{ id: 12, policy_name: "Brute Force PIN Lockout", action_type: "LOCK_USER_TEMPORARY" }]);
-    expect(component.toggleLabel(view)).toBe("Show the details of Brute Force PIN Lockout");
+    expect(component.toggleLabel(view)).toBe("Show the details of LOCK_USER_TEMPORARY by Brute Force PIN Lockout");
     component.toggle(view.key);
-    expect(component.toggleLabel(view)).toBe("Hide the details of Brute Force PIN Lockout");
+    expect(component.toggleLabel(view)).toBe("Hide the details of LOCK_USER_TEMPORARY by Brute Force PIN Lockout");
+  });
+
+  it("tells two actions of one policy apart, since the visible line names only the policy", () => {
+    // A policy that ran two actions renders two rows under one name (the shipped brute-force template locks and
+    // mails), so the action is the only thing distinguishing their toggles.
+    const views = viewsFor([
+      { id: 1, policy_name: "Brute Force PIN Lockout", action_type: "LOCK_USER_TEMPORARY" },
+      { id: 2, policy_name: "Brute Force PIN Lockout", action_type: "EMAIL_ADMIN" }
+    ]);
+    const labels = views.map((view) => component.toggleLabel(view));
+    expect(new Set(labels).size).toBe(2);
+    expect(labels[0]).toContain("LOCK_USER_TEMPORARY");
+    expect(labels[1]).toContain("EMAIL_ADMIN");
   });
 
   it("renders one line per outcome and reveals the rest only on the toggle", () => {
