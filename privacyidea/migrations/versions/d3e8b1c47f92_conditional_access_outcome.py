@@ -22,8 +22,8 @@ from alembic import op
 from sqlalchemy.dialects import mysql
 from sqlalchemy.exc import OperationalError, ProgrammingError
 
-# Same type the model uses: BigInteger everywhere, but INTEGER on SQLite so the primary key becomes
-# "INTEGER PRIMARY KEY" and SQLite auto-assigns it via rowid. auth_log_id uses it too, so it matches the
+# Same type the model uses: BigInteger everywhere, but INTEGER on SQLite, so the primary key becomes
+# "INTEGER PRIMARY KEY" and SQLite auto-assigns it via rowid; auth_log_id uses it too, matching the
 # authentication_log.id column it references.
 from privacyidea.models.utils import BigIntegerType
 

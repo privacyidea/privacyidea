@@ -43,9 +43,9 @@ from privacyidea.models import Challenge, db
 from .authlog_utils import AuthLogTestCase, assert_authentication_log, assert_authentication_log_entry
 
 
-# For the type checker only, the mixin is a subclass of its cooperating fixture, so that self.serial, self.assertEqual,
-# self._post, etc. resolve. At runtime the base is object: the mixin must NOT be a TestCase, or it would be collected
-# and run with its abstract hooks raising NotImplementedError.
+# The type checker treats _ContractHost as the fixture class, so self.serial, self.assertEqual, self._post, etc.
+# resolve; at runtime the base is plain object, because a TestCase base here would be collected and run, raising
+# NotImplementedError from the abstract hooks.
 if TYPE_CHECKING:
     _ContractHost = AuthLogTestCase
 else:
@@ -392,9 +392,8 @@ class _AuthLogContractTests(_ContractHost):
                                         transaction_id=transaction_id)
 
     # --- attempt_id: grouping the rows of one logical authentication attempt ---
-    # Note: single-flow grouping (trigger+answer, multichallenge, ...) is asserted automatically by
-    # assert_authentication_log (same_attempt=True) in every flow test above. These two cover what that does not:
-    # a genuinely multi-attempt log, and a wrong-then-right retry on one challenge.
+    # Single-flow grouping is already asserted by assert_authentication_log(same_attempt=True) in every test above;
+    # these two additionally cover a genuinely multi-attempt log and a wrong-then-right retry on one challenge.
 
     def test_attempt_id_distinct_for_separate_attempts(self):
         # Two independent single-request logins are two attempts and get two different attempt_ids.
@@ -405,9 +404,9 @@ class _AuthLogContractTests(_ContractHost):
         self.assertNotEqual(first.attempt_id, second.attempt_id)
 
     def test_attempt_id_groups_challenge_retry(self):
-        # A wrong answer followed by the correct one on the same challenge is still one attempt: the trigger, the
-        # wrong answer and the success share one attempt_id (a later success does not start a new attempt).
-        # assert_authentication_log (same_attempt default) asserts the shared id across all three rows.
+        # A wrong answer followed by the correct one on the same challenge is still one attempt: trigger, wrong answer
+        # and success share one attempt_id, since a later success does not start a new attempt (asserted here by the
+        # default same_attempt check).
         self._enable_challenge_response()
         try:
             transaction_id = self._trigger_challenge()
@@ -421,10 +420,9 @@ class _AuthLogContractTests(_ContractHost):
                                   transaction_id=transaction_id)
 
     def test_attempt_id_is_carried_by_the_challenge(self):
-        # The grouping lives in the triggered challenge's own data, not in the authentication log: with the trigger row
-        # deleted, the answer still joins the attempt that challenge was triggered for. That is also what keeps a
-        # *successful* answer grouped at all - the token logic deletes the challenge it answered, so the attempt has to
-        # be recovered before that.
+        # The grouping lives in the triggered challenge's own data, not the authentication log, so the answer still
+        # joins its attempt even after the trigger row is deleted; a successful answer needs this too, since the token
+        # logic deletes the challenge it answers.
         self._enable_challenge_response()
         try:
             transaction_id = self._trigger_challenge()
@@ -441,11 +439,9 @@ class _AuthLogContractTests(_ContractHost):
         self.assertEqual(attempt_id, success[AuthEventType.LOGIN_SUCCESS].attempt_id)
 
     def test_uncontinuable_transaction_is_logged(self):
-        # A request naming a transaction whose challenge records no attempt cannot be grouped with it and starts its
-        # own, saying so. Benign here (the transaction never existed), but this line is the only signal if the
-        # resolution order in before_request is ever broken, so assert it is actually emitted. The converse - a live
-        # challenge staying silent - is covered by test_attempt_id_is_carried_by_the_challenge: the ids match there,
-        # which they could not if a new attempt had been started.
+        # A transaction whose challenge records no attempt starts a new attempt and logs a debug line saying so, the
+        # only signal if before_request's resolution order ever breaks; the converse (a live challenge staying silent)
+        # is covered by test_attempt_id_is_carried_by_the_challenge.
         with self.assertLogs("privacyidea.api.lib.utils", level="DEBUG") as captured:
             self._assert_failed(self._authenticate("755224", transaction_id="9999999999999999999"))
         self.assertTrue(any("has no challenge recording an authentication attempt" in line
@@ -587,9 +583,9 @@ class _AuthLogContractTests(_ContractHost):
         return response.json["detail"]
 
     def test_questionnaire_multichallenge_correlates_by_attempt_id(self):
-        # Questionnaire with question_number=2: PIN triggers question 1 (first_transaction_id), answering question 1
-        # triggers question 2 (second_transaction_id), answering question 2 is a LOGIN_SUCCESS. The three rows span two
-        # transaction_ids but are one attempt, so they share one attempt_id.
+        # Questionnaire with question_number=2: the PIN triggers question 1 (first_transaction_id), answering it
+        # triggers question 2 (second_transaction_id), and answering that is LOGIN_SUCCESS; the three rows span two
+        # transaction_ids but share one attempt_id.
         questions_and_answers = {"Question1": "Answer1", "Question2": "Answer2", "Question3": "Answer3",
                                  "Question4": "Answer4", "Question5": "Answer5"}
         questionnaire_serial = "AUTHLOG_QUESTIONNAIRE"
@@ -628,10 +624,9 @@ class _AuthLogContractTests(_ContractHost):
                                         serials={questionnaire_serial}, transaction_id=second_transaction_id)
 
     def test_foureyes_multichallenge_correlates_by_attempt_id(self):
-        # 4-eyes with realm1 count=2: PIN triggers the initial challenge (first_transaction_id), the first admin
-        # authenticates which satisfies one of two required tokens and creates a new challenge
-        # (second_transaction_id), the second admin authenticates to satisfy the second required token and completes
-        # the flow (LOGIN_SUCCESS). The rows span two transaction_ids but share one attempt_id.
+        # 4-eyes with realm1 count=2: the PIN triggers the initial challenge (first_transaction_id), the first admin's
+        # auth satisfies one of two tokens and creates a new challenge (second_transaction_id), and the second admin's
+        # auth completes the flow (LOGIN_SUCCESS); the rows span two transaction_ids but share one attempt_id.
         required_realms = {"realm1": {"selected": True, "count": 2}}
         foureyes_serial = "AUTHLOG_FOUREYES"
         first_admin_serial = "AUTHLOG_FIRST_ADMIN"
@@ -756,9 +751,9 @@ class ValidateCheckAuthLogTestCase(_AuthLogContractTests, AuthLogTestCase):
     # --- Paths that diverge from /auth in return type / error code ---
 
     def test_revoked_token_logs_no_usable_token(self):
-        # All of the user's tokens are revoked: check_token_list raises TOKEN_LOCKED (ERR1007) before it can classify
-        # the request. The API catches that, records NO_USABLE_TOKEN for the log, and re-raises so the error response
-        # is unchanged.
+        # All of the user's tokens are revoked, so check_token_list raises TOKEN_LOCKED (ERR1007) before it can classify
+        # the request. The API catches that, records NO_USABLE_TOKEN for the log, and re-raises so the error response is
+        # unchanged.
         revoke_token(self.serial)
         res = self._post('/validate/check', {"user": self.username, "pass": f"{self.pin}755224"})
         self.assertEqual(400, res.status_code, res.json)
@@ -793,9 +788,9 @@ class ValidateCheckAuthLogTestCase(_AuthLogContractTests, AuthLogTestCase):
     # --- Enroll via multi challenge ---
 
     def test_enroll_via_multichallenge_trigger_and_completion(self):
-        # The user authenticates with the existing token, which triggers an enrollment challenge for a token type the
-        # user does not have yet (totp) in the post-policy -> ENROLLMENT_TRIGGERED. Answering with the freshly enrolled
-        # token's OTP completes the login -> LOGIN_SUCCESS. Both rows are correlated by the enrollment transaction_id.
+        # Authenticating with the existing token triggers a post-policy enrollment challenge for a token type (totp) the
+        # user doesn't have yet -> ENROLLMENT_TRIGGERED; answering with the freshly enrolled token's OTP completes the
+        # login -> LOGIN_SUCCESS, and both rows are correlated by the enrollment transaction_id.
         set_policy("authlog_enroll", scope=SCOPE.AUTH,
                    action=f"{PolicyAction.ENROLL_VIA_MULTICHALLENGE}=totp")
         try:
@@ -867,9 +862,9 @@ class ValidateCheckAuthLogTestCase(_AuthLogContractTests, AuthLogTestCase):
         remove_token(enrolled_serial)  # still exists because the enrollment was not cancelled
 
     def test_enroll_triggered_via_challenge_response(self):
-        # Answering an HOTP challenge response correctly triggers a TOTP enrollment via post-policy. The enrollment
-        # step is reclassified from LOGIN_SUCCESS to ENROLLMENT_TRIGGERED (the reclassify call updates
-        # event_type/serial/transaction_id). All rows share one attempt_id across the two transaction_ids.
+        # Answering the HOTP challenge correctly triggers a TOTP enrollment via post-policy, which reclassifies that row
+        # from LOGIN_SUCCESS to ENROLLMENT_TRIGGERED (updating its event_type/serial/transaction_id); all rows share one
+        # attempt_id across the two transaction_ids.
         self._enable_challenge_response()
         set_policy("authlog_enroll", scope=SCOPE.AUTH, action=f"{PolicyAction.ENROLL_VIA_MULTICHALLENGE}=totp")
         enrolled_serial = None
@@ -1086,8 +1081,8 @@ class AuthEndpointAuthLogTestCase(_AuthLogContractTests, AuthLogTestCase):
             delete_realm("adminrealm")
 
     def test_revoked_token_logs_no_usable_token(self):
-        # All of the user's tokens are revoked: check_user_pass raises TOKEN_LOCKED before it can classify the
-        # request. /auth keeps its generic "Wrong credentials" (4031) response, but the log must still record
+        # All of the user's tokens are revoked, so check_user_pass raises TOKEN_LOCKED before it can classify the
+        # request. /auth keeps its generic "Wrong credentials" (4031) response, but the log still records
         # NO_USABLE_TOKEN.
         revoke_token(self.serial)
         self._enable_privacyidea_login()
@@ -1216,9 +1211,9 @@ class InitializeAuthLogTestCase(AuthLogTestCase):
         assert_authentication_log_entry(entries[AuthEventType.NO_USABLE_TOKEN])
 
     def test_initialize_without_relying_party_id_logs_challenge_trigger_fail(self):
-        # No relying-party-id policy, so the server cannot build the challenge at all. The fault is the server's, not a
-        # client credential failure, which is why this is CHALLENGE_TRIGGER_FAIL and not MFA_FAIL - and why it is
-        # deliberately absent from the shipped rate-limit templates, so a config gap cannot get clients blocked.
+        # With no relying-party-id policy the server can't build the challenge at all; the fault is the server's, not a
+        # client credential failure, so this is CHALLENGE_TRIGGER_FAIL, not MFA_FAIL, and it's deliberately absent from
+        # the shipped rate-limit templates so a server config gap can't get clients blocked.
         response = self._initialize({"type": "passkey"})
         self.assertEqual(403, response.status_code, response.json)
         entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGER_FAIL])

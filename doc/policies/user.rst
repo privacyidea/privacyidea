@@ -210,6 +210,17 @@ view older entries.
 
 Can be something like 10m (10 minutes), 10h (10 hours) or 10d (ten days).
 
+authentication_log_read
+~~~~~~~~~~~~~~~~~~~~~~~
+
+type: ``bool``
+
+The user is allowed to read their own entries from the
+:ref:`authentication_log`. The columns identifying the user are hidden, since
+every entry is the user's own.
+
+.. versionadded:: 3.14
+
 hide_audit_columns
 ~~~~~~~~~~~~~~~~~~
 
@@ -221,18 +232,6 @@ For example a value ``sig_check log_level`` will hide these two columns.
 
 The list of available columns can be checked by examining the response of the
 request to the :ref:`rest_audit`.
-
-authentication_log_read
-~~~~~~~~~~~~~~~~~~~~~~~
-
-type: ``bool``
-
-This action allows the user to read their own entries of the authentication
-log, i.e. how their own authentication requests were decided.
-
-To learn more about the authentication log, see :ref:`authentication_log`.
-
-.. versionadded:: 3.14
 
 updateuser
 ~~~~~~~~~~

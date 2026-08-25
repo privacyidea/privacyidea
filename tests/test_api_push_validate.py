@@ -909,7 +909,7 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
         assert_authentication_log_entry(auth_log_entries.all[0], user=user, serials={self.serial_push},
                                         transaction_id=transaction_id)
 
-        # We do poll only, so we need to poll (polling does not create an auth-log entry)
+        # Poll for the challenge; polling by itself does not create an auth-log entry.
         timestamp = datetime.datetime.now(tz=datetime.timezone.utc).isoformat()
         sign_string = f"{self.serial_push}|{timestamp}"
         sig = self.smartphone_private_key.sign(sign_string.encode('utf8'),
@@ -1731,14 +1731,11 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
         auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED,
                                                   AuthEventType.CHALLENGE_ANSWERED_OUT_OF_BAND,
                                                   AuthEventType.LOGIN_SUCCESS])
-        # All three rows correlate to the attempt via the same transaction_id: the PIN trigger and the
-        # /validate/check collection echo the request parameter, the /ttype/push confirm recovers it from the
-        # answered challenge.
+        # All three rows share the same transaction_id: the trigger and /validate/check echo the request
+        # parameter, while /ttype/push recovers it from the answered challenge.
         assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_TRIGGERED],
                                         user=user, serials={self.serial_push}, transaction_id=transaction_id)
-        # CHALLENGE_ANSWERED_OK occurs twice, so assert each occurrence by position:
-        # .all[1] is the smartphone confirm at /ttype/push, .all[2] is the client collecting the result at
-        # /validate/check. Both carry the user.
+        # Each event type here occurs once, so indexing auth_log_entries by type returns that row directly.
         assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_ANSWERED_OUT_OF_BAND], user=user,
                                         serials={self.serial_push},
                                         transaction_id=transaction_id)

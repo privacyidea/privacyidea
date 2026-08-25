@@ -35,8 +35,8 @@ describe("ConditionalAccessCell", () => {
     fixture = TestBed.createComponent(ConditionalAccessCell);
     component = fixture.componentInstance;
     fixture.componentRef.setInput("entryId", 42);
-    // The policies these tests link to, with the id each has *now*. An outcome stores only the policy's name, so this
-    // map is what makes a link possible - and only for a name that still exists (see the deleted-policy test).
+    // The policies these tests link to, keyed by each one's current id: an outcome stores only the policy's name, so
+    // this map is what makes a link possible, and only for a name that still exists (see the deleted-policy test).
     fixture.componentRef.setInput(
       "policyIdsByName",
       new Map([
@@ -116,8 +116,8 @@ describe("ConditionalAccessCell", () => {
   });
 
   it("identifies an unnamed stage by its threshold", () => {
-    // stage_name is the one nullable identifier of a stage, so the threshold has to be shown: it is what an admin
-    // recognizes the stage by when they never named one.
+    // stage_name is the one nullable identifier of a stage, so the threshold has to be shown as well: it is what an
+    // admin recognizes the stage by when it has no name.
     const [view] = viewsFor([
       { policy_name: "Brute Force PIN Lockout", action_type: "LOCK_USER_TEMPORARY", threshold: 5, dry_run: false }
     ]);
@@ -126,8 +126,8 @@ describe("ConditionalAccessCell", () => {
   });
 
   it("takes the expiry out of info, and only a usable one", () => {
-    // Shown in the details, because once the lockout/block state row has lapsed this is the only record of how long the
-    // restriction lasted. It is validated here and not in the template: `info` is free-form JSON and the date pipe
+    // Shown in the details because once the lockout/block state row lapses, this is the only record of how long the
+    // restriction lasted; validated here rather than in the template because `info` is free-form JSON and the date pipe
     // throws on a value it cannot parse.
     const views = viewsFor([
       { action_type: "LOCK_USER_TEMPORARY", info: { expires_at: "2026-08-03T09:10:00+00:00" } },
@@ -164,8 +164,8 @@ describe("ConditionalAccessCell", () => {
   });
 
   it("omits every policy link for an admin who may not read the policies", () => {
-    // Then the caller passes no policies at all, so the column degrades to names without links rather than to links
-    // that land on a page the admin cannot open.
+    // If the caller passes no policies at all, the column degrades to names without links rather than to links that
+    // land on a page the admin cannot open.
     fixture.componentRef.setInput("policyIdsByName", new Map<string, number>());
     const [view] = viewsFor([{ policy_name: "Brute force", action_type: "LOCK_USER_TEMPORARY" }]);
     expect(view.policy).toBe("Brute force");
@@ -173,7 +173,7 @@ describe("ConditionalAccessCell", () => {
   });
 
   it("is empty for a request conditional access did nothing to, and for anything that is not a list", () => {
-    // The table's skeleton rows set every column to "", which the nullish default does not catch - a list column must
+    // The table's skeleton rows set every column to "", which a nullish default would not catch, so a list column must
     // render nothing there instead of throwing.
     expect(viewsFor([])).toEqual([]);
     expect(viewsFor(null)).toEqual([]);

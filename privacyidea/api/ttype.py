@@ -164,11 +164,10 @@ def token(ttype=None):
         if len(policies) >= 1:
             code_to_phone_message = list(policies)[0]
         request.all_data[PushAction.PUSH_CODE_TO_PHONE_MESSAGE] = code_to_phone_message
-        # The conditional-access pre-check for push runs inside the push token's
-        # _api_endpoint_post (auth path only), not here, so enrollment and firebase
-        # token updates are never gated by a lockout.
 
     try:
+        # This dispatcher carries no conditional-access gate: push checks itself inside _api_endpoint_post, and only on
+        # the signed challenge answer, so enrollment and firebase-token updates are never refused by a lockout.
         res = token_class.api_endpoint(request, g)
     except Exception as e:
         if Match.action_only(
@@ -189,9 +188,8 @@ def token(ttype=None):
     # Log push authentication
     push_auth_event = getattr(g, PUSH_AUTH_EVENT, None)
     if push_auth_event:
-        # The smartphone's request carries only the serial; scope the auth-log row
-        # and the conditional-access engine to the resolved token owner (the param
-        # user is empty for a push answer) so per-user failure counts add up.
+        # The smartphone's request carries only the serial, so scope the auth-log row and the conditional-access engine
+        # to the resolved token owner (the param user is empty for a push answer) so per-user failure counts add up.
         owner = _push_token_owner(serial)
         log_authentication(push_auth_event, request, user=owner, serial=serial,
                            transaction_id=getattr(g, PUSH_AUTH_TRANSACTION_ID, None),

@@ -84,7 +84,7 @@ describe("ConditionalAccessActionItemComponent", () => {
   });
 
   it("should describe every action type", () => {
-    for (const type of ["LOCK_USER_TEMPORARY", "LOCK_USER_PERMANENT", "BLOCK_IP_TEMPORARY", "ALLOW", "DENY", "EMAIL_USER"] as const) {
+    for (const type of ["LOCK_USER_TEMPORARY", "LOCK_USER_PERMANENT", "BLOCK_IP_TEMPORARY", "DENY", "EMAIL_USER"] as const) {
       setAction({ action_type: type, action_value: null });
       expect(component.actionDescription().length).toBeGreaterThan(0);
     }
@@ -95,7 +95,7 @@ describe("ConditionalAccessActionItemComponent", () => {
     expect(component.valueMode()).toBe("duration");
     setAction({ action_type: "EMAIL_ADMIN", action_value: {} });
     expect(component.valueMode()).toBe("email");
-    setAction({ action_type: "ALLOW", action_value: null });
+    setAction({ action_type: "DENY", action_value: null });
     expect(component.valueMode()).toBe("none");
   });
 
@@ -107,8 +107,8 @@ describe("ConditionalAccessActionItemComponent", () => {
         ConditionalAccessPolicyService
       ) as unknown as MockConditionalAccessPolicyService;
       policyServiceMock.actionsByTarget.set({
-        user: ["LOCK_USER_TEMPORARY", "LOCK_USER_PERMANENT", "EMAIL_ADMIN", "EMAIL_USER", "ALLOW", "DENY"],
-        source_ip: ["BLOCK_IP_TEMPORARY", "BLOCK_IP_PERMANENT", "EMAIL_ADMIN", "ALLOW", "DENY"]
+        user: ["LOCK_USER_TEMPORARY", "LOCK_USER_PERMANENT", "EMAIL_ADMIN", "EMAIL_USER", "DENY"],
+        source_ip: ["BLOCK_IP_TEMPORARY", "BLOCK_IP_PERMANENT", "EMAIL_ADMIN", "DENY"]
       });
     });
 
@@ -254,8 +254,8 @@ describe("ConditionalAccessActionItemComponent", () => {
         ConditionalAccessPolicyService
       ) as unknown as MockConditionalAccessPolicyService;
       policyServiceMock.actionsByTarget.set({
-        user: ["LOCK_USER_TEMPORARY", "LOCK_USER_PERMANENT", "EMAIL_ADMIN", "EMAIL_USER", "ALLOW", "DENY"],
-        source_ip: ["BLOCK_IP_TEMPORARY", "BLOCK_IP_PERMANENT", "EMAIL_ADMIN", "ALLOW", "DENY"]
+        user: ["LOCK_USER_TEMPORARY", "LOCK_USER_PERMANENT", "EMAIL_ADMIN", "EMAIL_USER", "DENY"],
+        source_ip: ["BLOCK_IP_TEMPORARY", "BLOCK_IP_PERMANENT", "EMAIL_ADMIN", "DENY"]
       });
       setRights([]);
     });
@@ -271,8 +271,8 @@ describe("ConditionalAccessActionItemComponent", () => {
     it("keeps one the policy already carries valid for its target", () => {
       setAction({ action_type: "EMAIL_ADMIN", action_value: { smtp_identifier: "primary" } });
       expect(component.allowedActionTypes()).toContain("EMAIL_ADMIN");
-      // The action is still valid for a user-targeted policy: it is the SMTP config that is out of
-      // reach, not the action type, so nothing is flagged as target-incompatible.
+      // The action is still valid for a user-targeted policy: it is the SMTP config that is out of reach, not the
+      // action type, so nothing is flagged as target-incompatible.
       expect(component.isActionAllowedForTarget()).toBe(true);
     });
   });

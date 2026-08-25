@@ -32,28 +32,27 @@ import {
   LockoutPolicyCondition
 } from "@services/conditional-access/conditional-access-policy.service";
 
-// The wording for one condition type that the API cannot supply: what its values are called, how its
-// operator control is announced, and what the selection does under each operator. Keyed by type and
-// looked up per rendered row - the rows themselves come from /conditiontypes (see rows), so a type
-// added to the backend registry appears without a WebUI change and gets the generic wording from
+// Hand-written wording for one condition type that the API does not supply -- its value label,
+// operator announcement, and per-operator hint -- keyed by type and looked up per row; rows
+// themselves come from /conditiontypes (see rows), so a newly registered type still renders using
 // genericCopy() until an entry is written here.
 interface ConditionRowCopy {
   // Label of the multi-select, naming what is being picked rather than repeating the condition type.
   valuesLabel: string;
-  // Names the operator control for assistive technology: the leading label is a plain span and is
-  // not otherwise tied to the toggle group, so without this a screen-reader user hears "is one of"
-  // with no indication of which row it belongs to.
+  // Names the operator control for assistive technology; the leading label is a plain span not tied
+  // to the toggle group, so without this a screen-reader announces "is one of" with no indication
+  // of which row it belongs to.
   operatorAriaLabel: string;
-  // What the selection does, per operator: the same list means "only these" under IN and "everything
-  // but these" under NOT_IN, so the hint follows the toggle rather than restating the label. Always
-  // shown - what an empty selection means is said once for both rows in the section text above.
+  // What the selection does per operator: the same list means "only these" under IN and "everything
+  // but these" under NOT_IN, so the hint follows the toggle instead of restating the label; always
+  // shown, since what an empty selection means is said once in the section text above.
   hints: Record<KnownConditionOperator, string>;
-  // Names the clear button. ClearButtonComponent uses this for both the tooltip and the aria-label, so
-  // it cannot be dropped without leaving the button nameless (its mat-icon is aria-hidden). Per row
-  // rather than a shared "Clear", so the buttons on the page are told apart out of context.
+  // Names the clear button for both its tooltip and aria-label (ClearButtonComponent uses this for
+  // both, and its mat-icon is aria-hidden); kept per row rather than a shared "Clear" so the buttons
+  // are distinguishable out of context.
   clearToolTip: string;
-  // Friendly labels for a closed vocabulary. Absent for realms: those are admin-chosen names and
-  // must be shown verbatim, or the admin cannot match what they see here against their realm config.
+  // Friendly labels for a closed vocabulary; absent for realms, whose admin-chosen names must be
+  // shown verbatim so the admin can match them against their realm config.
   valueLabels?: Record<string, string>;
 }
 
@@ -100,16 +99,15 @@ const CONDITION_COPY: Partial<Record<KnownConditionType, ConditionRowCopy>> = {
   }
 };
 
-// The hand-written copy for a served condition type, or undefined for one this WebUI has none for.
-// The lookup is by plain string because the served type is one; keying the table on
-// KnownConditionType is what still catches a mistyped key in CONDITION_COPY itself.
+// Hand-written copy for a served condition type, or undefined if this WebUI has none; the lookup
+// uses a plain string because the served type is one, while CONDITION_COPY itself is keyed on
+// KnownConditionType so a mistyped key there is still caught.
 function conditionCopy(type: string): ConditionRowCopy | undefined {
   return (CONDITION_COPY as Partial<Record<string, ConditionRowCopy>>)[type];
 }
 
-// Wording for a condition type this WebUI does not know yet, derived from the label the backend
-// serves for it. Plainer than the hand-written copy, but it makes a new registry entry usable rather
-// than absent.
+// Wording for a condition type this WebUI has no hand-written copy for, derived from the backend's
+// label; plainer, but it makes a new registry entry usable rather than absent.
 function genericCopy(label: string): ConditionRowCopy {
   return {
     valuesLabel: label,
@@ -122,21 +120,21 @@ function genericCopy(label: string): ConditionRowCopy {
   };
 }
 
-// Fallback operator labels, used until /conditiontypes has loaded. They mirror the backend's own
-// labels (OPERATORS in privacyidea.lib.conditional_access.conditions) so nothing visibly changes
-// once the real ones arrive.
+// Fallback operator labels used until /conditiontypes has loaded, mirroring the backend's own labels
+// (OPERATORS in privacyidea.lib.conditional_access.conditions) so nothing visibly changes once the
+// real ones arrive.
 const OPERATOR_FALLBACK: ConditionOperatorMeta[] = [
   { name: "IN", label: $localize`is one of` },
   { name: "NOT_IN", label: $localize`is not one of` }
 ];
 
-// Which operator a row starts on before anything is picked. The registry's first operator is the
+// Operator a row starts on before anything is picked: the registry's first operator is the
 // membership one, and restricting reads as the less surprising default than exempting.
 const DEFAULT_OPERATOR: KnownConditionOperator = "IN";
 
-// Shown when the selected operator is one this WebUI has no wording for - a backend registry that has
-// grown an operator the client does not know. Says what the selection is for without claiming a
-// direction that would be wrong for half the possible operators.
+// Shown when the selected operator is one this WebUI has no wording for, i.e. the backend registry
+// has grown an operator the client does not know; states what the selection is for without claiming
+// a direction that would be wrong for half the possible operators.
 const UNKNOWN_OPERATOR_HINT = $localize`The values this condition compares against.`;
 
 // The selection of a row that carries no condition (see selectedValues).
@@ -155,14 +153,12 @@ export class ConditionalAccessConditionsComponent {
   readonly conditions = input.required<LockoutPolicyCondition[]>();
   readonly conditionsChange = output<LockoutPolicyCondition[]>();
 
-  // Built from /conditiontypes rather than a local list, so a type added to the backend registry shows
-  // up here without a WebUI change - which is what that registry is designed for. Two rules decide
-  // what gets a row:
-  // * a type whose values cannot be enumerated (choices null) is skipped: a multi-select cannot
-  //   represent an open value space, and one offering nothing is worse than none.
+  // Rows come from /conditiontypes rather than a local list, so a type added to the backend registry
+  // appears here without a WebUI change. Two rules decide what gets a row:
+  // * a type whose values cannot be enumerated (choices null) is skipped, since a multi-select
+  //   cannot represent an open value space.
   // * a type the policy already carries always gets a row, even if the endpoint has not answered yet
-  //   or no longer offers that type, so a stored condition is never invisible while still being saved
-  //   with the policy.
+  //   or no longer offers that type, so a stored condition is never invisible.
   readonly rows = computed<ConditionRowSpec[]>(() => {
     const meta = this.policyService.conditionTypes();
     const offered = Object.keys(meta).filter((type) => meta[type].choices !== null);
@@ -174,14 +170,14 @@ export class ConditionalAccessConditionsComponent {
     });
   });
 
-  // The operator picked for a type that currently carries no condition. Without this the choice
-  // would be lost: a row with nothing selected emits no condition at all, so there is nowhere in the
-  // policy to keep it, and picking "is not one of" before picking values would silently snap back.
-  // Only ever consulted as a fallback (see selectedOperator).
+  // Operator picked for a type that currently carries no condition -- since a row with no selection
+  // emits no condition, this is the only place the choice can live, so without it picking "is not
+  // one of" before picking values would silently snap back; consulted only as selectedOperator's
+  // fallback.
   private readonly pendingOperators = signal<Record<string, string>>({});
 
-  // Values referenced by a condition that no longer exist, by type - the message goes under the
-  // control that carries them.
+  // Values referenced by a condition that no longer exist, keyed by type so the message can be
+  // placed under the control that carries them.
   private readonly staleByType = computed<Record<string, string[]>>(() =>
     Object.fromEntries(
       this.policyService.staleConditionValues(this.conditions()).map((stale) => [stale.condition_type, stale.values])
@@ -192,37 +188,34 @@ export class ConditionalAccessConditionsComponent {
     return this.conditions().find((condition) => condition.condition_type === type);
   }
 
-  // Each of a row's two controls has a selected*/*Options pair: what the policy currently says, and
-  // what the admin may pick. The selected* accessors read the policy, the *Options ones the backend
-  // vocabulary, so the two halves never share a source.
+  // --- a row's two controls: selected* reads the policy, *Options reads the backend vocabulary ---
+  // The two halves never share a source, so what the policy says and what the admin may pick stay distinct.
 
-  // The empty case is one shared array, not a fresh one per call: this feeds a mat-select's [value],
-  // whose setter compares by reference and marks the view dirty, scheduling another change-detection
-  // pass - which would build another array, for a loop that never settles (see editConditions in the
-  // edit page, and what an unsettled app does to an open overlay's position).
+  // The empty case returns one shared array, not a fresh one per call: this feeds a mat-select's
+  // [value], whose setter compares by reference and marks the view dirty on any new array, which
+  // would never let change detection settle (see editConditions in the edit page).
   selectedValues(type: string): string[] {
     return this.conditionFor(type)?.value ?? NO_VALUES;
   }
 
-  // The stored condition wins over the remembered choice: were it the other way round, loading a
-  // policy into an instance where an operator had been picked for a type with no values would show an
-  // operator the policy does not have.
+  // The stored condition wins over the remembered choice; otherwise loading a policy into an instance
+  // where an operator had been picked for an empty type would show an operator the policy does not
+  // actually have.
   selectedOperator(type: string): string {
     return this.conditionFor(type)?.operator ?? this.pendingOperators()[type] ?? DEFAULT_OPERATOR;
   }
 
-  // The operators offered by the toggle group, backend-supplied so their labels and the set itself
-  // stay in step with the registry; the local fallback only covers the paint before /conditiontypes
+  // Operators offered by the toggle group, backend-supplied so their labels and the set stay in step
+  // with the registry; the local fallback only covers the first paint before /conditiontypes
   // answers.
   operatorOptions(type: string): ConditionOperatorMeta[] {
     const fromBackend = this.policyService.operatorsForConditionType(type);
     return fromBackend.length ? fromBackend : OPERATOR_FALLBACK;
   }
 
-  // The options offered by the multi-select: the currently valid values plus any the policy already
-  // references that are no longer valid. The stale ones must be listed, or mat-select would render a
-  // blank trigger for a value it has no option for - and the admin needs to see what the policy
-  // actually says before deciding what to do about it.
+  // Options offered by the multi-select: currently valid values plus any the policy already
+  // references that are no longer valid; the stale ones must be listed, or mat-select would render a
+  // blank trigger for a value it has no option for.
   valueOptions(type: string): string[] {
     const choices = this.policyService.choicesForConditionType(type);
     const selected = this.selectedValues(type);
@@ -245,8 +238,7 @@ export class ConditionalAccessConditionsComponent {
   }
 
   // Widened for the lookup because the selected operator is whatever the backend served: an operator
-  // this WebUI has no wording for gets the neutral hint instead of rendering blank, which is what the
-  // old union-typed index did silently.
+  // this WebUI has no wording for gets the neutral hint instead of rendering blank.
   hintFor(row: ConditionRowSpec): string {
     const hints: Partial<Record<string, string>> = row.hints;
     return hints[this.selectedOperator(row.type)] ?? UNKNOWN_OPERATOR_HINT;
@@ -261,8 +253,8 @@ export class ConditionalAccessConditionsComponent {
   }
 
   // An empty selection removes the condition rather than storing an empty value list: the backend
-  // rejects an empty list, and "restrict to nothing" has no useful reading anyway - under IN it
-  // would make the policy dead, under NOT_IN it is the same as no condition at all.
+  // rejects an empty list, and "restrict to nothing" has no useful reading -- dead under IN,
+  // equivalent to no condition under NOT_IN.
   onValuesChange(type: string, values: string[]): void {
     if (values.length === 0) {
       this.conditionsChange.emit(this.conditions().filter((condition) => condition.condition_type !== type));
@@ -275,9 +267,9 @@ export class ConditionalAccessConditionsComponent {
     });
   }
 
-  // Emitted in condition_type order, the same canonical order the backend serves them in. They are
-  // ANDed, so order carries no meaning - but without a fixed one, removing and re-adding a condition
-  // would reorder the array and the edit page's JSON diff would report a change that is not one.
+  // Emitted in condition_type order, the backend's canonical order; conditions are ANDed so order
+  // carries no meaning, but without a fixed one, removing and re-adding a condition would make the
+  // edit page's JSON diff report a change that is not one.
   private emitUpsert(type: string, condition: LockoutPolicyCondition): void {
     const others = this.conditions().filter((existing) => existing.condition_type !== type);
     this.conditionsChange.emit([...others, condition].sort((a, b) => a.condition_type.localeCompare(b.condition_type)));

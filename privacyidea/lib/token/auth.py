@@ -483,14 +483,12 @@ def check_token_list(token_object_list: list[TokenClass], passw: str, user: User
                 repl = repl or {}
                 reply_dict.update(repl)
                 if otp_count >= 0:
-                    # This is a successful authentication. LOGIN_SUCCESS is classified
-                    # once, later, in the final valid_token_list block (which re-checks
-                    # check_all before confirming success), so it is deliberately not
-                    # appended here as well - it would be a redundant duplicate.
+                    # LOGIN_SUCCESS is classified once, later in the final valid_token_list block, after it
+                    # re-checks check_all - so it is not appended here too, avoiding a duplicate event.
                     valid_token_list.append(token_object)
                 elif pin_match:
-                    # The PIN (first factor) of the token matches, but the OTP did not. For logging check if a pin was
-                    # required / checked at all.
+                    # The PIN matched but the OTP did not; the classification below depends on whether a PIN was
+                    # required at all.
                     pin_matching_token_list.append(token_object)
                     if token_object.auth_details.get(SUPPRESS_TERMINAL_EVENT_KEY):
                         # The token logged its own outcome (push_wait timeout); do not add a terminal event on top.
@@ -504,7 +502,7 @@ def check_token_list(token_object_list: list[TokenClass], passw: str, user: User
                         _record_reason(token_reasons, token_object, AuthEventReason.WRONG_OTP)
                 else:
                     # Nothing matches at all: a wrong first factor (PIN_FAIL, or PASSWORD_FAIL with otppin=userstore).
-                    # This stays PIN_FAIL even with otppin=none, if a pin was given unexpectedly
+                    # This is classified PIN_FAIL even under otppin=none, if a pin was given unexpectedly.
                     invalid_token_list.append(token_object)
                     _note_event(request_events, event_serials,
                                 _token_event(token_object, AuthEventType.PIN_FAIL), token_object)
@@ -726,10 +724,9 @@ def check_token_list(token_object_list: list[TokenClass], passw: str, user: User
         # There is no suitable token for authentication
         reply_dict["message"] = _("No suitable token found for authentication.")
 
-    # Classify the request outcome for the authentication log by reducing the per-token events collected during the
-    # walk to the single highest-precedence one. If no token contributed an event, the user either owns tokens that
-    # were all unusable (revoked, disabled, disabled type, max-fail exceeded, out of validity) -> NO_USABLE_TOKEN, or
-    # owns no token at all -> NO_TOKEN.
+    # Reduce the per-token events collected during the walk to the single highest-precedence one for the
+    # authentication log: no event means NO_USABLE_TOKEN if every owned token was unusable (revoked, disabled,
+    # disabled type, max-fail exceeded, out of validity), or NO_TOKEN if the user owns none at all.
     reduced_event = reduce_request_events(request_events)
     # When a token suppressed its terminal event (push_wait timeout), leave the classification empty instead of
     # falling back, so no terminal row is logged on top of the one the token logged itself.

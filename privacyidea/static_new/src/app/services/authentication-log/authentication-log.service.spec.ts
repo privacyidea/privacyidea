@@ -73,8 +73,8 @@ describe("AuthenticationLogService", () => {
     httpMock.match((r) => r.url.endsWith("/endpoints")).forEach((r) => r.flush(MockPiResponse.fromValue([])));
   };
 
-  // The oldest-entry resource (page_size=1, timestamp asc) loads under the same gate as the log page; flush it where a
-  // test only asserts the page request.
+  // The oldest-entry resource (page_size=1, timestamp asc) loads under the same gate as the log page, so a test
+  // asserting only the page request must also flush this one.
   const flushOldest = () =>
     httpMock
       .match((r) => r.url.endsWith("/authenticationlog/") && r.params.get("page_size") === "1")

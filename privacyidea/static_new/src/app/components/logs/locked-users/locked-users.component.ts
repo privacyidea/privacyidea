@@ -153,9 +153,9 @@ export class LockedUsersComponent {
     return row.username || row.uid;
   }
 
-  // Pre-seed the authentication-log filter with this user's identity and jump there. Matches by username when
-  // known (falling back to uid for username-less rows), scoped to the same realm/resolver so the log shows only
-  // that user's events. Navigation to the auth-log route itself is done by the template's routerLink.
+  // Pre-seeds the authentication-log filter with this user's identity - username, or uid for username-less rows, scoped
+  // to the same realm/resolver - so the log shows only that user's events; the template's routerLink does the
+  // navigation.
   showAuthenticationLog(row: LockedUserEntry): void {
     const identity = row.username
       ? new FilterValue().addEntry("username", row.username)
@@ -302,9 +302,9 @@ export class LockedUsersComponent {
   }
 
   deleteExpired(): void {
-    // Generic confirmation only: the set of expired records is evaluated server-side at purge time, so listing a
-    // snapshot here could be misleading (more may expire in between). Admins can inspect them via the "Expired"
-    // state filter beforehand.
+    // Generic confirmation only: the set of expired records is evaluated server-side at purge time, so a snapshot
+    // listed here could be misleading (more may expire meanwhile); admins can inspect them via the "Expired" state
+    // filter beforehand.
     this.dialogService
       .openDialog({
         component: SimpleConfirmationDialogComponent,

@@ -67,9 +67,8 @@ class AuthEventType(str, Enum):
     PIN_FAIL = "PIN_FAIL"
     # PIN skipped (otppin=none / otponly=1) but the OTP itself is wrong.
     TOKEN_ONLY_FAIL = "TOKEN_ONLY_FAIL"
-    # Correct first factor (pin / password), but the second factor failed, e.g. wrong otp
-    # Note: We also log this for a failed passkey authentication, even thought we can not be sure what exactly failed
-    # there.
+    # Correct first factor (pin / password), but the second factor failed, e.g. wrong OTP.
+    # Also used for a failed passkey authentication, since the exact cause of failure cannot be determined there.
     MFA_FAIL = "MFA_FAIL"
     # Username not found in any resolver, or the resolved user is empty.
     USER_UNKNOWN = "USER_UNKNOWN"
@@ -101,7 +100,7 @@ class AuthEventType(str, Enum):
     ENROLLMENT_TRIGGERED = "ENROLLMENT_TRIGGERED"
     # cancelling the enrollment failed (unknown or already-consumed transaction_id).
     ENROLLMENT_CANCELED_FAIL = "ENROLLMENT_CANCELED_FAIL"
-    # Default fallback, if no auth event was set somewhere, but authentication failed we log this to have failed attempt
+    # Fallback used when authentication fails but no other event type was set, so the failure is still recorded.
     UNKNOWN_FAIL_REASON = "UNKNOWN_FAIL_REASON"
 
     # --- written by conditional access itself, before any credential check ---------------------------------------

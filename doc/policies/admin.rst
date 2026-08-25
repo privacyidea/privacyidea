@@ -872,11 +872,83 @@ authentication_log_read
 
 type: ``bool``
 
-The administrator is allowed to read the authentication log. If the policy is
-scoped to realms, resolvers or users, the administrator only sees the entries
-matching that scope, next to their own login attempts.
+The administrators are allowed to read the :ref:`authentication_log`. If the
+policy is scoped to realms, resolvers or users, the administrator only sees
+entries matching that scope. An administrator always also sees their own
+entries.
 
-To learn more about the authentication log, see :ref:`authentication_log`.
+.. versionadded:: 3.14
+
+.. _policy_lockout_policy_read:
+
+lockout_policy_read
+~~~~~~~~~~~~~~~~~~~
+
+type: ``bool``
+
+The administrators are allowed to view the lockout policies of
+:ref:`conditional_access`.
+
+.. versionadded:: 3.14
+
+.. _policy_lockout_policy_write:
+
+lockout_policy_write
+~~~~~~~~~~~~~~~~~~~~
+
+type: ``bool``
+
+The administrators are allowed to create, edit, reorder and delete the lockout
+policies of :ref:`conditional_access`.
+
+.. versionadded:: 3.14
+
+.. _policy_user_lockout_read:
+
+user_lockout_read
+~~~~~~~~~~~~~~~~~
+
+type: ``bool``
+
+The administrators are allowed to see whether a user is locked and to list the
+locked users. If the policy is scoped to realms, resolvers or users, only
+matching users are shown.
+
+.. versionadded:: 3.14
+
+.. _policy_user_lockout_reset:
+
+user_lockout_reset
+~~~~~~~~~~~~~~~~~~
+
+type: ``bool``
+
+The administrators are allowed to unlock a user that was locked by
+:ref:`conditional_access`.
+
+.. versionadded:: 3.14
+
+.. _policy_blocklist_read:
+
+blocklist_read
+~~~~~~~~~~~~~~
+
+type: ``bool``
+
+The administrators are allowed to view the source IP addresses blocked by
+:ref:`conditional_access`.
+
+.. versionadded:: 3.14
+
+.. _policy_blocklist_reset:
+
+blocklist_reset
+~~~~~~~~~~~~~~~
+
+type: ``bool``
+
+The administrators are allowed to remove entries from the blocklist of
+:ref:`conditional_access`.
 
 .. versionadded:: 3.14
 

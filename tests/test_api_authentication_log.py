@@ -42,8 +42,8 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
     OTHER_REALM = "otherrealm"
 
     def _seed(self, include_no_realm=False):
-        # LOGIN_SUCCESS + MFA_FAIL in realm1 and a LOGIN_SUCCESS in another realm; optionally a null-realm row
-        # (e.g. USER_UNKNOWN). Returns the created ids by key.
+        # Seeds LOGIN_SUCCESS + MFA_FAIL in realm1 and a LOGIN_SUCCESS in another realm, plus an optional null-realm row
+        # (e.g. USER_UNKNOWN); returns the created ids by key.
         ids = {
             "realm1_login": log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res", uid="1",
                                                      realm=self.realm1),
@@ -76,8 +76,8 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
         return {entry["id"] for entry in value["auth_logs"]}
 
     def _login_helpdesk(self):
-        # Log in a helpdesk admin from the superuser realm "adminrealm" (so they have a real realm + username), and
-        # clear the auth event its login produced so tests work on controlled entries only. Returns the JWT.
+        # Logs in a helpdesk admin from the superuser realm "adminrealm" (so they have a real realm + username) and
+        # clears the auth event their login produced, so tests run on controlled entries only; returns the JWT.
         set_realm("adminrealm", [{"name": self.resolvername1}])
         with self.app.test_request_context("/auth", method="POST",
                                            data={"username": "selfservice@adminrealm", "password": "test"}):
@@ -113,8 +113,8 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
         self.assertIsNone(last["next"])
 
     def test_invalid_paging_params_fall_back_to_defaults(self):
-        # A bad page / page_size must not reach the query as a negative offset or empty limit: non-positive and
-        # non-numeric values fall back to the defaults (page 1, default page_size) instead.
+        # A bad page / page_size must not reach the query as a negative offset or empty limit, so non-positive and
+        # non-numeric values fall back to the defaults (page 1, default page_size).
         self._seed(include_no_realm=True)
         for bad in ({"page": 0}, {"page": -3}, {"page": "abc"}):
             value = self._get(bad)["result"]["value"]
@@ -411,8 +411,8 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
         self.assertEqual("success", by_name["LOGIN_SUCCESS"])
         self.assertEqual("failure", by_name["USER_UNKNOWN"])
         self.assertEqual("pending", by_name["CHALLENGE_TRIGGERED"])
-        # Including the ones conditional access writes for its own rejections: a policy may not count them, but an
-        # admin must be able to filter the log for them.
+        # This includes the types conditional access writes for its own rejections: a policy may not count them, but an
+        # admin must still be able to filter the log for them.
         self.assertEqual("failure", by_name["USER_LOCKED"])
         self.assertEqual("failure", by_name["IP_BLOCKED"])
         self.assertEqual("failure", by_name["ACCESS_DENIED"])
@@ -503,8 +503,8 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
 
     def test_user_scoped_policy_matches_username_case_sensitively_by_default(self):
         # A user-scoped policy is an authorization boundary: without user_case_insensitive it matches the username
-        # case-sensitively, so a differently-cased entry ("Alice") is hidden from an admin scoped to "alice". The
-        # username column is case-sensitive-collated, so this holds on every backend (not only on SQLite/Postgres).
+        # case-sensitively, so a differently-cased entry ("Alice") is hidden from an admin scoped to "alice" -- and the
+        # case-sensitive column collation guarantees this on every backend.
         in_scope = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver=self.resolvername1,
                                             uid="1", realm=self.realm1, username="alice")
         log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver=self.resolvername1, uid="2",
@@ -519,8 +519,8 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
 
     def test_user_scoped_policy_case_insensitive_when_policy_set(self):
         # With user_case_insensitive on the policy, the username dimension is forced case-insensitive (LOWER on both
-        # sides), so the admin scoped to "alice" also sees the "Alice" entry. This exercises the policy -> scope ->
-        # query wiring.
+        # sides), so the admin scoped to "alice" also sees the "Alice" entry, exercising the policy -> scope -> query
+        # wiring.
         alice = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver=self.resolvername1,
                                          uid="1", realm=self.realm1, username="alice")
         alice_upper = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver=self.resolvername1,
@@ -554,8 +554,8 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
             delete_policy("authlog_p2")
 
     def test_unscoped_policy_grants_all_even_alongside_a_scoped_one(self):
-        # If any applicable policy has no target scope, the admin is unrestricted -- even when another policy is
-        # scoped. (The scoped policy alone would have limited the result to realm1's 2 rows.)
+        # If any applicable policy has no target scope, the admin is unrestricted, even alongside another policy that is
+        # scoped (which alone would have limited the result to realm1's 2 rows).
         ids = self._seed(include_no_realm=True)  # realm1 x2, OTHER_REALM x1, null-realm x1
         set_policy("authlog_scoped", scope=SCOPE.ADMIN, action=PolicyAction.AUTHENTICATION_LOG_READ, realm=self.realm1)
         set_policy("authlog_all", scope=SCOPE.ADMIN, action=PolicyAction.AUTHENTICATION_LOG_READ)
@@ -567,8 +567,8 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
             delete_policy("authlog_all")
 
     def test_unscoped_policy_builds_no_visibility_filter(self):
-        # Efficiency: an unscoped policy grants everything, so no realm/resolver/user filter is built at all -- the
-        # lib is called with visibility_scopes=None, not scopes that merely happen to match every row.
+        # An unscoped policy grants everything, so no realm/resolver/user filter is built at all -- the lib is called
+        # with visibility_scopes=None rather than scopes that merely happen to match every row.
         with mock.patch("privacyidea.api.authentication_log.get_authentication_logs_paginate") as paginate_mock:
             paginate_mock.return_value.to_dict.return_value = {}
             # Only a scoped policy -> the lib receives concrete scopes.
@@ -586,8 +586,8 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
                 delete_policy("authlog_all")
 
     def test_realm_scoped_admin_always_sees_own_entries(self):
-        # A realm-scoped helpdesk admin sees their own entry even though it is in a different realm (adminrealm). The
-        # own-scope matches by realm + username (resolver is intentionally not part of the match).
+        # A realm-scoped helpdesk admin sees their own entry even though it is in a different realm (adminrealm),
+        # because the own-scope matches by realm + username -- resolver is intentionally not part of the match.
         helpdesk_token = self._login_helpdesk()
         in_scope = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver=self.resolvername1,
                                             uid="1", realm=self.realm1)
@@ -602,9 +602,9 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
             delete_realm("adminrealm")
 
     def test_resolver_scoped_admin_always_sees_own_entries(self):
-        # The helpdesk admin resolves via resolvername1 (adminrealm uses it).
-        # Granted read access scoped to a *different* resolver, their own entries fall outside that
-        # scope and are only included via the own-entries scope.
+        # The helpdesk admin resolves via resolvername1 (adminrealm uses it); granted read access scoped to a
+        # *different* resolver, their own entries fall outside that scope and are only included via the own-entries
+        # scope.
         save_resolver({"resolver": "otherresolver", "type": "passwdresolver", "fileName": "tests/testdata/passwords"})
         helpdesk_token = self._login_helpdesk()
         in_scope = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="otherresolver",
@@ -622,8 +622,8 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
             delete_resolver("otherresolver")
 
     def test_user_scoped_admin_always_sees_own_entries(self):
-        # A user-scoped helpdesk admin sees their own entry even though its username differs from the scoped user,
-        # so it is only included via the own-entries scope.
+        # A user-scoped helpdesk admin sees their own entry even though its username differs from the scoped user, so it
+        # is only included via the own-entries scope.
         helpdesk_token = self._login_helpdesk()
         in_scope = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver=self.resolvername1,
                                             uid="1", realm=self.realm1, username="someuser")
@@ -639,7 +639,7 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
 
     def test_local_admin_always_sees_own_entries(self):
         # A restricted local (DB) admin has no realm; their own /auth events are recorded with realm/resolver NULL and
-        # user_role=admin-internal, so they are matched by username + role, not by realm..
+        # user_role=admin-internal, so they are matched by username + role, not by realm.
         in_scope = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver=self.resolvername1,
                                             uid="1", realm=self.realm1)
         own = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, username=self.testadmin,
@@ -658,8 +658,8 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
             delete_policy("authlog_realm")
 
     def test_user_sees_only_own_entries(self):
-        # Log in the self-service user "selfservice" in realm1 (-> self.at_user); that login writes its own auth-log
-        # entry, so clear the log to test on controlled entries only.
+        # Logs in the self-service user "selfservice" in realm1 (-> self.at_user); that login writes its own auth-log
+        # entry, so the log is cleared to test on controlled entries only.
         self.authenticate_selfservice_user()
         self._clear_log()
         own = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver=self.resolvername1, uid="1",

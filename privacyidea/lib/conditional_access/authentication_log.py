@@ -34,9 +34,8 @@ from privacyidea.lib.sqlutils import delete_matching_rows
 
 log = logging.getLogger(__name__)
 
-# Columns that may be used to sort a paginated authentication-log query, keyed by the name accepted from the API.
-# Every scalar column is sortable; ``other_info`` is excluded because it is a JSON column whose ordering is not
-# meaningful and not portable across databases.
+# Columns a paginated authentication-log query can sort by, keyed by the name the API accepts; every scalar column
+# is sortable, but ``other_info`` is excluded because JSON column ordering is neither meaningful nor portable.
 SORTABLE_COLUMNS: dict[str, InstrumentedAttribute] = {
     "id": AuthenticationLog.id,
     "timestamp": AuthenticationLog.timestamp,
@@ -214,22 +213,21 @@ class PendingAuthEvent:
     serial: str | None = None
     attempt_id: str | None = None
     other_info: dict | None = None
-    # A point-in-time record another request has to see while this one is still running (the push_wait challenge
-    # trigger), rather than this request's classification. Such an event is written on the spot and must not be
-    # reclassified afterwards - see ConditionalAccessContext.amendable.
+    # A point-in-time record another in-flight request has to see (the push_wait challenge trigger) rather than this
+    # request's own classification, and must never be reclassified afterwards - see ConditionalAccessContext.amendable.
     immediate: bool = False
     # Id of the stored row, set once it has been committed; None means "not written yet".
     row_id: int | None = None
-    # What conditional access did to this request, waiting for the row id it has to be recorded against (see
-    # ConditionalAccessContext.flush). Not row content: it becomes rows in conditional_access_outcome, not columns here.
+    # What conditional access did for this request, held here until the row id to record it against exists (see
+    # ConditionalAccessContext.flush); it becomes rows in conditional_access_outcome, not columns on this row.
     outcomes: list[ConditionalAccessOutcome] = field(default_factory=list)
     # Set when a field is assigned after the row was written, i.e. the stored row no longer matches this event.
     _changed: bool = field(init=False, default=False, repr=False, compare=False)
 
     def __setattr__(self, name: str, value: Any) -> None:
-        # ``row_id``, ``outcomes``, ``immediate`` and the flag itself are bookkeeping rather than row content, so they
-        # never mark the event changed. ``self.__dict__`` is read directly because the dataclass __init__ assigns the
-        # fields through here too, at which point ``row_id`` does not exist yet.
+        # ``row_id``, ``outcomes``, ``immediate`` and the flag itself are bookkeeping, not row content, so assigning
+        # them never marks the event changed. ``self.__dict__`` is read directly because the dataclass __init__ also
+        # assigns fields through this method, before ``row_id`` exists.
         if name not in ("row_id", "outcomes", "immediate", "_changed") and self.__dict__.get("row_id") is not None:
             object.__setattr__(self, "_changed", True)
         object.__setattr__(self, name, value)
@@ -300,10 +298,9 @@ def write_authentication_events(events: Sequence[PendingAuthEvent]) -> bool:
     entries = [_build_entry(event) for event in events]
     label = ("the authentication log entry" if len(entries) == 1
              else f"the {len(entries)} authentication log entries")
-    # The ids are read inside the guarded block, from an explicit flush that assigns the primary keys, and only
-    # published to the events once the commit succeeded. Reading them after the commit instead would leave a failure
-    # there unguarded, and an event whose row *was* committed but never stamped would be re-inserted by the next
-    # flush.
+    # Ids are read inside the guarded block from an explicit flush, then published to the events only once the
+    # commit has succeeded; reading them after the commit would leave that read unguarded, and a row committed but
+    # never stamped would be re-inserted by the next flush.
     row_ids: list[int] = []
     with guarded_write(label) as outcome:
         session = get_ca_session()
@@ -389,8 +386,8 @@ def delete_authentication_log_event(event_id: int) -> None:
         session = get_ca_session()
         entry = session.get(AuthenticationLog, event_id)
         if entry is not None:
-            # Deleted as an *object*, so the ``outcomes`` relationship cascade takes this request's conditional-access
-            # history with it - on every backend, without relying on a foreign key SQLite does not enforce.
+            # Deleted as an *object*, so the outcomes relationship cascade removes this entry's conditional-access
+            # history too, on every backend, since SQLite does not enforce foreign keys.
             session.delete(entry)
 
 
@@ -662,9 +659,8 @@ def get_authentication_logs_paginate(resolver: str | list[str] | None = None,
                                     client_label=client_label, endpoint=endpoint,
                                     start_time=start_time, end_time=end_time,
                                     case_insensitive=case_insensitive)
-    # An EXISTS over the outcome table, kept out of _filter_conditions: those conditions are also applied to DELETE
-    # statements (see delete_authentication_logs), and "delete every entry a policy ever locked someone on" is not a
-    # retention rule anybody asked for.
+    # An EXISTS over the outcome table, kept out of _filter_conditions because those conditions also apply to DELETE
+    # statements (see delete_authentication_logs), and matching an outcome is not a valid reason to delete an entry.
     outcome_condition = _outcome_condition(ca_action_type=ca_action_type, ca_policy_name=ca_policy_name,
                                            ca_dry_run=ca_dry_run, case_insensitive=case_insensitive)
     if outcome_condition is not None:
@@ -687,10 +683,9 @@ def get_authentication_logs_paginate(resolver: str | list[str] | None = None,
     page = max(1, page)
     page_size = max(1, page_size)
     offset = (page - 1) * page_size
-    # The only place that loads the conditional-access outcomes. selectinload fetches them for the whole page in one
-    # extra statement (WHERE auth_log_id IN (<the page's ids>)), so the statement count does not grow with the page
-    # size. A JOIN would be wrong rather than merely slower: it multiplies each entry by its outcomes, which breaks
-    # both LIMIT and the count above.
+    # The only place that eagerly loads conditional-access outcomes: selectinload fetches a whole page's outcomes in
+    # one extra statement, so the statement count does not grow with the page size, whereas a JOIN would multiply
+    # each entry by its outcomes and break both LIMIT and the count above.
     stmt = stmt.options(selectinload(AuthenticationLog.outcomes))
     auth_logs = get_ca_session().scalars(stmt.limit(page_size).offset(offset)).all()
     return AuthenticationLogPage(auth_logs=auth_logs,

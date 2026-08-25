@@ -253,9 +253,8 @@ export class UserUtilsPanelComponent {
       this.containerService.userContainersResource.reload();
       return;
     } else if (this.contentService.onConditionalAccess()) {
-      // Covers the conditional-access list, edit and new pages, which all read
-      // from the same policies resource (its dynamic details URL is not an exact
-      // route match, so it is handled here rather than in the switch below).
+      // Covers the conditional-access list, edit and new pages, which all share one policies resource; its dynamic
+      // details URL is not an exact route match, so it is handled here rather than in the switch below.
       this.conditionalAccessPolicyService.policiesResource.reload();
       return;
     }

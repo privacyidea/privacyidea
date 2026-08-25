@@ -88,8 +88,8 @@ class OutcomeLogTestCase(MyTestCase):
         self.assertEqual(info, outcome.info)
 
     def test_outcome_for_stage_records_the_expiry_in_info(self):
-        # The expiry is a typed parameter of the factory but action-specific data in the row: it lands in `info` as an
-        # aware ISO-8601 string, since a JSON column cannot hold a datetime.
+        # expires_at is a typed factory parameter, but it is action-specific data stored in the row's `info` field.
+        # It is serialized there as an aware ISO-8601 string, because a JSON column cannot hold a datetime object.
         policy, stage = self._policy_and_stage()
         expires_at = utc_now() + timedelta(seconds=600)
 
@@ -101,16 +101,14 @@ class OutcomeLogTestCase(MyTestCase):
                          outcome_for_stage(policy, stage, LockoutAction.BLOCK_IP_TEMPORARY, 6, expires_at=aware).info)
 
     def test_outcome_for_stage_leaves_info_empty_without_an_expiry(self):
-        # An action that creates no restriction has nothing of its own to record, so the column stays NULL rather than
-        # holding an empty dict.
+        # An action with nothing of its own to record leaves the column NULL rather than an empty dict.
         policy, stage = self._policy_and_stage()
         outcome = outcome_for_stage(policy, stage, LockoutAction.EMAIL_ADMIN, 6)
         self.assertIsNone(outcome.info)
 
     def test_outcome_for_stage_copies_what_the_history_must_keep(self):
-        # The policy name and the stage name are denormalized copies, so the history stays readable after a rename or a
-        # deletion; the threshold identifies the stage. The policy's *id* is deliberately not copied: it can be handed
-        # to a different policy after a deletion (SQLite, MySQL/MariaDB), which would misattribute the history.
+        # The policy name and stage name are denormalized copies so history stays readable after a rename or deletion;
+        # the id is not copied: a deleted id can be reused by another policy, which would misattribute the history.
         policy, stage = self._policy_and_stage()
         outcome = outcome_for_stage(policy, stage, LockoutAction.LOCK_USER_TEMPORARY, 6, dry_run=True)
 
@@ -130,8 +128,8 @@ class OutcomeLogTestCase(MyTestCase):
         self.assertFalse(get_outcomes(event_id)[0].dry_run)
 
     def test_recording_twice_appends_rather_than_replaces(self):
-        # A request can be evaluated more than once (a post-policy correcting the classification re-runs the engine),
-        # and the history of the first evaluation must survive the second.
+        # A request can be re-evaluated (a post-policy correcting the classification reruns the engine),
+        # so the first evaluation's history must survive the second.
         event_id = self._auth_log_row()
         record_outcomes([_outcome()], event_id)
         record_outcomes([_outcome(action_type=str(LockoutAction.LOCK_USER_PERMANENT))], event_id)
@@ -145,24 +143,22 @@ class OutcomeLogTestCase(MyTestCase):
         self.assertListEqual([], list(get_outcomes(event_id)))
 
     def test_outcomes_without_an_auth_log_row_are_dropped(self):
-        # Every outcome belongs to the request that caused it: the subject and the time live on that row, so a
-        # parentless outcome would be a fact about nobody. A missing row is either legitimate (a poll logs no
-        # authentication event) or a logging bug, and neither is fixed by storing an orphan.
+        # Every outcome belongs to the request that caused it, so a parentless outcome would be a fact about nobody.
+        # A missing row is either legitimate (a poll logs no event) or a bug, but neither is fixed by storing an orphan.
         self.assertFalse(record_outcomes([_outcome()], None))
         self.assertEqual(0, get_ca_session().query(ConditionalAccessOutcome).count())
 
     def test_a_failing_write_is_swallowed_and_reported(self):
-        # Writing history must never break the response that produced it, so a failure is logged and the caller is told
-        # it did not happen - which is what lets the request context keep the outcomes for a later retry.
+        # Writing history must never break the response that produced it, so a failure is logged and reported to the
+        # caller, which is what lets the request context keep the outcomes for a later retry.
         event_id = self._auth_log_row()
         with mock.patch.object(get_ca_session(), "commit", side_effect=Exception("db down")):
             self.assertFalse(record_outcomes([_outcome()], event_id))
         self.assertListEqual([], list(get_outcomes(event_id)))
 
     def test_the_same_outcomes_can_be_retried_after_a_failed_write(self):
-        # The outcomes are the very objects the engine built, so a retry reuses them. A rolled-back session expunges
-        # what it had pending, leaving them transient - which is what makes the request context's "keep them and retry
-        # on the next flush" behaviour work.
+        # The outcomes are the engine's own objects, so a retry reuses them; a rollback expunges them from the session,
+        # leaving them transient, which lets the request context keep them and retry on the next flush.
         event_id = self._auth_log_row()
         outcomes = [_outcome()]
         with mock.patch.object(get_ca_session(), "commit", side_effect=Exception("db down")):
@@ -173,8 +169,7 @@ class OutcomeLogTestCase(MyTestCase):
                              [outcome.action_type for outcome in get_outcomes(event_id)])
 
     def test_recording_the_same_outcome_object_twice_stores_it_once(self):
-        # Belt and braces for the retry path above: once stored, an outcome is persistent, so handing it to the writer
-        # again cannot duplicate the row.
+        # Once stored, an outcome is persistent, so re-handing it to the writer never duplicates the row.
         event_id = self._auth_log_row()
         outcomes = [_outcome()]
         record_outcomes(outcomes, event_id)
@@ -190,8 +185,8 @@ class OutcomeLogTestCase(MyTestCase):
         self.assertListEqual([str(LockoutAction.BLOCK_IP_TEMPORARY)], [outcome.action_type for outcome in get_outcomes(second)])
 
     def test_column_lengths_mirror_the_columns_they_copy(self):
-        # The outcome stores copies of the policy configuration, and each column is as wide as its source. That is why
-        # the writer does not truncate: a name that fits where an admin typed it fits here too.
+        # The outcome stores copies of the policy configuration, each column as wide as its source.
+        # That is why the writer does not truncate: a name that fits where an admin typed it fits here too.
         self.assertEqual(LockoutPolicy.__table__.c.name.type.length,
                          conditional_access_outcome_column_length["policy_name"])
         self.assertEqual(LockoutPolicyStage.__table__.c.name.type.length,

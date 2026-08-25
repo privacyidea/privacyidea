@@ -60,8 +60,7 @@ describe("AuthenticationLog", () => {
       imports: [AuthenticationLog],
       providers: [
         provideHttpClient(),
-        // The cells that link (realm, a policy behind an outcome) instantiate routerLink, which needs an
-        // ActivatedRoute.
+        // The cells linking to a realm or an outcome's policy use routerLink, which needs an ActivatedRoute.
         provideRouter([]),
         { provide: MockAuthenticationLogService, useClass: MockAuthenticationLogService },
         { provide: MockTableUtilsService, useClass: MockTableUtilsService },
@@ -234,8 +233,8 @@ describe("AuthenticationLog", () => {
   });
 
   it("shows the User Role filter button for an admin and hides it in self-service", () => {
-    // fixture.nativeElement is typed `any`, so it is narrowed here: an untyped call cannot take a type argument, and
-    // without one the found element would be `unknown`.
+    // fixture.nativeElement is typed `any`, so it is cast to HTMLElement here: an untyped call cannot take a type
+    // argument, and without the cast the found element would be `unknown`.
     const userRoleButton = () =>
       Array.from(
         (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>(".actions-container button")
@@ -292,8 +291,8 @@ describe("AuthenticationLog", () => {
   });
 
   it("hasInfoValues only reports true when an entry on the page actually carries something to show", () => {
-    // The table swaps in a fresh MatTableDataSource per page, so the signal must be re-set (not mutated in place) for
-    // the computed to see new rows.
+    // The table swaps in a fresh MatTableDataSource per page, so the signal must be re-set rather than mutated in place
+    // for the computed to see new rows.
     const rows: AuthenticationLogEntry[] = [
       { id: 1, event_type: "LOGIN_SUCCESS", timestamp: "2026-08-03T09:00:00Z", other_info: null },
       { id: 2, event_type: "PIN_FAIL", timestamp: "2026-08-03T09:00:01Z", other_info: {} }
@@ -316,7 +315,7 @@ describe("AuthenticationLog", () => {
   });
 
   it("sizes each info-like column on its own content", () => {
-    // The two columns are independent: a rejection row carries outcomes and no other_info, so the Conditional access
+    // The two columns are independent: a rejection row carries outcomes but no other_info, so the Conditional access
     // column must claim its width while the Info column stays narrow.
     component.dataSource.set(
       new MatTableDataSource([
@@ -476,8 +475,8 @@ describe("AuthenticationLog", () => {
     // The same icon as the other selection filters: this menu sets several keys, so it has no set/not-set state.
     expect(trigger.querySelector("mat-icon")?.textContent?.trim()).toBe("filter_list");
 
-    // The rule that governs a combination of these filters is stated in the menu, not left to a hover tooltip, and
-    // repeated on the trigger so it is announced before the menu is even opened.
+    // The rule governing how these filters combine is stated in the menu, not left to a hover tooltip, and repeated on
+    // the trigger so it is announced before the menu is even opened.
     expect(trigger.getAttribute("aria-label")).toContain("All conditions must match one and the same outcome.");
 
     trigger.click();
@@ -645,7 +644,8 @@ describe("AuthenticationLog", () => {
       const span = component.windowEndMs() - component.windowStartMs();
       expect(span).toBeGreaterThan(23 * 3_600_000);
       expect(span).toBeLessThanOrEqual(86_400_000);
-      // The end thumb at its max now maps to the concrete day-end, not an open "now" bound.
+      // Because both dates fall on the same day, the end thumb at its max maps to that day's exact end rather than an
+      // open "now" bound.
       expect(service.timestampTo()).not.toBeNull();
     });
 
@@ -715,7 +715,8 @@ describe("AuthenticationLog", () => {
     });
 
     it("clearAllFilters clears both the text filter and the time filter", () => {
-      // A time filter lives in its own signals; clearing the text alone used to leave it silently active.
+      // A time filter lives in its own signals, separate from the text filter, so clearing the text alone would leave
+      // it silently active.
       service.authenticationLogFilter.set(service.authenticationLogFilter().copyWith({ value: "username: alice" }));
       component.onRangeStartDateChange(new Date(2026, 5, 2));
       expect(service.timestampFrom()).not.toBeNull();

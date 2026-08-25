@@ -127,8 +127,8 @@ def get_authentication_log():
     end_time = isoparse(end_time) if end_time else None
 
     visibility_scopes = get_policy_visibility_scopes(PolicyAction.AUTHENTICATION_LOG_READ)
-    # A scoped admin always also sees their own entries, added to the policy scope as an extra OR alternative.
-    # (A user already sees only their own entries, so this is irrelevant for them.)
+    # A scoped admin always also sees their own entries, added to the policy scope as an extra OR alternative;
+    # irrelevant for a user, who already sees only their own entries.
     if g.logged_in_user["role"] == ROLE.ADMIN and visibility_scopes is not None:
         own_realm = g.logged_in_user.get("realm")
         own_username = g.logged_in_user.get("username")

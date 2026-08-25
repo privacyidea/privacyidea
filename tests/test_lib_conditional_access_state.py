@@ -54,8 +54,7 @@ class LockoutStateTestCase(MyTestCase):
 
     def setUp(self):
         self.setUp_user_realms()
-        # "cornelius" resolves to a non-empty uid in the test resolver, so it is a
-        # fully resolved (resolver, uid, realm) identity.
+        # "cornelius" resolves to a non-empty uid, so it is a fully resolved (resolver, uid, realm) identity.
         self.user = User("cornelius", self.realm1, self.resolvername1)
         self._clear()
 
@@ -284,9 +283,8 @@ class LockoutStateTestCase(MyTestCase):
         self.assertListEqual([], list_locked_users())
 
     def test_unlock_user_by_id_uid_collision_across_resolvers(self):
-        # uid is resolver-local and opaque, so the same uid can belong to unrelated users in two
-        # resolvers of a realm. Without a resolver both matching locks are cleared; with one, only
-        # the targeted resolver's lock is removed.
+        # uid is resolver-local and opaque: the same uid can name unrelated users in two resolvers of a realm.
+        # Omitting resolver clears both matching locks; passing one removes only that resolver's lock.
         self._lock(utc_now() + timedelta(seconds=600), resolver="resoA", uid="1001",
                    realm="collide", username="alice")
         self._lock(utc_now() + timedelta(seconds=600), resolver="resoB", uid="1001",

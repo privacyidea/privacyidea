@@ -48,7 +48,7 @@ log = logging.getLogger(__name__)
 # Key the context is cached under in the app-context-local store.
 _CONTEXT_KEY = "conditional_access_context"
 
-# The key under which a challenge records the authentication attempt it was triggered for. Written by
+# The key under which a challenge records the attempt it was triggered for, written by
 # :func:`~privacyidea.lib.token.auth.create_challenge`, read back by :meth:`ConditionalAccessContext.continue_attempt`.
 ATTEMPT_ID_CHALLENGE_KEY = "attempt_id"
 
@@ -90,8 +90,8 @@ class ConditionalAccessContext:
         self.source_ip: str | None = None
         # The attempt this request belongs to, once it is known (see attempt_id).
         self._attempt_id: str | None = None
-        # Outcomes produced before any event was staged, i.e. by the pre-auth decision. The first event staged after
-        # them takes them over (see stage), because that is the row they belong to.
+        # Outcomes produced before any event was staged (the pre-auth decision), taken over by the first event
+        # staged afterward (see stage), because that is the row they belong to.
         self.pending_outcomes: list[ConditionalAccessOutcome] = []
         # The classification the engine has already been run for, so a repeated call is skipped but a *corrected*
         # outcome is not (see run_post_eval).

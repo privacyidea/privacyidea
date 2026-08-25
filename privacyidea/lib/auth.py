@@ -150,9 +150,9 @@ def check_webui_user(user, password, options=None, superuser_realms=None, check_
                         log.debug(f"Could not find container for token {details.get('serial')}: {e}")
         except Exception as e:
             log.debug(f"Error authenticating user against privacyIDEA: {e!r}")
-            # check_user_pass raises for outcomes it can not classify by return value: a locked/revoked token
-            # (TOKEN_LOCKED) or an unknown user (the auth_user_does_not_exist decorator). The login still fails the
-            # same way, but the authentication log must record the real reason
+            # check_user_pass raises for outcomes it cannot classify by return value alone: a locked/revoked token
+            # (TOKEN_LOCKED) or an unknown user (the auth_user_does_not_exist decorator). The login fails either
+            # way, but the authentication log must still record the real reason.
             details = details or {}
             if isinstance(e, TokenAdminError) and e.id == Error.TOKEN_LOCKED:
                 details[AUTH_EVENT_TYPE_KEY] = AuthEventType.NO_USABLE_TOKEN

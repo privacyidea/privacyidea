@@ -43,10 +43,8 @@ log = logging.getLogger(__name__)
 
 DEFAULT_PAGE_SIZE = 15
 
-# The lock "state" is derived from lock_expires_at vs. now:
-#   permanent  -> lock_expires_at IS NULL
-#   temporary  -> lock_expires_at in the future  (actively locked, will lift on its own)
-#   expired    -> lock_expires_at in the past     (stale record, no longer enforced)
+# The lock state is derived from lock_expires_at vs. now: permanent means NULL, temporary means the expiry is
+# still ahead (in force, lifts on its own), and expired means it has passed (a stale record, no longer enforced).
 LOCK_STATES = ("permanent", "temporary", "expired")
 
 # Columns the locked-users list may be sorted by (any other value falls back to locked_at).
@@ -126,6 +124,8 @@ def _locked_user_dict(row: UserLockoutState, now: datetime) -> dict:
 
 
 def _blocklist_dict(row: BlockList, now: datetime) -> dict:
+    # Reported as "identifier", not "ip": the API shape is already the generic one the table will grow into when
+    # non-IP entries (device, API key) become blockable.
     return {
         "identifier": row.ip,
         "permanent": row.block_expires_at is None,
