@@ -36,7 +36,7 @@
     @if (authService.actionAllowed("policydelete")) {
       <button
         (click)="deleteSelectedPolicies()"
-        [disabled]="policySelection().size < 1"
+        [disabled]="policySelection().length < 1"
         class="action-button-delete-secondary button-width-m"
         mat-stroked-button>
         <mat-icon>delete_sweep</mat-icon>
@@ -47,7 +47,7 @@
     @if (authService.actionAllowed("policywrite")) {
       <button
         (click)="copySelectedPolicies()"
-        [disabled]="policySelection().size < 1"
+        [disabled]="policySelection().length < 1"
         class="action-button-secondary button-width-m"
         mat-stroked-button>
         <mat-icon>content_copy</mat-icon>

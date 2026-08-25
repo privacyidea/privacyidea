@@ -1,0 +1,29 @@
+// The two card treatments: a surface is set apart from its parent by being raised above it or
+// sunk into it, never by an outline, so neither mixin sets a border.
+//
+// $slot picks a step of the shared 3 < 5 < 8 depth scale, and which step a surface takes
+// follows from where it sits:
+//
+//   page container     raised 5   routed pages and the table containers on them
+//   dialog             raised 3   lifts off its own scrim, which does the separating
+//   sticky header      raised 3   floats over the page while scrolled
+//   expansion panel    raised 3   floats over the page too; its content recesses
+//   group on a page    inset 3    a set of fields or controls, also inside a raised panel
+//   group in a group   inset 5    one level further in
+//   group in that      inset 8    the deepest step
+//
+// A card counts how many cards it is inside, and standing on a recessed surface inverts that:
+// the dashboard field is recessed, so the widgets on it are raised.
+@mixin card-raised($slot: 5) {
+  border: 0;
+  border-radius: var(--border-radius);
+  background: var(--surface-raised);
+  box-shadow: var(--elevation-#{$slot});
+}
+
+@mixin card-recessed($slot: 3) {
+  border: 0;
+  border-radius: var(--border-radius);
+  background: var(--inset-surface-#{$slot});
+  box-shadow: var(--inset-shadow-#{$slot});
+}

@@ -27,6 +27,7 @@ import { DialogService } from "@services/dialog/dialog.service";
 import { SmsGatewayService } from "@services/sms-gateway/sms-gateway.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
+import { expectsTableStateGating } from "@testing/table-state-gating";
 import {
   MockAuthService,
   MockDialogService,
@@ -77,6 +78,13 @@ describe("SmsGatewaysComponent", () => {
     fixture.detectChanges();
   });
 
+  it("gates the table on its read right, row count and filter", () => {
+    expectsTableStateGating({
+      state: component.tableState,
+      right: "smsgateway_read"
+    });
+  });
+
   it("should create", () => {
     expect(component).toBeTruthy();
   });
@@ -102,25 +110,25 @@ describe("SmsGatewaysComponent", () => {
     expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.EXTERNAL_SERVICES_SMS_DETAILS + gateway.name);
   });
 
-  it("should toggle row and all-row selection", () => {
-    const gateway = smsGatewayServiceMock.smsGateways()[0];
-    component.toggleRow(gateway);
-    expect(component.isSelected(gateway)).toBe(true);
-    component.toggleAllRows();
-    expect(component.isAllSelected()).toBe(true);
-    component.toggleAllRows();
-    expect(component.selection().length).toBe(0);
+  it("should only select the gateways left by the filter", async () => {
+    component.onFilterInput("gw1");
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    component.selector.selectAllRows();
+
+    expect(component.selector.selectedRows().map((row) => row.name)).toEqual(["gw1"]);
   });
 
   it("should delete the selected gateways after confirmation", () => {
     const gateway = smsGatewayServiceMock.smsGateways()[0];
-    component.selection.set([gateway]);
+    component.selector.selectRow(gateway);
     component.deleteSelected();
     expect(dialogServiceMock.openDialog).toHaveBeenCalled();
     confirmClosed.next("discard");
     confirmClosed.complete();
     expect(smsGatewayServiceMock.deleteSmsGateway).toHaveBeenCalledWith("gw1");
-    expect(component.selection().length).toBe(0);
+    expect(component.selector.selectedCount()).toBe(0);
   });
 
   it("should not open the dialog when nothing is selected", () => {

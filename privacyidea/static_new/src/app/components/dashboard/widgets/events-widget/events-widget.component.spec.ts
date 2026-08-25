@@ -46,6 +46,7 @@ function makeEventsResponse(events: { id: number; name: string; active: boolean 
         active: e.active,
         handlermodule: "",
         ordering: 0,
+        abort_on_error: false,
         position: "post",
         event: [],
         action: "",

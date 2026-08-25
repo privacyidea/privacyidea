@@ -3,9 +3,16 @@
 
 .audit-table-container {
   @include styles.main-component-style;
-  max-height: var(--table-max-height);
+  @include table.page-table-state-size;
   @include table.base-table-structure(".audit-table", ".audit-table-filter", ".table-scroll-container");
   display: flex;
   flex-direction: column;
   overflow: hidden;
+}
+
+.filter-action-button {
+  margin-left: 8px;
+  // align on the 56px input infix rather than the full field height, which includes the hint line below
+  align-self: flex-start;
+  margin-top: 8px;
 }

@@ -8,7 +8,7 @@
 .ldap-config-container {
   display: grid;
   grid-template-columns: repeat(2, var(--input-width-l));
-  gap: var(--global-gap);
+  gap: 16px;
 
   --mat-form-field-filled-disabled-label-text-color: var(--mat-sys-on-surface-variant);
   --mat-checkbox-disabled-label-color: var(--mat-sys-on-surface);

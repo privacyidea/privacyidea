@@ -19,4 +19,5 @@
 export class MockLoadingService {
   addLoading = jest.fn();
   removeLoading = jest.fn();
+  getLoadingGroups = jest.fn().mockReturnValue([]);
 }

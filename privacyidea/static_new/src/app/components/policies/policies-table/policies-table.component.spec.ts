@@ -27,10 +27,18 @@ import { PoliciesTableComponent } from "@components/policies/policies-table/poli
 import { PolicyFilterComponent } from "@components/policies/policies-table/policy-filter/policy-filter.component";
 import { FilterValueGeneric } from "@core/models/filter_value_generic/filter-value-generic";
 import { AuthService } from "@services/auth/auth.service";
+import { ContentService } from "@services/content/content.service";
 import { DialogService } from "@services/dialog/dialog.service";
 import { PolicyDetail, PolicyService } from "@services/policies/policies.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
-import { MockDialogService, MockPolicyService, MockRouter, MockTableUtilsService } from "@testing/mock-services";
+import {
+  MockContentService,
+  MockDialogService,
+  MockPolicyService,
+  MockRouter,
+  MockTableUtilsService
+} from "@testing/mock-services";
+import { expectsTableStateGating } from "@testing/table-state-gating";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { of } from "rxjs";
 
@@ -65,6 +73,7 @@ describe("PoliciesTableComponent", () => {
         { provide: AuthService, useClass: MockAuthService },
         { provide: TableUtilsService, useClass: MockTableUtilsService },
         { provide: PolicyFilterComponent, useClass: MockPolicyFilterComponent },
+        { provide: ContentService, useClass: MockContentService },
         { provide: Router, useClass: MockRouter }
       ]
     })
@@ -78,6 +87,11 @@ describe("PoliciesTableComponent", () => {
     mockDialogService = TestBed.inject(DialogService) as unknown as MockDialogService;
     router = TestBed.inject(Router) as unknown as MockRouter;
 
+    const mockAuthService = TestBed.inject(AuthService) as unknown as MockAuthService;
+    // Through the rights signal rather than by pinning actionAllowed: a constant answer reads no
+    // signal, so anything computed from it caches its first verdict and never re-evaluates.
+    mockAuthService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["policyread"] });
+
     mockPolicyService.allPolicies.set(mockPolicies);
 
     fixture = TestBed.createComponent(PoliciesTableComponent);
@@ -85,26 +99,28 @@ describe("PoliciesTableComponent", () => {
     fixture.detectChanges();
   });
 
+  it("gates the table on its read right, row count and filter", () => {
+    expectsTableStateGating({
+      state: component.tableState,
+      right: "policyread"
+    });
+  });
+
   it("should create", () => {
     expect(component).toBeTruthy();
   });
 
-  it("should show skeleton rows when service returns no policies", () => {
+  it("stands the state panel in for the table while the policies are still loading", () => {
+    // A table of placeholder rows is shaped like data, so ending the load on the empty panel reads
+    // as rows arriving and then being taken away. The panel speaks for the load instead.
     mockPolicyService.allPolicies.set([]);
+    mockPolicyService.allPoliciesResource.value.set(undefined);
     fixture.detectChanges();
 
-    const rows = fixture.debugElement.queryAll(By.css("tr[mat-row]"));
-
-    expect(rows.length).toBe(component.skeletonRowCount);
-    expect(rows[0].classes["skeleton-row"]).toBeTruthy();
-  });
-
-  it("should disable header checkbox when in skeleton state", () => {
-    mockPolicyService.allPolicies.set([]);
-    fixture.detectChanges();
-
-    const headerCheckbox = fixture.debugElement.query(By.css("th.mat-column-select mat-checkbox"));
-    expect(headerCheckbox.componentInstance.disabled).toBeTruthy();
+    expect(component.tableState.status()).toBe("loading");
+    expect(component.tableState.showTable()).toBe(false);
+    expect(fixture.debugElement.queryAll(By.css("tr[mat-row]")).length).toBe(0);
+    expect(fixture.debugElement.query(By.css("mat-progress-spinner"))).toBeTruthy();
   });
 
   it("should display all rows when policies are present", () => {
@@ -115,14 +131,17 @@ describe("PoliciesTableComponent", () => {
     expect(component.sortedFilteredPolicies().length).toBe(3);
   });
 
-  it("should select all displayed rows when masterToggle is called", () => {
+  it("should select all displayed rows when select-all is triggered", () => {
     fixture.detectChanges();
 
-    component.masterToggle();
-    expect(component.selectedPolicies().size).toBe(3);
-    expect(component.selectedPolicies().has("Policy-A")).toBeTruthy();
-    expect(component.selectedPolicies().has("Policy-B")).toBeTruthy();
-    expect(component.selectedPolicies().has("Policy-C")).toBeTruthy();
+    component.selector.selectAllRows();
+
+    expect(component.selector.selectedRows().map((policy) => policy.name)).toEqual([
+      "Policy-A",
+      "Policy-B",
+      "Policy-C"
+    ]);
+    expect(component.selector.allRowsSelected()).toBe(true);
   });
 
   it("should open edit dialog only if row is not a skeleton row", () => {
@@ -154,7 +173,7 @@ describe("PoliciesTableComponent", () => {
 
     const noDataRow = fixture.debugElement.query(By.css("tr.mat-mdc-no-data-row"));
     expect(noDataRow).toBeTruthy();
-    expect(noDataRow.nativeElement.textContent).toContain($localize`No data matching the filter.`);
+    expect(noDataRow.nativeElement.textContent).toContain($localize`No entries match the filter`);
   });
 
   it("should toggle filter keys when clicking header filter buttons", () => {
@@ -218,6 +237,66 @@ describe("PoliciesTableComponent", () => {
     const expectedColspan = component.columnKeys().length;
 
     expect(noDataCell.attributes["colspan"]).toBe(expectedColspan.toString());
+  });
+
+  describe("initial filter from query params", () => {
+    const rssPolicy = {
+      name: "rss-policy",
+      priority: 40,
+      scope: "webui",
+      active: true,
+      description: "",
+      action: { rss_age: "30" },
+      realm: [],
+      user: [],
+      adminrealm: [],
+      adminuser: [],
+      pinode: [],
+      client: [],
+      user_agents: [],
+      time: "",
+      conditions: []
+    } as unknown as PolicyDetail;
+
+    const createWithQueryParams = (params: Record<string, string>): ComponentFixture<PoliciesTableComponent> => {
+      (TestBed.inject(ContentService) as unknown as MockContentService).queryParams.set(params);
+      const created = TestBed.createComponent(PoliciesTableComponent);
+      created.detectChanges();
+      return created;
+    };
+
+    it("should start unfiltered when no filter param is present", () => {
+      const created = createWithQueryParams({});
+
+      expect(created.componentInstance.filter().isEmpty).toBe(true);
+      created.destroy();
+    });
+
+    it("should adopt the filter query param as initial filter", () => {
+      const created = createWithQueryParams({ filter: "actions: rss_age" });
+
+      expect(created.componentInstance.filter().getFilterOfKey("actions")).toBe("rss_age");
+      created.destroy();
+    });
+
+    it("should apply the filter query param to the listed policies", () => {
+      mockPolicyService.allPolicies.set([...mockPolicies, rssPolicy]);
+      const created = createWithQueryParams({ filter: "actions: rss_age" });
+
+      expect(created.componentInstance.policiesListFiltered().map((policy) => policy.name)).toEqual(["rss-policy"]);
+      created.destroy();
+    });
+
+    it("should hand the query param filter to the filter component", () => {
+      const authService = TestBed.inject(AuthService) as unknown as MockAuthService;
+      authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["policyread"] });
+      const created = createWithQueryParams({ filter: "actions: rss_age" });
+
+      const filterComponent = created.debugElement.query(By.directive(MockPolicyFilterComponent))
+        .componentInstance as MockPolicyFilterComponent;
+      expect(filterComponent.initialFilter.getFilterOfKey("actions")).toBe("rss_age");
+      created.destroy();
+    });
   });
 
   describe("filter matching and highlighting", () => {

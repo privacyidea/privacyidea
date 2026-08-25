@@ -18,6 +18,7 @@
  **/
 import { Component, OnInit, computed, effect, inject, signal } from "@angular/core";
 import { PiResponse } from "@app/app.component";
+import { ROUTE_PATHS } from "@app/route_paths";
 import { TableSortHeaderComponent } from "@components/dashboard/widgets/table-sort/table-sort-header.component";
 import { TableSort } from "@components/dashboard/widgets/table-sort/table-sort";
 import { WidgetStateComponent } from "@components/dashboard/widgets/widget-state/widget-state.component";
@@ -40,6 +41,8 @@ export class AdministrationWidgetComponent extends DashboardWidget implements On
   static override readonly requiredAction = "auditlog";
   static override readonly title = $localize`Administration`;
   static override readonly icon = "supervised_user_circle";
+  static override readonly titleLink = ROUTE_PATHS.AUDIT;
+  static override readonly titleLinkAction = "auditlog";
   static override readonly defaultSize: WidgetSize = { cols: 10, rows: 6 };
   static override readonly minSize: WidgetSize = { cols: 7, rows: 4 };
   static override readonly maxSize: WidgetSize = { cols: DASHBOARD_COLUMNS, rows: 8 };

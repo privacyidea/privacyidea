@@ -16,7 +16,16 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, ElementRef, ViewChild, WritableSignal, computed, inject, linkedSignal } from "@angular/core";
+import {
+  Component,
+  ElementRef,
+  OnDestroy,
+  ViewChild,
+  WritableSignal,
+  computed,
+  inject,
+  linkedSignal
+} from "@angular/core";
 import { MatPaginatorModule, PageEvent } from "@angular/material/paginator";
 import { Sort } from "@angular/material/sort";
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
@@ -38,6 +47,8 @@ import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
 import { MatMenuModule } from "@angular/material/menu";
+import { RouterLink } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
 import { ContainerTableActionsComponent } from "@components/container/container-table/container-table-actions/container-table-actions.component";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
@@ -45,7 +56,9 @@ import { CopyableComponent } from "@components/shared/copyable/copyable.componen
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { FilterAutocompleteDirective } from "@components/shared/directives/filter-autocomplete.directive";
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
+import { TableStateComponent } from "@components/shared/table-state/table-state.component";
 import { FilterValue } from "@core/models/filter_value/filter_value";
+import { TableState } from "@core/models/table_state/table-state";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { inlineFilterHint } from "@utils/filter-hint.utils";
 @Component({
@@ -68,12 +81,14 @@ import { inlineFilterHint } from "@utils/filter-hint.utils";
     MatButtonModule,
     MatMenuModule,
     MatDividerModule,
-    ScrollEdgesDirective
+    ScrollEdgesDirective,
+    TableStateComponent,
+    RouterLink
   ],
   templateUrl: "./container-table.component.html",
   styleUrl: "./container-table.component.scss"
 })
-export class ContainerTableComponent {
+export class ContainerTableComponent implements OnDestroy {
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
@@ -121,7 +136,7 @@ export class ContainerTableComponent {
 
   containerDataSource: WritableSignal<MatTableDataSource<ContainerDetailData>> = linkedSignal({
     source: this.containerResource.value,
-    computation: (containerResource, previous) => {
+    computation: (containerResource) => {
       if (containerResource && containerResource.result?.value) {
         const processedData =
           containerResource.result?.value?.containers.map((item) => ({
@@ -131,7 +146,7 @@ export class ContainerTableComponent {
           })) ?? [];
         return new MatTableDataSource<ContainerDetailData>(processedData);
       }
-      return previous?.value ?? new MatTableDataSource<ContainerDetailData>([]);
+      return new MatTableDataSource<ContainerDetailData>([]);
     }
   });
 
@@ -147,6 +162,20 @@ export class ContainerTableComponent {
 
   pageSizeOptions = this.tableUtilsService.pageSizeOptions;
 
+  readonly ROUTE_PATHS = ROUTE_PATHS;
+  readonly tableState = new TableState({
+    resource: this.containerResource,
+    count: () => this.total(),
+    filterActive: () => !this.containerService.activeFilter().isEmpty,
+    allowed: () => this.authService.actionAllowed("container_list"),
+    resetFilter: () => this.containerService.clearFilter()
+  });
+  readonly emptyHint = computed(() =>
+    this.authService.actionAllowed("container_create")
+      ? $localize`Create your first container to assign tokens to a user or a device.`
+      : ""
+  );
+
   @ViewChild("filterHTMLInputElement", { static: false })
   filterInput!: ElementRef<HTMLInputElement>;
   expandedElement: ContainerDetailData | null = null;
@@ -161,28 +190,8 @@ export class ContainerTableComponent {
     realms: "container_realm"
   } as const;
 
-  isAllSelected() {
-    return (
-      this.containerSelection().length === this.containerDataSource().data.length &&
-      this.containerDataSource().data.length > 0
-    );
-  }
-
-  toggleAllRows() {
-    if (this.isAllSelected()) {
-      this.containerSelection.set([]);
-    } else {
-      this.containerSelection.set([...this.containerDataSource().data]);
-    }
-  }
-
-  toggleRow(row: ContainerDetailData): void {
-    const current = this.containerSelection();
-    if (current.includes(row)) {
-      this.containerSelection.set(current.filter((r) => r !== row));
-    } else {
-      this.containerSelection.set([...current, row]);
-    }
+  ngOnDestroy(): void {
+    this.containerSelection.deselectAllRows();
   }
 
   handleStateClick(element: ContainerDetailData) {

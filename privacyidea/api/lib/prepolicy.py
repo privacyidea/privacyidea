@@ -292,9 +292,9 @@ def realmadmin(request=None, action=None):
     """
     This decorator adds the realm(s) to the parameters if the administrator
     calling this API is a realm admin.
-    This way, if the admin calls e.g. GET /user without realm parameter,
-    he will not see all users, but only users in the realms granted by
-    matching policies.
+    This way, if the admin calls e.g. GET /user without a realm parameter
+    (or with an empty one), he will not see all users, but only users in
+    the realms granted by matching policies.
 
     All realms from all matching policies are collected (union).
     If any matching policy lists no realms (i.e. "all realms"), the realm
@@ -311,7 +311,10 @@ def realmadmin(request=None, action=None):
     # This decorator is only valid for admins
     if g.logged_in_user.get("role") == ROLE.ADMIN:
         params = request.all_data
-        if "realm" not in params:
+        if not params.get("realm"):
+            # An empty realm (e.g. "?realm=") is treated the same as an absent one:
+            # otherwise a realm-restricted admin would be evaluated against an
+            # empty realm instead of falling back to their granted realm(s).
             # Collect the union of realms from every matching policy.
             matching_policies = Match.admin(g, action=action).policies()
             if matching_policies:
@@ -1794,12 +1797,35 @@ def check_external(request=None, action="init"):
     return True
 
 
+_api_key_required_deprecation_warned = False
+
+
+def _warn_api_key_required_deprecated():
+    """
+    Log the ``api_key_required`` deprecation once per process, so a deployment
+    that still relies on it is nudged toward API clients without spamming the log
+    on every request.
+    """
+    global _api_key_required_deprecation_warned
+    if not _api_key_required_deprecation_warned:
+        _api_key_required_deprecation_warned = True
+        log.warning("The 'api_key_required' policy (and the JWT minted by 'pi-manage api "
+                    "createtoken') is deprecated and will be removed in a future release. "
+                    "The X-API-Key API clients feature is intended to replace it.")
+
+
 def api_key_required(request=None, action=None):
     """
     This is a decorator for check_user_pass and check_serial_pass.
     It checks, if a policy scope=auth, action=apikeyrequired is set.
     If so, the validate request will only be performed, if a JWT token is passed
     with role=validate.
+
+    .. deprecated::
+        The ``api_key_required`` policy and its ``Authorization`` JWT (minted by
+        ``pi-manage api createtoken``) are deprecated and will be removed in a
+        future release. The X-API-Key API clients feature is intended to replace
+        them; it does not yet cover this use case.
     """
     user_object = request.User
 
@@ -1807,6 +1833,7 @@ def api_key_required(request=None, action=None):
     action = Match.user(g, scope=SCOPE.AUTHZ, action=PolicyAction.APIKEY, user_object=user_object).policies()
     # Do we have a policy?
     if action:
+        _warn_api_key_required_deprecated()
         # check if we were passed a correct JWT
         # Get the Authorization token from the header
         auth_token = request.headers.get('PI-Authorization')

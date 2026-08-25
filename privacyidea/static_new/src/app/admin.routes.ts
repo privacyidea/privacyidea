@@ -50,8 +50,9 @@ import { NewTokengroupComponent } from "@components/external-services/tokengroup
 import { TokengroupsComponent } from "@components/external-services/tokengroups/tokengroups.component";
 import { MachineResolverDetailsComponent } from "@components/machine-resolver/machine-resolver-details/machine-resolver-details.component";
 import { MachineResolverComponent } from "@components/machine-resolver/machine-resolver.component";
+import { NewsComponent } from "@components/news/news.component";
 import { PolicyEditPageComponent } from "@components/policies/policy-edit-page/policy-edit-page.component";
-import { UISettingsComponent } from "@components/ui-settings/ui-settings.component";
+import { UISettingsComponent } from "@components/configuration/ui-settings/ui-settings.component";
 import { PoliciesTableComponent } from "@components/policies/policies-table/policies-table.component";
 import { ChallengesTableComponent } from "@components/token/challenges-table/challenges-table.component";
 import { ContainerCreateComponent } from "@components/container/container-create/container-create.component";
@@ -183,6 +184,10 @@ export const routes: Routes = [
       { path: "", component: AuditComponent },
       { path: "clients", component: ClientsComponent }
     ]
+  },
+  {
+    path: "news",
+    component: NewsComponent
   },
   {
     path: "external-services",

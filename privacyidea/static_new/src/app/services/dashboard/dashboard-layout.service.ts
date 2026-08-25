@@ -246,18 +246,24 @@ export class DashboardLayoutService implements DashboardLayoutServiceInterface {
   }
 
   private defaultWidgets(): WidgetInstance[] {
-    const positions: { type: WidgetTypeId; x: number; y: number }[] = [
-      { type: "tokens", x: 0, y: 0 },
-      { type: "token-types", x: 0, y: 5 },
-      { type: "events", x: 0, y: 10 },
-      { type: "policies", x: 6, y: 0 },
-      { type: "administration", x: 6, y: 5 },
-      { type: "authentications", x: 16, y: 5 }
+    // The subscription overview opens the layout in the top left corner (8 columns,
+    // 11 rows), so the widgets next to it start to its right and continue below it.
+    // News and events are widened past their default size to give the feed and the
+    // event list a bit more breathing room than their minimum column count.
+    const positions: { type: WidgetTypeId; x: number; y: number; cols?: number }[] = [
+      { type: "subscriptions", x: 0, y: 0 },
+      { type: "policies", x: 8, y: 0 },
+      { type: "tokens", x: 18, y: 0 },
+      { type: "news", x: 8, y: 5, cols: 9 },
+      { type: "events", x: 17, y: 5, cols: 7 },
+      { type: "authentications", x: 8, y: 8 },
+      { type: "token-types", x: 16, y: 8 },
+      { type: "administration", x: 0, y: 14 }
     ];
-    return positions.reduce<WidgetInstance[]>((result, { type, x, y }) => {
+    return positions.reduce<WidgetInstance[]>((result, { type, x, y, cols }) => {
       const widgetType = this.registry.get(type);
       if (widgetType) {
-        result.push({ id: uuid(), type, x, y, ...widgetType.defaultSize });
+        result.push({ id: uuid(), type, x, y, ...widgetType.defaultSize, cols: cols ?? widgetType.defaultSize.cols });
       }
       return result;
     }, []);

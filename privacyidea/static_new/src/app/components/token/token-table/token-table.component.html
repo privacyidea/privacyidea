@@ -22,7 +22,7 @@
   aria-label="Token Table"
   class="token-table-layout"
   i18n-aria-label>
-  @if (authService.actionAllowed("tokenlist")) {
+  @if (tableState.showTable()) {
     <div class="filter-paginator-container">
       <mat-form-field
         class="token-table-filter"
@@ -91,17 +91,16 @@
                 class="table-checkbox"
                 mat-header-cell>
                 <mat-checkbox
-                  (change)="$event ? toggleAllRows() : null"
+                  (change)="$event.checked ? tokenSelection.selectAllRows() : tokenSelection.deselectAllRows()"
                   aria-label="Select all tokens"
                   i18n-aria-label
-                  [checked]="isAllSelected()"
-                  [disabled]="totalLength() === 0"
-                  [indeterminate]="tokenSelection().length > 0 && !isAllSelected()" />
+                  [checked]="tokenSelection.allRowsSelected()"
+                  [disabled]="!tokenSelection.hasVisibleRows()"
+                  [indeterminate]="tokenSelection.someRowsSelected()" />
               </th>
             } @else {
               <th
                 *matHeaderCellDef
-                attr.aria-label="{{ column.label }} Header"
                 mat-header-cell>
                 <div class="flex ali-center">
                   {{ column.label }}
@@ -164,18 +163,17 @@
                 'width-300': column.key === 'description',
                 'container_serial-width': column.key === 'container_serial'
               }"
-              attr.aria-label="{{ column.label }} Cell"
               class="max-width-300"
               mat-cell>
               <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
                 @switch (column.key) {
                   @case ("select") {
                     <mat-checkbox
-                      (change)="$event ? toggleRow(tokenDetails) : null"
+                      (change)="tokenSelection.setRowSelected(tokenDetails, $event.checked)"
                       (click)="$event.stopPropagation()"
                       attr.aria-label="Select token {{ tokenDetails.serial }}"
-                      [checked]="tokenSelection().includes(tokenDetails)"
-                      [disabled]="totalLength() === 0" />
+                      [checked]="tokenSelection.isRowSelected(tokenDetails)"
+                      [disabled]="!tokenSelection.hasVisibleRows()" />
                   }
                   @case ("serial") {
                     <app-copyable [copyText]="tokenDetails.serial">
@@ -282,32 +280,41 @@
         }
         <tr
           *matHeaderRowDef="columnKeys; sticky: true"
-          aria-label="Header Row"
-          i18n-aria-label
           mat-header-row></tr>
 
         <tr
           *matRowDef="let row; columns: columnKeys"
-          aria-label="Data Row"
-          i18n-aria-label
           mat-row></tr>
 
-        <tr
-          *matNoDataRow
-          aria-label="No Data Row"
-          i18n-aria-label>
-          <td
-            [attr.colspan]="columnKeys.length"
-            aria-label="No Data Cell"
-            i18n
-            i18n-aria-label>
-            No data matching the filter.
+        <tr *matNoDataRow>
+          <td [attr.colspan]="columnKeys.length">
+            <app-table-state
+              [status]="tableState.rowStatus()"
+              [table]="tableState" />
           </td>
         </tr>
       </table>
     </div>
   } @else {
-    <div i18n>You do not have the permission to view the token list.</div>
+    <app-table-state
+      [hint]="emptyHint()"
+      [table]="tableState"
+      heading="No tokens yet"
+      i18n-heading
+      icon="shield">
+      @if (authService.tokenEnrollmentAllowed()) {
+        <button
+          [routerLink]="[ROUTE_PATHS.TOKENS_ENROLLMENT]"
+          class="action-button-primary button-width-m"
+          mat-stroked-button>
+          <span class="icon-badge">
+            <mat-icon class="padding-right-3">shield</mat-icon>
+            <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+          </span>
+          <span i18n>Enroll Token</span>
+        </button>
+      }
+    </app-table-state>
   }
 </div>
 
@@ -336,13 +343,7 @@
   @for (keyword of advancedApiFilterKeys; track keyword) {
     <button
       (click)="onKeywordClick(keyword)"
-      [attr.aria-disabled]="isUnsupportedKeyword(keyword)"
-      [class.unsupported-filter-item]="isUnsupportedKeyword(keyword)"
-      [disableRipple]="isUnsupportedKeyword(keyword)"
-      [matTooltip]="filterColumnTooltip(keyword, keyword)"
-      mat-menu-item
-      matTooltipClass="filter-hint-tooltip"
-      matTooltipPosition="right">
+      mat-menu-item>
       <mat-icon class="margin-right-16">{{ getFilterIconName(keyword) }}</mat-icon>
       {{ keyword }}
     </button>

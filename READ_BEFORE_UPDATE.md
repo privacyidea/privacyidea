@@ -1,167 +1,262 @@
 # Update Notes
+
 ## Update from 3.13 to 3.14
 
+* **Challenge table cleared** — The database migration deletes all rows from the `challenge` table. Challenge data is
+  now stored in a new format (encrypted JSON dict) that is incompatible with previous versions. If you use long
+  challenge validity times, make sure no important challenge-response authentications are still pending before starting
+  the update.
 
-* **Search wildcard change** — Audit-log, token, and user (SQL resolver) searches now treat `*` as the
-  **only** wildcard. Literal `%` and `_` in a search value are now matched literally instead of acting as
-  SQL `LIKE`/`ILIKE` wildcards. If you have saved filters, integrations, or scripts that used `%` as a
-  wildcard — for example an audit filter `action="%/token/init"` or `serial="OATH%"`, or a token search
-  `serial="OATH%"` — replace the `%` with `*` (`action="*/token/init"`, `serial="OATH*"`). Queries that
-  relied on `%` or `_` as wildcards will otherwise return no results, because those characters now only
-  match themselves. This makes search behaviour consistent (`*` everywhere) and prevents user-supplied
-  input from unintentionally broadening a query.
+* **Search wildcard change** — Audit-log, token, and user (SQL resolver) searches now treat `*` as the **only**
+  wildcard. Literal `%` and `_` in a search value are now matched literally instead of acting as SQL `LIKE`/`ILIKE`
+  wildcards. If you have saved filters, integrations, or scripts that used `%` as a wildcard — for example an audit
+  filter `action="%/token/init"` or `serial="OATH%"`, or a token search
+  `serial="OATH%"` — replace the `%` with `*` (`action="*/token/init"`, `serial="OATH*"`). Queries that relied on `%` or
+  `_` as wildcards will otherwise return no results, because those characters now only match themselves. This makes
+  search behaviour consistent (`*` everywhere) and prevents user-supplied input from unintentionally broadening a query.
 
 * A new admin policy action `cancelchallenge` has been added. Cancelling an active challenge via
   `DELETE /token/challenges/transaction/<transaction_id>` previously required the `getchallenges`
-  right; it now requires the new, write-scoped `cancelchallenge` right. Admins who should only be
-  able to *inspect* open challenges will lose the ability to cancel them after the upgrade unless
-  you explicitly grant the new action. Review your admin policies that reference `getchallenges`
+  right; it now requires the new, write-scoped `cancelchallenge` right. Admins who should only be able to *inspect* open
+  challenges will lose the ability to cancel them after the upgrade unless you explicitly grant the new action. Review
+  your admin policies that reference `getchallenges`
   and decide whether each admin should also get `cancelchallenge`.
 
-* The optional Redis challenge cache (`PI_REDIS_CACHE_CHALLENGES`) is new in this release. If you
-  enable it, be aware that authentications that are mid-flight at the moment of any subsequent
-  upgrade may need to be restarted by the user - same expectation we already set for the SQL
-  schema upgrade. See the "Redis cache" section of the documentation for the full
-  payload-compatibility policy.
+* The optional Redis challenge cache (`PI_REDIS_CACHE_CHALLENGES`) is new in this release. If you enable it, be aware
+  that authentications that are mid-flight at the moment of any subsequent upgrade may need to be restarted by the
+  user - same expectation we already set for the SQL schema upgrade. See the "Redis cache" section of the documentation
+  for the full payload-compatibility policy.
 
-* **HTTP API change** - `GET /token/challenges/...` no longer returns the `id` field for each
-  challenge. The integer ID was the SQL primary key, never a stable cross-deployment identifier,
-  and it was incompatible with the new Redis-backed challenges which have no SQL row. Use
+* Three further optional Redis caches are new in this release, each behind its own flag and **off by default**:
+  `PI_REDIS_CACHE_USERS` (user store lookups), `PI_REDIS_CACHE_AUTH` (the entries of the `auth_cache` policy) and
+  `PI_REDIS_CACHE_HEALTH` (the certificate health results behind the dashboard panel). Enabling them changes where the
+  data lives, not what it means. Two consequences are worth knowing before you switch them on: with
+  `PI_REDIS_CACHE_AUTH` the `authcache` table stays empty and `pi-manage config authcache cleanup` has nothing left to
+  do, and with `PI_REDIS_CACHE_USERS` a resolver's own `CACHE_TIMEOUT` still bounds how quickly a user change is
+  noticed, because that per-process cache sits in front of the shared one. See the "Redis cache" section of the
+  documentation.
+
+* **`clientapplication.lastseen` is written again.** Since 3.13 the column was only ever set when a client's row was
+  first created: the update path assigned an attribute that is not the column, so the client list in the WebUI and the
+  metering of plugin traffic showed when each client was *first* seen rather than last. This is fixed. Expect the
+  timestamps in that list to start moving again, which may look like new activity where there is none.
+
+* **Two write reductions are active by default** and change behaviour without any configuration. Both are intervals in
+  seconds that can be set to `0` in `pi.cfg` to restore the previous per-request behaviour:
+
+  * `PI_CLIENTAPPLICATION_WRITE_INTERVAL` (default `60`) - a client's `lastseen` is refreshed at most once per interval
+    per worker process instead of on every request, so it can be up to a minute behind.
+  * `PI_SUBSCRIPTION_COUNT_INTERVAL` (default `60`) - the number of users with active tokens is reused between
+    subscription checks, so a user who is given a token may take up to a minute to count towards the subscription. The
+    number is always recounted before a subscription can be declared exceeded, so no authentication is ever refused on
+    the strength of a stale count, and the subscription overview and the statistics task keep counting exactly.
+
+* **HTTP API change** - `GET /token/challenges/...` no longer returns the `id` field for each challenge. The integer ID
+  was the SQL primary key, never a stable cross-deployment identifier, and it was incompatible with the new Redis-backed
+  challenges which have no SQL row. Use
   `transaction_id` (already present, identical across both backends) instead. The change affects
   `GET /token/challenges/`, `GET /token/challenges/<serial>`, and the new
-  `GET /token/challenges/user` endpoint. Integrations that indexed responses by `id` need to be
-  updated to use `transaction_id`.
+  `GET /token/challenges/user` endpoint. Integrations that indexed responses by `id` need to be updated to use
+  `transaction_id`.
 
-* A new `hide_version` policy action (scope `hardening`) lets you suppress the
-  privacyIDEA version (`version` / `versionnumber`) from API responses and the
-  WebUI for unauthenticated requests. Authenticated requests still receive it:
-  an admin or user with a valid token (e.g. the WebUI's `/config` call after
-  login) sees the version as before, so the WebUI keeps showing it.
+* A new `hide_version` policy action (scope `hardening`) lets you suppress the privacyIDEA version (`version` /
+  `versionnumber`) from API responses and the WebUI for unauthenticated requests. Authenticated requests still receive
+  it:
+  an admin or user with a valid token (e.g. the WebUI's `/config` call after login) sees the version as before, so the
+  WebUI keeps showing it.
 
-* When the `hide_version` policy is active, `version`/`versionnumber` are also
-  removed from API responses to unauthenticated callers such as
-  `/validate/check`. This is intentional (defense in depth). Do not rely on the
-  version field to decide whether the server supports an operation — use the
-  relevant capability flags in the response instead.
+* When the `hide_version` policy is active, `version`/`versionnumber` are also removed from API responses to
+  unauthenticated callers such as
+  `/validate/check`. This is intentional (defense in depth). Do not rely on the version field to decide whether the
+  server supports an operation — use the relevant capability flags in the response instead.
 
 * Independently of that policy, the health-check endpoints (`/healthz`,
-  `/healthz/livez`, `/healthz/readyz`, `/healthz/startupz`) **no longer return
-  the `version`/`versionnumber` fields at all**. These probes are unauthenticated
-  and the version is not needed for liveness/readiness; evaluating the policy is
-  deliberately avoided here so the checks stay dependency-free and keep answering
-  even when the database is unavailable (policy evaluation reads the cached
-  configuration, whose freshness check still touches the database). If you relied
-  on scraping the privacyIDEA version from a health endpoint, read it from an
-  authenticated endpoint instead.
+  `/healthz/livez`, `/healthz/readyz`, `/healthz/startupz`) **no longer return the `version`/`versionnumber` fields at
+  all**. These probes are unauthenticated and the version is not needed for liveness/readiness; evaluating the policy is
+  deliberately avoided here so the checks stay dependency-free and keep answering even when the database is unavailable
+  (policy evaluation reads the cached configuration, whose freshness check still touches the database). If you relied on
+  scraping the privacyIDEA version from a health endpoint, read it from an authenticated endpoint instead.
 
-* Sensitive configuration values (passwords, secrets) are no longer returned in plaintext by
-  the REST API. Affected endpoints: CA connectors (`GET /caconnector`), machine resolvers
-  (`GET /machineresolver`), RADIUS servers (`GET /radiusserver`), SMS gateways
-  (`GET /smsgateway`), and SMTP servers (`GET /smtpserver`). Secret fields are now replaced
-  with a censored placeholder (`__CENSORED__`) in API responses.
-  **If you have external tools or scripts** that read configuration via these API endpoints and
-  rely on retrieving the actual secret values, they will now receive the placeholder instead.
-  Sending the placeholder back in a PUT/POST request preserves the existing stored value (it is
-  not overwritten). To set a new secret, supply the actual new value.
+* Sensitive configuration values (passwords, secrets) are no longer returned in plaintext by the REST API. Affected
+  endpoints: CA connectors (`GET /caconnector`), machine resolvers (`GET /machineresolver`), RADIUS servers
+  (`GET /radiusserver`), SMS gateways (`GET /smsgateway`), and SMTP servers (`GET /smtpserver`). Secret fields are now
+  replaced with a censored placeholder (`__CENSORED__`) in API responses. **If you have external tools or scripts** that
+  read configuration via these API endpoints and rely on retrieving the actual secret values, they will now receive the
+  placeholder instead. Sending the placeholder back in a PUT/POST request preserves the existing stored value (it is not
+  overwritten). To set a new secret, supply the actual new value.
 
 * A new pre-aggregated `metric_aggregate` table backs the *Resolver Timing* and *Notification Delivery*
-  dashboard panels. The schema migration creates the table empty; nothing breaks if you skip the next step,
-  but the table grows unbounded over time. After the upgrade, go to *Config -> Tasks* and schedule the new
-  **MetricsCleanup** periodic task (option `older_than_hours`, default `24`; daily cadence recommended). If you
-  prefer not to record metrics at all, set `PI_NO_INTERNAL_METRICS = True` in `pi.cfg` - the dashboard panels
-  will show no data and the table stays empty.
-  The dashboard panels read the last hour by default, so anything older than ~24 h is dead weight.
+  dashboard panels. The schema migration creates the table empty; nothing breaks if you skip the next step, but the
+  table grows unbounded over time. After the upgrade, go to *Config -> Tasks* and schedule the new **MetricsCleanup**
+  periodic task (option `older_than_hours`, default `24`; daily cadence recommended). If you prefer not to record
+  metrics at all, set `PI_NO_INTERNAL_METRICS = True` in `pi.cfg` - the dashboard panels will show no data and the table
+  stays empty. The dashboard panels read the last hour by default, so anything older than ~24 h is dead weight.
 
 * The `/validate/samlcheck` endpoint has been removed (deprecated in 3.11). The
-  `ReturnSamlAttributes` and `ReturnSamlAttributesOnFail` system configuration
-  options are removed along with it; the corresponding WebUI controls are gone
-  and stored values become inert. Switch any clients to `/validate/check` with
-  the authorization policies `add_user_in_response` and/or
+  `ReturnSamlAttributes` and `ReturnSamlAttributesOnFail` system configuration options are removed along with it; the
+  corresponding WebUI controls are gone and stored values become inert. Switch any clients to `/validate/check` with the
+  authorization policies `add_user_in_response` and/or
   `add_resolver_in_response`; user attributes are then returned under
   `detail.user` (and resolver/realm under `detail.user-resolver` /
   `detail.user-realm`) instead of inside `result.value.attributes`.
 
   **No direct replacement for `ReturnSamlAttributesOnFail`**: the
-  `add_user_in_response` policy only fires when authentication succeeds, so
-  applications that relied on receiving user attributes on a failed
-  authentication need to be reworked (e.g. look the user up via the user API
-  on the relying-party side).
+  `add_user_in_response` policy only fires when authentication succeeds, so applications that relied on receiving user
+  attributes on a failed authentication need to be reworked (e.g. look the user up via the user API on the relying-party
+  side).
 
-* A new admin policy action `get_user_internal_attributes` controls who may read the
-  privacyIDEA-internal user attributes (e.g. `fido2_user_id`, `last_used_token`) via the
-  new `GET /user/internal_attribute` endpoint and the *Internal attributes* panel in the
-  user details view. **If you have any admin policies defined**, your administrators will
-  not be able to read these attributes until you grant them this action — review your
-  superuser/helpdesk policies and add `get_user_internal_attributes` where needed.
-  Installations without any admin policies are unaffected (all actions remain allowed).
+* A new admin policy action `get_user_internal_attributes` controls who may read the privacyIDEA-internal user
+  attributes (e.g. `fido2_user_id`, `last_used_token`) via the new `GET /user/internal_attribute` endpoint and the
+  *Internal attributes* panel in the user details view. **If you have any admin policies defined**, your administrators
+  will not be able to read these attributes until you grant them this action — review your superuser/helpdesk policies
+  and add `get_user_internal_attributes` where needed. Installations without any admin policies are unaffected (all
+  actions remain allowed).
 
-* Internal user state (the `fido2_user_id` value and `last_used_token_*` entries) is moved out
-  of the `customuserattribute` table into a new `internaluserattribute` table during the schema
-  update, and the original rows are then deleted from `customuserattribute`. Because the migration
-  both moves and deletes these rows, run the schema update with the privacyIDEA service stopped. In
-  a multi-node setup, do not keep an old version serving while the upgrade runs: a concurrent
-  old-version node could write these values back into `customuserattribute` and have them dropped by
-  the cleanup. (Single-node / offline upgrades are unaffected.)
+* Internal user state (the `fido2_user_id` value and `last_used_token_*` entries) is moved out of the
+  `customuserattribute` table into a new `internaluserattribute` table during the schema update, and the original rows
+  are then deleted from `customuserattribute`. Because the migration both moves and deletes these rows, run the schema
+  update with the privacyIDEA service stopped. In a multi-node setup, do not keep an old version serving while the
+  upgrade runs: a concurrent old-version node could write these values back into `customuserattribute` and have them
+  dropped by the cleanup. (Single-node / offline upgrades are unaffected.)
 
-* The `u2f` token has been removed. It no longer functions. If you have any tokens of this type left,
-  the schema update will flip them to `tokentype='deprecated'` and disable them, preserving the
-  original type in `tokeninfo['original_tokentype']`. The migration logs a loud warning with the
-  count at upgrade time. Existing u2f tokens remain visible in the token list but can no longer be
-  used to authenticate. Clean them up when you are ready with:
+* The `u2f` token has been removed. It no longer functions. If you have any tokens of this type left, the schema update
+  will flip them to `tokentype='deprecated'` and disable them, preserving the original type in
+  `tokeninfo['original_tokentype']`. The migration logs a loud warning with the count at upgrade time. Existing u2f
+  tokens remain visible in the token list but can no longer be used to authenticate. Clean them up when you are ready
+  with:
 
       pi-tokenjanitor deprecated delete u2f
 
 * The `rollout_state` of fully enrolled tokens has changed. Previously, tokens that completed enrollment could have an
-  empty string (`""`) as their `rollout_state`. Now, fully enrolled tokens have the `rollout_state` set to `enrolled`.
-  A database migration script updates all existing tokens with an empty or `NULL` `rollout_state` to `enrolled`.
-  If you have custom code or external tools that check the `rollout_state` of tokens (e.g. by comparing against
-  an empty string), you need to update those checks to also handle the value `enrolled`.
+  empty string (`""`) as their `rollout_state`. Now, fully enrolled tokens have the `rollout_state` set to `enrolled`. A
+  database migration script updates all existing tokens with an empty or `NULL` `rollout_state` to `enrolled`. If you
+  have custom code or external tools that check the `rollout_state` of tokens (e.g. by comparing against an empty
+  string), you need to update those checks to also handle the value `enrolled`.
 
   **Event handlers** that use the `rollout_state` condition with an empty string (`""`) to mean
-  "fully enrolled" will silently stop matching after the migration. Update any such conditions to
-  use `enrolled` instead. You can find affected event handlers in the WebUI under *Config -> Events*
+  "fully enrolled" will silently stop matching after the migration. Update any such conditions to use `enrolled`
+  instead. You can find affected event handlers in the WebUI under *Config -> Events*
   by reviewing handlers whose conditions reference `rollout_state`.
 
-* Realm-restricted admins with the `userlist` right now see users from **all** realms granted to
-  them, not just one. Previously, when such an admin called `GET /user/` without an explicit `realm`
+* `GET /user/` now honours the `resolver` parameter. Previously, combining `realm` and `resolver`
+  ignored the resolver and returned every user of the realm, and a `resolver`-only query fanned out
+  to every sibling resolver in the realms containing it (so the `resolver` field of a returned user
+  could be a different, higher-priority resolver). Now `realm` + `resolver` returns only that
+  resolver's users within the realm (an empty result if the resolver is not part of the realm), and
+  a `resolver`-only query returns only that resolver's users. If you have scripts or integrations
+  that call `GET /user/` with a `resolver` parameter and relied on the old behaviour, review them.
+
+* Realm-restricted admins with the `userlist` right now see users from **all** realms granted to them, not just one.
+  Previously, when such an admin called `GET /user/` without an explicit `realm`
   parameter, only the users of a single realm were returned (the first realm of the first matching
-  `userlist` policy), even when the admin was authorized for several realms — whether through one
-  policy listing multiple realms or through multiple policies. The endpoint now returns the union of
-  users across every granted realm. If you have admins that should stay scoped to a single realm,
-  review their `userlist` policies to confirm they grant only the intended realms.
+  `userlist` policy), even when the admin was authorized for several realms — whether through one policy listing
+  multiple realms or through multiple policies. The endpoint now returns the union of users across every granted realm.
+  If you have admins that should stay scoped to a single realm, review their `userlist` policies to confirm they grant
+  only the intended realms.
 
-* Resolvers within a realm that share the same priority are now sorted **alphabetically by name**.
-  Previously, the order was undefined and depended on the database insertion order, which could
-  differ between SQLite, PostgreSQL and MariaDB. If you rely on a specific resolver ordering
-  within a realm, make sure each resolver has an explicit, distinct priority.
+* Resolvers within a realm that share the same priority are now sorted **alphabetically by name**. Previously, the order
+  was undefined and depended on the database insertion order, which could differ between SQLite, PostgreSQL and MariaDB.
+  If you rely on a specific resolver ordering within a realm, make sure each resolver has an explicit, distinct
+  priority.
 
-* **Machine `hostname` in `GET /machine/` is always a list.** The LDAP machine resolver previously
-  returned a single string (e.g. `"dc01.example.test"`); it now returns a list
-  (e.g. `["dc01.example.test"]`), consistent with the hosts resolver and the documented API.
+* **A failing event handler no longer aborts the request.** Previously any exception raised by an event handler
+  ended the request with an error, so a single unreachable SMTP server or a broken script could make token
+  enrollment or authentication fail. A failing handler is now best-effort: the failure is written to the audit log
+  (`success=False`, with the exception class in the `info` column), the remaining handlers still run, and the
+  request continues. The exception text itself only goes to the privacyIDEA log, not into the audit database,
+  because it can contain the parameters of the forwarded request.
+
+  This is configurable per event handler binding with the new **Abort on error** option (API parameter
+  `abort_on_error`, new column in the `eventhandler` table). Enable it for a binding whose result the request
+  itself consumes — otherwise the handler silently not running changes what the client receives. The clearest
+  cases are a **response mangler** that removes data from a response (if it does not run, the data is sent to the
+  client) and a **request mangler** that overwrites request parameters (if it does not run, the endpoint uses the
+  values the client sent). Review your handlers under *Config -> Events* and decide for each whether a failure
+  should fail the request.
+
+  The schema update sets `abort_on_error` for existing **Federation** handlers, because a federation handler
+  replaces the response with the one of the remote privacyIDEA: continuing without it would answer the client
+  with the locally generated response as if the remote server had produced it. All other existing handlers keep
+  the new best-effort behaviour. If you would rather have a failed federation request answered locally, clear the
+  option for those handlers after the update.
+
+  Note that a post-event handler runs after the API function has already done its work, so aborting the request
+  there reports an error for an operation that partly happened — the local token was created, only the forwarded
+  request failed.
+
+* **Machine `hostname` in `GET /machine/` is always a list.** The LDAP machine resolver previously returned a single
+  string (e.g. `"dc01.example.test"`); it now returns a list (e.g. `["dc01.example.test"]`), consistent with the hosts
+  resolver and the documented API.
 
 * **HTTP API change** - `GET /container/` now filters by the realm of the assigned user when `realm`
-  is given without `user`, listing the containers of all users of that realm. Previously such a
-  request returned an empty list, because the realm was only ever applied together with a resolved
-  user id. Note that `realm` (the realm of the assigned user) and `container_realm` (the realm of the
-  container itself) are still two distinct filters. A realm that does not exist matches nothing, like
-  any other filter value that does not exist. A `user` that can not be resolved to a user id is now
-  rejected with a 400 instead of being answered with an empty list, because the request would
-  otherwise be filtered by the realm and the resolver alone and return the containers of other users.
-  Scripts that pass a stale or misspelled user name to `GET /container/` and relied on getting an
-  empty result need to handle the error.
+  is given without `user`, listing the containers of all users of that realm. Previously such a request returned an
+  empty list, because the realm was only ever applied together with a resolved user id. Note that `realm` (the realm of
+  the assigned user) and `container_realm` (the realm of the container itself) are still two distinct filters. A realm
+  that does not exist matches nothing, like any other filter value that does not exist. A `user` that can not be
+  resolved to a user id is now rejected with a 400 instead of being answered with an empty list, because the request
+  would otherwise be filtered by the realm and the resolver alone and return the containers of other users. Scripts that
+  pass a stale or misspelled user name to `GET /container/` and relied on getting an empty result need to handle the
+  error.
+
+* **HTTP API change** - the `resolver` and `userid` filters of `GET /token/` are now applied. Both parameters have
+  always been accepted and documented, but they never became a condition of the query, so a request carrying one of
+  them returned *all* tokens instead of the tokens of that resolver or of that user id. `resolver` is matched
+  case-insensitively and `*` acts as a wildcard in both, consistent with `GET /container/`. Since only a token that is
+  assigned to a user can match either filter, tokens without an owner are no longer part of such a result. Saved
+  filters, scripts and integrations that pass `resolver` or `userid` will therefore receive fewer tokens than before -
+  namely the ones they asked for.
+
+* **HTTP API change** - `GET /token/?realm=<name>` now returns an empty list if the realm does not exist, instead of
+  answering with a 404 `ResourceNotFoundError`. An unknown value matches nothing, the way every other filter of the
+  endpoint (including `tokenrealm`) already behaves. A `user` that can not be resolved to a user id is still rejected
+  with a 400, because the request would otherwise be filtered by the realm and the resolver alone and return the tokens
+  of other users.
+
+* **Policies with a User Agent condition are no longer dropped when no user agent is known.** Listing the policies
+  without a user agent - which is the case for `pi-manage config export`, for the configuration report of
+  `GET /system/documentation`, and for the internal check whether a scope contains any policy at all - previously
+  omitted every policy that carries a `User Agent` condition. Such a policy was therefore missing from a configuration
+  export (#5683), and a scope whose policies all carry a User Agent condition was treated as if it had no policies.
+  All of these now see the complete set of policies.
+
+  **This changes who is allowed what** in the `admin` and `user` scopes. Those scopes allow everything as long as they
+  contain no policy at all, and deny everything that is not explicitly granted as soon as they contain one. A scope
+  whose only policies carry a User Agent condition was therefore treated as empty and allowed everything; it now counts
+  as configured, and a request arriving with a different user agent is denied unless a policy grants the action to it.
+  For example, if your only `user` scope policy grants `enrollpin` limited to `privacyIDEA-WebUI`, users can still set
+  their PIN through the WebUI, but a request from another client is refused.
+
+  **WARNING**: in the `admin` scope this can lock you out. If **every** policy in your `admin` scope carries a User
+  Agent condition, then before the update administrators kept full rights no matter which client they used, and after
+  the update they only have the rights of the policies that match their user agent - none, if no policy names it. An
+  admin policy limited to, say, `privacyIDEA-CP` will leave you unable to administrate through the WebUI, including
+  unable to edit the very policy causing it.
+
+  **Before updating**, check your `admin` scope policies under *Config -> Policies* for a User Agent condition. If any
+  are present, make sure that at least one **active** `admin` policy grants your administrators their rights either
+  with no User Agent condition at all or with a condition that includes the client they administrate with
+  (`privacyIDEA-WebUI` for the WebUI). The same review applies to the `user` scope, where the consequence is users
+  losing self-service rights rather than a lockout.
+
+  If you are already locked out after the update, the policy can be disabled from the command line on the server, which
+  does not go through the policy check:
+
+      pi-manage config policy list
+      pi-manage config policy disable <name>
+
+  Installations that do not use the User Agent condition are unaffected.
 
 ## Update from 3.12 to 3.13
 
-* `enrollpin` right enforcement has been made stricter. If you try to enroll a token with a PIN but do not have the
-  the right, the enrollment will be denied with a PolicyError.
+* `enrollpin` right enforcement has been made stricter. If you try to enroll a token with a PIN but do not have the the
+  right, the enrollment will be denied with a PolicyError.
 
 * Database changes:
 
-  * In the `pidea_audit` table the size of the signature column is increased to support 4096 Bit RSA signatures.
-  * The size of the `id` column in the `pidea_audit` table is enhanced from int to bigint.
-  * The table `smtpserver` gets a new boolean SMIME column.
-  * On existing installations the missing `tokencredentialidhash_seq` is created
-  
+    * In the `pidea_audit` table the size of the signature column is increased to support 4096 Bit RSA signatures.
+    * The size of the `id` column in the `pidea_audit` table is enhanced from int to bigint.
+    * The table `smtpserver` gets a new boolean SMIME column.
+    * On existing installations the missing `tokencredentialidhash_seq` is created
 
 ## Update from 3.11 to 3.12
 
@@ -171,18 +266,18 @@
 
   `PI_TEMPLATE_FOLDER = "static_new/dist/privacyidea-webui/browser/"`
 
-* The behaviour of the Certificate Token changes when the certificate key-pair is created by privacyIDEA.
-  The secret key will not be saved to the tokeninfo anymore. Instead, only the PKCS12 container will contain
-  the secret key. The PKCS12 container will be available in the tokeninfo and will be encrypted either with
-  the token PIN or a generated password which is shown to the user during rollout, but only once!
-* The directory containing the database schema update scripts moved into the `privacyidea` package.
-  The parameter `-d` is not required anymore to run database migration commands.
+* The behaviour of the Certificate Token changes when the certificate key-pair is created by privacyIDEA. The secret key
+  will not be saved to the tokeninfo anymore. Instead, only the PKCS12 container will contain the secret key. The PKCS12
+  container will be available in the tokeninfo and will be encrypted either with the token PIN or a generated password
+  which is shown to the user during rollout, but only once!
+* The directory containing the database schema update scripts moved into the `privacyidea` package. The parameter `-d`
+  is not required anymore to run database migration commands.
 * The `u2f` token has been added to the list of non-enrollable token types because it is no longer supported by most
   browsers. Existing tokens can still be used. The enrollment can be enabled by adding the type `u2f` to the
   configuration option list `PI_ENABLE_TOKEN_TYPE_ENROLLMENT`.
-* Some migration scripts for the database schema update have been identified to cause problems in
-  some cases when upgrading from a version smaller than privacyIDEA v3.9. Please check the output
-  of the migration steps for potential problems.
+* Some migration scripts for the database schema update have been identified to cause problems in some cases when
+  upgrading from a version smaller than privacyIDEA v3.9. Please check the output of the migration steps for potential
+  problems.
 
 ## Update from 3.10 to 3.11
 
@@ -192,40 +287,38 @@
   still see all tokens. This restriction is currently for all token and container operations except for the user
   assignment. So for example, a helpdesk admin of realm A can still assign a token without a realm to a user in realm A,
   but the serial of the token is required.
-* The webauthn JavaScript submodule was removed and replaced with a static file.
-  When using a Git-Checkout you probably need to remove the directory/submodule before updating.
+* The webauthn JavaScript submodule was removed and replaced with a static file. When using a Git-Checkout you probably
+  need to remove the directory/submodule before updating.
 * Deprecation:
-    * `/validate/samlcheck`: The endpoint will be removed in the future version **3.12**.
-      This also removes the `Include SAML attributes in the authentication response` configuration option.
-      If you are using that endpoint for one of your applications, please start using `validate/check` with the policies
+    * `/validate/samlcheck`: The endpoint will be removed in the future version **3.12**. This also removes the
+      `Include SAML attributes in the authentication response` configuration option. If you are using that endpoint for
+      one of your applications, please start using `validate/check` with the policies
       `add_user_in_response` and/or `add_resolver_in_response`.
-    * Authorization Policies `no_detail_on_fail` and `no_detail_on_success` since they
-      break challenge-response authentication.
+    * Authorization Policies `no_detail_on_fail` and `no_detail_on_success` since they break challenge-response
+      authentication.
 
 ## Update from 3.9 to 3.10
 
-* Due to stability and performance reasons, unanswered challenges will remain in the database table
-  and are not cleaned up automatically. This can be achieved with the command `pi-manage config challenge cleanup`.
-  A commented line in the privacyIDEA crontab-file is added as an example to perform this cleanup regularly.
-* The `PI_NODES` configuration option is not used anymore. The nodes will be added
-  to the database with a unique identifier for each installation.
+* Due to stability and performance reasons, unanswered challenges will remain in the database table and are not cleaned
+  up automatically. This can be achieved with the command `pi-manage config challenge cleanup`. A commented line in the
+  privacyIDEA crontab-file is added as an example to perform this cleanup regularly.
+* The `PI_NODES` configuration option is not used anymore. The nodes will be added to the database with a unique
+  identifier for each installation.
 * The columns *user_agent*, *version*, *container_serial* and *container_type*
-  were added to the table `pidea_audit`.
-  If you are running the Audit table on a different database, then you need to add these columns manually!
-* Due to the rewrite of the CLI tools, some commands have been removed or changed.
-  For `pi-manage` these changes can be found here:
+  were added to the table `pidea_audit`. If you are running the Audit table on a different database, then you need to
+  add these columns manually!
+* Due to the rewrite of the CLI tools, some commands have been removed or changed. For `pi-manage` these changes can be
+  found here:
   https://github.com/privacyidea/privacyidea/wiki/concept:-Migrate-to-click-framework#changes-of-the-commands
 
 ## Update from 3.8 to 3.9
 
 * The response of the API `POST /auth` has changed if the WebUI policy action
-  `login_mode` is set `privacyIDEA` and the user has a challenge-response token.
-  Until version 3.8 an error-response was returned which contained the necessary
-  data for the WebUI to ask for the corresponding response.
-  Since version 3.9 the initial request now returns a valid response with the
-  challenge-data but without the authentication token (#3436)
-* To enhance the functionality of SSH key assignment, the REST API for GET /application
-  has changed. The options of an application are now returned like:
+  `login_mode` is set `privacyIDEA` and the user has a challenge-response token. Until version 3.8 an error-response was
+  returned which contained the necessary data for the WebUI to ask for the corresponding response. Since version 3.9 the
+  initial request now returns a valid response with the challenge-data but without the authentication token (#3436)
+* To enhance the functionality of SSH key assignment, the REST API for GET /application has changed. The options of an
+  application are now returned like:
   ```json
    {"luks": {"options": {"slot": {"type": "int"},
                          "partition": {"type": "str"}},
@@ -236,21 +329,18 @@
   ```
   Unless you are using this API call directly, this is not relevant for normal operation.
 
-* The database table `serviceid` is added, there is no data migration
-  necessary.
+* The database table `serviceid` is added, there is no data migration necessary.
 
-* The SQL ORM SQLAlchemy is updated to version 1.4 which makes some changes
-  under the hood (i.e. Sequences are now supported with MariaDB > 10.3).
+* The SQL ORM SQLAlchemy is updated to version 1.4 which makes some changes under the hood (i.e. Sequences are now
+  supported with MariaDB > 10.3).
 
 Be sure to run the schema update script!
 
 ## Update from 3.7 to 3.8
 
-* The algorithms for WebAuthn tokens have been enhanced. This is why it
-  was necessary to change the policy definition for WebAuthn Token enrollment.
-  The enrollment policy action name `webauthn_public_key_credential_algorithm_preference`
-  will be changed to `webauthn_public_key_credential_algorithms`.
-  The values will also be adapted from
+* The algorithms for WebAuthn tokens have been enhanced. This is why it was necessary to change the policy definition
+  for WebAuthn Token enrollment. The enrollment policy action name `webauthn_public_key_credential_algorithm_preference`
+  will be changed to `webauthn_public_key_credential_algorithms`. The values will also be adapted from
     * `ecdsa_preferred` -> `ecdsa rsassa-pss`
     * `ecdsa_only` -> `ecdsa`
     * `rsassa-pss_preferred` -> `rsassa-pss ecdsa`
@@ -263,90 +353,78 @@ Several database changes have been added. These are all *adds* without data migr
 * New tables "tokengroup" and "tokentokengroup".
 * Sequence for the tables "customuserattribute" has been added.
 * The size of the "key_enc" column in the table "token" has been increased.
-* The "pidea_audit" table gets a new column "thread_id". If you are running the Audit table on a different
-  database, then you need to add this column manually!
+* The "pidea_audit" table gets a new column "thread_id". If you are running the Audit table on a different database,
+  then you need to add this column manually!
 
 Be sure to run the schema update script!
 
 ## Update from 3.6 to 3.7
 
-* The database schema in table "machinetoken" was changed to support a new way of
-  handling offline tokens.
-* The notification handler can contain more complex reply_to emails.
-  The handler optiones were adapted in the database.
+* The database schema in table "machinetoken" was changed to support a new way of handling offline tokens.
+* The notification handler can contain more complex reply_to emails. The handler options were adapted in the database.
 
 Be sure to run the schema update script!
 
 ## Update from 3.5 to 3.6
 
-* Up to version 3.5 TLS autonegotiation was used for LDAP resolvers, if no specific
-  TLS_VERSION was specified. For security reasons this is not supported anymore, thus the
-  migration script sets resolvers without a configured TLS_VERSION to 1.2.
+* Up to version 3.5 TLS autonegotiation was used for LDAP resolvers, if no specific TLS_VERSION was specified. For
+  security reasons this is not supported anymore, thus the migration script sets resolvers without a configured
+  TLS_VERSION to 1.2.
 
-  **WARNING**: On Ubuntu 20.04 using TLS 1.0 will fail and users will not be found.
-  Either change to TLS 1.2 before running the update or use a local admin to change
-  the TLS version after the update.
+  **WARNING**: On Ubuntu 20.04 using TLS 1.0 will fail and users will not be found. Either change to TLS 1.2 before
+  running the update or use a local admin to change the TLS version after the update.
 
 Be sure to run the schema update script!
 
 ## Update from 3.4 to 3.5
 
-* The audit log table now also records the start date and the duration
-  of a request. If you are running the Audit table on a different
-  database, then you need to add this column manually!
+* The audit log table now also records the start date and the duration of a request. If you are running the Audit table
+  on a different database, then you need to add this column manually!
 
 * The authcache database table gets a longer column "authentication"
   to cope with the longer Argon2 hashes.
 
-Be sure to run the schema update script.
-The current database schema now is d5870fd2f2a4.
+Be sure to run the schema update script. The current database schema now is d5870fd2f2a4.
 
 ## Update from 3.3 to 3.4
 
 * Policies can now contain the privacyIDEA node as condition.
 
-  Be sure to run the schema updates in you pip installation.
-  Ubuntu or CentOS installations will run the schema update automatically.
+  Be sure to run the schema updates in you pip installation. Ubuntu or CentOS installations will run the schema update
+  automatically.
 
-* The SMS Gateway database tables have been enhanced with an additional
-  constraint on the type of the options.
+* The SMS Gateway database tables have been enhanced with an additional constraint on the type of the options.
 
   The data in the column "Type" of the database table "smsgatewayoption"
-  will be migrated by the schema update script.
-  If you are using SMS Gateways, check your gateway configurtion
-  after the update.
+  will be migrated by the schema update script. If you are using SMS Gateways, check your gateway configuration after
+  the update.
 
 ## Update from 3.2 to 3.3
 
 * Admin policies now do have a destinct admin username field.
 
-  The normal username field will not be used for the admin user
-  anymore but can be used for normal users.
-  The SQL migration script migrates existing admin policies by moving
-  the usernames of administrators to the new username field.
+  The normal username field will not be used for the admin user anymore but can be used for normal users. The SQL
+  migration script migrates existing admin policies by moving the usernames of administrators to the new username field.
 
 * PostgreSQL database adapter removed from default installation
 
-  When installing privacyIDEA from github or via Pypi, the ``psycopg2`` package
-  won't be installed anymore. Instead one can use
+  When installing privacyIDEA from github or via Pypi, the ``psycopg2`` package won't be installed anymore. Instead one
+  can use
   ``pip install privacyIDEA[postgres]`` to also install the required packages.
 
 * Internal signature of the tokenclass method
 
-  ``get_default_settings`` changed.
-  If you added your own tokenclass, please assure to update
-  your function signature.
+  ``get_default_settings`` changed. If you added your own tokenclass, please assure to update your function signature.
 
 * Output of Logger Audit changed
 
-  The log-message of the Logger Audit is now converted to a JSON-encoded string
-  sorted by keywords. This could potentially mess up subsequent reporting
-  configurations.
+  The log-message of the Logger Audit is now converted to a JSON-encoded string sorted by keywords. This could
+  potentially mess up subsequent reporting configurations.
 
 * Update of some HTML templates due to update of UI components
 
-  Several HTML templates have changed and might render custom templates unusable.
-  Please check your custom templates and compare to these changes:
+  Several HTML templates have changed and might render custom templates unusable. Please check your custom templates and
+  compare to these changes:
     - File upload component changed
     - Switch ``pattern`` to ``ng-pattern`` to avoid error message in console
     - Accordion component changed
@@ -357,77 +435,59 @@ The current database schema now is d5870fd2f2a4.
 
 * Change to Python 3
 
-  The built Ubuntu und CentOS packages are now built with Python 3.
-  The virtual environments thus have changed.
-  If you have any changes like customizations under
-  /opt/privacyidea/lib/python2.7/ these will not be found anymore
-  and the WebUI could result in not being accessable.
-  This could be relevant when using ``PI_CUSTOM_CSS = True``
+  The built Ubuntu und CentOS packages are now built with Python 3. The virtual environments thus have changed. If you
+  have any changes like customizations under /opt/privacyidea/lib/python2.7/ these will not be found anymore and the
+  WebUI could result in not being accessible. This could be relevant when using ``PI_CUSTOM_CSS = True``
   or ``PI_CUSTOMIZATION`` in your pi.cfg file.
 
-  You will have to move the corresponding files to
-  /opt/privacyidea/lib/python3.x/...
+  You will have to move the corresponding files to /opt/privacyidea/lib/python3.x/...
 
 * MySQL-python obsolete
 
-  With the change to Python 3 the MySQL DB driver has become
-  obsolete since it is not supported under Python 3 anymore.
-  If your current DB URI starts with "mysql://", the
-  update script will automatically change this to
+  With the change to Python 3 the MySQL DB driver has become obsolete since it is not supported under Python 3 anymore.
+  If your current DB URI starts with "mysql://", the update script will automatically change this to
   "mysql+pymysql://" to assure further operation under Python 3.
 
 * REST API
 
   The endpoints "GET /event" has been changed to "GET /event/"
-  since it returns a list of events.
-  The endpoints "GET /smsgateway" has been changed to
+  since it returns a list of events. The endpoints "GET /smsgateway" has been changed to
   "GET /smsgateway/"  since it returns a list of events.
 
 ## Update from 3.0 to 3.1
 
 * Policies
 
-  In the scope admin a new action "tokenlist" was added. This
-  action assures, that admins can only list tokens in certain realms.
-  Without this action, and administrator can not view any tokens.
-  To allow all administrators to still list tokens, during migration
-  from 3.0 to 3.1 a new policy **pi-update-policy-b9131d0686eb** is
-  automatically created.
+  In the scope admin a new action "tokenlist" was added. This action assures, that admins can only list tokens in
+  certain realms. Without this action, and administrator can not view any tokens. To allow all administrators to still
+  list tokens, during migration from 3.0 to 3.1 a new policy **pi-update-policy-b9131d0686eb** is automatically created.
 
-  After the update you might want to review this policy and the
-  token list rights of your administrators.
+  After the update you might want to review this policy and the token list rights of your administrators.
 
-  **Note**, that due to the naming of this auto-generated policy, it is
-  not possible to modify this policy. You can still disable and enable
-  or delete this policy.
+  **Note**, that due to the naming of this auto-generated policy, it is not possible to modify this policy. You can
+  still disable and enable or delete this policy.
 
 ## Update from 2.23 to 3.0
 
 * Database
 
   **WARNING**: Be sure to run a backup of your database before upgrading!
-  The database schema in regards to the token assignment is changed.
-  The token assignment is moved from the table "token" to the table
-  "tokenowner". The user columns in the "token" table are deleted and
-  migrated to the "tokenowner" table.
+  The database schema in regards to the token assignment is changed. The token assignment is moved from the table
+  "token" to the table
+  "tokenowner". The user columns in the "token" table are deleted and migrated to the "tokenowner" table.
 
-* The packaging for ubuntu has changed. While privacyIDEA 2.23 was
-  installed into the system environment, the ubuntu packages
-  starting with privacyIDEA 3.0 will install the software in the
-  Python virtual environment at /opt/privacyidea.
-  However, the debian package update process will take care of this.
+* The packaging for ubuntu has changed. While privacyIDEA 2.23 was installed into the system environment, the ubuntu
+  packages starting with privacyIDEA 3.0 will install the software in the Python virtual environment at
+  /opt/privacyidea. However, the debian package update process will take care of this.
 
-  But this also means that the apache configuration was changed slightly.
-  In /etc/apache2/sites-available/privacyidea.conf a line
+  But this also means that the apache configuration was changed slightly. In
+  /etc/apache2/sites-available/privacyidea.conf a line
   "WSGIPythonHome /opt/privacyidea"
-  was added.
-  Unless you modified the file privacyidea.conf, the update process
-  will take care of this automatically.
+  was added. Unless you modified the file privacyidea.conf, the update process will take care of this automatically.
 
 * Package dependencies:
 
-  A lot of changes will be introduced in privacyIDEA 3.0, most notably the
-  Python 3 compatibility.
+  A lot of changes will be introduced in privacyIDEA 3.0, most notably the Python 3 compatibility.
 
     * Removed packages:
         * matplotlib
@@ -441,43 +501,39 @@ The current database schema now is d5870fd2f2a4.
         * requests (2.18.4 -> 2.20.0)
         * PyYAML (3.12 -> 5.1)
 
-* Due to the switch from PyCrypto to cryptography, the calculation of signatures
-  changed. In order to be able to verify old audit entry signatures,
-  PI_CHECK_OLD_SIGNATURES must be set to "True" in your pi.cfg.
+* Due to the switch from PyCrypto to cryptography, the calculation of signatures changed. In order to be able to verify
+  old audit entry signatures, PI_CHECK_OLD_SIGNATURES must be set to "True" in your pi.cfg.
 
 ## Update from 2.22 to 2.23
 
-* An additional dependency python-croniter was added.
-  Thus you need to run "apt dist-upgrade" on Ubuntu systems,
-  to also install this new dependency.
+* An additional dependency python-croniter was added. Thus you need to run "apt dist-upgrade" on Ubuntu systems, to also
+  install this new dependency.
 
-* When upgrading on Ubuntu using apt, you will be notified, that pi.cfg was changed by the maintainer.
-  This is fine. You must keep your pi.cfg, so press "N"!
-  This is due to the PI_ENGINE_REGISTRY_CLASS which is set to "shared" on new installations.
-  If you want to, you can set PI_ENGINE_REGISTRY_CLASS = "shared"
+* When upgrading on Ubuntu using apt, you will be notified, that pi.cfg was changed by the maintainer. This is fine. You
+  must keep your pi.cfg, so press "N"!
+  This is due to the PI_ENGINE_REGISTRY_CLASS which is set to "shared" on new installations. If you want to, you can set
+  PI_ENGINE_REGISTRY_CLASS = "shared"
   in your pi.cfg manually.
 
-* The database schema was changed. The meta packages on Ubuntu
-  privacyidea-apache2 and privacyidea-nginx should take care of this.
-  The last version of the DB schema will be 1a0710df148b
+* The database schema was changed. The meta packages on Ubuntu privacyidea-apache2 and privacyidea-nginx should take
+  care of this. The last version of the DB schema will be 1a0710df148b
 
 ## Update from 2.21 to 2.22
 
-* There are currently version conflicts with the packages of ldap3 and pyasn1 that
-  privacyIDEA depends on.
+* There are currently version conflicts with the packages of ldap3 and pyasn1 that privacyIDEA depends on.
 
   **Our recommendations**:
     * Use either **ldap3 2.1.1** and **pyasn1 0.1.9**
       or **ldap3 2.1.1** and **pyasn1 0.4.2**.
         * The Ubuntu installation comes with ldap3 2.1.1 and pyasn1 0.1.9.
-        * Virtualenv installation comes with ldap3 2.1.1 and pyasn1 0.4.2.
-          With ldap3 2.1.1 and pyasn1 0.4.2, StartTLS will not work! LDAPS will work.
-    * We added pull requests to ldap3 and also added workarounds in privacyIDEA 2.22. With the next
-      release of ldap3 all version conflicts should be solved.
+        * Virtualenv installation comes with ldap3 2.1.1 and pyasn1 0.4.2. With ldap3 2.1.1 and pyasn1 0.4.2, StartTLS
+          will not work! LDAPS will work.
+    * We added pull requests to ldap3 and also added workarounds in privacyIDEA 2.22. With the next release of ldap3 all
+      version conflicts should be solved.
     * Here are some of the issues resulting from the version conflicts:
         * ldap3 2.1.1, pyasn1 0.4.2: Attempts to use STARTTLS fail with an exception (Issue #885)
         * ldap3 >= 2.4: User attributes are not retrieved properly (Issue #911)
         * ldap3 == 2.4.1: UnicodeError on authentication, token view displays resolver errors (Issue #911)
         * ldap3 == 2.4.1: Cannot search for non-ASCII characters in user view (#980)
-* The size of the ``serial`` column in the ``pidea_audit`` database table was increased from 20 to 40 characters.
-  Please verify that your database can handle this increasing of the table size!
+* The size of the ``serial`` column in the ``pidea_audit`` database table was increased from 20 to 40 characters. Please
+  verify that your database can handle this increasing of the table size!

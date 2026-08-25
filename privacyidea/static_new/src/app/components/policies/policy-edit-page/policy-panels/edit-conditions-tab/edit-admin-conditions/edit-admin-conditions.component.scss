@@ -21,14 +21,14 @@
   flex-wrap: nowrap;
   gap: 6px;
   overflow-x: auto;
-  padding-bottom: var(--half-global-padding);
+  padding-bottom: 8px;
   scrollbar-width: thin;
 }
 
 .admin-input-container {
   align-items: center;
   display: flex;
-  gap: var(--half-global-gap);
+  gap: 8px;
 }
 
 .remove-admin-btn {

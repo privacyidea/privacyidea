@@ -1,13 +1,13 @@
 @use "styles";
 
 .policy-template-picker {
-  margin-bottom: var(--global-padding);
+  margin-bottom: 16px;
 }
 
 .template-list {
   display: flex;
   flex-direction: column;
-  gap: var(--quarter-global-padding);
+  gap: 4px;
 }
 
 .template-list-item {
@@ -19,8 +19,8 @@
   cursor: pointer;
   display: flex;
   font: inherit;
-  gap: var(--global-gap);
-  padding: var(--half-global-padding) var(--global-padding);
+  gap: 16px;
+  padding: 8px 16px;
   text-align: left;
   width: 100%;
 

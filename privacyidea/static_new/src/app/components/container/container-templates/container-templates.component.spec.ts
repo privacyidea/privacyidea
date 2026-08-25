@@ -19,15 +19,16 @@
 
 import { signal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { MatCheckboxChange } from "@angular/material/checkbox";
 import { By } from "@angular/platform-browser";
-import { Router } from "@angular/router";
+import { provideRouter, Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { AuthService } from "@services/auth/auth.service";
 import { ContainerTemplateService } from "@services/container-template/container-template.service";
 import { ContainerTemplate } from "@services/container/container.service";
 import { DialogService } from "@services/dialog/dialog.service";
 import { ContainerTemplatesComponent } from "./container-templates.component";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { expectsTableStateGating } from "@testing/table-state-gating";
 
 describe("ContainerTemplatesComponent", () => {
   let component: ContainerTemplatesComponent;
@@ -40,13 +41,11 @@ describe("ContainerTemplatesComponent", () => {
   ];
 
   const templatesSignal = signal<ContainerTemplate[]>(mockTemplates);
+  const templatesLoaded = signal(true);
 
   const mockContainerTemplateService = {
-    templates: templatesSignal
-  };
-
-  const mockAuthService = {
-    isAdmin: signal(true)
+    templates: templatesSignal,
+    templatesResource: { hasValue: () => templatesLoaded(), error: () => null, reload: jest.fn() }
   };
 
   const mockDialogService = {
@@ -55,41 +54,50 @@ describe("ContainerTemplatesComponent", () => {
 
   beforeEach(async () => {
     templatesSignal.set(mockTemplates);
+    templatesLoaded.set(true);
     await TestBed.configureTestingModule({
       imports: [ContainerTemplatesComponent],
       providers: [
         { provide: ContainerTemplateService, useValue: mockContainerTemplateService },
-        { provide: AuthService, useValue: mockAuthService },
+        { provide: AuthService, useClass: MockAuthService },
         { provide: DialogService, useValue: mockDialogService },
-        { provide: Router, useValue: { navigateByUrl: jest.fn() } }
+        provideRouter([])
       ]
     }).compileComponents();
+
+    (TestBed.inject(AuthService) as unknown as MockAuthService).authData.set({
+      ...MockAuthService.MOCK_AUTH_DATA,
+
+      rights: ["container_template_list"]
+    });
 
     fixture = TestBed.createComponent(ContainerTemplatesComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
 
+  it("gates the table on its read right, row count and filter", () => {
+    expectsTableStateGating({
+      state: component.tableState,
+      right: "container_template_list"
+    });
+  });
+
   it("should create", () => {
     expect(component).toBeTruthy();
   });
 
-  it("should show skeleton rows when service returns no templates", () => {
+  it("stands the state panel in for the table while the templates are still loading", () => {
+    // A table of placeholder rows is shaped like data, so ending the load on the empty panel reads
+    // as rows arriving and then being taken away. The panel speaks for the load instead.
     templatesSignal.set([]);
+    templatesLoaded.set(false);
     fixture.detectChanges();
 
-    const rows = fixture.debugElement.queryAll(By.css("tr[mat-row]"));
-
-    expect(rows.length).toBe(component.pageSize());
-    expect(rows[0].classes["skeleton-row"]).toBeTruthy();
-  });
-
-  it("should disable header checkbox when in skeleton state", () => {
-    templatesSignal.set([]);
-    fixture.detectChanges();
-
-    const headerCheckbox = fixture.debugElement.query(By.css("th.mat-column-select mat-checkbox"));
-    expect(headerCheckbox.componentInstance.disabled).toBeTruthy();
+    expect(component.tableState.status()).toBe("loading");
+    expect(component.tableState.showTable()).toBe(false);
+    expect(fixture.debugElement.queryAll(By.css("tr[mat-row]")).length).toBe(0);
+    expect(fixture.debugElement.query(By.css("mat-progress-spinner"))).toBeTruthy();
   });
 
   it("should respect pageSize and slice data accordingly", () => {
@@ -116,49 +124,39 @@ describe("ContainerTemplatesComponent", () => {
     expect(component.pageIndex()).toBe(0);
   });
 
-  it("should only select displayed rows on the current page when toggleAllRows is called", () => {
+  it("should only select displayed rows on the current page", () => {
     component.pageSize.set(1);
     fixture.detectChanges();
 
-    component.toggleAllRows();
-    expect(component.selectedTemplateNames().size).toBe(1);
-    expect(component.selectedTemplateNames().has("Template-C")).toBeTruthy();
-    expect(component.selectedTemplates().length).toBe(1);
+    component.selector.selectAllRows();
+
+    expect(component.selector.selectedRows().map((template) => template.name)).toEqual(["Template-C"]);
+    expect(component.selector.allRowsSelected()).toBe(true);
   });
 
   it("should clear selection when page changes", () => {
     component.pageSize.set(1);
     fixture.detectChanges();
-    component.toggleAllRows();
+    component.selector.selectAllRows();
 
     component.pageIndex.set(1);
     fixture.detectChanges();
 
-    expect(component.selectedTemplateNames().size).toBe(0);
-  });
-
-  it("should update selection when updateSelection is called", () => {
-    const template = mockTemplates[0];
-    component.updateSelection({ checked: true } as MatCheckboxChange, template);
-    expect(component.selectedTemplateNames().has(template.name)).toBeTruthy();
-    expect(component.selectedTemplates()[0].name).toBe(template.name);
-
-    component.updateSelection({ checked: false } as MatCheckboxChange, template);
-    expect(component.selectedTemplateNames().has(template.name)).toBeFalsy();
+    expect(component.selector.hasSelection()).toBe(false);
   });
 
   it("should reduce selection when pageSize changes from 10 to 1 and update child component", () => {
     component.pageSize.set(10);
     fixture.detectChanges();
 
-    component.toggleAllRows();
+    component.selector.selectAllRows();
     fixture.detectChanges();
-    expect(component.selectedTemplates().length).toBe(3);
+    expect(component.selector.selectedCount()).toBe(3);
 
     component.pageSize.set(1);
     fixture.detectChanges();
 
-    expect(component.selectedTemplates().length).toBe(1);
+    expect(component.selector.selectedCount()).toBe(1);
 
     const actionComponent = fixture.debugElement.query(
       By.css("app-container-templates-table-actions")
@@ -169,7 +167,7 @@ describe("ContainerTemplatesComponent", () => {
   });
   it("should navigate to details route only if row is not a skeleton row", () => {
     const router = TestBed.inject(Router);
-    const navigateSpy = jest.spyOn(router, "navigateByUrl");
+    const navigateSpy = jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
 
     component.onClickTemplateName(mockTemplates[0]);
     expect(navigateSpy).toHaveBeenCalledWith(ROUTE_PATHS.CONTAINERS_TEMPLATES_DETAILS + mockTemplates[0].name);
@@ -196,7 +194,7 @@ describe("ContainerTemplatesComponent", () => {
 
     const noDataRow = fixture.debugElement.query(By.css("tr.mat-mdc-no-data-row"));
     expect(noDataRow).toBeTruthy();
-    expect(noDataRow.nativeElement.textContent).toContain("No data matching the filter.");
+    expect(noDataRow.nativeElement.textContent).toContain("No entries match the filter");
   });
 
   it("should toggle filter keys and reset pageIndex when clicking header filter buttons", () => {

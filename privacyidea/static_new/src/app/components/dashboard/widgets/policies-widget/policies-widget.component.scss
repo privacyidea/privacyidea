@@ -32,7 +32,7 @@
   border-collapse: collapse;
 
   td {
-    padding: calc(var(--global-padding) / 4) calc(var(--global-padding) / 2);
+    padding: calc(16px / 4) calc(16px / 2);
     vertical-align: top;
   }
 
@@ -48,6 +48,6 @@
 }
 
 .separator {
-  margin: 0 calc(var(--global-gap) / 4);
+  margin: 0 calc(16px / 4);
   opacity: 0.5;
 }

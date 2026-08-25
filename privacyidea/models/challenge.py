@@ -32,7 +32,8 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column
 
 from privacyidea.lib.challenge_types import is_challenge_open
-from privacyidea.lib.crypto import get_rand_digit_str, encryptPassword, decryptPassword
+from privacyidea.lib.crypto import (FAILED_TO_DECRYPT_PASSWORD, get_rand_digit_str, encryptPassword,
+                                    decryptPassword)
 from privacyidea.lib.log import log_with
 from privacyidea.lib.utils import convert_column_to_unicode
 from privacyidea.models import db
@@ -60,12 +61,15 @@ class Challenge(MethodsMixin, db.Model):
 
     @property
     def data(self):
-        """Return the decrypted challenge data, or the raw value for legacy data."""
+        """Return the decrypted challenge data as a JSON string, or empty string."""
         raw = self._data
         if not raw:
             return raw
         decrypted = decryptPassword(raw)
-        if decrypted and not decrypted.startswith("FAILED TO DECRYPT"):
+        # decryptPassword() returns the sentinel verbatim on failure, so compare
+        # for equality: a prefix match would also discard a legitimately
+        # decrypted value that happens to start with that text.
+        if decrypted and decrypted != FAILED_TO_DECRYPT_PASSWORD:
             return decrypted
         # Legacy unencrypted data or decryption failure - return as-is
         return raw
@@ -75,9 +79,20 @@ class Challenge(MethodsMixin, db.Model):
         """Allow direct assignment to data (encrypts before storing)."""
         self.set_data(value)
 
+    @property
+    def encrypted_data(self) -> str:
+        """
+        Return the stored ciphertext of ``data``, without decrypting it.
+
+        For a caller that has to persist the very same value somewhere else - the
+        Redis cache stores this challenge instead of the row - so that it does not
+        have to decrypt and re-encrypt what is already encrypted here.
+        """
+        return self._data or ''
+
     @log_with(log)
     def __init__(self, serial, transaction_id=None,
-                 challenge='', data='', session='', validitytime=120):
+                 challenge='', data=None, session='', validitytime=120):
         # We manually assign attributes here as they depend on the function parameters
         self.transaction_id = transaction_id or self.create_transaction_id()
         self.challenge = challenge
@@ -117,31 +132,39 @@ class Challenge(MethodsMixin, db.Model):
         """
         return is_challenge_open(self.is_valid(), self.otp_valid, self.get_session())
 
-    def set_data(self, data):
+    def set_data(self, data: dict | None):
         """
         Set the internal data of the challenge.
         The data is encrypted before being stored in the database since it
         may contain OTP values.
 
-        :param data: The challenge data (string, dict, or other serializable value)
+        :param data: The challenge data. Must be a dict (or None/empty).
         """
-        if data is None or data == '':
+        if not data:
             self._data = ''
-        elif isinstance(data, dict):
-            self._data = encryptPassword(json.dumps(data))
-        elif isinstance(data, str):
-            self._data = encryptPassword(data)
         else:
-            self._data = encryptPassword(convert_column_to_unicode(data))
+            self._data = encryptPassword(json.dumps(data))
 
-    def get_data(self):
-        if not self.data:
+    def get_data(self) -> dict:
+        """
+        Get the decrypted challenge data as a dict.
+
+        :return: The challenge data as a dict. Returns ``{}`` if no data is stored.
+        :rtype: dict
+        """
+        data = self.data
+        if not data:
             return {}
         try:
-            data = json.loads(self.data)
-        except (json.JSONDecodeError, UnicodeDecodeError, ValueError):
-            data = self.data
-        return data
+            result = json.loads(data)
+        except (json.JSONDecodeError, ValueError):
+            log.warning("Challenge %s: failed to decode data as JSON.", self.transaction_id)
+            return {}
+        if not isinstance(result, dict):
+            log.warning("Challenge %s: data is not a dict (got %s). Returning empty dict.",
+                        self.transaction_id, type(result).__name__)
+            return {}
+        return result
 
     def get_session(self):
         return self.session

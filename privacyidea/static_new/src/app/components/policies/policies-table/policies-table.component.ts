@@ -20,7 +20,7 @@
 import { CommonModule, KeyValuePipe } from "@angular/common";
 import { Component, computed, inject, linkedSignal, signal, viewChild } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
-import { MatCheckboxChange, MatCheckboxModule } from "@angular/material/checkbox";
+import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
 import { MatSlideToggleModule } from "@angular/material/slide-toggle";
@@ -28,15 +28,19 @@ import { MatSortModule, Sort } from "@angular/material/sort";
 import { MatTableModule } from "@angular/material/table";
 import { MatTooltipModule } from "@angular/material/tooltip";
 
-import { Router } from "@angular/router";
+import { Router, RouterLink } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
 import { HighlightPipe } from "@components/shared/pipes/highlight.pipe";
+import { TableStateComponent } from "@components/shared/table-state/table-state.component";
+import { TableState } from "@core/models/table_state/table-state";
 import { FilterOption } from "@core/models/filter_value_generic/filter-option";
 import { FilterValueGeneric } from "@core/models/filter_value_generic/filter-value-generic";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { PolicyDetail, PolicyService, PolicyServiceInterface } from "@services/policies/policies.service";
+import { RowSelector } from "@services/table-utils/row-selector";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { PoliciesTableActionsComponent } from "./policies-table-actions/policies-table-actions.component";
 import { PolicyFilterComponent } from "./policy-filter/policy-filter.component";
@@ -62,7 +66,9 @@ import { ViewConditionsColumnComponent } from "./view-conditions-column/view-con
     PolicyFilterComponent,
     ViewConditionsColumnComponent,
     CopyButtonComponent,
-    HighlightPipe
+    HighlightPipe,
+    TableStateComponent,
+    RouterLink
   ],
   templateUrl: "./policies-table.component.html",
   styleUrl: "./policies-table.component.scss"
@@ -73,6 +79,7 @@ export class PoliciesTableComponent {
   readonly authService: AuthServiceInterface = inject(AuthService);
   readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   private readonly router = inject(Router);
+  private readonly contentService: ContentServiceInterface = inject(ContentService);
 
   readonly filterComponent = viewChild<PolicyFilterComponent>("filterComponent");
 
@@ -88,11 +95,26 @@ export class PoliciesTableComponent {
 
   readonly columnKeys = computed(() => ["select", ...Object.keys(this.columns)]);
 
-  readonly skeletonRowCount = 10;
-
   readonly sort = signal<Sort>({ active: "priority", direction: "asc" });
-  readonly filter = signal<FilterValueGeneric<PolicyDetail>>(
-    new FilterValueGeneric({ availableFilters: policyFilterOptions })
+  readonly filter = linkedSignal<string, FilterValueGeneric<PolicyDetail>>({
+    source: () => (this.contentService.queryParams()["filter"] ?? "").replace(/^"(.*)"$/s, "$1"),
+    computation: (raw) => {
+      const filter = new FilterValueGeneric<PolicyDetail>({ availableFilters: policyFilterOptions });
+      return raw ? filter.setByString(raw) : filter;
+    }
+  });
+
+  readonly ROUTE_PATHS = ROUTE_PATHS;
+  readonly tableState = new TableState({
+    resource: this.policyService.allPoliciesResource,
+    count: () => this.policyService.allPolicies().length,
+    allowed: () => this.authService.actionAllowed("policyread"),
+    resetFilter: () => this.onFilterUpdate(this.filter().clear())
+  });
+  readonly emptyHint = computed(() =>
+    this.authService.actionAllowed("policywrite")
+      ? $localize`Create a policy to control what users and administrators are allowed to do and how the system behaves.`
+      : ""
   );
 
   // Terms to visually highlight per dense column: the keyword-less search terms plus that column's
@@ -111,14 +133,11 @@ export class PoliciesTableComponent {
     };
   });
 
-  readonly emptyResource = linkedSignal({
-    source: () => this.policyService.allPolicies(),
-    computation: () => Array.from({ length: this.skeletonRowCount }, () => ({ name: "" }) as PolicyDetail)
-  });
-
   readonly policiesListFiltered = computed(() => {
     const all = this.policyService.allPolicies();
-    if (all.length === 0) return this.emptyResource();
+    if (all.length === 0) {
+      return [];
+    }
     return this.filter().filterItems(all);
   });
 
@@ -136,17 +155,9 @@ export class PoliciesTableComponent {
     });
   });
 
-  readonly selectedPolicies = linkedSignal<PolicyDetail[], Set<string>>({
-    source: () => this.policiesListFiltered(),
-    computation: (source, previous) => {
-      const selected = new Set(previous?.value ?? []);
-      if (this.policyService.allPolicies().length === 0) return new Set();
-      const currentNames = new Set(source.map((p) => p.name));
-      for (const name of selected) {
-        if (!currentNames.has(name)) selected.delete(name);
-      }
-      return selected;
-    }
+  readonly selector = new RowSelector<PolicyDetail>({
+    keyGetter: (policy) => policy.name,
+    visibleRows: computed(() => this.sortedFilteredPolicies().filter((policy) => !!policy.name))
   });
 
   readonly keepOrder = () => 0;
@@ -165,34 +176,6 @@ export class PoliciesTableComponent {
     const nextFilter = option.toggle ? option.toggle(this.filter()) : this.filter().toggleKey(option.key);
     this.onFilterUpdate(nextFilter);
     this.filterComponent()?.updateFilterManually(nextFilter);
-  }
-
-  updateSelection($event: MatCheckboxChange, policyName: string): void {
-    if (!policyName) return;
-    const selected = new Set(this.selectedPolicies());
-    if ($event.checked) {
-      selected.add(policyName);
-    } else {
-      selected.delete(policyName);
-    }
-    this.selectedPolicies.set(selected);
-  }
-
-  isAllSelected(): boolean {
-    const displayed = this.sortedFilteredPolicies().filter((p) => !!p.name);
-    if (displayed.length === 0) return false;
-    return displayed.every((p) => this.selectedPolicies().has(p.name));
-  }
-
-  masterToggle(): void {
-    const selected = new Set(this.selectedPolicies());
-    const displayed = this.sortedFilteredPolicies().filter((p) => !!p.name);
-    if (this.isAllSelected()) {
-      displayed.forEach((p) => selected.delete(p.name));
-    } else {
-      displayed.forEach((p) => selected.add(p.name));
-    }
-    this.selectedPolicies.set(selected);
   }
 
   getFilterIconName(columnKey: string): string {
@@ -241,7 +224,10 @@ const PRIORITY_OPERATORS: readonly [string, (a: number, b: number) => boolean][]
 ];
 
 function matchesPriority(priority: number, val: string): boolean {
-  const [prefix, compare] = PRIORITY_OPERATORS.find(([p]) => val.startsWith(p)) ?? ["", (a: number, b: number) => a === b];
+  const [prefix, compare] = PRIORITY_OPERATORS.find(([p]) => val.startsWith(p)) ?? [
+    "",
+    (a: number, b: number) => a === b
+  ];
   const rest = val.substring(prefix.length).trim();
   if (!/^-?\d+$/.test(rest)) return false;
   return compare(priority, Number(rest));
@@ -267,7 +253,7 @@ function matchesConditions(item: PolicyDetail, term: string): boolean {
   if (listFields.some((list) => list?.some((entry) => entry.toLowerCase().includes(term)))) return true;
   return Boolean(
     item.time?.toLowerCase().includes(term) ||
-      item.conditions?.some((cond) => cond.some((c) => String(c).toLowerCase().includes(term)))
+    item.conditions?.some((cond) => cond.some((c) => String(c).toLowerCase().includes(term)))
   );
 }
 

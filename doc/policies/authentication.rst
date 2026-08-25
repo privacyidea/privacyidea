@@ -601,6 +601,12 @@ dependent on the clients IP address and the user agent.
 
    It may make sense to create a cronjob that periodically cleans up old authentication cache entries.
 
+.. note:: With :ref:`redis_auth_cache` enabled, cache entries live in Redis
+   instead of the ``authcache`` table. They then carry the lifetime this policy
+   grants and expire on their own, so neither the cleanup command nor a cronjob
+   for it is needed - and the authentication path stops writing to the database
+   altogether.
+
 .. note:: The AuthCache only works for user authentication, not for
    authentication with serials.
 
@@ -1090,3 +1096,64 @@ Other information is also removed from the `detail` object of the response.
 
 .. note:: To additionally return a uniform HTTP status code for failed authentications, see
     the :ref:`policies_hardening` scope policy ``hide_auth_error_status``.
+
+.. _policy_remember_device:
+
+remember_device
+~~~~~~~~~~~~~~~
+
+type: ``bool``
+
+Allow an API client to obtain a persistent "remember this device" cookie on a
+successful authentication at :http:post:`/validate/check` (the client must send
+``request_persistent_cookie=1``). The feature is off by default and requires the
+request to be made by an identified API client (the ``X-API-Key`` header, see
+the :ref:`policy_api_client_list` admin action): without a client, no cookie is
+issued and the recognition endpoint returns ``401``.
+
+The cookie holds only a rotating ``series_id:counter`` token (never the API key)
+and is later checked at :http:post:`/validate/remember_device`, which reports
+whether the device is recognised so the calling client can decide to skip the
+second factor. Recognition is **not** an authentication and does not by itself
+grant access.
+
+.. note:: :http:get:`/validate/capabilities` reports whether this policy makes
+    the feature available to a client. That is a *client-level* answer; whether
+    it applies to a specific user is decided at issuance and recognition, so a
+    policy scoped to specific users/realms may still report ``true`` to the
+    client.
+
+.. versionadded:: 3.14
+
+.. _policy_remember_device_validity:
+
+remember_device_validity
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: ``int``
+
+How many days a "remember this device" cookie stays valid. If unset, the default
+is 30 days. Because it is a policy value, it can be scoped per realm or user with
+the usual conditions - for example a shorter lifetime for administrators than for
+regular users. The lifetime is fixed when the cookie is issued; recognition
+rotates the token but does not extend the expiry.
+
+.. versionadded:: 3.14
+
+.. _policy_remember_device_max_devices:
+
+remember_device_max_devices
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: ``int``
+
+The maximum number of remembered devices a single user may have per API client.
+Each opt-in on ``/validate/check`` mints a **new** device series (the server
+cannot reliably tell one client's devices apart, and a user legitimately having
+several devices is normal), so a client that opts in on every login would
+accumulate rows until they expire. Set this to cap that: once the user already
+has this many *live* devices for the client, further opt-ins issue no new cookie
+and the existing devices keep working. Unset or ``0`` means unlimited (the
+default). Scope it per realm/user like the other conditions.
+
+.. versionadded:: 3.14

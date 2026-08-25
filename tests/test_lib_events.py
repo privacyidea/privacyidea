@@ -4,6 +4,7 @@ This file contains the event handlers tests. It tests:
 lib/eventhandler/usernotification.py (one event handler module)
 lib/event.py (the decorator)
 """
+import json
 import os
 from collections import OrderedDict
 from datetime import datetime, timedelta, timezone
@@ -75,6 +76,7 @@ class EventHandlerLibTestCase(MyTestCase):
         self.assertTrue(event_1.active)
         self.assertEqual("post", event_1.position)
         self.assertEqual("", event_1.condition)
+        self.assertFalse(event_1.abort_on_error)
         # Relationships
         self.assertEqual("emailconfig", event_1.options[0].Key)
         self.assertEqual("themis", event_1.options[0].Value)
@@ -187,6 +189,36 @@ class EventHandlerLibTestCase(MyTestCase):
 
         h_obj = get_handler_object("Container")
         self.assertEqual(type(h_obj), ContainerEventHandler)
+
+    def test_03_abort_on_error(self):
+        def stored(event_id):
+            return db.session.scalars(select(EventHandler).where(EventHandler.id == event_id)).one_or_none()
+
+        # A handler whose result the request consumes is created as aborting, the others are best-effort
+        federation_id = set_event("federation", "token_init", "Federation", "forward")
+        notification_id = set_event("notification", "token_init", "UserNotification", "sendmail")
+        self.assertTrue(stored(federation_id).abort_on_error)
+        self.assertFalse(stored(notification_id).abort_on_error)
+
+        # An update that does not mention abort_on_error keeps the stored value
+        set_event("federation", "token_init", "Federation", "forward", id=federation_id, ordering=2)
+        self.assertTrue(stored(federation_id).abort_on_error)
+
+        # The stored value can be changed in both directions
+        set_event("federation", "token_init", "Federation", "forward", id=federation_id, abort_on_error=False)
+        self.assertFalse(stored(federation_id).abort_on_error)
+        set_event("notification", "token_init", "UserNotification", "sendmail", id=notification_id,
+                  abort_on_error=True)
+        self.assertTrue(stored(notification_id).abort_on_error)
+
+        # The handler definition passed to the event handlers carries the value
+        event_config = EventConfiguration()
+        handler_definitions = {d.get("id"): d for d in event_config.get_handled_events("token_init")}
+        self.assertFalse(handler_definitions[federation_id].get("abort_on_error"))
+        self.assertTrue(handler_definitions[notification_id].get("abort_on_error"))
+
+        delete_event(federation_id)
+        delete_event(notification_id)
 
 
 class BaseEventHandlerTestCase(MyTestCase):
@@ -4237,162 +4269,123 @@ class WebhookTestCase(MyTestCase):
         super(WebhookTestCase, self).setUp()
         self.setUp_user_realms()
 
+    # ── helpers ──────────────────────────────────────────────────────
+
+    def _make_g(self, username='hans', realm=None):
+        """Return a FakeFlaskG pre-populated with a logged_in_user."""
+        g = FakeFlaskG()
+        g.logged_in_user = {'username': username,
+                            'realm': realm or self.realm1}
+        return g
+
+    def _make_options(self, g, url='http://test.com',
+                      content_type=ContentType.JSON, data='',
+                      replace=None, request=None):
+        """Build the *options* dict expected by WebHookHandler.do()."""
+        handler_opts = {"URL": url, "content_type": content_type, "data": data}
+        if replace is not None:
+            handler_opts["replace"] = replace
+        opts = {"g": g, "handler_def": {"options": handler_opts}}
+        if request is not None:
+            opts["request"] = request
+        return opts
+
+    def _do_webhook(self, options, action=WHEH_ACTION_TYPE.POST_WEBHOOK):
+        """Execute the webhook handler and return (result, handler)."""
+        handler = WebHookHandler()
+        return handler.do(action, options=options), handler
+
+    def _posted_json(self, mock_post):
+        """Return the parsed JSON body from the most recent ``requests.post`` call."""
+        return json.loads(mock_post.call_args.kwargs["data"])
+
     @patch('requests.post')
     def test_01_send_webhook(self, mock_post):
         with mock.patch("logging.Logger.info") as mock_log:
             mock_post.return_value.status_code = 200
             mock_post.return_value.json.return_value = 'response'
 
-            g = FakeFlaskG()
-            g.logged_in_user = {'username': 'hans',
-                                'realm': self.realm1}
+            g = self._make_g()
 
-            t_handler = WebHookHandler()
-            options = {"g": g,
-                       "handler_def": {
-                           "options": {"URL": 'https://test.com',
-                                       "content_type": ContentType.URLENCODED,
-                                       "data": 'This is a test'
-                                       }
-                       }
-                       }
-            res = t_handler.do(WHEH_ACTION_TYPE.POST_WEBHOOK, options=options)
+            # URLENCODED
+            opts = self._make_options(g, url='https://test.com',
+                                      content_type=ContentType.URLENCODED,
+                                      data='This is a test')
+            res, _ = self._do_webhook(opts)
             self.assertTrue(res)
             text = "A webhook is called at 'https://test.com' with data: 'This is a test'"
             mock_log.assert_any_call(text)
             mock_log.assert_called_with(200)
 
-            # This works since we don't have the "replace" option set, otherwise this
-            # would lead to a json decode error since the data is not a valid JSON string
-            options = {"g": g,
-                       "handler_def": {
-                           "options": {"URL": 'https://test.com',
-                                       "content_type": ContentType.JSON,
-                                       "data": 'This is a test'
-                                       }
-                       }
-                       }
-            res = t_handler.do(WHEH_ACTION_TYPE.POST_WEBHOOK, options=options)
+            # JSON (no replace → raw string is fine even though it's not valid JSON)
+            opts = self._make_options(g, url='https://test.com',
+                                      content_type=ContentType.JSON,
+                                      data='This is a test')
+            res, _ = self._do_webhook(opts)
             self.assertTrue(res)
             mock_log.assert_any_call(text)
             mock_log.assert_called_with(200)
 
     def test_03_wrong_action_type(self):
         with mock.patch("logging.Logger.warning") as mock_log:
-            g = FakeFlaskG()
-            g.logged_in_user = {'username': 'hans',
-                                'realm': self.realm1}
-
-            t_handler = WebHookHandler()
-            options = {"g": g,
-                       "handler_def": {
-                           "options": {"URL": 'https://test.com',
-                                       "content_type": ContentType.URLENCODED,
-                                       "data": 'This is a test'
-                                       }
-                       }
-                       }
-            res = t_handler.do("False_Type", options=options)
+            g = self._make_g()
+            opts = self._make_options(g, url='https://test.com',
+                                      content_type=ContentType.URLENCODED,
+                                      data='This is a test')
+            res, _ = self._do_webhook(opts, action="False_Type")
             self.assertFalse(res)
-            text = 'Unknown action value: False_Type'
-            mock_log.assert_any_call(text)
+            mock_log.assert_any_call('Unknown action value: False_Type')
 
     def test_04_wrong_content_type(self):
         with mock.patch("logging.Logger.warning") as mock_log:
-            g = FakeFlaskG()
-            g.logged_in_user = {'username': 'hans',
-                                'realm': self.realm1}
-
-            t_handler = WebHookHandler()
-            options = {"g": g,
-                       "handler_def": {
-                           "options": {"URL": 'https://test.com',
-                                       "content_type": 'False_Type',
-                                       "data": 'This is a test'
-                                       }
-                       }
-                       }
-            res = t_handler.do(WHEH_ACTION_TYPE.POST_WEBHOOK, options=options)
+            g = self._make_g()
+            opts = self._make_options(g, url='https://test.com',
+                                      content_type='False_Type',
+                                      data='This is a test')
+            res, _ = self._do_webhook(opts)
             self.assertFalse(res)
-            text = 'Unknown content type value: False_Type'
-            mock_log.assert_any_call(text)
+            mock_log.assert_any_call('Unknown content type value: False_Type')
 
     @patch('requests.post')
     def test_05_wrong_url(self, mock_post):
         mock_post.side_effect = requests.exceptions.ConnectionError()
-
-        g = FakeFlaskG()
-        g.logged_in_user = {'username': 'hans',
-                            'realm': self.realm1}
-
-        t_handler = WebHookHandler()
-        options = {"g": g,
-                   "handler_def": {
-                       "options": {"URL": 'https://xyz.blablba',
-                                   "content_type": ContentType.JSON,
-                                   "data": 'This is a test'
-                                   }
-                   }
-                   }
-        res = t_handler.do(WHEH_ACTION_TYPE.POST_WEBHOOK, options=options)
+        g = self._make_g()
+        opts = self._make_options(g, url='https://xyz.blablba',
+                                  content_type=ContentType.JSON,
+                                  data='This is a test')
+        res, _ = self._do_webhook(opts)
         self.assertFalse(res)
 
     @patch('requests.post')
     def test_06_replace_function_json(self, mock_post):
         with mock.patch("logging.Logger.info") as mock_log:
             mock_post.return_value.status_code = 200
-            mock_post.return_value.json.return_value = 'response'
 
-            g = FakeFlaskG()
-            g.logged_in_user = {'username': 'hans',
-                                'realm': self.realm1}
-
-            t_handler = WebHookHandler()
+            g = self._make_g()
             data = '{"{realm}": {"{realm}": {"{realm}": "This is {logged_in_user} from realm {realm}"}}}'
-            options = {"g": g,
-                       "handler_def": {
-                           "options": {"URL":
-                                           'http://test.com',
-                                       "content_type":
-                                           ContentType.JSON,
-                                       "replace":
-                                           True,
-                                       "data": data
-                                       }
-                       }
-                       }
-            res = t_handler.do("post_webhook", options=options)
+            opts = self._make_options(g, data=data, replace=True)
+            res, _ = self._do_webhook(opts)
             self.assertTrue(res)
-            text = 'A webhook is called at {0!r} with data: {1!r}'.format(
-                'http://test.com', '{"realm1": {"realm1": {"realm1": "This is hans from realm realm1"}}}')
-            mock_log.assert_any_call(text)
+            expected_body = '{"realm1": {"realm1": {"realm1": "This is hans from realm realm1"}}}'
+            mock_log.assert_any_call(
+                f"A webhook is called at 'http://test.com' with data: '{expected_body}'")
             mock_log.assert_called_with(200)
 
     @patch('requests.post')
     def test_07_replace_function_urlencoded(self, mock_post):
         with mock.patch("logging.Logger.info") as mock_log:
             mock_post.return_value.status_code = 200
-            mock_post.return_value.json.return_value = 'response'
 
-            g = FakeFlaskG()
-            g.logged_in_user = {'username': 'hans',
-                                'realm': self.realm1}
-
-            t_handler = WebHookHandler()
-            options = {"g": g,
-                       "handler_def": {
-                           "options": {"URL": 'https://test.com',
-                                       "content_type": ContentType.URLENCODED,
-                                       "replace": True,
-                                       "data": 'This is {logged_in_user} from realm {realm}'
-                                       }
-                       }
-                       }
-            res = t_handler.do(WHEH_ACTION_TYPE.POST_WEBHOOK, options=options)
+            g = self._make_g()
+            opts = self._make_options(g, url='https://test.com',
+                                      content_type=ContentType.URLENCODED,
+                                      data='This is {logged_in_user} from realm {realm}',
+                                      replace=True)
+            res, _ = self._do_webhook(opts)
             self.assertTrue(res)
-            text = 'A webhook is called at {0!r} with data: {1!r}'.format(
-                'https://test.com', 'This is hans from realm realm1')
-            mock_log.assert_any_call(text)
+            mock_log.assert_any_call(
+                "A webhook is called at 'https://test.com' "
+                "with data: 'This is hans from realm realm1'")
             mock_log.assert_called_with(200)
 
     @patch('requests.post')
@@ -4400,32 +4393,17 @@ class WebhookTestCase(MyTestCase):
         with mock.patch("logging.Logger.warning") as mock_log:
             with mock.patch("logging.Logger.info") as mock_info:
                 mock_post.return_value.status_code = 200
-                mock_post.return_value.json.return_value = 'response'
 
-                g = FakeFlaskG()
-                g.logged_in_user = {"username": "cornelius", "realm": self.realm1}
-
-                t_handler = WebHookHandler()
-                options = {"g": g,
-                           "handler_def": {
-                               "options": {"URL":
-                                               'http://test.com',
-                                           "content_type":
-                                               ContentType.JSON,
-                                           "replace":
-                                               True,
-                                           "data":
-                                               '{"{token_serial}": "{token_owner} {unknown_tag}"}'
-                                           }
-                           }
-                           }
-                res = t_handler.do(WHEH_ACTION_TYPE.POST_WEBHOOK, options=options)
+                g = self._make_g(username='cornelius')
+                data = '{"{token_serial}": "{token_owner} {unknown_tag}"}'
+                opts = self._make_options(g, data=data, replace=True)
+                res, _ = self._do_webhook(opts)
                 self.assertTrue(res)
-                mock_log.assert_any_call("Unable to replace placeholder: ('unknown_tag')!"
-                                         " Please check the webhooks data option.")
-                text = 'A webhook is called at {0!r} with data: {1!r}'.format(
-                    'http://test.com', '{"{token_serial}": "{token_owner} {unknown_tag}"}')
-                mock_info.assert_any_call(text)
+                mock_log.assert_any_call(
+                    "Unable to replace placeholder: ('unknown_tag')!"
+                    " Please check the webhooks data option.")
+                mock_info.assert_any_call(
+                    f"A webhook is called at 'http://test.com' with data: '{data}'")
                 mock_info.assert_called_with(200)
 
     @patch('requests.post')
@@ -4433,7 +4411,6 @@ class WebhookTestCase(MyTestCase):
         with mock.patch("logging.Logger.warning") as mock_log:
             with mock.patch("logging.Logger.info") as mock_info:
                 mock_post.return_value.status_code = 200
-                mock_post.return_value.json.return_value = 'response'
 
                 init_token({"serial": "SPASS01", "type": "spass"},
                            User("cornelius", self.realm1))
@@ -4441,7 +4418,6 @@ class WebhookTestCase(MyTestCase):
                 builder = EnvironBuilder(method='POST',
                                          data={'serial': "SPASS01"},
                                          headers={})
-
                 env = builder.get_environ()
                 env["REMOTE_ADDR"] = "10.0.0.1"
                 g.client_ip = env["REMOTE_ADDR"]
@@ -4449,57 +4425,30 @@ class WebhookTestCase(MyTestCase):
                 req.all_data = {"serial": "SPASS01"}
                 req.User = User("cornelius", self.realm1)
 
-                t_handler = WebHookHandler()
-                options = {"g": g,
-                           "request": req,
-                           "handler_def": {
-                               "options": {"URL":
-                                               'http://test.com',
-                                           "content_type":
-                                               ContentType.JSON,
-                                           "replace":
-                                               True,
-                                           "data":
-                                               '{"text": "The token serial is {token_seril}"}'
-                                           }
-                           }
-                           }
-                res = t_handler.do(WHEH_ACTION_TYPE.POST_WEBHOOK, options=options)
+                data = '{"text": "The token serial is {token_seril}"}'
+                opts = self._make_options(g, data=data, replace=True, request=req)
+                res, _ = self._do_webhook(opts)
                 self.assertTrue(res)
-                mock_log.assert_any_call("Unable to replace placeholder: ('token_seril')!"
-                                         " Please check the webhooks data option.")
-                text = 'A webhook is called at {0!r} with data: {1!r}'.format(
-                    'http://test.com', '{"text": "The token serial is {token_seril}"}')
-                mock_info.assert_any_call(text)
+                mock_log.assert_any_call(
+                    "Unable to replace placeholder: ('token_seril')!"
+                    " Please check the webhooks data option.")
+                mock_info.assert_any_call(
+                    f"A webhook is called at 'http://test.com' with data: '{data}'")
                 mock_info.assert_called_with(200)
 
     @patch('requests.post')
     def test_10_content_type_header_is_set_correctly(self, mock_post):
         mock_post.return_value.status_code = 200
+        g = self._make_g()
 
-        g = FakeFlaskG()
-        g.logged_in_user = {'username': 'hans', 'realm': self.realm1}
-        t_handler = WebHookHandler()
-
-        # JSON content type is forwarded as Content-Type header
-        options = {"g": g,
-                   "handler_def": {
-                       "options": {"URL": 'https://test.com',
-                                   "content_type": ContentType.JSON,
-                                   "data": '{"key": "value"}'
-                                   }
-                   }
-                   }
-        t_handler.do(WHEH_ACTION_TYPE.POST_WEBHOOK, options=options)
-        _, kwargs = mock_post.call_args
-        self.assertEqual(kwargs["headers"]["Content-Type"], ContentType.JSON)
-
-        # URLENCODED content type is forwarded as Content-Type header
-        options["handler_def"]["options"]["content_type"] = ContentType.URLENCODED
-        options["handler_def"]["options"]["data"] = "key=value"
-        t_handler.do(WHEH_ACTION_TYPE.POST_WEBHOOK, options=options)
-        _, kwargs = mock_post.call_args
-        self.assertEqual(kwargs["headers"]["Content-Type"], ContentType.URLENCODED)
+        for ct in (ContentType.JSON, ContentType.URLENCODED):
+            with self.subTest(content_type=ct):
+                data = '{"key": "value"}' if ct == ContentType.JSON else "key=value"
+                opts = self._make_options(g, url='https://test.com',
+                                          content_type=ct, data=data)
+                self._do_webhook(opts)
+                _, kwargs = mock_post.call_args
+                self.assertEqual(kwargs["headers"]["Content-Type"], ct)
 
     def test_11_db_content_type_map_covers_old_and_new_values(self):
         self.assertEqual(DB_CONTENT_TYPE_MAP["json"], ContentType.JSON)
@@ -4511,29 +4460,125 @@ class WebhookTestCase(MyTestCase):
     @patch('requests.post')
     def test_12_legacy_db_values_are_accepted_and_mapped_to_correct_header(self, mock_post):
         mock_post.return_value.status_code = 200
+        g = self._make_g()
 
+        for legacy, expected in [("json", ContentType.JSON),
+                                 ("urlencoded", ContentType.URLENCODED)]:
+            with self.subTest(legacy_value=legacy):
+                data = '{"key": "value"}' if legacy == "json" else "key=value"
+                opts = self._make_options(g, url='https://test.com',
+                                          content_type=legacy, data=data)
+                res, _ = self._do_webhook(opts)
+                self.assertTrue(res)
+                _, kwargs = mock_post.call_args
+                self.assertEqual(kwargs["headers"]["Content-Type"], expected)
+
+    @patch('requests.post')
+    def test_13_replace_recursive_edge_cases(self, mock_post):
+        """replace_recursive must handle multi-key dicts, nested dicts,
+        non-string values, and arrays at any depth."""
+        mock_post.return_value.status_code = 200
+        g = self._make_g()
+
+        cases = [
+            # (description, input payload, expected output)
+            ("multi-key dict",
+             {"user": "{logged_in_user}", "serial": "{token_serial}", "event": "login"},
+             {"user": "hans", "serial": "", "event": "login"}),
+
+            ("nested multi-key dict",
+             {"outer": {"a": "{realm}", "b": "keep"}, "top": "{logged_in_user}"},
+             {"outer": {"a": "realm1", "b": "keep"}, "top": "hans"}),
+
+            ("non-string values pass through",
+             {"count": 5, "active": True, "nothing": None, "user": "{logged_in_user}"},
+             {"count": 5, "active": True, "nothing": None, "user": "hans"}),
+
+            ("placeholders inside arrays",
+             {"tags": ["{realm}", "{logged_in_user}"], "nested": [{"k": "{realm}"}]},
+             {"tags": ["realm1", "hans"], "nested": [{"k": "realm1"}]}),
+        ]
+        for desc, payload, expected in cases:
+            with self.subTest(desc):
+                opts = self._make_options(g, data=json.dumps(payload), replace=True)
+                res, _ = self._do_webhook(opts)
+                self.assertTrue(res, f"handler returned False for: {desc}")
+                self.assertEqual(self._posted_json(mock_post), expected)
+
+    @patch('requests.post')
+    def test_14_replace_with_create_tag_dict_tags(self, mock_post):
+        """New create_tag_dict tags and backward-compatible aliases both work."""
+        mock_post.return_value.status_code = 200
+
+        init_token({"serial": "SPASS02", "type": "spass"},
+                   User("cornelius", self.realm1))
         g = FakeFlaskG()
-        g.logged_in_user = {'username': 'hans', 'realm': self.realm1}
-        t_handler = WebHookHandler()
+        g.logged_in_user = {'username': 'admin1', 'realm': self.realm1}
+        g.client_ip = "10.0.0.1"
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "SPASS02"},
+                                 headers={})
+        env = builder.get_environ()
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        req = Request(env)
+        req.all_data = {"serial": "SPASS02"}
+        req.User = User("cornelius", self.realm1)
 
-        # Legacy "json" value stored in DB maps to application/json header
-        options = {"g": g,
-                   "handler_def": {
-                       "options": {"URL": 'https://test.com',
-                                   "content_type": "json",
-                                   "data": '{"key": "value"}'
-                                   }
-                   }
-                   }
-        res = t_handler.do(WHEH_ACTION_TYPE.POST_WEBHOOK, options=options)
+        data = json.dumps({
+            "admin": "{admin}",
+            "serial": "{serial}",
+            "tokentype": "{tokentype}",
+            "legacy_user": "{logged_in_user}",
+            "legacy_serial": "{token_serial}",
+            "ip": "{client_ip}"
+        })
+        opts = self._make_options(g, data=data, replace=True, request=req)
+        res, _ = self._do_webhook(opts)
         self.assertTrue(res)
-        _, kwargs = mock_post.call_args
-        self.assertEqual(kwargs["headers"]["Content-Type"], ContentType.JSON)
+        posted_data = self._posted_json(mock_post)
+        self.assertEqual(posted_data["admin"], "admin1")
+        self.assertEqual(posted_data["serial"], "SPASS02")
+        self.assertEqual(posted_data["tokentype"], "spass")
+        # {logged_in_user} is sourced from request.User (the authenticating end-user),
+        # not from g.logged_in_user (the admin) — preserving old behavior
+        self.assertEqual(posted_data["legacy_user"], "cornelius")
+        self.assertEqual(posted_data["legacy_serial"], "SPASS02")
+        self.assertEqual(posted_data["ip"], "10.0.0.1")
 
-        # Legacy "urlencoded" value stored in DB maps to application/x-www-form-urlencoded header
-        options["handler_def"]["options"]["content_type"] = "urlencoded"
-        options["handler_def"]["options"]["data"] = "key=value"
-        res = t_handler.do(WHEH_ACTION_TYPE.POST_WEBHOOK, options=options)
+    @patch('requests.post')
+    def test_15_replace_false_string_does_not_trigger_replacement(self, mock_post):
+        """The string 'False' from the DB must not enable placeholder replacement."""
+        mock_post.return_value.status_code = 200
+        g = self._make_g()
+        data = '{"user": "{logged_in_user}"}'
+        opts = self._make_options(g, data=data, replace="False")
+        res, _ = self._do_webhook(opts)
         self.assertTrue(res)
-        _, kwargs = mock_post.call_args
-        self.assertEqual(kwargs["headers"]["Content-Type"], ContentType.URLENCODED)
+        # The data should be sent unchanged — no replacement performed
+        posted = mock_post.call_args.kwargs["data"]
+        self.assertEqual(posted, data)
+
+    @patch('privacyidea.lib.eventhandler.base.get_tokens')
+    @patch('requests.post')
+    def test_16_token_lookup_failure_does_not_propagate(self, mock_post, mock_get_tokens):
+        """A failing token lookup while gathering tags must be swallowed like a
+        rendering failure, not propagate out of the handler."""
+        mock_post.return_value.status_code = 200
+        mock_get_tokens.side_effect = AttributeError("lookup boom")
+
+        with mock.patch("logging.Logger.warning") as mock_log:
+            g = self._make_g()
+            builder = EnvironBuilder(method='POST', data={'serial': "SPASS01"}, headers={})
+            req = Request(builder.get_environ())
+            req.all_data = {"serial": "SPASS01"}
+
+            data = '{"user": "{logged_in_user}"}'
+            opts = self._make_options(g, data=data, replace=True, request=req)
+            res, _ = self._do_webhook(opts)
+            self.assertTrue(res)
+            mock_log.assert_any_call(
+                "Unable to replace placeholder: (lookup boom)!"
+                " Please check the webhooks data option.")
+        # The unformatted data is still sent — the webhook call itself is not aborted
+        posted = mock_post.call_args.kwargs["data"]
+        self.assertEqual(posted, data)

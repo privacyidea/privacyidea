@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { computed, Directive, input, signal, Type } from "@angular/core";
+import { computed, Directive, input, Signal, signal, TemplateRef, Type } from "@angular/core";
 import { PolicyAction } from "@services/auth/policy-actions";
 
 export const DASHBOARD_COLUMNS = 24;
@@ -24,6 +24,7 @@ export const DASHBOARD_COLUMNS = 24;
 export type WidgetState = "loading" | "ready" | "denied" | "error";
 
 export type WidgetTypeId =
+  | "news"
   | "tokens"
   | "token-types"
   | "authentications"
@@ -33,7 +34,8 @@ export type WidgetTypeId =
   | "subscriptions"
   | "certificate-health"
   | "resolver-timing"
-  | "notification-delivery";
+  | "notification-delivery"
+  | "appearance";
 
 export interface WidgetSize {
   cols: number;
@@ -54,6 +56,15 @@ export abstract class DashboardWidget {
   readonly loading = computed(() => this.state() === "loading");
   readonly partialLoading = computed(() => false);
   readonly refreshFailed = computed(() => false);
+  readonly canReload = computed(() => true);
+  readonly titleRoute = computed<string | null>(() => null);
+  /**
+   * Buttons the widget adds to its frame's header, in front of the reload button, so a
+   * widget does not have to spend a row of its own body on a toolbar. A template rather
+   * than a list of icons and callbacks, so a widget can hand over components that keep
+   * state of their own — the copy button and its "copied" feedback, for one.
+   */
+  readonly headerActions?: Signal<TemplateRef<unknown> | undefined>;
 
   static readonly type: WidgetTypeId;
   static readonly title: string = "";
@@ -65,6 +76,8 @@ export abstract class DashboardWidget {
   static readonly pinned: boolean = false;
   static readonly fixedPosition: { x: number; y: number } | null = null;
   static readonly requiredAction: PolicyAction | null = null;
+  static readonly titleLink: string | null = null;
+  static readonly titleLinkAction: PolicyAction | null = null;
 
   abstract reload(): void;
 }

@@ -97,6 +97,11 @@ DOCKER_LOGGING_CONFIG = {
 class SecureFormatter(Formatter):
 
     def format(self, record):
+        if not isinstance(record.msg, str):
+            # Logging allows any object as the message (log.info(exception) is common).
+            # Coerce it here, like logging.LogRecord.getMessage() would, so the string
+            # operations below can not fail on the message object.
+            record.msg = str(record.msg)
         if 's_line' in record.__dict__ and '_called' not in record.__dict__:
             # rotating file handler calls "format" to check for its length before
             # emitting the actual line
@@ -121,9 +126,15 @@ SENSITIVE_KEY_NAMES = frozenset({
     # "anotpval" is the parameter holding the OTP in the check_otp signature of every token class.
     # It is listed literally because "otp" is too short to be matched inside a longer name.
     "anotpval",
+    # "apikey" (squashed) hides both the "api_key" result field and the "X-API-Key" request
+    # header, so the plaintext API client key is never written to the log.
+    "apikey",
     "answer", "answers", "authorization", "bindpw", "cakey", "cookie", "credential", "fbtoken",
     "key_enc", "key_iv", "otp", "otp1", "otp2", "otpkey", "otpvalue", "pass", "passphrase",
     "passw", "passwd", "password", "pin", "privatekey", "questions", "recoverycode", "secret",
+    # "series_id" is the secret half of the remember-device cookie (series_id:counter); logging it
+    # at DEBUG would write a replayable bearer token to the log.
+    "series_id",
     "session", "sshkey", "tans",
 })
 
@@ -235,6 +246,24 @@ def is_sensitive_key(key) -> bool:
     """
     if not isinstance(key, str):
         return False
+    return _is_sensitive_key_name(key)
+
+
+# The cache is bounded on purpose: a caller can send arbitrary parameter names, and every distinct
+# name that reaches a DEBUG log line would otherwise become a permanent entry. The names that
+# actually occur are a small set which stays resident, while one-off names are evicted again.
+@functools.lru_cache(maxsize=4096)
+def _is_sensitive_key_name(key: str) -> bool:
+    """
+    Decide whether the value belonging to the name ``key`` has to be hidden from the log.
+
+    Separate from :py:func:`is_sensitive_key` so that the memoized function is only ever reached
+    with a hashable string, and so that the decision is computed once per distinct name: it runs
+    several regular expressions, and it is evaluated for every key of every decorated call.
+
+    :param key: A mapping key or parameter name
+    :return: True if the value must not be logged
+    """
     normalized_key = key.strip().lower()
     if normalized_key in INSENSITIVE_KEY_NAMES:
         return False
@@ -263,6 +292,25 @@ def _is_headers_like(value) -> bool:
     """
     return type(value).__name__ in ("Headers", "EnvironHeaders", "ImmutableTypeConversionDict",
                                     "CombinedMultiDict", "MultiDict", "ImmutableMultiDict")
+
+
+def _all_items(value):
+    """
+    Return the key/value pairs of a mapping, including the repeated keys.
+
+    A request may carry a key more than once - several ``X-Forwarded-For`` headers, a parameter
+    sent twice - but ``MultiDict.items()`` yields only the first value of each key. Ask for all of
+    them where the container supports it, so that the log does not drop the very values someone
+    raised the log level to look at. Containers without the keyword either cannot hold a repeated
+    key or already yield them all.
+
+    :param value: A mapping or header container
+    :return: An iterable of key/value pairs
+    """
+    try:
+        return value.items(multi=True)
+    except TypeError:
+        return value.items()
 
 
 def redact_url(url: str) -> str:
@@ -318,9 +366,14 @@ def redact(value, depth: int = 0, _path_ids: frozenset = frozenset()):
             return "<recursion>"
         _path_ids = _path_ids | {id(value)}
         try:
-            return {key: HIDDEN if is_sensitive_key(key) and is_sensitive_value(item)
-                    else redact(item, depth + 1, _path_ids)
-                    for key, item in value.items()}
+            collected = {}
+            for key, item in _all_items(value):
+                collected.setdefault(key, []).append(
+                    HIDDEN if is_sensitive_key(key) and is_sensitive_value(item)
+                    else redact(item, depth + 1, _path_ids))
+            # The result is a plain dict and can hold one value per key, so a key that occurred
+            # more than once keeps its values in a list instead of losing all but one.
+            return {key: items[0] if len(items) == 1 else items for key, items in collected.items()}
         except Exception:
             # Returning the original here would hand an unredacted object to the log line, which
             # then renders it through its repr. A container we failed to walk is a container whose
@@ -328,6 +381,28 @@ def redact(value, depth: int = 0, _path_ids: frozenset = frozenset()):
             # is also called from __repr__, which has no caller able to suppress the whole line.
             return "<redaction failed>"
     return value
+
+
+def redacted_attributes(obj) -> dict:
+    """
+    Render the instance attributes of ``obj`` for a ``__repr__``, with every secret replaced.
+
+    A repr ends up in the log like any other value, so it has to hide what a log line has to hide.
+    Both the token class and the token database model represent themselves this way, and they share
+    this function so that a change to the hiding rules cannot reach one of them but not the other.
+
+    :param obj: The object whose instance attributes are rendered
+    :return: A dictionary mapping the repr of every attribute name to the repr of its value
+    """
+    attributes = {}
+    for name, value in vars(obj).items():
+        if is_sensitive_key(name) and is_sensitive_value(value):
+            attributes[f"{name!r}"] = f"{HIDDEN!r}"
+        else:
+            # An attribute that is not sensitive itself can still carry a secret inside it,
+            # for example the enrollment key in init_details.
+            attributes[f"{name!r}"] = f"{redact(value)!r}"
+    return attributes
 
 
 class log_with:

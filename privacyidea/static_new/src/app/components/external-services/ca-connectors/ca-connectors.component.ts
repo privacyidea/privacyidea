@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, ElementRef, inject, signal, ViewChild, WritableSignal } from "@angular/core";
+import { Component, computed, ElementRef, inject, signal, ViewChild, viewChild, WritableSignal } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatTooltipModule } from "@angular/material/tooltip";
@@ -39,7 +39,10 @@ import { ClearableInputComponent } from "@components/shared/clearable-input/clea
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { TableStateComponent } from "@components/shared/table-state/table-state.component";
+import { TableState } from "@core/models/table_state/table-state";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { renderedRows, RowSelector } from "@services/table-utils/row-selector";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 
 @Component({
@@ -58,7 +61,8 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
     MatLabel,
     ClearableInputComponent,
     MatInput,
-    CopyableComponent
+    CopyableComponent,
+    TableStateComponent
   ],
   templateUrl: "./ca-connectors.component.html",
   styleUrl: "./ca-connectors.component.scss"
@@ -75,21 +79,30 @@ export class CaConnectorsComponent {
   totalLength: WritableSignal<number> = computed(
     () => this.caConnectorService.caConnectors().length
   ) as WritableSignal<number>;
+  readonly tableState = new TableState({
+    resource: this.caConnectorService.caConnectorResource,
+    count: () => this.caConnectorService.caConnectors().length,
+    allowed: () => this.authService.actionAllowed("caconnectorread"),
+    resetFilter: () => this.resetFilter()
+  });
 
-  @ViewChild(MatPaginator) paginator!: MatPaginator;
+  readonly paginator = viewChild(MatPaginator);
   @ViewChild(MatSort) sort!: MatSort;
   @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: ElementRef<HTMLInputElement>;
 
   displayedColumns: string[] = ["select", "connectorname", "type"];
 
-  selection = signal<CaConnector[]>([]);
-
   caConnectorDataSource = computed(() => {
     const connectors = this.caConnectorService.caConnectors();
     const dataSource = new MatTableDataSource(connectors);
-    dataSource.paginator = this.paginator;
+    dataSource.paginator = this.paginator() ?? null;
     dataSource.sort = this.sort;
     return dataSource;
+  });
+
+  selector = new RowSelector<CaConnector>({
+    keyGetter: (connector) => connector.connectorname,
+    visibleRows: renderedRows(this.caConnectorDataSource)
   });
 
   openEditDialog(connector?: CaConnector): void {
@@ -100,34 +113,8 @@ export class CaConnectorsComponent {
     }
   }
 
-  isAllSelected(): boolean {
-    const rows = this.caConnectorDataSource().data;
-    return rows.length > 0 && this.selection().length === rows.length;
-  }
-
-  toggleAllRows(): void {
-    if (this.isAllSelected()) {
-      this.selection.set([]);
-    } else {
-      this.selection.set([...this.caConnectorDataSource().data]);
-    }
-  }
-
-  toggleRow(row: CaConnector): void {
-    const current = this.selection();
-    if (current.includes(row)) {
-      this.selection.set(current.filter((selected) => selected !== row));
-    } else {
-      this.selection.set([...current, row]);
-    }
-  }
-
-  isSelected(row: CaConnector): boolean {
-    return this.selection().includes(row);
-  }
-
   deleteSelected(): void {
-    const selected = this.selection();
+    const selected = this.selector.selectedRows();
     if (selected.length === 0) {
       return;
     }
@@ -147,7 +134,7 @@ export class CaConnectorsComponent {
           selected.forEach(
             (row) => void this.caConnectorService.deleteCaConnector(row.connectorname).catch(() => undefined)
           );
-          this.selection.set([]);
+          this.selector.deselectAllRows();
         }
       });
   }

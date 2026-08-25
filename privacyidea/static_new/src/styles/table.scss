@@ -9,7 +9,6 @@ $table-bg: var(--table-color);
 $link-color: var(--mat-sys-primary);
 $paginator-bg: var(--table-color);
 $highlight-padding: 2px 6px;
-$border-radius: 4px;
 $icon-font-size: 22px;
 $fix-width: 20rem;
 
@@ -18,13 +17,6 @@ $gap-small: 8px;
 $margin-left-small: 10px;
 $padding-top-small: 8px;
 $description-width: 18rem;
-
-@mixin table-container-styles {
-  padding: var(--global-padding);
-  border-radius: var(--border-radius);
-  box-shadow: var(--elevation-5);
-  background-color: var(--table-color);
-}
 
 // Striped key/value Material table used inside the token and container detail
 // cards, so both render identical rows.
@@ -62,7 +54,7 @@ $description-width: 18rem;
   flex-direction: row;
   flex-wrap: wrap;
   align-items: flex-start;
-  gap: var(--global-gap);
+  gap: 16px;
 
   > * {
     flex: 1 1 28rem;
@@ -99,7 +91,9 @@ $description-width: 18rem;
     row-gap: 4px;
     margin: 0 0 0 16px;
     padding: 0;
-    width: 100%;
+    // The left inset is part of the card's content box, so the grid takes the
+    // remaining width instead of the full one.
+    width: auto;
 
     // Key uses the same font as everything else and is vertically centered.
     .info-key {
@@ -133,11 +127,25 @@ $description-width: 18rem;
       flex: 1 1 auto;
       min-width: 0;
     }
+
+    button {
+      flex: 0 0 auto;
+    }
   }
 
+  // The add row holds a key and a value field whose .input-width-* caps are
+  // wider than the card, so they shrink to the card instead of overflowing it.
   .info-add-row {
     display: flex;
     flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    margin-left: 16px;
+
+    mat-form-field {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
   }
 }
 
@@ -156,6 +164,25 @@ $description-width: 18rem;
     background: var(--mat-sys-surface-container);
     border-radius: var(--border-radius);
   }
+}
+
+// Sizes the standalone state panel (empty, denied, error) for a table that owns its
+// page: the panel claims the footprint the table would have had, so it reads as the
+// page content rather than as a small island at the top of an empty content area.
+// Tables embedded as one section of a details page deliberately do not opt in — there
+// the compact default keeps the section proportionate to its neighbours.
+// Opted into by tables that own their page: the state panel fills the footprint
+// the table would have had, and steps up one typescale/icon size with it. A
+// panel alone on a page and a panel sitting among a page's other sections are
+// the same component at two sizes, not two different components.
+@mixin page-table-state-size {
+  // The footprint is the page container's own box: main-component-style caps it at 100cq* against
+  // the content region and pads 16px per side, so the panel takes that box less the padding.
+  --table-state-min-height: calc(100cqh - 2 * 16px);
+  --table-state-min-width: min(44rem, calc(100cqw - 2 * 16px));
+  --table-state-heading-font: var(--mat-sys-title-large);
+  --table-state-icon-frame-size: 5.5rem;
+  --table-state-icon-size: 40px;
 }
 
 @mixin base-table-structure(
@@ -261,12 +288,12 @@ table {
 }
 
 .mat-mdc-paginator-range-label {
-  margin: 0 var(--global-padding);
+  margin: 0 16px;
   white-space: nowrap;
 }
 
 .mat-mdc-paginator-container {
-  padding: 0 0 0 var(--global-padding);
+  padding: 0 0 0 16px;
   flex-wrap: nowrap !important;
   --mat-paginator-container-size: 0px;
 }
@@ -324,7 +351,7 @@ th:nth-child(even) {
 .highlight-warning-clickable,
 .highlight-false-clickable,
 .highlight-disabled {
-  border-radius: $border-radius;
+  border-radius: var(--border-radius);
   padding: $highlight-padding;
   color: white;
   display: inline-block;
@@ -447,6 +474,8 @@ th:nth-child(even) {
   width: 42px;
 }
 
+// Placeholder rows shown while a table loads for the first time: the row keeps its
+// height so the table does not jump, but no cell content is visible or interactive.
 .cdk-overlay-pane {
   position: absolute !important;
   z-index: 1;
@@ -522,8 +551,19 @@ th:nth-child(even) {
   }
 }
 
-.details-card-title {
-  margin: 0 0 4px;
+// Card titles. The margin goes on the row and the h3/h4 reset below keeps the browser's em-based
+// heading margins out of it. Scoped by app-details-card, so a page-level .details-header keeps
+// its own spacing.
+.details-card-title,
+app-details-card .details-header {
+  margin: 8px;
+}
+
+app-details-card .details-header {
+  h3,
+  h4 {
+    margin: 0;
+  }
 }
 
 .details-cards-column {

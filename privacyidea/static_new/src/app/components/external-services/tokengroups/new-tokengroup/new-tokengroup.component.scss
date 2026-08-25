@@ -2,18 +2,17 @@
 
 .tokengroup-page-container {
   @include styles.main-component-style;
-  // Shared detail/edit-page cap. See --detail-max-height in styles.scss.
-  max-height: var(--table-max-height);
+  min-width: calc(var(--config-form-width) + 32px);
   display: grid;
   position: relative;
 }
 
 .header-row {
   display: flex;
-  gap: var(--global-gap);
-  padding: var(--half-global-padding) var(--global-padding);
+  gap: 16px;
+  padding: 8px 16px;
 }
 
 .tokengroup-content {
-  padding: var(--global-padding);
+  padding: 16px;
 }
