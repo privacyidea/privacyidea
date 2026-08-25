@@ -37,6 +37,7 @@ from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import SCOPE, AUTHORIZED, set_policy, delete_policy
 from privacyidea.lib.smtpserver import add_smtpserver, delete_smtpserver
+from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.token import init_token, remove_token, get_tokens
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import AUTH_RESPONSE
@@ -248,11 +249,38 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         self.assertEqual("Locked. Try again in about 10 minute(s).", body["detail"]["message"], body)
         self.assertTrue(is_user_locked(User("selfservice", self.realm1)))
 
-    def test_triggering_a_challenge_reports_nothing(self):
-        # The counterpart: a challenge actually triggered is not a failure, so there is nothing to report on
-        # it even with a policy in place. Guards the count-as-value shape - a truthy count must read as
-        # "worked", the way a truthy boolean does on /validate/check.
+    def test_a_challenge_that_succeeds_and_trips_a_lock_is_still_withdrawn(self):
+        # This used to assert the opposite, on the grounds that a challenge actually triggered is not a failure and
+        # so has nothing to report. The count-as-value shape is what made that look right: result.value here is the
+        # *number of challenges triggered*, so a request that both triggered one and tripped a lock read as a
+        # success and was left alone - handing the client a transaction_id the pre-check would refuse on the very
+        # next request, and answering differently from every request the lock then refuses.
+        #
+        # What decides is the restriction, not whether the response looked like a failure.
         self._make_lock_policy(counter_type=AuthEventType.CHALLENGE_TRIGGERED, threshold=1, duration=600,
+                               error_message="Locked. Try again in about {duration}.")
+        with self.app.test_request_context("/validate/triggerchallenge", method="POST",
+                                           data={"user": "cornelius", "realm": self.realm1},
+                                           headers={"PI-Authorization": self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            body = res.json
+        self.assertTrue(is_user_locked(self.user))
+        # 0, not False: the value is a count on this endpoint, so a rejection answers with its kind of nothing.
+        self.assertEqual(0, body["result"]["value"], body)
+        self.assertNotIsInstance(body["result"]["value"], bool, body)
+        self.assertEqual(AUTH_RESPONSE.REJECT, body["result"]["authentication"], body)
+        # The reason and nothing that describes the challenge it overtook.
+        self.assertSetEqual({"message", "threadid"}, set(body["detail"]), body)
+        self.assertEqual("Locked. Try again in about 10 minute(s).", body["detail"]["message"], body)
+        # Withdrawn, not invalidated: the row is left to expire unanswered, exactly as on /validate/check.
+        self.assertTrue(get_challenges(serial=self.serial))
+
+    def test_triggering_a_challenge_without_a_restriction_is_untouched(self):
+        # The other half of the count-as-value shape, and what the rewritten test above must not cost: with a
+        # policy in place but nothing tripped, a triggered challenge is reported exactly as it would be with no
+        # policy at all - a truthy count still reads as "worked".
+        self._make_lock_policy(counter_type=AuthEventType.CHALLENGE_TRIGGERED, threshold=99, duration=600,
                                error_message="Should not be shown.")
         with self.app.test_request_context("/validate/triggerchallenge", method="POST",
                                            data={"user": "cornelius", "realm": self.realm1},
@@ -260,9 +288,9 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertEqual(200, res.status_code, res.json)
             body = res.json
+        self.assertFalse(is_user_locked(self.user))
         self.assertEqual(1, body["result"]["value"], body)
         self.assertNotIn("Should not be shown.", str(body["detail"]), body)
-        # Untouched: the triggered challenge is reported as it would be with no policy in place at all.
         self.assertTrue(body["detail"]["transaction_ids"], body)
         self.assertEqual([self.serial], [entry["serial"] for entry in body["detail"]["multi_challenge"]], body)
 
@@ -287,10 +315,7 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         # rather than saying anything about it, so it stays.
         self.assertSetEqual({"message", "threadid"}, set(body["detail"]), body)
         self.assertEqual("Locked. Try again in about 10 minute(s).", body["detail"]["message"], body)
-        # result.authentication is left as it stands, on purpose: hide_specific_error_message keys on it and
-        # runs after this hook, and the audit row reads it in-view, before it. Pinned so that changing it is a
-        # deliberate act with those two in view - not because CHALLENGE is the right word for this response.
-        self.assertEqual(AUTH_RESPONSE.CHALLENGE, body["result"]["authentication"], body)
+        self.assertEqual(AUTH_RESPONSE.REJECT, body["result"]["authentication"], body)
         # Writing the lock does not reclassify the request: USER_LOCKED is what the *pre-check* of a later
         # request logs, so this one is still filed as the challenge trigger it was.
         self.assertListEqual([AuthEventType.CHALLENGE_TRIGGERED],

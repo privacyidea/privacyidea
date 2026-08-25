@@ -90,6 +90,7 @@ from privacyidea.lib.error import AuthError, Error
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import Match, SCOPE
 from privacyidea.lib.user import User
+from privacyidea.lib.utils import AUTH_RESPONSE
 
 log = logging.getLogger(__name__)
 
@@ -173,7 +174,8 @@ def _evaluate_rejection(user: User) -> "Rejection | None":
 
 # --- /validate/*: return the rejection as a response ---------------------------------------------------------------
 
-def conditional_access_precheck(user: User, log_rejection: bool = True) -> Response | None:
+def conditional_access_precheck(user: User, log_rejection: bool = True,
+                                rejection_value: Any = False) -> Response | None:
     """
     Reject a request pre-auth (before any token logic and before the failcounter /
     max_auth checks) when conditional-access policies forbid it. Returns the failure
@@ -191,6 +193,10 @@ def conditional_access_precheck(user: User, log_rejection: bool = True) -> Respo
     outcome for it.
 
     :param user: the identity to gate on
+    :param rejection_value: what ``result.value`` says on a rejection. ``False`` everywhere except
+        ``/validate/triggerchallenge``, where the value is the *number of challenges triggered* rather than a
+        boolean - answering that endpoint with ``False`` would change the type of a field its callers may be
+        reading as a number. See :func:`_rejected_value`, which keeps the same promise on the other path.
     :param log_rejection: write that authentication-log row. A rejection row **replaces** the row the request would
         have written anyway and must never create one where there would be none, so a caller whose endpoint logs no
         authentication event when it succeeds passes ``False``. Exactly one does: ``/validate/polltransaction``, where
@@ -205,7 +211,7 @@ def conditional_access_precheck(user: User, log_rejection: bool = True) -> Respo
     # An empty detail would be a tell in itself: on these endpoints an ordinary failure carries one, so a
     # response without it could only have come from conditional access. Endpoints whose ordinary failure carries
     # no detail need the opposite - see conditional_access_rejection.
-    return send_result(False, rid=2, details={"message": rejection.message or str(GENERIC_AUTH_FAILURE)})
+    return send_result(rejection_value, rid=2, details={"message": rejection.message or str(GENERIC_AUTH_FAILURE)})
 
 
 def conditional_access_rejection(user: User, log_rejection: bool = True) -> Rejection | None:
@@ -242,6 +248,22 @@ def conditional_access_rejection(user: User, log_rejection: bool = True) -> Reje
         # its own. A rejection *is* the whole message, so there is no failure reason it could carry past the mask.
         get_ca_context().claim_message(rejection.message)
     return rejection
+
+
+def _rejected_value(value: Any) -> Any:
+    """
+    What ``result.value`` becomes on a request conditional access refused, in the type the endpoint uses.
+
+    ``False`` almost everywhere, because that is what the value already is on a failed authentication. Not on
+    ``/validate/triggerchallenge``, where it is the *number of challenges triggered*: answering that endpoint with
+    a boolean would change the type of a field its callers may be reading as a number, so it gets ``0``. Anything
+    already falsy is left exactly as it stands.
+
+    ``bool`` is a subclass of ``int``, hence the second check - without it every ``True`` would become ``0``.
+    """
+    if not value:
+        return value
+    return 0 if isinstance(value, int) and not isinstance(value, bool) else False
 
 
 def rejection_message(messages: list[StageMessage]) -> str:
@@ -316,9 +338,6 @@ def surface_conditional_access_message(request, response):
     if not response or not response.is_json:
         return response
     content = response.json
-    if content.get("result", {}).get("value"):
-        # A success has nothing to report: the message is only ever shown on a failed authentication.
-        return response
     try:
         context = get_ca_context()
         context.flush()
@@ -328,30 +347,47 @@ def surface_conditional_access_message(request, response):
         # than raises and this hook wraps it; run_post_eval declines to evaluate its own rejections, so there
         # is nothing to compose and the gate's error message is left alone.
         evaluation = context.run_post_eval()
-        if evaluation.restricted or evaluation.messages:
-            detail = content.get("detail") or {}
-            if evaluation.restricted:
-                # Answered exactly as the pre-check answers every request after this one - wording and nothing
-                # else - whether or not that wording exists. Keyed on the restriction rather than on having
-                # something to say, because a silent lock still refuses this request: leaving the token failure
-                # in place would have the response that *wrote* the lock disagree with the ones it then refuses.
-                # Everything else in the detail describes what this rejection overtook - the token attempt that
-                # failed, or the challenge that was about to be handed out. The threadid is kept: it identifies
-                # the request rather than saying anything about it.
-                message = rejection_message(evaluation.messages)
-                detail = {"threadid": detail["threadid"]} if "threadid" in detail else {}
-            else:
-                message = compose_failure_message(detail.get("message"), evaluation.messages)
-            detail["message"] = message
-            content["detail"] = detail
-            response.set_data(json.dumps(content))
-            if evaluation.messages:
-                # Only wording an admin configured is claimed; a silent rejection is the ordinary failure and is
-                # masked with every other one, exactly as the pre-check leaves its own generic message unclaimed.
-                # A notification is claimed against the generic failure rather than as composed above, because it
-                # was appended to the token's own reason - which is what hide_specific_error_message suppresses.
-                context.claim_message(message if evaluation.restricted
-                                      else compose_failure_message(str(GENERIC_AUTH_FAILURE), evaluation.messages))
+        result = content.get("result") or {}
+        detail = content.get("detail") or {}
+        if evaluation.restricted:
+            # Answered exactly as the pre-check answers every request after this one - wording and nothing else -
+            # whether or not that wording exists. Keyed on the restriction rather than on having something to say,
+            # because a silent lock still refuses this request: leaving the token failure in place would have the
+            # response that *wrote* the lock disagree with the ones it then refuses.
+            #
+            # Keyed on it rather than on the response looking like a failure, too. ``result.value`` is a *count* on
+            # /validate/triggerchallenge, so a request that successfully triggered a challenge and tripped a lock in
+            # the same breath reads as a success - and used to be left alone, handing the client a transaction_id
+            # the next request would refuse.
+            #
+            # Everything else in the detail describes what this rejection overtook - the token attempt that failed,
+            # or the challenge that was about to be handed out. The threadid is kept: it identifies the request
+            # rather than saying anything about it.
+            message = rejection_message(evaluation.messages)
+            detail = {"threadid": detail["threadid"]} if "threadid" in detail else {}
+            # The response is a refusal now, whatever it was on its way to being: a falsy value in the type this
+            # endpoint uses, and REJECT, which is also what lets hide_specific_error_message mask it - that
+            # post-policy keys on the authentication field and runs after this hook.
+            result["value"] = _rejected_value(result.get("value"))
+            result["authentication"] = AUTH_RESPONSE.REJECT
+        elif evaluation.messages and not result.get("value"):
+            # A stage that only notified, on a response that did in fact fail.
+            message = compose_failure_message(detail.get("message"), evaluation.messages)
+        else:
+            # Nothing happened, or a notification on a response that did not fail: the message is failure-only and
+            # is never shown on a successful authentication.
+            return response
+        detail["message"] = message
+        content["result"] = result
+        content["detail"] = detail
+        response.set_data(json.dumps(content))
+        if evaluation.messages:
+            # Only wording an admin configured is claimed; a silent rejection is the ordinary failure and is
+            # masked with every other one, exactly as the pre-check leaves its own generic message unclaimed.
+            # A notification is claimed against the generic failure rather than as composed above, because it
+            # was appended to the token's own reason - which is what hide_specific_error_message suppresses.
+            context.claim_message(message if evaluation.restricted
+                                  else compose_failure_message(str(GENERIC_AUTH_FAILURE), evaluation.messages))
     except Exception as ex:
         # Never break an authentication response over the error message of its own rejection.
         log.warning(f"Could not surface the conditional-access message on this response: {ex!r}")
@@ -359,7 +395,8 @@ def surface_conditional_access_message(request, response):
 
 
 def conditional_access_gate(identity_resolver: Callable[[], User] | None = None,
-                            log_rejection: bool = True) -> Callable[[Callable], Callable]:
+                            log_rejection: bool = True,
+                            rejection_value: Any = False) -> Callable[[Callable], Callable]:
     """
     View decorator that runs :func:`conditional_access_precheck` before anything else acts on the request. If the
     pre-check rejects it, that response is returned immediately and neither the pre-policies nor the endpoint run.
@@ -384,12 +421,13 @@ def conditional_access_gate(identity_resolver: Callable[[], User] | None = None,
         owner) pass their own resolver.
     :param log_rejection: passed through to the pre-check; see there for when an
         endpoint has to opt out.
+    :param rejection_value: passed through to the pre-check; see there for the one endpoint that sets it.
     """
     def decorator(wrapped_function: Callable) -> Callable:
         @functools.wraps(wrapped_function)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
             user = identity_resolver() if identity_resolver is not None else request.User
-            rejection = conditional_access_precheck(user, log_rejection=log_rejection)
+            rejection = conditional_access_precheck(user, log_rejection=log_rejection, rejection_value=rejection_value)
             if rejection is not None:
                 return rejection
             return wrapped_function(*args, **kwargs)

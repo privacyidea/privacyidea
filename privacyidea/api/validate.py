@@ -1179,7 +1179,9 @@ def check_remember_device():
 @add_serial_from_response_to_g
 # The conditional-access gate is the first decorator that acts on the request: nothing may run for a locked user, a
 # blocked source IP or a denied request before it is refused.
-@conditional_access_gate()
+# rejection_value=0: result.value here is the number of challenges triggered, not a boolean, so a rejection
+# answers with this endpoint's own kind of nothing rather than changing the field's type.
+@conditional_access_gate(rejection_value=0)
 @check_user_serial_or_cred_id_in_request(request)
 @prepolicy(check_application_tokentype, request=request)
 @prepolicy(increase_failcounter_on_challenge, request=request)
