@@ -34,10 +34,16 @@ request is turned away before anything else logs an outcome for it. Both link it
 carries, if any, so the rejection lands on the attempt it refused to process. ``/auth`` additionally records the
 ``internal_admin`` flag, being the only entry point where a local admin authenticates.
 
-TODO: both gates say only what an admin opted into on the stage, but ``hide_specific_error_message`` discards it on
-both - on ``/auth`` through :func:`~privacyidea.api.before_after.auth_error`, on ``/validate/*`` through the postpolicy
-of the same name. That policy exists to suppress what privacyIDEA volunteers *by default*, so having it also throw away
-an error message an admin configured (silently, with nothing to say it happened) is the thing to decouple.
+``hide_specific_error_message`` does not discard either message. That policy suppresses what privacyIDEA volunteers
+*by default* - which factor failed, why the token refused; a conditional-access message is the opposite, since an
+admin either wrote it on the stage or turned it on by policy. So whichever path produced one claims it
+(:attr:`~privacyidea.lib.conditional_access.request_context.ConditionalAccessContext.carries_own_message`), and both
+places that would otherwise mask it ask first, via
+:func:`~privacyidea.lib.conditional_access.request_context.response_carries_ca_message`:
+:func:`~privacyidea.api.before_after.auth_error` on ``/auth`` and the postpolicy of the same name on ``/validate/*``.
+
+Only the message, though: both still collapse the rest of the detail, which is what the policy is for and is no loss
+here - a rejection has nothing else to put there anyway (see :func:`replaces_failure_reason`).
 """
 import functools
 import json

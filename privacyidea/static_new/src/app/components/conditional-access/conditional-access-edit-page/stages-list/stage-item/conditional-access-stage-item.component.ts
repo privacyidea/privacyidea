@@ -38,7 +38,7 @@ import { ConditionalAccessActionsListComponent } from "./actions-list/conditiona
 // The one tag the server substitutes into a stage's error message.
 const DURATION_TAG = "{duration}";
 
-// Mirrors MAX_STAGE_ERROR_MESSAGE_LENGTH in privacyidea.lib.conditional_access.lockout_policy
+// Mirrors MAX_ERROR_MESSAGE_LENGTH in privacyidea.lib.conditional_access.lockout_policy
 // (Unicode(500) in the model). Enforced here too so the field cannot be overrun into a 400.
 const MAX_ERROR_MESSAGE_LENGTH = 500;
 
