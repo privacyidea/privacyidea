@@ -332,7 +332,10 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
             self._check({"user": "cornelius", "pass": "pin"})
         finally:
             delete_policy("ca_chalresp")
-        self.assertEqual(1, db.session.query(Challenge).count())
+        # get_challenges(serial=...), not a count on the Challenge table: with PI_REDIS_CACHE_CHALLENGES the
+        # challenge lives in Redis and the table is empty, so a table count would "prove" the row was deleted on
+        # every run. Keyed by serial because the cache cannot enumerate.
+        self.assertEqual(1, len(get_challenges(serial=self.serial)))
 
     def test_a_notification_is_appended_to_a_challenge_it_was_tripped_by(self):
         # The other shape: a notify-only stage adds to what the response already said instead of replacing it,
@@ -1289,10 +1292,11 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
 
         # The first call is counted: one trackable CHALLENGE_TRIGGERED row, below the threshold.
         body = self._initialize(remote_addr="203.0.113.7")
+        first_transaction = body["detail"]["transaction_id"]
         entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED])
         assert_authentication_log_entry(entries[AuthEventType.CHALLENGE_TRIGGERED], user=None,
                                         source_ip="203.0.113.7",
-                                        transaction_id=body["detail"]["transaction_id"])
+                                        transaction_id=first_transaction)
         self.assertFalse(is_ip_blocked("203.0.113.7"))
 
         # The second reaches the threshold, so its post-eval writes the block. Two separate requests, hence two
@@ -1304,8 +1308,15 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         # transaction it logged is read from the challenge row rather than from the body.
         self.assertNotIn("transaction_id", body["detail"], body)
         self.assertNotIn("passkey", body["detail"], body)
-        tripping_transaction = db.session.query(Challenge).order_by(Challenge.id.desc()).first().transaction_id
         entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED] * 2, same_attempt=False)
+        # The transaction is taken from the row and then proved, rather than read out of the response: this call's
+        # challenge was withdrawn from the body, and it cannot be looked up in the challenge store either, since a
+        # passkey challenge carries no serial and an unfiltered get_challenges() returns nothing when the challenges
+        # live in Redis (the cache is keyed by serial/transaction and cannot enumerate). So assert what identifies
+        # it - a transaction of its own, not the first call's, naming a challenge that really was created.
+        tripping_transaction = entries.all[1].transaction_id
+        self.assertNotEqual(first_transaction, tripping_transaction, entries.all[1])
+        self.assertTrue(get_challenges(transaction_id=tripping_transaction))
         assert_authentication_log_entry(entries.all[1], user=None, source_ip="203.0.113.7",
                                         transaction_id=tripping_transaction)
 
