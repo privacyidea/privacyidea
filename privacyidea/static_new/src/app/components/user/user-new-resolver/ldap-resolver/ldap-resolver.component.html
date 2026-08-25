@@ -57,7 +57,7 @@
             matInput />
         </app-clearable-input>
         @if (ldapForm.LDAPBASE().errors().some(e => e.kind === 'required') && ldapForm.LDAPBASE().touched()) {
-          <mat-error i18n="@@resolver.baseDnRequired">Base DN is <strong>required</strong> .</mat-error>
+          <mat-error i18n="@@resolver.baseDnRequired">Base DN is <strong>required</strong>.</mat-error>
         }
       </mat-form-field>
 
@@ -72,7 +72,7 @@
             placeholder="ldap://privacyidea.server1, ldap://privacyidea.server2" />
         </app-clearable-input>
         @if (ldapForm.LDAPURI().errors().some(e => e.kind === 'required') && ldapForm.LDAPURI().touched()) {
-          <mat-error i18n="@@resolver.serverUriRequired">Server URI is <strong>required</strong> .</mat-error>
+          <mat-error i18n="@@resolver.serverUriRequired">Server URI is <strong>required</strong>.</mat-error>
         }
       </mat-form-field>
 
@@ -337,7 +337,7 @@
             ldapForm.LOGINNAMEATTRIBUTE().errors().some(e => e.kind === 'required') && ldapForm.LOGINNAMEATTRIBUTE().touched()
           ) {
             <mat-error i18n="@@resolver.loginnameAttributeRequired"
-              >Loginname attribute is <strong>required</strong> .</mat-error
+              >Loginname attribute is <strong>required</strong>.</mat-error
             >
           }
         </mat-form-field>
@@ -368,7 +368,7 @@
         @if (
           ldapForm.LDAPSEARCHFILTER().errors().some(e => e.kind === 'required') && ldapForm.LDAPSEARCHFILTER().touched()
         ) {
-          <mat-error i18n="@@resolver.searchFilterRequired">Search filter is <strong>required</strong> .</mat-error>
+          <mat-error i18n="@@resolver.searchFilterRequired">Search filter is <strong>required</strong>.</mat-error>
         }
       </mat-form-field>
 
@@ -381,7 +381,7 @@
              "givenname" : "givenName"}'></textarea>
         @if (ldapForm.USERINFO().errors().some(e => e.kind === 'required') && ldapForm.USERINFO().touched()) {
           <mat-error i18n="@@resolver.attributeMappingRequired"
-            >Attribute mapping is <strong>required</strong> .</mat-error
+            >Attribute mapping is <strong>required</strong>.</mat-error
           >
         }
       </mat-form-field>

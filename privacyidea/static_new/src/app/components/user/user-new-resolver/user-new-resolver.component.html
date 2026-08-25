@@ -61,14 +61,14 @@
         @if (
           resolverNameForm.resolverName().errors().some(e => e.kind === 'required') && resolverNameForm.resolverName().touched()
         ) {
-          <mat-error i18n="@@resolver.resolverNameRequired">Resolver name is <strong>required</strong> .</mat-error>
+          <mat-error i18n="@@resolver.resolverNameRequired">Resolver name is <strong>required</strong>.</mat-error>
         }
         @if (
           resolverNameForm.resolverName().errors().some(e => e.kind === 'pattern') && resolverNameForm.resolverName().touched()
         ) {
           <mat-error i18n="@@resolver.resolverNameContains"
-            >Resolver name contains <strong>invalid characters</strong> . Only alphanumeric characters, dots,
-            underscores and hyphens are allowed.</mat-error
+            >Resolver name contains <strong>invalid characters</strong>. Only alphanumeric characters, dots, underscores
+            and hyphens are allowed.</mat-error
           >
         }
       </mat-form-field>

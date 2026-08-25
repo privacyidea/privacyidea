@@ -59,7 +59,7 @@
               placeholder="https://example.com/path/to/users/:userid" />
           </app-clearable-input>
           @if (httpForm.endpoint().errors().some(e => e.kind === 'required') && httpForm.endpoint().touched()) {
-            <mat-error i18n="@@resolver.endpointRequired">Endpoint is <strong>required</strong> .</mat-error>
+            <mat-error i18n="@@resolver.endpointRequired">Endpoint is <strong>required</strong>.</mat-error>
           }
         </mat-form-field>
 
@@ -84,7 +84,7 @@
         @if (
           httpForm.requestMapping().errors().some(e => e.kind === 'required') && httpForm.requestMapping().touched()
         ) {
-          <mat-error i18n="@@resolver.requestMapping">Request mapping is <strong>required</strong> .</mat-error>
+          <mat-error i18n="@@resolver.requestMapping">Request mapping is <strong>required</strong>.</mat-error>
         }
       </mat-form-field>
 
@@ -95,7 +95,7 @@
           matInput
           placeholder='{"Content-Type":"application/json; charset=UTF-8"}'></textarea>
         @if (httpForm.headers().errors().some(e => e.kind === 'required') && httpForm.headers().touched()) {
-          <mat-error i18n="@@resolver.headersRequired">Headers are <strong>required</strong> .</mat-error>
+          <mat-error i18n="@@resolver.headersRequired">Headers are <strong>required</strong>.</mat-error>
         }
       </mat-form-field>
 
@@ -108,7 +108,7 @@
         @if (
           httpForm.responseMapping().errors().some(e => e.kind === 'required') && httpForm.responseMapping().touched()
         ) {
-          <mat-error i18n="@@resolver.responseMapping">Response mapping is <strong>required</strong> .</mat-error>
+          <mat-error i18n="@@resolver.responseMapping">Response mapping is <strong>required</strong>.</mat-error>
         }
       </mat-form-field>
     </div>
@@ -129,7 +129,7 @@
           matInput
           placeholder='{"success": false, "message": "An error occurred!"}'></textarea>
         @if (httpForm.errorResponse().errors().some(e => e.kind === 'required') && httpForm.errorResponse().touched()) {
-          <mat-error i18n="@@resolver.responseContains">Response contains is <strong>required</strong> .</mat-error>
+          <mat-error i18n="@@resolver.responseContains">Response contains is <strong>required</strong>.</mat-error>
         }
       </mat-form-field>
     }
@@ -166,7 +166,7 @@
           below.</mat-hint
         >
         @if (httpForm.base_url().errors().some(e => e.kind === 'required') && httpForm.base_url().touched()) {
-          <mat-error i18n="@@resolver.baseUrlRequired">Base URL is <strong>required</strong> .</mat-error>
+          <mat-error i18n="@@resolver.baseUrlRequired">Base URL is <strong>required</strong>.</mat-error>
         }
       </mat-form-field>
     </div>
@@ -425,7 +425,7 @@
                         placeholder="e.g. 12345678-1234-1234-1234-123456789012" />
                     </app-clearable-input>
                     @if (httpForm.tenant().errors().some(e => e.kind === 'required') && httpForm.tenant().touched()) {
-                      <mat-error i18n="@@resolver.tenantIdRequired">Tenant ID is <strong>required</strong> .</mat-error>
+                      <mat-error i18n="@@resolver.tenantIdRequired">Tenant ID is <strong>required</strong>.</mat-error>
                     }
                   </mat-form-field>
 
@@ -442,7 +442,7 @@
                     @if (
                       httpForm.client_id().errors().some(e => e.kind === 'required') && httpForm.client_id().touched()
                     ) {
-                      <mat-error i18n="@@resolver.clientIdRequired">Client ID is <strong>required</strong> .</mat-error>
+                      <mat-error i18n="@@resolver.clientIdRequired">Client ID is <strong>required</strong>.</mat-error>
                     }
                   </mat-form-field>
                 </div>
@@ -473,7 +473,7 @@
                         httpForm.client_secret().errors().some(e => e.kind === 'required') && httpForm.client_secret().touched()
                       ) {
                         <mat-error i18n="@@resolver.clientSecretRequired"
-                          >Client secret is <strong>required</strong> .</mat-error
+                          >Client secret is <strong>required</strong>.</mat-error
                         >
                       }
                     </mat-form-field>

@@ -19,6 +19,7 @@
 
 import { Component, computed, input } from "@angular/core";
 import { HighlightPipe } from "@components/shared/pipes/highlight.pipe";
+import { labelWithColon } from "@utils/i18n.utils";
 
 @Component({
   selector: "app-view-condition-section",
@@ -32,5 +33,5 @@ export class ViewConditionSectionComponent {
   readonly values = input.required<string[]>();
   readonly marker = input<string>();
   readonly highlightTerms = input<string[]>([]);
-  readonly displayLabel = computed(() => `:@@common.withColon:${this.label()}:LABEL::`);
+  readonly displayLabel = computed(() => labelWithColon(this.label()));
 }

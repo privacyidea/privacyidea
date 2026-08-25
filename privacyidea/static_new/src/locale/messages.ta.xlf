@@ -10446,7 +10446,7 @@
         <target>பயனர் <x id="START_BLOCK_IF" equiv-text="@if (authService.actionAllowed(&quot;userlist&quot;)) {"/><x id="START_LINK" ctype="x-a" equiv-text="&lt;a role=&quot;button&quot; tabindex=&quot;0&quot; (click)=&quot;navigateUserDetails()&quot; (keydown.enter)=&quot;navigateUserDetails()&quot; (keydown.space)=&quot;$event.preventDefault(); navigateUserDetails()&quot; class=&quot;text-link-button cursor-pointer&quot; &gt;"/><x id="INTERPOLATION" equiv-text="{{ username() }}"/><x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a &gt;"/><x id="CLOSE_BLOCK_IF" equiv-text="}"/><x id="START_BLOCK_ELSE" equiv-text="@else {"/><x id="START_TAG_SPAN" ctype="x-span" equiv-text="&lt;span&gt;"/><x id="INTERPOLATION" equiv-text="{{ username() }}"/><x id="CLOSE_TAG_SPAN" ctype="x-span" equiv-text="&lt;/span&gt;"/><x id="CLOSE_BLOCK_ELSE" equiv-text="}"/> சாம்ராச்யம் <x id="START_BLOCK_IF_1" equiv-text="@if (authService.role() === &quot;admin&quot;) {"/><x id="START_LINK_1" equiv-text="&lt;a role=&quot;button&quot; tabindex=&quot;0&quot; (click)=&quot;navigateRealms()&quot; (keydown.enter)=&quot;navigateRealms()&quot; (keydown.space)=&quot;$event.preventDefault(); navigateRealms()&quot; class=&quot;text-link-button cursor-pointer&quot; &gt;"/><x id="INTERPOLATION_1" equiv-text="{{ userRealm() }}"/><x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a &gt;"/><x id="CLOSE_BLOCK_IF" equiv-text="}"/><x id="START_BLOCK_ELSE" equiv-text="@else {"/><x id="START_TAG_SPAN" ctype="x-span" equiv-text="&lt;span&gt;"/><x id="INTERPOLATION_1" equiv-text="{{ userRealm() }}"/><x id="CLOSE_TAG_SPAN" ctype="x-span" equiv-text="&lt;/span&gt;"/><x id="CLOSE_BLOCK_ELSE" equiv-text="}"/> இல் டோக்கனுக்கு ஒதுக்கப்பட்டார்.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrolled-text/token-enrolled-text.component.html</context>
-          <context context-type="linenumber">50</context>
+          <context context-type="linenumber">49</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.tokenWasAssigned" datatype="html">
@@ -10454,7 +10454,7 @@
         <target>டோக்கன் சாம்ராச்யம் <x id="START_BLOCK_IF" equiv-text="@if (authService.role() === &quot;admin&quot;) {"/><x id="START_LINK" ctype="x-a" equiv-text="&lt;a role=&quot;button&quot; tabindex=&quot;0&quot; (click)=&quot;navigateRealms()&quot; (keydown.enter)=&quot;navigateRealms()&quot; (keydown.space)=&quot;$event.preventDefault(); navigateRealms()&quot; class=&quot;text-link-button cursor-pointer&quot; &gt;"/><x id="INTERPOLATION" equiv-text="{{ userRealm() }}"/><x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a &gt;"/><x id="CLOSE_BLOCK_IF" equiv-text="}"/><x id="START_BLOCK_ELSE" equiv-text="@else {"/><x id="START_TAG_SPAN" ctype="x-span" equiv-text="&lt;span&gt;"/><x id="INTERPOLATION" equiv-text="{{ userRealm() }}"/><x id="CLOSE_TAG_SPAN" ctype="x-span" equiv-text="&lt;/span&gt;"/><x id="CLOSE_BLOCK_ELSE" equiv-text="}"/> க்கு ஒதுக்கப்பட்டது.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrolled-text/token-enrolled-text.component.html</context>
-          <context context-type="linenumber">81</context>
+          <context context-type="linenumber">80</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.tokenSerialNumber" datatype="html">
@@ -10462,7 +10462,7 @@
         <target>தொடர் எண் <x id="START_LINK" ctype="x-a" equiv-text="&lt;a role=&quot;button&quot; tabindex=&quot;0&quot; (click)=&quot;tokenSelected()&quot; (keydown.enter)=&quot;tokenSelected()&quot; (keydown.space)=&quot;$event.preventDefault(); tokenSelected()&quot;&gt;"/> <x id="INTERPOLATION" equiv-text="{{ serial() }}"/> <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/> கொண்ட டோக்கன் வெற்றிகரமாக ரோல்ஓவர் செய்யப்பட்டது.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrolled-text/token-enrolled-text.component.html</context>
-          <context context-type="linenumber">102</context>
+          <context context-type="linenumber">101</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.otpKey" datatype="html">
@@ -12484,8 +12484,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.endpointRequired" datatype="html">
-        <source>Endpoint is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> .</source>
-        <target>இறுதிப்புள்ளி <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>தேவை<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> .</target>
+        <source>Endpoint is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
+        <target>இறுதிப்புள்ளி <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>தேவை<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/http-resolver/http-resolver.component.html</context>
           <context context-type="linenumber">62</context>
@@ -12500,8 +12500,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.requestMapping" datatype="html">
-        <source>Request mapping is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> .</source>
-        <target>கோரிக்கை மேப்பிங் <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>தேவை<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> .</target>
+        <source>Request mapping is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
+        <target>கோரிக்கை மேப்பிங் <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>தேவை<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/http-resolver/http-resolver.component.html</context>
           <context context-type="linenumber">87</context>
@@ -12520,8 +12520,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.headersRequired" datatype="html">
-        <source>Headers are <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> .</source>
-        <target>தலைப்புகள் <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>தேவை<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> .</target>
+        <source>Headers are <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
+        <target>தலைப்புகள் <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>தேவை<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/http-resolver/http-resolver.component.html</context>
           <context context-type="linenumber">98</context>
@@ -12536,8 +12536,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.responseMapping" datatype="html">
-        <source>Response mapping is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> .</source>
-        <target>பதில் மேப்பிங் <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>தேவை<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> .</target>
+        <source>Response mapping is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
+        <target>பதில் மேப்பிங் <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>தேவை<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/http-resolver/http-resolver.component.html</context>
           <context context-type="linenumber">111</context>
@@ -12552,8 +12552,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.responseContains" datatype="html">
-        <source>Response contains is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> .</source>
-        <target>பதில் கொண்டுள்ளது <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>தேவை<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> .</target>
+        <source>Response contains is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
+        <target>பதில் கொண்டுள்ளது <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>தேவை<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/http-resolver/http-resolver.component.html</context>
           <context context-type="linenumber">132</context>
@@ -12576,8 +12576,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.baseUrlRequired" datatype="html">
-        <source>Base URL is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> .</source>
-        <target>அடிப்படை URL <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>தேவை<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> .</target>
+        <source>Base URL is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
+        <target>அடிப்படை URL <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>தேவை<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/http-resolver/http-resolver.component.html</context>
           <context context-type="linenumber">169</context>
@@ -12736,16 +12736,16 @@
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.tenantIdRequired" datatype="html">
-        <source>Tenant ID is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> .</source>
-        <target>குத்தகைதாரர் ID <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>தேவை<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> .</target>
+        <source>Tenant ID is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
+        <target>குத்தகைதாரர் ID <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>தேவை<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/http-resolver/http-resolver.component.html</context>
           <context context-type="linenumber">428</context>
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.clientIdRequired" datatype="html">
-        <source>Client ID is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> .</source>
-        <target>கிளையன் ID <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>தேவை<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> .</target>
+        <source>Client ID is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
+        <target>கிளையன் ID <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>தேவை<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/http-resolver/http-resolver.component.html</context>
           <context context-type="linenumber">445</context>
@@ -12768,8 +12768,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.clientSecretRequired" datatype="html">
-        <source>Client secret is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> .</source>
-        <target>கிளையன் இரகசியம் <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>தேவை<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> .</target>
+        <source>Client secret is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
+        <target>கிளையன் இரகசியம் <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>தேவை<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/http-resolver/http-resolver.component.html</context>
           <context context-type="linenumber">476</context>
@@ -12920,8 +12920,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.baseDnRequired" datatype="html">
-        <source>Base DN is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> .</source>
-        <target>அடிப்படை DN <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>தேவை<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> .</target>
+        <source>Base DN is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
+        <target>அடிப்படை DN <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>தேவை<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/ldap-resolver/ldap-resolver.component.html</context>
           <context context-type="linenumber">60</context>
@@ -12940,8 +12940,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.serverUriRequired" datatype="html">
-        <source>Server URI is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> .</source>
-        <target>சேவையக URI <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>தேவை<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> .</target>
+        <source>Server URI is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
+        <target>சேவையக URI <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>தேவை<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/ldap-resolver/ldap-resolver.component.html</context>
           <context context-type="linenumber">75</context>
@@ -13136,8 +13136,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.loginnameAttributeRequired" datatype="html">
-        <source>Loginname attribute is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> .</source>
-        <target>உள்நுழைவுப்பெயர் பண்பு <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>தேவை<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> .</target>
+        <source>Loginname attribute is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
+        <target>உள்நுழைவுப்பெயர் பண்பு <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>தேவை<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/ldap-resolver/ldap-resolver.component.html</context>
           <context context-type="linenumber">340</context>
@@ -13164,16 +13164,16 @@
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.searchFilterRequired" datatype="html">
-        <source>Search filter is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> .</source>
-        <target>தேடல் வடிப்பான் <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>தேவை<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> .</target>
+        <source>Search filter is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
+        <target>தேடல் வடிப்பான் <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>தேவை<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/ldap-resolver/ldap-resolver.component.html</context>
           <context context-type="linenumber">371</context>
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.attributeMappingRequired" datatype="html">
-        <source>Attribute mapping is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> .</source>
-        <target>பண்பு மேப்பிங் <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>தேவை<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> .</target>
+        <source>Attribute mapping is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
+        <target>பண்பு மேப்பிங் <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>தேவை<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/ldap-resolver/ldap-resolver.component.html</context>
           <context context-type="linenumber">384</context>
@@ -13292,8 +13292,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.filenameRequired" datatype="html">
-        <source>Filename is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> .</source>
-        <target>கோப்புப்பெயர் <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>தேவை<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> .</target>
+        <source>Filename is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
+        <target>கோப்புப்பெயர் <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>தேவை<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/passwd-resolver/passwd-resolver.component.html</context>
           <context context-type="linenumber">34</context>
@@ -13316,8 +13316,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.authenticationServerUri" datatype="html">
-        <source>Authentication server URI is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> .</source>
-        <target>அங்கீகார சேவையக URI <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>தேவை<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> .</target>
+        <source>Authentication server URI is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
+        <target>அங்கீகார சேவையக URI <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>தேவை<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/scim-resolver/scim-resolver.component.html</context>
           <context context-type="linenumber">35</context>
@@ -13332,24 +13332,24 @@
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.resourceServerUri" datatype="html">
-        <source>Resource server URI is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> .</source>
-        <target>வள சேவையக URI <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>தேவை<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> .</target>
+        <source>Resource server URI is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
+        <target>வள சேவையக URI <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>தேவை<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/scim-resolver/scim-resolver.component.html</context>
           <context context-type="linenumber">53</context>
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.clientRequired" datatype="html">
-        <source>Client is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> .</source>
-        <target>கிளையன் <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>தேவை<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> .</target>
+        <source>Client is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
+        <target>கிளையன் <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>தேவை<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/scim-resolver/scim-resolver.component.html</context>
           <context context-type="linenumber">70</context>
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.secretRequired" datatype="html">
-        <source>Secret is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> .</source>
-        <target>இரகசியம் <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>தேவை<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> .</target>
+        <source>Secret is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
+        <target>இரகசியம் <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>தேவை<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/scim-resolver/scim-resolver.component.html</context>
           <context context-type="linenumber">86</context>
@@ -13368,8 +13368,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.mappingRequired" datatype="html">
-        <source>Mapping is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> .</source>
-        <target>மேப்பிங் <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>தேவை<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> .</target>
+        <source>Mapping is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
+        <target>மேப்பிங் <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>தேவை<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/scim-resolver/scim-resolver.component.html</context>
           <context context-type="linenumber">98</context>
@@ -13396,8 +13396,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.driverRequired" datatype="html">
-        <source>Driver is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> .</source>
-        <target>இயக்கி <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>தேவை<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> .</target>
+        <source>Driver is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
+        <target>இயக்கி <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>தேவை<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/sql-resolver/sql-resolver.component.html</context>
           <context context-type="linenumber">35</context>
@@ -13420,8 +13420,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.serverRequired" datatype="html">
-        <source>Server is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> .</source>
-        <target>சேவையகம் <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>தேவை<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> .</target>
+        <source>Server is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
+        <target>சேவையகம் <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>தேவை<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/sql-resolver/sql-resolver.component.html</context>
           <context context-type="linenumber">64</context>
@@ -13476,8 +13476,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.tableRequired" datatype="html">
-        <source>Table is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> .</source>
-        <target>அட்டவணை <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>தேவை<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> .</target>
+        <source>Table is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
+        <target>அட்டவணை <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>தேவை<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/sql-resolver/sql-resolver.component.html</context>
           <context context-type="linenumber">186</context>
@@ -13492,8 +13492,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.limitRequired" datatype="html">
-        <source>Limit is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> .</source>
-        <target>வரம்பு <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>தேவை<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> .</target>
+        <source>Limit is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
+        <target>வரம்பு <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>தேவை<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/sql-resolver/sql-resolver.component.html</context>
           <context context-type="linenumber">198</context>
@@ -13596,16 +13596,16 @@
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.resolverNameRequired" datatype="html">
-        <source>Resolver name is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> .</source>
-        <target>தீர்வி பெயர் <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>தேவை<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> .</target>
+        <source>Resolver name is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
+        <target>தீர்வி பெயர் <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>தேவை<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/user-new-resolver.component.html</context>
           <context context-type="linenumber">64</context>
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.resolverNameContains" datatype="html">
-        <source>Resolver name contains <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>invalid characters<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> . Only alphanumeric characters, dots, underscores and hyphens are allowed.</source>
-        <target>தீர்வி பெயரில் <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>தவறான எழுத்துக்கள்<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> உள்ளன . எழுத்தெண் எழுத்துக்கள், புள்ளிகள், அடிக்கோடுகள் மற்றும் இணைப்புக்கோடுகள் மட்டுமே அனுமதிக்கப்படுகின்றன.</target>
+        <source>Resolver name contains <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>invalid characters<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>. Only alphanumeric characters, dots, underscores and hyphens are allowed.</source>
+        <target state="new">தீர்வி பெயரில் <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>தவறான எழுத்துக்கள்<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> உள்ளன . எழுத்தெண் எழுத்துக்கள், புள்ளிகள், அடிக்கோடுகள் மற்றும் இணைப்புக்கோடுகள் மட்டுமே அனுமதிக்கப்படுகின்றன.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/user-new-resolver.component.html</context>
           <context context-type="linenumber">70</context>
@@ -16136,8 +16136,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="machine.machineResolverNameContains" datatype="html">
-        <source>Machine resolver name contains <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>invalid characters<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> . Only alphanumeric characters, dots, underscores and hyphens are allowed.</source>
-        <target state="new">Machine resolver name contains <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>invalid characters<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> . Only alphanumeric characters, dots, underscores and hyphens are allowed.</target>
+        <source>Machine resolver name contains <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>invalid characters<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>. Only alphanumeric characters, dots, underscores and hyphens are allowed.</source>
+        <target state="new">Machine resolver name contains <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>invalid characters<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>. Only alphanumeric characters, dots, underscores and hyphens are allowed.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/machine-resolver/machine-resolver-details/machine-resolver-details.component.html</context>
           <context context-type="linenumber">76</context>

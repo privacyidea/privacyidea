@@ -32,7 +32,7 @@
         </app-clearable-input>
         @if (scimForm.Authserver().errors().some(e => e.kind === 'required') && scimForm.Authserver().touched()) {
           <mat-error i18n="@@resolver.authenticationServerUri"
-            >Authentication server URI is <strong>required</strong> .</mat-error
+            >Authentication server URI is <strong>required</strong>.</mat-error
           >
         }
       </mat-form-field>
@@ -50,7 +50,7 @@
         @if (
           scimForm.Resourceserver().errors().some(e => e.kind === 'required') && scimForm.Resourceserver().touched()
         ) {
-          <mat-error i18n="@@resolver.resourceServerUri">Resource server URI is <strong>required</strong> .</mat-error>
+          <mat-error i18n="@@resolver.resourceServerUri">Resource server URI is <strong>required</strong>.</mat-error>
         }
       </mat-form-field>
     </div>
@@ -67,7 +67,7 @@
             placeholder="hostname" />
         </app-clearable-input>
         @if (scimForm.Client().errors().some(e => e.kind === 'required') && scimForm.Client().touched()) {
-          <mat-error i18n="@@resolver.clientRequired">Client is <strong>required</strong> .</mat-error>
+          <mat-error i18n="@@resolver.clientRequired">Client is <strong>required</strong>.</mat-error>
         }
       </mat-form-field>
 
@@ -83,7 +83,7 @@
             type="password" />
         </app-clearable-input>
         @if (scimForm.Secret().errors().some(e => e.kind === 'required') && scimForm.Secret().touched()) {
-          <mat-error i18n="@@resolver.secretRequired">Secret is <strong>required</strong> .</mat-error>
+          <mat-error i18n="@@resolver.secretRequired">Secret is <strong>required</strong>.</mat-error>
         }
       </mat-form-field>
     </div>
@@ -95,7 +95,7 @@
         matInput
         placeholder='{"userName": "username", "id": "userid", "emails.0.value": "email"}'></textarea>
       @if (scimForm.Mapping().errors().some(e => e.kind === 'required') && scimForm.Mapping().touched()) {
-        <mat-error i18n="@@resolver.mappingRequired">Mapping is <strong>required</strong> .</mat-error>
+        <mat-error i18n="@@resolver.mappingRequired">Mapping is <strong>required</strong>.</mat-error>
       }
     </mat-form-field>
   </div>

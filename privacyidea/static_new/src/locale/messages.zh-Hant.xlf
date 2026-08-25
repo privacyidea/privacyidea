@@ -10446,7 +10446,7 @@
         <target>使用者 <x id="START_BLOCK_IF" equiv-text="@if (authService.actionAllowed(&quot;userlist&quot;)) {"/><x id="START_LINK" ctype="x-a" equiv-text="&lt;a role=&quot;button&quot; tabindex=&quot;0&quot; (click)=&quot;navigateUserDetails()&quot; (keydown.enter)=&quot;navigateUserDetails()&quot; (keydown.space)=&quot;$event.preventDefault(); navigateUserDetails()&quot; class=&quot;text-link-button cursor-pointer&quot; &gt;"/><x id="INTERPOLATION" equiv-text="{{ username() }}"/><x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a &gt;"/><x id="CLOSE_BLOCK_IF" equiv-text="}"/><x id="START_BLOCK_ELSE" equiv-text="@else {"/><x id="START_TAG_SPAN" ctype="x-span" equiv-text="&lt;span&gt;"/><x id="INTERPOLATION" equiv-text="{{ username() }}"/><x id="CLOSE_TAG_SPAN" ctype="x-span" equiv-text="&lt;/span&gt;"/><x id="CLOSE_BLOCK_ELSE" equiv-text="}"/> 在領域 <x id="START_BLOCK_IF_1" equiv-text="@if (authService.role() === &quot;admin&quot;) {"/><x id="START_LINK_1" equiv-text="&lt;a role=&quot;button&quot; tabindex=&quot;0&quot; (click)=&quot;navigateRealms()&quot; (keydown.enter)=&quot;navigateRealms()&quot; (keydown.space)=&quot;$event.preventDefault(); navigateRealms()&quot; class=&quot;text-link-button cursor-pointer&quot; &gt;"/><x id="INTERPOLATION_1" equiv-text="{{ userRealm() }}"/><x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a &gt;"/><x id="CLOSE_BLOCK_IF" equiv-text="}"/><x id="START_BLOCK_ELSE" equiv-text="@else {"/><x id="START_TAG_SPAN" ctype="x-span" equiv-text="&lt;span&gt;"/><x id="INTERPOLATION_1" equiv-text="{{ userRealm() }}"/><x id="CLOSE_TAG_SPAN" ctype="x-span" equiv-text="&lt;/span&gt;"/><x id="CLOSE_BLOCK_ELSE" equiv-text="}"/> 中已指派給此權杖。</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrolled-text/token-enrolled-text.component.html</context>
-          <context context-type="linenumber">50</context>
+          <context context-type="linenumber">49</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.tokenWasAssigned" datatype="html">
@@ -10454,7 +10454,7 @@
         <target>此權杖已指派給領域 <x id="START_BLOCK_IF" equiv-text="@if (authService.role() === &quot;admin&quot;) {"/><x id="START_LINK" ctype="x-a" equiv-text="&lt;a role=&quot;button&quot; tabindex=&quot;0&quot; (click)=&quot;navigateRealms()&quot; (keydown.enter)=&quot;navigateRealms()&quot; (keydown.space)=&quot;$event.preventDefault(); navigateRealms()&quot; class=&quot;text-link-button cursor-pointer&quot; &gt;"/><x id="INTERPOLATION" equiv-text="{{ userRealm() }}"/><x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a &gt;"/><x id="CLOSE_BLOCK_IF" equiv-text="}"/><x id="START_BLOCK_ELSE" equiv-text="@else {"/><x id="START_TAG_SPAN" ctype="x-span" equiv-text="&lt;span&gt;"/><x id="INTERPOLATION" equiv-text="{{ userRealm() }}"/><x id="CLOSE_TAG_SPAN" ctype="x-span" equiv-text="&lt;/span&gt;"/><x id="CLOSE_BLOCK_ELSE" equiv-text="}"/>。</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrolled-text/token-enrolled-text.component.html</context>
-          <context context-type="linenumber">81</context>
+          <context context-type="linenumber">80</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.tokenSerialNumber" datatype="html">
@@ -10462,7 +10462,7 @@
         <target>序號為 <x id="START_LINK" ctype="x-a" equiv-text="&lt;a role=&quot;button&quot; tabindex=&quot;0&quot; (click)=&quot;tokenSelected()&quot; (keydown.enter)=&quot;tokenSelected()&quot; (keydown.space)=&quot;$event.preventDefault(); tokenSelected()&quot;&gt;"/> <x id="INTERPOLATION" equiv-text="{{ serial() }}"/> <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/> 的權杖已成功翻轉。</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrolled-text/token-enrolled-text.component.html</context>
-          <context context-type="linenumber">102</context>
+          <context context-type="linenumber">101</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.otpKey" datatype="html">
@@ -12484,7 +12484,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.endpointRequired" datatype="html">
-        <source>Endpoint is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> .</source>
+        <source>Endpoint is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target>端點為<x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>必填<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>。</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/http-resolver/http-resolver.component.html</context>
@@ -12500,7 +12500,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.requestMapping" datatype="html">
-        <source>Request mapping is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> .</source>
+        <source>Request mapping is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target>請求對應為<x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>必填<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>。</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/http-resolver/http-resolver.component.html</context>
@@ -12520,7 +12520,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.headersRequired" datatype="html">
-        <source>Headers are <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> .</source>
+        <source>Headers are <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target>標頭為<x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>必填<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>。</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/http-resolver/http-resolver.component.html</context>
@@ -12536,7 +12536,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.responseMapping" datatype="html">
-        <source>Response mapping is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> .</source>
+        <source>Response mapping is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target>回應對應為<x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>必填<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>。</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/http-resolver/http-resolver.component.html</context>
@@ -12552,7 +12552,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.responseContains" datatype="html">
-        <source>Response contains is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> .</source>
+        <source>Response contains is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target>回應包含為<x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>必填<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>。</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/http-resolver/http-resolver.component.html</context>
@@ -12576,7 +12576,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.baseUrlRequired" datatype="html">
-        <source>Base URL is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> .</source>
+        <source>Base URL is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target>基礎 URL 為<x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>必填<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>。</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/http-resolver/http-resolver.component.html</context>
@@ -12736,7 +12736,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.tenantIdRequired" datatype="html">
-        <source>Tenant ID is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> .</source>
+        <source>Tenant ID is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target>租用戶 ID 為<x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>必填<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>。</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/http-resolver/http-resolver.component.html</context>
@@ -12744,7 +12744,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.clientIdRequired" datatype="html">
-        <source>Client ID is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> .</source>
+        <source>Client ID is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target>用戶端 ID 為<x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>必填<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>。</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/http-resolver/http-resolver.component.html</context>
@@ -12768,7 +12768,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.clientSecretRequired" datatype="html">
-        <source>Client secret is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> .</source>
+        <source>Client secret is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target>用戶端密鑰為<x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>必填<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>。</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/http-resolver/http-resolver.component.html</context>
@@ -12920,7 +12920,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.baseDnRequired" datatype="html">
-        <source>Base DN is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> .</source>
+        <source>Base DN is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target>Base DN 為<x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>必填<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>。</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/ldap-resolver/ldap-resolver.component.html</context>
@@ -12940,7 +12940,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.serverUriRequired" datatype="html">
-        <source>Server URI is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> .</source>
+        <source>Server URI is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target>伺服器 URI 為<x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>必填<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>。</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/ldap-resolver/ldap-resolver.component.html</context>
@@ -13136,7 +13136,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.loginnameAttributeRequired" datatype="html">
-        <source>Loginname attribute is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> .</source>
+        <source>Loginname attribute is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target>登入名稱屬性為<x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>必填<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>。</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/ldap-resolver/ldap-resolver.component.html</context>
@@ -13164,7 +13164,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.searchFilterRequired" datatype="html">
-        <source>Search filter is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> .</source>
+        <source>Search filter is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target>搜尋篩選為<x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>必填<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>。</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/ldap-resolver/ldap-resolver.component.html</context>
@@ -13172,7 +13172,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.attributeMappingRequired" datatype="html">
-        <source>Attribute mapping is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> .</source>
+        <source>Attribute mapping is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target>屬性對應為<x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>必填<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>。</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/ldap-resolver/ldap-resolver.component.html</context>
@@ -13292,7 +13292,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.filenameRequired" datatype="html">
-        <source>Filename is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> .</source>
+        <source>Filename is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target>檔名為<x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>必填<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>。</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/passwd-resolver/passwd-resolver.component.html</context>
@@ -13316,7 +13316,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.authenticationServerUri" datatype="html">
-        <source>Authentication server URI is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> .</source>
+        <source>Authentication server URI is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target>驗證伺服器 URI 為<x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>必填<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>。</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/scim-resolver/scim-resolver.component.html</context>
@@ -13332,7 +13332,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.resourceServerUri" datatype="html">
-        <source>Resource server URI is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> .</source>
+        <source>Resource server URI is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target>資源伺服器 URI 為<x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>必填<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>。</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/scim-resolver/scim-resolver.component.html</context>
@@ -13340,7 +13340,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.clientRequired" datatype="html">
-        <source>Client is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> .</source>
+        <source>Client is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target>用戶端為<x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>必填<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>。</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/scim-resolver/scim-resolver.component.html</context>
@@ -13348,7 +13348,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.secretRequired" datatype="html">
-        <source>Secret is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> .</source>
+        <source>Secret is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target>密鑰為<x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>必填<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>。</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/scim-resolver/scim-resolver.component.html</context>
@@ -13368,7 +13368,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.mappingRequired" datatype="html">
-        <source>Mapping is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> .</source>
+        <source>Mapping is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target>對應為<x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>必填<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>。</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/scim-resolver/scim-resolver.component.html</context>
@@ -13396,7 +13396,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.driverRequired" datatype="html">
-        <source>Driver is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> .</source>
+        <source>Driver is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target>驅動程式為<x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>必填<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>。</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/sql-resolver/sql-resolver.component.html</context>
@@ -13420,7 +13420,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.serverRequired" datatype="html">
-        <source>Server is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> .</source>
+        <source>Server is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target>伺服器為<x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>必填<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>。</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/sql-resolver/sql-resolver.component.html</context>
@@ -13476,7 +13476,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.tableRequired" datatype="html">
-        <source>Table is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> .</source>
+        <source>Table is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target>資料表為<x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>必填<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>。</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/sql-resolver/sql-resolver.component.html</context>
@@ -13492,7 +13492,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.limitRequired" datatype="html">
-        <source>Limit is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> .</source>
+        <source>Limit is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target>限制為<x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>必填<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>。</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/sql-resolver/sql-resolver.component.html</context>
@@ -13596,7 +13596,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.resolverNameRequired" datatype="html">
-        <source>Resolver name is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> .</source>
+        <source>Resolver name is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target>解析器名稱為<x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>必填<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>。</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/user-new-resolver.component.html</context>
@@ -13604,8 +13604,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.resolverNameContains" datatype="html">
-        <source>Resolver name contains <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>invalid characters<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> . Only alphanumeric characters, dots, underscores and hyphens are allowed.</source>
-        <target>解析器名稱包含<x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>無效字元<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>。僅允許英數字元、句點、底線和連字號。</target>
+        <source>Resolver name contains <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>invalid characters<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>. Only alphanumeric characters, dots, underscores and hyphens are allowed.</source>
+        <target state="new">解析器名稱包含<x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>無效字元<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>。僅允許英數字元、句點、底線和連字號。</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/user-new-resolver.component.html</context>
           <context context-type="linenumber">70</context>
@@ -16136,8 +16136,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="machine.machineResolverNameContains" datatype="html">
-        <source>Machine resolver name contains <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>invalid characters<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> . Only alphanumeric characters, dots, underscores and hyphens are allowed.</source>
-        <target state="new">Machine resolver name contains <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>invalid characters<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> . Only alphanumeric characters, dots, underscores and hyphens are allowed.</target>
+        <source>Machine resolver name contains <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>invalid characters<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>. Only alphanumeric characters, dots, underscores and hyphens are allowed.</source>
+        <target state="new">Machine resolver name contains <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>invalid characters<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>. Only alphanumeric characters, dots, underscores and hyphens are allowed.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/machine-resolver/machine-resolver-details/machine-resolver-details.component.html</context>
           <context context-type="linenumber">76</context>
