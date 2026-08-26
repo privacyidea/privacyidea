@@ -60,6 +60,7 @@ const mockPolicy: LockoutPolicy = {
   priority: 1,
   target: "user",
   count_mode: "PER_REQUEST",
+  reset_on_success: true,
   counter_types_to_track: ["PIN_FAIL"],
   stages: [{ failure_threshold: 5, priority: 1, actions: [{ action_type: "LOCK_USER", action_value: null }] }],
   conditions: []
@@ -74,6 +75,7 @@ const EMPTY_TEMPLATE_POLICY: LockoutPolicySaveParams = {
   priority: null,
   target: "user",
   count_mode: "PER_REQUEST",
+  reset_on_success: true,
   counter_types_to_track: ["PASSWORD_FAIL"],
   stages: [{ failure_threshold: 10, priority: 1, actions: [{ action_type: "LOCK_USER", action_value: null }] }]
 };
@@ -539,6 +541,7 @@ describe("ConditionalAccessEditPageComponent — new mode", () => {
           priority: null,
           target: "user",
           count_mode: "PER_REQUEST",
+          reset_on_success: true,
           counter_types_to_track: ["PASSWORD_FAIL"],
           stages: [{ failure_threshold: 10, priority: 1, actions: [{ action_type: "LOCK_USER", action_value: null }] }]
         }
@@ -673,6 +676,44 @@ describe("ConditionalAccessEditPageComponent — new mode", () => {
       component.onTargetChange("source_ip");
       component.onStagesChange(stageWith("LOCK_USER"));
       expect(component.targetActionsValid()).toBe(true);
+    });
+  });
+
+  describe("reset on success", () => {
+    it("should update reset_on_success on change", () => {
+      component.onResetOnSuccessChange(false);
+      expect(component.editPolicy().reset_on_success).toBe(false);
+      component.onResetOnSuccessChange(true);
+      expect(component.editPolicy().reset_on_success).toBe(true);
+    });
+
+    // A source-IP policy aggregates across accounts, so the setting is inert there: the control stays
+    // visible - so the target change explains itself - but cannot be operated.
+    it("should not apply to a source-IP policy", () => {
+      component.onTargetChange("source_ip");
+      expect(component.resetOnSuccessApplies()).toBe(false);
+      component.onTargetChange("user");
+      expect(component.resetOnSuccessApplies()).toBe(true);
+    });
+
+    it("should render the checkbox disabled for a source-IP policy", () => {
+      component.onTargetChange("source_ip");
+      fixture.detectChanges();
+      const checkbox: HTMLInputElement = fixture.nativeElement.querySelector(".ca-reset-on-success input");
+      expect(checkbox.disabled).toBe(true);
+    });
+
+    // The shipped templates carry no choice here, so a prefill falls back to the backend's default.
+    it("should default a template prefill to resetting", () => {
+      policyServiceMock.templates.set([
+        {
+          key: "no_reset_key",
+          description: "d",
+          policy: { ...EMPTY_TEMPLATE_POLICY, reset_on_success: undefined }
+        }
+      ]);
+      component.applyTemplate("no_reset_key");
+      expect(component.editPolicy().reset_on_success).toBe(true);
     });
   });
 

@@ -584,9 +584,11 @@ def _policy_count(policy: LockoutPolicy, user: "User", window_end: datetime,
     :param user: the resolved user to count for
     :param window_end: the instant the window ends (reference time)
     :param since_last_success: True to floor the count at the user's last completed login in the window (a successful
-        login resets the counter). Applies to both user modes — ``PER_REQUEST`` floors at the last ``LOGIN_SUCCESS``
-        row, ``PER_ATTEMPT`` at the last successful attempt. (Source-IP ``DISTINCT_USERS`` deliberately never resets,
-        which is why it is a separate mode and does not go through here.)
+        login resets the counter); the post-response caller passes the policy's
+        :attr:`~privacyidea.models.lockout_policy.LockoutPolicy.reset_on_success`. Applies to both user modes —
+        ``PER_REQUEST`` floors at the last ``LOGIN_SUCCESS`` row, ``PER_ATTEMPT`` at the last successful attempt.
+        (Source-IP ``DISTINCT_USERS`` deliberately never resets, which is why it is a separate mode and does not go
+        through here.)
     :return: the event count (``PER_REQUEST``) or the attempt count (``PER_ATTEMPT``)
     """
     sql_filters, row_filter = _count_scoping(policy)
@@ -969,8 +971,9 @@ def evaluate_lockout_policies(context: CAContext, event_type: AuthEventType | No
     ``retrigger_above_threshold`` fires whenever the count is at or above the
     threshold, so a single stage can email once at threshold 8 while keeping the
     user locked for every further failure (see :func:`_action_threshold_met`). The
-    count climbs by one per tracked failure and resets after a successful login
-    (see :func:`count_user_events`), so a fresh burst re-triggers the fire-once
+    count climbs by one per tracked failure and, for a policy with
+    ``reset_on_success``, resets after a successful login (see
+    :func:`count_user_events`), so a fresh burst re-triggers the fire-once
     actions too.
 
     The persistent side effects (lock state) are consulted by the *next* inbound
@@ -1117,14 +1120,17 @@ def _evaluate_policy(policy: LockoutPolicy, context: CAContext, event_type: str,
             # user, so an unresolved user (unknown login, local admin) is never
             # locked. Source-IP policies above still run for such requests.
             return LockoutEvaluation()
-        # The lock counts consecutive failures since the user's last completed login:
-        # a successful authentication clears the slate, so a legitimate user is not
-        # re-locked by stale pre-login failures on their next single typo. (The DENY
-        # decision deliberately does not reset on success — see _policy_access_decision.)
+        # With the policy's reset_on_success (the default) the lock counts consecutive
+        # failures since the user's last completed login: a successful authentication
+        # clears the slate, so a legitimate user is not re-locked by stale pre-login
+        # failures on their next single typo. Without it every tracked event in the raw
+        # window counts, which is what an admin wants when the threshold is meant to
+        # measure total failures rather than a run of them. (The DENY decision never
+        # resets on success — see _policy_access_decision.)
         # The count is the *combined* total over all of the policy's tracked types,
         # not just the current request's event_type, so a policy tracking several
         # failure types trips on their sum.
-        count = _policy_count(policy, user, now, since_last_success=True)
+        count = _policy_count(policy, user, now, since_last_success=policy.reset_on_success)
         subject_label = repr(user)
 
     # Pick the triggered stage: the highest-priority stage that has at least one

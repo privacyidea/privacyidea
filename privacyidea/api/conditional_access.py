@@ -272,6 +272,11 @@ def create_policy():
         Required.
     :jsonparam enabled: whether the policy is evaluated (default true).
     :jsonparam dry_run: log-only mode, nothing is enforced (default false).
+    :jsonparam reset_on_success: whether a completed login clears the events
+        counted for this policy, so the thresholds apply to consecutive failures
+        since that login (default true). Only a ``user`` target resets: a
+        ``source_ip`` policy aggregates across accounts and never does, and the
+        pre-auth ALLOW/DENY decision never does either.
     :jsonparam priority: evaluation priority; lower numbers are evaluated first.
         Required and must be unique across policies (no default).
     :jsonparam target: the identity the policy counts and acts on - ``user``
@@ -289,6 +294,7 @@ def create_policy():
     name = get_required(params, "name")
     enabled = get_optional(params, "enabled")
     dry_run = get_optional(params, "dry_run")
+    reset_on_success = get_optional(params, "reset_on_success")
     policy_id = create_lockout_policy(
         name=name,
         time_window_seconds=get_required(params, "time_window_seconds"),
@@ -297,6 +303,7 @@ def create_policy():
         conditions=_get_json_param(params, "conditions"),
         enabled=is_true(enabled) if enabled is not None else True,
         dry_run=is_true(dry_run) if dry_run is not None else False,
+        reset_on_success=is_true(reset_on_success) if reset_on_success is not None else True,
         priority=get_required(params, "priority"),
         count_mode=get_optional(params, "count_mode"),
         target=get_required(params, "target"))
@@ -329,6 +336,7 @@ def update_policy(policy_id):
     params = request.all_data
     enabled = get_optional(params, "enabled")
     dry_run = get_optional(params, "dry_run")
+    reset_on_success = get_optional(params, "reset_on_success")
     policy_id = _int_policy_id(policy_id)
     policy_id, changed_fields = update_lockout_policy(
         policy_id,
@@ -339,6 +347,7 @@ def update_policy(policy_id):
         conditions=_get_json_param(params, "conditions"),
         enabled=is_true(enabled) if enabled is not None else None,
         dry_run=is_true(dry_run) if dry_run is not None else None,
+        reset_on_success=is_true(reset_on_success) if reset_on_success is not None else None,
         priority=get_optional(params, "priority"),
         target=get_optional(params, "target"),
         count_mode=get_optional(params, "count_mode"))

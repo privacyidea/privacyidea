@@ -59,6 +59,7 @@ function makePolicy(overrides: Partial<LockoutPolicy>): LockoutPolicy {
     priority: 1,
     target: "user",
     count_mode: "PER_REQUEST",
+    reset_on_success: true,
     counter_types_to_track: ["PASSWORD_FAIL"],
     stages: [],
     ...overrides

@@ -152,6 +152,10 @@ export interface LockoutPolicy {
   priority: number;
   target: LockoutTarget;
   count_mode: CountMode;
+  // Whether a completed login clears this policy's counted events, so the thresholds apply to consecutive
+  // failures since that login. Only a "user" target resets: a "source_ip" policy aggregates a signal across
+  // accounts and never does, and the pre-auth allow/deny decision never does either.
+  reset_on_success: boolean;
   counter_types_to_track: AuthEventType[];
   stages: LockoutPolicyStage[];
   // Which requests the policy applies to at all. Optional: a policy without any restriction simply
@@ -171,8 +175,11 @@ export type LockoutPolicySaveParams = Omit<LockoutPolicy, "id" | "priority"> & {
 // What a shipped template carries: a create payload minus the priority, which the
 // catalog deliberately omits so the admin picks a unique one. Optional (not just
 // nullable) because the key is absent from the response altogether.
-export type LockoutPolicyTemplateParams = Omit<LockoutPolicySaveParams, "priority"> & {
+export type LockoutPolicyTemplateParams = Omit<LockoutPolicySaveParams, "priority" | "reset_on_success"> & {
   priority?: number | null;
+  // The catalog omits this too: it is only meaningful for the user brute-force templates, so the shipped
+  // policies leave the backend's default to apply rather than stating a choice they do not have.
+  reset_on_success?: boolean;
 };
 
 // A ready-made policy the backend ships (GET /conditionalaccess/template); "policy"
@@ -191,6 +198,7 @@ export const EMPTY_LOCKOUT_POLICY: LockoutPolicySaveParams = {
   priority: null,
   target: "user",
   count_mode: "PER_REQUEST",
+  reset_on_success: true,
   counter_types_to_track: [],
   stages: []
 };

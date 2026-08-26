@@ -91,7 +91,8 @@ class LockoutEngineTestCase(LockoutTestCase):
         db.session.commit()
 
     def _make_policy(self, *, name: str, counter_type, window: int = 3600, enabled: bool = True,
-                     dry_run: bool = False, priority: int = 1, target: LockoutTarget = LockoutTarget.USER,
+                     dry_run: bool = False, reset_on_success: bool = True, priority: int = 1,
+                     target: LockoutTarget = LockoutTarget.USER,
                      count_mode: CountMode | None = None,
                      conditions: Sequence[LockoutPolicyCondition] = (),
                      stages: Sequence[StageDefinition] = (
@@ -113,6 +114,7 @@ class LockoutEngineTestCase(LockoutTestCase):
         counter_types = counter_type if isinstance(counter_type, (list, tuple)) else [counter_type]
         policy = LockoutPolicy(name=name, counter_types_to_track=[str(t) for t in counter_types],
                                time_window_seconds=window, enabled=enabled, dry_run=dry_run,
+                               reset_on_success=reset_on_success,
                                priority=priority, target=str(target), count_mode=str(count_mode),
                                conditions=list(conditions), stages=_build_stages(list(stages)))
         db.session.add(policy)
@@ -692,6 +694,63 @@ class LockoutEngineTestCase(LockoutTestCase):
         self._seed_events(AuthEventType.MFA_FAIL, 2, timestamp=now - timedelta(seconds=50))
         evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL, now=now)
         self.assertTrue(is_user_locked(self.user))
+
+    def test_reset_on_success_is_on_by_default(self):
+        # The default reproduces the historic behaviour, which is what makes the flag safe to add.
+        policy, _ = self._make_policy(name="default", counter_type=AuthEventType.MFA_FAIL)
+        self.assertTrue(policy.reset_on_success)
+
+    def test_reset_on_success_disabled_keeps_pre_login_failures(self):
+        # Without the reset the threshold measures every tracked failure in the raw window, so failures that
+        # precede a successful login still count towards it.
+        now = utc_now()
+        self._make_policy(name="lock3-noreset", counter_type=AuthEventType.MFA_FAIL, reset_on_success=False)
+        self._seed_events(AuthEventType.MFA_FAIL, 2, timestamp=now - timedelta(seconds=300))
+        self._seed_events(AuthEventType.LOGIN_SUCCESS, 1, timestamp=now - timedelta(seconds=200))
+        self._seed_events(AuthEventType.MFA_FAIL, 1, timestamp=now - timedelta(seconds=100))
+
+        # 2 + 1 = 3, the stage's threshold: the login did not clear the slate, so this locks where the
+        # default would count only the single post-login failure and leave the user alone.
+        evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL, now=now)
+        self.assertIsNotNone(self._state())
+        self.assertTrue(is_user_locked(self.user))
+
+    def test_reset_on_success_disabled_keeps_pre_login_attempts(self):
+        # The same for PER_ATTEMPT, which floors on the last successful *attempt* rather than the last row.
+        now = utc_now()
+        self._make_policy(name="attempts-noreset", counter_type=AuthEventType.MFA_FAIL,
+                          count_mode=CountMode.PER_ATTEMPT, reset_on_success=False)
+        self._seed_attempts(AuthEventType.MFA_FAIL, 2, timestamp=now - timedelta(seconds=300))
+        self._seed_attempts(AuthEventType.LOGIN_SUCCESS, 1, timestamp=now - timedelta(seconds=200), start=2)
+        self._seed_attempts(AuthEventType.MFA_FAIL, 1, timestamp=now - timedelta(seconds=100), start=3)
+
+        evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL, now=now)
+        self.assertTrue(is_user_locked(self.user))
+
+    def test_reset_on_success_does_not_reach_a_source_ip_policy(self):
+        # An IP signal is aggregated across accounts, so one account's legitimate login must never clear it -
+        # the flag is a user-policy setting and _policy_count_ip does not take it.
+        now = utc_now()
+        ip = "10.0.0.77"
+        self._make_policy(name="spray", counter_type=AuthEventType.PASSWORD_FAIL, target=LockoutTarget.SOURCE_IP,
+                          reset_on_success=True,
+                          stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.BLOCK_IP, 600)]),))
+        self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=3, timestamp=now - timedelta(seconds=300))
+        self._seed_events(AuthEventType.LOGIN_SUCCESS, 1, timestamp=now - timedelta(seconds=200))
+
+        evaluate_lockout_policies(CAContext(self.user, source_ip=ip), AuthEventType.PASSWORD_FAIL, now=now)
+        self.assertIsNotNone(self._block(ip))
+
+    def test_reset_on_success_does_not_reach_the_access_decision(self):
+        # The pre-auth DENY is deliberately not reset by a success, whatever the policy says: it is a
+        # stateless reject that lifts as the failures age out of the window.
+        now = utc_now()
+        self._make_policy(name="deny", counter_type=AuthEventType.PASSWORD_FAIL, reset_on_success=True,
+                          stages=(StageDefinition(3, 1, [StageActionDefinition(LockoutAction.DENY)]),))
+        self._seed_events(AuthEventType.PASSWORD_FAIL, 3, timestamp=now - timedelta(seconds=300))
+        self._seed_events(AuthEventType.LOGIN_SUCCESS, 1, timestamp=now - timedelta(seconds=200))
+
+        self.assertEqual(AccessDecision.DENY, evaluate_access_decision(CAContext(self.user), now=now).decision)
 
     def test_expired_lock_is_reapplied_when_the_threshold_is_still_met(self):
         # An expired lock leaves the failures in the window, so the stage locks the user again rather than leaving a

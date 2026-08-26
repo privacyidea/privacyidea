@@ -41,6 +41,15 @@
   margin: 16px 0;
 }
 
+// The checkbox and its info hint sit together as one field in the wrapping field row, aligned with the
+// form fields around them rather than with their own top edge.
+.ca-reset-on-success {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  align-self: center;
+}
+
 .ca-stages-error {
   color: var(--mat-sys-error, #b3261e);
 }

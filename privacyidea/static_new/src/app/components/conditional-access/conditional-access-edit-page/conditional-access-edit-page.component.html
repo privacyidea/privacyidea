@@ -172,6 +172,21 @@
         }
       </mat-form-field>
 
+      <div class="ca-reset-on-success">
+        <mat-checkbox
+          [checked]="editPolicy().reset_on_success"
+          [disabled]="!resetOnSuccessApplies()"
+          (change)="onResetOnSuccessChange($event.checked)"
+          i18n>
+          Reset the count on a successful login
+        </mat-checkbox>
+        <app-info-hint
+          text="When on, a completed login clears the events counted so far, so the thresholds apply to consecutive failures since that login. When off, every tracked event in the time window counts. A source-IP policy never resets, because one account's legitimate login must not clear a signal aggregated across accounts, and the allow/deny decision never resets either."
+          i18n-text
+          ariaLabel="About resetting on success"
+          i18n-ariaLabel />
+      </div>
+
       <mat-form-field
         appearance="fill"
         class="input-width-s">

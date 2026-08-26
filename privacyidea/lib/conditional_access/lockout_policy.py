@@ -33,6 +33,7 @@ A policy is passed around as a plain dict::
         "priority": 1,
         "target": "user",
         "count_mode": "PER_REQUEST",
+        "reset_on_success": True,
         "counter_types_to_track": ["PIN_FAIL", "MFA_FAIL"],
         "conditions": [
             {"condition_type": "USER_REALM", "operator": "IN", "value": ["sales", "support"]},
@@ -55,7 +56,15 @@ A policy is passed around as a plain dict::
 values depend on the target (see ``_COUNT_MODES_BY_TARGET``): both targets count event volume per ``authentication_log``
 row (``PER_REQUEST``) or per whole authentication attempt (``PER_ATTEMPT``); a ``source_ip`` policy may additionally
 count distinct targeted accounts (``DISTINCT_USERS``, the spraying / enumeration signal). When omitted it defaults to
-the target's default (``PER_REQUEST`` for ``user``, ``DISTINCT_USERS`` for ``source_ip``). ``counter_types_to_track``
+the target's default (``PER_REQUEST`` for ``user``, ``DISTINCT_USERS`` for ``source_ip``).
+
+``reset_on_success`` (default ``True``) decides whether a completed login clears the events counted so far, so the
+stage thresholds apply to consecutive failures since that login rather than to every failure in the raw window.
+Turning it off is how a threshold comes to mean "this many failures in the window" outright. It applies to a
+``user`` policy only: a ``source_ip`` policy aggregates a signal across accounts, where one account's legitimate
+login must not clear it, and the pre-auth ``ALLOW``/``DENY`` decision never resets either.
+
+``counter_types_to_track``
 values must be
 :class:`~privacyidea.lib.conditional_access.authentication_event_types.AuthEventType` names and ``action_type`` values
 must be :class:`~privacyidea.lib.conditional_access.engine.LockoutAction` names; anything else is a
@@ -668,6 +677,7 @@ def create_lockout_policy(
     priority: int,
     enabled: bool = True,
     dry_run: bool = False,
+    reset_on_success: bool = True,
     count_mode: str | None = None,
     conditions: list[dict] | None = None,
 ) -> int:
@@ -705,6 +715,7 @@ def create_lockout_policy(
         time_window_seconds=time_window_seconds,
         enabled=bool(enabled),
         dry_run=bool(dry_run),
+        reset_on_success=bool(reset_on_success),
         priority=priority,
         target=lockout_target,
         counter_types_to_track=counter_types,
@@ -728,6 +739,7 @@ def update_lockout_policy(
     stages: list[dict] | None = None,
     enabled: bool | None = None,
     dry_run: bool | None = None,
+    reset_on_success: bool | None = None,
     priority: int | None = None,
     target: str | None = None,
     count_mode: str | None = None,
@@ -808,6 +820,9 @@ def update_lockout_policy(
         if dry_run is not None:
             policy.dry_run = bool(dry_run)
             changed_fields.append("dry_run")
+        if reset_on_success is not None:
+            policy.reset_on_success = bool(reset_on_success)
+            changed_fields.append("reset_on_success")
         if count_mode is not None:
             policy.count_mode = count_mode
             changed_fields.append("count_mode")

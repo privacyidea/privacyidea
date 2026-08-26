@@ -32,6 +32,7 @@ import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearButtonComponent } from "@components/shared/clear-button/clear-button.component";
 import { ErrorStateDirective } from "@components/shared/directives/error-state.directive";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { MatCheckboxModule } from "@angular/material/checkbox";
 import { InfoHintComponent } from "@components/shared/info-hint/info-hint.component";
 import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
@@ -81,6 +82,7 @@ const COUNT_MODE_LABELS: Record<string, string> = {
   imports: [
     FormField,
     MatButtonModule,
+    MatCheckboxModule,
     MatFormFieldModule,
     MatIconModule,
     MatInputModule,
@@ -255,6 +257,11 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
     return new Set(thresholds).size === thresholds.length;
   });
 
+  // Only a user policy resets on a successful login: a source-IP policy aggregates a signal across accounts,
+  // where one account's legitimate login must not clear it, so the checkbox is shown but inert there rather
+  // than disappearing when the target changes.
+  resetOnSuccessApplies = computed(() => this.editPolicy().target === "user");
+
   hasChanges = computed(() => JSON.stringify(this.policy()) !== JSON.stringify(this.editPolicy()));
   canSave = computed(
     () =>
@@ -378,11 +385,13 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
     const prefill = template ? deepCopy(template.policy) : deepCopy(EMPTY_LOCKOUT_POLICY);
     delete prefill.id;
     // Templates carry no priority: the admin must pick a unique one, so normalize the
-    // missing key to null and leave the field empty (see priorityValid). Spelling the
-    // target type out here makes the compiler enforce that normalization.
+    // missing key to null and leave the field empty (see priorityValid). They carry no
+    // reset-on-success choice either, so it falls back to the backend's default. Spelling
+    // the target type out here makes the compiler enforce both normalizations.
     const policy: LockoutPolicySaveParams = {
       ...prefill,
       priority: prefill.priority ?? null,
+      reset_on_success: prefill.reset_on_success ?? true,
       stages: prefill.stages
     };
     this.editPolicy.set(policy);
@@ -453,6 +462,10 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
 
   toggleDryRun(checked: boolean): void {
     this.updateEditPolicy({ dry_run: checked });
+  }
+
+  onResetOnSuccessChange(checked: boolean): void {
+    this.updateEditPolicy({ reset_on_success: checked });
   }
 
   cancelEdit(): void {

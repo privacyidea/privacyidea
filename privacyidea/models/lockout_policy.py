@@ -48,7 +48,9 @@ class LockoutPolicy(MethodsMixin, db.Model):
     the related :class:`LockoutPolicyCounterType` rows; ``counter_types_to_track``
     is the list-of-strings view over them used throughout the code and tests
     (assignable as a plain list). Their events are counted **together** (a single
-    combined count over all listed types) against the stage thresholds. Admins
+    combined count over all listed types) against the stage thresholds, and
+    ``reset_on_success`` decides whether a completed login clears what has been
+    counted so far. Admins
     can define multiple policies (e.g. "Admin Policy" vs "Default User Policy");
     policies are evaluated by ascending ``priority`` (a lower number means higher
     precedence, matching privacyIDEA's policy engine). The ``priority`` is unique
@@ -75,6 +77,13 @@ class LockoutPolicy(MethodsMixin, db.Model):
     # How the tracked counters are counted against the stage thresholds: per authentication_log row
     # ("PER_REQUEST", the default) or per whole authentication attempt ("PER_ATTEMPT").
     count_mode: Mapped[str] = mapped_column(Unicode(20), default=CountMode.PER_REQUEST, nullable=False)
+    # Whether a completed login clears the events counted so far: with it set (the default) the count is
+    # floored at the user's most recent LOGIN_SUCCESS inside the window, so the stage thresholds apply to
+    # consecutive failures since that login rather than to every failure that happens to fall in the raw
+    # window. Only a "user" target resets - a source-IP policy aggregates a signal across accounts, where one
+    # account's legitimate login must not clear it (see engine._policy_count_ip), and the pre-auth ALLOW/DENY
+    # decision never resets either (see engine._policy_access_decision).
+    reset_on_success: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
     stages: Mapped[list["LockoutPolicyStage"]] = relationship(
         "LockoutPolicyStage",

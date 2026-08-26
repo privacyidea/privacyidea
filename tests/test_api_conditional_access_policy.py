@@ -118,6 +118,25 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
         res = self._request("policy", method="POST", json_data=body)
         self.assertEqual(400, res.status_code, res.json)
 
+    def test_create_defaults_reset_on_success_to_true(self):
+        policy_id = self._create_policy()
+        res = self._request(f"policy/{policy_id}")
+        self.assertTrue(res.json["result"]["value"]["reset_on_success"])
+
+    def test_create_accepts_reset_on_success_false(self):
+        # An explicit JSON false must reach the CRUD layer rather than being read as "not given".
+        policy_id = self._create_policy(reset_on_success=False)
+        res = self._request(f"policy/{policy_id}")
+        self.assertFalse(res.json["result"]["value"]["reset_on_success"])
+
+    def test_patch_toggles_reset_on_success(self):
+        policy_id = self._create_policy()
+        for value in (False, True):
+            res = self._request(f"policy/{policy_id}", method="PATCH", json_data={"reset_on_success": value})
+            self.assertEqual(200, res.status_code, res.json)
+            res = self._request(f"policy/{policy_id}")
+            self.assertEqual(value, res.json["result"]["value"]["reset_on_success"])
+
     def test_create_duplicate_name_is_400(self):
         self._create_policy(name="Dup")
         res = self._request("policy", method="POST", json_data=self._policy_body(name="Dup"))

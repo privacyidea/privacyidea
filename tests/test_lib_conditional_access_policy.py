@@ -105,6 +105,8 @@ class LockoutPolicyCrudTestCase(MyTestCase):
         self.assertEqual(10, policy["stages"][1]["failure_threshold"])
         self.assertEqual(2, len(policy["stages"][1]["actions"]))
         self.assertEqual({"lock_duration_seconds": 600}, policy["stages"][0]["actions"][0]["action_value"])
+        # A successful login clears the counted events unless the policy says otherwise.
+        self.assertTrue(policy["reset_on_success"])
         # retrigger_above_threshold defaults to False on a lock action (fire once).
         self.assertFalse(policy["stages"][0]["actions"][0]["retrigger_above_threshold"])
 
@@ -509,6 +511,19 @@ class LockoutPolicyCrudTestCase(MyTestCase):
         )
         self.assertIn(LockoutAction.BLOCK_IP.value, constraints[LockoutTarget.SOURCE_IP.value]["actions"])
         self.assertIn(LockoutAction.LOCK_USER.value, constraints[LockoutTarget.USER.value]["actions"])
+
+    def test_10b_reset_on_success_round_trips(self):
+        # Off is storable and readable back; the update reports it as changed only when it was sent, so a
+        # PATCH of something else never silently rewrites it.
+        policy_id = create_lockout_policy("NoReset", 600, ["PIN_FAIL"], [_stage()], LockoutTarget.USER, 1,
+                                          reset_on_success=False)
+        self.assertFalse(get_lockout_policy(policy_id)["reset_on_success"])
+        _, changed = update_lockout_policy(policy_id, reset_on_success=True)
+        self.assertIn("reset_on_success", changed)
+        self.assertTrue(get_lockout_policy(policy_id)["reset_on_success"])
+        _, changed = update_lockout_policy(policy_id, name="NoReset renamed")
+        self.assertNotIn("reset_on_success", changed)
+        self.assertTrue(get_lockout_policy(policy_id)["reset_on_success"])
 
     def test_11_duplicate_priority_rejected(self):
         # priority must be unique across policies: a second policy reusing a
