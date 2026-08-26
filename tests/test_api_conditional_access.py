@@ -796,6 +796,55 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
                                             same_attempt=False)
         assert_authentication_log_entry(entries.all[-1], user=self.user)
 
+    def test_a_lock_that_was_never_written_does_not_refuse_its_own_request(self):
+        # A restricting action that did not restrict anything must not turn its own request into a rejection: the
+        # response would say what a lock says while no lock exists, and the very next request would authenticate.
+        # Here the duration cannot be read (action_value uses a key _lock_duration_seconds does not look at), so
+        # the write is skipped - the same shape as a BLOCK_IP on a request with no source IP, or a write that
+        # fails outright.
+        create_lockout_policy(
+            name="ca_lock_unusable", time_window_seconds=3600,
+            counter_types_to_track=_counter_types(AuthEventType.PIN_FAIL),
+            stages=[{"failure_threshold": 1, "priority": 1, "error_message": None,
+                     "actions": [{"action_type": str(LockoutAction.LOCK_USER),
+                                  "action_value": {"lock_duration_seconds": 600}}]}],
+            target=LockoutTarget.USER, priority=1)
+
+        body = self._check({"user": "cornelius", "pass": "wrongpin"})
+        # The token failure is still the reason the request failed, and still says so.
+        self.assertEqual("wrong otp pin", body["detail"]["message"], body)
+        self.assertEqual(AUTH_RESPONSE.REJECT, body["result"]["authentication"], body)
+        self.assertFalse(is_user_locked(self.user))
+        # Nothing ran, so nothing is recorded as having happened.
+        self.assertEqual(0, db.session.query(ConditionalAccessOutcome).count())
+        # And the next request is not refused, which is the disagreement the rejection would have created.
+        body = self._check({"user": "cornelius", "pass": "pin755224"})
+        self.assertTrue(body["result"]["value"], body)
+
+    def test_a_stage_whose_lock_was_skipped_still_says_nothing_about_it(self):
+        # The other half of the same rule, and the reason "did it restrict anything" and "may it speak" are two
+        # questions: the stage's one error message describes the lock it aimed at, so a stage that only managed to
+        # send its mail must not append that sentence - a lock that is not in force, carrying a {duration} there is
+        # nothing to substitute against - to a failure it did not cause.
+        create_lockout_policy(
+            name="ca_lock_unusable", time_window_seconds=3600,
+            counter_types_to_track=_counter_types(AuthEventType.PIN_FAIL),
+            stages=[{"failure_threshold": 1, "priority": 1,
+                     "error_message": "Your account is locked. Try again in about {duration}.",
+                     "actions": [{"action_type": str(LockoutAction.LOCK_USER),
+                                  "action_value": {"lock_duration_seconds": 600}},
+                                 {"action_type": str(LockoutAction.EMAIL_ADMIN),
+                                  "action_value": {"recipient": "admin@example.com"}}]}],
+            target=LockoutTarget.USER, priority=1)
+
+        with mock.patch("privacyidea.lib.conditional_access.engine._send_lockout_email", return_value=True):
+            body = self._check({"user": "cornelius", "pass": "wrongpin"})
+        self.assertEqual("wrong otp pin", body["detail"]["message"], body)
+        self.assertFalse(is_user_locked(self.user))
+        # The mail did go out, so that much is history; the lock that never happened is not.
+        self.assertListEqual([str(LockoutAction.EMAIL_ADMIN)],
+                             [outcome.action_type for outcome in db.session.query(ConditionalAccessOutcome).all()])
+
     def test_dry_run_lock_policy_persists_outcome_but_never_locks(self):
         # A dry-run LOCK_USER policy never locks the user, but the triggering request's own
         # authentication_log row records what the policy would have done.

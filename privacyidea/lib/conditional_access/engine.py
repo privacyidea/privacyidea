@@ -361,8 +361,9 @@ class LockoutEvaluation:
     """
     messages: list[StageMessage] = field(default_factory=list)
     outcomes: list[ConditionalAccessOutcome] = field(default_factory=list)
-    #: Which rows this evaluation set out to restrict, so the caller describes the restriction that ended up in
-    #: force there - see :func:`_restrictions_in_force`.
+    #: Which rows this evaluation left a restriction on, so the caller describes what ended up in force there -
+    #: see :func:`_restrictions_in_force`. A restricting action that never wrote anything is not in here: the
+    #: caller answers a request as a rejection on the strength of this set.
     enforced_targets: set[LockoutTarget] = field(default_factory=set)
 
 
@@ -1168,8 +1169,7 @@ def _stage_access_decision(stage: LockoutPolicyStage, count: int) -> "AccessDeci
 
 def _restrictions_in_force(context: CAContext, targets: set[LockoutTarget]) -> list[StageMessage]:
     """
-    The error message of the restrictions in force on the targets an evaluation set out to restrict, one message
-    per row.
+    The error message of the restrictions in force on the targets an evaluation restricted, one message per row.
 
     Read back rather than rendered by the stage that aimed at it. Several policies can restrict the same subject
     in one request and a stage can carry several restricting actions, but only one row survives them all - so the
@@ -1178,10 +1178,11 @@ def _restrictions_in_force(context: CAContext, targets: set[LockoutTarget]) -> l
     down the expiry that actually stands, whatever the upserts decided to keep, and that a write declined as
     weakening still leaves the user told about the restriction that stands instead of about nothing.
 
-    Silent by default holds here as everywhere: a row carrying no error message produces none, and neither does a
-    target whose write failed outright and left nothing in force.
+    Silent by default holds here as everywhere: a row carrying no error message produces none. A target whose
+    write failed outright is not passed here at all - it restricted nothing, so there is no row to describe and no
+    request to refuse (see :func:`_execute_stage_actions`).
 
-    :param targets: the targets this evaluation aimed a restricting action at, so an untouched row is never read
+    :param targets: the targets this evaluation restricted, so an untouched row is never read
     """
     statuses = []
     if LockoutTarget.USER in targets and context.user is not None:
@@ -1595,25 +1596,38 @@ def _execute_stage_actions(policy: LockoutPolicy, stage: LockoutPolicyStage,
     :param policy: the triggering policy, for the outcomes
     :param count: the count that tripped the stage, for the outcomes
     :return: a :class:`LockoutEvaluation` with this stage's message when it only notified, one outcome per action
-        that ran, and the targets it aimed a restricting action at (all empty if every action was skipped).
+        that ran, and the targets those actions restricted (all empty if every action was skipped).
     """
     outcomes: list[ConditionalAccessOutcome] = []
-    # Which rows this stage aimed a restricting action at - noted whatever the write then did, because the caller
-    # describes those rows from whatever ends up in force on them (see _restrictions_in_force). So a stage that
-    # restricts carries no message of its own from here, and one whose write was declined as weakening still has
-    # the restriction that stands described rather than nothing.
+    # Which rows this stage left a restriction on - noted for an action that actually restricted one, not for one
+    # that was configured to. The caller answers a request as a rejection on the strength of this set, so an action
+    # whose write never happened - no valid duration, no source IP, a failed write - must not put a target here
+    # that no later request would be refused by.
+    #
+    # A write *declined as weakening* wrote nothing either, and the row it declined to weaken is still described:
+    # only a stronger restriction in force declines one, and that one was written either by an earlier action here
+    # or by another policy in this same evaluation - which recorded the target. (It cannot have been in force
+    # beforehand: the pre-check would have refused the request, and a rejection is never evaluated.) The union
+    # evaluate_lockout_policies collects therefore holds it, and the message comes from whatever stands on that
+    # row - never from the action that aimed at it.
     enforced: set[LockoutTarget] = set()
-    # Whether the stage also decides this request. A DENY is rendered by the pre-auth decision step that makes it
-    # (see _evaluate_rejection), and it is a no-op here, so a stage carrying one must not describe a denial to a
-    # request the denial did not turn away.
+    # Whether the stage *aimed* at a restriction or a denial, which is a different question from what it achieved
+    # and is why these two are not read off `enforced`. The stage's one error message describes whatever the stage
+    # does; for those two the description belongs elsewhere - the row in force, or the pre-auth decision step - so
+    # the stage says nothing from here either way. A write that was declined or skipped leaves nothing to describe,
+    # not a lock-shaped sentence to append to the failure as though it were a notification.
+    restricts = False
     decides = False
 
     user = context.user
     source_ip = context.source_ip
 
     def record(action_type: str, expires_at: datetime | None = None) -> None:
-        """Note that *action_type* ran, with the expiry it wrote (if any)."""
+        """Note that *action_type* ran, with the expiry it wrote (if any), and what it restricted."""
         outcomes.append(outcome_for_stage(policy, stage, action_type, count, expires_at=expires_at))
+        target = RESTRICTED_TARGET_BY_ACTION.get(action_type)
+        if target is not None:
+            enforced.add(target)
 
     for action in actions:
         try:
@@ -1621,9 +1635,7 @@ def _execute_stage_actions(policy: LockoutPolicy, stage: LockoutPolicyStage,
         except ValueError:
             log.warning(f"Unknown lockout action type {action.action_type!r} on stage {stage.id}; skipping.")
             continue
-        target = RESTRICTED_TARGET_BY_ACTION.get(action_type)
-        if target is not None:
-            enforced.add(target)
+        restricts = restricts or action_type in RESTRICTED_TARGET_BY_ACTION
         decides = decides or action_type is LockoutAction.DENY
 
         try:
@@ -1685,7 +1697,7 @@ def _execute_stage_actions(policy: LockoutPolicy, stage: LockoutPolicyStage,
         # restriction from the row it left behind (_restrictions_in_force), a denial by the pre-auth decision step
         # that makes it. Either way, repeating it here would tell the user twice - or tell them about a denial
         # that did not turn this request away.
-        rendered = None if enforced or decides else render_error_message(stage.error_message)
+        rendered = None if restricts or decides else render_error_message(stage.error_message)
     elif context.use_default_error_message:
         # The default error message is per action rather than per stage, so nothing is described twice and no
         # such rule is needed: compose_default_error_message carries only what reports something, and leaves any
