@@ -1953,8 +1953,70 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
             self.assertFalse(worded.json["result"]["value"], worded.json)
             self.assertEqual("Locked. Try again in about 10 minute(s).",
                              worded.json["detail"]["message"], worded.json)
+            # This endpoint renders with rid 1 and reports no authentication verdict, so neither may a rejection:
+            # the field an ordinary failed answer does not have is one more thing to be told apart by.
+            for name, body in (("ordinary", ordinary), ("silent", silent), ("worded", worded)):
+                self.assertNotIn("authentication", body.json["result"], f"{name}: {body.json}")
             # The answer was never processed, so the challenge is still open through all three attempts.
             self.assertTrue(get_challenges(transaction_id=challenge.transaction_id))
+        finally:
+            self._clear_ca()
+            delete_challenges(serial=self.serial_push)
+            remove_token(self.serial_push)
+            delete_policy("push_config")
+
+    def test_18h_push_answer_that_trips_a_lock_is_refused_in_this_endpoints_shape(self):
+        """An answer that locks its own owner is refused exactly as the answers after it are refused - the whole
+        response, not just the wording, and whether or not the stage carried any. Silent is the case that matters:
+        it produces no wording, so it can only be told apart from a refusal by the response still being one."""
+        from privacyidea.lib.conditional_access.engine import LockoutAction, LockoutTarget
+        from privacyidea.lib.conditional_access.lockout_policy import create_lockout_policy
+
+        self.setUp_user_realms()
+        user = User("selfservice", self.realm1)
+        set_policy("push_config", scope=SCOPE.ENROLL,
+                   action=f"{PushAction.FIREBASE_CONFIG}={POLL_ONLY},"
+                          f"{PushAction.REGISTRATION_URL}={REGISTRATION_URL}")
+        self._enroll_push_for(user)
+
+        def answer_that_locks(error_message):
+            """Trigger a challenge, then answer it correctly with a policy that locks on that very answer."""
+            self._clear_ca()
+            delete_challenges(serial=self.serial_push)
+            create_lockout_policy(
+                name="ca_push_lock", time_window_seconds=3600,
+                counter_types_to_track=[str(AuthEventType.CHALLENGE_ANSWERED_OUT_OF_BAND)],
+                stages=[{"failure_threshold": 1, "priority": 1, "error_message": error_message,
+                         "actions": [{"action_type": str(LockoutAction.LOCK_USER), "action_value": 600}]}],
+                target=LockoutTarget.USER, priority=1)
+            with self.app.test_request_context('/validate/check', method='POST',
+                                               data={"user": "selfservice", "pass": "push_pin"}):
+                self.app.full_dispatch_request()
+            challenge = get_challenges(serial=self.serial_push)[0]
+            signature = self.smartphone_private_key.sign(
+                f"{challenge.challenge}|{self.serial_push}".encode("utf8"), padding.PKCS1v15(), hashes.SHA256())
+            with self.app.test_request_context('/ttype/push', method='POST',
+                                               data={"serial": self.serial_push,
+                                                     "signature": b32encode(signature)}):
+                return self.app.full_dispatch_request()
+
+        try:
+            # Silent: the answer would have succeeded, and is refused with nothing to show for it - no detail,
+            # because an ordinary failed answer here has none, and no authentication verdict, because no response
+            # here has one.
+            silent = answer_that_locks(None)
+            self.assertFalse(silent.json["result"]["value"], silent.json)
+            self.assertNotIn("detail", silent.json, silent.json)
+            self.assertNotIn("authentication", silent.json["result"], silent.json)
+            self.assertTrue(is_user_locked(user))
+
+            # Worded: the same response, plus the sentence the stage carries.
+            worded = answer_that_locks("Locked. Try again in about {duration}.")
+            self.assertFalse(worded.json["result"]["value"], worded.json)
+            self.assertEqual("Locked. Try again in about 10 minute(s).",
+                             worded.json["detail"]["message"], worded.json)
+            self.assertNotIn("authentication", worded.json["result"], worded.json)
+            self.assertTrue(is_user_locked(user))
         finally:
             self._clear_ca()
             delete_challenges(serial=self.serial_push)

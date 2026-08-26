@@ -602,7 +602,7 @@ def get_auth_token():
             # is any, the ordinary failure if not, and nothing else. The details describe the overtaken attempt -
             # "wrong otp pin" and the token it was aimed at - and a rejection carries none of that. The id drops
             # WRONG_CREDENTIALS for the same reason: nothing here is a statement about the credential.
-            message = rejection_message(evaluation.messages)
+            message = rejection_message(context.rejection_shape, evaluation.messages)
             details = {}
             error_id = Error.AUTHENTICATE
             if evaluation.messages:

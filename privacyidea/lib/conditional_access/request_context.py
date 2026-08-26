@@ -94,6 +94,40 @@ class PostEvaluation:
     restricted: bool = False
 
 
+@dataclass(frozen=True)
+class RejectionShape:
+    """
+    How one endpoint answers a request conditional access refuses.
+
+    Recorded by whichever gate guards the endpoint, so a request restricted by *itself* is answered exactly as the
+    gate answers every request after it - the whole response, not just the wording, and whatever the view was about
+    to return. Looking like an ordinary failed authentication is the whole requirement, and what one looks like
+    differs per endpoint.
+
+    :ivar value: what ``result.value`` says. ``False`` everywhere except ``/validate/triggerchallenge``, where the
+        value is the number of challenges triggered and a boolean would change the type of a field its callers may
+        be reading as a number.
+    :ivar rid: the response id this endpoint renders with. ``prepare_result`` adds ``result.authentication`` only
+        for ``rid > 1``, so a rejection at ``/ttype/push`` - which renders with ``1`` - must not grow a field the
+        endpoint never carries.
+    :ivar carries_detail: whether an ordinary failed authentication here carries a ``detail`` at all. On
+        ``/validate/*`` every failure does, so a silent rejection carries the generic failure to have one too; at
+        ``/ttype/push`` none does, so a silent rejection carries none either - the generic message would be exactly
+        the tell that including it on ``/validate`` avoids.
+    :ivar as_error: ``/auth``, the one entry point whose failed authentication is an error response rather than a
+        ``200`` carrying ``result.value`` false.
+    """
+    value: Any = False
+    rid: int = 2
+    carries_detail: bool = True
+    as_error: bool = False
+
+    @property
+    def reports_authentication(self) -> bool:
+        """Whether this endpoint's responses carry ``result.authentication`` at all (see :attr:`rid`)."""
+        return self.rid > 1
+
+
 class ConditionalAccessContext:
     """
     The conditional-access work of one request: who is authenticating, and the authentication-log rows it will write.
@@ -123,11 +157,8 @@ class ConditionalAccessContext:
         self.use_default_error_message = False
         # How this endpoint answers a refused request, recorded by whichever gate guards it so the response hook can
         # answer a *restricted* request the same way - even when the view raised and the body to replace is an error.
-        # ``rejection_value`` is what ``result.value`` says (a count on /validate/triggerchallenge, hence not simply
-        # False); ``rejects_with_error`` marks /auth, the one entry point whose failed authentication is an error
-        # response rather than a 200 carrying false.
-        self.rejection_value: Any = False
-        self.rejects_with_error = False
+        # The default is the /validate shape, which is also the safest thing to assume for a request no gate ran on.
+        self.rejection_shape = RejectionShape()
 
     def claim_message(self, message: str) -> None:
         """
