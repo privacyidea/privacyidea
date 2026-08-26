@@ -32,7 +32,7 @@ from sqlalchemy import (
 from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from privacyidea.lib.conditional_access.authentication_event_types import CountMode
+from privacyidea.lib.conditional_access.authentication_event_types import CountMode, RestrictionCause
 from privacyidea.models import db
 from privacyidea.models.utils import MethodsMixin, utc_now, case_sensitive_unicode
 
@@ -274,6 +274,9 @@ class UserLockoutState(MethodsMixin, db.Model):
     The row records the lock itself, not which policy produced it: what a stage
     did, and to whom, is the conditional-access history
     (:class:`~privacyidea.models.conditional_access_outcome.ConditionalAccessOutcome`).
+    It does record ``lock_cause``, i.e. *whether* a policy or an administrator
+    imposed the lock now in force - a manual lock has no authentication request,
+    so it can have no history row of its own.
     """
     __tablename__ = 'user_lockout_state'
     resolver: Mapped[str] = mapped_column(case_sensitive_unicode(120), primary_key=True)
@@ -284,6 +287,11 @@ class UserLockoutState(MethodsMixin, db.Model):
     # live resolver lookup (which would also fail for a since-deleted user).
     username: Mapped[str | None] = mapped_column(case_sensitive_unicode(255), nullable=True)
     lock_expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    # Who imposed this lock: the engine acting on a policy, or an administrator by hand. Written together with
+    # ``lock_expires_at``, so it always describes the lock now in force; see
+    # :class:`~privacyidea.lib.conditional_access.authentication_event_types.RestrictionCause` for why the state
+    # row is the only place a manual lock's provenance can live.
+    lock_cause: Mapped[str] = mapped_column(Unicode(20), default=RestrictionCause.POLICY, nullable=False)
     # When the lock was applied; refreshed on each (re)lock, so it reflects the start of the
     # current active lock rather than a generic audit timestamp.
     locked_at: Mapped[datetime] = mapped_column(
@@ -308,6 +316,8 @@ class BlockList(MethodsMixin, db.Model):
     Like :class:`UserLockoutState` the row records the block itself, not which
     policy produced it; that is the conditional-access history
     (:class:`~privacyidea.models.conditional_access_outcome.ConditionalAccessOutcome`).
+    It does record ``block_cause``, i.e. whether a policy or an administrator
+    imposed the block now in force.
     """
     __tablename__ = 'block_list'
     # TODO: the blocked identity is a source IP for now. A future revision may
@@ -317,6 +327,8 @@ class BlockList(MethodsMixin, db.Model):
     # IPv4-mapped IPv6 address.
     ip: Mapped[str] = mapped_column(Unicode(50), primary_key=True)
     block_expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    # Who imposed this block, the IP counterpart of :attr:`UserLockoutState.lock_cause`.
+    block_cause: Mapped[str] = mapped_column(Unicode(20), default=RestrictionCause.POLICY, nullable=False)
     # When the block was applied; refreshed on each (re)block, so it reflects the start of the
     # current active block rather than a generic audit timestamp.
     blocked_at: Mapped[datetime] = mapped_column(

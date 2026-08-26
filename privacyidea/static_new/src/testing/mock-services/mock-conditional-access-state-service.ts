@@ -21,12 +21,14 @@ import { Sort } from "@angular/material/sort";
 import { PiResponse } from "@app/app.component";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import {
+  BlockIpRequest,
   BlocklistEntry,
   ConditionalAccessStateServiceInterface,
   LockedUsersPage,
   LockedUserEntry,
   LockState,
-  ResetUserLockoutRequest
+  ResetUserLockoutRequest,
+  SetUserLockoutRequest
 } from "@services/conditional-access-state/conditional-access-state.service";
 import { Observable, of } from "rxjs";
 import { MockHttpResourceRef, MockPiResponse } from "./mock-utils";
@@ -44,6 +46,22 @@ export class MockConditionalAccessStateService implements ConditionalAccessState
   });
 
   resetUserLockout = jest.fn().mockImplementation((_: ResetUserLockoutRequest): Observable<boolean> => of(true));
+
+  // Returns the lock the request asked for, so a caller that reads the result back gets a coherent entry.
+  setUserLockout = jest.fn().mockImplementation(
+    (request: SetUserLockoutRequest): Observable<LockedUserEntry | null> =>
+      of({
+        resolver: request.resolver ?? "",
+        uid: request.uid ?? "",
+        realm: request.realm,
+        username: request.login ?? "",
+        permanent: request.duration_seconds == null,
+        lock_expires_at: null,
+        seconds_remaining: request.duration_seconds ?? null,
+        lock_cause: "MANUAL",
+        locked_at: ""
+      })
+  );
 
   lockedUsersFilter = signal(new FilterValue());
   lockedUsersFilterParams = computed<Record<string, string>>(() => ({}));
@@ -101,6 +119,18 @@ export class MockConditionalAccessStateService implements ConditionalAccessState
     );
 
   removeBlocklistEntry = jest.fn().mockImplementation((_: BlocklistEntry): Observable<boolean> => of(true));
+
+  addBlocklistEntry = jest.fn().mockImplementation(
+    (request: BlockIpRequest): Observable<BlocklistEntry | null> =>
+      of({
+        identifier: request.ip,
+        permanent: request.duration_seconds == null,
+        block_expires_at: null,
+        seconds_remaining: request.duration_seconds ?? null,
+        block_cause: "MANUAL",
+        blocked_at: ""
+      })
+  );
   purgeBlocklist = jest.fn().mockImplementation((): Observable<number> => of(0));
 
   setUserLockoutStatus(value: LockedUserEntry | null): void {

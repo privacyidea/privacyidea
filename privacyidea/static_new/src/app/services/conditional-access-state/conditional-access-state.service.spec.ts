@@ -51,6 +51,7 @@ const lockoutStatus = (): LockedUserEntry => ({
   permanent: false,
   lock_expires_at: "2030-01-01T10:00:00Z",
   seconds_remaining: 120,
+  lock_cause: "POLICY",
   locked_at: "2030-01-01T09:58:00Z"
 });
 
@@ -59,6 +60,7 @@ const blocklistEntry = (identifier: string): BlocklistEntry => ({
   permanent: false,
   block_expires_at: "2030-01-01T10:00:00Z",
   seconds_remaining: 120,
+  block_cause: "POLICY",
   blocked_at: "2030-01-01T09:58:00Z"
 });
 
@@ -266,6 +268,51 @@ describe("ConditionalAccessStateService", () => {
     const req = httpMock.expectOne((r) => r.url === BASE + "lockout/user" && r.method === "DELETE");
     req.flush(errorResponse().error, { status: 500, statusText: "Server Error" });
     expect(result).toBe(false);
+    expect(notification.error).toHaveBeenCalled();
+  });
+
+  // --- setUserLockout / addBlocklistEntry (the manual write path) ---
+
+  it("setUserLockout posts the login and omits the duration for a permanent lock", () => {
+    let result: LockedUserEntry | null | undefined;
+    service.setUserLockout({ login: "alice", realm: "realm1", resolver: "reso1" }).subscribe((v) => (result = v));
+    const req = httpMock.expectOne((r) => r.url === BASE + "lockout/user" && r.method === "POST");
+    // An absent duration is what the backend reads as "permanent", so the key must not be sent as null.
+    expect(req.request.body).toEqual({ realm: "realm1", resolver: "reso1", user: "alice" });
+    req.flush(MockPiResponse.fromValue({ ...lockoutStatus(), lock_cause: "MANUAL" }));
+    expect(result?.lock_cause).toBe("MANUAL");
+  });
+
+  it("setUserLockout posts a user_id and the duration when given", () => {
+    service.setUserLockout({ uid: "uid-1", realm: "realm1", duration_seconds: 600 }).subscribe();
+    const req = httpMock.expectOne((r) => r.url === BASE + "lockout/user" && r.method === "POST");
+    expect(req.request.body).toEqual({ realm: "realm1", user_id: "uid-1", duration_seconds: 600 });
+    req.flush(MockPiResponse.fromValue(lockoutStatus()));
+  });
+
+  it("setUserLockout returns null and notifies on error", () => {
+    let result: LockedUserEntry | null | undefined;
+    service.setUserLockout({ login: "alice", realm: "realm1" }).subscribe((v) => (result = v));
+    const req = httpMock.expectOne((r) => r.url === BASE + "lockout/user" && r.method === "POST");
+    req.flush(errorResponse().error, { status: 500, statusText: "Server Error" });
+    expect(result).toBeNull();
+    expect(notification.error).toHaveBeenCalled();
+  });
+
+  it("addBlocklistEntry posts the IP and the duration when given", () => {
+    service.addBlocklistEntry({ ip: "203.0.113.9", duration_seconds: 300 }).subscribe();
+    const req = httpMock.expectOne((r) => r.url === BASE + "blocklist" && r.method === "POST");
+    expect(req.request.body).toEqual({ ip: "203.0.113.9", duration_seconds: 300 });
+    req.flush(MockPiResponse.fromValue(blocklistEntry("203.0.113.9")));
+  });
+
+  it("addBlocklistEntry returns null and notifies when the backend refuses", () => {
+    let result: BlocklistEntry | null | undefined;
+    service.addBlocklistEntry({ ip: "127.0.0.1" }).subscribe((v) => (result = v));
+    const req = httpMock.expectOne((r) => r.url === BASE + "blocklist" && r.method === "POST");
+    expect(req.request.body).toEqual({ ip: "127.0.0.1" });
+    req.flush(errorResponse().error, { status: 400, statusText: "Bad Request" });
+    expect(result).toBeNull();
     expect(notification.error).toHaveBeenCalled();
   });
 

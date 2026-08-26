@@ -1,0 +1,77 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<app-dialog-wrapper
+  (actionTriggered)="onAction($event)"
+  (wrapperClose)="close()"
+  [actions]="dialogActions()"
+  i18n-title
+  title="Lock User">
+  <p class="lock-dialog-intro">
+    <span i18n>Locking</span>
+    <strong>{{ data.username }}&#64;{{ data.realm }}</strong>
+    <span i18n>rejects every authentication attempt until the lock is lifted or expires.</span>
+  </p>
+
+  <mat-radio-group
+    class="lock-dialog-modes"
+    [value]="mode()"
+    (change)="mode.set($event.value)">
+    <mat-radio-button
+      value="permanent"
+      i18n>
+      Until an administrator unlocks the user
+    </mat-radio-button>
+    <mat-radio-button
+      value="timed"
+      i18n>
+      For a limited time
+    </mat-radio-button>
+  </mat-radio-group>
+
+  @if (mode() === "timed") {
+    <div class="lock-dialog-duration">
+      <mat-form-field
+        appearance="fill"
+        subscriptSizing="dynamic"
+        class="input-width-s">
+        <mat-label i18n>Duration</mat-label>
+        <input
+          matInput
+          type="number"
+          min="1"
+          [value]="durationInput()"
+          (input)="durationInput.set($any($event.target).value)" />
+      </mat-form-field>
+
+      <mat-form-field
+        appearance="fill"
+        subscriptSizing="dynamic"
+        class="input-width-s">
+        <mat-label i18n>Unit</mat-label>
+        <mat-select
+          [value]="durationUnit()"
+          (selectionChange)="durationUnit.set($event.value)">
+          @for (unit of durationUnits; track unit) {
+            <mat-option [value]="unit">{{ unit }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+    </div>
+  }
+</app-dialog-wrapper>

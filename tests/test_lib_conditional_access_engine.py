@@ -56,6 +56,7 @@ from privacyidea.lib.conditional_access.engine import (
     _safe_format,
     _resolve_admin_recipients,
 )
+from privacyidea.lib.conditional_access.lockout_state import lock_user
 from privacyidea.lib.conditional_access.lockout_policy import (StageDefinition, StageActionDefinition,
                                                                _build_stages)
 from privacyidea.lib.config import set_privacyidea_config, delete_privacyidea_config, SYSCONF
@@ -691,6 +692,42 @@ class LockoutEngineTestCase(LockoutTestCase):
         # Two more post-login failures reach the threshold again (1 + 2 = 3) -> locked.
         self._seed_events(AuthEventType.MFA_FAIL, 2, timestamp=now - timedelta(seconds=50))
         evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL, now=now)
+        self.assertTrue(is_user_locked(self.user))
+
+    def test_policy_lock_records_the_policy_cause(self):
+        # A policy lock names itself, so the Locked Users page can tell it from one an admin imposed.
+        now = utc_now()
+        self._make_policy(name="cause", counter_type=AuthEventType.MFA_FAIL)
+        self._seed_events(AuthEventType.MFA_FAIL, 3, timestamp=now - timedelta(seconds=100))
+        evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL, now=now)
+        self.assertEqual("POLICY", self._state().lock_cause)
+
+    def test_policy_lock_overwrites_a_manual_timed_lock_cause(self):
+        # The cause describes the lock now in force, so a policy lock that strengthens an admin's timed one
+        # becomes a policy lock rather than staying attributed to the admin.
+        now = utc_now()
+        lock_user(self.user, duration_seconds=60, now=now)
+        self._make_policy(name="cause2", counter_type=AuthEventType.MFA_FAIL)
+        self._seed_events(AuthEventType.MFA_FAIL, 3, timestamp=now - timedelta(seconds=100))
+        evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL, now=now)
+        self.assertEqual("POLICY", self._state().lock_cause)
+
+    def test_a_policy_lock_declined_as_a_weakening_keeps_the_manual_cause(self):
+        # The upsert refuses to downgrade a permanent lock to a timed one, so the row - cause included - is
+        # left exactly as the admin wrote it.
+        now = utc_now()
+        lock_user(self.user, now=now)
+        self._make_policy(name="cause3", counter_type=AuthEventType.MFA_FAIL)
+        self._seed_events(AuthEventType.MFA_FAIL, 3, timestamp=now - timedelta(seconds=100))
+        evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL, now=now)
+        state = self._state()
+        self.assertIsNone(state.lock_expires_at)
+        self.assertEqual("MANUAL", state.lock_cause)
+
+    def test_a_manual_lock_is_enforced_like_a_policy_lock(self):
+        # The whole point of writing the same row: the pre-check reads it whoever wrote it, so a manual lock
+        # needs no engine change to take effect.
+        lock_user(self.user)
         self.assertTrue(is_user_locked(self.user))
 
     def test_expired_lock_is_reapplied_when_the_threshold_is_still_met(self):

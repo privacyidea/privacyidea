@@ -26,12 +26,13 @@ proxy IP) can recover from the command line.
 import click
 from flask.cli import AppGroup
 
-from privacyidea.lib.conditional_access.lockout_state import (list_blocklist,
-                                                              list_locked_users,
+from privacyidea.lib.conditional_access.lockout_state import (block_ip, list_blocklist,
+                                                              list_locked_users, lock_user,
                                                               purge_expired_blocklist,
                                                               purge_expired_user_lockouts,
                                                               remove_blocklist_entry,
                                                               unlock_user_by_id, unlock_user_by_username)
+from privacyidea.lib.user import User
 from privacyidea.models import db
 from privacyidea.models.lockout_policy import BlockList, UserLockoutState
 
@@ -53,7 +54,8 @@ def list_blocked_ips():
         return
     click.echo(f"{len(entries)} blocked IP(s):")
     for entry in entries:
-        click.echo(f"  {entry['identifier']}\texpires={_format_expiry(entry['block_expires_at'])}")
+        click.echo(f"  {entry['identifier']}\texpires={_format_expiry(entry['block_expires_at'])}\t"
+                   f"cause={entry['block_cause']}")
 
 
 @conditional_access_cli.command("unblock-ip", help="Remove the block for a single IP.")
@@ -92,7 +94,28 @@ def list_locked_users_cmd():
     click.echo(f"{len(users)} locked user(s):")
     for user in users:
         click.echo(f"  resolver={user['resolver']}\tuid={user['uid']}\trealm={user['realm']}\t"
-                   f"expires={_format_expiry(user['lock_expires_at'])}")
+                   f"expires={_format_expiry(user['lock_expires_at'])}\tcause={user['lock_cause']}")
+
+
+@conditional_access_cli.command("lock-user", help="Lock a single user by hand.")
+@click.argument("login")
+@click.option("--realm", required=True, help="The realm of the user.")
+@click.option("--resolver", help="The resolver of the user (only needed to disambiguate).")
+@click.option("--duration", type=int, help="How long the lock lasts, in seconds. Omitted, it is permanent.")
+def lock_user_cmd(login, realm, resolver, duration):
+    # The escape hatch for the WebUI's Lock action: the same authoritative write, recorded as a manual lock
+    # and enforced by the same pre-check as a policy lock.
+    user = User(login=login, realm=realm, resolver=resolver or "")
+    lock = lock_user(user, duration_seconds=duration)
+    click.echo(f"Locked user {login}@{realm} (expires={_format_expiry(lock['lock_expires_at'])}).")
+
+
+@conditional_access_cli.command("block-ip", help="Block a single IP by hand.")
+@click.argument("ip")
+@click.option("--duration", type=int, help="How long the block lasts, in seconds. Omitted, it is permanent.")
+def block_ip_cmd(ip, duration):
+    entry = block_ip(ip, duration_seconds=duration)
+    click.echo(f"Blocked IP {ip} (expires={_format_expiry(entry['block_expires_at'])}).")
 
 
 @conditional_access_cli.command("unlock-user", help="Remove the lock for a single user.")

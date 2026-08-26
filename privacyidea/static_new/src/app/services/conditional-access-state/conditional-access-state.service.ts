@@ -36,12 +36,16 @@ const LOCKED_USERS_DEFAULT_PAGE_SIZE = 15;
 // case-insensitively by the backend). Plural to match the API query parameters (`usernames`, `realms`,
 // `resolvers`), which each accept a list of values. `states` selects the lock state(s)
 // (permanent / temporary / expired) and replaces the former "show expired" toggle.
-const LOCKED_USERS_FILTER_KEYS = ["usernames", "realms", "resolvers", "states"];
+const LOCKED_USERS_FILTER_KEYS = ["usernames", "realms", "resolvers", "states", "causes"];
 
 // The lock states a record can be in, as accepted by the `states` query parameter of `lockout/users`:
 // permanent (no expiry), temporary (expiry still ahead) and expired (a stale row a purge removes).
 // Mirrors privacyidea.lib.conditional_access.lockout_state.LOCK_STATES.
 export type LockState = "permanent" | "temporary" | "expired";
+
+// Who imposed the restriction now in force: a conditional-access policy, or an administrator by hand.
+// Mirrors privacyidea.lib.conditional_access.authentication_event_types.RestrictionCause.
+export type LockCause = "POLICY" | "MANUAL";
 
 // Shallow value-equality for the flat filter-params record, so a value-less key edit does not re-notify.
 function shallowEqualRecord(a: Record<string, string>, b: Record<string, string>): boolean {
@@ -58,6 +62,7 @@ export interface LockedUserEntry {
   permanent: boolean;
   lock_expires_at: string | null;
   seconds_remaining: number | null;
+  lock_cause: LockCause;
   locked_at: string;
 }
 
@@ -73,6 +78,21 @@ export type ResetUserLockoutRequest =
       resolver: string;
     };
 
+// What a manual lock needs: the user to lock, and how long for. duration_seconds omitted means a
+// permanent lock, which is the backend's default and the usual intent when locking by hand.
+export interface SetUserLockoutRequest {
+  realm: string;
+  resolver?: string;
+  login?: string;
+  uid?: string;
+  duration_seconds?: number;
+}
+
+export interface BlockIpRequest {
+  ip: string;
+  duration_seconds?: number;
+}
+
 export interface LockedUsersPage {
   locked_users: LockedUserEntry[];
   count: number;
@@ -86,6 +106,7 @@ export interface BlocklistEntry {
   permanent: boolean;
   block_expires_at: string | null;
   seconds_remaining: number | null;
+  block_cause: LockCause;
   blocked_at: string;
 }
 
@@ -93,6 +114,7 @@ export interface ConditionalAccessStateServiceInterface {
   userLockoutResource: HttpResourceRef<PiResponse<LockedUserEntry | null> | undefined>;
   userLockoutStatus: Signal<LockedUserEntry | null>;
   resetUserLockout(request: ResetUserLockoutRequest): Observable<boolean>;
+  setUserLockout(request: SetUserLockoutRequest): Observable<LockedUserEntry | null>;
   lockedUsersFilter: WritableSignal<FilterValue>;
   lockedUsersFilterParams: () => Record<string, string>;
   lockedUsersSort: WritableSignal<Sort>;
@@ -105,6 +127,7 @@ export interface ConditionalAccessStateServiceInterface {
   blocklistResource: HttpResourceRef<PiResponse<BlocklistEntry[]> | undefined>;
   fetchBlocklist(includeExpired?: boolean): Observable<PiResponse<BlocklistEntry[]>>;
   removeBlocklistEntry(entry: BlocklistEntry): Observable<boolean>;
+  addBlocklistEntry(request: BlockIpRequest): Observable<BlocklistEntry | null>;
   purgeBlocklist(): Observable<number>;
 }
 
@@ -254,6 +277,37 @@ export class ConditionalAccessStateService implements ConditionalAccessStateServ
       );
   }
 
+  // Lock a user by administrator decision. Returns the new lock, or null when the call failed - the
+  // notification has already been shown by then, so the caller only decides whether to reload.
+  setUserLockout(request: SetUserLockoutRequest): Observable<LockedUserEntry | null> {
+    const payload: Record<string, unknown> = { realm: request.realm };
+    if (request.resolver) {
+      payload["resolver"] = request.resolver;
+    }
+    if (request.uid) {
+      payload["user_id"] = request.uid;
+    } else {
+      payload["user"] = request.login;
+    }
+    // Omitted rather than null: the backend reads an absent duration as "permanent".
+    if (request.duration_seconds != null) {
+      payload["duration_seconds"] = request.duration_seconds;
+    }
+    return this.http
+      .post<PiResponse<LockedUserEntry>>(this.conditionalAccessBaseUrl + "lockout/user", payload, {
+        headers: this.authService.getHeaders()
+      })
+      .pipe(
+        map((response) => response.result?.value ?? null),
+        catchError((error) => {
+          console.error("Failed to lock user.", error);
+          const message = error.error?.result?.error?.message || "";
+          this.notificationService.error($localize`Failed to lock user. ` + message);
+          return of(null);
+        })
+      );
+  }
+
   purgeUserLockouts(): Observable<number> {
     return this.http
       .post<PiResponse<number>>(this.conditionalAccessBaseUrl + "lockout/users/purge", null, {
@@ -305,6 +359,28 @@ export class ConditionalAccessStateService implements ConditionalAccessStateServ
           const message = error.error?.result?.error?.message || "";
           this.notificationService.error($localize`Failed to remove blocklist entry. ` + message);
           return of(false);
+        })
+      );
+  }
+
+  // Block an IP by administrator decision. A never-block address is refused by the backend with an
+  // explanation, which reaches the admin as the notification below rather than as a silent no-op.
+  addBlocklistEntry(request: BlockIpRequest): Observable<BlocklistEntry | null> {
+    const payload: Record<string, unknown> = { ip: request.ip };
+    if (request.duration_seconds != null) {
+      payload["duration_seconds"] = request.duration_seconds;
+    }
+    return this.http
+      .post<PiResponse<BlocklistEntry>>(this.conditionalAccessBaseUrl + "blocklist", payload, {
+        headers: this.authService.getHeaders()
+      })
+      .pipe(
+        map((response) => response.result?.value ?? null),
+        catchError((error) => {
+          console.error("Failed to block IP.", error);
+          const message = error.error?.result?.error?.message || "";
+          this.notificationService.error($localize`Failed to block IP. ` + message);
+          return of(null);
         })
       );
   }

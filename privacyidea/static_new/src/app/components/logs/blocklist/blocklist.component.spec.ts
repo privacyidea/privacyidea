@@ -18,6 +18,10 @@
  **/
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import {
+  BlocklistBlockDialogComponent,
+  BlocklistBlockDialogResult
+} from "./blocklist-block-dialog/blocklist-block-dialog.component";
 import { BlocklistComponent } from "./blocklist.component";
 import { AuthService } from "@services/auth/auth.service";
 import { DialogService } from "@services/dialog/dialog.service";
@@ -41,6 +45,7 @@ const activeEntry: BlocklistEntry = {
   block_expires_at: "2026-12-31T23:59:59Z",
   seconds_remaining: 3600,
   permanent: false,
+  block_cause: "POLICY",
   blocked_at: "2026-01-01T09:00:00Z"
 };
 
@@ -49,6 +54,7 @@ const permanentEntry: BlocklistEntry = {
   block_expires_at: null,
   seconds_remaining: null,
   permanent: true,
+  block_cause: "POLICY",
   blocked_at: "2026-01-01T08:00:00Z"
 };
 
@@ -57,6 +63,7 @@ const expiredEntry: BlocklistEntry = {
   block_expires_at: "2025-06-01T00:00:00Z",
   seconds_remaining: 0,
   permanent: false,
+  block_cause: "POLICY",
   blocked_at: "2025-05-01T00:00:00Z"
 };
 
@@ -167,6 +174,45 @@ describe("BlocklistComponent", () => {
     expect(casService.removeBlocklistEntry).toHaveBeenCalledWith(activeEntry);
     expect(notificationService.success).toHaveBeenCalled();
     expect(casService.blocklistResource.reload).toHaveBeenCalled();
+  });
+
+  it("blocks an IP from the dialog and reloads", () => {
+    const dialogRef = new MockMatDialogRef<unknown, BlocklistBlockDialogResult>();
+    (dialogService.openDialog as jest.Mock).mockReturnValue(dialogRef);
+
+    component.blockIp();
+    dialogRef.close({ ip: "203.0.113.42", durationSeconds: 600 });
+
+    expect(dialogService.openDialog).toHaveBeenCalledWith(
+      expect.objectContaining({ component: BlocklistBlockDialogComponent })
+    );
+    expect(casService.addBlocklistEntry).toHaveBeenCalledWith({ ip: "203.0.113.42", duration_seconds: 600 });
+    expect(casService.blocklistResource.reload).toHaveBeenCalled();
+  });
+
+  it("omits the duration for a permanent block", () => {
+    const dialogRef = new MockMatDialogRef<unknown, BlocklistBlockDialogResult>();
+    (dialogService.openDialog as jest.Mock).mockReturnValue(dialogRef);
+
+    component.blockIp();
+    dialogRef.close({ ip: "203.0.113.42", durationSeconds: null });
+
+    expect(casService.addBlocklistEntry).toHaveBeenCalledWith({ ip: "203.0.113.42", duration_seconds: undefined });
+  });
+
+  it("does NOT block when the dialog is cancelled", () => {
+    const dialogRef = new MockMatDialogRef<unknown, BlocklistBlockDialogResult>();
+    (dialogService.openDialog as jest.Mock).mockReturnValue(dialogRef);
+
+    component.blockIp();
+    dialogRef.close(null as never);
+
+    expect(casService.addBlocklistEntry).not.toHaveBeenCalled();
+  });
+
+  it("labels who imposed the block", () => {
+    expect(component.blockCauseLabel({ ...activeEntry, block_cause: "MANUAL" })).toBe("Manual");
+    expect(component.blockCauseLabel({ ...activeEntry, block_cause: "POLICY" })).toBe("Policy");
   });
 
   it("does NOT remove when the dialog is cancelled", () => {

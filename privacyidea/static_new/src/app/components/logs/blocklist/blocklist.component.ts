@@ -46,6 +46,7 @@ import {
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
+import { BlocklistBlockDialogComponent } from "./blocklist-block-dialog/blocklist-block-dialog.component";
 import { from } from "rxjs";
 import { concatMap, reduce } from "rxjs/operators";
 
@@ -80,7 +81,7 @@ export class BlocklistComponent {
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
 
-  readonly displayedColumns: string[] = ["select", "identifier", "state", "block_expires_at", "blocked_at"];
+  readonly displayedColumns: string[] = ["select", "identifier", "state", "cause", "block_expires_at", "blocked_at"];
 
   // Keep the previous rows while a reload is in flight to avoid flicker.
   readonly dataSource = linkedSignal<PiResponse<BlocklistEntry[]> | undefined, MatTableDataSource<BlocklistEntry>>({
@@ -122,6 +123,34 @@ export class BlocklistComponent {
     return (row.seconds_remaining ?? 0) === 0 ? "expired" : "temporary";
   }
 
+  blockCauseLabel(row: BlocklistEntry): string {
+    return row.block_cause === "MANUAL" ? $localize`Manual` : $localize`Policy`;
+  }
+
+  // Add an IP to the blocklist by hand. A never-block address is refused by the backend, and the
+  // explanation reaches the admin as a notification rather than as a silently missing row.
+  blockIp(): void {
+    this.dialogService
+      .openDialog({ component: BlocklistBlockDialogComponent })
+      .afterClosed()
+      .subscribe({
+        next: (result) => {
+          if (!result) {
+            return;
+          }
+          this.casService
+            .addBlocklistEntry({ ip: result.ip, duration_seconds: result.durationSeconds ?? undefined })
+            .subscribe({
+              next: (entry) => {
+                if (entry) {
+                  this.casService.blocklistResource.reload();
+                }
+              }
+            });
+        }
+      });
+  }
+
   blockFilterPredicate() {
     return (element: BlocklistEntry, filterValue: string): boolean => {
       if (!filterValue) {
@@ -133,7 +162,8 @@ export class BlocklistComponent {
         element.identifier.toLowerCase().includes(lowerFilter) ||
         element.blocked_at.toLowerCase().includes(lowerFilter) ||
         (element.block_expires_at ?? "").toLowerCase().includes(lowerFilter) ||
-        this.blockState(element).toLowerCase().includes(lowerFilter)
+        this.blockState(element).toLowerCase().includes(lowerFilter) ||
+        this.blockCauseLabel(element).toLowerCase().includes(lowerFilter)
       );
     };
   }
@@ -193,6 +223,8 @@ export class BlocklistComponent {
     switch (key) {
       case "state":
         return this.blockState(row);
+      case "cause":
+        return this.blockCauseLabel(row).toLowerCase();
       case "block_expires_at":
       case "blocked_at": {
         const timestamp = Date.parse(String((row as unknown as Record<string, unknown>)[key] ?? ""));

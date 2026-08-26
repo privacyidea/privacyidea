@@ -287,6 +287,112 @@ class ConditionalAccessStateApiTestCase(MyApiTestCase):
         res = self._request("lockout/users", auth_token=self.at_user)
         self.assertEqual(401, res.status_code, res.json)
 
+    # --- POST lockout/user (the manual lock) ----------------------------------
+
+    def test_set_user_lockout_locks_permanently_by_default(self):
+        res = self._request("lockout/user", method="POST",
+                            json_data={"user": "cornelius", "realm": self.realm1})
+        self.assertEqual(200, res.status_code, res.json)
+        value = res.json["result"]["value"]
+        self.assertTrue(value["permanent"])
+        self.assertEqual("MANUAL", value["lock_cause"])
+        self.assertEqual("MANUAL", UserLockoutState.query.one().lock_cause)
+
+    def test_set_user_lockout_with_a_duration(self):
+        res = self._request("lockout/user", method="POST",
+                            json_data={"user": "cornelius", "realm": self.realm1, "duration_seconds": 600})
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertFalse(res.json["result"]["value"]["permanent"])
+
+    def test_set_user_lockout_rejects_a_bad_duration(self):
+        for duration in ("soon", 0, -5):
+            res = self._request("lockout/user", method="POST",
+                                json_data={"user": "cornelius", "realm": self.realm1,
+                                           "duration_seconds": duration})
+            self.assertEqual(400, res.status_code, res.json)
+        self.assertEqual(0, UserLockoutState.query.count())
+
+    def test_set_user_lockout_by_uid_needs_a_resolver(self):
+        res = self._request("lockout/user", method="POST",
+                            json_data={"user_id": self.user.uid, "realm": self.realm1})
+        self.assertEqual(400, res.status_code, res.json)
+
+    def test_set_user_lockout_for_an_unknown_user_is_400(self):
+        res = self._request("lockout/user", method="POST",
+                            json_data={"user": "nosuchuser", "realm": self.realm1})
+        self.assertEqual(400, res.status_code, res.json)
+        self.assertEqual(0, UserLockoutState.query.count())
+
+    def test_set_user_lockout_is_visible_on_the_list(self):
+        self._request("lockout/user", method="POST", json_data={"user": "cornelius", "realm": self.realm1})
+        page = self._request("lockout/users", query_string={"causes": "MANUAL"}).json["result"]["value"]
+        self.assertEqual(1, page["count"])
+        self.assertEqual("MANUAL", page["locked_users"][0]["lock_cause"])
+        page = self._request("lockout/users", query_string={"causes": "POLICY"}).json["result"]["value"]
+        self.assertEqual(0, page["count"])
+
+    def test_list_locked_users_rejects_an_unknown_cause(self):
+        res = self._request("lockout/users", query_string={"causes": "ADMIN"})
+        self.assertEqual(400, res.status_code, res.json)
+
+    # --- POST blocklist (the manual block) -------------------------------------
+
+    def test_add_blocklist_entry(self):
+        res = self._request("blocklist", method="POST",
+                            json_data={"ip": "203.0.113.9", "duration_seconds": 300})
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertEqual("MANUAL", res.json["result"]["value"]["block_cause"])
+        self.assertEqual("203.0.113.9", BlockList.query.one().ip)
+
+    def test_add_blocklist_entry_refuses_a_never_block_ip(self):
+        res = self._request("blocklist", method="POST", json_data={"ip": "127.0.0.1"})
+        self.assertEqual(400, res.status_code, res.json)
+        self.assertEqual(0, BlockList.query.count())
+
+    def test_add_blocklist_entry_rejects_an_invalid_ip(self):
+        res = self._request("blocklist", method="POST", json_data={"ip": "not-an-ip"})
+        self.assertEqual(400, res.status_code, res.json)
+
+    def test_read_and_reset_do_not_grant_set(self):
+        # Clearing a restriction is recoverable, imposing one is not, so the rights are separate.
+        set_policy("ca_state_no_set", scope=SCOPE.ADMIN,
+                   action=f"{PolicyAction.USER_LOCKOUT_READ},{PolicyAction.USER_LOCKOUT_RESET},"
+                          f"{PolicyAction.BLOCKLIST_READ},{PolicyAction.BLOCKLIST_RESET}")
+        try:
+            lock = self._request("lockout/user", method="POST",
+                                 json_data={"user": "cornelius", "realm": self.realm1})
+            self.assertEqual(403, lock.status_code, lock.json)
+            block = self._request("blocklist", method="POST", json_data={"ip": "203.0.113.9"})
+            self.assertEqual(403, block.status_code, block.json)
+        finally:
+            delete_policy("ca_state_no_set")
+        self.assertEqual(0, UserLockoutState.query.count())
+        self.assertEqual(0, BlockList.query.count())
+
+    def test_user_lockout_set_does_not_grant_blocklist_set(self):
+        set_policy("ca_state_lock_only", scope=SCOPE.ADMIN, action=str(PolicyAction.USER_LOCKOUT_SET))
+        try:
+            lock = self._request("lockout/user", method="POST",
+                                 json_data={"user": "cornelius", "realm": self.realm1})
+            self.assertEqual(200, lock.status_code, lock.json)
+            block = self._request("blocklist", method="POST", json_data={"ip": "203.0.113.9"})
+            self.assertEqual(403, block.status_code, block.json)
+        finally:
+            delete_policy("ca_state_lock_only")
+
+    def test_set_user_lockout_outside_the_visibility_scope_is_refused(self):
+        # A write has exactly one target, so an out-of-scope one is refused loudly rather than silently
+        # doing nothing - a lock that did not happen must not look like one that did.
+        set_policy("ca_state_scoped_set", scope=SCOPE.ADMIN, action=str(PolicyAction.USER_LOCKOUT_SET),
+                   user="someoneelse")
+        try:
+            res = self._request("lockout/user", method="POST",
+                                json_data={"user": "cornelius", "realm": self.realm1})
+            self.assertEqual(403, res.status_code, res.json)
+        finally:
+            delete_policy("ca_state_scoped_set")
+        self.assertEqual(0, UserLockoutState.query.count())
+
     def test_read_action_does_not_grant_reset(self):
         # An admin policy that grants only the read actions must block the resets.
         self._lock_user(utc_now() + timedelta(seconds=600))

@@ -79,6 +79,7 @@ function makeBlock(overrides: Partial<BlocklistEntry>): BlocklistEntry {
     permanent: false,
     block_expires_at: new Date(Date.now() + MS_PER_HOUR).toISOString(),
     seconds_remaining: 600,
+    block_cause: "POLICY",
     blocked_at: hoursAgo(2),
     ...overrides
   };
@@ -234,6 +235,7 @@ describe("ConditionalAccessWidgetComponent", () => {
         permanent: false,
         lock_expires_at: new Date(Date.now() + MS_PER_HOUR).toISOString(),
         seconds_remaining: 600,
+        lock_cause: "POLICY",
         locked_at: hoursAgo(1)
       }
     ]);
@@ -260,6 +262,7 @@ describe("ConditionalAccessWidgetComponent", () => {
         permanent: true,
         lock_expires_at: null,
         seconds_remaining: null,
+        lock_cause: "POLICY",
         locked_at: hoursAgo(400)
       }
     ]);
@@ -358,6 +361,7 @@ describe("ConditionalAccessWidgetComponent", () => {
           permanent: false,
           lock_expires_at: new Date(Date.now() + MS_PER_HOUR).toISOString(),
           seconds_remaining: 600,
+          lock_cause: "POLICY",
           locked_at: hoursAgo(4)
         }
       ]);

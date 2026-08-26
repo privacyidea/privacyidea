@@ -1,0 +1,22 @@
+@use "styles";
+
+.lock-dialog-intro {
+  margin: 0 0 16px;
+
+  strong {
+    margin: 0 4px;
+  }
+}
+
+// The two lock modes read as a vertical list of choices rather than a row of buttons.
+.lock-dialog-modes {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.lock-dialog-duration {
+  display: flex;
+  gap: 16px;
+  margin-top: 16px;
+}

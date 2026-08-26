@@ -4,6 +4,7 @@ Create the block_list table, which records a blocked source IP written by the
 BLOCK_IP conditional-access action and consulted by the authentication
 pre-check on the next inbound request - the same live-state pattern as
 user_lockout_state, but keyed by source IP. The load-bearing field is
+block_cause records whether the engine or an administrator imposed the block.
 block_expires_at: a row whose block_expires_at lies in the future means the IP
 is currently blocked; a NULL value means a permanent block.
 
@@ -41,6 +42,7 @@ def upgrade():
         'block_list',
         sa.Column('ip', sa.Unicode(length=50), nullable=False),
         sa.Column('block_expires_at', sa.DateTime(), nullable=True),
+        sa.Column('block_cause', sa.Unicode(length=20), nullable=False, server_default='POLICY'),
         sa.Column('blocked_at', sa.DateTime(), nullable=False),
         sa.PrimaryKeyConstraint('ip'),
     )

@@ -242,8 +242,10 @@ class PolicyAction:
     LOCKOUT_POLICY_WRITE = "lockout_policy_write"
     USER_LOCKOUT_READ = "user_lockout_read"
     USER_LOCKOUT_RESET = "user_lockout_reset"
+    USER_LOCKOUT_SET = "user_lockout_set"
     BLOCKLIST_READ = "blocklist_read"
     BLOCKLIST_RESET = "blocklist_reset"
+    BLOCKLIST_SET = "blocklist_set"
 
 
 class PasskeyLoginButtonOptions:

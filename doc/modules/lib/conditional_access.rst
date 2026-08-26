@@ -36,6 +36,13 @@ Conditional access engine
    :members:
    :undoc-members:
 
+Live lockout state
+~~~~~~~~~~~~~~~~~~~
+
+.. automodule:: privacyidea.lib.conditional_access.lockout_state
+   :members:
+   :undoc-members:
+
 Per-request context
 ~~~~~~~~~~~~~~~~~~~~
 

@@ -260,6 +260,28 @@
         </td>
       </ng-container>
 
+      <!-- Lock cause column -->
+      <ng-container matColumnDef="cause">
+        <th
+          *matHeaderCellDef
+          mat-header-cell>
+          <span class="header-cell">
+            <span i18n>Cause</span>
+            <app-multi-select-filter
+              i18n-label
+              label="Cause"
+              [options]="causeOptions"
+              [selected]="selectedFilterValues('causes')"
+              (selectionChange)="setFilterValues('causes', $event)" />
+          </span>
+        </th>
+        <td
+          *matCellDef="let row"
+          mat-cell>
+          {{ lockCauseLabel(row) }}
+        </td>
+      </ng-container>
+
       <!-- Lock expiry column -->
       <ng-container matColumnDef="lock_expires_at">
         <th

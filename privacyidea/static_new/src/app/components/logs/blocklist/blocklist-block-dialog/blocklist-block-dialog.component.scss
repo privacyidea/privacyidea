@@ -1,0 +1,24 @@
+@use "styles";
+
+.block-dialog-intro {
+  margin: 0 0 16px;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.block-dialog-ip {
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+// The two block modes read as a vertical list of choices rather than a row of buttons.
+.block-dialog-modes {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.block-dialog-duration {
+  display: flex;
+  gap: 16px;
+  margin-top: 16px;
+}

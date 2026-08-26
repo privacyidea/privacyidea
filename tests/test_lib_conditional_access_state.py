@@ -25,7 +25,9 @@ from datetime import timedelta
 from privacyidea.lib.conditional_access.authentication_log import AuthenticationLogVisibilityScope
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.conditional_access.lockout_state import (
+    block_ip,
     get_user_lockout_dict,
+    lock_user,
     list_blocklist,
     list_locked_users,
     list_locked_users_paginate,
@@ -83,6 +85,84 @@ class LockoutStateTestCase(MyTestCase):
     def _block(self, ip, block_expires_at):
         db.session.add(BlockList(ip=ip, block_expires_at=block_expires_at))
         db.session.commit()
+
+    # --- lock_user / block_ip (the manual write path) -------------------------
+
+    def test_lock_user_writes_a_permanent_manual_lock(self):
+        # Permanent is the default: an admin locking by hand is reacting to an incident, and a lock that
+        # quietly expires on its own would be the surprising outcome.
+        lock = lock_user(self.user)
+        self.assertTrue(lock["permanent"])
+        self.assertEqual("MANUAL", lock["lock_cause"])
+        row = db.session.query(UserLockoutState).one()
+        self.assertIsNone(row.lock_expires_at)
+        self.assertEqual("MANUAL", row.lock_cause)
+        self.assertEqual(self.user.login, row.username)
+
+    def test_lock_user_with_a_duration_sets_the_expiry(self):
+        lock = lock_user(self.user, duration_seconds=600)
+        self.assertFalse(lock["permanent"])
+        self.assertAlmostEqual(600, lock["seconds_remaining"], delta=5)
+
+    def test_lock_user_rejects_a_non_positive_duration(self):
+        for duration in (0, -1, True, "600"):
+            self.assertRaises(ParameterError, lock_user, self.user, duration)
+        self.assertEqual(0, db.session.query(UserLockoutState).count())
+
+    def test_lock_user_rejects_an_unresolved_user(self):
+        # The row is keyed on (resolver, uid, realm), so a user that does not resolve has no key.
+        self.assertRaises(ParameterError, lock_user, User())
+
+    def test_manual_lock_is_authoritative_in_both_directions(self):
+        # The engine refuses to downgrade a permanent lock so that the order two policies happen to fire in
+        # cannot decide the outcome. An admin stating the outcome is not a race, so the write stands.
+        lock_user(self.user)
+        self.assertTrue(get_user_lockout_dict(self.user)["permanent"])
+        # A permanent lock is replaced by a timed one, which the engine's upsert would decline as a weakening.
+        lock_user(self.user, duration_seconds=60)
+        self.assertFalse(get_user_lockout_dict(self.user)["permanent"])
+        lock_user(self.user)
+        self.assertTrue(get_user_lockout_dict(self.user)["permanent"])
+
+    def test_lock_user_replaces_a_policy_lock_and_its_cause(self):
+        self._lock(utc_now() + timedelta(seconds=3600))
+        self.assertEqual("POLICY", db.session.query(UserLockoutState).one().lock_cause)
+        lock_user(self.user, duration_seconds=60)
+        self.assertEqual("MANUAL", db.session.query(UserLockoutState).one().lock_cause)
+
+    def test_block_ip_writes_a_manual_block(self):
+        entry = block_ip("203.0.113.9", duration_seconds=300)
+        self.assertEqual("203.0.113.9", entry["identifier"])
+        self.assertEqual("MANUAL", entry["block_cause"])
+        self.assertFalse(entry["permanent"])
+        self.assertEqual("MANUAL", db.session.query(BlockList).one().block_cause)
+
+    def test_block_ip_refuses_a_never_block_address_loudly(self):
+        # The engine skips one silently so an automatic action cannot lock out everyone behind a shared
+        # proxy; an admin asking for a block has to be told it did not happen.
+        self.assertRaisesRegex(ParameterError, "never-block", block_ip, "127.0.0.1")
+        self.assertEqual(0, db.session.query(BlockList).count())
+
+    def test_block_ip_rejects_an_invalid_address(self):
+        self.assertRaisesRegex(ParameterError, "not a valid IP address", block_ip, "not-an-ip")
+
+    # --- the lock cause --------------------------------------------------------
+
+    def test_locked_user_dict_reports_the_cause(self):
+        self._lock(None)
+        self.assertEqual("POLICY", list_locked_users()[0]["lock_cause"])
+
+    def test_list_locked_users_filters_by_cause(self):
+        self._lock(None)
+        lock_user(User("selfservice", self.realm1, self.resolvername1))
+        self.assertEqual(2, len(list_locked_users()))
+        self.assertEqual(["MANUAL"], [row["lock_cause"] for row in list_locked_users(causes=["MANUAL"])])
+        self.assertEqual(["POLICY"], [row["lock_cause"] for row in list_locked_users(causes=["POLICY"])])
+
+    def test_list_locked_users_rejects_an_unknown_cause(self):
+        # Ignoring it would widen the result to every cause, so a typo would return more than was asked for.
+        self._lock(None)
+        self.assertRaisesRegex(ParameterError, "Unknown lock cause", list_locked_users, causes=["ADMIN"])
 
     # --- list_locked_users ----------------------------------------------------
 

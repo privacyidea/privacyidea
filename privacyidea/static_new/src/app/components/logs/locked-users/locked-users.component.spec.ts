@@ -53,6 +53,7 @@ const mockEntry: LockedUserEntry = {
   permanent: false,
   lock_expires_at: "2026-01-01T10:00:00Z",
   seconds_remaining: 3600,
+  lock_cause: "POLICY",
   locked_at: "2026-01-01T09:00:00Z"
 };
 
