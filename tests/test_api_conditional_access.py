@@ -359,7 +359,8 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         self.assertEqual(0, self._failcount())
         entries = assert_authentication_log([AuthEventType.IP_BLOCKED])
         assert_authentication_log_entry(entries[AuthEventType.IP_BLOCKED], user=self.user,
-                                        source_ip="203.0.113.7")
+                                        source_ip="203.0.113.7", peer_ip="203.0.113.7",
+                                        source_ip_source="REMOTE_ADDR")
 
         # The block is per-IP: the same user from a clean IP still authenticates
         # (the valid OTP was never consumed by the rejected request above).
@@ -514,7 +515,8 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         body = self._check({"user": "cornelius", "pass": "pin755224"}, remote_addr="203.0.113.7")
         self.assertFalse(body["result"]["value"], body)
         entries = assert_authentication_log([AuthEventType.IP_BLOCKED])
-        assert_authentication_log_entry(entries[AuthEventType.IP_BLOCKED], user=self.user, source_ip="203.0.113.7")
+        assert_authentication_log_entry(entries[AuthEventType.IP_BLOCKED], user=self.user, source_ip="203.0.113.7", peer_ip="203.0.113.7",
+                                        source_ip_source="REMOTE_ADDR")
 
     def test_deny_with_lower_threshold_shadows_lock_policy(self):
         # A DENY threshold below a LOCK_USER threshold catches first: once met,
@@ -573,7 +575,8 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         body = self._trigger_challenge(remote_addr="203.0.113.7")
         self.assertFalse(body["result"]["value"], body)
         entries = assert_authentication_log([AuthEventType.IP_BLOCKED])
-        assert_authentication_log_entry(entries[AuthEventType.IP_BLOCKED], user=self.user, source_ip="203.0.113.7")
+        assert_authentication_log_entry(entries[AuthEventType.IP_BLOCKED], user=self.user, source_ip="203.0.113.7", peer_ip="203.0.113.7",
+                                        source_ip_source="REMOTE_ADDR")
 
     def test_triggerchallenge_denied_by_policy_rejected(self):
         # A default-deny policy (threshold 0) rejects every request pre-auth.
@@ -714,7 +717,8 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         self.assertIn("passkey", body["detail"], body)
         entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED])
         assert_authentication_log_entry(entries[AuthEventType.CHALLENGE_TRIGGERED], user=None,
-                                        source_ip="203.0.113.7",
+                                        source_ip="203.0.113.7", peer_ip="203.0.113.7",
+                                        source_ip_source="REMOTE_ADDR",
                                         transaction_id=body["detail"]["transaction_id"])
         challenges_before = db.session.query(Challenge).count()
 
@@ -729,7 +733,8 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         # row remains, and the second contributes an untrackable IP_BLOCKED one.
         entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.IP_BLOCKED],
                                             same_attempt=False)
-        assert_authentication_log_entry(entries[AuthEventType.IP_BLOCKED], user=None, source_ip="203.0.113.7")
+        assert_authentication_log_entry(entries[AuthEventType.IP_BLOCKED], user=None, source_ip="203.0.113.7", peer_ip="203.0.113.7",
+                                        source_ip_source="REMOTE_ADDR")
 
     def test_initialize_cannot_feed_the_counter_that_blocked_it(self):
         # /validate/initialize writes a trackable CHALLENGE_TRIGGERED row.
@@ -745,7 +750,8 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         body = self._initialize(remote_addr="203.0.113.7")
         entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED])
         assert_authentication_log_entry(entries[AuthEventType.CHALLENGE_TRIGGERED], user=None,
-                                        source_ip="203.0.113.7",
+                                        source_ip="203.0.113.7", peer_ip="203.0.113.7",
+                                        source_ip_source="REMOTE_ADDR",
                                         transaction_id=body["detail"]["transaction_id"])
         self.assertFalse(is_ip_blocked("203.0.113.7"))
 
@@ -753,7 +759,8 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         # attempts (same_attempt=False).
         body = self._initialize(remote_addr="203.0.113.7")
         entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED] * 2, same_attempt=False)
-        assert_authentication_log_entry(entries.all[1], user=None, source_ip="203.0.113.7",
+        assert_authentication_log_entry(entries.all[1], user=None, source_ip="203.0.113.7", peer_ip="203.0.113.7",
+                                        source_ip_source="REMOTE_ADDR",
                                         transaction_id=body["detail"]["transaction_id"])
         self.assertTrue(is_ip_blocked("203.0.113.7"))
 
@@ -1020,7 +1027,8 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
         self.assertEqual("temporary", res.json["detail"]["restriction"], res.json)
         entries = assert_authentication_log([AuthEventType.IP_BLOCKED])
         assert_authentication_log_entry(entries[AuthEventType.IP_BLOCKED], user=self.user,
-                                        source_ip="203.0.113.7")
+                                        source_ip="203.0.113.7", peer_ip="203.0.113.7",
+                                        source_ip_source="REMOTE_ADDR")
 
     def test_blocked_local_admin_is_recorded_as_such(self):
         # The role has to survive the pre-check, which runs before /auth decides its admin/user branch: it reads the
@@ -1035,7 +1043,8 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
 
         entries = assert_authentication_log([AuthEventType.IP_BLOCKED])
         assert_authentication_log_entry(entries[AuthEventType.IP_BLOCKED], user=User(self.testadmin),
-                                        source_ip="203.0.113.7", user_role=AuthLogUserRole.ADMIN_INTERNAL)
+                                        source_ip="203.0.113.7", peer_ip="203.0.113.7",
+                                        source_ip_source="REMOTE_ADDR", user_role=AuthLogUserRole.ADMIN_INTERNAL)
 
     def test_permanently_blocked_ip_message_at_auth(self):
         # A permanent block (no expiry) points the user at the administrator, no minutes.

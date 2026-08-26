@@ -42,7 +42,10 @@ authentication_log_column_length = {
     "user_role": 30,
     "event_type": 40,
     "source_ip": 50,
+    "peer_ip": 50,
+    "source_ip_source": 40,
     "client_label": 1024,
+    "client_label_source": 40,
     "serial": 1024,
     # transaction_id (and attempt_id) originate in the challenge table, whose transaction_id is Unicode(64), so a real
     # value never exceeds 64 here either.
@@ -59,6 +62,24 @@ class AuthenticationLog(MethodsMixin, db.Model):
     multi-challenge flow where answering one challenge triggers another - share an ``attempt_id``; ordering an
     attempt's rows by ``id`` reconstructs the full chain, and each row's own ``transaction_id`` still links back to the
     challenge table.
+
+    The client of a request is recorded as what was decided *and* how it was decided:
+
+    * ``source_ip`` is the effective client IP - the one authorization is evaluated against and the only one the
+      conditional-access engine counts and enforces on. It is unchanged by the provenance columns below.
+    * ``peer_ip`` is the TCP peer the request actually arrived from (``request.remote_addr``), which is the same
+      address unless a proxy mapping moved it. It is indexed, because "what came from this machine" is the
+      second question a forensic query asks.
+    * ``source_ip_source`` names where ``source_ip`` was taken from, as a
+      :class:`~privacyidea.lib.utils.ClientIpSource` value. ``REMOTE_ADDR_UNMAPPED`` is deliberately distinct
+      from ``REMOTE_ADDR``: the peer was used *despite* an ``OverrideAuthorizationClient`` being configured.
+    * ``ip_chain`` is the whole path that was considered, recorded even when no override is configured and the
+      ``X-Forwarded-For`` header is therefore ignored - recording what a request claimed is not trusting it.
+      Everything past ``peer_ip`` is client-supplied and must never gate a decision.
+    * ``client_label`` is the ``client_id`` parameter or the User-Agent, and ``client_label_source`` says which.
+
+    **NULL in any of the four provenance columns means the row predates them**, and nothing may be inferred
+    from it - in particular a NULL ``source_ip_source`` must never be rendered as "direct connection".
     """
     __tablename__ = "authentication_log"
     __table_args__ = (
@@ -68,6 +89,9 @@ class AuthenticationLog(MethodsMixin, db.Model):
         # event_type predicate, so each needs timestamp right after the subject column(s).
         Index("ix_authlog_user_time", "resolver", "uid", "realm", "timestamp"),
         Index("ix_authlog_ip_time", "source_ip", "timestamp"),
+        # The TCP peer is the second pivot a forensic query starts from - "what came from this machine",
+        # whatever it claimed to be forwarding for. 50*4 + 8 = 208 bytes, well under the same key limit.
+        Index("ix_authlog_peer_ip_time", "peer_ip", "timestamp"),
     )
     id: Mapped[int] = mapped_column(BigIntegerType, Identity(always=False), primary_key=True)
     resolver: Mapped[str | None] = mapped_column(case_sensitive_unicode(authentication_log_column_length["resolver"]))
@@ -81,8 +105,18 @@ class AuthenticationLog(MethodsMixin, db.Model):
     timestamp: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
     source_ip: Mapped[str | None] = mapped_column(
         case_sensitive_unicode(authentication_log_column_length["source_ip"]))
+    peer_ip: Mapped[str | None] = mapped_column(
+        case_sensitive_unicode(authentication_log_column_length["peer_ip"]))
+    source_ip_source: Mapped[str | None] = mapped_column(
+        case_sensitive_unicode(authentication_log_column_length["source_ip_source"]))
     client_label: Mapped[str | None] = mapped_column(
         case_sensitive_unicode(authentication_log_column_length["client_label"]))
+    client_label_source: Mapped[str | None] = mapped_column(
+        case_sensitive_unicode(authentication_log_column_length["client_label_source"]))
+    # The path privacyIDEA considered when deriving source_ip, peer first and the claimed origin last:
+    # ``[{"ip": "...", "source": "REMOTE_ADDR|X_FORWARDED_FOR|CLIENT_PARAM", "effective": true}, ...]``.
+    # Written only when there is more than one hop, so NULL means the path was exactly ``[peer_ip]``.
+    ip_chain: Mapped[list | None] = mapped_column(JSON)
     serial: Mapped[str | None] = mapped_column(case_sensitive_unicode(authentication_log_column_length["serial"]))
     transaction_id: Mapped[str | None] = mapped_column(
         case_sensitive_unicode(authentication_log_column_length["transaction_id"]))

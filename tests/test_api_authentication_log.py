@@ -334,6 +334,37 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
         self.assertEqual(1, value["count"])
         self.assertEqual("vpn", value["auth_logs"][0]["client_label"])
 
+    def test_filter_by_peer_ip_and_source(self):
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res", uid="1", realm=self.realm1,
+                                 source_ip="203.0.113.5", peer_ip="10.0.0.17",
+                                 source_ip_source="X_FORWARDED_FOR")
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res", uid="2", realm=self.realm1,
+                                 source_ip="10.0.0.18", peer_ip="10.0.0.18", source_ip_source="REMOTE_ADDR")
+        db.session.commit()
+
+        value = self._get({"peer_ip": "10.0.0.17"})["result"]["value"]
+        self.assertEqual(1, value["count"])
+        self.assertEqual("203.0.113.5", value["auth_logs"][0]["source_ip"])
+        value = self._get({"source_ip_source": "REMOTE_ADDR"})["result"]["value"]
+        self.assertEqual(1, value["count"])
+
+    def test_entries_carry_the_client_derivation(self):
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res", uid="1", realm=self.realm1,
+                                 source_ip="203.0.113.5", peer_ip="10.0.0.17",
+                                 source_ip_source="X_FORWARDED_FOR", client_label="myapp",
+                                 client_label_source="client_id",
+                                 ip_chain=[{"ip": "10.0.0.17", "source": "REMOTE_ADDR"},
+                                           {"ip": "203.0.113.5", "source": "X_FORWARDED_FOR",
+                                            "effective": True}])
+        db.session.commit()
+
+        entry = self._get({})["result"]["value"]["auth_logs"][0]
+        self.assertEqual("10.0.0.17", entry["peer_ip"])
+        self.assertEqual("X_FORWARDED_FOR", entry["source_ip_source"])
+        self.assertEqual("client_id", entry["client_label_source"])
+        self.assertEqual(2, len(entry["ip_chain"]))
+        self.assertTrue(entry["ip_chain"][1]["effective"])
+
     def test_filter_by_attempt_id(self):
         log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res", uid="1", realm=self.realm1,
                                  attempt_id="att-x")
