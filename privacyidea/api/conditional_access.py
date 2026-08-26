@@ -268,8 +268,12 @@ def create_policy():
         stage thresholds. Required.
     :jsonparam stages: non-empty list of stage definitions, each
         ``{"failure_threshold": <int>, "priority": <int, optional>,
-        "actions": [{"action_type": <LockoutAction>, "action_value": <any>}]}``.
-        Required.
+        "actions": [{"action_type": <LockoutAction>, "action_value": <per action type>}]}``.
+        Required. ``action_value`` is checked against what the action can actually do:
+        ``LOCK_USER``/``BLOCK_IP`` need a positive number of seconds (an integer, a
+        numeric string, or an object with ``duration_seconds``), ``EMAIL_ADMIN``/
+        ``EMAIL_USER`` an object with a non-empty ``subject`` and ``body``, and the
+        ``PERMANENT_*``/``ALLOW``/``DENY`` actions no value at all.
     :jsonparam enabled: whether the policy is evaluated (default true).
     :jsonparam dry_run: log-only mode, nothing is enforced (default false).
     :jsonparam priority: evaluation priority; lower numbers are evaluated first.
@@ -283,7 +287,8 @@ def create_policy():
         See :http:get:`/conditionalaccess/conditiontypes` for the available types
         and their valid values.
     :status 200: the id of the new policy in ``result.value``
-    :status 400: invalid or missing parameter
+    :status 400: invalid or missing parameter, including an ``action_value`` the named action
+        could not act on
     """
     params = request.all_data
     name = get_required(params, "name")

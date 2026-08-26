@@ -87,7 +87,7 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
                 "counter_types_to_track": [str(AuthEventType.PIN_FAIL)],
                 "stages": [{"failure_threshold": 5,
                             "actions": [{"action_type": str(LockoutAction.LOCK_USER),
-                                         "action_value": {"lock_duration_seconds": 300}}]}]}
+                                         "action_value": {"duration_seconds": 300}}]}]}
         body.update(overrides)
         return body
 
@@ -117,6 +117,33 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
         body["stages"][0]["actions"][0]["action_type"] = "NOPE"
         res = self._request("policy", method="POST", json_data=body)
         self.assertEqual(400, res.status_code, res.json)
+
+    def test_create_lock_user_without_duration_is_400(self):
+        # An action the engine cannot act on is rejected at save time rather than stored and skipped at runtime.
+        body = self._policy_body()
+        body["stages"][0]["actions"][0]["action_value"] = None
+        res = self._request("policy", method="POST", json_data=body)
+        self.assertEqual(400, res.status_code, res.json)
+        self.assertIn("duration_seconds", res.json["result"]["error"]["message"])
+
+    def test_create_lock_user_with_legacy_duration_key_is_400(self):
+        # The key the module docstring used to advertise; the engine never read it, so a policy carrying it
+        # locked nobody. The error names it, because that is the mistake the admin made.
+        body = self._policy_body()
+        body["stages"][0]["actions"][0]["action_value"] = {"lock_duration_seconds": 300}
+        res = self._request("policy", method="POST", json_data=body)
+        self.assertEqual(400, res.status_code, res.json)
+        self.assertIn("lock_duration_seconds", res.json["result"]["error"]["message"])
+
+    def test_patch_enable_still_works_with_a_stored_bad_action_value(self):
+        # Validation is on the write path only: a policy whose stored action_value predates this rule stays
+        # switchable instead of being frozen until it is repaired (which is what the WebUI's toggles rely on).
+        policy_id = self._create_policy()
+        action = db.session.query(LockoutStageAction).one()
+        action.action_value = {"lock_duration_seconds": 300}
+        db.session.commit()
+        res = self._request(f"policy/{policy_id}", method="PATCH", json_data={"enabled": False})
+        self.assertEqual(200, res.status_code, res.json)
 
     def test_create_duplicate_name_is_400(self):
         self._create_policy(name="Dup")
@@ -268,10 +295,10 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
             name="Retrig",
             stages=[{"failure_threshold": 8,
                      "actions": [{"action_type": str(LockoutAction.LOCK_USER),
-                                  "action_value": {"lock_duration_seconds": 300},
+                                  "action_value": {"duration_seconds": 300},
                                   "retrigger_above_threshold": True},
                                  {"action_type": str(LockoutAction.EMAIL_ADMIN),
-                                  "action_value": {"smtp_identifier": "x"},
+                                  "action_value": {"smtp_identifier": "x", "subject": "s", "body": "b"},
                                   "retrigger_above_threshold": False}]}])
         res = self._request("policy", method="POST", json_data=body)
         self.assertEqual(200, res.status_code, res.json)
@@ -417,7 +444,7 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
                 "counter_types_to_track": json.dumps(["PIN_FAIL"]),
                 "stages": json.dumps([{"failure_threshold": 5,
                                        "actions": [{"action_type": "LOCK_USER",
-                                                    "action_value": {"lock_duration_seconds": 60}}]}])}
+                                                    "action_value": {"duration_seconds": 60}}]}])}
         with self.app.test_request_context("/conditionalaccess/policy", method="POST", data=data,
                                            headers={"Authorization": self.at}):
             res = self.app.full_dispatch_request()
@@ -451,7 +478,7 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
             counter_types_to_track=[str(AuthEventType.PIN_FAIL)],
             stages=[{"failure_threshold": 5,
                      "actions": [{"action_type": str(LockoutAction.LOCK_USER),
-                                  "action_value": {"lock_duration_seconds": 300}}]}],
+                                  "action_value": {"duration_seconds": 300}}]}],
             target="user", priority=priority) for priority in priorities]
 
     def test_reorder_swaps_two_policies(self):

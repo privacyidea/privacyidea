@@ -302,6 +302,14 @@
         Some actions are not allowed for the selected target. Change the target or remove those actions.
       </p>
     }
+    @if (!actionValuesValid()) {
+      <p
+        class="ca-stages-error"
+        i18n>
+        Some actions are missing a value they need to run: a lock or block needs a duration, an email needs a
+        subject and body. Open the action to fix it.
+      </p>
+    }
     <app-conditional-access-stages-list
       [stages]="editPolicy().stages"
       [target]="editPolicy().target"

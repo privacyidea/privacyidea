@@ -61,7 +61,7 @@ const mockPolicy: LockoutPolicy = {
   target: "user",
   count_mode: "PER_REQUEST",
   counter_types_to_track: ["PIN_FAIL"],
-  stages: [{ failure_threshold: 5, priority: 1, actions: [{ action_type: "LOCK_USER", action_value: null }] }],
+  stages: [{ failure_threshold: 5, priority: 1, actions: [{ action_type: "LOCK_USER", action_value: 600 }] }],
   conditions: []
 };
 
@@ -75,7 +75,7 @@ const EMPTY_TEMPLATE_POLICY: LockoutPolicySaveParams = {
   target: "user",
   count_mode: "PER_REQUEST",
   counter_types_to_track: ["PASSWORD_FAIL"],
-  stages: [{ failure_threshold: 10, priority: 1, actions: [{ action_type: "LOCK_USER", action_value: null }] }]
+  stages: [{ failure_threshold: 10, priority: 1, actions: [{ action_type: "LOCK_USER", action_value: 600 }] }]
 };
 
 describe("ConditionalAccessEditPageComponent — edit mode", () => {
@@ -540,7 +540,7 @@ describe("ConditionalAccessEditPageComponent — new mode", () => {
           target: "user",
           count_mode: "PER_REQUEST",
           counter_types_to_track: ["PASSWORD_FAIL"],
-          stages: [{ failure_threshold: 10, priority: 1, actions: [{ action_type: "LOCK_USER", action_value: null }] }]
+          stages: [{ failure_threshold: 10, priority: 1, actions: [{ action_type: "LOCK_USER", action_value: 600 }] }]
         }
       }
     ]);
@@ -639,6 +639,29 @@ describe("ConditionalAccessEditPageComponent — new mode", () => {
 
     it("should fall back to the raw value for an unknown target", () => {
       expect(component.targetLabel("realm")).toBe("realm");
+    });
+  });
+
+  describe("actionValuesValid", () => {
+    // Mirrors the backend's _ACTION_VALUE_VALIDATORS: an action whose value the engine could not act on is a
+    // 400 on save, so the editor blocks it and says why instead of letting the round-trip fail.
+    const stageWithValue = (actionValue: unknown) => [
+      {
+        failure_threshold: 5,
+        priority: 1,
+        actions: [{ action_type: "LOCK_USER" as LockoutActionType, action_value: actionValue }]
+      }
+    ];
+
+    it("should block saving while a restricting action has no duration", () => {
+      component.onStagesChange(stageWithValue(null));
+      expect(component.actionValuesValid()).toBe(false);
+      expect(component.canSave()).toBe(false);
+    });
+
+    it("should allow saving once the duration is set", () => {
+      component.onStagesChange(stageWithValue(600));
+      expect(component.actionValuesValid()).toBe(true);
     });
   });
 

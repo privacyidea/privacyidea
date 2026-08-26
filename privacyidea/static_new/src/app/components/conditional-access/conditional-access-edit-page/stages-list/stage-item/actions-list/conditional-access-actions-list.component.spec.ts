@@ -33,7 +33,7 @@ describe("ConditionalAccessActionsListComponent", () => {
   let fixture: ComponentFixture<ConditionalAccessActionsListComponent>;
 
   const actions: LockoutStageAction[] = [
-    { action_type: "LOCK_USER", action_value: { lock_duration_seconds: 600 } },
+    { action_type: "LOCK_USER", action_value: 600 },
     { action_type: "EMAIL_ADMIN", action_value: null }
   ];
 

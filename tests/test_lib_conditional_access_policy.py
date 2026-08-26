@@ -30,6 +30,7 @@ from privacyidea.lib.conditional_access.conditions import (ConditionOperator, Co
                                                            get_condition_types)
 from privacyidea.lib.conditional_access.engine import LockoutAction, LockoutTarget
 from privacyidea.lib.conditional_access.lockout_policy import (
+    _ACTION_VALUE_VALIDATORS,
     _ACTIONS_BY_TARGET,
     _COUNT_MODES_BY_TARGET,
     _DEFAULT_COUNT_MODE_BY_TARGET,
@@ -57,7 +58,7 @@ from .base import MyTestCase
 
 def _stage(threshold=5, priority=1, actions=None, retrigger=False):
     if actions is None:
-        actions = [{"action_type": "LOCK_USER", "action_value": {"lock_duration_seconds": 600}}]
+        actions = [{"action_type": "LOCK_USER", "action_value": {"duration_seconds": 600}}]
     # retrigger is per action; apply it to each action of this stage.
     actions = [{**action, "retrigger_above_threshold": retrigger} for action in actions]
     return {"failure_threshold": threshold, "priority": priority, "actions": actions}
@@ -89,7 +90,8 @@ class LockoutPolicyCrudTestCase(MyTestCase):
                     _stage(10, priority=2,
                            actions=[{"action_type": "PERMANENT_LOCK_USER", "action_value": None},
                                     {"action_type": "EMAIL_ADMIN",
-                                     "action_value": {"smtp_identifier": "mock"}}])],
+                                     "action_value": {"smtp_identifier": "mock",
+                                                      "subject": "Locked", "body": "{username} is locked."}}])],
             target=LockoutTarget.USER, priority=3)
         policy = get_lockout_policy(policy_id)
         self.assertEqual("Brute Force", policy["name"])
@@ -104,7 +106,7 @@ class LockoutPolicyCrudTestCase(MyTestCase):
         self.assertEqual(5, policy["stages"][0]["failure_threshold"])
         self.assertEqual(10, policy["stages"][1]["failure_threshold"])
         self.assertEqual(2, len(policy["stages"][1]["actions"]))
-        self.assertEqual({"lock_duration_seconds": 600}, policy["stages"][0]["actions"][0]["action_value"])
+        self.assertEqual({"duration_seconds": 600}, policy["stages"][0]["actions"][0]["action_value"])
         # retrigger_above_threshold defaults to False on a lock action (fire once).
         self.assertFalse(policy["stages"][0]["actions"][0]["retrigger_above_threshold"])
 
@@ -115,10 +117,10 @@ class LockoutPolicyCrudTestCase(MyTestCase):
             "Retrig", 600, ["PIN_FAIL"],
             stages=[{"failure_threshold": 8,
                      "actions": [{"action_type": "LOCK_USER",
-                                  "action_value": {"lock_duration_seconds": 300},
+                                  "action_value": {"duration_seconds": 300},
                                   "retrigger_above_threshold": True},
                                  {"action_type": "EMAIL_ADMIN",
-                                  "action_value": {"smtp_identifier": "x"},
+                                  "action_value": {"smtp_identifier": "x", "subject": "s", "body": "b"},
                                   "retrigger_above_threshold": False}]}],
             target=LockoutTarget.USER, priority=1)
         policy = get_lockout_policy(policy_id)
@@ -134,7 +136,7 @@ class LockoutPolicyCrudTestCase(MyTestCase):
             stages=[{"failure_threshold": 3, "actions": [{"action_type": "DENY"}]},
                     {"failure_threshold": 5,
                      "actions": [{"action_type": "LOCK_USER",
-                                  "action_value": {"lock_duration_seconds": 60}}]}],
+                                  "action_value": {"duration_seconds": 60}}]}],
             target=LockoutTarget.USER, priority=1)
         policy = get_lockout_policy(policy_id)
         by_threshold = {stage["failure_threshold"]: stage for stage in policy["stages"]}
@@ -332,24 +334,28 @@ class LockoutPolicyCrudTestCase(MyTestCase):
             )
 
     def test_02j_target_action_compatibility(self):
-        # BLOCK_IP only makes sense on a source_ip target; LOCK_USER only on a user target.
-        self.assertRaises(
+        # BLOCK_IP only makes sense on a source_ip target; LOCK_USER only on a user target. Both actions carry a
+        # valid duration so the rejection is pinned to the target mismatch rather than to the action_value check,
+        # which runs first (_validate_stages before _validate_target_actions).
+        self.assertRaisesRegex(
             ParameterError,
+            "not allowed for target 'user'",
             create_lockout_policy,
             "P",
             600,
             ["PIN_FAIL"],
-            [_stage(actions=[{"action_type": "BLOCK_IP"}])],
+            [_stage(actions=[{"action_type": "BLOCK_IP", "action_value": 3600}])],
             target=LockoutTarget.USER,
             priority=1,
         )
-        self.assertRaises(
+        self.assertRaisesRegex(
             ParameterError,
+            "not allowed for target 'source_ip'",
             create_lockout_policy,
             "P",
             600,
             ["PIN_FAIL"],
-            [_stage(actions=[{"action_type": "LOCK_USER"}])],
+            [_stage(actions=[{"action_type": "LOCK_USER", "action_value": 600}])],
             target=LockoutTarget.SOURCE_IP,
             priority=2,
         )
@@ -361,6 +367,150 @@ class LockoutPolicyCrudTestCase(MyTestCase):
             [_stage(20, actions=[{"action_type": "BLOCK_IP", "action_value": {"duration_seconds": 3600}}])],
             target=LockoutTarget.SOURCE_IP,
             priority=3,
+        )
+
+    def _create_with_action(self, action, target=LockoutTarget.USER, name="P", priority=1):
+        """Create a one-stage policy carrying exactly *action*, for the action_value validation tests."""
+        return create_lockout_policy(name, 600, ["PIN_FAIL"], [_stage(actions=[action])],
+                                     target=target, priority=priority)
+
+    def test_02k_lock_user_requires_a_positive_duration(self):
+        # A LOCK_USER the engine could not act on must not be storable: without a duration it is skipped at
+        # runtime with only a log line, so the admin sees a saved policy that never locks anyone.
+        for action_value in (None, 0, -5, True, "abc", {}, {"lock_duration_seconds": 600}):
+            self.assertRaisesRegex(
+                ParameterError, "duration",
+                self._create_with_action, {"action_type": "LOCK_USER", "action_value": action_value},
+            )
+        # The legacy key is named in the error rather than reported as a generic "no duration".
+        self.assertRaisesRegex(
+            ParameterError, "lock_duration_seconds",
+            self._create_with_action,
+            {"action_type": "LOCK_USER", "action_value": {"lock_duration_seconds": 600}},
+        )
+        self.assertEqual(0, db.session.query(LockoutPolicy).count())
+
+    def test_02l_lock_user_accepts_every_shape_the_engine_reads(self):
+        # Whatever parse_lock_duration_seconds accepts is storable, and is stored verbatim: normalizing here
+        # would make the round-trip a different thing from what the admin sent.
+        for index, action_value in enumerate((600, "600", {"duration_seconds": 600}, {"duration": 600}), start=1):
+            policy_id = self._create_with_action({"action_type": "LOCK_USER", "action_value": action_value},
+                                                 name=f"P{index}", priority=index)
+            policy = get_lockout_policy(policy_id)
+            self.assertEqual(action_value, policy["stages"][0]["actions"][0]["action_value"])
+
+    def test_02m_block_ip_requires_a_positive_duration(self):
+        self.assertRaisesRegex(
+            ParameterError, "duration",
+            self._create_with_action, {"action_type": "BLOCK_IP", "action_value": None},
+            LockoutTarget.SOURCE_IP,
+        )
+        self._create_with_action({"action_type": "BLOCK_IP", "action_value": 3600}, LockoutTarget.SOURCE_IP)
+
+    def test_02n_duration_action_value_rejects_an_unknown_key(self):
+        # A valid duration next to a key nothing reads is still a mistake worth reporting: the admin who wrote
+        # it believes it does something.
+        self.assertRaisesRegex(
+            ParameterError, "lock_duration_seconds",
+            self._create_with_action,
+            {"action_type": "LOCK_USER", "action_value": {"duration_seconds": 600, "lock_duration_seconds": 600}},
+        )
+
+    def test_02o_permanent_and_decision_actions_take_no_action_value(self):
+        # These four never read action_value, so a duration on one of them describes an expiry that never comes.
+        for index, action_type in enumerate(("PERMANENT_LOCK_USER", "ALLOW", "DENY"), start=1):
+            self.assertRaisesRegex(
+                ParameterError, "takes no action_value",
+                self._create_with_action, {"action_type": action_type, "action_value": 600},
+                LockoutTarget.USER, f"P{index}", index,
+            )
+        self.assertRaisesRegex(
+            ParameterError, "takes no action_value",
+            self._create_with_action, {"action_type": "PERMANENT_BLOCK_IP", "action_value": 600},
+            LockoutTarget.SOURCE_IP,
+        )
+        # An explicit null and an omitted key are both fine.
+        self._create_with_action({"action_type": "PERMANENT_LOCK_USER", "action_value": None}, name="Null")
+        self._create_with_action({"action_type": "DENY"}, name="Omitted", priority=2)
+
+    def test_02p_email_action_requires_subject_and_body(self):
+        self.assertRaisesRegex(
+            ParameterError, "'subject'",
+            self._create_with_action,
+            {"action_type": "EMAIL_ADMIN", "action_value": {"smtp_identifier": "mock"}},
+        )
+        self.assertRaisesRegex(
+            ParameterError, "'body'",
+            self._create_with_action,
+            {"action_type": "EMAIL_ADMIN", "action_value": {"smtp_identifier": "mock", "subject": "s"}},
+        )
+        # A non-object payload cannot carry any of them.
+        self.assertRaisesRegex(
+            ParameterError, "must be an object",
+            self._create_with_action, {"action_type": "EMAIL_USER", "action_value": 600},
+        )
+
+    def test_02q_email_action_accepts_a_blank_smtp_identifier(self):
+        # The shipped MFA_BRUTEFORCE template ships the identifier blank for the admin to fill in once an SMTP
+        # server exists, so a blank one must stay storable.
+        policy_id = self._create_with_action(
+            {"action_type": "EMAIL_ADMIN", "action_value": {"smtp_identifier": "", "subject": "s", "body": "b"}})
+        self.assertEqual({"smtp_identifier": "", "subject": "s", "body": "b"},
+                         get_lockout_policy(policy_id)["stages"][0]["actions"][0]["action_value"])
+
+    def test_02r_email_action_value_vocabulary_is_checked(self):
+        base = {"smtp_identifier": "mock", "subject": "s", "body": "b"}
+        self.assertRaisesRegex(
+            ParameterError, "subjekt",
+            self._create_with_action, {"action_type": "EMAIL_ADMIN", "action_value": {**base, "subjekt": "x"}},
+        )
+        self.assertRaisesRegex(
+            ParameterError, "mimetype",
+            self._create_with_action, {"action_type": "EMAIL_ADMIN", "action_value": {**base, "mimetype": "pdf"}},
+        )
+        self.assertRaisesRegex(
+            ParameterError, "recipient_group",
+            self._create_with_action,
+            {"action_type": "EMAIL_ADMIN", "action_value": {**base, "recipient_group": "soc-team"}},
+        )
+        self.assertRaisesRegex(
+            ParameterError, "must be a string",
+            self._create_with_action, {"action_type": "EMAIL_ADMIN", "action_value": {**base, "subject": 5}},
+        )
+        # The groups the engine resolves, an address list, and the optional keys it reads are all accepted.
+        for index, extra in enumerate(({"recipient_group": "internal_admins"},
+                                       {"recipient_group": "soc@example.com, ops@example.com"},
+                                       {"mimetype": "html", "login_notice": "Check your mail."},
+                                       {"identifier": "alias"}), start=1):
+            self._create_with_action({"action_type": "EMAIL_ADMIN", "action_value": {**base, **extra}},
+                                     name=f"Mail{index}", priority=index)
+
+    def test_02s_update_revalidates_action_values(self):
+        policy_id = self._create_with_action({"action_type": "LOCK_USER", "action_value": 600})
+        self.assertRaisesRegex(
+            ParameterError, "duration",
+            update_lockout_policy, policy_id,
+            stages=[_stage(actions=[{"action_type": "LOCK_USER", "action_value": None}])],
+        )
+        # Nothing of the rejected update is applied.
+        self.assertEqual(600, get_lockout_policy(policy_id)["stages"][0]["actions"][0]["action_value"])
+
+    def test_02t_a_stored_bad_action_value_stays_editable(self):
+        # Validation is on the write path only, so a policy stored before this rule (or through the ORM) can
+        # still be switched off and renamed - the WebUI's enable/dry-run toggles rely on that. Only sending the
+        # stages back re-checks them, which is the repair path.
+        policy_id = self._create_with_action({"action_type": "LOCK_USER", "action_value": 600})
+        action = db.session.query(LockoutStageAction).one()
+        action.action_value = {"lock_duration_seconds": 600}
+        db.session.commit()
+        update_lockout_policy(policy_id, enabled=False)
+        update_lockout_policy(policy_id, name="Renamed")
+        self.assertEqual("Renamed", get_lockout_policy(policy_id)["name"])
+        self.assertRaisesRegex(
+            ParameterError, "lock_duration_seconds",
+            update_lockout_policy, policy_id,
+            stages=[_stage(actions=[{"action_type": "LOCK_USER",
+                                     "action_value": {"lock_duration_seconds": 600}}])],
         )
 
     def test_03_list_and_order(self):
@@ -470,6 +620,14 @@ class LockoutPolicyCrudTestCase(MyTestCase):
         )
         covered = set().union(*_ACTIONS_BY_TARGET.values())
         self.assertSetEqual(set(LockoutAction), covered, "a LockoutAction is not assignable to any target")
+
+    def test_08b_action_value_validators_are_exhaustive(self):
+        # Guard the manual registration in _ACTION_VALUE_VALIDATORS the way test_08 guards _ACTIONS_BY_TARGET.
+        # The dispatch is indexed without a default, so a missing entry is a KeyError on the first policy that
+        # uses the new action - which is the point: a new action type must declare what action_value it takes
+        # rather than inheriting "anything goes".
+        self.assertSetEqual({action.value for action in LockoutAction}, set(_ACTION_VALUE_VALIDATORS),
+                            "a LockoutAction is missing from _ACTION_VALUE_VALIDATORS")
 
     def test_09_count_modes_by_target_is_exhaustive(self):
         # Guard the per-target count-mode registration like test_08 does for actions: every target needs an entry in

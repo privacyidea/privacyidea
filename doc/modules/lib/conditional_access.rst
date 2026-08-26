@@ -36,6 +36,27 @@ Conditional access engine
    :members:
    :undoc-members:
 
+Lockout policies
+~~~~~~~~~~~~~~~~~
+
+.. automodule:: privacyidea.lib.conditional_access.lockout_policy
+   :members:
+   :undoc-members:
+
+Policy conditions
+~~~~~~~~~~~~~~~~~~
+
+.. automodule:: privacyidea.lib.conditional_access.conditions
+   :members:
+   :undoc-members:
+
+Shipped policy templates
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. automodule:: privacyidea.lib.conditional_access.lockout_policy_template
+   :members:
+   :undoc-members:
+
 Per-request context
 ~~~~~~~~~~~~~~~~~~~~
 

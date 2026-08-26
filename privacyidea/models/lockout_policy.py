@@ -228,9 +228,13 @@ class LockoutStageAction(MethodsMixin, db.Model):
     What to do when a :class:`LockoutPolicyStage` is triggered. One stage
     can have multiple actions (e.g. lock the user *and* email the admin).
 
-    ``action_value`` is the action-specific payload, stored as JSON:
-    e.g. the lock duration in seconds for ``LOCK_USER``/``BLOCK_IP`` or
-    an email template ID for ``EMAIL_ADMIN``/``EMAIL_USER``.
+    ``action_value`` is the action-specific payload, stored as JSON: the restriction
+    duration in seconds for ``LOCK_USER``/``BLOCK_IP``, the SMTP settings object
+    (``smtp_identifier``, ``subject``, ``body``, ...) for ``EMAIL_ADMIN``/``EMAIL_USER``,
+    and nothing at all for the ``PERMANENT_*`` restrictions and the ``ALLOW``/``DENY``
+    decisions. The authoritative per-action contract - what the engine reads, and what
+    the write path therefore rejects - is
+    :data:`~privacyidea.lib.conditional_access.lockout_policy._ACTION_VALUE_VALIDATORS`.
 
     ``retrigger_above_threshold`` controls how this action fires as the failure
     count crosses its stage's threshold. False: fire once, when the count equals

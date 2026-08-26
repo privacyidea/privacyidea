@@ -36,6 +36,7 @@ import { InfoHintComponent } from "@components/shared/info-hint/info-hint.compon
 import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import {
+  actionValueError,
   ConditionalAccessPolicyService,
   ConditionalAccessPolicyServiceInterface,
   CountMode,
@@ -247,6 +248,12 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
   // save fail - mirroring countModeValid / targetActionsValid, which exist for the same reason.
   readonly staleConditionValues = computed(() => this.policyService.staleConditionValues(this.editPolicy().conditions));
   conditionValuesValid = computed(() => this.staleConditionValues().length === 0);
+  // Every stage action must carry an action_value its type can act on (the backend enforces the same via
+  // _ACTION_VALUE_VALIDATORS and 400s otherwise). Checked here so the missing duration or subject is reported
+  // next to the field instead of as a failed save; the action item shows the per-action message.
+  actionValuesValid = computed(() =>
+    this.editPolicy().stages.every((stage) => stage.actions.every((action) => actionValueError(action) === null))
+  );
   // Only the highest-priority stage whose threshold is met ever fires, so two stages
   // sharing a threshold would leave one permanently dead; the backend rejects it too
   // (uq_lockout_stage_policy_threshold), so block it here.
@@ -266,6 +273,7 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
       this.stagesValid() &&
       this.stageThresholdsUnique() &&
       this.targetActionsValid() &&
+      this.actionValuesValid() &&
       this.countModeValid() &&
       this.conditionValuesValid()
   );

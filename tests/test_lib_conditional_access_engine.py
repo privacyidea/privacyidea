@@ -51,7 +51,7 @@ from privacyidea.lib.conditional_access.engine import (
     is_ip_blocked,
     is_ip_never_block,
     get_ip_block,
-    _lock_duration_seconds,
+    parse_lock_duration_seconds,
     _policy_count_ip,
     _safe_format,
     _resolve_admin_recipients,
@@ -1529,15 +1529,15 @@ class LockoutEngineTestCase(LockoutTestCase):
         self._seed_ip_events("203.0.113.33", AuthEventType.PASSWORD_FAIL, n_users=5)
         self.assertEqual(AccessDecision.CONTINUE, evaluate_access_decision(CAContext(self.user, None)).decision)
 
-    # --- _lock_duration_seconds -----------------------------------------------
+    # --- parse_lock_duration_seconds -----------------------------------------------
 
     def test_lock_duration_parsing(self):
-        self.assertEqual(600, _lock_duration_seconds(600))
-        self.assertEqual(600, _lock_duration_seconds("600"))
-        self.assertEqual(300, _lock_duration_seconds({"duration_seconds": 300}))
-        self.assertEqual(120, _lock_duration_seconds({"duration": 120}))
+        self.assertEqual(600, parse_lock_duration_seconds(600))
+        self.assertEqual(600, parse_lock_duration_seconds("600"))
+        self.assertEqual(300, parse_lock_duration_seconds({"duration_seconds": 300}))
+        self.assertEqual(120, parse_lock_duration_seconds({"duration": 120}))
         for invalid in (None, 0, -5, True, False, "abc", {}, {"foo": 1}):
-            self.assertIsNone(_lock_duration_seconds(invalid), invalid)
+            self.assertIsNone(parse_lock_duration_seconds(invalid), invalid)
 
     # --- EMAIL_ADMIN / EMAIL_USER actions -------------------------------------
 

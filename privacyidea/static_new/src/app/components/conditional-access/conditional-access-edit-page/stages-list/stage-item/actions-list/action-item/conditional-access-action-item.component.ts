@@ -27,11 +27,13 @@ import { MatInputModule } from "@angular/material/input";
 import { MatSelectModule } from "@angular/material/select";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import {
+  actionValueError,
   ConditionalAccessPolicyService,
   ConditionalAccessPolicyServiceInterface,
   LockoutActionType,
   LockoutStageAction,
-  LockoutTarget
+  LockoutTarget,
+  parseActionDurationSeconds
 } from "@services/conditional-access/conditional-access-policy.service";
 import { SmtpService, SmtpServiceInterface } from "@services/smtp/smtp.service";
 import { InfoHintComponent } from "@components/shared/info-hint/info-hint.component";
@@ -49,7 +51,8 @@ const ACTION_DESCRIPTIONS: Record<LockoutActionType, string> = {
 };
 
 // How a given action type's action_value is edited:
-// - "duration": a single integer (seconds), stored as a plain number.
+// - "duration": a single integer (seconds), written as a plain number. The object form carrying
+//   duration_seconds is also accepted on read, because a policy written through the API may use it.
 // - "email": a JSON object with the fields listed in EMAIL_FIELDS.
 // - "none": the action takes no value (stored as null).
 type ActionValueMode = "duration" | "email" | "none";
@@ -207,6 +210,11 @@ export class ConditionalAccessActionItemComponent {
     ConditionalAccessActionItemComponent.modeFor(this.action().action_type)
   );
 
+  // What is missing from this action's value, or null when the backend would accept it. Shown next to the
+  // field so the admin fixes it here rather than reading a 400 after saving; the edit page gates Save on the
+  // same rule (see actionValuesValid).
+  readonly actionValueError = computed<string | null>(() => actionValueError(this.action()));
+
   readonly emailFields = computed<EmailField[]>(() => {
     const isAdmin = this.action().action_type === "EMAIL_ADMIN";
     const fields = EMAIL_FIELDS.filter((field) => isAdmin || !field.onlyAdmin);
@@ -267,18 +275,11 @@ export class ConditionalAccessActionItemComponent {
 
   readonly durationUnits: readonly DurationUnit[] = ["seconds", "minutes", "hours"];
 
-  // The raw stored duration in seconds, or null if unset/invalid.
+  // The raw stored duration in seconds, or null if unset/invalid. Every shape the backend accepts is read,
+  // not just the bare number this editor writes, so a duration set through the API renders in the field
+  // instead of looking empty.
   private durationSeconds(): number | null {
-    const value = this.action().action_value;
-    if (typeof value === "number") {
-      return value;
-    }
-    if (value && typeof value === "object" && !Array.isArray(value)) {
-      const record = value as Record<string, unknown>;
-      const nested = record["duration_seconds"] ?? record["duration"];
-      return typeof nested === "number" ? nested : null;
-    }
-    return null;
+    return parseActionDurationSeconds(this.action().action_value);
   }
 
   // Display value in the currently selected unit.
