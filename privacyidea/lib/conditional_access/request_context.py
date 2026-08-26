@@ -155,7 +155,7 @@ class ConditionalAccessContext:
         The gate is the innermost decorator, so the post-policies still run on its rejection response and would
         otherwise classify a request that never reached any token logic. There is nothing for them to say about it:
         the request was refused for a reason already recorded, and logging their own outcome on top would both bury
-        that reason and hand the lockout counters an attempt the lock itself produced.
+        that reason and hand the conditional-access counters an attempt the lock itself produced.
         """
         event = self.latest
         return event is not None and event.event_type in CA_ENFORCEMENT_EVENT_TYPES
@@ -362,11 +362,11 @@ class ConditionalAccessContext:
             return []
         # Deferred import: the engine pulls in the ORM models, so importing it at module level would risk an
         # import-order cycle during app startup.
-        from privacyidea.lib.conditional_access.engine import evaluate_lockout_policies
+        from privacyidea.lib.conditional_access.engine import evaluate_conditional_access_policies
         context = CAContext(user=self.principal.user or None, source_ip=self.source_ip,
                             user_role=event.user_role)
         try:
-            evaluation = evaluate_lockout_policies(context, event.event_type)
+            evaluation = evaluate_conditional_access_policies(context, event.event_type)
         except Exception as ex:
             log.warning(f"Conditional-access policy evaluation failed: {ex!r}")
             return []

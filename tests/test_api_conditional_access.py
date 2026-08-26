@@ -16,7 +16,7 @@
 # SPDX-FileCopyrightText: 2026 NetKnights GmbH <https://netknights.it>
 # SPDX-License-Identifier: AGPL-3.0-or-later
 """
-End-to-end tests for the conditional-access lockout engine at the
+End-to-end tests for the conditional-access engine at the
 ``/validate/check`` view: the pre-check that rejects an already-locked user
 before any token logic runs, and the full loop where repeated failures trip a
 policy stage and lock the user.
@@ -26,9 +26,9 @@ from datetime import datetime, timedelta
 from privacyidea.lib.conditional_access.conditions import ConditionOperator, ConditionType
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, CountMode
 from privacyidea.lib.conditional_access.authentication_log import AuthLogUserRole, get_authentication_logs
-from privacyidea.lib.conditional_access.engine import (LockoutAction, LockoutTarget,
+from privacyidea.lib.conditional_access.engine import (ConditionalAccessAction, ConditionalAccessTarget,
                                                        is_user_locked, is_ip_blocked)
-from privacyidea.lib.conditional_access.lockout_policy import create_lockout_policy
+from privacyidea.lib.conditional_access.policy import create_conditional_access_policy
 from privacyidea.lib.conditional_access.outcome_log import get_outcomes
 from privacyidea.lib.conditional_access.session import get_ca_session
 from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction
@@ -39,14 +39,14 @@ from privacyidea.lib.token import init_token, remove_token, get_tokens
 from privacyidea.lib.user import User
 from privacyidea.models import db, Challenge, ConditionalAccessOutcome
 from privacyidea.models.authentication_log import AuthenticationLog
-from privacyidea.models.lockout_policy import (
+from privacyidea.models.conditional_access_policy import (
     BlockList,
-    LockoutPolicy,
-    LockoutPolicyCondition,
-    LockoutPolicyCounterType,
-    LockoutPolicyStage,
-    LockoutStageAction,
-    UserLockoutState,
+    ConditionalAccessPolicy,
+    ConditionalAccessPolicyCondition,
+    ConditionalAccessPolicyCounterType,
+    ConditionalAccessPolicyStage,
+    ConditionalAccessStageAction,
+    UserLockState,
 )
 from privacyidea.models.utils import utc_now
 from . import smtpmock
@@ -73,7 +73,7 @@ def _rows_since(before: int) -> list[str]:
 
 def _counter_types(counter_type):
     """Normalize a single AuthEventType (or string) or an iterable of them into
-    the list-of-strings shape stored in ``LockoutPolicy.counter_types_to_track``."""
+    the list-of-strings shape stored in ``ConditionalAccessPolicy.counter_types_to_track``."""
     values = counter_type if isinstance(counter_type, (list, tuple)) else [counter_type]
     return [str(t) for t in values]
 
@@ -112,8 +112,8 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
 
     @staticmethod
     def _clear() -> None:
-        for model in (ConditionalAccessOutcome, UserLockoutState, BlockList, LockoutStageAction,
-                      LockoutPolicyStage, LockoutPolicyCondition, LockoutPolicyCounterType, LockoutPolicy,
+        for model in (ConditionalAccessOutcome, UserLockState, BlockList, ConditionalAccessStageAction,
+                      ConditionalAccessPolicyStage, ConditionalAccessPolicyCondition, ConditionalAccessPolicyCounterType, ConditionalAccessPolicy,
                       AuthenticationLog, Challenge):
             db.session.query(model).delete()
         db.session.commit()
@@ -126,39 +126,39 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
             return response.json
 
     def _lock_user(self, lock_expires_at) -> None:
-        db.session.add(UserLockoutState(resolver=self.user.resolver, uid=self.user.uid,
+        db.session.add(UserLockState(resolver=self.user.resolver, uid=self.user.uid,
                                         realm=self.user.realm, lock_expires_at=lock_expires_at))
         db.session.commit()
 
     @staticmethod
     def _make_lock_policy(*, counter_type, threshold: int, duration: int, window: int = 3600,
                           dry_run: bool = False, priority: int = 1) -> None:
-        create_lockout_policy(
+        create_conditional_access_policy(
             name="ca_lock", time_window_seconds=window,
             counter_types_to_track=_counter_types(counter_type),
             stages=[{"failure_threshold": threshold, "priority": 1,
-                     "actions": [{"action_type": str(LockoutAction.LOCK_USER), "action_value": duration}]}],
-            target=LockoutTarget.USER, dry_run=dry_run, priority=priority)
+                     "actions": [{"action_type": str(ConditionalAccessAction.LOCK_USER), "action_value": duration}]}],
+            target=ConditionalAccessTarget.USER, dry_run=dry_run, priority=priority)
 
     @staticmethod
     def _make_block_ip_policy(*, counter_type, threshold: int, duration: int, window: int = 3600,
                               priority: int = 1) -> None:
-        create_lockout_policy(
+        create_conditional_access_policy(
             name="ca_blockip", time_window_seconds=window,
             counter_types_to_track=_counter_types(counter_type),
             stages=[{"failure_threshold": threshold, "priority": 1,
-                     "actions": [{"action_type": str(LockoutAction.BLOCK_IP), "action_value": duration}]}],
-            target=LockoutTarget.SOURCE_IP, priority=priority)
+                     "actions": [{"action_type": str(ConditionalAccessAction.BLOCK_IP), "action_value": duration}]}],
+            target=ConditionalAccessTarget.SOURCE_IP, priority=priority)
 
     @staticmethod
     def _make_decision_policy(*, name: str, counter_type, threshold: int, action,
                               priority: int = 1, window: int = 3600) -> None:
-        create_lockout_policy(
+        create_conditional_access_policy(
             name=name, time_window_seconds=window,
             counter_types_to_track=_counter_types(counter_type),
             stages=[{"failure_threshold": threshold, "priority": 1,
                      "actions": [{"action_type": str(action), "action_value": None}]}],
-            target=LockoutTarget.USER, priority=priority)
+            target=ConditionalAccessTarget.USER, priority=priority)
 
     def _failcount(self) -> int:
         return get_tokens(serial=self.serial)[0].token.failcount
@@ -197,7 +197,7 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         self.assertTrue(body["result"]["value"], body)
         # The stale row carries no state; the pre-check opts into cleanup, so this
         # next login drops it (rather than leaving it for the bulk purge).
-        self.assertIsNone(db.session.get(UserLockoutState, (self.user.resolver, self.user.uid, self.user.realm)))
+        self.assertIsNone(db.session.get(UserLockState, (self.user.resolver, self.user.uid, self.user.realm)))
 
     # --- full loop ------------------------------------------------------------
 
@@ -245,7 +245,7 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         self.assertEqual("ca_lock", outcome.policy_name)
         self.assertEqual(3, outcome.threshold)
         self.assertEqual(3, outcome.event_count)
-        self.assertEqual(str(LockoutAction.LOCK_USER), outcome.action_type)
+        self.assertEqual(str(ConditionalAccessAction.LOCK_USER), outcome.action_type)
         # The expiry the lock would have had, so a dry run reads like the enforced one.
         self.assertIn("expires_at", outcome.info)
         # The earlier rows, which did not trip the threshold, carry nothing.
@@ -255,7 +255,7 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         body = self._check({"user": "cornelius", "pass": "pin755224"})
         self.assertTrue(body["result"]["value"], body)
 
-    def test_lockout_write_does_not_corrupt_transaction(self):
+    def test_lock_write_does_not_corrupt_transaction(self):
         # Regression: the engine's writes used to run on the shared request session, wrapped in
         # db.session.begin_nested() + commit. Under SQLAlchemy 2.x the first inner commit closes the
         # transaction, so the next DB operation still inside the savepoint context raised InvalidRequestError.
@@ -292,7 +292,7 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         self.assertTrue(is_user_locked(self.user))
 
         # The lock runs out while the original failures are still in the window.
-        state = db.session.get(UserLockoutState,
+        state = db.session.get(UserLockState,
                                (self.user.resolver, self.user.uid, self.user.realm))
         state.lock_expires_at = utc_now() - timedelta(seconds=10)
         db.session.commit()
@@ -406,19 +406,19 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         # A policy's priority does NOT preempt the temp lock - lock/block policies
         # both fire when both thresholds are met, regardless of priority.
         self._make_lock_policy(counter_type=AuthEventType.MFA_FAIL, threshold=2, duration=60)
-        create_lockout_policy(
+        create_conditional_access_policy(
             name="ca_permlock", time_window_seconds=3600,
             counter_types_to_track=_counter_types(AuthEventType.MFA_FAIL),
             stages=[{"failure_threshold": 3, "priority": 1,
-                     "actions": [{"action_type": str(LockoutAction.PERMANENT_LOCK_USER), "action_value": None}]}],
-            target=LockoutTarget.USER, priority=99)
+                     "actions": [{"action_type": str(ConditionalAccessAction.PERMANENT_LOCK_USER), "action_value": None}]}],
+            target=ConditionalAccessTarget.USER, priority=99)
         key = (self.user.resolver, self.user.uid, self.user.realm)
 
         # Two failures -> temp-locked, not yet permanently locked (count 2 < 3).
         for _ in range(2):
             self._check({"user": "cornelius", "pass": "pin000000"})
         self.assertTrue(is_user_locked(self.user))
-        self.assertIsNotNone(db.session.get(UserLockoutState, key).lock_expires_at)  # timed
+        self.assertIsNotNone(db.session.get(UserLockState, key).lock_expires_at)  # timed
 
         # Hammering DURING the lock is rejected at the pre-check. Each rejection is logged, but as USER_LOCKED -
         # a type no policy may track - so the tracked MFA_FAIL count stays frozen at 2 and never escalates to the
@@ -430,16 +430,16 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         self.assertListEqual([AuthEventType.USER_LOCKED] * 3, _rows_since(logs_locked))
         self.assertEqual(2, len([entry for entry in get_authentication_logs()
                                  if entry.event_type == AuthEventType.MFA_FAIL]))
-        self.assertIsNotNone(db.session.get(UserLockoutState, key).lock_expires_at)  # still timed
+        self.assertIsNotNone(db.session.get(UserLockState, key).lock_expires_at)  # still timed
 
         # Expire the lock; the next failure reaches count 3 and escalates - the user
         # is now permanently locked (lock_expires_at is None).
-        state = db.session.get(UserLockoutState, key)
+        state = db.session.get(UserLockState, key)
         state.lock_expires_at = utc_now() - timedelta(seconds=10)
         db.session.commit()
         body = self._check({"user": "cornelius", "pass": "pin000000"})
         self.assertFalse(body["result"]["value"], body)
-        state = db.session.get(UserLockoutState, key)
+        state = db.session.get(UserLockState, key)
         self.assertIsNotNone(state)
         self.assertIsNone(state.lock_expires_at)
         self.assertTrue(is_user_locked(self.user))
@@ -448,7 +448,7 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
 
     def test_deny_policy_rejects_after_threshold(self):
         self._make_decision_policy(name="ca_deny", counter_type=AuthEventType.MFA_FAIL,
-                                   threshold=3, action=LockoutAction.DENY)
+                                   threshold=3, action=ConditionalAccessAction.DENY)
         for _ in range(3):
             body = self._check({"user": "cornelius", "pass": "pin000000"})
             self.assertFalse(body["result"]["value"], body)
@@ -466,7 +466,7 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
     def test_allow_policy_does_not_block_valid_auth(self):
         # A default-allow policy (threshold 0) must not interfere with a valid login.
         self._make_decision_policy(name="ca_allow", counter_type=AuthEventType.MFA_FAIL,
-                                   threshold=0, action=LockoutAction.ALLOW)
+                                   threshold=0, action=ConditionalAccessAction.ALLOW)
         body = self._check({"user": "cornelius", "pass": "pin755224"})
         self.assertTrue(body["result"]["value"], body)
 
@@ -474,9 +474,9 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         # A higher-precedence ALLOW exception (lower priority number) lets a valid
         # login through despite a DENY with a higher number whose threshold is met.
         self._make_decision_policy(name="ca_deny", counter_type=AuthEventType.MFA_FAIL,
-                                   threshold=3, action=LockoutAction.DENY, priority=10)
+                                   threshold=3, action=ConditionalAccessAction.DENY, priority=10)
         self._make_decision_policy(name="ca_allow", counter_type=AuthEventType.MFA_FAIL,
-                                   threshold=0, action=LockoutAction.ALLOW, priority=1)
+                                   threshold=0, action=ConditionalAccessAction.ALLOW, priority=1)
         for _ in range(3):
             self._check({"user": "cornelius", "pass": "pin000000"})
         # The DENY threshold is met, but the higher-priority ALLOW wins -> valid auth succeeds.
@@ -496,7 +496,7 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         # maximum-priority default-allow exception cannot unlock a locked user.
         self._lock_user(utc_now() + timedelta(seconds=600))
         self._make_decision_policy(name="ca_allow", counter_type=AuthEventType.MFA_FAIL,
-                                   threshold=0, action=LockoutAction.ALLOW, priority=1)
+                                   threshold=0, action=ConditionalAccessAction.ALLOW, priority=1)
         body = self._check({"user": "cornelius", "pass": "pin755224"})
         self.assertFalse(body["result"]["value"], body)
         self.assertFalse(body.get("detail"), body)
@@ -510,7 +510,7 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         db.session.add(BlockList(ip="203.0.113.7", block_expires_at=utc_now() + timedelta(seconds=600)))
         db.session.commit()
         self._make_decision_policy(name="ca_allow", counter_type=AuthEventType.MFA_FAIL,
-                                   threshold=0, action=LockoutAction.ALLOW, priority=1)
+                                   threshold=0, action=ConditionalAccessAction.ALLOW, priority=1)
         body = self._check({"user": "cornelius", "pass": "pin755224"}, remote_addr="203.0.113.7")
         self.assertFalse(body["result"]["value"], body)
         entries = assert_authentication_log([AuthEventType.IP_BLOCKED])
@@ -523,7 +523,7 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         # lock never engages. Intentional: the stateless DENY self-heals as the
         # failures age out of its window, whereas the lock would persist.
         self._make_decision_policy(name="ca_deny", counter_type=AuthEventType.MFA_FAIL,
-                                   threshold=3, action=LockoutAction.DENY, priority=1)
+                                   threshold=3, action=ConditionalAccessAction.DENY, priority=1)
         self._make_lock_policy(counter_type=AuthEventType.MFA_FAIL, threshold=5, duration=600, priority=2)
 
         for _ in range(3):
@@ -578,7 +578,7 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
     def test_triggerchallenge_denied_by_policy_rejected(self):
         # A default-deny policy (threshold 0) rejects every request pre-auth.
         self._make_decision_policy(name="ca_deny", counter_type=AuthEventType.PIN_FAIL,
-                                   threshold=0, action=LockoutAction.DENY)
+                                   threshold=0, action=ConditionalAccessAction.DENY)
         body = self._trigger_challenge()
         self.assertFalse(body["result"]["value"], body)
         entries = assert_authentication_log([AuthEventType.ACCESS_DENIED])
@@ -646,7 +646,7 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         # The two halves of this feature meeting: the pre-check writes the ACCESS_DENIED row, and the DENY outcome the
         # engine returned - buffered on the context, because at decision time no row existed - is recorded against it.
         self._make_decision_policy(name="ca_deny", counter_type=AuthEventType.MFA_FAIL,
-                                   threshold=0, action=LockoutAction.DENY)
+                                   threshold=0, action=ConditionalAccessAction.DENY)
         body = self._check({"user": "cornelius", "pass": "pin755224"})
         self.assertFalse(body["result"]["value"], body)
 
@@ -654,7 +654,7 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         self.assertListEqual([AuthEventType.ACCESS_DENIED], [entry.event_type for entry in entries])
         outcomes = get_outcomes(entries[0].id)
         self.assertEqual(1, len(outcomes))
-        self.assertEqual(str(LockoutAction.DENY), outcomes[0].action_type)
+        self.assertEqual(str(ConditionalAccessAction.DENY), outcomes[0].action_type)
         self.assertEqual("ca_deny", outcomes[0].policy_name)
         self.assertFalse(outcomes[0].dry_run)
 
@@ -664,7 +664,7 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         self._make_lock_policy(counter_type=AuthEventType.MFA_FAIL, threshold=1, duration=600)
         self._check({"user": "cornelius", "pass": "pin000000"})
         self.assertTrue(is_user_locked(self.user))
-        locked_until = db.session.get(UserLockoutState, (self.user.resolver, self.user.uid,
+        locked_until = db.session.get(UserLockState, (self.user.resolver, self.user.uid,
                                                         self.user.realm)).lock_expires_at
 
         logs_before = len(get_authentication_logs())
@@ -672,7 +672,7 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
 
         self.assertListEqual([AuthEventType.USER_LOCKED], _rows_since(logs_before))
         # The lock was neither refreshed nor escalated by its own rejection.
-        self.assertEqual(locked_until, db.session.get(UserLockoutState, (self.user.resolver, self.user.uid,
+        self.assertEqual(locked_until, db.session.get(UserLockState, (self.user.resolver, self.user.uid,
                                                                         self.user.realm)).lock_expires_at)
 
     def test_polltransaction_does_not_write_authentication_log(self):
@@ -734,12 +734,12 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
     def test_initialize_cannot_feed_the_counter_that_blocked_it(self):
         # /validate/initialize writes a trackable CHALLENGE_TRIGGERED row.
         self._set_relying_party_id()
-        create_lockout_policy(
+        create_conditional_access_policy(
             name="ca_initialize_rate", time_window_seconds=3600,
             counter_types_to_track=_counter_types(AuthEventType.CHALLENGE_TRIGGERED),
             stages=[{"failure_threshold": 2, "priority": 1,
-                     "actions": [{"action_type": str(LockoutAction.BLOCK_IP), "action_value": 600}]}],
-            target=LockoutTarget.SOURCE_IP, count_mode=str(CountMode.PER_REQUEST), priority=1)
+                     "actions": [{"action_type": str(ConditionalAccessAction.BLOCK_IP), "action_value": 600}]}],
+            target=ConditionalAccessTarget.SOURCE_IP, count_mode=str(CountMode.PER_REQUEST), priority=1)
 
         # The first call is counted: one trackable CHALLENGE_TRIGGERED row, below the threshold.
         body = self._initialize(remote_addr="203.0.113.7")
@@ -807,12 +807,12 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
     def test_engine_evaluates_the_corrected_outcome_only(self):
         # Two policies, one tracking the pre-authz outcome and one the corrected one. Only the corrected outcome may
         # be evaluated.
-        create_lockout_policy(
+        create_conditional_access_policy(
             name="ca_on_success", time_window_seconds=3600,
             counter_types_to_track=_counter_types(AuthEventType.LOGIN_SUCCESS),
             stages=[{"failure_threshold": 1, "priority": 1,
-                     "actions": [{"action_type": str(LockoutAction.PERMANENT_LOCK_USER), "action_value": None}]}],
-            target=LockoutTarget.USER, priority=1)
+                     "actions": [{"action_type": str(ConditionalAccessAction.PERMANENT_LOCK_USER), "action_value": None}]}],
+            target=ConditionalAccessTarget.USER, priority=1)
         set_policy("authz_deny", scope=SCOPE.AUTHZ, action=f"{PolicyAction.AUTHORIZED}={AUTHORIZED.DENY}")
         try:
             with self.app.test_request_context('/validate/check', method='POST',
@@ -827,7 +827,7 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
     def test_a_conditional_access_rejection_is_not_reclassified_by_authz_deny(self):
         # The gate is the innermost decorator, so authorized=deny still runs on its rejection response. The rejection
         # row is the only record of *why* the request was refused, and relabelling it to NOT_AUTHORIZED would also
-        # take the refused request past the CA_ENFORCEMENT_EVENT_TYPES guard and into the lockout counters - a lock
+        # take the refused request past the CA_ENFORCEMENT_EVENT_TYPES guard and into the conditional-access counters - a lock
         # feeding itself. So the rejection stands and the post-policy logs nothing of its own.
         self._lock_user(utc_now() + timedelta(seconds=600))
         set_policy("authz_deny", scope=SCOPE.AUTHZ, action=f"{PolicyAction.AUTHORIZED}={AUTHORIZED.DENY}")
@@ -850,7 +850,7 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
 
 
 class ConditionalAccessAuthTestCase(MyApiTestCase):
-    """The WebUI JWT login (/auth) is gated by the same lockout engine."""
+    """The WebUI JWT login (/auth) is gated by the same conditional-access engine."""
 
     def setUp(self) -> None:
         super().setUp()
@@ -864,8 +864,8 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
 
     @staticmethod
     def _clear():
-        for model in (ConditionalAccessOutcome, UserLockoutState, BlockList, LockoutStageAction,
-                      LockoutPolicyStage, LockoutPolicyCondition, LockoutPolicyCounterType, LockoutPolicy,
+        for model in (ConditionalAccessOutcome, UserLockState, BlockList, ConditionalAccessStageAction,
+                      ConditionalAccessPolicyStage, ConditionalAccessPolicyCondition, ConditionalAccessPolicyCounterType, ConditionalAccessPolicy,
                       AuthenticationLog):
             db.session.query(model).delete()
         db.session.commit()
@@ -878,21 +878,21 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
 
     @staticmethod
     def _make_password_policy(*, threshold, duration=600, window=3600, priority=1):
-        create_lockout_policy(
+        create_conditional_access_policy(
             name="ca_pw", time_window_seconds=window,
             counter_types_to_track=_counter_types(AuthEventType.PASSWORD_FAIL),
             stages=[{"failure_threshold": threshold, "priority": 1,
-                     "actions": [{"action_type": str(LockoutAction.LOCK_USER), "action_value": duration}]}],
-            target=LockoutTarget.USER, priority=priority)
+                     "actions": [{"action_type": str(ConditionalAccessAction.LOCK_USER), "action_value": duration}]}],
+            target=ConditionalAccessTarget.USER, priority=priority)
 
     @staticmethod
     def _make_dry_run_password_policy(*, threshold, duration=600, window=3600, priority=1):
-        create_lockout_policy(
+        create_conditional_access_policy(
             name="ca_pw_dry", time_window_seconds=window,
             counter_types_to_track=_counter_types(AuthEventType.PASSWORD_FAIL),
             stages=[{"failure_threshold": threshold, "priority": 1,
-                     "actions": [{"action_type": str(LockoutAction.LOCK_USER), "action_value": duration}]}],
-            target=LockoutTarget.USER, dry_run=True, priority=priority)
+                     "actions": [{"action_type": str(ConditionalAccessAction.LOCK_USER), "action_value": duration}]}],
+            target=ConditionalAccessTarget.USER, dry_run=True, priority=priority)
 
     def test_dry_run_outcome_persisted_on_auth_login(self):
         # /auth evaluates in-view rather than at request teardown (it surfaces the engine's notices in its own
@@ -916,35 +916,35 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
         self.assertTrue(outcomes[0].dry_run)
         self.assertEqual("ca_pw_dry", outcomes[0].policy_name)
         self.assertEqual(2, outcomes[0].threshold)
-        self.assertEqual(str(LockoutAction.LOCK_USER), outcomes[0].action_type)
+        self.assertEqual(str(ConditionalAccessAction.LOCK_USER), outcomes[0].action_type)
 
     @staticmethod
     def _make_decision_policy(*, name, threshold, action, priority=1, window=3600):
-        create_lockout_policy(
+        create_conditional_access_policy(
             name=name, time_window_seconds=window,
             counter_types_to_track=_counter_types(AuthEventType.PASSWORD_FAIL),
             stages=[{"failure_threshold": threshold, "priority": 1,
                      "actions": [{"action_type": str(action), "action_value": None}]}],
-            target=LockoutTarget.USER, priority=priority)
+            target=ConditionalAccessTarget.USER, priority=priority)
 
     @staticmethod
     def _make_block_ip_policy(*, threshold, duration=600, window=3600, priority=1):
-        create_lockout_policy(
+        create_conditional_access_policy(
             name="ca_block_ip", time_window_seconds=window,
             counter_types_to_track=_counter_types(AuthEventType.PASSWORD_FAIL),
             stages=[{"failure_threshold": threshold, "priority": 1,
-                     "actions": [{"action_type": str(LockoutAction.BLOCK_IP), "action_value": duration}]}],
-            target=LockoutTarget.SOURCE_IP, priority=priority)
+                     "actions": [{"action_type": str(ConditionalAccessAction.BLOCK_IP), "action_value": duration}]}],
+            target=ConditionalAccessTarget.SOURCE_IP, priority=priority)
 
     def test_locked_user_rejected_at_auth(self):
-        db.session.add(UserLockoutState(resolver=self.user.resolver, uid=self.user.uid, realm=self.user.realm,
+        db.session.add(UserLockState(resolver=self.user.resolver, uid=self.user.uid, realm=self.user.realm,
                                         lock_expires_at=utc_now() + timedelta(seconds=600)))
         db.session.commit()
-        # Correct userstore password, but the user is locked -> 401 that states the lockout.
+        # Correct userstore password, but the user is locked -> 401 that states the lock.
         res = self._auth("cornelius", "test")
         self.assertEqual(401, res.status_code, res)
         self.assertEqual(4031, res.json["result"]["error"]["code"], res.json)
-        # The message tells the user about the (timed) lockout instead of "Wrong credentials".
+        # The message tells the user about the (timed) lock instead of "Wrong credentials".
         message = res.json["result"]["error"]["message"]
         self.assertIn("locked", message.lower(), message)
         self.assertIn("minute", message.lower(), message)
@@ -974,7 +974,7 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
 
         # Same tripped time limit, but now the user is locked: the lock is what refuses the login, and the row records
         # the lock rather than the time limit.
-        db.session.add(UserLockoutState(resolver=self.user.resolver, uid=self.user.uid, realm=self.user.realm,
+        db.session.add(UserLockState(resolver=self.user.resolver, uid=self.user.uid, realm=self.user.realm,
                                         lock_expires_at=utc_now() + timedelta(seconds=600)))
         db.session.commit()
         self._clear_authentication_log()
@@ -991,7 +991,7 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
 
     def test_permanently_locked_user_message_at_auth(self):
         # A permanent lock (no expiry) points the user at the administrator.
-        db.session.add(UserLockoutState(resolver=self.user.resolver, uid=self.user.uid, realm=self.user.realm,
+        db.session.add(UserLockState(resolver=self.user.resolver, uid=self.user.uid, realm=self.user.realm,
                                         lock_expires_at=None))
         db.session.commit()
         res = self._auth("cornelius", "test")
@@ -1053,12 +1053,12 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
         self.assertEqual("permanent", res.json["detail"]["restriction"], res.json)
 
     def test_hide_specific_error_message_strips_restriction_hint(self):
-        # With hide_specific_error_message the lockout becomes a generic failure and the
+        # With hide_specific_error_message the lock becomes a generic failure and the
         # restriction hint must be stripped, so neither the message nor the detail leaks
         # that the account is (permanently) locked.
         from privacyidea.lib.policy import set_policy, delete_policy, SCOPE
         from privacyidea.lib.policies.actions import PolicyAction
-        db.session.add(UserLockoutState(resolver=self.user.resolver, uid=self.user.uid,
+        db.session.add(UserLockState(resolver=self.user.resolver, uid=self.user.uid,
                                         realm=self.user.realm, lock_expires_at=None))
         db.session.commit()
         set_policy(name="ca_hide", scope=SCOPE.AUTH, action=f"{PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE}")
@@ -1099,7 +1099,7 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
         # After enough prior PASSWORD_FAILs the next login is denied pre-auth, even with
         # the correct password. The message states it was a conditional-access decision
         # (without naming the policy); no new log row and no persisted lock.
-        self._make_decision_policy(name="ca_deny", threshold=3, action=LockoutAction.DENY)
+        self._make_decision_policy(name="ca_deny", threshold=3, action=ConditionalAccessAction.DENY)
         for _ in range(3):
             res = self._auth("cornelius", "wrongpass")
             self.assertEqual(401, res.status_code, res)
@@ -1123,7 +1123,7 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
     # IP for the block, "conditional-access" for the decision).
 
     def _lock_user(self):
-        db.session.add(UserLockoutState(resolver=self.user.resolver, uid=self.user.uid, realm=self.user.realm,
+        db.session.add(UserLockState(resolver=self.user.resolver, uid=self.user.uid, realm=self.user.realm,
                                         lock_expires_at=utc_now() + timedelta(seconds=600)))
         db.session.commit()
 
@@ -1133,9 +1133,9 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
 
     def test_lock_checked_before_deny_at_auth(self):
         # Both a persistent lock and an always-met DENY stage: the lock is checked
-        # first, so the 401 states the account lockout, not the policy denial.
+        # first, so the 401 states the account lock, not the policy denial.
         self._lock_user()
-        self._make_decision_policy(name="ca_deny", threshold=0, action=LockoutAction.DENY)
+        self._make_decision_policy(name="ca_deny", threshold=0, action=ConditionalAccessAction.DENY)
         res = self._auth("cornelius", "test")
         self.assertEqual(401, res.status_code, res)
         message = res.json["result"]["error"]["message"]
@@ -1146,7 +1146,7 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
         # Both a persistent IP block and an always-met DENY stage: the block is
         # checked first, so the 401 names the blocked IP, not the policy denial.
         self._block_ip("203.0.113.7")
-        self._make_decision_policy(name="ca_deny", threshold=0, action=LockoutAction.DENY)
+        self._make_decision_policy(name="ca_deny", threshold=0, action=ConditionalAccessAction.DENY)
         res = self._auth("cornelius", "test", remote_addr="203.0.113.7")
         self.assertEqual(401, res.status_code, res)
         message = res.json["result"]["error"]["message"]
@@ -1155,7 +1155,7 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
 
     def test_lock_checked_before_ip_block_at_auth(self):
         # Both a persistent lock and a persistent IP block: the lock is checked
-        # first, so the 401 states the account lockout, not the IP block.
+        # first, so the 401 states the account lock, not the IP block.
         self._lock_user()
         self._block_ip("203.0.113.7")
         res = self._auth("cornelius", "test", remote_addr="203.0.113.7")
@@ -1169,7 +1169,7 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
         # maximum-priority default-allow exception cannot unlock a locked user.
         self._lock_user()
         self._make_decision_policy(name="ca_allow", threshold=0,
-                                   action=LockoutAction.ALLOW, priority=1)
+                                   action=ConditionalAccessAction.ALLOW, priority=1)
         res = self._auth("cornelius", "test")
         self.assertEqual(401, res.status_code, res)
         self.assertIn("account", res.json["result"]["error"]["message"].lower(), res.json)
@@ -1193,7 +1193,7 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
 
     def test_permanent_lock_message_wins_over_timed_ip_block(self):
         # Symmetric: a permanent user lock outranks a timed IP block.
-        db.session.add(UserLockoutState(resolver=self.user.resolver, uid=self.user.uid, realm=self.user.realm,
+        db.session.add(UserLockState(resolver=self.user.resolver, uid=self.user.uid, realm=self.user.realm,
                                         lock_expires_at=None))
         self._block_ip("203.0.113.7")  # timed block, 600s
         res = self._auth("cornelius", "test", remote_addr="203.0.113.7")
@@ -1221,19 +1221,19 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
     @smtpmock.activate
     def test_email_notice_surfaced_in_auth_rejection(self):
         # When an EMAIL_* action fires on the failing request, its notice is appended to the
-        # rejection message so the login screen shows it, just like a lockout message.
+        # rejection message so the login screen shows it, just like a lock message.
         smtpmock.setdata(response={})
-        add_smtpserver(identifier="lockoutmail", server="1.2.3.4", tls=False)
+        add_smtpserver(identifier="actionmail", server="1.2.3.4", tls=False)
         try:
-            create_lockout_policy(
+            create_conditional_access_policy(
                 name="ca_mail", time_window_seconds=3600,
                 counter_types_to_track=_counter_types(AuthEventType.PASSWORD_FAIL),
                 stages=[{"failure_threshold": 2, "priority": 1,
-                         "actions": [{"action_type": str(LockoutAction.EMAIL_ADMIN),
-                                      "action_value": {"smtp_identifier": "lockoutmail",
+                         "actions": [{"action_type": str(ConditionalAccessAction.EMAIL_ADMIN),
+                                      "action_value": {"smtp_identifier": "actionmail",
                                                        "recipient_group": "soc@example.com",
                                                        "subject": "alert", "body": "alert"}}]}],
-                target=LockoutTarget.USER, priority=1)
+                target=ConditionalAccessTarget.USER, priority=1)
 
             # 1st failure is below the threshold: plain rejection, no email, no notice.
             res = self._auth("cornelius", "wrongpass")
@@ -1250,25 +1250,25 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
             # An EMAIL-only stage writes no lock state, so the pre-check still lets the user in.
             self.assertFalse(is_user_locked(self.user))
         finally:
-            delete_smtpserver("lockoutmail")
+            delete_smtpserver("actionmail")
 
     @smtpmock.activate
-    def test_lockout_message_and_email_notice_combined(self):
+    def test_lock_message_and_email_notice_combined(self):
         # A stage that both locks the user (timed) and emails the admin: the rejection on the
-        # locking request leads with the lockout message and appends the email notice.
+        # locking request leads with the lock message and appends the email notice.
         smtpmock.setdata(response={})
-        add_smtpserver(identifier="lockoutmail", server="1.2.3.4", tls=False)
+        add_smtpserver(identifier="actionmail", server="1.2.3.4", tls=False)
         try:
-            create_lockout_policy(
+            create_conditional_access_policy(
                 name="ca_lockmail", time_window_seconds=3600,
                 counter_types_to_track=_counter_types(AuthEventType.PASSWORD_FAIL),
                 stages=[{"failure_threshold": 2, "priority": 1,
-                         "actions": [{"action_type": str(LockoutAction.LOCK_USER), "action_value": 600},
-                                     {"action_type": str(LockoutAction.EMAIL_ADMIN),
-                                      "action_value": {"smtp_identifier": "lockoutmail",
+                         "actions": [{"action_type": str(ConditionalAccessAction.LOCK_USER), "action_value": 600},
+                                     {"action_type": str(ConditionalAccessAction.EMAIL_ADMIN),
+                                      "action_value": {"smtp_identifier": "actionmail",
                                                        "recipient_group": "soc@example.com",
                                                        "subject": "s", "body": "b"}}]}],
-                target=LockoutTarget.USER, priority=1)
+                target=ConditionalAccessTarget.USER, priority=1)
 
             self._auth("cornelius", "wrongpass")  # 1st failure: below the threshold
             res = self._auth("cornelius", "wrongpass")  # 2nd: trips the stage -> lock + email
@@ -1282,22 +1282,22 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
             self.assertNotIn("Wrong credentials", message, message)
             self.assertTrue(is_user_locked(self.user))
         finally:
-            delete_smtpserver("lockoutmail")
+            delete_smtpserver("actionmail")
 
     def test_break_glass_local_admin_is_exempt_from_pre_auth_deny(self):
         # A blanket source-IP DENY that exempts local admins, written the obvious
         # way. It must be a source_ip target: a user-target policy already skips a
         # local admin because their User() never resolves, so the role would not be
         # consulted at all. Loopback is on the never-block list, hence 10.0.0.5.
-        create_lockout_policy(
+        create_conditional_access_policy(
             name="ca_deny_ip", time_window_seconds=3600,
             counter_types_to_track=_counter_types(AuthEventType.PASSWORD_FAIL),
             stages=[{"failure_threshold": 0, "priority": 1,
-                     "actions": [{"action_type": str(LockoutAction.DENY), "action_value": None}]}],
+                     "actions": [{"action_type": str(ConditionalAccessAction.DENY), "action_value": None}]}],
             conditions=[{"condition_type": str(ConditionType.USER_ROLE),
                          "operator": str(ConditionOperator.NOT_IN),
                          "value": [str(AuthLogUserRole.ADMIN_INTERNAL)]}],
-            target=LockoutTarget.SOURCE_IP, priority=1)
+            target=ConditionalAccessTarget.SOURCE_IP, priority=1)
 
         # The local DB admin gets in: pre-auth the role is admin-internal, taken
         # from g.resolved_user (before_request already looked the name up), so the

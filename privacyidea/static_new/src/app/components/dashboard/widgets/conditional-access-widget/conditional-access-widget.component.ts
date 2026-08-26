@@ -45,7 +45,7 @@ import {
 import {
   ConditionalAccessPolicyService,
   ConditionalAccessPolicyServiceInterface,
-  LockoutPolicy
+  ConditionalAccessPolicy
 } from "@services/conditional-access/conditional-access-policy.service";
 import { DashboardDataRef, DashboardDataStore } from "@services/dashboard/dashboard-data-store.service";
 import { formatLocalDateTime } from "@utils/date-format.utils";
@@ -85,13 +85,13 @@ export const WINDOW_END_PRESETS: readonly RangePreset[] = [
 
 // The three areas the widget summarizes are governed by separate rights, so each is fetched only when its own
 // right is granted and left out of the summary otherwise (see ConditionalAccessSummary's nullable sections).
-const POLICY_READ: PolicyAction = "lockout_policy_read";
-const LOCKOUT_READ: PolicyAction = "user_lockout_read";
+const POLICY_READ: PolicyAction = "conditional_access_policy_read";
+const USER_LOCK_READ: PolicyAction = "user_lock_read";
 const BLOCKLIST_READ: PolicyAction = "blocklist_read";
 
 // What one request returns per area, with null standing for "not fetched because the right is missing".
 interface ConditionalAccessResponses {
-  policies: PiResponse<LockoutPolicy[]> | null;
+  policies: PiResponse<ConditionalAccessPolicy[]> | null;
   permanentLocks: PiResponse<LockedUsersPage> | null;
   temporaryLocks: PiResponse<LockedUsersPage> | null;
   expiredLocks: PiResponse<LockedUsersPage> | null;
@@ -160,7 +160,7 @@ function isExpired(entry: BlocklistEntry): boolean {
 })
 export class ConditionalAccessWidgetComponent extends DashboardWidget implements OnInit {
   static override readonly type = "conditional-access";
-  static override readonly requiredAction = [POLICY_READ, LOCKOUT_READ, BLOCKLIST_READ];
+  static override readonly requiredAction = [POLICY_READ, USER_LOCK_READ, BLOCKLIST_READ];
   static override readonly title = $localize`Conditional Access`;
   static override readonly icon = "security";
   static override readonly titleLink = ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS;
@@ -397,9 +397,9 @@ export class ConditionalAccessWidgetComponent extends DashboardWidget implements
 
   ngOnInit(): void {
     const canReadPolicies = this.authService.actionAllowed(POLICY_READ);
-    const canReadLockouts = this.authService.actionAllowed(LOCKOUT_READ);
+    const canReadUserLocks = this.authService.actionAllowed(USER_LOCK_READ);
     const canReadBlocklist = this.authService.actionAllowed(BLOCKLIST_READ);
-    if (!canReadPolicies && !canReadLockouts && !canReadBlocklist) {
+    if (!canReadPolicies && !canReadUserLocks && !canReadBlocklist) {
       this.state.set("denied");
       return;
     }
@@ -409,13 +409,13 @@ export class ConditionalAccessWidgetComponent extends DashboardWidget implements
           policies: canReadPolicies ? this.policyService.getPolicies() : of(null),
           // The lock counts come per state rather than from one page of records: the totals must cover every
           // lock, not just the page the widget could show.
-          permanentLocks: canReadLockouts ? this.stateService.countLockedUsers(["permanent"]) : of(null),
-          temporaryLocks: canReadLockouts ? this.stateService.countLockedUsers(["temporary"]) : of(null),
-          expiredLocks: canReadLockouts ? this.stateService.countLockedUsers(["expired"]) : of(null),
+          permanentLocks: canReadUserLocks ? this.stateService.countLockedUsers(["permanent"]) : of(null),
+          temporaryLocks: canReadUserLocks ? this.stateService.countLockedUsers(["temporary"]) : of(null),
+          expiredLocks: canReadUserLocks ? this.stateService.countLockedUsers(["expired"]) : of(null),
           // Expired entries are included so the widget can report the stale rows a purge would remove.
           // The records behind the list: the locks still in force, so a lock is listed next to a blocked IP. The
           // counts above stay exact regardless of how many records this page holds.
-          recentLocks: canReadLockouts
+          recentLocks: canReadUserLocks
             ? this.stateService.fetchLockedUsers(["permanent", "temporary"], LOCK_RECORD_LIMIT)
             : of(null),
           blocklist: canReadBlocklist ? this.stateService.fetchBlocklist(true) : of(null)
@@ -455,7 +455,7 @@ export class ConditionalAccessWidgetComponent extends DashboardWidget implements
     return count > 0 ? "highlight-false" : "highlight-true";
   }
 
-  private policySummary(policies: LockoutPolicy[]): PolicySummary {
+  private policySummary(policies: ConditionalAccessPolicy[]): PolicySummary {
     // A dry-run policy is counted on its own and never as enforcing: it evaluates and records findings, but
     // its actions never run, so an admin reading "3 enforcing" must not be counting it.
     const enabled = policies.filter((policy) => policy.enabled);
