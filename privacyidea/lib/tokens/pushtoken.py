@@ -1002,20 +1002,13 @@ class PushTokenClass(TokenClass):
         if all(k in request_data for k in ("fbtoken", "pubkey")):
             return cls._handle_enrollment_step2(serial, request_data)
         elif "signature" in request_data and "new_fb_token" not in request_data:
-            # Conditional-access pre-check runs ONLY here, on the authentication
-            # path (the signed challenge answer), never on enrollment or firebase
-            # token updates. The smartphone sends only the serial, so the token
-            # owner is resolved from it and the answer is rejected - before the
-            # signature is verified - when that owner is locked, the source IP is
-            # blocked, or a DENY policy applies.
+            # The conditional-access pre-check runs ONLY here, on the authentication path (the signed challenge
+            # answer) - never on enrollment or firebase token updates. The smartphone sends only the serial, so
+            # the owner is resolved from it, and the answer is refused before the signature is verified.
             #
-            # The rejection is reported the way this endpoint reports any failed
-            # answer, so it cannot be told apart from one: an error message an
-            # admin configured is surfaced, and a silent rejection carries no
-            # detail, because an ordinary failed answer here carries none either.
-            # That is the opposite of /validate/*, where every failure has a
-            # detail and a silent rejection therefore needs the generic message
-            # to have one too.
+            # A silent rejection carries no detail, because an ordinary failed answer here carries none either -
+            # the opposite of /validate/*, where every failure has one and a silent rejection needs the generic
+            # message to have one too. Configured wording is surfaced on both.
             from privacyidea.api.lib.conditional_access import conditional_access_rejection
             rejection = conditional_access_rejection(cls._resolve_token_owner(serial))
             if rejection is not None:

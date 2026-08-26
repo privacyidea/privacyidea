@@ -571,13 +571,11 @@ def after_request(response):
     This function is called after a request
     :return: The response
     """
-    # Report what conditional access did to this request, if anything. Here rather than on the authenticating
-    # endpoints themselves for two reasons: this runs for a response an *error handler* built, where every
-    # post-policy is skipped, and no new gated endpoint can forget to opt in. It no-ops in one lookup for the
-    # many requests that never authenticated anything - see surface_conditional_access_message. Before
-    # sign_response, which the postrequest decorator above applies to this function's return value - and first
-    # in this function, because a restricted request gets a *replacement* response and the headers set below
-    # have to land on the one that is actually returned.
+    # Report what conditional access did to this request, if anything. Central rather than per endpoint for two
+    # reasons: this also runs for a response an *error handler* built, where every post-policy is skipped, and no
+    # gated endpoint can forget to opt in. One lookup and it is done for every request. First in this function, because
+    # a restricted request gets a *replacement* response and the headers set below must land on the one actually
+    # returned - and before sign_response, which the decorator above applies to whatever this function returns.
     response = surface_conditional_access_message(response)
 
     # No caching!
@@ -631,10 +629,8 @@ def auth_error(error):
             hide_message = Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE,
                                       user_object=request.User if hasattr(request, 'User') else None).any()
             if hide_message:
-                # Only the message is conditional access's to keep. The error id says nothing about what an admin
-                # configured and everything about *why* the login failed, so it is remapped either way - otherwise a
-                # masked conditional-access rejection stayed AUTHENTICATE_WRONG_CREDENTIALS while every other masked
-                # failure became AUTHENTICATE, and the code told them apart after the message had stopped doing so.
+                # Only the message is conditional access's to keep. The id says nothing about what an admin
+                # configured and everything about *why* the login failed, so it is remapped either way.
                 error.message = claimed_ca_message() or GENERIC_AUTH_FAILURE
                 # Remap to the generic AUTHENTICATE id, so a masked failure is
                 # indistinguishable from any other unspecified auth failure.

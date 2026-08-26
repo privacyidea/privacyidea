@@ -22,52 +22,41 @@ authenticating entry points, plus the messages that tell a human why.
 Both entry points **decide** identically - :func:`_evaluate_rejection` is the whole decision - and differ only in how a
 rejection reaches the client:
 
-* :func:`conditional_access_gate` guards ``/validate/*`` and **returns** the rejection as a :class:`~flask.Response`: a
-  machine-facing failure that says whatever the triggering stage configured, and by default only what every other
-  failed authentication says.
+* :func:`conditional_access_gate` guards ``/validate/*`` and **returns** the rejection as a :class:`~flask.Response`:
+  an ordinary ``200`` carrying ``result.value`` false and no error object, like any other failed authentication there.
 * :func:`conditional_access_login_gate` guards the JWT login ``/auth`` and **raises** an :class:`AuthError` the login
-  screen renders, so a human is told what is in force instead of "Wrong credentials" for ten minutes. An ``AuthError``
-  needs some message, so with no error message configured it falls back to the generic failure rather than to silence.
+  screen renders, so a human is told what is in force instead of "Wrong credentials" for ten minutes. Its id is
+  :attr:`~privacyidea.lib.error.Error.AUTHENTICATE` (``403``). An ``AuthError`` needs some message, so
+  with nothing configured it falls back to the generic failure rather than to silence.
 
-  Its id is :attr:`~privacyidea.lib.error.Error.AUTHENTICATE` (``403``), not
-  :attr:`~privacyidea.lib.error.Error.AUTHENTICATE_WRONG_CREDENTIALS` (``4031``) as an ordinary failed login there:
-  a rejection is refused before the credential is ever checked, so calling it wrong credentials states something
-  this path cannot know and that is usually false - a locked user typing the right password gets rejected too. The
-  ``/validate`` endpoints need no such choice, since a failed authentication there is an ordinary ``200`` carrying
-  ``result.value`` false and no error object at all.
-
-  This holds whether or not a stage carried wording, and whether the restriction was already in force or written
-  by this very request: a rejection reads the same either way (see :func:`rejection_message`). A stage that only
-  *notified* is the one exception - it refused nothing, the credential really was wrong, and the failure keeps its
-  own id and its own reason, with the notification appended (see :func:`compose_failure_message`).
+Silent is the default on both: a rejection says what an admin configured on the triggering stage, and with nothing
+configured only what every other failed authentication says.
 
 A restriction reads the same whichever request meets it. The request that *writes* a lock is answered exactly as the
-requests the lock then refuses - the whole response, not just the wording, and whether or not a stage carried any:
-:func:`rejection_message` for what it says, and the failure's own details dropped either way, because the credential
-that request happened to carry no longer decides anything. One lock therefore cannot answer two ways depending on
-which request caught it. The cost is that a silent lock is detectable at the moment it trips, since the response
-changes shape; a stage that only notified is the exception and leaves its failure entirely intact.
+requests the lock then refuses - the whole response, not just the wording, and whether or not a stage configured any
+(see :func:`rejection_message`). The failure's own details go with it, since the credential that request happened to
+carry no longer decides anything. The cost is that a silent lock is detectable at the moment it trips, because the
+response changes shape.
+
+A stage that only *notified* is the exception throughout: it refused nothing, so the credential failure is still the
+reason and keeps its own id, message and details, with the notification appended (see
+:func:`compose_failure_message`).
 
 Both classify their rejection in the authentication log, since that row is the only thing an admin can filter for: the
 request is turned away before anything else logs an outcome for it. Both link it to the transaction the request
 carries, if any, so the rejection lands on the attempt it refused to process. ``/auth`` additionally records the
 ``internal_admin`` flag, being the only entry point where a local admin authenticates.
 
-``hide_specific_error_message`` does not discard either message. That policy suppresses what privacyIDEA volunteers
-*by default* - which factor failed, why the token refused; a conditional-access message is the opposite, since an
-admin either wrote it on the stage or turned it on by policy. So whichever path produced one claims it
-(:meth:`~privacyidea.lib.conditional_access.request_context.ConditionalAccessContext.claim_message`), and both
-places that would otherwise mask it show that wording instead of their own, via
+``hide_specific_error_message`` and ``no_detail_on_fail`` do not discard a configured message. Those actions suppress
+what privacyIDEA volunteers *by default* - which factor failed, why the token refused; a conditional-access message is
+the opposite, since an admin either wrote it or turned it on by policy. So a gate claims its error message
+(:meth:`~privacyidea.lib.conditional_access.request_context.ConditionalAccessContext.claim_message`) and all three
+places that would otherwise mask it read it back through
 :func:`~privacyidea.lib.conditional_access.request_context.claimed_ca_message`:
-:func:`~privacyidea.api.before_after.auth_error` on ``/auth`` and the postpolicy of the same name on ``/validate/*``.
+:func:`~privacyidea.api.before_after.auth_error` on ``/auth``, and both actions on ``/validate/*``. Only the message
+survives; the rest of the detail is collapsed, which is what those actions are for and costs a rejection nothing.
 
-What is claimed is the wording *as it must read once the specific reason is masked*, which is not always what the
-response already carries. A restriction replaces that reason, so the two coincide; a notification is appended to it,
-and only the appended half is conditional access's to keep - claiming the composed string would carry "wrong otp pin"
-straight past the policy that exists to suppress it.
-
-Only the message, though: both still collapse the rest of the detail, which is what the policy is for and is no loss
-here - a rejection has nothing else to put there anyway (see :func:`rejection_message`).
+:func:`surface_conditional_access_message` claims nothing - it runs from ``after_request``, after all three.
 """
 import functools
 import json
@@ -326,42 +315,29 @@ def surface_conditional_access_message(response):
     """
     Report on the response what conditional access just did to this request.
 
-    Called from :func:`~privacyidea.api.before_after.after_request`, which is the last point that can still shape
-    a body and - unlike a decorator - runs for a response an *error handler* built. That matters: a view that
-    raises skips every post-policy, so a stage tripped by a request ending in ``ERR1007`` used to be written and
-    then never mentioned, with the next request carrying the wording instead. It also means no endpoint can
-    forget to opt in, which the per-endpoint decorator this replaces could.
-
-    Nothing here is policy-driven, so it is not a post-policy; and it cannot be teardown either, since teardown
-    callbacks are handed the *exception*, not the response - by then the body is already a WSGI iterable.
-    Teardown still runs the same evaluation as a backstop for the one case this misses, an unhandled ``500``,
-    where Flask skips ``after_request`` entirely. Both are guarded per classification
-    (:meth:`~privacyidea.lib.conditional_access.request_context.ConditionalAccessContext.run_post_eval`), so
-    whichever runs first does the work and the other returns nothing. The flush first is what makes this
-    request's own event part of the count.
+    Called from :func:`~privacyidea.api.before_after.after_request`: the last point that can still shape a body,
+    and - unlike a decorator - one that also runs for a response an *error handler* built. Being central also means
+    no gated endpoint can forget to opt in.
 
     Reads the buffer with :func:`~privacyidea.lib.conditional_access.request_context.peek_ca_context` rather than
-    creating one: this runs on every response of every blueprint, and a request that never authenticated anything
-    has no buffer - which is exactly the question to ask, and answering it costs one lookup. Creating one here
-    would allocate a buffer for every administrative request and give teardown work to undo.
+    creating one. This runs on every response of every blueprint, and "has no buffer" is exactly the question to
+    ask - a request that authenticated nothing has none - answered in a single lookup. Creating one would allocate a
+    buffer for every administrative request and leave teardown work to undo.
 
     Running after the post-policies rather than among them is what makes ``hide_specific_error_message`` and
-    ``no_detail_on_fail`` a non-issue for this path: they have already had their say, so a notification composes
-    onto whatever survived them - the generic failure when masking is on, the token's own reason when it is not -
-    and needs no claim to protect it. The pre-check still claims, because its response is returned from inside
-    the decorator stack where those two can still reach it.
+    ``no_detail_on_fail`` a non-issue here: they have already had their say, so a notification composes onto
+    whatever survived them - the generic failure when masking is on, the token's own reason when it is not - and
+    needs no claim to protect it. The gates still claim, their responses being built where those actions can reach
+    them.
 
-    A stage can be tripped by any event a policy tracks, a challenge trigger included, and a restriction written
-    on such a request refuses it like any other: the response then carries the reason and nothing else. That is
-    the whole rule - what a conditional-access rejection says does not depend on what the request happened to be
-    doing when it was refused.
+    A stage can be tripped by any event a policy tracks, a challenge trigger included, and a restriction written on
+    such a request refuses it like any other. What a rejection says never depends on what the request happened to be
+    doing when it was refused. A stage that only notified changes none of that: it refused nothing, so its message
+    is appended and everything the response carried - a challenge included - stays.
 
-    Withdrawing the challenge from the response is not the same as invalidating it: the row is left alone and
-    simply expires unanswered, because the client is never told the ``transaction_id`` and could not use it
-    anyway - the next request carries it into the pre-check, which refuses it with the same wording.
-
-    A stage that only notified changes none of this. It refused nothing, so its message is appended and
-    everything the response already carried - a challenge included - is left in place.
+    Withdrawing a challenge from the response is not invalidating it: the row is left to expire unanswered, and the
+    client is never told the ``transaction_id``, so it could not use it anyway. The next request carries it into the
+    pre-check, which refuses it with the same wording.
     """
     context = peek_ca_context()
     if context is None or not response or not response.is_json:
@@ -369,58 +345,51 @@ def surface_conditional_access_message(response):
     content = response.json
     try:
         context.flush()
-        # Everything in force was written by this request - anything already in force was refused by the
-        # pre-check, which returns its own response - so the evaluation is the whole story and nothing has to
-        # be read back. A request the pre-check did refuse still passes through here, since it returns rather
-        # than raises and this hook wraps it; run_post_eval declines to evaluate its own rejections, so there
-        # is nothing to compose and the gate's error message is left alone.
+        # Anything already in force was refused by the pre-check, which returns its own response, so this
+        # evaluation is the whole story and nothing has to be read back. A request the pre-check did refuse still
+        # reaches here; run_post_eval declines to evaluate conditional access's own rejections, so there is
+        # nothing to add and the gate's wording stands.
         evaluation = context.run_post_eval()
         result = content.get("result") or {}
         detail = content.get("detail") or {}
         # An error-shaped body means the view raised and an error handler built this response.
         errored = "error" in result
-        if errored and not evaluation.restricted:
-            # Only a restriction overtakes an error. A notification refused nothing, so the error it merely
-            # coincided with is still the reason the request failed and is left to speak for itself.
-            return response
         if evaluation.restricted:
             if errored:
-                # Refused by conditional access, so answered the way this endpoint answers a refusal rather than
-                # as the error it was about to be. The endpoint's own error must not survive: "ERR1007: the token
-                # is locked" states the very reason the rejection exists to withhold, and would sit next to the
-                # wording meant to replace it.
+                # Answered the way this endpoint answers a refusal rather than as the error it was about to be.
+                # That error must not survive: "ERR1007: the token is locked" states the very reason a rejection
+                # withholds, and would sit beside the wording meant to replace it.
                 return _rejection_response(context, rejection_message(evaluation.messages))
-            # Answered exactly as the pre-check answers every request after this one - wording and nothing else -
-            # whether or not that wording exists. Keyed on the restriction rather than on having something to say,
-            # because a silent lock still refuses this request: leaving the token failure in place would have the
-            # response that *wrote* the lock disagree with the ones it then refuses.
-            #
-            # Keyed on it rather than on the response looking like a failure, too. ``result.value`` is a *count* on
-            # /validate/triggerchallenge, so a request that successfully triggered a challenge and tripped a lock in
-            # the same breath reads as a success - and used to be left alone, handing the client a transaction_id
-            # the next request would refuse.
-            #
-            # Everything else in the detail describes what this rejection overtook - the token attempt that failed,
-            # or the challenge that was about to be handed out. The threadid is kept: it identifies the request
-            # rather than saying anything about it.
             if not evaluation.messages and "detail" not in content:
-                # A silent restriction on a response whose detail the policies removed (no_detail_on_fail) says
-                # nothing, rather than putting a generic message where they left none - the pre-check answers such
-                # a request with no detail either, and the two have to agree.
+                # A silent restriction on a response whose detail no_detail_on_fail removed stays quiet rather than
+                # putting a generic message where that action left none: the pre-check answers such a request with
+                # no detail either, and the two have to agree.
                 return response
+            # Answered as the pre-check answers every request after this one: the wording and nothing else. Keyed on
+            # the restriction rather than on having something to say, because a silent lock refuses this request
+            # too - and rather than on the response looking like a failure, because ``result.value`` is a *count* on
+            # /validate/triggerchallenge, where a request that triggers a challenge and trips a lock in one breath
+            # reads as a success.
+            #
+            # The rest of the detail describes what the rejection overtook: the token attempt that failed, or the
+            # challenge about to be handed out. The threadid stays - it identifies the request rather than
+            # describing it.
             message = rejection_message(evaluation.messages)
             detail = {"threadid": detail["threadid"]} if "threadid" in detail else {}
-            # The response is a refusal now, whatever it was on its way to being: a falsy value in the type this
-            # endpoint uses, and REJECT, which is also what lets hide_specific_error_message mask it - that
-            # post-policy keys on the authentication field and runs after this hook.
+            # A refusal now, whatever it was on its way to being: a falsy value in the type this endpoint uses, and
+            # REJECT, which is what a refused request reads as everywhere else.
             result["value"] = _rejected_value(result.get("value"))
             result["authentication"] = AUTH_RESPONSE.REJECT
+        elif errored:
+            # Only a restriction overtakes an error. A notification refused nothing, so the error it merely
+            # coincided with is still why the request failed, and speaks for itself.
+            return response
         elif evaluation.messages and not result.get("value"):
-            # A stage that only notified, on a response that did in fact fail.
+            # A stage that only notified, on a response that did fail.
             message = compose_failure_message(detail.get("message"), evaluation.messages)
         else:
             # Nothing happened, or a notification on a response that did not fail: the message is failure-only and
-            # is never shown on a successful authentication.
+            # never shown on a successful authentication.
             return response
         detail["message"] = message
         content["result"] = result

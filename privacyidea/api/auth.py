@@ -578,11 +578,11 @@ def get_auth_token():
                        username=login_name,
                        internal_admin=internal_admin)
 
-    # Feed the classified outcome to the lockout engine. Unlike the other endpoints this cannot wait for request
-    # teardown: a stage this login tripped may have wording to surface on the rejection below, and the lock/block it
-    # may have just written is read back there. So the staged log row is written now - the count has to include it -
-    # and the evaluation is run in-view. Both are idempotent, so teardown finds nothing left to do. Guarded
-    # internally; it must never break this login response.
+    # Feed the classified outcome to the lockout engine here, in the view, because this endpoint *raises* its
+    # rejection: the error message, the error id and the details all go into the AuthError below, and the lock or block
+    # this login may have just written is read back for them. The staged row is flushed first, so the count includes
+    # this request's own event. Both halves are guarded and idempotent, so after_request and teardown find nothing
+    # left to do and this can never break the login response.
     context = get_ca_context()
     context.flush()
     evaluation = context.run_post_eval()

@@ -373,10 +373,7 @@ def _challenge_owner(challenge) -> User:
 @postpolicy(check_serial, request=request)
 @postpolicy(autoassign, request=request)
 @add_serial_from_response_to_g
-# The conditional-access gate is the first decorator that acts on the request: nothing may run for a locked user, a
-# blocked source IP or a denied request before it is refused. It stays below the response decorators because it
-# *returns* its rejection rather than raising one - which is what keeps a refused request shaped like every other
-# failed authentication this endpoint produces - and a returned response still travels back out through them.
+# First decorator to act on the request; see conditional_access_gate for why it sits exactly here.
 @conditional_access_gate(_conditional_access_identity)
 @prepolicy(check_application_tokentype, request=request)
 @prepolicy(pushtoken_validate, request=request)
@@ -527,10 +524,8 @@ def check():
 
 
     """
-    # The conditional-access pre-check runs in the @conditional_access_gate
-    # decorator above (resolving the identity via _conditional_access_identity),
-    # so a locked user, blocked source IP or DENY decision is rejected before the
-    # body runs.
+    # A locked user, a blocked source IP or a DENY decision was already refused by @conditional_access_gate above,
+    # which resolves the identity via _conditional_access_identity.
 
     # Handle Enrollment Cancellation (Immediate Return)
     if is_true(request.all_data.get("cancel_enrollment")):
@@ -1155,10 +1150,9 @@ def check_remember_device():
 @postpolicy(mangle_challenge_response, request=request)
 @postpolicy(preferred_client_mode, request=request)
 @add_serial_from_response_to_g
-# The conditional-access gate is the first decorator that acts on the request: nothing may run for a locked user, a
-# blocked source IP or a denied request before it is refused.
-# rejection_value=0: result.value here is the number of challenges triggered, not a boolean, so a rejection
-# answers with this endpoint's own kind of nothing rather than changing the field's type.
+# First decorator to act on the request; see conditional_access_gate for why it sits exactly here.
+# rejection_value=0: result.value here is the number of challenges triggered, not a boolean, so a rejection answers
+# with this endpoint's own kind of nothing rather than changing the field's type.
 @conditional_access_gate(rejection_value=0)
 @check_user_serial_or_cred_id_in_request(request)
 @prepolicy(check_application_tokentype, request=request)
@@ -1285,9 +1279,7 @@ def trigger_challenge():
 
     """
     user = request.User
-    # The conditional-access pre-check runs in the @conditional_access_gate
-    # decorator above (gating on request.User), so a locked user, blocked source
-    # IP or DENY decision is rejected before a challenge is triggered.
+    # A locked user, a blocked source IP or a DENY decision was already refused by @conditional_access_gate above.
     serial = get_optional(request.all_data, "serial")
     token_type = get_optional(request.all_data, "type")
     details = {"messages": [], "transaction_ids": []}
@@ -1334,12 +1326,6 @@ def trigger_challenge():
 
 @validate_blueprint.route('/polltransaction', methods=['GET'])
 @validate_blueprint.route('/polltransaction/<transaction_id>', methods=['GET'])
-# Deliberately *not* gated by conditional access - the only authentication-related endpoint that is not. A poll is a
-# status read: it carries no authentication event, cannot advance any counter, and reveals nothing but the challenge's
-# own status. Gating it bought nothing and cost the contract: a rejection replaces detail.challenge_status - the one
-# field a client acts on, and the very channel that would tell a poller to stop - with a message the shipped client
-# never reads, while running a lock read, a block read and two policy queries on every poll of every pending login.
-# A lock is still enforced where it decides something: the /validate/check that completes the login is gated.
 @prepolicy(mangle, request=request)
 @CheckSubscription(request)
 @prepolicy(api_key_required, request=request)
@@ -1430,6 +1416,7 @@ def poll_transaction(transaction_id=None):
 
 
 @validate_blueprint.route('/initialize', methods=['POST', 'GET'])
+# First decorator to act on the request; see conditional_access_gate for why it sits exactly here.
 @conditional_access_gate()
 @prepolicy(fido2_auth, request=request)
 @prepolicy(disabled_token_types, request=request)

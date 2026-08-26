@@ -251,13 +251,10 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         self.assertTrue(is_user_locked(User("selfservice", self.realm1)))
 
     def test_a_challenge_that_succeeds_and_trips_a_lock_is_still_withdrawn(self):
-        # This used to assert the opposite, on the grounds that a challenge actually triggered is not a failure and
-        # so has nothing to report. The count-as-value shape is what made that look right: result.value here is the
-        # *number of challenges triggered*, so a request that both triggered one and tripped a lock read as a
-        # success and was left alone - handing the client a transaction_id the pre-check would refuse on the very
-        # next request, and answering differently from every request the lock then refuses.
-        #
-        # What decides is the restriction, not whether the response looked like a failure.
+        # What decides is the restriction, not whether the response looked like a failure. That distinction matters
+        # here because result.value is the *number of challenges triggered*, so a request that both triggers one and
+        # trips a lock reads as a success - yet handing the client a transaction_id the pre-check would refuse on the
+        # very next request would answer differently from every request the lock then refuses.
         self._make_lock_policy(counter_type=AuthEventType.CHALLENGE_TRIGGERED, threshold=1, duration=600,
                                error_message="Locked. Try again in about {duration}.")
         with self.app.test_request_context("/validate/triggerchallenge", method="POST",
@@ -316,6 +313,7 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         # rather than saying anything about it, so it stays.
         self.assertSetEqual({"message", "threadid"}, set(body["detail"]), body)
         self.assertEqual("Locked. Try again in about 10 minute(s).", body["detail"]["message"], body)
+        # REJECT rather than CHALLENGE: the challenge was withdrawn, so this response is a refusal like any other.
         self.assertEqual(AUTH_RESPONSE.REJECT, body["result"]["authentication"], body)
         # Writing the lock does not reclassify the request: USER_LOCKED is what the *pre-check* of a later
         # request logs, so this one is still filed as the challenge trigger it was.
@@ -439,9 +437,9 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
 
     def test_a_restriction_written_by_a_raising_request_is_still_answered_as_a_rejection(self):
         # A view that raises skips every post-policy, so the response is built by an error handler. The engine
-        # still runs (at teardown), so the lock is written - it used to be written and then never mentioned, with
-        # the *next* request carrying the wording. Reported now, and reported as a rejection: the endpoint's own
-        # error must not survive, because "the token is locked" states the very reason a rejection withholds.
+        # still runs (at teardown), so the lock is written either way - and the response has to say so, as a
+        # rejection: the endpoint's own error must not survive, because "the token is locked" states the very
+        # reason a rejection withholds.
         remove_token(self.serial)
         init_token({"serial": self.serial, "type": "hotp", "otpkey": self.otpkey, "pin": "pin"}, user=self.user)
         revoke_token(self.serial)

@@ -104,9 +104,8 @@ ACTION_SEVERITY: tuple[LockoutAction, ...] = (
 #: :data:`~privacyidea.lib.conditional_access.authentication_event_types._EVENT_RANK`.
 _ACTION_RANK: dict[LockoutAction, int] = {action: rank for rank, action in enumerate(ACTION_SEVERITY)}
 
-#: The actions that only report something. Their message is *appended* to a failure conditional access did not
-#: cause, where every other action's message replaces the reason
-#: (see :func:`~privacyidea.api.lib.conditional_access.replaces_failure_reason`).
+#: The actions that only report something, rather than restricting anything. Used to compose the default error message
+#: for what a stage did (see :func:`~privacyidea.lib.conditional_access.lockout_policy.compose_default_error_message`).
 NOTIFYING_ACTIONS = frozenset({LockoutAction.EMAIL_USER, LockoutAction.EMAIL_ADMIN})
 
 
@@ -235,9 +234,11 @@ class StageMessage:
     One user-facing message a triggered stage produced, already rendered.
 
     :ivar text: what to show; ``{duration}`` is substituted here, where the duration just written is known.
-    :ivar action: the action this message is about. It ranks the message (:data:`ACTION_SEVERITY`) and says
-        whether it replaces the failure's reason or is appended to it (:data:`NOTIFYING_ACTIONS`) - both read off
-        the one thing that happened, rather than derived a second time.
+    :ivar action: the action this message is about, which ranks it (:data:`ACTION_SEVERITY`) so a caller showing
+        several leads with the one the user can do least about. Read off the one thing that happened rather than
+        derived a second time. Whether the message *replaces* the failure's reason or is appended to it is a
+        separate question, answered by whether the request was restricted at all - see
+        :attr:`~privacyidea.lib.conditional_access.request_context.PostEvaluation.restricted`.
     """
     text: str
     action: LockoutAction
@@ -286,12 +287,11 @@ def rank_and_deduplicate(messages: list["StageMessage"]) -> list["StageMessage"]
     """
     The messages to show, ordered by :data:`ACTION_SEVERITY` and with each distinct sentence kept once.
 
-    Ranked before de-duplicating, so the strongest meaning of a given sentence is the one kept. An admin can
-    configure the same error message on a notify-only stage and on a locking one; keeping the notification would have
-    :func:`~privacyidea.api.lib.conditional_access.compose_failure_message` append it to the generic failure rather
-    than replace it, and the user would read "wrong credentials" for an account that is locked. The sort is stable,
-    so messages of equal severity stay in the order they were collected in. A message about an action with no rank
-    sorts last, so an oversight in :data:`ACTION_SEVERITY` costs the order rather than the message.
+    Ranked before de-duplicating, so where an admin configured the same sentence on a notify-only stage and on a
+    locking one, the copy kept is the one labelled with the severer action - and a reader of the result sees the
+    ranking the stage earned. The sort is stable, so messages of equal severity stay in the order they were
+    collected in. A message about an action with no rank sorts last, so an oversight in :data:`ACTION_SEVERITY`
+    costs the order rather than the message.
 
     Used by both paths that describe a restriction - the post-response evaluation and the pre-check that refuses
     the requests after it - so the same state cannot be worded differently depending on which one answers.
@@ -313,10 +313,9 @@ def restriction_messages(*restrictions: "RestrictionStatus | None",
     Silent by default: a restriction carrying no error message produces none, and ``None`` (nothing in force)
     contributes nothing at all. With *use_default_error_message* the wording for the restriction's shape stands
     in for a missing one, which is what the ``show_default_ca_error_message`` policy buys - an admin gets the same
-    sentence they would have got by writing the suggestion onto every stage by hand. Silent is still not
-    generic: the rejection carrying no message at all is what leaves it indistinguishable from any other
-    failure, which is a separate question the caller answers (:data:`~privacyidea.api.lib.utils.
-    GENERIC_AUTH_FAILURE`).
+    sentence they would have got by writing the suggestion onto every stage by hand. Silent is not the same as
+    generic: producing no message is what leaves a rejection indistinguishable from any other failure, and what
+    the response then says instead is the caller's question to answer.
 
     Both paths that describe a restriction come through here, so the error message cannot depend on which one
     answered: the pre-check that refuses a request already restricted, and the evaluation that just restricted
@@ -1697,8 +1696,7 @@ def _execute_stage_actions(policy: LockoutPolicy, stage: LockoutPolicyStage,
             compose_default_error_message([outcome.action_type for outcome in outcomes]))
     else:
         rendered = None
-    # Ranked by the most severe thing the stage actually did, which is also what decides whether the message
-    # replaces the failure's reason or is appended to it (see NOTIFYING_ACTIONS).
+    # Ranked by the most severe thing the stage actually did, so a caller showing several messages leads with that.
     action = most_severe_action(outcome.action_type for outcome in outcomes)
     messages = [StageMessage(rendered, action)] if rendered and action else []
     return LockoutEvaluation(messages=messages, outcomes=outcomes, enforced_targets=enforced)

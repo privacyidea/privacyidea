@@ -115,32 +115,27 @@ class ConditionalAccessContext:
         # The classification the engine has already been run for, so a repeated call is skipped but a *corrected*
         # outcome is not (see run_post_eval).
         self._evaluated_as = None
-        # The wording conditional access claims for this response, in the form that is safe to show even when the
-        # specific failure reason is masked (see claim_message).
+        # The wording conditional access claims for this response, so the masking actions show it (see claim_message).
         self.own_message: str | None = None
         # Whether a rejection with no error message of its own falls back to the default wording for what it did
         # (see CAContext). Resolved once by the gate, where policies can be matched, and read again at
         # post-response evaluation so both halves of one request answer the same way.
         self.use_default_error_message = False
-        # How this endpoint answers a request conditional access refuses, recorded by whichever gate guards it so
-        # the response hook can answer a *restricted* request the same way - even when the view raised and the
-        # body it has to replace is an error. ``rejection_value`` is what ``result.value`` says (a count on
-        # /validate/triggerchallenge, hence not simply False); ``rejects_with_error`` is set by the /auth gate,
-        # the one entry point whose failed authentication is an error response rather than a 200 carrying false.
+        # How this endpoint answers a refused request, recorded by whichever gate guards it so the response hook can
+        # answer a *restricted* request the same way - even when the view raised and the body to replace is an error.
+        # ``rejection_value`` is what ``result.value`` says (a count on /validate/triggerchallenge, hence not simply
+        # False); ``rejects_with_error`` marks /auth, the one entry point whose failed authentication is an error
+        # response rather than a 200 carrying false.
         self.rejection_value: Any = False
         self.rejects_with_error = False
 
     def claim_message(self, message: str) -> None:
         """
         Claim *message* as conditional access's own wording for this response, so ``hide_specific_error_message``
-        leaves it alone (see :func:`claimed_ca_message`).
+        and ``no_detail_on_fail`` show it instead of their own generic text (see :func:`claimed_ca_message`).
 
-        What is claimed is the wording as it must read **when the specific failure reason is masked**, which is not
-        always the wording the response already carries. A restriction replaces that reason, so the two are the same
-        sentence; a notification is *appended* to it, and the response therefore says "wrong otp pin. Your
-        administrator has been notified." while only the second half is conditional access's to keep. Claiming the
-        composed string there would carry the token's reason straight past the very policy that exists to suppress
-        it, so the caller composes this one against the generic failure instead.
+        Only the gates claim: their responses are built inside the decorator stack, where those two actions can
+        still reach them. The ``after_request`` hook needs no claim, since it runs after both.
         """
         self.own_message = message
 
@@ -478,17 +473,13 @@ def current_attempt_id() -> str | None:
 
 def claimed_ca_message() -> str | None:
     """
-    The wording conditional access claims for this response (or ``AuthError``), or ``None`` when it wrote none.
+    The error message conditional access claims for this response (or ``AuthError``), or ``None`` when it wrote none.
 
-    ``hide_specific_error_message`` exists to suppress the error message privacyIDEA volunteers *by default* - which
-    factor failed, why the token refused. A conditional-access message is the opposite: an admin either wrote it
-    on the stage or turned it on by policy. The two are separate concerns, so that policy shows this wording rather
-    than its own. It is only about the message; whether a failure carries *details* is ``no_detail_on_fail``'s
-    question, and conditional access answers it for itself by never putting anything but the message there.
-
-    This is what the masking callers show, rather than whatever the response body happens to hold: an appended
-    notification leaves the token's own reason in that body, and keeping it would defeat the policy
-    (see :meth:`ConditionalAccessContext.claim_message`).
+    ``hide_specific_error_message`` and ``no_detail_on_fail`` exist to suppress what privacyIDEA volunteers *by
+    default* - which factor failed, why the token refused. A conditional-access message is the opposite: an admin
+    either wrote it on the stage or turned it on by policy. The two are separate concerns, so both actions show
+    this wording rather than their own generic text, and suppress everything else as usual - which costs a
+    rejection nothing, since it has nothing else to say.
 
     Read with :func:`peek_ca_context`, so asking the question on a request that never touched conditional access
     does not bring a buffer into existence.
