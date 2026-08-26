@@ -1121,12 +1121,12 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
 
     # --- /validate/triggerchallenge -------------------------------------------
 
-    def _trigger_challenge(self, remote_addr: str | None = None) -> dict:
+    def _trigger_challenge(self, remote_addr: str | None = None, data: dict | None = None) -> dict:
         if not getattr(self, "at", None):
             self.authenticate()
         kwargs = {"environ_base": {"REMOTE_ADDR": remote_addr}} if remote_addr else {}
         with self.app.test_request_context('/validate/triggerchallenge', method='POST',
-                                           data={"user": "cornelius"},
+                                           data=data if data is not None else {"user": "cornelius"},
                                            headers={"Authorization": self.at}, **kwargs):
             response = self.app.full_dispatch_request()
             self.assertEqual(200, response.status_code, response)
@@ -1142,6 +1142,26 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         # transaction id is returned.
         entries = assert_authentication_log([AuthEventType.USER_LOCKED])
         assert_authentication_log_entry(entries[AuthEventType.USER_LOCKED], user=self.user)
+        self.assertEqual(0, db.session.query(Challenge).count())
+
+    def test_triggerchallenge_locked_user_rejected_via_serial(self):
+        # A serial-only trigger carries no user= parameter, so it is gated on the token owner - the same resolution
+        # /validate/check uses. Without it an admin naming the token instead of its owner would push a prompt to a
+        # locked user's phone, and the lock would only be discovered when they answered it.
+        # The serial is confirmed to trigger first, so the rejection is provably the lock.
+        body = self._trigger_challenge(data={"serial": self.serial})
+        self.assertEqual(1, body["result"]["value"], body)
+        self.assertEqual(1, db.session.query(Challenge).count())
+        db.session.query(Challenge).delete()
+        db.session.commit()
+        rows = len(get_authentication_logs())
+
+        self._lock_user(utc_now() + timedelta(seconds=600))
+        body = self._trigger_challenge(data={"serial": self.serial})
+        self.assertEqual(0, body["result"]["value"], body)
+        self.assertEqual(str(GENERIC_AUTH_FAILURE), body["detail"]["message"], body)
+        # Refused before any token work: the rejection classifies the request and no challenge is created.
+        self.assertListEqual([AuthEventType.USER_LOCKED], _rows_since(rows))
         self.assertEqual(0, db.session.query(Challenge).count())
 
     def test_triggerchallenge_blocked_ip_rejected(self):

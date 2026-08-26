@@ -315,13 +315,18 @@ def offlinerefill():
 
 def _conditional_access_identity():
     """
-    Resolve the identity the /validate/check conditional-access pre-check must gate
-    on. ``before_request`` builds ``request.User`` from the ``user`` parameter only,
-    so a username-less passkey request (identified by ``credential_id``) or a
-    serial-only request arrives with an empty user — and the user-lock / DENY checks
-    would be silently skipped, letting a locked user authenticate by credential id or
-    serial. Resolve the token owner in that case so the lock is enforced before any
-    token work runs. Falls back to the (empty) request user when no owner can be
+    Resolve the identity the conditional-access pre-check must gate on, for the endpoints that accept a token
+    instead of a user: ``/validate/check`` and ``/validate/triggerchallenge``.
+
+    ``before_request`` builds ``request.User`` from the ``user`` parameter only, so a username-less passkey request
+    (identified by ``credential_id``) or a serial-only request arrives with an empty user — and the user-lock / DENY
+    checks would be silently skipped, letting a locked user authenticate by credential id or serial, or an admin
+    trigger a challenge that pushes a prompt to a locked user's phone. Resolve the token owner in that case so the
+    lock is enforced before any token work runs.
+
+    Both endpoints require a ``user``, a ``serial`` or a ``credential_id``
+    (:class:`~privacyidea.lib.decorators.check_user_serial_or_cred_id_in_request`), so between them these three
+    cover every request that can reach the gate. Falls back to the (empty) request user when no owner can be
     resolved, so the IP-block check still applies.
     """
     if request.User:
@@ -1153,7 +1158,7 @@ def check_remember_device():
 # First decorator to act on the request; see conditional_access_gate for why it sits exactly here.
 # rejection_value=0: result.value here is the number of challenges triggered, not a boolean, so a rejection answers
 # with this endpoint's own kind of nothing rather than changing the field's type.
-@conditional_access_gate(rejection_value=0)
+@conditional_access_gate(_conditional_access_identity, rejection_value=0)
 @check_user_serial_or_cred_id_in_request(request)
 @prepolicy(check_application_tokentype, request=request)
 @prepolicy(increase_failcounter_on_challenge, request=request)
