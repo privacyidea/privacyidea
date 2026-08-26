@@ -565,8 +565,8 @@ def get_auth_token():
     if auth_event_type is None and not terminal_event_suppressed:
         # Nothing along the way classified this request. A successful login that no handler labelled is a
         # LOGIN_SUCCESS; an unclassified failure is logged as UNKNOWN_FAIL_REASON (not PASSWORD_FAIL, which would
-        # misattribute it to a wrong userstore password and skew password-failure lockout counters), mirroring
-        # /validate/check. A deliberately suppressed terminal event (push_wait) keeps auth_event_type None, so
+        # misattribute it to a wrong userstore password and skew password-failure conditional-access counters),
+        # mirroring /validate/check. A deliberately suppressed terminal event (push_wait) keeps auth_event_type None, so
         # log_authentication below is a no-op and no row is added over the one the token already wrote.
         auth_event_type = AuthEventType.LOGIN_SUCCESS if (
                 admin_auth or user_auth) else AuthEventType.UNKNOWN_FAIL_REASON
@@ -577,14 +577,14 @@ def get_auth_token():
                        username=login_name,
                        internal_admin=internal_admin)
 
-    # Feed the classified outcome to the lockout engine. Unlike the other endpoints this cannot wait for request
-    # teardown: the engine's notices (e.g. "an email was sent") are surfaced on the rejection below, and the
+    # Feed the classified outcome to the conditional-access engine. Unlike the other endpoints this cannot wait
+    # for request teardown: the engine's notices (e.g. "an email was sent") are surfaced on the rejection below, and the
     # lock/block it may have just written is read back there to lead with the right message. So the staged log row is
     # written now - the count has to include it - and the evaluation is run in-view. Both are idempotent, so teardown
     # finds nothing left to do. Guarded internally; it must never break this login response.
     context = get_ca_context()
     context.flush()
-    lockout_notices = context.run_post_eval()
+    conditional_access_notices = context.run_post_eval()
 
     if not admin_auth and not user_auth:
         # If this very request tripped a stage that locked the user or blocked its source
@@ -597,13 +597,13 @@ def get_auth_token():
             details["restriction"] = restriction.kind
         else:
             message = _("Authentication failure. Wrong credentials")
-        if lockout_notices:
+        if conditional_access_notices:
             # Append the notice(s) to the message (not an extra detail key) so the
             # hide_specific_error_message policy masks them, and the login screen shows
-            # them in error.message exactly as it shows a lockout rejection. The result reads
+            # them in error.message exactly as it shows a lock rejection. The result reads
             # e.g. "Your account is temporarily locked ... in about 10 minute(s). Your
             # administrator has been notified by email."
-            message = message.rstrip(".") + ". " + " ".join(lockout_notices)
+            message = message.rstrip(".") + ". " + " ".join(conditional_access_notices)
         raise AuthError(message, id=Error.AUTHENTICATE_WRONG_CREDENTIALS,
                         details=details)
     else:

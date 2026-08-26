@@ -25,10 +25,10 @@ import { AuthService } from "@services/auth/auth.service";
 import {
   ConditionalAccessPolicyService,
   CountMode,
-  LockoutActionType,
-  LockoutPolicy,
-  LockoutPolicySaveParams,
-  LockoutTarget
+  ConditionalAccessActionType,
+  ConditionalAccessPolicy,
+  ConditionalAccessPolicySaveParams,
+  ConditionalAccessTarget
 } from "@services/conditional-access/conditional-access-policy.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
@@ -51,7 +51,7 @@ globalThis.IntersectionObserver = class IntersectionObserver {
   takeRecords = (): IntersectionObserverEntry[] => [];
 } as unknown as typeof IntersectionObserver;
 
-const mockPolicy: LockoutPolicy = {
+const mockPolicy: ConditionalAccessPolicy = {
   id: 1,
   name: "Brute Force",
   time_window_seconds: 600,
@@ -65,7 +65,7 @@ const mockPolicy: LockoutPolicy = {
   conditions: []
 };
 
-const EMPTY_TEMPLATE_POLICY: LockoutPolicySaveParams = {
+const EMPTY_TEMPLATE_POLICY: ConditionalAccessPolicySaveParams = {
   name: "Password Brute-Force",
   time_window_seconds: 900,
   enabled: true,
@@ -586,7 +586,7 @@ describe("ConditionalAccessEditPageComponent — new mode", () => {
       ]);
     });
 
-    const applyAndReadActionTypes = (rights: string[]): LockoutActionType[] => {
+    const applyAndReadActionTypes = (rights: string[]): ConditionalAccessActionType[] => {
       const authService = TestBed.inject(AuthService) as unknown as MockAuthService;
       authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights });
       component.applyTemplate("mfa_bruteforce");
@@ -643,7 +643,7 @@ describe("ConditionalAccessEditPageComponent — new mode", () => {
   });
 
   describe("targetActionsValid", () => {
-    const stageWith = (actionType: LockoutActionType) => [
+    const stageWith = (actionType: ConditionalAccessActionType) => [
       { failure_threshold: 5, priority: 1, actions: [{ action_type: actionType, action_value: null }] }
     ];
 
@@ -668,7 +668,7 @@ describe("ConditionalAccessEditPageComponent — new mode", () => {
     });
 
     it("should not block while the allowed-actions list is still empty", () => {
-      policyServiceMock.actionsByTarget.set({} as Record<LockoutTarget, LockoutActionType[]>);
+      policyServiceMock.actionsByTarget.set({} as Record<ConditionalAccessTarget, ConditionalAccessActionType[]>);
       policyServiceMock.actionTypes.set([]);
       component.onTargetChange("source_ip");
       component.onStagesChange(stageWith("LOCK_USER"));
@@ -685,7 +685,7 @@ describe("ConditionalAccessEditPageComponent — new mode", () => {
     });
 
     it("should offer the current mode until /targets loads", () => {
-      policyServiceMock.countModesByTarget.set({} as Record<LockoutTarget, CountMode[]>);
+      policyServiceMock.countModesByTarget.set({} as Record<ConditionalAccessTarget, CountMode[]>);
       expect(component.countModeOptions()).toEqual([component.editPolicy().count_mode]);
     });
 
@@ -725,7 +725,7 @@ describe("ConditionalAccessEditPageComponent — new mode", () => {
     });
 
     it("should not block while the supported-modes list is still empty", () => {
-      policyServiceMock.countModesByTarget.set({} as Record<LockoutTarget, CountMode[]>);
+      policyServiceMock.countModesByTarget.set({} as Record<ConditionalAccessTarget, CountMode[]>);
       component.onTargetChange("user");
       component.onCountModeChange("DISTINCT_USERS");
       expect(component.countModeValid()).toBe(true);

@@ -582,17 +582,19 @@ export class AuthenticationLog {
   }
 
   // The real action vocabulary and the existing policy names, both from the backend so no list is duplicated here.
-  // Empty until the resources have loaded, or for an admin without `lockout_policy_read` - which is what
-  // canReadLockoutPolicies decides the Policy entry's shape on.
+  // Empty until the resources have loaded, or for an admin without `conditional_access_policy_read` - which is what
+  // canReadConditionalAccessPolicies decides the Policy entry's shape on.
   readonly outcomeActionOptions = computed<string[]>(() => this.conditionalAccessPolicyService.actionTypes());
   readonly outcomePolicyOptions = computed<string[]>(() =>
     [...new Set(this.conditionalAccessPolicyService.policies().map((policy) => policy.name))].sort((a, b) =>
       a.localeCompare(b)
     )
   );
-  readonly canReadLockoutPolicies = computed(() => this.authService.actionAllowed("lockout_policy_read"));
+  readonly canReadConditionalAccessPolicies = computed(() =>
+    this.authService.actionAllowed("conditional_access_policy_read")
+  );
   // How an outcome's policy name becomes a link: the id each existing policy has *now*, from the list this page already
-  // loads. Without `lockout_policy_read` the list is empty, so the cell renders the name as text (see its
+  // loads. Without `conditional_access_policy_read` the list is empty, so the cell renders the name as text (see its
   // `policyIdsByName`).
   readonly policyIdsByName = computed<ReadonlyMap<string, number>>(
     () => new Map(this.conditionalAccessPolicyService.policies().map((policy) => [policy.name, policy.id]))

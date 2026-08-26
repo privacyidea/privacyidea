@@ -29,9 +29,10 @@ from privacyidea.models.utils import BigIntegerType, case_sensitive_unicode
 # Each length matches the column the value is copied from, so a name that fits in the policy configuration always
 # fits here.
 conditional_access_outcome_column_length = {
-    # Mirrors lockout_stage_actions.action_type, whose vocabulary (LockoutAction) this column stores.
+    # Mirrors conditional_access_stage_actions.action_type, whose vocabulary (ConditionalAccessAction) this column
+    # stores.
     "action_type": 100,
-    # Mirror lockout_policies.name and lockout_policy_stages.name.
+    # Mirror conditional_access_policies.name and conditional_access_policy_stages.name.
     "policy_name": 255,
     "stage_name": 255,
 }
@@ -42,7 +43,7 @@ class ConditionalAccessOutcome(db.Model):
     History of what conditional access *did*: one row per action the engine executed for one request, plus dry-run
     rows recording what a dry-run policy *would* have done.
 
-    This is the queryable counterpart of the live state in ``user_lockout_state`` and ``block_list``, which show the
+    This is the queryable counterpart of the live state in ``user_lock_state`` and ``block_list``, which show the
     restriction currently in force and then forget it. Only this table can answer "when was this user locked, by which
     policy, and for how long".
 
@@ -69,14 +70,14 @@ class ConditionalAccessOutcome(db.Model):
     hit a policy deliberately recreated under that name; matching on a recycled surrogate key attributes history to a
     policy that never produced it.
 
-    Whether the policy still exists is therefore a lookup by name (unique on ``lockout_policies``).
+    Whether the policy still exists is therefore a lookup by name (unique on ``conditional_access_policies``).
     ``auth_log_id``, in contrast, is a real foreign key and cascades: the history of a request is deleted with the
     request.
 
     There is deliberately **no stage id**:
-    :func:`~privacyidea.lib.conditional_access.lockout_policy.update_lockout_policy` replaces a policy's stages as a
+    :func:`~privacyidea.lib.conditional_access.policy.update_conditional_access_policy` replaces a policy's stages as a
     whole, so every edit gives them fresh ids and a stored one would dangle. The stage is identified by its natural key
-    instead: a stage is unique per policy by its threshold (``uq_lockout_stage_policy_threshold``) and that survives
+    instead: a stage is unique per policy by its threshold (``uq_ca_stage_policy_threshold``) and that survives
     edits, and the threshold is what a human reads anyway.
 
     Everything a triggered stage knows is therefore mandatory - ``policy_name``, ``threshold``, ``event_count`` -
@@ -113,7 +114,8 @@ class ConditionalAccessOutcome(db.Model):
     auth_log_id: Mapped[int] = mapped_column(BigIntegerType,
                                              ForeignKey("authentication_log.id", ondelete="CASCADE"),
                                              nullable=False)
-    # A LockoutAction value: the action that ran (LOCK_USER, BLOCK_IP, EMAIL_*, ...) or the pre-auth decision (DENY).
+    # A ConditionalAccessAction value: the action that ran (LOCK_USER, BLOCK_IP, EMAIL_*, ...) or the pre-auth
+    # decision (DENY).
     action_type: Mapped[str] = mapped_column(
         case_sensitive_unicode(conditional_access_outcome_column_length["action_type"]), nullable=False)
     # The policy was in dry run: nothing was actually done and this row says what would have happened.

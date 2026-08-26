@@ -497,7 +497,7 @@ def _outcome_condition(ca_action_type: str | list[str] | None = None,
     page's ``LIMIT`` and the ``count`` that shares these conditions -- an entry with three matching outcomes would be
     counted three times and appear three times.
 
-    :param ca_action_type: match outcomes with this ``action_type`` (a ``LockoutAction`` value)
+    :param ca_action_type: match outcomes with this ``action_type`` (a ``ConditionalAccessAction`` value)
     :param ca_policy_name: match outcomes recorded for this policy name (the denormalized copy, so a deleted policy is
         still matchable)
     :param ca_dry_run: match only dry-run outcomes (``True``) or only enforced ones (``False``)

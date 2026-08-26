@@ -1399,3 +1399,77 @@ of a client's devices, or - across all clients - every device of a realm or of a
 single user. Realm-scoped admins can only revoke within their allowed realms.
 
 .. versionadded:: 3.14
+
+.. _policy_conditional_access_policy_read:
+
+conditional_access_policy_read
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: ``bool``
+
+The administrator is allowed to read the conditional-access policies, the
+vocabulary they are built from (event types, action types, condition types,
+targets) and the shipped policy templates.
+
+.. versionadded:: 3.14
+
+.. _policy_conditional_access_policy_write:
+
+conditional_access_policy_write
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: ``bool``
+
+The administrator is allowed to create, change, reorder and delete
+conditional-access policies.
+
+.. versionadded:: 3.14
+
+.. _policy_user_lock_read:
+
+user_lock_read
+~~~~~~~~~~~~~~~
+
+type: ``bool``
+
+The administrator is allowed to see which users are currently locked by
+conditional access. The list is constrained to the realms, resolvers and users
+the policy granting this right is scoped to.
+
+.. versionadded:: 3.14
+
+.. _policy_user_lock_reset:
+
+user_lock_reset
+~~~~~~~~~~~~~~~~
+
+type: ``bool``
+
+The administrator is allowed to unlock a locked user and to purge the stale
+records of locks that have already expired.
+
+.. versionadded:: 3.14
+
+.. _policy_blocklist_read:
+
+blocklist_read
+~~~~~~~~~~~~~~~
+
+type: ``bool``
+
+The administrator is allowed to see the conditional-access blocklist, i.e. the
+source IPs currently blocked.
+
+.. versionadded:: 3.14
+
+.. _policy_blocklist_reset:
+
+blocklist_reset
+~~~~~~~~~~~~~~~~
+
+type: ``bool``
+
+The administrator is allowed to unblock a blocked IP and to purge the stale
+records of blocks that have already expired.
+
+.. versionadded:: 3.14

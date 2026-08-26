@@ -51,7 +51,7 @@
   </div>
 
   <div class="toolbar">
-    @if (authService.actionAllowed("user_lockout_reset")) {
+    @if (authService.actionAllowed("user_lock_reset")) {
       <button
         (click)="resetSelected()"
         [disabled]="selection().length === 0"

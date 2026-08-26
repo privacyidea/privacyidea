@@ -32,7 +32,7 @@ import { lastValueFrom, Observable } from "rxjs";
 // These string-literal unions stay as a compile-time safety net for the per-type UI logic (e.g. the
 // ACTION_DESCRIPTIONS record and the value-mode handling keyed by action type): the value strings
 // mirror privacyidea.lib.conditional_access.authentication_event_types.AuthEventType and
-// privacyidea.lib.conditional_access.engine.LockoutAction.
+// privacyidea.lib.conditional_access.engine.ConditionalAccessAction.
 export type AuthEventType =
   | "NOT_AUTHORIZED"
   | "PASSWORD_FAIL"
@@ -54,7 +54,7 @@ export type AuthEventType =
   | "ENROLLMENT_CANCELED_FAIL"
   | "UNKNOWN_FAIL_REASON";
 
-export type LockoutActionType =
+export type ConditionalAccessActionType =
   | "LOCK_USER"
   | "PERMANENT_LOCK_USER"
   | "EMAIL_ADMIN"
@@ -65,7 +65,7 @@ export type LockoutActionType =
   | "DENY";
 
 // The identity a policy counts and acts on.
-export type LockoutTarget = "user" | "source_ip";
+export type ConditionalAccessTarget = "user" | "source_ip";
 
 // How the tracked counters are counted against the stage thresholds; which values are valid depends on the
 // target (see the /conditionalaccess/targets endpoint). Mirrors
@@ -75,25 +75,25 @@ export type CountMode = "PER_REQUEST" | "PER_ATTEMPT" | "DISTINCT_USERS";
 // Everything the backend constrains by target, served per target by /conditionalaccess/targets: the stage actions
 // it allows and the count modes it supports (both sorted; the UI treats the first count mode as the default).
 export interface TargetConstraints {
-  actions: LockoutActionType[];
+  actions: ConditionalAccessActionType[];
   count_modes: CountMode[];
 }
 
-export interface LockoutStageAction {
+export interface ConditionalAccessStageAction {
   id?: number;
-  action_type: LockoutActionType;
+  action_type: ConditionalAccessActionType;
   action_value: unknown;
   // When false (default) the action fires once, at its stage's exact threshold;
   // when true it keeps firing while the count stays at or above the threshold.
   retrigger_above_threshold?: boolean;
 }
 
-export interface LockoutPolicyStage {
+export interface ConditionalAccessPolicyStage {
   id?: number;
   name?: string | null;
   failure_threshold: number;
   priority: number;
-  actions: LockoutStageAction[];
+  actions: ConditionalAccessStageAction[];
 }
 
 // The condition types and operators this WebUI ships hand-written wording for (mirroring
@@ -130,7 +130,7 @@ export interface ConditionTypeMeta {
 // One restriction on which requests a policy applies to. All of a policy's conditions must hold
 // (AND); a policy with no conditions applies to every request. The backend rejects an empty "value"
 // list, so "no restriction on this type" is expressed by omitting the condition, not by an empty one.
-export interface LockoutPolicyCondition {
+export interface ConditionalAccessPolicyCondition {
   condition_type: string;
   operator: string;
   value: string[];
@@ -143,27 +143,27 @@ export interface StaleConditionValues {
   values: string[];
 }
 
-export interface LockoutPolicy {
+export interface ConditionalAccessPolicy {
   id: number;
   name: string;
   time_window_seconds: number;
   enabled: boolean;
   dry_run: boolean;
   priority: number;
-  target: LockoutTarget;
+  target: ConditionalAccessTarget;
   count_mode: CountMode;
   counter_types_to_track: AuthEventType[];
-  stages: LockoutPolicyStage[];
+  stages: ConditionalAccessPolicyStage[];
   // Which requests the policy applies to at all. Optional: a policy without any restriction simply
   // has none, which is why the shipped templates carry no conditions key and why an editor with
   // nothing selected omits it from the payload rather than sending an empty list.
-  conditions?: LockoutPolicyCondition[];
+  conditions?: ConditionalAccessPolicyCondition[];
 }
 
 // The shape sent to create/update; id is only present (and ignored server-side) on update.
 // priority is number | null in the draft: a new policy starts with no priority so the admin
 // is forced to pick a deliberate, unique value (the backend requires it and 400s otherwise).
-export type LockoutPolicySaveParams = Omit<LockoutPolicy, "id" | "priority"> & {
+export type ConditionalAccessPolicySaveParams = Omit<ConditionalAccessPolicy, "id" | "priority"> & {
   id?: number;
   priority: number | null;
 };
@@ -171,19 +171,19 @@ export type LockoutPolicySaveParams = Omit<LockoutPolicy, "id" | "priority"> & {
 // What a shipped template carries: a create payload minus the priority, which the
 // catalog deliberately omits so the admin picks a unique one. Optional (not just
 // nullable) because the key is absent from the response altogether.
-export type LockoutPolicyTemplateParams = Omit<LockoutPolicySaveParams, "priority"> & {
+export type ConditionalAccessPolicyTemplateParams = Omit<ConditionalAccessPolicySaveParams, "priority"> & {
   priority?: number | null;
 };
 
 // A ready-made policy the backend ships (GET /conditionalaccess/template); "policy"
 // is a full create payload a client prefills, edits and POSTs as a normal policy.
-export interface LockoutPolicyTemplate {
+export interface ConditionalAccessPolicyTemplate {
   key: string;
   description: string;
-  policy: LockoutPolicyTemplateParams;
+  policy: ConditionalAccessPolicyTemplateParams;
 }
 
-export const EMPTY_LOCKOUT_POLICY: LockoutPolicySaveParams = {
+export const EMPTY_CONDITIONAL_ACCESS_POLICY: ConditionalAccessPolicySaveParams = {
   name: "",
   time_window_seconds: 600,
   enabled: true,
@@ -196,34 +196,34 @@ export const EMPTY_LOCKOUT_POLICY: LockoutPolicySaveParams = {
 };
 
 export interface ConditionalAccessPolicyServiceInterface {
-  readonly policiesResource: HttpResourceRef<PiResponse<LockoutPolicy[]> | undefined>;
-  readonly policies: Signal<LockoutPolicy[]>;
+  readonly policiesResource: HttpResourceRef<PiResponse<ConditionalAccessPolicy[]> | undefined>;
+  readonly policies: Signal<ConditionalAccessPolicy[]>;
   readonly eventTypesResource: HttpResourceRef<PiResponse<string[]> | undefined>;
   readonly eventTypes: Signal<AuthEventType[]>;
   readonly actionTypesResource: HttpResourceRef<PiResponse<string[]> | undefined>;
-  readonly actionTypes: Signal<LockoutActionType[]>;
+  readonly actionTypes: Signal<ConditionalAccessActionType[]>;
   readonly targetsResource: HttpResourceRef<PiResponse<Record<string, TargetConstraints>> | undefined>;
-  readonly actionsByTarget: Signal<Record<LockoutTarget, LockoutActionType[]>>;
-  readonly countModesByTarget: Signal<Record<LockoutTarget, CountMode[]>>;
-  readonly targets: Signal<LockoutTarget[]>;
-  readonly templatesResource: HttpResourceRef<PiResponse<LockoutPolicyTemplate[]> | undefined>;
-  readonly templates: Signal<LockoutPolicyTemplate[]>;
+  readonly actionsByTarget: Signal<Record<ConditionalAccessTarget, ConditionalAccessActionType[]>>;
+  readonly countModesByTarget: Signal<Record<ConditionalAccessTarget, CountMode[]>>;
+  readonly targets: Signal<ConditionalAccessTarget[]>;
+  readonly templatesResource: HttpResourceRef<PiResponse<ConditionalAccessPolicyTemplate[]> | undefined>;
+  readonly templates: Signal<ConditionalAccessPolicyTemplate[]>;
   readonly conditionTypesResource: HttpResourceRef<PiResponse<Record<string, ConditionTypeMeta>> | undefined>;
   readonly conditionTypes: Signal<Record<string, ConditionTypeMeta>>;
 
-  actionsForTarget(target: LockoutTarget): LockoutActionType[];
+  actionsForTarget(target: ConditionalAccessTarget): ConditionalAccessActionType[];
 
-  countModesForTarget(target: LockoutTarget): CountMode[];
+  countModesForTarget(target: ConditionalAccessTarget): CountMode[];
 
-  getPolicies(): Observable<PiResponse<LockoutPolicy[]>>;
+  getPolicies(): Observable<PiResponse<ConditionalAccessPolicy[]>>;
 
   operatorsForConditionType(conditionType: string): ConditionOperatorMeta[];
 
   choicesForConditionType(conditionType: string): string[] | null;
 
-  staleConditionValues(conditions: LockoutPolicyCondition[] | undefined): StaleConditionValues[];
+  staleConditionValues(conditions: ConditionalAccessPolicyCondition[] | undefined): StaleConditionValues[];
 
-  savePolicy(policy: LockoutPolicySaveParams): Promise<number | undefined>;
+  savePolicy(policy: ConditionalAccessPolicySaveParams): Promise<number | undefined>;
 
   deletePolicy(id: number): Promise<void>;
 
@@ -261,8 +261,8 @@ export class ConditionalAccessPolicyService implements ConditionalAccessPolicySe
     () => this.contentService.onConditionalAccess() || this.contentService.onAuthenticationLog()
   );
 
-  readonly policiesResource = httpResource<PiResponse<LockoutPolicy[]>>(() => {
-    if (!this.authService.actionAllowed("lockout_policy_read")) {
+  readonly policiesResource = httpResource<PiResponse<ConditionalAccessPolicy[]>>(() => {
+    if (!this.authService.actionAllowed("conditional_access_policy_read")) {
       return undefined;
     }
     if (!this.onRouteUsingPolicies()) {
@@ -275,7 +275,7 @@ export class ConditionalAccessPolicyService implements ConditionalAccessPolicySe
     };
   });
 
-  readonly policies: Signal<LockoutPolicy[]> = computed(() => {
+  readonly policies: Signal<ConditionalAccessPolicy[]> = computed(() => {
     if (this.policiesResource.hasValue()) {
       return this.policiesResource.value()?.result?.value ?? [];
     }
@@ -285,7 +285,10 @@ export class ConditionalAccessPolicyService implements ConditionalAccessPolicySe
   // The trackable authentication event types and the stage action types are served by the backend
   // (the authoritative enums) so the editor's selects cover newly added types without a WebUI change.
   readonly eventTypesResource = httpResource<PiResponse<string[]>>(() => {
-    if (!this.authService.actionAllowed("lockout_policy_read") || !this.contentService.onConditionalAccess()) {
+    if (
+      !this.authService.actionAllowed("conditional_access_policy_read") ||
+      !this.contentService.onConditionalAccess()
+    ) {
       return undefined;
     }
     return {
@@ -300,7 +303,7 @@ export class ConditionalAccessPolicyService implements ConditionalAccessPolicySe
   );
 
   readonly actionTypesResource = httpResource<PiResponse<string[]>>(() => {
-    if (!this.authService.actionAllowed("lockout_policy_read") || !this.onRouteUsingPolicies()) {
+    if (!this.authService.actionAllowed("conditional_access_policy_read") || !this.onRouteUsingPolicies()) {
       return undefined;
     }
     return {
@@ -310,14 +313,17 @@ export class ConditionalAccessPolicyService implements ConditionalAccessPolicySe
     };
   });
 
-  readonly actionTypes: Signal<LockoutActionType[]> = computed(
-    () => (this.actionTypesResource.value()?.result?.value ?? []) as LockoutActionType[]
+  readonly actionTypes: Signal<ConditionalAccessActionType[]> = computed(
+    () => (this.actionTypesResource.value()?.result?.value ?? []) as ConditionalAccessActionType[]
   );
 
   // The targets and, per target, the constraints that depend on the target: the actions it allows and the count
   // modes it supports (see the TargetConstraints shape).
   readonly targetsResource = httpResource<PiResponse<Record<string, TargetConstraints>>>(() => {
-    if (!this.authService.actionAllowed("lockout_policy_read") || !this.contentService.onConditionalAccess()) {
+    if (
+      !this.authService.actionAllowed("conditional_access_policy_read") ||
+      !this.contentService.onConditionalAccess()
+    ) {
       return undefined;
     }
     return {
@@ -327,28 +333,33 @@ export class ConditionalAccessPolicyService implements ConditionalAccessPolicySe
     };
   });
 
-  private readonly targetConstraints: Signal<Record<LockoutTarget, TargetConstraints>> = computed(
-    () => (this.targetsResource.value()?.result?.value ?? {}) as Record<LockoutTarget, TargetConstraints>
+  private readonly targetConstraints: Signal<Record<ConditionalAccessTarget, TargetConstraints>> = computed(
+    () => (this.targetsResource.value()?.result?.value ?? {}) as Record<ConditionalAccessTarget, TargetConstraints>
   );
 
-  readonly actionsByTarget: Signal<Record<LockoutTarget, LockoutActionType[]>> = computed(
+  readonly actionsByTarget: Signal<Record<ConditionalAccessTarget, ConditionalAccessActionType[]>> = computed(
     () =>
       Object.fromEntries(
         Object.entries(this.targetConstraints()).map(([target, entry]) => [target, entry.actions])
-      ) as Record<LockoutTarget, LockoutActionType[]>
+      ) as Record<ConditionalAccessTarget, ConditionalAccessActionType[]>
   );
 
-  readonly countModesByTarget: Signal<Record<LockoutTarget, CountMode[]>> = computed(
+  readonly countModesByTarget: Signal<Record<ConditionalAccessTarget, CountMode[]>> = computed(
     () =>
       Object.fromEntries(
         Object.entries(this.targetConstraints()).map(([target, entry]) => [target, entry.count_modes])
-      ) as Record<LockoutTarget, CountMode[]>
+      ) as Record<ConditionalAccessTarget, CountMode[]>
   );
 
-  readonly targets: Signal<LockoutTarget[]> = computed(() => Object.keys(this.targetConstraints()) as LockoutTarget[]);
+  readonly targets: Signal<ConditionalAccessTarget[]> = computed(
+    () => Object.keys(this.targetConstraints()) as ConditionalAccessTarget[]
+  );
 
-  readonly templatesResource = httpResource<PiResponse<LockoutPolicyTemplate[]>>(() => {
-    if (!this.authService.actionAllowed("lockout_policy_read") || !this.contentService.onConditionalAccess()) {
+  readonly templatesResource = httpResource<PiResponse<ConditionalAccessPolicyTemplate[]>>(() => {
+    if (
+      !this.authService.actionAllowed("conditional_access_policy_read") ||
+      !this.contentService.onConditionalAccess()
+    ) {
       return undefined;
     }
     return {
@@ -358,7 +369,7 @@ export class ConditionalAccessPolicyService implements ConditionalAccessPolicySe
     };
   });
 
-  readonly templates: Signal<LockoutPolicyTemplate[]> = computed(
+  readonly templates: Signal<ConditionalAccessPolicyTemplate[]> = computed(
     () => this.templatesResource.value()?.result?.value ?? []
   );
 
@@ -366,7 +377,10 @@ export class ConditionalAccessPolicyService implements ConditionalAccessPolicySe
   // valid right now. Fetched rather than hard-coded because the realm list changes as realms are
   // created and deleted, and a stale selection list would invite a condition that can never match.
   readonly conditionTypesResource = httpResource<PiResponse<Record<string, ConditionTypeMeta>>>(() => {
-    if (!this.authService.actionAllowed("lockout_policy_read") || !this.contentService.onConditionalAccess()) {
+    if (
+      !this.authService.actionAllowed("conditional_access_policy_read") ||
+      !this.contentService.onConditionalAccess()
+    ) {
       return undefined;
     }
     return {
@@ -382,18 +396,20 @@ export class ConditionalAccessPolicyService implements ConditionalAccessPolicySe
 
   // Actions allowed for a target; falls back to the full list until /targets loads,
   // so the select is never empty on first paint.
-  actionsForTarget(target: LockoutTarget): LockoutActionType[] {
+  actionsForTarget(target: ConditionalAccessTarget): ConditionalAccessActionType[] {
     return this.actionsByTarget()[target] ?? this.actionTypes();
   }
 
-  countModesForTarget(target: LockoutTarget): CountMode[] {
+  countModesForTarget(target: ConditionalAccessTarget): CountMode[] {
     return this.countModesByTarget()[target] ?? [];
   }
 
   // One-off read of the policy list for callers outside the conditional-access page, where policiesResource
   // deliberately does not fetch (e.g. the dashboard widget, which caches the response itself).
-  getPolicies(): Observable<PiResponse<LockoutPolicy[]>> {
-    return this.http.get<PiResponse<LockoutPolicy[]>>(this.baseUrl, { headers: this.authService.getHeaders() });
+  getPolicies(): Observable<PiResponse<ConditionalAccessPolicy[]>> {
+    return this.http.get<PiResponse<ConditionalAccessPolicy[]>>(this.baseUrl, {
+      headers: this.authService.getHeaders()
+    });
   }
 
   // The operators a condition type permits, with their translated labels. Empty until
@@ -413,7 +429,7 @@ export class ConditionalAccessPolicyService implements ConditionalAccessPolicySe
   // written. These matter because the backend rejects them on write (_validate_condition_value),
   // so such a policy cannot be saved at all until they are dealt with - and because a condition
   // naming a value that no longer exists silently stopped doing what it was written to do.
-  staleConditionValues(conditions: LockoutPolicyCondition[] | undefined): StaleConditionValues[] {
+  staleConditionValues(conditions: ConditionalAccessPolicyCondition[] | undefined): StaleConditionValues[] {
     return (conditions ?? [])
       .map((condition) => {
         const choices = this.choicesForConditionType(condition.condition_type);
@@ -431,7 +447,7 @@ export class ConditionalAccessPolicyService implements ConditionalAccessPolicySe
     });
   }
 
-  async savePolicy(policy: LockoutPolicySaveParams): Promise<number | undefined> {
+  async savePolicy(policy: ConditionalAccessPolicySaveParams): Promise<number | undefined> {
     const headers = this.authService.getHeaders();
     const isUpdate = policy.id != null;
     const request = isUpdate
@@ -550,7 +566,7 @@ export class ConditionalAccessPolicyService implements ConditionalAccessPolicySe
 
   // Rearrange the evaluation order: the listed policies take the priority values this
   // same set already holds, in the given order. Only these policies change, so a single
-  // swap sends two ids. See reorder_lockout_policies() for the invariant.
+  // swap sends two ids. See reorder_conditional_access_policies() for the invariant.
   //
   // expectedPriorities asserts what each policy held when the caller read it, so a
   // concurrent rearrangement comes back as a 409 instead of silently overwriting the
