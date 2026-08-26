@@ -1,32 +1,20 @@
 // A dialog sits on its own scrim, which does the separating, so the shallow step is enough to
 // lift it and its surface stays one flat card tone with no depth gradient.
-.mat-mdc-dialog-surface {
-  border-radius: var(--border-radius) !important;
-  box-shadow: var(--elevation-3) !important;
-  background-color: var(--mat-sys-surface-container-lowest) !important;
+.cdk-overlay-pane.mat-mdc-dialog-panel {
+  --mat-dialog-container-max-width: calc(100vw - var(--overlay-margin) - 2 * 32px);
+
+  --mat-dialog-container-elevation-shadow: var(--elevation-3);
+  --mat-dialog-container-shape: var(--border-radius);
+  --mat-dialog-container-color: var(--mat-sys-surface-container-lowest);
+  --mat-dialog-supporting-text-size: 16px;
+
+  max-height: calc(100vh - 2 * 32px);
+}
+
+.mat-mdc-dialog-container .mat-mdc-dialog-content {
+  max-height: 82vh;
 }
 
 .width-36 {
   width: 36rem;
-}
-
-.external-service-dialog-title {
-  padding: 16px 16px 0 16px;
-}
-
-.external-service-dialog-actions {
-  padding: 0 16px 16px 16px;
-}
-
-.width-600 {
-  width: 600px;
-  min-width: 600px;
-}
-.mat-mdc-dialog-content {
-  max-height: 82vh;
-  font-size: 16px;
-}
-
-.cdk-overlay-pane {
-  max-width: unset !important;
 }
