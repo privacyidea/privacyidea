@@ -900,3 +900,40 @@ only the latest-release column stays empty. This is the only outbound request th
 subscription overview makes.
 
 .. versionadded:: 3.14
+
+.. _ini_conditional_access_never_block:
+
+Conditional access never-block list
+-----------------------------------
+
+.. index:: conditional access, lockout, never-block
+
+The conditional access lockout policies can block a source IP (the ``BLOCK_IP``
+action). ``PI_CONDITIONAL_ACCESS_NEVER_BLOCK`` lists the addresses and networks
+that must never be blocked by that machinery::
+
+    PI_CONDITIONAL_ACCESS_NEVER_BLOCK = ["10.0.0.0/8", "192.0.2.15"]
+
+The value is either a list of entries or a single string of entries separated by
+commas or whitespace. Each entry is a CIDR network or a bare IP address; an entry
+that cannot be parsed is written to the log and ignored. Loopback (``127.0.0.0/8``
+and ``::1/128``) is always on the list and cannot be removed — blocking it would
+lock out a reverse proxy running on the same host, and when ``OverrideAuthorizationClient``
+is unset every client is seen as that proxy.
+
+Put the addresses of your reverse proxies, load balancers, NAT gateways and
+management networks here. Blocking shared infrastructure locks out everyone
+behind it.
+
+The list wins over an existing block: if an IP is already blocked and is added to
+this list afterwards, the block is no longer enforced, and the block entry itself
+is removed the next time that IP authenticates. Removing the IP from the list
+again does not bring the old block back.
+
+This setting can **only** be configured in ``pi.cfg``. It is deliberately not a
+system setting and there is no WebUI or API for it: it is the safety net that
+keeps an administrator from being locked out, so it must not be reachable through
+the same API an attacker — or a mistaken lockout policy — could be acting on.
+Changes take effect after a restart of the web server.
+
+.. versionadded:: 3.14
