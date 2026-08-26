@@ -692,25 +692,27 @@ def is_user_locked(user: "User", now: datetime | None = None, *, clear_expired: 
 # Built-in never-block networks: blocking loopback would lock out a same-host
 # reverse proxy — and when OVERRIDECLIENT is unset every client is seen as that
 # proxy — turning one BLOCK_IP action into a self-inflicted outage. Admins extend
-# this via the PI_CONDITIONAL_ACCESS_NEVER_BLOCK setting in pi.cfg (proxy /
+# this via the PI_CONDITIONAL_ACCESS_NEVER_BLOCK server setting (proxy /
 # load-balancer / NAT / management CIDRs).
 _DEFAULT_NEVER_BLOCK_NETWORKS = ("127.0.0.0/8", "::1/128")
 
-#: pi.cfg key holding the never-block allowlist. This lives in the config file and
-#: not in the system config on purpose: it is the safety net that keeps an admin
-#: from locking themselves out, so it must not be reachable through the very API
-#: an attacker (or a mistaken BLOCK_IP policy) could be attacking.
+#: App-config key holding the never-block allowlist, set in pi.cfg or through the
+#: PRIVACYIDEA_-prefixed environment variable of the same name. This lives in the
+#: server configuration and not in the system config on purpose: it is the safety
+#: net that keeps an admin from locking themselves out, so it must not be reachable
+#: through the very API an attacker (or a mistaken BLOCK_IP policy) could be attacking.
 NEVER_BLOCK_CONFIG_KEY = "PI_CONDITIONAL_ACCESS_NEVER_BLOCK"
 
 
 def _never_block_networks() -> "list[ipaddress._BaseNetwork]":
     """
     The never-block networks: the built-in loopback defaults plus the CIDRs (or
-    bare IPs) configured as ``PI_CONDITIONAL_ACCESS_NEVER_BLOCK`` in ``pi.cfg``.
+    bare IPs) configured as ``PI_CONDITIONAL_ACCESS_NEVER_BLOCK`` in the server
+    configuration (``pi.cfg`` or the environment).
     The setting is either a list of entries or a single comma/whitespace-separated
     string. A malformed setting is logged and ignored rather than breaking the
-    engine: this runs on every authentication, so a typo in pi.cfg must degrade to
-    the loopback defaults, not answer 500 to every request.
+    engine: this runs on every authentication, so a typo in the configuration must
+    degrade to the loopback defaults, not answer 500 to every request.
     """
     # Lazy import: framework pulls in the app context machinery; importing it at
     # module load would risk an import-order cycle.
@@ -740,7 +742,7 @@ def is_ip_never_block(source_ip: str | None) -> bool:
     """
     Return whether *source_ip* must never be blocked by the conditional-access
     engine: it is loopback (built-in) or matches the ``PI_CONDITIONAL_ACCESS_NEVER_BLOCK``
-    allowlist from ``pi.cfg``. A falsy or unparsable IP is treated as never-block as
+    allowlist from the server configuration. A falsy or unparsable IP is treated as never-block as
     well — fail safe: never block an address the engine cannot positively identify.
     """
     if not source_ip:
@@ -1539,7 +1541,7 @@ def _upsert_ip_block(source_ip: str, *, block_expires_at: datetime | None) -> bo
     never break the authentication response that already completed) and an
     existing **permanent** block is never downgraded to a timed one.
 
-    Never-block IPs (loopback and the ``PI_CONDITIONAL_ACCESS_NEVER_BLOCK`` pi.cfg
+    Never-block IPs (loopback and the ``PI_CONDITIONAL_ACCESS_NEVER_BLOCK``
     allowlist) are skipped: blocking shared infrastructure (a reverse proxy, NAT egress, or
     a load balancer) would lock out everyone behind it.
 
