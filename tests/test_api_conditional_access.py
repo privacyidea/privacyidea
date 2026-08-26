@@ -38,7 +38,7 @@ from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import SCOPE, AUTHORIZED, set_policy, delete_policy
 from privacyidea.lib.smtpserver import add_smtpserver, delete_smtpserver
-from privacyidea.lib.challenge import get_challenges
+from privacyidea.lib.challenge import get_challenges, delete_challenges
 from privacyidea.lib.token import init_token, remove_token, get_tokens, revoke_token
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import AUTH_RESPONSE
@@ -815,8 +815,9 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         self.assertEqual("wrong otp pin", body["detail"]["message"], body)
         self.assertEqual(AUTH_RESPONSE.REJECT, body["result"]["authentication"], body)
         self.assertFalse(is_user_locked(self.user))
-        # Nothing ran, so nothing is recorded as having happened.
-        self.assertEqual(0, db.session.query(ConditionalAccessOutcome).count())
+        # Nothing ran, so nothing is recorded as having happened on the row this request wrote.
+        entries = get_authentication_logs()
+        self.assertListEqual([], list(get_outcomes(entries[-1].id)))
         # And the next request is not refused, which is the disagreement the rejection would have created.
         body = self._check({"user": "cornelius", "pass": "pin755224"})
         self.assertTrue(body["result"]["value"], body)
@@ -842,8 +843,9 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         self.assertEqual("wrong otp pin", body["detail"]["message"], body)
         self.assertFalse(is_user_locked(self.user))
         # The mail did go out, so that much is history; the lock that never happened is not.
+        entries = get_authentication_logs()
         self.assertListEqual([str(LockoutAction.EMAIL_ADMIN)],
-                             [outcome.action_type for outcome in db.session.query(ConditionalAccessOutcome).all()])
+                             [outcome.action_type for outcome in get_outcomes(entries[-1].id)])
 
     def test_dry_run_lock_policy_persists_outcome_but_never_locks(self):
         # A dry-run LOCK_USER policy never locks the user, but the triggering request's own
@@ -1200,9 +1202,8 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         # The serial is confirmed to trigger first, so the rejection is provably the lock.
         body = self._trigger_challenge(data={"serial": self.serial})
         self.assertEqual(1, body["result"]["value"], body)
-        self.assertEqual(1, db.session.query(Challenge).count())
-        db.session.query(Challenge).delete()
-        db.session.commit()
+        self.assertEqual(1, len(get_challenges(serial=self.serial)))
+        delete_challenges(serial=self.serial)
         rows = len(get_authentication_logs())
 
         self._lock_user(utc_now() + timedelta(seconds=600))
@@ -1211,7 +1212,7 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         self.assertEqual(str(GENERIC_AUTH_FAILURE), body["detail"]["message"], body)
         # Refused before any token work: the rejection classifies the request and no challenge is created.
         self.assertListEqual([AuthEventType.USER_LOCKED], _rows_since(rows))
-        self.assertEqual(0, db.session.query(Challenge).count())
+        self.assertListEqual([], get_challenges(serial=self.serial))
 
     def test_triggerchallenge_blocked_ip_rejected(self):
         db.session.add(BlockList(ip="203.0.113.7", block_expires_at=utc_now() + timedelta(seconds=600)))
