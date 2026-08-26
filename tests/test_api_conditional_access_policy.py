@@ -118,6 +118,50 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
         res = self._request("policy", method="POST", json_data=body)
         self.assertEqual(400, res.status_code, res.json)
 
+    def test_create_duplicate_action_in_one_stage_is_400(self):
+        body = self._policy_body()
+        body["stages"][0]["actions"].append({"action_type": str(LockoutAction.LOCK_USER),
+                                             "action_value": {"duration_seconds": 60}})
+        res = self._request("policy", method="POST", json_data=body)
+        self.assertEqual(400, res.status_code, res.json)
+        self.assertIn("Duplicate action", res.json["result"]["error"]["message"])
+
+    def test_create_timed_and_permanent_lock_in_one_stage_is_400(self):
+        body = self._policy_body()
+        body["stages"][0]["actions"].append({"action_type": str(LockoutAction.PERMANENT_LOCK_USER)})
+        res = self._request("policy", method="POST", json_data=body)
+        self.assertEqual(400, res.status_code, res.json)
+        self.assertIn("mutually exclusive", res.json["result"]["error"]["message"])
+
+    def test_create_allow_and_deny_in_one_stage_is_400(self):
+        body = self._policy_body(stages=[{"failure_threshold": 0,
+                                          "actions": [{"action_type": str(LockoutAction.ALLOW)},
+                                                      {"action_type": str(LockoutAction.DENY)}]}])
+        res = self._request("policy", method="POST", json_data=body)
+        self.assertEqual(400, res.status_code, res.json)
+        self.assertIn("mutually exclusive", res.json["result"]["error"]["message"])
+
+    def test_create_two_email_actions_in_one_stage_is_accepted(self):
+        # The exception the rule exists around: one stage notifying two different recipient groups.
+        body = self._policy_body(stages=[{"failure_threshold": 5, "actions": [
+            {"action_type": str(LockoutAction.EMAIL_ADMIN), "action_value": {"recipient_group": "admins"}},
+            {"action_type": str(LockoutAction.EMAIL_ADMIN),
+             "action_value": {"recipient_group": "soc@example.com"}}]}])
+        res = self._request("policy", method="POST", json_data=body)
+        self.assertEqual(200, res.status_code, res.json)
+        res = self._request(f"policy/{res.json['result']['value']}")
+        self.assertEqual(2, len(res.json["result"]["value"]["stages"][0]["actions"]))
+
+    def test_patch_duplicate_action_in_one_stage_is_400(self):
+        policy_id = self._create_policy()
+        stages = [{"failure_threshold": 5,
+                   "actions": [{"action_type": str(LockoutAction.LOCK_USER),
+                                "action_value": {"duration_seconds": 60}},
+                               {"action_type": str(LockoutAction.LOCK_USER),
+                                "action_value": {"duration_seconds": 120}}]}]
+        res = self._request(f"policy/{policy_id}", method="PATCH", json_data={"stages": stages})
+        self.assertEqual(400, res.status_code, res.json)
+
     def test_create_duplicate_name_is_400(self):
         self._create_policy(name="Dup")
         res = self._request("policy", method="POST", json_data=self._policy_body(name="Dup"))
@@ -336,6 +380,18 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
                              constraints["user"]["count_modes"])
         self.assertListEqual([str(CountMode.DISTINCT_USERS), str(CountMode.PER_ATTEMPT), str(CountMode.PER_REQUEST)],
                              constraints["source_ip"]["count_modes"])
+        # The per-stage action rules are served too, so the editor enforces them from one definition rather
+        # than from a hand-kept copy. Only the notifications repeat.
+        self.assertListEqual([str(LockoutAction.EMAIL_ADMIN), str(LockoutAction.EMAIL_USER)],
+                             constraints["user"]["repeatable_actions"])
+        self.assertListEqual([str(LockoutAction.EMAIL_ADMIN)], constraints["source_ip"]["repeatable_actions"])
+        # A group is served only for the target whose actions can actually form it.
+        self.assertIn([str(LockoutAction.LOCK_USER), str(LockoutAction.PERMANENT_LOCK_USER)],
+                      constraints["user"]["exclusive_action_groups"])
+        self.assertNotIn([str(LockoutAction.LOCK_USER), str(LockoutAction.PERMANENT_LOCK_USER)],
+                         constraints["source_ip"]["exclusive_action_groups"])
+        self.assertIn([str(LockoutAction.BLOCK_IP), str(LockoutAction.PERMANENT_BLOCK_IP)],
+                      constraints["source_ip"]["exclusive_action_groups"])
 
     # --- PATCH /policy/<id> (update) -------------------------------------------
 

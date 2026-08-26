@@ -60,7 +60,10 @@ values must be
 :class:`~privacyidea.lib.conditional_access.authentication_event_types.AuthEventType` names and ``action_type`` values
 must be :class:`~privacyidea.lib.conditional_access.engine.LockoutAction` names; anything else is a
 :class:`~privacyidea.lib.error.ParameterError` (fail-closed - a typo must not silently create a policy that never
-matches or an action that never fires).
+matches or an action that never fires). Within one stage an action may appear only once - except
+``EMAIL_ADMIN``/``EMAIL_USER`` (:data:`REPEATABLE_ACTIONS`), where a second copy is how one stage notifies a
+second set of recipients - and no stage may hold two actions of the same mutually exclusive group
+(:data:`_EXCLUSIVE_ACTION_GROUPS`: timed vs permanent lock, timed vs permanent block, ``ALLOW`` vs ``DENY``).
 
 ``conditions`` is the *applicability* axis, orthogonal to the counting one: it restricts which requests the policy
 applies to at all, while the counter types and thresholds decide what trips it. It is optional - a policy without
@@ -98,6 +101,26 @@ MAX_NAME_LENGTH = 255
 # stays at or above the threshold, so they default to re-triggering (the
 # post-response lock/email/block effects default to fire-once).
 DECISION_ACTIONS = frozenset({str(LockoutAction.ALLOW), str(LockoutAction.DENY)})
+
+# The actions a stage may carry more than once. Only the notifications: repeating EMAIL_ADMIN with a
+# different recipient_group (or a different subject and body) is the one case where a second copy of an
+# action does something the first cannot - see
+# :func:`~privacyidea.lib.conditional_access.engine._send_lockout_email`, which resolves its recipients per
+# action. Every other action writes one piece of state or one verdict, so a second copy either does nothing
+# or silently overwrites the first.
+REPEATABLE_ACTIONS = frozenset({str(LockoutAction.EMAIL_ADMIN), str(LockoutAction.EMAIL_USER)})
+
+# Actions that contradict each other within one stage. The timed and permanent variants write the same
+# lockout resp. block row, and the upsert refuses to downgrade a permanent restriction to a timed one, so
+# which of the two wins depends on the order the rows happen to come back in - LockoutPolicyStage.actions
+# carries no order_by. ALLOW and DENY are opposite verdicts on the same request:
+# :func:`~privacyidea.lib.conditional_access.engine._stage_access_decision` fails closed, which leaves the
+# ALLOW as configuration that can never take effect.
+_EXCLUSIVE_ACTION_GROUPS = (
+    frozenset({str(LockoutAction.LOCK_USER), str(LockoutAction.PERMANENT_LOCK_USER)}),
+    frozenset({str(LockoutAction.BLOCK_IP), str(LockoutAction.PERMANENT_BLOCK_IP)}),
+    frozenset({str(LockoutAction.ALLOW), str(LockoutAction.DENY)}),
+)
 
 
 @dataclass
@@ -297,20 +320,30 @@ def get_actions_by_target() -> dict[str, list[str]]:
     return {target.value: sorted(action.value for action in actions) for target, actions in _ACTIONS_BY_TARGET.items()}
 
 
-def get_target_constraints() -> dict[str, dict[str, list[str]]]:
+def get_target_constraints() -> dict[str, dict[str, list]]:
     """
-    The per-target policy constraints, as ``{target_value: {"actions": [...], "count_modes": [...]}}`` - for each
-    target the stage actions it allows (:data:`_ACTIONS_BY_TARGET`) and the count modes it supports
-    (:data:`_COUNT_MODES_BY_TARGET`), both sorted. Actions and count modes are the two things constrained by the
-    target.
+    The per-target policy constraints, as ``{target_value: {"actions": [...], "count_modes": [...],
+    "repeatable_actions": [...], "exclusive_action_groups": [[...], ...]}}``: for each target the stage actions it
+    allows (:data:`_ACTIONS_BY_TARGET`), the count modes it supports (:data:`_COUNT_MODES_BY_TARGET`), which of its
+    actions may appear more than once in one stage (:data:`REPEATABLE_ACTIONS`) and which of its actions contradict
+    each other within one stage (:data:`_EXCLUSIVE_ACTION_GROUPS`), all sorted.
+
+    The last two are served rather than left for the client to hard-code, for the same reason the condition-type
+    registry is: a rule the editor enforces should come from the one place that defines it. They are filtered to
+    the actions the target allows, so a group that cannot arise for this target (the lock pair under
+    ``source_ip``, the block pair under ``user``) is not offered as a rule the editor could never apply.
     """
-    return {
-        target.value: {
-            "actions": sorted(action.value for action in _ACTIONS_BY_TARGET[target]),
+    constraints = {}
+    for target in LockoutTarget:
+        actions = {action.value for action in _ACTIONS_BY_TARGET[target]}
+        constraints[target.value] = {
+            "actions": sorted(actions),
             "count_modes": sorted(mode.value for mode in _COUNT_MODES_BY_TARGET[target]),
+            "repeatable_actions": sorted(REPEATABLE_ACTIONS & actions),
+            "exclusive_action_groups": [sorted(group) for group in _EXCLUSIVE_ACTION_GROUPS
+                                        if len(group & actions) > 1],
         }
-        for target in LockoutTarget
-    }
+    return constraints
 
 
 def _validate_target(target) -> "LockoutTarget":
@@ -416,6 +449,11 @@ def _validate_stages(stages) -> list[StageDefinition]:
     (its action-specific interpretation happens in the engine); unknown keys in
     a stage or action dict are rejected so typos fail loudly.
 
+    Each stage's action set is checked as a whole by
+    :func:`_validate_stage_action_combination`: an action may appear only once per
+    stage unless it is one of the :data:`REPEATABLE_ACTIONS`, and no stage may
+    hold two actions of the same mutually exclusive group.
+
     :return: normalized list of :class:`StageDefinition` (without ids)
     """
     if not isinstance(stages, list) or not stages:
@@ -468,10 +506,50 @@ def _validate_stages(stages) -> list[StageDefinition]:
                     retrigger_above_threshold=retrigger,
                 )
             )
+        _validate_stage_action_combination(normalized_actions, threshold)
         normalized.append(
             StageDefinition(failure_threshold=threshold, priority=priority, name=name, actions=normalized_actions)
         )
     return normalized
+
+
+def _validate_stage_action_combination(actions: list[StageActionDefinition], threshold: int) -> None:
+    """
+    Reject an action set one stage cannot meaningfully hold: the same non-repeatable action twice (see
+    :data:`REPEATABLE_ACTIONS`), or two actions from the same mutually exclusive group (see
+    :data:`_EXCLUSIVE_ACTION_GROUPS`).
+
+    Both shapes are configuration that cannot do what it reads as. A stage carrying ``LOCK_USER`` twice locks
+    for whichever of the two durations happens to be applied last; one carrying both the timed and the
+    permanent variant resolves by row order, which is not defined. Rejecting them here is the same fail-closed
+    stance the rest of this module takes, and the same reason the duplicate ``failure_threshold`` check lives
+    in :func:`_validate_stages`: a policy whose stage contradicts itself must not be storable.
+
+    Only *submitted* stages are judged - the check sits inside :func:`_validate_stages` rather than beside
+    :func:`_validate_target_actions`, which deliberately re-reads the stored stages on update. A policy
+    written before this rule existed therefore stays renameable and switchable; re-sending its stages is what
+    re-checks them.
+
+    The stage is named by its ``failure_threshold``, which is unique within a policy and identifies a stage
+    across an update - stages are replaced wholesale, so their ids are not stable.
+    """
+    seen = []
+    for action in actions:
+        action_type = str(action.action_type)
+        if action_type in seen and action_type not in REPEATABLE_ACTIONS:
+            raise ParameterError(
+                f"Duplicate action '{action_type}' in the stage with failure_threshold {threshold}: a stage can "
+                f"carry it only once. Repeatable: {', '.join(sorted(REPEATABLE_ACTIONS))}."
+            )
+        seen.append(action_type)
+    present = set(seen)
+    for group in _EXCLUSIVE_ACTION_GROUPS:
+        conflict = group & present
+        if len(conflict) > 1:
+            raise ParameterError(
+                f"Action(s) {', '.join(sorted(conflict))} cannot be combined in the stage with failure_threshold "
+                f"{threshold}: they are mutually exclusive."
+            )
 
 
 def _validate_conditions(conditions) -> list[ConditionDefinition]:

@@ -44,9 +44,12 @@ export class ConditionalAccessActionsListComponent {
   readonly actionsChange = output<LockoutStageAction[]>();
 
   onAddAction(): void {
-    // Default a new action to one that is valid for the current target, so it is
-    // never born incompatible (e.g. LOCK_USER under a source_ip policy).
-    const allowed = this.policyService.actionsForTarget(this.target());
+    // Default a new action to one that is valid for the current target and not already taken, so it is
+    // never born incompatible (e.g. LOCK_USER under a source_ip policy) and never born in conflict with an
+    // action the stage already carries. Both targets allow the repeatable EMAIL_ADMIN, so there is always
+    // something left to offer once /targets has answered.
+    const unavailable = this.policyService.unavailableActionTypes(this.actions(), this.target());
+    const allowed = this.policyService.actionsForTarget(this.target()).filter((type) => !unavailable.has(type));
     const actionType = allowed[0] ?? "LOCK_USER";
     this.actionsChange.emit([...this.actions(), { action_type: actionType, action_value: null }]);
   }

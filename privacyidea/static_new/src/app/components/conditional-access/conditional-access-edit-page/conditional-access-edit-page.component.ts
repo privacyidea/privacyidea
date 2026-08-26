@@ -255,6 +255,17 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
     return new Set(thresholds).size === thresholds.length;
   });
 
+  // Within one stage an action may appear only once (except the email actions), and the timed/permanent and
+  // allow/deny pairs may not be combined; the backend rejects both (_validate_stage_action_combination), so a
+  // policy carrying one cannot be saved at all until it is fixed - surfaced here rather than left to the 400.
+  stageActionsValid = computed(() =>
+    this.editPolicy().stages.every((stage) =>
+      stage.actions.every(
+        (_, index) => this.policyService.actionConflict(stage.actions, index, this.editPolicy().target) === null
+      )
+    )
+  );
+
   hasChanges = computed(() => JSON.stringify(this.policy()) !== JSON.stringify(this.editPolicy()));
   canSave = computed(
     () =>
@@ -265,6 +276,7 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
       this.counterTypesValid() &&
       this.stagesValid() &&
       this.stageThresholdsUnique() &&
+      this.stageActionsValid() &&
       this.targetActionsValid() &&
       this.countModeValid() &&
       this.conditionValuesValid()

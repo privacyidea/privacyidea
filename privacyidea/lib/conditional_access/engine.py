@@ -937,7 +937,9 @@ def _stage_access_decision(stage: LockoutPolicyStage, count: int) -> "AccessDeci
     Extract the pre-auth ALLOW/DENY decision from a stage's actions whose
     per-action threshold condition is met at *count*, or ``None`` if no such
     ALLOW/DENY action applies. If both an ALLOW and a DENY apply, DENY wins (fail
-    closed).
+    closed) - a combination the CRUD layer now rejects on write
+    (:func:`~privacyidea.lib.conditional_access.lockout_policy._validate_stage_action_combination`), so this
+    only ever meets it on a row written before that rule, or written straight to the database.
     """
     has_allow = False
     for action in stage.actions:
@@ -1480,7 +1482,9 @@ def _upsert_user_lockout_state(user: "User", *, lock_expires_at: datetime | None
     The write is defensive: a failure is logged and rolled back so that writing
     the lockout state can never break the authentication response that already
     completed. An existing **permanent** lock is never downgraded to a timed
-    lock.
+    lock - which now guards against a *second policy* (or a stage written before
+    the CRUD rejected the combination), since one stage may no longer carry both
+    the timed and the permanent variant.
 
     :return: whether the lock was written. ``False`` when the write failed, or when it was declined because a stronger
         (permanent) lock is already in force - the caller uses this to record the action in the history only if it
@@ -1509,7 +1513,9 @@ def _upsert_ip_block(source_ip: str, *, block_expires_at: datetime | None) -> bo
     The IP counterpart of :func:`_upsert_user_lockout_state`: the write is
     defensive (a failure is logged and rolled back so that blocking an IP can
     never break the authentication response that already completed) and an
-    existing **permanent** block is never downgraded to a timed one.
+    existing **permanent** block is never downgraded to a timed one - which now
+    guards against a second policy rather than a sibling action, since one stage
+    may no longer carry both variants.
 
     Never-block IPs (loopback and the ``CONDITIONAL_ACCESS_NEVER_BLOCK`` config)
     are skipped: blocking shared infrastructure (a reverse proxy, NAT egress, or

@@ -496,9 +496,17 @@ class LockoutPolicyCrudTestCase(MyTestCase):
         constraints = get_target_constraints()
         self.assertSetEqual({t.value for t in LockoutTarget}, set(constraints))
         for target, entry in constraints.items():
-            self.assertSetEqual({"actions", "count_modes"}, set(entry))
+            self.assertSetEqual({"actions", "count_modes", "repeatable_actions", "exclusive_action_groups"},
+                                set(entry))
             self.assertListEqual(sorted(entry["actions"]), entry["actions"])
             self.assertListEqual(sorted(entry["count_modes"]), entry["count_modes"])
+            self.assertListEqual(sorted(entry["repeatable_actions"]), entry["repeatable_actions"])
+            # Every served rule is expressible for this target: a group only one of whose members the target
+            # allows could never be violated, so offering it as a rule would be noise.
+            for group in entry["exclusive_action_groups"]:
+                self.assertListEqual(sorted(group), group)
+                self.assertTrue(set(group).issubset(entry["actions"]), group)
+            self.assertTrue(set(entry["repeatable_actions"]).issubset(entry["actions"]))
         self.assertListEqual(
             [CountMode.PER_ATTEMPT.value, CountMode.PER_REQUEST.value],
             constraints[LockoutTarget.USER.value]["count_modes"],
@@ -509,6 +517,108 @@ class LockoutPolicyCrudTestCase(MyTestCase):
         )
         self.assertIn(LockoutAction.BLOCK_IP.value, constraints[LockoutTarget.SOURCE_IP.value]["actions"])
         self.assertIn(LockoutAction.LOCK_USER.value, constraints[LockoutTarget.USER.value]["actions"])
+        # Only the notifications repeat, and only the pairs that can actually arise for the target are served.
+        self.assertListEqual([LockoutAction.EMAIL_ADMIN.value, LockoutAction.EMAIL_USER.value],
+                             constraints[LockoutTarget.USER.value]["repeatable_actions"])
+        self.assertListEqual([LockoutAction.EMAIL_ADMIN.value],
+                             constraints[LockoutTarget.SOURCE_IP.value]["repeatable_actions"])
+        self.assertIn([LockoutAction.LOCK_USER.value, LockoutAction.PERMANENT_LOCK_USER.value],
+                      constraints[LockoutTarget.USER.value]["exclusive_action_groups"])
+        self.assertNotIn([LockoutAction.LOCK_USER.value, LockoutAction.PERMANENT_LOCK_USER.value],
+                         constraints[LockoutTarget.SOURCE_IP.value]["exclusive_action_groups"])
+        self.assertIn([LockoutAction.ALLOW.value, LockoutAction.DENY.value],
+                      constraints[LockoutTarget.SOURCE_IP.value]["exclusive_action_groups"])
+
+    def test_10b_duplicate_action_in_one_stage_is_rejected(self):
+        # Two LOCK_USER actions on one stage lock for whichever duration is applied last, which is not a thing
+        # an admin can have meant.
+        self.assertRaisesRegex(
+            ParameterError, "Duplicate action 'LOCK_USER'",
+            create_lockout_policy, "Dup", 600, ["PIN_FAIL"],
+            [_stage(5, actions=[{"action_type": "LOCK_USER", "action_value": 60},
+                                {"action_type": "LOCK_USER", "action_value": 120}])],
+            LockoutTarget.USER, 1,
+        )
+        self.assertEqual(0, db.session.query(LockoutPolicy).count())
+
+    def test_10c_repeated_email_actions_in_one_stage_are_allowed(self):
+        # The one case a second copy of an action does something the first cannot: a different recipient group.
+        policy_id = create_lockout_policy(
+            "Mails", 600, ["PIN_FAIL"],
+            [_stage(5, actions=[{"action_type": "EMAIL_ADMIN", "action_value": {"recipient_group": "admins"}},
+                                {"action_type": "EMAIL_ADMIN",
+                                 "action_value": {"recipient_group": "soc@example.com"}},
+                                {"action_type": "EMAIL_USER", "action_value": None}])],
+            LockoutTarget.USER, 1,
+        )
+        actions = get_lockout_policy(policy_id)["stages"][0]["actions"]
+        self.assertEqual(3, len(actions))
+        self.assertSetEqual({"admins", "soc@example.com"},
+                            {action["action_value"]["recipient_group"] for action in actions
+                             if action["action_type"] == "EMAIL_ADMIN"})
+
+    def test_10d_timed_and_permanent_restrictions_cannot_share_a_stage(self):
+        # Both write the same row and the upsert refuses to downgrade a permanent restriction, so which one
+        # wins depends on the order the rows come back in.
+        self.assertRaisesRegex(
+            ParameterError, "mutually exclusive",
+            create_lockout_policy, "Both", 600, ["PIN_FAIL"],
+            [_stage(5, actions=[{"action_type": "LOCK_USER", "action_value": 60},
+                                {"action_type": "PERMANENT_LOCK_USER"}])],
+            LockoutTarget.USER, 1,
+        )
+        self.assertRaisesRegex(
+            ParameterError, "mutually exclusive",
+            create_lockout_policy, "BothIP", 600, ["PIN_FAIL"],
+            [_stage(5, actions=[{"action_type": "BLOCK_IP", "action_value": 60},
+                                {"action_type": "PERMANENT_BLOCK_IP"}])],
+            LockoutTarget.SOURCE_IP, 2,
+        )
+
+    def test_10e_allow_and_deny_cannot_share_a_stage(self):
+        # _stage_access_decision fails closed, so a co-located ALLOW could never take effect.
+        self.assertRaisesRegex(
+            ParameterError, "ALLOW, DENY",
+            create_lockout_policy, "Verdicts", 600, ["PIN_FAIL"],
+            [_stage(0, actions=[{"action_type": "ALLOW"}, {"action_type": "DENY"}])],
+            LockoutTarget.USER, 1,
+        )
+
+    def test_10f_the_same_action_in_different_stages_is_allowed(self):
+        # The rule is per stage: escalating the same action at a higher threshold is the normal shape.
+        policy_id = create_lockout_policy(
+            "Escalate", 600, ["PIN_FAIL"],
+            [_stage(5, actions=[{"action_type": "LOCK_USER", "action_value": 60}]),
+             _stage(10, priority=2, actions=[{"action_type": "LOCK_USER", "action_value": 3600}])],
+            LockoutTarget.USER, 1,
+        )
+        self.assertEqual(2, len(get_lockout_policy(policy_id)["stages"]))
+
+    def test_10g_update_rejects_a_stage_list_with_a_duplicate_action(self):
+        policy_id = create_lockout_policy("Ok", 600, ["PIN_FAIL"], [_stage(5)], LockoutTarget.USER, 1)
+        self.assertRaisesRegex(
+            ParameterError, "Duplicate action",
+            update_lockout_policy, policy_id,
+            stages=[_stage(5, actions=[{"action_type": "LOCK_USER", "action_value": 60},
+                                       {"action_type": "LOCK_USER", "action_value": 120}])],
+        )
+        self.assertEqual(1, len(get_lockout_policy(policy_id)["stages"][0]["actions"]))
+
+    def test_10h_update_of_other_fields_does_not_revalidate_stored_stages(self):
+        # A policy written before this rule (or straight through the ORM) must stay switchable and renameable:
+        # only submitted stages are judged, which is why the check lives in _validate_stages rather than beside
+        # _validate_target_actions, which deliberately re-reads the stored stages.
+        policy = LockoutPolicy(name="Legacy", time_window_seconds=600, priority=1,
+                               target=LockoutTarget.USER.value, counter_types_to_track=["PIN_FAIL"])
+        policy.stages = [LockoutPolicyStage(
+            failure_threshold=5, priority=1,
+            actions=[LockoutStageAction(action_type="LOCK_USER", action_value=60),
+                     LockoutStageAction(action_type="PERMANENT_LOCK_USER")])]
+        db.session.add(policy)
+        db.session.commit()
+        update_lockout_policy(policy.id, enabled=False)
+        update_lockout_policy(policy.id, name="Legacy renamed")
+        self.assertEqual("Legacy renamed", get_lockout_policy(policy.id)["name"])
 
     def test_11_duplicate_priority_rejected(self):
         # priority must be unique across policies: a second policy reusing a

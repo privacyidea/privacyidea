@@ -135,6 +135,73 @@ describe("ConditionalAccessActionItemComponent", () => {
     });
   });
 
+  // The client-side half of _validate_stage_action_combination: a stage may not carry the same action twice
+  // (except the emails) nor two actions that contradict each other.
+  describe("stage action combinations", () => {
+    let policyServiceMock: MockConditionalAccessPolicyService;
+    const action = (actionType: LockoutActionType) => ({ action_type: actionType, action_value: null });
+
+    beforeEach(() => {
+      policyServiceMock = TestBed.inject(
+        ConditionalAccessPolicyService
+      ) as unknown as MockConditionalAccessPolicyService;
+      policyServiceMock.repeatableActionsByTarget.set({
+        user: ["EMAIL_ADMIN", "EMAIL_USER"],
+        source_ip: ["EMAIL_ADMIN"]
+      });
+      policyServiceMock.exclusiveGroupsByTarget.set({
+        user: [
+          ["LOCK_USER", "PERMANENT_LOCK_USER"],
+          ["ALLOW", "DENY"]
+        ],
+        source_ip: [["BLOCK_IP", "PERMANENT_BLOCK_IP"]]
+      });
+    });
+
+    const withSiblings = (siblings: LockoutStageAction[], index: number) => {
+      fixture.componentRef.setInput("siblingActions", siblings);
+      fixture.componentRef.setInput("actionIndex", index);
+      setAction(siblings[index]);
+    };
+
+    it("flags the second copy of a non-repeatable action, not the first", () => {
+      const siblings = [action("LOCK_USER"), action("LOCK_USER")];
+      withSiblings(siblings, 1);
+      expect(component.actionConflict()).toBe("duplicate");
+      expect(component.conflictMessage()).not.toBe("");
+      withSiblings(siblings, 0);
+      expect(component.actionConflict()).toBeNull();
+    });
+
+    it("does not flag a repeated email action", () => {
+      const siblings = [action("EMAIL_ADMIN"), action("EMAIL_ADMIN")];
+      withSiblings(siblings, 1);
+      expect(component.actionConflict()).toBeNull();
+      expect(component.conflictMessage()).toBe("");
+    });
+
+    it("flags an action that contradicts another on the stage", () => {
+      withSiblings([action("LOCK_USER"), action("PERMANENT_LOCK_USER")], 1);
+      expect(component.actionConflict()).toBe("exclusive");
+    });
+
+    it("disables the types another action already occupies, but never its own", () => {
+      withSiblings([action("LOCK_USER"), action("EMAIL_ADMIN")], 1);
+      const disabled = component.disabledActionTypes();
+      expect(disabled.has("LOCK_USER")).toBe(true);
+      expect(disabled.has("PERMANENT_LOCK_USER")).toBe(true);
+      expect(disabled.has("EMAIL_ADMIN")).toBe(false);
+    });
+
+    it("does not judge while no rules have been served", () => {
+      policyServiceMock.repeatableActionsByTarget.set({} as Record<LockoutTarget, LockoutActionType[]>);
+      policyServiceMock.exclusiveGroupsByTarget.set({} as Record<LockoutTarget, LockoutActionType[][]>);
+      withSiblings([action("LOCK_USER"), action("LOCK_USER")], 1);
+      expect(component.actionConflict()).toBeNull();
+      expect(component.disabledActionTypes().size).toBe(0);
+    });
+  });
+
   describe("duration", () => {
     it("should read a plain-number duration", () => {
       setAction({ action_type: "LOCK_USER", action_value: 600 });

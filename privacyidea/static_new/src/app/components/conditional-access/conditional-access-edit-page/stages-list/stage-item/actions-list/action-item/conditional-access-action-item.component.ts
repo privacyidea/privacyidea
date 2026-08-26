@@ -160,6 +160,10 @@ export class ConditionalAccessActionItemComponent {
   private readonly smtpService: SmtpServiceInterface = inject(SmtpService);
 
   readonly action = input.required<LockoutStageAction>();
+  // The whole stage's action list plus this action's place in it, so the picker can grey out the types
+  // another action already occupies and this action can say why it collides with one of them.
+  readonly siblingActions = input<LockoutStageAction[]>([]);
+  readonly actionIndex = input<number>(0);
   readonly target = input<LockoutTarget>("user");
   readonly updateAction = output<Partial<LockoutStageAction>>();
   readonly removeAction = output<void>();
@@ -190,6 +194,30 @@ export class ConditionalAccessActionItemComponent {
   readonly isActionAllowedForTarget = computed<boolean>(() => {
     const allowed = this.policyService.actionsForTarget(this.target());
     return allowed.length === 0 || allowed.includes(this.action().action_type);
+  });
+
+  // The types this action may not switch to: taken by another action on the same stage, or mutually
+  // exclusive with one. This action's own index is excluded, so its current type is never disabled.
+  readonly disabledActionTypes = computed<Set<LockoutActionType>>(() =>
+    this.policyService.unavailableActionTypes(this.siblingActions(), this.target(), this.actionIndex())
+  );
+
+  // Why this action collides with an earlier one on the same stage, or null when it does not. The backend
+  // rejects both shapes (_validate_stage_action_combination), so it is flagged here rather than left to the
+  // save - mirroring isActionAllowedForTarget.
+  readonly actionConflict = computed<"duplicate" | "exclusive" | null>(() =>
+    this.policyService.actionConflict(this.siblingActions(), this.actionIndex(), this.target())
+  );
+
+  readonly conflictMessage = computed<string>(() => {
+    switch (this.actionConflict()) {
+      case "duplicate":
+        return $localize`This action is already on this stage. Only the email actions may be added more than once.`;
+      case "exclusive":
+        return $localize`This action contradicts another action on this stage. Remove one of them.`;
+      default:
+        return "";
+    }
   });
 
   // Effective checkbox state. When the action carries no explicit value the

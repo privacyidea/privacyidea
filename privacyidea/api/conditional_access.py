@@ -172,13 +172,15 @@ def list_condition_types():
 @log_with(log)
 def list_targets():
     """
-    Return the policy targets and, for each, the constraints that depend on the target - the stage actions it allows
-    and the count modes it supports - as ``{target: {"actions": [...], "count_modes": [...]}}`` (both sorted; see
+    Return the policy targets and, for each, the constraints that depend on the target - the stage actions it allows,
+    the count modes it supports, which of its actions may appear more than once within one stage, and which of its
+    actions contradict each other within one stage - as ``{target: {"actions": [...], "count_modes": [...],
+    "repeatable_actions": [...], "exclusive_action_groups": [[...], ...]}}`` (all sorted; see
     :func:`~privacyidea.lib.conditional_access.lockout_policy.get_target_constraints`).
 
     Requires the admin policy action :ref:`policy_lockout_policy_read`.
 
-    :status 200: mapping of target name to its allowed actions and supported count modes
+    :status 200: mapping of target name to its allowed actions, supported count modes and per-stage action rules
     """
     target_constraints = get_target_constraints()
     g.audit_object.log({"success": True, "info": f"{len(target_constraints)} targets"})
@@ -269,7 +271,10 @@ def create_policy():
     :jsonparam stages: non-empty list of stage definitions, each
         ``{"failure_threshold": <int>, "priority": <int, optional>,
         "actions": [{"action_type": <LockoutAction>, "action_value": <any>}]}``.
-        Required.
+        Required. Within one stage an action type may appear only once, except
+        ``EMAIL_ADMIN``/``EMAIL_USER``; and ``LOCK_USER``/``PERMANENT_LOCK_USER``,
+        ``BLOCK_IP``/``PERMANENT_BLOCK_IP`` and ``ALLOW``/``DENY`` may not be
+        combined in the same stage.
     :jsonparam enabled: whether the policy is evaluated (default true).
     :jsonparam dry_run: log-only mode, nothing is enforced (default false).
     :jsonparam priority: evaluation priority; lower numbers are evaluated first.

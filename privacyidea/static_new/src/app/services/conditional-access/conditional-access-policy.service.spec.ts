@@ -26,7 +26,7 @@ import { DialogService } from "@services/dialog/dialog.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { MockContentService, MockDialogService, MockNotificationService, MockPiResponse } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
-import { ConditionalAccessPolicyService, LockoutPolicy } from "./conditional-access-policy.service";
+import { ConditionalAccessPolicyService, LockoutPolicy, LockoutStageAction } from "./conditional-access-policy.service";
 
 describe("ConditionalAccessPolicyService", () => {
   let service: ConditionalAccessPolicyService;
@@ -205,14 +205,22 @@ describe("ConditionalAccessPolicyService", () => {
 
   describe("targets and templates", () => {
     const targetConstraints = {
-      user: { actions: ["LOCK_USER", "ALLOW", "DENY"], count_modes: ["PER_ATTEMPT", "PER_REQUEST"] },
+      user: {
+        actions: ["LOCK_USER", "PERMANENT_LOCK_USER", "EMAIL_ADMIN", "ALLOW", "DENY"],
+        count_modes: ["PER_ATTEMPT", "PER_REQUEST"],
+        repeatable_actions: ["EMAIL_ADMIN"],
+        exclusive_action_groups: [
+          ["LOCK_USER", "PERMANENT_LOCK_USER"],
+          ["ALLOW", "DENY"]
+        ]
+      },
       source_ip: {
         actions: ["BLOCK_IP", "ALLOW", "DENY"],
         count_modes: ["DISTINCT_USERS", "PER_ATTEMPT", "PER_REQUEST"]
       }
     };
     const expectedActionsByTarget = {
-      user: ["LOCK_USER", "ALLOW", "DENY"],
+      user: ["LOCK_USER", "PERMANENT_LOCK_USER", "EMAIL_ADMIN", "ALLOW", "DENY"],
       source_ip: ["BLOCK_IP", "ALLOW", "DENY"]
     };
     const expectedCountModesByTarget = {
@@ -285,8 +293,71 @@ describe("ConditionalAccessPolicyService", () => {
 
     it("should return the allowed actions for a known target", async () => {
       await load();
-      expect(service.actionsForTarget("user")).toEqual(["LOCK_USER", "ALLOW", "DENY"]);
+      expect(service.actionsForTarget("user")).toEqual([
+        "LOCK_USER",
+        "PERMANENT_LOCK_USER",
+        "EMAIL_ADMIN",
+        "ALLOW",
+        "DENY"
+      ]);
       expect(service.actionsForTarget("source_ip")).toEqual(["BLOCK_IP", "ALLOW", "DENY"]);
+    });
+
+    // The per-stage action rules come from /targets rather than a hand-kept client copy; a target the
+    // backend serves no rules for simply has none, which is what keeps an older backend usable.
+    it("should derive the per-stage action rules from the /targets response", async () => {
+      await load();
+      expect(service.repeatableActionsByTarget()).toEqual({ user: ["EMAIL_ADMIN"], source_ip: [] });
+      expect(service.exclusiveGroupsByTarget()).toEqual({
+        user: [
+          ["LOCK_USER", "PERMANENT_LOCK_USER"],
+          ["ALLOW", "DENY"]
+        ],
+        source_ip: []
+      });
+    });
+
+    describe("unavailableActionTypes / actionConflict", () => {
+      const action = (actionType: string) => ({ action_type: actionType, action_value: null }) as LockoutStageAction;
+
+      it("should report nothing while no rules have been served", () => {
+        const actions = [action("LOCK_USER"), action("LOCK_USER")];
+        expect(service.unavailableActionTypes(actions, "user").size).toBe(0);
+        expect(service.actionConflict(actions, 1, "user")).toBeNull();
+      });
+
+      it("should mark a non-repeatable action already on the stage as unavailable", async () => {
+        await load();
+        expect([...service.unavailableActionTypes([action("LOCK_USER")], "user")]).toEqual(
+          expect.arrayContaining(["LOCK_USER", "PERMANENT_LOCK_USER"])
+        );
+      });
+
+      it("should leave a repeatable action available", async () => {
+        await load();
+        expect(service.unavailableActionTypes([action("EMAIL_ADMIN")], "user").has("EMAIL_ADMIN")).toBe(false);
+      });
+
+      it("should not report an action against itself", async () => {
+        await load();
+        expect(service.unavailableActionTypes([action("LOCK_USER")], "user", 0).size).toBe(0);
+      });
+
+      it("should flag only the later action of a colliding pair", async () => {
+        await load();
+        const duplicate = [action("LOCK_USER"), action("LOCK_USER")];
+        expect(service.actionConflict(duplicate, 0, "user")).toBeNull();
+        expect(service.actionConflict(duplicate, 1, "user")).toBe("duplicate");
+      });
+
+      it("should flag mutually exclusive actions as exclusive, and repeated emails not at all", async () => {
+        await load();
+        expect(service.actionConflict([action("LOCK_USER"), action("PERMANENT_LOCK_USER")], 1, "user")).toBe(
+          "exclusive"
+        );
+        expect(service.actionConflict([action("ALLOW"), action("DENY")], 1, "user")).toBe("exclusive");
+        expect(service.actionConflict([action("EMAIL_ADMIN"), action("EMAIL_ADMIN")], 1, "user")).toBeNull();
+      });
     });
 
     it("should return the supported count modes for a known target", async () => {

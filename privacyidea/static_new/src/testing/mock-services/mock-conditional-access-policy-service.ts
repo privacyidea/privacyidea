@@ -29,6 +29,7 @@ import {
   LockoutPolicyCondition,
   LockoutPolicySaveParams,
   LockoutPolicyTemplate,
+  LockoutStageAction,
   LockoutTarget,
   StaleConditionValues,
   TargetConstraints
@@ -56,6 +57,13 @@ export class MockConditionalAccessPolicyService implements ConditionalAccessPoli
   );
 
   countModesByTarget = signal<Record<LockoutTarget, CountMode[]>>({} as Record<LockoutTarget, CountMode[]>);
+  // Empty by default, so a spec that does not opt in sees no per-stage action rules and is not gated by them.
+  repeatableActionsByTarget = signal<Record<LockoutTarget, LockoutActionType[]>>(
+    {} as Record<LockoutTarget, LockoutActionType[]>
+  );
+  exclusiveGroupsByTarget = signal<Record<LockoutTarget, LockoutActionType[][]>>(
+    {} as Record<LockoutTarget, LockoutActionType[][]>
+  );
 
   targets = signal<LockoutTarget[]>([]);
 
@@ -92,6 +100,53 @@ export class MockConditionalAccessPolicyService implements ConditionalAccessPoli
   );
 
   countModesForTarget = jest.fn((target: LockoutTarget): CountMode[] => this.countModesByTarget()[target] ?? []);
+
+  unavailableActionTypes = jest.fn(
+    (actions: LockoutStageAction[], target: LockoutTarget, exceptIndex?: number): Set<LockoutActionType> => {
+      const repeatable = new Set(this.repeatableActionsByTarget()[target] ?? []);
+      const groups = this.exclusiveGroupsByTarget()[target] ?? [];
+      const unavailable = new Set<LockoutActionType>();
+      if (repeatable.size === 0 && groups.length === 0) {
+        return unavailable;
+      }
+      const present = actions.filter((_, index) => index !== exceptIndex).map((action) => action.action_type);
+      for (const actionType of present) {
+        if (!repeatable.has(actionType)) {
+          unavailable.add(actionType);
+        }
+        for (const group of groups) {
+          if (group.includes(actionType)) {
+            group.forEach((member) => unavailable.add(member));
+          }
+        }
+      }
+      return unavailable;
+    }
+  );
+
+  actionConflict = jest.fn(
+    (actions: LockoutStageAction[], index: number, target: LockoutTarget): "duplicate" | "exclusive" | null => {
+      const action = actions[index];
+      if (!action) {
+        return null;
+      }
+      const repeatable = new Set(this.repeatableActionsByTarget()[target] ?? []);
+      const groups = this.exclusiveGroupsByTarget()[target] ?? [];
+      if (repeatable.size === 0 && groups.length === 0) {
+        return null;
+      }
+      const earlier = actions.slice(0, index).map((other) => other.action_type);
+      if (!repeatable.has(action.action_type) && earlier.includes(action.action_type)) {
+        return "duplicate";
+      }
+      const conflicting = groups.some(
+        (group) =>
+          group.includes(action.action_type) &&
+          earlier.some((type) => type !== action.action_type && group.includes(type))
+      );
+      return conflicting ? "exclusive" : null;
+    }
+  );
 
   getPolicies = jest.fn(
     (): Observable<PiResponse<LockoutPolicy[]>> => of(MockPiResponse.fromValue<LockoutPolicy[]>(this.policies()))

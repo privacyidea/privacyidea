@@ -642,6 +642,53 @@ describe("ConditionalAccessEditPageComponent — new mode", () => {
     });
   });
 
+  describe("stageActionsValid", () => {
+    const stageWith = (...actionTypes: LockoutActionType[]) => [
+      {
+        failure_threshold: 5,
+        priority: 1,
+        actions: actionTypes.map((actionType) => ({ action_type: actionType, action_value: null }))
+      }
+    ];
+
+    beforeEach(() => {
+      policyServiceMock.repeatableActionsByTarget.set({
+        user: ["EMAIL_ADMIN", "EMAIL_USER"],
+        source_ip: ["EMAIL_ADMIN"]
+      });
+      policyServiceMock.exclusiveGroupsByTarget.set({
+        user: [
+          ["LOCK_USER", "PERMANENT_LOCK_USER"],
+          ["ALLOW", "DENY"]
+        ],
+        source_ip: [["BLOCK_IP", "PERMANENT_BLOCK_IP"]]
+      });
+    });
+
+    it("should accept distinct actions on one stage", () => {
+      component.onStagesChange(stageWith("LOCK_USER", "EMAIL_ADMIN"));
+      expect(component.stageActionsValid()).toBe(true);
+    });
+
+    it("should block saving a stage carrying the same action twice", () => {
+      component.onStagesChange(stageWith("LOCK_USER", "LOCK_USER"));
+      expect(component.stageActionsValid()).toBe(false);
+      expect(component.canSave()).toBe(false);
+    });
+
+    it("should block saving a stage carrying two contradicting actions", () => {
+      component.onStagesChange(stageWith("LOCK_USER", "PERMANENT_LOCK_USER"));
+      expect(component.stageActionsValid()).toBe(false);
+    });
+
+    it("should not block while no rules have been served", () => {
+      policyServiceMock.repeatableActionsByTarget.set({} as Record<LockoutTarget, LockoutActionType[]>);
+      policyServiceMock.exclusiveGroupsByTarget.set({} as Record<LockoutTarget, LockoutActionType[][]>);
+      component.onStagesChange(stageWith("LOCK_USER", "LOCK_USER"));
+      expect(component.stageActionsValid()).toBe(true);
+    });
+  });
+
   describe("targetActionsValid", () => {
     const stageWith = (actionType: LockoutActionType) => [
       { failure_threshold: 5, priority: 1, actions: [{ action_type: actionType, action_value: null }] }

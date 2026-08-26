@@ -78,6 +78,29 @@ describe("ConditionalAccessActionsListComponent", () => {
     expect(spy).toHaveBeenCalledWith([...actions, { action_type: "BLOCK_IP", action_value: null }]);
   });
 
+  // A singleton action already on the stage - and anything mutually exclusive with one - cannot be added
+  // twice, so offering it would only produce an action the admin has to change straight away.
+  it("should skip an action type the stage cannot take again", () => {
+    const policyServiceMock = TestBed.inject(
+      ConditionalAccessPolicyService
+    ) as unknown as MockConditionalAccessPolicyService;
+    policyServiceMock.actionsByTarget.set({
+      user: ["ALLOW", "DENY", "EMAIL_ADMIN", "LOCK_USER"],
+      source_ip: ["BLOCK_IP", "ALLOW", "DENY"]
+    });
+    policyServiceMock.repeatableActionsByTarget.set({ user: ["EMAIL_ADMIN"], source_ip: ["EMAIL_ADMIN"] });
+    policyServiceMock.exclusiveGroupsByTarget.set({ user: [["ALLOW", "DENY"]], source_ip: [] });
+    fixture.componentRef.setInput("actions", [{ action_type: "ALLOW", action_value: null }]);
+
+    const spy = jest.spyOn(component.actionsChange, "emit");
+    component.onAddAction();
+    // ALLOW is taken and DENY contradicts it, so the first free type wins.
+    expect(spy).toHaveBeenCalledWith([
+      { action_type: "ALLOW", action_value: null },
+      { action_type: "EMAIL_ADMIN", action_value: null }
+    ]);
+  });
+
   it("should emit a merged action on update by index", () => {
     const spy = jest.spyOn(component.actionsChange, "emit");
     component.onUpdateAction(1, { action_type: "EMAIL_USER" });
