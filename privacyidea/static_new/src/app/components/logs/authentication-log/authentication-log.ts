@@ -57,6 +57,7 @@ import { RouterLink } from "@angular/router";
 import { ConditionalAccessCell } from "./cells/conditional-access-cell/conditional-access-cell";
 import { InfoCell } from "./cells/info-cell/info-cell";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { SourceIpCell } from "./cells/source-ip-cell/source-ip-cell";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { FilterValueButtonComponent } from "@components/shared/filter-value-button/filter-value-button.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
@@ -229,6 +230,20 @@ function parseFilterTimestamp(value: string | null | undefined): string | null {
   return null;
 }
 
+// What the Client column's provenance badge says. Mirrors
+// privacyidea.lib.conditional_access.authentication_log.ClientLabelSource; an unknown or absent value gets no
+// badge, since an entry written before the recording says nothing about where its label came from.
+const CLIENT_LABEL_SOURCE_META: Record<string, { label: string; tooltip: string }> = {
+  client_id: {
+    label: $localize`client id`,
+    tooltip: $localize`The name the client gave itself in the request's client_id parameter.`
+  },
+  user_agent: {
+    label: $localize`user agent`,
+    tooltip: $localize`The User-Agent header the client sent; it names no particular integration.`
+  }
+};
+
 // Full, independently-translatable tooltip per column that has an inline filter button. Kept as complete sentences
 // (not noun-interpolated) so each language can phrase determiner/grammar correctly; a column without an entry falls
 // back to the button's generic default.
@@ -273,6 +288,7 @@ const TRUNCATED_COLUMN_CLASSES: Record<string, string> = {
     MatLabel,
     CopyableComponent,
     FilterValueButtonComponent,
+    SourceIpCell,
     RouterLink,
     ScrollToTopDirective,
     ScrollEdgesDirective,
@@ -755,6 +771,13 @@ export class AuthenticationLog {
     if (columnKey === "client_label") return false;
     if (columnKey === "source_ip") return !this.showSourceIpMenu();
     return true;
+  }
+
+  // What the Client column's badge says about where the label came from, or null when the entry predates the
+  // recording. The two are worth very different amounts: a client_id is a name an integration gave itself, a
+  // User-Agent is a string any browser sends.
+  clientLabelBadge(source: string | null | undefined): { label: string; tooltip: string } | null {
+    return source ? (CLIENT_LABEL_SOURCE_META[source] ?? null) : null;
   }
 
   // Localized tooltip for a cell's inline filter button, falling back to the generic phrasing.

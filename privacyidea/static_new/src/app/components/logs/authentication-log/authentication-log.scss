@@ -239,3 +239,15 @@ td.cell-info {
     white-space: nowrap;
   }
 }
+
+// Names where a row's client label came from, next to the label itself. Rendered only when the row records it.
+.client-label-source-badge {
+  margin-left: 4px;
+  padding: 0 6px;
+  border-radius: 8px;
+  font-size: 0.75em;
+  line-height: 1.6;
+  white-space: nowrap;
+  background: var(--mat-sys-surface-container-highest);
+  color: var(--mat-sys-on-surface-variant);
+}

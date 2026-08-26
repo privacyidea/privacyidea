@@ -1,0 +1,56 @@
+@use "../info-list";
+
+// The one visible line: the effective address, its filter button and the provenance badge.
+.source-ip-summary {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+// Reveals the peer and the claimed path. Sized and styled like the conditional-access cell's toggle so the two
+// columns of the same table read as siblings, and kept a real button so it is operable by keyboard.
+.source-ip-toggle {
+  flex: 0 0 auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--mat-sys-primary);
+  cursor: pointer;
+  line-height: 1;
+
+  .mat-icon {
+    width: 18px;
+    height: 18px;
+    font-size: 18px;
+  }
+}
+
+// Names where the shown address came from. No badge at all is rendered for an entry that predates the
+// recording, so the badge always states something the row actually says.
+.ip-source-badge {
+  padding: 0 6px;
+  border-radius: 8px;
+  font-size: 0.75em;
+  line-height: 1.6;
+  white-space: nowrap;
+  background: var(--mat-sys-surface-container-highest);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+// A mapped address rests on what a proxy claimed, so it is marked rather than left to look like the peer.
+.ip-source-badge--proxy,
+.ip-source-badge--param {
+  background: var(--mat-sys-tertiary-container);
+  color: var(--mat-sys-on-tertiary-container);
+}
+
+.source-ip-details {
+  padding-left: 20px;
+}
+
+// The hop the effective address was taken from, marked so the path reads as an answer and not just a list.
+.ip-hop-effective {
+  font-weight: 500;
+  color: var(--mat-sys-on-surface);
+}

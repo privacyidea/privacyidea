@@ -13,7 +13,8 @@ from privacyidea.lib.crypto import generate_password
 from privacyidea.lib.error import PolicyError, ParameterError
 from privacyidea.lib.utils import (parse_timelimit,
                                    check_time_in_range, parse_proxy,
-                                   check_proxy, reduce_realms, is_true,
+                                   check_proxy, get_client_ip_info, MAX_IP_CHAIN_HOPS,
+                                   reduce_realms, is_true,
                                    parse_date, get_data_from_params, parse_legacy_time,
                                    int_to_hex, parse_time_offset_from_now, censor_connect_string,
                                    parse_timedelta, to_unicode,
@@ -672,6 +673,70 @@ class UtilsTestCase(MyTestCase):
         r.blueprint = "token_blueprint"
         ip = get_client_ip(r, "10.0.0.1")
         self.assertEqual(ip, direct_client)
+
+    def test_23b_get_client_ip_info_records_the_derivation(self):
+        # Same selection as test_23, plus the record of how it was reached.
+        class RequestMock:
+            blueprint = None
+            remote_addr = None
+            all_data = {}
+            access_route = []
+
+        r = RequestMock()
+        r.blueprint = "validate_blueprint"
+        direct_client, client_proxy, client_parameter = "10.0.0.1", "172.16.1.2", "192.168.2.1"
+        r.remote_addr = direct_client
+        r.all_data = {"client": client_parameter}
+        r.access_route = [client_proxy]
+
+        # No override configured: the peer is the client, but the header and the client parameter it claimed
+        # are still recorded - recording is not honouring.
+        info = get_client_ip_info(r, "")
+        self.assertEqual(direct_client, info.ip)
+        self.assertEqual(direct_client, info.peer_ip)
+        self.assertEqual("REMOTE_ADDR", info.source)
+        self.assertEqual([direct_client, client_proxy, client_parameter], [hop.ip for hop in info.chain])
+        self.assertEqual(["REMOTE_ADDR", "X_FORWARDED_FOR", "CLIENT_PARAM"],
+                         [hop.source for hop in info.chain])
+        self.assertEqual(0, info.effective_index)
+
+        # The override admits the header hop.
+        info = get_client_ip_info(r, "10.0.0.1")
+        self.assertEqual(client_proxy, info.ip)
+        self.assertEqual("X_FORWARDED_FOR", info.source)
+        self.assertEqual(1, info.effective_index)
+
+        # ... and, with the proxy also allowed to map, the client parameter.
+        info = get_client_ip_info(r, "10.0.0.1>172.16.1.2>0.0.0.0/0")
+        self.assertEqual(client_parameter, info.ip)
+        self.assertEqual("CLIENT_PARAM", info.source)
+
+        # An override is configured but this peer may not map any further: that is a different fact from
+        # "no override configured", and must not read as a direct connection.
+        info = get_client_ip_info(r, "203.0.113.1")
+        self.assertEqual(direct_client, info.ip)
+        self.assertEqual("REMOTE_ADDR_UNMAPPED", info.source)
+
+        # No route at all with an override configured: get_client_ip has always returned None here.
+        r.access_route = []
+        info = get_client_ip_info(r, "10.0.0.1")
+        self.assertIsNone(info.ip)
+        self.assertIsNone(info.source)
+        self.assertEqual(direct_client, info.peer_ip)
+
+    def test_23c_get_client_ip_info_caps_a_long_claimed_chain(self):
+        # X-Forwarded-For is attacker-controlled, so the recorded chain is capped rather than stored whole.
+        class RequestMock:
+            blueprint = "token_blueprint"
+            remote_addr = "10.0.0.1"
+            all_data = {}
+            access_route = [f"172.16.0.{index}" for index in range(1, 40)]
+
+        info = get_client_ip_info(RequestMock(), "")
+        self.assertEqual(MAX_IP_CHAIN_HOPS, len(info.chain))
+        self.assertEqual(40 - MAX_IP_CHAIN_HOPS, info.dropped_hops)
+        # The effective hop survives the cap.
+        self.assertEqual("10.0.0.1", info.chain[info.effective_index].ip)
 
     def test_24_sanity_name_check(self):
         self.assertTrue(sanity_name_check('Hello_World'))

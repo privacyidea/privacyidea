@@ -42,8 +42,9 @@ authentication_log_blueprint = Blueprint("authentication_log_blueprint", __name_
 # Filter parameters that map 1:1 to a get_authentication_logs_paginate keyword argument. The ca_* ones filter on the
 # entry's conditional-access outcomes rather than on a column of its own row; ca_dry_run is parsed separately because
 # it is a boolean, not a list of values.
-_FILTER_PARAMS = ["resolver", "uid", "realm", "username", "user_role", "event_type", "source_ip", "serial",
-                  "transaction_id", "attempt_id", "client_label", "ca_action_type", "ca_policy_name"]
+_FILTER_PARAMS = ["resolver", "uid", "realm", "username", "user_role", "event_type", "source_ip", "peer_ip",
+                  "source_ip_source", "serial", "transaction_id", "attempt_id", "client_label",
+                  "client_label_source", "ca_action_type", "ca_policy_name"]
 
 
 def _split_csv(value: str | None) -> list[str] | None:
@@ -82,8 +83,9 @@ def get_authentication_log():
     scope may read the log; if the policy is scoped to realms, resolvers and/or users, only entries matching that
     scope are returned. A **user** with the action set in the user scope may read only their own entries.
 
-    Each of ``resolver``, ``uid``, ``realm``, ``username``, ``user_role``, ``event_type``, ``source_ip``, ``serial``,
-    ``transaction_id``, ``attempt_id`` and ``client_label`` may be passed as a query
+    Each of ``resolver``, ``uid``, ``realm``, ``username``, ``user_role``, ``event_type``, ``source_ip``,
+    ``peer_ip``, ``source_ip_source``, ``serial``,
+    ``transaction_id``, ``attempt_id``, ``client_label`` and ``client_label_source`` may be passed as a query
     parameter to filter on it. A value may be a comma-separated list (e.g. ``event_type=MFA_FAIL,PIN_FAIL``), matching
     entries that equal any of the values. A value may contain a ``*`` wildcard (e.g. ``serial=TOTP*``) to match by
     prefix/pattern instead of exactly. Note, using wildcards filtering is always case-insensitive.
@@ -91,7 +93,7 @@ def get_authentication_log():
     :query page: page number, 1-indexed (default 1).
     :query page_size: entries per page (default 15).
     :query sort_column: column to sort by (id, timestamp, event_type, resolver, uid, realm, username, source_ip,
-        client_label, serial, transaction_id, attempt_id).
+        peer_ip, source_ip_source, client_label, client_label_source, serial, transaction_id, attempt_id).
     :query sort_order: ``asc`` or ``desc`` (default ``desc``).
     :query start_time: only entries at/after this ISO 8601 timestamp.
     :query end_time: only entries at/before this ISO 8601 timestamp.
@@ -104,6 +106,18 @@ def get_authentication_log():
     :query ca_dry_run: ``true`` for only entries with a dry-run outcome, ``false`` for only entries with an enforced
         one; omit it to get both. The three ``ca_*`` filters apply to the *same* outcome, so an entry matches when one
         of its outcomes satisfies all of them.
+    Each entry records **how** its client was determined as well as what it was determined to be. ``source_ip``
+    is the effective address - the one authorization and conditional access act on - while ``peer_ip`` is the TCP
+    peer the request arrived from, ``source_ip_source`` names where the effective address was taken from
+    (``REMOTE_ADDR``, ``REMOTE_ADDR_UNMAPPED`` when an ``OverrideAuthorizationClient`` is configured but this peer
+    may not map any further, ``X_FORWARDED_FOR`` or ``CLIENT_PARAM``), and ``ip_chain`` is the whole path that was
+    considered, peer first, with the chosen hop marked ``"effective": true``. The chain is recorded even when no
+    override is configured and the header is therefore ignored. ``client_label_source`` says whether the label is
+    the ``client_id`` the client chose (``client_id``) or its User-Agent (``user_agent``).
+
+    ``null`` in any of these means the entry predates the recording, and nothing may be inferred from it - in
+    particular a null ``source_ip_source`` does not mean "direct connection".
+
     :status 200: paginated result in ``result.value`` with ``auth_logs``, ``count``, ``current``, ``prev``, ``next``.
     """
     params = request.all_data

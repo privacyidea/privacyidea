@@ -53,7 +53,11 @@ def upgrade():
             sa.Column('event_type', _unicode_case_sensitive(40), nullable=False),
             sa.Column('timestamp', sa.DateTime(), nullable=False),
             sa.Column('source_ip', _unicode_case_sensitive(50), nullable=True),
+            sa.Column('peer_ip', _unicode_case_sensitive(50), nullable=True),
+            sa.Column('source_ip_source', _unicode_case_sensitive(40), nullable=True),
             sa.Column('client_label', _unicode_case_sensitive(1024), nullable=True),
+            sa.Column('client_label_source', _unicode_case_sensitive(40), nullable=True),
+            sa.Column('ip_chain', sa.JSON(), nullable=True),
             sa.Column('serial', _unicode_case_sensitive(1024), nullable=True),
             sa.Column('transaction_id', _unicode_case_sensitive(64), nullable=True),
             sa.Column('attempt_id', _unicode_case_sensitive(64), nullable=True),
@@ -70,6 +74,9 @@ def upgrade():
                         ['resolver', 'uid', 'realm', 'timestamp'])
         op.create_index('ix_authlog_ip_time', 'authentication_log',
                         ['source_ip', 'timestamp'])
+        # The TCP peer the request arrived from, the second pivot of a forensic query.
+        op.create_index('ix_authlog_peer_ip_time', 'authentication_log',
+                        ['peer_ip', 'timestamp'])
 
     except (OperationalError, ProgrammingError) as ex:
         if "already exists" in str(ex.orig).lower():
@@ -86,6 +93,7 @@ def downgrade():
             batch_op.drop_index('ix_authlog_ip_event_time')
             batch_op.drop_index('ix_authlog_user_time')
             batch_op.drop_index('ix_authlog_ip_time')
+            batch_op.drop_index('ix_authlog_peer_ip_time')
 
         op.drop_table('authentication_log')
 

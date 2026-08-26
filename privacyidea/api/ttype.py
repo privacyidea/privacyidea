@@ -53,7 +53,7 @@ from privacyidea.lib.policy import PolicyClass, PolicyAction, SCOPE, Match
 from privacyidea.lib.token import get_one_token
 from privacyidea.lib.tokens.pushtoken import PUSH_AUTH_EVENT, PUSH_AUTH_TRANSACTION_ID
 from privacyidea.lib.user import get_user_from_param, User
-from privacyidea.lib.utils import get_client_ip, get_plugin_info_from_useragent
+from privacyidea.lib.utils import get_client_ip_info, get_plugin_info_from_useragent
 from ..lib.framework import get_app_config_value
 from ..lib.log import log_with
 from ..lib.tokens.push_types import PushAction
@@ -81,8 +81,9 @@ def before_request():
     g.audit_object = getAudit(current_app.config)
     g.event_config = EventConfiguration()
     # access_route contains the ip addresses of all clients, hops and proxies.
-    g.client_ip = get_client_ip(request,
-                                get_from_config(SYSCONF.OVERRIDECLIENT))
+    g.client_ip_info = get_client_ip_info(request,
+                                          get_from_config(SYSCONF.OVERRIDECLIENT))
+    g.client_ip = g.client_ip_info.ip
     g.serial = get_optional(request.all_data, "serial", default=None)
     ua_name, ua_version, _ua_comment = get_plugin_info_from_useragent(request.user_agent.string)
     g.user_agent = ua_name

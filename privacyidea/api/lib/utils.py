@@ -37,14 +37,15 @@ from flask import jsonify, current_app, Response, Request, request, g, has_reque
 from flask_babel import _
 
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
-from privacyidea.lib.conditional_access.authentication_log import AuthLogUserRole, PendingAuthEvent
+from privacyidea.lib.conditional_access.authentication_log import (AuthLogUserRole, ClientLabelSource,
+                                                                    PendingAuthEvent)
 from privacyidea.lib.conditional_access.request_context import AuthPrincipal, get_ca_context
 from privacyidea.lib.user import User
 from privacyidea.lib.audit import getAudit
 from privacyidea.lib.config import get_from_config, SYSCONF
 from privacyidea.lib.event import EventConfiguration
 from privacyidea.lib.utils import (prepare_result, get_version, to_unicode,
-                                   get_client_ip, get_plugin_info_from_useragent)
+                                   get_client_ip_info, get_plugin_info_from_useragent)
 # Re-exported from privacyidea.lib.params for backwards-compatibility with
 # callers that import these names from privacyidea.api.lib.utils.
 from privacyidea.lib.params import (  # noqa: F401
@@ -322,6 +323,11 @@ def log_authentication(event_type: AuthEventType | None, request: Request | None
     lib layer can record an event from outside a view (e.g. push_wait). Worst case those two columns are empty; the
     event itself is never lost.
 
+    Both are recorded together with their derivation, taken off the ``ClientIpInfo`` ``before_request`` published:
+    the TCP peer, which hop the effective address came from, the whole path that was considered, and whether the
+    label is a ``client_id`` the client chose or its User-Agent. The engine still evaluates ``source_ip`` alone -
+    the rest is the forensic record of how that address was arrived at.
+
     ``user_role`` records whether the principal is a regular user or an admin (see :class:`AuthLogUserRole`). Pass
     ``internal_admin=True`` for a local database admin (``/auth`` only); an admin-realm admin is detected from the
     user's realm, so the caller need not flag it.
@@ -334,12 +340,31 @@ def log_authentication(event_type: AuthEventType | None, request: Request | None
     if not event_type:
         log.debug("Not logging authentication event, because no event type is given.")
         return
-    client_label = None
-    source_ip = None
+    client_label = client_label_source = None
+    source_ip = peer_ip = source_ip_source = ip_chain = None
     if has_request_context():
-        source_ip = g.client_ip
+        client_ip_info = g.get("client_ip_info")
+        if client_ip_info is not None:
+            source_ip = client_ip_info.ip
+            peer_ip = client_ip_info.peer_ip
+            source_ip_source = str(client_ip_info.source) if client_ip_info.source else None
+            if len(client_ip_info.chain) > 1:
+                # Only a chain with something to say is stored: one hop is exactly peer_ip, which the row
+                # already carries. The effective hop is marked by index, not by address, because the same
+                # address can legitimately appear twice in a chain.
+                ip_chain = [{"ip": hop.ip, "source": str(hop.source),
+                             **({"effective": True} if index == client_ip_info.effective_index else {})}
+                            for index, hop in enumerate(client_ip_info.chain)]
+        else:
+            # before_request never got as far as publishing the derivation (an early AuthError, say). The
+            # address is still known; how it was reached is not, and is left NULL rather than guessed at.
+            source_ip = g.get("client_ip")
         if request is not None:
-            client_label = get_optional(request.all_data, "client_id") or (request.user_agent.string or None)
+            client_id = get_optional(request.all_data, "client_id")
+            if client_id:
+                client_label, client_label_source = client_id, str(ClientLabelSource.CLIENT_ID)
+            elif request.user_agent.string:
+                client_label, client_label_source = request.user_agent.string, str(ClientLabelSource.USER_AGENT)
     # TODO: replace by user function (after related PR is merged)
     resolved = bool(user and user.resolver)
     if not resolved and serial and "," not in serial:
@@ -383,7 +408,11 @@ def log_authentication(event_type: AuthEventType | None, request: Request | None
         username=username or ((user.login or None) if user else None),
         user_role=_determine_user_role(user, internal_admin),
         source_ip=source_ip,
+        peer_ip=peer_ip,
+        source_ip_source=source_ip_source,
         client_label=client_label,
+        client_label_source=client_label_source,
+        ip_chain=ip_chain,
         serial=serial,
         attempt_id=context.attempt_id,
         immediate=immediate,
@@ -514,8 +543,11 @@ def get_before_request_config():
     g.policy_object = PolicyClass()
     g.audit_object = getAudit(current_app.config, g.startdate)
     g.event_config = EventConfiguration()
-    # access_route contains the ip addresses of all clients, hops and proxies.
-    g.client_ip = get_client_ip(request, get_from_config(SYSCONF.OVERRIDECLIENT))
+    # access_route contains the ip addresses of all clients, hops and proxies. The derivation is published
+    # alongside the address so the authentication log can record how the client was determined, not only what
+    # it was determined to be.
+    g.client_ip_info = get_client_ip_info(request, get_from_config(SYSCONF.OVERRIDECLIENT))
+    g.client_ip = g.client_ip_info.ip
     # Save the HTTP header in the localproxy object
     g.request_headers = request.headers
     g.policies = {}
@@ -700,12 +732,13 @@ def hardening_action_active(g, request, action) -> bool:
         # Match.action_only matches the client IP and user agent implicitly.
         if not hasattr(g, "client_ip") or not g.client_ip:
             from privacyidea.lib.config import get_from_config, SYSCONF
-            from privacyidea.lib.utils import get_client_ip
+            from privacyidea.lib.utils import get_client_ip_info
             try:
                 override_client = get_from_config(SYSCONF.OVERRIDECLIENT)
             except Exception:
                 override_client = None
-            g.client_ip = get_client_ip(request, override_client)
+            g.client_ip_info = get_client_ip_info(request, override_client)
+            g.client_ip = g.client_ip_info.ip
         if not g.get("user_agent"):
             ua_name, _ua_version, _ua_comment = get_plugin_info_from_useragent(request.user_agent.string)
             g.user_agent = ua_name

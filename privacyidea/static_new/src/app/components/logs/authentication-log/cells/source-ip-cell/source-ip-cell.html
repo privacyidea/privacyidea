@@ -1,0 +1,93 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+
+<div class="source-ip-summary">
+  @if (canExpand()) {
+    <button
+      class="source-ip-toggle"
+      type="button"
+      [attr.aria-controls]="'source-ip-' + cellId()"
+      [attr.aria-expanded]="expanded()"
+      aria-label="Show how this client address was determined"
+      i18n-aria-label
+      (click)="toggle()">
+      <mat-icon>{{ expanded() ? "expand_less" : "expand_more" }}</mat-icon>
+    </button>
+  }
+  @if (sourceIp()) {
+    <app-copyable [copyText]="sourceIp()!">
+      <span>{{ sourceIp() }}</span>
+      @if (showFilter()) {
+        <app-filter-value-button
+          class="margin-left-8"
+          label="Filter by this source IP"
+          i18n-label
+          [value]="sourceIp()!"
+          (filterValue)="onFilter('source_ip', $event)" />
+      }
+    </app-copyable>
+  }
+  @if (badge(); as sourceBadge) {
+    <span
+      class="ip-source-badge {{ sourceBadge.modifier }}"
+      [matTooltip]="sourceBadge.tooltip">
+      {{ sourceBadge.label }}
+    </span>
+  }
+</div>
+
+@if (expanded()) {
+  <div
+    class="source-ip-details"
+    [id]="'source-ip-' + cellId()">
+    @if (showsPeer()) {
+      <div class="info-group-row">
+        <span
+          class="info-key info-group-prefix"
+          i18n>
+          Connected from:
+        </span>
+        <app-copyable [copyText]="peerIp()!">
+          <span>{{ peerIp() }}</span>
+          <app-filter-value-button
+            class="margin-left-8"
+            label="Filter by this peer address"
+            i18n-label
+            [value]="peerIp()!"
+            (filterValue)="onFilter('peer_ip', $event)" />
+        </app-copyable>
+      </div>
+    }
+    @if (hops().length) {
+      <span
+        class="info-key"
+        i18n>
+        Claimed path:
+      </span>
+      <ul class="info-sublist">
+        @for (hop of hops(); track $index) {
+          <li [class.ip-hop-effective]="hop.effective">
+            {{ hop.ip }}
+            <span class="info-key">({{ hopLabel(hop.source) }})</span>
+          </li>
+        }
+      </ul>
+    }
+  </div>
+}

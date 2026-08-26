@@ -38,7 +38,13 @@ export interface AuthenticationLogEntry {
   event_type: string;
   timestamp: string;
   source_ip?: string | null;
+  // How source_ip was derived. Null means the entry predates the recording - never that the connection was
+  // direct. See the AuthenticationLog model.
+  peer_ip?: string | null;
+  source_ip_source?: string | null;
+  ip_chain?: { ip: string; source: string; effective?: boolean }[] | null;
   client_label?: string | null;
+  client_label_source?: string | null;
   serial?: string | null;
   transaction_id?: string | null;
   attempt_id?: string | null;
@@ -86,7 +92,19 @@ const apiFilter = [
 // are offered in the Conditional access column's menu, and listed here so they can also be typed in the main filter.
 // resolver and uid have no column either - they identify the same user the username column already names - but stay
 // filterable by hand.
-const advancedApiFilter: string[] = ["user_role", "resolver", "uid", "ca_action_type", "ca_policy_name", "ca_dry_run"];
+// peer_ip, source_ip_source and client_label_source describe how the client of a row was derived. They are
+// reachable from the Source IP and Client columns rather than owning a column of their own, so they live here.
+const advancedApiFilter: string[] = [
+  "user_role",
+  "resolver",
+  "uid",
+  "peer_ip",
+  "source_ip_source",
+  "client_label_source",
+  "ca_action_type",
+  "ca_policy_name",
+  "ca_dry_run"
+];
 
 export interface AuthenticationLogServiceInterface {
   apiFilter: string[];
