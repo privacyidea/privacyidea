@@ -131,11 +131,20 @@ class UserNotificationEventHandler(BaseEventHandler):
         """
         Collect the email addresses of all users in the given admin realm.
 
+        A broken resolver in the realm would otherwise silently drop its admins
+        from the result, so skipped resolvers are captured and warn-logged --
+        the returned list may be incomplete.
+
         :param admin_realm: the name of the admin realm
         :return: a list of email addresses of users that have an email
         """
         attr = is_attribute_at_all()
-        ulist = get_user_list({"realm": admin_realm}, include_custom_attributes=attr)
+        failures: list[str] = []
+        ulist = get_user_list({"realm": admin_realm}, include_custom_attributes=attr, failures=failures)
+        if failures:
+            skipped = sorted(failures)
+            log.warning(f"Admin recipient list for realm {admin_realm!r} may be incomplete; "
+                        f"resolvers skipped due to errors: {skipped}")
         return [u.get("email") for u in ulist if u.get("email")]
 
     @property
@@ -362,7 +371,7 @@ class UserNotificationEventHandler(BaseEventHandler):
                 "email": internal_admin.email if internal_admin else ""
             }
         elif notify_type == NOTIFY_TYPE.ADMIN_REALM:
-            # Send emails to all the users in the specified admin realm
+            # Send emails to all the users in the specified admin realm.
             admin_realm = handler_options.get("To " + NOTIFY_TYPE.ADMIN_REALM)
             if admin_realm:
                 recipient = {
@@ -479,7 +488,7 @@ class UserNotificationEventHandler(BaseEventHandler):
                         reply_to = internal_admin.email if internal_admin else ""
 
                     elif reply_to_type == NOTIFY_TYPE.ADMIN_REALM:
-                        # Adds all email addresses from a specific admin realm to the reply-to-header
+                        # Adds all email addresses from a specific admin realm to the reply-to-header.
                         admin_realm = handler_options.get("reply_to " + NOTIFY_TYPE.ADMIN_REALM)
                         if admin_realm:
                             reply_to = ",".join(self.get_admin_realm_emails(admin_realm))

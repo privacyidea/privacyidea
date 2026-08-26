@@ -42,11 +42,10 @@
   align-items: center;
 }
 
+// Sits inside a raised expansion panel, so the shallow recess.
 .auth-panel-body {
-  border: 1px solid var(--mat-sys-surface-container-highest);
-  border-radius: var(--border-radius);
+  @include styles.card-recessed(3);
   padding: 16px;
-  background: var(--mat-sys-surface-container-lowest);
 }
 
 .auth-description {

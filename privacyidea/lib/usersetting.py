@@ -62,6 +62,12 @@ USER_SETTINGS_ALLOWED_KEYS_CONFIG = "PI_USER_SETTINGS_ALLOWED_KEYS"
 KNOWN_SETTING_KEYS = {
     "theme",
     "locale",
+    "show_loading_urls",
+    "depth",
+    "light_source",
+    "corner_radius",
+    "starting_page",
+    "token_columns",
     "dashboard",
 }
 

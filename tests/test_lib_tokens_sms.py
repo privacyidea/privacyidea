@@ -399,6 +399,10 @@ class SMSTokenTestCase(MyTestCase):
                       body=self.success_body)
         transactionid = "123456098712"
         set_privacyidea_config("sms.providerConfig", self.SMSProviderConfig)
+        # The mock replaces the resolver, which the Redis user cache answers
+        # before: reading token.user.info below would then cache the real number
+        # and the mocked one would never be seen
+        self.pin_to_database("users")
         db_token = Token.query.filter_by(serial=self.serial2).first()
         token = SmsTokenClass(db_token)
         # if the email is a multi-value attribute, the first address should be chosen

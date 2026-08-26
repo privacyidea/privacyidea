@@ -5,7 +5,7 @@
   flex-direction: column;
 
   * {
-    padding: 0 var(--half-global-padding) !important;
+    padding: 0 8px !important;
 
     &:not(:last-child) {
       border-bottom: 1px solid var(--mat-sys-outline-variant);
@@ -20,16 +20,15 @@
   gap: 12px;
 }
 
+// One card per condition, at the s step of the card scale.
 .additional-condition-item {
-  background-color: var(--mat-sys-surface-container-low);
-  border: 1px solid var(--mat-sys-outline-variant);
-  border-radius: 8px;
+  @include styles.card-recessed(3);
   display: flex;
-  flex: 1 1 350px;
+  flex: 1 1 var(--card-width-s);
   flex-direction: column;
   gap: 8px;
   max-width: 100%;
-  min-width: 350px;
+  min-width: var(--card-width-s);
   padding: 10px 12px;
 }
 
@@ -52,7 +51,7 @@
 
   .additional-condition-badge {
     background: var(--mat-sys-secondary-container);
-    border-radius: 4px;
+    border-radius: var(--border-radius);
     color: var(--mat-sys-on-secondary-container);
     font-size: 10px;
     padding: 1px 6px;
