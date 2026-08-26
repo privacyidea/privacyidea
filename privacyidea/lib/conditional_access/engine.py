@@ -708,7 +708,9 @@ def _never_block_networks() -> "list[ipaddress._BaseNetwork]":
     The never-block networks: the built-in loopback defaults plus the CIDRs (or
     bare IPs) configured as ``PI_CONDITIONAL_ACCESS_NEVER_BLOCK`` in ``pi.cfg``.
     The setting is either a list of entries or a single comma/whitespace-separated
-    string. Invalid entries are logged and ignored rather than breaking the engine.
+    string. A malformed setting is logged and ignored rather than breaking the
+    engine: this runs on every authentication, so a typo in pi.cfg must degrade to
+    the loopback defaults, not answer 500 to every request.
     """
     # Lazy import: framework pulls in the app context machinery; importing it at
     # module load would risk an import-order cycle.
@@ -717,6 +719,12 @@ def _never_block_networks() -> "list[ipaddress._BaseNetwork]":
     configured = get_app_config_value(NEVER_BLOCK_CONFIG_KEY) or []
     if isinstance(configured, str):
         configured = re.split(r"[,\s]+", configured.strip())
+    elif not isinstance(configured, (list, tuple, set, frozenset)):
+        # Anything else is a pi.cfg mistake. Only these types are accepted rather than
+        # "any iterable": an ip_network object, for one, iterates over its 16.7M hosts.
+        log.warning(f"Ignoring {NEVER_BLOCK_CONFIG_KEY}: expected a list or a string, "
+                    f"got {type(configured).__name__}.")
+        configured = []
     for entry in configured:
         entry = str(entry).strip()
         if not entry:

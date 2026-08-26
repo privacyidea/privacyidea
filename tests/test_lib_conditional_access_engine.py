@@ -21,6 +21,7 @@ Unit tests for the conditional-access lockout policy engine
 pre-check lock test, and the policy-evaluation workflow (stage selection,
 de-duplication, dry-run, and the LOCK_USER / PERMANENT_LOCK_USER actions).
 """
+import ipaddress
 from collections.abc import Sequence
 from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
@@ -1191,6 +1192,13 @@ class LockoutEngineTestCase(LockoutTestCase):
             self.assertTrue(is_ip_never_block("203.0.113.7"))
             self.assertTrue(is_ip_never_block("198.51.100.5"))
             self.assertFalse(is_ip_never_block("198.51.100.6"))
+
+    def test_malformed_config_value_falls_back_to_the_defaults(self):
+        # A pi.cfg typo must not break every authentication; the loopback defaults stay.
+        for value in (True, 42, ipaddress.ip_network("10.0.0.0/8")):
+            with self.subTest(value=value), never_block_config(value):
+                self.assertFalse(is_ip_never_block("10.0.0.1"))
+                self.assertTrue(is_ip_never_block("127.0.0.1"))
 
     def test_invalid_config_entry_ignored(self):
         with never_block_config("garbage, 203.0.113.0/24"):
