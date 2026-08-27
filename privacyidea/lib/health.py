@@ -7,6 +7,7 @@ the TLS server certificate of Keycloak resolvers, the client-certificate
 credential of EntraID resolvers, and the privacyIDEA server certificate.
 """
 import datetime
+import json
 import logging
 import socket
 import ssl
@@ -14,8 +15,10 @@ import threading
 from urllib.parse import urlparse
 
 import ldap3
+import redis as redis_lib
 from cryptography import x509
 
+from privacyidea.lib.cache.redis import _disable_redis, redis_client_for_feature
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.resolver import get_resolver_list
 from privacyidea.lib.resolvers.LDAPIdResolver import IdResolver as LDAPIdResolver
@@ -29,15 +32,115 @@ CRITICAL_DAYS = 7
 _CACHE: dict = {}
 _CACHE_LOCK = threading.Lock()
 
+# Producing these results means opening a TLS connection to every configured
+# LDAP, Keycloak and EntraID endpoint. The dictionary above keeps them for one
+# process, so every worker on every node probes every endpoint for itself once
+# per TTL. Redis lets them share one answer, which is what turns "workers times
+# nodes" rounds of outbound connections per TTL into one.
+#
+# The results only feed a dashboard panel, so a shared answer needs nothing
+# beyond the TTL that already governs the per-process one.
+HEALTH_CACHE_FEATURE = "health"
+_CERTIFICATE_KEY = "pi:health:v1:certificates"
+
+# Held while one worker refreshes the shared results. Without it the sharing only
+# helps in the steady state: the moment the shared entry expires, every worker
+# that notices probes every endpoint at once, which is the burst of outbound
+# connections this feature exists to remove - just once per TTL instead of once
+# per request. The loser of the race serves its own copy for this one request
+# rather than waiting, since a dashboard panel is not worth blocking on.
+_REFRESH_LOCK_KEY = "pi:health:v1:certificates:refreshing"
+_REFRESH_LOCK_SECONDS = 60
+
+
+def _claim_refresh(client) -> bool:
+    """
+    Return True if this worker should be the one to probe the endpoints.
+
+    A ``SET NX`` with an expiry is enough: the lock is an optimisation, so a
+    worker that dies holding it only means the endpoints are probed a minute
+    later than they could have been, and a failure to reach Redis means everyone
+    probes exactly as they did before.
+    """
+    try:
+        return bool(client.set(_REFRESH_LOCK_KEY, "1", nx=True, ex=_REFRESH_LOCK_SECONDS))
+    except redis_lib.exceptions.RedisError as error:
+        _disable_redis(error)
+        return True
+
+
+def _cache_client():
+    """Return the Redis client to share health results through, or None."""
+    return redis_client_for_feature(HEALTH_CACHE_FEATURE)
+
+
+def _cache_ttl() -> int:
+    """Return how long a certificate health result may be reused."""
+    try:
+        return int(get_app_config_value("PI_CERT_CHECK_CACHE_SECONDS", 3600))
+    except (TypeError, ValueError):
+        log.warning("PI_CERT_CHECK_CACHE_SECONDS is not a number, using 3600s.")
+        return 3600
+
+
+def _read_shared_certificates(client) -> list | None:
+    """
+    Return the certificate results another worker has already produced, or None.
+
+    None means this worker has to probe: nothing is stored, Redis could not be
+    read, or what is stored is not what this version writes. Nothing here may
+    raise - a dashboard panel is not worth an error, and probing is always an
+    option.
+    """
+    try:
+        raw = client.get(_CERTIFICATE_KEY)
+    except redis_lib.exceptions.RedisError as error:
+        _disable_redis(error)
+        return None
+    if raw is None:
+        return None
+    try:
+        results = json.loads(raw)
+        if not isinstance(results, list):
+            raise TypeError(f"certificate health payload is {type(results).__name__}, expected list")
+        return results
+    except (json.JSONDecodeError, TypeError) as error:
+        log.warning(f"Ignoring a malformed certificate health entry: {error}")
+        return None
+
+
+def _write_shared_certificates(client, results: list, ttl: int) -> None:
+    """Share the results this worker produced with the other workers."""
+    try:
+        client.set(_CERTIFICATE_KEY, json.dumps(results), ex=ttl)
+    except redis_lib.exceptions.RedisError as error:
+        _disable_redis(error)
+    except (TypeError, ValueError) as error:
+        log.warning(f"Could not serialise the certificate health results: {error}")
+
 
 def invalidate_certificate_cache() -> None:
     """Drop all cached certificate health results.
 
     Called from resolver save/delete paths so that admins see the effect of
     LDAP resolver changes immediately, without waiting for the TTL to elapse.
+
+    Drops the shared results as well, so one admin's resolver change reaches
+    every worker on every node rather than only the one that served the request.
     """
     with _CACHE_LOCK:
         _CACHE.clear()
+    client = _cache_client()
+    if client is None:
+        return
+    try:
+        # The refresh lease goes with it: a lease held by a worker that probed a
+        # moment ago would otherwise keep the next request answering from a local
+        # copy for up to a minute, which is exactly the stale answer this call is
+        # supposed to get rid of.
+        client.unlink(_CERTIFICATE_KEY, _REFRESH_LOCK_KEY)
+    except redis_lib.exceptions.RedisError as error:
+        _disable_redis(error)
 
 
 def _classify(days_remaining: int | None) -> str:
@@ -325,13 +428,41 @@ def get_certificate_status(refresh: bool = False) -> list:
 
     Results are cached for ``PI_CERT_CHECK_CACHE_SECONDS`` seconds (default
     3600). Pass ``refresh=True`` to bypass the cache.
+
+    With ``PI_REDIS_CACHE_HEALTH`` enabled the results are shared between all
+    workers and nodes, so the endpoints are probed once per TTL for the whole
+    installation instead of once per worker process. The shared copy is consulted
+    *before* the per-process one, which keeps two promises: dropping it reaches
+    every worker rather than only the one that served the request, and an entry
+    cannot outlive its TTL twice over by being re-stamped locally on the way
+    past. The per-process dictionary is what answers when Redis cannot.
     """
-    ttl = int(get_app_config_value("PI_CERT_CHECK_CACHE_SECONDS", 3600))
+    ttl = _cache_ttl()
     now = datetime.datetime.now(tz=datetime.timezone.utc)
     cache_key = "certificates"
-    with _CACHE_LOCK:
-        cached = _CACHE.get(cache_key)
-        if not refresh and cached and (now - cached[0]).total_seconds() < ttl:
+    client = _cache_client()
+    if not refresh:
+        if client is not None:
+            shared = _read_shared_certificates(client)
+            if shared is not None:
+                # Kept locally as well, so this worker still has an answer if
+                # Redis becomes unreachable before the next request
+                with _CACHE_LOCK:
+                    _CACHE[cache_key] = (now, shared)
+                return shared
+        else:
+            with _CACHE_LOCK:
+                cached = _CACHE.get(cache_key)
+                if cached and (now - cached[0]).total_seconds() < ttl:
+                    return cached[1]
+
+    if client is not None and not refresh and not _claim_refresh(client):
+        # Another worker is already probing. Answer from this worker's own copy,
+        # however old, rather than adding to the burst; the next request picks up
+        # the shared result.
+        with _CACHE_LOCK:
+            cached = _CACHE.get(cache_key)
+        if cached:
             return cached[1]
 
     results = _check_ldap_resolvers()
@@ -341,4 +472,6 @@ def get_certificate_status(refresh: bool = False) -> list:
 
     with _CACHE_LOCK:
         _CACHE[cache_key] = (now, results)
+    if client is not None:
+        _write_shared_certificates(client, results, ttl)
     return results

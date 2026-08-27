@@ -46,12 +46,19 @@
       </div>
     }
     @if (showProgressBar()) {
-      <div class="loading-urls-container">
-        @for (l of loadingUrls(); track l.key) {
-          <span class="loading-url"> {{ l.url.slice(1) }} </span>
-          <br />
-        }
-      </div>
+      @if (showLoadingUrls()) {
+        <div class="loading-urls-container">
+          @for (group of loadingGroups(); track group.endpoint) {
+            <span class="loading-url">
+              {{ group.endpoint.slice(1) }}
+              @if (group.count > 1) {
+                <span class="loading-url__count">&times;{{ group.count }}</span>
+              }
+            </span>
+            <br />
+          }
+        </div>
+      }
       <mat-progress-bar
         class="progress-bar"
         mode="indeterminate" />

@@ -32,6 +32,7 @@ import json
 import logging
 import os
 import random
+import time
 import traceback
 
 import requests
@@ -41,7 +42,7 @@ from privacyidea.lib import lazy_gettext
 from privacyidea.lib.config import get_from_config, set_privacyidea_config
 from privacyidea.lib.crypto import Sign
 from privacyidea.lib.error import SubscriptionError
-from privacyidea.lib.framework import get_app_config_value
+from privacyidea.lib.framework import get_app_config_value, get_app_local_store
 from privacyidea.lib.integrations import DASHBOARD_INTEGRATIONS, PRODUCTS, resolve_product
 from privacyidea.lib.token import get_tokens
 from .log import log_with
@@ -704,6 +705,71 @@ def subscription_exceeded_probability(active_tokens, allowed_tokens):
         return False
 
 
+# ``check_subscription`` runs on every authentication that carries a known
+# plugin's user agent, and counting the users costs a DISTINCT over the whole
+# tokenowner and token tables every time. The number it produces moves only when
+# tokens are assigned or deactivated, and it is used to decide whether a
+# subscription is exceeded - a decision that is deliberately probabilistic
+# already. A short-lived count per worker is accurate enough for that and takes
+# the scan off the authentication path.
+_USER_COUNT_KEY = '_subscription_user_count'
+_DEFAULT_COUNT_INTERVAL_SECONDS = 60
+
+
+def _count_interval_seconds() -> int:
+    """
+    Return how many seconds the counted number of users may be reused for, or 0
+    to count on every check.
+    """
+    raw = get_app_config_value('PI_SUBSCRIPTION_COUNT_INTERVAL', _DEFAULT_COUNT_INTERVAL_SECONDS)
+    try:
+        value = int(raw)
+    except (TypeError, ValueError):
+        log.warning(f"PI_SUBSCRIPTION_COUNT_INTERVAL is not a number ({raw!r}), "
+                    f"using {_DEFAULT_COUNT_INTERVAL_SECONDS}s.")
+        return _DEFAULT_COUNT_INTERVAL_SECONDS
+    return max(value, 0)
+
+
+def _users_with_active_tokens_for_check(allowed_users: int = None) -> int:
+    """
+    Return the number of users with active tokens, as the subscription check
+    needs it.
+
+    Only for the check on the authentication path. Everything that shows the
+    number to somebody - the subscription overview, the statistics task - calls
+    :py:func:`get_users_with_active_tokens` and gets an exact answer.
+
+    A number kept from a previous check is only handed out while it stays within
+    ``allowed_users``. The moment it would say the subscription is exceeded, the
+    users are counted again, because that answer denies authentications and must
+    never rest on a number that may be out of date - tokens deleted a moment ago
+    would otherwise keep users locked out for the rest of the interval. Counting
+    is skipped exactly when the answer is "everything is fine", which is what
+    almost every request gets.
+
+    The opposite direction is the accepted trade: a user who was given a token
+    within the interval may not be counted yet. Subscription enforcement is
+    probabilistic and about compliance over time, so noticing seconds later
+    changes nothing.
+
+    :param allowed_users: the number of users the subscription allows, if known
+    :return: the number of users with active tokens
+    """
+    interval = _count_interval_seconds()
+    if not interval:
+        return get_users_with_active_tokens()
+    store = get_app_local_store()
+    counted = store.get(_USER_COUNT_KEY)
+    now = time.monotonic()
+    if counted is not None and now - counted[0] < interval:
+        if allowed_users is None or counted[1] <= allowed_users:
+            return counted[1]
+    user_count = get_users_with_active_tokens()
+    store[_USER_COUNT_KEY] = (now, user_count)
+    return user_count
+
+
 def check_subscription(application, max_free_subscriptions=None):
     """
     This checks if the subscription for the given application is valid.
@@ -727,10 +793,14 @@ def check_subscription(application, max_free_subscriptions=None):
         # without a subscription, rather than blocking the client outright.
         subscriptions = [subscription for subscription in get_subscription(application)
                          if subscription.get("date_till")]
-        # get the number of users with active tokens
-        token_users = get_users_with_active_tokens()
         free_subscriptions = max_free_subscriptions or APPLICATIONS.get(application)
+        # The users are counted in the branches below rather than here, so that the
+        # number can be reused only while it stays within the limit that branch applies
+        # (see _users_with_active_tokens_for_check), and so that an expired subscription
+        # does not count them at all.
         if len(subscriptions) == 0:
+            # get the number of users with active tokens
+            token_users = _users_with_active_tokens_for_check(free_subscriptions)
             if subscription_exceeded_probability(token_users, free_subscriptions):
                 raise SubscriptionError(description="No subscription for your client.",
                                         application=application)
@@ -747,6 +817,7 @@ def check_subscription(application, max_free_subscriptions=None):
                 # subscription is still valid, so check the signature.
                 check_signature(subscription)
                 allowed_tokennums = subscription.get("num_tokens")
+                token_users = _users_with_active_tokens_for_check(allowed_tokennums)
                 if subscription_exceeded_probability(token_users, allowed_tokennums):
                     # subscription is exceeded
                     raise SubscriptionError(description="Too many users "

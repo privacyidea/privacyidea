@@ -175,10 +175,11 @@
         <app-clearable-input
           (clearButtonClick)="radiusModel.update(m => ({...m, description: ''}))"
           [showClearButton]="!!radiusModel().description">
-          <input
+          <textarea
             [formField]="radiusForm.description"
             matInput
-            placeholder="some wise words" />
+            placeholder="some wise words"
+            rows="3"></textarea>
         </app-clearable-input>
       </mat-form-field>
 

@@ -41,7 +41,7 @@ class MockLoadingService {
   addListener = jest.fn();
   removeListener = jest.fn();
   isLoading = jest.fn().mockReturnValue(false);
-  getLoadingUrls = jest.fn().mockReturnValue([]);
+  getLoadingGroups = jest.fn().mockReturnValue([]);
 }
 
 describe("LayoutComponent", () => {

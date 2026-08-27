@@ -1,19 +1,20 @@
 @use "styles";
 @use "table";
 
-.layout {
-  &:has(.self-service-layout) {
-    --max-width: calc(
-      100vw - var(--drawer-width-self-service) - 2 * var(--double-global-padding) - 2 * var(--global-padding)
-    );
-  }
-
-  &:has(.admin-layout) {
-    --max-width: calc(100vw - 2 * var(--double-global-padding) - 2 * var(--global-padding));
-  }
+:host {
+  --loading-indicator-color: var(--mat-sys-primary);
+  --loading-indicator-opacity: 0.33;
 }
 
 .progress-bar {
+  // The `top` calc below reads these two tokens, so the bar's offset follows its height.
+  --mat-progress-bar-track-height: 14px;
+  --mat-progress-bar-active-indicator-height: 14px;
+  --mat-progress-bar-active-indicator-color: var(--loading-indicator-color);
+  --mat-progress-bar-track-color: transparent;
+
+  opacity: var(--loading-indicator-opacity);
+
   position: fixed;
   top: calc(
     100% - max(var(--mat-progress-bar-track-height, 4px), var(--mat-progress-bar-active-indicator-height, 4px))
@@ -25,17 +26,21 @@
 
 .loading-urls-container {
   position: fixed;
-  bottom: 1vh;
-  right: 0;
+  bottom: 2vh;
+  right: 1vh;
   z-index: 9999;
+}
+
+.loading-url__count {
+  font-variant-numeric: tabular-nums;
 }
 
 .loading-url {
   margin-left: auto;
-  margin-right: var(--global-padding);
+  margin-right: 16px;
   margin-bottom: 2px;
-  color: var(--mat-sys-primary);
-  opacity: 0.33;
+  color: var(--loading-indicator-color);
+  opacity: var(--loading-indicator-opacity);
 }
 
 .admin-layout {
@@ -45,16 +50,21 @@
 }
 
 // Fills the space below the toolbar(s). The routed component stretches to it
-// (align-items: stretch) so its container can reach the bottom, inset by the
-// single --global-padding — no hard-coded toolbar heights.
+// (align-items: stretch) so its container can reach the bottom, inset by a
+// single 16px padding — no hard-coded toolbar heights.
+//
+// Also a size container: main-component-style caps routed pages at 100cqw/100cqh, measured
+// against this box. Its own size comes from `flex: 1` and the column, not from its content,
+// so size containment does not collapse it.
 .admin-content {
   flex: 1;
   min-height: 0;
   display: flex;
   justify-content: center;
   align-items: stretch;
-  padding: var(--global-padding);
+  padding: 16px;
   overflow: hidden;
+  container-type: size;
 
   // The dashboard is a scrollable canvas, not a centered content card, so it
   // stretches to the full space below the toolbar(s) instead of being inset.
@@ -79,6 +89,7 @@
   }
 }
 
+// Size container like .admin-content: routed pages measure 100cq* against the space beside the drawer.
 .selfservice-content-container {
   display: flex;
   justify-content: center;
@@ -87,5 +98,6 @@
   min-height: 0;
   box-sizing: border-box;
   overflow: hidden;
-  padding: var(--global-padding);
+  padding: 16px;
+  container-type: size;
 }

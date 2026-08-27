@@ -41,6 +41,11 @@ export class MockUserSettingsService implements UserSettingsServiceInterface {
     return of(this.settings() ?? {});
   }
 
+  setSettings(values: Partial<Record<UserSettingKey, unknown>>): Observable<UserSettings> {
+    this.settings.update((settings) => ({ ...settings, ...values }));
+    return of(this.settings() ?? {});
+  }
+
   deleteSetting(key: UserSettingKey): Observable<UserSettings> {
     this.settings.update((settings) => {
       const remaining = { ...settings };

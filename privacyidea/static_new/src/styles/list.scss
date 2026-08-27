@@ -37,11 +37,11 @@
   }
 
   .mat-expansion-panel-body {
-    gap: var(--global-gap);
+    gap: 16px;
     display: flex;
     flex-direction: row;
     border-radius: var(--border-radius);
-    padding: var(--three-quarters-global-padding);
+    padding: 12px;
     padding-top: 0;
   }
 

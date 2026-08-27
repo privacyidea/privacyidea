@@ -21,6 +21,7 @@
 import { DOCUMENT, inject, Injectable, Renderer2, RendererFactory2, Signal, signal } from "@angular/core";
 import { APP_THEME_COOKIE_NAME } from "@core/constants";
 import { readCookie, writeCookie } from "@core/cookie";
+import { Observable, catchError, of, shareReplay } from "rxjs";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { UserSettingsService, UserSettingsServiceInterface } from "@services/user-settings/user-settings.service";
 
@@ -55,14 +56,23 @@ export class ThemeService {
   /**
    * Sets the theme, updates the cookie, and applies the corresponding classes to
    * the HTML element. For an administrator the choice is additionally stored as the
-   * ``theme`` user setting, so it follows them to their other devices.
+   * ``theme`` user setting, so it follows them to their other devices. Reports once that
+   * write has settled (or immediately, if there is none), so a caller that also navigates
+   * away -- switching locale is a full-page load, which would abort a write mid-flight --
+   * can wait for it first.
    * @param themeMode The themeMode to set ('light', 'dark', or 'system').
    */
-  public setTheme(themeMode: ThemeMode): void {
+  public setTheme(themeMode: ThemeMode): Observable<unknown> {
     this.applyStoredTheme(themeMode);
-    if (this.authService.isAuthenticated()) {
-      this.userSettingsService.setSetting("theme", themeMode).subscribe({ error: () => undefined });
+    if (!this.authService.isAuthenticated()) {
+      return of(null);
     }
+    const write$ = this.userSettingsService.setSetting("theme", themeMode).pipe(
+      catchError(() => of(null)),
+      shareReplay(1)
+    );
+    write$.subscribe();
+    return write$;
   }
 
   /**

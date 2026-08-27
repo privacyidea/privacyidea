@@ -1,0 +1,106 @@
+/**
+ * (c) NetKnights GmbH 2026,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ **/
+
+@use "styles";
+@use "table";
+
+.settings-container {
+  @include styles.main-component-style;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  // Fits the xs + s card pair (162 + 16 + 340 = the m step) plus the border-box padding the mixin sets.
+  max-width: calc(var(--card-width-m) + 2 * 16px);
+
+  // The mixin caps the height and scrolls the overflow, but a flex child shrinks before the
+  // container ever overflows: the expanded panel would be squeezed and clip its own content
+  // (it is overflow: hidden) with nothing left to scroll. Each child keeps its natural height
+  // instead, so the overflow reaches the container and the scrollbar appears.
+  > * {
+    flex: none;
+  }
+}
+
+.settings-header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+// The cards carry their own widths and wrap into rows; the global class is a grid with no columns.
+.details-cards-grid {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.settings-card-xs {
+  @include table.card-width(xs);
+}
+
+.settings-card-s {
+  @include table.card-width(s);
+}
+
+.settings-card-m {
+  @include table.card-width(m);
+}
+
+// Sits in the panel header, so it keeps the header's description tone and stays smaller than the
+// title beside it.
+.settings-appearance-hint {
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+}
+
+// Header and body share one inset, so the title lines up with the cards below it.
+.settings-appearance-panel {
+  --expansion-panel-header-padding: 0 16px;
+  --expansion-panel-body-padding: 0 16px 16px;
+
+  // The m width these cards carry outside the panel is the container's full content width, which
+  // no longer fits once the panel's inset comes off it, so inside they fill the body instead.
+  // These sit inside the panel rather than on the page container, so they recess into it.
+  .settings-card-m {
+    @include styles.card-recessed(3);
+    flex: 1 1 100%;
+    max-width: 100%;
+  }
+}
+
+// Set as Material tokens, not as border-radius/background: Material paints the toggles from these,
+// so plain properties would depend on stylesheet order.
+mat-button-toggle-group {
+  --mat-button-toggle-shape: var(--border-radius);
+  --mat-button-toggle-selected-state-background-color: var(--mat-sys-primary-light);
+  --mat-button-toggle-selected-state-text-color: var(--mat-sys-on-primary);
+}
+
+.settings-row {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  margin: 8px;
+}
