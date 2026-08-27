@@ -20,7 +20,7 @@
 <app-dialog-wrapper
   title="Complete Token Enrollment"
   i18n-title="@@tokenEnrollCompleteTitle"
-  [showCancelButton]="true"
+  [showCloseButton]="showCloseButton()"
   [actions]="dialogActions()"
   (actionTriggered)="onDialogAction($event)"
   cancelButtonLabel="Close"

@@ -17,12 +17,9 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, forwardRef, inject } from "@angular/core";
+import { Component, forwardRef, inject, signal } from "@angular/core";
 import { MatDialogRef } from "@angular/material/dialog";
-import {
-  EnrollmentResponse,
-  TokenEnrollmentData
-} from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { EnrollmentResponse, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import {
   WebAuthnApiPayloadMapper,
   WebAuthnEnrollmentData,
@@ -31,16 +28,21 @@ import {
   WebauthnFinalizeData
 } from "@app/mappers/token-api-payload/webauthn-token-api-payload.mapper";
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
-import { TokenEnrollmentFirstStepDialogComponent } from "@components/token/token-enrollment/token-enrollment-firtst-step-dialog/token-enrollment-first-step-dialog.component";
 import {
-  EnrollmentArgs,
-  EnrollTokenBase
-} from "@components/token/token-enrollment/enroll-token-base";
+  TokenEnrollmentFirstStepDialogComponent,
+  TokenEnrollmentFirstStepDialogData
+} from "@components/token/token-enrollment/token-enrollment-firtst-step-dialog/token-enrollment-first-step-dialog.component";
+import { EnrollmentArgs, EnrollTokenBase } from "@components/token/token-enrollment/enroll-token-base";
+import {
+  ENROLLMENT_CANCELLED,
+  EnrollmentStepResult
+} from "@components/token/token-enrollment/token-enrollment.constants";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { Base64Service, Base64ServiceInterface } from "@services/base64/base64.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
-import { firstValueFrom } from "rxjs";
+import { firstValueFrom, lastValueFrom } from "rxjs";
 
 @Component({
   selector: "app-enroll-webauthn",
@@ -48,9 +50,7 @@ import { firstValueFrom } from "rxjs";
   imports: [],
   templateUrl: "./enroll-webauthn.component.html",
   styleUrl: "./enroll-webauthn.component.scss",
-  providers: [
-    { provide: EnrollTokenBase, useExisting: forwardRef(() => EnrollWebauthnComponent) }
-  ]
+  providers: [{ provide: EnrollTokenBase, useExisting: forwardRef(() => EnrollWebauthnComponent) }]
 })
 export class EnrollWebauthnComponent extends EnrollTokenBase<WebAuthnEnrollmentData> {
   protected readonly enrollmentMapper: WebAuthnApiPayloadMapper = inject(WebAuthnApiPayloadMapper);
@@ -59,8 +59,14 @@ export class EnrollWebauthnComponent extends EnrollTokenBase<WebAuthnEnrollmentD
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly base64Service: Base64ServiceInterface = inject(Base64Service);
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
 
-  stepOneDialogRef: MatDialogRef<AbstractDialogComponent, boolean> | null = null;
+  stepOneDialogRef: MatDialogRef<
+    AbstractDialogComponent<TokenEnrollmentFirstStepDialogData, EnrollmentStepResult>,
+    EnrollmentStepResult
+  > | null = null;
+
+  readonly registrationFailed = signal(false);
 
   buildEnrollmentArgs(basicEnrollmentData: TokenEnrollmentData): EnrollmentArgs<WebAuthnEnrollmentData> | null {
     if (!navigator.credentials?.create) {
@@ -83,7 +89,7 @@ export class EnrollWebauthnComponent extends EnrollTokenBase<WebAuthnEnrollmentD
   override async onEnrollmentResponse(
     enrollmentResponse: EnrollmentResponse,
     enrollmentData: TokenEnrollmentData
-  ): Promise<EnrollmentResponse | null> {
+  ): Promise<EnrollmentStepResult> {
     if (!enrollmentResponse?.detail) {
       this.notificationService.error(
         $localize`Failed to initiate WebAuthn registration: Invalid server response or missing details.`
@@ -98,25 +104,47 @@ export class EnrollWebauthnComponent extends EnrollTokenBase<WebAuthnEnrollmentD
       console.warn("Received enrollment data is not of type 'webauthn'. Cannot proceed with WebAuthn enrollment.");
       return null;
     }
-    const webauthnEnrollmentResponse = enrollmentResponse as WebauthnEnrollmentResponse;
-    const webauthnEnrollmentData = enrollmentData as WebAuthnEnrollmentData;
 
-    this.openStepOneDialog({
-      webauthnEnrollmentData,
-      webauthnEnrollmentResponse: webauthnEnrollmentResponse
+    return this.runRegistration({
+      webauthnEnrollmentData: enrollmentData as WebAuthnEnrollmentData,
+      webauthnEnrollmentResponse: enrollmentResponse as WebauthnEnrollmentResponse
     });
+  }
 
-    const responseLastStep = await this.finalizeEnrollment({
-      webauthnEnrollmentData,
-      webauthnEnrollmentResponse: webauthnEnrollmentResponse
-    });
+  private async runRegistration(args: {
+    webauthnEnrollmentData: WebAuthnEnrollmentData;
+    webauthnEnrollmentResponse: WebauthnEnrollmentResponse;
+  }): Promise<EnrollmentStepResult> {
+    const dialogRef = this.openStepOneDialog(args);
+    void this.attemptRegistration(args);
 
-    if (!responseLastStep) {
-      this.closeStepOneDialog();
-      return null;
+    const dialogResult = await lastValueFrom(dialogRef.afterClosed());
+    if (dialogResult === ENROLLMENT_CANCELLED) {
+      this.reopenDialog.set(undefined);
+      return ENROLLMENT_CANCELLED;
+    }
+    return dialogResult ?? null;
+  }
+
+  private async attemptRegistration(args: {
+    webauthnEnrollmentData: WebAuthnEnrollmentData;
+    webauthnEnrollmentResponse: WebauthnEnrollmentResponse;
+  }): Promise<void> {
+    const dialogRef = this.stepOneDialogRef;
+    this.registrationFailed.set(false);
+
+    const publicKeyCred = await this.readPublicKeyCred(args.webauthnEnrollmentResponse);
+    if (!publicKeyCred || (dialogRef && !this.dialogService.isDialogOpen(dialogRef))) {
+      this.registrationFailed.set(true);
+      return;
     }
 
-    return responseLastStep;
+    const responseLastStep = await this.finalizeEnrollment({ ...args, publicKeyCred });
+    if (!responseLastStep) {
+      this.registrationFailed.set(true);
+      return;
+    }
+    dialogRef?.close(responseLastStep);
   }
 
   readPublicKeyCred = async (enrollmentResponse: WebauthnEnrollmentResponse): Promise<PublicKeyCredential | null> => {
@@ -162,8 +190,6 @@ export class EnrollWebauthnComponent extends EnrollTokenBase<WebAuthnEnrollmentD
         browserOrCredentialError instanceof Error ? browserOrCredentialError.message : String(browserOrCredentialError);
       this.notificationService.error($localize`WebAuthn credential creation failed: ${message || "Unknown error"}`);
       publicKeyCred = null;
-    } finally {
-      this.closeStepOneDialog();
     }
     return publicKeyCred;
   };
@@ -171,38 +197,39 @@ export class EnrollWebauthnComponent extends EnrollTokenBase<WebAuthnEnrollmentD
   openStepOneDialog(args: {
     webauthnEnrollmentData: WebAuthnEnrollmentData;
     webauthnEnrollmentResponse: WebauthnEnrollmentResponse;
-  }): void {
-    const { webauthnEnrollmentResponse } = args;
+  }): MatDialogRef<
+    AbstractDialogComponent<TokenEnrollmentFirstStepDialogData, EnrollmentStepResult>,
+    EnrollmentStepResult
+  > {
+    const { webauthnEnrollmentData, webauthnEnrollmentResponse } = args;
+    const showCancelButton = !webauthnEnrollmentData.rollover && this.authService.actionAllowed("delete");
 
     this.reopenDialog.set(async () => {
       if (this.stepOneDialogRef && this.dialogService.isDialogOpen(this.stepOneDialogRef)) {
         return null;
       }
-      this.stepOneDialogRef = this.dialogService.openDialog({
-        component: TokenEnrollmentFirstStepDialogComponent,
-        data: { enrollmentResponse: webauthnEnrollmentResponse }
-      });
-
-      return null;
+      return this.runRegistration(args);
     });
+
     this.stepOneDialogRef = this.dialogService.openDialog({
       component: TokenEnrollmentFirstStepDialogComponent,
-      data: { enrollmentResponse: webauthnEnrollmentResponse }
+      data: {
+        enrollmentResponse: webauthnEnrollmentResponse,
+        showCancelButton,
+        showCloseButton: !showCancelButton,
+        registrationFailed: this.registrationFailed.asReadonly(),
+        onRetry: () => void this.attemptRegistration(args)
+      }
     });
-  }
-
-  closeStepOneDialog(): void {
-    if (this.stepOneDialogRef) {
-      this.stepOneDialogRef.close(true);
-      this.stepOneDialogRef = null;
-    }
+    return this.stepOneDialogRef;
   }
 
   private async finalizeEnrollment(args: {
     webauthnEnrollmentData: WebAuthnEnrollmentData;
     webauthnEnrollmentResponse: WebauthnEnrollmentResponse;
+    publicKeyCred: PublicKeyCredential;
   }): Promise<EnrollmentResponse | null> {
-    const { webauthnEnrollmentData, webauthnEnrollmentResponse } = args;
+    const { webauthnEnrollmentData, webauthnEnrollmentResponse, publicKeyCred } = args;
 
     if (!webauthnEnrollmentResponse || !webauthnEnrollmentResponse.detail) {
       this.notificationService.warning($localize`Enrollment response or its detail is missing for finalization.`);
@@ -216,11 +243,6 @@ export class EnrollWebauthnComponent extends EnrollTokenBase<WebAuthnEnrollmentD
       this.notificationService.warning(
         $localize`Invalid transaction ID or serial number in enrollment detail for finalization.`
       );
-      return null;
-    }
-
-    const publicKeyCred = await this.readPublicKeyCred(webauthnEnrollmentResponse);
-    if (publicKeyCred === null) {
       return null;
     }
 

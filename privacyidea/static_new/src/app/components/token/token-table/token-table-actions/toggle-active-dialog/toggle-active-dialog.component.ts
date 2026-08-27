@@ -37,7 +37,6 @@ export interface ToggleActiveDialogData {
       i18n-title
       (wrapperClose)="close()"
       [actions]="actions"
-      [showCancelButton]="true"
       (actionTriggered)="onAction($event)">
       <div class="margin-right-16">
         <p i18n>The following tokens will be toggled:</p>

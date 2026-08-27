@@ -108,7 +108,7 @@ describe("ContainerTemplateDeleteDialogComponent", () => {
       const wrapper = fixture.debugElement.query(By.directive(DialogWrapperComponent)).componentInstance;
 
       const showCancelValue =
-        typeof wrapper.showCancelButton === "function" ? wrapper.showCancelButton() : wrapper.showCancelButton;
+        typeof wrapper.showCloseButton === "function" ? wrapper.showCloseButton() : wrapper.showCloseButton;
 
       const actionsValue = typeof wrapper.actions === "function" ? wrapper.actions() : wrapper.actions;
 

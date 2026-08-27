@@ -16,13 +16,28 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, inject } from "@angular/core";
+import { Component, computed, inject, Signal } from "@angular/core";
 import { MatDialogContent } from "@angular/material/dialog";
 import { EnrollmentResponse } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
 import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
+import {
+  ENROLLMENT_CANCELLED,
+  EnrollmentStepResult
+} from "@components/token/token-enrollment/token-enrollment.constants";
+import { DialogAction } from "@models/dialog";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
+
+export interface TokenEnrollmentFirstStepDialogData {
+  enrollmentResponse: EnrollmentResponse;
+  showCancelButton?: boolean;
+  showCloseButton?: boolean;
+  registrationFailed?: Signal<boolean>;
+  onRetry?: () => void;
+}
+
+type FirstStepDialogAction = "retry" | "cancelEnrollment";
 
 @Component({
   selector: "app-token-enrollment-first-step-dialog",
@@ -31,14 +46,54 @@ import { TokenService, TokenServiceInterface } from "@services/token/token.servi
   styleUrl: "./token-enrollment-first-step-dialog.component.scss"
 })
 export class TokenEnrollmentFirstStepDialogComponent extends AbstractDialogComponent<
-  {
-    enrollmentResponse: EnrollmentResponse;
-  },
-  boolean
+  TokenEnrollmentFirstStepDialogData,
+  EnrollmentStepResult
 > {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly Object = Object;
+
+  protected readonly registrationFailed = computed(() => this.data.registrationFailed?.() ?? false);
+
+  protected readonly actions = computed<DialogAction<FirstStepDialogAction>[]>(() => {
+    const actions: DialogAction<FirstStepDialogAction>[] = [];
+    if (this.data.showCancelButton) {
+      actions.push({
+        type: "destruct",
+        label: $localize`Cancel`,
+        value: "cancelEnrollment"
+      });
+    }
+    if (this.data.onRetry && this.registrationFailed()) {
+      actions.push({
+        type: "confirm",
+        label: $localize`Retry`,
+        value: "retry",
+        primary: true
+      });
+    }
+    return actions;
+  });
+
+  protected readonly showCloseButton = this.data.showCloseButton ?? true;
+
+  onAction(action: FirstStepDialogAction): void {
+    if (action === "retry") {
+      this.data.onRetry?.();
+      return;
+    }
+    this.cancelEnrollment();
+  }
+
+  cancelEnrollment(): void {
+    const tokenSerial = this.data.enrollmentResponse.detail?.serial;
+    if (!tokenSerial) {
+      return;
+    }
+    this.tokenService.cancelEnrollment(tokenSerial).subscribe({
+      next: () => this.close(ENROLLMENT_CANCELLED)
+    });
+  }
 
   tokenSelected(tokenSerial: string) {
     this.dialogRef.close();

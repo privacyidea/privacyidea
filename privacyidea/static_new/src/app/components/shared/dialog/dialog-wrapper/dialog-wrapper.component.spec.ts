@@ -37,7 +37,7 @@ describe("DialogWrapperComponent", () => {
     fixture = TestBed.createComponent(DialogWrapperComponent<DialogAction[]>);
     component = fixture.componentInstance;
     nativeElement = fixture.nativeElement;
-    fixture.componentRef.setInput("showCancelButton", true);
+    fixture.componentRef.setInput("showCloseButton", true);
     fixture.componentRef.setInput("title", "Test Title");
     fixture.componentRef.setInput("actions", [
       { value: "confirm", label: "Confirm", type: "confirm", primary: true },
@@ -65,15 +65,15 @@ describe("DialogWrapperComponent", () => {
     expect(iconEl?.textContent).toBe("test_icon");
   });
 
-  it("should show the close button when showCancelButton is true", () => {
+  it("should show the close button when showCloseButton is true", () => {
     const buttons = nativeElement.querySelectorAll(".pi-dialog-footer button");
     const closeButton = Array.from(buttons).find((btn) => btn.textContent?.trim() === "Cancel");
     expect(closeButton?.textContent?.trim()).toBe("Cancel");
     expect(closeButton).toBeTruthy();
   });
 
-  it("should not show the close button when showCancelButton is false", () => {
-    fixture.componentRef.setInput("showCancelButton", false);
+  it("should not show the close button when showCloseButton is false", () => {
+    fixture.componentRef.setInput("showCloseButton", false);
     fixture.detectChanges();
     const buttons = nativeElement.querySelectorAll(".pi-dialog-footer button");
     const closeButton = Array.from(buttons).find((btn) => btn.textContent?.trim() === "Close");
@@ -135,18 +135,18 @@ describe("DialogWrapperComponent", () => {
     const fixtureWrapper = TestBed.createComponent(DialogWrapperComponent);
     fixtureWrapper.componentRef.setInput("title", "Error Test");
     fixtureWrapper.componentRef.setInput("actions", []);
-    fixtureWrapper.componentRef.setInput("showCancelButton", false);
+    fixtureWrapper.componentRef.setInput("showCloseButton", false);
 
     expect(() => fixtureWrapper.detectChanges()).toThrow("Dialog must have at least one action or a cancel button.");
   });
 
   it("should display the custom cancel button label", () => {
-    fixture.componentRef.setInput("showCancelButton", true);
+    fixture.componentRef.setInput("showCloseButton", true);
     fixture.componentRef.setInput("cancelButtonLabel", "Discard Changes");
     fixture.detectChanges();
 
     const buttons = nativeElement.querySelectorAll(".pi-dialog-footer button");
-    // The cancel button is always the first button when showCancelButton is true
+    // The cancel button is always the first button when showCloseButton is true
     const cancelButton = buttons[0];
 
     expect(cancelButton?.textContent?.trim()).toBe("Discard Changes");

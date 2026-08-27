@@ -54,6 +54,7 @@ import {
   switchMap,
   takeUntil,
   takeWhile,
+  tap,
   throwError,
   timer
 } from "rxjs";
@@ -361,6 +362,8 @@ export interface TokenServiceInterface extends FilterableTableServiceInterface {
   setTokenInfos(tokenSerial: string, infos: Record<string, string>): Observable<PiResponse<boolean>[]>;
 
   deleteToken(tokenSerial: string): Observable<PiResponse<number>>;
+
+  cancelEnrollment(tokenSerial: string): Observable<PiResponse<number>>;
 
   bulkDeleteTokens(selectedTokens: string[]): Observable<PiResponse<BulkResult>>;
 
@@ -955,6 +958,19 @@ export class TokenService extends FilterableTableService implements TokenService
   deleteToken(tokenSerial: string): Observable<PiResponse<number>> {
     const headers = this.authService.getHeaders();
     return this.http.delete<PiResponse<number>>(this.tokenBaseUrl + encodeURIComponent(tokenSerial), { headers });
+  }
+
+  cancelEnrollment(tokenSerial: string): Observable<PiResponse<number>> {
+    this.stopPolling();
+    return this.deleteToken(tokenSerial).pipe(
+      tap(() => this.notificationService.info($localize`The enrollment of token ${tokenSerial} was cancelled.`)),
+      catchError((error) => {
+        console.error("Failed to cancel the enrollment.", error);
+        const message = error.error?.result?.error?.message || "";
+        this.notificationService.error($localize`Failed to cancel the enrollment. ${message}`);
+        return throwError(() => error);
+      })
+    );
   }
 
   revokeToken(tokenSerial: string): Observable<PiResponse<number>> {
