@@ -136,7 +136,7 @@ export class NotificationService implements NotificationServiceInterface {
     if (severity === "success") {
       return count === 1 ? $localize`1 success:` : $localize`${count} successes:`;
     }
-    return count === 1 ? $localize`1 info:` : $localize`${count} infos:`;
+    return count === 1 ? $localize`1 info:` : $localize`${count} info:`;
   }
 
   private _open(message: string, panelClass: string, duration?: number): void {

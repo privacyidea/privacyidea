@@ -961,9 +961,11 @@ export class TokenService extends FilterableTableService implements TokenService
   }
 
   cancelEnrollment(tokenSerial: string): Observable<PiResponse<number>> {
-    this.stopPolling();
     return this.deleteToken(tokenSerial).pipe(
-      tap(() => this.notificationService.info($localize`The enrollment of token ${tokenSerial} was cancelled.`)),
+      tap(() => {
+        this.stopPolling();
+        this.notificationService.info($localize`The enrollment of token ${tokenSerial} was cancelled.`);
+      }),
       catchError((error) => {
         console.error("Failed to cancel the enrollment.", error);
         const message = error.error?.result?.error?.message || "";

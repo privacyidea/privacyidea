@@ -137,7 +137,7 @@ describe("DialogWrapperComponent", () => {
     fixtureWrapper.componentRef.setInput("actions", []);
     fixtureWrapper.componentRef.setInput("showCloseButton", false);
 
-    expect(() => fixtureWrapper.detectChanges()).toThrow("Dialog must have at least one action or a cancel button.");
+    expect(() => fixtureWrapper.detectChanges()).toThrow("Dialog must have at least one action or a close button.");
   });
 
   it("should display the custom cancel button label", () => {

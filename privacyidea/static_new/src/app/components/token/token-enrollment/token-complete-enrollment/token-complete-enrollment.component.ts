@@ -99,7 +99,8 @@ export class TokenCompleteEnrollmentComponent extends AbstractDialogComponent<
       return;
     }
     this.tokenService.cancelEnrollment(tokenSerial).subscribe({
-      next: () => this.close(ENROLLMENT_CANCELLED)
+      next: () => this.close(ENROLLMENT_CANCELLED),
+      error: () => undefined
     });
   }
 

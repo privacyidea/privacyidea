@@ -118,7 +118,8 @@ export class TokenEnrollmentFirstStepDialogComponent extends AbstractDialogCompo
 
   private deleteIncompleteToken(tokenSerial: string): void {
     this.tokenService.cancelEnrollment(tokenSerial).subscribe({
-      next: () => this.close(ENROLLMENT_CANCELLED)
+      next: () => this.close(ENROLLMENT_CANCELLED),
+      error: () => undefined
     });
   }
 
