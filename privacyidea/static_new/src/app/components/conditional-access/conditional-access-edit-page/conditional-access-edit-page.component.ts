@@ -397,7 +397,7 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
     const policy: LockoutPolicySaveParams = {
       ...prefill,
       priority: prefill.priority ?? null,
-      reset_on_success: prefill.target === "source_ip" ? false : (prefill.reset_on_success ?? true),
+      reset_on_success: prefill.target === "user" ? (prefill.reset_on_success ?? true) : false,
       stages: prefill.stages
     };
     this.editPolicy.set(policy);
