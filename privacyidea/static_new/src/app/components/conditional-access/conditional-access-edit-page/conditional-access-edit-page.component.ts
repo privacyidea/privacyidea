@@ -365,11 +365,15 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
   }
 
   onTargetChange(target: LockoutTarget): void {
-    // Only the target changes here; the count mode is left as-is. Switching to a target that does not support the
-    // current mode (e.g. DISTINCT_USERS under a user target) is surfaced as a validation error (countModeValid) that
-    // blocks saving, rather than silently rewriting the user's selection - mirroring how an incompatible stage action
-    // is handled (targetActionsValid).
-    this.updateEditPolicy({ target });
+    // The count mode is left as-is. Switching to a target that does not support the current mode (e.g.
+    // DISTINCT_USERS under a user target) is surfaced as a validation error (countModeValid) that blocks saving,
+    // rather than silently rewriting the user's selection - mirroring how an incompatible stage action is handled
+    // (targetActionsValid).
+    //
+    // reset_on_success is cleared, because unlike the count mode it is not invalid for the new target but inert:
+    // a source-IP policy never resets, so a checkbox left ticked would describe something the policy does not do.
+    // It stays cleared when switching back, where the control is enabled again and shows what it is set to.
+    this.updateEditPolicy({ target, reset_on_success: false });
   }
 
   onCountModeChange(count_mode: CountMode): void {

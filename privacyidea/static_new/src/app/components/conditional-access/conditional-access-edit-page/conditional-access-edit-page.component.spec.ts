@@ -696,6 +696,16 @@ describe("ConditionalAccessEditPageComponent — new mode", () => {
       expect(component.resetOnSuccessApplies()).toBe(true);
     });
 
+    // The setting is inert for a source-IP policy, so it is cleared rather than left describing a reset that
+    // never happens. It stays cleared on the way back, where the control is enabled again.
+    it("should clear the checkbox when the target changes", () => {
+      expect(component.editPolicy().reset_on_success).toBe(true);
+      component.onTargetChange("source_ip");
+      expect(component.editPolicy().reset_on_success).toBe(false);
+      component.onTargetChange("user");
+      expect(component.editPolicy().reset_on_success).toBe(false);
+    });
+
     it("should render the checkbox disabled for a source-IP policy", () => {
       component.onTargetChange("source_ip");
       fixture.detectChanges();
