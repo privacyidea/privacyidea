@@ -89,7 +89,7 @@ def upgrade():
         # A policy carries at most one condition of each type; they are ANDed, so a
         # second one on the same value could only narrow to a contradiction.
         sa.UniqueConstraint('policy_id', 'condition_type', name='uq_ca_condition_policy'),
-        sa.Index('ix_ca_policy_conditions_policy_id', 'policy_id'),
+        sa.Index('ix_conditional_access_policy_conditions_policy_id', 'policy_id'),
     )
     _create_table(
         'conditional_access_policy_stages',
@@ -112,7 +112,7 @@ def upgrade():
         sa.Column('retrigger_above_threshold', sa.Boolean(), nullable=False),
         sa.ForeignKeyConstraint(['stage_id'], ['conditional_access_policy_stages.id'], ondelete='CASCADE'),
         sa.PrimaryKeyConstraint('id'),
-        sa.Index('ix_ca_stage_actions_stage_id', 'stage_id'),
+        sa.Index('ix_conditional_access_stage_actions_stage_id', 'stage_id'),
     )
 
 
