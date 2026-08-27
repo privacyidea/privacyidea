@@ -478,7 +478,7 @@ describe("UserNewResolverComponent", () => {
 
     component.onTypeChange("ldapresolver");
     expect(component.resolverType()).toBe("ldapresolver");
-    expect(component.formData["TLS_VERSION"]).toBe("TLSv1_3");
+    expect(component.formData["TLS_VERSION"]).toBe("2");
 
     component.onTypeChange("entraidresolver");
     expect(component.formData).toEqual({});

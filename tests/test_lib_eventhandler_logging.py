@@ -113,8 +113,9 @@ class LoggingTestCase(MyTestCase):
     @log_capture()
     def test_05_loggingevent_tags(self, capture):
         class UserAgentMock:
-            string = "hello world"
-            browser = "browser"
+            # Werkzeug does not parse the user agent, the name is taken from the string
+            string = "privacyidea-keycloak/1.2.3"
+            browser = None
 
         # simple logging event with all tags
         self.setUp_sqlite_resolver_realm('testuser.sqlite', 'sqliterealm')
@@ -161,5 +162,6 @@ class LoggingTestCase(MyTestCase):
                  'url=https://pi.example.com user=Cornelius surname=Kölbel '
                  'givenname=Cornelius username=cornelius userrealm=sqliterealm '
                  'tokentype=spass time=05:06:08 date=2018-03-04 '
-                 'client_ip=None ua_browser=browser ua_string=hello world')
+                 'client_ip= ua_browser=privacyidea-keycloak '
+                 'ua_string=privacyidea-keycloak/1.2.3')
             )

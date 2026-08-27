@@ -27,6 +27,30 @@
   user - same expectation we already set for the SQL schema upgrade. See the "Redis cache" section of the documentation
   for the full payload-compatibility policy.
 
+* Three further optional Redis caches are new in this release, each behind its own flag and **off by default**:
+  `PI_REDIS_CACHE_USERS` (user store lookups), `PI_REDIS_CACHE_AUTH` (the entries of the `auth_cache` policy) and
+  `PI_REDIS_CACHE_HEALTH` (the certificate health results behind the dashboard panel). Enabling them changes where the
+  data lives, not what it means. Two consequences are worth knowing before you switch them on: with
+  `PI_REDIS_CACHE_AUTH` the `authcache` table stays empty and `pi-manage config authcache cleanup` has nothing left to
+  do, and with `PI_REDIS_CACHE_USERS` a resolver's own `CACHE_TIMEOUT` still bounds how quickly a user change is
+  noticed, because that per-process cache sits in front of the shared one. See the "Redis cache" section of the
+  documentation.
+
+* **`clientapplication.lastseen` is written again.** Since 3.13 the column was only ever set when a client's row was
+  first created: the update path assigned an attribute that is not the column, so the client list in the WebUI and the
+  metering of plugin traffic showed when each client was *first* seen rather than last. This is fixed. Expect the
+  timestamps in that list to start moving again, which may look like new activity where there is none.
+
+* **Two write reductions are active by default** and change behaviour without any configuration. Both are intervals in
+  seconds that can be set to `0` in `pi.cfg` to restore the previous per-request behaviour:
+
+  * `PI_CLIENTAPPLICATION_WRITE_INTERVAL` (default `60`) - a client's `lastseen` is refreshed at most once per interval
+    per worker process instead of on every request, so it can be up to a minute behind.
+  * `PI_SUBSCRIPTION_COUNT_INTERVAL` (default `60`) - the number of users with active tokens is reused between
+    subscription checks, so a user who is given a token may take up to a minute to count towards the subscription. The
+    number is always recounted before a subscription can be declared exceeded, so no authentication is ever refused on
+    the strength of a stale count, and the subscription overview and the statistics task keep counting exactly.
+
 * **HTTP API change** - `GET /token/challenges/...` no longer returns the `id` field for each challenge. The integer ID
   was the SQL primary key, never a stable cross-deployment identifier, and it was incompatible with the new Redis-backed
   challenges which have no SQL row. Use
@@ -113,6 +137,14 @@
   "fully enrolled" will silently stop matching after the migration. Update any such conditions to use `enrolled`
   instead. You can find affected event handlers in the WebUI under *Config -> Events*
   by reviewing handlers whose conditions reference `rollout_state`.
+
+* `GET /user/` now honours the `resolver` parameter. Previously, combining `realm` and `resolver`
+  ignored the resolver and returned every user of the realm, and a `resolver`-only query fanned out
+  to every sibling resolver in the realms containing it (so the `resolver` field of a returned user
+  could be a different, higher-priority resolver). Now `realm` + `resolver` returns only that
+  resolver's users within the realm (an empty result if the resolver is not part of the realm), and
+  a `resolver`-only query returns only that resolver's users. If you have scripts or integrations
+  that call `GET /user/` with a `resolver` parameter and relied on the old behaviour, review them.
 
 * Realm-restricted admins with the `userlist` right now see users from **all** realms granted to them, not just one.
   Previously, when such an admin called `GET /user/` without an explicit `realm`

@@ -4,10 +4,10 @@
 .policy-action-item {
   display: flex;
   align-items: center;
-  gap: var(--global-gap);
+  gap: 16px;
   min-height: 52px;
-  padding: var(--half-global-padding) var(--global-padding);
-  margin: var(--quarter-global-padding) 0;
+  padding: 8px 16px;
+  margin: 4px 0;
   border-radius: var(--border-radius);
   border: 1px solid color-mix(in srgb, var(--mat-sys-outline-variant), transparent 50%);
   background-color: var(--mat-sys-surface-container-low);

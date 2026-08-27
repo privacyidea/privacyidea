@@ -1,25 +1,38 @@
-.expansion-panel {
-  box-shadow: var(--box-shadow) !important;
+@use "cards";
+
+// Material paints the panel from these two tokens and its shadow rule outranks a plain
+// .mat-expansion-panel selector, so the raised step is handed over as tokens. On :root, so a
+// container setting them on an ancestor still overrides them by inheritance.
+:root {
+  --mat-expansion-container-background-color: var(--surface-raised);
+  --mat-expansion-container-elevation-shadow: var(--elevation-3);
 }
 
+// The content group inside an expansion panel.
 .expansion-well {
-  border: 1px solid var(--mat-sys-surface-container-highest);
-  border-radius: var(--border-radius);
+  @include cards.card-recessed(3);
   padding: 16px;
-  background: var(--mat-sys-surface-container-lowest);
 }
 
 .mat-expansion-panel:not(.mat-expanded) .mat-expansion-panel-header:hover {
-  background: var(--mat-expansion-container-background-color, var(--mat-sys-surface-container-high));
+  background: var(--mat-sys-surface-container-high);
 }
 
 .mat-expansion-panel-header {
   padding: var(--expansion-panel-header-padding, 0 24px);
 }
 
+// Material's own padding, handed to a token so a panel whose content carries its own width can
+// take the inset off without reaching into the component's internals. Material sets it from a
+// lone .mat-expansion-panel-body and injects that at runtime, after this sheet, so the panel is
+// named too: equal specificity would leave the winner up to load order.
+.mat-expansion-panel .mat-expansion-panel-body {
+  padding: var(--expansion-panel-body-padding, 0 24px 16px);
+}
+
+// Keep this slot in step with --mat-expansion-container-elevation-shadow on :root above.
 .mat-expansion-panel {
-  background: var(--mat-expansion-container-background-color, var(--mat-sys-surface-container-low));
-  border: var(--expansion-panel-border);
+  @include cards.card-raised(3);
   --mat-expansion-container-shape: var(--border-radius);
 }
 
