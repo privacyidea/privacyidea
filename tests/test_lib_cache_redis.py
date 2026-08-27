@@ -483,7 +483,7 @@ class TestRedisCacheOperations(_RealRedisBase):
     def test_empty_serial_does_not_create_shared_set(self):
         """Usernameless passkey auth init writes challenges with serial="".
         Those must NOT all be funneled into the single shared key
-        ``pi:challenge:serial:``, otherwise its membership grows unbounded
+        ``pi:challenge:v1:serial:``, otherwise its membership grows unbounded
         across the worker lifetime and its TTL never settles. They are
         only ever fetched by transaction_id, so the set is pointless."""
         with redis_in_store(self._real_client):
@@ -1324,7 +1324,7 @@ class TestRedisKeyNames(MyTestCase):
     """
 
     def test_txn_key_format(self):
-        self.assertEqual('pi:challenge:txn:12345', _TXN_KEY.format('12345'))
+        self.assertEqual('pi:challenge:v1:txn:12345', _TXN_KEY.format('12345'))
 
     def test_serial_key_format(self):
-        self.assertEqual('pi:challenge:serial:SPASS01', _SERIAL_KEY.format('SPASS01'))
+        self.assertEqual('pi:challenge:v1:serial:SPASS01', _SERIAL_KEY.format('SPASS01'))
