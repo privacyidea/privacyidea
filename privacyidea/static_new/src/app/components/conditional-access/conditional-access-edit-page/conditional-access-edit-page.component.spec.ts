@@ -706,6 +706,21 @@ describe("ConditionalAccessEditPageComponent — new mode", () => {
       expect(component.editPolicy().reset_on_success).toBe(false);
     });
 
+    // A source-IP template must not prefill a ticked box the admin then cannot untick, which is what the
+    // backend default would produce if it were applied regardless of target.
+    it("should clear the checkbox when a source-IP template is applied", () => {
+      policyServiceMock.templates.set([
+        {
+          key: "spray_key",
+          description: "d",
+          policy: { ...EMPTY_TEMPLATE_POLICY, target: "source_ip", count_mode: "DISTINCT_USERS" }
+        }
+      ]);
+      component.applyTemplate("spray_key");
+      expect(component.editPolicy().reset_on_success).toBe(false);
+      expect(component.resetOnSuccessApplies()).toBe(false);
+    });
+
     it("should render the checkbox disabled for a source-IP policy", () => {
       component.onTargetChange("source_ip");
       fixture.detectChanges();

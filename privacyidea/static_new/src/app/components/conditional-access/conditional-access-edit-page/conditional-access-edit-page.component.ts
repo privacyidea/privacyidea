@@ -390,12 +390,14 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
     delete prefill.id;
     // Templates carry no priority: the admin must pick a unique one, so normalize the
     // missing key to null and leave the field empty (see priorityValid). They carry no
-    // reset-on-success choice either, so it falls back to the backend's default. Spelling
-    // the target type out here makes the compiler enforce both normalizations.
+    // reset-on-success choice either: it falls back to the backend's default for a user
+    // policy, and to cleared for a source-IP one, which never resets - the same rule
+    // onTargetChange applies, so a prefilled policy cannot start out ticked and disabled.
+    // Spelling the target type out here makes the compiler enforce both normalizations.
     const policy: LockoutPolicySaveParams = {
       ...prefill,
       priority: prefill.priority ?? null,
-      reset_on_success: prefill.reset_on_success ?? true,
+      reset_on_success: prefill.target === "source_ip" ? false : (prefill.reset_on_success ?? true),
       stages: prefill.stages
     };
     this.editPolicy.set(policy);
