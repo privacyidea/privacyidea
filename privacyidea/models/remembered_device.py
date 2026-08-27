@@ -17,7 +17,7 @@
 import logging
 from datetime import datetime, timedelta
 
-from sqlalchemy import DateTime, ForeignKey, Integer, Unicode
+from sqlalchemy import DateTime, ForeignKey, Index, Integer, Unicode
 from sqlalchemy.orm import Mapped, mapped_column
 
 from privacyidea.lib.log import log_with
@@ -51,8 +51,21 @@ class RememberedDevice(MethodsMixin, db.Model):
     account that later reuses a freed login. ``user_id`` is therefore the
     resolver's immutable id (as in :class:`TokenOwner`), and ``realm_id`` is a
     foreign key so a deleted realm cascades its devices away.
+
+    The composite ``(client_id, resolver, user_id, realm_id)`` index serves the
+    two lookups done on every remember-device request: :func:`get_valid_device`
+    (cookie validation) and :func:`count_user_devices` (the per-user device cap
+    at issuance), both of which filter on all four columns at once. At
+    ``utf8mb4`` this composite is 1908 bytes, under MySQL's 3072-byte
+    index-key limit, so - unlike ``usersetting``'s ``subject_hash`` - no hashed
+    column is needed here. The individual single-column indexes stay: they are
+    still required by :func:`revoke_devices`, the client-independent bulk
+    revoke that filters by realm/user without a ``client_id``.
     """
     __tablename__ = 'remembered_devices'
+    __table_args__ = (
+        Index('ix_remembered_devices_identity', 'client_id', 'resolver', 'user_id', 'realm_id'),
+    )
     # series_id is the secret half of the cookie (series_id:counter) and is never
     # exposed in an API response, URL or log. device_id is a separate, non-secret
     # handle used to list and revoke a device, so managing a device never leaks
@@ -70,7 +83,7 @@ class RememberedDevice(MethodsMixin, db.Model):
     user_agent: Mapped[str | None] = mapped_column(Unicode(255))
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
     last_used_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
-    expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime, index=True, nullable=False)
 
     @log_with(log)
     def __init__(self, series_id, device_id, client_id, resolver, user_id, realm_id,
