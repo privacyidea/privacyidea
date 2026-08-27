@@ -218,24 +218,26 @@
         <td
           *matCellDef="let client"
           mat-cell>
-          @if (authService.actionAllowed("api_client_rotate")) {
-            <button
-              (click)="rotateKey(client)"
-              matTooltip="Rotate key"
-              i18n-matTooltip
-              mat-icon-button>
-              <mat-icon>refresh</mat-icon>
-            </button>
-          }
-          @if (authService.actionAllowed("api_client_delete")) {
-            <button
-              (click)="deleteClient(client)"
-              matTooltip="Delete"
-              i18n-matTooltip
-              mat-icon-button>
-              <mat-icon>delete</mat-icon>
-            </button>
-          }
+          <div class="flex-row gap-0">
+            @if (authService.actionAllowed("api_client_rotate")) {
+              <button
+                (click)="rotateKey(client)"
+                matTooltip="Rotate key"
+                i18n-matTooltip
+                mat-icon-button>
+                <mat-icon>refresh</mat-icon>
+              </button>
+            }
+            @if (authService.actionAllowed("api_client_delete")) {
+              <button
+                (click)="deleteClient(client)"
+                matTooltip="Delete"
+                i18n-matTooltip
+                mat-icon-button>
+                <mat-icon>delete</mat-icon>
+              </button>
+            }
+          </div>
         </td>
       </ng-container>
 
