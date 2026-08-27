@@ -32,14 +32,9 @@ Three levels, see issue #5705:
 * agent name — the literal ``User-Agent`` string a client sends. Never shown in a UI,
   never stored as policy data; only used to resolve a live request to an integration.
 
-Only two things this module intentionally does NOT do, both deliberate, both explained on
-the products they touch:
+One thing this module intentionally does not do, deliberate and explained on the product
+it touches:
 
-* It does not merge ``simplesamlphp`` and ``privacyidea-simplesamlphp`` into one product,
-  even though they are almost certainly the same real-world plugin under an old and a new
-  name. They are two disconnected, separately-metered products today; merging them is a
-  licensing decision for a real customer's signed subscription, not something to fold into
-  a vocabulary refactor.
 * It does not enforce a free-tier limit for the Authenticator App (``free_users=None`` on
   its product): the app's own requests were already excluded from request-based metering,
   and the one remaining enforcement path (a login-time push-token count nag) is being
@@ -123,9 +118,9 @@ class Integration:
 
 
 # The free-tier limit, in users with active tokens, allowed without a subscription file.
-# `simplesamlphp` / `privacyidea-simplesamlphp`, and `owncloud` / `demo_application`, are
-# legacy products with no current dashboard row or picker entry — they stay reachable only
-# for a client whose own user-agent happens to equal one of these names, exactly as before.
+# `owncloud` / `demo_application` are legacy products with no current dashboard row or
+# picker entry — they stay reachable only for a client whose own user-agent happens to
+# equal one of these names, exactly as before.
 PRODUCTS: dict[str, Product] = {
     product.id: product
     for product in (
@@ -138,7 +133,12 @@ PRODUCTS: dict[str, Product] = {
         Product(id="privacyidea-shibboleth", label="Shibboleth", free_users=10000),
         Product(id="privacyidea-adfs", label="AD FS", free_users=50),
         Product(id="privacyidea-keycloak", label="Keycloak", free_users=10000),
-        Product(id="simplesamlphp", label="SimpleSAMLphp", free_users=10000),
+        # `simplesamlphp` and `privacyidea-simplesamlphp` were added as two separate,
+        # identically-configured products in the same 2021 commit (8bca25e0), with no
+        # explanation distinguishing them — unlike PAM's user_agents/pam-privacyidea
+        # rename, there is no evidence they were ever meant to be different products. One
+        # product now, named like every other real plugin (`privacyidea-*`); both wire
+        # names alias into it, see the "simplesamlphp" integration below.
         Product(id="privacyidea-simplesamlphp", label="SimpleSAMLphp", free_users=10000),
         # Never counted or enforced, see the module docstring. Still a real, subscribable
         # product: the dashboard keeps reporting its subscription state.
@@ -270,9 +270,9 @@ CATALOG: tuple[Integration, ...] = (
     Integration(
         id="simplesamlphp",
         label="SimpleSAMLphp",
-        agent_names=("simpleSAMLphp", "simplesamlphp"),
+        agent_names=("simpleSAMLphp", "simplesamlphp", "privacyidea-simplesamlphp"),
         policy_value="simpleSAMLphp",
-        product_id="simplesamlphp",
+        product_id="privacyidea-simplesamlphp",
     ),
     Integration(
         id="privacyidea-ldap-proxy",
