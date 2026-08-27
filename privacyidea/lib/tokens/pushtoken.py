@@ -303,9 +303,10 @@ def _build_smartphone_data(token: TokenClass, challenge: str, registration_url: 
                            challenge=options.get("challenge"))
     try:
         message_on_mobile = message_on_mobile.format(**tags)
-    except (KeyError, IndexError, ValueError) as e:
-        # An unknown tag, a positional field or an unbalanced brace in the policy value must not
-        # fail the authentication, so fall back to the default message.
+    except Exception as e:
+        # A text that can not be formatted must not fail the authentication. Besides an unknown
+        # tag, this also happens for a positional field, an unbalanced brace, attribute access
+        # or an index into a tag that is not set, so every error falls back to the default.
         log.warning(f"Could not format the message: {e!r}. Using default message.")
         message_on_mobile = default_message
     log.debug(f"Sending to mobile: {message_on_mobile}")

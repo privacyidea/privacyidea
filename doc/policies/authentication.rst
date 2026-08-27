@@ -636,26 +636,31 @@ The text can contain the following tags, that will be filled:
   * {time} the current server time in the format HH:MM:SS.
   * {date} the current server date in the format YYYY-MM-DD.
   * {client_ip} the IP address of the client that triggered the challenge.
-  * {ua_browser} the name of the browser or of the application that triggered the
-    challenge, like *firefox* or *privacyidea-keycloak*.
+  * {ua_browser} the name of the application that triggered the challenge, taken from its
+    user agent, like *privacyidea-keycloak*. Browsers report *Mozilla* here, use
+    {ua_string} to get the complete user agent of a browser.
   * {ua_string} the complete user agent of the client that triggered the challenge.
   * {action} the endpoint that triggered the challenge, like */validate/check*.
   * {url} the base URL of the privacyIDEA server. This requires ``PI_BASE_URL`` to be
     configured in :ref:`cfgfile`.
 
-.. note:: The remaining tags known from :ref:`emailtext` do not work here. There is no
-   {otp}, because a push notification never contains an OTP value, and *{challenge}* is
-   only filled for tokens that receive transaction data in the *challenge* parameter of
-   the authentication request (see :ref:`ocra_token`), which a push token does not.
-   If the text contains a tag that does not exist, the complete text is discarded and
-   the default text *Do you want to confirm the login?* is displayed instead.
+.. note:: A tag that does not exist at all - like the {otp} of :ref:`emailtext`, which a
+   push notification never contains - can not be filled. The complete text is discarded in
+   this case and the default text *Do you want to confirm the login?* is displayed instead.
+
+   Tags that exist but are not filled during an authentication with a push token are
+   *not* replaced by the default text. They are inserted as an empty value, so the text is
+   displayed with a gap. This applies to *{challenge}*, which is only filled for tokens
+   that receive transaction data in the *challenge* parameter of the authentication request
+   (see :ref:`ocra_token`), and to the tags of the other policies like
+   {tokendescription}, {registrationcode} or {pin}.
 
 .. note:: The tags {client_ip}, {ua_browser}, {ua_string} and {action} describe the
    client that triggered the challenge, so they can only be filled in the notification
    that is sent via Firebase. If the smartphone fetches its open challenges by polling
-   instead, the text is rendered again for the request of the smartphone, which contains
-   no information about the client that triggered the challenge. These four tags are
-   empty in this case. The tags of the token owner are filled on both ways.
+   instead, the text is rendered again for the request of the smartphone, and no
+   information about the client that triggered the challenge is available anymore.
+   All four tags are empty then. The tags of the token owner are filled on both ways.
 
 .. _policy_push_title_on_mobile:
 

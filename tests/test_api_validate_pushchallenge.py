@@ -181,7 +181,7 @@ class PushChallengeTags(MyApiTestCase):
 
         # A polling request contains no client information, so the user agent and the
         # client IP are not available for the tags
-        self.assertEqual("Login von UserAgent:  via None/push.", self._get_question_of_challenge(pin, serial))
+        self.assertEqual("Login von UserAgent:  via /push.", self._get_question_of_challenge(pin, serial))
 
         remove_token(self.serial_push)
         delete_policy("push2")
