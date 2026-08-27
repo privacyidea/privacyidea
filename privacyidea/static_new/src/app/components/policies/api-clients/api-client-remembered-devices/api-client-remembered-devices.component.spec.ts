@@ -21,7 +21,8 @@ import { ApiClientService } from "@services/api-client/api-client.service";
 import { AuthService } from "@services/auth/auth.service";
 import { ContentService } from "@services/content/content.service";
 import { DialogService } from "@services/dialog/dialog.service";
-import { MockApiClientService, MockContentService, MockDialogService } from "@testing/mock-services";
+import { RealmService } from "@services/realm/realm.service";
+import { MockApiClientService, MockContentService, MockDialogService, MockRealmService } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
 import { Subject } from "rxjs";
@@ -31,6 +32,7 @@ describe("ApiClientRememberedDevicesComponent", () => {
   let component: ApiClientRememberedDevicesComponent;
   let fixture: ComponentFixture<ApiClientRememberedDevicesComponent>;
   let apiClientServiceMock: MockApiClientService;
+  let realmServiceMock: MockRealmService;
   let dialogServiceMock: MockDialogService;
   let confirmClosed: Subject<boolean>;
 
@@ -66,12 +68,18 @@ describe("ApiClientRememberedDevicesComponent", () => {
         { provide: ApiClientService, useClass: MockApiClientService },
         { provide: AuthService, useClass: MockAuthService },
         { provide: ContentService, useClass: MockContentService },
-        { provide: DialogService, useClass: MockDialogService }
+        { provide: DialogService, useClass: MockDialogService },
+        { provide: RealmService, useClass: MockRealmService }
       ]
     }).compileComponents();
 
     apiClientServiceMock = TestBed.inject(ApiClientService) as unknown as MockApiClientService;
-    apiClientServiceMock.getRememberedDevices = jest.fn().mockResolvedValue([device1, device2]);
+    apiClientServiceMock.getRememberedDevices = jest
+      .fn()
+      .mockResolvedValue({ devices: [device1, device2], count: 2, prev: null, next: null });
+
+    realmServiceMock = TestBed.inject(RealmService) as unknown as MockRealmService;
+    realmServiceMock.realmOptions.set(["realm1", "realm2"]);
 
     const authServiceMock = TestBed.inject(AuthService) as unknown as MockAuthService;
     authServiceMock.authData.set({
@@ -94,17 +102,39 @@ describe("ApiClientRememberedDevicesComponent", () => {
 
   it("should create and load the client's remembered devices", () => {
     expect(component).toBeTruthy();
-    expect(apiClientServiceMock.getRememberedDevices).toHaveBeenCalledWith("client1");
+    expect(apiClientServiceMock.getRememberedDevices).toHaveBeenCalledWith("client1", {
+      page: 1,
+      pageSize: 25,
+      realm: undefined
+    });
     expect(component.devices().length).toBe(2);
+    expect(component.count()).toBe(2);
   });
 
-  it("should list the distinct realms present in the loaded devices", () => {
+  it("should list the realms from the realm service", () => {
     expect(component.realmOptions()).toEqual(["realm1", "realm2"]);
   });
 
-  it("should filter devices by the selected realm", () => {
-    component.realmFilter.set("realm1");
-    expect(component.filteredDevices()).toEqual([device1]);
+  it("should reload with the selected realm and reset to the first page", async () => {
+    component.pageIndex.set(2);
+    component.onRealmFilterChange("realm1");
+    expect(component.pageIndex()).toBe(0);
+    await fixture.whenStable();
+    expect(apiClientServiceMock.getRememberedDevices).toHaveBeenCalledWith("client1", {
+      page: 1,
+      pageSize: 25,
+      realm: "realm1"
+    });
+  });
+
+  it("should reload the requested page on a paginator event", async () => {
+    component.onPage({ pageIndex: 1, pageSize: 10, length: 2 });
+    await fixture.whenStable();
+    expect(apiClientServiceMock.getRememberedDevices).toHaveBeenCalledWith("client1", {
+      page: 2,
+      pageSize: 10,
+      realm: undefined
+    });
   });
 
   it("should revoke a single device after confirmation and reload", async () => {
@@ -146,7 +176,7 @@ describe("ApiClientRememberedDevicesComponent", () => {
   });
 
   it("should do nothing when revoking all for the client with no devices", () => {
-    component.devices.set([]);
+    component.count.set(0);
     component.revokeAllForClient();
     expect(dialogServiceMock.openDialog).not.toHaveBeenCalled();
   });

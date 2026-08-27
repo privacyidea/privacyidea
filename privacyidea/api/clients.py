@@ -243,11 +243,19 @@ def list_client_remembered_devices_api(client_id):
     ``device_id`` (used to target revocation) and metadata (user, IP, user agent,
     created / last used / expiry).
 
+    The listing is paginated: a client shared across many browsers/devices per
+    user can accumulate a very large number of remembered devices.
+
     Requires admin authentication and the policy action :ref:`policy_remembered_device_list`.
 
     :param client_id: path component, the id of the client.
-    :status 200: a list of devices in ``result.value``.
-    :status 404: no client with that id exists.
+    :query page: 1-indexed page number, default ``1``.
+    :query pagesize: page size, default ``25``.
+    :query realm: optional realm name to narrow the listing to.
+    :status 200: ``result.value`` is a dict with ``devices`` (this page),
+        ``count`` (total matching devices), ``prev`` and ``next`` (page numbers,
+        or ``null`` when there is no such page).
+    :status 404: no client with that id exists, or ``realm`` does not exist.
     """
     # Ensure the client exists (404 otherwise).
     get_client(client_id)
@@ -255,10 +263,25 @@ def list_client_remembered_devices_api(client_id):
     # it: restrict the listing to the admin's allowed realms so a realm-scoped
     # remembered_device_list admin does not see every realm's devices.
     allowed_realm_ids = _allowed_realm_ids(PolicyAction.REMEMBERED_DEVICE_LIST)
-    devices = get_client_devices(client_id, realm_ids=allowed_realm_ids)
+    page = int(get_optional(request.all_data, "page", default=1))
+    page_size = int(get_optional(request.all_data, "pagesize", default=25))
+    realm = get_optional(request.all_data, "realm")
+    realm_id = None
+    if realm:
+        realm_id = get_realm_id(realm)
+        if realm_id is None:
+            raise ParameterError(f"The realm {realm!r} does not exist.")
+
+    result = get_client_devices(client_id, realm_ids=allowed_realm_ids, realm_id=realm_id,
+                                page=page, page_size=page_size)
 
     g.audit_object.log({"success": True, "info": f"Client ID: {client_id}"})
-    return send_result(devices_to_dicts(devices))
+    return send_result({
+        "devices": devices_to_dicts(result["devices"]),
+        "count": result["count"],
+        "prev": result["prev"],
+        "next": result["next"]
+    })
 
 
 @clients_blueprint.route('/<client_id>/remembered_devices', methods=['DELETE'])

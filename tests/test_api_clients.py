@@ -351,7 +351,11 @@ class APIClientRememberedDevicesTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertEqual(200, res.status_code, res)
-            devices = res.json['result']['value']
+            page = res.json['result']['value']
+            self.assertEqual(1, page['count'])
+            self.assertIsNone(page['prev'])
+            self.assertIsNone(page['next'])
+            devices = page['devices']
             self.assertEqual(1, len(devices))
             entry = devices[0]
             self.assertEqual(entry["device_id"], device.device_id)
@@ -369,6 +373,56 @@ class APIClientRememberedDevicesTestCase(MyApiTestCase):
             self.assertTrue(entry["created_at"].endswith("+00:00"), entry["created_at"])
             # The rotating token/counter must never be exposed.
             self.assertNotIn("counter", entry)
+
+    def test_01c_list_devices_paginates(self):
+        client, _key = create_client("paginated devices client", "privacyidea-cp")
+        devices = [self._device(client.id) for _ in range(5)]
+
+        with self.app.test_request_context(f'/clients/{client.id}/remembered_devices',
+                                           method='GET', query_string={"page": 1, "pagesize": 2},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            page = res.json['result']['value']
+            self.assertEqual(5, page['count'])
+            self.assertEqual(2, len(page['devices']))
+            self.assertIsNone(page['prev'])
+            self.assertEqual(2, page['next'])
+            # Newest first.
+            self.assertEqual(devices[-1].device_id, page['devices'][0]['device_id'])
+
+        with self.app.test_request_context(f'/clients/{client.id}/remembered_devices',
+                                           method='GET', query_string={"page": 3, "pagesize": 2},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            page = res.json['result']['value']
+            self.assertEqual(5, page['count'])
+            self.assertEqual(1, len(page['devices']))
+            self.assertEqual(2, page['prev'])
+            self.assertIsNone(page['next'])
+
+    def test_01d_list_devices_realm_filter(self):
+        set_realm("xclistfilter", [{"name": self.resolvername1}])
+        client, _key = create_client("realm filtered client", "privacyidea-cp")
+        in_realm = self._device(client.id, "cornelius", realm="xclistfilter").device_id
+        other_realm = self._device(client.id, "cornelius", realm=self.realm1).device_id
+
+        with self.app.test_request_context(f'/clients/{client.id}/remembered_devices',
+                                           method='GET', query_string={"realm": "xclistfilter"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            page = res.json['result']['value']
+            self.assertEqual(1, page['count'])
+            self.assertEqual(in_realm, page['devices'][0]['device_id'])
+            self.assertNotIn(other_realm, {d['device_id'] for d in page['devices']})
+
+        with self.app.test_request_context(f'/clients/{client.id}/remembered_devices',
+                                           method='GET', query_string={"realm": "does-not-exist"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(400, res.status_code, res)
 
     def test_02_revoke_device(self):
         client, _key = create_client("revoke client", "privacyidea-cp")
@@ -605,7 +659,7 @@ class APIClientRememberedDevicesTestCase(MyApiTestCase):
                                                method='GET', headers={'Authorization': self.at}):
                 res = self.app.full_dispatch_request()
                 self.assertEqual(200, res.status_code, res)
-                listed = {entry["device_id"] for entry in res.json['result']['value']}
+                listed = {entry["device_id"] for entry in res.json['result']['value']['devices']}
             self.assertIn(in_scope, listed)
             self.assertNotIn(out_scope, listed)
         finally:

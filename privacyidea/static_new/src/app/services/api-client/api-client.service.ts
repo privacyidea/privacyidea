@@ -55,6 +55,13 @@ export interface IssuedApiKey {
   apiKey: string;
 }
 
+export interface RememberedDevicesPage {
+  devices: RememberedDevice[];
+  count: number;
+  prev: number | null;
+  next: number | null;
+}
+
 export interface ApiClientServiceInterface {
   apiClientResource: HttpResourceRef<PiResponse<ApiClient[]> | undefined>;
   apiClients: WritableSignal<ApiClient[]>;
@@ -70,7 +77,10 @@ export interface ApiClientServiceInterface {
 
   deleteClient(id: string): Promise<void>;
 
-  getRememberedDevices(clientId: string): Promise<RememberedDevice[]>;
+  getRememberedDevices(
+    clientId: string,
+    options?: { page?: number; pageSize?: number; realm?: string }
+  ): Promise<RememberedDevicesPage>;
 
   revokeDevice(clientId: string, deviceId: string): Promise<void>;
 
@@ -194,17 +204,22 @@ export class ApiClientService implements ApiClientServiceInterface {
       });
   }
 
-  async getRememberedDevices(clientId: string): Promise<RememberedDevice[]> {
-    const request = this.http.get<PiResponse<RememberedDevice[]>>(
+  async getRememberedDevices(
+    clientId: string,
+    options?: { page?: number; pageSize?: number; realm?: string }
+  ): Promise<RememberedDevicesPage> {
+    let params = new HttpParams().set("page", options?.page ?? 1).set("pagesize", options?.pageSize ?? 25);
+    if (options?.realm) params = params.set("realm", options.realm);
+    const request = this.http.get<PiResponse<RememberedDevicesPage>>(
       `${this.clientsBaseUrl}${encodeURIComponent(clientId)}/remembered_devices`,
-      { headers: this.authService.getHeaders() }
+      { headers: this.authService.getHeaders(), params }
     );
     return lastValueFrom(request)
-      .then((response) => response.result?.value ?? [])
+      .then((response) => response.result?.value ?? { devices: [], count: 0, prev: null, next: null })
       .catch((error) => {
         const message = error.error?.result?.error?.message || "";
         this.notificationService.error($localize`Failed to load remembered devices. ` + message);
-        return [];
+        return { devices: [], count: 0, prev: null, next: null };
       });
   }
 

@@ -32,12 +32,14 @@ import { ContentService } from "@services/content/content.service";
 import { DialogService } from "@services/dialog/dialog.service";
 import { IntegrationsService } from "@services/integrations/integrations.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+import { RealmService } from "@services/realm/realm.service";
 import {
   MockApiClientService,
   MockAuthService,
   MockContentService,
   MockDialogService,
-  MockIntegrationsService
+  MockIntegrationsService,
+  MockRealmService
 } from "@testing/mock-services";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
 import { MockPendingChangesService } from "@testing/mock-services/mock-pending-changes-service";
@@ -111,7 +113,8 @@ describe("ApiClientEditComponent", () => {
         { provide: ContentService, useClass: MockContentService },
         { provide: IntegrationsService, useClass: MockIntegrationsService },
         { provide: PendingChangesService, useClass: MockPendingChangesService },
-        { provide: DialogService, useClass: MockDialogService }
+        { provide: DialogService, useClass: MockDialogService },
+        { provide: RealmService, useClass: MockRealmService }
       ]
     }).compileComponents();
 

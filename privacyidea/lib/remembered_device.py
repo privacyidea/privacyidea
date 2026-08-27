@@ -501,21 +501,44 @@ def count_user_devices(client_id: str, resolver: str, user_id: str, realm_id: in
     ).count()
 
 
-def get_client_devices(client_id: str, realm_ids: list[int] | set[int] | None = None) -> list[RememberedDevice]:
+def get_client_devices(client_id: str, realm_ids: list[int] | set[int] | None = None,
+                       realm_id: int | None = None, page: int = 1, page_size: int = 25) -> dict:
     """
-    Return the remembered devices belonging to a client, newest first, optionally
-    restricted to a set of realms.
+    Return a page of the remembered devices belonging to a client, newest
+    first, optionally restricted to a set of realms and/or narrowed to a single
+    realm.
+
+    Paginated: a client shared across many browsers/devices per user can
+    accumulate a very large number of devices, and returning them all in one
+    response would also force resolving a login for every distinct user in the
+    result within a single request.
 
     :param client_id: the id of the API client
     :param realm_ids: if given, only devices bound to one of these realms are
-        returned (used to scope a listing to a realm-restricted admin's allowed
-        realms); ``None`` returns all, an empty set returns nothing
-    :return: a list of ``RememberedDevice`` objects
+        considered (used to scope a listing to a realm-restricted admin's allowed
+        realms); ``None`` considers all, an empty set considers none
+    :param realm_id: if given, further narrows the listing to this single realm
+        (e.g. an admin-selected realm filter)
+    :param page: 1-indexed page number
+    :param page_size: number of devices per page
+    :return: dict with ``devices`` (the page, as ``RememberedDevice`` objects),
+        ``count`` (total matching devices across all pages), ``prev`` and
+        ``next`` (page numbers, or ``None`` when there is no such page)
     """
     query = RememberedDevice.query.filter_by(client_id=client_id)
     if realm_ids is not None:
         query = query.filter(RememberedDevice.realm_id.in_(realm_ids))
-    return query.order_by(RememberedDevice.created_at.desc()).all()
+    if realm_id is not None:
+        query = query.filter_by(realm_id=realm_id)
+    total_count = query.count()
+    offset = (page - 1) * page_size
+    devices = query.order_by(RememberedDevice.created_at.desc()).limit(page_size).offset(offset).all()
+    return {
+        "devices": devices,
+        "count": total_count,
+        "prev": page - 1 if page > 1 else None,
+        "next": page + 1 if offset + page_size < total_count else None,
+    }
 
 
 def revoke_client_devices(client_id: str, realm_id: int | None = None, resolver: str | None = None,

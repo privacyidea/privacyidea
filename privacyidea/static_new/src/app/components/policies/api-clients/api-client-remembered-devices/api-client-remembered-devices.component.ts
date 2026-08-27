@@ -21,6 +21,7 @@ import { Component, computed, effect, inject, input, signal } from "@angular/cor
 import { MatButtonModule } from "@angular/material/button";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
+import { MatPaginatorModule, PageEvent } from "@angular/material/paginator";
 import { MatSelectModule } from "@angular/material/select";
 import { MatTableModule } from "@angular/material/table";
 import { MatTooltipModule } from "@angular/material/tooltip";
@@ -29,6 +30,7 @@ import { ApiClientService, ApiClientServiceInterface, RememberedDevice } from "@
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
 
 @Component({
   selector: "app-api-client-remembered-devices",
@@ -40,6 +42,7 @@ import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.s
     MatTooltipModule,
     MatFormFieldModule,
     MatSelectModule,
+    MatPaginatorModule,
     DatePipe
   ],
   templateUrl: "./api-client-remembered-devices.component.html",
@@ -49,30 +52,31 @@ export class ApiClientRememberedDevicesComponent {
   protected readonly apiClientService: ApiClientServiceInterface = inject(ApiClientService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
+  protected readonly realmService: RealmServiceInterface = inject(RealmService);
   private readonly dialogService: DialogServiceInterface = inject(DialogService);
 
   clientId = input.required<string>();
 
   devices = signal<RememberedDevice[]>([]);
+  count = signal<number>(0);
+  pageIndex = signal<number>(0);
+  pageSize = signal<number>(25);
+  pageSizeOptions = [10, 25, 50, 100];
   realmFilter = signal<string>("");
 
   displayedColumns = ["user", "ip_address", "user_agent", "created_at", "last_used_at", "expires_at", "actions"];
 
-  realmOptions = computed(() =>
-    Array.from(new Set(this.devices().map((device) => device.realm))).sort((a, b) => a.localeCompare(b))
-  );
-
-  filteredDevices = computed(() => {
-    const realm = this.realmFilter();
-    const devices = this.devices();
-    return realm ? devices.filter((device) => device.realm === realm) : devices;
-  });
+  realmOptions = computed(() => this.realmService.realmOptions());
 
   constructor() {
     effect(() => {
       const id = this.clientId();
+      // Track the filter/paging signals so a change re-fetches this page.
+      const page = this.pageIndex();
+      const size = this.pageSize();
+      const realm = this.realmFilter();
       if (id && this.authService.actionAllowed("remembered_device_list")) {
-        void this.reload(id);
+        void this.reload(id, page, size, realm);
       }
     });
   }
@@ -86,9 +90,28 @@ export class ApiClientRememberedDevicesComponent {
     this.contentService.userSelected(device.user, device.realm);
   }
 
-  private async reload(clientId: string): Promise<void> {
-    const devices = await this.apiClientService.getRememberedDevices(clientId);
-    this.devices.set(devices);
+  onPage(event: PageEvent): void {
+    this.pageSize.set(event.pageSize);
+    this.pageIndex.set(event.pageIndex);
+  }
+
+  onRealmFilterChange(realm: string): void {
+    this.realmFilter.set(realm);
+    this.pageIndex.set(0);
+  }
+
+  private async reload(clientId: string, pageIndex: number, pageSize: number, realm: string): Promise<void> {
+    const result = await this.apiClientService.getRememberedDevices(clientId, {
+      page: pageIndex + 1,
+      pageSize,
+      realm: realm || undefined
+    });
+    this.devices.set(result.devices);
+    this.count.set(result.count);
+  }
+
+  private reloadCurrent(): void {
+    void this.reload(this.clientId(), this.pageIndex(), this.pageSize(), this.realmFilter());
   }
 
   revokeDevice(device: RememberedDevice): void {
@@ -105,9 +128,7 @@ export class ApiClientRememberedDevicesComponent {
       .afterClosed()
       .subscribe((result) => {
         if (result) {
-          void this.apiClientService
-            .revokeDevice(this.clientId(), device.device_id)
-            .then(() => this.reload(this.clientId()));
+          void this.apiClientService.revokeDevice(this.clientId(), device.device_id).then(() => this.reloadCurrent());
         }
       });
   }
@@ -128,15 +149,13 @@ export class ApiClientRememberedDevicesComponent {
       .afterClosed()
       .subscribe((result) => {
         if (result) {
-          void this.apiClientService
-            .revokeAllInRealmAcrossClients(device.realm, user)
-            .then(() => this.reload(this.clientId()));
+          void this.apiClientService.revokeAllInRealmAcrossClients(device.realm, user).then(() => this.reloadCurrent());
         }
       });
   }
 
   revokeAllForClient(): void {
-    if (this.devices().length === 0) return;
+    if (this.count() === 0) return;
     this.dialogService
       .openDialog({
         component: SimpleConfirmationDialogComponent,
@@ -150,7 +169,10 @@ export class ApiClientRememberedDevicesComponent {
       .afterClosed()
       .subscribe((result) => {
         if (result) {
-          void this.apiClientService.revokeAllForClient(this.clientId()).then(() => this.reload(this.clientId()));
+          void this.apiClientService.revokeAllForClient(this.clientId()).then(() => {
+            this.pageIndex.set(0);
+            this.reloadCurrent();
+          });
         }
       });
   }
@@ -171,7 +193,10 @@ export class ApiClientRememberedDevicesComponent {
       .afterClosed()
       .subscribe((result) => {
         if (result) {
-          void this.apiClientService.revokeAllInRealmAcrossClients(realm).then(() => this.reload(this.clientId()));
+          void this.apiClientService.revokeAllInRealmAcrossClients(realm).then(() => {
+            this.pageIndex.set(0);
+            this.reloadCurrent();
+          });
         }
       });
   }

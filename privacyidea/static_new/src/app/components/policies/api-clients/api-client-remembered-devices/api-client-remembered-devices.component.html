@@ -29,7 +29,7 @@
       @if (authService.actionAllowed("remembered_device_revoke")) {
         <button
           (click)="revokeAllForClient()"
-          [disabled]="devices().length === 0"
+          [disabled]="count() === 0"
           class="action-button-delete-secondary button-width-l"
           mat-stroked-button>
           <mat-icon>delete_sweep</mat-icon>
@@ -44,7 +44,7 @@
         <mat-label i18n>Realm</mat-label>
         <mat-select
           [value]="realmFilter()"
-          (selectionChange)="realmFilter.set($event.value)">
+          (selectionChange)="onRealmFilterChange($event.value)">
           <mat-option
             value=""
             i18n
@@ -59,7 +59,7 @@
       @if (realmFilter() && authService.actionAllowed("remembered_device_revoke")) {
         <button
           (click)="revokeAllInSelectedRealm()"
-          [disabled]="filteredDevices().length === 0"
+          [disabled]="count() === 0"
           class="action-button-delete-secondary button-width-l"
           mat-stroked-button>
           <mat-icon>delete_sweep</mat-icon>
@@ -69,7 +69,7 @@
     </div>
 
     <table
-      [dataSource]="filteredDevices()"
+      [dataSource]="devices()"
       class="remembered-devices-table"
       mat-table>
       <ng-container matColumnDef="user">
@@ -214,5 +214,13 @@
         </td>
       </tr>
     </table>
+
+    <mat-paginator
+      (page)="onPage($event)"
+      [length]="count()"
+      [pageIndex]="pageIndex()"
+      [pageSize]="pageSize()"
+      [pageSizeOptions]="pageSizeOptions"
+      showFirstLastButtons />
   </div>
 }

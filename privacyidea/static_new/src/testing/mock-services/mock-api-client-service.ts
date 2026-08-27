@@ -22,7 +22,7 @@ import {
   ApiClient,
   ApiClientServiceInterface,
   IssuedApiKey,
-  RememberedDevice
+  RememberedDevicesPage
 } from "@services/api-client/api-client.service";
 import { MockHttpResourceRef, MockPiResponse } from "./mock-utils";
 
@@ -43,7 +43,9 @@ export class MockApiClientService implements ApiClientServiceInterface {
   rotateClient = jest.fn(async (): Promise<void> => Promise.resolve());
   deleteClient = jest.fn(async (): Promise<void> => Promise.resolve());
 
-  getRememberedDevices = jest.fn(async (): Promise<RememberedDevice[]> => Promise.resolve([]));
+  getRememberedDevices = jest.fn(
+    async (): Promise<RememberedDevicesPage> => Promise.resolve({ devices: [], count: 0, prev: null, next: null })
+  );
   revokeDevice = jest.fn(async (): Promise<void> => Promise.resolve());
   revokeAllForClient = jest.fn(async (): Promise<number> => Promise.resolve(0));
   revokeAllInRealmAcrossClients = jest.fn(async (): Promise<number> => Promise.resolve(0));

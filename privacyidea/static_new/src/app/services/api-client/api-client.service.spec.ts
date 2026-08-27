@@ -143,30 +143,40 @@ describe("ApiClientService", () => {
   });
 
   it("should list remembered devices for a client", async () => {
-    const promise = service.getRememberedDevices("abc");
+    const promise = service.getRememberedDevices("abc", { page: 2, pageSize: 10, realm: "realm1" });
 
-    const req = httpMock.expectOne(`${environment.proxyUrl}/clients/abc/remembered_devices`);
-    expect(req.request.method).toBe("GET");
+    const req = httpMock.expectOne(
+      (r) => r.url === `${environment.proxyUrl}/clients/abc/remembered_devices` && r.method === "GET"
+    );
+    expect(req.request.params.get("page")).toBe("2");
+    expect(req.request.params.get("pagesize")).toBe("10");
+    expect(req.request.params.get("realm")).toBe("realm1");
     req.flush(
-      MockPiResponse.fromValue([
-        {
-          device_id: "dev1",
-          resolver: "res1",
-          user_id: "u1",
-          realm: "realm1",
-          user: "alice",
-          ip_address: "10.0.0.1",
-          user_agent: "ua",
-          created_at: "2026-01-01T00:00:00Z",
-          last_used_at: null,
-          expires_at: "2026-02-01T00:00:00Z"
-        }
-      ])
+      MockPiResponse.fromValue({
+        devices: [
+          {
+            device_id: "dev1",
+            resolver: "res1",
+            user_id: "u1",
+            realm: "realm1",
+            user: "alice",
+            ip_address: "10.0.0.1",
+            user_agent: "ua",
+            created_at: "2026-01-01T00:00:00Z",
+            last_used_at: null,
+            expires_at: "2026-02-01T00:00:00Z"
+          }
+        ],
+        count: 1,
+        prev: 1,
+        next: null
+      })
     );
 
-    const devices = await promise;
-    expect(devices.length).toBe(1);
-    expect(devices[0].device_id).toBe("dev1");
+    const page = await promise;
+    expect(page.count).toBe(1);
+    expect(page.devices.length).toBe(1);
+    expect(page.devices[0].device_id).toBe("dev1");
   });
 
   it("should revoke a single remembered device", async () => {
