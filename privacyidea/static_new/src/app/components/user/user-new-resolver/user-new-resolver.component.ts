@@ -215,7 +215,7 @@ export class UserNewResolverComponent implements OnDestroy {
       this.formData = { fileName: "/etc/passwd" };
     } else if (type === "ldapresolver") {
       this.formData = {
-        TLS_VERSION: "TLSv1_3",
+        TLS_VERSION: "2",
         TLS_VERIFY: true,
         SCOPE: "SUBTREE",
         AUTHTYPE: "Simple",

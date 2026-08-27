@@ -93,10 +93,10 @@
               (selectionChange)="model.update(m => ({ ...m, TLS_VERSION: $event.value }))"
               [disabled]="tlsVersionDisabled()"
               [value]="model().TLS_VERSION">
-              <mat-option value="TLSv1"> TLS v1.0 </mat-option>
-              <mat-option value="TLSv1_1"> TLS v1.1 </mat-option>
-              <mat-option value="TLSv1_2"> TLS v1.2 </mat-option>
-              <mat-option value="TLSv1_3"> TLS v1.3 </mat-option>
+              <mat-option value="3"> TLS v1.0 </mat-option>
+              <mat-option value="4"> TLS v1.1 </mat-option>
+              <mat-option value="5"> TLS v1.2 </mat-option>
+              <mat-option value="2"> TLS v1.3 </mat-option>
             </mat-select>
           </mat-form-field>
         </div>
