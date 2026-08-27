@@ -32,7 +32,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column
 
 from privacyidea.lib.challenge_types import is_challenge_open
-from privacyidea.lib.crypto import get_rand_digit_str, encryptPassword, decryptPassword
+from privacyidea.lib.crypto import FAILED_TO_DECRYPT_PASSWORD, get_rand_digit_str, encryptPassword, decryptPassword
 from privacyidea.lib.log import log_with
 from privacyidea.lib.utils import convert_column_to_unicode
 from privacyidea.models import db
@@ -64,7 +64,11 @@ class Challenge(MethodsMixin, db.Model):
         raw = self._data
         if not raw:
             return raw
-        return decryptPassword(raw)
+        decrypted = decryptPassword(raw)
+        if decrypted == FAILED_TO_DECRYPT_PASSWORD:
+            log.warning("Challenge %s: failed to decrypt data.", self.transaction_id)
+            return ''
+        return decrypted
 
     @data.setter
     def data(self, value):
