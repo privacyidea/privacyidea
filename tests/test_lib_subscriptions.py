@@ -24,7 +24,6 @@ from privacyidea.lib.subscriptions import (save_subscription,
                                            SubscriptionState,
                                            EXPIRING_THRESHOLD_DAYS,
                                            APPLICATIONS,
-                                           METERED_APPLICATIONS,
                                            DASHBOARD_PLUGINS)
 from privacyidea.lib import subscriptions as subscriptions_module
 from privacyidea.lib.token import init_token
@@ -214,9 +213,11 @@ class SubscriptionApplicationTestCase(MyTestCase):
     def test_06_authenticator_app_is_never_metered(self):
         # The Authenticator App is free to use: its authentications must not be counted
         # against any subscription, however many users have tokens, and it must not be
-        # able to raise a SubscriptionError.
-        self.assertNotIn("privacyidea-app", METERED_APPLICATIONS)
-        self.assertEqual("privacyidea-app", get_metered_application("privacyIDEA-App"))
+        # able to raise a SubscriptionError. It resolves to a real product - unlike a
+        # name with no product of its own, e.g. "" - but that product's free_users is
+        # None, which is what actually turns enforcement off, see check_subscription().
+        self.assertEqual("privacyidea authenticator", get_metered_application("privacyIDEA-App"))
+        self.assertIsNone(APPLICATIONS["privacyidea authenticator"])
         # The dashboard still reports it under the authenticator subscription.
         self.assertEqual("privacyidea authenticator", get_subscription_owner("privacyIDEA-App"))
 

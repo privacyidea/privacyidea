@@ -1,0 +1,125 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<div class="api-client-page-layout">
+  <div class="api-client-page-container">
+    @if (isEditMode()) {
+      <h3
+        class="margin-8"
+        i18n>
+        Edit API Client
+      </h3>
+    } @else {
+      <h3
+        class="margin-8"
+        i18n>
+        Create API Client
+      </h3>
+    }
+
+    <div class="header-row">
+      <div class="action-buttons">
+        <button
+          (click)="onCancel()"
+          class="action-button-secondary button-width-s"
+          mat-stroked-button>
+          <span i18n>Cancel</span>
+        </button>
+        @if (
+          (isEditMode() && authService.actionAllowed("api_client_edit")) ||
+          (!isEditMode() && authService.actionAllowed("api_client_add"))
+        ) {
+          <button
+            (click)="save()"
+            [disabled]="!apiClientForm().valid()"
+            class="action-button-primary button-width-s"
+            mat-stroked-button>
+            <mat-icon>save</mat-icon>
+            <span i18n>Save</span>
+          </button>
+        }
+      </div>
+    </div>
+
+    <div class="api-client-form">
+      <div class="flex-column gap-16">
+        <mat-form-field
+          appearance="fill"
+          class="input-width-l margin-bottom-16">
+          <mat-label i18n>Display name</mat-label>
+          <app-clearable-input
+            (clearButtonClick)="apiClientModel.update(m => ({...m, display_name: ''}))"
+            [showClearButton]="!!apiClientModel().display_name">
+            <input
+              [formField]="apiClientForm.display_name"
+              matInput
+              placeholder="My Windows Credential Provider" />
+          </app-clearable-input>
+          @if (
+            apiClientForm.display_name().errors().some(e => e.kind === 'required') &&
+            apiClientForm.display_name().touched()
+          ) {
+            <mat-error i18n>Display name is <strong>required</strong>.</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field
+          appearance="fill"
+          class="input-width-l">
+          <mat-label i18n>Client type</mat-label>
+          <mat-select [formField]="apiClientForm.client_type">
+            @for (option of clientTypeOptions(); track option.id) {
+              <mat-option [value]="option.id">{{ option.label }}</mat-option>
+            }
+          </mat-select>
+          <mat-hint i18n>The kind of integration this client represents. This cannot be changed later.</mat-hint>
+          @if (
+            apiClientForm.client_type().errors().some(e => e.kind === 'required') &&
+            apiClientForm.client_type().touched()
+          ) {
+            <mat-error i18n>Client type is <strong>required</strong>.</mat-error>
+          }
+        </mat-form-field>
+
+        @if (isEditMode() && authService.actionAllowed("api_client_edit")) {
+          <mat-form-field
+            appearance="fill"
+            class="input-width-l">
+            <mat-label i18n>Status</mat-label>
+            <mat-select [formField]="apiClientForm.status">
+              <mat-option
+                value="active"
+                i18n
+                >Active</mat-option
+              >
+              <mat-option
+                value="suspended"
+                i18n
+                >Suspended</mat-option
+              >
+            </mat-select>
+          </mat-form-field>
+        }
+      </div>
+    </div>
+
+    @if (isEditMode() && editClientId(); as clientId) {
+      <app-api-client-remembered-devices [clientId]="clientId" />
+    }
+  </div>
+</div>

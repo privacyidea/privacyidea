@@ -80,10 +80,10 @@ myApp.controller("policyListController", ["$scope", "$stateParams", "$location",
 
 myApp.controller("policyDetailsController", ["$scope", "$stateParams",
     "ConfigFactory", "$state",
-    "PolicyTemplateFactory",
+    "PolicyTemplateFactory", "InfoFactory",
     function ($scope, $stateParams,
               ConfigFactory, $state,
-              PolicyTemplateFactory) {
+              PolicyTemplateFactory, InfoFactory) {
         // init
         $scope.realms = [];
         $scope.adminRealms = [];
@@ -95,6 +95,7 @@ myApp.controller("policyDetailsController", ["$scope", "$stateParams",
         $scope.policyDefsLoaded = false;
         $scope.pinodesLoaded = false;
         $scope.policyConditionDefsLoaded = false;
+        $scope.userAgentsLoaded = false;
         $scope.scopes = [];
         $scope.selectedScope = null;
         $scope.viewPolicyTemplates = false;
@@ -102,24 +103,26 @@ myApp.controller("policyDetailsController", ["$scope", "$stateParams",
         $('html,body').scrollTop(0);
         $scope.onlySelectedVisible = false;
 
-        $scope.userAgentsMapping = {
-            "Credential Provider": "privacyidea-cp",
-            "Keycloak": "privacyIDEA-Keycloak",
-            "EntraID via Keycloak": "entraid-via-keycloak",
-            "AD FS": "PrivacyIDEA-ADFS",
-            "SimpleSAMLphp": "simpleSAMLphp",
-            "PAM OTP & Push": "PAM",
-            "PAM Passkey": "pam-passkey",
-            "Shibboleth": "privacyIDEA-Shibboleth",
-            "Nextcloud": "privacyidea-nextcloud",
-            "FreeRADIUS": "FreeRADIUS",
-            "LDAP Proxy": "privacyIDEA-LDAP-Proxy",
-            "privacyIDEA Authenticator": "privacyIDEA-App",
-            "privacyIDEA WebUI": "privacyIDEA-WebUI"
-        };
+        // The picker entries come from the shared ecosystem catalog (see issue #5705):
+        // every integration's policy_value/label. Merged rather than replaced, so a
+        // value already ticked (or a custom one added below) before this resolves
+        // survives.
         $scope.userAgents = [];
-        angular.forEach($scope.userAgentsMapping, function (value, key) {
-            $scope.userAgents.push({"name": key, "identifier": value, "ticked": false});
+        InfoFactory.getIntegrations(function (integrations) {
+            angular.forEach(integrations, function (integration) {
+                const existing = $scope.userAgents.find(a => a.identifier === integration.policy_value);
+                if (existing) {
+                    existing.name = integration.label;
+                } else {
+                    $scope.userAgents.push({
+                        "name": integration.label,
+                        "identifier": integration.policy_value,
+                        "ticked": false
+                    });
+                }
+            });
+            $scope.userAgentsLoaded = true;
+            check_all_loaded();
         });
         $scope.selectedUserAgents = {};
         $scope.customUserAgent = "";
@@ -141,7 +144,8 @@ myApp.controller("policyDetailsController", ["$scope", "$stateParams",
                 $scope.realmsLoaded &&
                 $scope.policyDefsLoaded &&
                 $scope.pinodesLoaded &&
-                $scope.policyConditionDefsLoaded) {
+                $scope.policyConditionDefsLoaded &&
+                $scope.userAgentsLoaded) {
                 $scope.presetEditValues();
             }
         };

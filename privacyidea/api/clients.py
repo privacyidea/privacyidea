@@ -92,7 +92,8 @@ def create_client_api():
     Requires admin authentication and the policy action :ref:`policy_api_client_add`.
 
     :jsonparam display_name: a human readable name for the client.
-    :jsonparam client_type: the type of client, e.g. 'windows_cp', 'keycloak', 'entraid'.
+    :jsonparam client_type: one of the API-client integrations from ``GET /info/integrations``,
+        e.g. 'privacyidea-cp', 'privacyidea-keycloak', 'entraid-via-keycloak'.
     :jsonparam config: optional JSON object for future remote configuration.
     :status 200: the client (including ``api_key``) in ``result.value``.
     """

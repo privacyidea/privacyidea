@@ -33,6 +33,17 @@ myApp.factory("InfoFactory", ["AuthFactory", "$http", "$state", "$rootScope", "i
                 }, function (error) {
                     AuthFactory.authError(error.data)
                 });
+            },
+            // The shared ecosystem-integration catalog (client types, policy user_agents
+            // presets, dashboard subscription rows) - see issue #5705.
+            getIntegrations: function (callback) {
+                $http.get(infoUrl + "/integrations", {
+                    headers: {'PI-Authorization': AuthFactory.getAuthToken()}
+                }).then(function (response) {
+                    callback(response.data.result.value)
+                }, function (error) {
+                    AuthFactory.authError(error.data)
+                });
             }
         };
     }]);

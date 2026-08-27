@@ -17,7 +17,7 @@ class APIClientsTestCase(MyApiTestCase):
     test creates the clients it needs and asserts on their specific ids.
     """
 
-    def _create_client(self, display_name="My CP", client_type="windows_cp"):
+    def _create_client(self, display_name="My CP", client_type="privacyidea-cp"):
         with self.app.test_request_context('/clients/',
                                            data={"display_name": display_name,
                                                  "client_type": client_type},
@@ -32,7 +32,7 @@ class APIClientsTestCase(MyApiTestCase):
         # The plaintext key is returned exactly once, on creation.
         self.assertIn("api_key", value)
         self.assertEqual("My CP", value["display_name"])
-        self.assertEqual("windows_cp", value["client_type"])
+        self.assertEqual("privacyidea-cp", value["client_type"])
         self.assertEqual("active", value["status"])
         self.assertNotIn("key_hash", value)
         client_id = value["id"]
@@ -44,7 +44,7 @@ class APIClientsTestCase(MyApiTestCase):
         self.assertTrue(api_key.startswith(f"pi_{value['key_id']}_"), api_key)
 
         # Creation is audited (never with the plaintext key in it).
-        create_audit = self.find_most_recent_audit_entry(info="*windows_cp: My CP*")
+        create_audit = self.find_most_recent_audit_entry(info="*privacyidea-cp: My CP*")
         self.assertEqual(1, create_audit["success"])
         self.assertNotIn(api_key, str(create_audit))
 
@@ -69,8 +69,8 @@ class APIClientsTestCase(MyApiTestCase):
         self.assertEqual({}, stored.config)
 
     def test_02_list_contains_created_clients(self):
-        a = self._create_client("List A", "keycloak")
-        b = self._create_client("List B", "entraid")
+        a = self._create_client("List A", "privacyidea-keycloak")
+        b = self._create_client("List B", "entraid-via-keycloak")
         with self.app.test_request_context('/clients/',
                                            method='GET',
                                            headers={'Authorization': self.at}):
@@ -94,6 +94,16 @@ class APIClientsTestCase(MyApiTestCase):
             self.assertEqual("suspended", value["status"])
         entry = self.find_most_recent_audit_entry(info=f"*Client ID: {client_id}*")
         self.assertEqual(1, entry["success"])
+
+    def test_01b_create_client_rejects_unknown_client_type(self):
+        with self.app.test_request_context('/clients/',
+                                           data={"display_name": "Bad Type",
+                                                 "client_type": "bogus"},
+                                           method='POST',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            # An unknown client_type is a bad parameter (400), not accepted as free text.
+            self.assertEqual(400, res.status_code, res)
 
     def test_03b_update_invalid_status_is_400(self):
         client_id = self._create_client()["id"]
@@ -122,7 +132,7 @@ class APIClientsTestCase(MyApiTestCase):
     def test_03d_config_is_never_none(self):
         # The model normalises config to a dict for any caller: nullable=False on
         # a JSON column does not stop a Python None (it stores JSON null).
-        client = Client(display_name="x", client_type="windows_cp",
+        client = Client(display_name="x", client_type="privacyidea-cp",
                         key_id="k1", key_hash="h", config=None)
         self.assertEqual({}, client.config)
         client.config = None
@@ -174,7 +184,7 @@ class APIClientsTestCase(MyApiTestCase):
         # Without an admin auth token the endpoint must not be reachable.
         with self.app.test_request_context('/clients/',
                                            data={"display_name": "x",
-                                                 "client_type": "keycloak"},
+                                                 "client_type": "privacyidea-keycloak"},
                                            method='POST'):
             res = self.app.full_dispatch_request()
             self.assertEqual(401, res.status_code, res)
@@ -192,7 +202,7 @@ class APIClientAPIKeyMiddlewareTestCase(MyApiTestCase):
     def _create_client(self):
         with self.app.test_request_context('/clients/',
                                            data={"display_name": "Mw",
-                                                 "client_type": "entraid"},
+                                                 "client_type": "entraid-via-keycloak"},
                                            method='POST',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
@@ -332,7 +342,7 @@ class APIClientRememberedDevicesTestCase(MyApiTestCase):
             return self.app.full_dispatch_request()
 
     def test_01_list_devices(self):
-        client, _key = create_client("devices client", "windows_cp")
+        client, _key = create_client("devices client", "privacyidea-cp")
         device, _cookie = create_remembered_device(self.identity, client.id, ip_address="10.0.0.9",
                                                user_agent="curl")
 
@@ -361,7 +371,7 @@ class APIClientRememberedDevicesTestCase(MyApiTestCase):
             self.assertNotIn("counter", entry)
 
     def test_02_revoke_device(self):
-        client, _key = create_client("revoke client", "windows_cp")
+        client, _key = create_client("revoke client", "privacyidea-cp")
         device, _cookie = create_remembered_device(self.identity, client.id)
 
         with self.app.test_request_context(f'/clients/{client.id}/remembered_devices/{device.device_id}',
@@ -374,8 +384,8 @@ class APIClientRememberedDevicesTestCase(MyApiTestCase):
         self.assertIsNone(RememberedDevice.query.filter_by(series_id=device.series_id).first())
 
     def test_03_revoke_is_scoped_to_client(self):
-        client_a, _ = create_client("client A", "windows_cp")
-        client_b, _ = create_client("client B", "keycloak")
+        client_a, _ = create_client("client A", "privacyidea-cp")
+        client_b, _ = create_client("client B", "privacyidea-keycloak")
         device, _cookie = create_remembered_device(self.identity, client_a.id)
 
         # Try to revoke A's device via B's id -> 404, and A's device survives.
@@ -394,7 +404,7 @@ class APIClientRememberedDevicesTestCase(MyApiTestCase):
             self.assertEqual(404, res.status_code, res)
 
     def test_05_revoke_all_devices(self):
-        client, _key = create_client("revoke-all client", "windows_cp")
+        client, _key = create_client("revoke-all client", "privacyidea-cp")
         self._device(client.id, "cornelius")
         self._device(client.id, "shadow")
 
@@ -408,8 +418,8 @@ class APIClientRememberedDevicesTestCase(MyApiTestCase):
         self.assertEqual(1, entry["success"])
 
     def test_06_revoke_all_is_scoped_to_client(self):
-        client_a, _ = create_client("all client A", "windows_cp")
-        client_b, _ = create_client("all client B", "keycloak")
+        client_a, _ = create_client("all client A", "privacyidea-cp")
+        client_b, _ = create_client("all client B", "privacyidea-keycloak")
         self._device(client_a.id)
         keep = self._device(client_b.id)
 
@@ -420,7 +430,7 @@ class APIClientRememberedDevicesTestCase(MyApiTestCase):
         self.assertIsNotNone(RememberedDevice.query.filter_by(series_id=keep.series_id).first())
 
     def test_07_revoke_all_narrowed_to_user(self):
-        client, _key = create_client("by-user client", "windows_cp")
+        client, _key = create_client("by-user client", "privacyidea-cp")
         # Capture series ids up front: the bulk delete+commit expires the ORM rows.
         target_series = self._device(client.id, "cornelius").series_id
         keep_series = self._device(client.id, "shadow").series_id
@@ -434,7 +444,7 @@ class APIClientRememberedDevicesTestCase(MyApiTestCase):
 
     def test_08_revoke_all_narrowed_to_realm(self):
         set_realm("realm_other", [{"name": self.resolvername1}])
-        client, _key = create_client("by-realm client", "windows_cp")
+        client, _key = create_client("by-realm client", "privacyidea-cp")
         # Capture series ids up front: the bulk delete+commit expires the ORM rows.
         target_series = self._device(client.id, "cornelius", realm=self.realm1).series_id
         keep_series = self._device(client.id, "cornelius", realm="realm_other").series_id
@@ -447,14 +457,14 @@ class APIClientRememberedDevicesTestCase(MyApiTestCase):
         self.assertIsNotNone(RememberedDevice.query.filter_by(series_id=keep_series).first())
 
     def test_09_revoke_all_unknown_user_is_400(self):
-        client, _key = create_client("bad-user client", "windows_cp")
+        client, _key = create_client("bad-user client", "privacyidea-cp")
         res = self._revoke_all(client.id, user="ghost", realm=self.realm1)
         # A user that does not resolve cannot be targeted by login.
         self.assertEqual(400, res.status_code, res)
 
     def test_09b_revoke_all_user_without_realm_is_400(self):
         # Filtering by user without a realm is ambiguous and must be rejected.
-        client, _key = create_client("user-no-realm client", "windows_cp")
+        client, _key = create_client("user-no-realm client", "privacyidea-cp")
         res = self._revoke_all(client.id, user="cornelius")
         self.assertEqual(400, res.status_code, res)
 
@@ -463,7 +473,7 @@ class APIClientRememberedDevicesTestCase(MyApiTestCase):
         self.assertEqual(404, res.status_code, res)
 
     def test_11_revoke_all_unknown_realm_is_400(self):
-        client, _key = create_client("unknown-realm client", "windows_cp")
+        client, _key = create_client("unknown-realm client", "privacyidea-cp")
         keep_series = self._device(client.id, "cornelius").series_id
         res = self._revoke_all(client.id, realm="nosuchrealm")
         # An unknown realm must be rejected, not silently widened to revoke-all.
@@ -480,8 +490,8 @@ class APIClientRememberedDevicesTestCase(MyApiTestCase):
         # Dedicated realms so the cross-client sweep only hits this test's rows.
         set_realm("xcrealm", [{"name": self.resolvername1}])
         set_realm("xcother", [{"name": self.resolvername1}])
-        client_a, _ = create_client("xc realm A", "windows_cp")
-        client_b, _ = create_client("xc realm B", "keycloak")
+        client_a, _ = create_client("xc realm A", "privacyidea-cp")
+        client_b, _ = create_client("xc realm B", "privacyidea-keycloak")
         a1 = self._device(client_a.id, "cornelius", realm="xcrealm").series_id
         b1 = self._device(client_b.id, "cornelius", realm="xcrealm").series_id
         other = self._device(client_a.id, "cornelius", realm="xcother").series_id
@@ -496,8 +506,8 @@ class APIClientRememberedDevicesTestCase(MyApiTestCase):
 
     def test_13_revoke_by_user_across_clients(self):
         set_realm("xcuser", [{"name": self.resolvername1}])
-        client_a, _ = create_client("xc user A", "windows_cp")
-        client_b, _ = create_client("xc user B", "keycloak")
+        client_a, _ = create_client("xc user A", "privacyidea-cp")
+        client_b, _ = create_client("xc user B", "privacyidea-keycloak")
         a = self._device(client_a.id, "cornelius", realm="xcuser").series_id
         b = self._device(client_b.id, "cornelius", realm="xcuser").series_id
         keep = self._device(client_a.id, "shadow", realm="xcuser").series_id
@@ -523,7 +533,7 @@ class APIClientRememberedDevicesTestCase(MyApiTestCase):
         # A remembered_device_revoke admin policy scoped to a different realm must block a
         # revoke targeting realm1 (the acting admin's realm restriction applies).
         set_realm("xcscope", [{"name": self.resolvername1}])
-        client, _ = create_client("scoped client", "windows_cp")
+        client, _ = create_client("scoped client", "privacyidea-cp")
         keep = self._device(client.id, "cornelius", realm=self.realm1).series_id
         set_policy("clients_scoped", scope=SCOPE.ADMIN,
                    action=PolicyAction.REMEMBERED_DEVICE_REVOKE, realm="xcscope")
@@ -540,7 +550,7 @@ class APIClientRememberedDevicesTestCase(MyApiTestCase):
         # the revoke is limited to the admin's allowed realms (here none apply, so
         # the realm1 device survives and nothing is revoked).
         set_realm("xcscope", [{"name": self.resolvername1}])
-        client, _ = create_client("scoped all client", "windows_cp")
+        client, _ = create_client("scoped all client", "privacyidea-cp")
         keep = self._device(client.id, "cornelius", realm=self.realm1).series_id
         set_policy("clients_scoped", scope=SCOPE.ADMIN,
                    action=PolicyAction.REMEMBERED_DEVICE_REVOKE, realm="xcscope")
@@ -554,7 +564,7 @@ class APIClientRememberedDevicesTestCase(MyApiTestCase):
 
     def test_18_revoke_single_respects_admin_realm_scope(self):
         set_realm("xcscope", [{"name": self.resolvername1}])
-        client, _ = create_client("scoped single client", "windows_cp")
+        client, _ = create_client("scoped single client", "privacyidea-cp")
         device = self._device(client.id, "cornelius", realm=self.realm1)
         set_policy("clients_scoped", scope=SCOPE.ADMIN,
                    action=PolicyAction.REMEMBERED_DEVICE_REVOKE, realm="xcscope")
@@ -569,7 +579,7 @@ class APIClientRememberedDevicesTestCase(MyApiTestCase):
 
     def test_19_revoke_by_user_respects_admin_realm_scope(self):
         set_realm("xcscope", [{"name": self.resolvername1}])
-        client, _ = create_client("scoped user client", "windows_cp")
+        client, _ = create_client("scoped user client", "privacyidea-cp")
         keep = self._device(client.id, "cornelius", realm=self.realm1).series_id
         set_policy("clients_scoped", scope=SCOPE.ADMIN,
                    action=PolicyAction.REMEMBERED_DEVICE_REVOKE, realm="xcscope")
@@ -585,7 +595,7 @@ class APIClientRememberedDevicesTestCase(MyApiTestCase):
         # scoped to one realm must not expose devices bound to other realms on the
         # same client (the read-side analogue of the revoke realm scoping).
         set_realm("xclist", [{"name": self.resolvername1}])
-        client, _ = create_client("scoped list client", "windows_cp")
+        client, _ = create_client("scoped list client", "privacyidea-cp")
         in_scope = self._device(client.id, "cornelius", realm="xclist").device_id
         out_scope = self._device(client.id, "cornelius", realm=self.realm1).device_id
         set_policy("clients_list_scoped", scope=SCOPE.ADMIN,

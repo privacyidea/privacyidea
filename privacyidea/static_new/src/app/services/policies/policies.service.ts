@@ -155,33 +155,12 @@ export const HANDLE_MISSING_DATA_OPTIONS: HandleMissingDataOption[] = [
   { key: "condition_is_true", label: $localize`Condition is true` }
 ];
 
-// 3. User Agent Options - key is the parsed application identifier (typically the prefix before "/") from the User-Agent header
+// 3. User Agent Options - the picker entries now come from the shared integration
+// catalog (see services/integrations/integrations.service.ts and issue #5705):
+// Integration.policy_value is the key, Integration.label is the label.
 export interface UserAgentOption {
   key: string;
   label: string;
-}
-
-export const USER_AGENT_OPTIONS: UserAgentOption[] = [
-  { key: "privacyidea-cp", label: "Credential Provider" },
-  { key: "privacyIDEA-Keycloak", label: "Keycloak" },
-  { key: "entraid-via-keycloak", label: "EntraID via Keycloak" },
-  { key: "PrivacyIDEA-ADFS", label: "AD FS" },
-  { key: "simpleSAMLphp", label: "SimpleSAMLphp" },
-  { key: "PAM", label: "PAM OTP & Push" },
-  { key: "pam-passkey", label: "PAM Passkey" },
-  { key: "privacyIDEA-Shibboleth", label: "Shibboleth" },
-  { key: "privacyidea-nextcloud", label: "Nextcloud" },
-  { key: "FreeRADIUS", label: "FreeRADIUS" },
-  { key: "privacyIDEA-LDAP-Proxy", label: "LDAP Proxy" },
-  { key: "privacyIDEA-App", label: "privacyIDEA Authenticator" },
-  { key: "privacyIDEA-WebUI", label: "privacyIDEA WebUI" }
-];
-
-export function getUserAgentLabel(identifier: string): string {
-  // The server matches user agents case-insensitively, so a hand-typed identifier
-  // still gets the label of the preset it means
-  const normalized = identifier.toLowerCase();
-  return USER_AGENT_OPTIONS.find((o) => o.key.toLowerCase() === normalized)?.label ?? identifier;
 }
 
 export interface PolicyServiceInterface {

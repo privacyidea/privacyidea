@@ -77,3 +77,35 @@ class RSSTest(MyApiTestCase):
                             "Community News': 'https://community.privacyidea.org/c/news.rss")
                 mock_log.assert_called_with(expected)
         delete_policy("rssfeed")
+
+
+class IntegrationsTest(MyApiTestCase):
+
+    def test_01_admin_gets_the_catalog(self):
+        with self.app.test_request_context('/info/integrations',
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            integrations = res.json.get("result").get("value")
+            by_id = {entry["id"]: entry for entry in integrations}
+            self.assertIn("privacyidea-cp", by_id)
+            cp = by_id["privacyidea-cp"]
+            self.assertEqual("Windows Credential Provider", cp["label"])
+            self.assertTrue(cp["api_client"])
+            self.assertTrue(cp["dashboard"])
+            self.assertIn("privacyidea-cp", cp["agent_names"])
+            # The Authenticator App is never an API-client client_type.
+            self.assertFalse(by_id["privacyidea-app"]["api_client"])
+            # Policy-condition-only integrations have no dashboard row.
+            self.assertFalse(by_id["privacyidea-webui"]["dashboard"])
+
+    def test_02_self_service_user_gets_an_empty_list(self):
+        self.setUp_user_realms()
+        self.authenticate_selfservice_user()
+        with self.app.test_request_context('/info/integrations',
+                                           method='GET',
+                                           headers={'Authorization': self.at_user}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            self.assertEqual([], res.json.get("result").get("value"))

@@ -87,6 +87,7 @@ export class MockContentService implements ContentServiceInterface {
   onExternalPrivacyIdea = computed(() => this.matchesPath(ROUTE_PATHS.EXTERNAL_SERVICES_PRIVACYIDEA));
   onExternalTokenGroups = computed(() => this.matchesPath(ROUTE_PATHS.EXTERNAL_SERVICES_TOKENGROUPS));
   onExternalServiceIds = computed(() => this.matchesPath(ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS));
+  onApiClients = computed(() => this.matchesPath(ROUTE_PATHS.POLICIES_API_CLIENTS));
   onUsersResolvers = computed(() => this.matchesPath(ROUTE_PATHS.USERS_RESOLVERS));
   onConfigurationPeriodicTasks = computed(() => this.matchesPath(ROUTE_PATHS.CONFIGURATION_PERIODIC_TASKS));
   onSubscription = computed(() => this.matchesPath(ROUTE_PATHS.SUBSCRIPTION));

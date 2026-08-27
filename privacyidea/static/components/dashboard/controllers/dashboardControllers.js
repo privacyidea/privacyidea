@@ -99,38 +99,15 @@ myApp.controller("dashboardController", ["ConfigFactory", "TokenFactory",
             "expired": gettext("Expired: the subscription's end date has passed.")
         }[status.subscription] || "";
     };
-    // Display name per plugin application key. The privacyidea- prefix is
-    // dropped — context already makes it obvious. Unknown keys fall back to
-    // the raw application identifier in the view.
-    $scope.pluginDisplayName = {
-        "privacyidea": "privacyIDEA Server",
-        "privacyidea-app": "privacyIDEA Authenticator App",
-        "freeradius": "FreeRADIUS",
-        "privacyidea-nextcloud": "Nextcloud",
-        "privacyidea-cp": "Windows Credential Provider",
-        "pam": "PAM OTP & Push",
-        "pam-passkey": "PAM Passkey",
-        "privacyidea-keycloak": "Keycloak",
-        "entraid-via-keycloak": "EntraID Integration",
-        "privacyidea-adfs": "AD FS",
-        "privacyidea-shibboleth": "Shibboleth"
-    };
-    // Slug of each component's product landing page. The page itself is picked
-    // by language and subscription state, see componentLinkTarget below.
+    // Display name per plugin application key, and the slug of each component's
+    // product landing page (the page itself is picked by language and subscription
+    // state, see componentLinkTarget below). Both come from the shared ecosystem
+    // catalog (see issue #5705) - only the server itself is seeded here, since it is
+    // not one of the catalog's integrations. Unknown keys fall back to the raw
+    // application identifier in the view.
+    $scope.pluginDisplayName = {"privacyidea": "privacyIDEA Server"};
     var PTL_BASE_URL = "https://netknights.it/plugin-traffic-light";
-    $scope.componentPtlSlug = {
-        "privacyidea": "privacyidea-server",
-        "privacyidea-app": "privacyidea-authenticator-app",
-        "freeradius": "privacyidea-freeradius",
-        "privacyidea-nextcloud": "privacyidea-nextcloud",
-        "privacyidea-cp": "privacyidea-windows-credential-provider",
-        "pam": "privacyidea-pam-otp-push",
-        "pam-passkey": "privacyidea-pam-passkey",
-        "privacyidea-keycloak": "privacyidea-keycloak",
-        "entraid-via-keycloak": "privacyidea-entraid-integration",
-        "privacyidea-adfs": "privacyidea-adfs",
-        "privacyidea-shibboleth": "privacyidea-shibboleth"
-    };
+    $scope.componentPtlSlug = {"privacyidea": "privacyidea-server"};
     // Build the landing page URL for a row as
     // <base>/<language>/<sla|non-sla|expired>/<component slug>. Only German is
     // served in its own language, every other locale gets the English page.
@@ -293,29 +270,59 @@ myApp.controller("dashboardController", ["ConfigFactory", "TokenFactory",
     };
 
 
-     // Hierarchy of the subscription overview. The server is the base component
-     // and is rendered on its own at the top. Everything else is a "use case",
-     // some grouped under sub-labels. Labels are pure headers; plugin nodes pull
-     // their status from the backend by `application`. This tree is flattened
-     // into rows with an `indent` level for rendering (see buildSubscriptionRows).
-     var SUBSCRIPTION_SECTIONS = [
-         {kind: "label", label: gettext("Use Cases"), children: [
-             {kind: "plugin", application: "privacyidea-app"},
-             {kind: "plugin", application: "freeradius"},
-             {kind: "plugin", application: "privacyidea-nextcloud"},
-             {kind: "label", label: gettext("System Login"), children: [
-                 {kind: "plugin", application: "privacyidea-cp"},
-                 {kind: "plugin", application: "pam"},
-                 {kind: "plugin", application: "pam-passkey"}
-             ]},
-             {kind: "label", label: gettext("Single Sign On"), children: [
-                 {kind: "plugin", application: "privacyidea-keycloak"},
-                 {kind: "plugin", application: "entraid-via-keycloak"},
-                 {kind: "plugin", application: "privacyidea-adfs"},
-                 {kind: "plugin", application: "privacyidea-shibboleth"}
-             ]}
-         ]}
-     ];
+     // Hierarchy of the subscription overview: each distinct section becomes a
+     // top-level group (no further nesting - "System Login" and "Single Sign On" are
+     // peers of "Use Cases", not children of it). Rebuilt from the shared ecosystem
+     // catalog once InfoFactory.getIntegrations resolves, see below. Labels are pure
+     // headers; plugin nodes pull their status from the backend by `application`. This
+     // tree is flattened into rows with an `indent` level for rendering (see
+     // buildSubscriptionRows).
+     var SUBSCRIPTION_SECTIONS = [];
+
+     // Display label per dashboard section key. The catalog's `section` is a stable key
+     // (e.g. "system_login"), not display text - the backend has no access to the
+     // admin's UI locale, so each frontend translates it locally.
+     function sectionLabel(section) {
+         return {
+             "use_cases": gettext("Use Cases"),
+             "system_login": gettext("System Login"),
+             "single_sign_on": gettext("Single Sign On")
+         }[section] || section;
+     }
+
+     // The subscription status entries from the most recent SubscriptionFactory.getStatus
+     // call, kept so the rows can be rebuilt once SUBSCRIPTION_SECTIONS itself arrives
+     // (the two fetches are independent and may resolve in either order).
+     var lastSubscriptionEntries = null;
+
+     function refreshSubscriptionRows() {
+         if (lastSubscriptionEntries !== null) {
+             $scope.subscriptionRows = buildSubscriptionRows(lastSubscriptionEntries);
+         }
+     }
+
+     if (AuthFactory.checkRight('managesubscription')) {
+         InfoFactory.getIntegrations(function (integrations) {
+             var bySection = {};
+             var sectionOrder = [];
+             angular.forEach(integrations, function (integration) {
+                 if (!integration.dashboard) { return; }
+                 $scope.pluginDisplayName[integration.id] = integration.label;
+                 if (integration.ptl_slug) {
+                     $scope.componentPtlSlug[integration.id] = integration.ptl_slug;
+                 }
+                 if (!bySection[integration.section]) {
+                     bySection[integration.section] = [];
+                     sectionOrder.push(integration.section);
+                 }
+                 bySection[integration.section].push({kind: "plugin", application: integration.id});
+             });
+             SUBSCRIPTION_SECTIONS = sectionOrder.map(function (section) {
+                 return {kind: "label", label: sectionLabel(section), children: bySection[section]};
+             });
+             refreshSubscriptionRows();
+         });
+     }
 
      // Default status for a section plugin the backend did not report.
      function unusedStatus(application) {
@@ -359,9 +366,11 @@ myApp.controller("dashboardController", ["ConfigFactory", "TokenFactory",
      $scope.getPluginStatus = function() {
         $scope.pluginStatusLoadState = null;
         SubscriptionFactory.getStatus(function (data) {
-            $scope.subscriptionRows = buildSubscriptionRows(data.result.value);
+            lastSubscriptionEntries = data.result.value;
             $scope.pluginStatusLoadState = "ok";
+            refreshSubscriptionRows();
         }, function () {
+            lastSubscriptionEntries = null;
             $scope.subscriptionRows = [];
             $scope.pluginStatusLoadState = "error";
         });

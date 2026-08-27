@@ -42,6 +42,7 @@ from privacyidea.lib.config import get_from_config, set_privacyidea_config
 from privacyidea.lib.crypto import Sign
 from privacyidea.lib.error import SubscriptionError
 from privacyidea.lib.framework import get_app_config_value
+from privacyidea.lib.integrations import DASHBOARD_INTEGRATIONS, PRODUCTS, resolve_product
 from privacyidea.lib.token import get_tokens
 from .log import log_with
 from .utils import get_plugin_info_from_useragent, get_version_number, is_true
@@ -69,147 +70,44 @@ SIGN_FORMAT = """{application}
 {level}
 """
 
-# Single source of truth for subscription applications. Each entry maps an
-# application name to its configuration:
-#   ``free_users``   the free-tier limit (users with active tokens) allowed
-#                    without a subscription file.
-#   ``user_agents``  optional list of additional client user-agents that are
-#                    *metered* against this application's subscription, so
-#                    several distinct clients (e.g. privacyidea-pam and
-#                    pam-passkey) can share one subscription. The application key
-#                    itself is always implicitly one of its own user-agents.
-#   ``clients``      optional list of client user-agents that belong to this
-#                    application but are never metered. Their use is recorded and
-#                    the dashboard shows them under this application's
-#                    subscription, but they can always authenticate.
-# The flat lookups below (:data:`APPLICATIONS`, :data:`METERED_APPLICATIONS`,
-# :data:`SUBSCRIPTION_OWNERS`) are derived from this dict, so attaching a client to
-# a subscription is a single edit here.
-SUBSCRIPTIONS = {
-    "demo_application": {"free_users": 0},
-    "owncloud": {"free_users": 50},
-    "privacyidea-nextcloud": {"free_users": 50},
-    "privacyidea-ldap-proxy": {"free_users": 50},
-    "privacyidea-cp": {"free_users": 50},
-    # The PAM module identifies itself as "PAM"; privacyidea-pam stays an accepted alias
-    # of the same subscription for anything that sends the older name.
-    # "pam-privacyidea" is the name the first module is going to send, listed ahead of
-    # the rename so that a new module works with an older server as well.
-    "privacyidea-pam": {"free_users": 10000, "user_agents": ["pam", "pam-privacyidea", "pam-passkey"]},
-    "privacyidea-shibboleth": {"free_users": 10000},
-    "privacyidea-adfs": {"free_users": 50},
-    "privacyidea-keycloak": {"free_users": 10000, "user_agents": ["entraid-via-keycloak"]},
-    "simplesamlphp": {"free_users": 10000},
-    "privacyidea-simplesamlphp": {"free_users": 10000},
-    # The Authenticator App is free to use: it is recorded and reported on the
-    # dashboard, but its authentications never count against a subscription.
-    "privacyidea authenticator": {"free_users": 10, "clients": ["privacyidea-app"]},
-    # FreeRADIUS is covered by the server's own subscription and counts against the
-    # same free tier, so RADIUS traffic is metered exactly like the server itself.
-    "privacyidea": {"free_users": 50, "user_agents": ["FreeRADIUS"]},
-}
+# The application/integration/product vocabulary itself now lives in
+# :mod:`privacyidea.lib.integrations` (see issue #5705) — this module only owns the
+# licensing logic, reading names and limits from there. The names below are kept as thin,
+# derived views for existing callers.
 
-# Application and user-agent names are matched case-insensitively: clients spell their
-# user-agent however they like, so the lookups derived from SUBSCRIPTIONS are keyed and
-# valued lower-case, and every name entering them is lower-cased first.
+# Free-tier limit per subscription product. A product with ``free_users`` of None (e.g.
+# the Authenticator App) is never counted or enforced against a limit at all.
+APPLICATIONS = {product.id: product.free_users for product in PRODUCTS.values()}
 
-# Free-tier limit per subscription application. Derived from SUBSCRIPTIONS.
-APPLICATIONS = {application.lower(): config["free_users"]
-                for application, config in SUBSCRIPTIONS.items()}
+get_metered_application = resolve_product
+get_subscription_owner = resolve_product
 
-# Maps a client user-agent to the application whose subscription and free tier it is
-# metered against. Only the ``user_agents`` lists: a client missing here is never
-# metered, whatever its application's free tier says.
-METERED_APPLICATIONS = {user_agent.lower(): application.lower()
-                        for application, config in SUBSCRIPTIONS.items()
-                        for user_agent in config.get("user_agents", [])}
-
-# Maps a client user-agent to the application whose subscription record describes it, for
-# the dashboard overview. Unlike METERED_APPLICATIONS this includes the unmetered
-# ``clients``, so an unmetered client still shows its application's subscription.
-SUBSCRIPTION_OWNERS = {**METERED_APPLICATIONS,
-                       **{client.lower(): application.lower()
-                          for application, config in SUBSCRIPTIONS.items()
-                          for client in config.get("clients", [])}}
-
-
-def get_metered_application(plugin_name: str) -> str:
-    """
-    Map a client user-agent to the application whose subscription and free tier its
-    authentications are counted against, following :data:`METERED_APPLICATIONS`. The
-    result is always lower-case: a metered client resolves to its application, any other
-    name is returned unchanged apart from the case — and a name that is no application
-    of its own is not metered at all (see :func:`check_subscription`).
-
-    :param plugin_name: the plugin name parsed from a request's user-agent
-    :return: the application name to meter this client against
-    """
-    name = (plugin_name or "").lower()
-    return METERED_APPLICATIONS.get(name, name)
-
-
-def get_subscription_owner(plugin_name: str) -> str:
-    """
-    Map a client user-agent to the application whose subscription record describes it,
-    following :data:`SUBSCRIPTION_OWNERS`. This is what the dashboard overview shows and
-    it says nothing about metering: an unmetered client such as the Authenticator App
-    still reports the state of its application's subscription.
-
-    :param plugin_name: the client user-agent name
-    :return: the application name whose subscription describes this client
-    """
-    name = (plugin_name or "").lower()
-    return SUBSCRIPTION_OWNERS.get(name, name)
-
-
-# Client user-agents shown on the dashboard subscription overview, each as its
-# own row. These are the names the clients really send. A client that belongs to
-# another application (e.g. pam-passkey, entraid-via-keycloak, or the Authenticator
-# App) keeps its own row but reports that application's subscription, whether or not
-# it is metered against it (see :func:`get_plugin_subscription_status`). The frontend
-# groups these into sections and provides the display names (see the section
-# layout and ``pluginDisplayName`` in dashboardControllers.js), so this list is
-# just the set of rows the backend reports a status for; order is not
-# significant.
-DASHBOARD_PLUGINS = [
-    "privacyidea-app",
-    "freeradius",
-    "privacyidea-nextcloud",
-    "privacyidea-cp",
-    "pam",
-    "pam-passkey",
-    "privacyidea-keycloak",
-    "entraid-via-keycloak",
-    "privacyidea-adfs",
-    "privacyidea-shibboleth",
-]
+# Client user-agents shown on the dashboard subscription overview, each as its own row,
+# in section-grouped order. See :data:`privacyidea.lib.integrations.DASHBOARD_INTEGRATIONS`.
+DASHBOARD_PLUGINS = [integration.id for integration in DASHBOARD_INTEGRATIONS]
 
 # A subscription within this many days of its end date is flagged "expiring".
 EXPIRING_THRESHOLD_DAYS = 60
 # A plugin seen within this many days counts as actively used.
 USAGE_RECENT_DAYS = 7
 
-# GitHub repository (``owner/repo``) hosting each dashboard client, used to look
-# up the latest released version. Keyed by the dashboard application/user-agent.
-# An unknown/unreachable repository or one without a published release simply
-# yields no "current version" (None) — e.g. FreeRADIUS currently has no release.
-GITHUB_REPOS = {
-    "privacyidea": "privacyidea/privacyidea",
-    "privacyidea-app": "privacyidea/pi-authenticator",
-    "privacyidea-cp": "privacyidea/privacyidea-credential-provider",
-    "pam": "privacyidea/privacyidea-pam",
-    "pam-passkey": "privacyidea/pam-passkey",
-    "privacyidea-keycloak": "privacyidea/keycloak-provider",
-    "entraid-via-keycloak": "privacyidea/keycloak-protocolmapper-entraid",
-    "privacyidea-adfs": "privacyidea/adfs-provider",
-    "privacyidea-shibboleth": "privacyidea/shibboleth-plugin",
-    "freeradius": "privacyidea/FreeRADIUS",
-    "privacyidea-nextcloud": "privacyidea/privacyidea-nextcloud-app",
-}
+# GitHub repository (``owner/repo``) hosting each dashboard integration, used to look up
+# the latest released version. An unknown/unreachable repository or one without a
+# published release simply yields no "current version" (None) — e.g. FreeRADIUS
+# currently has no release. The server itself is added separately: it is not a dashboard
+# integration, but still has its own GitHub-hosted releases.
+GITHUB_REPOS = {"privacyidea": "privacyidea/privacyidea",
+                **{integration.id: integration.github_repo
+                   for integration in DASHBOARD_INTEGRATIONS
+                   if integration.github_repo}}
 # These clients are distributed via OS packages / app stores rather than a
 # downloadable GitHub release, so report their latest version + date but no
-# link to the release page.
-RELEASE_LINK_SUPPRESSED = {"privacyidea", "privacyidea-app"}
+# link to the release page. Keyed like GITHUB_REPOS: the server by its own id (a hardcoded
+# special case, it is not a dashboard integration), every other entry by the integration.
+RELEASE_LINK_SUPPRESSED = {"privacyidea"} | {
+    integration.id for integration in DASHBOARD_INTEGRATIONS
+    if integration.release_link_suppressed
+}
 # How long to cache the latest-release lookups, and the per-request timeout.
 GITHUB_VERSION_TTL = datetime.timedelta(hours=6)
 # A lookup that produced no release at all is kept for much less time: that is what a
@@ -621,20 +519,24 @@ def get_server_subscription_status(token_users: int | None = None) -> dict:
             "versions": [get_version_number().split("+")[0]]}
 
 
-def subscription_status(component="privacyidea", tokentype=None):
+def subscription_status(component: str = "privacyidea") -> int:
     """
     Return the status of the subscription
 
-    0: Token count <= 50
-    1: Token count > 50, no subscription at all
+    0: Token count within the free tier, or this product is never enforced
+    1: Token count over the free tier, no subscription at all
     2: subscription expired
     3: subscription OK
 
     :return: subscription state
     """
     component = get_metered_application(component)
-    token_count = get_tokens(assigned=True, active=True, count=True, tokentype=tokentype, all_nodes=True)
-    if token_count <= APPLICATIONS.get(component, 50):
+    free_users = APPLICATIONS.get(component, 50)
+    if free_users is None:
+        # This product is never counted or enforced, see privacyidea.lib.integrations.
+        return 0
+    token_count = get_tokens(assigned=True, active=True, count=True, all_nodes=True)
+    if token_count <= free_users:
         return 0
 
     subscriptions = get_subscription(component)
@@ -817,7 +719,9 @@ def check_subscription(application, max_free_subscriptions=None):
     # free limit. A client that is not metered resolves to a name that is no application
     # of its own, falls through below and may always authenticate.
     application = get_metered_application(application)
-    if application in APPLICATIONS:
+    # A product with no free-tier limit (APPLICATIONS[application] is None) is never
+    # counted or enforced at all, see privacyidea.lib.integrations.
+    if application in APPLICATIONS and APPLICATIONS[application] is not None:
         # date_till is nullable. A record without an end date says nothing about being
         # valid, so it is ignored here: the free tier then applies exactly as it would
         # without a subscription, rather than blocking the client outright.
