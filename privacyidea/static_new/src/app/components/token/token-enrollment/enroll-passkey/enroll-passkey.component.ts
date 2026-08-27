@@ -148,7 +148,7 @@ export class EnrollPasskeyComponent extends EnrollTokenBase<PasskeyEnrollmentDat
     EnrollmentStepResult
   > {
     const { enrollmentInitData, enrollmentResponse } = args;
-    const showCancelButton = !enrollmentInitData.rollover && this.authService.actionAllowed("delete");
+    const canCancel = !enrollmentInitData.rollover && this.authService.actionAllowed("delete");
 
     this.reopenDialog.set(async () => {
       if (this.currentStepOneRef && this.dialogService.isDialogOpen(this.currentStepOneRef)) {
@@ -161,8 +161,8 @@ export class EnrollPasskeyComponent extends EnrollTokenBase<PasskeyEnrollmentDat
       component: TokenEnrollmentFirstStepDialogComponent,
       data: {
         enrollmentResponse,
-        showCancelButton,
-        showCloseButton: !showCancelButton,
+        showCancelButton: canCancel,
+        showCloseButton: !canCancel,
         registrationFailed: this.registrationFailed.asReadonly(),
         onRetry: () => void this.attemptRegistration(args)
       }

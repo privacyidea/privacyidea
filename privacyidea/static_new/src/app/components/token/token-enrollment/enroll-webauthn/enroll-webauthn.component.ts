@@ -202,7 +202,7 @@ export class EnrollWebauthnComponent extends EnrollTokenBase<WebAuthnEnrollmentD
     EnrollmentStepResult
   > {
     const { webauthnEnrollmentData, webauthnEnrollmentResponse } = args;
-    const showCancelButton = !webauthnEnrollmentData.rollover && this.authService.actionAllowed("delete");
+    const canCancel = !webauthnEnrollmentData.rollover && this.authService.actionAllowed("delete");
 
     this.reopenDialog.set(async () => {
       if (this.stepOneDialogRef && this.dialogService.isDialogOpen(this.stepOneDialogRef)) {
@@ -215,8 +215,8 @@ export class EnrollWebauthnComponent extends EnrollTokenBase<WebAuthnEnrollmentD
       component: TokenEnrollmentFirstStepDialogComponent,
       data: {
         enrollmentResponse: webauthnEnrollmentResponse,
-        showCancelButton,
-        showCloseButton: !showCancelButton,
+        showCancelButton: canCancel,
+        showCloseButton: !canCancel,
         registrationFailed: this.registrationFailed.asReadonly(),
         onRetry: () => void this.attemptRegistration(args)
       }

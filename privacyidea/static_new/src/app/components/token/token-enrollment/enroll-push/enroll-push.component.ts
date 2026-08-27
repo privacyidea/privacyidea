@@ -132,6 +132,8 @@ export class EnrollPushComponent extends EnrollTokenBase<PushEnrollmentData> {
     AbstractDialogComponent<TokenEnrollmentFirstStepDialogData, EnrollmentStepResult>,
     EnrollmentStepResult
   > {
+    const canCancel = !rollover && this.authService.actionAllowed("delete");
+
     this.reopenDialog.set(async () => {
       if (this.firstStepDialogRef && this.dialogService.isDialogOpen(this.firstStepDialogRef)) {
         return null;
@@ -143,8 +145,9 @@ export class EnrollPushComponent extends EnrollTokenBase<PushEnrollmentData> {
       component: TokenEnrollmentFirstStepDialogComponent,
       data: {
         enrollmentResponse,
-        showCancelButton: !rollover && this.authService.actionAllowed("delete"),
-        showCloseButton: true
+        showCancelButton: canCancel,
+        showCloseButton: true,
+        cancelConfirmationMessage: $localize`When canceling the rollout the token will be deleted even when the QR code was scanned.`
       }
     });
   }
