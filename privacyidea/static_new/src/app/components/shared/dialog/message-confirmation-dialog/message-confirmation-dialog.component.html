@@ -18,7 +18,6 @@
 -->
 <app-dialog-wrapper
   (actionTriggered)="onAction($event)"
-  (wrapperClose)="close()"
   [actions]="actions"
   [title]="data.title">
   <p class="max-width-600">{{ data.message }}</p>

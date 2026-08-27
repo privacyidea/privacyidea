@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, computed, inject, Signal } from "@angular/core";
-import { MatDialogContent, MatDialogState } from "@angular/material/dialog";
+import { MatDialogContent } from "@angular/material/dialog";
 import { EnrollmentResponse } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
 import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
@@ -110,7 +110,7 @@ export class TokenEnrollmentFirstStepDialogComponent extends AbstractDialogCompo
       })
       .afterClosed()
       .subscribe((confirmed) => {
-        if (confirmed && this.dialogRef.getState() === MatDialogState.OPEN) {
+        if (confirmed) {
           this.deleteIncompleteToken(tokenSerial);
         }
       });

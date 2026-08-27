@@ -27,6 +27,7 @@ describe("DialogWrapperComponent", () => {
   let component: DialogWrapperComponent<DialogAction[]>;
   let fixture: ComponentFixture<DialogWrapperComponent<DialogAction[]>>;
   let nativeElement: HTMLElement;
+  let dialogRef: MockMatDialogRef<unknown, unknown>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -37,6 +38,7 @@ describe("DialogWrapperComponent", () => {
     fixture = TestBed.createComponent(DialogWrapperComponent<DialogAction[]>);
     component = fixture.componentInstance;
     nativeElement = fixture.nativeElement;
+    dialogRef = TestBed.inject(MatDialogRef) as unknown as MockMatDialogRef<unknown, unknown>;
     fixture.componentRef.setInput("showCloseButton", true);
     fixture.componentRef.setInput("title", "Test Title");
     fixture.componentRef.setInput("actions", [
@@ -50,6 +52,45 @@ describe("DialogWrapperComponent", () => {
 
   it("should create", () => {
     expect(component).toBeTruthy();
+  });
+
+  it("shows the close button without the caller opting in", () => {
+    const defaultFixture = TestBed.createComponent(DialogWrapperComponent<DialogAction[]>);
+    defaultFixture.componentRef.setInput("title", "Defaults");
+    defaultFixture.detectChanges();
+
+    const buttons: HTMLButtonElement[] = Array.from(
+      defaultFixture.nativeElement.querySelectorAll(".pi-dialog-footer button")
+    );
+    expect(buttons.map((button) => button.textContent?.trim())).toEqual(["Cancel"]);
+  });
+
+  it("hides the close button when the caller opts out", () => {
+    fixture.componentRef.setInput("showCloseButton", false);
+    fixture.detectChanges();
+
+    const buttons: HTMLButtonElement[] = Array.from(nativeElement.querySelectorAll(".pi-dialog-footer button"));
+    expect(buttons.map((button) => button.textContent?.trim())).not.toContain("Cancel");
+  });
+
+  it("closes the dialog itself by default", () => {
+    const buttons: HTMLButtonElement[] = Array.from(nativeElement.querySelectorAll(".pi-dialog-footer button"));
+    buttons[0].click();
+
+    expect(dialogRef.close).toHaveBeenCalled();
+  });
+
+  it("hands the close over to the parent when handleCloseExternally is set", () => {
+    const wrapperClose = jest.fn();
+    component.wrapperClose.subscribe(wrapperClose);
+    fixture.componentRef.setInput("handleCloseExternally", true);
+    fixture.detectChanges();
+
+    const buttons: HTMLButtonElement[] = Array.from(nativeElement.querySelectorAll(".pi-dialog-footer button"));
+    buttons[0].click();
+
+    expect(wrapperClose).toHaveBeenCalled();
+    expect(dialogRef.close).not.toHaveBeenCalled();
   });
 
   it("should display the title", () => {

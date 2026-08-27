@@ -23,18 +23,18 @@ import { PiResponse } from "@app/app.component";
 import { EnrollmentResponse, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { PushApiPayloadMapper, PushEnrollmentData } from "@app/mappers/token-api-payload/push-token-api-payload.mapper";
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
+import { EnrollmentArgs, EnrollTokenBase } from "@components/token/token-enrollment/enroll-token-base";
 import {
   TokenEnrollmentFirstStepDialogComponent,
   TokenEnrollmentFirstStepDialogData
 } from "@components/token/token-enrollment/token-enrollment-firtst-step-dialog/token-enrollment-first-step-dialog.component";
-import { EnrollmentArgs, EnrollTokenBase } from "@components/token/token-enrollment/enroll-token-base";
 import {
   ENROLLMENT_CANCELLED,
   EnrollmentStepResult
 } from "@components/token/token-enrollment/token-enrollment.constants";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
-import { TokenService, TokenServiceInterface, Tokens } from "@services/token/token.service";
+import { Tokens, TokenService, TokenServiceInterface } from "@services/token/token.service";
 import { lastValueFrom } from "rxjs";
 
 @Component({
@@ -90,8 +90,10 @@ export class EnrollPushComponent extends EnrollTokenBase<PushEnrollmentData> {
   ): Promise<EnrollmentStepResult> {
     const dialogRef = this._openStepOneDialog(initResponse, rollover);
     this.firstStepDialogRef = dialogRef;
+    const dialogClosed = lastValueFrom(dialogRef.afterClosed());
 
     let lastPollResponse: PiResponse<Tokens> | undefined;
+    let pollingFailed = false;
     this.tokenService.pollTokenRolloutState({ tokenSerial: initResponse.detail.serial, initDelay }).subscribe({
       next: (pollResponse) => {
         lastPollResponse = pollResponse;
@@ -100,16 +102,22 @@ export class EnrollPushComponent extends EnrollTokenBase<PushEnrollmentData> {
           dialogRef.close();
         }
       },
-      error: () => dialogRef.close()
+      error: () => {
+        pollingFailed = true;
+        dialogRef.close();
+      }
     });
 
-    const dialogResult = await lastValueFrom(dialogRef.afterClosed());
+    const dialogResult = await dialogClosed;
     this.tokenService.stopPolling();
     this.pollResponse.set(undefined);
 
     if (dialogResult === ENROLLMENT_CANCELLED) {
       this.reopenDialog.set(undefined);
       return ENROLLMENT_CANCELLED;
+    }
+    if (pollingFailed) {
+      return null;
     }
 
     const rolloutState = lastPollResponse?.result?.value?.tokens[0].rollout_state ?? initResponse.detail.rollout_state;

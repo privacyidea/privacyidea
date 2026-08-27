@@ -28,11 +28,11 @@ import {
   WebauthnFinalizeData
 } from "@app/mappers/token-api-payload/webauthn-token-api-payload.mapper";
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
+import { EnrollmentArgs, EnrollTokenBase } from "@components/token/token-enrollment/enroll-token-base";
 import {
   TokenEnrollmentFirstStepDialogComponent,
   TokenEnrollmentFirstStepDialogData
 } from "@components/token/token-enrollment/token-enrollment-firtst-step-dialog/token-enrollment-first-step-dialog.component";
-import { EnrollmentArgs, EnrollTokenBase } from "@components/token/token-enrollment/enroll-token-base";
 import {
   ENROLLMENT_CANCELLED,
   EnrollmentStepResult
@@ -105,9 +105,18 @@ export class EnrollWebauthnComponent extends EnrollTokenBase<WebAuthnEnrollmentD
       return null;
     }
 
+    const webauthnEnrollmentResponse = enrollmentResponse as WebauthnEnrollmentResponse;
+    const registerRequest = webauthnEnrollmentResponse.detail.webAuthnRegisterRequest;
+    if (!registerRequest?.transaction_id || !webauthnEnrollmentResponse.detail.serial) {
+      this.notificationService.warning(
+        $localize`Invalid transaction ID or serial number in enrollment detail for finalization.`
+      );
+      return null;
+    }
+
     return this.runRegistration({
       webauthnEnrollmentData: enrollmentData as WebAuthnEnrollmentData,
-      webauthnEnrollmentResponse: enrollmentResponse as WebauthnEnrollmentResponse
+      webauthnEnrollmentResponse
     });
   }
 
@@ -116,9 +125,10 @@ export class EnrollWebauthnComponent extends EnrollTokenBase<WebAuthnEnrollmentD
     webauthnEnrollmentResponse: WebauthnEnrollmentResponse;
   }): Promise<EnrollmentStepResult> {
     const dialogRef = this.openStepOneDialog(args);
+    const dialogClosed = lastValueFrom(dialogRef.afterClosed());
     void this.attemptRegistration(args);
 
-    const dialogResult = await lastValueFrom(dialogRef.afterClosed());
+    const dialogResult = await dialogClosed;
     if (dialogResult === ENROLLMENT_CANCELLED) {
       this.reopenDialog.set(undefined);
       return ENROLLMENT_CANCELLED;

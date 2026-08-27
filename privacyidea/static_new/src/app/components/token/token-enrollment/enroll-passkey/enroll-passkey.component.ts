@@ -31,11 +31,11 @@ import {
   PasskeyFinalizeData
 } from "@app/mappers/token-api-payload/passkey-token-api-payload.mapper";
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
+import { EnrollmentArgs, EnrollTokenBase } from "@components/token/token-enrollment/enroll-token-base";
 import {
   TokenEnrollmentFirstStepDialogComponent,
   TokenEnrollmentFirstStepDialogData
 } from "@components/token/token-enrollment/token-enrollment-firtst-step-dialog/token-enrollment-first-step-dialog.component";
-import { EnrollmentArgs, EnrollTokenBase } from "@components/token/token-enrollment/enroll-token-base";
 import {
   ENROLLMENT_CANCELLED,
   EnrollmentStepResult
@@ -113,9 +113,10 @@ export class EnrollPasskeyComponent extends EnrollTokenBase<PasskeyEnrollmentDat
     enrollmentResponse: EnrollmentResponse;
   }): Promise<EnrollmentStepResult> {
     const dialogRef = this.openStepOneDialog(args);
+    const dialogClosed = lastValueFrom(dialogRef.afterClosed());
     void this.attemptRegistration(args);
 
-    const dialogResult = await lastValueFrom(dialogRef.afterClosed());
+    const dialogResult = await dialogClosed;
     if (dialogResult === ENROLLMENT_CANCELLED) {
       this.reopenDialog.set(undefined);
       return ENROLLMENT_CANCELLED;

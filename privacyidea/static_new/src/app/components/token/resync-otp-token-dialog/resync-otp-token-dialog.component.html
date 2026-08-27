@@ -20,8 +20,7 @@
 <app-dialog-wrapper
   [title]="data ? 'Token Resync Successful' : 'Token Resync Failed'"
   cancelButtonLabel="Close"
-  i18n-cancelButtonLabel="@@closeButtonLabel"
-  (wrapperClose)="close()">
+  i18n-cancelButtonLabel="@@closeButtonLabel">
   <mat-dialog-content>
     <div class="text-center">
       @if (data) {

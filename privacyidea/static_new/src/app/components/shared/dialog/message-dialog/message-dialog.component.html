@@ -19,8 +19,7 @@
 
 <app-dialog-wrapper
   [title]="data.title || 'Information'"
-  [icon]="data.icon"
-  (wrapperClose)="close()">
+  [icon]="data.icon">
   <mat-dialog-content>
     <div class="text-center">
       @for (text of data.texts; track text) {

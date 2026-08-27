@@ -35,7 +35,6 @@ export interface ToggleActiveDialogData {
     <app-dialog-wrapper
       title="(De)activate Selected Tokens"
       i18n-title
-      (wrapperClose)="close()"
       [actions]="actions"
       (actionTriggered)="onAction($event)">
       <div class="margin-right-16">
