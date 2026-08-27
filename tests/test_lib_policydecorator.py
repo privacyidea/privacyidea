@@ -56,6 +56,12 @@ class LibPolicyTestCase(MyTestCase):
     Test all the internal libpolicy decorators
     """
 
+    def setUp(self):
+        super().setUp()
+        # test_12_authcache builds authcache rows directly, which is not where
+        # the cached authentications live when Redis holds them
+        self.pin_to_database("auth")
+
     @staticmethod
     def fake_check_otp(dummy, pin, user=None, options=None):
         return pin == "FAKE"
