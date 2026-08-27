@@ -1,0 +1,40 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+@if (apiClientService.lastIssuedKey(); as issuedKey) {
+  <div class="inline-warning issued-key-panel">
+    <div class="issued-key-header">
+      <span i18n>API key for "{{ issuedKey.displayName }}"</span>
+      <button
+        (click)="apiClientService.dismissIssuedKey()"
+        aria-label="Dismiss"
+        i18n-aria-label
+        mat-icon-button>
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+    <p i18n>
+      Copy this key now. For security reasons it is shown only once and cannot be retrieved again. If you lose it,
+      rotate the key to generate a new one.
+    </p>
+    <div class="issued-key-value">
+      <code>{{ issuedKey.apiKey }}</code>
+      <app-copy-button [copyText]="issuedKey.apiKey" />
+    </div>
+  </div>
+}

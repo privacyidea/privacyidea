@@ -19,28 +19,7 @@
 <div
   appScrollToTop
   class="api-clients-container">
-  @if (apiClientService.lastIssuedKey(); as issuedKey) {
-    <div class="inline-warning issued-key-panel">
-      <div class="issued-key-header">
-        <span i18n>API key for "{{ issuedKey.displayName }}"</span>
-        <button
-          (click)="apiClientService.dismissIssuedKey()"
-          aria-label="Dismiss"
-          i18n-aria-label
-          mat-icon-button>
-          <mat-icon>close</mat-icon>
-        </button>
-      </div>
-      <p i18n>
-        Copy this key now. For security reasons it is shown only once and cannot be retrieved again. If you lose it,
-        rotate the key to generate a new one.
-      </p>
-      <div class="issued-key-value">
-        <code>{{ issuedKey.apiKey }}</code>
-        <app-copy-button [copyText]="issuedKey.apiKey" />
-      </div>
-    </div>
-  }
+  <app-api-client-issued-key-banner />
 
   @if (tableState.showTable()) {
     <div class="filter-paginator-container">

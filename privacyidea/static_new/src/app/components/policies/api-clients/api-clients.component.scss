@@ -16,29 +16,6 @@
   width: 100%;
 }
 
-.issued-key-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.issued-key-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-weight: 600;
-}
-
-.issued-key-value {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-
-  code {
-    overflow-wrap: anywhere;
-  }
-}
-
 .status-badge {
   border-radius: var(--border-radius);
   padding: 2px 8px;

@@ -27,8 +27,10 @@ import { MatSelectModule } from "@angular/material/select";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { ActivatedRoute, Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
+import { ApiClientIssuedKeyBannerComponent } from "@components/policies/api-clients/api-client-issued-key-banner/api-client-issued-key-banner.component";
 import { ApiClientRememberedDevicesComponent } from "@components/policies/api-clients/api-client-remembered-devices/api-client-remembered-devices.component";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import {
   ApiClient,
@@ -64,7 +66,8 @@ const EMPTY_API_CLIENT_FORM: ApiClientFormModel = {
     MatButtonModule,
     MatIconModule,
     ClearableInputComponent,
-    ApiClientRememberedDevicesComponent
+    ApiClientRememberedDevicesComponent,
+    ApiClientIssuedKeyBannerComponent
   ],
   templateUrl: "./api-client-edit.component.html",
   styleUrl: "./api-client-edit.component.scss"
@@ -164,6 +167,32 @@ export class ApiClientEditComponent implements OnDestroy {
     } catch {
       return false;
     }
+  }
+
+  rotateKey(): void {
+    const id = this.editClientId();
+    if (!id) return;
+    const displayName = this.apiClientModel().display_name;
+    this.dialogService
+      .openDialog({
+        component: SimpleConfirmationDialogComponent,
+        data: {
+          title: $localize`Rotate API Key`,
+          items: [displayName],
+          itemType: "api-client",
+          confirmAction: {
+            label: $localize`Rotate key`,
+            value: true,
+            type: "destruct"
+          }
+        }
+      })
+      .afterClosed()
+      .subscribe((result) => {
+        if (result) {
+          void this.apiClientService.rotateClient(id, displayName).catch(() => undefined);
+        }
+      });
   }
 
   onCancel(): void {

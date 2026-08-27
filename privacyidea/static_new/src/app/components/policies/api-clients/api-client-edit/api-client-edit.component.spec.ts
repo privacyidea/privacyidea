@@ -39,8 +39,9 @@ import {
   MockDialogService,
   MockIntegrationsService
 } from "@testing/mock-services";
+import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
 import { MockPendingChangesService } from "@testing/mock-services/mock-pending-changes-service";
-import { of } from "rxjs";
+import { of, Subject } from "rxjs";
 import { ApiClientEditComponent } from "./api-client-edit.component";
 
 describe("ApiClientEditComponent", () => {
@@ -71,6 +72,49 @@ describe("ApiClientEditComponent", () => {
     }).compileComponents();
 
     apiClientServiceMock = TestBed.inject(ApiClientService) as unknown as MockApiClientService;
+    pendingChangesService = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
+    dialogService = TestBed.inject(DialogService) as unknown as MockDialogService;
+    router = TestBed.inject(Router);
+    jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
+
+    fixture = TestBed.createComponent(ApiClientEditComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+  }
+
+  async function setupEditMode() {
+    apiClientServiceMock = new MockApiClientService();
+    apiClientServiceMock.apiClients.set([
+      {
+        id: "abc",
+        display_name: "Existing Client",
+        client_type: "keycloak",
+        key_id: "key1",
+        status: "active",
+        created_at: "2026-01-01T00:00:00Z",
+        last_used_at: null
+      }
+    ]);
+
+    await TestBed.configureTestingModule({
+      imports: [ApiClientEditComponent],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideRouter([]),
+        {
+          provide: ActivatedRoute,
+          useValue: { paramMap: of(convertToParamMap({ id: "abc" })) }
+        },
+        { provide: ApiClientService, useValue: apiClientServiceMock },
+        { provide: AuthService, useClass: MockAuthService },
+        { provide: ContentService, useClass: MockContentService },
+        { provide: IntegrationsService, useClass: MockIntegrationsService },
+        { provide: PendingChangesService, useClass: MockPendingChangesService },
+        { provide: DialogService, useClass: MockDialogService }
+      ]
+    }).compileComponents();
+
     pendingChangesService = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
     dialogService = TestBed.inject(DialogService) as unknown as MockDialogService;
     router = TestBed.inject(Router);
@@ -112,45 +156,7 @@ describe("ApiClientEditComponent", () => {
   });
 
   it("should load the existing client and call updateClient in edit mode", async () => {
-    apiClientServiceMock = new MockApiClientService();
-    apiClientServiceMock.apiClients.set([
-      {
-        id: "abc",
-        display_name: "Existing Client",
-        client_type: "keycloak",
-        key_id: "key1",
-        status: "active",
-        created_at: "2026-01-01T00:00:00Z",
-        last_used_at: null
-      }
-    ]);
-
-    await TestBed.configureTestingModule({
-      imports: [ApiClientEditComponent],
-      providers: [
-        provideHttpClient(),
-        provideHttpClientTesting(),
-        provideRouter([]),
-        {
-          provide: ActivatedRoute,
-          useValue: { paramMap: of(convertToParamMap({ id: "abc" })) }
-        },
-        { provide: ApiClientService, useValue: apiClientServiceMock },
-        { provide: AuthService, useClass: MockAuthService },
-        { provide: ContentService, useClass: MockContentService },
-        { provide: IntegrationsService, useClass: MockIntegrationsService },
-        { provide: PendingChangesService, useClass: MockPendingChangesService },
-        { provide: DialogService, useClass: MockDialogService }
-      ]
-    }).compileComponents();
-
-    pendingChangesService = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
-    router = TestBed.inject(Router);
-    jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
-
-    fixture = TestBed.createComponent(ApiClientEditComponent);
-    component = fixture.componentInstance;
-    fixture.detectChanges();
+    await setupEditMode();
 
     expect(component.isEditMode()).toBe(true);
     expect(component.apiClientModel().display_name).toBe("Existing Client");
@@ -164,6 +170,40 @@ describe("ApiClientEditComponent", () => {
       status: "suspended"
     });
     expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.POLICIES_API_CLIENTS);
+  });
+
+  describe("rotateKey", () => {
+    let confirmClosed: Subject<boolean>;
+
+    beforeEach(async () => {
+      await setupEditMode();
+      confirmClosed = new Subject();
+      const dialogRefMock = new MockMatDialogRef();
+      dialogRefMock.afterClosed.mockReturnValue(confirmClosed);
+      dialogService.openDialog.mockReturnValue(dialogRefMock);
+    });
+
+    it("should rotate the key after confirmation", () => {
+      component.rotateKey();
+
+      expect(dialogService.openDialog).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ items: ["Existing Client"] })
+        })
+      );
+      confirmClosed.next(true);
+      confirmClosed.complete();
+
+      expect(apiClientServiceMock.rotateClient).toHaveBeenCalledWith("abc", "Existing Client");
+    });
+
+    it("should not rotate the key when the confirmation is cancelled", () => {
+      component.rotateKey();
+      confirmClosed.next(false);
+      confirmClosed.complete();
+
+      expect(apiClientServiceMock.rotateClient).not.toHaveBeenCalled();
+    });
   });
 
   describe("onCancel", () => {

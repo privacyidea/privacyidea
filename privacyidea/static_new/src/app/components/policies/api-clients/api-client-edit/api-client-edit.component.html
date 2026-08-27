@@ -33,7 +33,7 @@
     }
 
     <div class="header-row">
-      <div class="action-buttons">
+      <div class="action-buttons flex-row gap-8">
         <button
           (click)="onCancel()"
           class="action-button-secondary button-width-s"
@@ -53,14 +53,25 @@
             <span i18n>Save</span>
           </button>
         }
+        @if (isEditMode() && authService.actionAllowed("api_client_rotate")) {
+          <button
+            (click)="rotateKey()"
+            class="action-button-secondary button-width-s"
+            mat-stroked-button>
+            <mat-icon>refresh</mat-icon>
+            <span i18n>Rotate key</span>
+          </button>
+        }
       </div>
     </div>
 
+    <app-api-client-issued-key-banner />
+
     <div class="api-client-form">
-      <div class="flex-column gap-16">
+      <div class="flex-row gap-16">
         <mat-form-field
           appearance="fill"
-          class="input-width-l margin-bottom-16">
+          class="input-width-l">
           <mat-label i18n>Display name</mat-label>
           <app-clearable-input
             (clearButtonClick)="apiClientModel.update(m => ({...m, display_name: ''}))"
@@ -78,23 +89,39 @@
           }
         </mat-form-field>
 
-        <mat-form-field
-          appearance="fill"
-          class="input-width-l">
-          <mat-label i18n>Client type</mat-label>
-          <mat-select [formField]="apiClientForm.client_type">
-            @for (option of clientTypeOptions(); track option.id) {
-              <mat-option [value]="option.id">{{ option.label }}</mat-option>
+        @if (isEditMode()) {
+          <!-- A disabled mat-select can lose its displayed value if the option list
+               (fetched from the integrations catalog) has not arrived yet on first
+               paint. Since this value is immutable in edit mode anyway, show it as
+               plain read-only text instead of a select. -->
+          <mat-form-field
+            appearance="fill"
+            class="input-width-l">
+            <mat-label i18n>Client type</mat-label>
+            <input
+              [value]="integrationsService.labelFor(apiClientModel().client_type)"
+              disabled
+              matInput />
+          </mat-form-field>
+        } @else {
+          <mat-form-field
+            appearance="fill"
+            class="input-width-l">
+            <mat-label i18n>Client type</mat-label>
+            <mat-select [formField]="apiClientForm.client_type">
+              @for (option of clientTypeOptions(); track option.id) {
+                <mat-option [value]="option.id">{{ option.label }}</mat-option>
+              }
+            </mat-select>
+            <mat-hint i18n>The kind of integration this client represents. This cannot be changed later.</mat-hint>
+            @if (
+              apiClientForm.client_type().errors().some(e => e.kind === 'required') &&
+              apiClientForm.client_type().touched()
+            ) {
+              <mat-error i18n>Client type is <strong>required</strong>.</mat-error>
             }
-          </mat-select>
-          <mat-hint i18n>The kind of integration this client represents. This cannot be changed later.</mat-hint>
-          @if (
-            apiClientForm.client_type().errors().some(e => e.kind === 'required') &&
-            apiClientForm.client_type().touched()
-          ) {
-            <mat-error i18n>Client type is <strong>required</strong>.</mat-error>
-          }
-        </mat-form-field>
+          </mat-form-field>
+        }
 
         @if (isEditMode() && authService.actionAllowed("api_client_edit")) {
           <mat-form-field
