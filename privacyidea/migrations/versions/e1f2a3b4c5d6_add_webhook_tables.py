@@ -18,6 +18,27 @@ downgrade is trivially safe.
 No deduplication: two handlers posting to the same URL produce two webhook
 objects (safe, behaviour-preserving).
 
+Safety net
+----------
+privacyIDEA runs migrations with ``isolation_level="AUTOCOMMIT"`` (see
+``migrations/env.py``), so there is no enclosing transaction that could roll
+back a half-finished data migration. Before touching any row, this migration
+therefore writes a JSON snapshot of exactly the rows it is about to read and
+modify (the ``eventhandleroption`` rows of every WebHook handler) to
+
+    <snapshot dir>/privacyidea-e1f2a3b4c5d6-<timestamp>.json
+
+The directory is chosen in this order:
+
+1. ``$PRIVACYIDEA_MIGRATION_SNAPSHOT_DIR``
+2. privacyIDEA's backup directory (``/var/lib/privacyidea/backup``, the default
+   of ``pi-manage backup create``) if it already exists and is writable, so
+   snapshots land where administrators already look for recovery material
+3. the system temp directory
+
+If anything goes wrong the exact pre-migration state can be restored with
+:func:`restore_snapshot` without having to downgrade or replay a full dump.
+
 See https://github.com/privacyidea/privacyidea/issues/5751
 
 Revision ID: e1f2a3b4c5d6
@@ -25,14 +46,32 @@ Revises: d9e0f1a2b3c4
 Create Date: 2026-08-20 00:00:00.000000
 
 """
+import datetime
+import json
 import logging
+import os
 import re
+import tempfile
 
 from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.exc import OperationalError, ProgrammingError
 
 log = logging.getLogger("alembic.runtime.migration")
+
+#: Environment variable that overrides where the pre-migration snapshot is written.
+SNAPSHOT_DIR_ENV = "PRIVACYIDEA_MIGRATION_SNAPSHOT_DIR"
+
+#: Set this to "1"/"true"/"yes" to skip writing the snapshot entirely.
+SNAPSHOT_DISABLE_ENV = "PRIVACYIDEA_MIGRATION_NO_SNAPSHOT"
+
+#: Default backup directory of ``pi-manage backup create`` (see
+#: privacyidea/cli/pimanage/backup.py). Used as the snapshot location when it
+#: already exists, so snapshots sit next to regular backups.
+PI_BACKUP_DIR = "/var/lib/privacyidea/backup"
+
+#: Columns of ``eventhandleroption`` captured in the snapshot.
+_OPTION_COLUMNS = ("id", "eventhandler_id", "Key", "Value", "Type", "Description")
 
 # revision identifiers, used by Alembic.
 revision = 'e1f2a3b4c5d6'
@@ -87,6 +126,180 @@ _webhook = sa.table(
 def _sanitize_name(name):
     """Turn a handler name into a safe identifier fragment (ASCII, max 40 chars)."""
     return re.sub(r'[^a-zA-Z0-9_-]', '_', name)[:40]
+
+
+# ---------------------------------------------------------------------------
+# Pre-migration snapshot ("automatic backup")
+# ---------------------------------------------------------------------------
+
+def _snapshot_enabled():
+    return os.environ.get(SNAPSHOT_DISABLE_ENV, "").strip().lower() not in (
+        "1", "true", "yes", "on")
+
+
+def _snapshot_directory():
+    """
+    Where to put the snapshot.
+
+    Prefers an explicit override, then privacyIDEA's regular backup directory
+    (so snapshots sit next to ``pi-manage backup create`` output and are found
+    by administrators looking for recovery material), then the temp dir.
+    """
+    override = os.environ.get(SNAPSHOT_DIR_ENV)
+    if override:
+        return override
+    if os.path.isdir(PI_BACKUP_DIR) and os.access(PI_BACKUP_DIR, os.W_OK):
+        return PI_BACKUP_DIR
+    return tempfile.gettempdir()
+
+
+def _collect_snapshot(conn):
+    """
+    Return a JSON-serialisable snapshot of every row this migration may modify.
+
+    That is the complete set of ``eventhandleroption`` rows belonging to
+    handlers with ``handlermodule == 'WebHook'``. The ``webhook`` /
+    ``webhookheader`` tables are not captured: they are created by this very
+    migration, so their pre-migration state is "empty" by definition.
+    """
+    handler_ids = [
+        row[0] for row in conn.execute(
+            sa.select(_eventhandler.c.id)
+            .where(_eventhandler.c.handlermodule == 'WebHook')
+        ).fetchall()
+    ]
+
+    options = []
+    if handler_ids:
+        rows = conn.execute(
+            sa.select(*(_eventhandleroption.c[name] for name in _OPTION_COLUMNS))
+            .where(_eventhandleroption.c.eventhandler_id.in_(handler_ids))
+        ).fetchall()
+        for row in rows:
+            options.append(dict(zip(_OPTION_COLUMNS, row)))
+
+    return {
+        "revision": revision,
+        "created": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        "handler_ids": handler_ids,
+        "eventhandleroption": options,
+    }
+
+
+def _write_snapshot(conn):
+    """
+    Write a pre-migration snapshot and return its path (or None).
+
+    Never raises: a failure to write the safety net must not abort an
+    otherwise healthy upgrade.
+    """
+    if not _snapshot_enabled():
+        log.info(f"Snapshot disabled via {SNAPSHOT_DISABLE_ENV} — skipping.")
+        return None
+
+    try:
+        snapshot = _collect_snapshot(conn)
+    except (OperationalError, ProgrammingError) as ex:
+        log.warning(f"Could not collect pre-migration snapshot: {ex}")
+        return None
+
+    if not snapshot["handler_ids"]:
+        # Nothing will be modified, so there is nothing worth snapshotting.
+        return None
+
+    directory = _snapshot_directory()
+    timestamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    path = os.path.join(directory, f"privacyidea-{revision}-{timestamp}.json")
+
+    try:
+        os.makedirs(directory, exist_ok=True)
+        with open(path, "w", encoding="utf-8") as fh:
+            json.dump(snapshot, fh, indent=2, ensure_ascii=False, default=str)
+        os.chmod(path, 0o600)
+    except OSError as ex:
+        log.warning(
+            f"Could not write pre-migration snapshot to {path}: {ex}. "
+            f"The migration continues; it is additive and idempotent, so a "
+            f"failed run can simply be repeated with 'pi-manage db upgrade'."
+        )
+        return None
+
+    print(f"Pre-migration snapshot written to {path}")
+    log.info(
+        f"Snapshot of {len(snapshot['eventhandleroption'])} eventhandleroption "
+        f"row(s) for {len(snapshot['handler_ids'])} WebHook handler(s): {path}"
+    )
+    return path
+
+
+def restore_snapshot(conn, path):
+    """
+    Restore the exact pre-migration state captured by :func:`_write_snapshot`.
+
+    Use this instead of ``downgrade()`` when a migration run failed partway
+    through and the database is in a mixed state::
+
+        from privacyidea.migrations.versions.e1f2a3b4c5d6_add_webhook_tables \\
+            import restore_snapshot
+        restore_snapshot(db.engine.connect(), "/tmp/privacyidea-e1f2a3b4c5d6-...json")
+
+    The webhook tables themselves are left in place — they are empty of
+    migration-created rows afterwards and harmless. Re-running
+    ``pi-manage db upgrade`` after a restore is safe.
+
+    :return: the number of ``eventhandleroption`` rows restored
+    """
+    with open(path, encoding="utf-8") as fh:
+        snapshot = json.load(fh)
+
+    if snapshot.get("revision") != revision:
+        raise ValueError(
+            f"Snapshot {path} belongs to revision {snapshot.get('revision')!r}, "
+            f"not {revision!r}."
+        )
+
+    handler_ids = snapshot.get("handler_ids") or []
+    options = snapshot.get("eventhandleroption") or []
+
+    # 1. Drop the webhook objects this migration created.
+    if sa.inspect(conn).has_table("webhook"):
+        identifiers = [
+            opt["Value"] for opt in _migration_created_options(conn, handler_ids)
+        ]
+        if identifiers:
+            conn.execute(
+                _webhook.delete().where(_webhook.c.identifier.in_(identifiers))
+            )
+
+    # 2. Reset eventhandleroption for the affected handlers to the snapshot state.
+    if handler_ids:
+        conn.execute(
+            _eventhandleroption.delete().where(
+                _eventhandleroption.c.eventhandler_id.in_(handler_ids)
+            )
+        )
+    for opt in options:
+        conn.execute(_eventhandleroption.insert().values(**opt))
+
+    # Deliberately no conn.commit() here: migrations run under AUTOCOMMIT, where
+    # every statement is already durable. Committing an ORM-owned connection
+    # (as in the test suite) would break the surrounding session, so leave
+    # transaction control to the caller.
+    print(f"Restored {len(options)} eventhandleroption row(s) from {path}")
+    return len(options)
+
+
+def _migration_created_options(conn, handler_ids):
+    """Return the current 'webhook' option rows of the given handlers."""
+    if not handler_ids:
+        return []
+    rows = conn.execute(
+        sa.select(_eventhandleroption.c.Value).where(
+            _eventhandleroption.c.eventhandler_id.in_(handler_ids),
+            _eventhandleroption.c.Key == 'webhook',
+        )
+    ).fetchall()
+    return [{"Value": row[0]} for row in rows]
 
 
 # ---------------------------------------------------------------------------
@@ -268,9 +481,44 @@ def _run_data_migration(conn):
 # ---------------------------------------------------------------------------
 
 def upgrade():
+    conn = op.get_bind()
+
+    # Capture the rows the data migration will touch *before* creating any
+    # table, so the snapshot reflects a pristine pre-migration state.
+    snapshot_path = _write_snapshot(conn)
+
     _create_webhook_table()
     _create_webhookheader_table()
-    _run_data_migration(op.get_bind())
+
+    try:
+        _run_data_migration(conn)
+    except Exception:
+        print("\n" + "=" * 72)
+        print("The webhook data migration FAILED.")
+        if snapshot_path:
+            print(
+                f"\nThe pre-migration state of the affected eventhandleroption rows\n"
+                f"was saved to:\n    {snapshot_path}\n"
+                f"\nRecovery options, in order of preference:\n"
+                f"  1. Re-run 'pi-manage db upgrade'. This migration is idempotent\n"
+                f"     and additive, so it resumes where it stopped.\n"
+                f"  2. Restore just this migration's changes:\n"
+                f"       from privacyidea.migrations.versions."
+                f"e1f2a3b4c5d6_add_webhook_tables \\\n"
+                f"           import restore_snapshot\n"
+                f"       restore_snapshot(conn, {snapshot_path!r})\n"
+                f"  3. Only as a last resort, restore a full backup made with\n"
+                f"     'pi-manage backup create' -- note this also reverts every\n"
+                f"     other migration applied in this run.\n"
+            )
+        else:
+            print(
+                "\nNo pre-migration snapshot was written. Re-run\n"
+                "'pi-manage db upgrade' -- this migration is idempotent and\n"
+                "additive, so it resumes where it stopped.\n"
+            )
+        print("=" * 72 + "\n")
+        raise
 
 
 def downgrade():

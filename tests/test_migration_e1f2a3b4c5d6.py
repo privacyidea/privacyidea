@@ -1,10 +1,12 @@
 """
-Tests for the data migration script f2a3b4c5d6e7 that converts inline
-WebHook event handler options to first-class webhook objects.
+Tests for migration e1f2a3b4c5d6, which creates the webhook tables and
+converts inline WebHook event handler options to first-class webhook objects.
 
-See https://github.com/privacyidea/privacyidea/issues/5751 (step 1.3)
+See https://github.com/privacyidea/privacyidea/issues/5751 (steps 1.1-1.3)
 """
-from sqlalchemy import select
+import json
+import os
+import tempfile
 
 from privacyidea.models import db
 from privacyidea.models.event import EventHandler, EventHandlerOption
@@ -46,7 +48,7 @@ def _create_webhook_handler(name, url, content_type="application/json",
 
 class MigrateInlineWebhooksTestCase(MyTestCase):
     """
-    Test the _run_data_migration function from the f2a3b4c5d6e7 migration.
+    Test the _run_data_migration function from the e1f2a3b4c5d6 migration.
     """
 
     def _cleanup(self):
@@ -60,18 +62,27 @@ class MigrateInlineWebhooksTestCase(MyTestCase):
     def setUp(self):
         super().setUp()
         self._cleanup()
+        self.tmpdir = tempfile.mkdtemp(prefix="pi-snapshot-test-")
+        os.environ["PRIVACYIDEA_MIGRATION_SNAPSHOT_DIR"] = self.tmpdir
+        os.environ.pop("PRIVACYIDEA_MIGRATION_NO_SNAPSHOT", None)
 
     def tearDown(self):
+        os.environ.pop("PRIVACYIDEA_MIGRATION_SNAPSHOT_DIR", None)
+        os.environ.pop("PRIVACYIDEA_MIGRATION_NO_SNAPSHOT", None)
         self._cleanup()
         super().tearDown()
 
+    def _write_snapshot(self):
+        from privacyidea.migrations.versions.e1f2a3b4c5d6_add_webhook_tables import (
+            _write_snapshot
+        )
+        return _write_snapshot(db.session.connection())
+
     def _run_migration(self):
-        """Run the migration function under test."""
         from privacyidea.migrations.versions.e1f2a3b4c5d6_add_webhook_tables import (
             _run_data_migration
         )
-        conn = db.session.connection()
-        result = _run_data_migration(conn)
+        result = _run_data_migration(db.session.connection())
         db.session.commit()
         return result
 
@@ -291,3 +302,200 @@ class MigrateInlineWebhooksTestCase(MyTestCase):
 
         wh = Webhook.query.first()
         self.assertEqual(wh.content_type, "application/json")
+
+
+class WebhookMigrationSnapshotTestCase(MyTestCase):
+    """
+    Test the pre-migration snapshot ("automatic backup") and its restore path.
+
+    privacyIDEA runs migrations under AUTOCOMMIT (see migrations/env.py), so a
+    failed data migration cannot be rolled back by the database. The snapshot
+    captures the exact pre-migration state of every eventhandleroption row the
+    migration may touch.
+    """
+
+    def _cleanup(self):
+        for wh in Webhook.query.all():
+            wh.delete()
+        for eh in EventHandler.query.filter_by(handlermodule="WebHook").all():
+            db.session.delete(eh)
+        db.session.commit()
+
+    def setUp(self):
+        super().setUp()
+        self._cleanup()
+        self.tmpdir = tempfile.mkdtemp(prefix="pi-snapshot-test-")
+        os.environ["PRIVACYIDEA_MIGRATION_SNAPSHOT_DIR"] = self.tmpdir
+        os.environ.pop("PRIVACYIDEA_MIGRATION_NO_SNAPSHOT", None)
+
+    def tearDown(self):
+        os.environ.pop("PRIVACYIDEA_MIGRATION_SNAPSHOT_DIR", None)
+        os.environ.pop("PRIVACYIDEA_MIGRATION_NO_SNAPSHOT", None)
+        self._cleanup()
+        super().tearDown()
+
+    def _write_snapshot(self):
+        from privacyidea.migrations.versions.e1f2a3b4c5d6_add_webhook_tables import (
+            _write_snapshot
+        )
+        return _write_snapshot(db.session.connection())
+
+    def _run_migration(self):
+        from privacyidea.migrations.versions.e1f2a3b4c5d6_add_webhook_tables import (
+            _run_data_migration
+        )
+        result = _run_data_migration(db.session.connection())
+        db.session.commit()
+        return result
+
+    # ------------------------------------------------------------------
+    # Snapshot creation
+    # ------------------------------------------------------------------
+
+    def test_no_snapshot_when_nothing_to_migrate(self):
+        """With no WebHook handlers there is nothing worth snapshotting."""
+        self.assertIsNone(self._write_snapshot())
+
+    def test_snapshot_captures_handler_options(self):
+        """The snapshot contains every option row of every WebHook handler."""
+        eh = _create_webhook_handler(
+            name="Slack", url="https://hooks.slack.com/x",
+            content_type="application/json")
+
+        path = self._write_snapshot()
+        self.assertIsNotNone(path)
+        self.assertTrue(os.path.exists(path))
+
+        with open(path, encoding="utf-8") as fh:
+            snapshot = json.load(fh)
+
+        self.assertEqual(snapshot["revision"], "e1f2a3b4c5d6")
+        self.assertEqual(snapshot["handler_ids"], [eh.id])
+
+        keys = {opt["Key"] for opt in snapshot["eventhandleroption"]}
+        self.assertEqual(keys, {"URL", "content_type", "data", "replace"})
+        # No "webhook" option yet - this is the pre-migration state.
+        self.assertNotIn("webhook", keys)
+
+    def test_snapshot_file_is_owner_only(self):
+        """The snapshot may contain endpoint URLs, so restrict its permissions."""
+        _create_webhook_handler(name="Slack", url="https://hooks.slack.com/x")
+        path = self._write_snapshot()
+        self.assertEqual(os.stat(path).st_mode & 0o777, 0o600)
+
+    def test_snapshot_can_be_disabled(self):
+        """PRIVACYIDEA_MIGRATION_NO_SNAPSHOT=1 skips snapshot creation."""
+        _create_webhook_handler(name="Slack", url="https://hooks.slack.com/x")
+        os.environ["PRIVACYIDEA_MIGRATION_NO_SNAPSHOT"] = "1"
+        self.assertIsNone(self._write_snapshot())
+
+    def test_unwritable_directory_does_not_break_migration(self):
+        """A snapshot failure must never abort an otherwise healthy upgrade."""
+        _create_webhook_handler(name="Slack", url="https://hooks.slack.com/x")
+        os.environ["PRIVACYIDEA_MIGRATION_SNAPSHOT_DIR"] = "/proc/definitely/not/writable"
+
+        self.assertIsNone(self._write_snapshot())
+        # The data migration itself still works.
+        self.assertEqual(self._run_migration(), 1)
+
+    # ------------------------------------------------------------------
+    # Snapshot directory selection (alignment with pi-manage backup)
+    # ------------------------------------------------------------------
+
+    def test_env_var_wins_over_everything(self):
+        """An explicit PRIVACYIDEA_MIGRATION_SNAPSHOT_DIR always takes priority."""
+        from privacyidea.migrations.versions.e1f2a3b4c5d6_add_webhook_tables import (
+            _snapshot_directory
+        )
+        os.environ["PRIVACYIDEA_MIGRATION_SNAPSHOT_DIR"] = self.tmpdir
+        self.assertEqual(_snapshot_directory(), self.tmpdir)
+
+    def test_falls_back_to_pi_backup_dir_when_available(self):
+        """Without an override, snapshots go next to 'pi-manage backup create' output."""
+        import privacyidea.migrations.versions.e1f2a3b4c5d6_add_webhook_tables as mig
+
+        os.environ.pop("PRIVACYIDEA_MIGRATION_SNAPSHOT_DIR", None)
+        original = mig.PI_BACKUP_DIR
+        try:
+            # Point the "pi-manage backup" dir at a real, writable directory.
+            mig.PI_BACKUP_DIR = self.tmpdir
+            self.assertEqual(mig._snapshot_directory(), self.tmpdir)
+        finally:
+            mig.PI_BACKUP_DIR = original
+
+    def test_falls_back_to_tempdir_when_backup_dir_missing(self):
+        """On a system without /var/lib/privacyidea/backup, use the temp dir."""
+        import privacyidea.migrations.versions.e1f2a3b4c5d6_add_webhook_tables as mig
+
+        os.environ.pop("PRIVACYIDEA_MIGRATION_SNAPSHOT_DIR", None)
+        original = mig.PI_BACKUP_DIR
+        try:
+            mig.PI_BACKUP_DIR = "/nonexistent/privacyidea/backup"
+            self.assertEqual(mig._snapshot_directory(), tempfile.gettempdir())
+        finally:
+            mig.PI_BACKUP_DIR = original
+
+    # ------------------------------------------------------------------
+    # Restore
+    # ------------------------------------------------------------------
+
+    def test_restore_undoes_the_migration(self):
+        """Restoring the snapshot returns the DB to its exact pre-migration state."""
+        from privacyidea.migrations.versions.e1f2a3b4c5d6_add_webhook_tables import (
+            restore_snapshot
+        )
+        eh = _create_webhook_handler(
+            name="Slack", url="https://hooks.slack.com/x",
+            content_type="application/json")
+
+        before = {
+            (o.Key, o.Value)
+            for o in EventHandlerOption.query.filter_by(eventhandler_id=eh.id).all()
+        }
+
+        path = self._write_snapshot()
+        self.assertEqual(self._run_migration(), 1)
+        self.assertEqual(Webhook.query.count(), 1)
+
+        restore_snapshot(db.session.connection(), path)
+        db.session.commit()
+        db.session.expire_all()
+
+        after = {
+            (o.Key, o.Value)
+            for o in EventHandlerOption.query.filter_by(eventhandler_id=eh.id).all()
+        }
+        self.assertEqual(before, after)
+        # The migration-created webhook object is gone again.
+        self.assertEqual(Webhook.query.count(), 0)
+
+    def test_migration_is_replayable_after_restore(self):
+        """After a restore, re-running the migration produces the same result."""
+        from privacyidea.migrations.versions.e1f2a3b4c5d6_add_webhook_tables import (
+            restore_snapshot
+        )
+        _create_webhook_handler(name="Slack", url="https://hooks.slack.com/x")
+
+        path = self._write_snapshot()
+        self._run_migration()
+        identifier_first = Webhook.query.first().identifier
+
+        restore_snapshot(db.session.connection(), path)
+        db.session.commit()
+        db.session.expire_all()
+
+        self.assertEqual(self._run_migration(), 1)
+        self.assertEqual(Webhook.query.first().identifier, identifier_first)
+
+    def test_restore_rejects_foreign_snapshot(self):
+        """A snapshot from a different revision must not be applied."""
+        from privacyidea.migrations.versions.e1f2a3b4c5d6_add_webhook_tables import (
+            restore_snapshot
+        )
+        path = os.path.join(self.tmpdir, "foreign.json")
+        with open(path, "w", encoding="utf-8") as fh:
+            json.dump({"revision": "deadbeef1234", "handler_ids": [],
+                       "eventhandleroption": []}, fh)
+
+        with self.assertRaises(ValueError):
+            restore_snapshot(db.session.connection(), path)
