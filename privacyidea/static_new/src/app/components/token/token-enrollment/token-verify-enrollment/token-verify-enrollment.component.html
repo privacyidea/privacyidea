@@ -20,12 +20,10 @@
 <app-dialog-wrapper
   title="Verify Token Enrollment"
   i18n-title="@@tokenEnrollVerifyTitle"
-  [showCancelButton]="true"
   [actions]="dialogActions()"
   (actionTriggered)="onDialogAction($event)"
   cancelButtonLabel="Close"
-  i18n-cancelButtonLabel="@@closeButtonLabel"
-  (wrapperClose)="close()">
+  i18n-cancelButtonLabel="@@closeButtonLabel">
   <app-token-enrolled-text
     [serial]="responseDetails?.serial"
     [containerSerial]="enrollData?.containerSerial"
