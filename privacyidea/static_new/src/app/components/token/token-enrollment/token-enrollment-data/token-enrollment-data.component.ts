@@ -17,11 +17,12 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, inject, input, linkedSignal } from "@angular/core";
+import { Component, computed, inject, input, linkedSignal, output } from "@angular/core";
 import { MatButton } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 import {
   BaseApiPayloadMapper,
+  EnrollmentResponse,
   EnrollmentResponseDetail,
   TokenEnrollmentData
 } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
@@ -62,6 +63,7 @@ export class TokenEnrollmentDataComponent {
   enrolledInputData = input<EnrollmentResponseDetail>();
   enrollmentParameters = input<EnrollTokenArguments>();
   tokenType = input<string>(this.tokenService.selectedTokenType()?.key);
+  enrollmentResponseChange = output<EnrollmentResponse>();
 
   enrolledData = linkedSignal(() => this.enrolledInputData());
   protected readonly serial = computed(() => this.enrolledData()?.serial ?? "");
@@ -111,7 +113,8 @@ export class TokenEnrollmentDataComponent {
       return;
     }
     const newEnrollmentData: TokenEnrollmentData = {
-      ...(this.enrollmentParameters()?.data ?? ({} as TokenEnrollmentData))
+      ...(this.enrollmentParameters()?.data ?? ({} as TokenEnrollmentData)),
+      serial: this.serial() || this.enrollmentParameters()?.data?.serial
     };
     const mapper = this.enrollmentParameters()?.mapper ?? new BaseApiPayloadMapper();
 
@@ -119,6 +122,7 @@ export class TokenEnrollmentDataComponent {
       next: (response) => {
         if (response?.detail) {
           this.enrolledData.set(response.detail);
+          this.enrollmentResponseChange.emit(response);
         }
       }
     });

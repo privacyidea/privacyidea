@@ -43,6 +43,7 @@
 
   @if (data.showEnrollData !== false) {
     <app-token-enrollment-data
+      (enrollmentResponseChange)="onEnrollmentResponseChange($event)"
       [enrolledInputData]="responseDetails"
       [tokenType]="tokenType"
       [enrollmentParameters]="enrollParameters"></app-token-enrollment-data>

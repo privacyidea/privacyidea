@@ -71,6 +71,10 @@ export class TokenCompleteEnrollmentComponent extends AbstractDialogComponent<To
     }
   }
 
+  onEnrollmentResponseChange(response: EnrollmentResponse): void {
+    this.data.onEnrollmentResponseChange?.(response);
+  }
+
   enrollToken() {
     this.enrollParameters.data.serial = this.enrollDetails?.serial;
     if (this.clientPart()) {

@@ -129,7 +129,8 @@ export class TokenRolloverComponent extends AbstractDialogComponent<
       response: enrollmentResponse,
       enrollParameters: enrollmentArgs,
       tokenType: this.tokenService.selectedTokenType().key,
-      rollover: true
+      rollover: true,
+      onEnrollmentResponseChange: (response) => this.updateEnrollmentResponse(response)
     });
 
     // Complete rollover
@@ -141,6 +142,11 @@ export class TokenRolloverComponent extends AbstractDialogComponent<
     // two step enrollment + handles further enrollment steps (verify + success dialog)
     this.dialogRef.close();
     this.handleCompleteEnrollment(enrollmentResponse);
+  }
+
+  updateEnrollmentResponse(response: EnrollmentResponse): void {
+    this.enrollResponse.set(response);
+    this.enrolledDialogData.update((data) => (data ? { ...data, response: response } : data));
   }
 
   handleCompleteEnrollment(enrollmentResponse: EnrollmentResponse | null): void {

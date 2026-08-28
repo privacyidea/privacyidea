@@ -33,6 +33,7 @@
   </span>
 
   <app-token-enrollment-data
+    (enrollmentResponseChange)="onEnrollmentResponseChange($event)"
     [enrolledInputData]="enrollDetails"
     [tokenType]="tokenType"
     [enrollmentParameters]="enrollParameters"></app-token-enrollment-data>

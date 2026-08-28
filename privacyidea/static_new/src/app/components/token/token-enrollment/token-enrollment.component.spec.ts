@@ -689,6 +689,42 @@ describe("TokenEnrollmentComponent", () => {
       expect(dialogServiceMock.openDialog).not.toHaveBeenCalled();
     });
 
+    it("reopenEnrollmentDialog: reopens with the regenerated response instead of the initial one", async () => {
+      tokenService.selectedTokenType.set({ key: "totp", name: "TOTP", info: "", text: "" });
+      installStrategy(component, {
+        buildEnrollmentArgs: jest.fn().mockReturnValue({
+          data: { type: "totp" },
+          mapper: jest.fn() as unknown as TokenApiPayloadMapper<TokenEnrollmentData>
+        }),
+        reopenDialog: () => undefined
+      });
+      const enrollResponse = {
+        result: { status: true },
+        detail: { serial: "TOTP0001", googleurl: { img: "initial-img", value: "initial-url" } }
+      } as unknown as EnrollmentResponse;
+      tokenService.enrollToken.mockReturnValueOnce(of(enrollResponse));
+      await component.enrollToken();
+
+      const regenerated = {
+        result: { status: true },
+        detail: { serial: "TOTP0001", googleurl: { img: "regenerated-img", value: "regenerated-url" } }
+      } as unknown as EnrollmentResponse;
+      component.enrolledDialogData()?.onEnrollmentResponseChange?.(regenerated);
+
+      expect(component.enrollResponse()).toBe(regenerated);
+      expect(component.enrolledDialogData()?.response).toBe(regenerated);
+
+      dialogServiceMock.openDialog.mockClear();
+      component.reopenEnrollmentDialog();
+
+      expect(dialogServiceMock.openDialog).toHaveBeenCalledWith(
+        expect.objectContaining({
+          component: TokenEnrollmentLastStepDialogComponent,
+          data: expect.objectContaining({ response: regenerated })
+        })
+      );
+    });
+
     it("reopenEnrollmentDialog: falls back to last-step data", () => {
       tokenService.selectedTokenType.set({ key: "hotp", name: "HOTP", info: "", text: "" });
       component.enrolledDialogData.set({

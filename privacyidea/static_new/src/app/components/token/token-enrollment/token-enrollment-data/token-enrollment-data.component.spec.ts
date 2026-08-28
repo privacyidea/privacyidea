@@ -19,6 +19,7 @@
 
 import { NO_ERRORS_SCHEMA } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { EnrollmentResponse } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 
 import { ContentService } from "@services/content/content.service";
 import { NotificationService } from "@services/notification/notification.service";
@@ -129,6 +130,55 @@ describe("TokenEnrollmentDataComponent", () => {
     expect(component.enrolledData()).toEqual({ serial: "SERIAL123", googleurl: { img: "new_img", value: "456" } });
     expect(component["qrCode"]()).toEqual("new_img");
     expect(component["url"]()).toEqual("456");
+  });
+
+  it("should regenerate the enrolled token even if the enrollment parameters carry no serial", () => {
+    mockTokenService.enrollToken = jest.fn().mockReturnValue(
+      of({
+        type: "hotp",
+        result: { status: true },
+        detail: { type: "hotp", serial: "OATH0001", googleurl: { img: "new_img", value: "new_url" } }
+      })
+    );
+    fixture.componentRef.setInput("enrollmentParameters", {
+      data: { type: "hotp", serial: null },
+      mapper: { map: jest.fn() }
+    });
+    fixture.componentRef.setInput("enrolledInputData", {
+      serial: "OATH0001",
+      googleurl: { img: "old_img", value: "old_url" }
+    });
+    fixture.detectChanges();
+
+    component.regenerateQRCode();
+
+    expect(mockTokenService.enrollToken).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ type: "hotp", serial: "OATH0001" }) })
+    );
+  });
+
+  it("should emit the regenerated enrollment response on regenerateQRCode", () => {
+    const regenerated = {
+      type: "hotp",
+      result: { status: true },
+      detail: { type: "hotp", serial: "OATH0001", googleurl: { img: "new_img", value: "new_url" } }
+    } as EnrollmentResponse;
+    mockTokenService.enrollToken = jest.fn().mockReturnValue(of(regenerated));
+    const emitted: EnrollmentResponse[] = [];
+    component.enrollmentResponseChange.subscribe((response) => emitted.push(response));
+    fixture.componentRef.setInput("enrollmentParameters", {
+      data: { type: "hotp", serial: "OATH0001" },
+      mapper: { map: jest.fn() }
+    });
+    fixture.componentRef.setInput("enrolledInputData", {
+      serial: "OATH0001",
+      googleurl: { img: "old_img", value: "old_url" }
+    });
+    fixture.detectChanges();
+
+    component.regenerateQRCode();
+
+    expect(emitted).toEqual([regenerated]);
   });
 
   it("should open notification if no enrollmentParameters are available on regenerateQRCode", () => {

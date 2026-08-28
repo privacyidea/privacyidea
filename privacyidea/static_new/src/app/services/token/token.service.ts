@@ -298,6 +298,7 @@ export interface TokenEnrollmentDialogData {
   onlyAddToRealm?: boolean;
   rollover?: boolean;
   showEnrollData?: boolean;
+  onEnrollmentResponseChange?: (response: EnrollmentResponse) => void;
 }
 
 export interface LostTokenData {

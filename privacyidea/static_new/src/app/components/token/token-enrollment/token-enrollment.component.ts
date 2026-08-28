@@ -386,7 +386,8 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
       userRealm: enrollmentArgs.data.realm,
       onlyAddToRealm: enrollmentArgs.data.onlyAddToRealm ?? false,
       rollover: false,
-      showEnrollData: strategy.showEnrollDataInLastStep
+      showEnrollData: strategy.showEnrollDataInLastStep,
+      onEnrollmentResponseChange: (response) => this.updateEnrollmentResponse(response)
     });
 
     // Complete enrollment
@@ -398,6 +399,11 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
     this.handleCompleteEnrollment(enrollmentResponse);
     this.pendingChangesService.clearAllRegistrations();
     return true;
+  }
+
+  updateEnrollmentResponse(response: EnrollmentResponse): void {
+    this.enrollResponse.set(response);
+    this.enrolledDialogData.update((data) => (data ? { ...data, response: response } : data));
   }
 
   handleCompleteEnrollment(enrollmentResponse: EnrollmentResponse | null): void {
