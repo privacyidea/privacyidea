@@ -261,6 +261,21 @@ class SubscriptionApplicationTestCase(MyTestCase):
                 self.assertTrue(check_subscription("FreeRADIUS"))
         mock_get_subscription.assert_called_once_with("privacyidea")
 
+    def test_08_simplesamlphp_checks_the_legacy_application_name_too(self):
+        # "simplesamlphp" and "privacyidea-simplesamlphp" were merged into one product
+        # for the UI, but a subscription file signed under the pre-merge name must still
+        # validate, so check_subscription looks up both names.
+        self.assertEqual("privacyidea-simplesamlphp", get_metered_application("simpleSAMLphp"))
+
+        with mock.patch("privacyidea.lib.subscriptions.get_users_with_active_tokens",
+                        return_value=0):
+            with mock.patch("privacyidea.lib.subscriptions.get_subscription",
+                            return_value=[]) as mock_get_subscription:
+                self.assertTrue(check_subscription("simpleSAMLphp"))
+        mock_get_subscription.assert_any_call("privacyidea-simplesamlphp")
+        mock_get_subscription.assert_any_call("simplesamlphp")
+        self.assertEqual(2, mock_get_subscription.call_count)
+
 
 class PluginSubscriptionStatusTestCase(MyTestCase):
     """

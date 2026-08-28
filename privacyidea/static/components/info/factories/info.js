@@ -35,7 +35,7 @@ myApp.factory("InfoFactory", ["AuthFactory", "$http", "$state", "$rootScope", "i
                 });
             },
             // The shared ecosystem-integration catalog (client types, policy user_agents
-            // presets, dashboard subscription rows) - see issue #5705.
+            // presets, dashboard subscription rows), from privacyidea.lib.integrations.
             getIntegrations: function (callback) {
                 $http.get(infoUrl + "/integrations", {
                     headers: {'PI-Authorization': AuthFactory.getAuthToken()}

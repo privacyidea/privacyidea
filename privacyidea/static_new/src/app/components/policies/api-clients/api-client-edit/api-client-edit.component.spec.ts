@@ -136,6 +136,37 @@ describe("ApiClientEditComponent", () => {
     expect(apiClientServiceMock.dismissIssuedKey).toHaveBeenCalled();
   });
 
+  it("should dismiss a lingering issued key again when the router reuses this instance for a different client", async () => {
+    // The router can reuse this component instance across a same-route id change
+    // (e.g. navigating directly from one client's detail page to another's), so a
+    // plaintext key just issued for the previous client must not linger.
+    const paramMap$ = new Subject<ReturnType<typeof convertToParamMap>>();
+    await TestBed.configureTestingModule({
+      imports: [ApiClientEditComponent],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideRouter([]),
+        { provide: ActivatedRoute, useValue: { paramMap: paramMap$ } },
+        { provide: ApiClientService, useClass: MockApiClientService },
+        { provide: AuthService, useClass: MockAuthService },
+        { provide: IntegrationsService, useClass: MockIntegrationsService },
+        { provide: PendingChangesService, useClass: MockPendingChangesService },
+        { provide: DialogService, useClass: MockDialogService }
+      ]
+    }).compileComponents();
+    apiClientServiceMock = TestBed.inject(ApiClientService) as unknown as MockApiClientService;
+    fixture = TestBed.createComponent(ApiClientEditComponent);
+    fixture.detectChanges();
+
+    paramMap$.next(convertToParamMap({ id: "client-a" }));
+    (apiClientServiceMock.dismissIssuedKey as jest.Mock).mockClear();
+
+    paramMap$.next(convertToParamMap({ id: "client-b" }));
+
+    expect(apiClientServiceMock.dismissIssuedKey).toHaveBeenCalled();
+  });
+
   it("should call createClient when saving a new client", async () => {
     await setup();
     component.apiClientModel.update((m) => ({ ...m, display_name: "My Client", client_type: "keycloak" }));

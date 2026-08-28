@@ -58,8 +58,8 @@ interface SectionNode {
 /**
  * Display name, section grouping and product-landing-page slug for the server row: it is
  * not one of the dashboard integrations from the shared catalog (see
- * services/integrations/integrations.service.ts and issue #5705), just always present on
- * its own at the top.
+ * services/integrations/integrations.service.ts), just always present on its own at the
+ * top.
  */
 const SERVER_DISPLAY_NAME = "privacyIDEA Server";
 const PTL_BASE_URL = "https://netknights.it/plugin-traffic-light";

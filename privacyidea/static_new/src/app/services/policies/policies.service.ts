@@ -156,8 +156,8 @@ export const HANDLE_MISSING_DATA_OPTIONS: HandleMissingDataOption[] = [
 ];
 
 // 3. User Agent Options - the picker entries now come from the shared integration
-// catalog (see services/integrations/integrations.service.ts and issue #5705):
-// Integration.policy_value is the key, Integration.label is the label.
+// catalog (see services/integrations/integrations.service.ts): Integration.policy_value
+// is the key, Integration.label is the label.
 export interface UserAgentOption {
   key: string;
   label: string;

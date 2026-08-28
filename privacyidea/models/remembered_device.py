@@ -61,10 +61,18 @@ class RememberedDevice(MethodsMixin, db.Model):
     column is needed here. The individual single-column indexes stay: they are
     still required by :func:`revoke_devices`, the client-independent bulk
     revoke that filters by realm/user without a ``client_id``.
+
+    The composite ``(client_id, created_at)`` index serves the paginated,
+    newest-first listing in :func:`get_client_devices`: ``(client_id, resolver,
+    user_id, realm_id)`` above cannot help that query order rows by
+    ``created_at``, so without this a client with a very large number of
+    devices would need every one of its rows collected and sorted before a
+    single page could be returned.
     """
     __tablename__ = 'remembered_devices'
     __table_args__ = (
         Index('ix_remembered_devices_identity', 'client_id', 'resolver', 'user_id', 'realm_id'),
+        Index('ix_remembered_devices_client_created', 'client_id', 'created_at'),
     )
     # series_id is the secret half of the cookie (series_id:counter) and is never
     # exposed in an API response, URL or log. device_id is a separate, non-secret

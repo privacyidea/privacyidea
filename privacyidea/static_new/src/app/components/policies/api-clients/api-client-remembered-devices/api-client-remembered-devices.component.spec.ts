@@ -127,6 +127,24 @@ describe("ApiClientRememberedDevicesComponent", () => {
     });
   });
 
+  it("should reset the page and realm filter when the viewed client changes", async () => {
+    // The router can reuse this component instance across a same-route client-to-client
+    // navigation, so stale paging/filtering from the previous client must not carry over.
+    component.pageIndex.set(2);
+    component.realmFilter.set("realm1");
+
+    fixture.componentRef.setInput("clientId", "client2");
+    await fixture.whenStable();
+
+    expect(component.pageIndex()).toBe(0);
+    expect(component.realmFilter()).toBe("");
+    expect(apiClientServiceMock.getRememberedDevices).toHaveBeenCalledWith("client2", {
+      page: 1,
+      pageSize: 50,
+      realm: undefined
+    });
+  });
+
   it("should reload the requested page on a paginator event", async () => {
     component.onPage({ pageIndex: 1, pageSize: 10, length: 2 });
     await fixture.whenStable();

@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { DatePipe } from "@angular/common";
-import { Component, computed, effect, inject, input, signal } from "@angular/core";
+import { Component, computed, effect, inject, input, linkedSignal, signal } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
@@ -59,10 +59,13 @@ export class ApiClientRememberedDevicesComponent {
 
   devices = signal<RememberedDevice[]>([]);
   count = signal<number>(0);
-  pageIndex = signal<number>(0);
+  // Reset to the first page / no realm filter whenever the viewed client changes,
+  // so a stale page number or realm from a previous client (e.g. the router reusing
+  // this instance across a same-route client-to-client navigation) can't carry over.
+  pageIndex = linkedSignal({ source: () => this.clientId(), computation: () => 0 });
   pageSize = signal<number>(50);
   pageSizeOptions = [10, 25, 50, 100];
-  realmFilter = signal<string>("");
+  realmFilter = linkedSignal({ source: () => this.clientId(), computation: () => "" });
 
   displayedColumns = ["user", "ip_address", "user_agent", "created_at", "last_used_at", "expires_at", "actions"];
 

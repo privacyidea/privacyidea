@@ -23,8 +23,9 @@ myApp.controller("clientsController", ["$scope", "$stateParams", "inform",
         }
 
         // The client types offered in the creation form: the integrations from the
-        // shared ecosystem catalog (see issue #5705) that are flagged as API clients.
-        // The backend accepts any string, but validates it against this same catalog.
+        // shared backend catalog (privacyidea.lib.integrations) that are flagged as
+        // API clients. The backend accepts any string, but validates it against this
+        // same catalog.
         $scope.clientTypes = [];
         InfoFactory.getIntegrations(function (integrations) {
             $scope.clientTypes = integrations
@@ -159,6 +160,17 @@ myApp.controller("clientsController", ["$scope", "$stateParams", "inform",
             return $scope.ui.realm
                 ? gettextCatalog.getString("Revoke all in this realm")
                 : gettextCatalog.getString("Revoke all");
+        };
+
+        // The trigger button keeps a short, fixed-width label (revokeAllLabel above),
+        // but the confirm step names the actual realm and - critically - spells out
+        // that a realm-scoped revoke crosses client boundaries, unlike the client-scoped
+        // one, so this is not lost at the one place an admin can still back out.
+        $scope.revokeAllConfirmText = function () {
+            return $scope.ui.realm
+                ? gettextCatalog.getString("Revoke all remembered devices in realm {{realm}} (across all clients)",
+                    {realm: $scope.ui.realm})
+                : gettextCatalog.getString("Revoke all remembered devices for this client");
         };
 
         // Bulk revoke. "For this client" is scoped to the client being viewed;

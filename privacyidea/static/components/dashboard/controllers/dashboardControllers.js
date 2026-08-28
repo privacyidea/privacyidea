@@ -101,10 +101,10 @@ myApp.controller("dashboardController", ["ConfigFactory", "TokenFactory",
     };
     // Display name per plugin application key, and the slug of each component's
     // product landing page (the page itself is picked by language and subscription
-    // state, see componentLinkTarget below). Both come from the shared ecosystem
-    // catalog (see issue #5705) - only the server itself is seeded here, since it is
-    // not one of the catalog's integrations. Unknown keys fall back to the raw
-    // application identifier in the view.
+    // state, see componentLinkTarget below). Both come from the shared backend
+    // catalog (privacyidea.lib.integrations) - only the server itself is seeded
+    // here, since it is not one of the catalog's integrations. Unknown keys fall
+    // back to the raw application identifier in the view.
     $scope.pluginDisplayName = {"privacyidea": "privacyIDEA Server"};
     var PTL_BASE_URL = "https://netknights.it/plugin-traffic-light";
     $scope.componentPtlSlug = {"privacyidea": "privacyidea-server"};

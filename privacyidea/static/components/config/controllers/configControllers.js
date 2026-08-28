@@ -103,10 +103,10 @@ myApp.controller("policyDetailsController", ["$scope", "$stateParams",
         $('html,body').scrollTop(0);
         $scope.onlySelectedVisible = false;
 
-        // The picker entries come from the shared ecosystem catalog (see issue #5705):
-        // every integration's policy_value/label. Merged rather than replaced, so a
-        // value already ticked (or a custom one added below) before this resolves
-        // survives.
+        // The picker entries come from the shared backend catalog
+        // (privacyidea.lib.integrations): every integration's policy_value/label.
+        // Merged rather than replaced, so a value already ticked (or a custom one
+        // added below) before this resolves survives.
         $scope.userAgents = [];
         InfoFactory.getIntegrations(function (integrations) {
             angular.forEach(integrations, function (integration) {

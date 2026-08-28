@@ -18,7 +18,11 @@
 #
 __doc__ = """Single source of truth for the privacyIDEA ecosystem's integration vocabulary.
 
-Three levels, see issue #5705:
+Before this module existed, the same "ecosystem integration" concept was expressed in at
+least three independent, hardcoded lists that had already drifted out of sync: the
+API-client type dropdown, the policy ``user_agents`` condition picker, and the
+subscription-metering table. All three key off the same underlying wire-format agent
+string, so unifying them requires three levels:
 
 * :class:`Product` — what is licensed. Its ``id`` is the ``Subscription.application``
   value on a real, cryptographically signed subscription file, so it is NOT free to
@@ -77,7 +81,9 @@ class Integration:
     :ivar agent_names: every raw ``User-Agent`` wire string this integration is known by,
         including old/renamed ones. Used only to resolve a *live request's* raw
         User-Agent to this integration, e.g. for subscription metering. Never stored as
-        policy data.
+        policy data. Matched case-insensitively (see :data:`AGENT_TO_INTEGRATION`), so
+        list a name once regardless of the casing a given plugin version happens to send;
+        include a second entry only for a genuinely different wire string (e.g. a rename).
     :ivar policy_value: the exact literal string the policy ``user_agents`` condition
         dropdown submits/stores. This must equal what the pre-catalog frontend lists
         (``USER_AGENT_OPTIONS`` / ``userAgentsMapping``) already submitted for this
@@ -139,6 +145,9 @@ PRODUCTS: dict[str, Product] = {
         # rename, there is no evidence they were ever meant to be different products. One
         # product now, named like every other real plugin (`privacyidea-*`); both wire
         # names alias into it, see the "simplesamlphp" integration below.
+        # A real, already-signed subscription file for either product may still
+        # carry the pre-merge id ("simplesamlphp") in its application field; that
+        # id is not renamed here, only merged for the UI. See PRODUCT_ALIASES.
         Product(id="privacyidea-simplesamlphp", label="SimpleSAMLphp", free_users=10000),
         # Never counted or enforced, see the module docstring. Still a real, subscribable
         # product: the dashboard keeps reporting its subscription state.
@@ -149,11 +158,20 @@ PRODUCTS: dict[str, Product] = {
     )
 }
 
+# Legacy product ids merged into a current one for the UI (see the "simplesamlphp"
+# Integration and the privacyidea-simplesamlphp Product above), mapped to the
+# canonical id they were merged into. A real subscription file signed under a
+# legacy id before the merge is still a valid file for the canonical product, so
+# a subscription lookup must check both; see product_names().
+PRODUCT_ALIASES: dict[str, str] = {
+    "simplesamlphp": "privacyidea-simplesamlphp",
+}
+
 CATALOG: tuple[Integration, ...] = (
     Integration(
         id="privacyidea-app",
         label="privacyIDEA Authenticator App",
-        agent_names=("privacyIDEA-App", "privacyidea-app"),
+        agent_names=("privacyIDEA-App",),
         policy_value="privacyIDEA-App",
         product_id="privacyidea authenticator",
         dashboard=True,
@@ -165,7 +183,7 @@ CATALOG: tuple[Integration, ...] = (
     Integration(
         id="freeradius",
         label="FreeRADIUS",
-        agent_names=("FreeRADIUS", "freeradius"),
+        agent_names=("FreeRADIUS",),
         policy_value="FreeRADIUS",
         product_id="privacyidea",
         api_client=True,
@@ -201,7 +219,7 @@ CATALOG: tuple[Integration, ...] = (
     Integration(
         id="pam",
         label="PAM OTP & Push",
-        agent_names=("PAM", "pam", "pam-privacyidea"),
+        agent_names=("PAM", "pam-privacyidea"),
         policy_value="PAM",
         product_id="privacyidea-pam",
         api_client=True,
@@ -225,7 +243,7 @@ CATALOG: tuple[Integration, ...] = (
     Integration(
         id="privacyidea-keycloak",
         label="Keycloak",
-        agent_names=("privacyIDEA-Keycloak", "privacyidea-keycloak"),
+        agent_names=("privacyIDEA-Keycloak",),
         policy_value="privacyIDEA-Keycloak",
         product_id="privacyidea-keycloak",
         api_client=True,
@@ -249,7 +267,7 @@ CATALOG: tuple[Integration, ...] = (
     Integration(
         id="privacyidea-adfs",
         label="AD FS",
-        agent_names=("PrivacyIDEA-ADFS", "privacyidea-adfs"),
+        agent_names=("PrivacyIDEA-ADFS",),
         policy_value="PrivacyIDEA-ADFS",
         product_id="privacyidea-adfs",
         api_client=True,
@@ -261,7 +279,7 @@ CATALOG: tuple[Integration, ...] = (
     Integration(
         id="privacyidea-shibboleth",
         label="Shibboleth",
-        agent_names=("privacyIDEA-Shibboleth", "privacyidea-shibboleth"),
+        agent_names=("privacyIDEA-Shibboleth",),
         policy_value="privacyIDEA-Shibboleth",
         product_id="privacyidea-shibboleth",
         api_client=True,
@@ -274,14 +292,14 @@ CATALOG: tuple[Integration, ...] = (
     Integration(
         id="simplesamlphp",
         label="SimpleSAMLphp",
-        agent_names=("simpleSAMLphp", "simplesamlphp", "privacyidea-simplesamlphp"),
+        agent_names=("simpleSAMLphp", "privacyidea-simplesamlphp"),
         policy_value="simpleSAMLphp",
         product_id="privacyidea-simplesamlphp",
     ),
     Integration(
         id="privacyidea-ldap-proxy",
         label="LDAP Proxy",
-        agent_names=("privacyIDEA-LDAP-Proxy", "privacyidea-ldap-proxy"),
+        agent_names=("privacyIDEA-LDAP-Proxy",),
         policy_value="privacyIDEA-LDAP-Proxy",
         product_id="privacyidea-ldap-proxy",
     ),
@@ -341,3 +359,18 @@ def resolve_product(name: str) -> str:
     if integration_id is not None:
         return INTEGRATION_TO_PRODUCT.get(integration_id, key)
     return key
+
+
+def product_names(product_id: str) -> tuple[str, ...]:
+    """
+    Every application name a subscription for ``product_id`` might be filed
+    under: the canonical id itself, plus any legacy id that used to be its own
+    product before being merged into it (see :data:`PRODUCT_ALIASES`). A
+    subscription file signed under a legacy id before its merge is still a
+    valid file for the canonical product, so a lookup must check both.
+
+    :param product_id: a canonical product id
+    :return: ``(product_id, *legacy_ids)``
+    """
+    legacy_ids = tuple(legacy for legacy, canonical in PRODUCT_ALIASES.items() if canonical == product_id)
+    return (product_id, *legacy_ids)

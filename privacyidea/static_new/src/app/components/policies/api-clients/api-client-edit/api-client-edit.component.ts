@@ -94,13 +94,16 @@ export class ApiClientEditComponent implements OnDestroy {
   });
 
   constructor() {
-    this.apiClientService.dismissIssuedKey();
-
     this.pendingChangesService.registerHasChanges(() => this.hasChanges);
     this.pendingChangesService.registerSave(() => this.save());
     this.pendingChangesService.registerValidChanges(() => this.canSave);
 
     this.route.paramMap.pipe(takeUntilDestroyed()).subscribe((params) => {
+      // Re-dismiss on every route id change, not just once at construction: the
+      // router reuses this component instance across a same-route id change
+      // (e.g. navigating directly from one client's detail page to another's),
+      // so a plaintext key just issued for the previous client must not linger.
+      this.apiClientService.dismissIssuedKey();
       const id = params.get("id");
       if (id) {
         this.isEditMode.set(true);

@@ -43,7 +43,7 @@ from privacyidea.lib.config import get_from_config, set_privacyidea_config
 from privacyidea.lib.crypto import Sign
 from privacyidea.lib.error import SubscriptionError
 from privacyidea.lib.framework import get_app_config_value, get_app_local_store
-from privacyidea.lib.integrations import DASHBOARD_INTEGRATIONS, PRODUCTS, resolve_product
+from privacyidea.lib.integrations import DASHBOARD_INTEGRATIONS, PRODUCTS, product_names, resolve_product
 from privacyidea.lib.token import get_tokens
 from .log import log_with
 from .utils import get_plugin_info_from_useragent, get_version_number, is_true
@@ -72,9 +72,11 @@ SIGN_FORMAT = """{application}
 """
 
 # The application/integration/product vocabulary itself now lives in
-# :mod:`privacyidea.lib.integrations` (see issue #5705) — this module only owns the
-# licensing logic, reading names and limits from there. The names below are kept as thin,
-# derived views for existing callers.
+# :mod:`privacyidea.lib.integrations`, which unifies what used to be three drifted,
+# independently-hardcoded lists (API-client types, the policy user_agents picker, and
+# this module's own APPLICATIONS) into one catalog. This module only owns the licensing
+# logic, reading names and limits from there. The names below are kept as thin, derived
+# views for existing callers.
 
 # Free-tier limit per subscription product. A product with ``free_users`` of None (e.g.
 # the Authenticator App) is never counted or enforced against a limit at all.
@@ -791,7 +793,12 @@ def check_subscription(application, max_free_subscriptions=None):
         # date_till is nullable. A record without an end date says nothing about being
         # valid, so it is ignored here: the free tier then applies exactly as it would
         # without a subscription, rather than blocking the client outright.
-        subscriptions = [subscription for subscription in get_subscription(application)
+        # A subscription file signed before two products were merged into this one (see
+        # privacyidea.lib.integrations.PRODUCT_ALIASES) still carries the pre-merge
+        # application name, so every name this product has ever been known as is checked.
+        subscriptions = [subscription
+                         for name in product_names(application)
+                         for subscription in get_subscription(name)
                          if subscription.get("date_till")]
         free_subscriptions = max_free_subscriptions or APPLICATIONS.get(application)
         # The users are counted in the branches below rather than here, so that the

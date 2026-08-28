@@ -24,10 +24,10 @@ import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 
 /**
- * One entry of the shared ecosystem-integration catalog, see
- * privacyidea.lib.integrations on the backend (issue #5705). Replaces what used to be
- * three independently hardcoded lists: the API client `client_type` dropdown, the policy
- * `user_agents` condition picker, and the dashboard subscription widget's rows.
+ * One entry of the shared ecosystem-integration catalog served by the backend
+ * (privacyidea.lib.integrations). Replaces what used to be three independently
+ * hardcoded lists: the API client `client_type` dropdown, the policy `user_agents`
+ * condition picker, and the dashboard subscription widget's rows.
  */
 export interface Integration {
   id: string;
