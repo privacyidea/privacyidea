@@ -333,14 +333,6 @@ INTEGRATION_TO_PRODUCT: dict[str, str] = {
 DASHBOARD_INTEGRATIONS: tuple[Integration, ...] = tuple(i for i in CATALOG if i.dashboard)
 
 
-def get_integration(integration_id: str) -> Integration | None:
-    """Look up an integration by id, or None if unknown."""
-    for integration in CATALOG:
-        if integration.id == integration_id:
-            return integration
-    return None
-
-
 def resolve_product(name: str) -> str:
     """
     Resolve a client user-agent (or an integration/product id) to the product id its

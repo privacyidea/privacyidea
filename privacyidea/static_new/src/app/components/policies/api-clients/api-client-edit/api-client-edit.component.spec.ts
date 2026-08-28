@@ -289,5 +289,54 @@ describe("ApiClientEditComponent", () => {
       expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
       expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.POLICIES_API_CLIENTS);
     });
+
+    it("should save and navigate back when user selects 'save-exit' in cancel dialog", async () => {
+      mockSaveExitDialogRef.afterClosed.mockReturnValue(of("save-exit"));
+      component.apiClientModel.update((m) => ({ ...m, display_name: "test", client_type: "keycloak" }));
+      component.apiClientForm().markAsDirty();
+
+      component.onCancel();
+
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(pendingChangesService.save).toHaveBeenCalled();
+      expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
+      expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.POLICIES_API_CLIENTS);
+    });
+
+    it("should not navigate back when 'save-exit' fails to save", async () => {
+      mockSaveExitDialogRef.afterClosed.mockReturnValue(of("save-exit"));
+      pendingChangesService.save.mockReturnValueOnce(false);
+      component.apiClientModel.update((m) => ({ ...m, display_name: "test", client_type: "keycloak" }));
+      component.apiClientForm().markAsDirty();
+
+      component.onCancel();
+
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(pendingChangesService.clearAllRegistrations).not.toHaveBeenCalled();
+      expect(router.navigateByUrl).not.toHaveBeenCalled();
+    });
+
+    it("should not navigate back when 'save-exit' is selected on an invalid form", async () => {
+      mockSaveExitDialogRef.afterClosed.mockReturnValue(of("save-exit"));
+      component.apiClientForm().markAsDirty();
+
+      component.onCancel();
+
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(pendingChangesService.save).not.toHaveBeenCalled();
+      expect(router.navigateByUrl).not.toHaveBeenCalled();
+    });
+  });
+
+  it("should not save an invalid form", async () => {
+    await setup();
+
+    const success = await component.save();
+
+    expect(success).toBe(false);
+    expect(apiClientServiceMock.createClient).not.toHaveBeenCalled();
   });
 });

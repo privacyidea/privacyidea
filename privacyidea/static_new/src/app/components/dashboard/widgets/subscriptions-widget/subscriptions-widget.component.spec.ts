@@ -178,6 +178,21 @@ describe("SubscriptionsWidgetComponent", () => {
     expect(rows.filter((row) => row.kind === "component").every((row) => row.indent === 1)).toBe(true);
   });
 
+  it("should fall back to the raw section key when the catalog reports an unrecognized section", () => {
+    const integrationsMock = TestBed.inject(IntegrationsService) as unknown as MockIntegrationsService;
+    integrationsMock.integrations.update((integrations) =>
+      integrations.map((integration) =>
+        integration.id === "freeradius" ? { ...integration, section: "some_future_section" } : integration
+      )
+    );
+    fixture = createWidget();
+    component = fixture.componentInstance;
+
+    const rows = component.rows();
+
+    expect(rows.filter((row) => row.kind === "label").map((row) => row.label)).toContain("some_future_section");
+  });
+
   it("should fall back to an unused status for components the backend did not report", () => {
     const radius = component.rows().find((row) => row.application === "freeradius");
 

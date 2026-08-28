@@ -131,6 +131,33 @@ describe("ApiClientService", () => {
     expect(notifyMock.success).toHaveBeenCalledWith("Successfully saved API client.");
   });
 
+  it("should show error notification when updating a client fails", async () => {
+    const promise = service.updateClient("abc", { display_name: "Renamed" });
+
+    const req = httpMock.expectOne(`${environment.proxyUrl}/clients/abc`);
+    req.flush(MockPiResponse.fromError({ message: "Something went wrong" }), {
+      status: 400,
+      statusText: "Bad Request"
+    });
+
+    await expect(promise).rejects.toThrow();
+    expect(notifyMock.error).toHaveBeenCalledWith("Failed to save API client. Something went wrong");
+  });
+
+  it("should show error notification when rotating a client's key fails", async () => {
+    const promise = service.rotateClient("abc", "My Client");
+
+    const req = httpMock.expectOne(`${environment.proxyUrl}/clients/abc/rotate`);
+    req.flush(MockPiResponse.fromError({ message: "Something went wrong" }), {
+      status: 400,
+      statusText: "Bad Request"
+    });
+
+    await expect(promise).rejects.toThrow();
+    expect(notifyMock.error).toHaveBeenCalledWith("Failed to rotate API key. Something went wrong");
+    expect(service.lastIssuedKey()).toBeNull();
+  });
+
   it("should delete a client", async () => {
     const promise = service.deleteClient("abc");
 
@@ -140,6 +167,19 @@ describe("ApiClientService", () => {
 
     await promise;
     expect(notifyMock.success).toHaveBeenCalledWith("Successfully deleted API client.");
+  });
+
+  it("should show error notification when deleting a client fails", async () => {
+    const promise = service.deleteClient("abc");
+
+    const req = httpMock.expectOne(`${environment.proxyUrl}/clients/abc`);
+    req.flush(MockPiResponse.fromError({ message: "Something went wrong" }), {
+      status: 400,
+      statusText: "Bad Request"
+    });
+
+    await expect(promise).rejects.toThrow();
+    expect(notifyMock.error).toHaveBeenCalledWith("Failed to delete API client. Something went wrong");
   });
 
   it("should list remembered devices for a client", async () => {
@@ -179,6 +219,22 @@ describe("ApiClientService", () => {
     expect(page.devices[0].device_id).toBe("dev1");
   });
 
+  it("should show error notification and return an empty page when listing remembered devices fails", async () => {
+    const promise = service.getRememberedDevices("abc");
+
+    const req = httpMock.expectOne(
+      (r) => r.url === `${environment.proxyUrl}/clients/abc/remembered_devices` && r.method === "GET"
+    );
+    req.flush(MockPiResponse.fromError({ message: "Something went wrong" }), {
+      status: 400,
+      statusText: "Bad Request"
+    });
+
+    const page = await promise;
+    expect(page).toEqual({ devices: [], count: 0, prev: null, next: null });
+    expect(notifyMock.error).toHaveBeenCalledWith("Failed to load remembered devices. Something went wrong");
+  });
+
   it("should revoke a single remembered device", async () => {
     const promise = service.revokeDevice("abc", "dev1");
 
@@ -188,6 +244,19 @@ describe("ApiClientService", () => {
 
     await promise;
     expect(notifyMock.success).toHaveBeenCalledWith("Successfully revoked the remembered device.");
+  });
+
+  it("should show error notification when revoking a single remembered device fails", async () => {
+    const promise = service.revokeDevice("abc", "dev1");
+
+    const req = httpMock.expectOne(`${environment.proxyUrl}/clients/abc/remembered_devices/dev1`);
+    req.flush(MockPiResponse.fromError({ message: "Something went wrong" }), {
+      status: 400,
+      statusText: "Bad Request"
+    });
+
+    await expect(promise).rejects.toThrow();
+    expect(notifyMock.error).toHaveBeenCalledWith("Failed to revoke the remembered device. Something went wrong");
   });
 
   it("should revoke all remembered devices for a client with optional realm/user filters", async () => {
@@ -206,6 +275,19 @@ describe("ApiClientService", () => {
     expect(count).toBe(3);
   });
 
+  it("should show error notification when revoking all remembered devices for a client fails", async () => {
+    const promise = service.revokeAllForClient("abc");
+
+    const req = httpMock.expectOne(`${environment.proxyUrl}/clients/abc/remembered_devices`);
+    req.flush(MockPiResponse.fromError({ message: "Something went wrong" }), {
+      status: 400,
+      statusText: "Bad Request"
+    });
+
+    await expect(promise).rejects.toThrow();
+    expect(notifyMock.error).toHaveBeenCalledWith("Failed to revoke remembered devices. Something went wrong");
+  });
+
   it("should revoke all remembered devices in a realm across all clients", async () => {
     const promise = service.revokeAllInRealmAcrossClients("realm1");
 
@@ -218,6 +300,22 @@ describe("ApiClientService", () => {
 
     const count = await promise;
     expect(count).toBe(5);
+  });
+
+  it("should show error notification when revoking all remembered devices in a realm fails", async () => {
+    const promise = service.revokeAllInRealmAcrossClients("realm1");
+
+    const req = httpMock.expectOne(
+      (request) =>
+        request.url === `${environment.proxyUrl}/clients/remembered_devices` && request.params.get("realm") === "realm1"
+    );
+    req.flush(MockPiResponse.fromError({ message: "Something went wrong" }), {
+      status: 400,
+      statusText: "Bad Request"
+    });
+
+    await expect(promise).rejects.toThrow();
+    expect(notifyMock.error).toHaveBeenCalledWith("Failed to revoke remembered devices. Something went wrong");
   });
 
   it("apiClientResource should not do a request and return undefined on unexpected route", () => {

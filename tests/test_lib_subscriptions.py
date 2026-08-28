@@ -276,6 +276,15 @@ class SubscriptionApplicationTestCase(MyTestCase):
         mock_get_subscription.assert_any_call("simplesamlphp")
         self.assertEqual(2, mock_get_subscription.call_count)
 
+    def test_09_subscription_status_never_enforced_product(self):
+        # subscription_status() must honor free_users=None (the Authenticator App's
+        # "never counted or enforced" state) the same way check_subscription() does,
+        # without even counting tokens.
+        self.assertIsNone(APPLICATIONS["privacyidea authenticator"])
+        with mock.patch("privacyidea.lib.subscriptions.get_tokens") as mock_get_tokens:
+            self.assertEqual(0, subscription_status("privacyIDEA-App"))
+        mock_get_tokens.assert_not_called()
+
 
 class PluginSubscriptionStatusTestCase(MyTestCase):
     """
