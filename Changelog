@@ -129,6 +129,10 @@ Version 3.14dev1
   * `pi-tokenjanitor findcontainer delete_info` reports only the container infos it actually deleted
   * Corrected the documentation of the "Clear failcounter after minutes" setting: any authentication attempt clears the
     fail counter, not only a successful one (#5515)
+  * Negated audit search filters also match rows whose column is unset. This corrects the count of the `authmaxfail`
+    policy, which silently ignored failed authentications.
+    Such rows count again after the upgrade, so an upgrade can lock out a user until the time window of the policy has
+    passed (#5629, #5616)
 
 Version 3.13.3
 
