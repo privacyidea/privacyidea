@@ -17,9 +17,8 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <app-dialog-wrapper
-  (wrapperClose)="close()"
   (actionTriggered)="onCloseAction()"
-  [showCancelButton]="false"
+  [showCloseButton]="false"
   [actions]="[closeAction]"
   [title]="dialogTitle()">
   <div class="lost-content">

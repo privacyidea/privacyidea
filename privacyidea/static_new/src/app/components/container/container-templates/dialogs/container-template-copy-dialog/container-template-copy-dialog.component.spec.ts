@@ -28,6 +28,7 @@ import { PendingChangesService } from "@services/pending-changes/pending-changes
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
 import { MockDialogService, MockPendingChangesService } from "@testing/mock-services";
 import { MockContainerTemplateService } from "@testing/mock-services/mock-container-template-service";
+import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { ContainerTemplateCopyDialogComponent } from "./container-template-copy-dialog.component";
 
 describe("ContainerTemplateCopyDialogComponent", () => {
@@ -72,6 +73,37 @@ describe("ContainerTemplateCopyDialogComponent", () => {
 
   it("should create", () => {
     expect(component).toBeTruthy();
+  });
+
+  describe("closing with unsaved changes", () => {
+    const clickCloseButton = () => {
+      const closeButton: HTMLButtonElement = fixture.nativeElement.querySelector(".pi-dialog-footer button");
+      expect(closeButton.textContent?.trim()).toBe("Cancel");
+      closeButton.click();
+      fixture.detectChanges();
+    };
+
+    it("asks before discarding an edited name instead of closing right away", () => {
+      const dialogService = TestBed.inject(DialogService) as unknown as MockDialogService;
+      component.editName("RenamedTemplate");
+      fixture.detectChanges();
+
+      clickCloseButton();
+
+      expect(dialogService.openDialogAsync).toHaveBeenCalledWith(
+        expect.objectContaining({ component: SaveAndExitDialogComponent })
+      );
+      expect(dialogRefMock.close).not.toHaveBeenCalled();
+    });
+
+    it("closes without asking when nothing was edited", () => {
+      const dialogService = TestBed.inject(DialogService) as unknown as MockDialogService;
+
+      clickCloseButton();
+
+      expect(dialogService.openDialogAsync).not.toHaveBeenCalled();
+      expect(dialogRefMock.close).toHaveBeenCalled();
+    });
   });
 
   it("should initialize with the name from MAT_DIALOG_DATA", () => {
