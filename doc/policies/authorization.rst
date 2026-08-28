@@ -133,14 +133,21 @@ the realm in this action.
 
 This policy is only applied to :http:post:`/validate/check`.
 
-This can be used if the user can not pass their realm when authenticating at a certain client, but the realm needs to
-be available during authentication since the user is not located in the default realm.
+Note, that this policy is evaluated, after the parameters of the request have been processed. This means,
+that the parameters like `user` and `realm` would already have to result in a valid user object. And thereafter this
+policy is applied.
+However, this means, that is is also possible to use the original user object in the policy conditions.
 
-.. note:: It is recommended to use the policy :ref:`policy_set_realm` from the authentication scope instead of this
-    policy. It takes precedence over this policy, is also applied to :http:post:`/auth`, and is applied before the
-    first user resolving, which avoids unnecessary requests to the user store.
+This policy can be used to move users from one original realm to a different realm, e.g. for authorization
+reasons. For this policy, the user has to be available in both realms!
+
+.. note:: Please check if you might actually want to use the policy :ref:`policy_set_realm` from the authentication
+    scope instead. That is applied before user resolving and thus it is not necessary to have the user in both
+    realms.
 
 .. note:: The :ref:`policy_mangle` policy is still executed after this policy and can change the realm again.
+
+For in depth information about user and realm mapping read :ref:`realms`.
 
 .. _policy_no_detail_on_success:
 
