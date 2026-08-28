@@ -6,7 +6,7 @@
     display: flex;
     justify-content: space-between;
 
-    padding: 0 var(--half-global-padding) !important;
+    padding: 0 8px !important;
 
     &:not(:last-child) {
       border-bottom: 1px solid var(--mat-sys-outline-variant);

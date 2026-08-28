@@ -1,15 +1,14 @@
 .event-selection-container {
   display: flex;
   flex-direction: column;
-  gap: var(--global-gap);
+  gap: 16px;
 }
 
 .selected-events-container,
 .add-events-container {
   --mat-expansion-container-background-color: transparent;
   --mat-expansion-container-elevation-shadow: none;
-  --expansion-panel-border: 1px solid var(--mat-sys-outline-variant);
-  --expansion-panel-header-padding: var(--half-global-padding) var(--three-quarters-global-padding);
+  --expansion-panel-header-padding: 8px 12px;
 }
 
 .selected-events-empty {
@@ -20,7 +19,7 @@
 .panel-content {
   display: flex;
   flex-direction: column;
-  gap: var(--global-gap);
+  gap: 16px;
 }
 
 .search-input {
@@ -30,7 +29,7 @@
   border-radius: 0;
   box-sizing: border-box;
   font-size: 1rem;
-  padding: var(--half-global-padding) 0;
+  padding: 8px 0;
   width: 100%;
 
   &:focus {
@@ -42,7 +41,7 @@
 .event-items {
   display: flex;
   flex-direction: column;
-  gap: var(--quarter-global-padding);
+  gap: 4px;
   overflow: auto;
   overflow-x: hidden;
 }
@@ -55,9 +54,9 @@
   box-sizing: border-box;
   cursor: pointer;
   display: flex;
-  gap: var(--global-gap);
+  gap: 16px;
   min-height: 44px;
-  padding: var(--half-global-padding) var(--global-padding);
+  padding: 8px 16px;
 
   &:hover {
     background-color: var(--mat-sys-surface-container);

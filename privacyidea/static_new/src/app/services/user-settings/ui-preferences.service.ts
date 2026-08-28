@@ -16,7 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { computed, inject, Injectable, LOCALE_ID, Signal } from "@angular/core";
+import { computed, inject, Injectable, LOCALE_ID, Signal, signal } from "@angular/core";
+import { Observable, catchError, of, shareReplay } from "rxjs";
 import {
   clearLocaleAttempt,
   isKnownLocale,
@@ -28,12 +29,17 @@ import {
   normalizeLocale,
   rememberLocale
 } from "@core/locale";
+import { AppearanceService } from "@services/appearance/appearance.service";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ThemeService } from "@services/theme/theme.service";
 import { UserSettingsService, UserSettingsServiceInterface } from "@services/user-settings/user-settings.service";
 
 export interface UiPreferencesServiceInterface {
   readonly preferredLocale: Signal<string>;
+
+  readonly showLoadingUrls: Signal<boolean>;
+
+  setShowLoadingUrls(show: boolean): Observable<unknown>;
 
   normalizeLocaleUrl(): void;
 
@@ -56,7 +62,9 @@ export class UiPreferencesService implements UiPreferencesServiceInterface {
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly userSettingsService: UserSettingsServiceInterface = inject(UserSettingsService);
   private readonly themeService = inject(ThemeService);
+  private readonly appearanceService = inject(AppearanceService);
   private readonly localeId = inject(LOCALE_ID);
+  private readonly _showLoadingUrls = signal(false);
 
   /** The locale of the bundle the app is currently running in. */
   public readonly currentLocale = normalizeLocale(this.localeId);
@@ -77,6 +85,23 @@ export class UiPreferencesService implements UiPreferencesServiceInterface {
     }
     return this.currentLocale;
   });
+
+  /** Whether the endpoints in flight are listed on screen while the loading bar shows. */
+  public readonly showLoadingUrls: Signal<boolean> = this._showLoadingUrls.asReadonly();
+
+  /**
+   * Reports once the write has settled, so a caller that also navigates away -- switching
+   * locale is a full-page load, which would abort a write mid-flight -- can wait for it first.
+   */
+  public setShowLoadingUrls(show: boolean): Observable<unknown> {
+    this._showLoadingUrls.set(show);
+    const write$ = this.userSettingsService.setSetting("show_loading_urls", show).pipe(
+      catchError(() => of(null)),
+      shareReplay(1)
+    );
+    write$.subscribe();
+    return write$;
+  }
 
   /**
    * Aligns the URL with the bundle that is actually running. A path asking for a locale the
@@ -100,6 +125,17 @@ export class UiPreferencesService implements UiPreferencesServiceInterface {
       next: (settings) => {
         if (settings.theme !== undefined) {
           this.themeService.applyStoredTheme(settings.theme);
+        }
+        this._showLoadingUrls.set(settings.show_loading_urls === true);
+        // An absent key leaves the cookie-cached appearance in place.
+        if (settings.depth !== undefined) {
+          this.appearanceService.applyStoredDepth(settings.depth);
+        }
+        if (settings.light_source !== undefined) {
+          this.appearanceService.applyStoredLightSource(settings.light_source);
+        }
+        if (settings.corner_radius !== undefined) {
+          this.appearanceService.applyStoredCorners(settings.corner_radius);
         }
         this.applyLocale(settings.locale);
       },

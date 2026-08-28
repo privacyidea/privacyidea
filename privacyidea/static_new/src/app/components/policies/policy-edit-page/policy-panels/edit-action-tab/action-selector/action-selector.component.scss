@@ -1,14 +1,18 @@
+// Neither this container nor the expansion panels it holds paint a surface. Material paints a panel
+// from the two tokens below, so setting them here is what flattens it.
 .action-selector-container {
   display: flex;
   flex-direction: column;
-  gap: var(--global-gap);
+  gap: 16px;
   background-color: transparent;
   box-shadow: none;
   padding: 0;
+  color: var(--mat-sys-on-surface);
+  min-width: 0;
+  overflow: auto;
   --mat-expansion-container-background-color: transparent;
   --mat-expansion-container-elevation-shadow: none;
-  --expansion-panel-border: 1px solid var(--mat-sys-outline-variant);
-  --expansion-panel-header-padding: var(--half-global-padding) var(--three-quarters-global-padding);
+  --expansion-panel-header-padding: 8px 12px;
 }
 
 .search-input {
@@ -18,7 +22,7 @@
   border-radius: 0;
   box-sizing: border-box;
   font-size: 1rem;
-  padding: var(--half-global-padding) 0;
+  padding: 8px 0;
   width: 100%;
 }
 
@@ -30,7 +34,7 @@
 .add-action-details {
   display: flex;
   flex-direction: column;
-  gap: var(--half-global-gap);
+  gap: 8px;
 }
 
 .policy-action-items {
@@ -49,27 +53,27 @@
   align-items: center;
   display: flex;
   flex-direction: column;
-  gap: calc(var(--global-gap) / 4);
+  gap: calc(16px / 4);
   justify-content: center;
 }
 
 .panel-content {
   display: flex;
   flex-direction: column;
-  gap: var(--global-gap);
+  gap: 16px;
 }
 
 .selectors-container {
   display: flex;
   flex-direction: column;
-  gap: var(--half-global-gap);
+  gap: 8px;
 }
 
 .selector-row {
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: var(--half-global-gap);
+  gap: 8px;
 
   .selector-label {
     font-weight: 500;

@@ -17,6 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 @use "buttons";
+@use "styles";
 
 :host {
   display: block;
@@ -25,21 +26,16 @@
   font-size: 14px;
 }
 
+// The field the widgets stand on, recessed at the deep step.
 .dashboard-page {
+  @include styles.card-recessed(5);
   display: flex;
   flex-direction: column;
-  gap: var(--global-gap);
-  box-sizing: border-box;
   height: 100%;
   width: 100%;
-  border-radius: var(--border-radius);
-  box-shadow: inset 0px 3px 5px -1px  var(--dashboard-shadow-color),
-  inset 0px 5px 8px 0px  var(--dashboard-shadow-color),
-  inset 0px 1px 14px 0px  var(--dashboard-shadow-color);
 }
 
 .dashboard-scroll-wrapper {
-  position: relative;
   flex: 1;
   min-height: 0;
   display: flex;
@@ -47,12 +43,10 @@
 }
 
 .dashboard-field-scroll {
-  flex: 1;
-  min-height: 0;
   overflow-x: hidden;
   overflow-y: auto;
   scrollbar-gutter: stable;
-  padding: var(--global-padding);
+  padding: 16px;
 }
 
 .dashboard-bottom-fade {

@@ -37,7 +37,11 @@
   }
   @case ("error") {
     <div class="widget-state-status">
-      <p i18n>Could not load data.</p>
+      @if (errorMessage(); as message) {
+        <p>{{ message }}</p>
+      } @else {
+        <p i18n>Could not load data.</p>
+      }
     </div>
   }
 }
