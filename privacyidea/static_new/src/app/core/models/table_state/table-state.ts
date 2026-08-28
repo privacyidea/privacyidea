@@ -24,7 +24,7 @@ export interface TableStateResource {
   hasValue(): boolean;
   error(): unknown;
   reload(): unknown;
-  isLoading?(): boolean;
+  isLoading(): boolean;
 }
 
 export interface TableStateOptions {
@@ -47,7 +47,7 @@ export class TableState {
   readonly showTable: Signal<boolean>;
 
   private readonly cancelled: WritableSignal<boolean> = linkedSignal({
-    source: () => this.options.resource.isLoading?.() ?? false,
+    source: () => this.options.resource.isLoading(),
     computation: (isLoading, previous) => (isLoading ? false : (previous?.value ?? false))
   });
 

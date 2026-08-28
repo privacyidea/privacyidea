@@ -119,7 +119,7 @@ describe("TableStateComponent", () => {
 
   it("says so without offering an action when the list may not be read", () => {
     const state = new TableState({
-      resource: { hasValue: () => true, error: () => null, reload: jest.fn() },
+      resource: { hasValue: () => true, error: () => null, isLoading: () => false, reload: jest.fn() },
       count: () => 0,
       allowed: () => false
     });
