@@ -21,7 +21,6 @@ import { Component, computed, inject, input, linkedSignal, output } from "@angul
 import { MatButton } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 import {
-  BaseApiPayloadMapper,
   EnrollmentResponse,
   EnrollmentResponseDetail,
   TokenEnrollmentData
@@ -37,7 +36,6 @@ import {
   REGENERATE_AS_VALUES_TOKEN_TYPES
 } from "@components/token/token-enrollment/token-enrollment.constants";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
-import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { EnrollTokenArguments, TokenService, TokenServiceInterface } from "@services/token/token.service";
 
 @Component({
@@ -58,11 +56,10 @@ import { EnrollTokenArguments, TokenService, TokenServiceInterface } from "@serv
 export class TokenEnrollmentDataComponent {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
-  protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   protected readonly Object = Object;
-  enrolledInputData = input<EnrollmentResponseDetail>();
-  enrollmentParameters = input<EnrollTokenArguments>();
-  tokenType = input<string>(this.tokenService.selectedTokenType()?.key);
+  enrolledInputData = input.required<EnrollmentResponseDetail>();
+  enrollmentParameters = input.required<EnrollTokenArguments>();
+  tokenType = input.required<string>();
   enrollmentResponseChange = output<EnrollmentResponse>();
 
   enrolledData = linkedSignal(() => this.enrolledInputData());
@@ -108,17 +105,13 @@ export class TokenEnrollmentDataComponent {
   );
 
   regenerateQRCode() {
-    if (!this.enrollmentParameters()) {
-      this.notificationService.warning($localize`Enrollment parameters are missing. Cannot regenerate token.`);
-      return;
-    }
+    const enrollmentParameters = this.enrollmentParameters();
     const newEnrollmentData: TokenEnrollmentData = {
-      ...(this.enrollmentParameters()?.data ?? ({} as TokenEnrollmentData)),
-      serial: this.serial() || this.enrollmentParameters()?.data?.serial
+      ...enrollmentParameters.data,
+      serial: this.serial() || enrollmentParameters.data.serial
     };
-    const mapper = this.enrollmentParameters()?.mapper ?? new BaseApiPayloadMapper();
 
-    this.tokenService.enrollToken({ data: newEnrollmentData, mapper: mapper }).subscribe({
+    this.tokenService.enrollToken({ data: newEnrollmentData, mapper: enrollmentParameters.mapper }).subscribe({
       next: (response) => {
         if (response?.detail) {
           this.enrolledData.set(response.detail);

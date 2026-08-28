@@ -41,10 +41,10 @@
     >However, to activate your token you still need to verify the enrollment.</span
   >
 
-  @if (data.showEnrollData !== false) {
+  @if (data.showEnrollData !== false && data.response) {
     <app-token-enrollment-data
       (enrollmentResponseChange)="onEnrollmentResponseChange($event)"
-      [enrolledInputData]="responseDetails"
+      [enrolledInputData]="data.response.detail"
       [tokenType]="tokenType"
       [enrollmentParameters]="enrollParameters"></app-token-enrollment-data>
   }

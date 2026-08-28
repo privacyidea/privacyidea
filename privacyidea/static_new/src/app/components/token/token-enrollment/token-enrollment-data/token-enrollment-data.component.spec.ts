@@ -22,11 +22,9 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { EnrollmentResponse } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 
 import { ContentService } from "@services/content/content.service";
-import { NotificationService } from "@services/notification/notification.service";
 import { TokenService } from "@services/token/token.service";
 import { MockTokenService } from "@testing/mock-services";
 import { MockContentService } from "@testing/mock-services/mock-content-service";
-import { MockNotificationService } from "@testing/mock-services/mock-notification-service";
 import { of } from "rxjs";
 import { TokenEnrollmentDataComponent } from "./token-enrollment-data.component";
 
@@ -34,23 +32,23 @@ describe("TokenEnrollmentDataComponent", () => {
   let component: TokenEnrollmentDataComponent;
   let fixture: ComponentFixture<TokenEnrollmentDataComponent>;
   let mockTokenService: MockTokenService;
-  let mockNotificationService: MockNotificationService;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [TokenEnrollmentDataComponent],
       providers: [
         { provide: TokenService, useClass: MockTokenService },
-        { provide: ContentService, useClass: MockContentService },
-        { provide: NotificationService, useClass: MockNotificationService }
+        { provide: ContentService, useClass: MockContentService }
       ],
       schemas: [NO_ERRORS_SCHEMA]
     }).compileComponents();
     fixture = TestBed.createComponent(TokenEnrollmentDataComponent);
     component = fixture.componentInstance;
+    fixture.componentRef.setInput("enrolledInputData", { type: "hotp", serial: "" });
+    fixture.componentRef.setInput("enrollmentParameters", { data: { type: "hotp" }, mapper: { map: jest.fn() } });
+    fixture.componentRef.setInput("tokenType", "hotp");
     fixture.detectChanges();
     mockTokenService = TestBed.inject(TokenService) as unknown as MockTokenService;
-    mockNotificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;
   });
 
   it("should create", () => {
@@ -181,11 +179,45 @@ describe("TokenEnrollmentDataComponent", () => {
     expect(emitted).toEqual([regenerated]);
   });
 
-  it("should open notification if no enrollmentParameters are available on regenerateQRCode", () => {
-    component.regenerateQRCode();
-    expect(mockNotificationService.warning).toHaveBeenCalledWith(
-      "Enrollment parameters are missing. Cannot regenerate token."
+  it.each(["paper", "tan"])("should regenerate the OTP values of a %s token", (tokenType) => {
+    const regenerated = {
+      type: tokenType,
+      result: { status: true },
+      detail: {
+        type: tokenType,
+        serial: "PPR0001",
+        otpkey: { img: "", value: "new-hex", value_b32: "" },
+        otps: { "0": "111111", "1": "222222" }
+      }
+    } as unknown as EnrollmentResponse;
+    mockTokenService.enrollToken = jest.fn().mockReturnValue(of(regenerated));
+    const emitted: EnrollmentResponse[] = [];
+    component.enrollmentResponseChange.subscribe((response) => emitted.push(response));
+    fixture.componentRef.setInput("tokenType", tokenType);
+    fixture.componentRef.setInput("enrollmentParameters", {
+      data: { type: tokenType, serial: null },
+      mapper: { map: jest.fn() }
+    });
+    fixture.componentRef.setInput("enrolledInputData", {
+      serial: "PPR0001",
+      otpkey: { img: "", value: "old-hex", value_b32: "" },
+      otps: { "0": "999999" }
+    });
+    fixture.detectChanges();
+
+    const regenerateButton = Array.from(fixture.nativeElement.querySelectorAll("button")).find((button) =>
+      (button as HTMLButtonElement).textContent?.includes("Regenerate Values")
+    ) as HTMLButtonElement;
+    expect(component.showQRCode()).toBe(false);
+    expect(regenerateButton).toBeTruthy();
+
+    regenerateButton.click();
+
+    expect(mockTokenService.enrollToken).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ type: tokenType, serial: "PPR0001" }) })
     );
+    expect(component.enrolledData()?.["otps"]).toEqual({ "0": "111111", "1": "222222" });
+    expect(emitted).toEqual([regenerated]);
   });
 
   it("uses pushurl for QR code and URL when googleurl is absent (push token)", () => {

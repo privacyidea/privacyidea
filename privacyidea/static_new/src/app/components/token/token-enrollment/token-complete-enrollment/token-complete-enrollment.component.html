@@ -32,11 +32,13 @@
     Your token with serial {{ enrollDetails?.serial }} is not completely enrolled, yet.
   </span>
 
-  <app-token-enrollment-data
-    (enrollmentResponseChange)="onEnrollmentResponseChange($event)"
-    [enrolledInputData]="enrollDetails"
-    [tokenType]="tokenType"
-    [enrollmentParameters]="enrollParameters"></app-token-enrollment-data>
+  @if (data.response) {
+    <app-token-enrollment-data
+      (enrollmentResponseChange)="onEnrollmentResponseChange($event)"
+      [enrolledInputData]="data.response.detail"
+      [tokenType]="tokenType"
+      [enrollmentParameters]="enrollParameters"></app-token-enrollment-data>
+  }
 
   @if (twoStepEnrollment()) {
     <div class="margin-top-16">

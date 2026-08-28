@@ -40,25 +40,25 @@
         {{ regenerateButtonText() }}
       </button>
     }
-    @if (enrolledData()?.["password"]) {
+    @if (enrolledData()["password"]) {
       <p i18n>
-        Your Password: <strong>{{ enrolledData()?.["password"] }}</strong
+        Your Password: <strong>{{ enrolledData()["password"] }}</strong
         >.
       </p>
     }
-    @if (enrolledData()?.otpkey?.value && !enrolledData()?.["otps"] && showQRCode()) {
+    @if (enrolledData().otpkey?.value && !enrolledData()["otps"] && showQRCode()) {
       <app-otp-key
-        [otpKeyHex]="enrolledData()?.otpkey?.value ?? ''"
-        [otpKeyBase32]="enrolledData()?.otpkey?.value_b32 ?? ''" />
+        [otpKeyHex]="enrolledData().otpkey?.value ?? ''"
+        [otpKeyBase32]="enrolledData().otpkey?.value_b32 ?? ''" />
     }
     @if (tokenType() === "tiqr") {
-      <app-tiqr-enroll-url [url]="enrolledData()?.['tiqrenroll']?.value ?? ''" />
+      <app-tiqr-enroll-url [url]="enrolledData()['tiqrenroll']?.value ?? ''" />
     }
     @if (tokenType() === "registration") {
-      <app-registration-code [registrationCode]="enrolledData()?.['registrationcode'] ?? ''" />
+      <app-registration-code [registrationCode]="enrolledData()['registrationcode'] ?? ''" />
     }
-    @if (enrolledData()?.["otps"]) {
-      <app-otp-values [otpValues]="enrolledData()?.['otps'] ?? []" />
+    @if (enrolledData()["otps"]) {
+      <app-otp-values [otpValues]="enrolledData()['otps'] ?? []" />
     }
   </div>
 </div>

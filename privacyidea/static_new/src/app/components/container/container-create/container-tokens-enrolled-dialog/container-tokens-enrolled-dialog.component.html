@@ -38,7 +38,9 @@
       Token <strong>{{ currentToken().serial }}</strong> successfully enrolled.
     </p>
     <app-token-enrollment-data
+      (enrollmentResponseChange)="onEnrollmentResponseChange($event)"
       [enrolledInputData]="currentToken()"
+      [enrollmentParameters]="currentToken().enrollmentParameters"
       [tokenType]="currentToken().type" />
   </div>
 </app-dialog-wrapper>
