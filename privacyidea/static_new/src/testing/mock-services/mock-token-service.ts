@@ -159,6 +159,7 @@ export class MockTokenService implements TokenServiceInterface {
     .mockReturnValue(of(MockPiResponse.fromValue<{ count: number; serial?: string }>({ count: 1, serial: "X" })));
   readonly setTokenInfos = jest.fn().mockReturnValue(of({}));
   readonly deleteToken = jest.fn().mockReturnValue(of({}));
+  readonly cancelEnrollment = jest.fn().mockReturnValue(of({}));
   readonly bulkDeleteTokens = jest
     .fn()
     .mockReturnValue(of(MockPiResponse.fromValue<BulkResult>({ failed: [], unauthorized: [], count_success: 1 })));
