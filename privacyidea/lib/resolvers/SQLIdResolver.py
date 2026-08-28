@@ -305,10 +305,17 @@ class IdResolver (UserIdResolver):
             return userinfo
         conditions = self._append_where_filter(conditions, self.TABLE, self.where)
         filter_condition = and_(*conditions)
-        # A DB error here must propagate rather than being logged and swallowed: callers
-        # like getUsername() rely on it to tell "the user does not exist" (an empty
-        # result) apart from "the backend could not be reached" (an exception).
-        result = self.session.execute(select(self.TABLE).filter(filter_condition))
+        try:
+            # A DB error here must propagate rather than being logged and swallowed: callers
+            # like getUsername() rely on it to tell "the user does not exist" (an empty
+            # result) apart from "the backend could not be reached" (an exception). The
+            # session is cached for the lifetime of the request (get_resolver_object), so
+            # it must be rolled back here or a later call would fail with a stale,
+            # unrelated "pending rollback" error instead.
+            result = self.session.execute(select(self.TABLE).filter(filter_condition))
+        except Exception:
+            self.session.rollback()
+            raise
 
         for r in result.mappings():
             if userinfo:  # pragma: no cover
