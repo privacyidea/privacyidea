@@ -26,7 +26,7 @@ from webauthn.helpers.cose import COSEAlgorithmIdentifier
 from webauthn.helpers.structs import AttestationConveyancePreference
 
 from privacyidea.lib.challenge import get_challenges
-from privacyidea.lib.error import EnrollmentError, ParameterError, ResourceNotFoundError
+from privacyidea.lib.error import EnrollmentError, ParameterError, ResourceNotFoundError, PolicyError
 from privacyidea.lib.fido2.challenge import create_fido2_challenge, verify_fido2_challenge
 from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction, PasskeyAction
 from privacyidea.lib.fido2.token_info import FIDO2TokenInfo
@@ -576,3 +576,87 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
         self.assertEqual("hans", token._resolve_user_label_tags("{givenname}", broken_user))
 
         remove_token(serial)
+
+    def test_16_enroll_restrict_authenticator_device_type(self):
+        """
+        The fixture credential is single_device (not backed up). Enrollment must be rejected if the
+        SCOPE.ENROLL policy only allows multi_device authenticators, and must succeed if it allows
+        single_device (or is not set at all).
+        """
+        registration_request = self._initialize_registration()
+        registration_request.registration_response[PasskeyAction.AllowedAuthenticatorDeviceTypes] = ["multi_device"]
+        with self.assertRaises(PolicyError):
+            registration_request.token.update(registration_request.registration_response)
+        # The token is left in CLIENTWAIT, as with any other failed enrollment
+        self.assertEqual(RolloutState.CLIENTWAIT, registration_request.token.rollout_state)
+        remove_token(serial=registration_request.token.get_serial())
+
+        registration_request = self._initialize_registration()
+        registration_request.registration_response[PasskeyAction.AllowedAuthenticatorDeviceTypes] = ["single_device"]
+        registration_request.token.update(registration_request.registration_response)
+        self.assertEqual(RolloutState.ENROLLED, registration_request.token.rollout_state)
+        remove_token(serial=registration_request.token.get_serial())
+
+    def test_17_authenticate_restrict_authenticator_device_type(self):
+        """
+        The fixture credential is single_device. The SCOPE.AUTH policy is independent of the SCOPE.ENROLL one:
+        it is evaluated fresh, cryptographically, on every authentication. A policy-denied response returns -1
+        rather than raising, since passkey check_otp can also be reached through the passkey_trigger_by_pin /
+        check_token_list path, which does not catch exceptions and would abort evaluation of other tokens.
+        """
+        token = self._create_token()
+        challenge = self._initialize_authentication()
+        authentication_response = dict(self.authentication_response_no_uv)
+        authentication_response["HTTP_ORIGIN"] = self.expected_origin
+        authentication_response[PasskeyAction.AllowedAuthenticatorDeviceTypes] = ["multi_device"]
+        verification_result = verify_fido2_challenge(challenge["transaction_id"], token, authentication_response)
+        self.assertEqual(-1, verification_result.success)
+
+        # A different, higher-sign-count fixture is used here: the sign count of a cryptographically valid
+        # response is persisted even when a policy above then still denies it (it is genuine proof of possession,
+        # not evidence of a replay), so the "no_uv" fixture's sign count has already been consumed.
+        with patch('privacyidea.lib.fido2.challenge.get_fido2_nonce') as get_nonce:
+            get_nonce.return_value = self.authentication_challenge_uv
+            challenge = create_fido2_challenge(self.rp_id)
+        authentication_response = dict(self.authentication_response_uv)
+        authentication_response["HTTP_ORIGIN"] = self.expected_origin
+        authentication_response[PasskeyAction.AllowedAuthenticatorDeviceTypes] = ["single_device"]
+        verification_result = verify_fido2_challenge(challenge["transaction_id"], token, authentication_response)
+        self.assertEqual(1, verification_result.success)
+        remove_token(serial=token.get_serial())
+
+    def test_18_authenticate_enforce_user_handle(self):
+        """
+        With PasskeyAction.EnforceUserHandle enabled, authentication must fail if the userHandle returned by the
+        authenticator does not match the FIDO2 user ID recorded for the token's assigned user (e.g. after the
+        token was unassigned and re-assigned to a different user), and must succeed if it matches - even though
+        the two are encoded with different base64 alphabets/padding on the wire. The default/off behavior
+        (mismatches are not checked at all) is already covered by every other authentication test in this file
+        that never sets this policy.
+        """
+        token = self._create_token()
+
+        # Mismatch: the recorded FIDO2 user ID does not correspond to self.user_handle at all
+        self.user.set_internal_attribute(FIDO2TokenInfo.USER_ID, bytes_to_base64url(b"some-other-users-id"))
+        challenge = self._initialize_authentication()
+        authentication_response = dict(self.authentication_response_no_uv)
+        authentication_response["HTTP_ORIGIN"] = self.expected_origin
+        authentication_response[PasskeyAction.EnforceUserHandle] = True
+        verification_result = verify_fido2_challenge(challenge["transaction_id"], token, authentication_response)
+        self.assertEqual(-1, verification_result.success)
+
+        # Match: self.user_handle is standard base64 (with padding), the stored value is base64url (unpadded) -
+        # same bytes, different alphabet. Uses the "uv" fixture (higher sign count) since the "no_uv" fixture's
+        # sign count was already consumed by the (cryptographically valid, if policy-denied) attempt above.
+        self.user.set_internal_attribute(FIDO2TokenInfo.USER_ID, bytes_to_base64url(
+            base64url_to_bytes(self.user_handle)))
+        with patch('privacyidea.lib.fido2.challenge.get_fido2_nonce') as get_nonce:
+            get_nonce.return_value = self.authentication_challenge_uv
+            challenge = create_fido2_challenge(self.rp_id)
+        authentication_response = dict(self.authentication_response_uv)
+        authentication_response["HTTP_ORIGIN"] = self.expected_origin
+        authentication_response[PasskeyAction.EnforceUserHandle] = True
+        verification_result = verify_fido2_challenge(challenge["transaction_id"], token, authentication_response)
+        self.assertEqual(1, verification_result.success)
+
+        remove_token(serial=token.get_serial())
