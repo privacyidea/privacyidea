@@ -502,7 +502,7 @@ def count_user_devices(client_id: str, resolver: str, user_id: str, realm_id: in
 
 
 def get_client_devices(client_id: str, realm_ids: list[int] | set[int] | None = None,
-                       realm_id: int | None = None, page: int = 1, page_size: int = 25) -> dict:
+                       realm_id: int | None = None, page: int = 1, page_size: int = 50) -> dict:
     """
     Return a page of the remembered devices belonging to a client, newest
     first, optionally restricted to a set of realms and/or narrowed to a single

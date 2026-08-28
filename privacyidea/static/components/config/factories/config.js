@@ -1099,8 +1099,9 @@ myApp.factory("ConfigFactory", ["AuthFactory", "$http", "$state", "$rootScope",
                     AuthFactory.authError(error.data)
                 });
             },
-            getClientRememberedDevices: function (clientId, callback) {
+            getClientRememberedDevices: function (clientId, params, callback) {
                 $http.get(clientsUrl + "/" + clientId + "/remembered_devices", {
+                    params: params,
                     headers: {
                         'PI-Authorization': AuthFactory.getAuthToken(),
                         'Content-Type': 'application/json'

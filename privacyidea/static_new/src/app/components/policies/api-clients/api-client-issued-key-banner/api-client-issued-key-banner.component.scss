@@ -21,4 +21,11 @@
   code {
     overflow-wrap: anywhere;
   }
+
+  // The copy button's default icon color is a low-contrast surface tone, meant
+  // for a plain page background; it is nearly invisible on this panel's tinted
+  // background, so give it a color that contrasts in both themes.
+  app-copy-button {
+    --copy-icon-color: var(--mat-sys-on-surface);
+  }
 }

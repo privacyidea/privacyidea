@@ -25,6 +25,7 @@ import { MatTooltip } from "@angular/material/tooltip";
 import { Router, RouterLink } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
+import { ApiClientService, ApiClientServiceInterface } from "@services/api-client/api-client.service";
 import { AuditService, AuditServiceInterface } from "@services/audit/audit.service";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { CaConnectorService, CaConnectorServiceInterface } from "@services/ca-connector/ca-connector.service";
@@ -110,6 +111,7 @@ export class UserUtilsPanelComponent {
   private readonly tokengroupService: TokengroupServiceInterface = inject(TokengroupService);
   private readonly caConnectorService: CaConnectorServiceInterface = inject(CaConnectorService);
   private readonly serviceIdService: ServiceIdServiceInterface = inject(ServiceIdService);
+  private readonly apiClientService: ApiClientServiceInterface = inject(ApiClientService);
   protected readonly periodicTaskService = inject(PeriodicTaskService);
   protected readonly eventService: EventServiceInterface = inject(EventService);
   protected readonly systemService: SystemServiceInterface = inject(SystemService);
@@ -234,6 +236,9 @@ export class UserUtilsPanelComponent {
       this.tokenService.tokenResource.reload();
       this.tokenService.userTokenResource.reload();
       this.containerService.userContainersResource.reload();
+      return;
+    } else if (this.contentService.onApiClients()) {
+      this.apiClientService.apiClientResource.reload();
       return;
     }
 

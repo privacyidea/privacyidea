@@ -60,7 +60,7 @@ export class ApiClientRememberedDevicesComponent {
   devices = signal<RememberedDevice[]>([]);
   count = signal<number>(0);
   pageIndex = signal<number>(0);
-  pageSize = signal<number>(25);
+  pageSize = signal<number>(50);
   pageSizeOptions = [10, 25, 50, 100];
   realmFilter = signal<string>("");
 
@@ -154,50 +154,37 @@ export class ApiClientRememberedDevicesComponent {
       });
   }
 
-  revokeAllForClient(): void {
-    if (this.count() === 0) return;
-    this.dialogService
-      .openDialog({
-        component: SimpleConfirmationDialogComponent,
-        data: {
-          title: $localize`Revoke All Remembered Devices`,
-          items: [$localize`All remembered devices for this client`],
-          itemType: "remembered-device",
-          confirmAction: { label: $localize`Revoke all`, value: true, type: "destruct" }
-        }
-      })
-      .afterClosed()
-      .subscribe((result) => {
-        if (result) {
-          void this.apiClientService.revokeAllForClient(this.clientId()).then(() => {
-            this.pageIndex.set(0);
-            this.reloadCurrent();
-          });
-        }
-      });
+  revokeAllLabel(): string {
+    return this.realmFilter() ? $localize`Revoke all in this realm` : $localize`Revoke all`;
   }
 
-  revokeAllInSelectedRealm(): void {
+  revokeAll(): void {
+    if (this.count() === 0) return;
     const realm = this.realmFilter();
-    if (!realm) return;
     this.dialogService
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: $localize`Revoke All In Realm`,
-          items: [$localize`All remembered devices in realm ${realm} (across all clients)`],
+          title: realm ? $localize`Revoke All In Realm` : $localize`Revoke All Remembered Devices`,
+          items: [
+            realm
+              ? $localize`All remembered devices in realm ${realm} (across all clients)`
+              : $localize`All remembered devices for this client`
+          ],
           itemType: "remembered-device",
-          confirmAction: { label: $localize`Revoke all in realm`, value: true, type: "destruct" }
+          confirmAction: { label: this.revokeAllLabel(), value: true, type: "destruct" }
         }
       })
       .afterClosed()
       .subscribe((result) => {
-        if (result) {
-          void this.apiClientService.revokeAllInRealmAcrossClients(realm).then(() => {
-            this.pageIndex.set(0);
-            this.reloadCurrent();
-          });
-        }
+        if (!result) return;
+        const revoke = realm
+          ? this.apiClientService.revokeAllInRealmAcrossClients(realm)
+          : this.apiClientService.revokeAllForClient(this.clientId());
+        void revoke.then(() => {
+          this.pageIndex.set(0);
+          this.reloadCurrent();
+        });
       });
   }
 }

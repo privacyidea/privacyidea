@@ -104,7 +104,7 @@ describe("ApiClientRememberedDevicesComponent", () => {
     expect(component).toBeTruthy();
     expect(apiClientServiceMock.getRememberedDevices).toHaveBeenCalledWith("client1", {
       page: 1,
-      pageSize: 25,
+      pageSize: 50,
       realm: undefined
     });
     expect(component.devices().length).toBe(2);
@@ -122,7 +122,7 @@ describe("ApiClientRememberedDevicesComponent", () => {
     await fixture.whenStable();
     expect(apiClientServiceMock.getRememberedDevices).toHaveBeenCalledWith("client1", {
       page: 1,
-      pageSize: 25,
+      pageSize: 50,
       realm: "realm1"
     });
   });
@@ -167,32 +167,31 @@ describe("ApiClientRememberedDevicesComponent", () => {
     expect(dialogServiceMock.openDialog).not.toHaveBeenCalled();
   });
 
-  it("should revoke all remembered devices for the client", async () => {
-    component.revokeAllForClient();
+  it("should revoke all remembered devices for the client when no realm is selected", async () => {
+    expect(component.revokeAllLabel()).toBe("Revoke all");
+    component.revokeAll();
     confirmClosed.next(true);
     confirmClosed.complete();
     await fixture.whenStable();
     expect(apiClientServiceMock.revokeAllForClient).toHaveBeenCalledWith("client1");
+    expect(apiClientServiceMock.revokeAllInRealmAcrossClients).not.toHaveBeenCalled();
   });
 
-  it("should do nothing when revoking all for the client with no devices", () => {
+  it("should do nothing when revoking all with no devices", () => {
     component.count.set(0);
-    component.revokeAllForClient();
+    component.revokeAll();
     expect(dialogServiceMock.openDialog).not.toHaveBeenCalled();
   });
 
   it("should revoke all devices in the selected realm across all clients", async () => {
     component.realmFilter.set("realm1");
-    component.revokeAllInSelectedRealm();
+    expect(component.revokeAllLabel()).toBe("Revoke all in this realm");
+    component.revokeAll();
     confirmClosed.next(true);
     confirmClosed.complete();
     await fixture.whenStable();
     expect(apiClientServiceMock.revokeAllInRealmAcrossClients).toHaveBeenCalledWith("realm1");
-  });
-
-  it("should do nothing when revoking all in realm without a realm selected", () => {
-    component.revokeAllInSelectedRealm();
-    expect(dialogServiceMock.openDialog).not.toHaveBeenCalled();
+    expect(apiClientServiceMock.revokeAllForClient).not.toHaveBeenCalled();
   });
 
   it("should navigate to the resolved user's details", () => {

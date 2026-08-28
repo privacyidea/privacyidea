@@ -131,6 +131,10 @@ export class ApiClientEditComponent implements OnDestroy {
     return this.apiClientForm().dirty();
   }
 
+  cancelLabel(): string {
+    return this.hasChanges ? $localize`Cancel` : $localize`Back`;
+  }
+
   get canSave(): boolean {
     return this.apiClientForm().valid();
   }

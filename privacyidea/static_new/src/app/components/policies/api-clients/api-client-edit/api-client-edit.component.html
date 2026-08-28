@@ -22,7 +22,7 @@
       <h3
         class="margin-8"
         i18n>
-        Edit API Client
+        API Client "{{ apiClientModel().display_name }}"
       </h3>
     } @else {
       <h3
@@ -38,7 +38,7 @@
           (click)="onCancel()"
           class="action-button-secondary button-width-s"
           mat-stroked-button>
-          <span i18n>Cancel</span>
+          <span>{{ cancelLabel() }}</span>
         </button>
         @if (
           (isEditMode() && authService.actionAllowed("api_client_edit")) ||

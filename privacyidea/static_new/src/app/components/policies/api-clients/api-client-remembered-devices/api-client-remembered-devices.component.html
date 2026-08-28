@@ -26,17 +26,6 @@
     </p>
 
     <div class="actions-row">
-      @if (authService.actionAllowed("remembered_device_revoke")) {
-        <button
-          (click)="revokeAllForClient()"
-          [disabled]="count() === 0"
-          class="action-button-delete-secondary button-width-l"
-          mat-stroked-button>
-          <mat-icon>delete_sweep</mat-icon>
-          <span i18n>Revoke all for this client</span>
-        </button>
-      }
-
       <mat-form-field
         appearance="fill"
         class="realm-filter"
@@ -56,14 +45,14 @@
         </mat-select>
       </mat-form-field>
 
-      @if (realmFilter() && authService.actionAllowed("remembered_device_revoke")) {
+      @if (authService.actionAllowed("remembered_device_revoke")) {
         <button
-          (click)="revokeAllInSelectedRealm()"
+          (click)="revokeAll()"
           [disabled]="count() === 0"
           class="action-button-delete-secondary button-width-l"
           mat-stroked-button>
           <mat-icon>delete_sweep</mat-icon>
-          <span i18n>Revoke all in realm {{ realmFilter() }} (across all clients)</span>
+          <span>{{ revokeAllLabel() }}</span>
         </button>
       }
     </div>

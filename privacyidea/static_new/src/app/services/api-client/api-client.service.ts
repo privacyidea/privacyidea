@@ -208,7 +208,7 @@ export class ApiClientService implements ApiClientServiceInterface {
     clientId: string,
     options?: { page?: number; pageSize?: number; realm?: string }
   ): Promise<RememberedDevicesPage> {
-    let params = new HttpParams().set("page", options?.page ?? 1).set("pagesize", options?.pageSize ?? 25);
+    let params = new HttpParams().set("page", options?.page ?? 1).set("pagesize", options?.pageSize ?? 50);
     if (options?.realm) params = params.set("realm", options.realm);
     const request = this.http.get<PiResponse<RememberedDevicesPage>>(
       `${this.clientsBaseUrl}${encodeURIComponent(clientId)}/remembered_devices`,
