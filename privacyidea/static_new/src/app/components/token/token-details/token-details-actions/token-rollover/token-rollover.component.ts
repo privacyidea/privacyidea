@@ -160,7 +160,8 @@ export class TokenRolloverComponent extends AbstractDialogComponent<
 
     const dialogRef = this.dialogService.openDialog({
       component: TokenCompleteEnrollmentComponent,
-      data: this.enrolledDialogData()
+      data: this.enrolledDialogData(),
+      configOverride: { autoFocus: "input", disableClose: true }
     });
     dialogRef.afterClosed().subscribe((result) => {
       this.tokenService.tokenDetailResource.reload();
@@ -192,7 +193,8 @@ export class TokenRolloverComponent extends AbstractDialogComponent<
     // Open verify dialog
     const dialogRef = this.dialogService.openDialog({
       component: TokenVerifyEnrollmentComponent,
-      data: this.enrolledDialogData()
+      data: this.enrolledDialogData(),
+      configOverride: { autoFocus: "input", disableClose: true }
     });
     dialogRef.afterClosed().subscribe((result) => {
       this.tokenService.tokenDetailResource.reload();

@@ -410,7 +410,10 @@ describe("TokenEnrollmentComponent", () => {
         await component.enrollToken();
 
         expect(dialogServiceMock.openDialog).toHaveBeenCalledWith(
-          expect.objectContaining({ component: TokenCompleteEnrollmentComponent })
+          expect.objectContaining({
+            component: TokenCompleteEnrollmentComponent,
+            configOverride: { autoFocus: "input", disableClose: true }
+          })
         );
         expect(component.enrollResponse()).toBeNull();
         expect(component.enrolledDialogData()).toBeNull();
@@ -434,7 +437,10 @@ describe("TokenEnrollmentComponent", () => {
         await component.enrollToken();
 
         expect(dialogServiceMock.openDialog).toHaveBeenCalledWith(
-          expect.objectContaining({ component: TokenVerifyEnrollmentComponent })
+          expect.objectContaining({
+            component: TokenVerifyEnrollmentComponent,
+            configOverride: { autoFocus: "input", disableClose: true }
+          })
         );
         expect(component.enrollResponse()).toBeNull();
         expect(component.enrolledDialogData()).toBeNull();
@@ -557,7 +563,8 @@ describe("TokenEnrollmentComponent", () => {
         expect(dialogServiceMock.openDialog).toHaveBeenCalledWith(
           expect.objectContaining({
             component: TokenCompleteEnrollmentComponent,
-            data: expect.objectContaining({ response: enrollResponse })
+            data: expect.objectContaining({ response: enrollResponse }),
+            configOverride: { autoFocus: "input", disableClose: true }
           })
         );
         // After closed complete dialog called and opened last step dialog with correct data
@@ -637,7 +644,8 @@ describe("TokenEnrollmentComponent", () => {
         expect(dialogServiceMock.openDialog).toHaveBeenCalledWith(
           expect.objectContaining({
             component: TokenCompleteEnrollmentComponent,
-            data: expect.objectContaining({ response: enrollResponse })
+            data: expect.objectContaining({ response: enrollResponse }),
+            configOverride: { autoFocus: "input", disableClose: true }
           })
         );
         // After closed complete dialog called and opened verify with correct data
@@ -645,7 +653,8 @@ describe("TokenEnrollmentComponent", () => {
         expect(dialogServiceMock.openDialog).toHaveBeenCalledWith(
           expect.objectContaining({
             component: TokenVerifyEnrollmentComponent,
-            data: expect.objectContaining({ response: completeResponse })
+            data: expect.objectContaining({ response: completeResponse }),
+            configOverride: { autoFocus: "input", disableClose: true }
           })
         );
         // verify dialog closed and last step dialog opened with correct data
@@ -701,7 +710,8 @@ describe("TokenEnrollmentComponent", () => {
         expect(dialogServiceMock.openDialog).toHaveBeenCalledWith(
           expect.objectContaining({
             component: TokenVerifyEnrollmentComponent,
-            data: expect.objectContaining({ response: enrollResponse })
+            data: expect.objectContaining({ response: enrollResponse }),
+            configOverride: { autoFocus: "input", disableClose: true }
           })
         );
         // closed verify dialog and open last step dialog with correct data

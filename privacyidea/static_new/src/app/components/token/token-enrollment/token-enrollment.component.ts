@@ -422,7 +422,8 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
 
     const dialogRef = this.dialogService.openDialog({
       component: TokenCompleteEnrollmentComponent,
-      data: this.enrolledDialogData()
+      data: this.enrolledDialogData(),
+      configOverride: { autoFocus: "input", disableClose: true }
     });
     dialogRef.afterClosed().subscribe((result) => {
       if (result === ENROLLMENT_CANCELLED) {
@@ -457,7 +458,8 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
     // Open verify dialog
     const dialogRef = this.dialogService.openDialog({
       component: TokenVerifyEnrollmentComponent,
-      data: this.enrolledDialogData()
+      data: this.enrolledDialogData(),
+      configOverride: { autoFocus: "input", disableClose: true }
     });
     dialogRef.afterClosed().subscribe((result) => {
       if (result === ENROLLMENT_CANCELLED) {

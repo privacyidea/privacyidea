@@ -138,6 +138,25 @@ describe("EnrollPushComponent", () => {
     expect(component.pollResponse()).toBeUndefined();
   });
 
+  it("opens the first-step dialog so it cannot be dismissed by clicking outside of it", async () => {
+    const initResp = makeInitResp("S-1");
+    const pollResp = makePollResp("enrolled");
+
+    tokenService.enrollToken.mockReturnValue(of(initResp));
+    tokenService.pollTokenRolloutState.mockReturnValue(of(pollResp));
+
+    const enrollmentArgs = component.buildEnrollmentArgs({} as TokenEnrollmentData);
+    const initResponse = await lastValueFrom(tokenService.enrollToken(enrollmentArgs!));
+
+    await component.onEnrollmentResponse(initResponse as EnrollmentResponse);
+
+    expect(dialogService.openDialog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        configOverride: { disableClose: true }
+      })
+    );
+  });
+
   it("keeps dialog open when rollout_state is clientwait", async () => {
     const pollResp = makePollResp("clientwait");
     tokenService.enrollToken.mockReturnValue(of(makeInitResp()));
