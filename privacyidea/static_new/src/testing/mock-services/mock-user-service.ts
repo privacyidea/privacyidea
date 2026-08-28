@@ -21,9 +21,14 @@ import { linkedSignal, Signal, signal } from "@angular/core";
 import { Sort } from "@angular/material/sort";
 import { PiResponse } from "@app/app.component";
 import { FilterValue } from "@core/models/filter_value/filter_value";
-import { UserAttributePolicy, UserData, UserServiceInterface } from "@services/user/user.service";
-import { of } from "rxjs";
+import {
+  UserAttributePolicy,
+  UserData,
+  UserListResponseDetail,
+  UserServiceInterface
+} from "@services/user/user.service";
 import { Debouncer } from "@utils/debounce.utils";
+import { of } from "rxjs";
 import { MockHttpResourceRef, MockPiResponse } from "./mock-utils";
 
 export class MockUserService implements UserServiceInterface {
@@ -118,9 +123,10 @@ export class MockUserService implements UserServiceInterface {
     username: ""
   });
 
-  usersResource: HttpResourceRef<PiResponse<UserData[], undefined> | undefined> = new MockHttpResourceRef(
-    MockPiResponse.fromValue([])
-  );
+  usersResource: HttpResourceRef<PiResponse<UserData[], UserListResponseDetail | undefined> | undefined> =
+    new MockHttpResourceRef(MockPiResponse.fromValue([]));
+  skippedResolvers = signal<string[]>([]);
+  realmResolverCount = signal(0);
 
   users = signal<UserData[]>([]);
   allUsernames: Signal<string[]> = signal([]);

@@ -23,6 +23,17 @@
   <div
     appScrollToTop
     class="user-table-container">
+    @if (userService.skippedResolvers().length) {
+      <div
+        class="inline-warning resolver-warning"
+        role="status">
+        <mat-icon aria-hidden="true">warning_amber</mat-icon>
+        <span i18n>
+          {{ userService.skippedResolvers().length }} of {{ userService.realmResolverCount() }} resolvers could not be
+          queried, so this list is incomplete: {{ skippedResolverNames() }}
+        </span>
+      </div>
+    }
     @if (tableState.showTable()) {
       <div class="filter-paginator-container">
         <mat-form-field

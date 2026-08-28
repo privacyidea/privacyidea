@@ -16,14 +16,15 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { computed, Signal } from "@angular/core";
+import { computed, linkedSignal, Signal, WritableSignal } from "@angular/core";
 
-export type TableStatus = "denied" | "loading" | "error" | "empty" | "filtered" | "ready";
+export type TableStatus = "denied" | "loading" | "cancelled" | "error" | "empty" | "filtered" | "ready";
 
 export interface TableStateResource {
   hasValue(): boolean;
   error(): unknown;
   reload(): unknown;
+  isLoading?(): boolean;
 }
 
 export interface TableStateOptions {
@@ -32,6 +33,7 @@ export interface TableStateOptions {
   readonly filterActive?: () => boolean;
   readonly allowed?: () => boolean;
   readonly resetFilter?: () => void;
+  readonly cancel?: () => void;
 }
 
 export class TableState {
@@ -44,6 +46,11 @@ export class TableState {
    */
   readonly showTable: Signal<boolean>;
 
+  private readonly cancelled: WritableSignal<boolean> = linkedSignal({
+    source: () => this.options.resource.isLoading?.() ?? false,
+    computation: (isLoading, previous) => (isLoading ? false : (previous?.value ?? false))
+  });
+
   constructor(private readonly options: TableStateOptions) {
     this.status = computed(() => {
       if (this.options.allowed?.() === false) {
@@ -53,7 +60,7 @@ export class TableState {
         return "error";
       }
       if (!this.options.resource.hasValue()) {
-        return "loading";
+        return this.cancelled() ? "cancelled" : "loading";
       }
       if (this.options.count() > 0) {
         return "ready";
@@ -64,7 +71,7 @@ export class TableState {
     this.isFiltered = computed(() => this.options.filterActive?.() ?? false);
     this.showTable = computed(() => {
       const status = this.status();
-      if (status === "empty" || status === "denied" || status === "error") {
+      if (status === "empty" || status === "denied" || status === "error" || status === "cancelled") {
         return false;
       }
       // A table of placeholder rows is shaped like data, so ending the load on the empty panel
@@ -85,7 +92,20 @@ export class TableState {
     return this.options.resetFilter !== undefined;
   }
 
+  get canCancel(): boolean {
+    return this.options.cancel !== undefined;
+  }
+
+  cancel(): void {
+    if (!this.options.cancel) {
+      return;
+    }
+    this.cancelled.set(true);
+    this.options.cancel();
+  }
+
   retry(): void {
+    this.cancelled.set(false);
     this.options.resource.reload();
   }
 

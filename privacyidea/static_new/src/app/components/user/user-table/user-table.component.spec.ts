@@ -21,7 +21,10 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { provideHttpClient } from "@angular/common/http";
 import { ActivatedRoute } from "@angular/router";
 import { FilterValue } from "@core/models/filter_value/filter_value";
+import { AuthService } from "@services/auth/auth.service";
 import { ContentService } from "@services/content/content.service";
+import { RealmService } from "@services/realm/realm.service";
+import { ResolverService } from "@services/resolver/resolver.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import { UserData, UserService } from "@services/user/user.service";
 import {
@@ -32,15 +35,12 @@ import {
   MockTableUtilsService,
   MockUserService
 } from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { MockResolverService } from "@testing/mock-services/mock-resolver-service";
 import { MockPiResponse } from "@testing/mock-services/mock-utils";
+import { expectsTableStateGating } from "@testing/table-state-gating";
 import { of } from "rxjs";
 import { UserTableComponent } from "./user-table.component";
-import { ResolverService } from "@services/resolver/resolver.service";
-import { MockResolverService } from "@testing/mock-services/mock-resolver-service";
-import { RealmService } from "@services/realm/realm.service";
-import { AuthService } from "@services/auth/auth.service";
-import { MockAuthService } from "@testing/mock-services/mock-auth-service";
-import { expectsTableStateGating } from "@testing/table-state-gating";
 
 describe("UserTableComponent", () => {
   let component: UserTableComponent;
@@ -82,6 +82,23 @@ describe("UserTableComponent", () => {
       state: component.tableState,
       right: "userlist"
     });
+  });
+
+  it("stops a user load that hangs, and reports it on the panel", () => {
+    const authService = TestBed.inject(AuthService) as unknown as MockAuthService;
+    authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["userlist"] });
+    mockUserService.usersResource.set(MockPiResponse.fromValue([]) as never);
+
+    component.tableState.cancel();
+
+    expect(mockUserService.usersResource.hasValue()).toBe(false);
+    expect(component.tableState.status()).toBe("cancelled");
+    expect(component.tableState.showTable()).toBe(false);
+
+    component.tableState.retry();
+
+    expect(mockUserService.usersResource.reload).toHaveBeenCalled();
+    expect(component.tableState.status()).toBe("loading");
   });
 
   it("should create", () => {

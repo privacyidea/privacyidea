@@ -62,10 +62,10 @@ import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-t
 import { FilterAutocompleteDirective } from "@components/shared/directives/filter-autocomplete.directive";
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { TableStateComponent } from "@components/shared/table-state/table-state.component";
-import { TableState } from "@core/models/table_state/table-state";
 import { UserNewResolverComponent } from "@components/user/user-new-resolver/user-new-resolver.component";
 import { FilterOption } from "@core/models/filter_value_generic/filter-option";
 import { FilterValueGeneric, keywordlessTerms } from "@core/models/filter_value_generic/filter-value-generic";
+import { TableState } from "@core/models/table_state/table-state";
 import { ResolverService } from "@services/resolver/resolver.service";
 import { UserTableActionsComponent } from "./user-table-actions/user-table-actions.component";
 
@@ -172,12 +172,15 @@ export class UserTableComponent implements OnDestroy {
     source: () => this.filteredUsers(),
     computation: (filtered, previous) => (filtered ? filtered.length : (previous?.value ?? 0))
   });
+  readonly skippedResolverNames = computed(() => this.userService.skippedResolvers().join(", "));
+
   readonly tableState = new TableState({
     resource: this.userService.usersResource,
     count: () => this.totalLength(),
     filterActive: () => !this.userService.activeFilter().isEmpty,
     allowed: () => this.authService.actionAllowed("userlist"),
-    resetFilter: () => this.userService.clearFilter()
+    resetFilter: () => this.userService.clearFilter(),
+    cancel: () => this.userService.usersResource.set(undefined)
   });
   usersDataSource: WritableSignal<MatTableDataSource<UserData>> = linkedSignal({
     source: () => ({
