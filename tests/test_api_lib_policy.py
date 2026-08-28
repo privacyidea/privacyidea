@@ -137,14 +137,15 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
     def test_01a_postpolicy_requires_a_request(self):
         # A postpolicy function matches on request.User, so a decorator call site that omits
         # request= must fail loudly at definition time rather than silently disabling every
-        # user/realm-scoped policy condition of the wrapped function.
-        self.assertRaises(ValueError, postpolicy, check_tokentype)
+        # user/realm-scoped policy condition of the wrapped function. request has no default,
+        # so omitting it entirely is a TypeError; passing an explicit None is a ValueError.
+        self.assertRaises(TypeError, postpolicy, check_tokentype)
         self.assertRaises(ValueError, postpolicy, check_tokentype, None)
 
     def test_01b_postrequest_requires_a_request(self):
         # postrequest has the same request.User matching as postpolicy, so it must fail
         # loudly at definition time too when a call site omits request=.
-        self.assertRaises(ValueError, postrequest, sign_response)
+        self.assertRaises(TypeError, postrequest, sign_response)
         self.assertRaises(ValueError, postrequest, sign_response, None)
 
     def test_01_check_undetermined_tokentype(self):

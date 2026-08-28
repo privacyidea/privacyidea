@@ -112,7 +112,7 @@ class postpolicy:
     The postpolicy decorator is to be used in the API calls.
     """
 
-    def __init__(self, function, request=None):
+    def __init__(self, function: callable, request: Request):
         """
         :param function: This is the policy function the is to be called
         :type function: function
@@ -152,7 +152,7 @@ class postrequest:
     Decorator that is supposed to be used with after_request.
     """
 
-    def __init__(self, function, request=None):
+    def __init__(self, function: callable, request: Request):
         """
         :param function: This is the policy function the is to be called
         :type function: function
