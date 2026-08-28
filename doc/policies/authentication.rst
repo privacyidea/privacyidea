@@ -283,13 +283,18 @@ type: ``string``
 
 This policy sets or overwrites the realm parameter at the beginning of authentication requests to :http:post:`/auth`
 and :http:post:`/validate/check`. It is applied before the first user resolving to avoid unnecessary user store
-requests.
+requests. This means, when this policy is evaluated there is no user object in the request, yet!
 
-This can be used if the user can not pass their realm when authenticating at a certain
-client, but the realm needs to be available during authentication, since the user is not located in the default realm or
-the user should not be unnecessarily annoyed with a realm selection.
+Please note, due to this, it is not possible to use user-related conditions for this policy!
 
-.. note:: This policy takes precedence over the :ref:`policy_mangle` and :ref:`policy_setrealm` policies.
+Also, the given parameters can actually point to a non-existing user object.
+
+This policy can be used if the user can not pass his realm when authenticating at a certain
+client, but this username would not be found in the default realm.
+
+.. note:: This policy is evaluated before the :ref:`policy_mangle` and :ref:`policy_setrealm` policies.
+
+For in depth information about user and realm mapping read :ref:`realms`.
 
 .. versionadded:: 3.12
 
@@ -304,7 +309,7 @@ type: ``string``
 
 The ``mangle`` policy can mangle the authentication request data before they
 are processed. Meaning the parameters ``user``, ``pass`` and ``realm`` can be
-modified prior to authentication.
+modified prior to authentication and before the user object is created during processing of the request.
 
 .. note:: This policy is only applied to :http:post:`/validate/check`.
 
