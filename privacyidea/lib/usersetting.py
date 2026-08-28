@@ -69,6 +69,11 @@ USER_SETTINGS_ALLOWED_KEYS_CONFIG = "PI_USER_SETTINGS_ALLOWED_KEYS"
 # frontend team defines the real set; do not treat them as a committed API yet.
 KNOWN_SETTING_KEYS = {
     "theme",
+    "locale",
+    "show_loading_urls",
+    "depth",
+    "light_source",
+    "corner_radius",
     "starting_page",
     "token_columns",
     "dashboard",

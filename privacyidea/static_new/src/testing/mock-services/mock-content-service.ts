@@ -34,6 +34,8 @@ export class MockContentService implements ContentServiceInterface {
   machineResolver = signal("");
 
   onLogin = computed(() => this.matchesPath(ROUTE_PATHS.LOGIN));
+  onDashboard = signal(false);
+  onNews = signal(false);
   onAudit = computed(() => this.matchesPath(ROUTE_PATHS.AUDIT));
   onClients = computed(() => this.matchesPath(ROUTE_PATHS.CLIENTS));
   onTokens = computed(() => this.matchesPath(ROUTE_PATHS.TOKENS));

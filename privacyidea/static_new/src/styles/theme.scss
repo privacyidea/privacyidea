@@ -9,7 +9,25 @@ html {
     --rose-ripple: light-dark(#f4d7e0, #433d3e);
     --sky-bg: light-dark(#edf3f5, #283034);
 
-    --mat-sys-light: light-dark(#ffffff, #242424);
+    // Highlight half of every shadow pair (--elevation-* in styles.scss). Kept a close step from
+    // --mat-sys-shadow so both halves read as grey and the pair separates surfaces softly.
+    --mat-sys-light: light-dark(#e8e8e8, #303030);
+
+    // The tones the flat depth level's border is drawn in. A border is a hard line on the surface
+    // it outlines, so it needs tones that clear both --mat-sys-background and --table-color; the
+    // shadow pair above is deliberately soft and lands too near one or the other. Straddling the
+    // page is no good either: a tone light enough to show against it is then the card's own fill.
+    // So every tone sits clear of both surfaces on the same side — darker in light mode, lighter in
+    // dark. Three steps, each a --shadow / --light pair for a surface's two halves: -1 is the most
+    // contrasty, -3 the lightest. styles.scss hands the shallower depth slots (3, then 5) the
+    // lighter steps and the deepest (8) the boldest, the same relationship the blurred shadow pair
+    // has through --depth-scale.
+    --flat-border-shadow-1: light-dark(hsl(0, 0%, 70%), hsl(0, 0%, 45%));
+    --flat-border-shadow-2: light-dark(hsl(0, 0%, 77%), hsl(0, 0%, 55%));
+    --flat-border-shadow-3: light-dark(hsl(0, 0%, 84%), hsl(0, 0%, 65%));
+    --flat-border-light-1: light-dark(hsl(0, 0%, 82%), hsl(0, 0%, 32%));
+    --flat-border-light-2: light-dark(hsl(0, 0%, 86%), hsl(0, 0%, 42%));
+    --flat-border-light-3: light-dark(hsl(0, 0%, 90%), hsl(0, 0%, 52%));
 
     --mat-sys-primary-dark: light-dark(hsl(198, 66%, 25%), hsl(198, 66%, 60%));
     --mat-sys-primary-base: light-dark(hsl(198, 66%, 30%), hsl(198, 66%, 55%));
@@ -43,9 +61,6 @@ html {
     --grey-light-active: light-dark(hsl(0, 0%, 60%), hsl(0, 0%, 58%));
     --grey-base-hover: light-dark(hsl(0, 0%, 45%), hsl(0, 0%, 35%));
 
-    --mat-sys-shadow-color-high: light-dark(#ababab, #050505);
-    --dashboard-shadow-color: light-dark(#cccccc, #181818);
-
     --mat-sys-primary: var(--mat-sys-primary-base);
     --mat-sys-on-primary: light-dark(hsl(198, 66%, 95%), hsl(198, 66%, 10%));
     --mat-sys-primary-container: light-dark(hsl(198, 66%, 90%), hsl(198, 66%, 20%));
@@ -60,14 +75,15 @@ html {
     --mat-sys-on-surface: light-dark(hsl(0, 0%, 10%), hsl(0, 0%, 90%));
     --mat-sys-on-surface-variant: light-dark(hsl(0, 0%, 30%), hsl(0, 0%, 80%));
     --mat-sys-on-primary-container: light-dark(hsl(198, 66%, 10%), hsl(198, 66%, 80%));
-    --mat-sys-shadow: light-dark(#cccccc, #000000);
+    // Shadow half of every shadow pair (--elevation-* in styles.scss), held short of pure black.
+    --mat-sys-shadow: light-dark(#d1d1d1, #1c1c1c);
 
     --mat-sys-outline: light-dark(hsl(246, 4%, 48%), hsl(0, 0%, 40%));
     --nav-item-border: light-dark(#d0d0d0, #333333);
 
     --inline-hint-bg: light-dark(hsl(200, 65%, 91%), hsl(200, 65%, 20%));
     --inline-warning-bg: light-dark(hsl(0, 83%, 95%), hsl(0, 83%, 18%));
-    --mat-tooltip-container-color: var(--mat-sys-surface-container-highest);
+    --mat-tooltip-container-color: light-dark(hsl(0, 0%, 95%), hsl(0, 0%, 35%));
     --mat-tooltip-supporting-text-color: var(--mat-sys-on-surface);
   }
 
@@ -78,7 +94,23 @@ html {
     --rose-ripple: #f4d7e0;
     --sky-bg: #edf3f5;
 
-    --mat-sys-light: #ffffff;
+    --mat-sys-light: #e8e8e8;
+
+    // The tones the flat depth level's border is drawn in. A border is a hard line on the surface
+    // it outlines, so it needs tones that clear both --mat-sys-background and --table-color; the
+    // shadow pair above is deliberately soft and lands too near one or the other. Straddling the
+    // page is no good either: a tone light enough to show against it is then the card's own fill.
+    // So every tone sits clear of both surfaces on the same side — darker in light mode, lighter in
+    // dark. Three steps, each a --shadow / --light pair for a surface's two halves: -1 is the most
+    // contrasty, -3 the lightest. styles.scss hands the shallower depth slots (3, then 5) the
+    // lighter steps and the deepest (8) the boldest, the same relationship the blurred shadow pair
+    // has through --depth-scale.
+    --flat-border-shadow-1: hsl(0, 0%, 70%);
+    --flat-border-shadow-2: hsl(0, 0%, 77%);
+    --flat-border-shadow-3: hsl(0, 0%, 84%);
+    --flat-border-light-1: hsl(0, 0%, 82%);
+    --flat-border-light-2: hsl(0, 0%, 86%);
+    --flat-border-light-3: hsl(0, 0%, 90%);
 
     --mat-sys-primary-dark: hsl(198, 66%, 25%);
     --mat-sys-primary-base: hsl(198, 66%, 30%);
@@ -112,9 +144,6 @@ html {
     --grey-light-active: hsl(0, 0%, 60%);
     --grey-base-hover: hsl(0, 0%, 45%);
 
-    --mat-sys-shadow-color-high: #ababab;
-    --dashboard-shadow-color: #cccccc;
-
     --mat-sys-primary: var(--mat-sys-primary-base);
     --mat-sys-on-primary: hsl(198, 66%, 95%);
     --mat-sys-primary-container: hsl(198, 66%, 90%);
@@ -129,13 +158,13 @@ html {
     --mat-sys-on-surface: hsl(0, 0%, 10%);
     --mat-sys-on-surface-variant: hsl(0, 0%, 30%);
     --mat-sys-on-primary-container: hsl(198, 66%, 10%);
-    --mat-sys-shadow: #cccccc;
+    --mat-sys-shadow: #d1d1d1;
     --mat-sys-outline: hsl(246, 4%, 48%);
     --nav-item-border: #d0d0d0;
 
     --inline-hint-bg: hsl(200, 65%, 91%);
     --inline-warning-bg: hsl(0, 83%, 95%);
-    --mat-tooltip-container-color: var(--mat-sys-surface-container-highest);
+    --mat-tooltip-container-color: hsl(0, 0%, 95%);
     --mat-tooltip-supporting-text-color: var(--mat-sys-on-surface);
   }
 
@@ -146,7 +175,23 @@ html {
     --rose-ripple: #433d3e;
     --sky-bg: #283034;
 
-    --mat-sys-light: #242424;
+    --mat-sys-light: #303030;
+
+    // The tones the flat depth level's border is drawn in. A border is a hard line on the surface
+    // it outlines, so it needs tones that clear both --mat-sys-background and --table-color; the
+    // shadow pair above is deliberately soft and lands too near one or the other. Straddling the
+    // page is no good either: a tone light enough to show against it is then the card's own fill.
+    // So every tone sits clear of both surfaces on the same side — darker in light mode, lighter in
+    // dark. Three steps, each a --shadow / --light pair for a surface's two halves: -1 is the most
+    // contrasty, -3 the lightest. styles.scss hands the shallower depth slots (3, then 5) the
+    // lighter steps and the deepest (8) the boldest, the same relationship the blurred shadow pair
+    // has through --depth-scale.
+    --flat-border-shadow-1: hsl(0, 0%, 45%);
+    --flat-border-shadow-2: hsl(0, 0%, 55%);
+    --flat-border-shadow-3: hsl(0, 0%, 65%);
+    --flat-border-light-1: hsl(0, 0%, 32%);
+    --flat-border-light-2: hsl(0, 0%, 42%);
+    --flat-border-light-3: hsl(0, 0%, 52%);
 
     --mat-sys-primary-dark: hsl(198, 66%, 60%);
     --mat-sys-primary-base: hsl(198, 66%, 55%);
@@ -180,9 +225,6 @@ html {
     --grey-light-active: hsl(0, 0%, 58%);
     --grey-base-hover: hsl(0, 0%, 35%);
 
-    --mat-sys-shadow-color-high: #050505;
-    --dashboard-shadow-color: #181818;
-
     --mat-sys-primary: var(--mat-sys-primary-base);
     --mat-sys-on-primary: hsl(198, 66%, 10%);
     --mat-sys-primary-container: hsl(198, 66%, 20%);
@@ -197,13 +239,13 @@ html {
     --mat-sys-on-surface: hsl(0, 0%, 90%);
     --mat-sys-on-surface-variant: hsl(0, 0%, 80%);
     --mat-sys-on-primary-container: hsl(198, 66%, 80%);
-    --mat-sys-shadow: #000000;
+    --mat-sys-shadow: #1c1c1c;
     --mat-sys-outline: hsl(0, 0%, 40%);
     --nav-item-border: #363636;
 
     --inline-hint-bg: hsl(200, 65%, 20%);
     --inline-warning-bg: hsl(0, 83%, 18%);
-    --mat-tooltip-container-color: var(--mat-sys-surface-container-highest);
+    --mat-tooltip-container-color: hsl(0, 0%, 35%);
     --mat-tooltip-supporting-text-color: var(--mat-sys-on-surface);
   }
 

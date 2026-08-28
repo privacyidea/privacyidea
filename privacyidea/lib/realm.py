@@ -379,7 +379,7 @@ def get_realms_of_resolver(resolver_name: str) -> list[str]:
 
 
 @log_with(log)
-def get_ordered_resolvers(realm: str) -> list[str]:
+def get_ordered_resolvers(realm: str, realm_config: dict | None = None) -> list[str]:
     """
     Return the resolvers of the given realm ordered by priority (lowest priority number first).
     Resolvers with the same priority are ordered alphabetically by name. Resolvers pinned to a node
@@ -387,10 +387,12 @@ def get_ordered_resolvers(realm: str) -> list[str]:
     preserving order.
 
     :param realm: The name of the realm
+    :param realm_config: optional, the result of ``get_realms(realm)`` when the caller already
+        fetched it, to avoid querying it again.
     :return: list of resolver names
     """
     resolver_tuples = []
-    realm_config = get_realms(realm)
+    realm_config = get_realms(realm) if realm_config is None else realm_config
     resolvers_in_realm = realm_config.get(realm, {}).get("resolver", [])
     for resolver in resolvers_in_realm:
         resolver_tuples.append((resolver.get("name"),

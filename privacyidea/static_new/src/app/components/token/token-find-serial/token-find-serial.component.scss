@@ -3,8 +3,17 @@
 
 .find-token-serial {
   @include styles.main-component-style;
-  max-height: var(--table-max-height);
   display: grid;
+}
+
+// Wide enough for the two-column input rows it holds: two large inputs, the gap between them and
+// the card's own padding.
+.search-config-card {
+  @include styles.card-recessed(3);
+  box-sizing: border-box;
+  width: calc(2 * var(--input-width-l) + 16px + 2 * 16px);
+  max-width: 100%;
+  padding: 16px;
 }
 
 .token-get-serial-footer {

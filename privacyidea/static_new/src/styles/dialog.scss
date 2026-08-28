@@ -1,20 +1,9 @@
+// A dialog sits on its own scrim, which does the separating, so the shallow step is enough to
+// lift it and its surface stays one flat card tone with no depth gradient.
 .mat-mdc-dialog-surface {
   border-radius: var(--border-radius) !important;
-  box-shadow: var(--box-dialog-shadow) !important;
+  box-shadow: var(--elevation-3) !important;
   background-color: var(--mat-sys-surface-container-lowest) !important;
-}
-
-@mixin dialog-container-styles {
-  padding: var(--global-padding);
-  border-radius: var(--border-radius);
-  box-shadow: var(--elevation-5);
-  background-color: var(--table-color);
-
-  // subtract double global padding to preserve margin around the component
-  // subtract single global padding which is the defined padding above to correctly get the displayed width of the component
-  max-width: calc(100vw - var(--overlay-margin) - 2 * var(--double-global-padding) - 2 * var(--global-padding));
-  max-height: calc(100vh - 2 * var(--double-global-padding) - 2 * var(--global-padding));
-  overflow: auto;
 }
 
 .width-36 {

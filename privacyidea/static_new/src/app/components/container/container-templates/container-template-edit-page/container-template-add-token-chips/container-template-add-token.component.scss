@@ -6,7 +6,7 @@
   mat-card-title {
     font-size: 1.2em;
     font-weight: 500;
-    padding: var(--half-global-padding);
+    padding: 8px;
   }
 
   mat-card {
@@ -19,7 +19,7 @@
     display: block;
     overflow-x: auto;
     width: 100%;
-    padding-bottom: var(--half-global-padding);
+    padding-bottom: 8px;
 
     &::-webkit-scrollbar {
       display: none;

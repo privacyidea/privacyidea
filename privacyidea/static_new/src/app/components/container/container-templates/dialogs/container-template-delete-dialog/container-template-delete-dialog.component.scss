@@ -3,9 +3,9 @@
 .delete-confirmation-container {
   display: flex;
   align-items: flex-start;
-  gap: var(--global-gap);
+  gap: 16px;
   width: 450px;
-  padding: var(--global-padding) 0;
+  padding: 16px 0;
 
   .warn-icon {
     color: var(--mat-sys-error);
@@ -17,7 +17,7 @@
   .message-content {
     display: flex;
     flex-direction: column;
-    gap: calc(var(--global-gap) / 2);
+    gap: calc(16px / 2);
 
     p {
       margin: 0;
