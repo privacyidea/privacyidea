@@ -117,7 +117,12 @@ class Token(MethodsMixin, db.Model):
     rollout_state: Mapped[str | None] = mapped_column(Unicode(10),
                                                          default='')
     info_list = relationship('TokenInfo', lazy='select', back_populates='token', cascade="all, delete-orphan")
-    owners = relationship('TokenOwner', lazy='dynamic', back_populates='token', cascade="all, delete-orphan")
+    # order_by makes first_owner deterministic for a token with more than one
+    # owner -- without it, "the first owner" is whatever order the database
+    # happens to return, which can differ from a query that orders explicitly
+    # (e.g. the token-list page's batched owner lookup).
+    owners = relationship('TokenOwner', lazy='dynamic', back_populates='token', cascade="all, delete-orphan",
+                          order_by='TokenOwner.id')
 
     # Container
     container = relationship('TokenContainer', secondary='tokencontainertoken', back_populates='tokens')
