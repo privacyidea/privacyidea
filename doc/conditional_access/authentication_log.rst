@@ -12,7 +12,10 @@ what was attempted, by whom, from where, and how it ended. It is the data
 It is separate from the :ref:`audit` log. The audit log records *what the API
 did*, in free text, for every call. The authentication log records *how an
 authentication ended*, one entry per request, with a fixed set of event types
-that can be filtered and counted reliably.
+that can be filtered and counted reliably. The only exception is
+:ref:`policy_push_wait`, where one request writes two entries: one when the
+challenge is triggered and one for the outcome, if the challenge was answered
+or declined before the wait ended.
 
 Each entry holds
 
