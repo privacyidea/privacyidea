@@ -24,11 +24,13 @@ The code is tested in tests/test_lib_tokens_ssh
 """
 
 import hashlib
+import json
 import logging
 
 from privacyidea.config import ConfigKey
 from privacyidea.lib import _
 from privacyidea.lib.crypto import safe_compare, decryptPassword, FAILED_TO_DECRYPT_PASSWORD
+from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib.error import TokenAdminError
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.log import log_with
@@ -44,6 +46,10 @@ log = logging.getLogger(__name__)
 #: SSH key types which are always allowed to be enrolled.
 DEFAULT_ALLOWED_SSH_KEY_TYPES = ["ssh-rsa", "ssh-ed25519", "ecdsa-sha2-nistp256",
                                  "sk-ecdsa-sha2-nistp256@openssh.com", "sk-ssh-ed25519@openssh.com"]
+
+#: Token info keys whose value is part of the SSH key integrity checksum.
+#: Whenever one of these is written or deleted, the checksum must be recomputed.
+SSH_KEY_INFO_KEYS = frozenset(["ssh_key", "ssh_type", "ssh_comment"])
 
 
 def compute_ssh_key_checksum(serial: str, key_type: str, key: str, comment: str) -> str:
@@ -62,7 +68,7 @@ def compute_ssh_key_checksum(serial: str, key_type: str, key: str, comment: str)
     :param comment: The SSH key comment
     :return: hexlified SHA256 checksum
     """
-    data = "\n".join([serial or "", key_type or "", key or "", comment or ""])
+    data = json.dumps([serial or "", key_type or "", key or "", comment or ""])
     return hashlib.sha256(data.encode("utf-8")).hexdigest()
 
 
@@ -190,8 +196,7 @@ class SSHkeyTokenClass(TokenClass):
         # Store an integrity checksum of the SSH key data in the encrypted
         # OTP key field, so that a manipulation of the database entries can
         # be detected in get_sshkey().
-        self.token.set_otpkey(compute_ssh_key_checksum(self.token.serial, key_type, key, key_comment))
-        self.token.save()
+        self._update_integrity_checksum()
 
     def import_token(self, token_information: dict):
         """
@@ -199,6 +204,40 @@ class SSHkeyTokenClass(TokenClass):
         imported SSH key data in the encrypted OTP key field.
         """
         TokenClass.import_token(self, token_information)
+        self._update_integrity_checksum()
+
+    @check_token_locked
+    def add_tokeninfo(self, key: str, value: str, value_type: str = None, commit_db_session: bool = True):
+        """
+        Add a token info entry and keep the SSH key integrity checksum in sync.
+
+        Overriding this method makes the token class the single enforcement
+        point for the checksum: any caller that changes the SSH key data
+        (``update()``, the generic ``settokeninfo`` endpoint, event handlers,
+        ...) goes through here, so the checksum can no longer be desynced by
+        writing directly to the token info.
+        """
+        super().add_tokeninfo(key, value, value_type=value_type, commit_db_session=commit_db_session)
+        if key in SSH_KEY_INFO_KEYS:
+            self._update_integrity_checksum()
+
+    def delete_tokeninfo(self, key: str = None):
+        """
+        Delete a token info entry and keep the SSH key integrity checksum in
+        sync when one of the SSH key relevant entries (or all entries) is
+        removed.
+        """
+        super().delete_tokeninfo(key)
+        if key is None or key in SSH_KEY_INFO_KEYS:
+            self._update_integrity_checksum()
+
+    def _update_integrity_checksum(self):
+        """
+        Recompute the SSH key integrity checksum from the current token info
+        and store it in the encrypted OTP key field. This is the single point
+        that keeps the checksum in sync with the ssh_key/ssh_type/ssh_comment
+        token info, regardless of which caller modified them.
+        """
         key_type, sshkey, key_comment = self._get_ssh_key_parts()
         self.token.set_otpkey(compute_ssh_key_checksum(self.token.serial, key_type, sshkey, key_comment))
         self.token.save()
@@ -231,23 +270,34 @@ class SSHkeyTokenClass(TokenClass):
         """
         Return the integrity checksum stored in the encrypted OTP key field.
 
-        The OTP key material (``key_enc``/``key_iv``) may be missing or
-        unreadable, e.g. for tokens that the integrity migration skipped
-        (NULL key fields) or if the columns were manipulated to malformed
-        values. In that case an empty string is returned so the caller can
-        treat it as a missing checksum and raise the documented
-        ``TokenAdminError`` instead of a low-level decoding/decryption error.
+        Two failure modes are distinguished so that ``get_sshkey()`` can report
+        them differently:
 
-        :return: the stored checksum, or an empty string if it is unreadable
+        * The OTP key material (``key_enc``/``key_iv``) is completely unset.
+          This is the case for tokens that predate the integrity checksum and
+          were never migrated. An empty string is returned so the caller can
+          treat it as a missing checksum and hint at running the migration.
+        * The OTP key material is present but cannot be read (malformed hex,
+          wrong length, undecryptable, ...), e.g. because the columns were
+          manipulated or corrupted. Rerunning the migration would not fix
+          this, so a ``TokenAdminError`` about a corrupted token is raised
+          directly instead of the misleading "run the migration" message.
+
+        :return: the stored checksum, or an empty string if the token was
+            never migrated (``key_enc``/``key_iv`` unset)
+        :raises TokenAdminError: if the OTP key material is present but
+            unreadable (the token may be corrupted)
         """
         if not self.token.key_enc or not self.token.key_iv:
+            # No OTP key material at all: the token was never migrated.
             return ""
         try:
             return to_unicode(self.token.get_otpkey().getKey())
         except Exception as exx:
-            log.warning(f"Could not read the SSH key integrity checksum of token "
-                        f"{self.token.serial!s}: {exx!r}")
-            return ""
+            log.error(f"Could not read the SSH key integrity checksum of token "
+                      f"{self.token.serial!s}: {exx!r}. The token may be corrupted.")
+            raise TokenAdminError(f"The SSH key integrity checksum of token "
+                                  f"{self.token.serial!s} is unreadable. The token may be corrupted.")
 
     @log_with(log)
     def get_sshkey(self):

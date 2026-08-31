@@ -4995,14 +4995,40 @@ class APISSHKeyReadTestCase(MyApiTestCase):
         remove_token(serial)
 
     def test_07_integrity_failure_is_reported(self):
+        from privacyidea.models import TokenInfo
         serial = "SSHREAD7"
         token = self._init_sshkey_token(serial)
-        # Simulate a database admin tampering with the plaintext key type
-        token.add_tokeninfo("ssh_type", "ssh-rsa")
+        # Simulate a database admin tampering with the plaintext key type by
+        # writing directly to the tokeninfo table, bypassing the token class
+        # (which would otherwise recompute the integrity checksum).
+        info = TokenInfo.query.filter_by(token_id=token.token.id, Key="ssh_type").first()
+        info.Value = "ssh-rsa"
+        db.session.commit()
         with self.app.test_request_context(f'/token/sshkey/{serial}',
                                            method="GET",
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertFalse(res.json["result"]["status"])
             self.assertIn("integrity", res.json["result"]["error"]["message"].lower())
+        remove_token(serial)
+
+    def test_08_legitimate_tokeninfo_change_keeps_integrity(self):
+        serial = "SSHREAD8"
+        self._init_sshkey_token(serial)
+        # A legitimate change of the SSH comment through the generic
+        # settokeninfo endpoint must keep the integrity checksum in sync, so
+        # the key can still be read afterwards.
+        with self.app.test_request_context(f'/token/info/{serial}/ssh_comment',
+                                           method="POST",
+                                           data={"value": "new-comment"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.json["result"]["status"])
+        with self.app.test_request_context(f'/token/sshkey/{serial}',
+                                           method="GET",
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            self.assertTrue(res.json["result"]["status"])
+            self.assertTrue(res.json["result"]["value"]["sshkey"].endswith("new-comment"))
         remove_token(serial)

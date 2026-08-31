@@ -284,17 +284,25 @@ class SSHTokenTestCase(MyTestCase):
 
         # Unreadable OTP key material (e.g. a token the migration skipped, whose
         # key_enc/key_iv stay NULL) must map to the integrity TokenAdminError,
-        # not to a low-level decoding error.
+        # not to a low-level decoding error. As the token was never migrated,
+        # the message hints at running the migration.
         token_a.token.key_enc = None
         token_a.token.key_iv = None
         token_a.token.save()
-        self.assertRaises(TokenAdminError, token_a.get_sshkey)
+        with self.assertRaises(TokenAdminError) as cm:
+            token_a.get_sshkey()
+        self.assertIn("missing", str(cm.exception).lower())
 
-        # Malformed (non-hex) OTP key material must be handled the same way.
+        # Malformed (non-hex) OTP key material is present but unreadable: this
+        # is a corruption, not a missing checksum, so the message must not tell
+        # the admin to (uselessly) rerun the migration.
         token_a.token.key_enc = "not-hex!"
         token_a.token.key_iv = "not-hex!"
         token_a.token.save()
-        self.assertRaises(TokenAdminError, token_a.get_sshkey)
+        with self.assertRaises(TokenAdminError) as cm:
+            token_a.get_sshkey()
+        self.assertIn("corrupt", str(cm.exception).lower())
+        self.assertNotIn("migration", str(cm.exception).lower())
 
         token_a.delete_token()
         token_b.delete_token()
@@ -345,3 +353,14 @@ class SSHTokenTestCase(MyTestCase):
         token_a.delete_token()
         token_b.delete_token()
         spass.delete_token()
+
+    def test_09_checksum_binds_field_boundaries(self):
+        # The checksum must uniquely bind the field boundaries. Moving text
+        # across the key/comment boundary must yield a different checksum,
+        # which a naive "\n".join() encoding would not (both would serialize
+        # to "...\nAAA\nX\nY" / "...\nAAA\nX\nY").
+        checksum_1 = compute_ssh_key_checksum("SSHBOUND", "ssh-rsa", "AAA", "X\nY")
+        checksum_2 = compute_ssh_key_checksum("SSHBOUND", "ssh-rsa", "AAA\nX", "Y")
+        self.assertNotEqual(checksum_1, checksum_2)
+        # It is also stable (idempotent) for the same input.
+        self.assertEqual(checksum_1, compute_ssh_key_checksum("SSHBOUND", "ssh-rsa", "AAA", "X\nY"))

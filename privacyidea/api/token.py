@@ -1671,12 +1671,6 @@ def get_sshkey_api(serial=None):
     :status 200: ``{"sshkey": "<type> <key> <comment>"}`` in
         ``result.value``.
     """
-    # check_token_action removes tokens the caller may not access and reports
-    # them in "not_authorized_serials". If our serial ended up there, deny.
-    not_authorized_serials = get_optional(request.all_data, "not_authorized_serials", [])
-    if serial in not_authorized_serials:
-        raise PolicyError(f"You are not allowed to read the SSH key of token {serial!s}.")
-
     user = request.User
     toks = get_tokens(serial=serial, user=user if user and not user.is_empty() else None,
                       tokentype="sshkey")
