@@ -282,6 +282,37 @@ you configure pooling. It uses the settings from the above mentioned
 
 .. _picfg_metrics_health:
 
+Authentication path tuning
+--------------------------
+
+These parameters reduce work that every authentication request would otherwise
+repeat. Both trade a little precision in data that is only ever read as an
+approximation, and both can be turned off by setting them to ``0``.
+
+``PI_CLIENTAPPLICATION_WRITE_INTERVAL`` (default ``60`` seconds) sets how long a
+client may keep its recorded ``lastseen`` timestamp before it is written again.
+privacyIDEA notes the address and user agent of every authenticating client in
+the ``clientapplication`` table, which is what the client list in the WebUI and
+the metering of plugin traffic read. Without this interval that means a
+``SELECT``, an ``UPDATE`` and a ``COMMIT`` per request - a cluster-wide write in
+a replicated setup - to keep a timestamp accurate to the second that nobody
+reads that precisely. Each worker process skips the write for a client it wrote
+within the interval, so ``lastseen`` is behind by at most that much. Set it to
+``0`` to write on every request.
+
+``PI_SUBSCRIPTION_COUNT_INTERVAL`` (default ``60`` seconds) sets how long the
+number of users with active tokens may be reused between subscription checks.
+The check runs on every authentication that carries a known plugin's user agent,
+and counting those users means a ``DISTINCT`` across the whole ``tokenowner`` and
+``token`` tables. A number is only reused while it stays within what the
+subscription allows: as soon as it would say the subscription is exceeded, the
+users are counted again, so an authentication is never refused on the strength of
+a number that may be out of date. The other direction is the accepted trade - a
+user given a token within the interval may not be counted yet, which changes
+nothing for enforcement that is deliberately probabilistic. The subscription
+overview and the statistics task always count exactly. Set it to ``0`` to count
+on every check.
+
 Metrics and certificate health
 ------------------------------
 
@@ -511,18 +542,33 @@ Redis cache
 
 .. index:: Redis, cache, HA, high availability
 
-privacyIDEA can offload selected short-lived state to Redis instead of the SQL
-database. The current use-case is challenge data for challenge-response token
-flows in HA setups, where multiple privacyIDEA nodes would otherwise have to
-round-trip every challenge through a clustered database (e.g. Galera with
-ProxySQL). More workloads (metrics, ...) may opt into Redis later; each one ships
-behind its own feature flag and stays off by default.
+privacyIDEA can offload selected state to Redis instead of the SQL database.
+Four workloads use it today:
+
+* **Challenges** - challenge data for challenge-response token flows in HA
+  setups, where multiple privacyIDEA nodes would otherwise have to round-trip
+  every challenge through a clustered database (e.g. Galera with ProxySQL).
+  Challenges are ephemeral, so Redis becomes their store rather than a cache.
+* **User store lookups** - the login names, user IDs and attributes that come
+  back from a resolver. Here Redis is a genuine cache in front of a store that
+  stays authoritative, which is what makes it cheap to drop and safe to be
+  aggressive about invalidating.
+* **Cached authentications** - the entries the :ref:`policy_auth_cache` policy
+  works with. Like challenges they are ephemeral, and losing one costs nothing
+  but a single real authentication.
+* **Certificate health results** - the certificate expiry information behind the
+  dashboard panel. Producing it means opening a TLS connection to every
+  configured endpoint, which is worth doing once for the installation rather
+  than once per worker process.
+
+More workloads (metrics, ...) may opt into Redis later; each one ships behind
+its own feature flag and stays off by default.
 
 .. note::
 
-   Redis **7 or later** is required. The challenge cache relies on the
-   ``EXPIRE ... NX`` and ``EXPIRE ... GT`` options to keep per-token TTLs
-   consistent across concurrent writes; these were introduced in Redis 7.
+   Redis **7 or later** is required. The challenge, user and authentication
+   workloads rely on the ``EXPIRE ... NX`` and ``EXPIRE ... GT`` options to keep
+   TTLs consistent across concurrent writes; these were introduced in Redis 7.
    The version is checked when the connection is established: an older server
    is refused up front, and the worker falls back to DB-only operation (and
    keeps retrying the connection) rather than failing later on the first write.
@@ -539,6 +585,18 @@ Configuration is two-stage:
 
     # Per-feature opt-in
     PI_REDIS_CACHE_CHALLENGES = True
+    PI_REDIS_CACHE_USERS = True
+    PI_REDIS_CACHE_AUTH = True
+    PI_REDIS_CACHE_HEALTH = True
+
+    # Optional: lifetime of a user cache entry in seconds. Default 300.
+    # Setting it to 0 disables the user cache, like clearing the flag.
+    # PI_REDIS_USER_CACHE_TTL = 300
+
+    # Optional: fallback lifetime for a cached authentication, in seconds.
+    # Default 3600. Only used when no auth_cache policy window applies, which
+    # in practice does not happen - the policy's own interval is the lifetime.
+    # PI_REDIS_AUTH_CACHE_TTL = 3600
 
     # Optional: how long (seconds) to wait before retrying Redis after a
     # failed op. Default 30. Raise it if your environment sees flaky Redis,
@@ -562,6 +620,120 @@ privacyIDEA behaves exactly as a database-only deployment.
 In a Docker deployment, the URL can be loaded from a secret file via
 ``PI_REDIS_URL_FILE`` (e.g. ``/run/secrets/redis_url``) instead of being passed
 in the environment.
+
+.. _redis_user_cache:
+
+User cache
+~~~~~~~~~~
+
+.. index:: user cache, Redis
+
+``PI_REDIS_CACHE_USERS`` caches the answers privacyIDEA gets from its user
+stores: the user ID behind a login name, the login name behind a user ID, and a
+user's attributes. Every one of those is a round trip to an external system - an
+LDAP search, an SQL query, an HTTP call - and the answers change rarely, so
+serving them from Redis removes most of the user store traffic from
+authentication and from listing tokens.
+
+Unlike the two caches privacyIDEA already had, this one is shared: the
+:ref:`usercache` table only holds the login/ID correlation, and an LDAP
+resolver's ``CACHE_TIMEOUT`` cache is a dictionary inside a single worker
+process. Redis is visible to every worker on every node, and can be flushed.
+
+The user store remains the single source of truth. A cache miss is answered by
+asking the resolver, nothing is stored that a resolver did not return, and
+dropping the whole keyspace costs nothing but a few extra lookups.
+
+**Lifetime.** ``PI_REDIS_USER_CACHE_TTL`` (default 300 seconds) is how long an
+entry lives. The default is deliberately short: a change made *directly in the
+user store*, behind privacyIDEA's back, is only noticed when the entry expires.
+That is the same bound the :ref:`usercache` table has always had, and the reason
+not to raise this into the hours.
+
+**Invalidation.** The TTL is the backstop, not the mechanism. Entries are
+dropped immediately when privacyIDEA knows something changed:
+
+* a user is updated or deleted through privacyIDEA - that user's entries go,
+* a resolver is saved or deleted - every entry of that resolver goes, because
+  its configuration is what gives its answers meaning,
+* an admin flushes the user cache (``DELETE /system/user-cache``, or *Flush
+  user cache* in the WebUI) - everything goes.
+
+Custom user attributes are never cached: they live in privacyIDEA's own database
+and are merged on top of the resolver's answer on every read, so they cannot go
+stale here.
+
+.. note::
+
+   A resolver with a non-zero ``CACHE_TIMEOUT`` keeps its own per-process copy
+   of the same answers, and that cache has no invalidation hook at all - only
+   its timeout. It therefore, not this cache, sets the real staleness bound. If
+   you want the invalidation above to take effect promptly, lower or zero the
+   resolvers' ``CACHE_TIMEOUT`` (see :ref:`useridresolvers`) and let the shared
+   cache do the work.
+
+.. _redis_auth_cache:
+
+Authentication cache
+~~~~~~~~~~~~~~~~~~~~
+
+.. index:: AuthCache, Authentication Cache, Redis
+
+``PI_REDIS_CACHE_AUTH`` moves the entries of the :ref:`policy_auth_cache` policy
+from the ``authcache`` table into Redis.
+
+That table is written to on the authentication path in three directions: an
+``UPDATE`` on every cache *hit* to count the use, an ``INSERT`` per successful
+authentication, and ``DELETE`` statements for entries that turn out to be stale.
+With Redis enabled none of that reaches the database.
+
+Entries live exactly as long as the policy allows: the policy's first interval
+(the ``4h`` in ``4h/5m``) becomes the Redis TTL, so a cached password
+disappears the moment the policy stops honouring it. Using an entry does not
+extend its life, because the window runs from the *first* authentication.
+``PI_REDIS_AUTH_CACHE_TTL`` (default 3600 seconds) is only a fallback for a
+caller that cannot name a window.
+
+Two consequences worth knowing:
+
+* The ``pi-manage config authcache cleanup`` command has nothing to do, and says
+  so instead of reporting that it deleted no rows. The cronjob that command
+  usually needs is no longer necessary.
+* The database-backed cache never bounded how many entries a user accumulated,
+  and every lookup verifies the presented password against each of them with
+  Argon2 - so the cache got slower the more it was used. Per-entry expiry bounds
+  that set.
+
+Like the other workloads it degrades safely: if Redis cannot be reached the
+database takes over, and a lost entry costs one real authentication against the
+user store, nothing else.
+
+.. _redis_health_cache:
+
+Certificate health results
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. index:: health, certificate, Redis
+
+``PI_REDIS_CACHE_HEALTH`` shares the certificate expiry information behind the
+:ref:`dashboard` panel between all workers and nodes.
+
+Producing that information means opening a TLS connection to every configured
+LDAP and Keycloak resolver endpoint, every EntraID client-certificate
+credential, and every admin-configured server certificate. Those results are
+cached for ``PI_CERT_CHECK_CACHE_SECONDS`` (default 3600) either way - but
+without Redis the cache is a dictionary in one worker process, so a deployment
+with eight workers on three nodes probes every endpoint twenty-four times per
+hour instead of once.
+
+The per-process cache stays in front of the shared one: a worker that already
+has the answer has no reason to ask Redis for it. The TTL is the same for both,
+and saving or deleting a resolver drops the shared copy as well, so one admin's
+change reaches every worker instead of only the one that served the request.
+
+Nothing here is on the authentication path and the results only feed a display,
+so if Redis cannot be reached the worker simply probes for itself, exactly as it
+did before.
 
 .. _redis_cache_security:
 
@@ -598,23 +770,37 @@ secret file with ``PI_REDIS_URL_FILE`` (see above). Credentials embedded in the
 URL are redacted from the privacyIDEA log (only ``***@host`` is ever written),
 so they do not leak into log files on connect or on error.
 
-**Data sensitivity.** When challenge caching is enabled, Redis holds exactly
-the content the SQL ``challenge`` table would have held, with the same
-protection: the ``data`` field is encrypted with the privacyIDEA encryption
-key, just as the ``data`` column is. That field is the one that can carry a
-secret - the OTP value itself for Email and SMS tokens when
-``email.concurrent_challenges`` / ``sms.concurrent_challenges`` is enabled, or
-the display code for Push code-to-phone.
+**Data sensitivity.** Redis needs the **same protection level as your
+database**: restrict it to a private network, require authentication, prefer
+``rediss://``, and use at-rest encryption (encrypted volume, or a managed Redis
+with encryption) if your threat model requires it. Do not expose the Redis
+instance on a public interface.
 
-The remaining fields (transaction ID, token serial, the challenge nonce,
-session and counters) are stored in the clear, again matching the database.
-Redis therefore needs the **same protection level as your database**: restrict
-it to a private network, require authentication, prefer ``rediss://``, and use
-at-rest encryption (encrypted volume, or a managed Redis with encryption) if
-your threat model requires it. Do not expose the Redis instance on a public
-interface. The exposure window is small - entries carry the challenge validity
-TTL, typically a few minutes - but the data is no less sensitive than a
-challenge row in the database.
+What is stored differs per workload:
+
+* Challenge data: the ``data`` field is encrypted with the privacyIDEA
+  encryption key before it is written, just as the SQL ``challenge.data``
+  column is. That field is the one that can carry a secret - the OTP value
+  itself for Email and SMS tokens when ``email.concurrent_challenges`` /
+  ``sms.concurrent_challenges`` is enabled, or the display code for Push
+  code-to-phone. The remaining fields (transaction ID, token serial, the
+  challenge nonce, session and counters) are stored in the clear, again
+  matching the database. The exposure window is small - entries carry the
+  challenge validity TTL, typically a few minutes.
+* User cache values are **encrypted** with the server's encryption key before
+  they are written, so a dump of the Redis database is not a dump of your
+  directory. The keys are not encrypted: a key contains a login name or a user
+  ID, because Redis has to be able to look it up. Treat the key space as
+  revealing who exists, and the values as unreadable without the encryption
+  key.
+* Authentication cache entries are **encrypted** the same way. An entry holds an
+  Argon2 hash of the user's password, which could be attacked offline if it
+  leaked in the clear. Note that, exactly as with the database-backed cache, a
+  password changed in the user store stays usable until its entry expires, so
+  keep the :ref:`policy_auth_cache` window short enough to live with that.
+* Certificate health results are stored as plaintext. They hold no credentials,
+  but they do name your internal LDAP and Keycloak hosts and their certificate
+  subjects, which is one more reason not to expose the Redis instance.
 
 Because the encryption uses the privacyIDEA encryption key, cached entries
 written before an encryption key rotation can no longer be read afterwards.
@@ -630,8 +816,8 @@ privacyIDEA does not support rolling upgrades on the SQL side (the schema
 migration step expects a single writer), so the Redis cache does not need to
 clear a higher bar. The policy below applies whenever the cache is enabled.
 
-**Within a single key prefix** (today: ``pi:challenge:``), the payload may grow
-over time. Older workers ignore unknown fields; newer workers read older
+**Within a single key prefix** (today: ``pi:challenge:v1:``), the payload may
+grow over time. Older workers ignore unknown fields; newer workers read older
 entries via ``dict.get(field, default)``. No operator action is needed for
 this kind of change.
 

@@ -34,6 +34,30 @@
   user - same expectation we already set for the SQL schema upgrade. See the "Redis cache" section of the documentation
   for the full payload-compatibility policy.
 
+* Three further optional Redis caches are new in this release, each behind its own flag and **off by default**:
+  `PI_REDIS_CACHE_USERS` (user store lookups), `PI_REDIS_CACHE_AUTH` (the entries of the `auth_cache` policy) and
+  `PI_REDIS_CACHE_HEALTH` (the certificate health results behind the dashboard panel). Enabling them changes where the
+  data lives, not what it means. Two consequences are worth knowing before you switch them on: with
+  `PI_REDIS_CACHE_AUTH` the `authcache` table stays empty and `pi-manage config authcache cleanup` has nothing left to
+  do, and with `PI_REDIS_CACHE_USERS` a resolver's own `CACHE_TIMEOUT` still bounds how quickly a user change is
+  noticed, because that per-process cache sits in front of the shared one. See the "Redis cache" section of the
+  documentation.
+
+* **`clientapplication.lastseen` is written again.** Since 3.13 the column was only ever set when a client's row was
+  first created: the update path assigned an attribute that is not the column, so the client list in the WebUI and the
+  metering of plugin traffic showed when each client was *first* seen rather than last. This is fixed. Expect the
+  timestamps in that list to start moving again, which may look like new activity where there is none.
+
+* **Two write reductions are active by default** and change behaviour without any configuration. Both are intervals in
+  seconds that can be set to `0` in `pi.cfg` to restore the previous per-request behaviour:
+
+  * `PI_CLIENTAPPLICATION_WRITE_INTERVAL` (default `60`) - a client's `lastseen` is refreshed at most once per interval
+    per worker process instead of on every request, so it can be up to a minute behind.
+  * `PI_SUBSCRIPTION_COUNT_INTERVAL` (default `60`) - the number of users with active tokens is reused between
+    subscription checks, so a user who is given a token may take up to a minute to count towards the subscription. The
+    number is always recounted before a subscription can be declared exceeded, so no authentication is ever refused on
+    the strength of a stale count, and the subscription overview and the statistics task keep counting exactly.
+
 * **HTTP API change** - `GET /token/challenges/...` no longer returns the `id` field for each challenge. The integer ID
   was the SQL primary key, never a stable cross-deployment identifier, and it was incompatible with the new Redis-backed
   challenges which have no SQL row. Use
