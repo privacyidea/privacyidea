@@ -21,7 +21,9 @@ Unit tests for the conditional-access policy engine
 pre-check lock test, and the policy-evaluation workflow (stage selection,
 de-duplication, dry-run, and the LOCK_USER / PERMANENT_LOCK_USER actions).
 """
+import ipaddress
 from collections.abc import Sequence
+from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 from email import message_from_string
 
@@ -50,6 +52,7 @@ from privacyidea.lib.conditional_access.engine import (
     is_user_locked,
     is_ip_blocked,
     is_ip_never_block,
+    NEVER_BLOCK_CONFIG_KEY,
     get_ip_block,
     _lock_duration_seconds,
     _policy_count_ip,
@@ -58,7 +61,7 @@ from privacyidea.lib.conditional_access.engine import (
 )
 from privacyidea.lib.conditional_access.policy import (StageDefinition, StageActionDefinition,
                                                                _build_stages)
-from privacyidea.lib.config import set_privacyidea_config, delete_privacyidea_config, SYSCONF
+from privacyidea.lib.framework import get_app_config
 from privacyidea.lib.smtpserver import add_smtpserver, delete_smtpserver
 from privacyidea.lib.user import User
 from privacyidea.models import Admin, db
@@ -74,6 +77,14 @@ from privacyidea.models.conditional_access_policy import (
 from privacyidea.models.utils import utc_now
 from . import smtpmock
 from .conditional_access_base import ConditionalAccessTestCase
+
+
+@contextmanager
+def never_block_config(value):
+    """Set the pi.cfg never-block allowlist for the duration of the block."""
+    with mock.patch.dict(get_app_config(), {NEVER_BLOCK_CONFIG_KEY: value}):
+        yield
+
 
 
 class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
@@ -1193,23 +1204,31 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
         self.assertTrue(is_ip_never_block("not-an-ip"))
 
     def test_configured_cidr_is_never_block(self):
-        set_privacyidea_config(SYSCONF.CONDITIONAL_ACCESS_NEVER_BLOCK, "203.0.113.0/24, 198.51.100.5")
-        try:
+        with never_block_config("203.0.113.0/24, 198.51.100.5"):
             self.assertTrue(is_ip_never_block("203.0.113.7"))
             self.assertTrue(is_ip_never_block("198.51.100.5"))
             self.assertFalse(is_ip_never_block("198.51.100.6"))
             # The built-in loopback default still applies alongside the config.
             self.assertTrue(is_ip_never_block("127.0.0.1"))
-        finally:
-            delete_privacyidea_config(SYSCONF.CONDITIONAL_ACCESS_NEVER_BLOCK)
+
+    def test_configured_list_is_never_block(self):
+        # pi.cfg may hold a Python list instead of a separator-joined string.
+        with never_block_config(["203.0.113.0/24", "198.51.100.5"]):
+            self.assertTrue(is_ip_never_block("203.0.113.7"))
+            self.assertTrue(is_ip_never_block("198.51.100.5"))
+            self.assertFalse(is_ip_never_block("198.51.100.6"))
+
+    def test_malformed_config_value_falls_back_to_the_defaults(self):
+        # A pi.cfg typo must not break every authentication; the loopback defaults stay.
+        for value in (True, 42, ipaddress.ip_network("10.0.0.0/8")):
+            with self.subTest(value=value), never_block_config(value):
+                self.assertFalse(is_ip_never_block("10.0.0.1"))
+                self.assertTrue(is_ip_never_block("127.0.0.1"))
 
     def test_invalid_config_entry_ignored(self):
-        set_privacyidea_config(SYSCONF.CONDITIONAL_ACCESS_NEVER_BLOCK, "garbage, 203.0.113.0/24")
-        try:
+        with never_block_config("garbage, 203.0.113.0/24"):
             self.assertTrue(is_ip_never_block("203.0.113.7"))
             self.assertFalse(is_ip_never_block("198.51.100.5"))
-        finally:
-            delete_privacyidea_config(SYSCONF.CONDITIONAL_ACCESS_NEVER_BLOCK)
 
     def test_block_ip_action_skips_never_block_ip(self):
         # A BLOCK_IP action must never write a block for a never-block IP (loopback).
@@ -1228,12 +1247,22 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
         db.session.add(BlockList(ip="203.0.113.7", block_expires_at=utc_now() + timedelta(seconds=900)))
         db.session.commit()
         self.assertTrue(is_ip_blocked("203.0.113.7"))
-        set_privacyidea_config(SYSCONF.CONDITIONAL_ACCESS_NEVER_BLOCK, "203.0.113.0/24")
-        try:
+        with never_block_config("203.0.113.0/24"):
             self.assertFalse(is_ip_blocked("203.0.113.7"))
             self.assertIsNone(get_ip_block("203.0.113.7"))
-        finally:
-            delete_privacyidea_config(SYSCONF.CONDITIONAL_ACCESS_NEVER_BLOCK)
+            # A pure read leaves the row alone for the admin blocklist view.
+            self.assertEqual(1, db.session.query(BlockList).count())
+
+    def test_allowlisted_ip_block_row_is_removed_by_the_auth_pre_check(self):
+        # The auth pre-check passes clear_expired, so the first authentication after the
+        # IP was allowlisted drops the now-unenforceable row.
+        db.session.add(BlockList(ip="203.0.113.7", block_expires_at=None))
+        db.session.commit()
+        with never_block_config("203.0.113.0/24"):
+            self.assertFalse(is_ip_blocked("203.0.113.7", clear_expired=True))
+        self.assertEqual(0, db.session.query(BlockList).count())
+        # And it stays gone once the allowlist entry is removed again.
+        self.assertFalse(is_ip_blocked("203.0.113.7"))
 
     # --- BLOCK_IP action ------------------------------------------------------
 

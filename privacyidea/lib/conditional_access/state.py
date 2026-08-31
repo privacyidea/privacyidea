@@ -356,7 +356,9 @@ def list_blocklist(include_expired: bool = True, now: datetime | None = None) ->
     expiry fields (``permanent`` / ``block_expires_at`` / ``seconds_remaining``),
     so the caller can tell a currently-enforced block from a stale, expired record.
     The never-block allowlist is an enforcement-time concern and is *not* applied
-    here, so an admin can see and clean up a row even for a never-enforced IP.
+    here, so an admin can see a row even for a never-enforced IP - until the next
+    authentication from that IP, which drops it (see
+    :func:`~privacyidea.lib.conditional_access.engine.get_ip_block`).
 
     :param include_expired: also return stale rows whose timed block has expired.
         Defaults to ``True``: a management view lists what is *on record* and the
