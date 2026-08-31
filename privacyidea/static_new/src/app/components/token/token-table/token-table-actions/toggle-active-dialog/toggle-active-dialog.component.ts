@@ -35,9 +35,7 @@ export interface ToggleActiveDialogData {
     <app-dialog-wrapper
       title="(De)activate Selected Tokens"
       i18n-title="@@token.deactivateSelectedTokens"
-      (wrapperClose)="close()"
       [actions]="actions"
-      [showCancelButton]="true"
       (actionTriggered)="onAction($event)">
       <div class="margin-right-16">
         <p i18n="@@token.followingTokensToggled">The following tokens will be toggled:</p>

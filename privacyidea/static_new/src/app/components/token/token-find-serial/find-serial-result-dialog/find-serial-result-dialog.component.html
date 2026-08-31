@@ -21,7 +21,7 @@
   title="Search for Token"
   i18n-title="@@token.searchToken"
   [actions]="[action]"
-  (wrapperClose)="close()"
+  [showCloseButton]="false"
   (actionTriggered)="onAction($event)">
   @if (data.foundSerial) {
     <div class="alert alert-success">

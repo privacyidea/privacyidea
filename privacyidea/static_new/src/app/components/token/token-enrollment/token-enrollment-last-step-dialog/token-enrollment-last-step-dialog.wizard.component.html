@@ -17,9 +17,9 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <app-dialog-wrapper
-  (wrapperClose)="close()"
   (actionTriggered)="onAction($event)"
   [actions]="actions()"
+  [showCloseButton]="false"
   i18n-title="@@token.tokenSuccessfully"
   title="Token Successfully Enrolled">
   <mat-dialog-content>

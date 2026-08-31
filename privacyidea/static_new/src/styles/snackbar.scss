@@ -47,4 +47,13 @@
       color: white;
     }
   }
+
+  &.info-snackbar {
+    --mat-snack-bar-container-color: var(--mat-sys-surface-container-lowest);
+    --mat-snack-bar-supporting-text-color: var(--mat-sys-on-surface);
+
+    .mat-mdc-button.mat-mdc-snack-bar-action:not(:disabled).mat-unthemed {
+      color: var(--mat-sys-on-surface);
+    }
+  }
 }

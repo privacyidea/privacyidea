@@ -17,8 +17,6 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <app-dialog-wrapper
-  (wrapperClose)="close()"
-  [showCancelButton]="true"
   cancelButtonLabel="Close"
   i18n-cancelButtonLabel="@@common.close"
   i18n-title="@@token.tokenSuccessfully"
@@ -29,9 +27,10 @@
     [rollover]="data.rollover ?? false"
     [serial]="serial"></app-token-enrolled-text>
 
-  @if (data.showEnrollData !== false) {
+  @if (data.showEnrollData !== false && data.response) {
     <app-token-enrollment-data
-      [enrolledInputData]="data.response?.detail"
+      (enrollmentResponseChange)="onEnrollmentResponseChange($event)"
+      [enrolledInputData]="data.response.detail"
       [enrollmentParameters]="data.enrollParameters"
       [tokenType]="data.tokenType"></app-token-enrollment-data>
   }

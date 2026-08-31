@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from dataclasses import dataclass
 from webauthn.helpers import bytes_to_base64url
 
-from privacyidea.lib.params import get_required_one_of, get_optional_one_of, get_required
+from privacyidea.lib.params import get_required_one_of, get_optional_one_of, get_required, get_optional
 from privacyidea.lib import fido2
 from privacyidea.lib.cache.redis import ChallengeDTO
 from privacyidea.lib.challenge import get_challenges, cancel_challenge
@@ -12,7 +12,7 @@ from privacyidea.models import Challenge
 from privacyidea.lib.crypto import geturandom
 from privacyidea.lib.error import ResourceNotFoundError, AuthError
 from privacyidea.lib.fido2.config import FIDO2ConfigOptions
-from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction
+from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction, PasskeyAction
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
@@ -141,6 +141,14 @@ def verify_fido2_challenge(transaction_id: str, token: TokenClass, params: dict)
     # These parameters are required for compatibility with the old WebAuthnToken class
     if token.type == "webauthn":
         options.update({"credential_id": get_required_one_of(params, ["credential_id", "credentialid"])})
+    if token.type == "passkey":
+        # Passkey-only policy restrictions resolved by the fido2_auth prepolicy, forwarded here since this
+        # function builds its own curated options dict rather than passing params through unchanged.
+        options.update({
+            PasskeyAction.AllowedAuthenticatorDeviceTypes: get_optional(
+                params, PasskeyAction.AllowedAuthenticatorDeviceTypes),
+            PasskeyAction.EnforceUserHandle: get_optional(params, PasskeyAction.EnforceUserHandle),
+        })
     options.update({"user": token.user})
     ret = token.check_otp(None, options=options)
     result = FIDOVerificationResult(ret, challenge)

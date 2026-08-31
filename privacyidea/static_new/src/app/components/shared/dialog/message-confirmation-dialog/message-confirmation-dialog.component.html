@@ -16,20 +16,9 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-
 <app-dialog-wrapper
-  [title]="data ? 'Token Resync Successful' : 'Token Resync Failed'"
-  cancelButtonLabel="Close"
-  i18n-cancelButtonLabel="@@common.close">
-  <mat-dialog-content>
-    <div class="text-center">
-      @if (data) {
-        <p i18n="@@token.tokenWasSuccessfully">The token was successfully synchronized.</p>
-      } @else {
-        <p i18n="@@token.tokenCouldNot"
-          >The token could not be synchronized. Please check the OTP values and try again.</p
-        >
-      }
-    </div>
-  </mat-dialog-content>
+  (actionTriggered)="onAction($event)"
+  [actions]="actions"
+  [title]="data.title">
+  <p class="max-width-600">{{ data.message }}</p>
 </app-dialog-wrapper>

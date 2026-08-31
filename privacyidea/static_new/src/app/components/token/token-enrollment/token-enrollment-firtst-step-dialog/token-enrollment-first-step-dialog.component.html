@@ -17,12 +17,22 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <app-dialog-wrapper
-  (wrapperClose)="close()"
-  [showCancelButton]="true"
+  (actionTriggered)="onAction($event)"
+  [actions]="actions()"
+  [showCloseButton]="showCloseButton"
+  cancelButtonLabel="Close"
+  i18n-cancelButtonLabel="@@common.close"
   i18n-title="@@token.takeActionYour"
   title="Take action on your authenticator">
   <mat-dialog-content>
-    @if (
+    @if (registrationFailed()) {
+      <p
+        class="max-width-600"
+        i18n>
+        The registration was not completed. Please try again or cancel the enrollment. Cancelling deletes the token that
+        has already been created for this enrollment.
+      </p>
+    } @else if (
       data.enrollmentResponse.detail["webAuthnRegisterRequest"] || data.enrollmentResponse.detail.passkey_registration
     ) {
       <p

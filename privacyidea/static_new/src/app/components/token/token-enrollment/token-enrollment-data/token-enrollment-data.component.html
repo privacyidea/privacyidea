@@ -34,6 +34,7 @@
     @if (url() && showRegenerateButton()) {
       <button
         (click)="regenerateQRCode()"
+        [disabled]="regenerating()"
         class="action-button-primary button-width-l"
         mat-stroked-button>
         <mat-icon>autorenew</mat-icon>

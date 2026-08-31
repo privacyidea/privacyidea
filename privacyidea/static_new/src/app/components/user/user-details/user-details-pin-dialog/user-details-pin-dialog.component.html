@@ -18,8 +18,8 @@
 -->
 <app-dialog-wrapper
   (actionTriggered)="onAction($event)"
-  (wrapperClose)="close()"
   [actions]="dialogActions()"
+  [showCloseButton]="false"
   i18n-title="@@user.tokenAssignment"
   title="Token Assignment">
   <mat-form-field

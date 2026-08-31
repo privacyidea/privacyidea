@@ -337,6 +337,27 @@ class RaceToleranceTest(MyTestCase):
 
         self.assertEqual({"race_a": 5, "race_b": 8}, self._counts())
 
+    def test_a_non_race_failure_does_not_lose_the_other_rows_of_the_batch(self):
+        # A lost insert race (above) recovers inside _apply_aggregate itself. Anything else --
+        # a lock-wait timeout, a deadlock -- is not: it must still cost only the one key that
+        # failed, not every other observation buffered in the same request.
+        window = _window_start(_utc_now())
+        original_increment = metrics._increment_row
+
+        def failing_increment(session, name, *args, **kwargs):
+            if name == "boom":
+                raise Exception("lock wait timeout exceeded")
+            return original_increment(session, name, *args, **kwargs)
+
+        with patch.object(metrics, "_increment_row", side_effect=failing_increment):
+            metrics._write_observations({
+                ("ok_a", (), "", window): _aggregate(count=5),
+                ("boom", (), "", window): _aggregate(count=5),
+                ("ok_z", (), "", window): _aggregate(count=5),
+            })
+
+        self.assertEqual({"ok_a": 5, "ok_z": 5}, self._counts())
+
     def test_rows_are_visited_in_a_deterministic_order(self):
         # Workers of one node share the rows of a window; a stable lock order is what
         # keeps two overlapping flushes from deadlocking.

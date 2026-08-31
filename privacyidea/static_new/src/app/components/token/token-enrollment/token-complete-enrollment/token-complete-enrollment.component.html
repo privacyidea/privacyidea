@@ -20,29 +20,31 @@
 <app-dialog-wrapper
   title="Complete Token Enrollment"
   i18n-title="@@token.completeToken"
-  [showCancelButton]="true"
+  [showCloseButton]="showCloseButton()"
   [actions]="dialogActions()"
   (actionTriggered)="onDialogAction($event)"
   cancelButtonLabel="Close"
-  i18n-cancelButtonLabel="@@common.close"
-  (wrapperClose)="close()">
+  i18n-cancelButtonLabel="@@common.close">
   <span
     class="margin-bottom-16"
     i18n="@@token.yourTokenSerial"
     >Your token with serial {{ enrollDetails?.serial }} is not completely enrolled, yet.</span
   >
 
-  <app-token-enrollment-data
-    [enrolledInputData]="enrollDetails"
-    [tokenType]="tokenType"
-    [enrollmentParameters]="enrollParameters"></app-token-enrollment-data>
+  @if (data.response) {
+    <app-token-enrollment-data
+      (enrollmentResponseChange)="onEnrollmentResponseChange($event)"
+      [enrolledInputData]="data.response.detail"
+      [tokenType]="tokenType"
+      [enrollmentParameters]="enrollParameters"></app-token-enrollment-data>
+  }
 
   @if (twoStepEnrollment()) {
     <div class="margin-top-16">
       <div i18n="@@token.pleaseScanQrCode"
         >Please scan the QR code with the privacyIDEA Authenticator app and enter the generated code below.</div
       >
-      <mat-form-field class="width-100">
+      <mat-form-field class="input-width-l">
         <mat-label i18n="@@token.clientPart">Client Part</mat-label>
         <input
           [formField]="clientPartForm"

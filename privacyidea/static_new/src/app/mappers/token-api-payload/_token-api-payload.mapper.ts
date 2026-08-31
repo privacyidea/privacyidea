@@ -67,7 +67,7 @@ export interface U2fRegisterRequest {
 }
 
 export interface EnrollmentResponseDetail {
-  type: string;
+  type: TokenTypeKey;
   serial: string;
   rollout_state?: string;
   threadid?: number;

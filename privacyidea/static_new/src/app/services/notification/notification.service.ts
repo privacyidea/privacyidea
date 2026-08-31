@@ -22,7 +22,7 @@ import { pluralize } from "@utils/i18n.utils";
 import { MatSnackBar, MatSnackBarRef } from "@angular/material/snack-bar";
 import { Subscription, timer } from "rxjs";
 
-export type NotificationSeverity = "success" | "warning" | "error";
+export type NotificationSeverity = "success" | "warning" | "error" | "info";
 
 interface QueuedNotification {
   severity: NotificationSeverity;
@@ -40,6 +40,8 @@ export interface NotificationServiceInterface {
   error(message: string, options?: { duration?: number }): void;
 
   warning(message: string, options?: { duration?: number }): void;
+
+  info(message: string, options?: { duration?: number }): void;
 
   handleResourceError(error: Error | undefined, subject: string): void;
 }
@@ -72,6 +74,10 @@ export class NotificationService implements NotificationServiceInterface {
     this._enqueue("warning", message, options?.duration);
   }
 
+  info(message: string, options?: { duration?: number }): void {
+    this._enqueue("info", message, options?.duration);
+  }
+
   handleResourceError(error: Error | undefined, subject: string): void {
     if (error) {
       const err = error as HttpErrorResponse;
@@ -101,7 +107,7 @@ export class NotificationService implements NotificationServiceInterface {
       return;
     }
 
-    const order: NotificationSeverity[] = ["error", "warning", "success"];
+    const order: NotificationSeverity[] = ["error", "warning", "success", "info"];
     const groups = new Map<NotificationSeverity, string[]>();
     for (const sev of order) groups.set(sev, []);
     for (const m of queue) groups.get(m.severity)!.push(m.message);
@@ -135,9 +141,15 @@ export class NotificationService implements NotificationServiceInterface {
         other: $localize`:@@common.warnings:${count}:COUNT: warnings:`
       });
     }
+    if (severity === "success") {
+      return pluralize(this.localeId, count, {
+        one: $localize`:@@common.success:1 success:`,
+        other: $localize`:@@common.successes:${count}:COUNT: successes:`
+      });
+    }
     return pluralize(this.localeId, count, {
-      one: $localize`:@@common.success:1 success:`,
-      other: $localize`:@@common.successes:${count}:COUNT: successes:`
+      one: $localize`:@@common.info:1 info:`,
+      other: $localize`:@@common.infos:${count}:COUNT: info:`
     });
   }
 
