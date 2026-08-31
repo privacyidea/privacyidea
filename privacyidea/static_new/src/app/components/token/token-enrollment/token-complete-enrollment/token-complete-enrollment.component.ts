@@ -28,6 +28,7 @@ import {
   ENROLLMENT_CANCELLED,
   EnrollmentStepResult
 } from "@components/token/token-enrollment/token-enrollment.constants";
+import { EnrollmentResponse } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { DialogAction } from "@models/dialog";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
