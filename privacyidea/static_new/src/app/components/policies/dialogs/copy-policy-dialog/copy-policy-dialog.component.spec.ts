@@ -36,8 +36,7 @@ class MockMatDialogRef {
 class MockDialogWrapperComponent {
   title = input.required<string>();
   actions = input.required<DialogAction<"submit" | null>[]>();
-  showCancelButton = input<boolean>(false);
-  handleCloseExternally = input<boolean>(false);
+  showCloseButton = input<boolean>(true);
   wrapperClose = output<void>();
   actionTriggered = output<"submit" | null>();
 }
@@ -144,15 +143,11 @@ describe("CopyPolicyDialogComponent", () => {
   });
 
   describe("4. Cancel Flow", () => {
-    it("should offer a cancel button that closes the dialog without a result", () => {
+    it("should leave the wrapper's close button enabled", () => {
       const wrapper = fixture.debugElement.query(By.directive(MockDialogWrapperComponent))
         .componentInstance as MockDialogWrapperComponent;
 
-      expect(wrapper.showCancelButton()).toBe(true);
-      expect(wrapper.handleCloseExternally()).toBe(true);
-
-      wrapper.wrapperClose.emit();
-      expect(dialogRef.close).toHaveBeenCalledWith(undefined);
+      expect(wrapper.showCloseButton()).toBe(true);
     });
   });
 });

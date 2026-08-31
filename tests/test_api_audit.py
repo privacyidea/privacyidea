@@ -11,7 +11,8 @@ from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import set_policy, SCOPE, delete_policy
 from privacyidea.lib.realm import set_realm
 from privacyidea.lib.resolver import save_resolver
-from privacyidea.models import Audit
+from privacyidea.lib.utils import AUTH_RESPONSE
+from privacyidea.models import Audit, db
 from .base import MyApiTestCase
 
 PWFILE = "tests/testdata/passwords"
@@ -584,3 +585,35 @@ class APIAuditTestCase(MyApiTestCase):
                 "auditdata")), 5, json_response)
             self.assertEqual(1, json_response.get("result").get("value").get(
                 "current"), json_response)
+
+    def test_07_search_negation_matches_unset_columns(self):
+        Audit.query.delete()
+        Audit(action="enroll", success=1, authentication=AUTH_RESPONSE.CHALLENGE).save()
+        Audit(action="enroll", success=1, authentication=AUTH_RESPONSE.REJECT).save()
+        Audit(action="enroll", success=1).save()
+        # entries written before the column was added contain NULL, not ""
+        Audit.query.filter(Audit.authentication == "").update({Audit.authentication: None})
+        db.session.commit()
+
+        # the entry with the unset column is not dropped by the negation
+        with self.app.test_request_context('/audit/',
+                                           method='GET',
+                                           query_string={"action": "enroll",
+                                                         "authentication": f"!{AUTH_RESPONSE.CHALLENGE}"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            value = res.json.get("result").get("value")
+            self.assertEqual(2, value.get("count"), value)
+            self.assertIn(None, [entry.get("authentication") for entry in value.get("auditdata")], value)
+
+        # a positive filter still does not match it
+        with self.app.test_request_context('/audit/',
+                                           method='GET',
+                                           query_string={"action": "enroll",
+                                                         "authentication": AUTH_RESPONSE.CHALLENGE},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            value = res.json.get("result").get("value")
+            self.assertEqual(1, value.get("count"), value)

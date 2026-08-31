@@ -1,6 +1,8 @@
 """
-Tests for the database migration script a1b2c3d4e5f6 that encrypts
-sensitive plaintext data (SMS gateway options and challenge data fields).
+Tests for the database migration script a1b2c3d4e5f6, which encrypts
+sensitive plaintext SMS gateway options and resizes the challenge.data
+column (the challenge rows themselves are cleared by the next revision,
+c3d4e5f6a7b8, rather than converted here).
 
 This tests the helper functions and data transformation logic without
 running the full alembic migration (which requires TEST_DATABASE_URL).
@@ -98,46 +100,6 @@ class MigrationEncryptionTestCase(MyTestCase):
 
         # Clean up
         gw.delete()
-
-    def test_03_migration_encrypts_challenge_data(self):
-        """
-        Simulate the migration logic: plaintext challenge data gets encrypted.
-        """
-        from privacyidea.migrations.versions.a1b2c3d4e5f6_encrypt_sensitive_db_fields import (
-            _looks_encrypted
-        )
-
-        # Create a challenge and manually set plaintext data (pre-migration state)
-        c = Challenge(serial="MIGTEST01", transaction_id="mig_tid001",
-                      validitytime=300)
-        c.save()
-
-        # Write plaintext OTP directly to _data column (simulating pre-migration DB)
-        plaintext_otp = "987654"
-        c._data = plaintext_otp
-        db.session.commit()
-
-        # Simulate migration logic: read raw _data, encrypt if plaintext
-        db.session.expire_all()
-        stmt = select(Challenge).filter_by(transaction_id="mig_tid001")
-        db_challenge = db.session.execute(stmt).scalar_one()
-        raw_data = db_challenge._data
-        if raw_data and not _looks_encrypted(raw_data):
-            db_challenge._data = encryptPassword(raw_data)
-        db.session.commit()
-
-        # Verify _data is now encrypted in DB
-        db.session.expire_all()
-        stmt = select(Challenge).filter_by(transaction_id="mig_tid001")
-        db_challenge = db.session.execute(stmt).scalar_one()
-        self.assertNotEqual(db_challenge._data, plaintext_otp)
-        self.assertIn(":", db_challenge._data)
-        # And the data property transparently decrypts
-        self.assertEqual(db_challenge.data, plaintext_otp)
-
-        # Clean up
-        db.session.delete(db_challenge)
-        db.session.commit()
 
     def test_04_migration_skips_already_encrypted(self):
         """Migration is idempotent - already encrypted values are skipped."""
