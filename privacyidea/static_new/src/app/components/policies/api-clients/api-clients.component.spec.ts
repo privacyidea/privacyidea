@@ -117,6 +117,42 @@ describe("ApiClientsComponent", () => {
     expect(component.apiClientDataSource().filter).toBe("client one");
   });
 
+  it("should keep the active filter when the client list reloads", () => {
+    // Regression: every reload built a fresh MatTableDataSource, and the filter lived only
+    // on the old instance - a rotate or delete silently showed all rows again while the
+    // filter box still held the term.
+    component.onFilterInput("Client One");
+    expect(component.apiClientDataSource().filteredData.length).toBe(1);
+
+    apiClientServiceMock.apiClients.update((clients) => [...clients]);
+    fixture.detectChanges();
+
+    expect(component.filterString()).toBe("Client One");
+    expect(component.apiClientDataSource().filter).toBe("client one");
+    expect(component.apiClientDataSource().filteredData.length).toBe(1);
+  });
+
+  it("should report the filtered row count to the paginator", async () => {
+    // The length now comes from the data source's filtered rows alone. Note this does not
+    // catch a re-added [length] binding: MatTableDataSource rewrites paginator.length
+    // right after the binding runs, so the conflict is only ever a transient flicker.
+    const authServiceMock = TestBed.inject(AuthService) as unknown as MockAuthService;
+    authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["api_client_list"] });
+    fixture.detectChanges();
+
+    component.onFilterInput("Client One");
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const dataSource = component.apiClientDataSource();
+    expect(dataSource.filteredData.length).toBe(1);
+    expect(dataSource.paginator).toBeTruthy();
+
+    const rangeLabel = (fixture.nativeElement as HTMLElement).querySelector(".mat-mdc-paginator-range-label");
+    expect(rangeLabel?.textContent?.trim()).toContain("of 1");
+  });
+
   it("should navigate to the edit page when editing a client", () => {
     const client = apiClientServiceMock.apiClients()[0];
     component.onEditApiClient(client);

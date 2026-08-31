@@ -219,7 +219,7 @@ describe("ApiClientService", () => {
     expect(page.devices[0].device_id).toBe("dev1");
   });
 
-  it("should show error notification and return an empty page when listing remembered devices fails", async () => {
+  it("should notify and reject rather than report an empty page when listing remembered devices fails", async () => {
     const promise = service.getRememberedDevices("abc");
 
     const req = httpMock.expectOne(
@@ -230,9 +230,15 @@ describe("ApiClientService", () => {
       statusText: "Bad Request"
     });
 
-    const page = await promise;
-    expect(page).toEqual({ devices: [], count: 0, prev: null, next: null });
+    await expect(promise).rejects.toThrow("remembered-devices-load-failed");
     expect(notifyMock.error).toHaveBeenCalledWith("Failed to load remembered devices. Something went wrong");
+  });
+
+  it("should bump the remembered-devices reload trigger", () => {
+    // The hook the top-bar refresh button pulls; the devices table tracks this trigger.
+    expect(service.rememberedDevicesReloadTrigger()).toBe(0);
+    service.reloadRememberedDevices();
+    expect(service.rememberedDevicesReloadTrigger()).toBe(1);
   });
 
   it("should revoke a single remembered device", async () => {

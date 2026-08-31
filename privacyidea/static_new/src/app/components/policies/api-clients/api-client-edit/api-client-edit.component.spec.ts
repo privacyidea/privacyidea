@@ -84,7 +84,7 @@ describe("ApiClientEditComponent", () => {
     fixture.detectChanges();
   }
 
-  async function setupEditMode() {
+  async function setupEditMode(rights?: string[]) {
     apiClientServiceMock = new MockApiClientService();
     apiClientServiceMock.apiClients.set([
       {
@@ -122,6 +122,11 @@ describe("ApiClientEditComponent", () => {
     dialogService = TestBed.inject(DialogService) as unknown as MockDialogService;
     router = TestBed.inject(Router);
     jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
+
+    if (rights) {
+      const authServiceMock = TestBed.inject(AuthService) as unknown as MockAuthService;
+      authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights });
+    }
 
     fixture = TestBed.createComponent(ApiClientEditComponent);
     component = fixture.componentInstance;
@@ -204,6 +209,78 @@ describe("ApiClientEditComponent", () => {
       status: "suspended"
     });
     expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.POLICIES_API_CLIENTS);
+  });
+
+  it("should not let a list-only admin edit the display name", async () => {
+    // Regression: only the Save button was gated, so this admin could dirty the form and
+    // then be offered "Save & exit", which ends in a 403 from the backend.
+    await setupEditMode(["api_client_list"]);
+
+    expect(component.canEditFields()).toBe(false);
+    expect(component.apiClientForm.display_name().disabled()).toBe(true);
+  });
+
+  it("should let an admin with the edit right edit the display name", async () => {
+    await setupEditMode(["api_client_list", "api_client_edit"]);
+
+    expect(component.canEditFields()).toBe(true);
+    expect(component.apiClientForm.display_name().disabled()).toBe(false);
+  });
+
+  it("should fill the form once the client list arrives late", async () => {
+    // The list is usually already loaded, but a direct URL hit reaches this page first.
+    apiClientServiceMock = new MockApiClientService();
+    apiClientServiceMock.apiClients.set([]);
+
+    await TestBed.configureTestingModule({
+      imports: [ApiClientEditComponent],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideRouter([]),
+        { provide: ActivatedRoute, useValue: { paramMap: of(convertToParamMap({ id: "abc" })) } },
+        { provide: ApiClientService, useValue: apiClientServiceMock },
+        { provide: AuthService, useClass: MockAuthService },
+        { provide: ContentService, useClass: MockContentService },
+        { provide: IntegrationsService, useClass: MockIntegrationsService },
+        { provide: PendingChangesService, useClass: MockPendingChangesService },
+        { provide: DialogService, useClass: MockDialogService },
+        { provide: RealmService, useClass: MockRealmService }
+      ]
+    }).compileComponents();
+
+    fixture = TestBed.createComponent(ApiClientEditComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+
+    expect(component.apiClientModel().display_name).toBe("");
+
+    apiClientServiceMock.apiClients.set([
+      {
+        id: "abc",
+        display_name: "Arrived Late",
+        client_type: "keycloak",
+        key_id: "key1",
+        status: "active",
+        created_at: "2026-01-01T00:00:00Z",
+        last_used_at: null
+      }
+    ]);
+    fixture.detectChanges();
+
+    expect(component.apiClientModel().display_name).toBe("Arrived Late");
+  });
+
+  it("should not discard typed changes when the list reloads with unchanged values", async () => {
+    // The old effect guarded this with a dirty check; the model is now keyed on the
+    // record's values, so an identical reload does not recompute at all.
+    await setupEditMode();
+    component.apiClientModel.update((model) => ({ ...model, display_name: "Typed By Admin" }));
+
+    apiClientServiceMock.apiClients.update((clients) => clients.map((client) => ({ ...client })));
+    fixture.detectChanges();
+
+    expect(component.apiClientModel().display_name).toBe("Typed By Admin");
   });
 
   describe("rotateKey", () => {

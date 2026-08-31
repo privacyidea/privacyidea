@@ -239,6 +239,7 @@ export class UserUtilsPanelComponent {
       return;
     } else if (this.contentService.onApiClients()) {
       this.apiClientService.apiClientResource.reload();
+      this.apiClientService.reloadRememberedDevices();
       return;
     }
 

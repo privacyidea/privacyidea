@@ -48,7 +48,7 @@
       @if (authService.actionAllowed("remembered_device_revoke")) {
         <button
           (click)="revokeAll()"
-          [disabled]="count() === 0"
+          [disabled]="count() === 0 || loadFailed()"
           class="action-button-delete-secondary button-width-l"
           mat-stroked-button>
           <mat-icon>delete_sweep</mat-icon>
@@ -195,7 +195,11 @@
 
       <tr *matNoDataRow>
         <td colspan="7">
-          @if (realmFilter()) {
+          @if (loadFailed()) {
+            <span i18n>The remembered devices could not be loaded. This is not a statement about how many exist.</span>
+          } @else if (isLoading()) {
+            <span i18n>Loading remembered devices...</span>
+          } @else if (realmFilter()) {
             <span i18n>This client has no remembered devices in realm {{ realmFilter() }}.</span>
           } @else {
             <span i18n>This client has no remembered devices.</span>

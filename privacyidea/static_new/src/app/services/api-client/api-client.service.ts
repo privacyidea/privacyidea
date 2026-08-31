@@ -66,6 +66,9 @@ export interface ApiClientServiceInterface {
   apiClientResource: HttpResourceRef<PiResponse<ApiClient[]> | undefined>;
   apiClients: WritableSignal<ApiClient[]>;
   lastIssuedKey: WritableSignal<IssuedApiKey | null>;
+  rememberedDevicesReloadTrigger: WritableSignal<number>;
+
+  reloadRememberedDevices(): void;
 
   dismissIssuedKey(): void;
 
@@ -123,6 +126,12 @@ export class ApiClientService implements ApiClientServiceInterface {
   });
 
   lastIssuedKey: WritableSignal<IssuedApiKey | null> = signal(null);
+
+  rememberedDevicesReloadTrigger: WritableSignal<number> = signal(0);
+
+  reloadRememberedDevices(): void {
+    this.rememberedDevicesReloadTrigger.update((trigger) => trigger + 1);
+  }
 
   dismissIssuedKey(): void {
     this.lastIssuedKey.set(null);
@@ -219,7 +228,7 @@ export class ApiClientService implements ApiClientServiceInterface {
       .catch((error) => {
         const message = error.error?.result?.error?.message || "";
         this.notificationService.error($localize`Failed to load remembered devices. ` + message);
-        return { devices: [], count: 0, prev: null, next: null };
+        throw new Error("remembered-devices-load-failed");
       });
   }
 

@@ -4,7 +4,6 @@
 .api-clients-container {
   @include styles.main-component-style;
   @include table.base-table-structure(".api-clients-table", ".table-filter", ".table-scroll-container");
-  max-height: var(--table-max-height);
   @include table.page-table-state-size;
 }
 

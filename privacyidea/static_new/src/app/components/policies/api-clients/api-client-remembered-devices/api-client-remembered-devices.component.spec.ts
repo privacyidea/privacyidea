@@ -22,9 +22,9 @@ import { AuthService } from "@services/auth/auth.service";
 import { ContentService } from "@services/content/content.service";
 import { DialogService } from "@services/dialog/dialog.service";
 import { RealmService } from "@services/realm/realm.service";
+import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
 import { MockApiClientService, MockContentService, MockDialogService, MockRealmService } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
-import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
 import { Subject } from "rxjs";
 import { ApiClientRememberedDevicesComponent } from "./api-client-remembered-devices.component";
 
@@ -59,6 +59,13 @@ describe("ApiClientRememberedDevicesComponent", () => {
     created_at: "2026-01-02T00:00:00Z",
     last_used_at: null,
     expires_at: "2026-02-02T00:00:00Z"
+  };
+
+  const settle = async (): Promise<void> => {
+    for (let i = 0; i < 3; i++) {
+      await fixture.whenStable();
+      fixture.detectChanges();
+    }
   };
 
   beforeEach(async () => {
@@ -160,9 +167,10 @@ describe("ApiClientRememberedDevicesComponent", () => {
     expect(dialogServiceMock.openDialog).toHaveBeenCalled();
     confirmClosed.next(true);
     confirmClosed.complete();
-    await fixture.whenStable();
+    await settle();
     expect(apiClientServiceMock.revokeDevice).toHaveBeenCalledWith("client1", "dev1");
     expect(apiClientServiceMock.getRememberedDevices).toHaveBeenCalledTimes(2);
+    expect(component.pageIndex()).toBe(0);
   });
 
   it("should not revoke a device when the confirmation is cancelled", () => {
@@ -191,25 +199,33 @@ describe("ApiClientRememberedDevicesComponent", () => {
     confirmClosed.next(true);
     confirmClosed.complete();
     await fixture.whenStable();
-    expect(apiClientServiceMock.revokeAllForClient).toHaveBeenCalledWith("client1");
+    expect(apiClientServiceMock.revokeAllForClient).toHaveBeenCalledWith("client1", { realm: undefined });
     expect(apiClientServiceMock.revokeAllInRealmAcrossClients).not.toHaveBeenCalled();
   });
 
-  it("should do nothing when revoking all with no devices", () => {
-    component.count.set(0);
+  it("should do nothing when revoking all with no devices", async () => {
+    apiClientServiceMock.getRememberedDevices = jest
+      .fn()
+      .mockResolvedValue({ devices: [], count: 0, prev: null, next: null });
+    apiClientServiceMock.reloadRememberedDevices();
+    await fixture.whenStable();
+
+    expect(component.count()).toBe(0);
     component.revokeAll();
     expect(dialogServiceMock.openDialog).not.toHaveBeenCalled();
   });
 
-  it("should revoke all devices in the selected realm across all clients", async () => {
+  it("should scope a realm-filtered revoke-all to this client only", async () => {
+    // Regression: this used to call the client-independent endpoint, so revoking "all in
+    // this realm" from one client's page wiped that realm's devices on every other client.
     component.realmFilter.set("realm1");
     expect(component.revokeAllLabel()).toBe("Revoke all in this realm");
     component.revokeAll();
     confirmClosed.next(true);
     confirmClosed.complete();
     await fixture.whenStable();
-    expect(apiClientServiceMock.revokeAllInRealmAcrossClients).toHaveBeenCalledWith("realm1");
-    expect(apiClientServiceMock.revokeAllForClient).not.toHaveBeenCalled();
+    expect(apiClientServiceMock.revokeAllForClient).toHaveBeenCalledWith("client1", { realm: "realm1" });
+    expect(apiClientServiceMock.revokeAllInRealmAcrossClients).not.toHaveBeenCalled();
   });
 
   it("should navigate to the resolved user's details", () => {
@@ -222,5 +238,61 @@ describe("ApiClientRememberedDevicesComponent", () => {
     const contentService = TestBed.inject(ContentService) as unknown as MockContentService;
     component.goToUser(device2);
     expect(contentService.userSelected).not.toHaveBeenCalled();
+  });
+  it("should report a failed load as a failure, not as an empty client", async () => {
+    // Regression: the service used to swallow the error into an empty page, so the table
+    // stated "This client has no remembered devices" - a positive claim about
+    // security-relevant state that nobody had verified.
+    apiClientServiceMock.getRememberedDevices = jest.fn().mockRejectedValue(new Error("boom"));
+    apiClientServiceMock.reloadRememberedDevices();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(component.loadFailed()).toBe(true);
+    expect(component.devices()).toEqual([]);
+    expect(component.count()).toBe(0);
+
+    const text = (fixture.nativeElement as HTMLElement).textContent ?? "";
+    expect(text).toContain("could not be loaded");
+    expect(text).not.toContain("has no remembered devices");
+  });
+
+  it("should re-fetch through the page reset alone when revoking all off page 0", async () => {
+    // Resetting the page is itself a re-fetch trigger. Pulling the reload hook on top of
+    // it is the redundant second request the fix removed, so the hook must stay untouched.
+    component.onPage({ pageIndex: 2, pageSize: 50, length: 200 });
+    await fixture.whenStable();
+    const fetchesBefore = apiClientServiceMock.getRememberedDevices.mock.calls.length;
+    const hookCallsBefore = apiClientServiceMock.reloadRememberedDevices.mock.calls.length;
+
+    component.revokeAll();
+    confirmClosed.next(true);
+    confirmClosed.complete();
+    await settle();
+
+    expect(component.pageIndex()).toBe(0);
+    expect(apiClientServiceMock.reloadRememberedDevices.mock.calls.length).toBe(hookCallsBefore);
+    expect(apiClientServiceMock.getRememberedDevices.mock.calls.length).toBe(fetchesBefore + 1);
+  });
+
+  it("should re-fetch through the reload hook when revoking all already on page 0", async () => {
+    const fetchesBefore = apiClientServiceMock.getRememberedDevices.mock.calls.length;
+
+    component.revokeAll();
+    confirmClosed.next(true);
+    confirmClosed.complete();
+    await settle();
+
+    expect(component.pageIndex()).toBe(0);
+    expect(apiClientServiceMock.reloadRememberedDevices).toHaveBeenCalled();
+    expect(apiClientServiceMock.getRememberedDevices.mock.calls.length).toBe(fetchesBefore + 1);
+  });
+
+  it("should re-fetch when the service's reload hook is pulled", async () => {
+    // The top-bar refresh button reaches this table only through that hook.
+    const before = apiClientServiceMock.getRememberedDevices.mock.calls.length;
+    apiClientServiceMock.reloadRememberedDevices();
+    await fixture.whenStable();
+    expect(apiClientServiceMock.getRememberedDevices.mock.calls.length).toBe(before + 1);
   });
 });

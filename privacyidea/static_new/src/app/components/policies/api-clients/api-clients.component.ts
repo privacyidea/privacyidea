@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { DatePipe } from "@angular/common";
-import { Component, computed, ElementRef, inject, signal, ViewChild, viewChild, WritableSignal } from "@angular/core";
+import { Component, computed, ElementRef, inject, signal, untracked, ViewChild, viewChild } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatIconModule } from "@angular/material/icon";
@@ -37,8 +37,8 @@ import { TableStateComponent } from "@components/shared/table-state/table-state.
 import { TableState } from "@core/models/table_state/table-state";
 import { ApiClient, ApiClientService, ApiClientServiceInterface } from "@services/api-client/api-client.service";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
-import { IntegrationsService, IntegrationsServiceInterface } from "@services/integrations/integrations.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { IntegrationsService, IntegrationsServiceInterface } from "@services/integrations/integrations.service";
 import { renderedRows, RowSelector } from "@services/table-utils/row-selector";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 
@@ -77,10 +77,6 @@ export class ApiClientsComponent {
 
   filterString = signal<string>("");
   pageSizeOptions = this.tableUtilsService.pageSizeOptions;
-  totalLength: WritableSignal<number> = computed(
-    () => this.apiClientService.apiClients().length
-  ) as WritableSignal<number>;
-
   readonly tableState = new TableState({
     resource: this.apiClientService.apiClientResource,
     count: () => this.apiClientService.apiClients().length,
@@ -108,6 +104,7 @@ export class ApiClientsComponent {
     const dataSource = new MatTableDataSource(clients);
     dataSource.paginator = this.paginator() ?? null;
     dataSource.sort = this.sort;
+    dataSource.filter = untracked(() => this.filterString()).toLowerCase();
     return dataSource;
   });
 

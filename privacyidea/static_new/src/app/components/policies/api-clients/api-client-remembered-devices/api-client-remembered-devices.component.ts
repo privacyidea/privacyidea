@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { DatePipe } from "@angular/common";
-import { Component, computed, effect, inject, input, linkedSignal, signal } from "@angular/core";
+import { Component, computed, inject, input, linkedSignal, resource, signal } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
@@ -26,11 +26,18 @@ import { MatSelectModule } from "@angular/material/select";
 import { MatTableModule } from "@angular/material/table";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
-import { ApiClientService, ApiClientServiceInterface, RememberedDevice } from "@services/api-client/api-client.service";
+import {
+  ApiClientService,
+  ApiClientServiceInterface,
+  RememberedDevice,
+  RememberedDevicesPage
+} from "@services/api-client/api-client.service";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
+
+const EMPTY_PAGE: RememberedDevicesPage = { devices: [], count: 0, prev: null, next: null };
 
 @Component({
   selector: "app-api-client-remembered-devices",
@@ -57,8 +64,6 @@ export class ApiClientRememberedDevicesComponent {
 
   clientId = input.required<string>();
 
-  devices = signal<RememberedDevice[]>([]);
-  count = signal<number>(0);
   // Reset to the first page / no realm filter whenever the viewed client changes,
   // so a stale page number or realm from a previous client (e.g. the router reusing
   // this instance across a same-route client-to-client navigation) can't carry over.
@@ -71,18 +76,45 @@ export class ApiClientRememberedDevicesComponent {
 
   realmOptions = computed(() => this.realmService.realmOptions());
 
-  constructor() {
-    effect(() => {
-      const id = this.clientId();
-      // Track the filter/paging signals so a change re-fetches this page.
-      const page = this.pageIndex();
-      const size = this.pageSize();
-      const realm = this.realmFilter();
-      if (id && this.authService.actionAllowed("remembered_device_list")) {
-        void this.reload(id, page, size, realm);
-      }
-    });
-  }
+  readonly devicesResource = resource({
+    params: () => ({
+      clientId: this.clientId(),
+      allowed: this.authService.actionAllowed("remembered_device_list"),
+      page: this.pageIndex() + 1,
+      pageSize: this.pageSize(),
+      realm: this.realmFilter() || undefined,
+      reloadTrigger: this.apiClientService.rememberedDevicesReloadTrigger()
+    }),
+    loader: ({ params }) => {
+      if (!params.clientId || !params.allowed) return Promise.resolve(EMPTY_PAGE);
+      return this.apiClientService.getRememberedDevices(params.clientId, {
+        page: params.page,
+        pageSize: params.pageSize,
+        realm: params.realm
+      });
+    }
+  });
+
+  private readonly loadedPage = linkedSignal<
+    { value: RememberedDevicesPage | undefined; isLoading: boolean; error: unknown },
+    RememberedDevicesPage
+  >({
+    source: () => ({
+      value: this.devicesResource.hasValue() ? this.devicesResource.value() : undefined,
+      isLoading: this.devicesResource.isLoading(),
+      error: this.devicesResource.error()
+    }),
+    computation: (source, previous) => {
+      if (source.error) return EMPTY_PAGE;
+      if (!source.value) return source.isLoading ? (previous?.value ?? EMPTY_PAGE) : EMPTY_PAGE;
+      return source.value;
+    }
+  });
+
+  readonly devices = computed<RememberedDevice[]>(() => this.loadedPage().devices);
+  readonly count = computed<number>(() => this.loadedPage().count);
+  readonly loadFailed = computed<boolean>(() => this.devicesResource.error() !== undefined);
+  readonly isLoading = computed<boolean>(() => this.devicesResource.isLoading());
 
   userDevicesTooltip(): string {
     return $localize`Revoke this user's remembered devices on all clients`;
@@ -103,18 +135,20 @@ export class ApiClientRememberedDevicesComponent {
     this.pageIndex.set(0);
   }
 
-  private async reload(clientId: string, pageIndex: number, pageSize: number, realm: string): Promise<void> {
-    const result = await this.apiClientService.getRememberedDevices(clientId, {
-      page: pageIndex + 1,
-      pageSize,
-      realm: realm || undefined
-    });
-    this.devices.set(result.devices);
-    this.count.set(result.count);
+  private reloadAfterRevoke(removedFromPage: number): void {
+    if (this.pageIndex() > 0 && this.devices().length <= removedFromPage) {
+      this.pageIndex.update((index) => index - 1);
+      return;
+    }
+    this.apiClientService.reloadRememberedDevices();
   }
 
-  private reloadCurrent(): void {
-    void this.reload(this.clientId(), this.pageIndex(), this.pageSize(), this.realmFilter());
+  private reloadFromFirstPage(): void {
+    if (this.pageIndex() !== 0) {
+      this.pageIndex.set(0);
+      return;
+    }
+    this.apiClientService.reloadRememberedDevices();
   }
 
   revokeDevice(device: RememberedDevice): void {
@@ -131,7 +165,9 @@ export class ApiClientRememberedDevicesComponent {
       .afterClosed()
       .subscribe((result) => {
         if (result) {
-          void this.apiClientService.revokeDevice(this.clientId(), device.device_id).then(() => this.reloadCurrent());
+          void this.apiClientService.revokeDevice(this.clientId(), device.device_id).then(() => {
+            this.reloadAfterRevoke(1);
+          });
         }
       });
   }
@@ -152,7 +188,9 @@ export class ApiClientRememberedDevicesComponent {
       .afterClosed()
       .subscribe((result) => {
         if (result) {
-          void this.apiClientService.revokeAllInRealmAcrossClients(device.realm, user).then(() => this.reloadCurrent());
+          void this.apiClientService
+            .revokeAllInRealmAcrossClients(device.realm, user)
+            .then(() => this.reloadFromFirstPage());
         }
       });
   }
@@ -171,7 +209,7 @@ export class ApiClientRememberedDevicesComponent {
           title: realm ? $localize`Revoke All In Realm` : $localize`Revoke All Remembered Devices`,
           items: [
             realm
-              ? $localize`All remembered devices in realm ${realm} (across all clients)`
+              ? $localize`All remembered devices for this client in realm ${realm}`
               : $localize`All remembered devices for this client`
           ],
           itemType: "remembered-device",
@@ -181,13 +219,9 @@ export class ApiClientRememberedDevicesComponent {
       .afterClosed()
       .subscribe((result) => {
         if (!result) return;
-        const revoke = realm
-          ? this.apiClientService.revokeAllInRealmAcrossClients(realm)
-          : this.apiClientService.revokeAllForClient(this.clientId());
-        void revoke.then(() => {
-          this.pageIndex.set(0);
-          this.reloadCurrent();
-        });
+        void this.apiClientService
+          .revokeAllForClient(this.clientId(), { realm: realm || undefined })
+          .then(() => this.reloadFromFirstPage());
       });
   }
 }

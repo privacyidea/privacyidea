@@ -33,6 +33,11 @@ export class MockApiClientService implements ApiClientServiceInterface {
 
   apiClients = signal<ApiClient[]>([]);
   lastIssuedKey = signal<IssuedApiKey | null>(null);
+  rememberedDevicesReloadTrigger = signal<number>(0);
+
+  reloadRememberedDevices = jest.fn(() => {
+    this.rememberedDevicesReloadTrigger.update((trigger) => trigger + 1);
+  });
 
   dismissIssuedKey = jest.fn(() => {
     this.lastIssuedKey.set(null);

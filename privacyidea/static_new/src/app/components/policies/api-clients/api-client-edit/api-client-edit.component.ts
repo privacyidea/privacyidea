@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, effect, inject, OnDestroy, signal, untracked } from "@angular/core";
+import { Component, computed, inject, linkedSignal, OnDestroy, signal, untracked } from "@angular/core";
 import { disabled, form, FormField, required } from "@angular/forms/signals";
 import { MatButtonModule } from "@angular/material/button";
 import { MatFormFieldModule } from "@angular/material/form-field";
@@ -85,13 +85,42 @@ export class ApiClientEditComponent implements OnDestroy {
   isEditMode = signal(false);
   editClientId = signal<string | null>(null);
 
-  apiClientModel = signal<ApiClientFormModel>({ ...EMPTY_API_CLIENT_FORM });
+  private readonly editedClient = computed<ApiClient | null>(() => {
+    const id = this.editClientId();
+    if (!id) return null;
+    return this.apiClientService.apiClients().find((client) => client.id === id) ?? null;
+  });
+
+  private readonly editedClientKey = computed<string>(() => {
+    const client = this.editedClient();
+    if (!client) return this.editClientId() ?? "";
+    return [client.id, client.display_name, client.client_type, client.status].join("|");
+  });
+
+  apiClientModel = linkedSignal<string, ApiClientFormModel>({
+    source: () => this.editedClientKey(),
+    computation: () =>
+      untracked(() => {
+        const client = this.editedClient();
+        if (!client) return { ...EMPTY_API_CLIENT_FORM };
+        return {
+          display_name: client.display_name || "",
+          client_type: client.client_type || "",
+          status: client.status || "active"
+        };
+      })
+  });
 
   apiClientForm = form(this.apiClientModel, (f) => {
     required(f.display_name);
     required(f.client_type);
     disabled(f.client_type, () => this.isEditMode());
+    disabled(f.display_name, () => !this.canEditFields());
   });
+
+  canEditFields(): boolean {
+    return this.authService.actionAllowed(this.isEditMode() ? "api_client_edit" : "api_client_add");
+  }
 
   constructor() {
     this.pendingChangesService.registerHasChanges(() => this.hasChanges);
@@ -105,28 +134,9 @@ export class ApiClientEditComponent implements OnDestroy {
       // so a plaintext key just issued for the previous client must not linger.
       this.apiClientService.dismissIssuedKey();
       const id = params.get("id");
-      if (id) {
-        this.isEditMode.set(true);
-        this.editClientId.set(id);
-        const client = this.apiClientService.apiClients().find((c) => c.id === id);
-        this.loadData(client ?? null);
-      } else {
-        this.isEditMode.set(false);
-        this.editClientId.set(null);
-        this.loadData(null);
-      }
-    });
-
-    // Re-initialize once the async list arrives, but only if the user hasn't started editing yet.
-    effect(() => {
-      const apiClients = this.apiClientService.apiClients();
-      const id = this.editClientId();
-      if (this.isEditMode() && id && untracked(() => !this.apiClientForm().dirty())) {
-        const client = apiClients.find((c) => c.id === id);
-        if (client) {
-          this.loadData(client);
-        }
-      }
+      this.isEditMode.set(!!id);
+      this.editClientId.set(id);
+      this.apiClientForm().reset();
     });
   }
 
@@ -144,15 +154,6 @@ export class ApiClientEditComponent implements OnDestroy {
 
   ngOnDestroy(): void {
     this.pendingChangesService.clearAllRegistrations();
-  }
-
-  private loadData(data: ApiClient | null): void {
-    this.apiClientModel.set({
-      display_name: data?.display_name || "",
-      client_type: data?.client_type || "",
-      status: data?.status || "active"
-    });
-    this.apiClientForm().reset();
   }
 
   async save(): Promise<boolean> {

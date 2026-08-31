@@ -386,7 +386,9 @@ export class SubscriptionsWidgetComponent extends DashboardWidget implements OnI
     for (const node of nodes) {
       if (node.label) {
         rows.push({ kind: "label", indent: depth, label: node.label });
-        this.flattenSections(node.children ?? [], depth + 1, rows, statusByApplication);
+      }
+      if (node.children?.length) {
+        this.flattenSections(node.children, node.label ? depth + 1 : depth, rows, statusByApplication);
       } else if (node.application) {
         rows.push({
           kind: "component",

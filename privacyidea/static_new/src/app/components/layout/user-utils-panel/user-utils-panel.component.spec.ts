@@ -26,6 +26,7 @@ import { provideLocationMocks } from "@angular/common/testing";
 import { MatSnackBar } from "@angular/material/snack-bar";
 import { ActivatedRoute, provideRouter } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
+import { ApiClientService } from "@services/api-client/api-client.service";
 import { AuditService } from "@services/audit/audit.service";
 import { AuthService } from "@services/auth/auth.service";
 import { CaConnectorService } from "@services/ca-connector/ca-connector.service";
@@ -47,7 +48,6 @@ import { PrivacyideaServerService } from "@services/privacyidea-server/privacyid
 import { RadiusServerService } from "@services/radius-server/radius-server.service";
 import { RealmService } from "@services/realm/realm.service";
 import { ResolverService } from "@services/resolver/resolver.service";
-import { ApiClientService } from "@services/api-client/api-client.service";
 import { ServiceIdService } from "@services/service-id/service-id.service";
 import { SessionTimerService } from "@services/session-timer/session-timer.service";
 import { SmsGatewayService } from "@services/sms-gateway/sms-gateway.service";
@@ -277,11 +277,12 @@ describe("UserUtilsPanelComponent", () => {
       expect(userService.usersResource.reload).toHaveBeenCalled();
     });
 
-    it("refreshes api clients details route", () => {
+    it("refreshes api clients details route, including the remembered devices table", () => {
       const apiClientService = TestBed.inject(ApiClientService) as unknown as MockApiClientService;
       content.routeUrl.set(`${ROUTE_PATHS.POLICIES_API_CLIENTS_DETAILS}abc`);
       component.refreshPage();
       expect(apiClientService.apiClientResource.reload).toHaveBeenCalled();
+      expect(apiClientService.reloadRememberedDevices).toHaveBeenCalled();
     });
   });
 
@@ -342,7 +343,7 @@ describe("UserUtilsPanelComponent", () => {
     });
 
     it("sessionOverOneDay defaults to false when remainingTime is undefined", () => {
-      sessionTimerService.remainingTime.set(undefined);
+      sessionTimerService.remainingTime.set(undefined as unknown as number);
       expect(component.sessionOverOneDay()).toBe(false);
     });
 
