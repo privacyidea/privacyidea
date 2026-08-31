@@ -17,6 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { MatTooltipDefaultOptions } from "@angular/material/tooltip";
+import { EnrollmentResponse } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 
 export const CUSTOM_TOOLTIP_OPTIONS: MatTooltipDefaultOptions = {
   showDelay: 500,
@@ -64,3 +65,11 @@ export const NO_REGENERATE_TOKEN_TYPES = [
  * A list of token types for which the regenerate button should show "Values" instead of "QR Code".
  */
 export const REGENERATE_AS_VALUES_TOKEN_TYPES = ["paper", "tan"];
+
+/**
+ * Result value of an enrollment dialog whose enrollment was cancelled by the user.
+ * The incomplete token has been deleted in that case.
+ */
+export const ENROLLMENT_CANCELLED = "enrollment-cancelled";
+
+export type EnrollmentStepResult = EnrollmentResponse | typeof ENROLLMENT_CANCELLED | null;
