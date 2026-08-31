@@ -477,6 +477,26 @@ added to the ``PI_ENABLE_TOKEN_TYPE_ENROLLMENT`` list in ``pi.cfg``::
    ``tokentype='deprecated'`` and handled via ``pi-tokenjanitor deprecated``
    - see the developer note ``dev/token-deprecation-strategy.md``.
 
+.. _picfg_allowed_ssh_key_types:
+
+Allowed SSH key types
+.....................
+
+.. versionadded:: 3.14
+
+The SSH key token only accepts a set of well known SSH key types (``ssh-rsa``,
+``ssh-ed25519``, ``ecdsa-sha2-nistp256``,
+``sk-ecdsa-sha2-nistp256@openssh.com`` and
+``sk-ssh-ed25519@openssh.com``). If you need to enroll SSH keys of other
+types, you can add them as a list in ``pi.cfg``::
+
+    PI_ALLOWED_SSH_KEY_TYPES = ['ssh-dss', 'ecdsa-sha2-nistp521']
+
+
+The configured key types are added to the default key types. privacyIDEA does
+not evaluate the key type itself, the SSH server decides which key types it
+accepts (see ``PubkeyAcceptedAlgorithms``).
+
 .. _picfg_email_validators:
 
 3rd party email validators
