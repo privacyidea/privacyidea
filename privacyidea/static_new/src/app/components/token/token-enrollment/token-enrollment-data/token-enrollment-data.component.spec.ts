@@ -98,6 +98,28 @@ describe("TokenEnrollmentDataComponent", () => {
     expect(component.showRegenerateButton()).toBe(false);
   });
 
+  it("should hide the regenerate button while the token awaits enrollment verification", () => {
+    fixture.componentRef.setInput("tokenType", "hotp");
+    fixture.componentRef.setInput("enrolledInputData", {
+      serial: "OATH0001",
+      rollout_state: "verify",
+      googleurl: { img: "img", value: "url" }
+    });
+    fixture.detectChanges();
+    expect(component.showRegenerateButton()).toBe(false);
+  });
+
+  it("should show the regenerate button once the token has left the verify state", () => {
+    fixture.componentRef.setInput("tokenType", "hotp");
+    fixture.componentRef.setInput("enrolledInputData", {
+      serial: "OATH0001",
+      rollout_state: "enrolled",
+      googleurl: { img: "img", value: "url" }
+    });
+    fixture.detectChanges();
+    expect(component.showRegenerateButton()).toBe(true);
+  });
+
   it("should adopt regenerate button text to token type", () => {
     fixture.componentRef.setInput("tokenType", "spass");
     fixture.detectChanges();
@@ -152,6 +174,55 @@ describe("TokenEnrollmentDataComponent", () => {
 
     expect(mockTokenService.enrollToken).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ type: "hotp", serial: "OATH0001" }) })
+    );
+  });
+
+  it("should request a rollover so the existing token is re-initialized", () => {
+    mockTokenService.enrollToken = jest.fn().mockReturnValue(
+      of({
+        type: "hotp",
+        result: { status: true },
+        detail: { type: "hotp", serial: "OATH0001", googleurl: { img: "new_img", value: "new_url" } }
+      })
+    );
+    fixture.componentRef.setInput("enrollmentParameters", {
+      data: { type: "hotp", serial: "OATH0001" },
+      mapper: { map: jest.fn() }
+    });
+    fixture.componentRef.setInput("enrolledInputData", { serial: "OATH0001" });
+    fixture.detectChanges();
+
+    component.regenerateQRCode();
+
+    expect(mockTokenService.enrollToken).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ rollover: true }) })
+    );
+  });
+
+  it("should keep 2stepinit alongside the rollover so the two-step handshake is preserved", () => {
+    mockTokenService.enrollToken = jest.fn().mockReturnValue(
+      of({
+        type: "hotp",
+        result: { status: true },
+        detail: { type: "hotp", serial: "OATH0001", rollout_state: "clientwait" }
+      })
+    );
+    fixture.componentRef.setInput("enrollmentParameters", {
+      data: { type: "hotp", serial: "OATH0001", "2stepinit": true },
+      mapper: { map: jest.fn() }
+    });
+    fixture.componentRef.setInput("enrolledInputData", {
+      serial: "OATH0001",
+      rollout_state: "clientwait"
+    });
+    fixture.detectChanges();
+
+    component.regenerateQRCode();
+
+    expect(mockTokenService.enrollToken).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ rollover: true, "2stepinit": true, serial: "OATH0001" })
+      })
     );
   });
 

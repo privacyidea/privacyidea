@@ -97,7 +97,13 @@ export class TokenEnrollmentDataComponent {
         this.enrolledData()?.["otps"]
       )
   );
-  showRegenerateButton = computed(() => !NO_REGENERATE_TOKEN_TYPES.includes(this.tokenType()));
+  // A token waiting for enrollment verification cannot be regenerated: the backend rejects any
+  // further /token/init for it until a valid "verify" value is supplied, so offering the button
+  // would only ever produce an error.
+  protected readonly isVerifyPending = computed(() => this.enrolledData()?.rollout_state === "verify");
+  showRegenerateButton = computed(
+    () => !NO_REGENERATE_TOKEN_TYPES.includes(this.tokenType()) && !this.isVerifyPending()
+  );
   regenerateButtonText = computed(() =>
     REGENERATE_AS_VALUES_TOKEN_TYPES.includes(this.tokenType())
       ? $localize`Regenerate Values`
@@ -108,7 +114,13 @@ export class TokenEnrollmentDataComponent {
     const enrollmentParameters = this.enrollmentParameters();
     const newEnrollmentData: TokenEnrollmentData = {
       ...enrollmentParameters.data,
-      serial: this.serial() || enrollmentParameters.data.serial
+      serial: this.serial() || enrollmentParameters.data.serial,
+      // The token already exists, so this call re-initializes it rather than enrolling a new
+      // one. Without "rollover" the backend treats the request as the next step of the original
+      // enrollment and rejects it - for a two-step enrollment the token is still in "clientwait"
+      // and resending "2stepinit" fails. "rollover" resets the rollout state first, so a fresh
+      // secret is generated and, for two-step, a new server component is issued.
+      rollover: true
     };
 
     this.tokenService.enrollToken({ data: newEnrollmentData, mapper: enrollmentParameters.mapper }).subscribe({
