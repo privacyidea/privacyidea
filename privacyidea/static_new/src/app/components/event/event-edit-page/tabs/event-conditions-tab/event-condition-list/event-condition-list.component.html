@@ -65,8 +65,8 @@
                 [value]="multiValueConditions()[conditionName] || []"
                 i18n-placeholder
                 placeholder="Select values ...">
-                @for (option of availableConditionValues()[conditionName]; track option) {
-                  <mat-option [value]="option">{{ option }}</mat-option>
+                @for (option of conditionValueOptions()[conditionName]; track option.value) {
+                  <mat-option [value]="option.value">{{ option.label }}</mat-option>
                 }
               </mat-select>
               <mat-error i18n> Select at least one value or remove the condition.</mat-error>
@@ -82,8 +82,8 @@
                 [value]="editConditions()[conditionName]"
                 i18n-placeholder
                 placeholder="Select one option ...">
-                @for (option of availableConditionValues()[conditionName]; track option) {
-                  <mat-option [value]="option">{{ option }}</mat-option>
+                @for (option of conditionValueOptions()[conditionName]; track option.value) {
+                  <mat-option [value]="option.value">{{ option.label }}</mat-option>
                 }
               </mat-select>
               <mat-error i18n> Select a value or remove the condition.</mat-error>

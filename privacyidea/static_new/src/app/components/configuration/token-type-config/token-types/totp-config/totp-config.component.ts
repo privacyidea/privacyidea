@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, input, output } from "@angular/core";
+import { Component, computed, input, output } from "@angular/core";
 
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatFormFieldModule } from "@angular/material/form-field";
@@ -24,6 +24,7 @@ import { MatInputModule } from "@angular/material/input";
 import { MatSelectModule } from "@angular/material/select";
 import { ClearButtonComponent } from "@components/shared/clear-button/clear-button.component";
 import { TOTP_HASHLIB, TOTP_TIME_SHIFT, TOTP_TIME_STEP, TOTP_TIME_WINDOW } from "@constants/token.constants";
+import { valueDisplayLabel } from "@utils/value-label.utils";
 
 @Component({
   selector: "app-totp-config",
@@ -41,6 +42,9 @@ export class TotpConfigComponent {
   formData = input.required<Record<string, string | number>>();
   totpSteps = input.required<string[]>();
   hashLibs = input.required<string[]>();
+  readonly hashLibOptions = computed<{ value: string; label: string }[]>(() =>
+    this.hashLibs().map((hashLib) => ({ value: hashLib, label: valueDisplayLabel(hashLib, this.hashLibs()) }))
+  );
   formDataChange = output<Record<string, string | number>>();
 
   updateFormData(fieldName: string, value: string | number): void {

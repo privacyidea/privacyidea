@@ -26,7 +26,7 @@
       @if (!action.isBoolean) {
         <span
           class="action-value"
-          [innerHTML]="'' + action.value | highlight: highlightTerms()"></span>
+          [innerHTML]="action.displayValue | highlight: highlightTerms()"></span>
       }
     </div>
   }

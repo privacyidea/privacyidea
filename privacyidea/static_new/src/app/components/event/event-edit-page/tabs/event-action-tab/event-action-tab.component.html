@@ -63,9 +63,9 @@
                 [appErrorState]="showOptionError(optionName)"
                 [required]="actionOptions()[optionName].required || false"
                 [value]="selectedOptions()[optionName]">
-                @for (valueOption of actionOptions()[optionName].value; track valueOption) {
-                  <mat-option [value]="valueOption">
-                    {{ valueOption }}
+                @for (valueOption of optionValueOptions()[optionName]; track valueOption.value) {
+                  <mat-option [value]="valueOption.value">
+                    {{ valueOption.label }}
                   </mat-option>
                 }
               </mat-select>

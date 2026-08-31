@@ -102,7 +102,7 @@
                             value: element[column.key]
                           })
                         ">
-                        {{ element[column.key] }}
+                        {{ tableUtilsService.getDisplayTextForKey(column.key, element[column.key]) }}
                       </span>
                     </div>
                   }

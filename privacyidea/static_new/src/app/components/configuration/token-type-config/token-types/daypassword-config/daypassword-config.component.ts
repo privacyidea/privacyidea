@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, input, output } from "@angular/core";
+import { Component, computed, input, output } from "@angular/core";
 
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatFormFieldModule } from "@angular/material/form-field";
@@ -24,6 +24,7 @@ import { MatInputModule } from "@angular/material/input";
 import { MatSelectModule } from "@angular/material/select";
 import { ClearButtonComponent } from "@components/shared/clear-button/clear-button.component";
 import { DAYPASSWORD_HASHLIB, DAYPASSWORD_TIME_STEP } from "@constants/token.constants";
+import { valueDisplayLabel } from "@utils/value-label.utils";
 
 @Component({
   selector: "app-daypassword-config",
@@ -36,6 +37,9 @@ export class DaypasswordConfigComponent {
   formData = input.required<Record<string, string | number | boolean>>();
   formDataChange = output<Record<string, string | number | boolean>>();
   hashLibs = input.required<string[]>();
+  readonly hashLibOptions = computed<{ value: string; label: string }[]>(() =>
+    this.hashLibs().map((hashLib) => ({ value: hashLib, label: valueDisplayLabel(hashLib, this.hashLibs()) }))
+  );
 
   updateFormData(fieldName: string, value: string | number | boolean): void {
     const newValue = { ...this.formData(), [fieldName]: value };

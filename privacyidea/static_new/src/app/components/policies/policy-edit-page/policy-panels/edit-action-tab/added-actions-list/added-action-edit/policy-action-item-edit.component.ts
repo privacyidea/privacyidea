@@ -29,6 +29,7 @@ import { MatSlideToggleModule } from "@angular/material/slide-toggle";
 import { SelectorButtonsComponent } from "@components/policies/policy-edit-page/policy-panels/edit-action-tab/selector-buttons/selector-buttons.component";
 import { MultiSelectOnlyComponent } from "@components/shared/multi-select-only/multi-select-only.component";
 import { PolicyActionDetail, PolicyService, PolicyServiceInterface } from "@services/policies/policies.service";
+import { valueDisplayLabels } from "@utils/value-label.utils";
 
 @Component({
   selector: "app-policy-action-item-edit",
@@ -61,6 +62,14 @@ export class PolicyActionItemEditComponent<T extends string | number | boolean =
     const actionValue = this.action()?.value;
     if (actionDetail === null || actionValue === undefined) return false;
     return this.policyService.actionValueIsValid(actionDetail, actionValue);
+  });
+
+  readonly valueLabels = computed<string[] | undefined>(() => valueDisplayLabels(this.actionDetail()?.value));
+
+  readonly valueOptions = computed<{ value: T; label: string }[]>(() => {
+    const values = this.actionDetail()?.value ?? [];
+    const labels = this.valueLabels();
+    return values.map((value, index) => ({ value, label: labels?.[index] ?? String(value) }));
   });
 
   selectedItems = computed<T[]>(() => {

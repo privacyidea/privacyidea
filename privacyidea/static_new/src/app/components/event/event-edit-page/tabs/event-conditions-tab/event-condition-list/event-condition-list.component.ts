@@ -37,6 +37,9 @@ import { MatOption, MatSelect } from "@angular/material/select";
 import { MatTooltip } from "@angular/material/tooltip";
 import { ClearButtonComponent } from "@components/shared/clear-button/clear-button.component";
 import { EventConditionMultiValue, EventService } from "@services/event/event.service";
+import { valueDisplayLabel } from "@utils/value-label.utils";
+
+const RAW_VALUE_CONDITIONS = ["result_value", "result_status"];
 
 @Component({
   selector: "app-event-condition-list",
@@ -94,6 +97,19 @@ export class EventConditionListComponent {
       }
     }
     return valueMap;
+  });
+  conditionValueOptions = computed<Record<string, { value: string; label: string }[]>>(() => {
+    const optionMap: Record<string, { value: string; label: string }[]> = {};
+    for (const [name, values] of Object.entries(this.availableConditionValues())) {
+      const stringValues = (values as (string | EventConditionMultiValue)[]).map((value) =>
+        typeof value === "string" ? value : value.name
+      );
+      optionMap[name] = stringValues.map((value) => ({
+        value,
+        label: RAW_VALUE_CONDITIONS.includes(name) ? value : valueDisplayLabel(value, stringValues, "predicate")
+      }));
+    }
+    return optionMap;
   });
   protected focusEffect = effect(() => {
     const conditionName = this.focusConditionName();

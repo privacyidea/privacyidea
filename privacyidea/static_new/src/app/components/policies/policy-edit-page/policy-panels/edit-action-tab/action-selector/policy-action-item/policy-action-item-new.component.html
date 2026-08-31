@@ -50,6 +50,7 @@
               class="flex-1"
               [initialValue]="currentAction().value"
               [values]="actionValues"
+              [labels]="valueLabels()"
               (selected)="updateSelectedActionValue($event ?? '')" />
           } @else {
             <mat-form-field
@@ -60,8 +61,8 @@
                 #selectElement
                 [value]="currentAction().value"
                 (selectionChange)="updateSelectedActionValue($event.value)">
-                @for (option of actionValues; track option) {
-                  <mat-option [value]="option">{{ option }}</mat-option>
+                @for (option of valueOptions(); track option.value) {
+                  <mat-option [value]="option.value">{{ option.label }}</mat-option>
                 }
               </mat-select>
             </mat-form-field>

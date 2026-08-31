@@ -44,8 +44,8 @@
         <mat-select
           [value]="formData()[HOTP_HASHLIB]"
           (valueChange)="updateFormData(HOTP_HASHLIB, $event)">
-          @for (hashlib of hashLibs(); track hashlib) {
-            <mat-option [value]="hashlib">{{ hashlib }}</mat-option>
+          @for (hashlib of hashLibOptions(); track hashlib.value) {
+            <mat-option [value]="hashlib.value">{{ hashlib.label }}</mat-option>
           }
         </mat-select>
         <app-clear-button

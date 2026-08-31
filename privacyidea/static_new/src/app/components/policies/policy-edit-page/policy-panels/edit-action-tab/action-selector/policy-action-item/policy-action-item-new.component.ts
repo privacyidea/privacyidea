@@ -27,6 +27,7 @@ import { MatTooltipModule } from "@angular/material/tooltip";
 import { SelectorButtonsComponent } from "@components/policies/policy-edit-page/policy-panels/edit-action-tab/selector-buttons/selector-buttons.component";
 import { MultiSelectOnlyComponent } from "@components/shared/multi-select-only/multi-select-only.component";
 import { PolicyActionDetail, PolicyService, PolicyServiceInterface } from "@services/policies/policies.service";
+import { valueDisplayLabels } from "@utils/value-label.utils";
 
 export interface SelectableAction {
   label: string;
@@ -73,6 +74,16 @@ export class PolicyActionItemComponent {
       const defaultValue = detail?.type === "bool" ? "true" : (this.actionValue() ?? "");
       return { name: actionName, value: defaultValue };
     }
+  });
+
+  readonly valueLabels = computed<string[] | undefined>(() =>
+    valueDisplayLabels(this.selectableAction().detail?.value)
+  );
+
+  readonly valueOptions = computed<{ value: string | number | boolean; label: string }[]>(() => {
+    const values = this.selectableAction().detail?.value ?? [];
+    const labels = this.valueLabels();
+    return values.map((value, index) => ({ value, label: labels?.[index] ?? String(value) }));
   });
 
   selectedItems = computed<(string | number)[]>(() => {

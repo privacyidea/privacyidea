@@ -22,6 +22,7 @@ import { FilterValue } from "@core/models/filter_value/filter_value";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContainerDetailToken } from "@services/container/container.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
+import { booleanDisplayLabel, valueDisplayLabel } from "@utils/value-label.utils";
 
 export interface FilterPair {
   key: string;
@@ -110,6 +111,8 @@ export interface TableUtilsServiceInterface {
 
   getChildClassForColumnKey(columnKey: string): string;
 
+  getDisplayTextForKey(key: string, value: TableCellValue): string;
+
   getDisplayTextForKeyAndRevoked(key: string, value: TableCellValue, revoked: boolean): string;
 
   getTdClassForKey(key: string): string[];
@@ -127,6 +130,15 @@ export interface TableUtilsServiceInterface {
   onSortButtonClick(key: string, sort: WritableSignal<Sort>, fallback?: Sort): void;
 
   clientsideSortTokenData(data: ContainerDetailToken[], s: Sort): ContainerDetailToken[];
+}
+
+const TOKEN_STATE_VALUES = ["active", "deactivated", "revoked", "locked"];
+const CONTAINER_STATE_VALUES = ["active", "disabled", "lost", "damaged"];
+const AUTHENTICATION_VALUES = ["accept", "challenge", "reject"];
+const ROLLOUT_STATE_VALUES = ["clientwait", "pending", "verify", "enrolled", "broken", "failed", "denied"];
+
+function tokenStateLabel(state: string): string {
+  return valueDisplayLabel(state, TOKEN_STATE_VALUES);
 }
 
 @Injectable()
@@ -191,16 +203,16 @@ export class TableUtilsService implements TableUtilsServiceInterface {
   }
 
   getTooltipForColumn(columnKey: string, element: TableRow): string {
-    if (element["locked"]) return "Locked";
-    if (element["revoked"]) return "Revoked";
+    if (element["locked"]) return $localize`Locked`;
+    if (element["revoked"]) return $localize`Revoked`;
 
     switch (columnKey) {
       case "active":
         if (element["active"] === "") return "";
-        return element["active"] ? "Deactivate Token" : "Activate Token";
+        return element["active"] ? $localize`Deactivate Token` : $localize`Activate Token`;
 
       case "failcount":
-        return element["failcount"] ? "Reset Fail Counter" : "";
+        return element["failcount"] ? $localize`Reset Fail Counter` : "";
     }
     return "";
   }
@@ -209,11 +221,15 @@ export class TableUtilsService implements TableUtilsServiceInterface {
     switch (columnKey) {
       case "active":
         if (element["active"] === "") return "";
-        if (element["revoked"]) return "revoked";
-        if (element["locked"]) return "locked";
-        if (element["active"]) return "active";
-        if (element["active"] === false) return "deactivated";
+        if (element["revoked"]) return tokenStateLabel("revoked");
+        if (element["locked"]) return tokenStateLabel("locked");
+        if (element["active"]) return tokenStateLabel("active");
+        if (element["active"] === false) return tokenStateLabel("deactivated");
         break;
+      case "rollout_state": {
+        const state = element["rollout_state"];
+        return typeof state === "string" ? valueDisplayLabel(state, ROLLOUT_STATE_VALUES) : "";
+      }
     }
     const cell = element[columnKey];
     return cell == null ? "" : String(cell);
@@ -293,12 +309,25 @@ export class TableUtilsService implements TableUtilsServiceInterface {
     return "";
   }
 
+  getDisplayTextForKey(key: string, value: TableCellValue): string {
+    if (value === "" || value === null || value === undefined) {
+      return "";
+    }
+    if (key === "success") {
+      return booleanDisplayLabel(value, "predicate");
+    }
+    if (key === "authentication") {
+      return valueDisplayLabel(value, AUTHENTICATION_VALUES);
+    }
+    return String(value);
+  }
+
   getDisplayTextForKeyAndRevoked(key: string, value: TableCellValue, revoked: boolean): string {
     if (value === "") {
       return "";
     }
     if (key === "active") {
-      return revoked ? "revoked" : value ? "active" : "deactivated";
+      return revoked ? tokenStateLabel("revoked") : tokenStateLabel(value ? "active" : "deactivated");
     }
     return value == null ? "" : String(value);
   }
@@ -337,13 +366,7 @@ export class TableUtilsService implements TableUtilsServiceInterface {
   }
 
   getDisplayTextForState(state: string) {
-    if (state === "active") {
-      return "active";
-    } else if (state === "disabled") {
-      return "deactivated";
-    } else {
-      return state;
-    }
+    return valueDisplayLabel(state, CONTAINER_STATE_VALUES);
   }
 
   pickColumns<const K extends readonly ColumnKey[]>(...keys: K) {
