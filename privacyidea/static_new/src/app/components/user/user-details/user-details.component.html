@@ -297,35 +297,37 @@
               class="details-card--user-info"
               title="User Lockout State"
               i18n-title>
-              <span [ngClass]="lockoutStateClass()">
-                {{ lockoutStatusText() }}
-              </span>
-              @if (isUserLocked()) {
-                <p class="user-lockout-cause">{{ lockoutCauseLabel() }}</p>
-              }
-              <div class="margin-top-8 user-lockout-actions">
-                @if (authService.actionAllowed("user_lockout_set")) {
-                  <button
-                    (click)="lockUser()"
-                    class="action-button-secondary"
-                    mat-stroked-button>
-                    <mat-icon>lock</mat-icon>
-                    @if (isUserLocked()) {
-                      <span i18n>Change lock</span>
-                    } @else {
-                      <span i18n>Lock</span>
-                    }
-                  </button>
+              <div class="user-lockout-row">
+                <span [ngClass]="lockoutStateClass()">
+                  {{ lockoutStatusText() }}
+                </span>
+                @if (isUserLocked()) {
+                  <p class="user-lockout-cause">{{ lockoutCauseLabel() }}</p>
                 }
-                @if (authService.actionAllowed("user_lockout_reset") && isUserLocked()) {
-                  <button
-                    (click)="resetUserLockout()"
-                    class="action-button-secondary"
-                    mat-stroked-button>
-                    <mat-icon>lock_open</mat-icon>
-                    <span i18n>Unlock</span>
-                  </button>
-                }
+                <div class="user-lockout-actions">
+                  @if (authService.actionAllowed("user_lockout_set")) {
+                    <button
+                      (click)="lockUser()"
+                      class="action-button-secondary button-width-m"
+                      mat-stroked-button>
+                      <mat-icon>lock</mat-icon>
+                      @if (isUserLocked()) {
+                        <span i18n>Change lock</span>
+                      } @else {
+                        <span i18n>Lock</span>
+                      }
+                    </button>
+                  }
+                  @if (authService.actionAllowed("user_lockout_reset") && isUserLocked()) {
+                    <button
+                      (click)="resetUserLockout()"
+                      class="action-button-secondary button-width-m"
+                      mat-stroked-button>
+                      <mat-icon>lock_open</mat-icon>
+                      <span i18n>Unlock</span>
+                    </button>
+                  }
+                </div>
               </div>
             </app-details-card>
           }
