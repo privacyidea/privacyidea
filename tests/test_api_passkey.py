@@ -1448,8 +1448,10 @@ class PasskeyAPITest(PasskeyAPITestBase):
                                                      transaction_id=transaction_id)
         assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_TRIGGERED],
                                         transaction_id=transaction_id)
+        # The policy check now runs after the credential_id resolved the token, so the owner is known
+        # and recorded on the row that says why the answer was refused.
         assert_authentication_log_entry(auth_log_entries[AuthEventType.NO_USABLE_TOKEN],
-                                        transaction_id=transaction_id)
+                                        user=self.user, transaction_id=transaction_id)
 
         remove_token(serial)
 
@@ -1595,7 +1597,65 @@ class PasskeyAPITest(PasskeyAPITestBase):
         remove_token(serial)
         remove_token(other_token.get_serial())
 
-    def test_26_locked_owner_rejected_before_token_work(self):
+    def test_26_authenticate_restrict_authenticator_device_type_scoped_to_realm(self):
+        """
+        A SCOPE.AUTH passkey_allowed_authenticator_device_types policy scoped to the token owner's realm must
+        still be enforced on the usernameless/discoverable login path, where the request never contains a user
+        parameter and the owner is only known once the credential_id resolves to a token.
+        """
+        self.set_policy_with_cleanup("restrict_device_type", scope=SCOPE.AUTH, realm=self.realm1,
+                                     action=f"{PasskeyAction.AllowedAuthenticatorDeviceTypes}=multi_device")
+        serial = self._enroll_static_passkey()
+
+        passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_no_uv)
+        transaction_id = passkey_challenge["transaction_id"]
+        data = self.authentication_response_no_uv
+        data["transaction_id"] = transaction_id
+        self.assertNotIn("user", data)
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data=data,
+                                           headers={"Origin": self.expected_origin}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code)
+            self.assertTrue(res.json["result"]["status"])
+            # The enrolled fixture credential is single_device, so the realm-scoped restriction to
+            # multi_device must reject it, even though the request never named a user.
+            self.assertFalse(res.json["result"]["value"])
+            self.assertEqual(AUTH_RESPONSE.REJECT, res.json["result"]["authentication"])
+
+        remove_token(serial)
+
+    def test_27_disabled_token_type_scoped_to_realm(self):
+        """
+        A SCOPE.AUTH disabled_token_types policy scoped to the token owner's realm must still be enforced on
+        the usernameless/discoverable login path, where the request never contains a user parameter and the
+        owner is only known once the credential_id resolves to a token.
+        """
+        self.set_policy_with_cleanup("disable_passkey", scope=SCOPE.AUTH, realm=self.realm1,
+                                     action=f"{PolicyAction.DISABLED_TOKEN_TYPES}=passkey")
+        serial = self._enroll_static_passkey()
+
+        delete_policy("disable_passkey")  # Temporarily disable to allow triggering a challenge
+        passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_no_uv)
+        self.set_policy_with_cleanup("disable_passkey", scope=SCOPE.AUTH, realm=self.realm1,
+                                     action=f"{PolicyAction.DISABLED_TOKEN_TYPES}=passkey")  # Re-enable
+        transaction_id = passkey_challenge["transaction_id"]
+        data = self.authentication_response_no_uv
+        data["transaction_id"] = transaction_id
+        self.assertNotIn("user", data)
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data=data,
+                                           headers={"Origin": self.expected_origin}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(403, res.status_code)
+            result = res.json["result"]
+            self.assertIn("error", result)
+            self.assertEqual(303, result["error"]["code"])
+            self.assertEqual("The authentication method is not available.", result["error"]["message"])
+
+        remove_token(serial)
+
+    def test_28_locked_owner_rejected_before_token_work(self):
         """A locked passkey owner is rejected at /validate/check by the
         conditional-access pre-check. The request is username-less, so the owner is
         resolved from the credential_id before any token work runs — closing the

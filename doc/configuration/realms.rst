@@ -18,6 +18,30 @@ Therefor the users need to authenticate with their username and the realm like t
 
    user@realm
 
+.. _user_parameters_in_request:
+
+Users and Realms in a request
+.............................
+
+When a request is processed, the given parameters are evaluated and a user object is created within the request.
+If the user object can not be created, a User Error E904 is returned.
+
+However, privacyIDEA can modify the given user related parameters and modify the user object.
+
+Parameters can be modified *before* they are evaluated to a user object.
+To do so, you have three different possibilities.
+
+You can use the policy :ref:`policy_set_realm` in the scope authentication if you want to set the realm to a specific
+value.
+You can use the policy :ref:`policy_mangle` in the scope authentication if you want to set the realm, the username
+or even the password. In this case you can use regular expressions to modify these values.
+
+The third possibility to modify user parameters in the request is using the pre event handler
+:ref:`requestmanglerhandler`.
+
+There is also a possibility to change the user object in the request, *after* the user object has been initially
+created from the given parameters. To do so you can use the policy :ref:`policy_setrealm` from the scope authorization.
+
 .. _relate_realm:
 
 Relate User to a Realm

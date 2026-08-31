@@ -159,7 +159,9 @@ Texts containing whitespaces must be enclosed in single quotes.
 
 Starting with version 2.20 you can use the tag *{challenge}*. This will add
 the challenge data that was passed in the first authentication request in the
-challenge parameter. This could contain banking transaction data.
+challenge parameter. This could contain banking transaction data, like it is
+used by the DisplayTAN token (see :ref:`ocra_token`). The tag is empty if the
+authentication request did not contain a challenge parameter.
 
 Starting with version 3.6 the `smstext` can contain a lot more tags similar to the
 policy :ref:`emailtext`:
@@ -234,7 +236,9 @@ The text can contain the following tags, that will be filled:
 
 Starting with version 2.20 you can use the tag *{challenge}*. This will add
 the challenge data that was passed in the first authentication request in the
-challenge parameter. This could contain banking transaction data.
+challenge parameter. This could contain banking transaction data, like it is
+used by the DisplayTAN token (see :ref:`ocra_token`). The tag is empty if the
+authentication request did not contain a challenge parameter.
 
 Default: *<otp>*
 
@@ -279,13 +283,18 @@ type: ``string``
 
 This policy sets or overwrites the realm parameter at the beginning of authentication requests to :http:post:`/auth`
 and :http:post:`/validate/check`. It is applied before the first user resolving to avoid unnecessary user store
-requests.
+requests. This means, when this policy is evaluated there is no user object in the request, yet!
 
-This can be used if the user can not pass their realm when authenticating at a certain
-client, but the realm needs to be available during authentication, since the user is not located in the default realm or
-the user should not be unnecessarily annoyed with a realm selection.
+Please note, due to this, it is not possible to use user-related conditions for this policy!
 
-.. note:: This policy takes precedence over the :ref:`policy_mangle` and :ref:`policy_setrealm` policies.
+Also, the given parameters can actually point to a non-existing user object.
+
+This policy can be used if the user can not pass his realm when authenticating at a certain
+client, but this username would not be found in the default realm.
+
+.. note:: This policy is evaluated before the :ref:`policy_mangle` and :ref:`policy_setrealm` policies.
+
+For in depth information about user and realm mapping read :ref:`realms`.
 
 .. versionadded:: 3.12
 
@@ -300,7 +309,7 @@ type: ``string``
 
 The ``mangle`` policy can mangle the authentication request data before they
 are processed. Meaning the parameters ``user``, ``pass`` and ``realm`` can be
-modified prior to authentication.
+modified prior to authentication and before the user object is created during processing of the request.
 
 .. note:: This policy is only applied to :http:post:`/validate/check`.
 
@@ -624,7 +633,45 @@ during the login process with a :ref:`push_token`.
 You can choose different texts for different users or IP addresses.
 This way you could customize push notifications for different applications.
 
-You can also use certain tags in the text, just like in :ref:`emailtext`.
+The text can contain the following tags, that will be filled:
+
+  * {serial} the serial number of the token.
+  * {user} the given name of the token owner.
+  * {givenname} the given name of the token owner.
+  * {surname} the surname of the token owner.
+  * {username} the loginname of the token owner.
+  * {userrealm} the realm of the token owner.
+  * {recipient_givenname} the given name of the token owner.
+  * {recipient_surname} the surname of the token owner.
+  * {tokentype} the type of the token, which is always *push*.
+  * {time} the current server time in the format HH:MM:SS.
+  * {date} the current server date in the format YYYY-MM-DD.
+  * {client_ip} the IP address of the client that triggered the challenge.
+  * {ua_browser} the name of the application that triggered the challenge, taken from its
+    user agent, like *privacyidea-keycloak*. Browsers report *Mozilla* here, use
+    {ua_string} to get the complete user agent of a browser.
+  * {ua_string} the complete user agent of the client that triggered the challenge.
+  * {action} the endpoint that triggered the challenge, like */validate/check*.
+  * {url} the base URL of the privacyIDEA server. This requires ``PI_BASE_URL`` to be
+    configured in :ref:`cfgfile`.
+
+.. note:: A tag that does not exist at all - like the {otp} of :ref:`emailtext`, which a
+   push notification never contains - can not be filled. The complete text is discarded in
+   this case and the default text *Do you want to confirm the login?* is displayed instead.
+
+   Tags that exist but are not filled during an authentication with a push token are
+   *not* replaced by the default text. They are inserted as an empty value, so the text is
+   displayed with a gap. This applies to *{challenge}*, which is only filled for tokens
+   that receive transaction data in the *challenge* parameter of the authentication request
+   (see :ref:`ocra_token`), and to the tags of the other policies like
+   {tokendescription}, {registrationcode} or {pin}.
+
+.. note:: The tags {client_ip}, {ua_browser}, {ua_string} and {action} describe the
+   client that triggered the challenge, so they can only be filled in the notification
+   that is sent via Firebase. If the smartphone fetches its open challenges by polling
+   instead, the text is rendered again for the request of the smartphone, and no
+   information about the client that triggered the challenge is available anymore.
+   All four tags are empty then. The tags of the token owner are filled on both ways.
 
 .. _policy_push_title_on_mobile:
 
@@ -638,6 +685,9 @@ type: ``string``
 This is the title of the push notification that is displayed
 on the user's smartphone during the login process with
 a :ref:`push_token`.
+
+.. note:: In contrast to :ref:`policy_push_text_on_mobile`, tags are not replaced in
+   the title.
 
 .. _policy_push_wait:
 

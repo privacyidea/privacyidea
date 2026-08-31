@@ -18,9 +18,7 @@
 -->
 <app-dialog-wrapper
   (actionTriggered)="onAction($event)"
-  (wrapperClose)="onCancel()"
   [actions]="actions()"
-  [showCancelButton]="true"
   i18n-title
   title="Assign Selected Token to User">
   @if (selectionContainsAssignedToken()) {
