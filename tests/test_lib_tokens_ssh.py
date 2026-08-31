@@ -56,90 +56,61 @@ class SSHTokenTestCase(MyTestCase):
     ---- END SSH2 PUBLIC KEY ----"""
     INVALID_SSH = "ssh-rsa"
 
+    @staticmethod
+    def _enroll_sshkey(serial, sshkey):
+        """Create and enroll a raw SSHkeyTokenClass token (bypassing init_token)."""
+        db_token = Token(serial, tokentype="sshkey")
+        db_token.save()
+        token = SSHkeyTokenClass(db_token)
+        token.update({"sshkey": sshkey})
+        return token
+
+    @staticmethod
+    def _load_sshkey(serial):
+        """Load an existing sshkey token from the DB as an SSHkeyTokenClass."""
+        return SSHkeyTokenClass(Token.query.filter(Token.serial == serial).first())
+
     def test_01_create_token(self):
         db_token = Token(self.serial1, tokentype="sshkey")
         db_token.save()
         token = SSHkeyTokenClass(db_token)
 
-        # An invalid key, raises an exception
-        self.assertRaises(TokenAdminError, token.update, {"sshkey": "InvalidKey"})
-        self.assertEqual(token.rollout_state, RolloutState.BROKEN)
-
-        # An invalid key, raises an exception
-        self.assertRaises(TokenAdminError, token.update, {"sshkey": self.INVALID_SSH})
-        self.assertEqual(token.rollout_state, RolloutState.BROKEN)
-
-        # An invalid key, raises an exception
-        self.assertRaises(TokenAdminError, token.update, {"sshkey": self.wrong_sshkey})
-        self.assertEqual(token.rollout_state, RolloutState.BROKEN)
-
-        # An unsupported keytype
-        self.assertRaises(TokenAdminError, token.update, {"sshkey": self.unsupported_keytype})
-        self.assertEqual(token.rollout_state, RolloutState.BROKEN)
+        # Invalid keys raise an exception and mark the token as broken
+        for invalid_key in ("InvalidKey", self.INVALID_SSH, self.wrong_sshkey, self.unsupported_keytype):
+            self.assertRaises(TokenAdminError, token.update, {"sshkey": invalid_key})
+            self.assertEqual(RolloutState.BROKEN, token.rollout_state)
 
         # Set valid key
         token.update({"sshkey": self.sshkey})
-        self.assertTrue(token.token.serial == self.serial1, token)
-        self.assertTrue(token.token.tokentype == "sshkey",
-                        token.token.tokentype)
-        self.assertTrue(token.type == "sshkey", token)
-        class_prefix = token.get_class_prefix()
-        self.assertTrue(class_prefix == "SSHK", class_prefix)
-        self.assertTrue(token.get_class_type() == "sshkey", token)
+        self.assertEqual(self.serial1, token.token.serial)
+        self.assertEqual("sshkey", token.token.tokentype)
+        self.assertEqual("sshkey", token.type)
+        self.assertEqual("SSHK", token.get_class_prefix())
+        self.assertEqual("sshkey", token.get_class_type())
 
-        # ecdsa
-        db_token = Token(self.serial2, tokentype="sshkey")
-        db_token.save()
-        token = SSHkeyTokenClass(db_token)
-        token.update({"sshkey": self.sshkey_ecdsa})
-
-        # ed25519
-        db_token = Token(self.serial3, tokentype="sshkey")
-        db_token.save()
-        token = SSHkeyTokenClass(db_token)
-        token.update({"sshkey": self.sshkey_ed25519})
-
-        # ecdsa_sk
-        db_token = Token(self.serial4, tokentype="sshkey")
-        db_token.save()
-        token = SSHkeyTokenClass(db_token)
-        token.update({"sshkey": self.ecdsa_sk})
+        # The other supported key types can be enrolled as well
+        for serial, sshkey in ((self.serial2, self.sshkey_ecdsa),
+                               (self.serial3, self.sshkey_ed25519),
+                               (self.serial4, self.ecdsa_sk)):
+            self._enroll_sshkey(serial, sshkey)
 
     def test_02_class_methods(self):
-        db_token = Token.query.filter(Token.serial == self.serial1).first()
-        token = SSHkeyTokenClass(db_token)
+        token = self._load_sshkey(self.serial1)
 
         info = token.get_class_info()
-        self.assertTrue(info.get("title") == "SSHkey Token",
-                        "{0!s}".format(info.get("title")))
+        self.assertEqual("SSHkey Token", info.get("title"))
 
         info = token.get_class_info("title")
-        self.assertTrue(info == "SSHkey Token", info)
+        self.assertEqual("SSHkey Token", info)
 
     def test_03_get_sshkey(self):
-        db_token = Token.query.filter(Token.serial == self.serial1).first()
-        token = SSHkeyTokenClass(db_token)
-        sshkey = token.get_sshkey()
-        self.assertTrue(sshkey == self.sshkey, sshkey)
-        self.assertIsInstance(sshkey, str)
-
-        db_token = Token.query.filter(Token.serial == self.serial2).first()
-        token = SSHkeyTokenClass(db_token)
-        sshkey = token.get_sshkey()
-        self.assertTrue(sshkey == self.sshkey_ecdsa, sshkey)
-        self.assertIsInstance(sshkey, str)
-
-        db_token = Token.query.filter(Token.serial == self.serial3).first()
-        token = SSHkeyTokenClass(db_token)
-        sshkey = token.get_sshkey()
-        self.assertTrue(sshkey == self.sshkey_ed25519, sshkey)
-        self.assertIsInstance(sshkey, str)
-
-        db_token = Token.query.filter(Token.serial == self.serial4).first()
-        token = SSHkeyTokenClass(db_token)
-        sshkey = token.get_sshkey()
-        self.assertEqual(self.ecdsa_sk, sshkey)
-        self.assertIsInstance(sshkey, str)
+        for serial, expected in ((self.serial1, self.sshkey),
+                                 (self.serial2, self.sshkey_ecdsa),
+                                 (self.serial3, self.sshkey_ed25519),
+                                 (self.serial4, self.ecdsa_sk)):
+            sshkey = self._load_sshkey(serial).get_sshkey()
+            self.assertEqual(expected, sshkey)
+            self.assertIsInstance(sshkey, str)
 
     def test_04_ssh_token_export(self):
         # Set up the SSHTokenClass for testing
@@ -240,6 +211,14 @@ class SSHTokenTestCase(MyTestCase):
         db.session.commit()
         return old_value
 
+    def _assert_tamper_detected(self, token, key, bad_value):
+        """Tamper with a tokeninfo entry in the DB, assert the integrity check
+        fails, then restore the original value and assert the key is readable
+        again."""
+        original = self._set_tokeninfo_value(token.token.id, key, bad_value)
+        self.assertRaises(TokenAdminError, token.get_sshkey)
+        self._set_tokeninfo_value(token.token.id, key, original)
+
     def test_07_integrity_checksum_detects_manipulation(self):
         token_a = init_token({"type": "sshkey", "serial": "SSHTAMPER1", "sshkey": self.sshkey})
         token_b = init_token({"type": "sshkey", "serial": "SSHTAMPER2", "sshkey": self.sshkey_ed25519})
@@ -248,33 +227,24 @@ class SSHTokenTestCase(MyTestCase):
         self.assertEqual(self.sshkey_ed25519, token_b.get_sshkey())
 
         # A database admin changes the plaintext key type in the database
-        old_type = self._set_tokeninfo_value(token_a.token.id, "ssh_type", "ssh-dss")
-        self.assertRaises(TokenAdminError, token_a.get_sshkey)
-        # Restore the original value: the key can be fetched again
-        self._set_tokeninfo_value(token_a.token.id, "ssh_type", old_type)
+        self._assert_tamper_detected(token_a, "ssh_type", "ssh-dss")
         self.assertEqual(self.sshkey, token_a.get_sshkey())
 
         # A database admin changes the plaintext comment in the database
-        old_comment = self._set_tokeninfo_value(token_a.token.id, "ssh_comment", "root@evil")
-        self.assertRaises(TokenAdminError, token_a.get_sshkey)
-        self._set_tokeninfo_value(token_a.token.id, "ssh_comment", old_comment)
+        self._assert_tamper_detected(token_a, "ssh_comment", "root@evil")
         self.assertEqual(self.sshkey, token_a.get_sshkey())
 
         # A database admin copies the encrypted ssh_key of another token
         # (substitution attack): they cannot decrypt it, but they can copy the
         # ciphertext. This is detected as well.
         ciphertext_b = TokenInfo.query.filter_by(token_id=token_b.token.id, Key="ssh_key").first().Value
-        old_ciphertext = self._set_tokeninfo_value(token_a.token.id, "ssh_key", ciphertext_b)
-        self.assertRaises(TokenAdminError, token_a.get_sshkey)
-        self._set_tokeninfo_value(token_a.token.id, "ssh_key", old_ciphertext)
+        self._assert_tamper_detected(token_a, "ssh_key", ciphertext_b)
         self.assertEqual(self.sshkey, token_a.get_sshkey())
 
         # A corrupt encrypted ssh_key that cannot be decrypted must raise a
         # TokenAdminError instead of handing out the decryption sentinel as the
         # public key.
-        old_ciphertext = self._set_tokeninfo_value(token_a.token.id, "ssh_key", "not-a-valid-ciphertext")
-        self.assertRaises(TokenAdminError, token_a.get_sshkey)
-        self._set_tokeninfo_value(token_a.token.id, "ssh_key", old_ciphertext)
+        self._assert_tamper_detected(token_a, "ssh_key", "not-a-valid-ciphertext")
         self.assertEqual(self.sshkey, token_a.get_sshkey())
 
         # A missing checksum is not accepted either
