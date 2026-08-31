@@ -82,6 +82,26 @@ def _get_json_param(params: dict, name: str, required: bool = False):
     return value
 
 
+def _duration_param(params: dict) -> int | None:
+    """
+    Parse the optional ``duration_seconds`` of a manual lock or block, or ``None`` when it is absent.
+
+    A form-encoded request delivers the duration as a string, so a string is cast here. Anything else is
+    passed through untouched, so that whether a value is an acceptable duration is decided in exactly one
+    place: the positive-integer check in
+    :func:`~privacyidea.lib.conditional_access.state._restriction_expiry`. Casting first would defeat it -
+    ``int()`` turns JSON's ``true`` into a one-second restriction and truncates ``3.9`` to three seconds,
+    both of which that check refuses when it gets to see the original value.
+    """
+    value = get_optional(params, "duration_seconds")
+    if isinstance(value, str):
+        try:
+            return int(value)
+        except ValueError:
+            raise ParameterError("'duration_seconds' must be a positive number of seconds.")
+    return value
+
+
 def _int_param(value, default: int) -> int:
     """Parse an optional integer query parameter, falling back to *default* when
     it is absent or not a valid integer (lenient — pagination should not 400)."""
@@ -543,12 +563,7 @@ def set_user_lock():
         # User() refuses a uid without a resolver (a uid is only unique per resolver); reject it here so
         # the caller gets a ParameterError instead of a UserError from deep inside the resolver lookup.
         raise ParameterError("The parameter 'resolver' is required when looking a user up by 'user_id'.")
-    duration_seconds = get_optional(params, "duration_seconds")
-    if duration_seconds is not None:
-        try:
-            duration_seconds = int(duration_seconds)
-        except (TypeError, ValueError):
-            raise ParameterError("'duration_seconds' must be a positive number of seconds.")
+    duration_seconds = _duration_param(params)
 
     user = request.User
     if not user or not user.exist():
@@ -681,12 +696,7 @@ def add_blocklist_entry():
     """
     params = request.all_data
     ip = get_required(params, "ip")
-    duration_seconds = get_optional(params, "duration_seconds")
-    if duration_seconds is not None:
-        try:
-            duration_seconds = int(duration_seconds)
-        except (TypeError, ValueError):
-            raise ParameterError("'duration_seconds' must be a positive number of seconds.")
+    duration_seconds = _duration_param(params)
     entry = block_ip(ip, duration_seconds=duration_seconds)
     g.audit_object.log({"success": True,
                         "info": f"blocked IP {ip} "

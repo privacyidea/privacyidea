@@ -328,7 +328,7 @@ class BlockList(MethodsMixin, db.Model):
     # IPv4-mapped IPv6 address.
     ip: Mapped[str] = mapped_column(Unicode(50), primary_key=True)
     block_expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
-    # Who imposed this block, the IP counterpart of :attr:`UserLockoutState.lock_cause`.
+    # Who imposed this block, the IP counterpart of :attr:`UserLockState.lock_cause`.
     block_cause: Mapped[str] = mapped_column(Unicode(20), default=RestrictionCause.POLICY, nullable=False)
     # When the block was applied; refreshed on each (re)block, so it reflects the start of the
     # current active block rather than a generic audit timestamp.

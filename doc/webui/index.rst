@@ -230,7 +230,7 @@ Locking a user or an IP by hand
 
 .. index:: manual lock, manual block
 
-A restriction does not have to come from a policy. The *User Lockout State*
+A restriction does not have to come from a policy. The *User Lock State*
 card on a user's details page offers a **Lock** action, and the *Blocklist*
 page a **Block IP** action; both ask whether the restriction lasts until an
 administrator lifts it (the default) or for a chosen duration.

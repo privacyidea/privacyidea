@@ -1489,3 +1489,21 @@ The administrator is allowed to unblock a blocked IP and to purge the stale
 records of blocks that have already expired.
 
 .. versionadded:: 3.14
+
+.. _policy_blocklist_set:
+
+blocklist_set
+~~~~~~~~~~~~~
+
+type: ``bool``
+
+The administrator is allowed to add a source IP to the conditional-access
+blocklist by hand, independently of the conditional-access policies -
+permanently, or for a chosen duration. The block is recorded with the cause
+*Manual* and is enforced exactly like a policy block.
+
+Kept separate from :ref:`policy_blocklist_reset` because clearing a restriction
+is recoverable and imposing one is not. This is the IP counterpart of
+:ref:`policy_user_lock_set`.
+
+.. versionadded:: 3.14
