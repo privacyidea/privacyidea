@@ -27,7 +27,7 @@ import {
 } from "@angular/core";
 import { MatPaginatorIntl } from "@angular/material/paginator";
 import { provideRouter } from "@angular/router";
-import { localeBaseHref } from "@core/locale";
+import { localeBaseHref, scriptRoot } from "@core/locale";
 import { UiPreferencesService } from "@services/user-settings/ui-preferences.service";
 import { routes } from "./app.routes";
 import { createPaginatorIntl } from "./paginator-intl";
@@ -39,7 +39,7 @@ import { AppearanceService } from "./services/appearance/appearance.service";
 import { ThemeService } from "./services/theme/theme.service";
 
 export function baseHrefFactory(): string {
-  return localeBaseHref(inject(LOCALE_ID));
+  return scriptRoot() + localeBaseHref(inject(LOCALE_ID));
 }
 
 export const appConfig: ApplicationConfig = {

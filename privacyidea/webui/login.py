@@ -28,11 +28,12 @@ Other html code is dynamically loaded via angularJS and located in
 """
 __author__ = "Cornelius Kölbel <cornelius@privacyidea.org>"
 
+import json
 import logging
 import os
 
 from flask import (Blueprint, render_template, request,
-                   current_app, g, send_from_directory, redirect, abort, Response)
+                   current_app, g, redirect, abort, Response)
 
 from privacyidea.api.lib.prepolicy import is_remote_user_allowed
 from privacyidea.api.lib.postpolicy import hide_version
@@ -302,9 +303,24 @@ def _serve_locale(locale: str) -> Response | None:
     if not canonical:
         return None
     dist = os.path.join(current_app.static_folder, "dist", "privacyidea-webui", "browser", canonical)
-    if not os.path.isfile(os.path.join(dist, "index.html")):
+    index_file = os.path.join(dist, "index.html")
+    if not os.path.isfile(index_file):
         return None
-    return send_from_directory(dist, "index.html")
+    # The bundle's <base href> and asset/API URLs are baked in at build time as
+    # absolute, root-relative paths. Behind a reverse-proxy sub-path mount
+    # (Apache WSGIScriptAlias, uwsgi mount-point, ...) those need the WSGI
+    # SCRIPT_NAME prefix prepended per request, so this is templated here
+    # rather than served as a static file.
+    script_root = request.script_root
+    with open(index_file, encoding="utf-8") as f:
+        content = f.read()
+    content = content.replace('<base href="/', f'<base href="{script_root}/', 1)
+    content = content.replace(
+        "</head>",
+        f"<script>window.__PI_SCRIPT_ROOT__={json.dumps(script_root)};</script></head>",
+        1
+    )
+    return send_html(content)
 
 
 @login_blueprint.route('/', methods=['GET'])
@@ -319,10 +335,10 @@ def single_page_application() -> Response:
         url_locale = locale.replace("_", "-")
         dist = os.path.join(current_app.static_folder, "dist", "privacyidea-webui", "browser", url_locale)
         if os.path.isfile(os.path.join(dist, "index.html")):
-            return redirect(f"/app/v2/{url_locale}/")
+            return redirect(f"{request.script_root}/app/v2/{url_locale}/")
     en_dist = os.path.join(current_app.static_folder, "dist", "privacyidea-webui", "browser", "en")
     if os.path.isfile(os.path.join(en_dist, "index.html")):
-        return redirect("/app/v2/")
+        return redirect(f"{request.script_root}/app/v2/")
     # Fallback to the classic AngularJS UI: no new-UI build exists, so render the
     # legacy index template from the server.
     render_context = get_render_context()
@@ -346,7 +362,7 @@ def single_page_application_locale(locale: str, subpath: str | None = None) -> R
             return _serve_locale(preferred) or _serve_locale("en") or abort(404)
         abort(404)
     if canonical != locale or subpath is None:
-        path = f"/app/v2/{canonical}/" + (subpath or "")
+        path = f"{request.script_root}/app/v2/{canonical}/" + (subpath or "")
         qs = request.query_string.decode()
         if qs:
             path += "?" + qs

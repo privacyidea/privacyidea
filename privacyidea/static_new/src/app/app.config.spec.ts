@@ -85,3 +85,32 @@ describe("APP_BASE_HREF factory", () => {
     expect(TestBed.inject(APP_BASE_HREF)).toBe("/app/v2/zh-Hant/");
   });
 });
+
+describe("APP_BASE_HREF factory behind a reverse-proxy sub-path mount", () => {
+  afterEach(() => {
+    TestBed.resetTestingModule();
+    delete (window as unknown as { __PI_SCRIPT_ROOT__?: string }).__PI_SCRIPT_ROOT__;
+  });
+
+  it("prepends the script root injected by the backend for English", () => {
+    (window as unknown as { __PI_SCRIPT_ROOT__?: string }).__PI_SCRIPT_ROOT__ = "/pi";
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: LOCALE_ID, useValue: "en" },
+        { provide: APP_BASE_HREF, useFactory: baseHrefFactory }
+      ]
+    });
+    expect(TestBed.inject(APP_BASE_HREF)).toBe("/pi/app/v2/");
+  });
+
+  it("prepends the script root injected by the backend for a non-English locale", () => {
+    (window as unknown as { __PI_SCRIPT_ROOT__?: string }).__PI_SCRIPT_ROOT__ = "/pi";
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: LOCALE_ID, useValue: "de" },
+        { provide: APP_BASE_HREF, useFactory: baseHrefFactory }
+      ]
+    });
+    expect(TestBed.inject(APP_BASE_HREF)).toBe("/pi/app/v2/de/");
+  });
+});

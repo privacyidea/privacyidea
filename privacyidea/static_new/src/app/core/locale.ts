@@ -22,6 +22,22 @@ import { writeCookie } from "@core/cookie";
 export const APP_PREFIX = "/app/v2/";
 
 /**
+ * The SCRIPT_NAME prefix the backend is mounted under (e.g. "/pi" behind an Apache
+ * WSGIScriptAlias), injected into the served index.html as a global by _serve_locale().
+ * Empty string when mounted at the web server root.
+ */
+export function scriptRoot(): string {
+  return (window as unknown as { __PI_SCRIPT_ROOT__?: string }).__PI_SCRIPT_ROOT__ ?? "";
+}
+
+/** window.location.pathname with the sub-path mount prefix (if any) stripped. */
+function pathWithoutScriptRoot(): string {
+  const root = scriptRoot();
+  const path = window.location.pathname;
+  return root && path.startsWith(root) ? path.slice(root.length) : path;
+}
+
+/**
  * Base href for a compiled locale bundle. The source locale (English) is served at the app
  * root without a locale subpath; every other locale lives under /app/v2/<locale>/.
  */
@@ -73,7 +89,7 @@ export function isKnownLocale(code: string): boolean {
  * locale segment (the source-locale bundle is served without one).
  */
 export function localeSegmentFromPath(): string | null {
-  const path = window.location.pathname;
+  const path = pathWithoutScriptRoot();
   if (!path.startsWith(APP_PREFIX)) {
     return null;
   }
@@ -92,7 +108,7 @@ export function localeFromPath(): string {
 
 /** The in-app route after the /app/v2/ prefix and any leading locale segment. */
 export function currentSubPath(): string {
-  const path = window.location.pathname;
+  const path = pathWithoutScriptRoot();
   if (!path.startsWith(APP_PREFIX)) {
     return "";
   }
@@ -106,7 +122,7 @@ export function currentSubPath(): string {
  * hash), so applying a language does not bounce the user through the root redirect.
  */
 export function localeTargetUrl(code: string): string {
-  return localeBaseHref(code) + currentSubPath() + window.location.search + window.location.hash;
+  return scriptRoot() + localeBaseHref(code) + currentSubPath() + window.location.search + window.location.hash;
 }
 
 /** Records the explicit language choice for a year, so it survives reloads and deep links. */

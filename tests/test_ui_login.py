@@ -129,7 +129,7 @@ class LoginUITestCase(MyTestCase):
     def test_08_script_root_slash(self):
         """Covers instance='' branch when SCRIPT_NAME is '/'."""
         with self.app.test_request_context('/', method='GET',
-                                           environ_base={'SCRIPT_NAME': '/'}):
+                                           environ_overrides={'SCRIPT_NAME': '/'}):
             res = self.app.full_dispatch_request()
         self.assertEqual(res.status_code, 200)
 
@@ -523,13 +523,90 @@ class NewUIRoutingTestCase(MyTestCase):
 
     def test_serve_locale_serves_index_when_file_exists(self):
         """_serve_locale returns a response when index.html exists."""
-        with mock.patch("privacyidea.webui.login.os.path.isfile", return_value=True):
-            with mock.patch("privacyidea.webui.login.send_from_directory",
-                            return_value=self._mock_response):
-                with self.app.test_request_context("/"):
-                    from privacyidea.webui.login import _serve_locale
-                    result = _serve_locale("de")
+        with (mock.patch("privacyidea.webui.login.os.path.isfile", return_value=True),
+             mock.patch("builtins.open", mock.mock_open(read_data="<html><head></head></html>"))):
+            with self.app.test_request_context("/"):
+                from privacyidea.webui.login import _serve_locale
+                result = _serve_locale("de")
         self.assertIsNotNone(result)
+
+    # --- Sub-path mount (Apache WSGIScriptAlias / SCRIPT_NAME) coverage ---
+
+    def test_serve_locale_rewrites_base_href_and_injects_script_root(self):
+        """_serve_locale prepends SCRIPT_NAME to <base href> and injects window.__PI_SCRIPT_ROOT__,
+        so the compiled bundle's absolute asset/API paths resolve when mounted under a sub-path."""
+        index_html = ('<html><head><base href="/static/dist/privacyidea-webui/browser/en/">'
+                     '</head><body></body></html>')
+        with (mock.patch("privacyidea.webui.login.os.path.isfile", return_value=True),
+             mock.patch("builtins.open", mock.mock_open(read_data=index_html))):
+            with self.app.test_request_context("/", environ_overrides={"SCRIPT_NAME": "/pi"}):
+                from privacyidea.webui.login import _serve_locale
+                result = _serve_locale("en")
+        self.assertIsNotNone(result)
+        body = to_unicode(result.get_data())
+        self.assertIn('<base href="/pi/static/dist/privacyidea-webui/browser/en/">', body)
+        self.assertIn('window.__PI_SCRIPT_ROOT__="/pi";', body)
+
+    def test_serve_locale_no_script_root_leaves_base_href_unprefixed(self):
+        """Mounted at the web server root (no SCRIPT_NAME), the base href and the injected
+        script root stay unprefixed/empty."""
+        index_html = ('<html><head><base href="/static/dist/privacyidea-webui/browser/en/">'
+                     '</head><body></body></html>')
+        with (mock.patch("privacyidea.webui.login.os.path.isfile", return_value=True),
+             mock.patch("builtins.open", mock.mock_open(read_data=index_html))):
+            with self.app.test_request_context("/"):
+                from privacyidea.webui.login import _serve_locale
+                result = _serve_locale("en")
+        body = to_unicode(result.get_data())
+        self.assertIn('<base href="/static/dist/privacyidea-webui/browser/en/">', body)
+        self.assertIn('window.__PI_SCRIPT_ROOT__="";', body)
+
+    def test_root_redirect_to_locale_carries_script_root(self):
+        """GET / (German) redirects to <SCRIPT_NAME>/app/v2/de/, not an unprefixed absolute path."""
+        with mock.patch("privacyidea.webui.login.os.path.isfile", return_value=True):
+            with self.app.test_request_context("/", method="GET", headers={"Accept-Language": "de"},
+                                               environ_overrides={"SCRIPT_NAME": "/pi"}):
+                res = self.app.full_dispatch_request()
+        self.assertEqual(res.status_code, 302)
+        self.assertEqual(res.location, "/pi/app/v2/de/")
+
+    def test_root_redirect_to_english_carries_script_root(self):
+        """GET / (English) redirects to <SCRIPT_NAME>/app/v2/, not an unprefixed absolute path."""
+        with mock.patch("privacyidea.webui.login.os.path.isfile", return_value=True):
+            with self.app.test_request_context("/", method="GET", headers={"Accept-Language": "en"},
+                                               environ_overrides={"SCRIPT_NAME": "/pi"}):
+                res = self.app.full_dispatch_request()
+        self.assertEqual(res.status_code, 302)
+        self.assertEqual(res.location, "/pi/app/v2/")
+
+    def test_locale_canonicalization_redirect_carries_script_root(self):
+        """GET /app/v2/DE/?next=/tokens (behind a sub-path mount) redirects to
+        <SCRIPT_NAME>/app/v2/de/?next=/tokens."""
+        with self.app.test_request_context("/app/v2/DE/?next=/tokens", method="GET",
+                                           environ_overrides={"SCRIPT_NAME": "/pi"}):
+            res = self.app.full_dispatch_request()
+        self.assertIn(res.status_code, [301, 302, 308])
+        self.assertEqual(res.location, "/pi/app/v2/de/?next=/tokens")
+
+    def test_fallback_app_v2_redirect_to_root_carries_script_root(self):
+        """404 on /app/v2/ with no Angular build redirects to <SCRIPT_NAME>/, not a bare /."""
+        with mock.patch("privacyidea.webui.login._serve_locale", return_value=None):
+            with self.app.test_request_context("/app/v2/unknown-route/", method="GET",
+                                               headers={"Accept": "text/html,*/*"},
+                                               environ_overrides={"SCRIPT_NAME": "/pi"}):
+                res = self.app.full_dispatch_request()
+        self.assertEqual(res.status_code, 302)
+        self.assertEqual(res.location, "/pi/")
+
+    def test_fallback_general_redirect_to_root_carries_script_root(self):
+        """404 on an arbitrary path with no Angular build redirects to <SCRIPT_NAME>/, not a bare /."""
+        with mock.patch("privacyidea.webui.login._serve_locale", return_value=None):
+            with self.app.test_request_context("/some-unknown-path", method="GET",
+                                               headers={"Accept": "text/html,*/*"},
+                                               environ_overrides={"SCRIPT_NAME": "/pi"}):
+                res = self.app.full_dispatch_request()
+        self.assertEqual(res.status_code, 302)
+        self.assertEqual(res.location, "/pi/")
 
     # --- Path traversal / injection security tests ---
 
