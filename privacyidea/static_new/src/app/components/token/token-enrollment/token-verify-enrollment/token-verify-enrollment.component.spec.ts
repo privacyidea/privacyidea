@@ -81,6 +81,16 @@ describe("TokenVerifyEnrollmentComponent", () => {
     expect(dialogData.onEnrollmentResponseChange).toHaveBeenCalledWith(regenerated);
   });
 
+  it("should render the verification message outside the input so it is not capped to its width", () => {
+    const message = fixture.debugElement
+      .queryAll(By.css("div"))
+      .find((element) => element.nativeElement.textContent.trim() === "Enter OTP");
+
+    expect(message).toBeTruthy();
+    expect(fixture.debugElement.query(By.css("mat-hint"))).toBeNull();
+    expect(message!.nativeElement.closest("mat-form-field")).toBeNull();
+  });
+
   it("should disable verify action if input is invalid", () => {
     component.verifyOTP_value.set("");
     fixture.detectChanges();

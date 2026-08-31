@@ -49,14 +49,17 @@
 
   <div class="margin-top-16">
     <h3 i18n>Verify Enrollment</h3>
+    <!-- The message comes from the token class and varies in length (the indexed-secret one
+         embeds a list of positions), so it is rendered at full dialog width instead of as a
+         mat-hint, which would be capped to the width of the input and wrap. -->
+    @if (verifyMessage) {
+      <div class="margin-bottom-16">{{ verifyMessage }}</div>
+    }
+    <mat-form-field class="input-width-l">
+      <mat-label i18n>OTP</mat-label>
+      <input
+        [formField]="verifyOTPForm"
+        matInput />
+    </mat-form-field>
   </div>
-  <mat-form-field class="width-100">
-    <mat-label i18n>OTP</mat-label>
-    <input
-      [formField]="verifyOTPForm"
-      matInput />
-    <mat-hint>
-      {{ verifyMessage }}
-    </mat-hint>
-  </mat-form-field>
 </app-dialog-wrapper>
