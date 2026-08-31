@@ -378,12 +378,13 @@ def _challenge_owner(challenge) -> User:
 @postpolicy(check_serial, request=request)
 @postpolicy(autoassign, request=request)
 @add_serial_from_response_to_g
-# First decorator to act on the request; see conditional_access_gate for why it sits exactly here.
-@conditional_access_gate(_conditional_access_identity)
 @prepolicy(check_application_tokentype, request=request)
 @prepolicy(pushtoken_validate, request=request)
 @prepolicy(set_realm, request=request)
 @prepolicy(mangle, request=request)
+# Below set_realm and mangle in particular, because both *rewrite the identity*
+# Besides of them, CA gate should the first step to run before any other authentication step starts
+@conditional_access_gate(_conditional_access_identity)
 @prepolicy(increase_failcounter_on_challenge, request=request)
 @prepolicy(save_client_application_type, request=request)
 @prepolicy(webauthntoken_request, request=request)

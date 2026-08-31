@@ -448,13 +448,15 @@ def surface_conditional_access_message(response):
 def conditional_access_gate(identity_resolver: Callable[[], User] | None = None,
                             rejection_value: Any = False) -> Callable[[Callable], Callable]:
     """
-    View decorator that runs :func:`conditional_access_precheck` before anything else acts on the request. If the
-    pre-check rejects it, that response is returned immediately and neither the pre-policies nor the endpoint run.
+    View decorator that runs :func:`conditional_access_precheck` before the pre-policies below it and the endpoint
+    act on the request. If the pre-check rejects it, that response is returned immediately and neither runs.
 
     **Keep it listed above every pre-policy and below the response decorators**, which is where every gated
     endpoint has it. Above the pre-policies because nothing may run for a locked user, a blocked source IP or a
     denied request before it is refused - the same rule ``/auth`` states at
-    :func:`conditional_access_login_gate`.
+    :func:`conditional_access_login_gate`. The exception is a pre-policy that rewrites the identity: ``set_realm``
+    and ``mangle`` on ``/validate/check`` assign a new ``request.User``, and everything downstream authenticates,
+    logs and counts as that one - so they run first, or the gate would check an identity that never authenticates.
 
     Below the response decorators because this gate *returns* its rejection rather than raising one: a failed
     authentication on ``/validate/*`` is an ordinary ``200`` carrying ``result.value`` false, not an error

@@ -31,6 +31,7 @@ from privacyidea.lib.conditional_access.authentication_event_types import AuthEv
 from privacyidea.lib.conditional_access.authentication_log import AuthLogUserRole, get_authentication_logs
 from privacyidea.lib.conditional_access.engine import is_user_locked, is_ip_blocked
 from privacyidea.lib.conditional_access.engine import LockoutAction, LockoutTarget
+from privacyidea.lib.conditional_access.engine import _upsert_user_lockout_state
 from privacyidea.lib.conditional_access.lockout_policy import create_lockout_policy, default_error_message
 from privacyidea.lib.conditional_access.outcome_log import get_outcomes
 from privacyidea.lib.conditional_access.session import get_ca_session
@@ -130,11 +131,9 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
             self.assertEqual(200, response.status_code, response)
             return response.json
 
-    def _lock_user(self, lock_expires_at, error_message: str | None = None) -> None:
-        db.session.add(UserLockoutState(resolver=self.user.resolver, uid=self.user.uid,
-                                        realm=self.user.realm, lock_expires_at=lock_expires_at,
-                                        error_message=error_message))
-        db.session.commit()
+    def _lock_user(self, lock_expires_at, error_message: str | None = None, user: User | None = None) -> None:
+        _upsert_user_lockout_state(user or self.user, lock_expires_at=lock_expires_at,
+                                   error_message=error_message)
 
     @staticmethod
     def _make_lock_policy(*, counter_type, threshold: int, duration: int, window: int = 3600,
@@ -1471,6 +1470,54 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         # Rejected before any token work: the fail counter is unmoved and the rejection classifies the request.
         self.assertListEqual([AuthEventType.USER_LOCKED], _rows_since(logs_after_success))
         self.assertEqual(0, self._failcount())
+
+    # --- identity rewriting (legacy setrealm / mangle) --------------------------
+
+    def _setrealm_to_realm2(self) -> User:
+        """Rewrite realm1 -> realm2 for cornelius via the legacy AUTHZ setrealm action, and return the identity
+        that then actually authenticates."""
+        self.setUp_user_realm2()
+        set_policy(name="ca_setrealm", scope=SCOPE.AUTHZ,
+                   action=f"{PolicyAction.SETREALM}={self.realm2}", realm=self.realm1)
+        return User("cornelius", self.realm2)
+
+    def test_a_lock_on_the_rewritten_identity_is_enforced(self):
+        # setrealm replaces request.User, and everything downstream - the token lookup, the authentication-log row,
+        # and so every count and every lock - uses that new identity. The gate has to check the same one: gating on
+        # the realm the client typed would leave the lock the engine writes unenforceable, and a locked user would
+        # authenticate for as long as the rewrite is configured.
+        rewritten = self._setrealm_to_realm2()
+        init_token({"serial": "CA_HOTP2", "type": "hotp", "otpkey": self.otpkey, "pin": "pin"}, user=rewritten)
+        try:
+            # The credentials are good, so a refusal is provably the lock and nothing else.
+            body = self._check({"user": "cornelius", "realm": self.realm1, "pass": "pin755224"})
+            self.assertTrue(body["result"]["value"], body)
+
+            self._lock_user(utc_now() + timedelta(seconds=600), user=rewritten)
+            rows = len(get_authentication_logs())
+            body = self._check({"user": "cornelius", "realm": self.realm1, "pass": "pin287082"})
+            self.assertFalse(body["result"]["value"], body)
+            self.assertEqual(str(GENERIC_AUTH_FAILURE), body["detail"]["message"], body)
+            self.assertListEqual([AuthEventType.USER_LOCKED], _rows_since(rows))
+        finally:
+            remove_token("CA_HOTP2")
+            delete_policy("ca_setrealm")
+
+    def test_a_lock_on_the_typed_identity_does_not_refuse_a_login_that_happens_elsewhere(self):
+        # The other direction. The realm the client typed is not the one authenticating, and the engine never
+        # writes a lock there - so one that exists was put there by something else, and must not turn away a login
+        # it says nothing about.
+        rewritten = self._setrealm_to_realm2()
+        init_token({"serial": "CA_HOTP2", "type": "hotp", "otpkey": self.otpkey, "pin": "pin"}, user=rewritten)
+        try:
+            self._lock_user(utc_now() + timedelta(seconds=600))
+            self.assertTrue(is_user_locked(self.user))
+            self.assertFalse(is_user_locked(rewritten))
+            body = self._check({"user": "cornelius", "realm": self.realm1, "pass": "pin755224"})
+            self.assertTrue(body["result"]["value"], body)
+        finally:
+            remove_token("CA_HOTP2")
+            delete_policy("ca_setrealm")
 
     # --- deferred write: one row per request, written at teardown ---------------
 
