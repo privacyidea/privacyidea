@@ -229,9 +229,9 @@ class ReasonPrecedenceTestCase(MyTestCase):
     def test_02_a_policy_decision_outranks_a_token_state(self):
         # Every reason is kept - the entry lists them all - and a policy decision leads, since it applies whatever the
         # tokens look like; a permanent state outranks a transient one.
-        self.assertEqual([AuthEventReason.AUTHORIZATION_POLICY, AuthEventReason.TOKEN_DISABLED],
+        self.assertEqual([AuthEventReason.AUTHORIZATION_DENIED, AuthEventReason.TOKEN_DISABLED],
                          order_request_reasons([AuthEventReason.TOKEN_DISABLED,
-                                                AuthEventReason.AUTHORIZATION_POLICY]))
+                                                AuthEventReason.AUTHORIZATION_DENIED]))
         self.assertEqual([AuthEventReason.TOKEN_REVOKED, AuthEventReason.TOKEN_FAILCOUNT_EXCEEDED],
                          order_request_reasons([AuthEventReason.TOKEN_FAILCOUNT_EXCEEDED,
                                                 AuthEventReason.TOKEN_REVOKED]))

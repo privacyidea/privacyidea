@@ -145,8 +145,8 @@ from .lib.utils import (get_required, get_auth_error_status_code, send_error, se
                         log_authentication, pop_auth_event_reason)
 from ..lib.conditional_access.authentication_event_types import (AuthEventType, AuthEventReason,
                                                                 AUTH_EVENT_TYPE_KEY, AUTH_EVENT_REASON_KEY,
-                                                                AUTH_EVENT_REASON_DETAIL_KEY,
-                                                                 LOG_TRANSACTION_ID_KEY)
+                                                                AUTH_EVENT_REASON_DETAIL_KEY, build_reason_detail,
+                                                                LOG_TRANSACTION_ID_KEY)
 from ..lib.conditional_access.request_context import continue_attempt
 from ..lib.decorators import (check_user_serial_or_cred_id_in_request)
 from ..lib.fido2.challenge import create_fido2_challenge, verify_fido2_challenge
@@ -602,9 +602,9 @@ def _record_context_reason(context: dict, reason: AuthEventReason, serial: str |
     handler knows exactly one reason, so it *replaces* the list. *serial* also puts the reason in the per-serial
     detail, matching what the token layer records.
     """
-    context[AUTH_EVENT_REASON_KEY] = [str(reason)]
+    context[AUTH_EVENT_REASON_KEY] = [reason]
     if serial:
-        context[AUTH_EVENT_REASON_DETAIL_KEY] = {"reasons": {serial: str(reason)}}
+        context[AUTH_EVENT_REASON_DETAIL_KEY] = build_reason_detail(reasons={serial: reason})
 
 
 def _handle_enrollment_cancellation(data: dict) -> Response:

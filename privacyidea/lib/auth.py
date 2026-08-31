@@ -167,9 +167,9 @@ def check_webui_user(user, password, options=None, superuser_realms=None, check_
             user_auth = True
             details[AUTH_EVENT_TYPE_KEY] = AuthEventType.LOGIN_SUCCESS
         else:
+            # LOGINMODE=userstore: the credential checked here *is* the user store password, which PASSWORD_FAIL
+            # already says - no reason of its own.
             details[AUTH_EVENT_TYPE_KEY] = AuthEventType.PASSWORD_FAIL
-            # LOGINMODE=userstore: the credential checked here *is* the user store password.
-            details[AUTH_EVENT_REASON_KEY] = AuthEventReason.WRONG_USERSTORE_PASSWORD
 
     # If the realm is in the SUPERUSER_REALM then the authorization role
     # is risen to "admin".

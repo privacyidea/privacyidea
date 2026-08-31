@@ -61,9 +61,11 @@ class AuthLogTestCase(MyApiTestCase):
         self._clear_audit_log()
 
     def tearDown(self) -> None:
-        for serial in (self.serial, self.second_serial):
-            if get_tokens(serial=serial):
-                remove_token(serial)
+        # Every token of the user, not just the two this fixture names: a test that enrolls one (enroll_via_
+        # multichallenge) or that fails before its own cleanup would otherwise leave it behind, and the next test
+        # would find the user owning a token it never created - which silently changes what is logged.
+        for token in get_tokens(user=self.user):
+            remove_token(token.get_serial())
         self._clear_log()
         self._clear_audit_log()
         super().tearDown()
@@ -171,7 +173,7 @@ def assert_authentication_log(event_types, transaction_id=None, same_attempt=Tru
     :return: an :class:`AuthLogEntries` (a dict of event type -> entry, plus the ordered ``.all`` list)
     """
     if transaction_id is not None:
-        entries = get_authentication_logs(transaction_id=transaction_id)
+        entries = get_authentication_logs(transaction_ids=transaction_id)
     else:
         entries = get_authentication_logs()
     assert [entry.event_type for entry in entries] == event_types
@@ -195,14 +197,10 @@ def assert_authentication_log_entry(entry: AuthenticationLog, user: User = None,
     The server-minted ``attempt_id`` is not checked here (its value is not knowable per entry); it is validated at the
     flow level in :func:`assert_authentication_log` (presence on every row, and shared across one attempt).
 
-    Every other column of the authentication_log table is checked. The nullable columns default to their database default
-    (None), so a column that is not passed is asserted to be empty — this enforces that a row carries *only* the data
-    it should and no leftover values. ``endpoint`` and the two reason arguments are the exceptions: every row written
-    from a view carries the request path, and nearly every failed one carries a reason, neither of which says anything
-    about the outcome under test - so they are only compared when a caller passes them. Their own contracts are
-    asserted where they are the subject (the endpoint in ValidateCheckAuthLogTestCase / AuthEndpointAuthLogTestCase,
-    the reasons in AuthReasonTestCase). For the same reason the ``other_info`` comparison ignores the per-serial reason
-    map: it is checked via ``reasons``, so a test about token info is not rewritten every time a reason is added.
+    Every other column of the authentication_log table is checked, **including the endpoint and the reasons**, and
+    every argument defaults to "the row carries nothing here": a value the caller does not pass is asserted to be
+    absent. Nothing about a row is therefore silently missed - what a request logs is spelled out at every call site,
+    under every condition and at every endpoint, which is the whole point of asserting an entry at all.
 
     The auto-populated id and timestamp are checked for presence. The non-nullable event_type is covered by the
     ordered list in :func:`assert_authentication_log`.
@@ -215,12 +213,11 @@ def assert_authentication_log_entry(entry: AuthenticationLog, user: User = None,
         expected (e.g. userless challenges or local-admin logins).
     :param serials: the entry must carry a comma separated list of these serials (default None: no serial)
     :param client_label: the entry must carry this client_label (default None: no client_label)
-    :param endpoint: if given, the entry must carry this endpoint; not checked when omitted (see above)
-    :param reason: if given, the entry's reasons must be exactly these, in this order (highest signal first): one
-        AuthEventReason or a list of them; not checked when omitted
-    :param reasons: if given, the ``{serial: reason}`` map in the reason detail must equal this; not checked when
-        omitted
-    :param policies: if given, the policy names in the reason detail must equal this; not checked when omitted
+    :param endpoint: the entry must carry this endpoint (default None: no endpoint, i.e. a row staged outside a view)
+    :param reason: the entry's reasons must be exactly these, in this order (highest signal first): one
+        AuthEventReason or a list of them (default None: no reason at all)
+    :param reasons: the ``{serial: reason}`` map in the entry's reason detail (default None: no such map)
+    :param policies: the policy names in the entry's reason detail (default None: no policy names)
     :param other_info: the entry must carry this other_info (default None: no other_info)
     :param transaction_id: the entry must carry this transaction_id (default None: no transaction_id)
     :param source_ip: the entry must carry this source_ip (default None: no source_ip)
@@ -234,17 +231,18 @@ def assert_authentication_log_entry(entry: AuthenticationLog, user: User = None,
     assert entry.username == expected_username
     assert entry.user_role == user_role
     assert entry.client_label == client_label
-    if endpoint is not None:
-        assert entry.endpoint == endpoint
-    if reason is not None:
-        expected_reasons = [str(value) for value in (reason if isinstance(reason, list) else [reason])]
-        assert [row.reason for row in entry.reasons] == expected_reasons
+    assert entry.endpoint == endpoint
+    expected_reasons = [] if reason is None else [str(value) for value in
+                                                 (reason if isinstance(reason, list) else [reason])]
+    assert [row.reason for row in entry.reasons] == expected_reasons
     stored_info = dict(entry.other_info or {})
     stored_detail = stored_info.pop(REASON_DETAIL_INFO_KEY, None) or {}
+    expected_detail = {}
     if reasons is not None:
-        assert stored_detail.get("reasons") == {serial: str(value) for serial, value in reasons.items()}
+        expected_detail["reasons"] = {serial: str(value) for serial, value in reasons.items()}
     if policies is not None:
-        assert stored_detail.get("policies") == policies
+        expected_detail["policies"] = policies
+    assert stored_detail == expected_detail
     # An empty dict is not None: a row that carries {} in a JSON column is a different thing from one that carries
     # nothing, and only the reason detail is allowed to be lifted out above.
     assert stored_info == (other_info or {})

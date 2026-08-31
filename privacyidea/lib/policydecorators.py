@@ -54,6 +54,7 @@ from privacyidea.lib.authcache import verify_in_cache, add_to_cache
 from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType, AUTH_EVENT_TYPE_KEY,
                                                                            AuthEventReason, AUTH_EVENT_REASON_KEY,
                                                                            AUTH_EVENT_REASON_DETAIL_KEY,
+                                                                           build_reason_detail,
                                                                            NO_FIRST_FACTOR_KEY)
 from privacyidea.lib.error import PolicyError, UserError, AuthError, Error
 from privacyidea.lib.policies.actions import PolicyAction
@@ -408,10 +409,14 @@ def auth_user_timelimit(wrapped_function, user, password, options=None):
     reply_dict = {}
     g = options.get("g")
     result = True
+    # Which limit was hit is classified here, not by the checks: their reply_dict reaches the client as the error
+    # details, so it carries nothing internal (see check_max_auth_fail).
+    reason = AuthEventReason.AUTH_MAX_FAIL
     if g:
         user_search_dict = {"user": user.login, "realm": user.realm}
         result, reply_dict = check_max_auth_fail(user, user_search_dict)
         if result:
+            reason = AuthEventReason.AUTH_MAX_SUCCESS
             result, reply_dict = check_max_auth_success(user, user_search_dict)
 
     # Only execute wrapped function if auth is not temporarily locked for the user
@@ -419,6 +424,7 @@ def auth_user_timelimit(wrapped_function, user, password, options=None):
         result, reply_dict = wrapped_function(user, password, options)
     else:
         reply_dict[AUTH_EVENT_TYPE_KEY] = AuthEventType.NOT_AUTHORIZED
+        reply_dict[AUTH_EVENT_REASON_KEY] = reason
 
     return result, reply_dict
 
@@ -472,7 +478,8 @@ def auth_lastauth(wrapped_function, user_or_serial, passw, options=None):
                                              f"{token.get_tokeninfo(PolicyAction.LASTAUTH)}. It is too long ago.")
                     reply_dict[AUTH_EVENT_TYPE_KEY] = AuthEventType.NOT_AUTHORIZED
                     reply_dict[AUTH_EVENT_REASON_KEY] = AuthEventReason.LAST_AUTH_TOO_OLD
-                    reply_dict[AUTH_EVENT_REASON_DETAIL_KEY] = {"policies": next(iter(last_auth_dict.values()))}
+                    reply_dict[AUTH_EVENT_REASON_DETAIL_KEY] = build_reason_detail(
+                        policies=next(iter(last_auth_dict.values())))
                     g.audit_object.add_policy(next(iter(last_auth_dict.values())))
 
             # Set the last successful authentication, if res still true
@@ -576,17 +583,15 @@ def auth_otppin(wrapped_function, *args, **kwds):
                 if token:
                     if authenticated_user is None:
                         token.auth_details[AUTH_EVENT_TYPE_KEY] = AuthEventType.PASSWORD_FAIL
-                        token.auth_details[AUTH_EVENT_REASON_KEY] = AuthEventReason.WRONG_USERSTORE_PASSWORD
                     else:
                         # This password is right, so a failure stamped by an earlier check of the same token in this
                         # request does not describe the outcome and must not outlive it. check_pin runs more than
                         # once per request: is_challenge_request asks with the whole ``password+OTP`` string, which
                         # fails the user store, and ``authenticate`` then asks again with the split password, which
-                        # passes. Without this, a correct password with a wrong OTP reads as
-                        # PASSWORD_FAIL / WRONG_USERSTORE_PASSWORD, and a lockout policy counting PASSWORD_FAIL
-                        # (the shipped Password Brute-Force template) counts the wrong OTP against it.
+                        # passes. Without this, a correct password with a wrong OTP reads as PASSWORD_FAIL, and a
+                        # lockout policy counting PASSWORD_FAIL (the shipped Password Brute-Force template) counts the
+                        # wrong OTP against it.
                         token.auth_details.pop(AUTH_EVENT_TYPE_KEY, None)
-                        token.auth_details.pop(AUTH_EVENT_REASON_KEY, None)
                 return authenticated_user is not None
 
     # Call and return the original check_pin function

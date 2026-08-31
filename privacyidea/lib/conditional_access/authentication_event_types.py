@@ -43,6 +43,7 @@ AUTH_EVENT_REASON_DETAIL_KEY = "authentication_event_reason_detail"
 # rest of other_info stays what a token reported about itself and neither has to know about the other.
 REASON_DETAIL_INFO_KEY = "reason_detail"
 
+
 # Key set on token.auth_details when the token logged its own outcome and no terminal event should be added on top.
 # A push_wait timeout sets this: the unanswered challenge is recorded only as CHALLENGE_TRIGGERED, not an MFA_FAIL.
 SUPPRESS_TERMINAL_EVENT_KEY = "suppress_terminal_authentication_event"
@@ -164,8 +165,9 @@ class AuthEventReason(str, Enum):
     TOKEN_NOT_APPLICABLE = "TOKEN_NOT_APPLICABLE"
 
     # --- authorization, i.e. a policy refusing an otherwise valid authentication ---------------------------------
-    # An authorization policy denied the request outright (PolicyAction.AUTHORIZED = deny).
-    AUTHORIZATION_POLICY = "AUTHORIZATION_POLICY"
+    # An authorization policy denied the request outright (PolicyAction.AUTHORIZED = deny). The three below are
+    # authorization decisions too, each naming the specific limit that was hit; this one is the plain deny.
+    AUTHORIZATION_DENIED = "AUTHORIZATION_DENIED"
     # The user made too many failed attempts inside the policy's time limit (auth_max_fail).
     AUTH_MAX_FAIL = "AUTH_MAX_FAIL"
     # The user made too many *successful* authentications inside the policy's time limit (auth_max_success).
@@ -174,12 +176,10 @@ class AuthEventReason(str, Enum):
     LAST_AUTH_TOO_OLD = "LAST_AUTH_TOO_OLD"
 
     # --- the credentials themselves ------------------------------------------------------------------------------
-    # The first factor is the user store password (otppin=userstore) and it was wrong.
-    WRONG_USERSTORE_PASSWORD = "WRONG_USERSTORE_PASSWORD"
-    # The token PIN was wrong. Also covers a PIN supplied where none was expected (otppin=none), which is a
-    # mismatch just the same.
-    WRONG_TOKEN_PIN = "WRONG_TOKEN_PIN"
-    # The first factor was right (or not required) but the OTP was not.
+    # The first factor was right (or not required) but the OTP was not. There is deliberately no reason for a wrong
+    # first factor: the event type already says which credential failed (PASSWORD_FAIL, PIN_FAIL), so a reason
+    # repeating it would add nothing. WRONG_OTP earns its place because MFA_FAIL is also what a token in a state the
+    # request never got to check looks like.
     WRONG_OTP = "WRONG_OTP"
 
     # --- challenge-response --------------------------------------------------------------------------------------
@@ -211,7 +211,7 @@ class AuthEventReason(str, Enum):
 # token state (revoked) outranks a transient one (failcount, which a reset clears); and a wrong credential ranks below
 # every state, since a state is the thing that made the credential moot.
 REASON_PRECEDENCE: list[AuthEventReason] = [
-    AuthEventReason.AUTHORIZATION_POLICY,
+    AuthEventReason.AUTHORIZATION_DENIED,
     AuthEventReason.AUTH_MAX_FAIL,
     AuthEventReason.AUTH_MAX_SUCCESS,
     AuthEventReason.LAST_AUTH_TOO_OLD,
@@ -228,8 +228,6 @@ REASON_PRECEDENCE: list[AuthEventReason] = [
     AuthEventReason.CHALLENGE_EXPIRED,
     AuthEventReason.CHALLENGE_DECLINED_ON_DEVICE,
     AuthEventReason.CHALLENGE_WRONG_RESPONSE,
-    AuthEventReason.WRONG_USERSTORE_PASSWORD,
-    AuthEventReason.WRONG_TOKEN_PIN,
     AuthEventReason.WRONG_OTP,
 ]
 
@@ -265,6 +263,27 @@ def order_request_reasons(reasons) -> list[AuthEventReason]:
             continue
         ranked.add(reason)
     return [reason for reason in REASON_PRECEDENCE if reason in ranked]
+
+
+def build_reason_detail(reasons: dict | None = None, policies: list | None = None) -> dict | None:
+    """
+    Build the reason-detail dict recorded under :data:`REASON_DETAIL_INFO_KEY`, or ``None`` when there is nothing to
+    record.
+
+    The one place its structure is defined, so every layer that adds to it - the token layer with its per-serial
+    findings, a policy layer with the rules that decided - writes the same shape. The detail is *merged* on the way
+    into the row (see :meth:`ConditionalAccessContext.reclassify`), so each layer only passes its own half.
+
+    :param reasons: what each token was found to be, keyed by serial
+    :param policies: the names of the policies that decided the request
+    :return: the detail dict, or ``None`` if both parts are empty
+    """
+    detail = {}
+    if reasons:
+        detail["reasons"] = {serial: str(reason) for serial, reason in reasons.items()}
+    if policies:
+        detail["policies"] = policies
+    return detail or None
 
 
 class AuthEventOutcome(str, Enum):

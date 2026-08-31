@@ -865,7 +865,7 @@ class LockoutPolicyCrudTestCase(MyTestCase):
         # A path outside the vocabulary is a typo, and a typo'd endpoint condition would silently never
         # match - so it is reported at write time like an unknown realm or role.
         self.assertRaises(ParameterError, self._create_with_conditions,
-                          "Bad endpoint", [self._condition(ConditionType.ENDPOINT, value=["/validate/chekc"])])
+                          "Bad endpoint", [self._condition(ConditionType.ENDPOINT, value=["/validate/unknown"])])
 
 
 class EndpointConditionChoicesTestCase(MyTestCase):

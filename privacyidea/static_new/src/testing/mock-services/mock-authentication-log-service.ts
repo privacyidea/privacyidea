@@ -67,8 +67,7 @@ export class MockAuthenticationLogService implements AuthenticationLogServiceInt
     "TOKEN_DISABLED",
     "TOKEN_FAILCOUNT_EXCEEDED",
     "TOKEN_REVOKED",
-    "AUTHORIZATION_POLICY",
-    "WRONG_TOKEN_PIN",
+    "AUTHORIZATION_DENIED",
     "WRONG_OTP"
   ]);
   reasonsResource = new MockHttpResourceRef<PiResponse<string[]> | undefined>(MockPiResponse.fromValue<string[]>([]));

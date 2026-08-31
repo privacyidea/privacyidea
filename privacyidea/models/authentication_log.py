@@ -87,8 +87,9 @@ class AuthenticationLog(MethodsMixin, db.Model):
     client_label: Mapped[str | None] = mapped_column(
         case_sensitive_unicode(authentication_log_column_length["client_label"]))
     # The endpoint the request authenticated against, as its request path ("/auth", "/validate/check", "/ttype/push").
-    # Nullable like the other request-scoped columns: an event recorded outside a request context (the CLI, the
-    # push_wait flow) has no endpoint to name.
+    # Every authentication reaches the server as a request - there is no authentication from the CLI, and push_wait
+    # runs inside the request that triggered the challenge - so an entry an authentication wrote always names one.
+    # Nullable only for an entry staged outside a view, which nothing on the authentication path does.
     endpoint: Mapped[str | None] = mapped_column(
         case_sensitive_unicode(authentication_log_column_length["endpoint"]))
     serial: Mapped[str | None] = mapped_column(case_sensitive_unicode(authentication_log_column_length["serial"]))

@@ -22,9 +22,6 @@ from typing import TYPE_CHECKING
 
 from flask import g
 
-from privacyidea.lib.conditional_access.authentication_event_types import (AUTH_EVENT_REASON_KEY,
-                                                                           AUTH_EVENT_REASON_DETAIL_KEY,
-                                                                           AuthEventReason)
 from privacyidea.lib.policy import Match, SCOPE
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.user import User
@@ -42,6 +39,10 @@ def check_max_auth_fail(user: User, user_search_dict: dict, check_validate_check
     """
     Check if the maximum number of authentication failures is reached.
     This function is used to determine if the user should be blocked due to too many failed authentication attempts.
+
+    *reply_dict* is handed to the client as the error details, so it carries nothing but the message: the caller
+    classifies the refusal for the authentication log itself (``AuthEventReason.AUTH_MAX_FAIL``), which it can,
+    since it knows which of the two checks said no.
     """
     result = True
     reply_dict = {}
@@ -72,8 +73,6 @@ def check_max_auth_fail(user: User, user_search_dict: dict, check_validate_check
         result = False
         deciding_policies = next(iter(max_fail_dict.values()))
         reply_dict["message"] = f"Only {policy_count} failed authentications per {time_delta} allowed."
-        reply_dict[AUTH_EVENT_REASON_KEY] = AuthEventReason.AUTH_MAX_FAIL
-        reply_dict[AUTH_EVENT_REASON_DETAIL_KEY] = {"policies": deciding_policies}
         g.audit_object.add_policy(deciding_policies)
 
     return result, reply_dict
@@ -83,6 +82,9 @@ def check_max_auth_success(user: User, user_search_dict: dict, check_validate_ch
     """
     Check if the maximum number of successful authentication is reached.
     This function is used to determine if the user should be blocked due to too many successful authentication attempts.
+
+    Like :func:`check_max_auth_fail`, *reply_dict* holds only the client-facing message; the caller classifies the
+    refusal as ``AuthEventReason.AUTH_MAX_SUCCESS``.
     """
     result = True
     reply_dict = {}
@@ -113,8 +115,6 @@ def check_max_auth_success(user: User, user_search_dict: dict, check_validate_ch
     if success_count >= policy_count:
         result = False
         reply_dict["message"] = f"Only {policy_count} successful authentications per {time_delta} allowed."
-        reply_dict[AUTH_EVENT_REASON_KEY] = AuthEventReason.AUTH_MAX_SUCCESS
-        reply_dict[AUTH_EVENT_REASON_DETAIL_KEY] = {"policies": next(iter(max_success_dict.values()))}
 
     return result, reply_dict
 

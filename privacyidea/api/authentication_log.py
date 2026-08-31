@@ -41,18 +41,13 @@ log = logging.getLogger(__name__)
 
 authentication_log_blueprint = Blueprint("authentication_log_blueprint", __name__)
 
-# The list-valued filter query parameters, mapped to the get_authentication_logs_paginate keyword argument each one
-# feeds. Every one of them takes a list of values, so the query parameter is plural while the library keyword names the
-# single field it matches. The ca_* ones filter on the entry's conditional-access outcomes rather than on a column of
-# its own row, and "reasons" on its reason rows - an entry matches when any of its reasons does; ca_dry_run is parsed
-# separately because it is a boolean, not a list of values.
-_FILTER_PARAMS = {"resolvers": "resolver", "uids": "uid", "realms": "realm", "usernames": "username",
-                  "user_roles": "user_role", "event_types": "event_type", "reasons": "reason",
-                  "source_ips": "source_ip",
-                  "serials": "serial", "transaction_ids": "transaction_id", "attempt_ids": "attempt_id",
-                  "client_labels": "client_label", "endpoints": "endpoint",
-                  "ca_action_types": "ca_action_type",
-                  "ca_policy_names": "ca_policy_name"}
+# The list-valued filter query parameters, which are also the get_authentication_logs_paginate keyword arguments they
+# feed - every one of them takes a list of values, so both are named in the plural. The ca_* ones filter on the entry's
+# conditional-access outcomes rather than on a column of its own row, and "reasons" on its reason rows - an entry
+# matches when any of its reasons does; ca_dry_run is parsed separately because it is a boolean, not a list of values.
+_FILTER_PARAMS = ["resolvers", "uids", "realms", "usernames", "user_roles", "event_types", "reasons", "source_ips",
+                  "serials", "transaction_ids", "attempt_ids", "client_labels", "endpoints",
+                  "ca_action_types", "ca_policy_names"]
 
 
 def _split_csv(value: str | None) -> list[str] | None:
@@ -118,7 +113,7 @@ def get_authentication_log():
     :status 200: paginated result in ``result.value`` with ``auth_logs``, ``count``, ``current``, ``prev``, ``next``.
     """
     params = request.all_data
-    filters = {keyword: _split_csv(get_optional(params, param)) for param, keyword in _FILTER_PARAMS.items()}
+    filters = {param: _split_csv(get_optional(params, param)) for param in _FILTER_PARAMS}
     # A tri-state: absent (or empty) does not filter, so that "both" needs no value of its own.
     ca_dry_run = get_optional(params, "ca_dry_run")
     filters["ca_dry_run"] = is_true(ca_dry_run) if ca_dry_run not in (None, "") else None

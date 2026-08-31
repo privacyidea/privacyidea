@@ -80,8 +80,8 @@ from privacyidea.api.lib.policyhelper import (get_init_tokenlabel_parameters,
                                               UserAttributes,
                                               get_container_user_attributes)
 from privacyidea.api.lib.utils import (attestation_certificate_allowed, is_fqdn, get_optional,
-                                      log_authentication, pop_auth_event_reason)
-from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
+                                      log_authentication)
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventReason, AuthEventType
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.clientapplication import save_clientapplication
 from privacyidea.lib.config import get_token_class
@@ -2862,19 +2862,19 @@ def auth_timelimit(request, action):
         # normal user
         user_search_dict = {"user": user.login, "realm": user.realm}
 
-    # Check policies
+    # Check policies. Which limit was hit is classified here rather than by the checks: their reply_dict is handed to
+    # the client as the error details, and an internal key travelling in it is one a later caller has to remember to
+    # take out again.
+    reason = AuthEventReason.AUTH_MAX_FAIL
     result, reply_dict = check_max_auth_fail(user, user_search_dict, check_validate_check=not local_admin)
     if result:
         if local_admin:
             user_search_dict = {"administrator": user.login}
+        reason = AuthEventReason.AUTH_MAX_SUCCESS
         result, reply_dict = check_max_auth_success(user, user_search_dict, check_validate_check=not local_admin)
 
     if not result:
-        # check_max_auth_fail / _success name which limit was hit and the policy that set it. Popped from reply_dict,
-        # which is handed to the client as the error details.
-        reasons, reason_detail = pop_auth_event_reason(reply_dict)
-        log_authentication(AuthEventType.NOT_AUTHORIZED, request, user=user,
-                           reasons=reasons, reason_detail=reason_detail)
+        log_authentication(AuthEventType.NOT_AUTHORIZED, request, user=user, reasons=[reason])
         raise AuthError(_("Authentication failure. The account has exceeded the authentication time limit!"),
                         details=reply_dict)
 

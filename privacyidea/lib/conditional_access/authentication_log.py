@@ -402,13 +402,13 @@ def log_authentication_event(event_type: AuthEventType,
     Create a new authentication log entry and return its id, or ``None`` if it could not be written.
 
     The single-event convenience wrapper over :func:`write_authentication_events`, for callers that have no request
-    context to collect on (the CLI, tests, and lib code outside a view).
+    context to collect on (tests and lib code outside a view; no authentication takes this path, since every
+    authentication reaches the server as a request).
     """
     event = PendingAuthEvent(event_type=event_type, reasons=list(reasons or []), transaction_id=transaction_id,
-                             resolver=resolver,
-                             uid=uid, realm=realm, username=username, user_role=user_role, source_ip=source_ip,
-                             client_label=client_label, endpoint=endpoint, serial=serial, attempt_id=attempt_id,
-                             other_info=other_info)
+                             resolver=resolver, uid=uid, realm=realm, username=username, user_role=user_role,
+                             source_ip=source_ip, client_label=client_label, endpoint=endpoint, serial=serial,
+                             attempt_id=attempt_id, other_info=other_info)
     write_authentication_events([event])
     return event.row_id
 
@@ -480,7 +480,7 @@ def match_condition(column: InstrumentedAttribute, value: str | list[str] | None
     return or_(*terms) if len(terms) > 1 else terms[0]
 
 
-def _reason_condition(reason: str | list[str] | None = None,
+def _reason_condition(reasons: str | list[str] | None = None,
                       case_insensitive: bool = False) -> ColumnElement[bool] | None:
     """
     Build the condition "this entry was classified with such a reason", or ``None`` when no reason filter is set.
@@ -494,7 +494,7 @@ def _reason_condition(reason: str | list[str] | None = None,
     its reasons, which would break both a page's ``LIMIT`` and the ``count`` that shares these conditions. It is
     correlated on the parent, so it applies unchanged to the ``DELETE`` statements that reuse these conditions.
     """
-    term = match_condition(AuthenticationLogReason.reason, reason, case_insensitive)
+    term = match_condition(AuthenticationLogReason.reason, reasons, case_insensitive)
     if term is None:
         return None
     return (select(1)
@@ -502,19 +502,19 @@ def _reason_condition(reason: str | list[str] | None = None,
             .exists())
 
 
-def _filter_conditions(resolver: str | list[str] | None = None,
-                       uid: str | list[str] | None = None,
-                       realm: str | list[str] | None = None,
-                       username: str | list[str] | None = None,
-                       user_role: str | list[str] | None = None,
-                       event_type: str | list[str] | None = None,
-                       reason: str | list[str] | None = None,
-                       source_ip: str | list[str] | None = None,
-                       serial: str | list[str] | None = None,
-                       transaction_id: str | list[str] | None = None,
-                       attempt_id: str | list[str] | None = None,
-                       client_label: str | list[str] | None = None,
-                       endpoint: str | list[str] | None = None,
+def _filter_conditions(resolvers: str | list[str] | None = None,
+                       uids: str | list[str] | None = None,
+                       realms: str | list[str] | None = None,
+                       usernames: str | list[str] | None = None,
+                       user_roles: str | list[str] | None = None,
+                       event_types: str | list[str] | None = None,
+                       reasons: str | list[str] | None = None,
+                       source_ips: str | list[str] | None = None,
+                       serials: str | list[str] | None = None,
+                       transaction_ids: str | list[str] | None = None,
+                       attempt_ids: str | list[str] | None = None,
+                       client_labels: str | list[str] | None = None,
+                       endpoints: str | list[str] | None = None,
                        start_time: datetime | None = None,
                        end_time: datetime | None = None,
                        case_insensitive: bool = False) -> list:
@@ -524,29 +524,29 @@ def _filter_conditions(resolver: str | list[str] | None = None,
     of the values, or (for a value containing a ``*`` wildcard) matches it with a ``LIKE``. Returned as a list so it
     can be applied to both ``select`` and ``delete`` statements. timestamp filters are inclusive on both ends.
 
-    ``reason`` is the one filter that does not match a column of the entry: an entry has a list of reasons, in a table
-    of its own, and matches if **any** of them matches (see :func:`_reason_condition`).
+    ``reasons`` is the one filter that does not match a column of the entry: an entry has a list of reasons, in a
+    table of its own, and matches if **any** of them matches (see :func:`_reason_condition`).
 
     With *case_insensitive* set, plain (non-wildcard) filter values match case-insensitively; wildcard values always
     match case-insensitively (see :func:`match_condition`).
     """
     match_filters: dict[InstrumentedAttribute, str | list[str] | None] = {
-        AuthenticationLog.resolver: resolver,
-        AuthenticationLog.uid: uid,
-        AuthenticationLog.realm: realm,
-        AuthenticationLog.username: username,
-        AuthenticationLog.user_role: user_role,
-        AuthenticationLog.event_type: event_type,
-        AuthenticationLog.source_ip: source_ip,
-        AuthenticationLog.serial: serial,
-        AuthenticationLog.transaction_id: transaction_id,
-        AuthenticationLog.attempt_id: attempt_id,
-        AuthenticationLog.client_label: client_label,
-        AuthenticationLog.endpoint: endpoint,
+        AuthenticationLog.resolver: resolvers,
+        AuthenticationLog.uid: uids,
+        AuthenticationLog.realm: realms,
+        AuthenticationLog.username: usernames,
+        AuthenticationLog.user_role: user_roles,
+        AuthenticationLog.event_type: event_types,
+        AuthenticationLog.source_ip: source_ips,
+        AuthenticationLog.serial: serials,
+        AuthenticationLog.transaction_id: transaction_ids,
+        AuthenticationLog.attempt_id: attempt_ids,
+        AuthenticationLog.client_label: client_labels,
+        AuthenticationLog.endpoint: endpoints,
     }
     conditions = [condition for column, value in match_filters.items()
                   if (condition := match_condition(column, value, case_insensitive)) is not None]
-    reason_condition = _reason_condition(reason, case_insensitive)
+    reason_condition = _reason_condition(reasons, case_insensitive)
     if reason_condition is not None:
         conditions.append(reason_condition)
     if start_time is not None:
@@ -556,8 +556,8 @@ def _filter_conditions(resolver: str | list[str] | None = None,
     return conditions
 
 
-def _outcome_condition(ca_action_type: str | list[str] | None = None,
-                       ca_policy_name: str | list[str] | None = None,
+def _outcome_condition(ca_action_types: str | list[str] | None = None,
+                       ca_policy_names: str | list[str] | None = None,
                        ca_dry_run: bool | None = None,
                        case_insensitive: bool = False) -> ColumnElement[bool] | None:
     """
@@ -566,11 +566,11 @@ def _outcome_condition(ca_action_type: str | list[str] | None = None,
 
     The string filters behave like every other filter on the log (a value or a list of them, ``*`` as the only
     wildcard, *case_insensitive* for the plain values -- see :func:`match_condition`); ``ca_dry_run`` is a boolean, so
-    ``None`` means "either" rather than "unset". ``ca_action_type="*"`` therefore reads as "entries conditional access
+    ``None`` means "either" rather than "unset". ``ca_action_types="*"`` therefore reads as "entries conditional access
     acted on at all".
 
     **All conditions apply to the same outcome row.** An entry matches when *one* of its outcomes satisfies all of
-    them, which is what the filter says: ``ca_action_type=LOCK_USER_TEMPORARY`` with ``ca_policy_name=Notify`` must
+    them, which is what the filter says: ``ca_action_types=LOCK_USER_TEMPORARY`` with ``ca_policy_names=Notify`` must
     not match a request where *Notify* sent an email and some other policy locked the user.
 
     An ``EXISTS`` rather than a join, for the reason the listing reads the outcomes with ``selectinload``
@@ -578,14 +578,14 @@ def _outcome_condition(ca_action_type: str | list[str] | None = None,
     page's ``LIMIT`` and the ``count`` that shares these conditions -- an entry with three matching outcomes would be
     counted three times and appear three times.
 
-    :param ca_action_type: match outcomes with this ``action_type`` (a ``LockoutAction`` value)
-    :param ca_policy_name: match outcomes recorded for this policy name (the denormalized copy, so a deleted policy is
-        still matchable)
+    :param ca_action_types: match outcomes with one of these ``action_type`` values (``LockoutAction`` values)
+    :param ca_policy_names: match outcomes recorded for one of these policy names (the denormalized copy, so a
+        deleted policy is still matchable)
     :param ca_dry_run: match only dry-run outcomes (``True``) or only enforced ones (``False``)
     :param case_insensitive: match the plain string values case-insensitively
     """
-    terms = [condition for column, value in ((ConditionalAccessOutcome.action_type, ca_action_type),
-                                             (ConditionalAccessOutcome.policy_name, ca_policy_name))
+    terms = [condition for column, value in ((ConditionalAccessOutcome.action_type, ca_action_types),
+                                             (ConditionalAccessOutcome.policy_name, ca_policy_names))
              if (condition := match_condition(column, value, case_insensitive)) is not None]
     if ca_dry_run is not None:
         terms.append(ConditionalAccessOutcome.dry_run.is_(ca_dry_run))
@@ -640,19 +640,19 @@ def _visibility_condition(scopes: list[AuthenticationLogVisibilityScope]) -> Col
     return or_(*scope_conditions)
 
 
-def get_authentication_logs(resolver: str | list[str] | None = None,
-                            uid: str | list[str] | None = None,
-                            realm: str | list[str] | None = None,
-                            username: str | list[str] | None = None,
-                            user_role: str | list[str] | None = None,
-                            event_type: str | list[str] | None = None,
-                            reason: str | list[str] | None = None,
-                            source_ip: str | list[str] | None = None,
-                            serial: str | list[str] | None = None,
-                            transaction_id: str | list[str] | None = None,
-                            attempt_id: str | list[str] | None = None,
-                            client_label: str | list[str] | None = None,
-                            endpoint: str | list[str] | None = None,
+def get_authentication_logs(resolvers: str | list[str] | None = None,
+                            uids: str | list[str] | None = None,
+                            realms: str | list[str] | None = None,
+                            usernames: str | list[str] | None = None,
+                            user_roles: str | list[str] | None = None,
+                            event_types: str | list[str] | None = None,
+                            reasons: str | list[str] | None = None,
+                            source_ips: str | list[str] | None = None,
+                            serials: str | list[str] | None = None,
+                            transaction_ids: str | list[str] | None = None,
+                            attempt_ids: str | list[str] | None = None,
+                            client_labels: str | list[str] | None = None,
+                            endpoints: str | list[str] | None = None,
                             start_time: datetime | None = None,
                             end_time: datetime | None = None) -> Sequence[AuthenticationLog]:
     """
@@ -665,32 +665,33 @@ def get_authentication_logs(resolver: str | list[str] | None = None,
     for the whole result: an entry read here is read to be looked at, and its reasons are part of it. The
     conditional-access outcomes are not - the paginated listing is the one query that reads those.
     """
-    conditions = _filter_conditions(resolver=resolver, uid=uid, realm=realm, username=username, user_role=user_role,
-                                    event_type=event_type, reason=reason,
-                                    source_ip=source_ip, serial=serial, transaction_id=transaction_id,
-                                    attempt_id=attempt_id,
-                                    client_label=client_label, endpoint=endpoint,
+    conditions = _filter_conditions(resolvers=resolvers, uids=uids, realms=realms, usernames=usernames,
+                                    user_roles=user_roles,
+                                    event_types=event_types, reasons=reasons,
+                                    source_ips=source_ips, serials=serials, transaction_ids=transaction_ids,
+                                    attempt_ids=attempt_ids,
+                                    client_labels=client_labels, endpoints=endpoints,
                                     start_time=start_time, end_time=end_time)
     stmt = (select(AuthenticationLog).where(*conditions).order_by(AuthenticationLog.id)
             .options(selectinload(AuthenticationLog.reasons)))
     return get_ca_session().scalars(stmt).all()
 
 
-def get_authentication_logs_paginate(resolver: str | list[str] | None = None,
-                                     uid: str | list[str] | None = None,
-                                     realm: str | list[str] | None = None,
-                                     username: str | list[str] | None = None,
-                                     user_role: str | list[str] | None = None,
-                                     event_type: str | list[str] | None = None,
-                                     reason: str | list[str] | None = None,
-                                     source_ip: str | list[str] | None = None,
-                                     serial: str | list[str] | None = None,
-                                     transaction_id: str | list[str] | None = None,
-                                     attempt_id: str | list[str] | None = None,
-                                     client_label: str | list[str] | None = None,
-                                     endpoint: str | list[str] | None = None,
-                                     ca_action_type: str | list[str] | None = None,
-                                     ca_policy_name: str | list[str] | None = None,
+def get_authentication_logs_paginate(resolvers: str | list[str] | None = None,
+                                     uids: str | list[str] | None = None,
+                                     realms: str | list[str] | None = None,
+                                     usernames: str | list[str] | None = None,
+                                     user_roles: str | list[str] | None = None,
+                                     event_types: str | list[str] | None = None,
+                                     reasons: str | list[str] | None = None,
+                                     source_ips: str | list[str] | None = None,
+                                     serials: str | list[str] | None = None,
+                                     transaction_ids: str | list[str] | None = None,
+                                     attempt_ids: str | list[str] | None = None,
+                                     client_labels: str | list[str] | None = None,
+                                     endpoints: str | list[str] | None = None,
+                                     ca_action_types: str | list[str] | None = None,
+                                     ca_policy_names: str | list[str] | None = None,
                                      ca_dry_run: bool | None = None,
                                      start_time: datetime | None = None,
                                      end_time: datetime | None = None,
@@ -703,16 +704,14 @@ def get_authentication_logs_paginate(resolver: str | list[str] | None = None,
     """
     Return a single page of authentication log entries matching the given filters.
 
-    The filter parameters -- ``resolver``, ``uid``, ``realm``, ``username``, ``user_role``, ``event_type``,
-    ``reason``, ``source_ip``, ``serial``, ``transaction_id``, ``attempt_id``, ``client_label``, ``endpoint``,
-    ``start_time`` and
-    ``end_time`` -- behave
-    exactly like :func:`get_authentication_logs`. The ``ca_*`` parameters filter on what conditional access *did* to the
+    The filter parameters -- ``resolvers``, ``uids``, ``realms``, ``usernames``, ``user_roles``, ``event_types``,
+    ``reasons``, ``source_ips``, ``serials``, ``transaction_ids``, ``attempt_ids``, ``client_labels``,
+    ``endpoints``, ``start_time`` and ``end_time`` -- behave exactly like :func:`get_authentication_logs`. The ``ca_*`` parameters filter on what conditional access *did* to the
     request and are only offered here, since this is the endpoint that reads the outcomes:
 
-    :param ca_action_type: only entries with an outcome of this action type; ``"*"`` reads as "conditional access acted
-        on this request at all"
-    :param ca_policy_name: only entries with an outcome recorded for this policy name
+    :param ca_action_types: only entries with an outcome of one of these action types; ``"*"`` reads as "conditional
+        access acted on this request at all"
+    :param ca_policy_names: only entries with an outcome recorded for one of these policy names
     :param ca_dry_run: only entries with a dry-run outcome (``True``) or with an enforced one (``False``); ``None``
         does not filter
     :param visibility_scopes: restrict the result to entries matching any of these scopes
@@ -726,16 +725,17 @@ def get_authentication_logs_paginate(resolver: str | list[str] | None = None,
     :param sort_order: ``asc`` or ``desc``
     :return: an :class:`AuthenticationLogPage` with the page's entries and the pagination metadata
     """
-    conditions = _filter_conditions(resolver=resolver, uid=uid, realm=realm, username=username, user_role=user_role,
-                                    event_type=event_type, reason=reason,
-                                    source_ip=source_ip, serial=serial, transaction_id=transaction_id,
-                                    attempt_id=attempt_id,
-                                    client_label=client_label, endpoint=endpoint,
+    conditions = _filter_conditions(resolvers=resolvers, uids=uids, realms=realms, usernames=usernames,
+                                    user_roles=user_roles,
+                                    event_types=event_types, reasons=reasons,
+                                    source_ips=source_ips, serials=serials, transaction_ids=transaction_ids,
+                                    attempt_ids=attempt_ids,
+                                    client_labels=client_labels, endpoints=endpoints,
                                     start_time=start_time, end_time=end_time,
                                     case_insensitive=case_insensitive)
     # An EXISTS over the outcome table, kept out of _filter_conditions because those conditions also apply to DELETE
     # statements (see delete_authentication_logs), and matching an outcome is not a valid reason to delete an entry.
-    outcome_condition = _outcome_condition(ca_action_type=ca_action_type, ca_policy_name=ca_policy_name,
+    outcome_condition = _outcome_condition(ca_action_types=ca_action_types, ca_policy_names=ca_policy_names,
                                            ca_dry_run=ca_dry_run, case_insensitive=case_insensitive)
     if outcome_condition is not None:
         conditions.append(outcome_condition)
@@ -836,19 +836,19 @@ def _delete_entries(criterion: ColumnElement[bool], chunk_size: int | None = Non
     return deleted
 
 
-def delete_authentication_logs(resolver: str | list[str] | None = None,
-                               uid: str | list[str] | None = None,
-                               realm: str | list[str] | None = None,
-                               username: str | list[str] | None = None,
-                               user_role: str | list[str] | None = None,
-                               event_type: str | list[str] | None = None,
-                               reason: str | list[str] | None = None,
-                               source_ip: str | list[str] | None = None,
-                               serial: str | list[str] | None = None,
-                               transaction_id: str | list[str] | None = None,
-                               attempt_id: str | list[str] | None = None,
-                               client_label: str | list[str] | None = None,
-                               endpoint: str | list[str] | None = None,
+def delete_authentication_logs(resolvers: str | list[str] | None = None,
+                               uids: str | list[str] | None = None,
+                               realms: str | list[str] | None = None,
+                               usernames: str | list[str] | None = None,
+                               user_roles: str | list[str] | None = None,
+                               event_types: str | list[str] | None = None,
+                               reasons: str | list[str] | None = None,
+                               source_ips: str | list[str] | None = None,
+                               serials: str | list[str] | None = None,
+                               transaction_ids: str | list[str] | None = None,
+                               attempt_ids: str | list[str] | None = None,
+                               client_labels: str | list[str] | None = None,
+                               endpoints: str | list[str] | None = None,
                                start_time: datetime | None = None,
                                end_time: datetime | None = None,
                                visibility_scopes: list[AuthenticationLogVisibilityScope] | None = None,
@@ -856,11 +856,10 @@ def delete_authentication_logs(resolver: str | list[str] | None = None,
     """
     Delete all authentication log entries matching the given filters and return the number deleted.
 
-    The filter parameters -- ``resolver``, ``uid``, ``realm``, ``username``, ``user_role``, ``event_type``,
-    ``reason``, ``source_ip``, ``serial``, ``transaction_id``, ``attempt_id``, ``client_label``, ``endpoint``,
-    ``start_time`` and
-    ``end_time`` -- behave exactly like :func:`get_authentication_logs` (to delete entries older than a point in time,
-    pass ``end_time``). The caller must pass at least one filter: with no filter this would delete the entire log,
+    The filter parameters -- ``resolvers``, ``uids``, ``realms``, ``usernames``, ``user_roles``, ``event_types``,
+    ``reasons``, ``source_ips``, ``serials``, ``transaction_ids``, ``attempt_ids``, ``client_labels``,
+    ``endpoints``, ``start_time`` and ``end_time`` -- behave exactly like :func:`get_authentication_logs` (to delete
+    entries older than a point in time, pass ``end_time``). The caller must pass at least one filter: with no filter this would delete the entire log,
     which this function refuses.
 
     :param visibility_scopes: restrict the deletion to entries matching any of these scopes
@@ -868,11 +867,12 @@ def delete_authentication_logs(resolver: str | list[str] | None = None,
     :param chunk_size: if given, delete in chunks of this size to avoid long locks on large tables
     :return: the number of deleted entries
     """
-    conditions = _filter_conditions(resolver=resolver, uid=uid, realm=realm, username=username, user_role=user_role,
-                                    event_type=event_type, reason=reason,
-                                    source_ip=source_ip, serial=serial, transaction_id=transaction_id,
-                                    attempt_id=attempt_id,
-                                    client_label=client_label, endpoint=endpoint,
+    conditions = _filter_conditions(resolvers=resolvers, uids=uids, realms=realms, usernames=usernames,
+                                    user_roles=user_roles,
+                                    event_types=event_types, reasons=reasons,
+                                    source_ips=source_ips, serials=serials, transaction_ids=transaction_ids,
+                                    attempt_ids=attempt_ids,
+                                    client_labels=client_labels, endpoints=endpoints,
                                     start_time=start_time, end_time=end_time)
     # Guard on the caller's filters before adding the visibility restriction, so a scoped admin also cannot wipe a
     # whole scope with an unfiltered request.

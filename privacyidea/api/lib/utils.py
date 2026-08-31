@@ -275,7 +275,7 @@ def _determine_user_role(user: User | None, internal_admin: bool) -> AuthLogUser
     caller (``/auth`` via ``verify_db_admin``/``db_admin_exists``) and is signalled by *internal_admin*. Otherwise a
     user whose realm is a configured ``SUPERUSER_REALM`` is an external (admin-realm) admin; everyone else is a
     regular user. The superuser realms are only readable inside an app context, so outside one the principal is
-    treated as a regular user (the only events logged outside a request are user token flows, e.g. push_wait).
+    treated as a regular user - which no authentication reaches, since every authentication is a request.
     """
     if internal_admin:
         return AuthLogUserRole.ADMIN_INTERNAL
@@ -364,8 +364,10 @@ def log_authentication(event_type: AuthEventType | None, request: Request | None
     records that token's user, keeping the log symmetric.
 
     ``source_ip`` (from ``g``) as well as ``client_label`` and ``endpoint`` (from ``request``) are only read inside a
-    request context, so the lib layer can record an event from outside a view (e.g. push_wait). Worst case those
-    columns are empty; the event itself is never lost. ``endpoint`` comes from :func:`request_endpoint`, the same
+    request context, so that a caller outside a view (tests, lib code) records an event rather than raising: worst
+    case those columns are empty and the event itself is never lost. No authentication takes that path - every
+    authentication reaches the server as a request, ``push_wait`` included, which triggers and awaits its challenge
+    within the one request. ``endpoint`` comes from :func:`request_endpoint`, the same
     reading an ``ENDPOINT`` conditional-access condition is evaluated against.
 
     ``reasons`` says *why* the event came out this way: every
@@ -457,9 +459,9 @@ def build_ca_context(user, internal_admin: bool | None = None) -> "CAContext":
     engine evaluates against.
 
     This is the one place that reads Flask state (``g`` / ``request``) for the
-    engine, keeping the lib layer free of it. Outside a request context (an event
-    recorded from outside a view, e.g. the push_wait flow) the request-scoped
-    fields are simply ``None``; nothing here raises.
+    engine, keeping the lib layer free of it. Outside a request context (a caller
+    that is not a view, such as a test) the request-scoped fields are simply
+    ``None``; nothing here raises.
 
     ``internal_admin`` flags a local database admin, which
     :func:`_determine_user_role` cannot infer from the user object alone (such an

@@ -125,7 +125,7 @@ class AuthenticationLogTestCase(MyTestCase):
         log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1")
         log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res2", uid="u2", realm="r1")
 
-        results = get_authentication_logs(resolver="res1")
+        results = get_authentication_logs(resolvers="res1")
         self.assertEqual(1, len(results))
         self.assertEqual("res1", results[0].resolver)
 
@@ -133,7 +133,7 @@ class AuthenticationLogTestCase(MyTestCase):
         log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1")
         log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u2", realm="r1")
 
-        results = get_authentication_logs(uid="u1")
+        results = get_authentication_logs(uids="u1")
         self.assertEqual(1, len(results))
         self.assertEqual("u1", results[0].uid)
 
@@ -141,7 +141,7 @@ class AuthenticationLogTestCase(MyTestCase):
         log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1")
         log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r2")
 
-        results = get_authentication_logs(realm="r2")
+        results = get_authentication_logs(realms="r2")
         self.assertEqual(1, len(results))
         self.assertEqual("r2", results[0].realm)
 
@@ -149,7 +149,7 @@ class AuthenticationLogTestCase(MyTestCase):
         log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1")
         log_authentication_event(event_type=AuthEventType.MFA_FAIL, resolver="res1", uid="u1", realm="r1")
 
-        results = get_authentication_logs(event_type=AuthEventType.MFA_FAIL)
+        results = get_authentication_logs(event_types=AuthEventType.MFA_FAIL)
         self.assertEqual(1, len(results))
         self.assertEqual(AuthEventType.MFA_FAIL, results[0].event_type)
 
@@ -158,7 +158,7 @@ class AuthenticationLogTestCase(MyTestCase):
         log_authentication_event(event_type=AuthEventType.MFA_FAIL, resolver="res1", uid="u1", realm="r1")
         log_authentication_event(event_type=AuthEventType.PIN_FAIL, resolver="res1", uid="u1", realm="r1")
 
-        results = get_authentication_logs(event_type=[AuthEventType.MFA_FAIL, AuthEventType.PIN_FAIL])
+        results = get_authentication_logs(event_types=[AuthEventType.MFA_FAIL, AuthEventType.PIN_FAIL])
         self.assertEqual(2, len(results))
         self.assertSetEqual({AuthEventType.MFA_FAIL, AuthEventType.PIN_FAIL},
                             {entry.event_type for entry in results})
@@ -171,7 +171,7 @@ class AuthenticationLogTestCase(MyTestCase):
         log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1",
                                  serial="HOTP001")
 
-        results = get_authentication_logs(serial="TOTP*")
+        results = get_authentication_logs(serials="TOTP*")
         self.assertSetEqual({"TOTP001", "TOTP002"}, {entry.serial for entry in results})
 
     def test_get_authentication_logs_wildcard_escapes_like_specials(self):
@@ -184,16 +184,16 @@ class AuthenticationLogTestCase(MyTestCase):
                                  serial="50%OFF")
 
         # 'A_*' must match only the literal "A_..." entry, not "AXB" (which an unescaped '_' wildcard would match)
-        self.assertSetEqual({"A_B"}, {entry.serial for entry in get_authentication_logs(serial="A_*")})
+        self.assertSetEqual({"A_B"}, {entry.serial for entry in get_authentication_logs(serials="A_*")})
         # '%' is literal too
-        self.assertSetEqual({"50%OFF"}, {entry.serial for entry in get_authentication_logs(serial="50%*")})
+        self.assertSetEqual({"50%OFF"}, {entry.serial for entry in get_authentication_logs(serials="50%*")})
 
     def test_get_authentication_logs_event_type_wildcard_underscore_literal(self):
         log_authentication_event(event_type=AuthEventType.MFA_FAIL, resolver="res1", uid="u1", realm="r1")
         log_authentication_event(event_type=AuthEventType.PIN_FAIL, resolver="res1", uid="u1", realm="r1")
 
         # the '_' in the pattern is literal, so 'MFA_*' matches MFA_FAIL but not PIN_FAIL
-        results = get_authentication_logs(event_type="MFA_*")
+        results = get_authentication_logs(event_types="MFA_*")
         self.assertListEqual([AuthEventType.MFA_FAIL], [entry.event_type for entry in results])
 
     def test_get_authentication_logs_filter_mixed_exact_and_wildcard(self):
@@ -205,7 +205,7 @@ class AuthenticationLogTestCase(MyTestCase):
                                  serial="YUBI999")
 
         # one exact value (batched into IN) plus one wildcard pattern (LIKE), OR'd together
-        results = get_authentication_logs(serial=["HOTP001", "TOTP*"])
+        results = get_authentication_logs(serials=["HOTP001", "TOTP*"])
         self.assertSetEqual({"TOTP001", "HOTP001"}, {entry.serial for entry in results})
 
     def test_get_authentication_logs_filter_by_user_role(self):
@@ -216,11 +216,11 @@ class AuthenticationLogTestCase(MyTestCase):
         log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u3", realm="r1",
                                  username="eadmin", user_role=AuthLogUserRole.ADMIN_EXTERNAL)
 
-        self.assertEqual(1, get_authentication_logs_paginate(user_role=AuthLogUserRole.USER).count)
-        self.assertEqual(1, get_authentication_logs_paginate(user_role=AuthLogUserRole.ADMIN_INTERNAL).count)
+        self.assertEqual(1, get_authentication_logs_paginate(user_roles=AuthLogUserRole.USER).count)
+        self.assertEqual(1, get_authentication_logs_paginate(user_roles=AuthLogUserRole.ADMIN_INTERNAL).count)
         # The shared 'admin-' prefix lets a single wildcard match either admin kind.
         self.assertEqual({AuthLogUserRole.ADMIN_INTERNAL, AuthLogUserRole.ADMIN_EXTERNAL},
-                         {entry.user_role for entry in get_authentication_logs_paginate(user_role="admin*").auth_logs})
+                         {entry.user_role for entry in get_authentication_logs_paginate(user_roles="admin*").auth_logs})
 
     def test_get_authentication_logs_case_insensitive_flag_enforces_insensitive_match(self):
         log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1",
@@ -229,19 +229,19 @@ class AuthenticationLogTestCase(MyTestCase):
         # Every string column uses a case-sensitive collation on every backend, so matching is case-sensitive unless
         # case_insensitive is set; this holds for a non-boundary column (serial) too, confirming the behaviour is
         # uniform across columns.
-        self.assertEqual(0, get_authentication_logs_paginate(username="alice").count)
-        self.assertEqual(1, get_authentication_logs_paginate(username="alice", case_insensitive=True).count)
-        self.assertEqual(1, get_authentication_logs_paginate(username="Alice").count)
-        self.assertEqual(0, get_authentication_logs_paginate(serial="tok1").count)
-        self.assertEqual(1, get_authentication_logs_paginate(serial="tok1", case_insensitive=True).count)
+        self.assertEqual(0, get_authentication_logs_paginate(usernames="alice").count)
+        self.assertEqual(1, get_authentication_logs_paginate(usernames="alice", case_insensitive=True).count)
+        self.assertEqual(1, get_authentication_logs_paginate(usernames="Alice").count)
+        self.assertEqual(0, get_authentication_logs_paginate(serials="tok1").count)
+        self.assertEqual(1, get_authentication_logs_paginate(serials="tok1", case_insensitive=True).count)
 
     def test_get_authentication_logs_wildcard_is_always_case_insensitive(self):
         log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1",
                                  serial="TOTP001")
 
         # A wildcard match ignores case regardless of the case_insensitive flag.
-        self.assertEqual(1, get_authentication_logs_paginate(serial="totp*").count)
-        self.assertEqual(1, get_authentication_logs_paginate(serial="totp*", case_insensitive=True).count)
+        self.assertEqual(1, get_authentication_logs_paginate(serials="totp*").count)
+        self.assertEqual(1, get_authentication_logs_paginate(serials="totp*", case_insensitive=True).count)
 
     def test_get_authentication_logs_filter_by_serial(self):
         log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1",
@@ -249,7 +249,7 @@ class AuthenticationLogTestCase(MyTestCase):
         log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1",
                                  serial="TOK002")
 
-        results = get_authentication_logs(serial="TOK001")
+        results = get_authentication_logs(serials="TOK001")
         self.assertEqual(1, len(results))
         self.assertEqual("TOK001", results[0].serial)
 
@@ -259,7 +259,7 @@ class AuthenticationLogTestCase(MyTestCase):
         log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1",
                                  source_ip="10.0.0.2")
 
-        results = get_authentication_logs(source_ip="10.0.0.1")
+        results = get_authentication_logs(source_ips="10.0.0.1")
         self.assertEqual(1, len(results))
         self.assertEqual("10.0.0.1", results[0].source_ip)
 
@@ -269,7 +269,7 @@ class AuthenticationLogTestCase(MyTestCase):
         log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1",
                                  client_label="webui")
 
-        results = get_authentication_logs(client_label="vpn")
+        results = get_authentication_logs(client_labels="vpn")
         self.assertEqual(1, len(results))
         self.assertEqual("vpn", results[0].client_label)
 
@@ -279,7 +279,7 @@ class AuthenticationLogTestCase(MyTestCase):
         log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, transaction_id="txn-b",
                                  resolver="res1", uid="u1", realm="r1")
 
-        results = get_authentication_logs(transaction_id="txn-a")
+        results = get_authentication_logs(transaction_ids="txn-a")
         self.assertEqual(1, len(results))
         self.assertEqual("txn-a", results[0].transaction_id)
 
@@ -292,7 +292,7 @@ class AuthenticationLogTestCase(MyTestCase):
         log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, attempt_id="att-b",
                                  resolver="res1", uid="u1", realm="r1")
 
-        results = get_authentication_logs(attempt_id="att-a")
+        results = get_authentication_logs(attempt_ids="att-a")
         self.assertEqual(2, len(results))
         self.assertSetEqual({"att-a"}, {entry.attempt_id for entry in results})
 
@@ -301,7 +301,7 @@ class AuthenticationLogTestCase(MyTestCase):
         log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u2", realm="r1")
         log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res2", uid="u1", realm="r1")
 
-        results = get_authentication_logs(resolver="res1", uid="u1")
+        results = get_authentication_logs(resolvers="res1", uids="u1")
         self.assertEqual(1, len(results))
         self.assertEqual("res1", results[0].resolver)
         self.assertEqual("u1", results[0].uid)
@@ -309,7 +309,7 @@ class AuthenticationLogTestCase(MyTestCase):
     def test_get_authentication_logs_no_match_returns_empty(self):
         log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1")
 
-        results = get_authentication_logs(resolver="nonexistent")
+        results = get_authentication_logs(resolvers="nonexistent")
         self.assertEqual([], results)
 
     def test_get_authentication_logs_timestamp_filters(self):
@@ -568,11 +568,11 @@ class AuthenticationLogTestCase(MyTestCase):
         self.assertEqual(["TOKEN_DISABLED", "WRONG_OTP"], [row.reason for row in entry.reasons])
 
         event.event_type = AuthEventType.NOT_AUTHORIZED
-        event.reasons = ["AUTHORIZATION_POLICY"]
+        event.reasons = ["AUTHORIZATION_DENIED"]
         update_authentication_events([event])
 
         entry = get_authentication_log_event(event.row_id)
-        self.assertEqual(["AUTHORIZATION_POLICY"], [row.reason for row in entry.reasons])
+        self.assertEqual(["AUTHORIZATION_DENIED"], [row.reason for row in entry.reasons])
 
     def test_deleting_an_entry_takes_its_reasons_with_it(self):
         event = PendingAuthEvent(event_type=AuthEventType.NO_USABLE_TOKEN, reasons=["TOKEN_DISABLED"])
@@ -697,7 +697,7 @@ class AuthenticationLogPaginateTestCase(MyTestCase):
     def test_filters_are_applied(self):
         self._create(2, serial="TOK_A")
         self._create(3, serial="TOK_B")
-        page = get_authentication_logs_paginate(serial="TOK_A")
+        page = get_authentication_logs_paginate(serials="TOK_A")
         self.assertEqual(2, page.count)
         self.assertTrue(all(entry.serial == "TOK_A" for entry in page.auth_logs))
 
@@ -813,7 +813,7 @@ class AuthenticationLogDeleteTestCase(MyTestCase):
     def test_delete_by_filter_returns_count(self):
         log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="realm1")
         log_authentication_event(event_type=AuthEventType.MFA_FAIL, resolver="res1", uid="u2", realm="realm1")
-        deleted = delete_authentication_logs(event_type=AuthEventType.MFA_FAIL)
+        deleted = delete_authentication_logs(event_types=AuthEventType.MFA_FAIL)
         self.assertEqual(1, deleted)
         remaining = get_authentication_logs()
         self.assertEqual(1, len(remaining))
@@ -831,7 +831,7 @@ class AuthenticationLogDeleteTestCase(MyTestCase):
         log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS)  # no realm
         # Deleting all LOGIN_SUCCESS while scoped to realm1 only removes the realm1 row.
         scope = AuthenticationLogVisibilityScope(realms=["realm1"], resolvers=[], usernames=[])
-        deleted = delete_authentication_logs(event_type=AuthEventType.LOGIN_SUCCESS, visibility_scopes=[scope])
+        deleted = delete_authentication_logs(event_types=AuthEventType.LOGIN_SUCCESS, visibility_scopes=[scope])
         self.assertEqual(1, deleted)
         remaining_realms = {entry.realm for entry in get_authentication_logs()}
         self.assertEqual({"realm2", None}, remaining_realms)
@@ -955,7 +955,7 @@ class AuthenticationLogOutcomeJoinTestCase(MyTestCase):
         removed = self._entry_with_outcomes(2, username="doomed")
         kept = self._entry_with_outcomes(username="spared")
 
-        self.assertEqual(1, delete_authentication_logs(username="doomed"))
+        self.assertEqual(1, delete_authentication_logs(usernames="doomed"))
 
         self.assertEqual([], list(get_outcomes(removed)))
         self.assertEqual(1, len(get_outcomes(kept)))

@@ -116,7 +116,7 @@ class PushChallengeTags(MyApiTestCase):
         auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED], transaction_id=transaction_id)
         assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_TRIGGERED],
                                         user=User(self.user, self.realm1), serials={serial},
-                                        transaction_id=transaction_id)
+                                        transaction_id=transaction_id, endpoint='/validate/check')
 
         # We do poll only, so we need to poll
         ts = datetime.datetime.utcnow().isoformat()

@@ -433,7 +433,7 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
         value = res.json["result"]["value"]
         self.assertListEqual([str(reason) for reason in AuthEventReason], value)
         self.assertIn("TOKEN_DISABLED", value)
-        self.assertIn("AUTHORIZATION_POLICY", value)
+        self.assertIn("AUTHORIZATION_DENIED", value)
 
     def test_endpoints_lists_the_authenticating_paths(self):
         # Served like the reason vocabulary, so the endpoint filter can offer a selection. The list is the configured

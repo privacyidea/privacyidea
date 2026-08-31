@@ -138,8 +138,10 @@ The state of a token
      application-specific password whose service does not match.
 
 A policy refusing an otherwise valid authentication
-   ``AUTHORIZATION_POLICY``
-     an authorization policy denied the request.
+   ``AUTHORIZATION_DENIED``
+     an authorization policy turned the request away outright
+     (``authorized=deny``); the three below are authorization decisions too,
+     each naming the specific limit that was hit.
    ``AUTH_MAX_FAIL``
      too many failed attempts inside the policy's time limit, see
      :ref:`policy_auth_max_fail`.
@@ -149,12 +151,12 @@ A policy refusing an otherwise valid authentication
      the token's last successful authentication is too long ago.
 
 The credentials
-   ``WRONG_USERSTORE_PASSWORD``
-     the user store password was wrong.
-   ``WRONG_TOKEN_PIN``
-     the token PIN was wrong, or one was given where none was expected.
    ``WRONG_OTP``
-     the first factor was right, or not required, but the OTP was not.
+     the first factor was right, or not required, but the OTP was not. A wrong
+     first factor gets no reason of its own: the event type already names the
+     credential that failed (``PASSWORD_FAIL``, ``PIN_FAIL``), while
+     ``MFA_FAIL`` alone would not tell a wrong OTP apart from a token the
+     request never got to check.
 
 Challenge-response
    ``CHALLENGE_WRONG_RESPONSE``
@@ -167,7 +169,10 @@ Challenge-response
    ``CHALLENGE_DECLINED_ON_DEVICE``
      the challenge was rejected on the device.
    ``TOKEN_NOT_FIT_FOR_CHALLENGE``
-     the response matched, but the token may no longer complete a challenge.
+     the response matched, but the token may no longer complete a challenge -
+     its state changed between the trigger and the answer, so one of the token
+     states above now holds (it was disabled or revoked, its validity period
+     ended, or its failcounter filled up in the meantime).
 
 A successful authentication needs no reason, and neither does one still in
 flight. An entry is also without one where nothing determined a cause, so no
@@ -221,8 +226,9 @@ request path:
   a push challenge answered on the smartphone, which reaches the server out of
   band.
 
-The column is empty for an event recorded outside a request, for example from
-the command line. The same value is what an *Endpoint* condition of a lockout
+Every authentication reaches the server as a request, so an entry written by an
+authentication always names its endpoint; the column is empty only for an entry
+staged outside a view. The same value is what an *Endpoint* condition of a lockout
 policy is matched against, see :ref:`lockout_policies`, so a policy can be
 limited to the endpoints it should watch: counting the failed authentications
 of an application without counting WebUI logins, for instance.

@@ -13,6 +13,7 @@ from privacyidea.lib.challengeresponsedecorators import (generic_challenge_respo
 from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType, AUTH_EVENT_TYPE_KEY,
                                                                            AuthEventReason, AUTH_EVENT_REASON_KEY,
                                                                            AUTH_EVENT_REASON_DETAIL_KEY,
+                                                                           build_reason_detail,
                                                                            CHALLENGE_LAPSED_KEY,
                                                                            NO_FIRST_FACTOR_KEY, reduce_request_events,
                                                                            order_request_reasons, outcome_of,
@@ -506,17 +507,17 @@ def check_token_list(token_object_list: list[TokenClass], passw: str, user: User
                     invalid_token_list.append(token_object)
                     _note_event(request_events, event_serials,
                                 _token_event(token_object, AuthEventType.PIN_FAIL), token_object)
-                    # auth_otppin records WRONG_USERSTORE_PASSWORD for otppin=userstore; otherwise it is the PIN.
-                    _record_reason(token_reasons, token_object, AuthEventReason.WRONG_TOKEN_PIN)
+                    # No reason of its own: PIN_FAIL / PASSWORD_FAIL already names the credential that did not match.
+                    # Only what a check recorded on the token itself - a state that made it unusable - is kept.
+                    _record_reason(token_reasons, token_object)
             else:
                 invalid_token_list.append(token_object)
-                # Both the event and the reason come from the token when it classified itself: is_challenge_request
-                # already ran check_pin, so with otppin=userstore auth_otppin has recorded a wrong user store
-                # password - PASSWORD_FAIL / WRONG_USERSTORE_PASSWORD - and the PIN is only the fallback. Same as the
-                # sibling branch above; hard-coding either here made the row blame a token PIN nobody checked.
+                # The event comes from the token when it classified itself: is_challenge_request already ran
+                # check_pin, so with otppin=userstore auth_otppin has recorded PASSWORD_FAIL, and PIN_FAIL is only the
+                # fallback. Like the sibling branch above, the wrong credential gets no reason of its own.
                 _note_event(request_events, event_serials,
                             _token_event(token_object, AuthEventType.PIN_FAIL), token_object)
-                _record_reason(token_reasons, token_object, AuthEventReason.WRONG_TOKEN_PIN)
+                _record_reason(token_reasons, token_object)
                 log.info(f"Skipping authentication try for token {token_object.get_serial()}"
                          f" because policy force_challenge_response is set.")
 
@@ -739,17 +740,23 @@ def check_token_list(token_object_list: list[TokenClass], passw: str, user: User
     # Only a failed request gets any: a success needs no reason, and the finding of a token that lost to a succeeding
     # one would be noise on that row.
     # The reasons are read from the tokens that produced the winning event, so they explain that event (see
-    # _note_event), and only where no token produced it - a NO_USABLE_TOKEN from the fallback above, where every token
-    # was turned away before it could contribute - does the whole set decide.
-    deciding_serials = event_serials.get(str(reduced_event), set()) & token_reasons.keys()
-    deciding_reasons = ([token_reasons[serial] for serial in deciding_serials] if deciding_serials
+    # _note_event); only where no token produced it - a NO_USABLE_TOKEN from the fallback above, where every token was
+    # turned away before it could contribute - does the whole set decide. A token that produced the event without
+    # recording a reason (a wrong PIN, which the event type already names) therefore leaves the row without one,
+    # rather than borrowing the finding of a token this request never failed on.
+    event_producers = event_serials.get(str(reduced_event), set())
+    deciding_serials = event_producers & token_reasons.keys()
+    deciding_reasons = ([token_reasons[serial] for serial in deciding_serials] if event_producers
                         else list(token_reasons.values()))
     # Passed as recorded: order_request_reasons coerces and drops what it cannot, while converting here would raise
     # past that guard, from inside the generator, and fail the authentication over a mislabelled reason.
     ordered_reasons = order_request_reasons(deciding_reasons)
-    if ordered_reasons and reduced_event and outcome_of(reduced_event) == AuthEventOutcome.FAILURE:
-        reply_dict[AUTH_EVENT_REASON_KEY] = ordered_reasons
-        reply_dict[AUTH_EVENT_REASON_DETAIL_KEY] = {"reasons": dict(token_reasons)}
+    if token_reasons and reduced_event and outcome_of(reduced_event) == AuthEventOutcome.FAILURE:
+        # The per-serial map is recorded whenever a token was found to be something, even where none of those
+        # findings explains the winning event: "which token was in which state" is what the detail is for.
+        if ordered_reasons:
+            reply_dict[AUTH_EVENT_REASON_KEY] = ordered_reasons
+        reply_dict[AUTH_EVENT_REASON_DETAIL_KEY] = build_reason_detail(reasons=token_reasons)
 
     return res, reply_dict
 
