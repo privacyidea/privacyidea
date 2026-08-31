@@ -51,6 +51,36 @@ if TYPE_CHECKING:
 
 log = logging.getLogger(__name__)
 
+# --- What this module is ----------------------------------------------------------------------------------------------
+# The conditional-access engine: it decides whether a request may proceed, then reacts to how that request turned
+# out. Two entry points, one per phase of a request:
+#
+#   evaluate_access_decision()  - pre-auth, before any credential check. Counts the subject's prior events and
+#                                 answers DENY / CONTINUE. A DENY refuses this one request and persists
+#                                 nothing, so it lifts by itself as the failures age out of the window.
+#   evaluate_conditional_access_policies() - post-response, once this request's authentication_log row exists so the
+#                                 count includes it. Runs the actions of the single triggered stage: lock, block, email.
+#
+# Callers gate in a fixed order - locked user, then blocked source IP, then the DENY decision (see
+# api/lib/conditional_access.py). A subject is exempted from a policy by an applicability condition on that policy
+# (USER_REALM NOT_IN [...]), which excludes it from evaluation entirely.
+#
+# What a policy counts: its tracked event types, summed, over its window, for one subject. A `user` policy keys on
+# the resolved (resolver, uid, realm); a `source_ip` policy keys on the IP and applies even when nobody resolves,
+# which is what catches spraying. CountMode decides what "one" means - a row, a whole challenge-response attempt,
+# or a distinct targeted account. Only the lock path forgives failures older than the last successful login; the
+# pre-auth decision and every source_ip mode deliberately do not.
+#
+# What trips: stages, each with a failure threshold. Only the highest matching stage of a policy fires, and each of
+# its actions decides for itself - once at the exact threshold by default, or on every request at or above it.
+#
+# Policies run by ascending priority and the first one to decide wins. A `dry_run` policy still produces outcomes
+# but changes nothing, which is how an admin measures a policy before enforcing it.
+#
+# This module writes no history: it returns ConditionalAccessOutcome objects because it never sees the id of the
+# authentication-log row they belong to. Its own state writes go through guarded_write, one row per block.
+# ----------------------------------------------------------------------------------------------------------------------
+
 
 class ConditionalAccessAction(str, Enum):
     """
@@ -60,10 +90,15 @@ class ConditionalAccessAction(str, Enum):
     :attr:`LOCK_USER`, :attr:`PERMANENT_LOCK_USER`, :attr:`EMAIL_ADMIN`,
     :attr:`EMAIL_USER`, :attr:`BLOCK_IP` and :attr:`PERMANENT_BLOCK_IP` are
     post-response side effects executed by :func:`evaluate_conditional_access_policies`.
-    :attr:`ALLOW` and :attr:`DENY` decide the *current* request and are therefore
-    handled by the pre-auth decision step (:func:`evaluate_access_decision`)
-    instead. The action table stores the string value, so the enum can grow
-    without a schema change.
+    :attr:`DENY` decides the *current* request and is therefore handled by the
+    pre-auth decision step (:func:`evaluate_access_decision`) instead. The action
+    table stores the string value, so the enum can grow without a schema change.
+
+    An exemption is expressed as an applicability condition on the policy being
+    exempted from (``USER_REALM NOT_IN [...]``), not as an action: conditions are
+    the only scoping mechanism, and a policy whose conditions do not match is
+    skipped in both phases, so the exemption covers the lock, block and email
+    actions as well as the :attr:`DENY`.
 
     The ``PERMANENT_*`` variants ignore ``action_value`` and never expire (only an
     admin reset clears them); the timed :attr:`LOCK_USER` / :attr:`BLOCK_IP` read
@@ -80,7 +115,6 @@ class ConditionalAccessAction(str, Enum):
     EMAIL_USER = "EMAIL_USER"
     BLOCK_IP = "BLOCK_IP"
     PERMANENT_BLOCK_IP = "PERMANENT_BLOCK_IP"
-    ALLOW = "ALLOW"
     DENY = "DENY"
 
     def __str__(self) -> str:
@@ -93,15 +127,16 @@ class AccessDecision(str, Enum):
     (:func:`evaluate_access_decision`) for a single request.
 
     :attr:`DENY` rejects the current request outright (no persistent state is
-    written); :attr:`ALLOW` permits it and short-circuits any lower-priority
-    DENY policy, but does **not** bypass the credential check; :attr:`CONTINUE`
-    is the default ("no decision policy matched") and lets the normal flow
-    proceed. These map to the :attr:`ConditionalAccessAction.ALLOW` / :attr:`ConditionalAccessAction.DENY`
-    stage actions, which - unlike the lock/email/block actions - decide the
-    current request and so are handled here, before authentication, rather than
-    in the post-response engine.
+    written); :attr:`CONTINUE` is the default ("no policy denied this request")
+    and lets the normal flow proceed. It maps to the
+    :attr:`ConditionalAccessAction.DENY` stage action, which - unlike the
+    lock/email/block actions - decides the current request and so is handled
+    here, before authentication, rather than in the post-response engine.
+
+    Two states rather than a bool, because "no policy had an opinion" and "a
+    policy said yes" are worth telling apart in the logs, and because the enum can
+    grow if another standing verdict is ever added.
     """
-    ALLOW = "ALLOW"
     DENY = "DENY"
     CONTINUE = "CONTINUE"
 
@@ -173,8 +208,8 @@ class AccessDecisionResult:
     """
     The verdict of the pre-auth decision step plus the outcomes it produced.
 
-    A ``DENY`` yields an outcome (enforced or dry-run); an ``ALLOW`` yields none, because the default-allow idiom - an
-    ``ALLOW`` at threshold 0, which matches every request - would otherwise write one row per authentication.
+    A ``DENY`` yields an outcome (enforced or dry-run); a ``CONTINUE`` yields none, since a policy with no opinion has
+    nothing to record.
 
     One type for a single policy's contribution (:func:`_policy_access_decision`) and for the whole evaluation
     (:func:`evaluate_access_decision`), the way :class:`ConditionalAccessEvaluation` serves one policy and all of
@@ -385,15 +420,13 @@ def _count_matching_attempts(rows: Sequence[AuthenticationLog], tracked_types: s
     latest: dict[str, AuthenticationLog] = {}
     success: dict[str, AuthenticationLog] = {}
     last_success_id = -1
-    # First pass: aggregate every row into its attempt — the attempt's latest (highest-id) row, its latest success row
-    # if it has one, and the newest LOGIN_SUCCESS row id (the reset point for since_last_success).
+    # First pass: for each row, track its attempt's latest row, its latest success row, and the newest LOGIN_SUCCESS
+    # id (the since_last_success reset point).
     for row in rows:
         if row.event_type in CA_ENFORCEMENT_EVENT_TYPES:
-            # A row conditional access wrote for its own rejection is not an outcome *of* the attempt and must not
-            # classify one: the representative is the latest row by id, so a rejection correlated into an existing
-            # attempt (a client retrying an answered transaction while locked) would displace a tracked failure with an
-            # untracked type and *remove* an attempt that had already been counted - which would stop an escalation
-            # from reaching its next stage once the lock expired.
+            # A row conditional access wrote for its own rejection must never classify the attempt: as the latest row
+            # it would replace a real tracked failure with an untracked type and drop an already-counted attempt,
+            # stalling an escalation once the lock expires.
             continue
         if row.event_type == AuthEventType.LOGIN_SUCCESS:
             last_success_id = max(last_success_id, row.id)
@@ -405,9 +438,8 @@ def _count_matching_attempts(rows: Sequence[AuthenticationLog], tracked_types: s
             latest[row.attempt_id] = row
     cutoff_id = last_success_id if since_last_success else -1
     matches = 0
-    # Second pass: over the distinct attempts, resolve each representative row and count the ones whose event matches —
-    # when flooring, only those whose latest row is newer than the last successful login, and only those whose
-    # representative the row filter admits.
+    # Second pass: for each attempt, count it if its representative's event type matches, it is newer than the last
+    # success when flooring, and the row filter admits it.
     for attempt_id, row in latest.items():
         representative = success.get(attempt_id) or row
         if representative.event_type not in tracked_types or row.id <= cutoff_id:
@@ -668,7 +700,6 @@ def get_user_lock(user: "User", now: datetime | None = None, *,
         return RestrictionStatus(permanent=True, expires_at=None, seconds_remaining=None)
     now = _naive_utc(now) if now is not None else utc_now()
     if state.lock_expires_at <= now:
-        # If explicitly requested, drop expired rows
         if clear_expired:
             _delete_user_lock_state(state)
         return None
@@ -691,11 +722,9 @@ def is_user_locked(user: "User", now: datetime | None = None, *, clear_expired: 
     return get_user_lock(user, now=now, clear_expired=clear_expired) is not None
 
 
-# Built-in never-block networks: blocking loopback would lock out a same-host
-# reverse proxy — and when OVERRIDECLIENT is unset every client is seen as that
-# proxy — turning one BLOCK_IP action into a self-inflicted outage. Admins extend
-# this via the PI_CONDITIONAL_ACCESS_NEVER_BLOCK server setting (proxy /
-# load-balancer / NAT / management CIDRs).
+# Built-in never-block networks: with OVERRIDECLIENT unset, every client appears as the same-host reverse proxy, so
+# blocking loopback would turn one BLOCK_IP action into a self-inflicted outage. PI_CONDITIONAL_ACCESS_NEVER_BLOCK
+# extends this list with admin-configured proxy, load-balancer, NAT, or management CIDRs.
 _DEFAULT_NEVER_BLOCK_NETWORKS = ("127.0.0.0/8", "::1/128")
 
 #: App-config key holding the never-block allowlist, set in pi.cfg or through the
@@ -794,11 +823,10 @@ def get_ip_block(source_ip: str | None, now: datetime | None = None, *,
     state = get_ca_session().get(BlockList, source_ip)
     if not state:
         return None
-    # A block row exists; the never-block allowlist outranks it, so adding an IP to
-    # the allowlist immediately stops enforcing any (e.g. stale or mistaken) block on
-    # that IP. With clear_expired the row itself is dropped here — the allowlist can
-    # never be outvoted, so the record is dead weight and the auth pre-check is the
-    # one caller that reliably sees the IP again.
+    # A block row exists, but the never-block allowlist is honored here too, so adding an IP to it immediately stops
+    # enforcing any stale or mistaken block on that IP. With clear_expired the row itself is dropped here — the
+    # allowlist can never be outvoted, so the record is dead weight and the auth pre-check is the one caller that
+    # reliably sees the IP again.
     if is_ip_never_block(source_ip):
         if clear_expired:
             log.info(f"Removing the block for IP {source_ip!r}: it is on the never-block allowlist.")
@@ -836,34 +864,34 @@ def is_ip_blocked(source_ip: str | None, now: datetime | None = None, *, clear_e
 def evaluate_access_decision(context: CAContext, now: datetime | None = None) -> "AccessDecisionResult":
     """
     Pre-auth conditional-access decision for the current request: should it be
-    denied, explicitly allowed, or left to the normal flow?
+    denied, or left to the normal flow?
 
-    This runs **before** the credential check (and, per the chosen precedence,
-    *after* the persistent :func:`is_user_locked` / :func:`is_ip_blocked`
-    pre-checks, so an :attr:`AccessDecision.ALLOW` can never override a lock or
-    block). It handles only the :attr:`ConditionalAccessAction.ALLOW` /
-    :attr:`ConditionalAccessAction.DENY` actions; the lock/email/block actions are
+    This runs **before** the credential check, and after the persistent
+    :func:`is_user_locked` / :func:`is_ip_blocked` pre-checks. It handles only the
+    :attr:`ConditionalAccessAction.DENY` action; the lock/email/block actions are
     post-response side effects handled by :func:`evaluate_conditional_access_policies`.
 
     Because there is no event for the current request yet, the decision is keyed
     on the user's **prior** event history: for each enabled policy the events of
     its ``counter_types_to_track`` are counted (combined across all tracked
-    types) over its window, and the highest-priority stage with a matching
-    ALLOW/DENY action supplies the decision. A
-    ``DENY`` action therefore rejects this single request without persisting any
-    state — a stateless, self-healing reject that lifts on its own as the
-    failures age out of the window (contrast the durable :attr:`ConditionalAccessAction.LOCK_USER`).
-    Because ALLOW/DENY actions default to re-triggering (``count >= threshold``), a
-    stage with ``failure_threshold`` 0 always matches, so an ``ALLOW`` action at
-    threshold 0 acts as a default-allow / allowlist exception.
+    types) over its window, and the matching stage with the highest threshold
+    supplies the decision. A ``DENY`` action therefore rejects this single request
+    without persisting any state — a stateless, self-healing reject that lifts on
+    its own as the failures age out of the window (contrast the durable
+    :attr:`ConditionalAccessAction.LOCK_USER`). Because ``DENY`` defaults to re-triggering
+    (``count >= threshold``), a stage with ``failure_threshold`` 0 always matches,
+    which is the lockdown idiom - scope it with conditions.
 
     Policies are evaluated by ascending ``priority`` (a lower number means higher
-    precedence, matching privacyIDEA's policy engine) and the first one that
-    yields a decision wins, so an ALLOW with a lower priority number overrides a
-    DENY with a higher number and vice versa. ``dry_run`` policies are logged but
-    never enforced.
+    precedence, matching privacyIDEA's policy engine) and the first one that denies
+    wins, which is what decides *which* policy is named as having refused the
+    request. ``dry_run`` policies are logged but never enforced.
 
-    Both targets decide here: a ``user`` policy is keyed on the resolved
+    A subject is exempted by an applicability condition on this policy
+    (``USER_REALM NOT_IN [...]``, ``USER_ROLE NOT_IN [...]``): a policy whose
+    conditions do not match is never evaluated for that request.
+
+    Both targets can deny here: a ``user`` policy is keyed on the resolved
     ``(resolver, uid, realm)`` user (an unresolved user - unknown login, local
     admin - is never decided by a user policy), while a ``source_ip`` policy is
     keyed on the context's source IP and therefore applies even when the user is
@@ -890,8 +918,8 @@ def evaluate_access_decision(context: CAContext, now: datetime | None = None) ->
         contribution = _policy_access_decision(policy, context, now)
         outcomes.extend(contribution.outcomes)
         if contribution.decision != AccessDecision.CONTINUE:
-            # The first policy that decides wins, so no lower-priority policy is even consulted - and the outcomes
-            # collected so far are exactly those of the policies that had something to say.
+            # The first policy that decides wins: no lower-priority policy is consulted, and the collected outcomes
+            # are exactly those of the policies that had something to say.
             return AccessDecisionResult(contribution.decision, outcomes)
     return AccessDecisionResult(outcomes=outcomes)
 
@@ -899,62 +927,49 @@ def evaluate_access_decision(context: CAContext, now: datetime | None = None) ->
 def _policy_access_decision(policy: ConditionalAccessPolicy, context: CAContext,
                             now: datetime) -> "AccessDecisionResult":
     """
-    What a single policy contributes to the pre-auth decision: its ALLOW/DENY verdict, and the outcome to record for it.
+    What a single policy contributes to the pre-auth decision: whether it denies the request, and the outcome to
+    record for it.
 
-    The decision is :attr:`AccessDecision.CONTINUE` when this policy does not decide the request: wrong or absent
-    subject, no ALLOW/DENY action's threshold condition is met, or the policy is in dry run - a dry-run policy is never
+    The decision is :attr:`AccessDecision.CONTINUE` when this policy does not deny the request: wrong or absent
+    subject, no ``DENY`` action's threshold condition is met, or the policy is in dry run - a dry-run policy is never
     enforced, but it still yields its outcome, which is how an admin measures what enforcing it would do.
 
-    Each ALLOW/DENY action decides for itself via :func:`_action_threshold_met`:
-    such actions default to re-triggering (``count >= threshold``, so the decision
-    stands while the failures are high), which is what makes ``ALLOW`` at threshold
-    0 a default-allow and ``DENY`` a self-healing reject. An admin can switch a
-    decision action to fire-once, in which case it only decides the request at the
-    exact threshold count. The highest-priority stage with a met ALLOW/DENY action
-    supplies the decision.
-
-    Only a ``DENY`` produces an outcome. An ``ALLOW`` at threshold 0 is the documented default-allow idiom and matches
-    every request of every user it covers, so recording it would add a row to every authentication.
+    Each ``DENY`` action decides for itself via :func:`_action_threshold_met`: it
+    defaults to re-triggering (``count >= threshold``, so the refusal stands while
+    the failures are high), which is what makes it a self-healing reject. An admin
+    can switch it to fire-once, in which case it only refuses the request at the
+    exact threshold count. The stage with the highest threshold whose ``DENY``
+    action is met supplies the decision.
     """
-    # Applicability first: a policy whose conditions exclude this request
-    # contributes no decision, and costs no counting query.
+    # Applicability is checked first: a policy whose conditions exclude this request contributes no decision and
+    # costs no counting query.
     if not policy_matches_context(policy, context):
         return AccessDecisionResult()
-    # The counts below scope themselves to the policy's conditions (see _count_scoping), exactly as the
-    # post-response path does. Both paths must scope identically: they count the same subject over the
-    # same window, so a policy that denies on one count and acts on another would be reasoning about two
-    # different histories.
+    # Counts here are scoped to the policy's conditions via _count_scoping, exactly like the post-response path.
+    # Both paths must count the same subject over the same window, or a policy could deny based on one history and
+    # act on another.
     if policy.target == ConditionalAccessTarget.SOURCE_IP:
-        # IP-scoped: decide on the source IP regardless of user resolution. A
-        # never-block IP is never denied by an IP policy (mirrors the BLOCK_IP
-        # allowlist), so it contributes no decision.
+        # IP-scoped: decides on the source IP regardless of user resolution; a never-block IP is never denied here
+        # either, mirroring the BLOCK_IP allowlist.
         if not context.source_ip or is_ip_never_block(context.source_ip):
             return AccessDecisionResult()
         count = _policy_count_ip(policy, context.source_ip, now)
         subject_label = f"source IP {context.source_ip}"
     else:
-        # User-scoped: keyed on the resolved user, so an unresolved user is never
-        # decided by a user policy.
+        # User-scoped: keyed on the resolved user, so an unresolved user is never decided by a user policy.
         if not _resolved(context.user):
             return AccessDecisionResult()
         count = _policy_count(policy, context.user, now)
         subject_label = repr(context.user)
-    decision, deciding_stage = None, None
-    for stage in policy.stages:
-        decision = _stage_access_decision(stage, count)
-        if decision is not None:
-            deciding_stage = stage
-            break
-    if decision is None:
+    deciding_stage = next((stage for stage in policy.stages if _stage_denies(stage, count)), None)
+    if deciding_stage is None:
         return AccessDecisionResult()
+    decision = AccessDecision.DENY
     types = _types_label(policy.counter_types_to_track)
-    # Only a DENY is recorded; see the docstring for why an ALLOW is not.
-    outcomes = ([outcome_for_stage(policy, deciding_stage, ConditionalAccessAction.DENY, count, dry_run=policy.dry_run)]
-                if decision == AccessDecision.DENY else [])
+    outcomes = [outcome_for_stage(policy, deciding_stage, ConditionalAccessAction.DENY, count, dry_run=policy.dry_run)]
     if policy.dry_run:
-        # A dry-run policy never decides the request. The outcome still travels back: the pre-auth decision runs
-        # before this request's authentication-log row exists, so the caller buffers it and it is recorded once that
-        # row is written (see ConditionalAccessContext.stage).
+        # A dry-run policy never decides the request, but the pre-auth decision runs before the log row exists, so
+        # the caller buffers this outcome and records it once that row is written (see ConditionalAccessContext.stage).
         log.info(f"[dry-run] policy {policy.name!r} would return {decision} for {subject_label}: "
                  f"{count} event(s) of {types} in {policy.time_window_seconds}s.")
         return AccessDecisionResult(outcomes=outcomes)
@@ -963,27 +978,22 @@ def _policy_access_decision(policy: ConditionalAccessPolicy, context: CAContext,
     return AccessDecisionResult(decision, outcomes)
 
 
-def _stage_access_decision(stage: ConditionalAccessPolicyStage, count: int) -> "AccessDecision | None":
+def _stage_denies(stage: ConditionalAccessPolicyStage, count: int) -> bool:
     """
-    Extract the pre-auth ALLOW/DENY decision from a stage's actions whose
-    per-action threshold condition is met at *count*, or ``None`` if no such
-    ALLOW/DENY action applies. If both an ALLOW and a DENY apply, DENY wins (fail
-    closed).
+    Whether *stage* refuses the request at *count*: it carries a ``DENY`` action
+    whose per-action threshold condition is met. An unparsable action type is
+    skipped rather than treated as a refusal.
     """
-    has_allow = False
     for action in stage.actions:
         try:
             action_type = ConditionalAccessAction(action.action_type)
         except ValueError:
             continue
-        if action_type not in (ConditionalAccessAction.ALLOW, ConditionalAccessAction.DENY):
+        if action_type != ConditionalAccessAction.DENY:
             continue
-        if not _action_threshold_met(action, stage.failure_threshold, count):
-            continue
-        if action_type == ConditionalAccessAction.DENY:
-            return AccessDecision.DENY
-        has_allow = True
-    return AccessDecision.ALLOW if has_allow else None
+        if _action_threshold_met(action, stage.failure_threshold, count):
+            return True
+    return False
 
 
 def evaluate_conditional_access_policies(context: CAContext, event_type: AuthEventType | None,
@@ -1033,11 +1043,9 @@ def evaluate_conditional_access_policies(context: CAContext, event_type: AuthEve
         return ConditionalAccessEvaluation()
     now = _naive_utc(now) if now is not None else utc_now()
     event_type = str(event_type)
-    # Select only the enabled policies that track the current event type, via an
-    # indexed equality filter on the normalized conditional_access_policy_counter_types
-    # table (policy_id, counter_type) is unique, so a policy matches at
-    # most once. The combined count over *all* of a matched policy's tracked types
-    # is then computed in _evaluate_policy.
+    # Selects only enabled policies tracking the current event type via an indexed equality filter on the normalized
+    # conditional_access_policy_counter_types table; (policy_id, counter_type) is unique, so a policy matches at most
+    # once. _evaluate_policy then computes the combined count over all of a matched policy's tracked types.
     policies = get_ca_session().scalars(
         select(ConditionalAccessPolicy)
         .options(selectinload(ConditionalAccessPolicy.conditions))
@@ -1049,9 +1057,9 @@ def evaluate_conditional_access_policies(context: CAContext, event_type: AuthEve
     notices: list[str] = []
     outcomes: list[ConditionalAccessOutcome] = []
     for policy in policies:
-        # Guarded per policy so one policy's failure does not cost the others theirs: a broken policy would otherwise
-        # disable every policy ordered behind it. The only failure that escapes is the policy query above, which runs
-        # before any action does, so a retry always starts from a clean slate.
+        # Each policy is evaluated inside its own guard, so a broken policy cannot disable every policy ordered
+        # behind it. The only unguarded step is the policy query above, which runs before any action, so a retry
+        # always starts clean.
         try:
             evaluation = _evaluate_policy(policy, context, event_type, now)
         except Exception as ex:
@@ -1059,9 +1067,9 @@ def evaluate_conditional_access_policies(context: CAContext, event_type: AuthEve
             continue
         notices.extend(evaluation.notices)
         outcomes.extend(evaluation.outcomes)
-    # De-duplicate the notices while preserving order: several policies tracking the same user can emit the same one
-    # in a single request. The outcomes are *not* de-duplicated - each is a distinct thing that happened, and two
-    # policies locking the same user are two facts worth keeping apart.
+    # Notices are de-duplicated while preserving order, since several policies tracking the same user can emit the
+    # same one. Outcomes are never de-duplicated: each is a distinct fact, and two policies locking the same user are
+    # two facts worth keeping apart.
     seen: set[str] = set()
     unique: list[str] = []
     for notice in notices:
@@ -1112,23 +1120,16 @@ def _evaluate_policy(policy: ConditionalAccessPolicy, context: CAContext, event_
         and the outcomes describing what was done (both empty if no stage triggered; in dry run there are outcomes
         but no notices, since nothing ran)
     """
-    # Applicability first: a policy whose conditions exclude this request neither
-    # counts nor acts, and costs no counting query.
+    # Applicability is checked first: a policy whose conditions exclude this request neither counts nor acts, and
+    # costs no counting query.
     if not policy_matches_context(policy, context):
         return ConditionalAccessEvaluation()
-    # A condition then *also* narrows what is counted, which the counts below apply for themselves (see
-    # _count_scoping). The two halves cannot disagree: OperatorSpec.matches_missing is what answers a
-    # missing value on both sides - directly for the row predicate, and mirrored by OperatorSpec.sql for
-    # the SQL one - so a request the gate admits is one whose rows the scoping admits.
-    #
-    # What it changes is what a policy counts once it applies. That matters for a source-IP policy,
-    # whose subject is the IP and whose rows therefore span many identities, realms and roles: without
-    # this it would count the whole IP's history however narrowly it was scoped. For a user policy the
-    # filters are redundant rather than wrong - the subject is one (resolver, uid, realm) identity, so
-    # the realm is pinned, and with it the role (an admin realm holds only admins, and an internal
-    # admin has no realm at all, so no identity is ever both).
-    #
-    # A policy whose conditions cannot all be expressed as predicates counts unscoped, as before.
+    # A policy's conditions scope what is counted, not just whether it applies (see _count_scoping); matches_missing
+    # and the SQL filter treat a missing value the same way, so the gate and the count never disagree.
+    # This matters for a source-IP policy, whose rows span many identities and roles and would otherwise count the
+    # whole IP's history; for a user policy the filters add little, since the subject already pins one identity's
+    # realm and role.
+    # A policy whose conditions cannot all be expressed as predicates counts unscoped.
     window = policy.time_window_seconds
     user = context.user
     source_ip = context.source_ip
@@ -1137,37 +1138,31 @@ def _evaluate_policy(policy: ConditionalAccessPolicy, context: CAContext, event_
             # An IP-targeted policy cannot count or act without a source IP.
             log.debug(f"Skipping source-IP policy {policy.name!r}: the request carries no source IP.")
             return ConditionalAccessEvaluation()
-        # Count per the policy's mode: distinct targeted accounts (spraying) or plain per-IP volume. No
-        # since-last-success reset in any mode — a legit login by one account must not clear a signal aggregated
-        # across the whole IP (see _policy_count_ip).
+        # Counts per the policy's mode: distinct targeted accounts (spraying) or plain per-IP volume; no mode resets
+        # on success, since one account's login must not clear a signal aggregated across the whole IP (see
+        # _policy_count_ip).
         count = _policy_count_ip(policy, source_ip, now)
         subject_label = f"source IP {source_ip}"
     else:
         if not _resolved(user):
-            # A user-target policy is keyed on the resolved (resolver, uid, realm)
-            # user, so an unresolved user (unknown login, local admin) is never
-            # locked. Source-IP policies above still run for such requests.
+            # A user-target policy is keyed on the resolved (resolver, uid, realm) user, so an unresolved user
+            # (unknown login, local admin) is never locked; source-IP policies above still run for such requests.
             return ConditionalAccessEvaluation()
-        # The lock counts consecutive failures since the user's last completed login:
-        # a successful authentication clears the slate, so a legitimate user is not
-        # re-locked by stale pre-login failures on their next single typo. (The DENY
-        # decision deliberately does not reset on success — see _policy_access_decision.)
-        # The count is the *combined* total over all of the policy's tracked types,
-        # not just the current request's event_type, so a policy tracking several
-        # failure types trips on their sum.
+        # The lock counts consecutive failures since the user's last completed login, so a legitimate user is not
+        # re-locked by stale pre-login failures (the pre-auth DENY decision deliberately does not reset on success —
+        # see _policy_access_decision).
+        # The count is the combined total across all of the policy's tracked types, not just the current
+        # event_type, so a policy tracking several failure types trips on their sum.
         count = _policy_count(policy, user, now, since_last_success=True)
         subject_label = repr(user)
 
-    # Pick the triggered stage: the highest-priority stage that has at least one
-    # action whose per-action condition is met (see _action_threshold_met). By
-    # default an action fires only at the exact threshold, so each fire-once action
-    # triggers once as the count climbs past it (a threshold-8 email is sent when
-    # the 8th failure lands, not again at 9); a re-triggering action keeps firing
-    # while the count stays at or above the threshold. Stages are ordered
-    # highest-priority first by the relationship, so the most severe stage with a
-    # pending action wins; only that one stage's pending actions run (one stage per
-    # policy per request). (Contrast the pre-auth ALLOW/DENY decision - see
-    # _policy_access_decision.)
+    # Picks the triggered stage: the highest-threshold stage with at least one action whose per-action condition is
+    # met (see _action_threshold_met).
+    # By default an action fires once, exactly at the threshold (a threshold-8 email sends on the 8th failure, not
+    # again at 9); retrigger_above_threshold keeps it firing while the count stays at or above the threshold.
+    # Stages are ordered by descending threshold, so the most severe stage with a pending action wins and only that
+    # stage's actions run (one stage per policy per request); contrast the pre-auth DENY decision in
+    # _policy_access_decision.
     triggered_stage = next((stage for stage in policy.stages
                             if _stage_pending_actions(stage, count)), None)
     if triggered_stage is None:
@@ -1178,15 +1173,15 @@ def _evaluate_policy(policy: ConditionalAccessPolicy, context: CAContext, event_
         log.info(f"[dry-run] policy {policy.name!r} would trigger stage {triggered_stage.id} "
                  f"(threshold {triggered_stage.failure_threshold}) for {subject_label}: "
                  f"{count} event(s) of {_types_label(policy.counter_types_to_track)} in {window}s.")
-        # One outcome per action that would have run, carrying the expiry it would have written - which is the whole
-        # point of dry run: the history shows what enforcing this policy would have done to real traffic. A LOCK_USER
-        # or BLOCK_IP whose duration is misconfigured records no expiry, so dry run surfaces that too.
-        # ALLOW/DENY are left out: they decide the request pre-auth and are recorded there (_policy_access_decision),
-        # so recording them again here would double-count the same decision.
+        # One outcome is recorded per action that would have run, carrying the expiry it would have written, so the
+        # history shows what enforcing this policy would have done (a misconfigured LOCK_USER/BLOCK_IP duration
+        # surfaces as a missing expiry).
+        # DENY is excluded here since it is already recorded pre-auth by _policy_access_decision; recording it
+        # again would double-count the same decision.
         outcomes = [outcome_for_stage(policy, triggered_stage, action.action_type, count, dry_run=True,
                                       expires_at=_action_expiry(action, now))
                     for action in pending_actions
-                    if action.action_type not in (ConditionalAccessAction.ALLOW, ConditionalAccessAction.DENY)]
+                    if action.action_type != ConditionalAccessAction.DENY]
         return ConditionalAccessEvaluation(outcomes=outcomes)
 
     log.info(f"Policy {policy.name!r} triggered stage {triggered_stage.id} "
@@ -1201,7 +1196,7 @@ def _action_expiry(stage_action: ConditionalAccessStageAction, now: datetime) ->
     When the restriction written by *stage_action* ends, or ``None`` when there is nothing to expire.
 
     ``None`` covers three different cases, which the action type tells apart: a ``PERMANENT_*`` action (never expires),
-    an action that creates no restriction at all (``EMAIL_*``, ``ALLOW``/``DENY``), and a timed action whose configured
+    an action that creates no restriction at all (``EMAIL_*``, ``DENY``), and a timed action whose configured
     duration is missing or invalid - which is a misconfiguration the enforced path skips and logs, and which a dry-run
     outcome surfaces as "would have locked, but for how long is not configured".
     """
@@ -1299,8 +1294,8 @@ def _resolve_admin_recipients(recipient_group: str | None) -> list[str]:
     if "@" in group:
         return [addr.strip() for addr in group.split(",") if addr.strip()]
     if group.lower() in ("internal_admins", "admins", "all"):
-        # Imported lazily: keeps the engine's hot path free of lib.auth's heavy
-        # token/container imports and avoids any import-time coupling.
+        # Imported lazily to keep the engine's hot path free of lib.auth's heavy token/container imports and avoid
+        # import-time coupling.
         from privacyidea.lib.auth import get_all_db_admins
         return [admin.email for admin in get_all_db_admins() if admin.email]
     log.warning(f"Unknown EMAIL_ADMIN recipient_group {recipient_group!r}; "
@@ -1401,6 +1396,10 @@ def _execute_stage_actions(policy: ConditionalAccessPolicy, stage: ConditionalAc
     IP, an undeliverable mail, a permanent lock that must not be downgraded - is logged and left out of the history, so
     every stored outcome is a thing that happened rather than a thing that was configured.
 
+    The never-block allowlist is checked per action, in :func:`_upsert_ip_block`, not for the stage as a whole: a
+    ``BLOCK_IP`` against an exempt address is skipped and not recorded, while an ``EMAIL_ADMIN`` on the same stage
+    still runs and is still recorded. The stage tripped; only the block is withheld.
+
     :param policy: the triggering policy, for the outcomes
     :param count: the count that tripped the stage, for the outcomes
     :return: a :class:`ConditionalAccessEvaluation` with the user-facing notices produced by executed ``EMAIL_*``
@@ -1442,10 +1441,8 @@ def _execute_stage_actions(policy: ConditionalAccessPolicy, stage: ConditionalAc
                     notices.append(notice)
                     record(action_type)
             elif action_type in (ConditionalAccessAction.BLOCK_IP, ConditionalAccessAction.PERMANENT_BLOCK_IP):
-                # Failures are counted per user, so this blocks the source IP
-                # of the request that tripped a *per-user* policy. It does not
-                # detect password spraying (failures from one IP across many
-                # users); it simply blocks the offending request's IP.
+                # BLOCK_IP on a per-user policy blocks only the source IP of the request that tripped it; it is not
+                # a password-spraying detector (failures from one IP across many users).
                 if not source_ip:
                     log.warning(f"{action_type} action {action.id} on stage {stage.id}: this request "
                                 f"has no source IP; skipping.")
@@ -1462,11 +1459,10 @@ def _execute_stage_actions(policy: ConditionalAccessPolicy, stage: ConditionalAc
                     block_expires_at = now + timedelta(seconds=duration)
                 if _upsert_ip_block(source_ip, block_expires_at=block_expires_at):
                     record(action_type, expires_at=block_expires_at)
-            elif action_type in (ConditionalAccessAction.ALLOW, ConditionalAccessAction.DENY):
-                # ALLOW/DENY decide the current request pre-auth (see
-                # evaluate_access_decision); they are not post-response side
-                # effects, so there is nothing to do here - and nothing to record: the decision is already an outcome
-                # of its own from _policy_access_decision.
+            elif action_type == ConditionalAccessAction.DENY:
+                # DENY decides the current request pre-auth (see evaluate_access_decision), so there is nothing to
+                # do or record here — the decision is already recorded as its own outcome in
+                # _policy_access_decision.
                 log.debug(f"{action_type} is a pre-auth access decision; skipping in the "
                           f"post-response engine.")
             else:

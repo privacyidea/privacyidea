@@ -557,8 +557,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
 
                 self.assertIn("client_mode", challenge1)
                 self.assertEqual("webauthn", challenge1["client_mode"])
-        # triggerchallenge writes a single CHALLENGE_TRIGGERED row for the shared transaction, carrying one of the
-        # challenged passkey serials
+        # triggerchallenge writes one CHALLENGE_TRIGGERED row for the shared transaction with one of the serials.
         auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED], transaction_id=transaction_id)
         entry = auth_log_entries[AuthEventType.CHALLENGE_TRIGGERED]
         assert_authentication_log_entry(entry, user=self.user, serials={serial1, serial2},
@@ -835,10 +834,8 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self.assertEqual(public_key, response["pubKey"])
             credential_id = token.token.get_otpkey().getKey().decode("utf-8")
             self.assertEqual(credential_id, response["credentialId"])
-        # Correlated by the enrollment transaction_id: the postpolicy logs ENROLLMENT_TRIGGERED when it injects the
-        # passkey enrollment challenge, and the enrollment answer then completes the login on the new passkey ->
-        # LOGIN_SUCCESS. (The initial spass authentication also logged LOGIN_SUCCESS, but with no transaction_id,
-        # because the enroll challenge is created by a postpolicy after that log is written.)
+        # The postpolicy's ENROLLMENT_TRIGGERED and the answering LOGIN_SUCCESS share the enrollment transaction_id.
+        # The earlier spass LOGIN_SUCCESS carries none, because it is logged before that challenge is created.
         auth_log_entries = assert_authentication_log([AuthEventType.ENROLLMENT_TRIGGERED, AuthEventType.LOGIN_SUCCESS],
                                                      transaction_id=transaction_id)
         assert_authentication_log_entry(auth_log_entries[AuthEventType.ENROLLMENT_TRIGGERED], user=self.user,
@@ -1055,8 +1052,8 @@ class PasskeyAPITest(PasskeyAPITestBase):
                                                      transaction_id=passkey_transaction_id)
         assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_TRIGGERED],
                                         transaction_id=passkey_transaction_id)
-        # The successful passkey answer turned into an enrollment challenge, so its row was reclassified to
-        # ENROLLMENT_TRIGGERED and re-pointed at the enrolled token + enrollment transaction.
+        # The successful passkey answer turns into an enrollment challenge, reclassifying its row to
+        # ENROLLMENT_TRIGGERED and re-pointing it at the enrolled token and enrollment transaction.
         auth_log_entries = assert_authentication_log([AuthEventType.ENROLLMENT_TRIGGERED],
                                                      transaction_id=enroll_transaction_id)
         assert_authentication_log_entry(auth_log_entries[AuthEventType.ENROLLMENT_TRIGGERED], user=self.user,
@@ -1070,7 +1067,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
             j = res.json
             self._assert_result_value_true(j)
             self.assertIn("Cancelled enrollment via multichallenge", j.get("detail", {}).get("message"), "")
-        # check auth log
+        # Check the authentication log.
         auth_log_entries = assert_authentication_log([AuthEventType.ENROLLMENT_TRIGGERED, AuthEventType.LOGIN_SUCCESS],
                                                      transaction_id=enroll_transaction_id)
         assert_authentication_log_entry(auth_log_entries[AuthEventType.LOGIN_SUCCESS], user=self.user,
@@ -1677,8 +1674,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
                 self.assertFalse(res.json["result"]["value"], res.json)
                 # Generic reject: no reason leaked in the detail.
                 self.assertFalse(res.json.get("detail"), res.json)
-            # The rejection classifies the request: this row is the only place an admin can see why it failed, since
-            # no token work ran to log an outcome of its own.
+            # This row is the only place an admin sees why it failed, since no token work logs an outcome of its own.
             self.assertListEqual([AuthEventType.USER_LOCKED],
                                  [entry.event_type for entry in get_authentication_logs()])
         finally:

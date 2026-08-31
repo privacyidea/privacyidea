@@ -34,7 +34,6 @@ describe("ConditionalAccessStageItemComponent", () => {
 
   const stage: ConditionalAccessPolicyStage = {
     failure_threshold: 5,
-    priority: 1,
     actions: [{ action_type: "LOCK_USER", action_value: { lock_duration_seconds: 600 } }]
   };
 
@@ -65,10 +64,61 @@ describe("ConditionalAccessStageItemComponent", () => {
     expect(spy).toHaveBeenCalledWith({ failure_threshold: 10 });
   });
 
-  it("should emit updateStage for a threshold of 0 (an allow/deny allowlist stage)", () => {
+  it("should emit updateStage for a threshold of 0 (an always-matching DENY stage)", () => {
     const spy = jest.spyOn(component.updateStage, "emit");
     component.onFailureThresholdInput("0");
     expect(spy).toHaveBeenCalledWith({ failure_threshold: 0 });
+  });
+
+  // A threshold counts failures, so the minimum is 1 unless every action on the stage is a standing
+  // DENY verdict, which is what the backend's _validate_threshold_for_actions allows at 0.
+  it.each([
+    ["only DENY", [{ action_type: "DENY", action_value: null }], true],
+    ["only DENY", [{ action_type: "DENY", action_value: null }], true],
+    ["a counting action", [{ action_type: "LOCK_USER", action_value: 60 }], false],
+    [
+      "a decision plus a counting action",
+      [
+        { action_type: "DENY", action_value: null },
+        { action_type: "LOCK_USER", action_value: 60 }
+      ],
+      false
+    ],
+    ["no actions at all", [], false]
+  ])("should %s a zero threshold with %s", (_label, actions, allowed) => {
+    fixture.componentRef.setInput("stage", { failure_threshold: 5, actions });
+    fixture.detectChanges();
+    expect(component.zeroThresholdAllowed()).toBe(allowed);
+    expect(component.minThreshold()).toBe(allowed ? 0 : 1);
+  });
+
+  it("should flag a stage already sitting at 0 once an action stops allowing it", () => {
+    fixture.componentRef.setInput("stage", {
+      failure_threshold: 0,
+      actions: [{ action_type: "DENY", action_value: null }]
+    });
+    fixture.detectChanges();
+    expect(component.zeroThresholdInvalid()).toBe(false);
+
+    // Adding a lock to the same stage leaves the threshold at 0, which no longer holds.
+    fixture.componentRef.setInput("stage", {
+      failure_threshold: 0,
+      actions: [
+        { action_type: "DENY", action_value: null },
+        { action_type: "LOCK_USER", action_value: 60 }
+      ]
+    });
+    fixture.detectChanges();
+    expect(component.zeroThresholdInvalid()).toBe(true);
+  });
+
+  it("should not flag a threshold of 1 or more whatever the actions are", () => {
+    fixture.componentRef.setInput("stage", {
+      failure_threshold: 5,
+      actions: [{ action_type: "LOCK_USER", action_value: 60 }]
+    });
+    fixture.detectChanges();
+    expect(component.zeroThresholdInvalid()).toBe(false);
   });
 
   it("should not emit for an invalid failure_threshold", () => {

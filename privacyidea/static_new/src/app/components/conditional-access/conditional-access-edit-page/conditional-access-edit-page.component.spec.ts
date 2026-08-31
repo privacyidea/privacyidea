@@ -61,7 +61,7 @@ const mockPolicy: ConditionalAccessPolicy = {
   target: "user",
   count_mode: "PER_REQUEST",
   counter_types_to_track: ["PIN_FAIL"],
-  stages: [{ failure_threshold: 5, priority: 1, actions: [{ action_type: "LOCK_USER", action_value: null }] }],
+  stages: [{ failure_threshold: 5, actions: [{ action_type: "LOCK_USER", action_value: null }] }],
   conditions: []
 };
 
@@ -75,7 +75,7 @@ const EMPTY_TEMPLATE_POLICY: ConditionalAccessPolicySaveParams = {
   target: "user",
   count_mode: "PER_REQUEST",
   counter_types_to_track: ["PASSWORD_FAIL"],
-  stages: [{ failure_threshold: 10, priority: 1, actions: [{ action_type: "LOCK_USER", action_value: null }] }]
+  stages: [{ failure_threshold: 10, actions: [{ action_type: "LOCK_USER", action_value: null }] }]
 };
 
 describe("ConditionalAccessEditPageComponent — edit mode", () => {
@@ -161,33 +161,188 @@ describe("ConditionalAccessEditPageComponent — edit mode", () => {
     expect(component.canSave()).toBe(false);
   });
 
+  // The select carries no form control, so its mat-error only renders once appErrorState says so.
+  it("should flag the tracked event types as an error while none are selected", () => {
+    component.onCounterTypesChange([]);
+    expect(component.showCounterTypesError()).toBe(true);
+    expect(component.saveBlockers()).toContain("Select at least one tracked event type.");
+
+    component.onCounterTypesChange(["PIN_FAIL"]);
+    expect(component.showCounterTypesError()).toBe(false);
+    expect(component.saveBlockers()).not.toContain("Select at least one tracked event type.");
+  });
+
+  it("should list nothing to fix while the policy is valid", () => {
+    expect(component.canSave()).toBe(true);
+    expect(component.saveBlockers()).toEqual([]);
+  });
+
+  // Both halves of showNameError: the message waits for the field to be touched, and clears once the
+  // name is valid again.
+  it("should only show the name error once the field has been touched", () => {
+    component.editPolicy.set({ ...component.editPolicy(), name: "" });
+    expect(component.showNameError()).toBe(false);
+    component.nameTouched.set(true);
+    expect(component.showNameError()).toBe(true);
+    component.editPolicy.set({ ...component.editPolicy(), name: "Valid again" });
+    expect(component.showNameError()).toBe(false);
+  });
+
+  it("should keep the loaded form when the routed id names no known policy", () => {
+    // The list may not hold the id yet (a deep link before /policy has answered), so the editor
+    // leaves the form as it stands rather than blanking it; the effect below reloads it once the
+    // matching policy does arrive.
+    paramMap$.next(convertToParamMap({ id: "4711" }));
+    expect(component.isNewPolicy()).toBe(false);
+    expect(component.editPolicy().name).toBe(mockPolicy.name);
+
+    // A list that still lacks that id changes nothing either.
+    policyServiceMock.policies.set([{ ...mockPolicy, id: 99, name: "Someone else" }]);
+    fixture.detectChanges();
+    expect(component.editPolicy().name).toBe(mockPolicy.name);
+
+    // When it does arrive, the form picks it up.
+    policyServiceMock.policies.set([{ ...mockPolicy, id: 4711, name: "Arrived late" }]);
+    fixture.detectChanges();
+    expect(component.editPolicy().name).toBe("Arrived late");
+  });
+
+  // A stored window is displayed in the coarsest unit that divides it evenly, so 3600s reads as
+  // "1 hours" rather than "3600 seconds".
+  it.each([
+    [3600, "hours", 1],
+    [600, "minutes", 10],
+    [90, "seconds", 90]
+  ])("should show a window of %ss in the coarsest fitting unit", (seconds, unit, value) => {
+    policyServiceMock.templates.set([
+      {
+        key: "window",
+        description: "",
+        policy: { ...EMPTY_TEMPLATE_POLICY, time_window_seconds: seconds }
+      }
+    ]);
+    component.applyTemplate("window");
+    expect(component.timeWindowUnit()).toBe(unit);
+    expect(component.timeWindowValue()).toBe(value);
+  });
+
+  it("should report no priority conflict while the priority is empty", () => {
+    // An empty priority cannot collide with anything, so it is reported as "required", not as a clash.
+    policyServiceMock.policies.set([mockPolicy, { ...mockPolicy, id: 99, name: "Other", priority: 4 }]);
+    component.onPriorityInput("");
+    expect(component.priorityConflict()).toBeUndefined();
+    expect(component.priorityUnique()).toBe(true);
+    expect(component.priorityError()).toBe("required");
+  });
+
+  it("should name a name that is too long", () => {
+    component.editPolicy.set({ ...component.editPolicy(), name: "n".repeat(256) });
+    expect(component.nameTooLong()).toBe(true);
+    expect(component.saveBlockers()).toEqual(["Name must not exceed 255 characters."]);
+  });
+
+  it("should name a time window below one second", () => {
+    component.editPolicy.set({ ...component.editPolicy(), time_window_seconds: 0 });
+    expect(component.saveBlockers()).toEqual(["Time window must be at least 1 second."]);
+  });
+
+  it("should name a priority already held by another policy", () => {
+    policyServiceMock.policies.set([mockPolicy, { ...mockPolicy, id: 99, name: "Other", priority: 4 }]);
+    component.onPriorityInput("4");
+    expect(component.saveBlockers()).toEqual(["Priority must be unique across policies."]);
+  });
+
+  it("should name duplicate stage thresholds", () => {
+    component.onStagesChange([
+      { failure_threshold: 5, actions: [{ action_type: "LOCK_USER", action_value: null }] },
+      { failure_threshold: 5, actions: [{ action_type: "LOCK_USER", action_value: null }] }
+    ]);
+    expect(component.saveBlockers()).toEqual(["Each stage must have a different failure threshold."]);
+  });
+
+  it("should name an action that the target does not allow", () => {
+    policyServiceMock.actionsByTarget.set({
+      user: ["LOCK_USER", "DENY"],
+      source_ip: ["BLOCK_IP", "DENY"]
+    });
+    component.onTargetChange("source_ip");
+    component.onStagesChange([{ failure_threshold: 5, actions: [{ action_type: "LOCK_USER", action_value: null }] }]);
+    expect(component.saveBlockers()).toContain("Some actions are not allowed for the selected target.");
+  });
+
+  it("should name a count mode that the target does not support", () => {
+    policyServiceMock.countModesByTarget.set({
+      user: ["PER_ATTEMPT", "PER_REQUEST"],
+      source_ip: ["DISTINCT_USERS", "PER_ATTEMPT", "PER_REQUEST"]
+    });
+    component.onTargetChange("source_ip");
+    component.onCountModeChange("DISTINCT_USERS");
+    component.onTargetChange("user");
+    expect(component.saveBlockers()).toContain("The selected count mode is not allowed for the selected target.");
+  });
+
+  it("should name every reason saving is blocked", () => {
+    component.editPolicy.set({
+      ...component.editPolicy(),
+      name: "",
+      priority: null,
+      counter_types_to_track: [],
+      stages: [{ failure_threshold: 0, actions: [] }]
+    });
+    expect(component.canSave()).toBe(false);
+    expect(component.saveBlockers()).toEqual([
+      "Name is required.",
+      "Priority is required and must be a whole number of at least 1.",
+      "Select at least one tracked event type.",
+      "Every stage needs a failure threshold of at least 1 - or 0 on a stage carrying only DENY."
+    ]);
+  });
+
   it("should become invalid when stages is emptied", () => {
     component.onStagesChange([]);
     expect(component.stagesValid()).toBe(false);
     expect(component.canSave()).toBe(false);
   });
 
-  it("should stay valid when a stage has a zero threshold (an allow/deny allowlist stage)", () => {
-    component.onStagesChange([{ failure_threshold: 0, priority: 1, actions: [] }]);
+  it("should stay valid when a zero-threshold stage only carries DENY", () => {
+    component.onStagesChange([{ failure_threshold: 0, actions: [{ action_type: "DENY", action_value: null }] }]);
     expect(component.stagesValid()).toBe(true);
   });
 
+  // A threshold counts failures, so only a standing DENY verdict may sit at 0; the backend
+  // refuses the rest in _validate_threshold_for_actions.
+  it.each([
+    ["no action to justify it", []],
+    ["an action that reacts to a count", [{ action_type: "LOCK_USER", action_value: 60 }]],
+    [
+      "a standing verdict mixed with a counting action",
+      [
+        { action_type: "DENY", action_value: null },
+        { action_type: "LOCK_USER", action_value: 60 }
+      ]
+    ]
+  ])("should become invalid when a zero-threshold stage has %s", (_label, actions) => {
+    component.onStagesChange([{ failure_threshold: 0, actions: actions as never }]);
+    expect(component.stagesValid()).toBe(false);
+    expect(component.canSave()).toBe(false);
+  });
+
   it("should become invalid when a stage has a negative threshold", () => {
-    component.onStagesChange([{ failure_threshold: -1, priority: 1, actions: [] }]);
+    component.onStagesChange([{ failure_threshold: -1, actions: [] }]);
     expect(component.stagesValid()).toBe(false);
   });
 
   it("should block saving when two stages share a failure threshold", () => {
     component.onStagesChange([
-      { failure_threshold: 5, priority: 2, actions: [] },
-      { failure_threshold: 5, priority: 1, actions: [] }
+      { failure_threshold: 5, actions: [] },
+      { failure_threshold: 5, actions: [] }
     ]);
     expect(component.stageThresholdsUnique()).toBe(false);
     expect(component.canSave()).toBe(false);
     // distinct thresholds are fine
     component.onStagesChange([
-      { failure_threshold: 5, priority: 2, actions: [] },
-      { failure_threshold: 10, priority: 1, actions: [] }
+      { failure_threshold: 5, actions: [] },
+      { failure_threshold: 10, actions: [] }
     ]);
     expect(component.stageThresholdsUnique()).toBe(true);
   });
@@ -245,8 +400,8 @@ describe("ConditionalAccessEditPageComponent — edit mode", () => {
     expect(component.priorityInput()).toBe(String(mockPolicy.priority));
   });
 
-  // mat-form-field only projects <mat-error> while its control is in an error state, so
-  // asserting on the signals alone would pass with nothing rendered. These read the DOM.
+  // mat-form-field only projects <mat-error> while its control is in an error state, so asserting on the signals alone
+  // would pass with nothing rendered; these helpers read the DOM instead.
   const renderedErrors = (): string[] =>
     Array.from(fixture.nativeElement.querySelectorAll("mat-error")).map((element) =>
       (element as HTMLElement).textContent!.trim()
@@ -313,14 +468,14 @@ describe("ConditionalAccessEditPageComponent — edit mode", () => {
   it("should derive each stage's priority from its threshold on save", async () => {
     policyServiceMock.savePolicy.mockResolvedValueOnce(1);
     component.onStagesChange([
-      { failure_threshold: 5, priority: 1, actions: [] },
-      { failure_threshold: 10, priority: 1, actions: [] }
+      { failure_threshold: 5, actions: [] },
+      { failure_threshold: 10, actions: [] }
     ]);
     await component.savePolicy();
     const payload = policyServiceMock.savePolicy.mock.calls.at(-1)![0];
     expect(payload.stages).toEqual([
-      { failure_threshold: 5, priority: 5, actions: [] },
-      { failure_threshold: 10, priority: 10, actions: [] }
+      { failure_threshold: 5, actions: [] },
+      { failure_threshold: 10, actions: [] }
     ]);
   });
 
@@ -360,8 +515,8 @@ describe("ConditionalAccessEditPageComponent — edit mode", () => {
       expect(component.hasChanges()).toBe(true);
     });
 
-    // An empty list would stringify differently from an absent key, marking a policy that never had
-    // conditions as dirty after a condition was added and removed again.
+    // An empty list would stringify differently from an absent key, marking a policy that never had conditions as dirty
+    // after a condition was added and removed again.
     it("should drop the key rather than store an empty list, leaving the policy unchanged", () => {
       component.onConditionsChange([{ condition_type: "USER_REALM", operator: "IN", value: ["sales"] }]);
       component.onConditionsChange([]);
@@ -383,8 +538,8 @@ describe("ConditionalAccessEditPageComponent — edit mode", () => {
       ]);
     });
 
-    // Omitting the key here would leave the stored conditions in place: the backend replaces them
-    // only when the key is present, so clearing them takes an explicit empty list.
+    // Omitting the key here would leave the stored conditions in place: the backend replaces them only when the key is
+    // present, so clearing them takes an explicit empty list.
     it("should send an empty list when the stored policy's last condition is removed", async () => {
       policyServiceMock.policies.set([
         { ...mockPolicy, conditions: [{ condition_type: "USER_REALM", operator: "IN", value: ["sales"] }] }
@@ -403,8 +558,8 @@ describe("ConditionalAccessEditPageComponent — edit mode", () => {
       expect(component.canSave()).toBe(true);
     });
 
-    // The backend rejects a value outside the type's current vocabulary, and the editor PATCHes the
-    // whole policy - so without this gate any save of such a policy would fail with a 400.
+    // The backend rejects a value outside the type's current vocabulary, and since the editor PATCHes the whole policy,
+    // without this gate any save of such a policy would fail with a 400.
     it("should be invalid and block saving when a condition names a value that is gone", () => {
       component.onConditionsChange([{ condition_type: "USER_REALM", operator: "IN", value: ["sales", "deleted"] }]);
       expect(component.conditionValuesValid()).toBe(false);
@@ -418,16 +573,16 @@ describe("ConditionalAccessEditPageComponent — edit mode", () => {
       expect(component.conditionValuesValid()).toBe(true);
     });
 
-    // Dropping a stale value silently would rewrite the policy on load: dropping it from a NOT_IN
-    // widens an exemption and from an IN narrows enforcement, neither of which the admin asked for.
+    // Dropping a stale value silently would rewrite the policy on load: dropping it from a NOT_IN widens an exemption,
+    // and from an IN narrows enforcement, neither of which the admin asked for.
     it("should keep a stale value on the loaded policy instead of dropping it", () => {
       policyServiceMock.policies.set([
         { ...mockPolicy, conditions: [{ condition_type: "USER_REALM", operator: "NOT_IN", value: ["deleted"] }] }
       ]);
       paramMap$.next(convertToParamMap({ id: String(mockPolicy.id) }));
       fixture.detectChanges();
-      // toMatchObject rather than toEqual: Signal Forms stamps its own identity symbols onto the
-      // objects of the model it wraps, which an exact comparison would trip over.
+      // toMatchObject rather than toEqual: Signal Forms stamps its own identity symbols onto the objects of the model
+      // it wraps, which an exact comparison would trip over.
       expect(component.editPolicy().conditions).toMatchObject([
         { condition_type: "USER_REALM", operator: "NOT_IN", value: ["deleted"] }
       ]);
@@ -487,7 +642,7 @@ describe("ConditionalAccessEditPageComponent — new mode", () => {
   it("should become valid once name, a counter type, a stage and a priority are set", () => {
     component.updateEditPolicy({ name: "New Policy" });
     component.onCounterTypesChange(["PIN_FAIL"]);
-    component.onStagesChange([{ failure_threshold: 5, priority: 1, actions: [] }]);
+    component.onStagesChange([{ failure_threshold: 5, actions: [] }]);
     component.onPriorityInput("1");
     expect(component.canSave()).toBe(true);
   });
@@ -495,7 +650,7 @@ describe("ConditionalAccessEditPageComponent — new mode", () => {
   it("should stay invalid until a priority is entered (no default)", () => {
     component.updateEditPolicy({ name: "New Policy" });
     component.onCounterTypesChange(["PIN_FAIL"]);
-    component.onStagesChange([{ failure_threshold: 5, priority: 1, actions: [] }]);
+    component.onStagesChange([{ failure_threshold: 5, actions: [] }]);
     expect(component.editPolicy().priority).toBeNull();
     expect(component.priorityValid()).toBe(false);
     expect(component.canSave()).toBe(false);
@@ -508,7 +663,7 @@ describe("ConditionalAccessEditPageComponent — new mode", () => {
     policyServiceMock.policies.set([{ ...mockPolicy, id: 99, priority: 3 }]);
     component.updateEditPolicy({ name: "New Policy" });
     component.onCounterTypesChange(["PIN_FAIL"]);
-    component.onStagesChange([{ failure_threshold: 5, priority: 1, actions: [] }]);
+    component.onStagesChange([{ failure_threshold: 5, actions: [] }]);
     component.onPriorityInput("3");
     expect(component.priorityUnique()).toBe(false);
     expect(component.priorityConflict()?.name).toBe("Brute Force");
@@ -540,7 +695,7 @@ describe("ConditionalAccessEditPageComponent — new mode", () => {
           target: "user",
           count_mode: "PER_REQUEST",
           counter_types_to_track: ["PASSWORD_FAIL"],
-          stages: [{ failure_threshold: 10, priority: 1, actions: [{ action_type: "LOCK_USER", action_value: null }] }]
+          stages: [{ failure_threshold: 10, actions: [{ action_type: "LOCK_USER", action_value: null }] }]
         }
       }
     ]);
@@ -574,7 +729,6 @@ describe("ConditionalAccessEditPageComponent — new mode", () => {
             stages: [
               {
                 failure_threshold: 5,
-                priority: 1,
                 actions: [
                   { action_type: "LOCK_USER", action_value: 600 },
                   { action_type: "EMAIL_ADMIN", action_value: { smtp_identifier: "" } }
@@ -597,8 +751,8 @@ describe("ConditionalAccessEditPageComponent — new mode", () => {
       expect(applyAndReadActionTypes(["smtpserver_read"])).toEqual(["LOCK_USER", "EMAIL_ADMIN"]);
     });
 
-    // The email action stays offered without the right; the identifier field just becomes a free-text
-    // input explaining why the configured servers cannot be listed.
+    // The email action stays offered without the right; the identifier field becomes free text explaining why the
+    // configured servers cannot be listed.
     it("prefills it for one who may not, too", () => {
       expect(applyAndReadActionTypes([])).toEqual(["LOCK_USER", "EMAIL_ADMIN"]);
       expect(component.editPolicy().name).toBe("MFA Brute-Force");
@@ -644,13 +798,13 @@ describe("ConditionalAccessEditPageComponent — new mode", () => {
 
   describe("targetActionsValid", () => {
     const stageWith = (actionType: ConditionalAccessActionType) => [
-      { failure_threshold: 5, priority: 1, actions: [{ action_type: actionType, action_value: null }] }
+      { failure_threshold: 5, actions: [{ action_type: actionType, action_value: null }] }
     ];
 
     beforeEach(() => {
       policyServiceMock.actionsByTarget.set({
-        user: ["LOCK_USER", "ALLOW", "DENY"],
-        source_ip: ["BLOCK_IP", "ALLOW", "DENY"]
+        user: ["LOCK_USER", "DENY"],
+        source_ip: ["BLOCK_IP", "DENY"]
       });
     });
 

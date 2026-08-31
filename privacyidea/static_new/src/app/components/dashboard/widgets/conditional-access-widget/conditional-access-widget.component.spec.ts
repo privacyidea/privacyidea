@@ -67,8 +67,8 @@ function makePolicy(overrides: Partial<ConditionalAccessPolicy>): ConditionalAcc
 
 const MS_PER_HOUR = 3_600_000;
 
-// Timestamps relative to the moment the test runs: the widget's window ends at "now", so a fixture dated in the
-// future would fall outside it.
+// Timestamps are relative to the moment the test runs, since the widget's window ends at "now" and a future-dated
+// fixture would fall outside it.
 function hoursAgo(hours: number): string {
   return new Date(Date.now() - hours * MS_PER_HOUR).toISOString();
 }
@@ -92,7 +92,7 @@ describe("ConditionalAccessWidgetComponent", () => {
   let stateMock: MockConditionalAccessStateService;
   let store: DashboardDataStore;
 
-  // The badge in the value cell of the count row carrying *label*, so a class assertion names the row it is about.
+  // Finds the badge in the value cell of the row labeled *label*, so an assertion can name which row it checks.
   function rowBadge(label: string): HTMLElement | null {
     const rows: HTMLTableRowElement[] = Array.from(fixture.nativeElement.querySelectorAll(".ca-table tr"));
     const row = rows.find((candidate) => candidate.cells[0]?.textContent?.trim() === label);
@@ -112,7 +112,7 @@ describe("ConditionalAccessWidgetComponent", () => {
       imports: [ConditionalAccessWidgetComponent],
       providers: [
         provideZonelessChangeDetection(),
-        // A catch-all so a click on one of the widget's links resolves instead of failing to match a route.
+        // A catch-all route so the test router always finds a match when a widget link is clicked.
         provideRouter([{ path: "**", children: [] }]),
         { provide: AuthService, useClass: MockAuthService },
         { provide: AuthenticationLogService, useClass: MockAuthenticationLogService },
@@ -245,7 +245,7 @@ describe("ConditionalAccessWidgetComponent", () => {
     expect(component.highlightLink(highlights[0])).toBe(ROUTE_PATHS.LOCKED_USERS);
     expect(component.highlightLink(highlights[1])).toBe(ROUTE_PATHS.AUTHENTICATION_LOG);
     expect(fixture.nativeElement.textContent).toContain("cornelius@defrealm");
-    // A blocked IP is marked by "IP" reading through the block glyph; a locked user by the lock icon alone.
+    // A blocked IP shows an "IP" label over the block icon; a locked user shows only the lock icon.
     expect(fixture.nativeElement.querySelectorAll(".icon-block-ip-text")).toHaveLength(2);
     expect(fixture.nativeElement.querySelector(".icon-block-ip-text").textContent).toBe("IP");
   });

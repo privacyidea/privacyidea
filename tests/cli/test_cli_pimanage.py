@@ -932,8 +932,7 @@ class PIManageAuthLogTestCase(CliTestCase):
     """
 
     def _insert(self, age_days, outcomes=0):
-        # Insert one authentication-log entry aged the given number of days, with *outcomes* conditional-access
-        # outcomes hanging off it.
+        # Insert an authentication-log entry aged age_days days, with outcomes conditional-access outcomes attached.
         entry = AuthenticationLog(event_type=AuthEventType.LOGIN_SUCCESS, resolver="r", uid="u", realm="rlm",
                                   timestamp=utc_now() - dt.timedelta(days=age_days))
         entry.save()
@@ -1107,8 +1106,8 @@ class PIManageConditionalAccessTestCase(CliTestCase):
         self.assertIn("Unlocked user ghost@nope (resolver=test)", res.output, res)
 
     def test_06_unlock_user_without_resolver(self):
-        # Regression: --resolver is optional (only disambiguates), so unlock-user must still
-        # unlock without it. It used to compile to ``resolver IS NULL`` and silently do nothing.
+        # Regression guard: --resolver only disambiguates, so unlock-user must still unlock without it;
+        # filtering on resolver IS NULL would silently match nothing.
         db.session.add(UserLockState(resolver="test", realm="nope", username="ghost", uid="1234"))
         db.session.commit()
         runner = self.app.test_cli_runner()

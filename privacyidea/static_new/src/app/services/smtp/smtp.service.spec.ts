@@ -246,8 +246,8 @@ describe("SmtpService", () => {
       req.flush(MockPiResponse.fromValue({}));
     });
 
-    // Without the right the endpoint can only answer 403, which would raise an error notification on
-    // a page that merely wanted to offer the identifiers, so nothing is requested at all.
+    // Without smtpserver_read the endpoint only answers 403, which would raise an error notification on a page that
+    // merely wants the identifiers, so nothing is requested at all.
     it("should not request the servers without smtpserver_read", () => {
       contentService.routeUrl.set(ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS);
       TestBed.tick();

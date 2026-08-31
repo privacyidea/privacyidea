@@ -906,9 +906,9 @@ subscription overview makes.
 Conditional access never-block list
 -----------------------------------
 
-.. index:: conditional access, lockout, never-block
+.. index:: conditional access, lock, never-block
 
-The conditional access lockout policies can block a source IP (the ``BLOCK_IP``
+The conditional access policies can block a source IP (the ``BLOCK_IP``
 action). ``PI_CONDITIONAL_ACCESS_NEVER_BLOCK`` lists the addresses and networks
 that must never be blocked by that machinery::
 
@@ -946,8 +946,8 @@ environment last, so there the variable wins.
 
 It is deliberately not a system setting, and there is no WebUI or API for it. It
 is the safety net that keeps an administrator from being locked out, so it must
-not be reachable through the same API that an attacker, or a mistaken lockout
-policy, could be acting on. Changes take effect after a restart of the web
+not be reachable through the same API that an attacker, or a mistaken
+conditional access policy, could be acting on. Changes take effect after a restart of the web
 server.
 
 .. versionadded:: 3.14

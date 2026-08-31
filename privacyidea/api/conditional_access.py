@@ -267,9 +267,11 @@ def create_policy():
         types (e.g. ``["PIN_FAIL", "MFA_FAIL"]``) counted together against the
         stage thresholds. Required.
     :jsonparam stages: non-empty list of stage definitions, each
-        ``{"failure_threshold": <int>, "priority": <int, optional>,
+        ``{"failure_threshold": <int>, "name": <str, optional>,
         "actions": [{"action_type": <ConditionalAccessAction>, "action_value": <any>}]}``.
-        Required.
+        Thresholds must be unique within the policy and are the evaluation order
+        (highest first). A threshold starts at 1, except on a stage whose every
+        action is ``DENY``, where 0 means "always". Required.
     :jsonparam enabled: whether the policy is evaluated (default true).
     :jsonparam dry_run: log-only mode, nothing is enforced (default false).
     :jsonparam priority: evaluation priority; lower numbers are evaluated first.
@@ -482,13 +484,13 @@ def get_user_lock():
     realm = get_required(request.all_data, "realm")
     resolver = get_optional(request.all_data, "resolver")
     if user_id and not username and not resolver:
-        # User() refuses a uid without a resolver (a uid is only unique per resolver); reject it here so
-        # the caller gets a ParameterError instead of a UserError from deep inside the resolver lookup.
+        # User() needs a resolver to look up a uid (a uid is unique only per resolver), so this rejects early with a
+        # clean ParameterError rather than a deep UserError from the resolver lookup.
         raise ParameterError("The parameter 'resolver' is required when looking a user up by 'user_id'.")
     visibility_scopes = get_policy_visibility_scopes(PolicyAction.USER_LOCK_READ)
 
-    # User is already resolved in before request, but only for the login, realm, resolver triplet. If the uid is given
-    # instead we need to resolve the user here
+    # before_request already resolves the user for a login/realm/resolver triplet, so a user given only by uid still
+    # needs resolving here.
     user = request.User
     if not user or not user.exist():
         user = User(uid=user_id, login=username, realm=realm, resolver=resolver)
