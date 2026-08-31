@@ -717,17 +717,23 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
 
     def test_20_authenticate_device_type_cannot_be_spoofed(self):
         """
-        The backup-eligible flag that determines credential_device_type lives inside the signed region of
-        authenticatorData, so it cannot be changed without invalidating the signature over it. This uses a
-        genuine multi_device response with that flag flipped off (attempting to pass as single_device) while
-        keeping the original signature - as an attacker with no private key would have to - and confirms
-        authentication is rejected outright, independent of any AllowedAuthenticatorDeviceTypes policy.
+        The backup flags that determine credential_device_type live inside the signed region of
+        authenticatorData, so they cannot be changed without invalidating the signature over them. This uses
+        a genuine multi_device response downgraded to single_device (both backup flags cleared, keeping the
+        original signature - as an attacker with no private key would have to) and confirms authentication is
+        rejected outright, independent of any AllowedAuthenticatorDeviceTypes policy.
         """
         token = self._create_token_multi_device()
 
         challenge = self._initialize_authentication_multi_device(self.authentication_challenge_multi_device_tamper)
         authentication_response = dict(self.authentication_response_multi_device_tamper)
         authentication_response["HTTP_ORIGIN"] = self.expected_origin
-        verification_result = verify_fido2_challenge(challenge["transaction_id"], token, authentication_response)
+        with self.assertLogs("privacyidea.lib.tokens.passkeytoken", level="ERROR") as log_capture:
+            verification_result = verify_fido2_challenge(challenge["transaction_id"], token, authentication_response)
         self.assertEqual(-1, verification_result.success)
+        # The tampered authenticatorData is a structurally valid single_device assertion (clearing only the
+        # backup-eligible bit would leave the forbidden backed-up-but-single-device state), so the rejection
+        # has to come from the signature over the original flags, not from a complaint about the flags.
+        self.assertTrue(any("Could not verify authentication signature" in message for message in log_capture.output),
+                        log_capture.output)
         remove_token(serial=token.get_serial())

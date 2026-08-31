@@ -188,10 +188,15 @@ def main() -> None:
     challenge_tamper, authdata_tamper, cdata_tamper, sig_tamper, tamper_flags = build_auth_response(8, True, 7)
     print("Authentication C (tamper case) verified as genuine multi_device credential")
 
-    # ---- Negative/tamper check: flip the BE bit on the *signed* authData, keep the original ----
-    # ---- signature (attacker has no private key) -> must be rejected. This is the "can you  ----
-    # ---- trick a non-platform assertion into looking like a different device type" question. ----
-    tampered_flags = tamper_flags & ~BE  # try to make it look single_device, signature is now stale
+    # ---- Negative/tamper check: clear the backup bits on the *signed* authData, keep the  ----
+    # ---- original signature (an attacker has no private key) -> must be rejected. This is ----
+    # ---- the "can a captured assertion be edited to claim another device type" question.  ----
+    # Both BE and BS are cleared, not just BE: WebAuthn forbids BS=1 with BE=0, so clearing only BE
+    # would leave a structurally invalid assertion that a verifier may reject on the flags alone
+    # (py_webauthn's parse_backup_flags does, though only after the signature check). The tampered
+    # data must be a coherent single_device assertion whose *only* defect is the stale signature,
+    # so that the test it feeds cannot pass for the wrong reason.
+    tampered_flags = tamper_flags & ~(BE | BS)
     tampered_authdata = build_authdata(RP_ID, tampered_flags, 8)
     try:
         verify_authentication_response(
@@ -217,7 +222,11 @@ def main() -> None:
         )
         raise SystemExit("TAMPER CHECK FAILED: verification accepted a flag-tampered signature!")
     except InvalidAuthenticationResponse as ex:
-        print(f"Tamper check passed: bit-flipped BE flag correctly rejected ({ex})")
+        # The rejection has to come from the signature, not from a structural complaint about the
+        # flags, otherwise the fixture would not be proving that the device type itself is protected.
+        if "signature" not in str(ex):
+            raise SystemExit(f"TAMPER CHECK FAILED: rejected for the wrong reason ({ex})")
+        print(f"Tamper check passed: cleared backup flags correctly rejected ({ex})")
 
     block_lines = [
         "",

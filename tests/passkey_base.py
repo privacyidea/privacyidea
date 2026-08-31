@@ -85,29 +85,29 @@ class PasskeyTestBase(unittest.TestCase):
         # generated credential (locally simulated ECDSA P-256 authenticator, not real hardware) that is
         # genuinely signed as backup-eligible, verified against the real py_webauthn verification functions
         # at generation time.
-        self.registration_challenge_multi_device = "pmNw3p9yTC49KAhz_-ccoif3mogs0rXllmo77xNKEc8"
+        self.registration_challenge_multi_device = "k-euGqXEZ15hg6lvGlJL9KlgN1FR9pkBlrCVtZswgmw"
         self.registration_attestation_multi_device = ("o2NmbXRkbm9uZWdhdHRTdG10oGhhdXRoRGF0YViktPp8c+wXo6hFUbdedkHcOP1s"
-                                                      "+xkwOrHsxfvNfhI7wVdZAAAAAAAAAAAAAAAAAAAAAAAAAAAAIFcVk6Mg+TaOq5rm"
-                                                      "gDaermd1YBj4jjp1KYSvlxXQk0BbpQECAyYgASFYIDtSmRs+YqC/9/gX8S3sTVvs"
-                                                      "Sr+BJeP33XjfVLhme9JiIlggaM9dR2j1xOsweMsmP26AWaotfkGnXfytfek87oXc"
-                                                      "P8o=")
-        self.registration_client_data_multi_device = ("eyJ0eXBlIjoid2ViYXV0aG4uY3JlYXRlIiwiY2hhbGxlbmdlIjoiY0cxT2R6TndP"
-                                                      "WGxVUXpRNVMwRm9lbDh0WTJOdmFXWXpiVzluY3pCeVdHeHNiVzgzTjNoT1MwVmpP"
-                                                      "QSIsIm9yaWdpbiI6Imh0dHBzOi8vY29vbC5uaWxzOjUwMDAifQ==")
-        self.credential_id_multi_device = "VxWToyD5No6rmuaANp6uZ3VgGPiOOnUphK-XFdCTQFs"
+                                                      "+xkwOrHsxfvNfhI7wVdZAAAAAAAAAAAAAAAAAAAAAAAAAAAAIJcUquK5S//Ox+jV"
+                                                      "7luek0n1Zf7w56FwYhEB7s3kSlgkpQECAyYgASFYIBzOyVwt5sTQSqnib2fe3nnV"
+                                                      "H4396fpRNWB71LqTGkm9IlggKG00jE6DEBYR/bFuRyPFNBEFdNVtKFHyGUTNzgu2"
+                                                      "0tc=")
+        self.registration_client_data_multi_device = ("eyJ0eXBlIjoid2ViYXV0aG4uY3JlYXRlIiwiY2hhbGxlbmdlIjoiYXkxbGRVZHhX"
+                                                      "RVZhTVRWb1p6WnNka2RzU2t3NVMyeG5UakZHVWpsd2EwSnNja05XZEZwemQyZHRk"
+                                                      "dyIsIm9yaWdpbiI6Imh0dHBzOi8vY29vbC5uaWxzOjUwMDAifQ==")
+        self.credential_id_multi_device = "lxSq4rlL_87H6NXuW56TSfVl_vDnoXBiEQHuzeRKWCQ"
         self.authenticator_attachment_multi_device = "platform"
-        self.user_handle_multi_device = ("ahm2K+5M+RFT3Wgu5o05kaY/XFpLA1dJMaMldjSbyyqtOHSL/YxEs/P9aakjQtmDeCpPoFU8hfa95"
-                                         "dVTcggG5A==")
+        self.user_handle_multi_device = ("I3nF9Zf6ycQcCx/mp5Q+DIEO4qgtDUgIMf/tkBCXVpRJFRRPKWp31CVwjiZvNMMeBz6JAnImAP86m"
+                                         "03YnvzXVw==")
 
         # Reject case: used with a SCOPE.AUTH policy restricting to single_device, must be denied
-        self.authentication_challenge_multi_device_reject = "1wqVthf6cD74Kjc2Lua1XpKfbfkthBgLVB3Jdx8ElxY"
+        self.authentication_challenge_multi_device_reject = "35lL32q5rzuXEwQrK6-BnxYkfl0lBnEDWX4xZKlxkaU"
         self.authenticator_data_multi_device_reject = "tPp8c+wXo6hFUbdedkHcOP1s+xkwOrHsxfvNfhI7wVcZAAAABg=="
-        self.authentication_client_data_multi_device_reject = ("eyJ0eXBlIjoid2ViYXV0aG4uZ2V0IiwiY2hhbGxlbmdlIjoiTVhkeFZ"
-                                                               "uUm9aalpqUkRjMFMycGpNa3gxWVRGWWNFdG1ZbVpyZEdoQ1oweFdRak"
-                                                               "5LWkhnNFJXeDRXUSIsIm9yaWdpbiI6Imh0dHBzOi8vY29vbC5uaWxzO"
+        self.authentication_client_data_multi_device_reject = ("eyJ0eXBlIjoid2ViYXV0aG4uZ2V0IiwiY2hhbGxlbmdlIjoiTXpWc1R"
+                                                               "ETXljVFZ5ZW5WWVJYZFJja3MyTFVKdWVGbHJabXd3YkVKdVJVUlhXRF"
+                                                               "I0V2t0c2VHdGhWUSIsIm9yaWdpbiI6Imh0dHBzOi8vY29vbC5uaWxzO"
                                                                "jUwMDAifQ==")
-        self.authentication_signature_multi_device_reject = ("MEYCIQDXWGWQ5EQt7wX6Pzt2vhF0l2KODDsvQmPJYg/xbEXiHQIhAKHGQ"
-                                                             "Mc0Pe6KhKYPRRmiOfBLMNbD75wg7VFxgkN0Ssah")
+        self.authentication_signature_multi_device_reject = ("MEUCIH/KO4HZuF/iupfGcTmrm3QHJbCHICYoiyn0Qo5yYioeAiEA7yy6B"
+                                                             "sKFercCGLfOiquMnUypE6hUAi9jetjZdpvfuEE=")
         self.authentication_response_multi_device_reject = {
             "clientDataJSON": self.authentication_client_data_multi_device_reject,
             "authenticatorData": self.authenticator_data_multi_device_reject,
@@ -117,14 +117,14 @@ class PasskeyTestBase(unittest.TestCase):
         }
 
         # Accept case: used with a SCOPE.AUTH policy restricting to multi_device, must succeed
-        self.authentication_challenge_multi_device_accept = "rDdZaECd8FN2Cg7EBrPwHGD3438vC8CSKw81cZPaRz0"
+        self.authentication_challenge_multi_device_accept = "YIzIkO_EbEbNJhM8iVoYpy_DnOd9vwyCZhvJKALKJuc"
         self.authenticator_data_multi_device_accept = "tPp8c+wXo6hFUbdedkHcOP1s+xkwOrHsxfvNfhI7wVcdAAAABw=="
-        self.authentication_client_data_multi_device_accept = ("eyJ0eXBlIjoid2ViYXV0aG4uZ2V0IiwiY2hhbGxlbmdlIjoiY2tSa1d"
-                                                               "tRkZRMlE0Ums0eVEyYzNSVUp5VUhkSVIwUXpORE00ZGtNNFExTkxkem"
-                                                               "d4WTFwUVlWSjZNQSIsIm9yaWdpbiI6Imh0dHBzOi8vY29vbC5uaWxzO"
+        self.authentication_client_data_multi_device_accept = ("eyJ0eXBlIjoid2ViYXV0aG4uZ2V0IiwiY2hhbGxlbmdlIjoiV1VsNlN"
+                                                               "XdFBYMFZpUldKT1NtaE5PR2xXYjFsd2VWOUViazlrT1haM2VVTmFhSF"
+                                                               "pLUzBGTVMwcDFZdyIsIm9yaWdpbiI6Imh0dHBzOi8vY29vbC5uaWxzO"
                                                                "jUwMDAifQ==")
-        self.authentication_signature_multi_device_accept = ("MEUCIHv3SL/4dh/54IUcxJT6CHiQKF0EoYWZElb8WgmzyNm8AiEA892W2"
-                                                             "TUIpKXCJ9FVM19J4tdAq7QK0RamllbiqSFUG2E=")
+        self.authentication_signature_multi_device_accept = ("MEQCIASyrpY4h90Dm9C0I+liwq8HW9avMtSGVNC6ipQN8jh/AiBFFw4HV"
+                                                             "fcOHdamongh4gGEvV3iPUz6xF1GFVBoZKeyEw==")
         self.authentication_response_multi_device_accept = {
             "clientDataJSON": self.authentication_client_data_multi_device_accept,
             "authenticatorData": self.authenticator_data_multi_device_accept,
@@ -136,14 +136,14 @@ class PasskeyTestBase(unittest.TestCase):
         # Tamper case: a genuine multi_device response with the backup-eligible bit flipped off in
         # authenticatorData while keeping the ORIGINAL signature (an attacker forging this has no private
         # key), used to prove the device type cannot be spoofed by editing the wire data post-signature.
-        self.authentication_challenge_multi_device_tamper = "CdRtaUqmBroufnDIXBJ2B6UTAtYIi9Cw0b1tMrP5MxA"
-        self.authentication_client_data_multi_device_tamper = ("eyJ0eXBlIjoid2ViYXV0aG4uZ2V0IiwiY2hhbGxlbmdlIjoiUTJSU2R"
-                                                               "HRlZjVzFDY205MVptNUVTVmhDU2pKQ05sVlVRWFJaU1drNVEzY3dZak"
-                                                               "YwVFhKUU5VMTRRUSIsIm9yaWdpbiI6Imh0dHBzOi8vY29vbC5uaWxzO"
+        self.authentication_challenge_multi_device_tamper = "gEUBW03dsRdsNiJBDNVGQWkAlvWcMe-BnqIhf0Tqq10"
+        self.authentication_client_data_multi_device_tamper = ("eyJ0eXBlIjoid2ViYXV0aG4uZ2V0IiwiY2hhbGxlbmdlIjoiWjBWVlF"
+                                                               "sY3dNMlJ6VW1SelRtbEtRa1JPVmtkUlYydEJiSFpYWTAxbExVSnVjVW"
+                                                               "xvWmpCVWNYRXhNQSIsIm9yaWdpbiI6Imh0dHBzOi8vY29vbC5uaWxzO"
                                                                "jUwMDAifQ==")
-        self.authentication_signature_multi_device_tamper = ("MEQCIHud3AYQEeYc9THbU2JMKU6PGG766HFl6m1ooSCRek/IAiAQUd9ad"
-                                                             "gX5zZQ91zL2tYjEUSmz9oRXqz3B3M7nHhLvYw==")
-        self.authenticator_data_multi_device_tamper_be_flipped = "tPp8c+wXo6hFUbdedkHcOP1s+xkwOrHsxfvNfhI7wVcVAAAACA=="
+        self.authentication_signature_multi_device_tamper = ("MEUCIBCUHLeJC9HxmWA0UD+pvByYGktM4q82962So2EckbgYAiEAltK4n"
+                                                             "2dZPw03hNtf4mhmUSC4OdiICmjOGR0fekQOGP4=")
+        self.authenticator_data_multi_device_tamper_be_flipped = "tPp8c+wXo6hFUbdedkHcOP1s+xkwOrHsxfvNfhI7wVcFAAAACA=="
         self.authentication_response_multi_device_tamper = {
             "clientDataJSON": self.authentication_client_data_multi_device_tamper,
             "authenticatorData": self.authenticator_data_multi_device_tamper_be_flipped,
