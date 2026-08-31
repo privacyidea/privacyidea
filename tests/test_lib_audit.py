@@ -16,6 +16,7 @@ from privacyidea.config import TestingConfig
 from privacyidea.lib.audit import getAudit, search
 from privacyidea.lib.auditmodules.containeraudit import Audit as ContainerAudit
 from privacyidea.lib.auditmodules.loggeraudit import Audit as LoggerAudit
+from privacyidea.lib.auditmodules import sqlaudit
 from privacyidea.lib.auditmodules.sqlaudit import Audit as SQLAudit, column_length, LogEntry
 from privacyidea.lib.utils import AUTH_RESPONSE
 from .base import MyTestCase, OverrideConfigTestCase
@@ -549,6 +550,47 @@ class AuditTestCase(MyTestCase):
             self.assertEqual(5, self.Audit._get_id_stride())
         finally:
             self.Audit.session.execute(text("SET SESSION auto_increment_increment = 1"))
+
+    def test_15_unreadable_table_is_read_again(self):
+        # A table that could not be read is not remembered as read, so that a database
+        # which was unreachable once does not leave the process sizing values to the
+        # model for the rest of its life
+        cache_key = str(self.Audit.engine.url)
+        sqlaudit._live_column_length.clear()
+        with mock.patch("privacyidea.lib.auditmodules.sqlaudit.sqlalchemy_inspect",
+                        side_effect=Exception("no such table: pidea_audit")):
+            self.assertEqual({}, sqlaudit.get_live_column_length(self.Audit.engine))
+        self.assertNotIn(cache_key, sqlaudit._live_column_length)
+
+        # The next look reaches the table and is cached
+        lengths = sqlaudit.get_live_column_length(self.Audit.engine)
+        self.assertEqual(column_length.get("serial"), lengths.get("serial"))
+        self.assertIn(cache_key, sqlaudit._live_column_length)
+
+    def test_16_column_length_follows_the_table(self):
+        audit = getAudit(self.app.config)
+
+        # A table that has not been migrated yet holds less than the model declares, and
+        # the table wins: a longer value would make the database reject the whole entry
+        audit._effective_column_length = None
+        with mock.patch("privacyidea.lib.auditmodules.sqlaudit.get_live_column_length",
+                        return_value={"serial": 40}):
+            self.assertEqual(40, audit.column_length.get("serial"))
+
+        # A column the table does not report keeps the length that is configured for it
+        audit._effective_column_length = None
+        with mock.patch("privacyidea.lib.auditmodules.sqlaudit.get_live_column_length",
+                        return_value={}):
+            self.assertEqual(column_length.get("serial"), audit.column_length.get("serial"))
+
+        # A column that holds a value of any length, e.g. TEXT, is not shortened at all
+        audit._effective_column_length = None
+        with mock.patch("privacyidea.lib.auditmodules.sqlaudit.get_live_column_length",
+                        return_value={"serial": None}):
+            self.assertNotIn("serial", audit.column_length)
+            audit.log({"serial": "S" * 500})
+            audit._truncate_data()
+            self.assertEqual(500, len(audit.audit_data.get("serial")))
 
 
 class AuditEngineOptionsTestCase(unittest.TestCase):

@@ -688,6 +688,29 @@ class UtilsTestCase(MyTestCase):
         ip = get_client_ip(r, "10.0.0.1")
         self.assertEqual(ip, direct_client)
 
+        # The forwarding path is request data, so it can contain anything. It is followed
+        # only as far as it consists of IP addresses: a client parameter that is no address
+        # is ignored, and the header is mapped as if it had not been sent at all.
+        r.blueprint = "validate_blueprint"
+        r.access_route = [client_proxy]
+        r.all_data = {"client": "not-an-ip-address"}
+        ip = get_client_ip(r, "10.0.0.1")
+        self.assertEqual(ip, client_proxy)
+
+        # The same for a X-Forwarded-For header that is no address: the path ends at the
+        # peer the request really came from
+        r.access_route = ["not-an-ip-address"]
+        r.all_data = {}
+        ip = get_client_ip(r, "10.0.0.1")
+        self.assertEqual(ip, direct_client)
+
+        # If not a single hop is an address, there is nothing to map and the address the
+        # request came from is used as it is
+        r.remote_addr = "not-an-ip-address"
+        r.access_route = ["not-an-ip-address"]
+        ip = get_client_ip(r, "10.0.0.1")
+        self.assertEqual(ip, "not-an-ip-address")
+
     def test_24_sanity_name_check(self):
         self.assertTrue(sanity_name_check('Hello_World'))
         with self.assertRaisesRegex(Exception, "non conformant characters in the name"):

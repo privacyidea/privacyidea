@@ -7,8 +7,12 @@ lengths: they check the length of the stored value instead of relying on the dat
 reject it.
 """
 from flask import Response
+from mock import mock
 from sqlalchemy import select
+from sqlalchemy.exc import OperationalError
 
+from privacyidea.api.validate import _challenged_token_serials
+from privacyidea.lib.clientapplication import save_clientapplication
 from privacyidea.lib.config import set_privacyidea_config
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import set_policy, delete_policy, SCOPE
@@ -161,3 +165,36 @@ class AuditRobustnessTestCase(MyApiTestCase):
             delete_policy("robust_cr")
             remove_token("OWNER001")
             remove_token("OTHER001")
+
+    def test_09_unnamed_user_gets_no_serials(self):
+        """Without a user there is nothing to restrict the challenged tokens to, so no
+        token is named rather than the tokens of somebody else."""
+        self.setUp_user_realms()
+        self.assertEqual([], _challenged_token_serials("does-not-matter", None))
+        self.assertEqual([], _challenged_token_serials("does-not-matter", User()))
+
+        # A transaction that has no challenges at all names no token either
+        self.assertEqual([], _challenged_token_serials("no-such-transaction",
+                                                       User("cornelius", self.realm1)))
+
+    def test_10_unreadable_challenges_cost_only_the_serials(self):
+        """The authentication result is decided before the audit entry is filled in, so a
+        challenge or token store that can not be read must not turn it into an error."""
+        self.setUp_user_realms()
+        user = User("cornelius", self.realm1)
+        with mock.patch("privacyidea.api.validate.get_challenges",
+                        side_effect=OperationalError("select", {}, Exception("gone"))):
+            self.assertEqual([], _challenged_token_serials("some-transaction", user))
+
+    def test_11_client_application_never_fails_the_request(self):
+        """Recording that a client was seen is telemetry. A database problem while writing
+        it ends there instead of failing the authentication it was collected from."""
+        with mock.patch("privacyidea.lib.clientapplication.db.session.commit",
+                        side_effect=OperationalError("insert", {}, Exception("gone"))):
+            # No exception leaves this call
+            save_clientapplication("10.1.2.3", "robustness-test")
+
+        # The failed write was not remembered as done, so the next request writes again
+        res = self._validate_check({"user": "cornelius", "pass": "wrong"},
+                                   headers={"User-Agent": "robustness-test/1.0"})
+        self.assertEqual(200, res.status_code, res.json)

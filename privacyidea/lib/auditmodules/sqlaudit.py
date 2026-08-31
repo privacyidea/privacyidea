@@ -295,9 +295,10 @@ class Audit(AuditBase):
 
         :return: None
         """
-        # ``log()`` already shortens what it is given, but a value can still grow past the
-        # column afterwards: ``finalize_log`` joins list values into one comma separated
-        # string. So every value is checked once more before it is written.
+        # This is the only place values are shortened, and it runs right before the entry
+        # is written: until then ``audit_data`` is shared request state that event handlers
+        # read the whole value from, and ``finalize_log`` has just joined list values into
+        # one comma separated string, which is what actually has to fit the column.
         for column in self.column_length:
             if column in self.audit_data:
                 self.audit_data[column] = self.fit_to_store(column, self.audit_data[column])
