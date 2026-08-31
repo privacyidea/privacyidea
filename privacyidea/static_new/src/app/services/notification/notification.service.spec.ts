@@ -211,6 +211,11 @@ describe("NotificationService", () => {
     flushDebounce();
     const warningCall = snackBar.open.mock.calls[2][2];
     expect(warningCall["panelClass"]).toEqual(["warning-snackbar"]);
+
+    service.info("i");
+    flushDebounce();
+    const infoCall = snackBar.open.mock.calls[3][2];
+    expect(infoCall["panelClass"]).toEqual(["info-snackbar"]);
   });
 
   describe("handleResourceError", () => {
@@ -308,6 +313,17 @@ describe("NotificationService", () => {
       expect(message).toContain("• Boom");
       expect(message).toContain("• Almost full");
       expect(message).toContain("• Saved");
+    });
+
+    it("uses the info panel when the batch only contains info messages", () => {
+      service.info("First");
+      service.info("Second");
+      flushDebounce();
+
+      const [message, , config] = snackBar.open.mock.calls[0];
+      expect(config["panelClass"]).toEqual(["info-snackbar"]);
+      expect(message).toContain("• First");
+      expect(message).toContain("• Second");
     });
 
     it("uses singular header for a single non-coalesced batch entry per severity", () => {

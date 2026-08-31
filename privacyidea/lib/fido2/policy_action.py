@@ -17,3 +17,5 @@ class PasskeyAction:
     AttestationConveyancePreference = "passkey_attestation_conveyance_preference"
     EnableTriggerByPIN = "passkey_trigger_by_pin"
     UserLabel = "passkey_user_label"
+    AllowedAuthenticatorDeviceTypes = "passkey_allowed_authenticator_device_types"
+    EnforceUserHandle = "passkey_enforce_user_handle"

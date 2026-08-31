@@ -18,9 +18,7 @@
 -->
 <app-dialog-wrapper
   [title]="data.title"
-  (wrapperClose)="close()"
   [actions]="actions"
-  [showCancelButton]="true"
   (actionTriggered)="onAction($event)">
   <div class="margin-right-16">
     @if (data.message) {

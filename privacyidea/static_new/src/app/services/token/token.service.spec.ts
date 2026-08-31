@@ -41,6 +41,7 @@ class MockNotificationService {
   success = jest.fn();
   error = jest.fn();
   warning = jest.fn();
+  info = jest.fn();
   handleResourceError = jest.fn();
 }
 
@@ -194,6 +195,53 @@ describe("TokenService", () => {
 
     expect(deleteSpy).toHaveBeenCalledWith(`${tokenService.tokenBaseUrl}${encodeURIComponent("DEL/1")}`, {
       headers: authService.getHeaders()
+    });
+  });
+
+  describe("cancelEnrollment()", () => {
+    it("deletes the incomplete token, stops the polling and reports the cancellation", (done) => {
+      const backend = MockPiResponse.fromValue(1);
+      deleteSpy.mockReturnValue(of(backend));
+      const stopPollingSpy = jest.spyOn(tokenService, "stopPolling");
+
+      tokenService.cancelEnrollment("PIPU0001").subscribe((response) => {
+        expect(deleteSpy).toHaveBeenCalledWith(`${tokenService.tokenBaseUrl}PIPU0001`, {
+          headers: authService.getHeaders()
+        });
+        expect(stopPollingSpy).toHaveBeenCalled();
+        expect(notificationService.info).toHaveBeenCalledWith("The enrollment of token PIPU0001 was cancelled.");
+        expect(response).toBe(backend);
+        done();
+      });
+    });
+
+    it("keeps the polling running and propagates the error when the deletion fails", (done) => {
+      const boom = new HttpErrorResponse({
+        error: { result: { error: { message: "denied" } } },
+        status: 403
+      });
+      deleteSpy.mockReturnValue(throwError(() => boom));
+      const stopPollingSpy = jest.spyOn(tokenService, "stopPolling");
+
+      tokenService.cancelEnrollment("PIPU0001").subscribe({
+        error: (error) => {
+          expect(error).toBe(boom);
+          expect(stopPollingSpy).not.toHaveBeenCalled();
+          expect(notificationService.error).toHaveBeenCalledWith("Failed to cancel the enrollment. denied");
+          expect(notificationService.info).not.toHaveBeenCalled();
+          done();
+        }
+      });
+    });
+
+    it("encodes the serial in the request url", () => {
+      deleteSpy.mockReturnValue(of(MockPiResponse.fromValue(1)));
+
+      tokenService.cancelEnrollment("PI/PU 1").subscribe();
+
+      expect(deleteSpy).toHaveBeenCalledWith(`${tokenService.tokenBaseUrl}${encodeURIComponent("PI/PU 1")}`, {
+        headers: authService.getHeaders()
+      });
     });
   });
 
