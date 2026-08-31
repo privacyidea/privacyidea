@@ -20,6 +20,7 @@
 import { Component, input, output } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
+import { By } from "@angular/platform-browser";
 import { DialogAction } from "@models/dialog";
 import { CopyPolicyDialogComponent } from "./copy-policy-dialog.component";
 
@@ -35,8 +36,10 @@ class MockMatDialogRef {
 class MockDialogWrapperComponent {
   title = input.required<string>();
   actions = input.required<DialogAction<"submit" | null>[]>();
-  closeDialog = output<void>();
-  actionEvent = output<"submit" | null>();
+  showCancelButton = input<boolean>(false);
+  handleCloseExternally = input<boolean>(false);
+  wrapperClose = output<void>();
+  actionTriggered = output<"submit" | null>();
 }
 
 describe("CopyPolicyDialogComponent", () => {
@@ -137,6 +140,19 @@ describe("CopyPolicyDialogComponent", () => {
     it("should return null when action value is null (cancel/close)", () => {
       component.onAction(null);
       expect(dialogRef.close).toHaveBeenCalledWith(null);
+    });
+  });
+
+  describe("4. Cancel Flow", () => {
+    it("should offer a cancel button that closes the dialog without a result", () => {
+      const wrapper = fixture.debugElement.query(By.directive(MockDialogWrapperComponent))
+        .componentInstance as MockDialogWrapperComponent;
+
+      expect(wrapper.showCancelButton()).toBe(true);
+      expect(wrapper.handleCloseExternally()).toBe(true);
+
+      wrapper.wrapperClose.emit();
+      expect(dialogRef.close).toHaveBeenCalledWith(undefined);
     });
   });
 });
