@@ -146,6 +146,19 @@ class LockoutStateTestCase(MyTestCase):
     def test_block_ip_rejects_an_invalid_address(self):
         self.assertRaisesRegex(ParameterError, "not a valid IP address", block_ip, "not-an-ip")
 
+    def test_block_ip_stores_an_ipv6_address_canonically(self):
+        # The pre-check looks a block up by exact string against the request's client IP, which is
+        # canonical, so a block filed under one of IPv6's other spellings would never match.
+        entry = block_ip("2001:0DB8::0:1", duration_seconds=300)
+        self.assertEqual("2001:db8::1", entry["identifier"])
+        self.assertEqual("2001:db8::1", db.session.query(BlockList).one().ip)
+
+    def test_block_ip_does_not_duplicate_a_differently_spelled_ipv6_address(self):
+        # Two spellings of one address are one block, not two rows racing each other.
+        block_ip("2001:0DB8::0:1", duration_seconds=300)
+        block_ip("2001:db8::1", duration_seconds=600)
+        self.assertEqual(1, db.session.query(BlockList).count())
+
     # --- the lock cause --------------------------------------------------------
 
     def test_locked_user_dict_reports_the_cause(self):

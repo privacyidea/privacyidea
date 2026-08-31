@@ -404,7 +404,11 @@ def block_ip(ip: str, duration_seconds: int | None = None, now: datetime | None 
         positive integer
     """
     try:
-        ipaddress.ip_address(ip)
+        # Store the canonical form: an IPv6 address has many spellings, while the engine looks blocks up by
+        # exact string against the request's client IP, which is already canonical. Keeping the typed spelling
+        # would file a block the pre-check never matches, and let a later engine block of the same address add
+        # a second row for it.
+        ip = str(ipaddress.ip_address(ip))
     except ValueError:
         raise ParameterError(f"{ip!r} is not a valid IP address.")
     if is_ip_never_block(ip):
