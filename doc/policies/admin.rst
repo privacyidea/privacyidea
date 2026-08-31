@@ -1433,8 +1433,7 @@ user_lock_read
 type: ``bool``
 
 The administrator is allowed to see which users are currently locked by
-conditional access. The list is constrained to the realms, resolvers and users
-the policy granting this right is scoped to.
+conditional access.
 
 .. versionadded:: 3.14
 

@@ -16,7 +16,7 @@
 # SPDX-FileCopyrightText: 2026 NetKnights GmbH <https://netknights.it>
 # SPDX-License-Identifier: AGPL-3.0-or-later
 """
-Tests for the conditional-access lock-policy CRUD layer
+Tests for the conditional-access policy CRUD layer
 (:mod:`privacyidea.lib.conditional_access.policy`).
 """
 
