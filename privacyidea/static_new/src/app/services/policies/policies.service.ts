@@ -43,6 +43,20 @@ export type PolicyActionGroups = Record<string, Record<string, Record<string, Po
 
 export type PoliciesList = PolicyDetail[];
 
+export function policyActionMatchesFilter(
+  actionName: string,
+  detail: PolicyActionDetail | undefined,
+  filter: string
+): boolean {
+  const searchTerm = filter.toLowerCase().trim();
+  if (!searchTerm) return true;
+  if (actionName.toLowerCase().includes(searchTerm)) return true;
+  return (detail?.desc ?? "")
+    .replace(/<[^>]*>/g, "") // Remove html tags
+    .toLowerCase()
+    .includes(searchTerm);
+}
+
 export interface PolicyDetail {
   action: Record<string, string | boolean> | null;
   active: boolean;
@@ -371,7 +385,7 @@ export class PolicyService implements PolicyServiceInterface {
           continue;
         }
         const action = actions[actionName];
-        if (!actionName.toLowerCase().includes(filterValue)) {
+        if (!policyActionMatchesFilter(actionName, action, filterValue)) {
           continue;
         }
         const group = action.group || "Other";

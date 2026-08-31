@@ -26,6 +26,7 @@ import { MatSelect, MatSelectModule } from "@angular/material/select";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { SelectorButtonsComponent } from "@components/policies/policy-edit-page/policy-panels/edit-action-tab/selector-buttons/selector-buttons.component";
 import { MultiSelectOnlyComponent } from "@components/shared/multi-select-only/multi-select-only.component";
+import { HighlightPipe } from "@components/shared/pipes/highlight.pipe";
 import { PolicyActionDetail, PolicyService, PolicyServiceInterface } from "@services/policies/policies.service";
 
 export interface SelectableAction {
@@ -46,7 +47,8 @@ export interface SelectableAction {
     MatInputModule,
     MatSelectModule,
     MatAutocompleteModule,
-    MultiSelectOnlyComponent
+    MultiSelectOnlyComponent,
+    HighlightPipe
   ],
   templateUrl: "./policy-action-item-new.component.html",
   styleUrls: ["./policy-action-item-new.component.scss"]
@@ -55,6 +57,7 @@ export class PolicyActionItemComponent {
   readonly policyService: PolicyServiceInterface = inject(PolicyService);
 
   readonly selectableAction = input.required<SelectableAction>();
+  readonly highlight = input<string>("");
   readonly actionValue = input<string | number>();
 
   readonly isBooleanAction = computed(() => this.selectableAction().detail?.type === "bool");

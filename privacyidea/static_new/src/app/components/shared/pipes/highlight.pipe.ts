@@ -27,9 +27,11 @@ import { DomSanitizer } from "@angular/platform-browser";
 export class HighlightPipe implements PipeTransform {
   private sanitizer = inject(DomSanitizer);
 
-  transform(value: string, searchTerm: string | string[]): string | null {
+  transform(value: string, searchTerm: string | string[], containsMarkup = false): string {
     const terms = (Array.isArray(searchTerm) ? searchTerm : [searchTerm]).filter((term) => !!term);
-    if (terms.length === 0 || !value) return this.escapeHtml(value);
+    if (terms.length === 0 || !value) {
+      return containsMarkup ? (this.sanitizer.sanitize(SecurityContext.HTML, value) ?? "") : this.escapeHtml(value);
+    }
     // Longer terms first so overlapping matches prefer the longer one in the alternation.
     const alternation = terms
       .sort((a, b) => b.length - a.length)
@@ -37,9 +39,14 @@ export class HighlightPipe implements PipeTransform {
       .join("|");
     // g - global (all occurrences), i - case-insensitive
     const regex = new RegExp(alternation, "gi");
-    // Match against the raw value and HTML-escape the matched and unmatched pieces separately. Escaping
-    // the whole string first would let the regex match inside generated entities (e.g. searching "&"
-    // hitting the "&" of "&amp;"), corrupting the output and failing to match terms with HTML metacharacters.
+    const highlighted = containsMarkup ? this.highlightAroundMarkup(value, regex) : this.highlightEscaped(value, regex);
+    return this.sanitizer.sanitize(SecurityContext.HTML, highlighted) ?? "";
+  }
+
+  // Match against the raw value and HTML-escape the matched and unmatched pieces separately. Escaping
+  // the whole string first would let the regex match inside generated entities (e.g. searching "&"
+  // hitting the "&" of "&amp;"), corrupting the output and failing to match terms with HTML metacharacters.
+  private highlightEscaped(value: string, regex: RegExp): string {
     let highlighted = "";
     let lastIndex = 0;
     for (const match of value.matchAll(regex)) {
@@ -48,8 +55,34 @@ export class HighlightPipe implements PipeTransform {
       highlighted += `<span class="highlight">${this.escapeHtml(match[0])}</span>`;
       lastIndex = start + match[0].length;
     }
-    highlighted += this.escapeHtml(value.slice(lastIndex));
-    return this.sanitizer.sanitize(SecurityContext.HTML, highlighted);
+    return highlighted + this.escapeHtml(value.slice(lastIndex));
+  }
+
+  // The value already is HTML, so tags and entities are handed through untouched and only the text
+  // between them is searched. Escaping would show the markup as literal text; sanitizing the result
+  // still strips everything active.
+  private highlightAroundMarkup(value: string, regex: RegExp): string {
+    let highlighted = "";
+    let lastIndex = 0;
+    for (const markup of value.matchAll(/<[^>]*>|&[a-zA-Z#][a-zA-Z0-9]*;/g)) {
+      const start = markup.index!;
+      highlighted += this.highlightPlain(value.slice(lastIndex, start), regex);
+      highlighted += markup[0];
+      lastIndex = start + markup[0].length;
+    }
+    return highlighted + this.highlightPlain(value.slice(lastIndex), regex);
+  }
+
+  private highlightPlain(text: string, regex: RegExp): string {
+    let highlighted = "";
+    let lastIndex = 0;
+    for (const match of text.matchAll(regex)) {
+      const start = match.index!;
+      highlighted += text.slice(lastIndex, start);
+      highlighted += `<span class="highlight">${match[0]}</span>`;
+      lastIndex = start + match[0].length;
+    }
+    return highlighted + text.slice(lastIndex);
   }
 
   escapeHtml(text: string): string {
