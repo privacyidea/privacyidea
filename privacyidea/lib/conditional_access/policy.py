@@ -15,10 +15,10 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-CRUD layer for conditional-access lockout policies.
+CRUD layer for conditional-access policies.
 
 The engine (:mod:`privacyidea.lib.conditional_access.engine`) only *reads*
-:class:`~privacyidea.models.lockout_policy.LockoutPolicy` rows; this module is
+:class:`~privacyidea.models.conditional_access_policy.ConditionalAccessPolicy` rows; this module is
 the write path used by the REST API (``/conditionalaccess``) and anything else
 that needs to create, edit or delete policies. All input validation lives
 here, so the API layer stays a thin request/response wrapper.
@@ -26,7 +26,7 @@ here, so the API layer stays a thin request/response wrapper.
 A policy is passed around as a plain dict::
 
     {
-        "name": "Brute Force Lockout",
+        "name": "Brute Force Lock",
         "time_window_seconds": 600,
         "enabled": True,
         "dry_run": False,
@@ -57,7 +57,7 @@ count distinct targeted accounts (``DISTINCT_USERS``, the spraying / enumeration
 the target's default (``PER_REQUEST`` for ``user``, ``DISTINCT_USERS`` for ``source_ip``). ``counter_types_to_track``
 values must be
 :class:`~privacyidea.lib.conditional_access.authentication_event_types.AuthEventType` names and ``action_type`` values
-must be :class:`~privacyidea.lib.conditional_access.engine.LockoutAction` names; anything else is a
+must be :class:`~privacyidea.lib.conditional_access.engine.ConditionalAccessAction` names; anything else is a
 :class:`~privacyidea.lib.error.ParameterError` (fail-closed - a typo must not silently create a policy that never
 matches or an action that never fires).
 
@@ -80,12 +80,12 @@ from privacyidea.lib.conditional_access.authentication_event_types import (
     CountMode,
 )
 from privacyidea.lib.conditional_access.conditions import CONDITION_TYPES
-from privacyidea.lib.conditional_access.engine import LockoutAction, LockoutTarget
+from privacyidea.lib.conditional_access.engine import ConditionalAccessAction, ConditionalAccessTarget
 from privacyidea.lib.error import ConflictError, ParameterError, ResourceNotFoundError
 from privacyidea.lib.log import log_with
 from privacyidea.models import db
-from privacyidea.models.lockout_policy import (LockoutPolicy, LockoutPolicyCondition,
-                                               LockoutPolicyStage, LockoutStageAction)
+from privacyidea.models.conditional_access_policy import (ConditionalAccessPolicy, ConditionalAccessPolicyCondition,
+                                               ConditionalAccessPolicyStage, ConditionalAccessStageAction)
 
 log = logging.getLogger(__name__)
 
@@ -96,7 +96,7 @@ MAX_NAME_LENGTH = 255
 # DENY is a standing pre-auth decision, so it defaults to re-triggering while the count stays at or above the
 # threshold; the post-response lock/email/block actions default to firing once. A set because both the threshold-0 rule
 # and the retrigger default ask "is this a standing verdict?".
-DECISION_ACTIONS = frozenset({str(LockoutAction.DENY)})
+DECISION_ACTIONS = frozenset({str(ConditionalAccessAction.DENY)})
 
 
 @dataclass
@@ -136,9 +136,9 @@ class StageDefinition:
     name: str | None = None
 
 
-def lockout_policy_to_dict(policy: LockoutPolicy) -> dict:
+def conditional_access_policy_to_dict(policy: ConditionalAccessPolicy) -> dict:
     """
-    Serialize a :class:`~privacyidea.models.lockout_policy.LockoutPolicy` with
+    Serialize a :class:`~privacyidea.models.conditional_access_policy.ConditionalAccessPolicy` with
     its stages and actions into the plain-dict shape documented in the module
     docstring (plus the ``id`` of each row).
     """
@@ -177,13 +177,13 @@ def lockout_policy_to_dict(policy: LockoutPolicy) -> dict:
     return result
 
 
-def _get_policy(policy_id: int) -> LockoutPolicy:
+def _get_policy(policy_id: int) -> ConditionalAccessPolicy:
     """
     Fetch one policy row or raise :class:`ResourceNotFoundError`.
     """
-    policy = db.session.get(LockoutPolicy, policy_id)
+    policy = db.session.get(ConditionalAccessPolicy, policy_id)
     if not policy:
-        raise ResourceNotFoundError(f"The lockout policy with id {policy_id} does not exist.")
+        raise ResourceNotFoundError(f"The conditional-access policy with id {policy_id} does not exist.")
     return policy
 
 
@@ -200,9 +200,9 @@ def _validate_name(name, exclude_id: int | None = None) -> str:
     name = name.strip()
     if len(name) > MAX_NAME_LENGTH:
         raise ParameterError(f"The policy name must not exceed {MAX_NAME_LENGTH} characters.")
-    existing = db.session.scalar(select(LockoutPolicy).where(LockoutPolicy.name == name))
+    existing = db.session.scalar(select(ConditionalAccessPolicy).where(ConditionalAccessPolicy.name == name))
     if existing and existing.id != exclude_id:
-        raise ParameterError(f"A lockout policy with the name '{name}' already exists.")
+        raise ParameterError(f"A conditional-access policy with the name '{name}' already exists.")
     return name
 
 
@@ -218,10 +218,11 @@ def _validate_priority(priority, exclude_id: int | None = None) -> int:
     :return: the validated priority
     """
     priority = _validate_positive_int(priority, "priority")
-    existing = db.session.scalar(select(LockoutPolicy).where(LockoutPolicy.priority == priority))
+    existing = db.session.scalar(select(ConditionalAccessPolicy).where(ConditionalAccessPolicy.priority == priority))
     if existing and existing.id != exclude_id:
         raise ParameterError(
-            f"A lockout policy with priority {priority} already exists ('{existing.name}'); priorities must be unique."
+            f"A conditional-access policy with priority {priority} already exists ('{existing.name}'); "
+            f"priorities must be unique."
         )
     return priority
 
@@ -257,18 +258,18 @@ def _validate_stage_name(name) -> str | None:
 # The actions each target permits: a user policy locks/notifies the user, a source-IP policy blocks the IP or alerts
 # the admin (LOCK_USER/EMAIL_USER have no user to act on); both may also refuse the request pre-auth via DENY.
 _ACTIONS_BY_TARGET = {
-    LockoutTarget.USER: {
-        LockoutAction.LOCK_USER,
-        LockoutAction.PERMANENT_LOCK_USER,
-        LockoutAction.EMAIL_USER,
-        LockoutAction.EMAIL_ADMIN,
-        LockoutAction.DENY,
+    ConditionalAccessTarget.USER: {
+        ConditionalAccessAction.LOCK_USER,
+        ConditionalAccessAction.PERMANENT_LOCK_USER,
+        ConditionalAccessAction.EMAIL_USER,
+        ConditionalAccessAction.EMAIL_ADMIN,
+        ConditionalAccessAction.DENY,
     },
-    LockoutTarget.SOURCE_IP: {
-        LockoutAction.BLOCK_IP,
-        LockoutAction.PERMANENT_BLOCK_IP,
-        LockoutAction.EMAIL_ADMIN,
-        LockoutAction.DENY,
+    ConditionalAccessTarget.SOURCE_IP: {
+        ConditionalAccessAction.BLOCK_IP,
+        ConditionalAccessAction.PERMANENT_BLOCK_IP,
+        ConditionalAccessAction.EMAIL_ADMIN,
+        ConditionalAccessAction.DENY,
     },
 }
 
@@ -293,25 +294,25 @@ def get_target_constraints() -> dict[str, dict[str, list[str]]]:
             "actions": sorted(action.value for action in _ACTIONS_BY_TARGET[target]),
             "count_modes": sorted(mode.value for mode in _COUNT_MODES_BY_TARGET[target]),
         }
-        for target in LockoutTarget
+        for target in ConditionalAccessTarget
     }
 
 
-def _validate_target(target) -> "LockoutTarget":
+def _validate_target(target) -> "ConditionalAccessTarget":
     """
-    Validate the policy target and return the matching :class:`LockoutTarget`
-    member (accepts either ``"user"`` or ``LockoutTarget.USER``). Persisting the
+    Validate the policy target and return the matching :class:`ConditionalAccessTarget`
+    member (accepts either ``"user"`` or ``ConditionalAccessTarget.USER``). Persisting the
     member to the ``Unicode`` column stores its value; the follow-up validation
     consumes the member directly.
     """
     try:
-        return LockoutTarget(target)
+        return ConditionalAccessTarget(target)
     except ValueError:
-        valid = ", ".join(sorted(t.value for t in LockoutTarget))
+        valid = ", ".join(sorted(t.value for t in ConditionalAccessTarget))
         raise ParameterError(f"Unknown target '{target}'. Valid targets: {valid}.")
 
 
-def _validate_target_actions(stage_defs: list["StageDefinition"], target: "LockoutTarget") -> None:
+def _validate_target_actions(stage_defs: list["StageDefinition"], target: "ConditionalAccessTarget") -> None:
     """
     Reject any stage action that is not allowed for *target* (see
     :data:`_ACTIONS_BY_TARGET`) - e.g. ``LOCK_USER`` on a ``source_ip`` policy.
@@ -330,16 +331,16 @@ def _validate_target_actions(stage_defs: list["StageDefinition"], target: "Locko
 # Count modes each target may use, and its default; both support the volume modes (per-request, per-attempt).
 # source_ip also offers DISTINCT_USERS, the spraying/enumeration signal, defaulting to it as the characteristic threat.
 _COUNT_MODES_BY_TARGET = {
-    LockoutTarget.USER: {CountMode.PER_REQUEST, CountMode.PER_ATTEMPT},
-    LockoutTarget.SOURCE_IP: {CountMode.DISTINCT_USERS, CountMode.PER_REQUEST, CountMode.PER_ATTEMPT},
+    ConditionalAccessTarget.USER: {CountMode.PER_REQUEST, CountMode.PER_ATTEMPT},
+    ConditionalAccessTarget.SOURCE_IP: {CountMode.DISTINCT_USERS, CountMode.PER_REQUEST, CountMode.PER_ATTEMPT},
 }
 _DEFAULT_COUNT_MODE_BY_TARGET = {
-    LockoutTarget.USER: CountMode.PER_REQUEST,
-    LockoutTarget.SOURCE_IP: CountMode.DISTINCT_USERS,
+    ConditionalAccessTarget.USER: CountMode.PER_REQUEST,
+    ConditionalAccessTarget.SOURCE_IP: CountMode.DISTINCT_USERS,
 }
 
 
-def _validate_count_mode(count_mode, target: "LockoutTarget") -> str:
+def _validate_count_mode(count_mode, target: "ConditionalAccessTarget") -> str:
     """
     Validate the policy's :class:`CountMode` for *target* and return its canonical string value.
 
@@ -394,7 +395,7 @@ def _validate_threshold_for_actions(threshold: int, actions: list[StageActionDef
 
     A threshold counts failures, so 1 is the lowest meaningful value for anything
     that reacts to a count. "Lock the user after 0 failures" is not a rule, it is
-    a typo, so :attr:`LockoutAction.LOCK_USER`, ``BLOCK_IP``, the ``PERMANENT_*``
+    a typo, so :attr:`ConditionalAccessAction.LOCK_USER`, ``BLOCK_IP``, the ``PERMANENT_*``
     variants and the ``EMAIL_*`` actions all require at least 1.
 
     ``DENY`` is the exception, because it does not react to a count at all - it
@@ -430,7 +431,7 @@ def _validate_stages(stages) -> list[StageDefinition]:
     """
     Validate the stage definitions: a non-empty list of dicts, each with a unique
     ``failure_threshold`` and a list of actions whose ``action_type`` is a valid
-    :class:`LockoutAction`. ``action_value`` may be any JSON-serializable value
+    :class:`ConditionalAccessAction`. ``action_value`` may be any JSON-serializable value
     (its action-specific interpretation happens in the engine); unknown keys in
     a stage or action dict are rejected so typos fail loudly.
 
@@ -443,7 +444,7 @@ def _validate_stages(stages) -> list[StageDefinition]:
     """
     if not isinstance(stages, list) or not stages:
         raise ParameterError("'stages' must be a non-empty list of stage definitions.")
-    valid_actions = {action.value for action in LockoutAction}
+    valid_actions = {action.value for action in ConditionalAccessAction}
     allowed_stage_keys = {"name", "failure_threshold", "actions"}
     allowed_action_keys = {"action_type", "action_value", "retrigger_above_threshold"}
     normalized = []
@@ -583,10 +584,10 @@ def _validate_condition_value(value, spec) -> list[str]:
     return validated
 
 
-def _build_conditions(condition_defs: list[ConditionDefinition]) -> list[LockoutPolicyCondition]:
+def _build_conditions(condition_defs: list[ConditionDefinition]) -> list[ConditionalAccessPolicyCondition]:
     """Turn validated :class:`ConditionDefinition` objects into (unpersisted) ORM objects."""
     return [
-        LockoutPolicyCondition(condition_type=condition.condition_type,
+        ConditionalAccessPolicyCondition(condition_type=condition.condition_type,
                                operator=condition.operator, value=condition.value)
         for condition in condition_defs
     ]
@@ -599,7 +600,7 @@ def _default_retrigger(action: StageActionDefinition) -> bool:
     return action.retrigger_above_threshold
 
 
-def _build_stages(stage_defs: list[StageDefinition]) -> list[LockoutPolicyStage]:
+def _build_stages(stage_defs: list[StageDefinition]) -> list[ConditionalAccessPolicyStage]:
     """
     Turn validated :class:`StageDefinition` objects into (unpersisted) ORM objects.
 
@@ -610,11 +611,11 @@ def _build_stages(stage_defs: list[StageDefinition]) -> list[LockoutPolicyStage]
     fire once, at the exact threshold.
     """
     return [
-        LockoutPolicyStage(
+        ConditionalAccessPolicyStage(
             name=stage.name,
             failure_threshold=stage.failure_threshold,
             actions=[
-                LockoutStageAction(
+                ConditionalAccessStageAction(
                     action_type=action.action_type,
                     action_value=action.action_value,
                     retrigger_above_threshold=_default_retrigger(action),
@@ -627,29 +628,29 @@ def _build_stages(stage_defs: list[StageDefinition]) -> list[LockoutPolicyStage]
 
 
 @log_with(log)
-def list_lockout_policies(enabled: bool | None = None) -> list[dict]:
+def list_conditional_access_policies(enabled: bool | None = None) -> list[dict]:
     """
-    Return all lockout policies as dicts, lowest priority number first (the
+    Return all conditional-access policies as dicts, lowest priority number first (the
     engine's evaluation order: a lower number means higher precedence, matching
     privacyIDEA's policy engine).
 
     :param enabled: if given, only return policies with this enabled state
     """
-    stmt = select(LockoutPolicy).order_by(LockoutPolicy.priority.asc())
+    stmt = select(ConditionalAccessPolicy).order_by(ConditionalAccessPolicy.priority.asc())
     if enabled is not None:
-        stmt = stmt.where(LockoutPolicy.enabled == enabled)
+        stmt = stmt.where(ConditionalAccessPolicy.enabled == enabled)
     policies = db.session.scalars(stmt).all()
-    return [lockout_policy_to_dict(policy) for policy in policies]
+    return [conditional_access_policy_to_dict(policy) for policy in policies]
 
 
 @log_with(log)
-def get_lockout_policy(policy_id: int) -> dict:
+def get_conditional_access_policy(policy_id: int) -> dict:
     """
-    Return one lockout policy as a dict.
+    Return one conditional-access policy as a dict.
 
     :raises ResourceNotFoundError: if no policy with this id exists
     """
-    return lockout_policy_to_dict(_get_policy(policy_id))
+    return conditional_access_policy_to_dict(_get_policy(policy_id))
 
 
 @contextmanager
@@ -664,7 +665,7 @@ def _unique_conflict_as_400():
     matters here - without it the session stays poisoned and every later query in
     the request raises - so *any* IntegrityError is handled. The per-policy child
     constraints (counter type, stage threshold) are ordered around by the split flushes in
-    :func:`update_lockout_policy` and so are only backstopped here; the message
+    :func:`update_conditional_access_policy` and so are only backstopped here; the message
     therefore names every uniqueness rule rather than guessing which one fired.
     The original error is chained, so the traceback still identifies the
     constraint.
@@ -674,13 +675,13 @@ def _unique_conflict_as_400():
     except IntegrityError as ex:
         db.session.rollback()
         raise ParameterError(
-            "The lockout policy conflicts with existing data: name and priority must be unique "
+            "The conditional-access policy conflicts with existing data: name and priority must be unique "
             "across policies, and counter types and stage thresholds unique within a policy."
         ) from ex
 
 
 @log_with(log)
-def create_lockout_policy(
+def create_conditional_access_policy(
     name: str,
     time_window_seconds: int,
     counter_types_to_track: list[str],
@@ -693,7 +694,7 @@ def create_lockout_policy(
     conditions: list[dict] | None = None,
 ) -> int:
     """
-    Create a lockout policy with its stages and actions in one transaction.
+    Create a conditional-access policy with its stages and actions in one transaction.
 
     See the module docstring for the parameter shapes; everything is validated
     here and a :class:`ParameterError` is raised on any invalid input before
@@ -710,22 +711,22 @@ def create_lockout_policy(
     name = _validate_name(name)
     time_window_seconds = _validate_positive_int(time_window_seconds, "time_window_seconds")
     priority = _validate_priority(priority)
-    lockout_target = _validate_target(target)
-    count_mode = _validate_count_mode(count_mode, lockout_target)
+    conditional_access_target = _validate_target(target)
+    count_mode = _validate_count_mode(count_mode, conditional_access_target)
     counter_types = _validate_counter_types(counter_types_to_track)
     stage_defs = _validate_stages(stages)
-    _validate_target_actions(stage_defs, lockout_target)
+    _validate_target_actions(stage_defs, conditional_access_target)
     # Checked with `is None`, not `or []`: only an omitted conditions parameter means "applies to everyone";
     # any other falsy value is a 400, not silently "no conditions" - which would widen the policy to every request.
     condition_defs = _validate_conditions([] if conditions is None else conditions)
 
-    policy = LockoutPolicy(
+    policy = ConditionalAccessPolicy(
         name=name,
         time_window_seconds=time_window_seconds,
         enabled=bool(enabled),
         dry_run=bool(dry_run),
         priority=priority,
-        target=lockout_target,
+        target=conditional_access_target,
         counter_types_to_track=counter_types,
         count_mode=count_mode,
         stages=_build_stages(stage_defs),
@@ -734,12 +735,12 @@ def create_lockout_policy(
     db.session.add(policy)
     with _unique_conflict_as_400():
         db.session.commit()
-    log.info(f"Created lockout policy '{name}' (id {policy.id}).")
+    log.info(f"Created conditional-access policy '{name}' (id {policy.id}).")
     return policy.id
 
 
 @log_with(log)
-def update_lockout_policy(
+def update_conditional_access_policy(
     policy_id: int,
     name: str | None = None,
     time_window_seconds: int | None = None,
@@ -753,7 +754,7 @@ def update_lockout_policy(
     conditions: list[dict] | None = None,
 ) -> tuple[int, list[str]]:
     """
-    Update a lockout policy. Only the given (non-``None``) fields are changed.
+    Update a conditional-access policy. Only the given (non-``None``) fields are changed.
 
     ``counter_types_to_track``, ``stages`` and ``conditions`` are **replaced as a
     whole** when given - the delete-orphan cascade drops the previous child rows.
@@ -782,7 +783,7 @@ def update_lockout_policy(
         time_window_seconds = _validate_positive_int(time_window_seconds, "time_window_seconds")
     if priority is not None:
         priority = _validate_priority(priority, exclude_id=policy.id)
-    lockout_target = _validate_target(target) if target is not None else None
+    conditional_access_target = _validate_target(target) if target is not None else None
     if counter_types_to_track is not None:
         counter_types_to_track = _validate_counter_types(counter_types_to_track)
     if stages is not None:
@@ -790,14 +791,16 @@ def update_lockout_policy(
     if conditions is not None:
         conditions = _validate_conditions(conditions)
     # target and stages must stay mutually compatible.
-    if lockout_target is not None or stages is not None:
-        effective_target = lockout_target if lockout_target is not None else LockoutTarget(policy.target)
+    if conditional_access_target is not None or stages is not None:
+        effective_target = (conditional_access_target if conditional_access_target is not None
+                            else ConditionalAccessTarget(policy.target))
         effective_stages = stages if stages is not None else policy.stages
         _validate_target_actions(effective_stages, effective_target)
     # target and count_mode must stay mutually compatible: switching the target can invalidate the stored mode (e.g.
     # a user policy's PER_REQUEST is not valid once it becomes a source_ip policy), so validate the effective pair.
-    if lockout_target is not None or count_mode is not None:
-        effective_target = lockout_target if lockout_target is not None else LockoutTarget(policy.target)
+    if conditional_access_target is not None or count_mode is not None:
+        effective_target = (conditional_access_target if conditional_access_target is not None
+                            else ConditionalAccessTarget(policy.target))
         effective_mode = count_mode if count_mode is not None else policy.count_mode
         validated_mode = _validate_count_mode(effective_mode, effective_target)
         if count_mode is not None:
@@ -816,8 +819,8 @@ def update_lockout_policy(
         if priority is not None:
             policy.priority = priority
             changed_fields.append("priority")
-        if lockout_target is not None:
-            policy.target = lockout_target
+        if conditional_access_target is not None:
+            policy.target = conditional_access_target
             changed_fields.append("target")
         if enabled is not None:
             policy.enabled = bool(enabled)
@@ -851,14 +854,14 @@ def update_lockout_policy(
             changed_fields.append("conditions")
         db.session.commit()
     log.info(
-        f"Updated lockout policy '{policy.name}' (id {policy.id}); "
+        f"Updated conditional-access policy '{policy.name}' (id {policy.id}); "
         f"changed fields: {', '.join(changed_fields) or 'none'}."
     )
     return policy.id, changed_fields
 
 
 @log_with(log)
-def reorder_lockout_policies(policy_ids: list[int], expected_priorities: list[int] | None = None) -> None:
+def reorder_conditional_access_policies(policy_ids: list[int], expected_priorities: list[int] | None = None) -> None:
     """
     Rearrange the evaluation order of the given policies.
 
@@ -911,7 +914,7 @@ def reorder_lockout_policies(policy_ids: list[int], expected_priorities: list[in
             names = ", ".join(f"'{name}'" for name in stale)
             raise ConflictError(
                 "The submitted expected priorities do not match the current "
-                f"priorities of these lockout policies: {names}."
+                f"priorities of these conditional-access policies: {names}."
             )
     # The values these policies hold, lowest first: reassigned in the requested order.
     priorities = sorted(policy.priority for policy in policies)
@@ -925,13 +928,13 @@ def reorder_lockout_policies(policy_ids: list[int], expected_priorities: list[in
             policy.priority = priority
         db.session.flush()
         db.session.commit()
-    log.info(f"Reordered {len(policies)} lockout policies.")
+    log.info(f"Reordered {len(policies)} conditional-access policies.")
 
 
 @log_with(log)
-def delete_lockout_policy(policy_id: int) -> int:
+def delete_conditional_access_policy(policy_id: int) -> int:
     """
-    Delete a lockout policy with all its stages and actions.
+    Delete a conditional-access policy with all its stages and actions.
 
     Existing locks/blocks written by this policy stay in force: live state is
     independent of the policy config.
@@ -943,14 +946,14 @@ def delete_lockout_policy(policy_id: int) -> int:
     name = policy.name
     db.session.delete(policy)
     db.session.commit()
-    log.info(f"Deleted lockout policy '{name}' (id {policy_id}).")
+    log.info(f"Deleted conditional-access policy '{name}' (id {policy_id}).")
     return policy_id
 
 
 @log_with(log)
-def enable_lockout_policy(policy_id: int, enable: bool = True) -> int:
+def enable_conditional_access_policy(policy_id: int, enable: bool = True) -> int:
     """
-    Enable or disable a lockout policy.
+    Enable or disable a conditional-access policy.
 
     :return: the id of the policy
     :raises ResourceNotFoundError: if no policy with this id exists
@@ -958,5 +961,5 @@ def enable_lockout_policy(policy_id: int, enable: bool = True) -> int:
     policy = _get_policy(policy_id)
     policy.enabled = bool(enable)
     db.session.commit()
-    log.info(f"{'Enabled' if enable else 'Disabled'} lockout policy '{policy.name}' (id {policy.id}).")
+    log.info(f"{'Enabled' if enable else 'Disabled'} conditional-access policy '{policy.name}' (id {policy.id}).")
     return policy.id

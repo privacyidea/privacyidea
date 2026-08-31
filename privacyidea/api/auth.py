@@ -560,7 +560,8 @@ def get_auth_token():
     # Authentication log
     if auth_event_type is None and not terminal_event_suppressed:
         # When nothing classified the request: a success defaults to LOGIN_SUCCESS, and an unclassified failure logs
-        # as UNKNOWN_FAIL_REASON rather than PASSWORD_FAIL, which would wrongly skew password-failure lockout counters.
+        # as UNKNOWN_FAIL_REASON rather than PASSWORD_FAIL, which would wrongly skew password-failure
+        # conditional-access counters.
         # A push_wait-suppressed terminal event leaves auth_event_type None, so log_authentication below is a
         # no-op and adds no row on top of the one the token already wrote.
         auth_event_type = AuthEventType.LOGIN_SUCCESS if (
@@ -572,13 +573,13 @@ def get_auth_token():
                        username=login_name,
                        internal_admin=internal_admin)
 
-    # Feeds the classified outcome to the lockout engine now rather than at teardown, because the rejection below
-    # needs to surface the engine's notices and read back any lock/block it just wrote.
+    # Feeds the classified outcome to the conditional-access engine now rather than at teardown, because the rejection
+    # below needs to surface the engine's notices and read back any lock/block it just wrote.
     # The staged log row is written and evaluated in-view (both idempotent, so teardown has nothing left to do),
     # all inside a guard so this can never break the login response.
     context = get_ca_context()
     context.flush()
-    lockout_notices = context.run_post_eval()
+    conditional_access_notices = context.run_post_eval()
 
     if not admin_auth and not user_auth:
         # If this request itself tripped a stage that locked the user or blocked its IP, lead with that instead of
@@ -590,10 +591,10 @@ def get_auth_token():
             details["restriction"] = restriction.kind
         else:
             message = _("Authentication failure. Wrong credentials")
-        if lockout_notices:
+        if conditional_access_notices:
             # Append the notice(s) to the message, not an extra detail key, so hide_specific_error_message masks
-            # them and the login screen renders them in error.message exactly like any lockout rejection.
-            message = message.rstrip(".") + ". " + " ".join(lockout_notices)
+            # them and the login screen renders them in error.message exactly like any lock rejection.
+            message = message.rstrip(".") + ". " + " ".join(conditional_access_notices)
         raise AuthError(message, id=Error.AUTHENTICATE_WRONG_CREDENTIALS,
                         details=details)
     else:

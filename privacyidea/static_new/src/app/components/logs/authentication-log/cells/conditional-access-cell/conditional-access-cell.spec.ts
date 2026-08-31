@@ -40,7 +40,7 @@ describe("ConditionalAccessCell", () => {
     fixture.componentRef.setInput(
       "policyIdsByName",
       new Map([
-        ["Brute Force PIN Lockout", 7],
+        ["Brute Force PIN Lock", 7],
         ["Permanent IP Block", 7],
         ["Email Notification Test", 3],
         ["Notify", 3],
@@ -62,7 +62,7 @@ describe("ConditionalAccessCell", () => {
           auth_log_id: 1,
           action_type: "LOCK_USER",
           dry_run: true,
-          policy_name: "Brute Force PIN Lockout",
+          policy_name: "Brute Force PIN Lock",
           threshold: 5,
           event_count: 5,
           stage_name: "Lock 10 min",
@@ -72,7 +72,7 @@ describe("ConditionalAccessCell", () => {
     ).toEqual([
       {
         key: "12",
-        policy: "Brute Force PIN Lockout",
+        policy: "Brute Force PIN Lock",
         policyLink: `${ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS_DETAILS}7`,
         dryRun: true,
         action: "LOCK_USER",
@@ -119,14 +119,14 @@ describe("ConditionalAccessCell", () => {
     // stage_name is the one nullable identifier of a stage, so the threshold has to be shown as well: it is what an
     // admin recognizes the stage by when it has no name.
     const [view] = viewsFor([
-      { policy_name: "Brute Force PIN Lockout", action_type: "LOCK_USER", threshold: 5, dry_run: false }
+      { policy_name: "Brute Force PIN Lock", action_type: "LOCK_USER", threshold: 5, dry_run: false }
     ]);
     expect(view.threshold).toBe(5);
     expect(view.stage).toBeUndefined();
   });
 
   it("takes the expiry out of info, and only a usable one", () => {
-    // Shown in the details because once the lockout/block state row lapses, this is the only record of how long the
+    // Shown in the details because once the lock/block state row lapses, this is the only record of how long the
     // restriction lasted; validated here rather than in the template because `info` is free-form JSON and the date pipe
     // throws on a value it cannot parse.
     const views = viewsFor([
@@ -215,7 +215,7 @@ describe("ConditionalAccessCell", () => {
         id: 12,
         action_type: "LOCK_USER",
         dry_run: false,
-        policy_name: "Brute Force PIN Lockout",
+        policy_name: "Brute Force PIN Lock",
         threshold: 5,
         event_count: 5,
         stage_name: "Lock 10 min",
@@ -229,13 +229,13 @@ describe("ConditionalAccessCell", () => {
     expect(toggle.getAttribute("aria-controls")).toBe("ca-outcome-12");
     // Collapsed, the cell answers "what happened" and nothing else.
     expect(fixture.nativeElement.textContent).toContain("LOCK_USER");
-    expect(fixture.nativeElement.textContent).not.toContain("Brute Force PIN Lockout");
+    expect(fixture.nativeElement.textContent).not.toContain("Brute Force PIN Lock");
 
     toggle.click();
     fixture.detectChanges();
     expect(toggle.getAttribute("aria-expanded")).toBe("true");
     const details: HTMLElement = fixture.nativeElement.querySelector("#ca-outcome-12");
-    expect(details.textContent).toContain("Brute Force PIN Lockout");
+    expect(details.textContent).toContain("Brute Force PIN Lock");
     expect(details.textContent).toContain("Lock 10 min");
     expect(details.textContent).toContain("5");
     expect(details.querySelector("a")?.getAttribute("href")).toContain(ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS_DETAILS);

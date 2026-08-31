@@ -146,7 +146,7 @@ describe("WidgetFrameComponent", () => {
   it("should render the title as a link to the page a widget names", () => {
     // The mock denies every right by default, and the link is gated on the right of the page it points to.
     const authService = TestBed.inject(AuthService) as unknown as MockAuthService;
-    authService.actionAllowed.mockImplementation((action: string) => action === "lockout_policy_read");
+    authService.actionAllowed.mockImplementation((action: string) => action === "conditional_access_policy_read");
 
     fixture.componentRef.setInput("instance", {
       id: "w2",

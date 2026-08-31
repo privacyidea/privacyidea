@@ -23,7 +23,7 @@ For the third question the policies are evaluated by ascending **priority** - a
 lower number takes precedence, as elsewhere in privacyIDEA - and the first policy
 that denies wins. If none denies, the request proceeds normally. A subject is
 exempted from a policy by giving that policy a condition, see
-:ref:`lockout_policies_exceptions`.
+:ref:`conditional_access_policies_exceptions`.
 
 After the request has been answered, its authentication log entry is evaluated
 against the thresholds. Locks, blocks and notifications are created at this

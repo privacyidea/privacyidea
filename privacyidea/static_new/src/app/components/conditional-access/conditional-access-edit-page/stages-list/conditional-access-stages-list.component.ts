@@ -20,10 +20,13 @@
 import { Component, input, output } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
-import { LockoutPolicyStage, LockoutTarget } from "@services/conditional-access/conditional-access-policy.service";
+import {
+  ConditionalAccessPolicyStage,
+  ConditionalAccessTarget
+} from "@services/conditional-access/conditional-access-policy.service";
 import { ConditionalAccessStageItemComponent } from "./stage-item/conditional-access-stage-item.component";
 
-const NEW_STAGE: LockoutPolicyStage = { failure_threshold: 1, actions: [] };
+const NEW_STAGE: ConditionalAccessPolicyStage = { failure_threshold: 1, actions: [] };
 
 @Component({
   selector: "app-conditional-access-stages-list",
@@ -33,13 +36,13 @@ const NEW_STAGE: LockoutPolicyStage = { failure_threshold: 1, actions: [] };
   styleUrl: "./conditional-access-stages-list.component.scss"
 })
 export class ConditionalAccessStagesListComponent {
-  readonly stages = input.required<LockoutPolicyStage[]>();
-  readonly target = input<LockoutTarget>("user");
-  readonly stagesChange = output<LockoutPolicyStage[]>();
+  readonly stages = input.required<ConditionalAccessPolicyStage[]>();
+  readonly target = input<ConditionalAccessTarget>("user");
+  readonly stagesChange = output<ConditionalAccessPolicyStage[]>();
 
   // 1-based order in which this stage triggers (lowest threshold = Stage 1), recomputed live so
   // editing a threshold re-numbers the stages.
-  stageNumber(stage: LockoutPolicyStage): number {
+  stageNumber(stage: ConditionalAccessPolicyStage): number {
     return this.stages().filter((other) => other.failure_threshold < stage.failure_threshold).length + 1;
   }
 
@@ -47,7 +50,7 @@ export class ConditionalAccessStagesListComponent {
     this.stagesChange.emit([...this.stages(), { ...NEW_STAGE, actions: [] }]);
   }
 
-  onUpdateStage(index: number, partial: Partial<LockoutPolicyStage>): void {
+  onUpdateStage(index: number, partial: Partial<ConditionalAccessPolicyStage>): void {
     this.stagesChange.emit(this.stages().map((stage, i) => (i === index ? { ...stage, ...partial } : stage)));
   }
 

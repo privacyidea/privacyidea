@@ -292,18 +292,18 @@
             </app-details-card>
           }
 
-          @if (authService.actionAllowed("user_lockout_read")) {
+          @if (authService.actionAllowed("user_lock_read")) {
             <app-details-card
               class="details-card--user-info"
-              title="User Lockout State"
+              title="User Lock State"
               i18n-title>
-              <span [ngClass]="lockoutStateClass()">
-                {{ lockoutStatusText() }}
+              <span [ngClass]="lockStateClass()">
+                {{ lockStatusText() }}
               </span>
-              @if (authService.actionAllowed("user_lockout_reset") && isUserLocked()) {
+              @if (authService.actionAllowed("user_lock_reset") && isUserLocked()) {
                 <div class="margin-top-8">
                   <button
-                    (click)="resetUserLockout()"
+                    (click)="resetUserLock()"
                     class="action-button-secondary"
                     mat-stroked-button>
                     <mat-icon>lock_open</mat-icon>

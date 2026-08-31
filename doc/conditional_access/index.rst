@@ -1,4 +1,4 @@
-.. index:: Conditional Access, lockout, blocklist
+.. index:: Conditional Access, lock, blocklist
 .. _conditional_access:
 
 Conditional Access
@@ -10,7 +10,7 @@ Conditional access refuses an authentication request because of what happened
 *before* it.
 
 Every authentication request is classified and written to the
-:ref:`authentication_log`. :ref:`lockout_policies` count those entries for one
+:ref:`authentication_log`. :ref:`conditional_access_policies` count those entries for one
 user or one source IP over a time window. When a threshold is reached, the
 configured actions run: the user is locked, the source IP is blocked, an email
 is sent, or the request is denied.
@@ -23,8 +23,8 @@ source IP, keeps the resulting lock or block until it expires or an
 administrator lifts it, and can react to attacks that never hit the same
 account twice, such as password spraying and user enumeration.
 
-.. note:: Conditional access does nothing until you create a lockout policy.
-   Nothing is enabled by default.
+.. note:: Conditional access does nothing until you create a conditional access
+   policy. Nothing is enabled by default.
 
 In the WebUI you will find it here:
 
@@ -38,9 +38,9 @@ In the WebUI you will find it here:
 Every one of these views requires an administrator right:
 
 * ``authentication_log_read`` - read the authentication log.
-* ``lockout_policy_read``, ``lockout_policy_write`` - view, and create/edit/delete,
-  the lockout policies.
-* ``user_lockout_read``, ``user_lockout_reset`` - view locked users, and unlock them.
+* ``conditional_access_policy_read``, ``conditional_access_policy_write`` - view,
+  and create/edit/delete, the conditional access policies.
+* ``user_lock_read``, ``user_lock_reset`` - view locked users, and unlock them.
 * ``blocklist_read``, ``blocklist_reset`` - view blocked addresses, and remove them.
 
 The rights are defined in the :ref:`admin_policies`, starting at
@@ -56,6 +56,6 @@ lifted again:
    :maxdepth: 1
 
    evaluation
-   lockout_policies
+   policies
    authentication_log
    locks_and_blocks

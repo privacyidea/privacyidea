@@ -16,12 +16,14 @@
 # SPDX-FileCopyrightText: 2026 NetKnights GmbH <https://netknights.it>
 # SPDX-License-Identifier: AGPL-3.0-or-later
 """
-Unit tests for the conditional-access lockout policy engine
+Unit tests for the conditional-access policy engine
 (:mod:`privacyidea.lib.conditional_access.engine`): the failure-count query, the
 pre-check lock test, and the policy-evaluation workflow (stage selection,
 de-duplication, dry-run, and the LOCK_USER / PERMANENT_LOCK_USER actions).
 """
+import ipaddress
 from collections.abc import Sequence
+from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 from email import message_from_string
 
@@ -37,46 +39,55 @@ from privacyidea.lib.conditional_access.conditions import (CONDITION_TYPES, Cond
 from privacyidea.lib.conditional_access.context import CAContext
 from privacyidea.lib.conditional_access.engine import (
     AccessDecision,
-    LockoutAction,
-    LockoutTarget,
+    ConditionalAccessAction,
+    ConditionalAccessTarget,
     count_user_events,
     count_user_attempts,
     count_distinct_users_for_ip,
     count_ip_events,
     count_ip_attempts,
     evaluate_access_decision,
-    evaluate_lockout_policies,
-    get_user_lockout,
+    evaluate_conditional_access_policies,
+    get_user_lock,
     is_user_locked,
     is_ip_blocked,
     is_ip_never_block,
+    NEVER_BLOCK_CONFIG_KEY,
     get_ip_block,
     _lock_duration_seconds,
     _policy_count_ip,
     _safe_format,
     _resolve_admin_recipients,
 )
-from privacyidea.lib.conditional_access.lockout_policy import (StageDefinition, StageActionDefinition,
+from privacyidea.lib.conditional_access.policy import (StageDefinition, StageActionDefinition,
                                                                _build_stages)
-from privacyidea.lib.config import set_privacyidea_config, delete_privacyidea_config, SYSCONF
+from privacyidea.lib.framework import get_app_config
 from privacyidea.lib.smtpserver import add_smtpserver, delete_smtpserver
 from privacyidea.lib.user import User
 from privacyidea.models import Admin, db
 from privacyidea.models.authentication_log import AuthenticationLog
-from privacyidea.models.lockout_policy import (
+from privacyidea.models.conditional_access_policy import (
     BlockList,
-    LockoutPolicy,
-    LockoutPolicyCondition,
-    LockoutPolicyStage,
-    LockoutStageAction,
-    UserLockoutState,
+    ConditionalAccessPolicy,
+    ConditionalAccessPolicyCondition,
+    ConditionalAccessPolicyStage,
+    ConditionalAccessStageAction,
+    UserLockState,
 )
 from privacyidea.models.utils import utc_now
 from . import smtpmock
-from .conditional_access_lockout_base import LockoutTestCase
+from .conditional_access_base import ConditionalAccessTestCase
 
 
-class LockoutEngineTestCase(LockoutTestCase):
+@contextmanager
+def never_block_config(value):
+    """Set the pi.cfg never-block allowlist for the duration of the block."""
+    with mock.patch.dict(get_app_config(), {NEVER_BLOCK_CONFIG_KEY: value}):
+        yield
+
+
+
+class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
 
     def _seed_attempt(self, attempt_id: str, event_types: list[AuthEventType],
                       timestamp: datetime | None = None, user: User | None = None) -> None:
@@ -91,14 +102,16 @@ class LockoutEngineTestCase(LockoutTestCase):
         db.session.commit()
 
     def _make_policy(self, *, name: str, counter_type, window: int = 3600, enabled: bool = True,
-                     dry_run: bool = False, priority: int = 1, target: LockoutTarget = LockoutTarget.USER,
+                     dry_run: bool = False, priority: int = 1,
+                     target: ConditionalAccessTarget = ConditionalAccessTarget.USER,
                      count_mode: CountMode | None = None,
-                     conditions: Sequence[LockoutPolicyCondition] = (),
+                     conditions: Sequence[ConditionalAccessPolicyCondition] = (),
                      stages: Sequence[StageDefinition] = (
-                             StageDefinition(3, [StageActionDefinition(LockoutAction.LOCK_USER, 600)]),)):
+                             StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.LOCK_USER, 600)]),)):
         """
         Build a policy with its stages and actions from :class:`StageDefinition` specs, persisted via the production
-        :func:`_build_stages`. Builds the ORM rows directly (not through ``create_lockout_policy``) so engine tests
+        :func:`_build_stages`. Builds the ORM rows directly (not through
+        ``create_conditional_access_policy``) so engine tests
         can also construct deliberately invalid policies (e.g. an unknown action type) that the CRUD would reject.
 
         ``count_mode`` defaults to the target's default (``DISTINCT_USERS`` for source_ip, else ``PER_REQUEST``),
@@ -109,9 +122,10 @@ class LockoutEngineTestCase(LockoutTestCase):
         :param stages: the :class:`StageDefinition` specs to create
         """
         if count_mode is None:
-            count_mode = CountMode.DISTINCT_USERS if target == LockoutTarget.SOURCE_IP else CountMode.PER_REQUEST
+            count_mode = (CountMode.DISTINCT_USERS if target == ConditionalAccessTarget.SOURCE_IP
+                          else CountMode.PER_REQUEST)
         counter_types = counter_type if isinstance(counter_type, (list, tuple)) else [counter_type]
-        policy = LockoutPolicy(name=name, counter_types_to_track=[str(t) for t in counter_types],
+        policy = ConditionalAccessPolicy(name=name, counter_types_to_track=[str(t) for t in counter_types],
                                time_window_seconds=window, enabled=enabled, dry_run=dry_run,
                                priority=priority, target=str(target), count_mode=str(count_mode),
                                conditions=list(conditions), stages=_build_stages(list(stages)))
@@ -202,7 +216,8 @@ class LockoutEngineTestCase(LockoutTestCase):
         ip = "10.1.0.5"
         # Two distinct attempts, one spanning three rows: PER_ATTEMPT counts 2 (PER_REQUEST would count 4).
         self._seed_ip_attempt(ip, "a1", [AuthEventType.CHALLENGE_ANSWERED_FAIL, AuthEventType.PASSWORD_FAIL])
-        self._seed_ip_attempt(ip, "a2", [AuthEventType.PASSWORD_FAIL, AuthEventType.PASSWORD_FAIL, AuthEventType.PASSWORD_FAIL])
+        self._seed_ip_attempt(ip, "a2", [AuthEventType.PASSWORD_FAIL, AuthEventType.PASSWORD_FAIL,
+                AuthEventType.PASSWORD_FAIL])
         self.assertEqual(2, count_ip_attempts(ip, [AuthEventType.PASSWORD_FAIL], 300))
         self.assertEqual(4, count_ip_events(ip, [AuthEventType.PASSWORD_FAIL], 300))
 
@@ -229,12 +244,14 @@ class LockoutEngineTestCase(LockoutTestCase):
         # trips it, where the DISTINCT_USERS spraying signal (1 distinct user) never would.
         ip = "203.0.113.20"
         self._make_policy(name="ratelimit", counter_type=AuthEventType.PASSWORD_FAIL, window=300,
-                          target=LockoutTarget.SOURCE_IP, count_mode=CountMode.PER_REQUEST,
+                          target=ConditionalAccessTarget.SOURCE_IP, count_mode=CountMode.PER_REQUEST,
                           stages=(StageDefinition(failure_threshold=5,
-                                                  actions=[StageActionDefinition(LockoutAction.BLOCK_IP, {"duration_seconds": 3600})]),))
+                                                  actions=[StageActionDefinition(
+                                                      ConditionalAccessAction.BLOCK_IP,
+                                                      {"duration_seconds": 3600})]),))
         self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=1, per_user=5)
         self.assertFalse(is_ip_blocked(ip))
-        evaluate_lockout_policies(CAContext(self.user, ip), AuthEventType.PASSWORD_FAIL)
+        evaluate_conditional_access_policies(CAContext(self.user, ip), AuthEventType.PASSWORD_FAIL)
         self.assertTrue(is_ip_blocked(ip))
 
     # --- source_ip target evaluation (spraying) -------------------------------
@@ -242,29 +259,32 @@ class LockoutEngineTestCase(LockoutTestCase):
     def test_spraying_policy_blocks_ip(self):
         ip = "203.0.113.7"
         self._make_policy(name="spray", counter_type=AuthEventType.PASSWORD_FAIL, window=300,
-                          target=LockoutTarget.SOURCE_IP,
-                          stages=(StageDefinition(20, [StageActionDefinition(LockoutAction.BLOCK_IP, {"duration_seconds": 3600})]),))
+                          target=ConditionalAccessTarget.SOURCE_IP,
+                          stages=(StageDefinition(20, [StageActionDefinition(
+                              ConditionalAccessAction.BLOCK_IP, {"duration_seconds": 3600})]),))
         self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=20)
         self.assertFalse(is_ip_blocked(ip))
-        evaluate_lockout_policies(CAContext(self.user, ip), AuthEventType.PASSWORD_FAIL)
+        evaluate_conditional_access_policies(CAContext(self.user, ip), AuthEventType.PASSWORD_FAIL)
         self.assertTrue(is_ip_blocked(ip))
 
     def test_spraying_policy_below_threshold_does_not_block(self):
         ip = "203.0.113.8"
         self._make_policy(name="spray", counter_type=AuthEventType.PASSWORD_FAIL, window=300,
-                          target=LockoutTarget.SOURCE_IP,
-                          stages=(StageDefinition(20, [StageActionDefinition(LockoutAction.BLOCK_IP, {"duration_seconds": 3600})]),))
+                          target=ConditionalAccessTarget.SOURCE_IP,
+                          stages=(StageDefinition(20, [StageActionDefinition(
+                              ConditionalAccessAction.BLOCK_IP, {"duration_seconds": 3600})]),))
         self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=19)
-        evaluate_lockout_policies(CAContext(self.user, ip), AuthEventType.PASSWORD_FAIL)
+        evaluate_conditional_access_policies(CAContext(self.user, ip), AuthEventType.PASSWORD_FAIL)
         self.assertFalse(is_ip_blocked(ip))
 
     def test_spraying_policy_without_source_ip_is_skipped(self):
         self._make_policy(name="spray", counter_type=AuthEventType.PASSWORD_FAIL, window=300,
-                          target=LockoutTarget.SOURCE_IP,
-                          stages=(StageDefinition(1, [StageActionDefinition(LockoutAction.BLOCK_IP, {"duration_seconds": 3600})]),))
+                          target=ConditionalAccessTarget.SOURCE_IP,
+                          stages=(StageDefinition(1, [StageActionDefinition(
+                              ConditionalAccessAction.BLOCK_IP, {"duration_seconds": 3600})]),))
         self._seed_ip_events("203.0.113.9", AuthEventType.PASSWORD_FAIL, n_users=5)
         # No source IP on the current request -> the IP-targeted policy cannot act.
-        self.assertEqual([], evaluate_lockout_policies(CAContext(self.user, None),
+        self.assertEqual([], evaluate_conditional_access_policies(CAContext(self.user, None),
                                                       AuthEventType.PASSWORD_FAIL).notices)
 
     # --- count_user_events ----------------------------------------------------
@@ -436,19 +456,19 @@ class LockoutEngineTestCase(LockoutTestCase):
         self.assertFalse(is_user_locked(self.user))
 
     def test_is_user_locked_timed_future(self):
-        db.session.add(UserLockoutState(resolver=self.user.resolver, uid=self.user.uid, realm=self.user.realm,
+        db.session.add(UserLockState(resolver=self.user.resolver, uid=self.user.uid, realm=self.user.realm,
                                         lock_expires_at=utc_now() + timedelta(seconds=600)))
         db.session.commit()
         self.assertTrue(is_user_locked(self.user))
 
     def test_is_user_locked_timed_expired(self):
-        db.session.add(UserLockoutState(resolver=self.user.resolver, uid=self.user.uid, realm=self.user.realm,
+        db.session.add(UserLockState(resolver=self.user.resolver, uid=self.user.uid, realm=self.user.realm,
                                         lock_expires_at=utc_now() - timedelta(seconds=600)))
         db.session.commit()
         self.assertFalse(is_user_locked(self.user))
 
     def test_is_user_locked_permanent(self):
-        db.session.add(UserLockoutState(resolver=self.user.resolver, uid=self.user.uid, realm=self.user.realm,
+        db.session.add(UserLockState(resolver=self.user.resolver, uid=self.user.uid, realm=self.user.realm,
                                         lock_expires_at=None))
         db.session.commit()
         self.assertTrue(is_user_locked(self.user))
@@ -456,42 +476,42 @@ class LockoutEngineTestCase(LockoutTestCase):
     def test_is_user_locked_unresolved_user(self):
         self.assertFalse(is_user_locked(User()))
 
-    # --- get_user_lockout clear_expired ---------------------------------------
+    # --- get_user_lock clear_expired ---------------------------------------
 
-    def _add_lockout(self, lock_expires_at):
-        db.session.add(UserLockoutState(resolver=self.user.resolver, uid=self.user.uid,
+    def _add_lock_action(self, lock_expires_at):
+        db.session.add(UserLockState(resolver=self.user.resolver, uid=self.user.uid,
                                         realm=self.user.realm, lock_expires_at=lock_expires_at))
         db.session.commit()
 
     def test_clear_expired_deletes_stale_row(self):
         # An expired timed lock is dropped when the pre-check opts in.
-        self._add_lockout(utc_now() - timedelta(seconds=600))
-        self.assertIsNone(get_user_lockout(self.user, clear_expired=True))
+        self._add_lock_action(utc_now() - timedelta(seconds=600))
+        self.assertIsNone(get_user_lock(self.user, clear_expired=True))
         self.assertIsNone(self._state())
 
     def test_clear_expired_default_keeps_stale_row(self):
         # The default is a pure read: an expired row reads as unlocked but stays.
-        self._add_lockout(utc_now() - timedelta(seconds=600))
-        self.assertIsNone(get_user_lockout(self.user))
+        self._add_lock_action(utc_now() - timedelta(seconds=600))
+        self.assertIsNone(get_user_lock(self.user))
         self.assertIsNotNone(self._state())
 
     def test_clear_expired_keeps_active_lock(self):
         # A still-active timed lock is never deleted, even with clear_expired.
-        self._add_lockout(utc_now() + timedelta(seconds=600))
-        self.assertIsNotNone(get_user_lockout(self.user, clear_expired=True))
+        self._add_lock_action(utc_now() + timedelta(seconds=600))
+        self.assertIsNotNone(get_user_lock(self.user, clear_expired=True))
         self.assertIsNotNone(self._state())
 
     def test_clear_expired_keeps_permanent_lock(self):
         # A permanent lock is never deleted, even with clear_expired.
-        self._add_lockout(None)
-        status = get_user_lockout(self.user, clear_expired=True)
+        self._add_lock_action(None)
+        status = get_user_lock(self.user, clear_expired=True)
         self.assertIsNotNone(status)
         self.assertTrue(status.permanent)
         self.assertIsNotNone(self._state())
 
     def test_is_user_locked_clear_expired_deletes_stale_row(self):
-        # The boolean wrapper threads clear_expired through to get_user_lockout.
-        self._add_lockout(utc_now() - timedelta(seconds=600))
+        # The boolean wrapper threads clear_expired through to get_user_lock.
+        self._add_lock_action(utc_now() - timedelta(seconds=600))
         self.assertFalse(is_user_locked(self.user, clear_expired=True))
         self.assertIsNone(self._state())
 
@@ -586,12 +606,12 @@ class LockoutEngineTestCase(LockoutTestCase):
         self.assertFalse(is_ip_blocked("203.0.113.5", clear_expired=True))
         self.assertIsNone(self._block("203.0.113.5"))
 
-    # --- evaluate_lockout_policies --------------------------------------------
+    # --- evaluate_conditional_access_policies --------------------------------------------
 
     def test_evaluate_triggers_lock(self):
         self._make_policy(name="lock3", counter_type=AuthEventType.MFA_FAIL)
         self._seed_events(AuthEventType.MFA_FAIL, 3)
-        evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+        evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
         state = self._state()
         self.assertIsNotNone(state)
         self.assertIsNotNone(state.lock_expires_at)
@@ -601,26 +621,26 @@ class LockoutEngineTestCase(LockoutTestCase):
     def test_evaluate_below_threshold_does_not_lock(self):
         self._make_policy(name="lock3", counter_type=AuthEventType.MFA_FAIL)
         self._seed_events(AuthEventType.MFA_FAIL, 2)
-        evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+        evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
         self.assertIsNone(self._state())
 
     def test_evaluate_no_op_for_unresolved_user(self):
         self._make_policy(name="lock3", counter_type=AuthEventType.MFA_FAIL)
         # No event_type / no resolved user must be a no-op without raising.
-        evaluate_lockout_policies(CAContext(self.user), None)
-        evaluate_lockout_policies(CAContext(User()), AuthEventType.MFA_FAIL)
+        evaluate_conditional_access_policies(CAContext(self.user), None)
+        evaluate_conditional_access_policies(CAContext(User()), AuthEventType.MFA_FAIL)
         self.assertIsNone(self._state())
 
     def test_evaluate_disabled_policy_skipped(self):
         self._make_policy(name="off", counter_type=AuthEventType.MFA_FAIL, enabled=False)
         self._seed_events(AuthEventType.MFA_FAIL, 5)
-        evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+        evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
         self.assertIsNone(self._state())
 
     def test_evaluate_non_matching_event_type_skipped(self):
         self._make_policy(name="mfa", counter_type=AuthEventType.MFA_FAIL)
         self._seed_events(AuthEventType.PIN_FAIL, 5)
-        evaluate_lockout_policies(CAContext(self.user), AuthEventType.PIN_FAIL)
+        evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.PIN_FAIL)
         self.assertIsNone(self._state())
 
     def test_evaluate_combined_count_across_tracked_types(self):
@@ -631,7 +651,7 @@ class LockoutEngineTestCase(LockoutTestCase):
         self._seed_events(AuthEventType.PASSWORD_FAIL, 2)
         self._seed_events(AuthEventType.MFA_FAIL, 1)
         # The current request is an MFA_FAIL — one of the tracked types.
-        evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+        evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
         self.assertTrue(is_user_locked(self.user))
 
     def test_evaluate_untracked_current_event_skips_policy(self):
@@ -641,10 +661,10 @@ class LockoutEngineTestCase(LockoutTestCase):
                           counter_type=[AuthEventType.PASSWORD_FAIL, AuthEventType.PIN_FAIL])
         self._seed_events(AuthEventType.PASSWORD_FAIL, 3)
         # MFA_FAIL is not tracked by this policy -> skipped, no lock.
-        evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+        evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
         self.assertIsNone(self._state())
         # A tracked type triggers it.
-        evaluate_lockout_policies(CAContext(self.user), AuthEventType.PASSWORD_FAIL)
+        evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.PASSWORD_FAIL)
         self.assertTrue(is_user_locked(self.user))
 
     def test_stage_exact_threshold_selection(self):
@@ -652,8 +672,8 @@ class LockoutEngineTestCase(LockoutTestCase):
         # between the two triggers nothing.
         _, stages = self._make_policy(
             name="tiers", counter_type=AuthEventType.MFA_FAIL,
-            stages=(StageDefinition(15, [StageActionDefinition(LockoutAction.LOCK_USER, 1800)]),
-                    StageDefinition(5, [StageActionDefinition(LockoutAction.LOCK_USER, 600)])))
+            stages=(StageDefinition(15, [StageActionDefinition(ConditionalAccessAction.LOCK_USER, 1800)]),
+                    StageDefinition(5, [StageActionDefinition(ConditionalAccessAction.LOCK_USER, 600)])))
         severe_stage, mild_stage = stages[0], stages[1]
 
         # Exactly 5 -> the mild stage fires. The recorded outcome names the stage by its threshold.
@@ -678,13 +698,13 @@ class LockoutEngineTestCase(LockoutTestCase):
 
         # One failure after the successful login: 1 < 3, not locked - the three pre-login failures no longer count.
         self._seed_events(AuthEventType.MFA_FAIL, 1, timestamp=now - timedelta(seconds=100))
-        evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL, now=now)
+        evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL, now=now)
         self.assertIsNone(self._state())
         self.assertFalse(is_user_locked(self.user))
 
         # Two more post-login failures reach the threshold again (1 + 2 = 3) -> locked.
         self._seed_events(AuthEventType.MFA_FAIL, 2, timestamp=now - timedelta(seconds=50))
-        evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL, now=now)
+        evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL, now=now)
         self.assertTrue(is_user_locked(self.user))
 
     def test_expired_lock_is_reapplied_when_the_threshold_is_still_met(self):
@@ -692,7 +712,7 @@ class LockoutEngineTestCase(LockoutTestCase):
         # dead zone where the threshold is met but nothing is in force.
         self._make_policy(name="lock3", counter_type=AuthEventType.MFA_FAIL)
         self._seed_events(AuthEventType.MFA_FAIL, 3)
-        evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+        evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
         self.assertTrue(is_user_locked(self.user))
 
         # The lock runs out while the original failures are still in the window.
@@ -702,7 +722,7 @@ class LockoutEngineTestCase(LockoutTestCase):
         self.assertFalse(is_user_locked(self.user))
 
         # The threshold is still met, so the stage locks again.
-        evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+        evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
         self.assertTrue(is_user_locked(self.user))
 
     def test_admin_unlock_is_undone_when_the_threshold_is_still_met(self):
@@ -710,7 +730,7 @@ class LockoutEngineTestCase(LockoutTestCase):
         # user again on the next evaluation.
         self._make_policy(name="lock3", counter_type=AuthEventType.MFA_FAIL)
         self._seed_events(AuthEventType.MFA_FAIL, 3)
-        evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+        evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
         self.assertTrue(is_user_locked(self.user))
 
         # Admin lifts the lock by deleting the row.
@@ -719,7 +739,7 @@ class LockoutEngineTestCase(LockoutTestCase):
         self.assertFalse(is_user_locked(self.user))
 
         # The threshold is still met, so the stage locks again.
-        evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+        evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
         self.assertTrue(is_user_locked(self.user))
 
     def test_fire_once_default_does_not_refire_above_threshold(self):
@@ -727,7 +747,7 @@ class LockoutEngineTestCase(LockoutTestCase):
         # threshold after the lock expires does not re-fire the threshold-3 stage.
         self._make_policy(name="lock3", counter_type=AuthEventType.MFA_FAIL)
         self._seed_events(AuthEventType.MFA_FAIL, 3)
-        evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+        evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
         self.assertTrue(is_user_locked(self.user))
 
         state = self._state()
@@ -737,7 +757,7 @@ class LockoutEngineTestCase(LockoutTestCase):
 
         # Count climbs to 4 (> 3) -> no exact match -> no re-lock.
         self._seed_events(AuthEventType.MFA_FAIL, 1)
-        evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+        evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
         self.assertFalse(is_user_locked(self.user))
 
     def test_retrigger_above_threshold_refires(self):
@@ -747,7 +767,7 @@ class LockoutEngineTestCase(LockoutTestCase):
         stages[0].actions[0].retrigger_above_threshold = True
         db.session.commit()
         self._seed_events(AuthEventType.MFA_FAIL, 3)
-        evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+        evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
         self.assertTrue(is_user_locked(self.user))
 
         state = self._state()
@@ -757,13 +777,13 @@ class LockoutEngineTestCase(LockoutTestCase):
 
         # Count climbs to 4 (>= 3) -> the re-triggering action fires again.
         self._seed_events(AuthEventType.MFA_FAIL, 1)
-        evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+        evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
         self.assertTrue(is_user_locked(self.user))
 
     def test_dry_run_writes_no_state(self):
         self._make_policy(name="dry", counter_type=AuthEventType.MFA_FAIL, dry_run=True)
         self._seed_events(AuthEventType.MFA_FAIL, 5)
-        evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+        evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
         self.assertIsNone(self._state())
         self.assertFalse(is_user_locked(self.user))
 
@@ -772,12 +792,12 @@ class LockoutEngineTestCase(LockoutTestCase):
         # as this request's history, since the engine itself never writes them.
         policy, _stages = self._make_policy(name="dry", counter_type=AuthEventType.MFA_FAIL, dry_run=True)
         self._seed_events(AuthEventType.MFA_FAIL, 3)
-        evaluation = evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+        evaluation = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
 
         self.assertEqual(1, len(evaluation.outcomes))
         outcome = evaluation.outcomes[0]
         self.assertTrue(outcome.dry_run)
-        self.assertEqual(str(LockoutAction.LOCK_USER), outcome.action_type)
+        self.assertEqual(str(ConditionalAccessAction.LOCK_USER), outcome.action_type)
         self.assertEqual("dry", outcome.policy_name)
         self.assertEqual(3, outcome.threshold)
         self.assertEqual(3, outcome.event_count)
@@ -787,7 +807,7 @@ class LockoutEngineTestCase(LockoutTestCase):
         # detail lives in `info` (JSON) rather than a dedicated column, since only two of the seven action types
         # would ever use it.
         self.assertIn("expires_at", outcome.info)
-        # Still a dry run: no lockout state is ever written.
+        # Still a dry run: no lock state is ever written.
         self.assertIsNone(self._state())
         self.assertFalse(is_user_locked(self.user))
 
@@ -796,9 +816,10 @@ class LockoutEngineTestCase(LockoutTestCase):
         # per policy that would have triggered.
         self._make_policy(name="dry_a", counter_type=AuthEventType.MFA_FAIL, dry_run=True)
         self._make_policy(name="dry_b", counter_type=AuthEventType.MFA_FAIL, dry_run=True, priority=2,
-                          stages=(StageDefinition(2, [StageActionDefinition(LockoutAction.PERMANENT_LOCK_USER)]),))
+                          stages=(StageDefinition(
+                              2, [StageActionDefinition(ConditionalAccessAction.PERMANENT_LOCK_USER)]),))
         self._seed_events(AuthEventType.MFA_FAIL, 3)
-        evaluation = evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+        evaluation = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
 
         # dry_b's PERMANENT_LOCK_USER is fire-once at threshold 2 and the count is 3, so only dry_a matches.
         self.assertEqual(["dry_a"], [outcome.policy_name for outcome in evaluation.outcomes])
@@ -809,16 +830,17 @@ class LockoutEngineTestCase(LockoutTestCase):
         # than only a threshold.
         self._make_policy(
             name="dry_named", counter_type=AuthEventType.MFA_FAIL, dry_run=True,
-            stages=(StageDefinition(3, [StageActionDefinition(LockoutAction.LOCK_USER, 600)],
+            stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.LOCK_USER, 600)],
                                     name="Lock 10 min"),))
         self._seed_events(AuthEventType.MFA_FAIL, 3)
-        outcome = evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL).outcomes[0]
+        outcome = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL).outcomes[0]
         self.assertEqual("Lock 10 min", outcome.stage_name)
 
     def test_dry_run_below_threshold_records_nothing(self):
         self._make_policy(name="dry", counter_type=AuthEventType.MFA_FAIL, dry_run=True)
         self._seed_events(AuthEventType.MFA_FAIL, 2)  # below the threshold of 3
-        self.assertEqual([], evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL).outcomes)
+        self.assertEqual([], evaluate_conditional_access_policies(CAContext(self.user),
+                AuthEventType.MFA_FAIL).outcomes)
         self.assertIsNone(self._state())
 
     def test_dry_run_fire_once_records_nothing_above_threshold(self):
@@ -827,7 +849,8 @@ class LockoutEngineTestCase(LockoutTestCase):
         # it - the same semantics as a live fire-once policy.
         self._make_policy(name="dry", counter_type=AuthEventType.MFA_FAIL, dry_run=True)
         self._seed_events(AuthEventType.MFA_FAIL, 6)  # well past the threshold of 3
-        self.assertEqual([], evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL).outcomes)
+        self.assertEqual([], evaluate_conditional_access_policies(CAContext(self.user),
+                AuthEventType.MFA_FAIL).outcomes)
 
     def test_dry_run_retrigger_records_a_outcome_above_threshold(self):
         # With a re-triggering action the dry run keeps reporting for as long as the count stays at or above the
@@ -836,7 +859,7 @@ class LockoutEngineTestCase(LockoutTestCase):
         stages[0].actions[0].retrigger_above_threshold = True
         db.session.commit()
         self._seed_events(AuthEventType.MFA_FAIL, 6)  # count 6 >= threshold 3
-        outcomes = evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL).outcomes
+        outcomes = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL).outcomes
 
         self.assertEqual(1, len(outcomes))
         self.assertEqual(3, outcomes[0].threshold)
@@ -851,9 +874,11 @@ class LockoutEngineTestCase(LockoutTestCase):
         db.session.commit()
         self._seed_events(AuthEventType.MFA_FAIL, 3)
 
-        self.assertEqual(1, len(evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL).outcomes))
+        self.assertEqual(1, len(evaluate_conditional_access_policies(CAContext(self.user),
+                AuthEventType.MFA_FAIL).outcomes))
         self._seed_events(AuthEventType.MFA_FAIL, 1)
-        self.assertEqual(1, len(evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL).outcomes))
+        self.assertEqual(1, len(evaluate_conditional_access_policies(CAContext(self.user),
+                AuthEventType.MFA_FAIL).outcomes))
         self.assertIsNone(self._state())
 
     def test_dry_run_records_one_outcome_per_pending_action_of_the_stage(self):
@@ -861,12 +886,12 @@ class LockoutEngineTestCase(LockoutTestCase):
         # history is queried by action.
         self._make_policy(
             name="dry", counter_type=AuthEventType.MFA_FAIL, dry_run=True,
-            stages=(StageDefinition(3, [StageActionDefinition(LockoutAction.LOCK_USER, 600),
-                                           StageActionDefinition(LockoutAction.PERMANENT_LOCK_USER)]),))
+            stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.LOCK_USER, 600),
+                                           StageActionDefinition(ConditionalAccessAction.PERMANENT_LOCK_USER)]),))
         self._seed_events(AuthEventType.MFA_FAIL, 3)
-        outcomes = evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL).outcomes
+        outcomes = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL).outcomes
 
-        self.assertEqual([str(LockoutAction.LOCK_USER), str(LockoutAction.PERMANENT_LOCK_USER)],
+        self.assertEqual([str(ConditionalAccessAction.LOCK_USER), str(ConditionalAccessAction.PERMANENT_LOCK_USER)],
                          [outcome.action_type for outcome in outcomes])
         # Only the timed action carries an expiry; a permanent lock has none by definition, so it records no info.
         self.assertIn("expires_at", outcomes[0].info)
@@ -877,22 +902,22 @@ class LockoutEngineTestCase(LockoutTestCase):
         # still produced with no expiry - exactly the misconfiguration a dry run is meant to surface.
         self._make_policy(
             name="dry_broken", counter_type=AuthEventType.MFA_FAIL, dry_run=True,
-            stages=(StageDefinition(3, [StageActionDefinition(LockoutAction.LOCK_USER, "not-a-duration")]),))
+            stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.LOCK_USER, "not-a-duration")]),))
         self._seed_events(AuthEventType.MFA_FAIL, 3)
-        outcome = evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL).outcomes[0]
-        self.assertEqual(str(LockoutAction.LOCK_USER), outcome.action_type)
+        outcome = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL).outcomes[0]
+        self.assertEqual(str(ConditionalAccessAction.LOCK_USER), outcome.action_type)
         self.assertIsNone(outcome.info)
 
     def test_dry_run_source_ip_policy_records_a_outcome_without_blocking(self):
         ip = "10.10.0.5"
         self._make_policy(name="dry_ip", counter_type=AuthEventType.PASSWORD_FAIL, dry_run=True,
-                          target=LockoutTarget.SOURCE_IP,
-                          stages=(StageDefinition(2, [StageActionDefinition(LockoutAction.BLOCK_IP, 600)]),))
+                          target=ConditionalAccessTarget.SOURCE_IP,
+                          stages=(StageDefinition(2, [StageActionDefinition(ConditionalAccessAction.BLOCK_IP, 600)]),))
         self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=2, per_user=1)
-        outcomes = evaluate_lockout_policies(CAContext(self.user, ip), AuthEventType.PASSWORD_FAIL).outcomes
+        outcomes = evaluate_conditional_access_policies(CAContext(self.user, ip), AuthEventType.PASSWORD_FAIL).outcomes
 
         self.assertEqual("dry_ip", outcomes[0].policy_name)
-        self.assertEqual(str(LockoutAction.BLOCK_IP), outcomes[0].action_type)
+        self.assertEqual(str(ConditionalAccessAction.BLOCK_IP), outcomes[0].action_type)
         # Dry run: the IP is never actually blocked.
         self.assertIsNone(self._block(ip))
 
@@ -915,42 +940,43 @@ class LockoutEngineTestCase(LockoutTestCase):
             return real(policy, *args, **kwargs)
 
         with mock.patch.object(engine, "_evaluate_policy", side_effect=fail_the_first):
-            evaluation = evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+            evaluation = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
 
         self.assertListEqual(["broken", "works"], calls)
         # The surviving policy still locked the user, and nothing propagated to the caller.
-        self.assertListEqual([str(LockoutAction.LOCK_USER)], [outcome.action_type for outcome in evaluation.outcomes])
+        self.assertListEqual([str(ConditionalAccessAction.LOCK_USER)],
+                [outcome.action_type for outcome in evaluation.outcomes])
         self.assertTrue(is_user_locked(self.user))
 
     def test_dry_run_returns_no_notices(self):
         self._make_policy(name="dry", counter_type=AuthEventType.MFA_FAIL, dry_run=True)
         self._seed_events(AuthEventType.MFA_FAIL, 3)
-        self.assertEqual([], evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL).notices)
+        self.assertEqual([], evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL).notices)
 
     @smtpmock.activate
     def test_dry_run_email_action_records_the_outcome_but_sends_nothing(self):
         # Dry-run must not produce the side effect itself: the outcome names EMAIL_ADMIN, but no mail is sent and
         # no user-facing notice is returned.
         smtpmock.setdata(response={})
-        add_smtpserver(identifier="lockoutmail", server="1.2.3.4", tls=False)
+        add_smtpserver(identifier="actionmail", server="1.2.3.4", tls=False)
         db.session.add(Admin(username="ca_dry_adm", email="dryadm@example.com"))
         db.session.commit()
         try:
             self._make_policy(
                 name="dry_mail", counter_type=AuthEventType.MFA_FAIL, dry_run=True,
-                stages=(StageDefinition(3, [StageActionDefinition(LockoutAction.EMAIL_ADMIN,
-                                                                     {"smtp_identifier": "lockoutmail",
+                stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.EMAIL_ADMIN,
+                                                                     {"smtp_identifier": "actionmail",
                                                                       "subject": "s", "body": "b"})]),))
             self._seed_events(AuthEventType.MFA_FAIL, 3)
-            evaluation = evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+            evaluation = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
 
-            self.assertListEqual([str(LockoutAction.EMAIL_ADMIN)],
+            self.assertListEqual([str(ConditionalAccessAction.EMAIL_ADMIN)],
                                  [outcome.action_type for outcome in evaluation.outcomes])
             self.assertEqual([], evaluation.notices)
             # Nothing was handed to the SMTP layer at all (the mock reports no recipient).
             self.assertIsNone(smtpmock.get_sent_recipient())
         finally:
-            delete_smtpserver("lockoutmail")
+            delete_smtpserver("actionmail")
             db.session.query(Admin).filter_by(username="ca_dry_adm").delete()
             db.session.commit()
 
@@ -960,7 +986,7 @@ class LockoutEngineTestCase(LockoutTestCase):
         self._make_policy(name="dry", counter_type=AuthEventType.MFA_FAIL, dry_run=True, priority=1)
         self._make_policy(name="live", counter_type=AuthEventType.MFA_FAIL, priority=2)
         self._seed_events(AuthEventType.MFA_FAIL, 3)
-        outcomes = evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL).outcomes
+        outcomes = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL).outcomes
 
         self.assertEqual([("dry", True), ("live", False)],
                          [(outcome.policy_name, outcome.dry_run) for outcome in outcomes])
@@ -970,13 +996,13 @@ class LockoutEngineTestCase(LockoutTestCase):
 
     def test_enforced_lock_records_the_expiry_it_wrote(self):
         self._make_policy(name="live", counter_type=AuthEventType.MFA_FAIL,
-                          stages=(StageDefinition(3, [StageActionDefinition(LockoutAction.LOCK_USER, 600)]),))
+                          stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.LOCK_USER, 600)]),))
         self._seed_events(AuthEventType.MFA_FAIL, 3)
-        outcomes = evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL).outcomes
+        outcomes = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL).outcomes
 
         self.assertEqual(1, len(outcomes))
         self.assertFalse(outcomes[0].dry_run)
-        self.assertEqual(str(LockoutAction.LOCK_USER), outcomes[0].action_type)
+        self.assertEqual(str(ConditionalAccessAction.LOCK_USER), outcomes[0].action_type)
         # The recorded expiry is the one that ended up in the state row, so the history says how long the lock
         # lasted even after the row is gone - stored as an aware ISO-8601 string since `info` is a JSON column.
         self.assertEqual({"expires_at": self._state().lock_expires_at.replace(tzinfo=timezone.utc).isoformat()},
@@ -984,11 +1010,12 @@ class LockoutEngineTestCase(LockoutTestCase):
 
     def test_enforced_permanent_lock_records_no_expiry(self):
         self._make_policy(name="perma", counter_type=AuthEventType.MFA_FAIL,
-                          stages=(StageDefinition(3, [StageActionDefinition(LockoutAction.PERMANENT_LOCK_USER)]),))
+                          stages=(StageDefinition(
+                              3, [StageActionDefinition(ConditionalAccessAction.PERMANENT_LOCK_USER)]),))
         self._seed_events(AuthEventType.MFA_FAIL, 3)
-        outcomes = evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL).outcomes
+        outcomes = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL).outcomes
 
-        self.assertEqual(str(LockoutAction.PERMANENT_LOCK_USER), outcomes[0].action_type)
+        self.assertEqual(str(ConditionalAccessAction.PERMANENT_LOCK_USER), outcomes[0].action_type)
         self.assertIsNone(outcomes[0].info)
 
     def test_a_skipped_action_records_nothing(self):
@@ -996,18 +1023,20 @@ class LockoutEngineTestCase(LockoutTestCase):
         # happened; the server log (a warning from _execute_stage_actions) records the misconfiguration instead.
         self._make_policy(
             name="broken", counter_type=AuthEventType.MFA_FAIL,
-            stages=(StageDefinition(3, [StageActionDefinition(LockoutAction.LOCK_USER, "not-a-duration")]),))
+            stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.LOCK_USER, "not-a-duration")]),))
         self._seed_events(AuthEventType.MFA_FAIL, 3)
-        self.assertListEqual([], evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL).outcomes)
+        self.assertListEqual([], evaluate_conditional_access_policies(CAContext(self.user),
+                AuthEventType.MFA_FAIL).outcomes)
         self.assertFalse(is_user_locked(self.user))
 
     def test_never_block_ip_records_nothing(self):
         # The never-block allowlist makes BLOCK_IP a no-op, so there is nothing to record either.
         self._make_policy(name="ip_live", counter_type=AuthEventType.PASSWORD_FAIL,
-                          target=LockoutTarget.SOURCE_IP,
-                          stages=(StageDefinition(2, [StageActionDefinition(LockoutAction.BLOCK_IP, 600)]),))
+                          target=ConditionalAccessTarget.SOURCE_IP,
+                          stages=(StageDefinition(2, [StageActionDefinition(ConditionalAccessAction.BLOCK_IP, 600)]),))
         self._seed_ip_events("127.0.0.1", AuthEventType.PASSWORD_FAIL, n_users=2, per_user=1)
-        evaluation = evaluate_lockout_policies(CAContext(self.user, "127.0.0.1"), AuthEventType.PASSWORD_FAIL)
+        evaluation = evaluate_conditional_access_policies(CAContext(self.user, "127.0.0.1"),
+                AuthEventType.PASSWORD_FAIL)
 
         self.assertListEqual([], evaluation.outcomes)
         self.assertIsNone(self._block("127.0.0.1"))
@@ -1015,15 +1044,16 @@ class LockoutEngineTestCase(LockoutTestCase):
     def test_declined_downgrade_of_a_permanent_lock_records_nothing(self):
         # A timed lock must not weaken an existing permanent one; since nothing changed, nothing is recorded.
         self._make_policy(name="perma", counter_type=AuthEventType.MFA_FAIL, priority=1,
-                          stages=(StageDefinition(2, [StageActionDefinition(LockoutAction.PERMANENT_LOCK_USER)]),))
+                          stages=(StageDefinition(
+                              2, [StageActionDefinition(ConditionalAccessAction.PERMANENT_LOCK_USER)]),))
         self._seed_events(AuthEventType.MFA_FAIL, 2)
-        evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+        evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
         self.assertIsNone(self._state().lock_expires_at)
 
         self._make_policy(name="timed", counter_type=AuthEventType.MFA_FAIL, priority=2,
-                          stages=(StageDefinition(3, [StageActionDefinition(LockoutAction.LOCK_USER, 600)]),))
+                          stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.LOCK_USER, 600)]),))
         self._seed_events(AuthEventType.MFA_FAIL, 1)
-        outcomes = evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL).outcomes
+        outcomes = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL).outcomes
 
         self.assertListEqual([], outcomes)
         # The permanent lock is untouched.
@@ -1039,7 +1069,7 @@ class LockoutEngineTestCase(LockoutTestCase):
         stages[0].actions[0].retrigger_above_threshold = True
         db.session.commit()
         self._seed_events(AuthEventType.MFA_FAIL, 3)
-        evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+        evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
         self.assertTrue(is_user_locked(self.user))
 
     def test_fire_once_and_retrigger_actions_in_one_stage_are_decided_separately(self):
@@ -1047,9 +1077,9 @@ class LockoutEngineTestCase(LockoutTestCase):
         # fire-once EMAIL_ADMIN stays silent, so one stage keeps a user locked but emails only once.
         _, stages = self._make_policy(
             name="mixed", counter_type=AuthEventType.MFA_FAIL,
-            stages=(StageDefinition(3, [StageActionDefinition(LockoutAction.LOCK_USER, 600,
+            stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.LOCK_USER, 600,
                                                                  retrigger_above_threshold=True),
-                                           StageActionDefinition(LockoutAction.EMAIL_ADMIN,
+                                           StageActionDefinition(ConditionalAccessAction.EMAIL_ADMIN,
                                                                  {"smtp_identifier": "nosuch"},
                                                                  retrigger_above_threshold=False)]),))
         lock_action, email_action = stages[0].actions[0], stages[0].actions[1]
@@ -1059,7 +1089,7 @@ class LockoutEngineTestCase(LockoutTestCase):
         # At a count above the threshold only the re-triggering action is pending, so the stage still fires - the
         # unreachable SMTP identifier would raise if the email action ran, but each action is guarded separately.
         self._seed_events(AuthEventType.MFA_FAIL, 5)
-        evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+        evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
         self.assertTrue(is_user_locked(self.user))
 
     def test_dry_run_outcome_reports_only_the_pending_actions(self):
@@ -1067,23 +1097,23 @@ class LockoutEngineTestCase(LockoutTestCase):
         # outcome lists only the re-triggering one.
         self._make_policy(
             name="dry_mixed", counter_type=AuthEventType.MFA_FAIL, dry_run=True,
-            stages=(StageDefinition(3, [StageActionDefinition(LockoutAction.LOCK_USER, 600,
+            stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.LOCK_USER, 600,
                                                                  retrigger_above_threshold=True),
-                                           StageActionDefinition(LockoutAction.PERMANENT_LOCK_USER, None,
+                                           StageActionDefinition(ConditionalAccessAction.PERMANENT_LOCK_USER, None,
                                                                  retrigger_above_threshold=False)]),))
         self._seed_events(AuthEventType.MFA_FAIL, 6)  # count 6 > threshold 3
-        outcomes = evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL).outcomes
+        outcomes = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL).outcomes
 
-        self.assertListEqual([str(LockoutAction.LOCK_USER)], [outcome.action_type for outcome in outcomes])
+        self.assertListEqual([str(ConditionalAccessAction.LOCK_USER)], [outcome.action_type for outcome in outcomes])
 
     def test_retrigger_stage_selection_prefers_the_highest_priority_pending_stage(self):
         # Both stages re-trigger and both thresholds are passed, so the most severe (highest-priority) stage
         # fires; only that one stage's actions run per policy per request.
         _, stages = self._make_policy(
             name="tiers", counter_type=AuthEventType.MFA_FAIL,
-            stages=(StageDefinition(5, [StageActionDefinition(LockoutAction.LOCK_USER, 1800,
+            stages=(StageDefinition(5, [StageActionDefinition(ConditionalAccessAction.LOCK_USER, 1800,
                                                                  retrigger_above_threshold=True)]),
-                    StageDefinition(3, [StageActionDefinition(LockoutAction.LOCK_USER, 600,
+                    StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.LOCK_USER, 600,
                                                                  retrigger_above_threshold=True)])))
         severe_stage = stages[0]
         self._seed_events(AuthEventType.MFA_FAIL, 6)  # past both thresholds
@@ -1095,8 +1125,8 @@ class LockoutEngineTestCase(LockoutTestCase):
         # at 3 is pending and fires instead.
         _, stages = self._make_policy(
             name="tiers", counter_type=AuthEventType.MFA_FAIL,
-            stages=(StageDefinition(15, [StageActionDefinition(LockoutAction.LOCK_USER, 1800)]),
-                    StageDefinition(3, [StageActionDefinition(LockoutAction.LOCK_USER, 600,
+            stages=(StageDefinition(15, [StageActionDefinition(ConditionalAccessAction.LOCK_USER, 1800)]),
+                    StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.LOCK_USER, 600,
                                                                  retrigger_above_threshold=True)])))
         mild_stage = stages[1]
         self._seed_events(AuthEventType.MFA_FAIL, 6)
@@ -1105,32 +1135,33 @@ class LockoutEngineTestCase(LockoutTestCase):
 
     def test_permanent_lock_action(self):
         self._make_policy(name="perm", counter_type=AuthEventType.MFA_FAIL,
-                          stages=(StageDefinition(3, [StageActionDefinition(LockoutAction.PERMANENT_LOCK_USER)]),))
+                          stages=(StageDefinition(
+                              3, [StageActionDefinition(ConditionalAccessAction.PERMANENT_LOCK_USER)]),))
         self._seed_events(AuthEventType.MFA_FAIL, 3)
-        evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+        evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
         state = self._state()
         self.assertIsNone(state.lock_expires_at)
         self.assertTrue(is_user_locked(self.user))
 
     def test_permanent_lock_not_downgraded_to_timed(self):
         # Pre-existing permanent lock (set by a higher-severity stage).
-        db.session.add(UserLockoutState(resolver=self.user.resolver, uid=self.user.uid,
+        db.session.add(UserLockState(resolver=self.user.resolver, uid=self.user.uid,
                                         realm=self.user.realm,
                                         lock_expires_at=None))
         db.session.commit()
         # A timed LOCK_USER policy now tries to lock the same user.
         self._make_policy(name="timed", counter_type=AuthEventType.MFA_FAIL)
         self._seed_events(AuthEventType.MFA_FAIL, 3)
-        evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+        evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
         # The permanent lock must remain permanent (lock_expires_at stays None).
         self.assertIsNone(self._state().lock_expires_at)
         self.assertTrue(is_user_locked(self.user))
 
     def test_invalid_duration_action_skipped(self):
         self._make_policy(name="baddur", counter_type=AuthEventType.MFA_FAIL,
-                          stages=(StageDefinition(3, [StageActionDefinition(LockoutAction.LOCK_USER)]),))
+                          stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.LOCK_USER)]),))
         self._seed_events(AuthEventType.MFA_FAIL, 3)
-        evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+        evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
         self.assertIsNone(self._state())
 
     def test_unknown_action_type_skipped(self):
@@ -1140,7 +1171,7 @@ class LockoutEngineTestCase(LockoutTestCase):
                           stages=(StageDefinition(3, [StageActionDefinition("TELEPORT_USER")]),))
         self._seed_events(AuthEventType.MFA_FAIL, 3)
         # Unknown action types are logged and skipped, not raised.
-        evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+        evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
         self.assertIsNone(self._state())
 
     # --- never-block allowlist ------------------------------------------------
@@ -1160,31 +1191,39 @@ class LockoutEngineTestCase(LockoutTestCase):
         self.assertTrue(is_ip_never_block("not-an-ip"))
 
     def test_configured_cidr_is_never_block(self):
-        set_privacyidea_config(SYSCONF.CONDITIONAL_ACCESS_NEVER_BLOCK, "203.0.113.0/24, 198.51.100.5")
-        try:
+        with never_block_config("203.0.113.0/24, 198.51.100.5"):
             self.assertTrue(is_ip_never_block("203.0.113.7"))
             self.assertTrue(is_ip_never_block("198.51.100.5"))
             self.assertFalse(is_ip_never_block("198.51.100.6"))
             # The built-in loopback default still applies alongside the config.
             self.assertTrue(is_ip_never_block("127.0.0.1"))
-        finally:
-            delete_privacyidea_config(SYSCONF.CONDITIONAL_ACCESS_NEVER_BLOCK)
+
+    def test_configured_list_is_never_block(self):
+        # pi.cfg may hold a Python list instead of a separator-joined string.
+        with never_block_config(["203.0.113.0/24", "198.51.100.5"]):
+            self.assertTrue(is_ip_never_block("203.0.113.7"))
+            self.assertTrue(is_ip_never_block("198.51.100.5"))
+            self.assertFalse(is_ip_never_block("198.51.100.6"))
+
+    def test_malformed_config_value_falls_back_to_the_defaults(self):
+        # A pi.cfg typo must not break every authentication; the loopback defaults stay.
+        for value in (True, 42, ipaddress.ip_network("10.0.0.0/8")):
+            with self.subTest(value=value), never_block_config(value):
+                self.assertFalse(is_ip_never_block("10.0.0.1"))
+                self.assertTrue(is_ip_never_block("127.0.0.1"))
 
     def test_invalid_config_entry_ignored(self):
-        set_privacyidea_config(SYSCONF.CONDITIONAL_ACCESS_NEVER_BLOCK, "garbage, 203.0.113.0/24")
-        try:
+        with never_block_config("garbage, 203.0.113.0/24"):
             self.assertTrue(is_ip_never_block("203.0.113.7"))
             self.assertFalse(is_ip_never_block("198.51.100.5"))
-        finally:
-            delete_privacyidea_config(SYSCONF.CONDITIONAL_ACCESS_NEVER_BLOCK)
 
     def test_block_ip_action_skips_never_block_ip(self):
         # A BLOCK_IP action must never write a block for a never-block IP (loopback).
         self._make_policy(name="blockloop", counter_type=AuthEventType.PASSWORD_FAIL,
-                          target=LockoutTarget.SOURCE_IP,
-                          stages=(StageDefinition(3, [StageActionDefinition(LockoutAction.BLOCK_IP, 900)]),))
+                          target=ConditionalAccessTarget.SOURCE_IP,
+                          stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.BLOCK_IP, 900)]),))
         self._seed_ip_events("127.0.0.1", AuthEventType.PASSWORD_FAIL, n_users=3)
-        evaluate_lockout_policies(CAContext(self.user, "127.0.0.1"), AuthEventType.PASSWORD_FAIL)
+        evaluate_conditional_access_policies(CAContext(self.user, "127.0.0.1"), AuthEventType.PASSWORD_FAIL)
         self.assertEqual(0, db.session.query(BlockList).count())
         self.assertFalse(is_ip_blocked("127.0.0.1"))
 
@@ -1194,12 +1233,22 @@ class LockoutEngineTestCase(LockoutTestCase):
         db.session.add(BlockList(ip="203.0.113.7", block_expires_at=utc_now() + timedelta(seconds=900)))
         db.session.commit()
         self.assertTrue(is_ip_blocked("203.0.113.7"))
-        set_privacyidea_config(SYSCONF.CONDITIONAL_ACCESS_NEVER_BLOCK, "203.0.113.0/24")
-        try:
+        with never_block_config("203.0.113.0/24"):
             self.assertFalse(is_ip_blocked("203.0.113.7"))
             self.assertIsNone(get_ip_block("203.0.113.7"))
-        finally:
-            delete_privacyidea_config(SYSCONF.CONDITIONAL_ACCESS_NEVER_BLOCK)
+            # A pure read leaves the row alone for the admin blocklist view.
+            self.assertEqual(1, db.session.query(BlockList).count())
+
+    def test_allowlisted_ip_block_row_is_removed_by_the_auth_pre_check(self):
+        # The auth pre-check passes clear_expired, so the first authentication after the
+        # IP was allowlisted drops the now-unenforceable row.
+        db.session.add(BlockList(ip="203.0.113.7", block_expires_at=None))
+        db.session.commit()
+        with never_block_config("203.0.113.0/24"):
+            self.assertFalse(is_ip_blocked("203.0.113.7", clear_expired=True))
+        self.assertEqual(0, db.session.query(BlockList).count())
+        # And it stays gone once the allowlist entry is removed again.
+        self.assertFalse(is_ip_blocked("203.0.113.7"))
 
     # --- BLOCK_IP action ------------------------------------------------------
 
@@ -1207,10 +1256,10 @@ class LockoutEngineTestCase(LockoutTestCase):
         ip = "203.0.113.7"
         _, stages = self._make_policy(
             name="blockip", counter_type=AuthEventType.PASSWORD_FAIL,
-            target=LockoutTarget.SOURCE_IP,
-            stages=(StageDefinition(3, [StageActionDefinition(LockoutAction.BLOCK_IP, 900)]),))
+            target=ConditionalAccessTarget.SOURCE_IP,
+            stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.BLOCK_IP, 900)]),))
         self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=3)
-        evaluate_lockout_policies(CAContext(self.user, ip), AuthEventType.PASSWORD_FAIL)
+        evaluate_conditional_access_policies(CAContext(self.user, ip), AuthEventType.PASSWORD_FAIL)
         block = self._block(ip)
         self.assertIsNotNone(block)
         self.assertIsNotNone(block.block_expires_at)
@@ -1222,19 +1271,19 @@ class LockoutEngineTestCase(LockoutTestCase):
     def test_block_ip_action_without_source_ip_skipped(self):
         # No source IP on the request -> the source-IP policy cannot act; skipped, not raised.
         self._make_policy(name="blocknoip", counter_type=AuthEventType.PASSWORD_FAIL,
-                          target=LockoutTarget.SOURCE_IP,
-                          stages=(StageDefinition(3, [StageActionDefinition(LockoutAction.BLOCK_IP, 900)]),))
+                          target=ConditionalAccessTarget.SOURCE_IP,
+                          stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.BLOCK_IP, 900)]),))
         self._seed_ip_events("203.0.113.7", AuthEventType.PASSWORD_FAIL, n_users=3)
-        evaluate_lockout_policies(CAContext(self.user, None), AuthEventType.PASSWORD_FAIL)
+        evaluate_conditional_access_policies(CAContext(self.user, None), AuthEventType.PASSWORD_FAIL)
         self.assertEqual(0, db.session.query(BlockList).count())
 
     def test_block_ip_action_invalid_duration_skipped(self):
         ip = "203.0.113.7"
         self._make_policy(name="blockbaddur", counter_type=AuthEventType.PASSWORD_FAIL,
-                          target=LockoutTarget.SOURCE_IP,
-                          stages=(StageDefinition(3, [StageActionDefinition(LockoutAction.BLOCK_IP)]),))
+                          target=ConditionalAccessTarget.SOURCE_IP,
+                          stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.BLOCK_IP)]),))
         self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=3)
-        evaluate_lockout_policies(CAContext(self.user, ip), AuthEventType.PASSWORD_FAIL)
+        evaluate_conditional_access_policies(CAContext(self.user, ip), AuthEventType.PASSWORD_FAIL)
         self.assertIsNone(self._block(ip))
 
     def test_block_ip_does_not_downgrade_permanent_block(self):
@@ -1243,10 +1292,10 @@ class LockoutEngineTestCase(LockoutTestCase):
         db.session.add(BlockList(ip=ip, block_expires_at=None))
         db.session.commit()
         self._make_policy(name="blocktimed", counter_type=AuthEventType.PASSWORD_FAIL,
-                          target=LockoutTarget.SOURCE_IP,
-                          stages=(StageDefinition(3, [StageActionDefinition(LockoutAction.BLOCK_IP, 900)]),))
+                          target=ConditionalAccessTarget.SOURCE_IP,
+                          stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.BLOCK_IP, 900)]),))
         self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=3)
-        evaluate_lockout_policies(CAContext(self.user, ip), AuthEventType.PASSWORD_FAIL)
+        evaluate_conditional_access_policies(CAContext(self.user, ip), AuthEventType.PASSWORD_FAIL)
         # The permanent block must remain permanent (block_expires_at stays None).
         self.assertIsNone(self._block(ip).block_expires_at)
         self.assertTrue(is_ip_blocked(ip))
@@ -1255,10 +1304,11 @@ class LockoutEngineTestCase(LockoutTestCase):
         ip = "203.0.113.7"
         # Mirror of PERMANENT_LOCK_USER: a permanent IP block (block_expires_at None).
         self._make_policy(name="permblock", counter_type=AuthEventType.PASSWORD_FAIL,
-                          target=LockoutTarget.SOURCE_IP,
-                          stages=(StageDefinition(3, [StageActionDefinition(LockoutAction.PERMANENT_BLOCK_IP)]),))
+                          target=ConditionalAccessTarget.SOURCE_IP,
+                          stages=(StageDefinition(
+                              3, [StageActionDefinition(ConditionalAccessAction.PERMANENT_BLOCK_IP)]),))
         self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=3)
-        evaluate_lockout_policies(CAContext(self.user, ip), AuthEventType.PASSWORD_FAIL)
+        evaluate_conditional_access_policies(CAContext(self.user, ip), AuthEventType.PASSWORD_FAIL)
         block = self._block(ip)
         self.assertIsNotNone(block)
         self.assertIsNone(block.block_expires_at)
@@ -1268,37 +1318,39 @@ class LockoutEngineTestCase(LockoutTestCase):
         ip = "203.0.113.7"
         # action_value is irrelevant for the permanent variant: even a "valid" duration does not make it timed.
         self._make_policy(name="permblockdur", counter_type=AuthEventType.PASSWORD_FAIL,
-                          target=LockoutTarget.SOURCE_IP,
+                          target=ConditionalAccessTarget.SOURCE_IP,
                           stages=(
-                              StageDefinition(3, [StageActionDefinition(LockoutAction.PERMANENT_BLOCK_IP, 900)]),))
+                              StageDefinition(
+                                  3, [StageActionDefinition(ConditionalAccessAction.PERMANENT_BLOCK_IP, 900)]),))
         self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=3)
-        evaluate_lockout_policies(CAContext(self.user, ip), AuthEventType.PASSWORD_FAIL)
+        evaluate_conditional_access_policies(CAContext(self.user, ip), AuthEventType.PASSWORD_FAIL)
         self.assertIsNone(self._block(ip).block_expires_at)
 
     def test_permanent_block_ip_without_source_ip_skipped(self):
         # Like BLOCK_IP, a request with no source IP is logged and skipped, not raised.
         self._make_policy(name="permblocknoip", counter_type=AuthEventType.PASSWORD_FAIL,
-                          target=LockoutTarget.SOURCE_IP,
-                          stages=(StageDefinition(3, [StageActionDefinition(LockoutAction.PERMANENT_BLOCK_IP)]),))
+                          target=ConditionalAccessTarget.SOURCE_IP,
+                          stages=(StageDefinition(
+                              3, [StageActionDefinition(ConditionalAccessAction.PERMANENT_BLOCK_IP)]),))
         self._seed_ip_events("203.0.113.7", AuthEventType.PASSWORD_FAIL, n_users=3)
-        evaluate_lockout_policies(CAContext(self.user, None), AuthEventType.PASSWORD_FAIL)
+        evaluate_conditional_access_policies(CAContext(self.user, None), AuthEventType.PASSWORD_FAIL)
         self.assertEqual(0, db.session.query(BlockList).count())
 
     def test_expired_block_is_reapplied_when_the_threshold_is_still_met(self):
         # The IP counterpart of test_expired_lock_is_reapplied_when_the_threshold_is_still_met.
         ip = "203.0.113.7"
         self._make_policy(name="blockip", counter_type=AuthEventType.PASSWORD_FAIL,
-                          target=LockoutTarget.SOURCE_IP,
-                          stages=(StageDefinition(3, [StageActionDefinition(LockoutAction.BLOCK_IP, 900)]),))
+                          target=ConditionalAccessTarget.SOURCE_IP,
+                          stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.BLOCK_IP, 900)]),))
         self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=3)
-        evaluate_lockout_policies(CAContext(self.user, ip), AuthEventType.PASSWORD_FAIL)
+        evaluate_conditional_access_policies(CAContext(self.user, ip), AuthEventType.PASSWORD_FAIL)
         # The block runs out while the failures are still in the window.
         block = self._block(ip)
         block.block_expires_at = utc_now() - timedelta(seconds=10)
         db.session.commit()
         self.assertFalse(is_ip_blocked(ip))
         # The threshold is still met (3 distinct users), so the stage blocks again.
-        evaluate_lockout_policies(CAContext(self.user, ip), AuthEventType.PASSWORD_FAIL)
+        evaluate_conditional_access_policies(CAContext(self.user, ip), AuthEventType.PASSWORD_FAIL)
         self.assertTrue(is_ip_blocked(ip))
 
     def test_source_ip_policy_fires_for_unresolved_user(self):
@@ -1307,15 +1359,15 @@ class LockoutEngineTestCase(LockoutTestCase):
         # A user-target policy in the same run stays a no-op for that unknown user.
         ip = "203.0.113.60"
         self._make_policy(name="spray", counter_type=AuthEventType.PASSWORD_FAIL, window=300,
-                          target=LockoutTarget.SOURCE_IP, priority=1,
-                          stages=(StageDefinition(3, [StageActionDefinition(LockoutAction.BLOCK_IP,
+                          target=ConditionalAccessTarget.SOURCE_IP, priority=1,
+                          stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.BLOCK_IP,
                                                                                {"duration_seconds": 3600})]),))
         self._make_policy(name="userlock", counter_type=AuthEventType.PASSWORD_FAIL, priority=2,
-                          stages=(StageDefinition(3, [StageActionDefinition(LockoutAction.LOCK_USER, 60)]),))
+                          stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.LOCK_USER, 60)]),))
         self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=3)
-        evaluate_lockout_policies(CAContext(User(), ip), AuthEventType.PASSWORD_FAIL)
+        evaluate_conditional_access_policies(CAContext(User(), ip), AuthEventType.PASSWORD_FAIL)
         self.assertTrue(is_ip_blocked(ip), "source-IP policy did not fire for an unresolved user")
-        self.assertEqual(0, db.session.query(UserLockoutState).count(),
+        self.assertEqual(0, db.session.query(UserLockState).count(),
                          "user policy wrote lock state for an unresolved user")
 
     # --- multiple policies on one request -------------------------------------
@@ -1326,18 +1378,19 @@ class LockoutEngineTestCase(LockoutTestCase):
         # All apply together, and the permanent block wins over the timed one regardless of evaluation order.
         ip = "203.0.113.50"
         self._make_policy(name="lock", counter_type=AuthEventType.PIN_FAIL, priority=1,
-                          stages=(StageDefinition(5, [StageActionDefinition(LockoutAction.LOCK_USER, 60)]),))
+                          stages=(StageDefinition(5, [StageActionDefinition(ConditionalAccessAction.LOCK_USER, 60)]),))
         self._make_policy(name="blocktimed", counter_type=AuthEventType.PIN_FAIL, priority=10,
-                          target=LockoutTarget.SOURCE_IP,
-                          stages=(StageDefinition(7, [StageActionDefinition(LockoutAction.BLOCK_IP, 60)]),))
+                          target=ConditionalAccessTarget.SOURCE_IP,
+                          stages=(StageDefinition(7, [StageActionDefinition(ConditionalAccessAction.BLOCK_IP, 60)]),))
         self._make_policy(name="blockperm", counter_type=AuthEventType.PIN_FAIL, priority=4,
-                          target=LockoutTarget.SOURCE_IP,
-                          stages=(StageDefinition(7, [StageActionDefinition(LockoutAction.PERMANENT_BLOCK_IP)]),))
+                          target=ConditionalAccessTarget.SOURCE_IP,
+                          stages=(StageDefinition(
+                              7, [StageActionDefinition(ConditionalAccessAction.PERMANENT_BLOCK_IP)]),))
         # 5 failures for the current user trip the per-user lock; 7 distinct users from the IP trip both
         # IP-block policies.
         self._seed_events(AuthEventType.PIN_FAIL, 5)
         self._seed_ip_events(ip, AuthEventType.PIN_FAIL, n_users=7)
-        evaluate_lockout_policies(CAContext(self.user, ip), AuthEventType.PIN_FAIL)
+        evaluate_conditional_access_policies(CAContext(self.user, ip), AuthEventType.PIN_FAIL)
         # user locked with a timeout
         state = self._state()
         self.assertIsNotNone(state)
@@ -1355,15 +1408,15 @@ class LockoutEngineTestCase(LockoutTestCase):
 
     def test_access_decision_deny_when_threshold_met(self):
         self._make_policy(name="deny", counter_type=AuthEventType.PASSWORD_FAIL,
-                          stages=(StageDefinition(3, [StageActionDefinition(LockoutAction.DENY)]),))
+                          stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.DENY)]),))
         self._seed_events(AuthEventType.PASSWORD_FAIL, 3)
         self.assertEqual(AccessDecision.DENY, evaluate_access_decision(CAContext(self.user)).decision)
-        # DENY is stateless: it persists no lockout state.
+        # DENY is stateless: it persists no lock state.
         self.assertIsNone(self._state())
 
     def test_access_decision_below_threshold_is_continue(self):
         self._make_policy(name="deny", counter_type=AuthEventType.PASSWORD_FAIL,
-                          stages=(StageDefinition(3, [StageActionDefinition(LockoutAction.DENY)]),))
+                          stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.DENY)]),))
         self._seed_events(AuthEventType.PASSWORD_FAIL, 2)
         self.assertEqual(AccessDecision.CONTINUE, evaluate_access_decision(CAContext(self.user)).decision)
 
@@ -1371,7 +1424,7 @@ class LockoutEngineTestCase(LockoutTestCase):
         # DENY defaults to re-trigger, so the decision stands while the count is at or above the threshold, not
         # only at the exact count.
         self._make_policy(name="deny", counter_type=AuthEventType.PASSWORD_FAIL,
-                          stages=(StageDefinition(3, [StageActionDefinition(LockoutAction.DENY)]),))
+                          stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.DENY)]),))
         self._seed_events(AuthEventType.PASSWORD_FAIL, 5)
         self.assertEqual(AccessDecision.DENY, evaluate_access_decision(CAContext(self.user)).decision)
 
@@ -1380,7 +1433,7 @@ class LockoutEngineTestCase(LockoutTestCase):
         # the threshold it no longer denies.
         self._make_policy(name="deny", counter_type=AuthEventType.PASSWORD_FAIL,
                           stages=(StageDefinition(3, [StageActionDefinition(
-                              LockoutAction.DENY, retrigger_above_threshold=False)]),))
+                              ConditionalAccessAction.DENY, retrigger_above_threshold=False)]),))
         self._seed_events(AuthEventType.PASSWORD_FAIL, 3)
         self.assertEqual(AccessDecision.DENY, evaluate_access_decision(CAContext(self.user)).decision)
         self._seed_events(AuthEventType.PASSWORD_FAIL, 1)  # count 4 > 3
@@ -1391,7 +1444,7 @@ class LockoutEngineTestCase(LockoutTestCase):
         # so the request is denied.
         self._make_policy(name="deny",
                           counter_type=[AuthEventType.PASSWORD_FAIL, AuthEventType.MFA_FAIL],
-                          stages=(StageDefinition(3, [StageActionDefinition(LockoutAction.DENY)]),))
+                          stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.DENY)]),))
         self._seed_events(AuthEventType.PASSWORD_FAIL, 2)
         self._seed_events(AuthEventType.MFA_FAIL, 2)
         self.assertEqual(AccessDecision.DENY, evaluate_access_decision(CAContext(self.user)).decision)
@@ -1401,7 +1454,7 @@ class LockoutEngineTestCase(LockoutTestCase):
         # between does not clear it, and it self-heals only as failures age out - pinning the reset to the lock only.
         now = utc_now()
         self._make_policy(name="deny", counter_type=AuthEventType.PASSWORD_FAIL,
-                          stages=(StageDefinition(3, [StageActionDefinition(LockoutAction.DENY)]),))
+                          stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.DENY)]),))
         self._seed_events(AuthEventType.PASSWORD_FAIL, 3, timestamp=now - timedelta(seconds=300))
         self._seed_events(AuthEventType.LOGIN_SUCCESS, 1, timestamp=now - timedelta(seconds=200))
         # The three pre-login failures still trigger DENY despite the login.
@@ -1410,35 +1463,35 @@ class LockoutEngineTestCase(LockoutTestCase):
     def test_access_decision_deny_threshold_zero_is_a_lockdown(self):
         # DENY re-triggers by default, so a stage with threshold 0 always matches: no events needed.
         self._make_policy(name="lockdown", counter_type=AuthEventType.PASSWORD_FAIL,
-                          stages=(StageDefinition(0, [StageActionDefinition(LockoutAction.DENY)]),))
+                          stages=(StageDefinition(0, [StageActionDefinition(ConditionalAccessAction.DENY)]),))
         self.assertEqual(AccessDecision.DENY, evaluate_access_decision(CAContext(self.user)).decision)
 
     def test_access_decision_exemption_is_a_condition_not_an_action(self):
         # A subject is exempted by a condition on the denying policy itself, which is then not evaluated for that
         # request at all.
         self._make_policy(name="lockdown", counter_type=AuthEventType.PASSWORD_FAIL,
-                          stages=(StageDefinition(0, [StageActionDefinition(LockoutAction.DENY)]),),
-                          conditions=[LockoutPolicyCondition(condition_type=str(ConditionType.USER_REALM),
+                          stages=(StageDefinition(0, [StageActionDefinition(ConditionalAccessAction.DENY)]),),
+                          conditions=[ConditionalAccessPolicyCondition(condition_type=str(ConditionType.USER_REALM),
                                                              operator=str(ConditionOperator.NOT_IN),
                                                              value=[self.user.realm])])
         self.assertEqual(AccessDecision.CONTINUE, evaluate_access_decision(CAContext(self.user)).decision)
 
-    def test_access_decision_ignores_lockout_only_stage(self):
+    def test_access_decision_ignores_lock_only_stage(self):
         # A LOCK_USER stage is a post-response side effect, not a pre-auth decision.
         self._make_policy(name="lock", counter_type=AuthEventType.PASSWORD_FAIL,
-                          stages=(StageDefinition(3, [StageActionDefinition(LockoutAction.LOCK_USER, 600)]),))
+                          stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.LOCK_USER, 600)]),))
         self._seed_events(AuthEventType.PASSWORD_FAIL, 5)
         self.assertEqual(AccessDecision.CONTINUE, evaluate_access_decision(CAContext(self.user)).decision)
 
     def test_access_decision_dry_run_not_enforced(self):
         self._make_policy(name="drydeny", counter_type=AuthEventType.PASSWORD_FAIL, dry_run=True,
-                          stages=(StageDefinition(3, [StageActionDefinition(LockoutAction.DENY)]),))
+                          stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.DENY)]),))
         self._seed_events(AuthEventType.PASSWORD_FAIL, 5)
         self.assertEqual(AccessDecision.CONTINUE, evaluate_access_decision(CAContext(self.user)).decision)
 
     def test_access_decision_disabled_policy_skipped(self):
         self._make_policy(name="offdeny", counter_type=AuthEventType.PASSWORD_FAIL, enabled=False,
-                          stages=(StageDefinition(3, [StageActionDefinition(LockoutAction.DENY)]),))
+                          stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.DENY)]),))
         self._seed_events(AuthEventType.PASSWORD_FAIL, 5)
         self.assertEqual(AccessDecision.CONTINUE, evaluate_access_decision(CAContext(self.user)).decision)
 
@@ -1446,14 +1499,14 @@ class LockoutEngineTestCase(LockoutTestCase):
         # A user-target policy is keyed on the resolved identity, so an unresolved user is never denied by one - even
         # by an always-met DENY stage.
         self._make_policy(name="lockdown", counter_type=AuthEventType.PASSWORD_FAIL,
-                          stages=(StageDefinition(0, [StageActionDefinition(LockoutAction.DENY)]),))
+                          stages=(StageDefinition(0, [StageActionDefinition(ConditionalAccessAction.DENY)]),))
         self.assertEqual(AccessDecision.CONTINUE, evaluate_access_decision(CAContext(User())).decision)
 
     def test_access_decision_deny_alongside_a_post_response_action_still_denies(self):
         # A stage may mix the pre-auth DENY with a post-response effect; the decision step reads only the DENY.
         self._make_policy(name="both", counter_type=AuthEventType.PASSWORD_FAIL,
-                          stages=(StageDefinition(3, [StageActionDefinition(LockoutAction.LOCK_USER, 600),
-                                                      StageActionDefinition(LockoutAction.DENY)]),))
+                          stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.LOCK_USER, 600),
+                                                      StageActionDefinition(ConditionalAccessAction.DENY)]),))
         self._seed_events(AuthEventType.PASSWORD_FAIL, 3)
         self.assertEqual(AccessDecision.DENY, evaluate_access_decision(CAContext(self.user)).decision)
 
@@ -1471,8 +1524,8 @@ class LockoutEngineTestCase(LockoutTestCase):
         # An IP that sprayed >= threshold distinct users is denied pre-auth.
         ip = "203.0.113.30"
         self._make_policy(name="ipdeny", counter_type=AuthEventType.PASSWORD_FAIL,
-                          target=LockoutTarget.SOURCE_IP,
-                          stages=(StageDefinition(3, [StageActionDefinition(LockoutAction.DENY)]),))
+                          target=ConditionalAccessTarget.SOURCE_IP,
+                          stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.DENY)]),))
         self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=3)
         self.assertEqual(AccessDecision.DENY, evaluate_access_decision(CAContext(self.user, ip)).decision)
 
@@ -1481,16 +1534,16 @@ class LockoutEngineTestCase(LockoutTestCase):
         # DENY (spraying/enumeration).
         ip = "203.0.113.31"
         self._make_policy(name="ipdeny", counter_type=AuthEventType.PASSWORD_FAIL,
-                          target=LockoutTarget.SOURCE_IP,
-                          stages=(StageDefinition(3, [StageActionDefinition(LockoutAction.DENY)]),))
+                          target=ConditionalAccessTarget.SOURCE_IP,
+                          stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.DENY)]),))
         self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=3)
         self.assertEqual(AccessDecision.DENY, evaluate_access_decision(CAContext(User(), ip)).decision)
 
     def test_access_decision_source_ip_below_threshold_continues(self):
         ip = "203.0.113.32"
         self._make_policy(name="ipdeny", counter_type=AuthEventType.PASSWORD_FAIL,
-                          target=LockoutTarget.SOURCE_IP,
-                          stages=(StageDefinition(3, [StageActionDefinition(LockoutAction.DENY)]),))
+                          target=ConditionalAccessTarget.SOURCE_IP,
+                          stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.DENY)]),))
         self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=2)
         self.assertEqual(AccessDecision.CONTINUE, evaluate_access_decision(CAContext(self.user, ip)).decision)
 
@@ -1498,15 +1551,15 @@ class LockoutEngineTestCase(LockoutTestCase):
         # A never-block IP (loopback) is never denied by an IP policy, mirroring BLOCK_IP.
         ip = "127.0.0.1"
         self._make_policy(name="ipdeny", counter_type=AuthEventType.PASSWORD_FAIL,
-                          target=LockoutTarget.SOURCE_IP,
-                          stages=(StageDefinition(3, [StageActionDefinition(LockoutAction.DENY)]),))
+                          target=ConditionalAccessTarget.SOURCE_IP,
+                          stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.DENY)]),))
         self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=5)
         self.assertEqual(AccessDecision.CONTINUE, evaluate_access_decision(CAContext(self.user, ip)).decision)
 
     def test_access_decision_source_ip_without_ip_continues(self):
         self._make_policy(name="ipdeny", counter_type=AuthEventType.PASSWORD_FAIL,
-                          target=LockoutTarget.SOURCE_IP,
-                          stages=(StageDefinition(3, [StageActionDefinition(LockoutAction.DENY)]),))
+                          target=ConditionalAccessTarget.SOURCE_IP,
+                          stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.DENY)]),))
         self._seed_ip_events("203.0.113.33", AuthEventType.PASSWORD_FAIL, n_users=5)
         self.assertEqual(AccessDecision.CONTINUE, evaluate_access_decision(CAContext(self.user, None)).decision)
 
@@ -1525,16 +1578,17 @@ class LockoutEngineTestCase(LockoutTestCase):
     @smtpmock.activate
     def test_email_user_action_sends_to_user(self):
         smtpmock.setdata(response={})
-        add_smtpserver(identifier="lockoutmail", server="1.2.3.4", tls=False)
+        add_smtpserver(identifier="actionmail", server="1.2.3.4", tls=False)
         try:
             self._make_policy(
                 name="mailuser", counter_type=AuthEventType.MFA_FAIL,
-                stages=(StageDefinition(3, [StageActionDefinition(LockoutAction.EMAIL_USER,
-                                                                     {"smtp_identifier": "lockoutmail",
+                stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.EMAIL_USER,
+                                                                     {"smtp_identifier": "actionmail",
                                                                       "subject": "Locked: {username}",
-                                                                      "body": "{username}@{realm} locked after {count} failures."})]),))
+                                                                      "body": "{username}@{realm} locked after "
+                                                                              "{count} failures."})]),))
             self._seed_events(AuthEventType.MFA_FAIL, 3)
-            evaluate_lockout_policies(CAContext(self.user, "10.0.0.9"), AuthEventType.MFA_FAIL)
+            evaluate_conditional_access_policies(CAContext(self.user, "10.0.0.9"), AuthEventType.MFA_FAIL)
 
             user_email = self.user.info.get("email")
             self.assertTrue(user_email, "test user must resolve to an email address")
@@ -1544,15 +1598,15 @@ class LockoutEngineTestCase(LockoutTestCase):
             self.assertEqual("Locked: cornelius", parsed["Subject"])
             body = parsed.get_payload(decode=True).decode("utf-8")
             self.assertEqual(f"cornelius@{self.user.realm} locked after 3 failures.", body)
-            # A pure notification action writes no lockout state.
+            # A pure notification action writes no lock state.
             self.assertIsNone(self._state())
         finally:
-            delete_smtpserver("lockoutmail")
+            delete_smtpserver("actionmail")
 
     @smtpmock.activate
     def test_email_admin_action_sends_to_internal_admins(self):
         smtpmock.setdata(response={})
-        add_smtpserver(identifier="lockoutmail", server="1.2.3.4", tls=False)
+        add_smtpserver(identifier="actionmail", server="1.2.3.4", tls=False)
         db.session.add(Admin(username="ca_adm1", email="adm1@example.com"))
         db.session.add(Admin(username="ca_adm2", email="adm2@example.com"))
         db.session.add(Admin(username="ca_noemail", email=None))
@@ -1560,13 +1614,14 @@ class LockoutEngineTestCase(LockoutTestCase):
         try:
             self._make_policy(
                 name="mailadmin", counter_type=AuthEventType.MFA_FAIL,
-                stages=(StageDefinition(3, [StageActionDefinition(LockoutAction.EMAIL_ADMIN,
-                                                                     {"smtp_identifier": "lockoutmail",
+                stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.EMAIL_ADMIN,
+                                                                     {"smtp_identifier": "actionmail",
                                                                       "recipient_group": "internal_admins",
                                                                       "subject": "{username} locked",
-                                                                      "body": "{count} failures in realm {realm}."})]),))
+                                                                      "body": "{count} failures in realm "
+                                                                              "{realm}."})]),))
             self._seed_events(AuthEventType.MFA_FAIL, 3)
-            evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+            evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
             # Both admins with an email are notified in one message; the email-less admin is skipped.
             recipients = set(smtpmock.get_sent_recipient())
             self.assertTrue({"adm1@example.com", "adm2@example.com"}.issubset(recipients), recipients)
@@ -1574,28 +1629,28 @@ class LockoutEngineTestCase(LockoutTestCase):
             Admin.query.filter(
                 Admin.username.in_(["ca_adm1", "ca_adm2", "ca_noemail"])).delete(synchronize_session=False)
             db.session.commit()
-            delete_smtpserver("lockoutmail")
+            delete_smtpserver("actionmail")
 
     @smtpmock.activate
     def test_email_admin_alerts_on_userless_spraying_traffic(self):
         # A source-IP policy fires on traffic that resolved no user, which is exactly the traffic an EMAIL_ADMIN
         # alert exists to report; the user-derived tags render empty, but the alert is still sent.
         smtpmock.setdata(response={})
-        add_smtpserver(identifier="lockoutmail", server="1.2.3.4", tls=False)
+        add_smtpserver(identifier="actionmail", server="1.2.3.4", tls=False)
         ip = "10.0.0.32"
         try:
-            email_config = {"smtp_identifier": "lockoutmail",
+            email_config = {"smtp_identifier": "actionmail",
                             "recipient_group": "soc@example.com",
                             "subject": "spraying from {client_ip}",
                             "body": "{count} accounts, user {username}."}
             self._make_policy(
                 name="spray alert", counter_type=AuthEventType.MFA_FAIL,
-                target=LockoutTarget.SOURCE_IP, count_mode=CountMode.DISTINCT_USERS,
-                stages=(StageDefinition(3, [StageActionDefinition(LockoutAction.EMAIL_ADMIN,
+                target=ConditionalAccessTarget.SOURCE_IP, count_mode=CountMode.DISTINCT_USERS,
+                stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.EMAIL_ADMIN,
                                                                      email_config)]),))
             self._seed_ip_accounts(ip, (self.realm1, self.realm1, self.realm1))
 
-            evaluate_lockout_policies(CAContext(None, source_ip=ip), AuthEventType.MFA_FAIL)
+            evaluate_conditional_access_policies(CAContext(None, source_ip=ip), AuthEventType.MFA_FAIL)
 
             self.assertEqual(["soc@example.com"], smtpmock.get_sent_recipient())
             parsed = message_from_string(smtpmock.get_sent_message())
@@ -1604,54 +1659,55 @@ class LockoutEngineTestCase(LockoutTestCase):
             self.assertEqual("3 accounts, user .",
                              parsed.get_payload(decode=True).decode("utf-8"))
         finally:
-            delete_smtpserver("lockoutmail")
+            delete_smtpserver("actionmail")
 
     @smtpmock.activate
     def test_email_admin_explicit_recipient_list(self):
         smtpmock.setdata(response={})
-        add_smtpserver(identifier="lockoutmail", server="1.2.3.4", tls=False)
+        add_smtpserver(identifier="actionmail", server="1.2.3.4", tls=False)
         try:
             self._make_policy(
                 name="mailadmin2", counter_type=AuthEventType.MFA_FAIL,
-                stages=(StageDefinition(3, [StageActionDefinition(LockoutAction.EMAIL_ADMIN,
-                                                                     {"smtp_identifier": "lockoutmail",
-                                                                      "recipient_group": "soc@example.com, ciso@example.com",
+                stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.EMAIL_ADMIN,
+                                                                     {"smtp_identifier": "actionmail",
+                                                                      "recipient_group": "soc@example.com, "
+                                                                                         "ciso@example.com",
                                                                       "subject": "alert", "body": "alert"})]),))
             self._seed_events(AuthEventType.MFA_FAIL, 3)
-            evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+            evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
             self.assertEqual(["soc@example.com", "ciso@example.com"], smtpmock.get_sent_recipient())
         finally:
-            delete_smtpserver("lockoutmail")
+            delete_smtpserver("actionmail")
 
     @smtpmock.activate
     def test_email_action_missing_config_is_skipped(self):
         # No subject/body in action_value -> the action is logged and skipped, never sent or raised.
         smtpmock.setdata(response={})
-        add_smtpserver(identifier="lockoutmail", server="1.2.3.4", tls=False)
+        add_smtpserver(identifier="actionmail", server="1.2.3.4", tls=False)
         try:
             self._make_policy(
                 name="mailbad", counter_type=AuthEventType.MFA_FAIL,
-                stages=(StageDefinition(3, [StageActionDefinition(LockoutAction.EMAIL_USER,
-                                                                     {"smtp_identifier": "lockoutmail"})]),))
+                stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.EMAIL_USER,
+                                                                     {"smtp_identifier": "actionmail"})]),))
             self._seed_events(AuthEventType.MFA_FAIL, 3)
-            evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+            evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
             self.assertIsNone(smtpmock.get_sent_message())
         finally:
-            delete_smtpserver("lockoutmail")
+            delete_smtpserver("actionmail")
 
     def test_email_failure_does_not_break_other_actions(self):
         # A stage that both locks the user and emails them: the email points at an unknown SMTP server so
         # sending raises, but per-action guarding must keep the LOCK_USER write intact.
         _, stages = self._make_policy(
             name="lockandmail", counter_type=AuthEventType.MFA_FAIL,
-            stages=(StageDefinition(3, [StageActionDefinition(LockoutAction.LOCK_USER, 600)]),))
-        db.session.add(LockoutStageAction(
-            stage_id=stages[0].id, action_type=str(LockoutAction.EMAIL_USER),
+            stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.LOCK_USER, 600)]),))
+        db.session.add(ConditionalAccessStageAction(
+            stage_id=stages[0].id, action_type=str(ConditionalAccessAction.EMAIL_USER),
             action_value={"smtp_identifier": "does-not-exist", "subject": "x", "body": "x"}))
         db.session.commit()
         self._seed_events(AuthEventType.MFA_FAIL, 3)
         # Must not raise even though the mail action fails.
-        evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+        evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
         state = self._state()
         self.assertIsNotNone(state)
 
@@ -1659,44 +1715,46 @@ class LockoutEngineTestCase(LockoutTestCase):
     def test_email_action_returns_login_notice(self):
         # A sent EMAIL_* action returns a user-facing notice for the login screen.
         smtpmock.setdata(response={})
-        add_smtpserver(identifier="lockoutmail", server="1.2.3.4", tls=False)
+        add_smtpserver(identifier="actionmail", server="1.2.3.4", tls=False)
         try:
             self._make_policy(
                 name="mailnotice", counter_type=AuthEventType.MFA_FAIL,
-                stages=(StageDefinition(3, [StageActionDefinition(LockoutAction.EMAIL_ADMIN,
-                                                                     {"smtp_identifier": "lockoutmail",
+                stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.EMAIL_ADMIN,
+                                                                     {"smtp_identifier": "actionmail",
                                                                       "recipient_group": "soc@example.com",
                                                                       "subject": "s", "body": "b"})]),))
             self._seed_events(AuthEventType.MFA_FAIL, 3)
-            notices = evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL).notices
+            notices = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL).notices
             self.assertEqual(["Your administrator has been notified by email."], notices)
         finally:
-            delete_smtpserver("lockoutmail")
+            delete_smtpserver("actionmail")
 
     @smtpmock.activate
     def test_email_action_custom_login_notice_with_tags(self):
         # An admin-supplied login_notice template overrides the default and is {tag}-rendered.
         smtpmock.setdata(response={})
-        add_smtpserver(identifier="lockoutmail", server="1.2.3.4", tls=False)
+        add_smtpserver(identifier="actionmail", server="1.2.3.4", tls=False)
         try:
             self._make_policy(
                 name="mailnotice2", counter_type=AuthEventType.MFA_FAIL,
-                stages=(StageDefinition(3, [StageActionDefinition(LockoutAction.EMAIL_USER,
-                                                                     {"smtp_identifier": "lockoutmail", "subject": "s",
+                stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.EMAIL_USER,
+                                                                     {"smtp_identifier": "actionmail", "subject": "s",
                                                                       "body": "b",
-                                                                      "login_notice": "We emailed {username} about {count} failures."})]),))
+                                                                      "login_notice": "We emailed {username} "
+                                                                                      "about {count} "
+                                                                                      "failures."})]),))
             self._seed_events(AuthEventType.MFA_FAIL, 3)
             self.assertEqual(["We emailed cornelius about 3 failures."],
-                             evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL).notices)
+                             evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL).notices)
         finally:
-            delete_smtpserver("lockoutmail")
+            delete_smtpserver("actionmail")
 
     def test_no_login_notice_for_non_email_action(self):
         # A LOCK_USER-only stage locks the user but produces no login-screen notice.
         self._make_policy(name="lockonly", counter_type=AuthEventType.MFA_FAIL,
-                          stages=(StageDefinition(3, [StageActionDefinition(LockoutAction.LOCK_USER, 600)]),))
+                          stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.LOCK_USER, 600)]),))
         self._seed_events(AuthEventType.MFA_FAIL, 3)
-        self.assertEqual([], evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL).notices)
+        self.assertEqual([], evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL).notices)
         self.assertTrue(is_user_locked(self.user))
 
     # --- _safe_format / _resolve_admin_recipients -----------------------------
@@ -1718,8 +1776,8 @@ class LockoutEngineTestCase(LockoutTestCase):
 
     @staticmethod
     def _condition(condition_type: ConditionType | str, operator: ConditionOperator | str,
-                   value: list[str] | None) -> LockoutPolicyCondition:
-        return LockoutPolicyCondition(condition_type=str(condition_type), operator=str(operator), value=value)
+                   value: list[str] | None) -> ConditionalAccessPolicyCondition:
+        return ConditionalAccessPolicyCondition(condition_type=str(condition_type), operator=str(operator), value=value)
 
     def test_policy_without_conditions_applies_to_everyone(self):
         # no condition rows means no restriction.
@@ -1826,16 +1884,16 @@ class LockoutEngineTestCase(LockoutTestCase):
         self._make_policy(
             name="other realm only", counter_type=AuthEventType.MFA_FAIL,
             conditions=[self._condition(ConditionType.USER_REALM, ConditionOperator.IN, [self.realm2])],
-            stages=(StageDefinition(3, [StageActionDefinition(LockoutAction.LOCK_USER, 600)]),))
+            stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.LOCK_USER, 600)]),))
         self._seed_events(AuthEventType.MFA_FAIL, 3)
-        self.assertEqual([], evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL).notices)
+        self.assertEqual([], evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL).notices)
         self.assertFalse(is_user_locked(self.user))
 
     def _spray_policy(self, *, threshold: int = 3,
                       operator: ConditionOperator = ConditionOperator.IN,
                       values: list[str] | None = None,
                       condition_type: ConditionType | str = ConditionType.USER_REALM
-                      ) -> tuple[LockoutPolicy, list[LockoutPolicyStage]]:
+                      ) -> tuple[ConditionalAccessPolicy, list[ConditionalAccessPolicyStage]]:
         """
         A source-IP spraying policy scoped by one condition, blocking the IP once the scoped count
         reaches *threshold* distinct accounts.
@@ -1848,10 +1906,10 @@ class LockoutEngineTestCase(LockoutTestCase):
         """
         return self._make_policy(
             name="scoped spray", counter_type=AuthEventType.MFA_FAIL,
-            target=LockoutTarget.SOURCE_IP, count_mode=CountMode.DISTINCT_USERS,
+            target=ConditionalAccessTarget.SOURCE_IP, count_mode=CountMode.DISTINCT_USERS,
             conditions=[self._condition(condition_type, operator,
                                         values if values is not None else [self.realm1])],
-            stages=(StageDefinition(threshold, [StageActionDefinition(LockoutAction.BLOCK_IP, 600)]),))
+            stages=(StageDefinition(threshold, [StageActionDefinition(ConditionalAccessAction.BLOCK_IP, 600)]),))
 
     def _seed_ip_accounts(self, ip: str, realms: Sequence[str | None], role: str | None = None) -> None:
         """
@@ -1877,7 +1935,7 @@ class LockoutEngineTestCase(LockoutTestCase):
         self._spray_policy(threshold=3)
         self._seed_ip_accounts(ip, (self.realm1, self.realm1, self.realm1, self.realm2, self.realm2))
 
-        evaluate_lockout_policies(CAContext(User("cornelius", self.realm1), source_ip=ip),
+        evaluate_conditional_access_policies(CAContext(User("cornelius", self.realm1), source_ip=ip),
                                   AuthEventType.MFA_FAIL)
         self.assertTrue(is_ip_blocked(ip))
 
@@ -1889,7 +1947,7 @@ class LockoutEngineTestCase(LockoutTestCase):
         self._seed_ip_accounts(ip, (self.realm1, self.realm1,
                                     self.realm2, self.realm2, self.realm2, self.realm2, self.realm2))
 
-        evaluate_lockout_policies(CAContext(User("cornelius", self.realm1), source_ip=ip),
+        evaluate_conditional_access_policies(CAContext(User("cornelius", self.realm1), source_ip=ip),
                                   AuthEventType.MFA_FAIL)
         self.assertFalse(is_ip_blocked(ip))
 
@@ -1900,7 +1958,7 @@ class LockoutEngineTestCase(LockoutTestCase):
         self._spray_policy(threshold=3)
         self._seed_ip_accounts(ip, (self.realm1, self.realm1, self.realm1))
 
-        evaluate_lockout_policies(CAContext(User("cornelius", self.realm2), source_ip=ip),
+        evaluate_conditional_access_policies(CAContext(User("cornelius", self.realm2), source_ip=ip),
                                   AuthEventType.MFA_FAIL)
         self.assertFalse(is_ip_blocked(ip))
 
@@ -1912,7 +1970,7 @@ class LockoutEngineTestCase(LockoutTestCase):
         self._spray_policy(threshold=2, operator=ConditionOperator.IN, values=[self.realm1])
         self._seed_ip_accounts(ip, (None, None, None))
 
-        evaluate_lockout_policies(CAContext(User("cornelius", self.realm1), source_ip=ip),
+        evaluate_conditional_access_policies(CAContext(User("cornelius", self.realm1), source_ip=ip),
                                   AuthEventType.MFA_FAIL)
         self.assertFalse(is_ip_blocked(ip))
 
@@ -1926,7 +1984,7 @@ class LockoutEngineTestCase(LockoutTestCase):
         self._spray_policy(threshold=3, operator=ConditionOperator.NOT_IN, values=[self.realm2])
         self._seed_ip_accounts(ip, (None, None, None))
 
-        evaluate_lockout_policies(CAContext(User(), source_ip=ip), AuthEventType.MFA_FAIL)
+        evaluate_conditional_access_policies(CAContext(User(), source_ip=ip), AuthEventType.MFA_FAIL)
         self.assertTrue(is_ip_blocked(ip))
 
     def test_role_condition_scopes_a_source_ip_count(self):
@@ -1937,12 +1995,12 @@ class LockoutEngineTestCase(LockoutTestCase):
         context = CAContext(User("cornelius", self.realm1), source_ip=ip,
                             user_role=str(AuthLogUserRole.USER))
         self._seed_ip_accounts(ip, (self.realm1, self.realm1), role=str(AuthLogUserRole.ADMIN_EXTERNAL))
-        evaluate_lockout_policies(context, AuthEventType.MFA_FAIL)
+        evaluate_conditional_access_policies(context, AuthEventType.MFA_FAIL)
         # Both rows are admin-external, so a user-role scope counts none of them.
         self.assertFalse(is_ip_blocked(ip))
 
         self._seed_ip_accounts(ip, (self.realm1, self.realm1), role=str(AuthLogUserRole.USER))
-        evaluate_lockout_policies(context, AuthEventType.MFA_FAIL)
+        evaluate_conditional_access_policies(context, AuthEventType.MFA_FAIL)
         self.assertTrue(is_ip_blocked(ip))
 
     def test_scoping_leaves_a_user_target_outcome_unchanged(self):
@@ -1956,7 +2014,7 @@ class LockoutEngineTestCase(LockoutTestCase):
             conditions=[self._condition(ConditionType.USER_REALM, ConditionOperator.IN, [self.realm1]),
                         self._condition(ConditionType.USER_ROLE, ConditionOperator.IN,
                                         [str(AuthLogUserRole.USER)])],
-            stages=(StageDefinition(2, [StageActionDefinition(LockoutAction.LOCK_USER, 600)]),))
+            stages=(StageDefinition(2, [StageActionDefinition(ConditionalAccessAction.LOCK_USER, 600)]),))
         for _ in range(2):
             db.session.add(AuthenticationLog(event_type=str(AuthEventType.MFA_FAIL),
                                              resolver=self.user.resolver, uid=self.user.uid,
@@ -1964,7 +2022,7 @@ class LockoutEngineTestCase(LockoutTestCase):
                                              timestamp=utc_now()))
         db.session.commit()
 
-        evaluate_lockout_policies(CAContext(self.user, user_role=str(AuthLogUserRole.USER)),
+        evaluate_conditional_access_policies(CAContext(self.user, user_role=str(AuthLogUserRole.USER)),
                                   AuthEventType.MFA_FAIL)
         self.assertTrue(is_user_locked(self.user))
 
@@ -1972,9 +2030,9 @@ class LockoutEngineTestCase(LockoutTestCase):
         self._make_policy(
             name="other realm only", counter_type=AuthEventType.MFA_FAIL,
             conditions=[self._condition(ConditionType.USER_REALM, ConditionOperator.IN, [self.realm2])],
-            stages=(StageDefinition(3, [StageActionDefinition(LockoutAction.LOCK_USER, 600)]),))
+            stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.LOCK_USER, 600)]),))
         self._seed_events(AuthEventType.MFA_FAIL, 3)
-        self.assertEqual([], evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL).notices)
+        self.assertEqual([], evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL).notices)
         self.assertFalse(is_user_locked(self.user))
 
     def test_a_condition_that_cannot_be_a_predicate_leaves_the_count_unscoped(self):
@@ -1990,13 +2048,13 @@ class LockoutEngineTestCase(LockoutTestCase):
         with mock.patch.dict(CONDITION_TYPES, {"CLIENT_LABEL": unscopable}):
             policy = self._make_policy(
                 name="unscopable", counter_type=AuthEventType.MFA_FAIL,
-                target=LockoutTarget.SOURCE_IP, count_mode=CountMode.DISTINCT_USERS,
+                target=ConditionalAccessTarget.SOURCE_IP, count_mode=CountMode.DISTINCT_USERS,
                 conditions=[self._condition("CLIENT_LABEL", ConditionOperator.IN, ["kiosk"])],
-                stages=(StageDefinition(2, [StageActionDefinition(LockoutAction.BLOCK_IP, 600)]),))[0]
+                stages=(StageDefinition(2, [StageActionDefinition(ConditionalAccessAction.BLOCK_IP, 600)]),))[0]
             self.assertFalse(policy_conditions_are_scopable(policy))
             # Two accounts in different realms: unscoped they both count and the threshold is reached.
             self._seed_ip_accounts(ip, (self.realm1, self.realm2))
-            evaluate_lockout_policies(CAContext(User("cornelius", self.realm1), source_ip=ip),
+            evaluate_conditional_access_policies(CAContext(User("cornelius", self.realm1), source_ip=ip),
                                       AuthEventType.MFA_FAIL)
             self.assertTrue(is_ip_blocked(ip))
 
@@ -2006,7 +2064,7 @@ class LockoutEngineTestCase(LockoutTestCase):
         self._make_policy(
             name="deny realm1", counter_type=AuthEventType.MFA_FAIL,
             conditions=[self._condition(ConditionType.USER_REALM, ConditionOperator.IN, [self.realm1])],
-            stages=(StageDefinition(0, [StageActionDefinition(LockoutAction.DENY)]),))
+            stages=(StageDefinition(0, [StageActionDefinition(ConditionalAccessAction.DENY)]),))
         self.assertEqual(AccessDecision.DENY, evaluate_access_decision(CAContext(self.user)).decision)
         self.assertEqual(AccessDecision.CONTINUE,
                          evaluate_access_decision(CAContext(User("cornelius", self.realm2))).decision)
@@ -2030,9 +2088,9 @@ class LockoutEngineTestCase(LockoutTestCase):
         """A source-IP PER_ATTEMPT policy scoped by one realm condition, for counting via _policy_count_ip."""
         policy, _stages = self._make_policy(
             name="attempt scoped", counter_type=counter_type,
-            target=LockoutTarget.SOURCE_IP, count_mode=CountMode.PER_ATTEMPT,
+            target=ConditionalAccessTarget.SOURCE_IP, count_mode=CountMode.PER_ATTEMPT,
             conditions=[self._condition(ConditionType.USER_REALM, operator, values)],
-            stages=(StageDefinition(1, [StageActionDefinition(LockoutAction.BLOCK_IP, 600)]),))
+            stages=(StageDefinition(1, [StageActionDefinition(ConditionalAccessAction.BLOCK_IP, 600)]),))
         return policy
 
     def test_a_condition_that_would_drop_a_success_does_not_turn_the_attempt_into_a_failure(self):
@@ -2095,9 +2153,9 @@ class LockoutEngineTestCase(LockoutTestCase):
         ip = "10.0.0.30"
         self._make_policy(
             name="scoped spray deny", counter_type=AuthEventType.MFA_FAIL,
-            target=LockoutTarget.SOURCE_IP, count_mode=CountMode.DISTINCT_USERS,
+            target=ConditionalAccessTarget.SOURCE_IP, count_mode=CountMode.DISTINCT_USERS,
             conditions=[self._condition(ConditionType.USER_REALM, ConditionOperator.IN, [self.realm1])],
-            stages=(StageDefinition(3, [StageActionDefinition(LockoutAction.DENY)]),))
+            stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.DENY)]),))
         self._seed_ip_accounts(ip, (self.realm1, self.realm1,
                                     self.realm2, self.realm2, self.realm2, self.realm2, self.realm2))
 
@@ -2110,9 +2168,9 @@ class LockoutEngineTestCase(LockoutTestCase):
         ip = "10.0.0.31"
         self._make_policy(
             name="scoped spray deny", counter_type=AuthEventType.MFA_FAIL,
-            target=LockoutTarget.SOURCE_IP, count_mode=CountMode.DISTINCT_USERS,
+            target=ConditionalAccessTarget.SOURCE_IP, count_mode=CountMode.DISTINCT_USERS,
             conditions=[self._condition(ConditionType.USER_REALM, ConditionOperator.IN, [self.realm1])],
-            stages=(StageDefinition(3, [StageActionDefinition(LockoutAction.DENY)]),))
+            stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.DENY)]),))
         self._seed_ip_accounts(ip, (self.realm1, self.realm1, self.realm1, self.realm2, self.realm2))
 
         self.assertEqual(AccessDecision.DENY,

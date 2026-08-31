@@ -29,15 +29,15 @@ import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import {
   ConditionalAccessPolicyService,
   ConditionalAccessPolicyServiceInterface,
-  LockoutActionType,
-  LockoutStageAction,
-  LockoutTarget
+  ConditionalAccessActionType,
+  ConditionalAccessStageAction,
+  ConditionalAccessTarget
 } from "@services/conditional-access/conditional-access-policy.service";
 import { SmtpService, SmtpServiceInterface } from "@services/smtp/smtp.service";
 import { InfoHintComponent } from "@components/shared/info-hint/info-hint.component";
 
 // One-line explanation of what each action does, shown under the action select.
-const ACTION_DESCRIPTIONS: Record<LockoutActionType, string> = {
+const ACTION_DESCRIPTIONS: Record<ConditionalAccessActionType, string> = {
   LOCK_USER: $localize`Temporarily lock the user out for the duration below.`,
   PERMANENT_LOCK_USER: $localize`Lock the user out until an administrator unlocks them.`,
   BLOCK_IP: $localize`Temporarily block the request's source IP for the duration below.`,
@@ -158,9 +158,9 @@ export class ConditionalAccessActionItemComponent {
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly smtpService: SmtpServiceInterface = inject(SmtpService);
 
-  readonly action = input.required<LockoutStageAction>();
-  readonly target = input<LockoutTarget>("user");
-  readonly updateAction = output<Partial<LockoutStageAction>>();
+  readonly action = input.required<ConditionalAccessStageAction>();
+  readonly target = input<ConditionalAccessTarget>("user");
+  readonly updateAction = output<Partial<ConditionalAccessStageAction>>();
   readonly removeAction = output<void>();
 
   readonly emailPlaceholders = EMAIL_PLACEHOLDERS;
@@ -176,7 +176,7 @@ export class ConditionalAccessActionItemComponent {
   // Action types offered for the current target (see /targets); the currently-selected type is
   // always included so a stale, now-incompatible action stays visible in the select instead of
   // being dropped on the next save.
-  readonly allowedActionTypes = computed<LockoutActionType[]>(() => {
+  readonly allowedActionTypes = computed<ConditionalAccessActionType[]>(() => {
     const allowed = this.policyService.actionsForTarget(this.target());
     const current = this.action().action_type;
     return allowed.includes(current) ? allowed : [...allowed, current];
@@ -238,7 +238,7 @@ export class ConditionalAccessActionItemComponent {
   });
 
   // Stored identifier when it names a server that is no longer configured (deleted or renamed), in
-  // which case the engine finds no server and skips the email (_send_lockout_email), so it is
+  // which case the engine finds no server and skips the email (_send_action_email), so it is
   // flagged rather than left looking valid; judged only against a non-empty list, since until
   // /smtpserver/ has answered, calling the stored one gone would be a guess.
   readonly staleSmtpIdentifier = computed<string>(() => {
@@ -247,7 +247,7 @@ export class ConditionalAccessActionItemComponent {
     return identifiers.length > 0 && !identifiers.includes(current) ? current : "";
   });
 
-  private static modeFor(actionType: LockoutActionType): ActionValueMode {
+  private static modeFor(actionType: ConditionalAccessActionType): ActionValueMode {
     if (actionType === "LOCK_USER" || actionType === "BLOCK_IP") {
       return "duration";
     }
@@ -297,7 +297,7 @@ export class ConditionalAccessActionItemComponent {
     return String(value);
   }
 
-  onActionTypeChange(actionType: LockoutActionType): void {
+  onActionTypeChange(actionType: ConditionalAccessActionType): void {
     // A value shaped for the previous mode is meaningless in a different one, so it resets when the
     // mode changes (e.g. switching an email object to a duration).
     if (ConditionalAccessActionItemComponent.modeFor(actionType) !== this.valueMode()) {

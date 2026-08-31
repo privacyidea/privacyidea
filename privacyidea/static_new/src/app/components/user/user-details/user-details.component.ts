@@ -157,7 +157,7 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
       this.canSetCustomAttribute() ||
       this.userService.userAttributesList().length > 0 ||
       this.authService.actionAllowed("get_user_internal_attributes") ||
-      this.authService.actionAllowed("user_lockout_read")
+      this.authService.actionAllowed("user_lock_read")
   );
   expandedKeys = signal<Set<string>>(new Set<string>());
   addKeyInput = signal<string>("");
@@ -210,14 +210,14 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
     const half = Math.ceil(entries.length / 2);
     return [entries.slice(0, half), entries.slice(half)];
   });
-  lockoutStatus = this.conditionalAccessStateService.userLockoutStatus;
-  isUserLocked = computed(() => this.lockoutStatus() !== null);
-  isPermanentLocked = computed(() => this.lockoutStatus()?.permanent ?? false);
-  lockoutStateClass = computed(() =>
+  lockStatus = this.conditionalAccessStateService.userLockStatus;
+  isUserLocked = computed(() => this.lockStatus() !== null);
+  isPermanentLocked = computed(() => this.lockStatus()?.permanent ?? false);
+  lockStateClass = computed(() =>
     this.isPermanentLocked() ? "highlight-false" : this.isUserLocked() ? "highlight-warning" : "highlight-true"
   );
-  lockoutStatusText = computed(() => {
-    const status = this.lockoutStatus();
+  lockStatusText = computed(() => {
+    const status = this.lockStatus();
     if (!status) {
       return $localize`Unlocked`;
     }
@@ -375,19 +375,19 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
     this.authenticationLogService.authenticationLogFilter.set(authLogFilter);
   }
 
-  resetUserLockout() {
-    const lockoutStatus = this.lockoutStatus();
-    if (!lockoutStatus) {
+  resetUserLock() {
+    const lockStatus = this.lockStatus();
+    if (!lockStatus) {
       return;
     }
     this.dialogService
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: $localize`Reset User Lockout`,
-          items: [`${lockoutStatus.username}@${lockoutStatus.realm}`],
+          title: $localize`Reset User Lock`,
+          items: [`${lockStatus.username}@${lockStatus.realm}`],
           itemType: "user",
-          confirmAction: { label: $localize`Reset lockout`, value: true, type: "confirm" }
+          confirmAction: { label: $localize`Reset lock`, value: true, type: "confirm" }
         }
       })
       .afterClosed()
@@ -397,22 +397,22 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
             return;
           }
           this.conditionalAccessStateService
-            .resetUserLockout({
-              resolver: lockoutStatus.resolver,
-              uid: lockoutStatus.uid,
-              realm: lockoutStatus.realm
+            .resetUserLock({
+              resolver: lockStatus.resolver,
+              uid: lockStatus.uid,
+              realm: lockStatus.realm
             })
             .subscribe({
               next: (success) => {
                 if (success) {
-                  this.conditionalAccessStateService.userLockoutResource.reload();
+                  this.conditionalAccessStateService.userLockResource.reload();
                   return;
                 }
                 // The request succeeded but removed nothing, because the lock was already gone or sits outside this
                 // admin's visibility scope; the service only reports transport errors, so without this the button would
                 // look like it did nothing.
-                this.notificationService.error($localize`No lockout was reset for this user.`);
-                this.conditionalAccessStateService.userLockoutResource.reload();
+                this.notificationService.error($localize`No lock was reset for this user.`);
+                this.conditionalAccessStateService.userLockResource.reload();
               }
             });
         }

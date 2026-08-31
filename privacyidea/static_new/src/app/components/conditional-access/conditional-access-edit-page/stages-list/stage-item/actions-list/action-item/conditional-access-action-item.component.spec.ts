@@ -20,9 +20,9 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { AuthService } from "@services/auth/auth.service";
 import {
   ConditionalAccessPolicyService,
-  LockoutActionType,
-  LockoutStageAction,
-  LockoutTarget
+  ConditionalAccessActionType,
+  ConditionalAccessStageAction,
+  ConditionalAccessTarget
 } from "@services/conditional-access/conditional-access-policy.service";
 import { SmtpServer, SmtpService } from "@services/smtp/smtp.service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
@@ -36,7 +36,7 @@ describe("ConditionalAccessActionItemComponent", () => {
   let authService: MockAuthService;
   let smtpService: MockSmtpService;
 
-  function setAction(action: LockoutStageAction): void {
+  function setAction(action: ConditionalAccessStageAction): void {
     fixture.componentRef.setInput("action", action);
     fixture.detectChanges();
   }
@@ -127,7 +127,7 @@ describe("ConditionalAccessActionItemComponent", () => {
     });
 
     it("does not flag while the allowed list is still empty", () => {
-      policyServiceMock.actionsByTarget.set({} as Record<LockoutTarget, LockoutActionType[]>);
+      policyServiceMock.actionsByTarget.set({} as Record<ConditionalAccessTarget, ConditionalAccessActionType[]>);
       policyServiceMock.actionTypes.set([]);
       fixture.componentRef.setInput("target", "source_ip");
       setAction({ action_type: "LOCK_USER", action_value: 600 });

@@ -6,7 +6,7 @@ Authentication Log
 
 The authentication log records the outcome of every authentication request:
 what was attempted, by whom, from where, and how it ended. It is the data
-:ref:`lockout_policies` count, and it is readable on its own under
+:ref:`conditional_access_policies` count, and it is readable on its own under
 *Logs → Authentication log*.
 
 It is separate from the :ref:`audit` log. The audit log records *what the API
@@ -38,8 +38,8 @@ Attempts
 
 A challenge-response login takes several requests, e.g. one that triggers the
 challenge and one that answers it. These share an **attempt ID**, so they can be
-recognised as one logical authentication attempt, and a lockout policy using the
-``PER_ATTEMPT`` count mode counts them once.
+recognised as one logical authentication attempt, and a conditional access policy
+using the ``PER_ATTEMPT`` count mode counts them once.
 
 The attempt ID also survives a multi-challenge login, where answering one
 challenge triggers the next one and the transaction ID changes. Filtering the
@@ -165,6 +165,6 @@ conditional-access outcomes recorded on them. Add ``--chunksize`` to delete in
 batches on a large table, and ``--dryrun`` to see how many entries would be
 removed without deleting anything.
 
-.. note:: Deleting entries also removes them from the counts a lockout policy
-   makes. Keep the retention period comfortably longer than the longest time
-   window you use in a policy.
+.. note:: Deleting entries also removes them from the counts a conditional
+   access policy makes. Keep the retention period comfortably longer than the
+   longest time window you use in a policy.

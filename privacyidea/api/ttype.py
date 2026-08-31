@@ -167,7 +167,7 @@ def token(ttype=None):
 
     try:
         # This dispatcher carries no conditional-access gate: push checks itself inside _api_endpoint_post, and only on
-        # the signed challenge answer, so enrollment and firebase-token updates are never refused by a lockout.
+        # the signed challenge answer, so enrollment and firebase-token updates are never refused by a lock.
         res = token_class.api_endpoint(request, g)
     except Exception as e:
         if Match.action_only(

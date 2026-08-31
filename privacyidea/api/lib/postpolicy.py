@@ -1276,7 +1276,7 @@ def is_authorized(request, response):
             context = get_ca_context()
             # Nothing to classify when conditional access already turned the request away before any token logic ran:
             # its rejection row already records why, and a NOT_AUTHORIZED row here would bury that reason and hand the
-            # lockout counters an attempt the lock itself produced.
+            # conditional-access counters an attempt the lock itself produced.
             if not context.rejected_by_conditional_access:
                 if context.amendable is not None:
                     context.reclassify(AuthEventType.NOT_AUTHORIZED)

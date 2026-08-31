@@ -299,7 +299,7 @@ describe("AuthenticationLog", () => {
           event_type: "USER_LOCKED",
           timestamp: "2026-08-03T09:00:00Z",
           other_info: null,
-          conditional_access_outcomes: [{ policy_name: "Brute Force PIN Lockout" }]
+          conditional_access_outcomes: [{ policy_name: "Brute Force PIN Lock" }]
         }
       ] as AuthenticationLogEntry[])
     );
@@ -387,13 +387,13 @@ describe("AuthenticationLog", () => {
   });
 
   it("falls back to typing a policy name for an admin who may not read the policies", () => {
-    // Without lockout_policy_read there is no list to offer, so the menu entry has to lead somewhere else.
+    // Without conditional_access_policy_read there is no list to offer, so the menu entry has to lead somewhere else.
     const authData = authService.authData()!;
-    authService.authData.set({ ...authData, rights: ["authentication_log_read", "lockout_policy_read"] });
-    expect(component.canReadLockoutPolicies()).toBe(true);
+    authService.authData.set({ ...authData, rights: ["authentication_log_read", "conditional_access_policy_read"] });
+    expect(component.canReadConditionalAccessPolicies()).toBe(true);
 
     authService.authData.set({ ...authData, rights: ["authentication_log_read"] });
-    expect(component.canReadLockoutPolicies()).toBe(false);
+    expect(component.canReadConditionalAccessPolicies()).toBe(false);
   });
 
   it("clearing the Conditional access filter drops all three of its keys at once", () => {

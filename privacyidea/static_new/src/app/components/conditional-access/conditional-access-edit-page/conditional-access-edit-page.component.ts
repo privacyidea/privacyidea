@@ -39,12 +39,12 @@ import {
   ConditionalAccessPolicyService,
   ConditionalAccessPolicyServiceInterface,
   CountMode,
-  EMPTY_LOCKOUT_POLICY,
-  LockoutPolicy,
-  LockoutPolicyCondition,
-  LockoutPolicySaveParams,
-  LockoutPolicyStage,
-  LockoutTarget
+  EMPTY_CONDITIONAL_ACCESS_POLICY,
+  ConditionalAccessPolicy,
+  ConditionalAccessPolicyCondition,
+  ConditionalAccessPolicySaveParams,
+  ConditionalAccessPolicyStage,
+  ConditionalAccessTarget
 } from "@services/conditional-access/conditional-access-policy.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
@@ -114,10 +114,10 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
 
   // Pristine copy of the last-loaded/-saved state, kept separate from the constantly-mutating
   // editPolicy for hasChanges()/delete, mirroring EventEditPageComponent's event/editEvent split.
-  policy = signal<LockoutPolicySaveParams>(deepCopy(EMPTY_LOCKOUT_POLICY));
+  policy = signal<ConditionalAccessPolicySaveParams>(deepCopy(EMPTY_CONDITIONAL_ACCESS_POLICY));
   // Working copy that Signal Forms wraps directly (form() writes through to this signal), so both
   // [formField] scalar edits and updateEditPolicy() array/boolean edits mutate the same model.
-  editPolicy = signal<LockoutPolicySaveParams>(deepCopy(EMPTY_LOCKOUT_POLICY));
+  editPolicy = signal<ConditionalAccessPolicySaveParams>(deepCopy(EMPTY_CONDITIONAL_ACCESS_POLICY));
   isNewPolicy = signal(true);
 
   readonly title = computed(() =>
@@ -135,9 +135,9 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
 
   // Options for the target select, falling back to a fixed enum until /targets loads so the
   // required field is never empty.
-  readonly targetOptions = computed<LockoutTarget[]>(() => {
+  readonly targetOptions = computed<ConditionalAccessTarget[]>(() => {
     const fromBackend = this.policyService.targets();
-    return fromBackend.length ? fromBackend : (["user", "source_ip"] as LockoutTarget[]);
+    return fromBackend.length ? fromBackend : (["user", "source_ip"] as ConditionalAccessTarget[]);
   });
   targetLabel(target: string): string {
     return TARGET_LABELS[target] ?? target;
@@ -168,7 +168,7 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
   // Cached here instead of `?? []` in the template: a fresh empty array on every change-detection
   // pass marks each mat-select's view dirty, so change detection never settles and an open select
   // overlay stays parked in the top-left corner for as long as it runs.
-  readonly editConditions = computed<LockoutPolicyCondition[]>(() => this.editPolicy().conditions ?? []);
+  readonly editConditions = computed<ConditionalAccessPolicyCondition[]>(() => this.editPolicy().conditions ?? []);
 
   timeWindowValid = computed(() => this.editPolicy().time_window_seconds >= 1);
   // Raw text of the priority field, kept separate from the parsed value so an invalid entry is
@@ -193,7 +193,7 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
   // Priorities must be unique across policies, so the evaluation order is unambiguous and the
   // backend 400s otherwise; this surfaces the clashing policy for the inline error, excluding the
   // policy's own id so an unchanged priority is not a self-collision.
-  priorityConflict = computed<LockoutPolicy | undefined>(() => {
+  priorityConflict = computed<ConditionalAccessPolicy | undefined>(() => {
     const priority = this.editPolicy().priority;
     if (priority == null) {
       return undefined;
@@ -260,7 +260,7 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
   readonly staleConditionValues = computed(() => this.policyService.staleConditionValues(this.editPolicy().conditions));
   conditionValuesValid = computed(() => this.staleConditionValues().length === 0);
   // Only the highest matching threshold ever fires, so two stages sharing a threshold would leave
-  // one permanently dead; the backend also rejects this (uq_lockout_stage_policy_threshold), so it
+  // one permanently dead; the backend also rejects this (uq_ca_stage_policy_threshold), so it
   // is blocked here too.
   stageThresholdsUnique = computed(() => {
     const thresholds = this.editPolicy().stages.map((stage) => stage.failure_threshold);
@@ -338,7 +338,7 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
   // The time window is stored in seconds; the editor lets the admin pick a coarser unit and enter a
   // plain number, converted to seconds on the way into editPolicy.
   timeWindowUnit = signal<TimeUnit>("seconds");
-  timeWindowValue = signal<number>(EMPTY_LOCKOUT_POLICY.time_window_seconds);
+  timeWindowValue = signal<number>(EMPTY_CONDITIONAL_ACCESS_POLICY.time_window_seconds);
 
   constructor() {
     this.route.paramMap.pipe(takeUntilDestroyed()).subscribe((params) => {
@@ -353,7 +353,7 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
       } else {
         this.isNewPolicy.set(true);
         this.editPolicyId = null;
-        this.loadPolicy(EMPTY_LOCKOUT_POLICY);
+        this.loadPolicy(EMPTY_CONDITIONAL_ACCESS_POLICY);
       }
     });
 
@@ -375,7 +375,7 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
 
   // Seeds both the pristine and working copies from one policy, each its own deep copy, so editing
   // one cannot reach into the other.
-  private loadPolicy(policy: LockoutPolicySaveParams): void {
+  private loadPolicy(policy: ConditionalAccessPolicySaveParams): void {
     const loaded = deepCopy(policy);
     // The read endpoint spells "no conditions" as an empty list, while this editor's model omits the
     // key entirely; collapsing the two here keeps hasChanges()'s JSON diff from reporting a change
@@ -393,27 +393,27 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
     this.pendingChangesService.clearAllRegistrations();
   }
 
-  updateEditPolicy(partial: Partial<LockoutPolicySaveParams>): void {
+  updateEditPolicy(partial: Partial<ConditionalAccessPolicySaveParams>): void {
     this.editPolicy.set({ ...this.editPolicy(), ...partial });
   }
 
-  onStagesChange(stages: LockoutPolicyStage[]): void {
+  onStagesChange(stages: ConditionalAccessPolicyStage[]): void {
     this.updateEditPolicy({ stages });
   }
 
   // No conditions means the absence of the key, not an empty list, so adding and removing a
   // condition again does not register as a change.
-  onConditionsChange(conditions: LockoutPolicyCondition[]): void {
+  onConditionsChange(conditions: ConditionalAccessPolicyCondition[]): void {
     this.updateEditPolicy({ conditions: conditions.length ? conditions : undefined });
   }
 
   onCounterTypesChange(counterTypes: string[]): void {
     this.updateEditPolicy({
-      counter_types_to_track: counterTypes as LockoutPolicySaveParams["counter_types_to_track"]
+      counter_types_to_track: counterTypes as ConditionalAccessPolicySaveParams["counter_types_to_track"]
     });
   }
 
-  onTargetChange(target: LockoutTarget): void {
+  onTargetChange(target: ConditionalAccessTarget): void {
     // Only the target changes here; the count mode is left as-is, so switching to a target that does
     // not support it (e.g. DISTINCT_USERS under a user target) surfaces as a countModeValid error
     // that blocks saving instead of being silently rewritten, mirroring targetActionsValid.
@@ -430,12 +430,12 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
   applyTemplate(key: string | null): void {
     this.selectedTemplateKey.set(key);
     const template = key ? this.policyService.templates().find((t) => t.key === key) : undefined;
-    const prefill = template ? deepCopy(template.policy) : deepCopy(EMPTY_LOCKOUT_POLICY);
+    const prefill = template ? deepCopy(template.policy) : deepCopy(EMPTY_CONDITIONAL_ACCESS_POLICY);
     delete prefill.id;
     // Templates carry no priority, since the admin must pick a unique one, so the missing key is
     // normalized to null leaving the field empty (see priorityValid); spelling out the target type
     // here makes the compiler enforce that normalization.
-    const policy: LockoutPolicySaveParams = {
+    const policy: ConditionalAccessPolicySaveParams = {
       ...prefill,
       priority: prefill.priority ?? null,
       stages: prefill.stages
@@ -517,7 +517,7 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
     // The engine evaluates stages by descending failure_threshold, so the thresholds the admin
     // entered are the order and nothing extra is derived here.
     const policy = this.editPolicy();
-    const payload: LockoutPolicySaveParams = { ...policy };
+    const payload: ConditionalAccessPolicySaveParams = { ...policy };
     if (!payload.conditions?.length) {
       // The backend only replaces conditions when the key is present, so an empty list is sent to
       // clear stored conditions, while a policy with none omits the key entirely — otherwise

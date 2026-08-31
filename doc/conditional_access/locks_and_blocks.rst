@@ -9,7 +9,7 @@ administrator lifts it. Both are listed in the WebUI, where they can also be
 lifted, and individual addresses or whole networks can be exempted from ever
 being blocked.
 
-.. _lockout_policies_lifting:
+.. _conditional_access_policies_lifting:
 
 Lifting locks and blocks
 ------------------------

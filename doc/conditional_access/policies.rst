@@ -1,12 +1,12 @@
-.. index:: Lockout policies, Conditional Access
-.. _lockout_policies:
+.. index:: Conditional Access policies, Conditional Access
+.. _conditional_access_policies:
 
-Lockout policies
-================
+Conditional access policies
+===========================
 
-A lockout policy counts authentication log entries for one subject over a time
-window and runs actions when a threshold is reached. Lockout policies are
-managed under *Policies → Conditional Access* and are independent of the
+A conditional access policy counts authentication log entries for one subject
+over a time window and runs actions when a threshold is reached. These policies
+are managed under *Policies → Conditional Access* and are independent of the
 policies described in :ref:`policies`.
 
 Policy settings
@@ -29,7 +29,7 @@ Policy settings
 
 **dry run**
 
-  Evaluate the policy but enforce nothing, see :ref:`lockout_policies_dry_run`.
+  Evaluate the policy but enforce nothing, see :ref:`conditional_access_policies_dry_run`.
 
 **target**
 
@@ -104,7 +104,7 @@ A ``source_ip`` policy never resets on a success. One user authenticating
 successfully must not clear a signal that is aggregated over everybody sharing
 that address.
 
-.. _lockout_policies_stages:
+.. _conditional_access_policies_stages:
 
 Stages and thresholds
 ---------------------
@@ -138,7 +138,7 @@ subject has done.
    the ``pi-manage conditionalaccess`` reset commands can lift it; undoing an
    unscoped one means disabling the policy in the database.
 
-.. _lockout_policies_actions:
+.. _conditional_access_policies_actions:
 
 Actions
 -------
@@ -167,7 +167,7 @@ Actions
     ``{stage_id}``, ``{event_type}``, ``{policy}`` and ``{time}``; ``EMAIL_USER``
     additionally offers ``{email}``, ``{givenname}`` and ``{surname}``.
 
-.. _lockout_policies_exceptions:
+.. _conditional_access_policies_exceptions:
 
 Exempting a subject
 -------------------
@@ -215,9 +215,9 @@ spraying and user enumeration. A template fills in tracked events, window,
 count mode, stages and actions; you pick the priority and review the
 thresholds. The two per-IP rate limit templates are pre-set to dry run, because
 their threshold depends on how many users share an address, see
-:ref:`lockout_policies_dry_run`.
+:ref:`conditional_access_policies_dry_run`.
 
-.. _lockout_policies_dry_run:
+.. _conditional_access_policies_dry_run:
 
 Trying a policy out first
 -------------------------

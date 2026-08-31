@@ -29,7 +29,7 @@ import {
 } from "@services/conditional-access-state/conditional-access-state.service";
 import {
   ConditionalAccessPolicyService,
-  LockoutPolicy
+  ConditionalAccessPolicy
 } from "@services/conditional-access/conditional-access-policy.service";
 import { DashboardDataStore } from "@services/dashboard/dashboard-data-store.service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
@@ -49,7 +49,7 @@ const instance: WidgetInstance = {
   rows: 6
 };
 
-function makePolicy(overrides: Partial<LockoutPolicy>): LockoutPolicy {
+function makePolicy(overrides: Partial<ConditionalAccessPolicy>): ConditionalAccessPolicy {
   return {
     id: 1,
     name: "policy",
@@ -161,8 +161,8 @@ describe("ConditionalAccessWidgetComponent", () => {
 
   it("should require any one of the three conditional-access read rights", () => {
     expect(ConditionalAccessWidgetComponent.requiredAction).toEqual([
-      "lockout_policy_read",
-      "user_lockout_read",
+      "conditional_access_policy_read",
+      "user_lock_read",
       "blocklist_read"
     ]);
   });
@@ -475,7 +475,7 @@ describe("ConditionalAccessWidgetComponent", () => {
     });
 
     it("should not count the skipped areas as failures", () => {
-      authMock.actionAllowed.mockImplementation((action: string) => action === "lockout_policy_read");
+      authMock.actionAllowed.mockImplementation((action: string) => action === "conditional_access_policy_read");
       create();
 
       expect(component.state()).toBe("ready");
@@ -494,7 +494,9 @@ describe("ConditionalAccessWidgetComponent", () => {
     });
 
     it("should report an error when a response carries a failed status", () => {
-      policyMock.getPolicies.mockReturnValue(of(MockPiResponse.fromError<LockoutPolicy[]>({ message: "nope" })));
+      policyMock.getPolicies.mockReturnValue(
+        of(MockPiResponse.fromError<ConditionalAccessPolicy[]>({ message: "nope" }))
+      );
       create();
 
       expect(component.state()).toBe("error");

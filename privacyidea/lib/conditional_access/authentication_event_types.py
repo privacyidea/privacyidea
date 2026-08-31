@@ -99,7 +99,7 @@ class AuthEventType(str, Enum):
     # A source-IP block in force turned the request away.
     IP_BLOCKED = "IP_BLOCKED"
     # A conditional-access policy's DENY action decided this single request. Named after the effect rather than the
-    # action, because DENY is a LockoutAction value stored in the adjacent outcome table.
+    # action, because DENY is a ConditionalAccessAction value stored in the adjacent outcome table.
     ACCESS_DENIED = "ACCESS_DENIED"
 
     def __str__(self) -> str:
@@ -161,7 +161,7 @@ EVENT_TYPE_OUTCOME: dict[AuthEventType, AuthEventOutcome] = {
 # is a second, higher-threshold stage on the underlying failure events.
 #
 # Excluding them from the vocabulary makes that structural rather than a warning: the policy-selection join in
-# evaluate_lockout_policies can then never match one.
+# evaluate_conditional_access_policies can then never match one.
 CA_ENFORCEMENT_EVENT_TYPES: frozenset[AuthEventType] = frozenset({
     AuthEventType.USER_LOCKED,
     AuthEventType.IP_BLOCKED,

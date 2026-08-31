@@ -19,8 +19,9 @@ from privacyidea.lib.cache import ChallengeDTO
 from privacyidea.lib.challenge import get_challenges, delete_challenges
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
 from privacyidea.lib.conditional_access.engine import is_user_locked
-from privacyidea.models.lockout_policy import (LockoutPolicy, LockoutPolicyStage, LockoutStageAction,
-                                               LockoutPolicyCounterType, UserLockoutState)
+from privacyidea.models.conditional_access_policy import (ConditionalAccessPolicy, ConditionalAccessPolicyStage,
+                                                          ConditionalAccessStageAction,
+                                                          ConditionalAccessPolicyCounterType, UserLockState)
 from privacyidea.lib.config import set_privacyidea_config, delete_privacyidea_config
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import SCOPE, set_policy, delete_policy
@@ -1803,8 +1804,8 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
             delete_policy("push_config")
 
     def _clear_ca(self):
-        for model in (UserLockoutState, LockoutStageAction, LockoutPolicyStage,
-                      LockoutPolicyCounterType, LockoutPolicy, AuthenticationLog):
+        for model in (UserLockState, ConditionalAccessStageAction, ConditionalAccessPolicyStage,
+                      ConditionalAccessPolicyCounterType, ConditionalAccessPolicy, AuthenticationLog):
             db.session.query(model).delete()
         db.session.commit()
 
@@ -1824,7 +1825,7 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
                                                  "fbtoken": "firebaseT"}):
             return self.app.full_dispatch_request()
 
-    def test_18e_push_enrollment_not_gated_by_lockout(self):
+    def test_18e_push_enrollment_not_gated_by_lock(self):
         """A locked token owner must still be able to complete push enrollment:
         the conditional-access pre-check runs only on the authentication path,
         not on the enrollment step at /ttype/push."""
@@ -1835,7 +1836,7 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
                           f"{PushAction.REGISTRATION_URL}={REGISTRATION_URL}")
         self._clear_ca()
         # Lock the owner up front.
-        db.session.add(UserLockoutState(resolver=user.resolver, uid=user.uid, realm=user.realm,
+        db.session.add(UserLockState(resolver=user.resolver, uid=user.uid, realm=user.realm,
                                         lock_expires_at=utc_now() + datetime.timedelta(seconds=600)))
         db.session.commit()
         try:
@@ -1852,7 +1853,7 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
             remove_token(self.serial_push)
             delete_policy("push_config")
 
-    def test_18f_push_auth_answer_gated_by_lockout(self):
+    def test_18f_push_auth_answer_gated_by_lock(self):
         """A locked owner's signed push answer is rejected by the pre-check before
         the signature is verified: the answer is not processed (no
         CHALLENGE_ANSWERED log row) and the challenge stays open."""
@@ -1872,7 +1873,7 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
             nonce = challenge.challenge
             transaction_id = challenge.transaction_id
             # Now lock the owner and answer with a VALID signature.
-            db.session.add(UserLockoutState(resolver=user.resolver, uid=user.uid, realm=user.realm,
+            db.session.add(UserLockState(resolver=user.resolver, uid=user.uid, realm=user.realm,
                                             lock_expires_at=utc_now() + datetime.timedelta(seconds=600)))
             db.session.commit()
             self.assertTrue(is_user_locked(user))

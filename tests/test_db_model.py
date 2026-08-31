@@ -28,7 +28,7 @@ from sqlalchemy import func, delete, select
 from sqlalchemy.exc import IntegrityError
 
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
-from privacyidea.lib.conditional_access.engine import LockoutTarget
+from privacyidea.lib.conditional_access.engine import ConditionalAccessTarget
 from privacyidea.lib.policies.conditions import (PolicyConditionClass, ConditionSection,
                                                  ConditionHandleMissingData)
 from privacyidea.lib.policy import set_policy_conditions
@@ -47,8 +47,8 @@ from privacyidea.models import (Token,
                                 Challenge, PasswordReset, ClientApplication, UserCache,
                                 EventCounter, MonitoringStats, PolicyCondition, db,
                                 Tokengroup, TokenTokengroup, Serviceid, TokenInfo,
-                                LockoutPolicy, LockoutPolicyCondition, LockoutPolicyStage,
-                                LockoutStageAction, AuthenticationLog, ConditionalAccessOutcome)
+                                ConditionalAccessPolicy, ConditionalAccessPolicyCondition, ConditionalAccessPolicyStage,
+                                ConditionalAccessStageAction, AuthenticationLog, ConditionalAccessOutcome)
 from .base import MyTestCase
 
 
@@ -762,19 +762,19 @@ class ResolverRealmTestCase(MyTestCase):
     # TODO: same nodes with different timestamps
 
 
-class LockoutPolicyTestCase(MyTestCase):
+class ConditionalAccessPolicyModelTestCase(MyTestCase):
 
     def test_01_create_policy_with_stages_and_actions(self):
-        policy = LockoutPolicy(name="Default MFA Lockout Policy",
+        policy = ConditionalAccessPolicy(name="Default MFA Lock Policy",
                                counter_types_to_track=[AuthEventType.MFA_FAIL],
                                time_window_seconds=3600,
-                               target=LockoutTarget.USER,
+                               target=ConditionalAccessTarget.USER,
                                priority=1)
         policy_id = policy.save()
         self.assertGreaterEqual(policy_id, 1)
 
         # Check the defaults
-        policy = LockoutPolicy.query.filter_by(name="Default MFA Lockout Policy").one()
+        policy = ConditionalAccessPolicy.query.filter_by(name="Default MFA Lock Policy").one()
         self.assertTrue(policy.enabled)
         self.assertFalse(policy.dry_run)
         self.assertEqual(["MFA_FAIL"], policy.counter_types_to_track)
@@ -782,9 +782,9 @@ class LockoutPolicyTestCase(MyTestCase):
         self.assertEqual(1, policy.priority)
 
         # Add two stages with different thresholds
-        stage5 = LockoutPolicyStage(policy_id=policy_id, failure_threshold=5)
+        stage5 = ConditionalAccessPolicyStage(policy_id=policy_id, failure_threshold=5)
         stage5.save()
-        stage15 = LockoutPolicyStage(policy_id=policy_id, failure_threshold=15)
+        stage15 = ConditionalAccessPolicyStage(policy_id=policy_id, failure_threshold=15)
         stage15.save()
 
         # Stages are ordered by descending threshold, so the most severe stage comes first
@@ -792,37 +792,37 @@ class LockoutPolicyTestCase(MyTestCase):
         self.assertEqual(policy_id, stage5.policy.id)
 
         # Add actions to a stage
-        LockoutStageAction(stage_id=stage15.id, action_type="LOCK_USER",
+        ConditionalAccessStageAction(stage_id=stage15.id, action_type="LOCK_USER",
                            action_value=600).save()
-        LockoutStageAction(stage_id=stage15.id, action_type="EMAIL_ADMIN",
+        ConditionalAccessStageAction(stage_id=stage15.id, action_type="EMAIL_ADMIN",
                            action_value={"template_id": 4}).save()
         self.assertEqual(2, len(stage15.actions))
-        action = LockoutStageAction.query.filter_by(stage_id=stage15.id,
+        action = ConditionalAccessStageAction.query.filter_by(stage_id=stage15.id,
                                                     action_type="EMAIL_ADMIN").one()
         self.assertEqual({"template_id": 4}, action.action_value)
         self.assertEqual(stage15.id, action.stage.id)
 
     def test_02_delete_policy_cascades(self):
-        policy = LockoutPolicy.query.filter_by(name="Default MFA Lockout Policy").one()
+        policy = ConditionalAccessPolicy.query.filter_by(name="Default MFA Lock Policy").one()
         policy_id = policy.delete()
 
         # The stages and actions are deleted along with the policy
-        self.assertEqual([], LockoutPolicy.query.filter_by(id=policy_id).all())
-        self.assertEqual([], LockoutPolicyStage.query.filter_by(policy_id=policy_id).all())
-        self.assertEqual([], LockoutStageAction.query.all())
+        self.assertEqual([], ConditionalAccessPolicy.query.filter_by(id=policy_id).all())
+        self.assertEqual([], ConditionalAccessPolicyStage.query.filter_by(policy_id=policy_id).all())
+        self.assertEqual([], ConditionalAccessStageAction.query.all())
 
     def test_03_counter_types_to_track_is_a_list(self):
         # A policy can track several counter types: the counter_types_to_track association proxy over the
         # normalized child table round-trips the list, preserving order.
-        policy = LockoutPolicy(name="Multi counter policy",
+        policy = ConditionalAccessPolicy(name="Multi counter policy",
                                counter_types_to_track=[AuthEventType.PASSWORD_FAIL, AuthEventType.MFA_FAIL,
                                                        AuthEventType.TOKEN_ONLY_FAIL],
                                time_window_seconds=900,
-                               target=LockoutTarget.USER,
+                               target=ConditionalAccessTarget.USER,
                                priority=2)
         policy.save()
 
-        reloaded = LockoutPolicy.query.filter_by(name="Multi counter policy").one()
+        reloaded = ConditionalAccessPolicy.query.filter_by(name="Multi counter policy").one()
         self.assertEqual([AuthEventType.PASSWORD_FAIL, AuthEventType.MFA_FAIL, AuthEventType.TOKEN_ONLY_FAIL],
                          reloaded.counter_types_to_track)
         reloaded.delete()
@@ -830,20 +830,20 @@ class LockoutPolicyTestCase(MyTestCase):
     def test_04_conditions_round_trip_and_cascade(self):
         # A policy carries its applicability conditions as child rows, the JSON value
         # holding the list the set-membership operators compare against.
-        policy = LockoutPolicy(name="Realm scoped policy",
+        policy = ConditionalAccessPolicy(name="Realm scoped policy",
                                counter_types_to_track=[AuthEventType.MFA_FAIL],
                                time_window_seconds=600,
-                               target=LockoutTarget.USER,
+                               target=ConditionalAccessTarget.USER,
                                priority=3,
                                conditions=[
-                                   LockoutPolicyCondition(condition_type="USER_REALM", operator="IN",
+                                   ConditionalAccessPolicyCondition(condition_type="USER_REALM", operator="IN",
                                                           value=["sales", "support"]),
-                                   LockoutPolicyCondition(condition_type="USER_ROLE", operator="NOT_IN",
+                                   ConditionalAccessPolicyCondition(condition_type="USER_ROLE", operator="NOT_IN",
                                                           value=["admin-internal"]),
                                ])
         policy_id = policy.save()
 
-        reloaded = LockoutPolicy.query.filter_by(name="Realm scoped policy").one()
+        reloaded = ConditionalAccessPolicy.query.filter_by(name="Realm scoped policy").one()
         self.assertEqual(2, len(reloaded.conditions))
         realm_condition, role_condition = reloaded.conditions
         self.assertEqual("USER_REALM", realm_condition.condition_type)
@@ -854,20 +854,20 @@ class LockoutPolicyTestCase(MyTestCase):
 
         # Deleting the policy takes its conditions with it.
         reloaded.delete()
-        self.assertEqual([], LockoutPolicyCondition.query.filter_by(policy_id=policy_id).all())
+        self.assertEqual([], ConditionalAccessPolicyCondition.query.filter_by(policy_id=policy_id).all())
 
     def test_05_condition_is_unique_per_type(self):
         # Conditions are ANDed: two of the same type on one policy would only narrow to a contradiction, so the
         # (policy_id, condition_type) constraint rejects them (every other required column here is already filled in).
-        policy = LockoutPolicy(name="Duplicate condition policy",
+        policy = ConditionalAccessPolicy(name="Duplicate condition policy",
                                counter_types_to_track=[AuthEventType.MFA_FAIL],
                                time_window_seconds=600,
-                               target=LockoutTarget.USER,
+                               target=ConditionalAccessTarget.USER,
                                priority=4,
                                conditions=[
-                                   LockoutPolicyCondition(condition_type="USER_REALM", operator="IN",
+                                   ConditionalAccessPolicyCondition(condition_type="USER_REALM", operator="IN",
                                                           value=["sales"]),
-                                   LockoutPolicyCondition(condition_type="USER_REALM", operator="NOT_IN",
+                                   ConditionalAccessPolicyCondition(condition_type="USER_REALM", operator="NOT_IN",
                                                           value=["support"]),
                                ])
         db.session.add(policy)
@@ -898,7 +898,7 @@ class ConditionalAccessOutcomeTestCase(MyTestCase):
     def _make_outcome(self, auth_log_id: int, **overrides: Any) -> ConditionalAccessOutcome:
         """An outcome carrying everything the engine always knows, so a test only states what it is about."""
         fields = {"auth_log_id": auth_log_id, "action_type": "LOCK_USER",
-                  "policy_name": "Brute Force PIN Lockout", "threshold": 5, "event_count": 6}
+                  "policy_name": "Brute Force PIN Lock", "threshold": 5, "event_count": 6}
         return ConditionalAccessOutcome(**{**fields, **overrides})
 
     def _store(self, outcome: ConditionalAccessOutcome) -> int:
@@ -932,7 +932,7 @@ class ConditionalAccessOutcomeTestCase(MyTestCase):
 
         outcome = ConditionalAccessOutcome.query.filter_by(id=outcome_id).one()
         self.assertTrue(outcome.dry_run)
-        self.assertEqual("Brute Force PIN Lockout", outcome.policy_name)
+        self.assertEqual("Brute Force PIN Lock", outcome.policy_name)
         self.assertEqual("Second strike", outcome.stage_name)
         self.assertEqual(5, outcome.threshold)
         self.assertEqual(6, outcome.event_count)
@@ -976,7 +976,7 @@ class ConditionalAccessOutcomeTestCase(MyTestCase):
         self.assertSetEqual({"ix_ca_outcome_authlog", "ix_ca_outcome_action"},
                             {index.name for index in table.indexes})
         # The subject and the time live on the parent row and are deliberately not repeated here; there is no stage id
-        # because update_lockout_policy replaces a policy's stages, so the threshold identifies the stage.
+        # because update_conditional_access_policy replaces a policy's stages, so the threshold identifies the stage.
         self.assertSetEqual({"id", "auth_log_id", "action_type", "dry_run", "policy_name",
                              "threshold", "event_count", "stage_name", "info"},
                             set(table.columns.keys()))

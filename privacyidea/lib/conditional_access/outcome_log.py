@@ -25,13 +25,13 @@ never sees, and it is what makes the *pre-auth* decision recordable at all: that
 its outcome has to be carried rather than stored on the spot.
 
 The model is deliberately left as schema only. Deriving an outcome from a policy and a stage is domain knowledge of this
-layer, not of the table - and a model that reached for ``LockoutPolicy`` could not even import it, since
-``models/__init__`` loads ``conditional_access_outcome`` before ``lockout_policy``.
+layer, not of the table - and a model that reached for ``ConditionalAccessPolicy`` could not even import it, since
+``models/__init__`` loads ``conditional_access_outcome`` before ``conditional_access_policy``.
 
 **Outcomes are only ever written from here.** They are rows of the conditional-access subsystem, so they must go on its
 session, where a failure cannot roll back the request's own work: never call ``save()`` on one.
 
-This is the queryable history the state tables cannot provide: ``user_lockout_state`` and ``block_list`` show the
+This is the queryable history the state tables cannot provide: ``user_lock_state`` and ``block_list`` show the
 restriction in force *now* and forget it the moment it lapses.
 
 Nothing here is read back on the authentication path. The engine counts over the authentication log, never over this
@@ -54,12 +54,13 @@ from datetime import datetime, timezone
 from sqlalchemy import select
 
 from privacyidea.lib.conditional_access.session import get_ca_session, guarded_write
-from privacyidea.models import ConditionalAccessOutcome, LockoutPolicy, LockoutPolicyStage
+from privacyidea.models import ConditionalAccessOutcome, ConditionalAccessPolicy, ConditionalAccessPolicyStage
 
 log = logging.getLogger(__name__)
 
 
-def outcome_for_stage(policy: LockoutPolicy, stage: LockoutPolicyStage, action_type: str, event_count: int, *,
+def outcome_for_stage(policy: ConditionalAccessPolicy, stage: ConditionalAccessPolicyStage, action_type: str,
+                      event_count: int, *,
                       dry_run: bool = False,
                       expires_at: datetime | None = None) -> ConditionalAccessOutcome:
     """
@@ -77,8 +78,8 @@ def outcome_for_stage(policy: LockoutPolicy, stage: LockoutPolicyStage, action_t
 
     :param policy: the deciding policy
     :param stage: the triggered stage
-    :param action_type: the action that ran. Hinted ``str`` rather than ``LockoutAction``: that enum is a ``str``
-        subclass, so a member satisfies it, and it lives in the engine - which imports *this* module
+    :param action_type: the action that ran. Hinted ``str`` rather than ``ConditionalAccessAction``: that enum is a
+        ``str`` subclass, so a member satisfies it, and it lives in the engine - which imports *this* module
     :param event_count: the count that tripped the stage
     :param dry_run: the policy was in dry run, so nothing was actually done
     :param expires_at: the expiry the action wrote, or would have written in dry run. Kept a typed parameter so call

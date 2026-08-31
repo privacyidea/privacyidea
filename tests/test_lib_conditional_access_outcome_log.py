@@ -27,10 +27,10 @@ from unittest import mock
 
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
 from privacyidea.lib.conditional_access.authentication_log import log_authentication_event
-from privacyidea.lib.conditional_access.engine import LockoutAction
+from privacyidea.lib.conditional_access.engine import ConditionalAccessAction
 from privacyidea.lib.conditional_access.outcome_log import get_outcomes, outcome_for_stage, record_outcomes
 from privacyidea.lib.conditional_access.session import get_ca_session
-from privacyidea.models import ConditionalAccessOutcome, LockoutPolicy, LockoutPolicyStage, db
+from privacyidea.models import ConditionalAccessOutcome, ConditionalAccessPolicy, ConditionalAccessPolicyStage, db
 from privacyidea.models.conditional_access_outcome import conditional_access_outcome_column_length
 from privacyidea.models.utils import utc_now
 
@@ -39,7 +39,7 @@ from .base import MyTestCase
 
 def _outcome(**overrides: Any) -> ConditionalAccessOutcome:
     """An outcome carrying everything the engine always knows, so a test only states what it is about."""
-    fields = {"action_type": str(LockoutAction.LOCK_USER), "policy_name": "Brute Force PIN Lockout",
+    fields = {"action_type": str(ConditionalAccessAction.LOCK_USER), "policy_name": "Brute Force PIN Lock",
               "threshold": 5, "event_count": 6}
     return ConditionalAccessOutcome(**{**fields, **overrides})
 
@@ -52,13 +52,13 @@ class OutcomeLogTestCase(MyTestCase):
         super().tearDown()
 
     @staticmethod
-    def _policy_and_stage() -> tuple[LockoutPolicy, LockoutPolicyStage]:
+    def _policy_and_stage() -> tuple[ConditionalAccessPolicy, ConditionalAccessPolicyStage]:
         """
         The configuration the factory copies from, as transient objects: it reads four fields and touches no session, so
         a database fixture would only add cleanup no assertion depends on.
         """
-        return (LockoutPolicy(id=7, name="Brute Force PIN Lockout"),
-                LockoutPolicyStage(failure_threshold=5, name="Second strike"))
+        return (ConditionalAccessPolicy(id=7, name="Brute Force PIN Lock"),
+                ConditionalAccessPolicyStage(failure_threshold=5, name="Second strike"))
 
     def _auth_log_row(self) -> int:
         return log_authentication_event(event_type=AuthEventType.MFA_FAIL, username="cornelius", realm="realm1",
@@ -66,10 +66,11 @@ class OutcomeLogTestCase(MyTestCase):
 
     def test_records_one_row_per_outcome_in_order(self):
         event_id = self._auth_log_row()
-        self.assertTrue(record_outcomes([_outcome(), _outcome(action_type=str(LockoutAction.EMAIL_ADMIN))], event_id))
+        self.assertTrue(record_outcomes([_outcome(), _outcome(action_type=str(ConditionalAccessAction.EMAIL_ADMIN))],
+                event_id))
 
         outcomes = get_outcomes(event_id)
-        self.assertListEqual([str(LockoutAction.LOCK_USER), str(LockoutAction.EMAIL_ADMIN)],
+        self.assertListEqual([str(ConditionalAccessAction.LOCK_USER), str(ConditionalAccessAction.EMAIL_ADMIN)],
                          [outcome.action_type for outcome in outcomes])
         self.assertListEqual([event_id, event_id], [outcome.auth_log_id for outcome in outcomes])
 
@@ -79,9 +80,9 @@ class OutcomeLogTestCase(MyTestCase):
         record_outcomes([_outcome(dry_run=True, stage_name="Second strike", info=info)], event_id)
 
         outcome = get_outcomes(event_id)[0]
-        self.assertEqual(str(LockoutAction.LOCK_USER), outcome.action_type)
+        self.assertEqual(str(ConditionalAccessAction.LOCK_USER), outcome.action_type)
         self.assertTrue(outcome.dry_run)
-        self.assertEqual("Brute Force PIN Lockout", outcome.policy_name)
+        self.assertEqual("Brute Force PIN Lock", outcome.policy_name)
         self.assertEqual(5, outcome.threshold)
         self.assertEqual(6, outcome.event_count)
         self.assertEqual("Second strike", outcome.stage_name)
@@ -93,24 +94,24 @@ class OutcomeLogTestCase(MyTestCase):
         policy, stage = self._policy_and_stage()
         expires_at = utc_now() + timedelta(seconds=600)
 
-        outcome = outcome_for_stage(policy, stage, LockoutAction.LOCK_USER, 6, expires_at=expires_at)
+        outcome = outcome_for_stage(policy, stage, ConditionalAccessAction.LOCK_USER, 6, expires_at=expires_at)
         self.assertDictEqual({"expires_at": expires_at.replace(tzinfo=timezone.utc).isoformat()}, outcome.info)
         # An aware value is left as it is rather than re-stamped.
         aware = expires_at.replace(tzinfo=timezone.utc)
         self.assertDictEqual({"expires_at": aware.isoformat()},
-                         outcome_for_stage(policy, stage, LockoutAction.BLOCK_IP, 6, expires_at=aware).info)
+                         outcome_for_stage(policy, stage, ConditionalAccessAction.BLOCK_IP, 6, expires_at=aware).info)
 
     def test_outcome_for_stage_leaves_info_empty_without_an_expiry(self):
         # An action with nothing of its own to record leaves the column NULL rather than an empty dict.
         policy, stage = self._policy_and_stage()
-        outcome = outcome_for_stage(policy, stage, LockoutAction.EMAIL_ADMIN, 6)
+        outcome = outcome_for_stage(policy, stage, ConditionalAccessAction.EMAIL_ADMIN, 6)
         self.assertIsNone(outcome.info)
 
     def test_outcome_for_stage_copies_what_the_history_must_keep(self):
         # The policy name and stage name are denormalized copies so history stays readable after a rename or deletion;
         # the id is not copied: a deleted id can be reused by another policy, which would misattribute the history.
         policy, stage = self._policy_and_stage()
-        outcome = outcome_for_stage(policy, stage, LockoutAction.LOCK_USER, 6, dry_run=True)
+        outcome = outcome_for_stage(policy, stage, ConditionalAccessAction.LOCK_USER, 6, dry_run=True)
 
         self.assertEqual(policy.name, outcome.policy_name)
         self.assertFalse(hasattr(outcome, "policy_id"), "the outcome must not carry a policy id")
@@ -132,9 +133,9 @@ class OutcomeLogTestCase(MyTestCase):
         # so the first evaluation's history must survive the second.
         event_id = self._auth_log_row()
         record_outcomes([_outcome()], event_id)
-        record_outcomes([_outcome(action_type=str(LockoutAction.PERMANENT_LOCK_USER))], event_id)
+        record_outcomes([_outcome(action_type=str(ConditionalAccessAction.PERMANENT_LOCK_USER))], event_id)
 
-        self.assertListEqual([str(LockoutAction.LOCK_USER), str(LockoutAction.PERMANENT_LOCK_USER)],
+        self.assertListEqual([str(ConditionalAccessAction.LOCK_USER), str(ConditionalAccessAction.PERMANENT_LOCK_USER)],
                          [outcome.action_type for outcome in get_outcomes(event_id)])
 
     def test_no_outcomes_is_a_successful_no_op(self):
@@ -165,7 +166,7 @@ class OutcomeLogTestCase(MyTestCase):
             self.assertFalse(record_outcomes(outcomes, event_id))
 
         self.assertTrue(record_outcomes(outcomes, event_id))
-        self.assertListEqual([str(LockoutAction.LOCK_USER)],
+        self.assertListEqual([str(ConditionalAccessAction.LOCK_USER)],
                              [outcome.action_type for outcome in get_outcomes(event_id)])
 
     def test_recording_the_same_outcome_object_twice_stores_it_once(self):
@@ -179,15 +180,17 @@ class OutcomeLogTestCase(MyTestCase):
     def test_get_outcomes_only_returns_the_requested_row(self):
         first, second = self._auth_log_row(), self._auth_log_row()
         record_outcomes([_outcome()], first)
-        record_outcomes([_outcome(action_type=str(LockoutAction.BLOCK_IP))], second)
+        record_outcomes([_outcome(action_type=str(ConditionalAccessAction.BLOCK_IP))], second)
 
-        self.assertListEqual([str(LockoutAction.LOCK_USER)], [outcome.action_type for outcome in get_outcomes(first)])
-        self.assertListEqual([str(LockoutAction.BLOCK_IP)], [outcome.action_type for outcome in get_outcomes(second)])
+        self.assertListEqual([str(ConditionalAccessAction.LOCK_USER)],
+                [outcome.action_type for outcome in get_outcomes(first)])
+        self.assertListEqual([str(ConditionalAccessAction.BLOCK_IP)],
+                [outcome.action_type for outcome in get_outcomes(second)])
 
     def test_column_lengths_mirror_the_columns_they_copy(self):
         # The outcome stores copies of the policy configuration, each column as wide as its source.
         # That is why the writer does not truncate: a name that fits where an admin typed it fits here too.
-        self.assertEqual(LockoutPolicy.__table__.c.name.type.length,
+        self.assertEqual(ConditionalAccessPolicy.__table__.c.name.type.length,
                          conditional_access_outcome_column_length["policy_name"])
-        self.assertEqual(LockoutPolicyStage.__table__.c.name.type.length,
+        self.assertEqual(ConditionalAccessPolicyStage.__table__.c.name.type.length,
                          conditional_access_outcome_column_length["stage_name"])

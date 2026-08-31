@@ -24,8 +24,8 @@ import { MatIconModule } from "@angular/material/icon";
 import {
   ConditionalAccessPolicyService,
   ConditionalAccessPolicyServiceInterface,
-  LockoutStageAction,
-  LockoutTarget
+  ConditionalAccessStageAction,
+  ConditionalAccessTarget
 } from "@services/conditional-access/conditional-access-policy.service";
 import { ConditionalAccessActionItemComponent } from "./action-item/conditional-access-action-item.component";
 
@@ -39,9 +39,9 @@ import { ConditionalAccessActionItemComponent } from "./action-item/conditional-
 export class ConditionalAccessActionsListComponent {
   private readonly policyService: ConditionalAccessPolicyServiceInterface = inject(ConditionalAccessPolicyService);
 
-  readonly actions = input.required<LockoutStageAction[]>();
-  readonly target = input<LockoutTarget>("user");
-  readonly actionsChange = output<LockoutStageAction[]>();
+  readonly actions = input.required<ConditionalAccessStageAction[]>();
+  readonly target = input<ConditionalAccessTarget>("user");
+  readonly actionsChange = output<ConditionalAccessStageAction[]>();
 
   onAddAction(): void {
     // Defaults a new action to one valid for the current target, so it is never born incompatible
@@ -51,7 +51,7 @@ export class ConditionalAccessActionsListComponent {
     this.actionsChange.emit([...this.actions(), { action_type: actionType, action_value: null }]);
   }
 
-  onUpdateAction(index: number, partial: Partial<LockoutStageAction>): void {
+  onUpdateAction(index: number, partial: Partial<ConditionalAccessStageAction>): void {
     this.actionsChange.emit(this.actions().map((action, i) => (i === index ? { ...action, ...partial } : action)));
   }
 
