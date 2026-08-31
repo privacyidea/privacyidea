@@ -32,7 +32,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column
 
 from privacyidea.lib.challenge_types import is_challenge_open
-from privacyidea.lib.crypto import get_rand_digit_str, encryptPassword, decryptPassword
+from privacyidea.lib.crypto import FAILED_TO_DECRYPT_PASSWORD, get_rand_digit_str, encryptPassword, decryptPassword
 from privacyidea.lib.log import log_with
 from privacyidea.lib.utils import convert_column_to_unicode
 from privacyidea.models import db
@@ -65,15 +65,26 @@ class Challenge(MethodsMixin, db.Model):
         if not raw:
             return raw
         decrypted = decryptPassword(raw)
-        if decrypted and not decrypted.startswith("FAILED TO DECRYPT"):
-            return decrypted
-        # Legacy unencrypted data or decryption failure - return as-is
-        return raw
+        if decrypted == FAILED_TO_DECRYPT_PASSWORD:
+            log.warning("Challenge %s: failed to decrypt data.", self.transaction_id)
+            return ''
+        return decrypted
 
     @data.setter
     def data(self, value):
         """Allow direct assignment to data (encrypts before storing)."""
         self.set_data(value)
+
+    @property
+    def encrypted_data(self) -> str:
+        """
+        Return the stored ciphertext of ``data``, without decrypting it.
+
+        For a caller that has to persist the very same value somewhere else - the
+        Redis cache stores this challenge instead of the row - so that it does not
+        have to decrypt and re-encrypt what is already encrypted here.
+        """
+        return self._data or ''
 
     @log_with(log)
     def __init__(self, serial, transaction_id=None,

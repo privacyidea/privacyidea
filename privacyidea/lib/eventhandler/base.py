@@ -554,6 +554,35 @@ class BaseEventHandler:
         return user
 
     @staticmethod
+    def _get_token_data(serial, tokenowner):
+        """
+        Look up the token type, description and (possibly updated) serial.
+
+        When *serial* is given the token is fetched directly.  Otherwise the
+        tokens belonging to *tokenowner* are looked up and their serials are
+        joined with commas (the same convention used by ``create_tag_dict``).
+
+        :param serial: A token serial (may be empty/None)
+        :type serial: str or None
+        :param tokenowner: The owner of the token (may be None)
+        :type tokenowner: User or None
+        :return: ``(serial, tokentype, tokendescription)`` – any element may
+            be ``None`` when the information is not available.
+        :rtype: tuple
+        """
+        tokentype = None
+        tokendescription = None
+        if serial:
+            tokens = get_tokens(serial=serial)
+            if tokens:
+                tokentype = tokens[0].get_tokentype()
+                tokendescription = tokens[0].token.description
+        else:
+            token_objects = get_tokens(user=tokenowner) if tokenowner else []
+            serial = ','.join([tok.get_serial() for tok in token_objects])
+        return serial, tokentype, tokendescription
+
+    @staticmethod
     def _get_container_owners(request):
         users = []
         user = User(login='', realm='')

@@ -37,7 +37,7 @@ import re
 
 from privacyidea.lib.resolvers.UserIdResolver import UserIdResolver
 
-from sqlalchemy import (Integer, cast, String, MetaData, Table, and_,
+from sqlalchemy import (Integer, cast, String, MetaData, Table, and_, or_,
                         create_engine, select, insert, delete, update, RowMapping)
 from sqlalchemy.orm import sessionmaker, scoped_session
 
@@ -79,6 +79,10 @@ import passlib.utils.handlers as uh  # noqa: E402
 import passlib.exc as exc  # noqa: E402
 from passlib.registry import register_crypt_handler  # noqa: E402
 from passlib.handlers.ldap_digests import _SaltedBase64DigestHelper  # noqa: E402
+
+# The number of user IDs that go into one query in get_user_info_batch. Databases cap the number of
+# bind parameters a statement may carry, so the IDs of a large page are looked up in several queries.
+BATCH_QUERY_CHUNK_SIZE = 500
 
 
 class phpass_drupal(uh.HasRounds, uh.HasSalt, uh.GenericHandler):  # pragma: no cover
@@ -295,19 +299,91 @@ class IdResolver (UserIdResolver):
 
         try:
             conditions = [self._get_userid_filter(user_id)]
-            conditions = self._append_where_filter(conditions, self.TABLE,
-                                                   self.where)
-            filter_condition = and_(*conditions)
+        except ValueError as error:
+            # e.g. a non-numeric ID against an integer column -- same as get_user_info_batch
+            log.info(f"Could not look up user id {user_id!r}: {error}")
+            return userinfo
+        conditions = self._append_where_filter(conditions, self.TABLE, self.where)
+        filter_condition = and_(*conditions)
+        try:
+            # A DB error here must propagate rather than being logged and swallowed: callers
+            # like getUsername() rely on it to tell "the user does not exist" (an empty
+            # result) apart from "the backend could not be reached" (an exception). The
+            # session is cached for the lifetime of the request (get_resolver_object), so
+            # it must be rolled back here or a later call would fail with a stale,
+            # unrelated "pending rollback" error instead.
             result = self.session.execute(select(self.TABLE).filter(filter_condition))
+        except Exception:
+            self.session.rollback()
+            raise
 
-            for r in result.mappings():
-                if userinfo:  # pragma: no cover
-                    raise Exception(f"More than one user with userid {user_id!s} found!")
-                userinfo = self._get_user_from_mapped_object(r, attributes)
-        except Exception as exx:  # pragma: no cover
-            log.error(f"Could not get the user information: {exx!r}")
+        for r in result.mappings():
+            if userinfo:  # pragma: no cover
+                raise Exception(f"More than one user with userid {user_id!s} found!")
+            userinfo = self._get_user_from_mapped_object(r, attributes)
 
         return userinfo
+
+    @track_resolver_op("get_user_info_batch")
+    def get_user_info_batch(self, user_ids: list, attributes: list[str] = None) -> dict:
+        """
+        Return the user information for several user IDs with one query per chunk of IDs, instead
+        of one query per ID. IDs without a matching row are omitted from the result.
+
+        :param user_ids: The user IDs in this resolver
+        :param attributes: list of attribute names to be returned for each user. If None, all attributes are returned.
+        :return: dictionary mapping each resolved user ID to its user information
+        """
+        user_info_map = {}
+        # dict.fromkeys de-duplicates the IDs while keeping their order
+        unique_ids = list(dict.fromkeys(user_ids))
+        userid_column = self.map.get("userid")
+
+        for chunk_start in range(0, len(unique_ids), BATCH_QUERY_CHUNK_SIZE):
+            chunk = unique_ids[chunk_start:chunk_start + BATCH_QUERY_CHUNK_SIZE]
+            # The rows are mapped back to the requested IDs over the same string conversion the
+            # userid attribute goes through, so an int column matches a string ID.
+            requested_ids = {}
+            userid_filters = []
+            for user_id in chunk:
+                try:
+                    userid_filters.append(self._get_userid_filter(user_id))
+                except ValueError as error:
+                    # e.g. a non-numeric ID against an integer column
+                    log.info(f"Skipping user id {user_id!r} in batch lookup: {error}")
+                    continue
+                requested_ids[convert_column_to_unicode(user_id)] = user_id
+            if not userid_filters:
+                continue
+
+            # A DB error here must propagate rather than being logged and swallowed: the caller
+            # (_resolve_owner_logins) catches it to fall back to a one-by-one lookup that marks only
+            # the users which keep failing as unresolvable. Swallowing it here would make a chunk's
+            # worth of users indistinguishable from ones that genuinely don't exist.
+            conditions = [or_(*userid_filters)]
+            conditions = self._append_where_filter(conditions, self.TABLE, self.where)
+            result = self.session.execute(select(self.TABLE).filter(and_(*conditions)))
+
+            for row in result.mappings():
+                returned_id = convert_column_to_unicode(row.get(userid_column))
+                user_id = requested_ids.get(returned_id)
+                if user_id is None:  # pragma: no cover
+                    log.info(f"Ignoring row with user id {returned_id!r}, which was not searched for.")
+                    continue
+                user_info_map[user_id] = self._get_user_from_mapped_object(row, attributes)
+
+        return user_info_map
+
+    @track_resolver_op("get_usernames_batch")
+    def get_usernames_batch(self, user_ids: list) -> dict:
+        """
+        Return the login names of several users with one query per chunk of IDs.
+
+        :param user_ids: The user IDs in this resolver
+        :return: dictionary mapping each user ID to its login name. IDs without a matching row are
+                 mapped to an empty string, as getUsername does for a single user.
+        """
+        return self._usernames_via_user_info_batch(user_ids)
 
     def get_available_info_keys(self) -> list[str]:
         """

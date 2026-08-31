@@ -1341,7 +1341,12 @@ def create_tag_dict(logged_in_user=None,
     :param container_serial: The serial number of the container
     :param container_url_value: The URL for the container registration
     :param container_url_img: The URL as QR code for the container registration
-    :return: The tag dictionary
+    :return: The tag dictionary, with the keys admin, realm, action, serial, url, user,
+        surname, givenname, username, userrealm, tokentype, tokendescription,
+        registrationcode, recipient_givenname, recipient_surname, googleurl_value,
+        googleurl_img, pushurl_value, pushurl_img, time, date, client_ip, pin, ua_browser,
+        ua_string, challenge, container_serial, container_url_value and container_url_img.
+        A tag whose value is not available is set to an empty string.
     """
     time = datetime.now().strftime("%H:%M:%S")
     date = datetime.now().strftime("%Y-%m-%d")
@@ -1371,17 +1376,17 @@ def create_tag_dict(logged_in_user=None,
                 date=date,
                 client_ip=client_ip,
                 pin=pin,
-                ua_browser=request.user_agent.browser if request else "",
+                ua_browser=get_useragent_name(request),
                 ua_string=request.user_agent.string if request else "",
                 challenge=challenge if challenge else "",
                 container_serial=container_serial,
                 container_url_value=container_url_value,
                 container_url_img=container_url_img)
+    # A tag that is not available must not be displayed as the string "None" in a message
+    tags = {key: "" if value is None else value for key, value in tags.items()}
+
     if escape_html:
-        escaped_tags = {}
-        for key, value in tags.items():
-            escaped_tags[key] = html.escape(value) if value is not None else None
-        tags = escaped_tags
+        tags = {key: html.escape(value) for key, value in tags.items()}
 
     return tags
 
@@ -1520,6 +1525,22 @@ def get_plugin_info_from_useragent(useragent):
     else:
         log.info(f"Could not match user-agent string: {useragent}")
         return "", None, None
+
+
+def get_useragent_name(request) -> str:
+    """
+    Return the name of the client application that sent the request.
+
+    This is the name from the user agent string, the same value that is used for the policy
+    condition on user agents and for the audit log. Clients like the privacyIDEA plugins send
+    their own name, browsers report "Mozilla".
+
+    :param request: The HTTP request object or None
+    :return: The name of the client application, "" if there is no user agent
+    """
+    if not request or not request.user_agent.string:
+        return ""
+    return get_plugin_info_from_useragent(request.user_agent.string)[0]
 
 
 def get_computer_name_from_user_agent(user_agent: str) -> str | None:

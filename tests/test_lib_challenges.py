@@ -332,6 +332,23 @@ class ChallengeDataEncryptionTestCase(MyTestCase):
         db.session.delete(c)
         db.session.commit()
 
+    def test_09a_data_is_empty_string_on_decryption_failure(self):
+        """The data property returns "" if the stored ciphertext cannot be decrypted."""
+        c = Challenge(serial="UNDECRYPTABLE01", transaction_id="tid_enc_009a",
+                      validitytime=300)
+        c.save()
+
+        # Write a value that is not valid ciphertext, so decryptPassword() fails
+        c._data = "not-a-valid-ciphertext"
+        db.session.commit()
+
+        self.assertEqual("", c.data)
+        self.assertEqual({}, c.get_data())
+
+        # Clean up
+        db.session.delete(c)
+        db.session.commit()
+
     def test_10_get_data_returns_empty_dict_on_non_dict_json(self):
         """get_data() returns {} if decrypted data is valid JSON but not a dict."""
         from privacyidea.lib.crypto import encryptPassword

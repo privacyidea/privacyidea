@@ -961,6 +961,12 @@ However, cache entries are removed at some defined events:
    user, the user cache is queried to determine the user ID of ``userX`` in ``resolverB``. If no matching entry
    can be found, ``resolverB`` is queried.
 
+.. note:: The user cache described here lives in privacyIDEA's own database and
+   stores only the login name / user ID association. If a Redis instance is
+   available, :ref:`redis_user_cache` additionally caches the *attributes* a
+   resolver returns, shared across all worker processes and nodes. The two are
+   independent: either, both, or neither can be enabled.
+
 .. rubric:: Footnotes
 
 .. [#serverpool] https://ldap3.readthedocs.io/en/latest/server.html#server-pool

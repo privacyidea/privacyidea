@@ -1,8 +1,35 @@
+@use "sass:color";
+@use "sass:math";
 @use "styles";
 
 $icon-size-sm: 18px;
 $toolbar-padding: 8px 16px;
 $breakpoint-compact: 1822px;
+
+// An active tab takes a flat tone rather than --surface-raised: the gradient is sized to the
+// element, so a short tab would run the whole ramp instead of the slice of the toolbar's it sits
+// on. These tones are that slice, stepping left to right across the bar, and .utils-group carries
+// the ramp on past the last tab.
+// The dark tones mirror the light ones by their distance from the page background rather than by
+// hex step, so the bar stands off the page by the same amount in both themes: light runs 5 to 8
+// points above a 90% page, dark the same above a 20% one, starting on surface-container-high.
+$nav-active-first: #f3f3f3;
+$nav-active-start: #f4f4f4;
+$nav-active-end: #f7f7f7;
+$nav-active-first-dark: #404040;
+$nav-active-start-dark: #414141;
+$nav-active-end-dark: #444444;
+// Ceiling for the interpolation loop below, not the count that actually renders -- rights
+// filtering and the overflow "More" tab both shrink it. One per section, plus "More".
+$nav-item-count: 10;
+
+// The bar the tabs and the util group sit on runs the same ramp they are stepped from, so the
+// tones line up at every depth setting. Fixed rather than --surface-raised, which is sized to the
+// element and drops its gradient at the flat setting.
+$bar-gradient-start: $nav-active-first;
+$bar-gradient-end: #f9f9f9;
+$bar-gradient-start-dark: $nav-active-first-dark;
+$bar-gradient-end-dark: #464646;
 
 @mixin flex-center {
   display: flex;
@@ -40,7 +67,8 @@ $breakpoint-compact: 1822px;
   @include flex-center;
   gap: 8px;
   padding: $toolbar-padding;
-  background: var(--mat-sys-surface-variant);
+  // Material paints a mat-toolbar from this token, so a plain `background` here would not survive.
+  --mat-toolbar-container-background-color: var(--mat-sys-surface-variant);
   min-height: 0;
 }
 
@@ -90,9 +118,15 @@ $breakpoint-compact: 1822px;
   flex: 1;
   justify-content: start;
   flex-wrap: nowrap;
-  padding-left: 10px;
+  // Room for the first tab's --side-glow, which `overflow: hidden` would otherwise clip against
+  // the brand beside it: the glow reaches offset + blur, up to 22px at the deepest setting.
+  padding-left: 22px;
   overflow: hidden;
   min-width: 0;
+  // Lifted like .toolbar-actions: the secondary toolbar is a later sibling and would otherwise
+  // paint over the glow of the active tab that meets this bar's bottom edge.
+  position: relative;
+  z-index: 1000;
 }
 
 .nav-button {
@@ -111,16 +145,39 @@ $breakpoint-compact: 1822px;
 }
 
 .nav-item {
+  height: 42px;
   padding: 12px 0;
   @include flex-center;
 
   &.active {
-    background-color: var(--mat-sys-surface-container-lowest);
-    box-shadow:
-      -8px 0 8px -8px var(--nav-item-border),
-      8px 0 8px -8px var(--nav-item-border);
+    background: light-dark($nav-active-first, $nav-active-first-dark);
+    box-shadow: var(--side-glow);
+    // --side-glow drops the vertical offset but keeps its blur, so it would bleed above and
+    // below. Clipping confines it to the sides; the bottom is cut a pixel short of the edge, so
+    // it stops at the bar rather than reaching into the toolbar below.
+    clip-path: inset(0 -40px 1px);
     border-top-right-radius: var(--border-radius);
     border-top-left-radius: var(--border-radius);
+  }
+
+  // Every tab but the first steps evenly from $nav-active-start to $nav-active-end, anchored to
+  // the LAST tab rather than counted from the first: how many tabs actually render varies (rights
+  // filter which sections exist, and a narrow window pushes some into the overflow "More" tab), so
+  // a fixed count from the front would strand the last visible tab short of $nav-active-end -- and
+  // .utils-group, right after it, carries a fixed end-of-ramp tone of its own to match. Counting
+  // from the end instead means whichever tab is actually last always lands exactly on that tone.
+  // :not(:first-child) keeps this from re-tinting tab 1 on a short bar, where nth-last-child could
+  // otherwise reach all the way back to it -- tab 1 always keeps $nav-active-first from the .active
+  // rule above.
+  @for $i from 1 through ($nav-item-count - 1) {
+    &:nth-last-child(#{$i}):not(:first-child).active {
+      $weight: math.div($nav-item-count - 1 - $i, $nav-item-count - 2) * 100%;
+
+      background: light-dark(
+        color.mix($nav-active-end, $nav-active-start, $weight),
+        color.mix($nav-active-end-dark, $nav-active-start-dark, $weight)
+      );
+    }
   }
 }
 
@@ -129,6 +186,10 @@ $breakpoint-compact: 1822px;
   gap: 4px;
   flex-shrink: 0;
   margin-left: auto;
+  // The secondary toolbar is a later sibling, so it paints over the util groups that meet this
+  // bar's bottom edge; positioning this section lifts them above it.
+  position: relative;
+  z-index: 1000;
 }
 
 .secondary-toolbar {
@@ -136,11 +197,18 @@ $breakpoint-compact: 1822px;
   gap: 8px;
   padding: $toolbar-padding;
   min-height: 44px;
-  background: var(--mat-sys-surface-container-lowest);
+  // Material paints a mat-toolbar from this token with a `background` shorthand, so the gradient
+  // goes here; setting `background` directly would lose to that rule.
+  --mat-toolbar-container-background-color: #{linear-gradient(
+      to right,
+      light-dark($bar-gradient-start, $bar-gradient-start-dark),
+      light-dark($bar-gradient-end, $bar-gradient-end-dark)
+    )};
   overflow: hidden;
   flex-wrap: nowrap;
-  box-shadow: var(--elevation-3);
+  box-shadow: var(--elevation-5);
   border-radius: var(--border-radius);
+  z-index: 1;
 
   // Plain navigation links/buttons render as flat nav buttons. Action buttons
   // (e.g. the dashboard edit controls) keep their own filled/outlined styling.
@@ -218,7 +286,9 @@ $breakpoint-compact: 1822px;
 
 .version-text {
   font-size: 14px;
-  color: var(--mat-sys-surface-container-highest);
+  // A text tone, not a surface one: the bar it sits on is itself near surface-container-highest in
+  // dark mode, which would leave the two barely a step apart.
+  color: var(--mat-sys-on-surface-variant);
   white-space: nowrap;
 }
 
@@ -254,7 +324,6 @@ $breakpoint-compact: 1822px;
 
   .main-nav {
     margin-right: 8px;
-    padding-left: 19px;
     gap: 2px;
   }
 

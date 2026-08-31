@@ -153,6 +153,58 @@ class UserIdResolver:
         """
         return {}
 
+    def get_user_info_batch(self, user_ids: list, attributes: list[str] = None) -> dict:
+        """
+        Return the user information for several users at once.
+
+        The default implementation loops over :py:func:`get_user_info`, so every resolver supports
+        this method. Resolvers whose backend can answer for several users in one request should
+        override it, which is what saves the caller a round trip per user. Such a resolver should
+        override :py:func:`get_usernames_batch` as well, since that is the one a token list calls.
+
+        User IDs that do not resolve to a user are omitted from the result, they do not raise.
+
+        :param user_ids: IDs of the users in the resolver
+        :param attributes: list of attribute names to be returned for each user. If None, all attributes are returned.
+        :return: dictionary mapping each resolved user ID to its user information
+        """
+        user_info_map = {}
+        # dict.fromkeys drops duplicate IDs but keeps their order, so a user that several tokens
+        # share is only looked up once
+        for user_id in dict.fromkeys(user_ids):
+            user_info = self.get_user_info(user_id, attributes=attributes)
+            if user_info:
+                user_info_map[user_id] = user_info
+        return user_info_map
+
+    def get_usernames_batch(self, user_ids: list) -> dict:
+        """
+        Return the login names of several users at once.
+
+        The default implementation loops over :py:func:`getUsername`, which for some resolvers is
+        considerably cheaper than reading the full user information of every user. A resolver that
+        can answer for several users in one request should override this.
+
+        :param user_ids: IDs of the users in the resolver
+        :return: dictionary mapping each user ID to its login name
+        """
+        # dict.fromkeys drops duplicate IDs, so a user that several tokens share is only looked up
+        # once even though the result would be the same
+        return {user_id: self.getUsername(user_id) for user_id in dict.fromkeys(user_ids)}
+
+    def _usernames_via_user_info_batch(self, user_ids: list) -> dict:
+        """
+        Shared :py:func:`get_usernames_batch` body for a resolver whose :py:func:`get_user_info_batch`
+        is the real batched implementation: read just the username attribute of each user through
+        it, defaulting an ID without a match to "" -- exactly like :py:func:`getUsername` does for a
+        single user.
+
+        :param user_ids: IDs of the users in the resolver
+        :return: dictionary mapping each user ID to its login name
+        """
+        user_info_map = self.get_user_info_batch(user_ids, attributes=["username"])
+        return {user_id: user_info_map.get(user_id, {}).get("username", "") for user_id in user_ids}
+
     def get_available_info_keys(self) -> list[str]:
         """
         This function returns a list of known privacyIDEA user attributes which can be used, e.g. for getUserList or

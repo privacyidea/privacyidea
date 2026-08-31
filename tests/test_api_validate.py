@@ -33,6 +33,7 @@ from privacyidea.lib.event import set_event
 from privacyidea.lib.machine import attach_token, detach_token
 from privacyidea.lib.machineresolver import save_resolver as save_machine_resolver
 from privacyidea.lib.policies.actions import PolicyAction
+from privacyidea.lib.policies.conditions import ConditionHandleMissingData, ConditionSection
 from privacyidea.lib.policy import SCOPE, set_policy, delete_policy, AUTHORIZED
 from privacyidea.lib.radiusserver import add_radius
 from privacyidea.lib.realm import set_realm, set_default_realm, delete_realm
@@ -54,6 +55,7 @@ from privacyidea.lib.tokens.yubikeytoken import YubikeyTokenClass
 from privacyidea.lib.user import (User)
 from privacyidea.lib.users.internal_user_attributes import InternalUserAttributes
 from privacyidea.lib.utils import AUTH_RESPONSE
+from privacyidea.lib.utils.compare import PrimaryComparators
 from privacyidea.lib.utils import to_unicode
 from privacyidea.models import (Token, Policy, Challenge, AuthCache, db, TokenOwner, Realm, CustomUserAttribute,
                                 NodeName)
@@ -68,6 +70,12 @@ class ValidateAPITestCase(MyApiTestCase):
     """
     test the api.validate endpoints
     """
+
+    def setUp(self):
+        super().setUp()
+        # test_33_auth_cache asserts authcache rows, which stay empty when Redis
+        # holds the cached authentications
+        self.pin_to_database("auth")
 
     def test_00_setup(self):
         self.setUp_user_realms()
@@ -3239,6 +3247,71 @@ class ValidateAPITestCase(MyApiTestCase):
                 self.assertEqual(400, res.status_code, res.json)
 
         delete_policy("hide_status")
+
+    def test_45_hide_specific_error_message_matches_the_policy_realm(self):
+        """
+        The policy is matched against the user of the request, so a policy
+        restricted to another realm must leave the specific message intact.
+        """
+        self.setUp_user_realms()
+        self.setUp_user_realm2()
+        set_default_realm(self.realm1)
+        init_token({"type": "spass", "serial": "spass_realm", "pin": "test45"},
+                   user=User("cornelius", self.realm1))
+
+        set_policy(name="hide_error_message", scope=SCOPE.AUTH,
+                   action=f"{PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE}=true", realm=self.realm2)
+        with self.app.test_request_context('/validate/check', method="POST",
+                                           data={"user": "cornelius", "pass": "wrong"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual("wrong otp pin", res.json.get("detail").get("message"))
+
+        set_policy(name="hide_error_message", scope=SCOPE.AUTH,
+                   action=f"{PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE}=true", realm=self.realm1)
+        with self.app.test_request_context('/validate/check', method="POST",
+                                           data={"user": "cornelius", "pass": "wrong"}):
+            res = self.app.full_dispatch_request()
+            self._assert_unspecific_message_with_200(res)
+
+        delete_policy("hide_error_message")
+        remove_token("spass_realm")
+
+    def test_46_hide_specific_error_message_evaluates_userinfo_conditions(self):
+        """
+        A userinfo condition is evaluated against the user of the request. The
+        user is available, so the outcome must not depend on the configured
+        handling of missing data.
+        """
+        self.setUp_user_realms()
+        set_default_realm(self.realm1)
+        init_token({"type": "spass", "serial": "spass_condition", "pin": "test46"},
+                   user=User("cornelius", self.realm1))
+
+        for handle_missing_data in [ConditionHandleMissingData.RAISE_ERROR.value,
+                                    ConditionHandleMissingData.IS_TRUE.value,
+                                    ConditionHandleMissingData.IS_FALSE.value]:
+            # cornelius has this email, so the condition matches and the message is masked
+            set_policy(name="hide_error_message", scope=SCOPE.AUTH,
+                       action=f"{PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE}=true",
+                       conditions=[(ConditionSection.USERINFO, "email", PrimaryComparators.EQUALS,
+                                    "user@localhost.localdomain", True, handle_missing_data)])
+            with self.app.test_request_context('/validate/check', method="POST",
+                                               data={"user": "cornelius", "pass": "wrong"}):
+                res = self.app.full_dispatch_request()
+                self._assert_unspecific_message_with_200(res)
+
+            # The condition does not match, so the specific message is kept
+            set_policy(name="hide_error_message", scope=SCOPE.AUTH,
+                       action=f"{PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE}=true",
+                       conditions=[(ConditionSection.USERINFO, "email", PrimaryComparators.EQUALS,
+                                    "someone.else@localhost.localdomain", True, handle_missing_data)])
+            with self.app.test_request_context('/validate/check', method="POST",
+                                               data={"user": "cornelius", "pass": "wrong"}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual("wrong otp pin", res.json.get("detail").get("message"))
+
+        delete_policy("hide_error_message")
+        remove_token("spass_condition")
 
     def _assert_unspecific_message_with_401(self, response):
         self.assertEqual(401, response.status_code, response.json)

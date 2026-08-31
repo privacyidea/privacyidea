@@ -45,7 +45,10 @@ myApp.controller("componentController", ["ComponentFactory", "$scope",
 
 
         if ($location.path() === "/component") {
-            $location.path("/component/clienttype");
+            // The menu entry is granted by either right, so land on a tab this admin may
+            // actually read - otherwise its controller requests data it has no right to.
+            $location.path(AuthFactory.checkRight("managesubscription")
+                ? "/component/subscriptions" : "/component/clienttype");
         }
 
 

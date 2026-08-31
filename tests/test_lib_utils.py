@@ -7,6 +7,7 @@ from datetime import timedelta, datetime
 import segno
 from dateutil.tz import tzlocal, tzoffset, gettz
 from netaddr import IPAddress, IPNetwork, AddrFormatError
+from werkzeug.user_agent import UserAgent
 
 from privacyidea.config import TestingConfig
 from privacyidea.lib.crypto import generate_password
@@ -30,6 +31,7 @@ from privacyidea.lib.utils import (parse_timelimit,
                                    check_serial_valid, determine_logged_in_userparams,
                                    to_list, parse_string_to_dict, convert_imagefile_to_dataimage,
                                    get_plugin_info_from_useragent, get_computer_name_from_user_agent,
+                                   get_useragent_name,
                                    redacted_email, redacted_phone_number,
                                    convert_wildcard_to_sql_like, SQL_LIKE_ESCAPE)
 from .base import MyTestCase, OverrideConfigTestCase
@@ -790,6 +792,15 @@ class UtilsTestCase(MyTestCase):
             # A spoofed Host header must never end up in the {url} tag (CWE-640).
             url_root = "http://attacker.example/"
 
+        class PluginUserAgentMock:
+            string = "privacyidea-keycloak/1.2.3"
+            browser = None
+
+        class PluginRequestMock:
+            user_agent = PluginUserAgentMock()
+            path = "/validate/check"
+            url_root = "http://pi.example.com/"
+
         recipient = {"givenname": "<b>Sömeone</b>"}
         dict1 = create_tag_dict(request=RequestMock(), recipient=recipient)
         self.assertEqual(dict1["ua_string"], "<b>hello world</b>")
@@ -809,6 +820,32 @@ class UtilsTestCase(MyTestCase):
             self.assertEqual(create_tag_dict(request=RequestMock())["url"], "https://pi.example.com")
         finally:
             self.app.config.pop("PI_BASE_URL", None)
+
+        # The name of the client application is taken from the user agent
+        plugin_tags = create_tag_dict(request=PluginRequestMock())
+        self.assertEqual(plugin_tags["ua_browser"], "privacyidea-keycloak")
+        self.assertEqual(plugin_tags["ua_string"], "privacyidea-keycloak/1.2.3")
+        # Without a request there is no client application
+        self.assertEqual(create_tag_dict()["ua_browser"], "")
+
+    def test_31a_get_useragent_name(self):
+        class RequestMock:
+            def __init__(self, useragent):
+                self.user_agent = UserAgent(useragent)
+
+        # A plugin, the app and a script send their own name
+        self.assertEqual("privacyidea-keycloak", get_useragent_name(RequestMock("privacyidea-keycloak/1.2.3")))
+        self.assertEqual("privacyIDEA-Authenticator", get_useragent_name(RequestMock("privacyIDEA-Authenticator/4.5")))
+        self.assertEqual("PAM", get_useragent_name(RequestMock("PAM/1.1.0")))
+        # Browsers all report Mozilla, the complete user agent is available as {ua_string}
+        chrome = ("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) "
+                  "Chrome/120.0.0.0 Safari/537.36")
+        self.assertEqual("Mozilla", get_useragent_name(RequestMock(chrome)))
+        self.assertEqual("Mozilla", get_useragent_name(RequestMock("Mozilla/5.0 (Windows NT 10.0; rv:121.0) "
+                                                                  "Gecko/20100101 Firefox/121.0")))
+        # No user agent and no request at all
+        self.assertEqual("", get_useragent_name(RequestMock("")))
+        self.assertEqual("", get_useragent_name(None))
 
     def test_32_allowed_serial_numbers(self):
         self.assertTrue(check_serial_valid("TOTP12345"))

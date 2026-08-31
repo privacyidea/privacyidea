@@ -17,5 +17,6 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 export const APP_THEME_COOKIE_NAME = "pi_ui_theme";
+export const APP_APPEARANCE_COOKIE_NAME = "pi_ui_appearance";
 export const BEARER_TOKEN_STORAGE_KEY = "bearer_token";
 export const AUTH_DATA_STORAGE_KEY = "auth_data";

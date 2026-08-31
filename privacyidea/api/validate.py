@@ -312,7 +312,7 @@ def offlinerefill():
 
 @validate_blueprint.route('/check', methods=['POST', 'GET'])
 @validate_blueprint.route('/radiuscheck', methods=['POST', 'GET'])
-@postpolicy(hide_specific_error_message)
+@postpolicy(hide_specific_error_message, request=request)
 @postpolicy(construct_radius_response, request=request)
 @postpolicy(is_authorized, request=request)
 @postpolicy(multichallenge_enroll_via_validate, request=request)
@@ -559,11 +559,6 @@ def _handle_fido2_auth(context: dict, credential_id: str):
             context["details"]["message"] = "No token found for the given credential ID or transaction ID!"
             return  # Result remains False
 
-    # Policy Checks
-    if (PolicyAction.DISABLED_TOKEN_TYPES in request.all_data and
-            token.get_type() in request.all_data[PolicyAction.DISABLED_TOKEN_TYPES]):
-        raise PolicyError(_("The authentication method is not available."))
-
     if not token.user:
         context["details"]["message"] = "No user found for the token with the given credential ID!"
         return  # Result remains False
@@ -573,6 +568,17 @@ def _handle_fido2_auth(context: dict, credential_id: str):
     request.User = user
     context["user"] = user
     context["options"]["user"] = user
+
+    # Policy Checks
+    # disabled_token_types already ran once before the token (and therefore the user) could be
+    # resolved from the credential_id, so a user/realm/resolver-scoped SCOPE.AUTH restriction was
+    # evaluated without a user and only matched unscoped policies. Re-run it now that request.User
+    # is set, same reasoning as fido2_auth/fido2_enroll below.
+    disabled_token_types(request, None)
+    if (PolicyAction.DISABLED_TOKEN_TYPES in request.all_data and
+            token.get_type() in request.all_data[PolicyAction.DISABLED_TOKEN_TYPES]):
+        raise PolicyError(_("The authentication method is not available."))
+
     # Handle Enrollment vs Authentication
     attestation_object = get_optional_one_of(request.all_data, ["attestationObject", "attestationobject"])
 
@@ -600,6 +606,13 @@ def _handle_fido2_auth(context: dict, credential_id: str):
             context["result"] = False
     else:
         # Actual Authentication
+        # The fido2_auth prepolicy already ran before the token (and therefore the user) could be
+        # resolved from the credential_id, so any user/realm/resolver-scoped SCOPE.AUTH policy for
+        # AllowedAuthenticatorDeviceTypes or EnforceUserHandle was evaluated without a user and only
+        # matched unscoped policies. Re-run it now that request.User is set, mirroring fido2_enroll
+        # above for the enrollment branch.
+        fido2_auth(request, None)
+
         if not check_last_auth_policy(g, token):
             log.debug(f"Last authentication policy check failed for token {token.get_serial()}.")
             context["details"]["message"] = _(
