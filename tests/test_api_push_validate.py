@@ -39,6 +39,7 @@ from privacyidea.lib.user import User
 from privacyidea.lib.utils import to_bytes, to_unicode, AUTH_RESPONSE
 from privacyidea.models import db, Challenge
 from privacyidea.models.authentication_log import AuthenticationLog
+from privacyidea.models.authentication_log_reason import AuthenticationLogReason
 from privacyidea.models.utils import utc_now
 from . import ldap3mock
 from .authlog_utils import assert_authentication_log, assert_authentication_log_entry
@@ -56,6 +57,7 @@ TTL = "10"
 
 
 def clear_log():
+    db.session.query(AuthenticationLogReason).delete()
     db.session.query(AuthenticationLog).delete()
     db.session.commit()
 
@@ -1689,6 +1691,7 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
             self.assertEqual(200, self.app.full_dispatch_request().status_code)
 
         def clear_log_and_challenges():
+            db.session.query(AuthenticationLogReason).delete()
             db.session.query(AuthenticationLog).delete()
             db.session.commit()
             # delete_challenges in Redis as well as in the db

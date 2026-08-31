@@ -19,7 +19,7 @@ Each entry holds
 * the time of the request,
 * the user, as resolver, user ID, realm and the login name that was used, plus
   the role (user, internal or external administrator),
-* the event type and, for a failed one, the reason behind it, see below,
+* the event type and, for a failed one, every reason behind it, see below,
 * the source IP, the client description and the endpoint the request
   authenticated against,
 * the token serial, the transaction ID and the attempt ID,
@@ -115,8 +115,8 @@ An event type says *what* happened to a request, and several different causes
 share one type. ``NO_USABLE_TOKEN`` is the clearest case: it is the same event
 whether every token of the user is disabled, past its failcount, outside its
 validity period or not fully enrolled, which are four findings calling for four
-different reactions. A failed entry therefore also carries a **reason**, which
-can be filtered like the event type.
+different reactions. A failed entry therefore also carries its **reasons**,
+which can be filtered like the event type.
 
 The state of a token
    ``TOKEN_DISABLED``
@@ -170,23 +170,29 @@ Challenge-response
      the response matched, but the token may no longer complete a challenge.
 
 A successful authentication needs no reason, and neither does one still in
-flight. The column is also empty where nothing determined a cause, so an empty
+flight. An entry is also without one where nothing determined a cause, so no
 reason reads as *not classified* rather than *no cause*.
 
-One entry, one reason
-~~~~~~~~~~~~~~~~~~~~~
+One entry, every reason
+~~~~~~~~~~~~~~~~~~~~~~~
 
 A request is checked against every token of the user, and those tokens can fail
-for different reasons. The entry names the most informative one, by a fixed
-precedence: a policy decision outranks any token state, because it applies
-whatever the tokens look like; a permanent state such as ``TOKEN_REVOKED``
-outranks a transient one such as a failcounter that a reset clears; and a wrong
-credential ranks below every state, since the state is what made the credential
-moot.
+for different reasons. The entry lists **all** of them, each filterable on its
+own: a request whose one token is revoked while another merely got the wrong
+OTP is found by either filter, because both are findings an admin may be
+looking for.
 
-Nothing is lost by that: the details of the entry keep the finding of every
-token under ``reason_detail.reasons``, keyed by serial, and the names of the
-policies that decided under ``reason_detail.policies``.
+They are ordered by how much they narrow down what to do about it, most
+informative first: a policy decision outranks any token state, because it
+applies whatever the tokens look like; a permanent state such as
+``TOKEN_REVOKED`` outranks a transient one such as a failcounter that a reset
+clears; and a wrong credential ranks below every state, since the state is what
+made the credential moot.
+
+Which token failed for which reason is not lost either: the details of the
+entry keep the finding of every token under ``reason_detail.reasons``, keyed by
+serial, and the names of the policies that decided under
+``reason_detail.policies``.
 
 .. note:: ``CHALLENGE_EXPIRED`` tells a timeout apart from a wrong answer - the
    user answered correctly, only too late. Recognizing it depends on the lapsed
@@ -227,7 +233,9 @@ Searching
 The log can be filtered in the WebUI and via ``GET /authenticationlog/`` on any
 column. Every filter parameter takes a list of values, which is why it is named
 in the plural while it matches one column: ``serials``, ``event_types``,
-``reasons``, ``endpoints`` and so on. Filter values are matched as follows:
+``reasons``, ``endpoints`` and so on. ``reasons`` is the one filter that does
+not match a column: an entry has a list of reasons and matches if *any* of them
+does. Filter values are matched as follows:
 
 * A value without a wildcard must match the column exactly, and is
   case-sensitive unless the case-insensitive option is set.
@@ -236,12 +244,13 @@ in the plural while it matches one column: ``serials``, ``event_types``,
 * Several values can be given as a comma-separated list, for example
   ``event_types=MFA_FAIL,PIN_FAIL``, matching entries equal to any of them.
 
-The *Endpoint* and *Reason* columns are filtered by selecting from the defined
+The *Endpoint* and *Reasons* columns are filtered by selecting from the defined
 values, which the WebUI reads from ``GET /authenticationlog/endpoints`` and
 ``GET /authenticationlog/reasons``.
 
 A time range can be given in addition, and the result can be sorted by any
-column except the conditional-access outcomes and the details.
+column except the reasons, the conditional-access outcomes and the details -
+each of those is a list per entry rather than a single value.
 
 The *Conditional access* column filters on what conditional access did: the
 action type, the name of the policy that acted, and whether the outcome was a

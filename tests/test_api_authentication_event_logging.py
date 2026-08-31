@@ -518,10 +518,10 @@ class _AuthLogContractTests(_ContractHost):
         assert_authentication_log_entry(entries[AuthEventType.CHALLENGE_TRIGGERED], user=self.user,
                                         serials={self.serial, self.second_serial}, transaction_id=transaction_id)
 
-    def test_reason_of_the_row_is_reduced_while_every_token_keeps_its_own(self):
-        # Two tokens, unusable for two different reasons. The row is classified by one of them - the permanent state
-        # outranks the transient one, see REASON_PRECEDENCE - but neither is lost: the whole per-serial map is
-        # recorded, which is the point of keeping the detail out of the column.
+    def test_the_row_lists_every_reason_while_every_token_keeps_its_own(self):
+        # Two tokens, unusable for two different reasons. The row carries both - each is a separate piece of advice
+        # for the admin and each is filterable on its own - ordered by REASON_PRECEDENCE, so the permanent state
+        # leads the transient one. Which token failed for which reason stays in the per-serial map.
         self._add_second_token(pin=self.pin)
         first = get_one_token(serial=self.serial)
         first.enable(False)
@@ -536,7 +536,7 @@ class _AuthLogContractTests(_ContractHost):
         entries = assert_authentication_log([AuthEventType.NO_USABLE_TOKEN])
         assert_authentication_log_entry(
             entries[AuthEventType.NO_USABLE_TOKEN], user=self.user,
-            reason=AuthEventReason.TOKEN_DISABLED,
+            reason=[AuthEventReason.TOKEN_DISABLED, AuthEventReason.TOKEN_FAILCOUNT_EXCEEDED],
             reasons={self.serial: AuthEventReason.TOKEN_DISABLED,
                      self.second_serial: AuthEventReason.TOKEN_FAILCOUNT_EXCEEDED})
 
@@ -568,7 +568,7 @@ class _AuthLogContractTests(_ContractHost):
 
         entries = assert_authentication_log([AuthEventType.LOGIN_SUCCESS])
         entry = entries[AuthEventType.LOGIN_SUCCESS]
-        self.assertIsNone(entry.reason, entry.reason)
+        self.assertEqual([], list(entry.reasons), entry.reasons)
         self.assertIsNone(entry.other_info, entry.other_info)
 
     # --- multichallenge correlation: a challenge answer that immediately triggers a fresh challenge (a new
@@ -1043,7 +1043,7 @@ class AuthEndpointAuthLogTestCase(_AuthLogContractTests, AuthLogTestCase):
                                         user_role=AuthLogUserRole.ADMIN_INTERNAL)
         # A local admin has no user store entry, so the reason classified for the *user* attempt this turned out not
         # to be must not survive: WRONG_USERSTORE_PASSWORD would name a credential nobody checked.
-        self.assertIsNone(entry.reason, entry.reason)
+        self.assertEqual([], list(entry.reasons), entry.reasons)
         self.assertIsNone(entry.other_info, entry.other_info)
 
     def test_auth_endpoint_failed_login_prefers_realm_user_over_local_admin(self):

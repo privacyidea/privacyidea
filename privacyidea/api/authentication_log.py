@@ -44,7 +44,8 @@ authentication_log_blueprint = Blueprint("authentication_log_blueprint", __name_
 # The list-valued filter query parameters, mapped to the get_authentication_logs_paginate keyword argument each one
 # feeds. Every one of them takes a list of values, so the query parameter is plural while the library keyword names the
 # single field it matches. The ca_* ones filter on the entry's conditional-access outcomes rather than on a column of
-# its own row; ca_dry_run is parsed separately because it is a boolean, not a list of values.
+# its own row, and "reasons" on its reason rows - an entry matches when any of its reasons does; ca_dry_run is parsed
+# separately because it is a boolean, not a list of values.
 _FILTER_PARAMS = {"resolvers": "resolver", "uids": "uid", "realms": "realm", "usernames": "username",
                   "user_roles": "user_role", "event_types": "event_type", "reasons": "reason",
                   "source_ips": "source_ip",
@@ -99,8 +100,9 @@ def get_authentication_log():
 
     :query page: page number, 1-indexed (default 1).
     :query page_size: entries per page (default 15).
-    :query sort_column: column to sort by (id, timestamp, event_type, reason, resolver, uid, realm, username,
-        source_ip, client_label, endpoint, serial, transaction_id, attempt_id).
+    :query sort_column: column to sort by (id, timestamp, event_type, resolver, uid, realm, username,
+        source_ip, client_label, endpoint, serial, transaction_id, attempt_id). An entry's reasons are a list, so
+        they are not sortable.
     :query sort_order: ``asc`` or ``desc`` (default ``desc``).
     :query start_time: only entries at/after this ISO 8601 timestamp.
     :query end_time: only entries at/before this ISO 8601 timestamp.

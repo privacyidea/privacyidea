@@ -41,7 +41,8 @@ from privacyidea.lib.conditional_access.engine import count_user_attempts, count
 from privacyidea.lib.conditional_access.outcome_log import get_outcomes, record_outcomes
 from privacyidea.lib.conditional_access.session import get_ca_session
 from privacyidea.lib.error import ParameterError
-from privacyidea.models import AuthenticationLog, ConditionalAccessOutcome, db, authentication_log_column_length
+from privacyidea.models import (AuthenticationLog, AuthenticationLogReason, ConditionalAccessOutcome, db,
+                                authentication_log_column_length)
 from privacyidea.models.utils import utc_now
 
 from .base import MyTestCase
@@ -52,6 +53,7 @@ class AuthenticationLogTestCase(MyTestCase):
     def tearDown(self):
         from privacyidea.models import db
         from privacyidea.models.authentication_log import AuthenticationLog
+        db.session.query(AuthenticationLogReason).delete()
         db.session.query(AuthenticationLog).delete()
         db.session.commit()
 
@@ -556,6 +558,32 @@ class AuthenticationLogTestCase(MyTestCase):
         self.assertEqual(AuthEventType.NOT_AUTHORIZED, entry.event_type)
         self.assertEqual({"reason": "after", "note": "updated"}, entry.other_info)
 
+    def test_amending_the_reasons_replaces_the_stored_rows(self):
+        # The reasons live in their own table, so an amended event has to bring those rows back in line too - and a
+        # post-policy that overrides the token layer's findings replaces them rather than adding to them.
+        event = PendingAuthEvent(event_type=AuthEventType.NO_USABLE_TOKEN,
+                                 reasons=["TOKEN_DISABLED", "WRONG_OTP"])
+        write_authentication_events([event])
+        entry = get_authentication_log_event(event.row_id)
+        self.assertEqual(["TOKEN_DISABLED", "WRONG_OTP"], [row.reason for row in entry.reasons])
+
+        event.event_type = AuthEventType.NOT_AUTHORIZED
+        event.reasons = ["AUTHORIZATION_POLICY"]
+        update_authentication_events([event])
+
+        entry = get_authentication_log_event(event.row_id)
+        self.assertEqual(["AUTHORIZATION_POLICY"], [row.reason for row in entry.reasons])
+
+    def test_deleting_an_entry_takes_its_reasons_with_it(self):
+        event = PendingAuthEvent(event_type=AuthEventType.NO_USABLE_TOKEN, reasons=["TOKEN_DISABLED"])
+        write_authentication_events([event])
+
+        delete_authentication_log_event(event.row_id)
+
+        self.assertIsNone(get_authentication_log_event(event.row_id))
+        self.assertEqual(0, db.session.query(AuthenticationLogReason)
+                         .filter_by(auth_log_id=event.row_id).count())
+
     def test_outcomes_on_an_event_are_not_row_content(self):
         # An event holds its conditional-access outcomes until the row id they attach to exists; since outcomes are not
         # columns, setting them on an already-written event must not mark it changed and trigger an UPDATE.
@@ -575,6 +603,7 @@ class AuthenticationLogDBTestCase(MyTestCase):
     def tearDown(self):
         from privacyidea.models import db
         from privacyidea.models.authentication_log import AuthenticationLog
+        db.session.query(AuthenticationLogReason).delete()
         db.session.query(AuthenticationLog).delete()
         db.session.commit()
 
@@ -587,17 +616,17 @@ class AuthenticationLogDBTestCase(MyTestCase):
             event_id = log_authentication_event(
                 event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="user1", realm="realm1",
                 username="testuser", user_role=AuthLogUserRole.ADMIN_EXTERNAL, source_ip="192.168.1.1",
-                client_label="vpn", endpoint="/validate/check", reason="TOKEN_DISABLED",
+                client_label="vpn", endpoint="/validate/check", reasons=["TOKEN_DISABLED", "WRONG_OTP"],
                 serial="TOK001", transaction_id="txn-123",
                 attempt_id="attempt-123",
                 other_info={"key": "value"}
             )
 
         entry = get_authentication_log_event(event_id)
-        auth_log_dict = entry.to_dict()
+        auth_log_dict = entry.to_dict(include_reasons=True)
 
         expected_keys = {"id", "resolver", "uid", "realm", "username", "user_role", "event_type", "timestamp",
-                         "reason", "source_ip", "client_label", "endpoint", "serial", "transaction_id",
+                         "reasons", "source_ip", "client_label", "endpoint", "serial", "transaction_id",
                          "attempt_id", "other_info"}
         self.assertSetEqual(expected_keys, set(auth_log_dict.keys()))
         self.assertEqual(event_id, auth_log_dict["id"])
@@ -612,7 +641,7 @@ class AuthenticationLogDBTestCase(MyTestCase):
         self.assertEqual("192.168.1.1", auth_log_dict["source_ip"])
         self.assertEqual("vpn", auth_log_dict["client_label"])
         self.assertEqual("/validate/check", auth_log_dict["endpoint"])
-        self.assertEqual("TOKEN_DISABLED", auth_log_dict["reason"])
+        self.assertEqual(["TOKEN_DISABLED", "WRONG_OTP"], auth_log_dict["reasons"])
         self.assertEqual("TOK001", auth_log_dict["serial"])
         self.assertEqual("txn-123", auth_log_dict["transaction_id"])
         self.assertEqual("attempt-123", auth_log_dict["attempt_id"])
@@ -626,6 +655,7 @@ class AuthenticationLogPaginateTestCase(MyTestCase):
         from privacyidea.models.authentication_log import AuthenticationLog
         # Children first: nothing cascades on SQLite.
         db.session.query(ConditionalAccessOutcome).delete()
+        db.session.query(AuthenticationLogReason).delete()
         db.session.query(AuthenticationLog).delete()
         db.session.commit()
         super().tearDown()
@@ -775,6 +805,7 @@ class AuthenticationLogDeleteTestCase(MyTestCase):
         from privacyidea.models.authentication_log import AuthenticationLog
         # Children first: nothing cascades on SQLite.
         db.session.query(ConditionalAccessOutcome).delete()
+        db.session.query(AuthenticationLogReason).delete()
         db.session.query(AuthenticationLog).delete()
         db.session.commit()
         super().tearDown()
@@ -814,6 +845,7 @@ class AuthenticationLogOutcomeJoinTestCase(MyTestCase):
 
     def tearDown(self):
         db.session.query(ConditionalAccessOutcome).delete()
+        db.session.query(AuthenticationLogReason).delete()
         db.session.query(AuthenticationLog).delete()
         db.session.commit()
         super().tearDown()

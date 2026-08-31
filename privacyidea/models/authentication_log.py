@@ -26,7 +26,7 @@ from privacyidea.models import db
 from privacyidea.models.utils import MethodsMixin, utc_now, BigIntegerType, case_sensitive_unicode
 
 if TYPE_CHECKING:
-    from privacyidea.models import ConditionalAccessOutcome
+    from privacyidea.models import AuthenticationLogReason, ConditionalAccessOutcome
 
 # Maximum length of the string columns; the lib layer truncates values to these lengths before insert (see
 # privacyidea.lib.conditional_access.authentication_log._truncate), so a value can never overflow a column.
@@ -39,8 +39,6 @@ authentication_log_column_length = {
     "username": 255,
     "user_role": 30,
     "event_type": 40,
-    # An AuthEventReason value; sized like event_type, which the longest member stays well inside.
-    "reason": 40,
     "source_ip": 50,
     "client_label": 1024,
     # The request path of the authenticating endpoint ("/auth", "/validate/check", ...). Sized well past the longest
@@ -83,12 +81,6 @@ class AuthenticationLog(MethodsMixin, db.Model):
         case_sensitive_unicode(authentication_log_column_length["user_role"]))
     event_type: Mapped[str] = mapped_column(
         case_sensitive_unicode(authentication_log_column_length["event_type"]), nullable=False)
-    # Why the event came out the way it did: an AuthEventReason value, or NULL when nothing classified one (a success
-    # needs no reason). Deliberately a column rather than a key in other_info: "every NO_USABLE_TOKEN caused by the
-    # failcounter" has to be a plain indexed predicate, and JSON predicates differ per backend. What is specific to
-    # one request - the deciding policy's name, which serial failed for which reason - stays in other_info.
-    reason: Mapped[str | None] = mapped_column(
-        case_sensitive_unicode(authentication_log_column_length["reason"]))
     timestamp: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
     source_ip: Mapped[str | None] = mapped_column(
         case_sensitive_unicode(authentication_log_column_length["source_ip"]))
@@ -126,6 +118,14 @@ class AuthenticationLog(MethodsMixin, db.Model):
         "ConditionalAccessOutcome", cascade="all, delete-orphan", lazy="raise",
         order_by="ConditionalAccessOutcome.id")
 
+    # Why this event came out the way it did: zero or more AuthEventReason values, highest signal first (a success
+    # needs none). Declared exactly like the outcomes above and for the same reasons - the cascade covers deleting an
+    # entry as an object on every backend, while the set-based delete paths remove the child rows themselves, and
+    # lazy="raise" keeps the authentication path from ever fanning out a query per row.
+    reasons: Mapped[list["AuthenticationLogReason"]] = relationship(
+        "AuthenticationLogReason", cascade="all, delete-orphan", lazy="raise",
+        order_by="AuthenticationLogReason.id")
+
     @property
     def aware_timestamp(self) -> datetime:
         """
@@ -137,16 +137,21 @@ class AuthenticationLog(MethodsMixin, db.Model):
         """
         return self.timestamp.replace(tzinfo=timezone.utc)
 
-    def to_dict(self, include_outcomes: bool = False) -> dict:
+    def to_dict(self, include_outcomes: bool = False, include_reasons: bool = False) -> dict:
         """
         Serialize the entry for the API response, with the timestamp as an ISO-8601 UTC string.
 
         *include_outcomes* adds the conditional-access history of this request as ``conditional_access_outcomes``. It is
         off by default and only the paginated listing turns it on, because the relationship is ``lazy="raise"``: reading
         it on an entry that was not loaded with its outcomes must fail loudly rather than emit a query per entry.
+
+        *include_reasons* adds the classified reasons as the ``reasons`` list, highest signal first, under the same
+        rule and for the same reason: that relationship is ``lazy="raise"`` too.
         """
         auth_log_dict = {name: getattr(self, name) for name in self.__table__.columns.keys()}
         auth_log_dict["timestamp"] = self.aware_timestamp.isoformat()
+        if include_reasons:
+            auth_log_dict["reasons"] = [entry.reason for entry in self.reasons]
         if include_outcomes:
             auth_log_dict["conditional_access_outcomes"] = [outcome.to_dict() for outcome in self.outcomes]
         return auth_log_dict

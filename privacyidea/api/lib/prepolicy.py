@@ -2872,9 +2872,9 @@ def auth_timelimit(request, action):
     if not result:
         # check_max_auth_fail / _success name which limit was hit and the policy that set it. Popped from reply_dict,
         # which is handed to the client as the error details.
-        reason, reason_detail = pop_auth_event_reason(reply_dict)
+        reasons, reason_detail = pop_auth_event_reason(reply_dict)
         log_authentication(AuthEventType.NOT_AUTHORIZED, request, user=user,
-                           reason=reason, reason_detail=reason_detail)
+                           reasons=reasons, reason_detail=reason_detail)
         raise AuthError(_("Authentication failure. The account has exceeded the authentication time limit!"),
                         details=reply_dict)
 

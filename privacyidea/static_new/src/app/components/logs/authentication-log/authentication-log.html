@@ -345,6 +345,15 @@
                     {{ element[column.key] }}
                   </span>
                 }
+                @case ("reason") {
+                  <!-- Every reason the request produced, highest signal first: one line each, so a request whose
+                    tokens failed differently shows all of its findings rather than only the top-ranked one. -->
+                  <div class="reason-list">
+                    @for (reason of element.reasons ?? []; track reason) {
+                      <span class="reason-entry">{{ reason }}</span>
+                    }
+                  </div>
+                }
                 @case ("serial") {
                   @for (serial of splitSerials(element.serial); track serial) {
                     <app-copyable [copyText]="serial">

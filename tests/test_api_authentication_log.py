@@ -339,24 +339,30 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
 
     def test_filter_by_reason(self):
         log_authentication_event(event_type=AuthEventType.NO_USABLE_TOKEN, resolver="res", uid="1", realm=self.realm1,
-                                 reason=AuthEventReason.TOKEN_DISABLED)
+                                 reasons=[str(AuthEventReason.TOKEN_DISABLED), str(AuthEventReason.WRONG_OTP)])
         log_authentication_event(event_type=AuthEventType.NO_USABLE_TOKEN, resolver="res", uid="2", realm=self.realm1,
-                                 reason=AuthEventReason.TOKEN_FAILCOUNT_EXCEEDED)
+                                 reasons=[str(AuthEventReason.TOKEN_FAILCOUNT_EXCEEDED)])
         log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res", uid="3", realm=self.realm1)
         db.session.commit()
 
-        # The point of the column: one event type, several causes, each filterable on its own.
+        # The point of the reasons: one event type, several causes, each filterable on its own - including a cause
+        # that was not the entry's highest-ranked one.
         value = self._get({"reasons": str(AuthEventReason.TOKEN_DISABLED)})["result"]["value"]
         self.assertEqual(1, value["count"])
-        self.assertEqual(str(AuthEventReason.TOKEN_DISABLED), value["auth_logs"][0]["reason"])
+        self.assertEqual([str(AuthEventReason.TOKEN_DISABLED), str(AuthEventReason.WRONG_OTP)],
+                         value["auth_logs"][0]["reasons"])
+        self.assertEqual(1, self._get({"reasons": str(AuthEventReason.WRONG_OTP)})["result"]["value"]["count"])
         self.assertEqual(2, self._get({"reasons": f"{AuthEventReason.TOKEN_DISABLED},"
                                                   f"{AuthEventReason.TOKEN_FAILCOUNT_EXCEEDED}"})
+                         ["result"]["value"]["count"])
+        # An entry matches once, however many of its reasons the filter names.
+        self.assertEqual(1, self._get({"reasons": f"{AuthEventReason.TOKEN_DISABLED},{AuthEventReason.WRONG_OTP}"})
                          ["result"]["value"]["count"])
         # A wildcard groups a family of reasons - every token-state one, here.
         self.assertEqual(2, self._get({"reasons": "TOKEN_*"})["result"]["value"]["count"])
         # The successful row has no reason at all, so no reason filter matches it.
-        self.assertIsNone(self._get({"event_types": str(AuthEventType.LOGIN_SUCCESS)})
-                          ["result"]["value"]["auth_logs"][0]["reason"])
+        self.assertEqual([], self._get({"event_types": str(AuthEventType.LOGIN_SUCCESS)})
+                         ["result"]["value"]["auth_logs"][0]["reasons"])
 
     def test_filter_by_endpoint(self):
         log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res", uid="1", realm=self.realm1,

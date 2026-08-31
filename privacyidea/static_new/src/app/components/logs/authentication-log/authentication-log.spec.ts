@@ -95,7 +95,8 @@ describe("AuthenticationLog", () => {
 
   it("offers the reason as a column with the backend's vocabulary as its value picker", () => {
     const reason = component.columnKeysMap.find((column) => column.key === "reason");
-    expect(reason).toEqual(expect.objectContaining({ filterable: true, sortable: true }));
+    // Not sortable: an entry has a list of reasons, in a table of its own.
+    expect(reason).toEqual(expect.objectContaining({ filterable: true, sortable: false }));
     // The options come from the service (i.e. the backend), not from a list held here.
     expect(component.reasonOptions()).toEqual(service.reasons());
     expect(component.reasonOptions()).toContain("TOKEN_DISABLED");
@@ -288,6 +289,32 @@ describe("AuthenticationLog", () => {
     expect(badges.length).toBe(1);
     expect(badges[0].textContent.trim()).toBe("internal admin");
     expect(badges[0].classList).toContain("role-badge-admin-internal");
+  });
+
+  it("lists every reason of an entry, not just the first", () => {
+    // A request whose tokens failed differently carries one reason per finding, ordered by precedence.
+    service.authenticationLogResource.set(
+      MockPiResponse.fromValue({
+        auth_logs: [
+          {
+            id: 1,
+            event_type: "NO_USABLE_TOKEN",
+            timestamp: "2026-06-22T10:00:00+00:00",
+            reasons: ["TOKEN_DISABLED", "WRONG_OTP"]
+          },
+          { id: 2, event_type: "LOGIN_SUCCESS", timestamp: "2026-06-22T10:01:00+00:00", reasons: [] }
+        ],
+        count: 2,
+        current: 1,
+        prev: null,
+        next: null
+      })
+    );
+    fixture.detectChanges();
+    const rendered = Array.from(fixture.nativeElement.querySelectorAll(".reason-entry")).map((element: any) =>
+      element.textContent.trim()
+    );
+    expect(rendered).toEqual(["TOKEN_DISABLED", "WRONG_OTP"]);
   });
 
   it("hasInfoValues only reports true when an entry on the page actually carries something to show", () => {

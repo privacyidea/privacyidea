@@ -26,7 +26,8 @@ from sqlalchemy import and_, false, func, or_, select
 from sqlalchemy.orm import InstrumentedAttribute, selectinload
 from sqlalchemy.sql import ColumnElement
 
-from privacyidea.models import AuthenticationLog, ConditionalAccessOutcome, authentication_log_column_length
+from privacyidea.models import (AuthenticationLog, AuthenticationLogReason, ConditionalAccessOutcome,
+                                authentication_log_column_length, authentication_log_reason_column_length)
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
 from privacyidea.lib.conditional_access.session import get_ca_session, guarded_write
 from privacyidea.lib.error import ParameterError
@@ -35,12 +36,12 @@ from privacyidea.lib.sqlutils import delete_matching_rows
 log = logging.getLogger(__name__)
 
 # Columns a paginated authentication-log query can sort by, keyed by the name the API accepts; every scalar column
-# is sortable, but ``other_info`` is excluded because JSON column ordering is neither meaningful nor portable.
+# is sortable, but ``other_info`` is excluded because JSON column ordering is neither meaningful nor portable, and
+# ``reasons`` because an entry has a list of them, in their own table (sorting rows by a collection is not defined).
 SORTABLE_COLUMNS: dict[str, InstrumentedAttribute] = {
     "id": AuthenticationLog.id,
     "timestamp": AuthenticationLog.timestamp,
     "event_type": AuthenticationLog.event_type,
-    "reason": AuthenticationLog.reason,
     "resolver": AuthenticationLog.resolver,
     "uid": AuthenticationLog.uid,
     "realm": AuthenticationLog.realm,
@@ -109,9 +110,9 @@ class AuthenticationLogPage:
     def to_dict(self) -> dict:
         """Serialize the page (entries plus pagination metadata) for the API response."""
         return {
-            # The entries were loaded with their outcomes (see get_authentication_logs_paginate), so this is the one
-            # place that may serialize them.
-            "auth_logs": [entry.to_dict(include_outcomes=True) for entry in self.auth_logs],
+            # The entries were loaded with their reasons and outcomes (see get_authentication_logs_paginate), so
+            # this is the one place that may serialize them.
+            "auth_logs": [entry.to_dict(include_outcomes=True, include_reasons=True) for entry in self.auth_logs],
             "count": self.count,
             "current": self.current,
             "prev": self.prev,
@@ -199,8 +200,6 @@ class PendingAuthEvent:
     into.
     """
     event_type: AuthEventType
-    # Why this event came out the way it did (see AuthEventReason); None when nothing classified a reason.
-    reason: str | None = None
     transaction_id: str | None = None
     resolver: str | None = None
     uid: str | None = None
@@ -213,6 +212,9 @@ class PendingAuthEvent:
     serial: str | None = None
     attempt_id: str | None = None
     other_info: dict | None = None
+    # Why this event came out the way it did: every classified reason (see AuthEventReason), highest signal first;
+    # empty when nothing classified one. Not a column of the row - they become rows of authentication_log_reason.
+    reasons: list[str] = field(default_factory=list)
     # A point-in-time record another in-flight request has to see (the push_wait challenge trigger) rather than this
     # request's own classification, and must never be reclassified afterwards - see ConditionalAccessContext.amendable.
     immediate: bool = False
@@ -246,7 +248,6 @@ class PendingAuthEvent:
 # The columns of an entry that are truncated to their column length, and the separator to cut on (see _truncate).
 _TRUNCATED_COLUMNS = {
     "event_type": None,
-    "reason": None,
     "transaction_id": None,
     "resolver": None,
     "uid": None,
@@ -278,9 +279,44 @@ def _row_values(event: PendingAuthEvent) -> dict:
     return {**stored, "other_info": _store_overflow(event.other_info, overflow)}
 
 
+def _reason_rows(event: PendingAuthEvent) -> list[AuthenticationLogReason]:
+    """
+    The child rows recording why *event* came out the way it did, in the order the event lists them (highest signal
+    first, see :func:`~privacyidea.lib.conditional_access.authentication_event_types.order_request_reasons`), which is
+    the order their ids then ascend in.
+
+    Each value is truncated like a column value would be, and empty ones are dropped: a reason column is ``NOT NULL``
+    and an unclassified reason is the absence of a row, not a row saying nothing.
+    """
+    max_length = authentication_log_reason_column_length["reason"]
+    return [AuthenticationLogReason(reason=str(reason)[:max_length]) for reason in event.reasons if reason]
+
+
+def _update_reason_rows(session, event: PendingAuthEvent) -> None:
+    """
+    Bring the stored reason rows of *event* in line with the reasons it now lists, replacing them when they moved and
+    leaving them untouched when they did not (an equal list re-written would delete and re-insert every row).
+
+    The rows are read and written **directly**, not through the parent's ``reasons`` relationship: that collection is
+    ``lazy="raise"``, and assigning to it loads the old rows to work out the delete-orphan diff - which the flag
+    refuses on an entry that was not loaded with them, as an amended one never is.
+    """
+    stored = session.scalars(select(AuthenticationLogReason)
+                             .where(AuthenticationLogReason.auth_log_id == event.row_id)
+                             .order_by(AuthenticationLogReason.id)).all()
+    reasons = _reason_rows(event)
+    if [row.reason for row in stored] == [row.reason for row in reasons]:
+        return
+    for row in stored:
+        session.delete(row)
+    for row in reasons:
+        row.auth_log_id = event.row_id
+        session.add(row)
+
+
 def _build_entry(event: PendingAuthEvent) -> AuthenticationLog:
-    """Build the :class:`AuthenticationLog` row for *event*."""
-    return AuthenticationLog(**_row_values(event))
+    """Build the :class:`AuthenticationLog` row for *event*, with its reason rows."""
+    return AuthenticationLog(**_row_values(event), reasons=_reason_rows(event))
 
 
 def write_authentication_events(events: Sequence[PendingAuthEvent]) -> bool:
@@ -340,6 +376,7 @@ def update_authentication_events(events: Sequence[PendingAuthEvent]) -> bool:
             values = _row_values(event)
             for column, value in values.items():
                 setattr(entry, column, value)
+            _update_reason_rows(session, event)
     if not outcome.succeeded:
         return False
     for event in events:
@@ -348,7 +385,7 @@ def update_authentication_events(events: Sequence[PendingAuthEvent]) -> bool:
 
 
 def log_authentication_event(event_type: AuthEventType,
-                             reason: str | None = None,
+                             reasons: list[str] | None = None,
                              transaction_id: str | None = None,
                              resolver: str | None = None,
                              uid: str | None = None,
@@ -367,9 +404,9 @@ def log_authentication_event(event_type: AuthEventType,
     The single-event convenience wrapper over :func:`write_authentication_events`, for callers that have no request
     context to collect on (the CLI, tests, and lib code outside a view).
     """
-    event = PendingAuthEvent(event_type=event_type, reason=reason, transaction_id=transaction_id, resolver=resolver,
-                             uid=uid,
-                             realm=realm, username=username, user_role=user_role, source_ip=source_ip,
+    event = PendingAuthEvent(event_type=event_type, reasons=list(reasons or []), transaction_id=transaction_id,
+                             resolver=resolver,
+                             uid=uid, realm=realm, username=username, user_role=user_role, source_ip=source_ip,
                              client_label=client_label, endpoint=endpoint, serial=serial, attempt_id=attempt_id,
                              other_info=other_info)
     write_authentication_events([event])
@@ -386,16 +423,21 @@ def delete_authentication_log_event(event_id: int) -> None:
         session = get_ca_session()
         entry = session.get(AuthenticationLog, event_id)
         if entry is not None:
-            # Deleted as an *object*, so the outcomes relationship cascade removes this entry's conditional-access
-            # history too, on every backend, since SQLite does not enforce foreign keys.
+            # Deleted as an *object*, so the relationship cascades remove this entry's reasons and its
+            # conditional-access history too, on every backend, since SQLite does not enforce foreign keys.
             session.delete(entry)
 
 
 def get_authentication_log_event(event_id: int) -> AuthenticationLog | None:
     """
-    Return a single AuthenticationLog entry by event_id, or None if not found.
+    Return a single AuthenticationLog entry by event_id, with its classified reasons, or None if not found.
+
+    The reasons are eagerly loaded because they are ``lazy="raise"`` and a single entry read by id is worth nothing
+    without them; one extra statement for one row is not the fan-out that flag guards against. The conditional-access
+    outcomes are *not*, so ``to_dict(include_outcomes=True)`` still belongs to the paginated listing alone.
     """
-    return get_ca_session().get(AuthenticationLog, event_id)
+    return get_ca_session().get(AuthenticationLog, event_id,
+                                options=[selectinload(AuthenticationLog.reasons)])
 
 
 def _wildcard_pattern(value: str) -> str:
@@ -438,6 +480,28 @@ def match_condition(column: InstrumentedAttribute, value: str | list[str] | None
     return or_(*terms) if len(terms) > 1 else terms[0]
 
 
+def _reason_condition(reason: str | list[str] | None = None,
+                      case_insensitive: bool = False) -> ColumnElement[bool] | None:
+    """
+    Build the condition "this entry was classified with such a reason", or ``None`` when no reason filter is set.
+
+    The values behave like every other filter on the log (a value or a list of them, ``*`` as the only wildcard,
+    *case_insensitive* for the plain values -- see :func:`match_condition`), and an entry matches when **any** of its
+    reasons does: an entry lists every reason its request produced, so "show me the revoked-token failures" must find
+    the request whose second token merely got the wrong OTP as well.
+
+    An ``EXISTS`` rather than a join, for the reason :func:`_outcome_condition` uses one: a join multiplies an entry by
+    its reasons, which would break both a page's ``LIMIT`` and the ``count`` that shares these conditions. It is
+    correlated on the parent, so it applies unchanged to the ``DELETE`` statements that reuse these conditions.
+    """
+    term = match_condition(AuthenticationLogReason.reason, reason, case_insensitive)
+    if term is None:
+        return None
+    return (select(1)
+            .where(AuthenticationLogReason.auth_log_id == AuthenticationLog.id, term)
+            .exists())
+
+
 def _filter_conditions(resolver: str | list[str] | None = None,
                        uid: str | list[str] | None = None,
                        realm: str | list[str] | None = None,
@@ -460,6 +524,9 @@ def _filter_conditions(resolver: str | list[str] | None = None,
     of the values, or (for a value containing a ``*`` wildcard) matches it with a ``LIKE``. Returned as a list so it
     can be applied to both ``select`` and ``delete`` statements. timestamp filters are inclusive on both ends.
 
+    ``reason`` is the one filter that does not match a column of the entry: an entry has a list of reasons, in a table
+    of its own, and matches if **any** of them matches (see :func:`_reason_condition`).
+
     With *case_insensitive* set, plain (non-wildcard) filter values match case-insensitively; wildcard values always
     match case-insensitively (see :func:`match_condition`).
     """
@@ -470,7 +537,6 @@ def _filter_conditions(resolver: str | list[str] | None = None,
         AuthenticationLog.username: username,
         AuthenticationLog.user_role: user_role,
         AuthenticationLog.event_type: event_type,
-        AuthenticationLog.reason: reason,
         AuthenticationLog.source_ip: source_ip,
         AuthenticationLog.serial: serial,
         AuthenticationLog.transaction_id: transaction_id,
@@ -480,6 +546,9 @@ def _filter_conditions(resolver: str | list[str] | None = None,
     }
     conditions = [condition for column, value in match_filters.items()
                   if (condition := match_condition(column, value, case_insensitive)) is not None]
+    reason_condition = _reason_condition(reason, case_insensitive)
+    if reason_condition is not None:
+        conditions.append(reason_condition)
     if start_time is not None:
         conditions.append(AuthenticationLog.timestamp >= _naive_utc(start_time))
     if end_time is not None:
@@ -591,6 +660,10 @@ def get_authentication_logs(resolver: str | list[str] | None = None,
     All parameters are optional; omitting a parameter means no filtering on that field. Each scalar filter accepts a
     single value or a list of values; an entry matches the field if it equals any of the listed values, or (for a
     value containing a ``*`` wildcard) matches it with a ``LIKE``. timestamp filters are inclusive on both ends.
+
+    The entries come with their classified reasons loaded (``lazy="raise"`` otherwise), which is one extra statement
+    for the whole result: an entry read here is read to be looked at, and its reasons are part of it. The
+    conditional-access outcomes are not - the paginated listing is the one query that reads those.
     """
     conditions = _filter_conditions(resolver=resolver, uid=uid, realm=realm, username=username, user_role=user_role,
                                     event_type=event_type, reason=reason,
@@ -598,7 +671,8 @@ def get_authentication_logs(resolver: str | list[str] | None = None,
                                     attempt_id=attempt_id,
                                     client_label=client_label, endpoint=endpoint,
                                     start_time=start_time, end_time=end_time)
-    stmt = select(AuthenticationLog).where(*conditions).order_by(AuthenticationLog.id)
+    stmt = (select(AuthenticationLog).where(*conditions).order_by(AuthenticationLog.id)
+            .options(selectinload(AuthenticationLog.reasons)))
     return get_ca_session().scalars(stmt).all()
 
 
@@ -683,10 +757,10 @@ def get_authentication_logs_paginate(resolver: str | list[str] | None = None,
     page = max(1, page)
     page_size = max(1, page_size)
     offset = (page - 1) * page_size
-    # The only place that eagerly loads conditional-access outcomes: selectinload fetches a whole page's outcomes in
-    # one extra statement, so the statement count does not grow with the page size, whereas a JOIN would multiply
-    # each entry by its outcomes and break both LIMIT and the count above.
-    stmt = stmt.options(selectinload(AuthenticationLog.outcomes))
+    # The only place that eagerly loads an entry's reasons and conditional-access outcomes: selectinload fetches a
+    # whole page's children in one extra statement each, so the statement count does not grow with the page size,
+    # whereas a JOIN would multiply each entry by its children and break both LIMIT and the count above.
+    stmt = stmt.options(selectinload(AuthenticationLog.reasons), selectinload(AuthenticationLog.outcomes))
     auth_logs = get_ca_session().scalars(stmt.limit(page_size).offset(offset)).all()
     return AuthenticationLogPage(auth_logs=auth_logs,
                                  count=count,
@@ -724,10 +798,24 @@ def _delete_outcomes_of(criterion: ColumnElement[bool], chunk_size: int | None =
                                 chunk_size)
 
 
+def _delete_reasons_of(criterion: ColumnElement[bool], chunk_size: int | None = None) -> int:
+    """
+    Delete the classified reasons of every authentication-log row matching *criterion*, and return how many were
+    removed.
+
+    The same contract as :func:`_delete_outcomes_of`, and for the same reasons: always before the parent rows, because
+    the foreign key does not cascade on SQLite, and explicitly rather than through the ORM cascade, which set-based
+    Core deletes never run.
+    """
+    return delete_matching_rows(get_ca_session(), AuthenticationLogReason.__table__,
+                                AuthenticationLogReason.auth_log_id.in_(select(AuthenticationLog.id).where(criterion)),
+                                chunk_size)
+
+
 def _delete_entries(criterion: ColumnElement[bool], chunk_size: int | None = None) -> int:
     """
-    Delete the authentication-log rows matching *criterion* **together with their conditional-access outcomes**, and
-    return how many entries were removed.
+    Delete the authentication-log rows matching *criterion* **together with their classified reasons and their
+    conditional-access outcomes**, and return how many entries were removed.
 
     Every set-based delete of authentication-log rows goes through here (the single-row path,
     :func:`delete_authentication_log_event`, does both deletes in one transaction instead). That is deliberate: neither
@@ -740,9 +828,11 @@ def _delete_entries(criterion: ColumnElement[bool], chunk_size: int | None = Non
         asked to delete entries, and their history is part of them)
     """
     outcomes = _delete_outcomes_of(criterion, chunk_size)
+    reasons = _delete_reasons_of(criterion, chunk_size)
     deleted = delete_matching_rows(get_ca_session(), AuthenticationLog.__table__, criterion, chunk_size)
-    if outcomes:
-        log.debug(f"Deleted {outcomes} conditional-access outcome(s) along with {deleted} authentication log entries.")
+    if outcomes or reasons:
+        log.debug(f"Deleted {outcomes} conditional-access outcome(s) and {reasons} reason(s) along with {deleted} "
+                  f"authentication log entries.")
     return deleted
 
 

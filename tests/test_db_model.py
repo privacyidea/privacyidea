@@ -48,7 +48,7 @@ from privacyidea.models import (Token,
                                 EventCounter, MonitoringStats, PolicyCondition, db,
                                 Tokengroup, TokenTokengroup, Serviceid, TokenInfo,
                                 LockoutPolicy, LockoutPolicyCondition, LockoutPolicyStage,
-                                LockoutStageAction, AuthenticationLog, ConditionalAccessOutcome)
+                                LockoutStageAction, AuthenticationLog, AuthenticationLogReason, ConditionalAccessOutcome)
 from .base import MyTestCase
 
 
@@ -885,6 +885,7 @@ class ConditionalAccessOutcomeTestCase(MyTestCase):
         # Children first: nothing cascades on SQLite.
         db.session.rollback()
         db.session.query(ConditionalAccessOutcome).delete()
+        db.session.query(AuthenticationLogReason).delete()
         db.session.query(AuthenticationLog).delete()
         db.session.commit()
         super().tearDown()

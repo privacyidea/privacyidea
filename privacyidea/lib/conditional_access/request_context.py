@@ -299,7 +299,9 @@ class ConditionalAccessContext:
         *reason_detail* is **merged** into the event's existing detail rather than assigned, which is why it is a
         parameter of its own instead of one more field: the detail is a namespace several layers write into (the token
         layer records why each of the user's tokens failed, a post-policy the rule that overrode them), and assigning
-        it - as passing ``other_info`` would - drops what the layer below recorded.
+        it - as passing ``other_info`` would - drops what the layer below recorded. The ``reasons`` list, in contrast,
+        is an ordinary field and is *replaced* like any other: a caller correcting the outcome is saying the reasons
+        it passes are the ones that now hold.
 
         With nothing :attr:`amendable` this is a no-op: a caller with no event of its own must stage one instead.
         """

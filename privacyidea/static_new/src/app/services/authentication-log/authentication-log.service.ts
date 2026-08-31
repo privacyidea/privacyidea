@@ -36,7 +36,9 @@ export interface AuthenticationLogEntry {
   username?: string | null;
   user_role?: string | null;
   event_type: string;
-  reason?: string | null;
+  // Every reason the request produced, highest signal first; empty for a success. A list, because a request whose
+  // tokens failed differently has one reason per finding (see AuthenticationLogReason in the backend).
+  reasons?: string[] | null;
   timestamp: string;
   source_ip?: string | null;
   client_label?: string | null;

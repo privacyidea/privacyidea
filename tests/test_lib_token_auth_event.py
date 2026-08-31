@@ -17,7 +17,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventReason, REASON_PRECEDENCE,
-                                                                          reduce_request_reasons,
+                                                                          order_request_reasons,
                                                                           AuthEventType, AUTH_EVENT_TYPE_KEY,
                                                                            CA_ENFORCEMENT_EVENT_TYPES,
                                                                            REQUEST_EVENT_PRECEDENCE,
@@ -217,7 +217,7 @@ class EventTypeOutcomeTestCase(MyTestCase):
 
 
 class ReasonPrecedenceTestCase(MyTestCase):
-    """Unit tests for the AuthEventReason vocabulary and its reduction."""
+    """Unit tests for the AuthEventReason vocabulary and its ordering."""
 
     def test_01_precedence_covers_every_reason(self):
         # Every reason must be ranked, so a new one cannot be added without a place in the order. Unlike the outcome
@@ -227,22 +227,28 @@ class ReasonPrecedenceTestCase(MyTestCase):
         self.assertEqual(len(REASON_PRECEDENCE), len(set(REASON_PRECEDENCE)), "Duplicate entry in REASON_PRECEDENCE.")
 
     def test_02_a_policy_decision_outranks_a_token_state(self):
-        # A policy applies whatever the tokens look like, and a permanent state outranks a transient one.
-        self.assertEqual(AuthEventReason.AUTHORIZATION_POLICY,
-                         reduce_request_reasons([AuthEventReason.TOKEN_DISABLED,
-                                                 AuthEventReason.AUTHORIZATION_POLICY]))
-        self.assertEqual(AuthEventReason.TOKEN_REVOKED,
-                         reduce_request_reasons([AuthEventReason.TOKEN_FAILCOUNT_EXCEEDED,
-                                                 AuthEventReason.TOKEN_REVOKED]))
+        # Every reason is kept - the entry lists them all - and a policy decision leads, since it applies whatever the
+        # tokens look like; a permanent state outranks a transient one.
+        self.assertEqual([AuthEventReason.AUTHORIZATION_POLICY, AuthEventReason.TOKEN_DISABLED],
+                         order_request_reasons([AuthEventReason.TOKEN_DISABLED,
+                                                AuthEventReason.AUTHORIZATION_POLICY]))
+        self.assertEqual([AuthEventReason.TOKEN_REVOKED, AuthEventReason.TOKEN_FAILCOUNT_EXCEEDED],
+                         order_request_reasons([AuthEventReason.TOKEN_FAILCOUNT_EXCEEDED,
+                                                AuthEventReason.TOKEN_REVOKED]))
         # A state outranks a credential: the state is what made the credential moot.
-        self.assertEqual(AuthEventReason.TOKEN_DISABLED,
-                         reduce_request_reasons([AuthEventReason.WRONG_OTP, AuthEventReason.TOKEN_DISABLED]))
+        self.assertEqual([AuthEventReason.TOKEN_DISABLED, AuthEventReason.WRONG_OTP],
+                         order_request_reasons([AuthEventReason.WRONG_OTP, AuthEventReason.TOKEN_DISABLED]))
 
-    def test_03_an_unusable_value_is_dropped_not_raised(self):
+    def test_03_the_same_reason_is_listed_once(self):
+        # Several tokens failing the same way is one finding for the admin, not three.
+        self.assertEqual([AuthEventReason.WRONG_OTP],
+                         order_request_reasons([AuthEventReason.WRONG_OTP, "WRONG_OTP", AuthEventReason.WRONG_OTP]))
+
+    def test_04_an_unusable_value_is_dropped_not_raised(self):
         # This runs on the authentication path, so a reason nobody ranked - or one recorded as a bare string by a
         # token class - must degrade the classification rather than break the authentication.
-        self.assertEqual(AuthEventReason.WRONG_OTP, reduce_request_reasons(["NOT_A_REASON", "WRONG_OTP"]))
-        self.assertIsNone(reduce_request_reasons(["NOT_A_REASON"]))
-        self.assertIsNone(reduce_request_reasons([]))
+        self.assertEqual([AuthEventReason.WRONG_OTP], order_request_reasons(["NOT_A_REASON", "WRONG_OTP"]))
+        self.assertEqual([], order_request_reasons(["NOT_A_REASON"]))
+        self.assertEqual([], order_request_reasons([]))
         # Values are accepted alongside members, since that is what auth_details carries.
-        self.assertEqual(AuthEventReason.TOKEN_DISABLED, reduce_request_reasons(["TOKEN_DISABLED"]))
+        self.assertEqual([AuthEventReason.TOKEN_DISABLED], order_request_reasons(["TOKEN_DISABLED"]))

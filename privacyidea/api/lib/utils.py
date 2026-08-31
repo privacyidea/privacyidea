@@ -302,22 +302,26 @@ def request_endpoint() -> str | None:
     return request.path.rstrip("/") or request.path
 
 
-def pop_auth_event_reason(details: dict | None) -> tuple[str | None, dict | None]:
+def pop_auth_event_reason(details: dict | None) -> tuple[list[str], dict | None]:
     """
-    Take the classified reason and its detail dict off *details*, the way the event type itself is taken off it.
+    Take the classified reasons and their detail dict off *details*, the way the event type itself is taken off it.
 
     Both are internal keys the lib layer sets alongside the event type (see
     :data:`~privacyidea.lib.conditional_access.authentication_event_types.AUTH_EVENT_REASON_KEY`) and neither may
     reach the client, so they are popped rather than read.
 
+    The layer below records either a list of reasons (the request-level classification, ordered by precedence) or a
+    single one (a layer that only ever finds one), so both are accepted and a list always comes back.
+
     :param details: the reply/details dict a lib call returned, or None
-    :return: ``(reason, reason_detail)``, each None when the layer below classified none
+    :return: ``(reasons, reason_detail)`` - an empty list and None when the layer below classified none
     """
     if not details:
-        return None, None
+        return [], None
     reason = details.pop(AUTH_EVENT_REASON_KEY, None)
     detail = details.pop(AUTH_EVENT_REASON_DETAIL_KEY, None)
-    return (str(reason) if reason else None), (detail or None)
+    reasons = list(reason) if isinstance(reason, (list, tuple)) else ([reason] if reason else [])
+    return [str(item) for item in reasons if item], (detail or None)
 
 
 def log_authentication(event_type: AuthEventType | None, request: Request | None = None, user: User | None = None,
@@ -325,7 +329,7 @@ def log_authentication(event_type: AuthEventType | None, request: Request | None
                        username: str | None = None,
                        internal_admin: bool = False,
                        immediate: bool = False,
-                       reason: str | None = None,
+                       reasons: list[str] | None = None,
                        reason_detail: dict | None = None) -> "PendingAuthEvent | None":
     """
     Record one authentication_log entry for the current request.
@@ -364,11 +368,11 @@ def log_authentication(event_type: AuthEventType | None, request: Request | None
     columns are empty; the event itself is never lost. ``endpoint`` comes from :func:`request_endpoint`, the same
     reading an ``ENDPOINT`` conditional-access condition is evaluated against.
 
-    ``reason`` says *why* the event came out this way (an
-    :class:`~privacyidea.lib.conditional_access.authentication_event_types.AuthEventReason` value), and
-    ``reason_detail`` carries what is specific to this request - the deciding policies, the per-serial reasons - into
-    ``other_info`` under its own :data:`REASON_DETAIL_INFO_KEY` key. Both are optional: an event nobody found a
-    reason for is logged without one.
+    ``reasons`` says *why* the event came out this way: every
+    :class:`~privacyidea.lib.conditional_access.authentication_event_types.AuthEventReason` the request produced,
+    highest signal first, each becoming a row of its own. ``reason_detail`` carries what is specific to this request -
+    the deciding policies, the per-serial reasons - into ``other_info`` under its own :data:`REASON_DETAIL_INFO_KEY`
+    key. Both are optional: an event nobody found a reason for is logged without any.
 
     ``user_role`` records whether the principal is a regular user or an admin (see :class:`AuthLogUserRole`). Pass
     ``internal_admin=True`` for a local database admin (``/auth`` only); an admin-realm admin is detected from the
@@ -425,7 +429,7 @@ def log_authentication(event_type: AuthEventType | None, request: Request | None
     context.source_ip = source_ip
     event = PendingAuthEvent(
         event_type=event_type,
-        reason=reason,
+        reasons=list(reasons or []),
         other_info={REASON_DETAIL_INFO_KEY: reason_detail} if reason_detail else None,
         transaction_id=transaction_id,
         resolver=user.resolver if resolved else None,

@@ -1260,7 +1260,9 @@ class PushTokenClass(TokenClass):
 
         # Hand the classified auth response to the api layer for logging
         setattr(g, PUSH_AUTH_EVENT, details.pop(PUSH_AUTH_EVENT, None))
-        setattr(g, PUSH_AUTH_REASON, details.pop(AUTH_EVENT_REASON_KEY, None))
+        push_reason = details.pop(AUTH_EVENT_REASON_KEY, None)
+        # Handed on as the list the log records: this path classifies at most one reason.
+        setattr(g, PUSH_AUTH_REASON, [str(push_reason)] if push_reason else [])
         setattr(g, PUSH_AUTH_TRANSACTION_ID, details.pop(PUSH_AUTH_TRANSACTION_ID, None))
         return "json", prepare_result(result, details=details)
 

@@ -298,9 +298,10 @@ def get_auth_token():
     realm_param = get_optional(request.all_data, "realm")
     details = {}
     auth_event_type = None
-    # Why that event, classified by the layer below (see AuthEventReason). Only the user-login path can produce one;
-    # an admin login leaves them None, so they are initialised here rather than in that branch.
-    auth_reason = None
+    # Why that event, classified by the layer below (see AuthEventReason): every reason the request produced, highest
+    # signal first. Only the user-login path can produce any; an admin login leaves them empty, so they are
+    # initialised here rather than in that branch.
+    auth_reasons: list[str] = []
     auth_reason_detail = None
     # A token can deliberately suppress its terminal event (push_wait timeout)
     terminal_event_suppressed = False
@@ -331,7 +332,7 @@ def get_auth_token():
             # The user owns this passkey but it is disabled -> NO_USABLE_TOKEN
             log_authentication(AuthEventType.NO_USABLE_TOKEN, request, user=token.user,
                                transaction_id=transaction_id,
-                               reason=str(AuthEventReason.TOKEN_DISABLED),
+                               reasons=[str(AuthEventReason.TOKEN_DISABLED)],
                                reason_detail={"reasons": {token.get_serial(): str(AuthEventReason.TOKEN_DISABLED)}})
             return send_result(False, rid=2, details={"message": "Token is disabled"})
 
@@ -341,7 +342,7 @@ def get_auth_token():
                             id=Error.AUTHENTICATE_MISSING_USERNAME)
         if token.get_type() in request.all_data.get("disabled_token_types", []):
             log_authentication(AuthEventType.NO_TOKEN, request, user=token.user, transaction_id=transaction_id,
-                               reason=str(AuthEventReason.TOKEN_TYPE_DISABLED),
+                               reasons=[str(AuthEventReason.TOKEN_TYPE_DISABLED)],
                                reason_detail={"reasons": {
                                    token.get_serial(): str(AuthEventReason.TOKEN_TYPE_DISABLED)}})
             raise AuthError(
@@ -352,7 +353,7 @@ def get_auth_token():
             log.debug(f"Last authentication policy check failed for token {token.get_serial()}.")
             log_authentication(AuthEventType.NOT_AUTHORIZED, request, user=token.user,
                                transaction_id=transaction_id,
-                               reason=str(AuthEventReason.LAST_AUTH_TOO_OLD))
+                               reasons=[str(AuthEventReason.LAST_AUTH_TOO_OLD)])
             raise AuthError(
                 _("Authentication failure. Last authentication policy check failed for token {serial}").format(
                     serial=token.get_serial()), id=Error.AUTHENTICATE_MISSING_RIGHT)
@@ -522,7 +523,7 @@ def get_auth_token():
             terminal_event_suppressed = AUTH_EVENT_TYPE_KEY in details and details[AUTH_EVENT_TYPE_KEY] is None
             auth_event_type = details.pop(AUTH_EVENT_TYPE_KEY, None)
             # Why it came out that way, classified alongside the event (see AuthEventReason).
-            auth_reason, auth_reason_detail = pop_auth_event_reason(details)
+            auth_reasons, auth_reason_detail = pop_auth_event_reason(details)
             # Pop the log-only transaction_id (push_wait success) so it never reaches the client, mirroring
             # /validate/check; it stands in for the challenge transaction_id the response doesn't carry.
             log_transaction_id = details.pop(LOG_TRANSACTION_ID_KEY, None)
@@ -559,10 +560,10 @@ def get_auth_token():
             if local_admin_exist and not user_auth and not user.exist():
                 auth_event_type = AuthEventType.PASSWORD_FAIL
                 internal_admin = True
-                # The reason classified above describes the *user* attempt this turned out not to be: a local admin
+                # The reasons classified above describe the *user* attempt this turned out not to be: a local admin
                 # has no user store entry, so WRONG_USERSTORE_PASSWORD would name a credential nobody checked. The
                 # event alone says what happened here.
-                auth_reason = None
+                auth_reasons = []
                 auth_reason_detail = None
                 # A local admin has no user attributes; its login name is logged separately.
                 user = User()
@@ -575,7 +576,7 @@ def get_auth_token():
                 g.audit_object.log({"authentication": AUTH_RESPONSE.CHALLENGE})
                 log_authentication(auth_event_type, request, user=user, serial=serials,
                                    transaction_id=details.get("transaction_id"),
-                                   reason=auth_reason, reason_detail=auth_reason_detail)
+                                   reasons=auth_reasons, reason_detail=auth_reason_detail)
                 return send_result(False, rid=2, details=details)
 
     # Authentication log
@@ -592,7 +593,7 @@ def get_auth_token():
                                        or details.get("transaction_id") or log_transaction_id),
                        username=login_name,
                        internal_admin=internal_admin,
-                       reason=auth_reason, reason_detail=auth_reason_detail)
+                       reasons=auth_reasons, reason_detail=auth_reason_detail)
 
     # Feeds the classified outcome to the lockout engine now rather than at teardown, because the rejection below
     # needs to surface the engine's notices and read back any lock/block it just wrote.

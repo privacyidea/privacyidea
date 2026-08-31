@@ -1285,12 +1285,14 @@ def is_authorized(request, response):
                 if context.amendable is not None:
                     # Correcting the staged event. The detail is merged, so the per-serial reasons the token layer
                     # recorded survive alongside the policy that overrode them.
+                    # The policy applies whatever the tokens looked like, so it *replaces* the token layer's
+                    # reasons rather than joining them: it is the one thing to act on now.
                     context.reclassify(AuthEventType.NOT_AUTHORIZED,
-                                       reason=str(AuthEventReason.AUTHORIZATION_POLICY),
+                                       reasons=[str(AuthEventReason.AUTHORIZATION_POLICY)],
                                        reason_detail=reason_detail)
                 else:
                     log_authentication(AuthEventType.NOT_AUTHORIZED, request, user=request.User,
-                                       reason=str(AuthEventReason.AUTHORIZATION_POLICY),
+                                       reasons=[str(AuthEventReason.AUTHORIZATION_POLICY)],
                                        reason_detail=reason_detail)
             raise ValidateError("User is not authorized to authenticate under these conditions.")
 

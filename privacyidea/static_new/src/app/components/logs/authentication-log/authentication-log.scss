@@ -239,3 +239,15 @@ td.cell-info {
     white-space: nowrap;
   }
 }
+
+// The reasons of one entry: stacked, since a request that failed for several reasons lists them all and they read as
+// separate findings rather than one wrapped value.
+.reason-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.reason-entry {
+  white-space: nowrap;
+}

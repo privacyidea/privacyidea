@@ -15,7 +15,7 @@ from privacyidea.lib.conditional_access.authentication_event_types import (AuthE
                                                                            AUTH_EVENT_REASON_DETAIL_KEY,
                                                                            CHALLENGE_LAPSED_KEY,
                                                                            NO_FIRST_FACTOR_KEY, reduce_request_events,
-                                                                           reduce_request_reasons, outcome_of,
+                                                                           order_request_reasons, outcome_of,
                                                                            AuthEventOutcome,
                                                                            SUPPRESS_TERMINAL_EVENT_KEY)
 from privacyidea.lib.config import (get_from_config,
@@ -734,21 +734,21 @@ def check_token_list(token_object_list: list[TokenClass], passw: str, user: User
         reduced_event = AuthEventType.NO_USABLE_TOKEN if num_all_tokens else AuthEventType.NO_TOKEN
     reply_dict[AUTH_EVENT_TYPE_KEY] = reduced_event
 
-    # Why, alongside what: the row carries one reason, reduced by REASON_PRECEDENCE, while other_info keeps the whole
-    # per-serial map so a request whose tokens failed differently does not lose the ones that lost the reduction.
-    # Only a failed request gets one: a success needs no reason, and the finding of a token that lost to a succeeding
+    # Why, alongside what: the row carries every reason the request produced, ordered by REASON_PRECEDENCE, while
+    # other_info keeps the whole per-serial map, so which token failed for which reason is not lost either.
+    # Only a failed request gets any: a success needs no reason, and the finding of a token that lost to a succeeding
     # one would be noise on that row.
-    # The reason is read from the tokens that produced the winning event, so it explains that event (see _note_event),
-    # and only where no token produced it - a NO_USABLE_TOKEN from the fallback above, where every token was turned
-    # away before it could contribute - does the whole set decide.
+    # The reasons are read from the tokens that produced the winning event, so they explain that event (see
+    # _note_event), and only where no token produced it - a NO_USABLE_TOKEN from the fallback above, where every token
+    # was turned away before it could contribute - does the whole set decide.
     deciding_serials = event_serials.get(str(reduced_event), set()) & token_reasons.keys()
     deciding_reasons = ([token_reasons[serial] for serial in deciding_serials] if deciding_serials
                         else list(token_reasons.values()))
-    # Passed as recorded: reduce_request_reasons coerces and drops what it cannot, while converting here would raise
+    # Passed as recorded: order_request_reasons coerces and drops what it cannot, while converting here would raise
     # past that guard, from inside the generator, and fail the authentication over a mislabelled reason.
-    reduced_reason = reduce_request_reasons(deciding_reasons)
-    if reduced_reason and reduced_event and outcome_of(reduced_event) == AuthEventOutcome.FAILURE:
-        reply_dict[AUTH_EVENT_REASON_KEY] = reduced_reason
+    ordered_reasons = order_request_reasons(deciding_reasons)
+    if ordered_reasons and reduced_event and outcome_of(reduced_event) == AuthEventOutcome.FAILURE:
+        reply_dict[AUTH_EVENT_REASON_KEY] = ordered_reasons
         reply_dict[AUTH_EVENT_REASON_DETAIL_KEY] = {"reasons": dict(token_reasons)}
 
     return res, reply_dict

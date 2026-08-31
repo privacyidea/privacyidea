@@ -39,6 +39,7 @@ from privacyidea.lib.token import init_token, remove_token, get_tokens
 from privacyidea.lib.user import User
 from privacyidea.models import db, Challenge, ConditionalAccessOutcome
 from privacyidea.models.authentication_log import AuthenticationLog
+from privacyidea.models.authentication_log_reason import AuthenticationLogReason
 from privacyidea.models.lockout_policy import (
     BlockList,
     LockoutPolicy,
@@ -965,6 +966,7 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
     def _clear_authentication_log() -> None:
         # Only the authentication log is cleared, never the audit log, since the classic AUTHMAXFAIL counts from the
         # audit log and clearing that would un-trip the very policy under test.
+        db.session.query(AuthenticationLogReason).delete()
         db.session.query(AuthenticationLog).delete()
         db.session.commit()
 

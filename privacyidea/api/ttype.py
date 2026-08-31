@@ -193,7 +193,7 @@ def token(ttype=None):
         owner = _push_token_owner(serial)
         log_authentication(push_auth_event, request, user=owner, serial=serial,
                            transaction_id=getattr(g, PUSH_AUTH_TRANSACTION_ID, None),
-                           reason=getattr(g, PUSH_AUTH_REASON, None))
+                           reasons=getattr(g, PUSH_AUTH_REASON, None) or [])
 
     if res[0] == "json":
         return jsonify(res[1])

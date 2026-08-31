@@ -35,6 +35,7 @@ from privacyidea.lib.user import User
 from privacyidea.lib.utils import AUTH_RESPONSE
 from privacyidea.models import db
 from privacyidea.models.authentication_log import AuthenticationLog
+from privacyidea.models.authentication_log_reason import AuthenticationLogReason
 from privacyidea.models.lockout_policy import UserLockoutState
 from privacyidea.models.utils import utc_now
 from tests.authlog_utils import assert_authentication_log, assert_authentication_log_entry
@@ -1602,6 +1603,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
         db.session.add(UserLockoutState(resolver=self.user.resolver, uid=self.user.uid,
                                         realm=self.user.realm, lock_expires_at=utc_now() + timedelta(seconds=600)))
         db.session.commit()
+        db.session.query(AuthenticationLogReason).delete()
         db.session.query(AuthenticationLog).delete()
         db.session.commit()
         try:

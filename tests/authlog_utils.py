@@ -34,7 +34,7 @@ from privacyidea.lib.conditional_access.authentication_log import get_authentica
 from privacyidea.lib.policy import set_policy, SCOPE, PolicyAction
 from privacyidea.lib.token import init_token, remove_token, get_tokens
 from privacyidea.lib.user import User
-from privacyidea.models import AuthenticationLog, Audit, db
+from privacyidea.models import AuthenticationLog, AuthenticationLogReason, Audit, db
 from privacyidea.models.utils import utc_now
 from .base import MyApiTestCase
 
@@ -70,6 +70,10 @@ class AuthLogTestCase(MyApiTestCase):
 
     @staticmethod
     def _clear_log() -> None:
+        # The reasons go first: a bulk delete runs no ORM cascade and SQLite does not enforce the foreign key, so
+        # orphaned reason rows would be picked up by the next entry that reuses the freed id (SQLite hands out
+        # max(rowid)+1).
+        db.session.query(AuthenticationLogReason).delete()
         db.session.query(AuthenticationLog).delete()
         db.session.commit()
 
@@ -212,7 +216,8 @@ def assert_authentication_log_entry(entry: AuthenticationLog, user: User = None,
     :param serials: the entry must carry a comma separated list of these serials (default None: no serial)
     :param client_label: the entry must carry this client_label (default None: no client_label)
     :param endpoint: if given, the entry must carry this endpoint; not checked when omitted (see above)
-    :param reason: if given, the entry's ``reason`` column must be this AuthEventReason; not checked when omitted
+    :param reason: if given, the entry's reasons must be exactly these, in this order (highest signal first): one
+        AuthEventReason or a list of them; not checked when omitted
     :param reasons: if given, the ``{serial: reason}`` map in the reason detail must equal this; not checked when
         omitted
     :param policies: if given, the policy names in the reason detail must equal this; not checked when omitted
@@ -232,7 +237,8 @@ def assert_authentication_log_entry(entry: AuthenticationLog, user: User = None,
     if endpoint is not None:
         assert entry.endpoint == endpoint
     if reason is not None:
-        assert entry.reason == str(reason)
+        expected_reasons = [str(value) for value in (reason if isinstance(reason, list) else [reason])]
+        assert [row.reason for row in entry.reasons] == expected_reasons
     stored_info = dict(entry.other_info or {})
     stored_detail = stored_info.pop(REASON_DETAIL_INFO_KEY, None) or {}
     if reasons is not None:

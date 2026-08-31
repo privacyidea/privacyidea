@@ -557,7 +557,7 @@ def check():
         "serial_list": [],
         "is_container_challenge": False,
         AUTH_EVENT_TYPE_KEY: None,
-        AUTH_EVENT_REASON_KEY: None,
+        AUTH_EVENT_REASON_KEY: [],
         AUTH_EVENT_REASON_DETAIL_KEY: None,
         # Build the token options from the request, but strip the internal keys
         "options": {k: v for k, v in request.all_data.items() if k not in INTERNAL_OPTION_KEYS}
@@ -597,11 +597,12 @@ def _record_context_reason(context: dict, reason: AuthEventReason, serial: str |
     Record *reason* on the request context, for a handler that classifies an event itself instead of taking it off a
     lib call's details.
 
-    Those handlers know exactly why they turned the request away, and a row whose reason is empty there would make
-    the column answer "no cause recorded" for a cause the code had in hand - so filtering by reason would silently
-    miss the endpoint. *serial* also puts the reason in the per-serial detail, matching what the token layer records.
+    Those handlers know exactly why they turned the request away, and a row with no reason there would answer "no
+    cause recorded" for a cause the code had in hand - so filtering by reason would silently miss the endpoint. Such a
+    handler knows exactly one reason, so it *replaces* the list. *serial* also puts the reason in the per-serial
+    detail, matching what the token layer records.
     """
-    context[AUTH_EVENT_REASON_KEY] = str(reason)
+    context[AUTH_EVENT_REASON_KEY] = [str(reason)]
     if serial:
         context[AUTH_EVENT_REASON_DETAIL_KEY] = {"reasons": {serial: str(reason)}}
 
@@ -968,7 +969,7 @@ def _log_authentication_event(context):
         user=context["user"],
         serial=",".join(context["serial_list"]) or None,
         transaction_id=logged_txn,
-        reason=context.get(AUTH_EVENT_REASON_KEY),
+        reasons=context.get(AUTH_EVENT_REASON_KEY),
         reason_detail=context.get(AUTH_EVENT_REASON_DETAIL_KEY),
     )
 
