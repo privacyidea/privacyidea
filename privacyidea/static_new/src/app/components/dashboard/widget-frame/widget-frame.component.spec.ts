@@ -19,7 +19,6 @@
 import { Component, provideZonelessChangeDetection, TemplateRef, viewChild } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { provideRouter } from "@angular/router";
-import { ROUTE_PATHS } from "@app/route_paths";
 import { TokensWidgetComponent } from "@components/dashboard/widgets/tokens-widget/tokens-widget.component";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { DashboardWidget, WidgetInstance } from "@models/dashboard";
