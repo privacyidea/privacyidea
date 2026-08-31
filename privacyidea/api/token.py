@@ -1663,6 +1663,10 @@ def get_sshkey_api(serial=None):
     Before returning, the integrity checksum of the token is verified, so a
     manipulation of the SSH key data in the database is detected.
 
+    Only active tokens are returned. Disabling or revoking an SSH key token
+    stops its key from being handed out here, just like it stops the key from
+    appearing in the authorized keys of a machine.
+
     Requires authentication and the policy action ``sshkey_read``. Admins
     are restricted by the realms of their policies, users can only read the
     SSH key of their own tokens.
@@ -1673,9 +1677,9 @@ def get_sshkey_api(serial=None):
     """
     user = request.User
     toks = get_tokens(serial=serial, user=user if user and not user.is_empty() else None,
-                      tokentype="sshkey")
+                      tokentype="sshkey", active=True)
     if not toks:
-        raise ResourceNotFoundError(f"No SSH key token with serial {serial!s} found.")
+        raise ResourceNotFoundError(f"No active SSH key token with serial {serial!s} found.")
     token = toks[0]
 
     sshkey = token.get_sshkey()

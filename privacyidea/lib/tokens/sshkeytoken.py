@@ -216,7 +216,14 @@ class SSHkeyTokenClass(TokenClass):
         (``update()``, the generic ``settokeninfo`` endpoint, event handlers,
         ...) goes through here, so the checksum can no longer be desynced by
         writing directly to the token info.
+
+        The same applies to the encryption of the public key: callers like the
+        generic ``settokeninfo`` endpoint do not pass a value type, which would
+        replace the encrypted key with its plaintext. The value type of the
+        public key is therefore enforced here as well.
         """
+        if key == "ssh_key":
+            value_type = "password"
         super().add_tokeninfo(key, value, value_type=value_type, commit_db_session=commit_db_session)
         if key in SSH_KEY_INFO_KEYS:
             self._update_integrity_checksum()
@@ -237,8 +244,16 @@ class SSHkeyTokenClass(TokenClass):
         and store it in the encrypted OTP key field. This is the single point
         that keeps the checksum in sync with the ssh_key/ssh_type/ssh_comment
         token info, regardless of which caller modified them.
+
+        A token without a public key is left untouched: a checksum over empty
+        data would let such a token pass its own integrity check in
+        ``get_sshkey()``, while an absent or stale checksum makes it fail
+        closed.
         """
         key_type, sshkey, key_comment = self._get_ssh_key_parts()
+        if not sshkey:
+            log.info(f"Token {self.token.serial!s} has no SSH key, not storing an integrity checksum.")
+            return
         self.token.set_otpkey(compute_ssh_key_checksum(self.token.serial, key_type, sshkey, key_comment))
         self.token.save()
 

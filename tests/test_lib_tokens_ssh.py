@@ -334,3 +334,40 @@ class SSHTokenTestCase(MyTestCase):
         self.assertNotEqual(checksum_1, checksum_2)
         # It is also stable (idempotent) for the same input.
         self.assertEqual(checksum_1, compute_ssh_key_checksum("SSHBOUND", "ssh-rsa", "AAA", "X\nY"))
+
+    def test_10_a_token_without_a_key_gets_no_checksum(self):
+        token = init_token({"type": "sshkey", "serial": "SSHEMPTY", "sshkey": self.sshkey})
+        checksum = token.token.get_otpkey().getKey()
+
+        # Removing the public key must not store a checksum over the empty key
+        # data, otherwise a key-less token would pass its own integrity check.
+        token.delete_tokeninfo("ssh_key")
+        self.assertEqual(checksum, token.token.get_otpkey().getKey())
+        self.assertRaises(TokenAdminError, token.get_sshkey)
+
+        # An import without any SSH key data gets no checksum either
+        imported = init_token({"type": "sshkey", "serial": "SSHEMPTY2", "sshkey": self.sshkey})
+        imported.delete_tokeninfo()
+        imported.token.key_enc = None
+        imported.token.key_iv = None
+        imported.token.save()
+        imported.import_token({"description": "no key data"})
+        self.assertRaises(TokenAdminError, imported.get_sshkey)
+
+        token.delete_token()
+        imported.delete_token()
+
+    def test_11_the_public_key_is_always_stored_encrypted(self):
+        token = init_token({"type": "sshkey", "serial": "SSHENC", "sshkey": self.sshkey})
+        key_part = self.sshkey.split()[1]
+
+        # Callers such as the generic settokeninfo endpoint do not pass a value
+        # type. The token class enforces it, so the key stays encrypted at rest
+        # and is still read back in clear text.
+        token.add_tokeninfo("ssh_key", key_part)
+        info = token.get_tokeninfo()
+        self.assertEqual("password", info.get("ssh_key.type"))
+        self.assertNotEqual(key_part, info.get("ssh_key"))
+        self.assertEqual(self.sshkey, token.get_sshkey())
+
+        token.delete_token()

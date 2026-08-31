@@ -39,6 +39,10 @@ endpoint ``GET /token/sshkey/<serial>``. Access is guarded by the policy
 action ``sshkey_read`` in the scopes ``admin`` and ``user``. A user may only
 read the SSH key of their own tokens.
 
+Only active tokens hand out their key. Disabling or revoking an SSH key token
+stops the key from being read here, just like it stops the key from appearing
+in the authorized keys of a machine.
+
 Integrity protection
 ~~~~~~~~~~~~~~~~~~~~~~
 
@@ -52,10 +56,20 @@ manipulation of the database entries - e.g. a database administrator
 replacing the public key to gain access to SSH servers - is detected and the
 SSH key is not handed out.
 
+The checksum covers the SSH key data wherever it is written, including the
+generic ``POST /token/info/<serial>/<key>`` endpoint. Changing the key type or
+the comment of an SSH key token that way keeps the checksum in sync, and the
+public key is kept encrypted even though that endpoint takes no value type.
+
 .. note:: SSH key tokens enrolled with privacyIDEA versions before 3.14 get
    their checksum computed by the database migration during the update. If
    the checksum is missing (e.g. the migration was not run), the token will
    refuse to hand out the SSH key.
+
+.. note:: A token whose checksum is present but unreadable is reported as
+   possibly corrupted rather than as unmigrated - rerunning the migration
+   would not repair it. Such a token, and one that lost its public key, keeps
+   refusing to hand out the SSH key until it is re-enrolled.
 
 .. _sshkey_allowed_key_types:
 
