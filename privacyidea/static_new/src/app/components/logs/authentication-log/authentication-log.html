@@ -224,14 +224,14 @@
                           mat-menu-item>
                           <span i18n>Action</span>
                         </button>
-                        @if (canReadLockoutPolicies()) {
+                        @if (canReadConditionalAccessPolicies()) {
                           <button
                             [matMenuTriggerFor]="outcomePolicyMenu.matMenu"
                             mat-menu-item>
                             <span i18n>Policy</span>
                           </button>
                         } @else {
-                          <!-- Without lockout_policy_read there is no list to offer, so the key goes into the main
+                          <!-- Without conditional_access_policy_read there is no list to offer, so the key goes into the main
                                filter input for the admin to type a name into. -->
                           <button
                             (click)="onAddCustomFilter('ca_policy_name')"

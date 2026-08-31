@@ -17,22 +17,22 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 """
 Unit tests for the conditional-access state management layer
-(:mod:`privacyidea.lib.conditional_access.lockout_state`): listing and clearing
-the live user-lockout state and blocklist entries.
+(:mod:`privacyidea.lib.conditional_access.state`): listing and clearing
+the live user-lock state and blocklist entries.
 """
 from datetime import timedelta
 
 from privacyidea.lib.conditional_access.authentication_log import AuthenticationLogVisibilityScope
 from privacyidea.lib.error import ParameterError
-from privacyidea.lib.conditional_access.lockout_state import (
+from privacyidea.lib.conditional_access.state import (
     block_ip,
-    get_user_lockout_dict,
+    get_user_lock_dict,
     lock_user,
     list_blocklist,
     list_locked_users,
     list_locked_users_paginate,
     purge_expired_blocklist,
-    purge_expired_user_lockouts,
+    purge_expired_user_locks,
     remove_blocklist_entry,
     unlock_user_by_id,
     user_matches_scopes, unlock_user_by_username,
@@ -40,19 +40,19 @@ from privacyidea.lib.conditional_access.lockout_state import (
 from privacyidea.lib.user import User
 from privacyidea.models import db
 from privacyidea.models.authentication_log import AuthenticationLog
-from privacyidea.models.lockout_policy import (
+from privacyidea.models.conditional_access_policy import (
     BlockList,
-    LockoutPolicy,
-    LockoutPolicyCounterType,
-    LockoutPolicyStage,
-    LockoutStageAction,
-    UserLockoutState,
+    ConditionalAccessPolicy,
+    ConditionalAccessPolicyCounterType,
+    ConditionalAccessPolicyStage,
+    ConditionalAccessStageAction,
+    UserLockState,
 )
 from privacyidea.models.utils import utc_now
 from .base import MyTestCase
 
 
-class LockoutStateTestCase(MyTestCase):
+class UserLockStateTestCase(MyTestCase):
 
     def setUp(self):
         self.setUp_user_realms()
@@ -67,14 +67,14 @@ class LockoutStateTestCase(MyTestCase):
 
     @staticmethod
     def _clear():
-        for model in (UserLockoutState, BlockList, LockoutStageAction, LockoutPolicyStage,
-                      LockoutPolicyCounterType, LockoutPolicy, AuthenticationLog):
+        for model in (UserLockState, BlockList, ConditionalAccessStageAction, ConditionalAccessPolicyStage,
+                      ConditionalAccessPolicyCounterType, ConditionalAccessPolicy, AuthenticationLog):
             db.session.query(model).delete()
         db.session.commit()
 
     def _lock(self, lock_expires_at, user=None, resolver=None, uid=None, realm=None, username=None):
         user = user or self.user
-        db.session.add(UserLockoutState(
+        db.session.add(UserLockState(
             resolver=resolver if resolver is not None else user.resolver,
             uid=uid if uid is not None else user.uid,
             realm=realm if realm is not None else user.realm,
@@ -94,7 +94,7 @@ class LockoutStateTestCase(MyTestCase):
         lock = lock_user(self.user)
         self.assertTrue(lock["permanent"])
         self.assertEqual("MANUAL", lock["lock_cause"])
-        row = db.session.query(UserLockoutState).one()
+        row = db.session.query(UserLockState).one()
         self.assertIsNone(row.lock_expires_at)
         self.assertEqual("MANUAL", row.lock_cause)
         self.assertEqual(self.user.login, row.username)
@@ -107,7 +107,7 @@ class LockoutStateTestCase(MyTestCase):
     def test_lock_user_rejects_a_non_positive_duration(self):
         for duration in (0, -1, True, "600"):
             self.assertRaises(ParameterError, lock_user, self.user, duration)
-        self.assertEqual(0, db.session.query(UserLockoutState).count())
+        self.assertEqual(0, db.session.query(UserLockState).count())
 
     def test_lock_user_rejects_an_unresolved_user(self):
         # The row is keyed on (resolver, uid, realm), so a user that does not resolve has no key.
@@ -117,18 +117,18 @@ class LockoutStateTestCase(MyTestCase):
         # The engine refuses to downgrade a permanent lock so that the order two policies happen to fire in
         # cannot decide the outcome. An admin stating the outcome is not a race, so the write stands.
         lock_user(self.user)
-        self.assertTrue(get_user_lockout_dict(self.user)["permanent"])
+        self.assertTrue(get_user_lock_dict(self.user)["permanent"])
         # A permanent lock is replaced by a timed one, which the engine's upsert would decline as a weakening.
         lock_user(self.user, duration_seconds=60)
-        self.assertFalse(get_user_lockout_dict(self.user)["permanent"])
+        self.assertFalse(get_user_lock_dict(self.user)["permanent"])
         lock_user(self.user)
-        self.assertTrue(get_user_lockout_dict(self.user)["permanent"])
+        self.assertTrue(get_user_lock_dict(self.user)["permanent"])
 
     def test_lock_user_replaces_a_policy_lock_and_its_cause(self):
         self._lock(utc_now() + timedelta(seconds=3600))
-        self.assertEqual("POLICY", db.session.query(UserLockoutState).one().lock_cause)
+        self.assertEqual("POLICY", db.session.query(UserLockState).one().lock_cause)
         lock_user(self.user, duration_seconds=60)
-        self.assertEqual("MANUAL", db.session.query(UserLockoutState).one().lock_cause)
+        self.assertEqual("MANUAL", db.session.query(UserLockState).one().lock_cause)
 
     def test_block_ip_writes_a_manual_block(self):
         entry = block_ip("203.0.113.9", duration_seconds=300)
@@ -342,22 +342,22 @@ class LockoutStateTestCase(MyTestCase):
             self.user, [AuthenticationLogVisibilityScope(realms=[], resolvers=[], usernames=["CORNELIUS"],
                                                          username_case_insensitive=True)]))
 
-    # --- get_user_lockout_dict ------------------------------------------------
+    # --- get_user_lock_dict ------------------------------------------------
 
-    def test_get_user_lockout_dict_none_when_not_locked(self):
-        self.assertIsNone(get_user_lockout_dict(self.user))
+    def test_get_user_lock_dict_none_when_not_locked(self):
+        self.assertIsNone(get_user_lock_dict(self.user))
 
-    def test_get_user_lockout_dict_returns_status(self):
+    def test_get_user_lock_dict_returns_status(self):
         self._lock(utc_now() + timedelta(seconds=600))
-        entry = get_user_lockout_dict(self.user)
+        entry = get_user_lock_dict(self.user)
         self.assertIsNotNone(entry)
         self.assertEqual("cornelius", entry["username"])
         self.assertFalse(entry["permanent"])
         self.assertGreater(entry["seconds_remaining"], 0)
 
-    def test_get_user_lockout_dict_none_when_expired(self):
+    def test_get_user_lock_dict_none_when_expired(self):
         self._lock(utc_now() - timedelta(seconds=60))
-        self.assertIsNone(get_user_lockout_dict(self.user))
+        self.assertIsNone(get_user_lock_dict(self.user))
 
     # --- unlock ---------------------------------------------------------------
 
@@ -365,7 +365,7 @@ class LockoutStateTestCase(MyTestCase):
         self._lock(utc_now() + timedelta(seconds=600))
         self.assertTrue(unlock_user_by_id(self.user.uid, self.user.realm, self.user.resolver))
         self.assertIsNone(db.session.get(
-            UserLockoutState, (self.user.resolver, self.user.uid, self.user.realm)))
+            UserLockState, (self.user.resolver, self.user.uid, self.user.realm)))
         # A second reset finds nothing to remove.
         self.assertFalse(unlock_user_by_id(self.user.uid, self.user.realm, self.user.resolver))
 
@@ -386,10 +386,10 @@ class LockoutStateTestCase(MyTestCase):
                    realm="collide", username="bob")
         # Targeted: only resoA's lock goes.
         self.assertTrue(unlock_user_by_id("1001", "collide", "resoA"))
-        self.assertIsNotNone(db.session.get(UserLockoutState, ("resoB", "1001", "collide")))
+        self.assertIsNotNone(db.session.get(UserLockState, ("resoB", "1001", "collide")))
         # Untargeted: the remaining collision (resoB) is cleared too.
         self.assertTrue(unlock_user_by_id("1001", "collide"))
-        self.assertIsNone(db.session.get(UserLockoutState, ("resoB", "1001", "collide")))
+        self.assertIsNone(db.session.get(UserLockState, ("resoB", "1001", "collide")))
 
     def test_unlock_user_by_username(self):
         self._lock(utc_now() + timedelta(seconds=600))
@@ -442,13 +442,13 @@ class LockoutStateTestCase(MyTestCase):
 
     # --- purge expired --------------------------------------------------------
 
-    def test_purge_expired_user_lockouts(self):
+    def test_purge_expired_user_locks(self):
         self._lock(utc_now() - timedelta(seconds=60))                       # expired -> purged
         self._lock(utc_now() + timedelta(seconds=600),
                    resolver="r", uid="2", realm="realm2")                   # active -> kept
         self._lock(None, resolver="r", uid="3", realm="realm3")            # permanent -> kept
-        self.assertEqual(1, purge_expired_user_lockouts())
-        self.assertEqual(2, UserLockoutState.query.count())
+        self.assertEqual(1, purge_expired_user_locks())
+        self.assertEqual(2, UserLockState.query.count())
 
     def test_purge_expired_blocklist(self):
         self._block("203.0.113.1", utc_now() - timedelta(seconds=60))       # expired -> purged

@@ -46,7 +46,7 @@ import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import {
   ConditionalAccessPolicyService,
   ConditionalAccessPolicyServiceInterface,
-  LockoutPolicy
+  ConditionalAccessPolicy
 } from "@services/conditional-access/conditional-access-policy.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
@@ -94,7 +94,7 @@ export class ConditionalAccessComponent implements OnDestroy {
   totalLength = computed(() => this.policyService.policies().length);
 
   // Rows selected via the checkbox column; the "Delete Selected" table action acts on these.
-  policySelection = signal<LockoutPolicy[]>([]);
+  policySelection = signal<ConditionalAccessPolicy[]>([]);
 
   priorityReorderHint = $localize`Move policies with the arrows in the Priority column to change the order they are evaluated in. Priorities are only relevant for the actions DENY and ALLOW.`;
   priorityReorderHintAriaLabel = $localize`About rearranging priorities`;
@@ -121,7 +121,7 @@ export class ConditionalAccessComponent implements OnDestroy {
     const dataSource = new MatTableDataSource(policies);
     dataSource.paginator = this.paginator;
     dataSource.sort = this.sort;
-    dataSource.filterPredicate = (policy: LockoutPolicy, filter: string) =>
+    dataSource.filterPredicate = (policy: ConditionalAccessPolicy, filter: string) =>
       policy.name.toLowerCase().includes(filter) ||
       policy.counter_types_to_track.some((type) => type.toLowerCase().includes(filter));
     return dataSource;
@@ -133,9 +133,9 @@ export class ConditionalAccessComponent implements OnDestroy {
   // above" would not be the next-higher-precedence policy), moves are staged locally and
   // nothing is written until Save. Cancel simply drops the draft.
   reorderMode = signal(false);
-  private readonly draftOrder = signal<LockoutPolicy[]>([]);
+  private readonly draftOrder = signal<ConditionalAccessPolicy[]>([]);
   // The order as it stood when the mode was entered; see startReorder/movedRows.
-  private readonly baselineOrder = signal<LockoutPolicy[]>([]);
+  private readonly baselineOrder = signal<ConditionalAccessPolicy[]>([]);
   reorderSaving = signal(false);
   // Set when a save is rejected: the draft is stale and must be replaced by the reloaded
   // order as soon as it arrives (see the effect in the constructor).
@@ -265,28 +265,28 @@ export class ConditionalAccessComponent implements OnDestroy {
     }
   }
 
-  canMoveUp(policy: LockoutPolicy): boolean {
+  canMoveUp(policy: ConditionalAccessPolicy): boolean {
     return this.draftIndex(policy) > 0;
   }
 
-  canMoveDown(policy: LockoutPolicy): boolean {
+  canMoveDown(policy: ConditionalAccessPolicy): boolean {
     const index = this.draftIndex(policy);
     return index >= 0 && index < this.draftOrder().length - 1;
   }
 
-  moveUpLabel(policy: LockoutPolicy): string {
+  moveUpLabel(policy: ConditionalAccessPolicy): string {
     return $localize`Move ${policy.name} up, so it is evaluated earlier`;
   }
 
-  moveDownLabel(policy: LockoutPolicy): string {
+  moveDownLabel(policy: ConditionalAccessPolicy): string {
     return $localize`Move ${policy.name} down, so it is evaluated later`;
   }
 
-  moveUp(policy: LockoutPolicy): void {
+  moveUp(policy: ConditionalAccessPolicy): void {
     this.swapDraft(this.draftIndex(policy), -1);
   }
 
-  moveDown(policy: LockoutPolicy): void {
+  moveDown(policy: ConditionalAccessPolicy): void {
     this.swapDraft(this.draftIndex(policy), 1);
   }
 
@@ -295,7 +295,7 @@ export class ConditionalAccessComponent implements OnDestroy {
   // and the table is re-rendered without moving focus, so nothing a screen reader tracks
   // changes when a move succeeds. Without this announcement a non-sighted admin pressing
   // "Move X up" gets no confirmation that anything happened, nor where the policy landed.
-  private announceMove(policy: LockoutPolicy): void {
+  private announceMove(policy: ConditionalAccessPolicy): void {
     const position = this.draftIndex(policy) + 1;
     const total = this.draftOrder().length;
     this.liveAnnouncer.announce($localize`${policy.name} moved to position ${position} of ${total}`);
@@ -303,7 +303,7 @@ export class ConditionalAccessComponent implements OnDestroy {
 
   // The priority shown per row while reordering: the draft position takes the priority
   // value that position already holds, so the admin sees the numbers the save will write.
-  draftPriority(policy: LockoutPolicy): number {
+  draftPriority(policy: ConditionalAccessPolicy): number {
     const index = this.draftIndex(policy);
     const values = this.draftOrder()
       .map((candidate) => candidate.priority)
@@ -324,15 +324,15 @@ export class ConditionalAccessComponent implements OnDestroy {
     this.announceMove(draft[target]);
   }
 
-  private draftIndex(policy: LockoutPolicy): number {
+  private draftIndex(policy: ConditionalAccessPolicy): number {
     return this.draftOrder().findIndex((candidate) => candidate.id === policy.id);
   }
 
-  thresholdDisplay(policy: LockoutPolicy): string {
+  thresholdDisplay(policy: ConditionalAccessPolicy): string {
     return policy.stages.map((stage) => stage.failure_threshold).join(", ");
   }
 
-  actionsDisplay(policy: LockoutPolicy): string {
+  actionsDisplay(policy: ConditionalAccessPolicy): string {
     return policy.stages.flatMap((stage) => stage.actions.map((action) => action.action_type)).join(", ");
   }
 
@@ -340,7 +340,7 @@ export class ConditionalAccessComponent implements OnDestroy {
   // flagged here rather than given a column of its own: the table is already wide, and what the admin
   // needs from the list is only whether a policy needs attention. The condition has silently stopped
   // doing what it was written to do, and the backend will refuse to save the policy until it is fixed.
-  hasStaleConditions(policy: LockoutPolicy): boolean {
+  hasStaleConditions(policy: ConditionalAccessPolicy): boolean {
     return this.policyService.staleConditionValues(policy.conditions).length > 0;
   }
 
@@ -359,7 +359,7 @@ export class ConditionalAccessComponent implements OnDestroy {
     }
   }
 
-  toggleRow(policy: LockoutPolicy): void {
+  toggleRow(policy: ConditionalAccessPolicy): void {
     const current = this.policySelection();
     if (current.includes(policy)) {
       this.policySelection.set(current.filter((row) => row !== policy));
@@ -368,7 +368,7 @@ export class ConditionalAccessComponent implements OnDestroy {
     }
   }
 
-  isSelected(policy: LockoutPolicy): boolean {
+  isSelected(policy: ConditionalAccessPolicy): boolean {
     return this.policySelection().includes(policy);
   }
 
@@ -459,11 +459,11 @@ export class ConditionalAccessComponent implements OnDestroy {
     this.router.navigateByUrl(ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS_NEW);
   }
 
-  onEditPolicy(policy: LockoutPolicy): void {
+  onEditPolicy(policy: ConditionalAccessPolicy): void {
     this.router.navigateByUrl(ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS_DETAILS + policy.id);
   }
 
-  onToggleEnabled(policy: LockoutPolicy): void {
+  onToggleEnabled(policy: ConditionalAccessPolicy): void {
     if (policy.enabled) {
       this.policyService.disablePolicy(policy.id);
     } else {
@@ -471,7 +471,7 @@ export class ConditionalAccessComponent implements OnDestroy {
     }
   }
 
-  onToggleDryRun(policy: LockoutPolicy): void {
+  onToggleDryRun(policy: ConditionalAccessPolicy): void {
     this.policyService.setDryRun(policy.id, !policy.dry_run);
   }
 

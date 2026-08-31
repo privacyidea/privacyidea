@@ -187,11 +187,10 @@ against the channel row's total. Reads ``GET
 Conditional access
 ~~~~~~~~~~~~~~~~~~
 
-.. index:: conditional access, dashboard metrics, lockout, blocklist
+.. index:: conditional access, dashboard metrics, user lock, blocklist
 
 The *Conditional Access* panel summarises what the conditional-access
-lockout policies are configured to do and what they are currently
-enforcing:
+policies are configured to do and what they are currently enforcing:
 
 * **Enforcing policies** - enabled policies whose actions actually run.
   Policies in dry-run mode are counted separately, since they only record
@@ -218,11 +217,11 @@ enforcing:
   (those outside the range, and any beyond the 100 lock records read).
 
 Every row links to the page it summarises. The three areas are governed
-by separate rights (``lockout_policy_read``, ``user_lockout_read``,
+by separate rights (``conditional_access_policy_read``, ``user_lock_read``,
 ``blocklist_read``); the panel shows only the areas an administrator may
 read and is offered as soon as any one of the three is granted. It reads
 the regular endpoints
-``GET /conditionalaccess/policy``, ``GET /conditionalaccess/lockout/users``
+``GET /conditionalaccess/policy``, ``GET /conditionalaccess/lock/users``
 (once per lock state, for the counts only) and
 ``GET /conditionalaccess/blocklist``.
 
@@ -251,7 +250,7 @@ itself. A never-block IP address (loopback, or one covered by
 ``CONDITIONAL_ACCESS_NEVER_BLOCK``) is refused with an explanation rather than
 silently skipped.
 
-The two actions are governed by their own rights, ``user_lockout_set`` and
+The two actions are governed by their own rights, ``user_lock_set`` and
 ``blocklist_set``, kept separate from the ``*_reset`` rights because clearing
 a restriction is recoverable and imposing one is not. ``pi-manage
 conditionalaccess lock-user`` and ``pi-manage conditionalaccess block-ip`` do

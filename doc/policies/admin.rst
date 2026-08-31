@@ -1400,10 +1400,10 @@ single user. Realm-scoped admins can only revoke within their allowed realms.
 
 .. versionadded:: 3.14
 
-.. _policy_lockout_policy_read:
+.. _policy_conditional_access_policy_read:
 
-lockout_policy_read
-~~~~~~~~~~~~~~~~~~~~
+conditional_access_policy_read
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 type: ``bool``
 
@@ -1413,10 +1413,10 @@ targets) and the shipped policy templates.
 
 .. versionadded:: 3.14
 
-.. _policy_lockout_policy_write:
+.. _policy_conditional_access_policy_write:
 
-lockout_policy_write
-~~~~~~~~~~~~~~~~~~~~~
+conditional_access_policy_write
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 type: ``bool``
 
@@ -1425,23 +1425,22 @@ conditional-access policies.
 
 .. versionadded:: 3.14
 
-.. _policy_user_lockout_read:
+.. _policy_user_lock_read:
 
-user_lockout_read
-~~~~~~~~~~~~~~~~~~
+user_lock_read
+~~~~~~~~~~~~~~~
 
 type: ``bool``
 
 The administrator is allowed to see which users are currently locked by
-conditional access. The list is constrained to the realms, resolvers and users
-the policy granting this right is scoped to.
+conditional access.
 
 .. versionadded:: 3.14
 
-.. _policy_user_lockout_reset:
+.. _policy_user_lock_reset:
 
-user_lockout_reset
-~~~~~~~~~~~~~~~~~~~
+user_lock_reset
+~~~~~~~~~~~~~~~~
 
 type: ``bool``
 
@@ -1450,10 +1449,10 @@ records of locks that have already expired.
 
 .. versionadded:: 3.14
 
-.. _policy_user_lockout_set:
+.. _policy_user_lock_set:
 
-user_lockout_set
-~~~~~~~~~~~~~~~~~
+user_lock_set
+~~~~~~~~~~~~~
 
 type: ``bool``
 
@@ -1461,7 +1460,7 @@ The administrator is allowed to lock a user by hand, independently of the
 conditional-access policies - permanently, or for a chosen duration. The lock is
 recorded with the cause *Manual* and is enforced exactly like a policy lock.
 
-Kept separate from :ref:`policy_user_lockout_reset` because clearing a
+Kept separate from :ref:`policy_user_lock_reset` because clearing a
 restriction is recoverable and imposing one is not. The target user must lie
 within the scope of the policy granting the right.
 
@@ -1488,18 +1487,5 @@ type: ``bool``
 
 The administrator is allowed to unblock a blocked IP and to purge the stale
 records of blocks that have already expired.
-
-.. versionadded:: 3.14
-
-.. _policy_blocklist_set:
-
-blocklist_set
-~~~~~~~~~~~~~~
-
-type: ``bool``
-
-The administrator is allowed to add a source IP to the conditional-access
-blocklist by hand - permanently, or for a chosen duration. A never-block address
-(loopback, or one covered by ``CONDITIONAL_ACCESS_NEVER_BLOCK``) is refused.
 
 .. versionadded:: 3.14

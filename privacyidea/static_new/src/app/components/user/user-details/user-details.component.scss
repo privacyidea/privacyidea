@@ -127,7 +127,7 @@
 // Status, cause and buttons sit on one line rather than stacked, so the card stays as tall as a
 // single row of buttons. It wraps because two m-width buttons plus the status text outgrow a
 // narrow user-info card.
-.user-lockout-row {
+.user-lock-row {
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
@@ -136,13 +136,13 @@
   margin-left: 16px;
 }
 
-.user-lockout-actions {
+.user-lock-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
 
-.user-lockout-cause {
+.user-lock-cause {
   margin: 0;
   color: var(--mat-sys-on-surface-variant);
   font-size: var(--mat-sys-body-small-size, 0.75rem);

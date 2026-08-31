@@ -670,6 +670,20 @@ class SQLResolverTestCase(MyTestCase):
         self.assertEqual("fred@artists.com", user_info.get("email"))
         self.assertEqual(2, user_info.get("id"))
 
+    def test_10a_get_user_info_error_handling(self):
+        resolver = SQLResolver()
+        resolver.loadConfig(self.parameters)
+
+        # A user ID the userid column can not hold is not an error, just an empty result --
+        # same as get_user_info_batch
+        self.assertDictEqual({}, resolver.get_user_info("not-a-number"))
+
+        # A DB error must propagate rather than being logged and swallowed: getUsername()
+        # relies on it to tell "the user does not exist" (an empty result) apart from "the
+        # backend could not be reached" (an exception).
+        with mock.patch.object(resolver.session, "execute", side_effect=Exception("the database is not reachable")):
+            self.assertRaises(Exception, resolver.get_user_info, "1")
+
     def test_11_getUserList(self):
         resolver = SQLResolver()
         resolver.loadConfig(self.parameters)
@@ -754,6 +768,17 @@ class SQLResolverTestCase(MyTestCase):
         self.assertEqual(1, mock_execute.call_count)
         self.assertDictEqual({"1": "user1", "3": "cornelius", "4242": ""}, login_map)
         self.assertEqual(resolver.getUsername("3"), login_map["3"], login_map)
+
+    def test_13a_get_user_info_batch_propagates_a_db_error(self):
+        resolver = SQLResolver()
+        resolver.loadConfig(self.parameters)
+
+        # A DB error while fetching a chunk must not be logged and swallowed: the caller
+        # (_resolve_owner_logins) relies on the batch call raising to fall back to a one-by-one
+        # lookup that marks only the users which keep failing, instead of every user in the chunk
+        # silently coming back as if they did not exist.
+        with mock.patch.object(resolver.session, "execute", side_effect=Exception("the database is not reachable")):
+            self.assertRaises(Exception, resolver.get_user_info_batch, ["1", "2"], attributes=["username"])
 
     def test_99_testconnection_fail(self):
         resolver = SQLResolver()
@@ -3106,6 +3131,25 @@ class LDAPResolverTestCase(MyTestCase):
             user_info_map = resolver.get_user_info_batch(["ALICE"], attributes=["username"])
 
         self.assertSetEqual({"ALICE"}, set(user_info_map.keys()), user_info_map)
+        self.assertEqual("alice", user_info_map["ALICE"]["username"], user_info_map)
+
+    @ldap3mock.activate
+    def test_50b_get_user_info_batch_resolves_every_case_variant_alias(self):
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
+        resolver = self._get_batch_resolver(uidtype="cn")
+        alice = [entry for entry in LDAPDirectory if entry["attributes"]["cn"] == "alice"][0]
+
+        def answering_search(self, search_base, search_filter, attributes):
+            # Two different logins that only differ in case (e.g. two TokenOwner rows recorded
+            # under different aliases of the same account, see has_multiple_loginnames) both match
+            # this one entry on a server whose uid attribute compares case-insensitively.
+            return [{"dn": alice["dn"], "attributes": alice["attributes"]}]
+
+        with mock.patch.object(LDAPResolver, "_search", answering_search):
+            user_info_map = resolver.get_user_info_batch(["Alice", "ALICE"], attributes=["username"])
+
+        self.assertSetEqual({"Alice", "ALICE"}, set(user_info_map.keys()), user_info_map)
+        self.assertEqual("alice", user_info_map["Alice"]["username"], user_info_map)
         self.assertEqual("alice", user_info_map["ALICE"]["username"], user_info_map)
 
     @ldap3mock.activate

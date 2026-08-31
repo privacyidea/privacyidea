@@ -17,29 +17,8 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <app-dialog-wrapper
-  title="Container Successfully Created"
-  i18n-title
-  [actions]="dialogActions()"
-  [showCloseButton]="false"
-  (actionTriggered)="onDialogAction($event)">
-  <div class="progress-header">
-    <span
-      class="progress-label"
-      i18n>
-      Token {{ currentIndex() + 1 }} / {{ total() }}
-    </span>
-    <span class="token-type">{{ currentToken().type | titlecase }}</span>
-  </div>
-  <mat-progress-bar
-    [value]="progress()"
-    mode="determinate"
-    class="progress-bar" />
-  <div class="enrollment-data">
-    <p i18n>
-      Token <strong>{{ currentToken().serial }}</strong> successfully enrolled.
-    </p>
-    <app-token-enrollment-data
-      [enrolledInputData]="currentToken()"
-      [tokenType]="currentToken().type" />
-  </div>
+  (actionTriggered)="onAction($event)"
+  [actions]="actions"
+  [title]="data.title">
+  <p class="max-width-600">{{ data.message }}</p>
 </app-dialog-wrapper>

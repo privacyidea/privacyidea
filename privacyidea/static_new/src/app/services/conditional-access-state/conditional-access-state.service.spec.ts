@@ -43,7 +43,7 @@ const BASE = "/api/conditionalaccess/";
 const emptyLockedUsersPage = () =>
   MockPiResponse.fromValue<LockedUsersPage>({ locked_users: [], count: 0, current: 1, prev: null, next: null });
 
-const lockoutStatus = (): LockedUserEntry => ({
+const lockStatus = (): LockedUserEntry => ({
   resolver: "reso1",
   uid: "uid-1",
   realm: "realm1",
@@ -143,23 +143,23 @@ describe("ConditionalAccessStateService", () => {
     expect(service.lockedUsersPageIndex()).toBe(1);
   });
 
-  // --- userLockoutResource / userLockoutStatus ---
+  // --- userLockResource / userLockStatus ---
 
-  it("loads the user lockout status on the user-details route, including the resolver when set", async () => {
+  it("loads the user lock status on the user-details route, including the resolver when set", async () => {
     userService.user.set({ ...userService.user(), resolver: "reso1" });
     onUserDetailsRoute();
     TestBed.tick();
 
-    const req = httpMock.expectOne((r) => r.url === BASE + "lockout/user");
+    const req = httpMock.expectOne((r) => r.url === BASE + "lock/user");
     expect(req.request.method).toBe("GET");
     expect(req.request.params.get("user")).toBe("alice");
     expect(req.request.params.get("realm")).toBe("realm1");
     expect(req.request.params.get("resolver")).toBe("reso1");
 
-    req.flush(MockPiResponse.fromValue(lockoutStatus()));
+    req.flush(MockPiResponse.fromValue(lockStatus()));
     await Promise.resolve();
     TestBed.tick();
-    expect(service.userLockoutStatus()?.username).toBe("alice");
+    expect(service.userLockStatus()?.username).toBe("alice");
   });
 
   it("omits the resolver param when the user has none", () => {
@@ -167,44 +167,44 @@ describe("ConditionalAccessStateService", () => {
     onUserDetailsRoute();
     TestBed.tick();
 
-    const req = httpMock.expectOne((r) => r.url === BASE + "lockout/user");
+    const req = httpMock.expectOne((r) => r.url === BASE + "lock/user");
     expect(req.request.params.has("resolver")).toBe(false);
     req.flush(MockPiResponse.fromValue<LockedUserEntry | null>(null));
   });
 
-  it("userLockoutStatus is null when the user is not locked (value null)", async () => {
+  it("userLockStatus is null when the user is not locked (value null)", async () => {
     onUserDetailsRoute();
     TestBed.tick();
-    const req = httpMock.expectOne((r) => r.url === BASE + "lockout/user");
+    const req = httpMock.expectOne((r) => r.url === BASE + "lock/user");
     req.flush(MockPiResponse.fromValue<LockedUserEntry | null>(null));
     await Promise.resolve();
     TestBed.tick();
-    expect(service.userLockoutStatus()).toBeNull();
+    expect(service.userLockStatus()).toBeNull();
   });
 
-  it("userLockoutStatus is null before the resource has a value", () => {
-    expect(service.userLockoutStatus()).toBeNull();
+  it("userLockStatus is null before the resource has a value", () => {
+    expect(service.userLockStatus()).toBeNull();
   });
 
-  it("does not load the user lockout without the username/realm", () => {
+  it("does not load the user lock without the username/realm", () => {
     content.detailsUser.set({ username: "", realm: "" });
     content.routeUrl.set(ROUTE_PATHS.USERS_DETAILS + "/alice");
     TestBed.tick();
-    httpMock.expectNone((r) => r.url === BASE + "lockout/user");
+    httpMock.expectNone((r) => r.url === BASE + "lock/user");
   });
 
-  it("does not load the user lockout off the user-details route", () => {
+  it("does not load the user lock off the user-details route", () => {
     content.detailsUser.set({ username: "alice", realm: "realm1" });
     content.routeUrl.set(ROUTE_PATHS.TOKENS);
     TestBed.tick();
-    httpMock.expectNone((r) => r.url === BASE + "lockout/user");
+    httpMock.expectNone((r) => r.url === BASE + "lock/user");
   });
 
-  it("does not load the user lockout without the read right", () => {
+  it("does not load the user lock without the read right", () => {
     (authService.actionAllowed as jest.Mock).mockReturnValue(false);
     onUserDetailsRoute();
     TestBed.tick();
-    httpMock.expectNone((r) => r.url === BASE + "lockout/user");
+    httpMock.expectNone((r) => r.url === BASE + "lock/user");
   });
 
   // --- lockedUsersResource ---
@@ -214,7 +214,7 @@ describe("ConditionalAccessStateService", () => {
     content.routeUrl.set(ROUTE_PATHS.LOCKED_USERS);
     TestBed.tick();
 
-    const req = httpMock.expectOne((r) => r.url === BASE + "lockout/users");
+    const req = httpMock.expectOne((r) => r.url === BASE + "lock/users");
     expect(req.request.method).toBe("GET");
     expect(req.request.params.get("page")).toBe("1");
     expect(req.request.params.get("page_size")).toBe("15");
@@ -229,7 +229,7 @@ describe("ConditionalAccessStateService", () => {
     service.lockedUsersSort.set({ active: "username", direction: "" });
     content.routeUrl.set(ROUTE_PATHS.LOCKED_USERS);
     TestBed.tick();
-    const req = httpMock.expectOne((r) => r.url === BASE + "lockout/users");
+    const req = httpMock.expectOne((r) => r.url === BASE + "lock/users");
     expect(req.request.params.get("sort_column")).toBe("username");
     expect(req.request.params.get("sort_order")).toBe("desc");
     req.flush(emptyLockedUsersPage());
@@ -239,61 +239,61 @@ describe("ConditionalAccessStateService", () => {
     content.routeUrl.set(ROUTE_PATHS.LOCKED_USERS);
     (authService.actionAllowed as jest.Mock).mockReturnValue(false);
     TestBed.tick();
-    httpMock.expectNone((r) => r.url === BASE + "lockout/users");
+    httpMock.expectNone((r) => r.url === BASE + "lock/users");
   });
 
-  // --- resetUserLockout ---
+  // --- resetUserLock ---
 
-  it("resetUserLockout by uid sends a user_id payload and maps the value", () => {
+  it("resetUserLock by uid sends a user_id payload and maps the value", () => {
     let result: boolean | undefined;
-    service.resetUserLockout({ uid: "uid-1", realm: "realm1", resolver: "reso1" }).subscribe((v) => (result = v));
-    const req = httpMock.expectOne((r) => r.url === BASE + "lockout/user" && r.method === "DELETE");
+    service.resetUserLock({ uid: "uid-1", realm: "realm1", resolver: "reso1" }).subscribe((v) => (result = v));
+    const req = httpMock.expectOne((r) => r.url === BASE + "lock/user" && r.method === "DELETE");
     expect(req.request.body).toEqual({ user_id: "uid-1", realm: "realm1", resolver: "reso1" });
     req.flush(MockPiResponse.fromValue(true));
     expect(result).toBe(true);
   });
 
-  it("resetUserLockout by login sends a user payload", () => {
+  it("resetUserLock by login sends a user payload", () => {
     let result: boolean | undefined;
-    service.resetUserLockout({ login: "alice", realm: "realm1", resolver: "reso1" }).subscribe((v) => (result = v));
-    const req = httpMock.expectOne((r) => r.url === BASE + "lockout/user" && r.method === "DELETE");
+    service.resetUserLock({ login: "alice", realm: "realm1", resolver: "reso1" }).subscribe((v) => (result = v));
+    const req = httpMock.expectOne((r) => r.url === BASE + "lock/user" && r.method === "DELETE");
     expect(req.request.body).toEqual({ user: "alice", realm: "realm1", resolver: "reso1" });
     req.flush(MockPiResponse.fromValue(false));
     expect(result).toBe(false);
   });
 
-  it("resetUserLockout returns false and notifies on error", () => {
+  it("resetUserLock returns false and notifies on error", () => {
     let result: boolean | undefined;
-    service.resetUserLockout({ uid: "uid-1", realm: "realm1", resolver: "reso1" }).subscribe((v) => (result = v));
-    const req = httpMock.expectOne((r) => r.url === BASE + "lockout/user" && r.method === "DELETE");
+    service.resetUserLock({ uid: "uid-1", realm: "realm1", resolver: "reso1" }).subscribe((v) => (result = v));
+    const req = httpMock.expectOne((r) => r.url === BASE + "lock/user" && r.method === "DELETE");
     req.flush(errorResponse().error, { status: 500, statusText: "Server Error" });
     expect(result).toBe(false);
     expect(notification.error).toHaveBeenCalled();
   });
 
-  // --- setUserLockout / addBlocklistEntry (the manual write path) ---
+  // --- setUserLock / addBlocklistEntry (the manual write path) ---
 
-  it("setUserLockout posts the login and omits the duration for a permanent lock", () => {
+  it("setUserLock posts the login and omits the duration for a permanent lock", () => {
     let result: LockedUserEntry | null | undefined;
-    service.setUserLockout({ login: "alice", realm: "realm1", resolver: "reso1" }).subscribe((v) => (result = v));
-    const req = httpMock.expectOne((r) => r.url === BASE + "lockout/user" && r.method === "POST");
+    service.setUserLock({ login: "alice", realm: "realm1", resolver: "reso1" }).subscribe((v) => (result = v));
+    const req = httpMock.expectOne((r) => r.url === BASE + "lock/user" && r.method === "POST");
     // An absent duration is what the backend reads as "permanent", so the key must not be sent as null.
     expect(req.request.body).toEqual({ realm: "realm1", resolver: "reso1", user: "alice" });
-    req.flush(MockPiResponse.fromValue({ ...lockoutStatus(), lock_cause: "MANUAL" }));
+    req.flush(MockPiResponse.fromValue({ ...lockStatus(), lock_cause: "MANUAL" }));
     expect(result?.lock_cause).toBe("MANUAL");
   });
 
-  it("setUserLockout posts a user_id and the duration when given", () => {
-    service.setUserLockout({ uid: "uid-1", realm: "realm1", duration_seconds: 600 }).subscribe();
-    const req = httpMock.expectOne((r) => r.url === BASE + "lockout/user" && r.method === "POST");
+  it("setUserLock posts a user_id and the duration when given", () => {
+    service.setUserLock({ uid: "uid-1", realm: "realm1", duration_seconds: 600 }).subscribe();
+    const req = httpMock.expectOne((r) => r.url === BASE + "lock/user" && r.method === "POST");
     expect(req.request.body).toEqual({ realm: "realm1", user_id: "uid-1", duration_seconds: 600 });
-    req.flush(MockPiResponse.fromValue(lockoutStatus()));
+    req.flush(MockPiResponse.fromValue(lockStatus()));
   });
 
-  it("setUserLockout returns null and notifies on error", () => {
+  it("setUserLock returns null and notifies on error", () => {
     let result: LockedUserEntry | null | undefined;
-    service.setUserLockout({ login: "alice", realm: "realm1" }).subscribe((v) => (result = v));
-    const req = httpMock.expectOne((r) => r.url === BASE + "lockout/user" && r.method === "POST");
+    service.setUserLock({ login: "alice", realm: "realm1" }).subscribe((v) => (result = v));
+    const req = httpMock.expectOne((r) => r.url === BASE + "lock/user" && r.method === "POST");
     req.flush(errorResponse().error, { status: 500, statusText: "Server Error" });
     expect(result).toBeNull();
     expect(notification.error).toHaveBeenCalled();
@@ -323,13 +323,13 @@ describe("ConditionalAccessStateService", () => {
     service
       .countLockedUsers(["permanent", "temporary"])
       .subscribe((response) => (count = response.result?.value?.count));
-    const req = httpMock.expectOne((r) => r.url === BASE + "lockout/users" && r.method === "GET");
+    const req = httpMock.expectOne((r) => r.url === BASE + "lock/users" && r.method === "GET");
 
     expect(req.request.params.get("states")).toBe("permanent,temporary");
     expect(req.request.params.get("page_size")).toBe("1");
     req.flush(
       MockPiResponse.fromValue<LockedUsersPage>({
-        locked_users: [lockoutStatus()],
+        locked_users: [lockStatus()],
         count: 7,
         current: 1,
         prev: null,
@@ -339,20 +339,20 @@ describe("ConditionalAccessStateService", () => {
     expect(count).toBe(7);
   });
 
-  // --- purgeUserLockouts ---
+  // --- purgeUserLocks ---
 
-  it("purgeUserLockouts maps the removed count", () => {
+  it("purgeUserLocks maps the removed count", () => {
     let result: number | undefined;
-    service.purgeUserLockouts().subscribe((v) => (result = v));
-    const req = httpMock.expectOne((r) => r.url === BASE + "lockout/users/purge" && r.method === "POST");
+    service.purgeUserLocks().subscribe((v) => (result = v));
+    const req = httpMock.expectOne((r) => r.url === BASE + "lock/users/purge" && r.method === "POST");
     req.flush(MockPiResponse.fromValue(3));
     expect(result).toBe(3);
   });
 
-  it("purgeUserLockouts returns 0 and notifies on error", () => {
+  it("purgeUserLocks returns 0 and notifies on error", () => {
     let result: number | undefined;
-    service.purgeUserLockouts().subscribe((v) => (result = v));
-    const req = httpMock.expectOne((r) => r.url === BASE + "lockout/users/purge" && r.method === "POST");
+    service.purgeUserLocks().subscribe((v) => (result = v));
+    const req = httpMock.expectOne((r) => r.url === BASE + "lock/users/purge" && r.method === "POST");
     req.flush(errorResponse().error, { status: 500, statusText: "Server Error" });
     expect(result).toBe(0);
     expect(notification.error).toHaveBeenCalled();
@@ -439,7 +439,7 @@ describe("ConditionalAccessStateService", () => {
   it("surfaces a locked-users resource error to the notification service", async () => {
     content.routeUrl.set(ROUTE_PATHS.LOCKED_USERS);
     TestBed.tick();
-    const req = httpMock.expectOne((r) => r.url === BASE + "lockout/users");
+    const req = httpMock.expectOne((r) => r.url === BASE + "lock/users");
     req.flush(errorResponse().error, { status: 500, statusText: "Server Error" });
     await Promise.resolve();
     TestBed.tick();

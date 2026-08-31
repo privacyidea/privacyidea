@@ -663,25 +663,25 @@ describe("UserDetailsComponent", () => {
     });
   });
 
-  it("shows lockout state card with 'Unlocked' status when user_lockout_read is allowed", () => {
+  it("shows lock state card with 'Unlocked' status when user_lock_read is allowed", () => {
     authServiceMock.authData.set({
       ...MockAuthService.MOCK_AUTH_DATA,
-      rights: ["user_lockout_read"]
+      rights: ["user_lock_read"]
     });
-    conditionalAccessStateServiceMock.setUserLockoutStatus(null);
+    conditionalAccessStateServiceMock.setUserLockStatus(null);
 
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.textContent).toContain("User Lockout");
+    expect(fixture.nativeElement.textContent).toContain("User Lock");
     expect(fixture.nativeElement.textContent).toContain("Unlocked");
   });
 
-  it("shows reset lockout action for locked users and triggers reset + reload after confirmation", () => {
+  it("shows reset lock action for locked users and triggers reset + reload after confirmation", () => {
     authServiceMock.authData.set({
       ...MockAuthService.MOCK_AUTH_DATA,
-      rights: ["user_lockout_read", "user_lockout_reset"]
+      rights: ["user_lock_read", "user_lock_reset"]
     });
-    conditionalAccessStateServiceMock.setUserLockoutStatus({
+    conditionalAccessStateServiceMock.setUserLockStatus({
       resolver: "resolver1",
       uid: "uid-123",
       realm: "realm1",
@@ -696,12 +696,12 @@ describe("UserDetailsComponent", () => {
       afterClosed: () => of(true)
     });
 
-    const reloadSpy = jest.spyOn(conditionalAccessStateServiceMock.userLockoutResource, "reload");
+    const reloadSpy = jest.spyOn(conditionalAccessStateServiceMock.userLockResource, "reload");
 
     fixture.detectChanges();
-    component.resetUserLockout();
+    component.resetUserLock();
 
-    expect(conditionalAccessStateServiceMock.resetUserLockout).toHaveBeenCalledWith({
+    expect(conditionalAccessStateServiceMock.resetUserLock).toHaveBeenCalledWith({
       resolver: "resolver1",
       uid: "uid-123",
       realm: "realm1"
@@ -709,8 +709,8 @@ describe("UserDetailsComponent", () => {
     expect(reloadSpy).toHaveBeenCalledTimes(1);
   });
 
-  it("lockoutStatusText reports a permanent lock", () => {
-    conditionalAccessStateServiceMock.setUserLockoutStatus({
+  it("lockStatusText reports a permanent lock", () => {
+    conditionalAccessStateServiceMock.setUserLockStatus({
       resolver: "resolver1",
       uid: "uid-123",
       realm: "realm1",
@@ -721,11 +721,11 @@ describe("UserDetailsComponent", () => {
       lock_cause: "POLICY",
       locked_at: "2030-01-01T09:58:00Z"
     });
-    expect(component.lockoutStatusText()).toBe("Locked permanently");
+    expect(component.lockStatusText()).toBe("Locked permanently");
   });
 
-  it("lockoutStatusText falls back to 'Locked' when locked without an expiry", () => {
-    conditionalAccessStateServiceMock.setUserLockoutStatus({
+  it("lockStatusText falls back to 'Locked' when locked without an expiry", () => {
+    conditionalAccessStateServiceMock.setUserLockStatus({
       resolver: "resolver1",
       uid: "uid-123",
       realm: "realm1",
@@ -736,21 +736,21 @@ describe("UserDetailsComponent", () => {
       lock_cause: "POLICY",
       locked_at: "2030-01-01T09:58:00Z"
     });
-    expect(component.lockoutStatusText()).toBe("Locked");
+    expect(component.lockStatusText()).toBe("Locked");
   });
 
-  it("resetUserLockout does nothing when the user is not locked", () => {
-    conditionalAccessStateServiceMock.setUserLockoutStatus(null);
+  it("resetUserLock does nothing when the user is not locked", () => {
+    conditionalAccessStateServiceMock.setUserLockStatus(null);
     dialogServiceMock.openDialog = jest.fn();
 
-    component.resetUserLockout();
+    component.resetUserLock();
 
     expect(dialogServiceMock.openDialog).not.toHaveBeenCalled();
-    expect(conditionalAccessStateServiceMock.resetUserLockout).not.toHaveBeenCalled();
+    expect(conditionalAccessStateServiceMock.resetUserLock).not.toHaveBeenCalled();
   });
 
-  it("resetUserLockout reports when nothing was reset (already gone or out of scope)", () => {
-    conditionalAccessStateServiceMock.setUserLockoutStatus({
+  it("resetUserLock reports when nothing was reset (already gone or out of scope)", () => {
+    conditionalAccessStateServiceMock.setUserLockStatus({
       resolver: "resolver1",
       uid: "uid-123",
       realm: "realm1",
@@ -762,9 +762,9 @@ describe("UserDetailsComponent", () => {
       locked_at: "2030-01-01T09:58:00Z"
     });
     dialogServiceMock.openDialog = jest.fn().mockReturnValue({ afterClosed: () => of(true) });
-    (conditionalAccessStateServiceMock.resetUserLockout as jest.Mock).mockReturnValue(of(false));
+    (conditionalAccessStateServiceMock.resetUserLock as jest.Mock).mockReturnValue(of(false));
 
-    component.resetUserLockout();
+    component.resetUserLock();
 
     expect(notificationServiceMock.error).toHaveBeenCalled();
   });
@@ -773,14 +773,14 @@ describe("UserDetailsComponent", () => {
     dialogServiceMock.openDialog = jest.fn().mockReturnValue({
       afterClosed: () => of({ durationSeconds: 600 })
     });
-    const reloadSpy = jest.spyOn(conditionalAccessStateServiceMock.userLockoutResource, "reload");
+    const reloadSpy = jest.spyOn(conditionalAccessStateServiceMock.userLockResource, "reload");
 
     component.lockUser();
 
     expect(dialogServiceMock.openDialog).toHaveBeenCalledWith(
       expect.objectContaining({ component: UserDetailsLockDialogComponent })
     );
-    expect(conditionalAccessStateServiceMock.setUserLockout).toHaveBeenCalledWith(
+    expect(conditionalAccessStateServiceMock.setUserLock).toHaveBeenCalledWith(
       expect.objectContaining({ duration_seconds: 600 })
     );
     expect(reloadSpy).toHaveBeenCalledTimes(1);
@@ -793,7 +793,7 @@ describe("UserDetailsComponent", () => {
 
     component.lockUser();
 
-    expect(conditionalAccessStateServiceMock.setUserLockout).toHaveBeenCalledWith(
+    expect(conditionalAccessStateServiceMock.setUserLock).toHaveBeenCalledWith(
       expect.objectContaining({ duration_seconds: undefined })
     );
   });
@@ -803,23 +803,23 @@ describe("UserDetailsComponent", () => {
 
     component.lockUser();
 
-    expect(conditionalAccessStateServiceMock.setUserLockout).not.toHaveBeenCalled();
+    expect(conditionalAccessStateServiceMock.setUserLock).not.toHaveBeenCalled();
   });
 
-  it("hides the lock action without user_lockout_set", () => {
+  it("hides the lock action without user_lock_set", () => {
     authServiceMock.authData.set({
       ...MockAuthService.MOCK_AUTH_DATA,
-      rights: ["user_lockout_read"]
+      rights: ["user_lock_read"]
     });
-    conditionalAccessStateServiceMock.setUserLockoutStatus(null);
+    conditionalAccessStateServiceMock.setUserLockStatus(null);
 
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.querySelector(".user-lockout-actions button")).toBeNull();
+    expect(fixture.nativeElement.querySelector(".user-lock-actions button")).toBeNull();
   });
 
   it("names who imposed the lock now in force", () => {
-    conditionalAccessStateServiceMock.setUserLockoutStatus({
+    conditionalAccessStateServiceMock.setUserLockStatus({
       resolver: "resolver1",
       uid: "uid-123",
       realm: "realm1",
@@ -830,11 +830,11 @@ describe("UserDetailsComponent", () => {
       lock_cause: "MANUAL",
       locked_at: "2030-01-01T09:58:00Z"
     });
-    expect(component.lockoutCauseLabel()).toBe("Locked by an administrator");
+    expect(component.lockCauseLabel()).toBe("Locked by an administrator");
   });
 
-  it("resetUserLockout does not reset when the confirmation is cancelled", () => {
-    conditionalAccessStateServiceMock.setUserLockoutStatus({
+  it("resetUserLock does not reset when the confirmation is cancelled", () => {
+    conditionalAccessStateServiceMock.setUserLockStatus({
       resolver: "resolver1",
       uid: "uid-123",
       realm: "realm1",
@@ -847,8 +847,8 @@ describe("UserDetailsComponent", () => {
     });
     dialogServiceMock.openDialog = jest.fn().mockReturnValue({ afterClosed: () => of(false) });
 
-    component.resetUserLockout();
+    component.resetUserLock();
 
-    expect(conditionalAccessStateServiceMock.resetUserLockout).not.toHaveBeenCalled();
+    expect(conditionalAccessStateServiceMock.resetUserLock).not.toHaveBeenCalled();
   });
 });

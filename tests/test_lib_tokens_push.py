@@ -2070,6 +2070,52 @@ class PushTokenTestCase(MyTestCase):
 
         remove_token(token.get_serial())
 
+    @responses.activate
+    def test_24_notification_names_the_triggering_client(self):
+        # The tags of the client that triggered the challenge are filled in the notification
+        # that is sent to firebase
+        self.setUp_user_realms()
+        set_smsgateway(self.firebase_config_name,
+                       "privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider",
+                       "myFB", FB_CONFIG_VALS)
+        set_policy("push_config", scope=SCOPE.ENROLL,
+                   action=f"{PushAction.FIREBASE_CONFIG}={self.firebase_config_name}")
+        set_policy("push_text", scope=SCOPE.AUTH,
+                   action=f"{PushAction.MOBILE_TEXT}=Confirm the login to " + "{ua_browser} on {action}")
+        token = self._create_push_token()
+        token.set_pin("pushpin")
+        token.add_user(User("cornelius", self.realm1))
+
+        cached_fbtoken = {
+            "firebase_token": {FB_CONFIG_VALS[FirebaseConfig.JSON_CONFIG]: _create_credential_mock()}}
+        self.app.config.setdefault("_app_local_store", {}).update(cached_fbtoken)
+        with mock.patch("privacyidea.lib.smsprovider.FirebaseProvider.service_account"
+                        ".Credentials.from_service_account_file"):
+            responses.add(responses.POST, "https://fcm.googleapis.com/v1/projects"
+                                          "/test-123456/messages:send",
+                          body="""{}""",
+                          content_type="application/json")
+            with self.app.test_request_context("/validate/check",
+                                               method="POST",
+                                               data={"user": "cornelius",
+                                                     "realm": self.realm1,
+                                                     "pass": "pushpin"},
+                                               headers={"User-Agent": "privacyidea-keycloak/1.2.3"}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code)
+
+            # The message that was sent to firebase names the plugin, not the browser class
+            # of werkzeug, which is always empty
+            firebase_message = json.loads(responses.calls[-1].request.body)
+            self.assertEqual("Confirm the login to privacyidea-keycloak on /validate/check",
+                             firebase_message["message"]["data"]["question"])
+            get_app_local_store().pop("firebase_token")
+
+        remove_token(token.get_serial())
+        delete_policy("push_text")
+        delete_policy("push_config")
+        delete_smsgateway(self.firebase_config_name)
+
 
 class PushCapabilitiesTestCase(MyTestCase):
     """The capability advertisement and the canonical bytes it is signed over.

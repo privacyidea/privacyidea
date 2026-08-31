@@ -17,24 +17,24 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 """
 ``pi-manage conditionalaccess`` — inspect and clear the conditional-access
-lockout state (locked users and blocked IPs).
+lock state (locked users and blocked IPs).
 
-This is the operational escape hatch for the lockout engine: it works without
+This is the operational escape hatch for the conditional-access engine: it works without
 the WebUI, so an administrator who has been locked out (or who blocked a shared
 proxy IP) can recover from the command line.
 """
 import click
 from flask.cli import AppGroup
 
-from privacyidea.lib.conditional_access.lockout_state import (block_ip, list_blocklist,
+from privacyidea.lib.conditional_access.state import (block_ip, list_blocklist,
                                                               list_locked_users, lock_user,
                                                               purge_expired_blocklist,
-                                                              purge_expired_user_lockouts,
+                                                              purge_expired_user_locks,
                                                               remove_blocklist_entry,
                                                               unlock_user_by_id, unlock_user_by_username)
 from privacyidea.lib.user import User
 from privacyidea.models import db
-from privacyidea.models.lockout_policy import BlockList, UserLockoutState
+from privacyidea.models.conditional_access_policy import BlockList, UserLockState
 
 conditional_access_cli = AppGroup("conditionalaccess",
                                   help="Inspect and clear conditional-access locks and IP blocks")
@@ -149,7 +149,7 @@ def unlock_by_id(uid, realm, resolver):
 @click.option("--realm", help="Only clear locks of users in this realm.")
 @click.confirmation_option(prompt="Remove the matching user locks?")
 def clear_locks(realm):
-    query = UserLockoutState.query
+    query = UserLockState.query
     if realm:
         query = query.filter_by(realm=realm)
     count = query.delete()
@@ -162,5 +162,5 @@ def clear_locks(realm):
                                 help="Remove only stale user locks (expired or unlocked); keep the ones "
                                      "still in force.")
 def purge_expired_locks():
-    count = purge_expired_user_lockouts()
+    count = purge_expired_user_locks()
     click.echo(f"Removed {count} stale user lock(s).")

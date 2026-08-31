@@ -166,7 +166,7 @@ def token(ttype=None):
         request.all_data[PushAction.PUSH_CODE_TO_PHONE_MESSAGE] = code_to_phone_message
         # The conditional-access pre-check for push runs inside the push token's
         # _api_endpoint_post (auth path only), not here, so enrollment and firebase
-        # token updates are never gated by a lockout.
+        # token updates are never gated by a lock.
 
     try:
         res = token_class.api_endpoint(request, g)

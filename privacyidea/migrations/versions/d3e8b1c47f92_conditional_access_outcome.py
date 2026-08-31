@@ -5,7 +5,7 @@ access did. One row per action the engine executed for a request (LOCK_USER,
 BLOCK_IP, EMAIL_*, and the pre-auth DENY decision), plus dry-run rows recording
 what a dry-run policy would have done.
 
-This is the queryable counterpart of the live state in user_lockout_state and
+This is the queryable counterpart of the live state in user_lock_state and
 block_list, which show the restriction currently in force and then forget it:
 only this table can answer "when was this user locked, by which policy, and for
 how long". Each row belongs to the authentication_log row of the request that

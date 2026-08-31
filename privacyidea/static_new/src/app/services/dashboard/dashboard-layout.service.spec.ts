@@ -383,7 +383,7 @@ describe("DashboardLayoutService", () => {
     it("should report a widget type with several required actions as forbidden when none is granted", () => {
       build([]);
       auth.actionAllowed.mockImplementation(
-        (action: string) => !["lockout_policy_read", "user_lockout_read", "blocklist_read"].includes(action)
+        (action: string) => !["conditional_access_policy_read", "user_lock_read", "blocklist_read"].includes(action)
       );
       expect(service.isWidgetTypeAllowed("conditional-access")).toBe(false);
     });

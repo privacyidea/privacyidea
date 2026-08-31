@@ -26,7 +26,7 @@ import { DialogService } from "@services/dialog/dialog.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { MockContentService, MockDialogService, MockNotificationService, MockPiResponse } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
-import { ConditionalAccessPolicyService, LockoutPolicy } from "./conditional-access-policy.service";
+import { ConditionalAccessPolicyService, ConditionalAccessPolicy } from "./conditional-access-policy.service";
 
 describe("ConditionalAccessPolicyService", () => {
   let service: ConditionalAccessPolicyService;
@@ -36,7 +36,7 @@ describe("ConditionalAccessPolicyService", () => {
   let authServiceMock: MockAuthService;
   let dialogServiceMock: MockDialogService;
 
-  const samplePolicy: LockoutPolicy = {
+  const samplePolicy: ConditionalAccessPolicy = {
     id: 1,
     name: "Brute Force",
     time_window_seconds: 600,
@@ -166,7 +166,7 @@ describe("ConditionalAccessPolicyService", () => {
   describe("getPolicies", () => {
     it("should read the policy list on demand, off the conditional-access route", () => {
       contentServiceMock.onConditionalAccess = signal(false);
-      let policies: LockoutPolicy[] | undefined;
+      let policies: ConditionalAccessPolicy[] | undefined;
       service.getPolicies().subscribe((response) => (policies = response.result?.value));
 
       const req = httpMock.expectOne(service.baseUrl);

@@ -285,7 +285,7 @@ export class LockedUsersComponent {
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: $localize`Reset User Lockout`,
+          title: $localize`Reset User Lock`,
           items: rows.map((row) => this.displayLogin(row)),
           itemType: "locked user",
           confirmAction: { label: $localize`Reset`, value: true, type: "destruct" }
@@ -299,13 +299,13 @@ export class LockedUsersComponent {
         from(rows)
           .pipe(
             concatMap((row) =>
-              this.casService.resetUserLockout({ uid: row.uid, realm: row.realm, resolver: row.resolver })
+              this.casService.resetUserLock({ uid: row.uid, realm: row.realm, resolver: row.resolver })
             ),
             reduce((count, success) => count + (success ? 1 : 0), 0)
           )
           .subscribe((count) => {
             if (count > 0) {
-              this.notificationService.success($localize`Reset ${count} user lockout(s).`);
+              this.notificationService.success($localize`Reset ${count} user lock(s).`);
             }
             this.casService.lockedUsersResource.reload();
           });
@@ -320,10 +320,10 @@ export class LockedUsersComponent {
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: $localize`Delete Expired Lockouts`,
+          title: $localize`Delete Expired Locks`,
           items: [],
-          itemType: "expired lockout record",
-          message: $localize`This permanently deletes all expired lockout records from the database.`,
+          itemType: "expired lock record",
+          message: $localize`This permanently deletes all expired lock records from the database.`,
           confirmAction: { label: $localize`Delete`, value: true, type: "destruct" }
         }
       })
@@ -332,8 +332,8 @@ export class LockedUsersComponent {
         if (!confirmed) {
           return;
         }
-        this.casService.purgeUserLockouts().subscribe((count) => {
-          this.notificationService.success($localize`Deleted ${count} expired lockout(s).`);
+        this.casService.purgeUserLocks().subscribe((count) => {
+          this.notificationService.success($localize`Deleted ${count} expired lock(s).`);
           this.casService.lockedUsersResource.reload();
         });
       });
