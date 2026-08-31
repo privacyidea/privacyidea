@@ -27,7 +27,7 @@ import { NotificationService } from "@services/notification/notification.service
 import { MockContentService, MockPiResponse } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockNotificationService } from "@testing/mock-services/mock-notification-service";
-import { PolicyActionDetail, PolicyDetail, PolicyService } from "./policies.service";
+import { policyActionMatchesFilter, PolicyActionDetail, PolicyDetail, PolicyService } from "./policies.service";
 
 describe("PolicyService", () => {
   let service: PolicyService;
@@ -598,5 +598,39 @@ describe("PolicyService", () => {
       const flat = service.allPolicyActionsFlat();
       expect(Object.keys(flat).filter((k) => k === "container_add_token").length).toBe(1);
     });
+  });
+});
+
+describe("policyActionMatchesFilter", () => {
+  const detail: PolicyActionDetail = {
+    type: "str",
+    desc: "The message shown above the <code>OTP</code> on the smartphone."
+  };
+
+  it("should match every action while the filter is empty", () => {
+    expect(policyActionMatchesFilter("push_text_on_mobile", detail, "")).toBe(true);
+    expect(policyActionMatchesFilter("push_text_on_mobile", detail, "   ")).toBe(true);
+  });
+
+  it("should match the action name case-insensitively", () => {
+    expect(policyActionMatchesFilter("push_text_on_mobile", detail, "TEXT_ON")).toBe(true);
+  });
+
+  it("should match the description as well", () => {
+    expect(policyActionMatchesFilter("push_text_on_mobile", detail, "smartphone")).toBe(true);
+    expect(policyActionMatchesFilter("push_text_on_mobile", detail, "otp")).toBe(true);
+  });
+
+  it("should not match the markup of the description", () => {
+    expect(policyActionMatchesFilter("push_text_on_mobile", detail, "code")).toBe(false);
+  });
+
+  it("should not match a term that appears in neither", () => {
+    expect(policyActionMatchesFilter("push_text_on_mobile", detail, "webauthn")).toBe(false);
+  });
+
+  it("should fall back to the name when there is no detail", () => {
+    expect(policyActionMatchesFilter("push_text_on_mobile", undefined, "push")).toBe(true);
+    expect(policyActionMatchesFilter("push_text_on_mobile", undefined, "smartphone")).toBe(false);
   });
 });
