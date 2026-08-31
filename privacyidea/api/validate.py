@@ -736,14 +736,17 @@ def _challenged_token_serials(transaction_id: str, user: User) -> list[str]:
     """
     if not user or not user.login:
         return []
-    challenged = {challenge.serial for challenge in get_challenges(transaction_id=transaction_id)
-                  if challenge.get_data().get("type", "token") != "container"}
-    if not challenged:
-        return []
     try:
+        challenged = {challenge.serial for challenge in get_challenges(transaction_id=transaction_id)
+                      if challenge.get_data().get("type", "token") != "container"}
+        if not challenged:
+            return []
         owned = {token.get_serial() for token in get_tokens(user=user)}
     except Exception as exx:  # noqa: BLE001 - naming the tokens must not fail the request
-        log.debug(f"Could not read the tokens of {user!r} for the audit log: {exx!r}")
+        # The authentication result is already decided at this point, only the audit entry
+        # is still being filled in. A challenge or token store that can not be read must
+        # therefore cost the entry its serials, never turn the response into an error.
+        log.debug(f"Could not read the challenged tokens of {user!r} for the audit log: {exx!r}")
         return []
     return sorted(challenged & owned)
 

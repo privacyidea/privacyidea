@@ -136,7 +136,9 @@ def get_live_column_length(engine) -> dict:
     to what the model declares. The result is cached per database.
 
     An unreachable database or a missing audit table yields an empty mapping, in which case
-    the model and the configuration decide alone.
+    the model and the configuration decide alone. Such a result is not cached, so that a
+    database that was unreachable once is read again on the next request instead of leaving
+    the process with the assumption that the table looks like the model for good.
 
     :param engine: the SQLAlchemy engine of the audit database
     :return: a dict mapping column name to its length
@@ -155,6 +157,7 @@ def get_live_column_length(engine) -> dict:
             # so this needs to be visible.
             log.warning(f"Could not read the columns of the table {AUDIT_TABLE_NAME}, audit "
                         f"entries are sized to the model instead: {exx!r}")
+            return {}
         _live_column_length[cache_key] = lengths
     return _live_column_length[cache_key]
 
