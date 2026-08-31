@@ -131,6 +131,24 @@ describe("ContainerTokensEnrolledDialogComponent", () => {
       expect(enrollmentData.enrolledData().googleurl?.img).toBe("regenerated-img");
     });
 
+    it("applies a response to the token it belongs to even when another one is on screen", () => {
+      component.next();
+      fixture.detectChanges();
+      expect(component.currentToken().serial).toBe("TOK-2");
+
+      emitRegenerated(regenerated({ serial: "TOK-1", googleurl: { img: "late-img", value: "late-url" } }));
+
+      expect(component.enrolledTokens()[0].googleurl?.img).toBe("late-img");
+      expect(component.enrolledTokens()[1].googleurl?.img).toBe("img");
+      expect(component.currentToken().serial).toBe("TOK-2");
+    });
+
+    it("ignores a response that carries no serial", () => {
+      emitRegenerated(regenerated({ googleurl: { img: "unattributable", value: "url" } }));
+
+      expect(component.enrolledTokens().map((token) => token.googleurl?.img)).toEqual(["img", "img", "img"]);
+    });
+
     it("shows the regenerated data and leaves the other tokens untouched", () => {
       emitRegenerated(
         regenerated({ serial: "TOK-1", googleurl: { img: "regenerated-img", value: "regenerated-url" } })

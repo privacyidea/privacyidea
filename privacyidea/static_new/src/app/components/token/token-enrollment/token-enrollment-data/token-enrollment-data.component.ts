@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, inject, input, linkedSignal, output } from "@angular/core";
+import { Component, computed, inject, input, linkedSignal, output, signal } from "@angular/core";
 import { MatButton } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 import {
@@ -110,11 +110,20 @@ export class TokenEnrollmentDataComponent {
       : $localize`Regenerate QR Code`
   );
 
+  regenerating = signal(false);
+
   regenerateQRCode() {
+    if (this.regenerating()) {
+      return;
+    }
     const enrollmentParameters = this.enrollmentParameters();
+    // The component instance is reused when the surrounding dialog pages between tokens, so
+    // remember which token this request belongs to and drop the response if it is no longer
+    // the one on screen.
+    const requestedSerial = this.serial() || enrollmentParameters.data.serial;
     const newEnrollmentData: TokenEnrollmentData = {
       ...enrollmentParameters.data,
-      serial: this.serial() || enrollmentParameters.data.serial,
+      serial: requestedSerial,
       // The token already exists, so this call re-initializes it rather than enrolling a new
       // one. Without "rollover" the backend treats the request as the next step of the original
       // enrollment and rejects it - for a two-step enrollment the token is still in "clientwait"
@@ -122,14 +131,26 @@ export class TokenEnrollmentDataComponent {
       // secret is generated and, for two-step, a new server component is issued.
       rollover: true
     };
+    // Regenerating replaces the secret and nothing else. The PIN is deliberately not sent
+    // again: the server keeps the existing one when the parameter is absent, and re-submitting
+    // it would re-apply it without the PIN policy checks, which the server skips for rollover
+    // requests.
+    delete newEnrollmentData.pin;
 
+    this.regenerating.set(true);
     this.tokenService.enrollToken({ data: newEnrollmentData, mapper: enrollmentParameters.mapper }).subscribe({
       next: (response) => {
+        this.regenerating.set(false);
         if (response?.detail) {
-          this.enrolledData.set(response.detail);
+          // The opener keys the update on the serial, so it is always told about the response.
+          // Only the displayed data is left alone when the dialog has moved on to another token.
+          if (this.serial() === requestedSerial) {
+            this.enrolledData.set(response.detail);
+          }
           this.enrollmentResponseChange.emit(response);
         }
-      }
+      },
+      error: () => this.regenerating.set(false)
     });
   }
 }

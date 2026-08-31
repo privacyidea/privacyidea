@@ -71,9 +71,15 @@ export class ContainerTokensEnrolledDialogComponent extends AbstractDialogCompon
   ]);
 
   onEnrollmentResponseChange(response: EnrollmentResponse) {
-    const index = this.currentIndex();
+    // Match on the serial rather than the current index: regenerating is asynchronous and the
+    // user can page to another token before the response arrives, which would otherwise write
+    // the regenerated secret and QR code into the token that happens to be shown by then.
+    const serial = response.detail?.serial;
+    if (!serial) {
+      return;
+    }
     this.enrolledTokens.update((tokens) =>
-      tokens.map((token, tokenIndex) => (tokenIndex === index ? { ...token, ...response.detail } : token))
+      tokens.map((token) => (token.serial === serial ? { ...token, ...response.detail } : token))
     );
   }
 

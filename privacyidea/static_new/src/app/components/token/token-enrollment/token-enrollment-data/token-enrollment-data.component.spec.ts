@@ -25,7 +25,7 @@ import { ContentService } from "@services/content/content.service";
 import { TokenService } from "@services/token/token.service";
 import { MockTokenService } from "@testing/mock-services";
 import { MockContentService } from "@testing/mock-services/mock-content-service";
-import { of } from "rxjs";
+import { Subject, of } from "rxjs";
 import { TokenEnrollmentDataComponent } from "./token-enrollment-data.component";
 
 describe("TokenEnrollmentDataComponent", () => {
@@ -177,6 +177,68 @@ describe("TokenEnrollmentDataComponent", () => {
     );
   });
 
+  it("should not start a second regeneration while one is still in flight", () => {
+    const pending = new Subject<EnrollmentResponse>();
+    mockTokenService.enrollToken = jest.fn().mockReturnValue(pending);
+    fixture.componentRef.setInput("enrollmentParameters", {
+      data: { type: "hotp", serial: "OATH0001" },
+      mapper: { map: jest.fn() }
+    });
+    fixture.componentRef.setInput("enrolledInputData", { serial: "OATH0001" });
+    fixture.detectChanges();
+
+    component.regenerateQRCode();
+    component.regenerateQRCode();
+
+    expect(mockTokenService.enrollToken).toHaveBeenCalledTimes(1);
+    expect(component.regenerating()).toBe(true);
+
+    pending.next({
+      type: "hotp",
+      result: { status: true },
+      detail: { type: "hotp", serial: "OATH0001" }
+    } as unknown as EnrollmentResponse);
+
+    expect(component.regenerating()).toBe(false);
+  });
+
+  it("should not overwrite the displayed token when a response for another one arrives late", () => {
+    const pending = new Subject<EnrollmentResponse>();
+    mockTokenService.enrollToken = jest.fn().mockReturnValue(pending);
+    fixture.componentRef.setInput("enrollmentParameters", {
+      data: { type: "hotp", serial: "OATH0001" },
+      mapper: { map: jest.fn() }
+    });
+    fixture.componentRef.setInput("enrolledInputData", {
+      serial: "OATH0001",
+      googleurl: { img: "first-img", value: "first-url" }
+    });
+    fixture.detectChanges();
+
+    component.regenerateQRCode();
+
+    // the surrounding dialog pages to another token before the response arrives
+    fixture.componentRef.setInput("enrolledInputData", {
+      serial: "OATH0002",
+      googleurl: { img: "second-img", value: "second-url" }
+    });
+    fixture.detectChanges();
+
+    const emitted: EnrollmentResponse[] = [];
+    component.enrollmentResponseChange.subscribe((response) => emitted.push(response));
+
+    const late = {
+      type: "hotp",
+      result: { status: true },
+      detail: { type: "hotp", serial: "OATH0001", googleurl: { img: "late-img", value: "late-url" } }
+    } as unknown as EnrollmentResponse;
+    pending.next(late);
+    fixture.detectChanges();
+
+    expect(component.enrolledData().googleurl?.img).toBe("second-img");
+    expect(emitted).toEqual([late]);
+  });
+
   it("should request a rollover so the existing token is re-initialized", () => {
     mockTokenService.enrollToken = jest.fn().mockReturnValue(
       of({
@@ -197,6 +259,29 @@ describe("TokenEnrollmentDataComponent", () => {
     expect(mockTokenService.enrollToken).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ rollover: true }) })
     );
+  });
+
+  it("should not resend the PIN when regenerating", () => {
+    mockTokenService.enrollToken = jest.fn().mockReturnValue(
+      of({
+        type: "hotp",
+        result: { status: true },
+        detail: { type: "hotp", serial: "OATH0001" }
+      })
+    );
+    fixture.componentRef.setInput("enrollmentParameters", {
+      data: { type: "hotp", serial: "OATH0001", pin: "1234" },
+      mapper: { map: jest.fn() }
+    });
+    fixture.componentRef.setInput("enrolledInputData", { serial: "OATH0001" });
+    fixture.detectChanges();
+
+    component.regenerateQRCode();
+
+    const sent = (mockTokenService.enrollToken as jest.Mock).mock.calls[0][0].data;
+    expect(sent.pin).toBeUndefined();
+    expect(sent.rollover).toBe(true);
+    expect(sent.serial).toBe("OATH0001");
   });
 
   it("should keep 2stepinit alongside the rollover so the two-step handshake is preserved", () => {
