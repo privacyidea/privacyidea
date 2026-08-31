@@ -23,6 +23,7 @@ import {
   TokenApiPayloadMapper,
   TokenEnrollmentData
 } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { EnrollmentStepResult } from "@components/token/token-enrollment/token-enrollment.constants";
 import { Observable } from "rxjs";
 
 export interface EnrollmentArgs<T extends TokenEnrollmentData> {
@@ -30,7 +31,7 @@ export interface EnrollmentArgs<T extends TokenEnrollmentData> {
   mapper: TokenApiPayloadMapper<T>;
 }
 
-export type ReopenDialogAction = () => Promise<EnrollmentResponse | null> | Observable<EnrollmentResponse | null>;
+export type ReopenDialogAction = () => Promise<EnrollmentStepResult> | Observable<EnrollmentStepResult>;
 
 // Abstract class so it can be used as a DI token via
 // `{ provide: EnrollTokenBase, useExisting: forwardRef(() => MyEnrollComponent) }`.
@@ -39,7 +40,7 @@ export type ReopenDialogAction = () => Promise<EnrollmentResponse | null> | Obse
 export abstract class EnrollTokenBase<T extends TokenEnrollmentData = TokenEnrollmentData> {
   abstract buildEnrollmentArgs(basic: TokenEnrollmentData): EnrollmentArgs<T> | null;
 
-  onEnrollmentResponse?(response: EnrollmentResponse, data: TokenEnrollmentData): Promise<EnrollmentResponse | null>;
+  onEnrollmentResponse?(response: EnrollmentResponse, data: TokenEnrollmentData): Promise<EnrollmentStepResult>;
 
   readonly showEnrollDataInLastStep: boolean = true;
 

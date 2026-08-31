@@ -20,10 +20,8 @@
 <app-dialog-wrapper
   title="Assign SSH Machine"
   i18n-title
-  (wrapperClose)="close()"
   (actionTriggered)="onAction($event)"
-  [actions]="[assignAction]"
-  [showCancelButton]="true">
+  [actions]="[assignAction]">
   <mat-form-field
     appearance="fill"
     class="input-width-l">

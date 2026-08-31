@@ -17,9 +17,7 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <app-dialog-wrapper
-  (wrapperClose)="close()"
   (actionTriggered)="rolloverToken()"
-  [showCancelButton]="true"
   [title]="title()"
   [actions]="dialogActions()">
   <div>

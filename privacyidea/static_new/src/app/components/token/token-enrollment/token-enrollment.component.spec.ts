@@ -16,6 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { signal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 
 import { provideHttpClient } from "@angular/common/http";
@@ -25,10 +26,12 @@ import {
   TokenApiPayloadMapper,
   TokenEnrollmentData
 } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { ENROLLMENT_CANCELLED } from "@components/token/token-enrollment/token-enrollment.constants";
 import { TokenCompleteEnrollmentComponent } from "@components/token/token-enrollment/token-complete-enrollment/token-complete-enrollment.component";
 import { TokenEnrollmentLastStepDialogComponent } from "@components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
 import { TokenVerifyEnrollmentComponent } from "@components/token/token-enrollment/token-verify-enrollment/token-verify-enrollment.component";
 import { environment } from "@env/environment";
+import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
 import { AuthService } from "@services/auth/auth.service";
 import { ContainerService } from "@services/container/container.service";
 import { ContentService } from "@services/content/content.service";
@@ -365,6 +368,84 @@ describe("TokenEnrollmentComponent", () => {
         );
       });
 
+      it("resets the pending enrollment when the strategy reports a cancellation", async () => {
+        tokenService.selectedTokenType.set({ key: "push", name: "Push", info: "", text: "" });
+        const reopenDialog = signal<(() => Promise<unknown>) | undefined>(() => Promise.resolve(null));
+        installStrategy(component, {
+          buildEnrollmentArgs: jest.fn().mockReturnValue({
+            data: { type: "push" },
+            mapper: jest.fn() as unknown as TokenApiPayloadMapper<TokenEnrollmentData>
+          }),
+          onEnrollmentResponse: jest.fn().mockResolvedValue(ENROLLMENT_CANCELLED),
+          reopenDialog
+        });
+        tokenService.enrollToken.mockReturnValueOnce(
+          of({ result: { status: true }, detail: { serial: "PIPU0001", rollout_state: "clientwait" } })
+        );
+
+        const result = await component.enrollToken();
+
+        expect(result).toBe(true);
+        expect(component.enrollResponse()).toBeNull();
+        expect(component.enrolledDialogData()).toBeNull();
+        expect(reopenDialog()).toBeUndefined();
+        expect(dialogServiceMock.openDialog).not.toHaveBeenCalled();
+      });
+
+      it("resets the pending enrollment when the complete dialog cancels it", async () => {
+        tokenService.selectedTokenType.set({ key: "hotp", name: "HOTP", info: "", text: "" });
+        installStrategy(component, {
+          buildEnrollmentArgs: jest.fn().mockReturnValue({
+            data: { type: "hotp" },
+            mapper: jest.fn() as unknown as TokenApiPayloadMapper<TokenEnrollmentData>
+          })
+        });
+        tokenService.enrollToken.mockReturnValueOnce(
+          of({ result: { status: true }, detail: { serial: "OATH0001", rollout_state: "clientwait" } })
+        );
+        const dialogRef = new MockMatDialogRef();
+        dialogRef.afterClosed.mockReturnValue(of(ENROLLMENT_CANCELLED));
+        dialogServiceMock.openDialog.mockReturnValue(dialogRef);
+
+        await component.enrollToken();
+
+        expect(dialogServiceMock.openDialog).toHaveBeenCalledWith(
+          expect.objectContaining({
+            component: TokenCompleteEnrollmentComponent,
+            configOverride: { autoFocus: "input", disableClose: true }
+          })
+        );
+        expect(component.enrollResponse()).toBeNull();
+        expect(component.enrolledDialogData()).toBeNull();
+      });
+
+      it("resets the pending enrollment when the verify dialog cancels it", async () => {
+        tokenService.selectedTokenType.set({ key: "hotp", name: "HOTP", info: "", text: "" });
+        installStrategy(component, {
+          buildEnrollmentArgs: jest.fn().mockReturnValue({
+            data: { type: "hotp" },
+            mapper: jest.fn() as unknown as TokenApiPayloadMapper<TokenEnrollmentData>
+          })
+        });
+        tokenService.enrollToken.mockReturnValueOnce(
+          of({ result: { status: true }, detail: { serial: "OATH0002", verify: { message: "Enter OTP" } } })
+        );
+        const dialogRef = new MockMatDialogRef();
+        dialogRef.afterClosed.mockReturnValue(of(ENROLLMENT_CANCELLED));
+        dialogServiceMock.openDialog.mockReturnValue(dialogRef);
+
+        await component.enrollToken();
+
+        expect(dialogServiceMock.openDialog).toHaveBeenCalledWith(
+          expect.objectContaining({
+            component: TokenVerifyEnrollmentComponent,
+            configOverride: { autoFocus: "input", disableClose: true }
+          })
+        );
+        expect(component.enrollResponse()).toBeNull();
+        expect(component.enrolledDialogData()).toBeNull();
+      });
+
       it("Strategy with showEnrollDataInLastStep false hides the enroll data in the last step dialog", async () => {
         tokenService.selectedTokenType.set({ key: "push", name: "Push", info: "", text: "" });
         const enrollmentArgsGetterFn = jest.fn().mockReturnValue({
@@ -482,7 +563,8 @@ describe("TokenEnrollmentComponent", () => {
         expect(dialogServiceMock.openDialog).toHaveBeenCalledWith(
           expect.objectContaining({
             component: TokenCompleteEnrollmentComponent,
-            data: expect.objectContaining({ response: enrollResponse })
+            data: expect.objectContaining({ response: enrollResponse }),
+            configOverride: { autoFocus: "input", disableClose: true }
           })
         );
         // After closed complete dialog called and opened last step dialog with correct data
@@ -562,7 +644,8 @@ describe("TokenEnrollmentComponent", () => {
         expect(dialogServiceMock.openDialog).toHaveBeenCalledWith(
           expect.objectContaining({
             component: TokenCompleteEnrollmentComponent,
-            data: expect.objectContaining({ response: enrollResponse })
+            data: expect.objectContaining({ response: enrollResponse }),
+            configOverride: { autoFocus: "input", disableClose: true }
           })
         );
         // After closed complete dialog called and opened verify with correct data
@@ -570,7 +653,8 @@ describe("TokenEnrollmentComponent", () => {
         expect(dialogServiceMock.openDialog).toHaveBeenCalledWith(
           expect.objectContaining({
             component: TokenVerifyEnrollmentComponent,
-            data: expect.objectContaining({ response: completeResponse })
+            data: expect.objectContaining({ response: completeResponse }),
+            configOverride: { autoFocus: "input", disableClose: true }
           })
         );
         // verify dialog closed and last step dialog opened with correct data
@@ -626,7 +710,8 @@ describe("TokenEnrollmentComponent", () => {
         expect(dialogServiceMock.openDialog).toHaveBeenCalledWith(
           expect.objectContaining({
             component: TokenVerifyEnrollmentComponent,
-            data: expect.objectContaining({ response: enrollResponse })
+            data: expect.objectContaining({ response: enrollResponse }),
+            configOverride: { autoFocus: "input", disableClose: true }
           })
         );
         // closed verify dialog and open last step dialog with correct data
@@ -687,6 +772,42 @@ describe("TokenEnrollmentComponent", () => {
 
       expect(fn).toHaveBeenCalledTimes(1);
       expect(dialogServiceMock.openDialog).not.toHaveBeenCalled();
+    });
+
+    it("reopenEnrollmentDialog: reopens with the regenerated response instead of the initial one", async () => {
+      tokenService.selectedTokenType.set({ key: "totp", name: "TOTP", info: "", text: "" });
+      installStrategy(component, {
+        buildEnrollmentArgs: jest.fn().mockReturnValue({
+          data: { type: "totp" },
+          mapper: jest.fn() as unknown as TokenApiPayloadMapper<TokenEnrollmentData>
+        }),
+        reopenDialog: () => undefined
+      });
+      const enrollResponse = {
+        result: { status: true },
+        detail: { serial: "TOTP0001", googleurl: { img: "initial-img", value: "initial-url" } }
+      } as unknown as EnrollmentResponse;
+      tokenService.enrollToken.mockReturnValueOnce(of(enrollResponse));
+      await component.enrollToken();
+
+      const regenerated = {
+        result: { status: true },
+        detail: { serial: "TOTP0001", googleurl: { img: "regenerated-img", value: "regenerated-url" } }
+      } as unknown as EnrollmentResponse;
+      component.enrolledDialogData()?.onEnrollmentResponseChange?.(regenerated);
+
+      expect(component.enrollResponse()).toBe(regenerated);
+      expect(component.enrolledDialogData()?.response).toBe(regenerated);
+
+      dialogServiceMock.openDialog.mockClear();
+      component.reopenEnrollmentDialog();
+
+      expect(dialogServiceMock.openDialog).toHaveBeenCalledWith(
+        expect.objectContaining({
+          component: TokenEnrollmentLastStepDialogComponent,
+          data: expect.objectContaining({ response: regenerated })
+        })
+      );
     });
 
     it("reopenEnrollmentDialog: falls back to last-step data", () => {

@@ -26,7 +26,12 @@ import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dial
 import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
 import { TokenEnrolledTextComponent } from "@components/token/token-enrollment/token-enrolled-text/token-enrolled-text.component";
 import { TokenEnrollmentDataComponent } from "@components/token/token-enrollment/token-enrollment-data/token-enrollment-data.component";
+import {
+  ENROLLMENT_CANCELLED,
+  EnrollmentStepResult
+} from "@components/token/token-enrollment/token-enrollment.constants";
 import { DialogAction } from "@models/dialog";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { TokenEnrollmentDialogData, TokenService, TokenServiceInterface } from "@services/token/token.service";
 
@@ -45,9 +50,13 @@ import { TokenEnrollmentDialogData, TokenService, TokenServiceInterface } from "
   templateUrl: "./token-verify-enrollment.component.html",
   styleUrl: "./token-verify-enrollment.component.scss"
 })
-export class TokenVerifyEnrollmentComponent extends AbstractDialogComponent<TokenEnrollmentDialogData, EnrollmentResponse> {
+export class TokenVerifyEnrollmentComponent extends AbstractDialogComponent<
+  TokenEnrollmentDialogData,
+  EnrollmentStepResult
+> {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
 
   protected readonly responseDetails = this.data.response?.detail;
   protected readonly tokenType = this.data.response?.type ?? "hotp";
@@ -61,19 +70,46 @@ export class TokenVerifyEnrollmentComponent extends AbstractDialogComponent<Toke
   });
   invalidInputSignal = computed(() => !this.verifyOTPForm().valid());
 
-  readonly dialogActions = computed<DialogAction<string>[]>(() => [
-    {
+  readonly dialogActions = computed<DialogAction<string>[]>(() => {
+    const actions: DialogAction<string>[] = [];
+    if (this.canCancelEnrollment()) {
+      actions.push({
+        label: $localize`Cancel`,
+        type: "destruct",
+        value: "cancelEnrollment"
+      });
+    }
+    actions.push({
       label: $localize`Verify`,
       type: "confirm",
       value: "verify",
       disabled: this.invalidInputSignal()
-    }
-  ]);
+    });
+    return actions;
+  });
 
   onDialogAction(value: string): void {
     if (value === "verify") {
       this.verifyOTP();
     }
+    if (value === "cancelEnrollment") {
+      this.cancelEnrollment();
+    }
+  }
+
+  cancelEnrollment(): void {
+    const tokenSerial = this.responseDetails?.serial;
+    if (!tokenSerial) {
+      return;
+    }
+    this.tokenService.cancelEnrollment(tokenSerial).subscribe({
+      next: () => this.close(ENROLLMENT_CANCELLED),
+      error: () => undefined
+    });
+  }
+
+  private canCancelEnrollment(): boolean {
+    return !this.data.rollover && this.authService.actionAllowed("delete");
   }
 
   verifyOTP() {
@@ -89,6 +125,10 @@ export class TokenVerifyEnrollmentComponent extends AbstractDialogComponent<Toke
         }
       }
     });
+  }
+
+  onEnrollmentResponseChange(response: EnrollmentResponse): void {
+    this.data.onEnrollmentResponseChange?.(response);
   }
 
   onSwitchRoute() {
