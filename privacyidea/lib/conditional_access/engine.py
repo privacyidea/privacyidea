@@ -692,38 +692,58 @@ def is_user_locked(user: "User", now: datetime | None = None, *, clear_expired: 
 # Built-in never-block networks: blocking loopback would lock out a same-host
 # reverse proxy — and when OVERRIDECLIENT is unset every client is seen as that
 # proxy — turning one BLOCK_IP action into a self-inflicted outage. Admins extend
-# this via the CONDITIONAL_ACCESS_NEVER_BLOCK system config (proxy / load-balancer
-# / NAT / management CIDRs).
+# this via the PI_CONDITIONAL_ACCESS_NEVER_BLOCK server setting (proxy /
+# load-balancer / NAT / management CIDRs).
 _DEFAULT_NEVER_BLOCK_NETWORKS = ("127.0.0.0/8", "::1/128")
+
+#: App-config key holding the never-block allowlist, set in pi.cfg or through the
+#: PRIVACYIDEA_-prefixed environment variable of the same name. This lives in the
+#: server configuration and not in the system config on purpose: it is the safety
+#: net that keeps an admin from locking themselves out, so it must not be reachable
+#: through the very API an attacker (or a mistaken BLOCK_IP policy) could be attacking.
+NEVER_BLOCK_CONFIG_KEY = "PI_CONDITIONAL_ACCESS_NEVER_BLOCK"
 
 
 def _never_block_networks() -> "list[ipaddress._BaseNetwork]":
     """
     The never-block networks: the built-in loopback defaults plus the CIDRs (or
-    bare IPs) configured in the ``CONDITIONAL_ACCESS_NEVER_BLOCK`` system config.
-    Invalid config entries are logged and ignored rather than breaking the engine.
+    bare IPs) configured as ``PI_CONDITIONAL_ACCESS_NEVER_BLOCK`` in the server
+    configuration (``pi.cfg`` or the environment).
+    The setting is either a list of entries or a single comma/whitespace-separated
+    string. A malformed setting is logged and ignored rather than breaking the
+    engine: this runs on every authentication, so a typo in the configuration must
+    degrade to the loopback defaults, not answer 500 to every request.
     """
-    # Lazy import: config is loaded very early in app startup; importing it at
+    # Lazy import: framework pulls in the app context machinery; importing it at
     # module load would risk an import-order cycle.
-    from privacyidea.lib.config import get_from_config, SYSCONF
+    from privacyidea.lib.framework import get_app_config_value
     networks = [ipaddress.ip_network(cidr) for cidr in _DEFAULT_NEVER_BLOCK_NETWORKS]
-    configured = get_from_config(SYSCONF.CONDITIONAL_ACCESS_NEVER_BLOCK) or ""
-    for entry in re.split(r"[,\s]+", configured.strip()):
+    configured = get_app_config_value(NEVER_BLOCK_CONFIG_KEY) or []
+    if isinstance(configured, str):
+        configured = re.split(r"[,\s]+", configured.strip())
+    elif not isinstance(configured, (list, tuple, set, frozenset)):
+        # Anything else is a pi.cfg mistake. Only these types are accepted rather than
+        # "any iterable": an ip_network object, for one, iterates over its 16.7M hosts.
+        log.warning(f"Ignoring {NEVER_BLOCK_CONFIG_KEY}: expected a list or a string, "
+                    f"got {type(configured).__name__}.")
+        configured = []
+    for entry in configured:
+        entry = str(entry).strip()
         if not entry:
             continue
         try:
             networks.append(ipaddress.ip_network(entry, strict=False))
         except ValueError:
-            log.warning(f"Ignoring invalid network {entry!r} in {SYSCONF.CONDITIONAL_ACCESS_NEVER_BLOCK}.")
+            log.warning(f"Ignoring invalid network {entry!r} in {NEVER_BLOCK_CONFIG_KEY}.")
     return networks
 
 
 def is_ip_never_block(source_ip: str | None) -> bool:
     """
     Return whether *source_ip* must never be blocked by the conditional-access
-    engine: it is loopback (built-in) or matches the ``CONDITIONAL_ACCESS_NEVER_BLOCK``
-    system config. A falsy or unparsable IP is treated as never-block as well —
-    fail safe: never block an address the engine cannot positively identify.
+    engine: it is loopback (built-in) or matches the ``PI_CONDITIONAL_ACCESS_NEVER_BLOCK``
+    allowlist from the server configuration. A falsy or unparsable IP is treated as never-block as
+    well — fail safe: never block an address the engine cannot positively identify.
     """
     if not source_ip:
         return True
@@ -743,8 +763,9 @@ def get_ip_block(source_ip: str | None, now: datetime | None = None, *,
     counterpart of :func:`get_user_lockout` and is meant for the authentication
     pre-check hot path.
 
-    By default this is a **pure read**: a stale row whose ``block_expires_at`` lies
-    in the past simply reads as *not blocked* and is left in place.
+    By default this is a **pure read**: a row that is not enforced — its
+    ``block_expires_at`` lies in the past, or the IP is on the never-block
+    allowlist — simply reads as *not blocked* and is left in place.
 
     With *clear_expired* the observed stale row is deleted on the spot, an expired
     timed block carries no enforced state (the authentication log is the record),
@@ -761,8 +782,9 @@ def get_ip_block(source_ip: str | None, now: datetime | None = None, *,
 
     :param source_ip: the client IP to check; a falsy value is never blocked
     :param now: the reference time; defaults to :func:`utc_now`
-    :param clear_expired: delete the row if it is a stale (timed, expired) block;
-        off by default to keep this a pure read for non-auth callers
+    :param clear_expired: delete the row if it no longer restricts anything - a stale
+        (timed, expired) block, or any block on a never-block IP; off by default to keep
+        this a pure read for non-auth callers
     :return: ``None`` if not blocked, else a :class:`RestrictionStatus`
     """
     if not source_ip:
@@ -770,9 +792,15 @@ def get_ip_block(source_ip: str | None, now: datetime | None = None, *,
     state = get_ca_session().get(BlockList, source_ip)
     if not state:
         return None
-    # A block row exists; honor the never-block allowlist so adding an IP to it
-    # immediately stops enforcing any (e.g. stale or mistaken) block on that IP.
+    # A block row exists; the never-block allowlist outranks it, so adding an IP to
+    # the allowlist immediately stops enforcing any (e.g. stale or mistaken) block on
+    # that IP. With clear_expired the row itself is dropped here — the allowlist can
+    # never be outvoted, so the record is dead weight and the auth pre-check is the
+    # one caller that reliably sees the IP again.
     if is_ip_never_block(source_ip):
+        if clear_expired:
+            log.info(f"Removing the block for IP {source_ip!r}: it is on the never-block allowlist.")
+            _delete_ip_block(state)
         return None
     if state.block_expires_at is None:
         # Permanent block; only an admin reset clears it.
@@ -796,7 +824,8 @@ def is_ip_blocked(source_ip: str | None, now: datetime | None = None, *, clear_e
 
     :param source_ip: the client IP to check; a falsy value is never blocked
     :param now: the reference time; defaults to :func:`utc_now`
-    :param clear_expired: delete the row if it is a stale (timed, expired) block
+    :param clear_expired: delete the row if it is a stale (timed, expired) block or a
+        block on a never-block IP
     :return: ``True`` if the IP is currently blocked
     """
     return get_ip_block(source_ip, now=now, clear_expired=clear_expired) is not None
@@ -1463,13 +1492,14 @@ def _delete_user_lockout_state(state: UserLockoutState) -> None:
 
 def _delete_ip_block(state: BlockList) -> None:
     """
-    Delete a stale :class:`BlockList` row. The IP counterpart of
-    :func:`_delete_user_lockout_state`: used by :func:`get_ip_block` to drop a
-    timed block the auth pre-check finds already expired. Defensive — a failure is
-    logged and rolled back so cleaning up can never break the authentication
+    Delete a :class:`BlockList` row that no longer restricts anything. The IP
+    counterpart of :func:`_delete_user_lockout_state`: used by :func:`get_ip_block`
+    to drop a timed block the auth pre-check finds already expired, or a block on an
+    IP that has since been added to the never-block allowlist. Defensive — a failure
+    is logged and rolled back so cleaning up can never break the authentication
     response that is still in flight.
     """
-    with guarded_write(f"the deletion of the expired IP block {state.ip!r}"):
+    with guarded_write(f"the deletion of the unenforced IP block {state.ip!r}"):
         get_ca_session().delete(state)
 
 
@@ -1511,8 +1541,8 @@ def _upsert_ip_block(source_ip: str, *, block_expires_at: datetime | None) -> bo
     never break the authentication response that already completed) and an
     existing **permanent** block is never downgraded to a timed one.
 
-    Never-block IPs (loopback and the ``CONDITIONAL_ACCESS_NEVER_BLOCK`` config)
-    are skipped: blocking shared infrastructure (a reverse proxy, NAT egress, or
+    Never-block IPs (loopback and the ``PI_CONDITIONAL_ACCESS_NEVER_BLOCK``
+    allowlist) are skipped: blocking shared infrastructure (a reverse proxy, NAT egress, or
     a load balancer) would lock out everyone behind it.
 
     :return: whether the block was written. ``False`` for a never-block IP, for a declined downgrade of a permanent
