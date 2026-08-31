@@ -24,6 +24,7 @@ import hashlib
 import json
 import logging
 import time
+import traceback
 
 from sqlalchemy import case, select, delete, update
 from sqlalchemy.exc import IntegrityError
@@ -254,14 +255,24 @@ def _write_observations(observations: dict) -> None:
     a window, so they have to take the row locks in one agreed order or two overlapping
     flushes can deadlock and lose a whole request's samples.
 
+    Each key is applied inside its own savepoint: a request can buffer several distinct
+    metric samples, and without this a transient failure (lock-wait timeout, deadlock)
+    on one of them would abort the shared transaction before ``commit()`` and lose every
+    other sample of the request, not just the one that failed.
+
     :param observations: maps (metric name, label items, node, window) to an aggregate
     """
     session = _metric_session()
     try:
         for key in sorted(observations):
             name, label_items, node, window = key
-            _apply_aggregate(session, name, _labels_key(dict(label_items)), node, window,
-                             observations[key])
+            try:
+                with session.begin_nested():
+                    _apply_aggregate(session, name, _labels_key(dict(label_items)), node, window,
+                                     observations[key])
+            except Exception as error:
+                log.error(f"metrics: could not apply the observation for {key!r}: {error!r}")
+                log.debug(traceback.format_exc())
         session.commit()
     finally:
         session.close()

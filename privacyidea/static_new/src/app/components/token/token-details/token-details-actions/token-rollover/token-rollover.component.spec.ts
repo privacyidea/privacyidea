@@ -191,7 +191,8 @@ describe("TokenRolloverComponent", () => {
 
       expect(dialogService.openDialog).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({ response: enrollResponse })
+          data: expect.objectContaining({ response: enrollResponse }),
+          configOverride: { autoFocus: "input", disableClose: true }
         })
       );
       expect(verifySpy).toHaveBeenCalledWith(completeResponse);
@@ -245,7 +246,8 @@ describe("TokenRolloverComponent", () => {
 
       expect(dialogService.openDialog).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({ response: enrollResponse })
+          data: expect.objectContaining({ response: enrollResponse }),
+          configOverride: { autoFocus: "input", disableClose: true }
         })
       );
       expect(finalizeSpy).toHaveBeenCalledWith(verifiedResponse);

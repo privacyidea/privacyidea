@@ -24,9 +24,12 @@ import { NO_ERRORS_SCHEMA } from "@angular/core";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { EnrollmentResponse } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { By } from "@angular/platform-browser";
+import { ENROLLMENT_CANCELLED } from "@components/token/token-enrollment/token-enrollment.constants";
+import { AuthService } from "@services/auth/auth.service";
 import { ContentService } from "@services/content/content.service";
 import { TokenService } from "@services/token/token.service";
 import { MockContentService } from "@testing/mock-services/mock-content-service";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockTokenService } from "@testing/mock-services/mock-token-service";
 import { of } from "rxjs";
 import { TokenVerifyEnrollmentComponent } from "./token-verify-enrollment.component";
@@ -116,5 +119,59 @@ describe("TokenVerifyEnrollmentComponent", () => {
   it("should close dialog on switch route", () => {
     component.onSwitchRoute();
     expect(dialogRefSpy.close).toHaveBeenCalled();
+  });
+
+  describe("cancelling the enrollment", () => {
+    const setup = async (data: Record<string, unknown> = {}, canDelete = false) => {
+      TestBed.resetTestingModule();
+      dialogRefSpy = { close: jest.fn() };
+      await TestBed.configureTestingModule({
+        imports: [TokenVerifyEnrollmentComponent],
+        providers: [
+          provideHttpClient(),
+          { provide: TokenService, useClass: MockTokenService },
+          { provide: ContentService, useClass: MockContentService },
+          { provide: AuthService, useClass: MockAuthService },
+          { provide: MatDialogRef, useValue: dialogRefSpy },
+          { provide: MAT_DIALOG_DATA, useValue: { ...dialogData, ...data } }
+        ],
+        schemas: [NO_ERRORS_SCHEMA]
+      }).compileComponents();
+      fixture = TestBed.createComponent(TokenVerifyEnrollmentComponent);
+      component = fixture.componentInstance;
+      mockTokenService = TestBed.inject(TokenService) as unknown as MockTokenService;
+      const authService = TestBed.inject(AuthService) as unknown as MockAuthService;
+      authService.actionAllowed.mockImplementation((action: string) => canDelete && action === "delete");
+      fixture.detectChanges();
+    };
+
+    const actionValues = () => component.dialogActions().map((action) => action.value);
+
+    it("offers no cancel action without the delete right", async () => {
+      await setup({}, false);
+
+      expect(actionValues()).toEqual(["verify"]);
+    });
+
+    it("offers the cancel action before the verify action", async () => {
+      await setup({}, true);
+
+      expect(actionValues()).toEqual(["cancelEnrollment", "verify"]);
+    });
+
+    it("never offers to cancel a rollover", async () => {
+      await setup({ rollover: true }, true);
+
+      expect(actionValues()).toEqual(["verify"]);
+    });
+
+    it("deletes the unverified token and reports the cancellation", async () => {
+      await setup({}, true);
+
+      component.onDialogAction("cancelEnrollment");
+
+      expect(mockTokenService.cancelEnrollment).toHaveBeenCalledWith("123");
+      expect(dialogRefSpy.close).toHaveBeenCalledWith(ENROLLMENT_CANCELLED);
+    });
   });
 });

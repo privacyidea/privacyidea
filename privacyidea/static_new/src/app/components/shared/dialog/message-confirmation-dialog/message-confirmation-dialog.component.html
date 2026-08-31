@@ -17,12 +17,8 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <app-dialog-wrapper
-  (actionTriggered)="rolloverToken()"
-  [title]="title()"
-  [actions]="dialogActions()">
-  <div>
-    <app-enroll-token-type-switch
-      [tokenTypeKey]="token()?.type ?? ''"
-      [enrollmentData]="token()" />
-  </div>
+  (actionTriggered)="onAction($event)"
+  [actions]="actions"
+  [title]="data.title">
+  <p class="max-width-600">{{ data.message }}</p>
 </app-dialog-wrapper>
