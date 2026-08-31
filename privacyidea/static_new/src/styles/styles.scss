@@ -268,7 +268,6 @@ body {
   --mdc-outlined-text-field-focus-outline-color: var(--mat-sys-primary-light);
   --mat-sys-corner-extra-small: var(--border-radius);
   --drawer-width-self-service: 256px;
-  --overlay-margin: 0px;
 
   --mat-menu-container-color: var(--mat-sys-surface-container-low);
 }
@@ -415,10 +414,6 @@ $corner-radii: (
 .selfservice-content-container > *:not(router-outlet) {
   min-height: 0;
   min-width: 0;
-}
-
-body.self-service-layout {
-  --overlay-margin: var(--drawer-width-self-service);
 }
 
 .shadow {

@@ -1,7 +1,7 @@
 // A dialog sits on its own scrim, which does the separating, so the shallow step is enough to
 // lift it and its surface stays one flat card tone with no depth gradient.
 .cdk-overlay-pane.mat-mdc-dialog-panel {
-  --mat-dialog-container-max-width: calc(100vw - var(--overlay-margin) - 2 * 32px);
+  --mat-dialog-container-max-width: calc(100vw - 2 * 32px);
 
   --mat-dialog-container-elevation-shadow: var(--elevation-3);
   --mat-dialog-container-shape: var(--border-radius);
