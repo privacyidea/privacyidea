@@ -79,6 +79,79 @@ class PasskeyTestBase(unittest.TestCase):
             "credential_id": self.credential_id,
         }
 
+        # Multi-device (backup-eligible) registration and authentication data. The backup-eligible flag
+        # lives inside the signed region of authenticatorData, so it cannot be produced by editing the
+        # single-device fixture above without invalidating its signature - this is a second, independently
+        # generated credential (locally simulated ECDSA P-256 authenticator, not real hardware) that is
+        # genuinely signed as backup-eligible, verified against the real py_webauthn verification functions
+        # at generation time.
+        self.registration_challenge_multi_device = "pmNw3p9yTC49KAhz_-ccoif3mogs0rXllmo77xNKEc8"
+        self.registration_attestation_multi_device = ("o2NmbXRkbm9uZWdhdHRTdG10oGhhdXRoRGF0YViktPp8c+wXo6hFUbdedkHcOP1s"
+                                                      "+xkwOrHsxfvNfhI7wVdZAAAAAAAAAAAAAAAAAAAAAAAAAAAAIFcVk6Mg+TaOq5rm"
+                                                      "gDaermd1YBj4jjp1KYSvlxXQk0BbpQECAyYgASFYIDtSmRs+YqC/9/gX8S3sTVvs"
+                                                      "Sr+BJeP33XjfVLhme9JiIlggaM9dR2j1xOsweMsmP26AWaotfkGnXfytfek87oXc"
+                                                      "P8o=")
+        self.registration_client_data_multi_device = ("eyJ0eXBlIjoid2ViYXV0aG4uY3JlYXRlIiwiY2hhbGxlbmdlIjoiY0cxT2R6TndP"
+                                                      "WGxVUXpRNVMwRm9lbDh0WTJOdmFXWXpiVzluY3pCeVdHeHNiVzgzTjNoT1MwVmpP"
+                                                      "QSIsIm9yaWdpbiI6Imh0dHBzOi8vY29vbC5uaWxzOjUwMDAifQ==")
+        self.credential_id_multi_device = "VxWToyD5No6rmuaANp6uZ3VgGPiOOnUphK-XFdCTQFs"
+        self.authenticator_attachment_multi_device = "platform"
+        self.user_handle_multi_device = ("ahm2K+5M+RFT3Wgu5o05kaY/XFpLA1dJMaMldjSbyyqtOHSL/YxEs/P9aakjQtmDeCpPoFU8hfa95"
+                                         "dVTcggG5A==")
+
+        # Reject case: used with a SCOPE.AUTH policy restricting to single_device, must be denied
+        self.authentication_challenge_multi_device_reject = "1wqVthf6cD74Kjc2Lua1XpKfbfkthBgLVB3Jdx8ElxY"
+        self.authenticator_data_multi_device_reject = "tPp8c+wXo6hFUbdedkHcOP1s+xkwOrHsxfvNfhI7wVcZAAAABg=="
+        self.authentication_client_data_multi_device_reject = ("eyJ0eXBlIjoid2ViYXV0aG4uZ2V0IiwiY2hhbGxlbmdlIjoiTVhkeFZ"
+                                                               "uUm9aalpqUkRjMFMycGpNa3gxWVRGWWNFdG1ZbVpyZEdoQ1oweFdRak"
+                                                               "5LWkhnNFJXeDRXUSIsIm9yaWdpbiI6Imh0dHBzOi8vY29vbC5uaWxzO"
+                                                               "jUwMDAifQ==")
+        self.authentication_signature_multi_device_reject = ("MEYCIQDXWGWQ5EQt7wX6Pzt2vhF0l2KODDsvQmPJYg/xbEXiHQIhAKHGQ"
+                                                             "Mc0Pe6KhKYPRRmiOfBLMNbD75wg7VFxgkN0Ssah")
+        self.authentication_response_multi_device_reject = {
+            "clientDataJSON": self.authentication_client_data_multi_device_reject,
+            "authenticatorData": self.authenticator_data_multi_device_reject,
+            "signature": self.authentication_signature_multi_device_reject,
+            "userHandle": self.user_handle_multi_device,
+            "credential_id": self.credential_id_multi_device,
+        }
+
+        # Accept case: used with a SCOPE.AUTH policy restricting to multi_device, must succeed
+        self.authentication_challenge_multi_device_accept = "rDdZaECd8FN2Cg7EBrPwHGD3438vC8CSKw81cZPaRz0"
+        self.authenticator_data_multi_device_accept = "tPp8c+wXo6hFUbdedkHcOP1s+xkwOrHsxfvNfhI7wVcdAAAABw=="
+        self.authentication_client_data_multi_device_accept = ("eyJ0eXBlIjoid2ViYXV0aG4uZ2V0IiwiY2hhbGxlbmdlIjoiY2tSa1d"
+                                                               "tRkZRMlE0Ums0eVEyYzNSVUp5VUhkSVIwUXpORE00ZGtNNFExTkxkem"
+                                                               "d4WTFwUVlWSjZNQSIsIm9yaWdpbiI6Imh0dHBzOi8vY29vbC5uaWxzO"
+                                                               "jUwMDAifQ==")
+        self.authentication_signature_multi_device_accept = ("MEUCIHv3SL/4dh/54IUcxJT6CHiQKF0EoYWZElb8WgmzyNm8AiEA892W2"
+                                                             "TUIpKXCJ9FVM19J4tdAq7QK0RamllbiqSFUG2E=")
+        self.authentication_response_multi_device_accept = {
+            "clientDataJSON": self.authentication_client_data_multi_device_accept,
+            "authenticatorData": self.authenticator_data_multi_device_accept,
+            "signature": self.authentication_signature_multi_device_accept,
+            "userHandle": self.user_handle_multi_device,
+            "credential_id": self.credential_id_multi_device,
+        }
+
+        # Tamper case: a genuine multi_device response with the backup-eligible bit flipped off in
+        # authenticatorData while keeping the ORIGINAL signature (an attacker forging this has no private
+        # key), used to prove the device type cannot be spoofed by editing the wire data post-signature.
+        self.authentication_challenge_multi_device_tamper = "CdRtaUqmBroufnDIXBJ2B6UTAtYIi9Cw0b1tMrP5MxA"
+        self.authentication_client_data_multi_device_tamper = ("eyJ0eXBlIjoid2ViYXV0aG4uZ2V0IiwiY2hhbGxlbmdlIjoiUTJSU2R"
+                                                               "HRlZjVzFDY205MVptNUVTVmhDU2pKQ05sVlVRWFJaU1drNVEzY3dZak"
+                                                               "YwVFhKUU5VMTRRUSIsIm9yaWdpbiI6Imh0dHBzOi8vY29vbC5uaWxzO"
+                                                               "jUwMDAifQ==")
+        self.authentication_signature_multi_device_tamper = ("MEQCIHud3AYQEeYc9THbU2JMKU6PGG766HFl6m1ooSCRek/IAiAQUd9ad"
+                                                             "gX5zZQ91zL2tYjEUSmz9oRXqz3B3M7nHhLvYw==")
+        self.authenticator_data_multi_device_tamper_be_flipped = "tPp8c+wXo6hFUbdedkHcOP1s+xkwOrHsxfvNfhI7wVcVAAAACA=="
+        self.authentication_response_multi_device_tamper = {
+            "clientDataJSON": self.authentication_client_data_multi_device_tamper,
+            "authenticatorData": self.authenticator_data_multi_device_tamper_be_flipped,
+            "signature": self.authentication_signature_multi_device_tamper,
+            "userHandle": self.user_handle_multi_device,
+            "credential_id": self.credential_id_multi_device,
+        }
+
     def validate_default_passkey_registration(self, passkey_registration: dict):
         """
         Validates the passkey registration response with the default values and the values set in this class
