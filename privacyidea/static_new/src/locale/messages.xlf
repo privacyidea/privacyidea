@@ -9953,7 +9953,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="token.hasBeenEnrolled" datatype="html">
-        <source>It has been enrolled in the container <x id="START_LINK" ctype="x-a" equiv-text="&lt;a role=&quot;button&quot; tabindex=&quot;0&quot; (click)=&quot;natigateContainerDetails()&quot; (keydown.enter)=&quot;natigateContainerDetails()&quot; (keydown.space)=&quot;$event.preventDefault(); natigateContainerDetails()&quot;&gt;"/> <x id="INTERPOLATION" equiv-text="{{ containerSerial() }}"/> <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a &gt;"/>.</source>
+        <source>It has been enrolled in the container <x id="START_LINK" ctype="x-a" equiv-text="&lt;a role=&quot;button&quot; tabindex=&quot;0&quot; (click)=&quot;natigateContainerDetails()&quot; (keydown.enter)=&quot;natigateContainerDetails()&quot; (keydown.space)=&quot;$event.preventDefault(); natigateContainerDetails()&quot;&gt;"/> <x id="INTERPOLATION" equiv-text="{{ containerSerial() }}"/> <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/> .</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrolled-text/token-enrolled-text.component.html</context>
           <context context-type="linenumber">35</context>
@@ -9963,21 +9963,21 @@
         <source>The user <x id="START_BLOCK_IF" equiv-text="@if (authService.actionAllowed(&quot;userlist&quot;)) {"/><x id="START_LINK" ctype="x-a" equiv-text="&lt;a role=&quot;button&quot; tabindex=&quot;0&quot; (click)=&quot;navigateUserDetails()&quot; (keydown.enter)=&quot;navigateUserDetails()&quot; (keydown.space)=&quot;$event.preventDefault(); navigateUserDetails()&quot; class=&quot;text-link-button cursor-pointer&quot; &gt;"/><x id="INTERPOLATION" equiv-text="{{ username() }}"/><x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a &gt;"/><x id="CLOSE_BLOCK_IF" equiv-text="}"/><x id="START_BLOCK_ELSE" equiv-text="@else {"/><x id="START_TAG_SPAN" ctype="x-span" equiv-text="&lt;span&gt;"/><x id="INTERPOLATION" equiv-text="{{ username() }}"/><x id="CLOSE_TAG_SPAN" ctype="x-span" equiv-text="&lt;/span&gt;"/><x id="CLOSE_BLOCK_ELSE" equiv-text="}"/> in the realm <x id="START_BLOCK_IF_1" equiv-text="@if (authService.role() === &quot;admin&quot;) {"/><x id="START_LINK_1" equiv-text="&lt;a role=&quot;button&quot; tabindex=&quot;0&quot; (click)=&quot;navigateRealms()&quot; (keydown.enter)=&quot;navigateRealms()&quot; (keydown.space)=&quot;$event.preventDefault(); navigateRealms()&quot; class=&quot;text-link-button cursor-pointer&quot; &gt;"/><x id="INTERPOLATION_1" equiv-text="{{ userRealm() }}"/><x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a &gt;"/><x id="CLOSE_BLOCK_IF" equiv-text="}"/><x id="START_BLOCK_ELSE" equiv-text="@else {"/><x id="START_TAG_SPAN" ctype="x-span" equiv-text="&lt;span&gt;"/><x id="INTERPOLATION_1" equiv-text="{{ userRealm() }}"/><x id="CLOSE_TAG_SPAN" ctype="x-span" equiv-text="&lt;/span&gt;"/><x id="CLOSE_BLOCK_ELSE" equiv-text="}"/> was assigned to the token.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrolled-text/token-enrolled-text.component.html</context>
-          <context context-type="linenumber">49</context>
+          <context context-type="linenumber">50</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.tokenWasAssigned" datatype="html">
         <source>The token was assigned to the realm <x id="START_BLOCK_IF" equiv-text="@if (authService.role() === &quot;admin&quot;) {"/><x id="START_LINK" ctype="x-a" equiv-text="&lt;a role=&quot;button&quot; tabindex=&quot;0&quot; (click)=&quot;navigateRealms()&quot; (keydown.enter)=&quot;navigateRealms()&quot; (keydown.space)=&quot;$event.preventDefault(); navigateRealms()&quot; class=&quot;text-link-button cursor-pointer&quot; &gt;"/><x id="INTERPOLATION" equiv-text="{{ userRealm() }}"/><x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a &gt;"/><x id="CLOSE_BLOCK_IF" equiv-text="}"/><x id="START_BLOCK_ELSE" equiv-text="@else {"/><x id="START_TAG_SPAN" ctype="x-span" equiv-text="&lt;span&gt;"/><x id="INTERPOLATION" equiv-text="{{ userRealm() }}"/><x id="CLOSE_TAG_SPAN" ctype="x-span" equiv-text="&lt;/span&gt;"/><x id="CLOSE_BLOCK_ELSE" equiv-text="}"/> .</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrolled-text/token-enrolled-text.component.html</context>
-          <context context-type="linenumber">80</context>
+          <context context-type="linenumber">81</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.tokenSerialNumber" datatype="html">
         <source>The token with serial number <x id="START_LINK" ctype="x-a" equiv-text="&lt;a role=&quot;button&quot; tabindex=&quot;0&quot; (click)=&quot;tokenSelected()&quot; (keydown.enter)=&quot;tokenSelected()&quot; (keydown.space)=&quot;$event.preventDefault(); tokenSelected()&quot;&gt;"/> <x id="INTERPOLATION" equiv-text="{{ serial() }}"/> <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/> was successfully rolled over.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrolled-text/token-enrolled-text.component.html</context>
-          <context context-type="linenumber">101</context>
+          <context context-type="linenumber">102</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.otpKey" datatype="html">
@@ -11777,7 +11777,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.userGroupsReceived" datatype="html">
-        <source>User groups are received in a separate request and stored under the privacyIDEA attribute <x id="START_TAG_CODE" ctype="x-code" equiv-text="&lt;code&gt;"/>groups<x id="CLOSE_TAG_CODE" ctype="x-code" equiv-text="&lt;/code&gt;"/>.</source>
+        <source>User groups are received in a separate request and stored under the privacyIDEA attribute <x id="START_TAG_CODE" ctype="x-code" equiv-text="&lt;code&gt;"/>groups<x id="CLOSE_TAG_CODE" ctype="x-code" equiv-text="&lt;/code&gt;"/> .</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/http-resolver/http-groups-attribute/http-groups-attribute.component.html</context>
           <context context-type="linenumber">110</context>
@@ -16894,6 +16894,13 @@
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-details/user-details-token-table/user-details-token-table.component.ts</context>
           <context context-type="linenumber">166</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="common.labelWithColon" datatype="html">
+        <source><x id="LABEL" equiv-text="label"/>:</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/utils/i18n.utils.ts</context>
+          <context context-type="linenumber">22</context>
         </context-group>
       </trans-unit>
     </body>

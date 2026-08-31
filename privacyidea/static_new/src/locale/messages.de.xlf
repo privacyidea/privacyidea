@@ -8023,7 +8023,7 @@
       </trans-unit>
       <trans-unit id="container.addTokenContainer" datatype="html">
         <source>Add Token to Container</source>
-        <target state="new">Token zum Container hinzufügen</target>
+        <target>Token zum Container hinzufügen</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/shared/container-add-token/container-add-token.component.html</context>
           <context context-type="linenumber">36</context>
@@ -8107,7 +8107,7 @@
       </trans-unit>
       <trans-unit id="common.youSureYouWant" datatype="html">
         <source>Are you sure you want to <x id="INTERPOLATION" equiv-text="{{ data.confirmAction.label.toLocaleLowerCase() }}"/> <x id="START_BLOCK_IF" equiv-text="@if (data.items.length &gt; 1) {"/> all selected (<x id="INTERPOLATION_1" equiv-text="{{ data.items.length }}"/>) <x id="INTERPOLATION_2" equiv-text="{{ data.itemType }}"/>s? <x id="CLOSE_BLOCK_IF" equiv-text="}"/><x id="START_BLOCK_ELSE" equiv-text="@else {"/> this <x id="INTERPOLATION_2" equiv-text="{{ data.itemType }}"/>? <x id="CLOSE_BLOCK_ELSE" equiv-text="}"/></source>
-        <target state="new">Sind Sie sicher, dass Sie <x id="INTERPOLATION" equiv-text="{{ data.confirmAction.label.toLocaleLowerCase() }}"/> <x id="START_BLOCK_IF" equiv-text="@if (data.items.length &gt; 1) {"/> alle ausgewählten (<x id="INTERPOLATION_1" equiv-text="{{ data.items.length }}"/>) <x id="INTERPOLATION_2" equiv-text="{{ data.itemType }}"/>s? <x id="CLOSE_BLOCK_IF" equiv-text="}"/><x id="START_BLOCK_ELSE" equiv-text="@else {"/> dieses <x id="INTERPOLATION_2" equiv-text="{{ data.itemType }}"/>? <x id="CLOSE_BLOCK_ELSE" equiv-text="}"/></target>
+        <target>Sind Sie sicher, dass Sie <x id="INTERPOLATION" equiv-text="{{ data.confirmAction.label.toLocaleLowerCase() }}"/> <x id="START_BLOCK_IF" equiv-text="@if (data.items.length &gt; 1) {"/> alle ausgewählten (<x id="INTERPOLATION_1" equiv-text="{{ data.items.length }}"/>) <x id="INTERPOLATION_2" equiv-text="{{ data.itemType }}"/>s? <x id="CLOSE_BLOCK_IF" equiv-text="}"/><x id="START_BLOCK_ELSE" equiv-text="@else {"/> dieses <x id="INTERPOLATION_2" equiv-text="{{ data.itemType }}"/>? <x id="CLOSE_BLOCK_ELSE" equiv-text="}"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/shared/dialog/confirmation-dialog/confirmation-dialog.component.html</context>
           <context context-type="linenumber">27</context>
@@ -10446,7 +10446,7 @@
         <target>Der Benutzer <x id="START_BLOCK_IF" equiv-text="@if (authService.actionAllowed(&quot;userlist&quot;)) {"/><x id="START_LINK" ctype="x-a" equiv-text="&lt;a role=&quot;button&quot; tabindex=&quot;0&quot; (click)=&quot;navigateUserDetails()&quot; (keydown.enter)=&quot;navigateUserDetails()&quot; (keydown.space)=&quot;$event.preventDefault(); navigateUserDetails()&quot; class=&quot;text-link-button cursor-pointer&quot; &gt;"/><x id="INTERPOLATION" equiv-text="{{ username() }}"/><x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a &gt;"/><x id="CLOSE_BLOCK_IF" equiv-text="}"/><x id="START_BLOCK_ELSE" equiv-text="@else {"/><x id="START_TAG_SPAN" ctype="x-span" equiv-text="&lt;span&gt;"/><x id="INTERPOLATION" equiv-text="{{ username() }}"/><x id="CLOSE_TAG_SPAN" ctype="x-span" equiv-text="&lt;/span&gt;"/><x id="CLOSE_BLOCK_ELSE" equiv-text="}"/> im Realm <x id="START_BLOCK_IF_1" equiv-text="@if (authService.role() === &quot;admin&quot;) {"/><x id="START_LINK_1" equiv-text="&lt;a role=&quot;button&quot; tabindex=&quot;0&quot; (click)=&quot;navigateRealms()&quot; (keydown.enter)=&quot;navigateRealms()&quot; (keydown.space)=&quot;$event.preventDefault(); navigateRealms()&quot; class=&quot;text-link-button cursor-pointer&quot; &gt;"/><x id="INTERPOLATION_1" equiv-text="{{ userRealm() }}"/><x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a &gt;"/><x id="CLOSE_BLOCK_IF" equiv-text="}"/><x id="START_BLOCK_ELSE" equiv-text="@else {"/><x id="START_TAG_SPAN" ctype="x-span" equiv-text="&lt;span&gt;"/><x id="INTERPOLATION_1" equiv-text="{{ userRealm() }}"/><x id="CLOSE_TAG_SPAN" ctype="x-span" equiv-text="&lt;/span&gt;"/><x id="CLOSE_BLOCK_ELSE" equiv-text="}"/> wurde dem Token zugewiesen.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrolled-text/token-enrolled-text.component.html</context>
-          <context context-type="linenumber">49</context>
+          <context context-type="linenumber">50</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.tokenWasAssigned" datatype="html">
@@ -10454,7 +10454,7 @@
         <target>Der Token wurde dem Realm <x id="START_BLOCK_IF" equiv-text="@if (authService.role() === &quot;admin&quot;) {"/><x id="START_LINK" ctype="x-a" equiv-text="&lt;a role=&quot;button&quot; tabindex=&quot;0&quot; (click)=&quot;navigateRealms()&quot; (keydown.enter)=&quot;navigateRealms()&quot; (keydown.space)=&quot;$event.preventDefault(); navigateRealms()&quot; class=&quot;text-link-button cursor-pointer&quot; &gt;"/><x id="INTERPOLATION" equiv-text="{{ userRealm() }}"/><x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a &gt;"/><x id="CLOSE_BLOCK_IF" equiv-text="}"/><x id="START_BLOCK_ELSE" equiv-text="@else {"/><x id="START_TAG_SPAN" ctype="x-span" equiv-text="&lt;span&gt;"/><x id="INTERPOLATION" equiv-text="{{ userRealm() }}"/><x id="CLOSE_TAG_SPAN" ctype="x-span" equiv-text="&lt;/span&gt;"/><x id="CLOSE_BLOCK_ELSE" equiv-text="}"/> zugewiesen.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrolled-text/token-enrolled-text.component.html</context>
-          <context context-type="linenumber">80</context>
+          <context context-type="linenumber">81</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.tokenSerialNumber" datatype="html">
@@ -10462,7 +10462,7 @@
         <target>Der Token mit der Seriennummer <x id="START_LINK" ctype="x-a" equiv-text="&lt;a role=&quot;button&quot; tabindex=&quot;0&quot; (click)=&quot;tokenSelected()&quot; (keydown.enter)=&quot;tokenSelected()&quot; (keydown.space)=&quot;$event.preventDefault(); tokenSelected()&quot;&gt;"/> <x id="INTERPOLATION" equiv-text="{{ serial() }}"/> <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/> wurde erfolgreich per Rollover erneuert.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrolled-text/token-enrolled-text.component.html</context>
-          <context context-type="linenumber">101</context>
+          <context context-type="linenumber">102</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.otpKey" datatype="html">
@@ -12213,7 +12213,7 @@
       </trans-unit>
       <trans-unit id="user.assignTokenUser" datatype="html">
         <source>Assign Token to User</source>
-        <target state="new">Token dem Benutzer zuweisen</target>
+        <target>Token dem Benutzer zuweisen</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-details/user-details.component.html</context>
           <context context-type="linenumber">311</context>
@@ -16497,7 +16497,7 @@
       </trans-unit>
       <trans-unit id="container.atLeastOneStateMust" datatype="html">
         <source>At least one state must be selected.</source>
-        <target state="new">At least one state must be selected.</target>
+        <target>Mindestens ein Status muss ausgewählt werden.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/container/container-details/container-details-states/container-details-states.component.ts</context>
           <context context-type="linenumber">61</context>
@@ -18785,6 +18785,14 @@
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-details/user-details-token-table/user-details-token-table.component.ts</context>
           <context context-type="linenumber">166</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="common.labelWithColon" datatype="html">
+        <source><x id="LABEL" equiv-text="label"/>:</source>
+        <target state="new"><x id="LABEL" equiv-text="label"/>:</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/utils/i18n.utils.ts</context>
+          <context context-type="linenumber">22</context>
         </context-group>
       </trans-unit>
     </body>
