@@ -29,7 +29,7 @@ Policy settings
 
 **dry run**
 
-  Evaluate the policy but enforce nothing, see :ref:`conditional_access`.
+  Evaluate the policy but enforce nothing, see :ref:`lockout_policies_dry_run`.
 
 **target**
 
@@ -65,8 +65,8 @@ Policy settings
 
   * ``PER_REQUEST`` - one authentication log entry. Default for ``user``.
   * ``PER_ATTEMPT`` - one authentication attempt. A challenge-response login
-    spans several requests; they count once. Use this if a push or
-    multi-challenge login should not count as several failures.
+    spans several requests; they count once. Use this if a
+    multi-challenge login should not count as several events.
   * ``DISTINCT_USERS`` - the number of *different* accounts the address
     targeted, not the number of requests. Available for ``source_ip`` only,
     and its default. This is the password spraying and user enumeration
@@ -119,8 +119,8 @@ lock permanently at 20. Thresholds must be unique within a policy.
 By default an action fires **once**, exactly when the count reaches the
 threshold: an email configured at 8 is sent on the 8th failure and not again on
 the 9th. Enable **re-trigger above threshold** for an action that should fire on
-every further request as well - a lock usually should, so that it is renewed
-while the attack continues.
+every further request as well. ``DENY`` defaults to re-trigger, as it is a one-time action denying only the current
+request.
 
 Stages are evaluated from the highest threshold down, so the order follows the
 thresholds themselves and there is nothing else to configure.
@@ -215,35 +215,25 @@ spraying and user enumeration. A template fills in tracked events, window,
 count mode, stages and actions; you pick the priority and review the
 thresholds. The two per-IP rate limit templates are pre-set to dry run, because
 their threshold depends on how many users share an address, see
-:ref:`conditional_access`.
+:ref:`lockout_policies_dry_run`.
 
-.. _lockout_policies_lifting:
+.. _lockout_policies_dry_run:
 
-Lifting locks and blocks
-------------------------
+Trying a policy out first
+-------------------------
 
-*Logs → Locked users* and *Logs → Blocklist* show the restrictions in force,
-with the permanent ones marked. An entry can be lifted individually or in bulk.
-Expired records restrict nobody; they are kept for the record and can be purged
-from the same pages.
+.. index:: dry run
 
-The same can be done on the command line with :ref:`pi-manage <pimanage>`::
+A policy with **dry run** enabled is evaluated like any other, but nothing is
+enforced: no user is locked, no address is blocked, no email is sent and no
+request is refused. Instead each action that *would* have run is recorded with
+the authentication log entry that triggered it, including how long the
+restriction would have lasted.
 
-   pi-manage conditionalaccess list-locked-users
-   pi-manage conditionalaccess unlock-user <login> --realm <realm>
-   pi-manage conditionalaccess clear-locks [--realm <realm>]
-   pi-manage conditionalaccess purge-expired-locks
+This is the way to size a threshold against real traffic. It is particularly
+recommended for source IP policies, where the right threshold depends on how
+many users share an address - shared egress such as NAT or CGNAT can put
+hundreds of users behind one address.
 
-   pi-manage conditionalaccess list-blocked-ips
-   pi-manage conditionalaccess unblock-ip <ip>
-   pi-manage conditionalaccess clear-blocks
-   pi-manage conditionalaccess purge-expired-blocks
-
-``unlock-user`` takes the login name as an argument and requires ``--realm``;
-add ``--resolver`` only if the login exists in more than one resolver. The two
-``clear-`` commands remove everything and ask for confirmation first, so pass
-``--yes`` when calling them from a script.
-
-.. note:: If you lock yourself out of the WebUI with a source IP policy, use
-   ``pi-manage conditionalaccess clear-blocks`` on the server, or add your
-   address to *ConditionalAccessNeverBlock*.
+Filter the authentication log on *dry run* outcomes to see what a policy would
+have done, then disable dry run once the threshold fits.

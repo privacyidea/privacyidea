@@ -30,9 +30,6 @@ privacyIDEA knows these scopes:
 You can define as many policies as you wish to.
 The logic of the policies in the scopes is additive.
 
-.. note:: The lockout policies of :ref:`conditional_access` are configured
-   separately and do not use these scopes.
-
 .. figure:: images/policies.png
    :width: 500
 

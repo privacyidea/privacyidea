@@ -1,7 +1,7 @@
 .. index:: Authentication log
 .. _authentication_log:
 
-Authentication log
+Authentication Log
 ==================
 
 The authentication log records the outcome of every authentication request:
@@ -27,15 +27,16 @@ Each entry holds
   its column.
 
 The user is recorded by resolver, user ID and realm, so entries stay
-attributable after a rename. A login naming a user that does not exist is still
-recorded, with the attempted login name and no resolved user.
+attributable after a rename. The login name is recorded as well and doesn't change on a rename.
+For non-existing users, the used login name and realm are recorded as well. The realm might not be passed explicitly,
+but defaults to the default realm.
 
 .. _authentication_log_attempts:
 
 Attempts
 --------
 
-A challenge-response login takes several requests: one that triggers the
+A challenge-response login takes several requests, e.g. one that triggers the
 challenge and one that answers it. These share an **attempt ID**, so they can be
 recognised as one logical authentication attempt, and a lockout policy using the
 ``PER_ATTEMPT`` count mode counts them once.
@@ -59,11 +60,12 @@ Success
 
 Pending
    ``CHALLENGE_TRIGGERED``
-     a challenge was created and sent to the client.
+     a challenge was created.
    ``CHALLENGE_CONTINUED``
-     a challenge was answered correctly, but a further one is required.
+     a challenge was answered correctly, which triggered a new challenge required to be answered.
    ``CHALLENGE_ANSWERED_OUT_OF_BAND``
-     a push challenge was approved on the smartphone.
+     a challenge was approved out of band, for example a push notification
+     confirmed in the authenticator app.
    ``ENROLLMENT_TRIGGERED``
      a successful authentication started the enrollment of a new token.
 
@@ -78,32 +80,40 @@ Failure
      the first factor was correct but the second failed. Also used for a failed
      passkey authentication, where the cause cannot be determined.
    ``USER_UNKNOWN``
-     the login name was not found in any resolver.
+     the login name was not found in any resolver of the given realm (or default realm if none were given).
    ``NO_TOKEN``
      the user exists but has no token.
    ``NO_USABLE_TOKEN``
-     the user has tokens, but every one is revoked, disabled, expired or over
-     its failcount.
+     the user has tokens, but none of them can be used for the authentication as they are revoked, disabled, expired or
+     over the failcount.
    ``INVALID_TOKEN_TYPE``
-     the request named no token type this endpoint can authenticate with.
+     the given token type can not be used to authenticate at this endpoint, e.g. `/validate/initialize` only accepts
+     passkeys.
    ``CHALLENGE_ANSWERED_FAIL``
-     the challenge response was wrong or expired, or the transaction is unknown.
+     the challenge response was wrong or expired, or the transaction ID is unknown.
    ``CHALLENGE_TRIGGER_FAIL``
      a challenge was requested but the server could not create one, for example
      because a required policy is missing.
    ``CHALLENGE_DECLINED``
-     a push challenge was rejected on the smartphone.
+     a challenge was rejected out of band, for example a push notification
+     declined in the authenticator app.
    ``ENROLLMENT_CANCELED_FAIL``
      cancelling an enrollment failed.
    ``NOT_AUTHORIZED``
      an authorization policy refused the authentication.
    ``UNKNOWN_FAIL_REASON``
-     the authentication failed and nothing more specific was determined.
+     the authentication failed and nothing more specific was determined. This is only used as fallback and should
+     usually not be seen.
 
-Conditional access writes three further types for the requests it refuses
-itself: ``USER_LOCKED``, ``IP_BLOCKED`` and ``ACCESS_DENIED``. They record why a
-request was turned away, and they are the types a lockout policy cannot track,
-see :ref:`lockout_policies`.
+Three further types are written by conditional access itself, when it refuses a
+request before any credentials are checked: ``USER_LOCKED`` (a user lock was in
+force), ``IP_BLOCKED`` (a source-IP block was in force) and ``ACCESS_DENIED`` (a conditional access
+policy's *deny* action refused this single request).
+
+These entries record that the refusal happened, and can be filtered and sorted
+like any other, so an administrator can see how often a lock or block took
+effect. They are, however, the only types a conditional access policy cannot
+count.
 
 Searching
 ---------
@@ -119,7 +129,7 @@ column. Filter values are matched as follows:
   ``event_type=MFA_FAIL,PIN_FAIL``, matching entries equal to any of them.
 
 A time range can be given in addition, and the result can be sorted by any
-column except the conditional-access outcomes and the details.
+column except the conditional-access outcomes and the other info.
 
 The *Conditional access* column filters on what conditional access did: the
 action type, the name of the policy that acted, and whether the outcome was a
@@ -130,7 +140,7 @@ Who sees what
 -------------
 
 Reading the log requires the ``authentication_log_read`` right, see
-:ref:`conditional_access_rights`.
+:ref:`policy_authentication_log_read`.
 
 If the administrator's policy is scoped to realms, resolvers or users, only
 matching entries are returned; an administrator always also sees their own
