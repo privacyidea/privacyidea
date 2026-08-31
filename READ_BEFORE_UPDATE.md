@@ -7,6 +7,27 @@
   challenge validity times, make sure no important challenge-response authentications are still pending before starting
   the update.
 
+* **Audit `serial` column widened to 200 characters** — An audit entry names every token that was involved in a
+  request, for example all tokens that were challenged in a challenge-response authentication. Three tokens with
+  default serials already filled the previous 40 characters. Beyond that, the entry was either shortened per serial
+  (with `PI_AUDIT_SQL_TRUNCATE`) or rejected by the database, in which case the whole audit entry was rolled back and
+  lost with only an error in the log. The database migration widens the column, so a user's tokens fit.
+
+  **If your audit log is written to a separate database** (`PI_AUDIT_SQL_URI`), the migration does **not** reach it: it
+  runs against the token database only. Apply the change to the audit database yourself, e.g.
+  `ALTER TABLE pidea_audit MODIFY serial VARCHAR(200);` (MySQL/MariaDB) or
+  `ALTER TABLE pidea_audit ALTER COLUMN serial TYPE VARCHAR(200);` (PostgreSQL). Do this **before** or together with the
+  upgrade, so that the audit log can hold the serials of all tokens of a user. It is not required for privacyIDEA to
+  work: entry values are shortened to the length the audit table really has, so a database that still has the
+  40-character column keeps logging shortened serial lists instead of losing entries.
+
+* **Audit entries are always shortened to fit their column** — Values that are longer than their audit column, e.g. a
+  long user name or user agent sent by a client, are shortened so that the entry is written. Previously this required
+  `PI_AUDIT_SQL_TRUNCATE = True`; without it, the database rejected the entry and it was lost. **The setting is now
+  ignored** and shortening is always applied, which also closes the possibility to suppress one's own audit entries by
+  sending over-long request data. `PI_AUDIT_SQL_COLUMN_LENGTH` still works and is only needed if you widened columns
+  beyond what privacyIDEA ships.
+
 * **Search wildcard change** — Audit-log, token, and user (SQL resolver) searches now treat `*` as the **only**
   wildcard. Literal `%` and `_` in a search value are now matched literally instead of acting as SQL `LIKE`/`ILIKE`
   wildcards. If you have saved filters, integrations, or scripts that used `%` as a wildcard — for example an audit

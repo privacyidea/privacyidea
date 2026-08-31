@@ -1715,6 +1715,67 @@ class ValidateAPITestCase(MyApiTestCase):
         remove_token("CR2B")
         delete_policy("test49")
 
+    def test_26a_audit_serials_of_three_challenges(self):
+        # The audit entry of every leg of a challenge response authentication names the
+        # tokens that were involved in it
+        self.setUp_user_realms()
+        OTPKE2 = "31323334353637383930313233343536373839AA"
+        user = User("multichal", self.realm1)
+        pin = "test26a"
+        # The serials are long enough that the comma separated list of all three of them
+        # does not fit into a 40 character audit column
+        serials = ["CR3A0000000000001", "CR3B0000000000002", "CR3C0000000000003"]
+        init_token({"serial": serials[0], "type": "hotp", "otpkey": OTPKE2, "pin": pin}, user)
+        init_token({"serial": serials[1], "type": "hotp", "otpkey": self.otpkey, "pin": pin}, user)
+        init_token({"serial": serials[2], "type": "hotp", "genkey": 1, "pin": pin}, user)
+        set_policy("test26a", scope=SCOPE.AUTH,
+                   action=f"{PolicyAction.CHALLENGERESPONSE!s}=hotp")
+
+        # First leg: the PIN triggers a challenge for each of the three tokens
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "multichal", "realm": self.realm1, "pass": pin}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            self.assertFalse(res.json.get("result").get("value"))
+            detail = res.json.get("detail")
+            transaction_id = detail.get("transaction_id")
+            self.assertEqual(set(serials), {c.get("serial") for c in detail.get("multi_challenge")})
+
+        self.assertEqual(3, len(get_challenges(transaction_id=transaction_id)))
+
+        # All three challenged tokens are named in the audit log
+        audit_entry = self.find_most_recent_audit_entry(action='* /validate/check')
+        self.assertEqual(set(serials), set(audit_entry.get('serial').split(',')), audit_entry)
+
+        # Second leg with a wrong OTP value: the tokens that were asked are still the
+        # tokens the failed attempt was made against
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "multichal", "realm": self.realm1,
+                                                 "transaction_id": transaction_id, "pass": "111111"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            self.assertFalse(res.json.get("result").get("value"))
+
+        audit_entry = self.find_most_recent_audit_entry(action='* /validate/check')
+        self.assertEqual(set(serials), set(audit_entry.get('serial').split(',')), audit_entry)
+
+        # Third leg with the OTP value of the second token: only the token that answered
+        # is named, not the two tokens that were also challenged
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "multichal", "realm": self.realm1,
+                                                 "transaction_id": transaction_id, "pass": "287082"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            self.assertTrue(res.json.get("result").get("value"))
+            self.assertEqual(serials[1], res.json.get("detail").get("serial"))
+
+        audit_entry = self.find_most_recent_audit_entry(action='* /validate/check')
+        self.assertEqual(serials[1], audit_entry.get('serial'), audit_entry)
+
+        for serial in serials:
+            remove_token(serial)
+        delete_policy("test26a")
+
     def test_27_multiple_challenge_response_different_pin(self):
         # Test the challenges for multiple active tokens with different PINs
         # Test issue #649

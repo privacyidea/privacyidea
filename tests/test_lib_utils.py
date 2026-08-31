@@ -495,6 +495,19 @@ class UtilsTestCase(MyTestCase):
         self.assertEqual(len(r), 4)
         self.assertEqual(r, "12,+")
 
+        # More entries than fit even when every entry is shortened to its marker. The
+        # entries can not get any shorter, so the list is cut and the beginning of it is
+        # kept, which says more than a row of markers.
+        for count in [22, 30, 101, 150, 199]:
+            for max_length in [40, 200]:
+                serials = ",".join(f"OATH{index:04d}" for index in range(count))
+                r = truncate_comma_list(serials, max_length)
+                self.assertLessEqual(len(r), max_length, (count, max_length))
+                if len(serials) > max_length:
+                    self.assertTrue(r.endswith("+"), r)
+                else:
+                    self.assertEqual(serials, r)
+
     def test_20_pin_policy(self):
         # Unspecified character specifier
         self.assertRaises(PolicyError, check_pin_contents, "1234", "+o")

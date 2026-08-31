@@ -288,7 +288,7 @@ class AuditTestCase(MyTestCase):
         self.assertEqual(count, 5)
 
     def test_06_truncate_data(self):
-        long_serial = "This serial is much to long, you know it!"
+        long_serial = "S" * (column_length.get("serial") + 1)
         token_type = "12345678901234567890"
         self.Audit.log({"serial": long_serial,
                         "token_type": token_type})
@@ -297,6 +297,15 @@ class AuditTestCase(MyTestCase):
                          column_length.get("serial"))
         self.assertEqual(len(self.Audit.audit_data.get("token_type")),
                          column_length.get("token_type"))
+
+        # A serial column that holds a list of serials, e.g. of all the tokens that were
+        # challenged, is shortened per entry, so that every token is still recognizable
+        serial_count = column_length.get("serial") // 8
+        self.Audit.log({"serial": ",".join(f"OATH{index:08d}" for index in range(serial_count))})
+        self.Audit._truncate_data()
+        truncated_serials = self.Audit.audit_data.get("serial")
+        self.assertLessEqual(len(truncated_serials), column_length.get("serial"))
+        self.assertEqual(serial_count, len(truncated_serials.split(",")), truncated_serials)
 
         # check treatment of None and boolean values
         self.Audit.log({"token_type": None, "info": True})

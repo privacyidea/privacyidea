@@ -35,7 +35,6 @@ The SQL Audit Module is configured like this::
 Optional::
 
     PI_AUDIT_SQL_URI = "sqlite://"
-    PI_AUDIT_SQL_TRUNCATE = True | False
     PI_AUDIT_SQL_COLUMN_LENGTH = {"user": 60, "info": 10 ...}
 
 If the PI_AUDIT_SQL_URI is omitted the Audit data is written to the
@@ -49,6 +48,7 @@ import traceback
 from collections import OrderedDict
 
 from sqlalchemy import asc, desc, and_, or_, select, delete
+from sqlalchemy import inspect as sqlalchemy_inspect
 from sqlalchemy import create_engine
 from sqlalchemy.engine.url import make_url
 from sqlalchemy.ext.compiler import compiles
@@ -61,9 +61,9 @@ from privacyidea.lib.crypto import Sign
 from privacyidea.lib.lifecycle import register_finalizer
 from privacyidea.lib.pooling import get_engine
 from privacyidea.lib.utils import censor_connect_string
-from privacyidea.lib.utils import (truncate_comma_list, is_true,
-                                   convert_wildcard_to_sql_like, SQL_LIKE_ESCAPE)
+from privacyidea.lib.utils import (is_true, convert_wildcard_to_sql_like, SQL_LIKE_ESCAPE)
 from privacyidea.models import Audit as LogEntry
+from privacyidea.models.audit import AUDIT_TABLE_NAME
 from privacyidea.models import audit_column_length as column_length
 
 log = logging.getLogger(__name__)
@@ -124,6 +124,41 @@ def _now():
     return datetime.datetime.now()
 
 
+# The audit table is introspected once per process and database: an Audit object is created
+# for every request, and the schema does not change underneath a running process.
+_live_column_length = {}
+
+
+def get_live_column_length(engine) -> dict:
+    """
+    Return the length of every length-restricted column of the audit table as it really is
+    in the database, so that values can be shortened to what the table accepts rather than
+    to what the model declares. The result is cached per database.
+
+    An unreachable database or a missing audit table yields an empty mapping, in which case
+    the model and the configuration decide alone.
+
+    :param engine: the SQLAlchemy engine of the audit database
+    :return: a dict mapping column name to its length
+    """
+    cache_key = str(engine.url)
+    if cache_key not in _live_column_length:
+        lengths = {}
+        try:
+            for column in sqlalchemy_inspect(engine).get_columns(AUDIT_TABLE_NAME):
+                # A type without a length, e.g. TEXT, holds a value of any length. It is
+                # reported as None so that nothing is cut for such a column.
+                lengths[column.get("name")] = getattr(column.get("type"), "length", None)
+        except Exception as exx:  # noqa: BLE001 - the table may not exist yet
+            # The values are sized to the model instead, which is what the table has unless
+            # somebody changed it. A database that has narrower columns rejects the entries,
+            # so this needs to be visible.
+            log.warning(f"Could not read the columns of the table {AUDIT_TABLE_NAME}, audit "
+                        f"entries are sized to the model instead: {exx!r}")
+        _live_column_length[cache_key] = lengths
+    return _live_column_length[cache_key]
+
+
 class Audit(AuditBase):
     """
     This is the SQLAudit module, which writes the audit entries
@@ -148,7 +183,6 @@ class Audit(AuditBase):
 
     * ``PI_AUDIT_POOL_SIZE``
     * ``PI_AUDIT_POOL_RECYCLE``
-    * ``PI_AUDIT_SQL_TRUNCATE``
     * ``PI_AUDIT_NO_SIGN``
     * ``PI_CHECK_OLD_SIGNATURES``
 
@@ -178,6 +212,8 @@ class Audit(AuditBase):
         # fill the missing parts with the default from the models
         self.custom_column_length = {k: (v if k not in config_column_length else config_column_length[k])
                                      for k, v in column_length.items()}
+        # Filled on first use from the columns the audit table really has
+        self._effective_column_length = None
         # We can use "sqlaudit" as the key because the SQLAudit connection
         # string is fixed for a running privacyIDEA instance.
         # In other words, we will not run into any problems with changing connect strings.
@@ -224,33 +260,41 @@ class Audit(AuditBase):
         self.session.close()
         self.engine.dispose()
 
+    @property
+    def column_length(self) -> dict:
+        """
+        The length every value has to fit into, which is the configured length of a column
+        capped by the length the column really has in the database. A database whose audit
+        table has not been migrated yet rejects a longer value and the entry would be lost,
+        so the actual table always wins over the configuration.
+        """
+        if self._effective_column_length is None:
+            live_length = get_live_column_length(self.engine)
+            effective = {}
+            for key, length in self.custom_column_length.items():
+                if key not in live_length:
+                    # The column is unknown, e.g. because the table could not be read
+                    effective[key] = length
+                elif live_length[key] is None:
+                    # The column holds a value of any length, so nothing has to be cut
+                    continue
+                else:
+                    effective[key] = min(length, live_length[key])
+            self._effective_column_length = effective
+        return self._effective_column_length
+
     def _truncate_data(self):
         """
-        Truncate self.audit_data according to the self.custom_column_length.
+        Shorten every value of self.audit_data to the length the table can hold.
 
         :return: None
         """
-        # Columns whose values can legitimately be comma-separated lists.
-        # Truncate them per-entry so they don't get cut mid-token (which
-        # destroys forensic detail) - entries are shortened with a "+"
-        # suffix instead. ``serial`` and ``container_serial`` are nominally
-        # single-value fields, but callers that comma-join into them
-        # (e.g. multi-token operations) get the same protection rather
-        # than a silent mid-serial chop. ``info`` is deliberately NOT here:
-        # it is free-form prose that routinely contains natural commas, and
-        # treating those as list separators mangles the message. Callers
-        # that pack a serial list into ``info`` size it to the column budget
-        # themselves (see cancel_challenge_api).
-        comma_list_columns = {"policies", "serial", "container_serial"}
-        for column, length in self.custom_column_length.items():
+        # ``log()`` already shortens what it is given, but a value can still grow past the
+        # column afterwards: ``finalize_log`` joins list values into one comma separated
+        # string. So every value is checked once more before it is written.
+        for column in self.column_length:
             if column in self.audit_data:
-                data = self.audit_data[column]
-                if isinstance(data, str):
-                    if column in comma_list_columns and "," in data:
-                        data = truncate_comma_list(data, length)
-                    else:
-                        data = data[:length]
-                self.audit_data[column] = data
+                self.audit_data[column] = self.fit_to_store(column, self.audit_data[column])
 
     @staticmethod
     def _create_filter(param: dict, admin_params: dict | None = None,
@@ -378,8 +422,9 @@ class Audit(AuditBase):
             for entry, value in self.audit_data.items():
                 if isinstance(value, list):
                     self.audit_data[entry] = ",".join(value)
-            if self.config.get(ConfigKey.AUDIT_SQL_TRUNCATE):
-                self._truncate_data()
+            # A value that does not fit into its column makes the database reject the whole
+            # entry, which would lose it. Shortening is therefore not optional.
+            self._truncate_data()
             if "tokentype" in self.audit_data:
                 log.warning("We have a wrong 'tokentype' key. This should not happen. Fix it!. "
                             "Error occurs in action: {!r}.".format(self.audit_data.get("action")))
