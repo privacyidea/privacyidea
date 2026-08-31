@@ -17,30 +17,43 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { currentSubPath, localeSegmentFromPath, localeTargetUrl, scriptRoot } from "@core/locale";
+import {
+  currentSubPath,
+  localeSegmentFromPath,
+  localeTargetUrl,
+  SCRIPT_ROOT_META_NAME,
+  scriptRoot
+} from "@core/locale";
 
 function setPath(path: string): void {
   window.history.pushState(null, "", path);
 }
 
 function setScriptRoot(root: string | undefined): void {
-  if (root === undefined) {
-    delete (window as unknown as { __PI_SCRIPT_ROOT__?: string }).__PI_SCRIPT_ROOT__;
-  } else {
-    (window as unknown as { __PI_SCRIPT_ROOT__?: string }).__PI_SCRIPT_ROOT__ = root;
+  document.querySelector(`meta[name="${SCRIPT_ROOT_META_NAME}"]`)?.remove();
+  if (root !== undefined) {
+    const meta = document.createElement("meta");
+    meta.setAttribute("name", SCRIPT_ROOT_META_NAME);
+    meta.setAttribute("content", root);
+    document.head.appendChild(meta);
   }
 }
 
 describe("scriptRoot", () => {
   afterEach(() => setScriptRoot(undefined));
 
-  it("returns an empty string when the backend did not inject a mount prefix", () => {
+  it("returns an empty string when the backend passed no mount prefix", () => {
     expect(scriptRoot()).toBe("");
   });
 
-  it("returns the value injected by the backend for a sub-path mount", () => {
+  it("returns the value from the meta tag for a sub-path mount", () => {
     setScriptRoot("/pi");
     expect(scriptRoot()).toBe("/pi");
+  });
+
+  it("returns an empty string for a root mount, where the meta tag is present but empty", () => {
+    setScriptRoot("");
+    expect(scriptRoot()).toBe("");
   });
 });
 

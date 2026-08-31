@@ -21,13 +21,21 @@ import { writeCookie } from "@core/cookie";
 /** Mount point of the new WebUI; locale bundles live at APP_PREFIX or APP_PREFIX + "<locale>/". */
 export const APP_PREFIX = "/app/v2/";
 
+/** Meta tag through which the backend passes the mount prefix; written by _serve_locale(). */
+export const SCRIPT_ROOT_META_NAME = "pi-script-root";
+
 /**
  * The SCRIPT_NAME prefix the backend is mounted under (e.g. "/pi" behind an Apache
- * WSGIScriptAlias), injected into the served index.html as a global by _serve_locale().
- * Empty string when mounted at the web server root.
+ * WSGIScriptAlias), read from the meta tag _serve_locale() injects into the served
+ * index.html. Empty string when mounted at the web server root, and when the dev
+ * server serves the bundle without the backend templating it.
+ *
+ * A meta tag rather than an injected global, because the backend's CSP allows only
+ * script-src 'self' and would block the inline script that set one.
  */
 export function scriptRoot(): string {
-  return (window as unknown as { __PI_SCRIPT_ROOT__?: string }).__PI_SCRIPT_ROOT__ ?? "";
+  const meta = document.querySelector(`meta[name="${SCRIPT_ROOT_META_NAME}"]`);
+  return meta?.getAttribute("content") ?? "";
 }
 
 /** window.location.pathname with the sub-path mount prefix (if any) stripped. */

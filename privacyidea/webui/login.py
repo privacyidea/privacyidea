@@ -28,12 +28,12 @@ Other html code is dynamically loaded via angularJS and located in
 """
 __author__ = "Cornelius Kölbel <cornelius@privacyidea.org>"
 
-import json
 import logging
 import os
 
 from flask import (Blueprint, render_template, request,
                    current_app, g, redirect, abort, Response)
+from markupsafe import escape
 
 from privacyidea.api.lib.prepolicy import is_remote_user_allowed
 from privacyidea.api.lib.postpolicy import hide_version
@@ -60,6 +60,10 @@ DEFAULT_LANGUAGE_LIST = ['en', 'de', 'nl', 'zh_Hant', 'fr', 'es', 'tr', 'cs',
 # Cookie that records an explicit UI language choice (set by the WebUI language switcher).
 # It is consulted before the browser's Accept-Language header when resolving the locale.
 LOCALE_COOKIE_NAME = "pi_ui_locale"
+
+# Meta tag carrying the WSGI SCRIPT_NAME prefix to the served WebUI bundle.
+# Keep the name in sync with scriptRoot() in the WebUI's core/locale.ts.
+SCRIPT_ROOT_META_NAME = "pi-script-root"
 
 # Case-insensitive, separator-insensitive lookup: normalized key → canonical BCP 47 locale
 _LOCALE_CANONICAL = {lang.replace("_", "-").lower(): lang.replace("_", "-") for lang in DEFAULT_LANGUAGE_LIST}
@@ -315,9 +319,12 @@ def _serve_locale(locale: str) -> Response | None:
     with open(index_file, encoding="utf-8") as f:
         content = f.read()
     content = content.replace('<base href="/', f'<base href="{script_root}/', 1)
+    # A meta tag rather than an inline script: the app's CSP allows only
+    # script-src 'self', so an inline script would be blocked and the frontend
+    # would fall back to an empty prefix on exactly the mounts this supports.
     content = content.replace(
         "</head>",
-        f"<script>window.__PI_SCRIPT_ROOT__={json.dumps(script_root)};</script></head>",
+        f'<meta name="{SCRIPT_ROOT_META_NAME}" content="{escape(script_root)}"></head>',
         1
     )
     return send_html(content)

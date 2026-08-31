@@ -3,9 +3,13 @@ This file tests the web UI Login
 
 implementation is contained webui/login.py
 """
+import os
 import pathlib
 import re
+import tempfile
 import unittest.mock as mock
+from collections.abc import Iterator
+from contextlib import contextmanager
 
 from flask import Response
 from flask_babel import refresh
@@ -530,11 +534,10 @@ class NewUIRoutingTestCase(MyTestCase):
                 result = _serve_locale("de")
         self.assertIsNotNone(result)
 
-    # --- Sub-path mount (Apache WSGIScriptAlias / SCRIPT_NAME) coverage ---
-
     def test_serve_locale_rewrites_base_href_and_injects_script_root(self):
-        """_serve_locale prepends SCRIPT_NAME to <base href> and injects window.__PI_SCRIPT_ROOT__,
-        so the compiled bundle's absolute asset/API paths resolve when mounted under a sub-path."""
+        """_serve_locale prepends SCRIPT_NAME to <base href> and passes it on in the
+        pi-script-root meta tag, so the compiled bundle's absolute asset/API paths
+        resolve when mounted under a sub-path."""
         index_html = ('<html><head><base href="/static/dist/privacyidea-webui/browser/en/">'
                      '</head><body></body></html>')
         with (mock.patch("privacyidea.webui.login.os.path.isfile", return_value=True),
@@ -545,11 +548,11 @@ class NewUIRoutingTestCase(MyTestCase):
         self.assertIsNotNone(result)
         body = to_unicode(result.get_data())
         self.assertIn('<base href="/pi/static/dist/privacyidea-webui/browser/en/">', body)
-        self.assertIn('window.__PI_SCRIPT_ROOT__="/pi";', body)
+        self.assertIn('<meta name="pi-script-root" content="/pi">', body)
 
     def test_serve_locale_no_script_root_leaves_base_href_unprefixed(self):
-        """Mounted at the web server root (no SCRIPT_NAME), the base href and the injected
-        script root stay unprefixed/empty."""
+        """Mounted at the web server root (no SCRIPT_NAME), the base href and the
+        script root meta tag stay unprefixed/empty."""
         index_html = ('<html><head><base href="/static/dist/privacyidea-webui/browser/en/">'
                      '</head><body></body></html>')
         with (mock.patch("privacyidea.webui.login.os.path.isfile", return_value=True),
@@ -559,7 +562,104 @@ class NewUIRoutingTestCase(MyTestCase):
                 result = _serve_locale("en")
         body = to_unicode(result.get_data())
         self.assertIn('<base href="/static/dist/privacyidea-webui/browser/en/">', body)
-        self.assertIn('window.__PI_SCRIPT_ROOT__="";', body)
+        self.assertIn('<meta name="pi-script-root" content="">', body)
+
+    def test_serve_locale_carries_no_inline_script(self):
+        """The served shell stays free of inline scripts: the app's CSP allows only
+        script-src 'self', with no nonce and no script hashes."""
+        index_html = ('<html><head><base href="/static/dist/privacyidea-webui/browser/en/">'
+                     '</head><body></body></html>')
+        with (mock.patch("privacyidea.webui.login.os.path.isfile", return_value=True),
+             mock.patch("builtins.open", mock.mock_open(read_data=index_html))):
+            with self.app.test_request_context("/", environ_overrides={"SCRIPT_NAME": "/pi"}):
+                from privacyidea.webui.login import _serve_locale
+                result = _serve_locale("en")
+        body = to_unicode(result.get_data())
+        self.assertNotIn("<script>", body)
+
+    def test_serve_locale_escapes_the_script_root(self):
+        """A mount point containing markup characters cannot break out of the meta tag."""
+        index_html = '<html><head></head><body></body></html>'
+        with (mock.patch("privacyidea.webui.login.os.path.isfile", return_value=True),
+             mock.patch("builtins.open", mock.mock_open(read_data=index_html))):
+            with self.app.test_request_context("/", environ_overrides={"SCRIPT_NAME": '/pi"><script>x</script>'}):
+                from privacyidea.webui.login import _serve_locale
+                result = _serve_locale("en")
+        body = to_unicode(result.get_data())
+        self.assertNotIn("<script>", body)
+        self.assertIn("&lt;script&gt;", body)
+        self.assertIn("&#34;", body)
+
+    @contextmanager
+    def _mounted_static_folder(self, path: str) -> Iterator[None]:
+        """Point the app at another static folder for the duration of the block. Assigning the
+        attribute is how create_app() applies PI_STATIC_FOLDER, so this exercises the same seam."""
+        original = self.app.static_folder
+        self.app.static_folder = path
+        try:
+            yield
+        finally:
+            self.app.static_folder = original
+
+    @staticmethod
+    def _write_bundle(static_folder: str, locale: str) -> str:
+        """Create a minimal locale bundle in the layout _serve_locale expects and return its
+        index.html. The <base href> mirrors the production baseHref of the Angular build,
+        which resolves through the same static folder the bundle is read from."""
+        browser_dir = os.path.join(static_folder, "dist", "privacyidea-webui", "browser", locale)
+        os.makedirs(browser_dir)
+        index_file = os.path.join(browser_dir, "index.html")
+        with open(index_file, "w", encoding="utf-8") as f:
+            f.write(f'<html><head><base href="/static/dist/privacyidea-webui/browser/{locale}/">'
+                    '</head><body></body></html>')
+        return index_file
+
+    def test_serve_locale_reads_the_bundle_from_the_static_folder(self):
+        """_serve_locale locates the bundle under <static folder>/dist/privacyidea-webui/browser/
+        without any filesystem mocking, so the on-disk layout, the configured static folder and
+        the Angular build output path have to agree for this to pass."""
+        with tempfile.TemporaryDirectory() as static_folder:
+            self._write_bundle(static_folder, "en")
+            with self._mounted_static_folder(static_folder):
+                with self.app.test_request_context("/", environ_overrides={"SCRIPT_NAME": "/pi"}):
+                    from privacyidea.webui.login import _serve_locale
+                    result = _serve_locale("en")
+            self.assertIsNotNone(result)
+            body = to_unicode(result.get_data())
+        self.assertIn('<base href="/pi/static/dist/privacyidea-webui/browser/en/">', body)
+        self.assertIn('<meta name="pi-script-root" content="/pi">', body)
+
+    def test_serve_locale_reads_a_non_english_bundle_from_the_static_folder(self):
+        """Each locale is a sibling directory under browser/, so a locale the build produced is
+        served from its own subdirectory rather than the source-locale one."""
+        with tempfile.TemporaryDirectory() as static_folder:
+            self._write_bundle(static_folder, "de")
+            with self._mounted_static_folder(static_folder):
+                with self.app.test_request_context("/"):
+                    from privacyidea.webui.login import _serve_locale
+                    result = _serve_locale("de")
+            self.assertIsNotNone(result)
+            body = to_unicode(result.get_data())
+        self.assertIn('<base href="/static/dist/privacyidea-webui/browser/de/">', body)
+
+    def test_serve_locale_returns_none_when_the_static_folder_holds_no_bundle(self):
+        """An empty static folder yields None, which is what makes the assertions above
+        meaningful: they fail rather than silently pass if the layout stops matching."""
+        with tempfile.TemporaryDirectory() as static_folder:
+            with self._mounted_static_folder(static_folder):
+                with self.app.test_request_context("/"):
+                    from privacyidea.webui.login import _serve_locale
+                    self.assertIsNone(_serve_locale("en"))
+
+    def test_serve_locale_ignores_a_bundle_for_another_locale(self):
+        """A built locale does not stand in for a missing one; only the requested locale's
+        directory is consulted."""
+        with tempfile.TemporaryDirectory() as static_folder:
+            self._write_bundle(static_folder, "en")
+            with self._mounted_static_folder(static_folder):
+                with self.app.test_request_context("/"):
+                    from privacyidea.webui.login import _serve_locale
+                    self.assertIsNone(_serve_locale("de"))
 
     def test_root_redirect_to_locale_carries_script_root(self):
         """GET / (German) redirects to <SCRIPT_NAME>/app/v2/de/, not an unprefixed absolute path."""

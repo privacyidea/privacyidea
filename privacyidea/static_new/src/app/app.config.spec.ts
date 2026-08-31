@@ -20,7 +20,18 @@
 import { APP_BASE_HREF } from "@angular/common";
 import { LOCALE_ID } from "@angular/core";
 import { TestBed } from "@angular/core/testing";
+import { SCRIPT_ROOT_META_NAME } from "@core/locale";
 import { baseHrefFactory } from "./app.config";
+
+function setScriptRoot(root: string | undefined): void {
+  document.querySelector(`meta[name="${SCRIPT_ROOT_META_NAME}"]`)?.remove();
+  if (root !== undefined) {
+    const meta = document.createElement("meta");
+    meta.setAttribute("name", SCRIPT_ROOT_META_NAME);
+    meta.setAttribute("content", root);
+    document.head.appendChild(meta);
+  }
+}
 
 describe("APP_BASE_HREF factory", () => {
   afterEach(() => TestBed.resetTestingModule());
@@ -89,11 +100,11 @@ describe("APP_BASE_HREF factory", () => {
 describe("APP_BASE_HREF factory behind a reverse-proxy sub-path mount", () => {
   afterEach(() => {
     TestBed.resetTestingModule();
-    delete (window as unknown as { __PI_SCRIPT_ROOT__?: string }).__PI_SCRIPT_ROOT__;
+    setScriptRoot(undefined);
   });
 
-  it("prepends the script root injected by the backend for English", () => {
-    (window as unknown as { __PI_SCRIPT_ROOT__?: string }).__PI_SCRIPT_ROOT__ = "/pi";
+  it("prepends the script root passed by the backend for English", () => {
+    setScriptRoot("/pi");
     TestBed.configureTestingModule({
       providers: [
         { provide: LOCALE_ID, useValue: "en" },
@@ -103,8 +114,8 @@ describe("APP_BASE_HREF factory behind a reverse-proxy sub-path mount", () => {
     expect(TestBed.inject(APP_BASE_HREF)).toBe("/pi/app/v2/");
   });
 
-  it("prepends the script root injected by the backend for a non-English locale", () => {
-    (window as unknown as { __PI_SCRIPT_ROOT__?: string }).__PI_SCRIPT_ROOT__ = "/pi";
+  it("prepends the script root passed by the backend for a non-English locale", () => {
+    setScriptRoot("/pi");
     TestBed.configureTestingModule({
       providers: [
         { provide: LOCALE_ID, useValue: "de" },
