@@ -23,9 +23,9 @@ import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
 import {
-  LockoutPolicyStage,
-  LockoutStageAction,
-  LockoutTarget
+  ConditionalAccessPolicyStage,
+  ConditionalAccessStageAction,
+  ConditionalAccessTarget
 } from "@services/conditional-access/conditional-access-policy.service";
 import { ConditionalAccessActionsListComponent } from "./actions-list/conditional-access-actions-list.component";
 
@@ -37,13 +37,13 @@ import { ConditionalAccessActionsListComponent } from "./actions-list/conditiona
   styleUrl: "./conditional-access-stage-item.component.scss"
 })
 export class ConditionalAccessStageItemComponent {
-  readonly stage = input.required<LockoutPolicyStage>();
+  readonly stage = input.required<ConditionalAccessPolicyStage>();
   // 1-based trigger order (lowest threshold = Stage 1), shown as "Stage N".
   readonly stageNumber = input.required<number>();
   // The identity the policy acts on; passed down to the action editor so it can
   // offer only the action types valid for this target.
-  readonly target = input<LockoutTarget>("user");
-  readonly updateStage = output<Partial<LockoutPolicyStage>>();
+  readonly target = input<ConditionalAccessTarget>("user");
+  readonly updateStage = output<Partial<ConditionalAccessPolicyStage>>();
   readonly removeStage = output<void>();
 
   // A saved stage (with an id) shows its name as text plus an edit button; an
@@ -71,7 +71,7 @@ export class ConditionalAccessStageItemComponent {
     }
   }
 
-  onActionsChange(actions: LockoutStageAction[]): void {
+  onActionsChange(actions: ConditionalAccessStageAction[]): void {
     this.updateStage.emit({ actions });
   }
 

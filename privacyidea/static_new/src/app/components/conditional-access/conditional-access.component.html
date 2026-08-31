@@ -50,7 +50,7 @@
       showFirstLastButtons />
   </div>
 
-  @if (authService.actionAllowed("lockout_policy_write")) {
+  @if (authService.actionAllowed("conditional_access_policy_write")) {
     <!-- The regular actions stay in place while rearranging and are only disabled, so the
          toolbar does not change shape when the mode is entered. Save/Cancel take over the
          trailing slot the "Reorder Priorities" button occupies otherwise. -->
@@ -331,7 +331,7 @@
           (click)="onToggleEnabled(policy); $event.stopPropagation()"
           [checked]="policy.enabled"
           [disableRipple]="true"
-          [disabled]="!authService.actionAllowed('lockout_policy_write') || reorderMode()"
+          [disabled]="!authService.actionAllowed('conditional_access_policy_write') || reorderMode()"
           i18n-matTooltip
           matTooltip="Toggle Enabled" />
       </td>
@@ -353,7 +353,7 @@
           (click)="onToggleDryRun(policy); $event.stopPropagation()"
           [checked]="policy.dry_run"
           [disableRipple]="true"
-          [disabled]="!authService.actionAllowed('lockout_policy_write') || reorderMode()"
+          [disabled]="!authService.actionAllowed('conditional_access_policy_write') || reorderMode()"
           i18n-matTooltip
           matTooltip="Toggle Dry Run (evaluate but do not enforce)" />
       </td>

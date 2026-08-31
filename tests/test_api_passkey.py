@@ -35,7 +35,7 @@ from privacyidea.lib.user import User
 from privacyidea.lib.utils import AUTH_RESPONSE
 from privacyidea.models import db
 from privacyidea.models.authentication_log import AuthenticationLog
-from privacyidea.models.lockout_policy import UserLockoutState
+from privacyidea.models.conditional_access_policy import UserLockState
 from privacyidea.models.utils import utc_now
 from tests.authlog_utils import assert_authentication_log, assert_authentication_log_entry
 from tests.base import MyApiTestCase, OverrideConfigTestCase
@@ -1602,7 +1602,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
         credential/serial lock-evasion gap. Generic failure to the client, and the log
         records the lock as the reason rather than a passkey outcome."""
         serial = self._enroll_static_passkey()
-        db.session.add(UserLockoutState(resolver=self.user.resolver, uid=self.user.uid,
+        db.session.add(UserLockState(resolver=self.user.resolver, uid=self.user.uid,
                                         realm=self.user.realm, lock_expires_at=utc_now() + timedelta(seconds=600)))
         db.session.commit()
         db.session.query(AuthenticationLog).delete()
@@ -1622,7 +1622,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self.assertListEqual([AuthEventType.USER_LOCKED],
                                  [entry.event_type for entry in get_authentication_logs()])
         finally:
-            db.session.query(UserLockoutState).delete()
+            db.session.query(UserLockState).delete()
             db.session.commit()
             remove_token(serial)
 
