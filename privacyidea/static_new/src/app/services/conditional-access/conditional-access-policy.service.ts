@@ -77,7 +77,7 @@ export type CountMode = "PER_REQUEST" | "PER_ATTEMPT" | "DISTINCT_USERS";
 // privacyidea.lib.conditional_access.engine is the one ordering behind both). Not scoped by target - an entry for
 // an action a target cannot hold simply never matches.
 export interface DefaultErrorMessage {
-  action_type: LockoutActionType;
+  action_type: ConditionalAccessActionType;
   message: string;
 }
 
@@ -87,7 +87,7 @@ export interface DefaultErrorMessage {
 // from "any timed action plus any permanent one", which would only be equivalent while a stage's actions are
 // confined to a single target - true today (_ACTIONS_BY_TARGET on the server), but it would silently mis-flag a
 // timed user lock beside a permanent IP block if that ever changes.
-export const REDUNDANT_RESTRICTION_PAIRS: readonly (readonly [LockoutActionType, LockoutActionType])[] = [
+export const REDUNDANT_RESTRICTION_PAIRS: readonly (readonly [ConditionalAccessActionType, ConditionalAccessActionType])[] = [
   ["LOCK_USER", "PERMANENT_LOCK_USER"],
   ["BLOCK_IP", "PERMANENT_BLOCK_IP"]
 ];
@@ -377,7 +377,7 @@ export class ConditionalAccessPolicyService implements ConditionalAccessPolicySe
   // Suggested error-message wording per stage action, most severe first. Fetched rather than hard-coded so the
   // suggestions stay translated by the server and in step with the actions the engine actually supports.
   readonly defaultErrorMessagesResource = httpResource<PiResponse<DefaultErrorMessage[]>>(() => {
-    if (!this.authService.actionAllowed("lockout_policy_read") || !this.contentService.onConditionalAccess()) {
+    if (!this.authService.actionAllowed("conditional_access_policy_read") || !this.contentService.onConditionalAccess()) {
       return undefined;
     }
     return {

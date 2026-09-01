@@ -91,7 +91,7 @@ describe("ConditionalAccessActionsListComponent", () => {
   });
 
   describe("redundant restrictions", () => {
-    const withActions = (list: LockoutStageAction[]) => {
+    const withActions = (list: ConditionalAccessStageAction[]) => {
       fixture.componentRef.setInput("actions", list);
       fixture.detectChanges();
     };

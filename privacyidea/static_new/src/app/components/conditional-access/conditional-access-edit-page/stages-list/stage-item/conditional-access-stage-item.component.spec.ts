@@ -20,8 +20,9 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { AuthService } from "@services/auth/auth.service";
 import {
   ConditionalAccessPolicyService,
-  DefaultErrorMessage,
-  ConditionalAccessPolicyStage
+  ConditionalAccessPolicyStage,
+  ConditionalAccessStageAction,
+  DefaultErrorMessage
 } from "@services/conditional-access/conditional-access-policy.service";
 import { SmtpService } from "@services/smtp/smtp.service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
@@ -171,7 +172,7 @@ describe("ConditionalAccessStageItemComponent", () => {
 
     let policyService: MockConditionalAccessPolicyService;
 
-    const withStage = (override: Partial<LockoutPolicyStage>) =>
+    const withStage = (override: Partial<ConditionalAccessPolicyStage>) =>
       fixture.componentRef.setInput("stage", { ...stage, ...override });
 
     beforeEach(() => {
@@ -223,7 +224,7 @@ describe("ConditionalAccessStageItemComponent", () => {
       // Always present, so ticking the box does not change the stage's shape on screen - only whether the
       // field can be typed into. mat-form-field has no disabled input, so this has to sit on the control.
       // withStage only sets the input; the other tests read computeds, so this one has to render as well.
-      const render = (override: Partial<LockoutPolicyStage>) => {
+      const render = (override: Partial<ConditionalAccessPolicyStage>) => {
         withStage(override);
         fixture.detectChanges();
       };
@@ -275,8 +276,9 @@ describe("ConditionalAccessStageItemComponent", () => {
     });
 
     it("should suggest nothing for an action that has no wording", () => {
-      // ALLOW rejects nothing, so the server offers no entry for it and there is nothing to reset to.
-      withStage({ error_message: null, actions: [{ action_type: "ALLOW", action_value: null }] });
+      // A stage carries no actions until the admin picks one, so there is nothing to suggest and nothing to
+      // reset to. (Every action the server offers now has wording of its own.)
+      withStage({ error_message: null, actions: [] });
       expect(component.suggestedErrorMessage()).toBeNull();
       expect(component.canResetErrorMessage()).toBe(false);
     });
@@ -338,7 +340,7 @@ describe("ConditionalAccessStageItemComponent", () => {
     });
 
     it("should switch on with an empty field when the stage has nothing to suggest", () => {
-      withStage({ error_message: null, actions: [{ action_type: "ALLOW", action_value: null }] });
+      withStage({ error_message: null, actions: [] });
       const spy = jest.spyOn(component.updateStage, "emit");
       component.toggleErrorMessage(true);
       expect(spy).toHaveBeenCalledWith({ error_message: "" });
@@ -374,7 +376,7 @@ describe("ConditionalAccessStageItemComponent", () => {
       expect(component.suggestedErrorMessage()).toBe("Locked. Try again in about {duration}.");
 
       const spy = jest.spyOn(component.updateStage, "emit");
-      const actions: LockoutStageAction[] = [{ action_type: "PERMANENT_LOCK_USER", action_value: null }];
+      const actions: ConditionalAccessStageAction[] = [{ action_type: "PERMANENT_LOCK_USER", action_value: null }];
       component.onActionsChange(actions);
       // Only the actions travel: an error_message key here would mean the wording was regenerated.
       expect(spy).toHaveBeenCalledWith({ actions });
