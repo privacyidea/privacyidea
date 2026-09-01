@@ -490,23 +490,27 @@ def get_user_lock():
 
     Requires the admin policy action :ref:`policy_user_lock_read`.
 
-    One user identifier is required: user or user_id
+    One user identifier is required: username or user_id
 
-    :query user: login of the user to look up.
+    :query username: login of the user to look up. For backward compatibility, the legacy key
+        ``user`` is also accepted.
     :query user_id: user id of the user to look up. Requires ``resolver``: a uid is only
         unique within its resolver, so a user object cannot be built from a uid alone.
     :query realm: realm of the user
-    :query resolver: resolver of the user; optional alongside ``user``, required with ``user_id``
+    :query resolver: resolver of the user; optional alongside ``username``, required with ``user_id``
     :status 200: the user's lock dict, or ``null``, in ``result.value``
     """
-    get_required_one_of(request.all_data, ["user", "user_id"])
+    # Prefer the unambiguous name 'username' but keep 'user' for compatibility
+    get_required_one_of(request.all_data, ["username", "user_id", "user"])
     user_id = get_optional(request.all_data, "user_id")
-    username = get_optional(request.all_data, "user")
+    username = get_optional(request.all_data, "username") or get_optional(request.all_data, "user")
     realm = get_required(request.all_data, "realm")
     resolver = get_optional(request.all_data, "resolver")
-    if user_id and not username and not resolver:
-        # User() refuses a uid without a resolver (a uid is only unique per resolver); reject it here so
-        # the caller gets a ParameterError instead of a UserError from deep inside the resolver lookup.
+    if user_id and not resolver:
+        # User() refuses a uid without a resolver (a uid is only unique per resolver), even when a username is
+        # also given: the two are not cross-checked against each other, so the uid alone still needs its
+        # resolver to be unambiguous. Reject it here so the caller gets a ParameterError instead of a
+        # UserError from deep inside the resolver lookup.
         raise ParameterError("The parameter 'resolver' is required when looking a user up by 'user_id'.")
     visibility_scopes = get_policy_visibility_scopes(PolicyAction.USER_LOCK_READ)
 
@@ -540,13 +544,14 @@ def set_user_lock():
     Requires the admin policy action :ref:`policy_user_lock_set`, which is deliberately separate from
     ``user_lock_reset``: clearing a restriction is recoverable, imposing one is not.
 
-    One user identifier is required: user or user_id
+    One user identifier is required: username or user_id
 
-    :jsonparam user: login of the user to lock
+    :jsonparam username: login of the user to lock. For backward compatibility, the legacy key
+        ``user`` is also accepted.
     :jsonparam user_id: user id of the user to lock. Requires ``resolver``: a uid is only unique within its
         resolver, so a user object cannot be built from a uid alone.
     :jsonparam realm: realm of the user. Required.
-    :jsonparam resolver: resolver of the user; optional alongside ``user``, required with ``user_id``
+    :jsonparam resolver: resolver of the user; optional alongside ``username``, required with ``user_id``
     :jsonparam duration_seconds: how long the lock lasts. Omitted, the lock is permanent and lifts only when
         an admin unlocks the user - which is the usual intent when locking by hand.
     :status 200: the new lock dict in ``result.value``
@@ -554,27 +559,31 @@ def set_user_lock():
     :status 403: the user is outside the admin's policy visibility scope
     """
     params = request.all_data
-    get_required_one_of(params, ["user", "user_id"])
+    # Prefer the unambiguous name 'username' but accept legacy 'user'
+    get_required_one_of(params, ["username", "user_id", "user"])
     user_id = get_optional(params, "user_id")
-    username = get_optional(params, "user")
+    username = get_optional(params, "username") or get_optional(params, "user")
     realm = get_required(params, "realm")
     resolver = get_optional(params, "resolver")
-    if user_id and not username and not resolver:
-        # User() refuses a uid without a resolver (a uid is only unique per resolver); reject it here so
-        # the caller gets a ParameterError instead of a UserError from deep inside the resolver lookup.
+    if user_id and not resolver:
+        # User() refuses a uid without a resolver (a uid is only unique per resolver), even when a username is
+        # also given: the two are not cross-checked against each other, so the uid alone still needs its
+        # resolver to be unambiguous. Reject it here so the caller gets a ParameterError instead of a
+        # UserError from deep inside the resolver lookup.
         raise ParameterError("The parameter 'resolver' is required when looking a user up by 'user_id'.")
     duration_seconds = _duration_param(params)
 
-    user = request.User
-    if not user or not user.exist():
-        user = User(uid=user_id, login=username, realm=realm, resolver=resolver)
-    if user.is_empty() or not user.exist():
-        raise ParameterError(f"The user {username or user_id}@{realm} does not exist.")
-    # A pre-flight check rather than a scoped WHERE clause: a write has exactly one target, so an
-    # out-of-scope one is refused loudly. A lock that did not happen must not look like one that did -
-    # the opposite trade-off from the DELETE, which may match several rows.
+    # Build a minimal User object from request parameters only; scope authorization must not disclose
+    # whether the user exists. Perform the scope check before attempting to resolve existence.
+    user = User(uid=user_id, login=username, realm=realm, resolver=resolver)
     if not user_matches_scopes(user, get_policy_visibility_scopes(PolicyAction.USER_LOCK_SET)):
-        raise PolicyError(f"You are not allowed to lock {user.login}@{user.realm}.")
+        # Do not include resolved identifiers; echo only the provided parameters
+        target = (username or user_id or "<unspecified>")
+        raise PolicyError(f"You are not allowed to lock the requested user '{target}' in realm '{realm}'.")
+
+    # Now it is safe to resolve and validate the user existence
+    if user.is_empty() or not user.exist():
+        raise ParameterError("The requested user does not exist.")
 
     lock = lock_user(user, duration_seconds=duration_seconds)
     g.audit_object.log({"success": True,
@@ -610,7 +619,7 @@ def purge_user_locks():
 def reset_user_lock():
     """
     Reset (unlock) a user's conditional-access lock. Identified by either the
-    login (``user``) or the resolver-local id (``user_id``); ``realm`` is
+    login (``username``) or the resolver-local id (``user_id``); ``realm`` is
     required and ``resolver`` is optional — it only narrows the match.
     Omitting it clears every matching lock in the realm.
 
@@ -621,9 +630,10 @@ def reset_user_lock():
     inside the scope, and a target outside it is indistinguishable from an absent lock
     (both return ``false``).
 
-    One of user or user_id is required.
+    One user identifier is required: username or user_id
 
-    :jsonparam user: login of the user to unlock
+    :jsonparam username: login of the user to unlock. For backward compatibility, the legacy key
+        ``user`` is also accepted.
     :jsonparam realm: realm of the user (required)
     :jsonparam resolver: resolver of the user (optional; only disambiguates)
     :jsonparam user_id: resolver-local user id
@@ -631,9 +641,9 @@ def reset_user_lock():
         outside the admin's visibility scope
     """
     params = request.all_data
-    get_required_one_of(params, ["user", "user_id"])
+    get_required_one_of(params, ["username", "user_id", "user"])
     user_id = get_optional(params, "user_id")
-    login = get_optional(params, "user")
+    login = get_optional(params, "username") or get_optional(params, "user")
     realm = get_required(params, "realm")
     resolver = get_optional(params, "resolver")
     visibility_scopes = get_policy_visibility_scopes(PolicyAction.USER_LOCK_RESET)

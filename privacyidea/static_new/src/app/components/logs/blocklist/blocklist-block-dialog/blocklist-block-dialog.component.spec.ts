@@ -73,4 +73,21 @@ describe("BlocklistBlockDialogComponent", () => {
     component.onAction("confirm");
     expect(dialogRefMock.close).not.toHaveBeenCalled();
   });
+
+  // The timed controls stay in the layout while permanent is selected (so switching modes does not shift
+  // the dialog) and are only disabled; picking "timed" enables them again.
+  it("disables the timed controls while permanent, enabling them for a timed block", () => {
+    expect(component.durationDisabled()).toBe(true);
+    component.mode.set("timed");
+    expect(component.durationDisabled()).toBe(false);
+  });
+
+  it("ignores a leftover duration once permanent is selected again", () => {
+    component.ip.set("203.0.113.9");
+    component.mode.set("timed");
+    component.durationInput.set("5");
+    component.mode.set("permanent");
+    component.onAction("confirm");
+    expect(dialogRefMock.close).toHaveBeenCalledWith({ ip: "203.0.113.9", durationSeconds: null });
+  });
 });

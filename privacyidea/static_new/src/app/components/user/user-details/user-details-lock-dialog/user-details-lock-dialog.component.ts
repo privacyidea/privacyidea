@@ -78,6 +78,10 @@ export class UserDetailsLockDialogComponent extends AbstractDialogComponent<
     return Number.isNaN(parsed) || parsed <= 0 ? null : parsed * DURATION_UNIT_FACTORS[this.durationUnit()];
   });
 
+  // The timed controls stay in the layout while "permanent" is selected so switching modes does not
+  // shift the dialog; they are simply disabled until a timed lock is chosen.
+  readonly durationDisabled = computed<boolean>(() => this.mode() === "permanent");
+
   // A timed lock needs a duration the backend would accept; a permanent one needs nothing.
   readonly canConfirm = computed<boolean>(() => this.mode() === "permanent" || this.durationSeconds() !== null);
 

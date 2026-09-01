@@ -85,4 +85,12 @@ describe("UserDetailsLockDialogComponent", () => {
     component.onAction("cancel");
     expect(dialogRefMock.close).not.toHaveBeenCalled();
   });
+
+  // The timed controls stay in the layout while permanent is selected (so switching modes does not shift
+  // the dialog) and are only disabled; picking "timed" enables them again.
+  it("disables the timed controls while permanent, enabling them for a timed lock", () => {
+    expect(component.durationDisabled()).toBe(true);
+    component.mode.set("timed");
+    expect(component.durationDisabled()).toBe(false);
+  });
 });

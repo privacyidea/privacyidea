@@ -23,6 +23,7 @@ the live user-lock state and blocklist entries.
 from datetime import timedelta
 
 from privacyidea.lib.conditional_access.authentication_log import AuthenticationLogVisibilityScope
+from privacyidea.lib.conditional_access.authentication_event_types import RestrictionCause
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.conditional_access.state import (
     block_ip,
@@ -93,10 +94,10 @@ class UserLockStateTestCase(MyTestCase):
         # quietly expires on its own would be the surprising outcome.
         lock = lock_user(self.user)
         self.assertTrue(lock["permanent"])
-        self.assertEqual("MANUAL", lock["lock_cause"])
+        self.assertEqual(RestrictionCause.MANUAL, lock["lock_cause"])
         row = db.session.query(UserLockState).one()
         self.assertIsNone(row.lock_expires_at)
-        self.assertEqual("MANUAL", row.lock_cause)
+        self.assertEqual(RestrictionCause.MANUAL, row.lock_cause)
         self.assertEqual(self.user.login, row.username)
 
     def test_lock_user_with_a_duration_sets_the_expiry(self):
@@ -126,16 +127,16 @@ class UserLockStateTestCase(MyTestCase):
 
     def test_lock_user_replaces_a_policy_lock_and_its_cause(self):
         self._lock(utc_now() + timedelta(seconds=3600))
-        self.assertEqual("POLICY", db.session.query(UserLockState).one().lock_cause)
+        self.assertEqual(RestrictionCause.POLICY, db.session.query(UserLockState).one().lock_cause)
         lock_user(self.user, duration_seconds=60)
-        self.assertEqual("MANUAL", db.session.query(UserLockState).one().lock_cause)
+        self.assertEqual(RestrictionCause.MANUAL, db.session.query(UserLockState).one().lock_cause)
 
     def test_block_ip_writes_a_manual_block(self):
         entry = block_ip("203.0.113.9", duration_seconds=300)
         self.assertEqual("203.0.113.9", entry["identifier"])
-        self.assertEqual("MANUAL", entry["block_cause"])
+        self.assertEqual(RestrictionCause.MANUAL, entry["block_cause"])
         self.assertFalse(entry["permanent"])
-        self.assertEqual("MANUAL", db.session.query(BlockList).one().block_cause)
+        self.assertEqual(RestrictionCause.MANUAL, db.session.query(BlockList).one().block_cause)
 
     def test_block_ip_refuses_a_never_block_address_loudly(self):
         # The engine skips one silently so an automatic action cannot lock out everyone behind a shared
@@ -163,14 +164,14 @@ class UserLockStateTestCase(MyTestCase):
 
     def test_locked_user_dict_reports_the_cause(self):
         self._lock(None)
-        self.assertEqual("POLICY", list_locked_users()[0]["lock_cause"])
+        self.assertEqual(RestrictionCause.POLICY, list_locked_users()[0]["lock_cause"])
 
     def test_list_locked_users_filters_by_cause(self):
         self._lock(None)
         lock_user(User("selfservice", self.realm1, self.resolvername1))
         self.assertEqual(2, len(list_locked_users()))
-        self.assertEqual(["MANUAL"], [row["lock_cause"] for row in list_locked_users(causes=["MANUAL"])])
-        self.assertEqual(["POLICY"], [row["lock_cause"] for row in list_locked_users(causes=["POLICY"])])
+        self.assertEqual([RestrictionCause.MANUAL], [row["lock_cause"] for row in list_locked_users(causes=["MANUAL"])])
+        self.assertEqual([RestrictionCause.POLICY], [row["lock_cause"] for row in list_locked_users(causes=["POLICY"])])
 
     def test_list_locked_users_rejects_an_unknown_cause(self):
         # Ignoring it would widen the result to every cause, so a typo would return more than was asked for.

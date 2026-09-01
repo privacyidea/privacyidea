@@ -70,6 +70,10 @@ export class BlocklistBlockDialogComponent extends AbstractDialogComponent<void,
     return Number.isNaN(parsed) || parsed <= 0 ? null : parsed * DURATION_UNIT_FACTORS[this.durationUnit()];
   });
 
+  // The timed controls stay in the layout while "permanent" is selected so switching modes does not
+  // shift the dialog; they are simply disabled until a timed block is chosen.
+  readonly durationDisabled = computed<boolean>(() => this.mode() === "permanent");
+
   // Only the obviously-empty case is caught here; whether the address parses, and whether it is on the
   // never-block list, is the backend's answer and arrives as a notification.
   readonly canConfirm = computed<boolean>(

@@ -32,7 +32,7 @@
   <mat-form-field
     appearance="fill"
     subscriptSizing="dynamic"
-    class="block-dialog-ip">
+    class="block-dialog-ip input-width-l">
     <mat-label i18n>IP address</mat-label>
     <input
       matInput
@@ -56,34 +56,34 @@
     </mat-radio-button>
   </mat-radio-group>
 
-  @if (mode() === "timed") {
-    <div class="block-dialog-duration">
-      <mat-form-field
-        appearance="fill"
-        subscriptSizing="dynamic"
-        class="input-width-s">
-        <mat-label i18n>Duration</mat-label>
-        <input
-          matInput
-          type="number"
-          min="1"
-          [value]="durationInput()"
-          (input)="durationInput.set($any($event.target).value)" />
-      </mat-form-field>
+  <div class="block-dialog-duration">
+    <mat-form-field
+      appearance="fill"
+      subscriptSizing="dynamic"
+      class="input-width-s">
+      <mat-label i18n>Duration</mat-label>
+      <input
+        matInput
+        type="number"
+        min="1"
+        [disabled]="durationDisabled()"
+        [value]="durationInput()"
+        (input)="durationInput.set($any($event.target).value)" />
+    </mat-form-field>
 
-      <mat-form-field
-        appearance="fill"
-        subscriptSizing="dynamic"
-        class="input-width-s">
-        <mat-label i18n>Unit</mat-label>
-        <mat-select
-          [value]="durationUnit()"
-          (selectionChange)="durationUnit.set($event.value)">
-          @for (unit of durationUnits; track unit) {
-            <mat-option [value]="unit">{{ unit }}</mat-option>
-          }
-        </mat-select>
-      </mat-form-field>
-    </div>
-  }
+    <mat-form-field
+      appearance="fill"
+      subscriptSizing="dynamic"
+      class="input-width-s">
+      <mat-label i18n>Unit</mat-label>
+      <mat-select
+        [disabled]="durationDisabled()"
+        [value]="durationUnit()"
+        (selectionChange)="durationUnit.set($event.value)">
+        @for (unit of durationUnits; track unit) {
+          <mat-option [value]="unit">{{ unit }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+  </div>
 </app-dialog-wrapper>

@@ -1,5 +1,11 @@
 @use "styles";
 
+// Cap the dialog so the intro text does not stretch it across a wide viewport.
+:host {
+  display: block;
+  max-width: 500px;
+}
+
 .lock-dialog-intro {
   margin: 0 0 16px;
 
