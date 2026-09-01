@@ -1,7 +1,7 @@
 """v3.14: Add an index on remembered_devices.expires_at
 
 Revision ID: 6296c0889f75
-Revises: d9e0f1a2b3c4
+Revises: b8c9d0e1f2a3
 Create Date: 2026-08-27 00:00:00.000000
 
 """
@@ -10,7 +10,7 @@ from sqlalchemy.exc import OperationalError, ProgrammingError
 
 # revision identifiers, used by Alembic.
 revision = '6296c0889f75'
-down_revision = 'd9e0f1a2b3c4'
+down_revision = 'b8c9d0e1f2a3'
 branch_labels = None
 depends_on = None
 
