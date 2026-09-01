@@ -1,15 +1,19 @@
-"""v3.14: Encrypt plaintext SMS gateway secrets and challenge data in the database
+"""v3.14: Encrypt plaintext SMS gateway secrets, resize challenge.data
 
-This migration encrypts sensitive data that was previously stored in plaintext:
+This migration:
 
-1. SMS Gateway options whose key contains PASSWORD or SECRET
+1. Encrypts SMS Gateway options whose key contains PASSWORD or SECRET
   (table: smsgatewayoption) – adds an ``Encrypted`` boolean column to track
   which values are encrypted.
-2. Challenge data field which may contain OTP values
-  (table: challenge)
+2. The ``challenge.data`` column is widened from 512 to 2000 characters, so it
+  can hold the encrypted JSON that newly created challenges store there. The
+  existing rows themselves are not converted here: the very next revision,
+  c3d4e5f6a7b8, unconditionally deletes every row of the ``challenge`` table,
+  since challenges are short-lived and none of them can be in the new
+  dict-only format yet. Encrypting them here first would be pure wasted work.
 
-The migration is idempotent: values that are already in encrypted format
-(contain a colon separating IV:ciphertext hex) are skipped.
+The migration is idempotent: SMS gateway option values that are already in
+encrypted format (contain a colon separating IV:ciphertext hex) are skipped.
 
 Revision ID: a1b2c3d4e5f6
 Revises: d4f5a6b7c8e9
@@ -116,37 +120,6 @@ def upgrade():
 
     log.info(f"Encrypted {encrypted_count} sensitive SMS gateway option(s).")
 
-    # --- 2. Encrypt challenge data fields ---
-    log.info("Encrypting challenge data fields...")
-    challenge = sa.table(
-        'challenge',
-        sa.column('id', sa.Integer),
-        sa.column('data', sa.Unicode),
-    )
-
-    result = conn.execute(
-        sa.select(challenge.c.id, challenge.c.data)
-    )
-    encrypted_count = 0
-    for row in result:
-        challenge_id, data = row
-        if not data:
-            continue
-        # Skip if already encrypted
-        if _looks_encrypted(data):
-            log.debug(f"Challenge id={challenge_id} data already encrypted, skipping.")
-            continue
-        # Encrypt the plaintext data
-        encrypted_data = encryptPassword(data)
-        conn.execute(
-            challenge.update().where(
-                challenge.c.id == challenge_id
-            ).values(data=encrypted_data)
-        )
-        encrypted_count += 1
-
-    log.info(f"Encrypted {encrypted_count} challenge data field(s).")
-
 
 def downgrade():
     """
@@ -190,32 +163,7 @@ def downgrade():
     with op.batch_alter_table('smsgatewayoption', schema=None) as batch_op:
         batch_op.drop_column('Encrypted')
 
-    # --- 2. Decrypt challenge data fields ---
-    log.info("Decrypting challenge data fields (downgrade)...")
-    challenge = sa.table(
-        'challenge',
-        sa.column('id', sa.Integer),
-        sa.column('data', sa.Unicode),
-    )
-
-    result = conn.execute(
-        sa.select(challenge.c.id, challenge.c.data)
-    )
-    for row in result:
-        challenge_id, data = row
-        if not data:
-            continue
-        if not _looks_encrypted(data):
-            continue
-        decrypted_data = decryptPassword(data)
-        if decrypted_data and not decrypted_data.startswith("FAILED TO DECRYPT"):
-            conn.execute(
-                challenge.update().where(
-                    challenge.c.id == challenge_id
-                ).values(data=decrypted_data)
-            )
-
-    # --- 3. Revert challenge.data column size back to 512 ---
+    # --- 2. Revert challenge.data column size back to 512 ---
     log.info("Reverting challenge.data column size from 2000 to 512...")
     with op.batch_alter_table('challenge', schema=None) as batch_op:
         batch_op.alter_column('data',

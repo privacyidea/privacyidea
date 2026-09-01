@@ -20,7 +20,7 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { AuthService } from "@services/auth/auth.service";
 import {
   ConditionalAccessPolicyService,
-  LockoutPolicyStage
+  ConditionalAccessPolicyStage
 } from "@services/conditional-access/conditional-access-policy.service";
 import { SmtpService } from "@services/smtp/smtp.service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
@@ -32,9 +32,9 @@ describe("ConditionalAccessStagesListComponent", () => {
   let component: ConditionalAccessStagesListComponent;
   let fixture: ComponentFixture<ConditionalAccessStagesListComponent>;
 
-  const stages: LockoutPolicyStage[] = [
-    { failure_threshold: 5, priority: 1, actions: [] },
-    { failure_threshold: 10, priority: 2, actions: [] }
+  const stages: ConditionalAccessPolicyStage[] = [
+    { failure_threshold: 5, actions: [] },
+    { failure_threshold: 10, actions: [] }
   ];
 
   beforeEach(async () => {
@@ -60,7 +60,7 @@ describe("ConditionalAccessStagesListComponent", () => {
   it("should emit a new array with an appended stage on add", () => {
     const spy = jest.spyOn(component.stagesChange, "emit");
     component.onAddStage();
-    expect(spy).toHaveBeenCalledWith([...stages, { failure_threshold: 1, priority: 1, actions: [] }]);
+    expect(spy).toHaveBeenCalledWith([...stages, { failure_threshold: 1, actions: [] }]);
   });
 
   it("should emit a merged stage on update by index", () => {

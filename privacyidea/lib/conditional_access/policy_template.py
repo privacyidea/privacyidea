@@ -15,18 +15,18 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-Ready-made conditional-access lockout policy templates.
+Ready-made conditional-access policy templates.
 
-The templates are a catalog of default lockout policies.
-Each is a :class:`LockoutPolicyTemplate` constant referencing the :class:`AuthEventType`
-/ :class:`LockoutAction` members directly (so a renamed event type or action
+The templates are a catalog of default conditional-access policies.
+Each is a :class:`ConditionalAccessPolicyTemplate` constant referencing the :class:`AuthEventType`
+/ :class:`ConditionalAccessAction` members directly (so a renamed event type or action
 fails at import, not silently at runtime); ``policy`` is a full payload for
-:func:`~privacyidea.lib.conditional_access.lockout_policy.create_lockout_policy`.
+:func:`~privacyidea.lib.conditional_access.policy.create_conditional_access_policy`.
 The shipped set is the single :data:`_TEMPLATES` tuple - to add a template,
 define a constant and add it there.
 
 The REST API returns the whole catalog in one call
-(:func:`list_lockout_policy_templates`); a client prefills a policy from a
+(:func:`list_conditional_access_policy_templates`); a client prefills a policy from a
 template and submits it as a normal create request.
 """
 import copy
@@ -36,28 +36,28 @@ from dataclasses import dataclass
 from privacyidea.lib import lazy_gettext
 from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType, CountMode,
                                                                               TRACKABLE_EVENT_TYPES)
-from privacyidea.lib.conditional_access.engine import LockoutAction, LockoutTarget
+from privacyidea.lib.conditional_access.engine import ConditionalAccessAction, ConditionalAccessTarget
 from privacyidea.lib.log import log_with
 
 log = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
-class LockoutPolicyTemplate:
+class ConditionalAccessPolicyTemplate:
     """
-    One shipped lockout policy template.
+    One shipped conditional-access policy template.
 
     :ivar key: stable catalog identifier
     :ivar description: a ``lazy_gettext`` string, translated when serialized
     :ivar policy: the create-policy payload (see
-        :mod:`~privacyidea.lib.conditional_access.lockout_policy`)
+        :mod:`~privacyidea.lib.conditional_access.policy`)
     """
     key: str
     description: object
     policy: dict
 
 
-PASSWORD_BRUTEFORCE = LockoutPolicyTemplate(
+PASSWORD_BRUTEFORCE = ConditionalAccessPolicyTemplate(
     key="password_bruteforce",
     description=lazy_gettext("Lock a single user after repeated wrong passwords or PINs (password brute-force)."),
     policy={
@@ -65,7 +65,7 @@ PASSWORD_BRUTEFORCE = LockoutPolicyTemplate(
         "time_window_seconds": 900,
         "enabled": True,
         "dry_run": False,
-        "target": LockoutTarget.USER,
+        "target": ConditionalAccessTarget.USER,
         "count_mode": CountMode.PER_REQUEST,
         # Reset on success: the threshold means "this many wrong passwords in a row", so a completed login clears
         # the slate and a legitimate user is not locked by stale failures from before it.
@@ -73,13 +73,13 @@ PASSWORD_BRUTEFORCE = LockoutPolicyTemplate(
         "counter_types_to_track": [AuthEventType.PASSWORD_FAIL,
                                    AuthEventType.PIN_FAIL],
         "stages": [
-            {"failure_threshold": 10, "priority": 1,
-             "actions": [{"action_type": LockoutAction.LOCK_USER,
+            {"failure_threshold": 10,
+             "actions": [{"action_type": ConditionalAccessAction.LOCK_USER,
                           "action_value": {"duration_seconds": 900}}]},
         ],
     })
 
-MFA_BRUTEFORCE = LockoutPolicyTemplate(
+MFA_BRUTEFORCE = ConditionalAccessPolicyTemplate(
     key="mfa_bruteforce",
     description=lazy_gettext("Progressively lock a user whose password is correct "
                              "but whose second factor keeps failing (MFA brute-force)."),
@@ -88,21 +88,21 @@ MFA_BRUTEFORCE = LockoutPolicyTemplate(
         "time_window_seconds": 3600,
         "enabled": True,
         "dry_run": False,
-        "target": LockoutTarget.USER,
+        "target": ConditionalAccessTarget.USER,
         "count_mode": CountMode.PER_REQUEST,
         # Reset on success, so the escalating stages measure one uninterrupted burst: a completed login means the
         # second factor worked, and the next burst starts again at the first stage.
         "reset_on_success": True,
         "counter_types_to_track": [AuthEventType.MFA_FAIL],
         "stages": [
-            {"failure_threshold": 3, "priority": 1,
-             "actions": [{"action_type": LockoutAction.LOCK_USER,
+            {"failure_threshold": 3,
+             "actions": [{"action_type": ConditionalAccessAction.LOCK_USER,
                           "action_value": {"duration_seconds": 600}}]},
-            {"failure_threshold": 5, "priority": 2,
+            {"failure_threshold": 5,
              "actions": [
-                 {"action_type": LockoutAction.LOCK_USER,
+                 {"action_type": ConditionalAccessAction.LOCK_USER,
                   "action_value": {"duration_seconds": 1800}},
-                 {"action_type": LockoutAction.EMAIL_ADMIN,
+                 {"action_type": ConditionalAccessAction.EMAIL_ADMIN,
                   "action_value": {
                       "smtp_identifier": "",
                       "recipient_group": "internal_admins",
@@ -112,10 +112,10 @@ MFA_BRUTEFORCE = LockoutPolicyTemplate(
                                "{event_type} events. Time: {time}.")}},
              ]},
 
-            {"failure_threshold": 10, "priority": 3,
+            {"failure_threshold": 10,
              "actions": [
-                 {"action_type": LockoutAction.PERMANENT_LOCK_USER},
-                 {"action_type": LockoutAction.EMAIL_ADMIN,
+                 {"action_type": ConditionalAccessAction.PERMANENT_LOCK_USER},
+                 {"action_type": ConditionalAccessAction.EMAIL_ADMIN,
                   "action_value": {
                       "smtp_identifier": "",
                       "recipient_group": "internal_admins",
@@ -127,10 +127,8 @@ MFA_BRUTEFORCE = LockoutPolicyTemplate(
         ],
     })
 
-# The authentication-failure event types the failed-attempt rate limits count. Explicit and curated on purpose -
-# deliberately NOT derived from the FAILURE outcome class - because a "FAILURE" outcome does not by itself mean a
-# type belongs in an authentication rate limit: a new failure type must be a conscious decision, never silently
-# pulled in.
+# The failure event types the failed-attempt rate limits count, curated by hand rather than derived from the
+# FAILURE outcome class, so adding a new failure type here is always a conscious decision, never automatic.
 _USER_AUTH_FAILURES = [
     AuthEventType.PASSWORD_FAIL,
     AuthEventType.PIN_FAIL,
@@ -146,7 +144,7 @@ _USER_AUTH_FAILURES = [
 # includes probing non-existent usernames (enumeration), which a per-user target cannot see.
 _IP_AUTH_FAILURES = _USER_AUTH_FAILURES + [AuthEventType.USER_UNKNOWN]
 
-USER_RATE_LIMITING = LockoutPolicyTemplate(
+USER_RATE_LIMITING = ConditionalAccessPolicyTemplate(
     key="user_rate_limiting",
     description=lazy_gettext("Rate-limit a single user's authentication: once too many attempts happen in a short "
                              "window, further attempts are briefly denied. Counts every attempt - successful, failed "
@@ -156,7 +154,7 @@ USER_RATE_LIMITING = LockoutPolicyTemplate(
         "time_window_seconds": 60,
         "enabled": True,
         "dry_run": False,
-        "target": LockoutTarget.USER,
+        "target": ConditionalAccessTarget.USER,
         # PER_ATTEMPT so a multichallenge / push login counts as one attempt; every *trackable* event type is counted
         # so successes and abandoned (pending) attempts count too - this caps the request rate, it does not lock.
         "count_mode": CountMode.PER_ATTEMPT,
@@ -166,12 +164,12 @@ USER_RATE_LIMITING = LockoutPolicyTemplate(
         "reset_on_success": False,
         "counter_types_to_track": list(TRACKABLE_EVENT_TYPES),
         "stages": [
-            {"failure_threshold": 20, "priority": 1,
-             "actions": [{"action_type": LockoutAction.DENY}]},
+            {"failure_threshold": 20,
+             "actions": [{"action_type": ConditionalAccessAction.DENY}]},
         ],
     })
 
-USER_FAILED_RATE_LIMITING = LockoutPolicyTemplate(
+USER_FAILED_RATE_LIMITING = ConditionalAccessPolicyTemplate(
     key="user_failed_rate_limiting",
     description=lazy_gettext("Rate-limit a single user's failed authentication attempts: after too many failures in "
                              "a short window, further attempts are briefly denied. Successful logins are not counted, "
@@ -181,19 +179,19 @@ USER_FAILED_RATE_LIMITING = LockoutPolicyTemplate(
         "time_window_seconds": 60,
         "enabled": True,
         "dry_run": False,
-        "target": LockoutTarget.USER,
+        "target": ConditionalAccessTarget.USER,
         "count_mode": CountMode.PER_ATTEMPT,
         # No reset on success either: the threshold means "this many failed attempts in the window", so a success
         # in between must not hand the burst a fresh budget.
         "reset_on_success": False,
         "counter_types_to_track": list(_USER_AUTH_FAILURES),
         "stages": [
-            {"failure_threshold": 10, "priority": 1,
-             "actions": [{"action_type": LockoutAction.DENY}]},
+            {"failure_threshold": 10,
+             "actions": [{"action_type": ConditionalAccessAction.DENY}]},
         ],
     })
 
-PASSWORD_SPRAYING = LockoutPolicyTemplate(
+PASSWORD_SPRAYING = ConditionalAccessPolicyTemplate(
     key="password_spraying",
     description=lazy_gettext("Block a source IP that fails first-factor authentication (wrong password "
                              "or PIN) against many different users in a short time (password spraying / "
@@ -203,20 +201,20 @@ PASSWORD_SPRAYING = LockoutPolicyTemplate(
         "time_window_seconds": 300,
         "enabled": True,
         "dry_run": False,
-        "target": LockoutTarget.SOURCE_IP,
+        "target": ConditionalAccessTarget.SOURCE_IP,
         "count_mode": CountMode.DISTINCT_USERS,
         # The only value a source-IP policy can have: the signal spans many accounts, so one account's legitimate
         # login must not clear it.
         "reset_on_success": False,
         "counter_types_to_track": [AuthEventType.PASSWORD_FAIL, AuthEventType.PIN_FAIL],
         "stages": [
-            {"failure_threshold": 20, "priority": 1,
-             "actions": [{"action_type": LockoutAction.BLOCK_IP,
+            {"failure_threshold": 20,
+             "actions": [{"action_type": ConditionalAccessAction.BLOCK_IP,
                           "action_value": {"duration_seconds": 3600}}]},
         ],
     })
 
-USER_ENUMERATION = LockoutPolicyTemplate(
+USER_ENUMERATION = ConditionalAccessPolicyTemplate(
     key="user_enumeration",
     description=lazy_gettext("Block a source IP that probes many different non-existent usernames in a short "
                              "time (user enumeration)."),
@@ -225,20 +223,20 @@ USER_ENUMERATION = LockoutPolicyTemplate(
         "time_window_seconds": 300,
         "enabled": True,
         "dry_run": False,
-        "target": LockoutTarget.SOURCE_IP,
+        "target": ConditionalAccessTarget.SOURCE_IP,
         # DISTINCT_USERS keys on the attempted username, so each probed non-existent login counts as a distinct
         # targeted account - the enumeration signal, and NAT-safe (fan-out, not raw request volume).
         "count_mode": CountMode.DISTINCT_USERS,
         "reset_on_success": False,
         "counter_types_to_track": [AuthEventType.USER_UNKNOWN],
         "stages": [
-            {"failure_threshold": 10, "priority": 1,
-             "actions": [{"action_type": LockoutAction.BLOCK_IP,
+            {"failure_threshold": 10,
+             "actions": [{"action_type": ConditionalAccessAction.BLOCK_IP,
                           "action_value": {"duration_seconds": 3600}}]},
         ],
     })
 
-IP_FAILED_RATE_LIMITING = LockoutPolicyTemplate(
+IP_FAILED_RATE_LIMITING = ConditionalAccessPolicyTemplate(
     key="ip_failed_rate_limiting",
     description=lazy_gettext("Rate-limit a source IP that fails authentication against many different accounts in a "
                              "short window (credential stuffing, spraying or user enumeration): further requests from "
@@ -250,19 +248,19 @@ IP_FAILED_RATE_LIMITING = LockoutPolicyTemplate(
         # Dry-run by default: the right distinct-account threshold depends on the environment (number of users, whether
         # a NAT/CGNAT/VPN egress is shared), so an admin should watch the logged decisions and tune it before enforcing.
         "dry_run": True,
-        "target": LockoutTarget.SOURCE_IP,
+        "target": ConditionalAccessTarget.SOURCE_IP,
         # For an IP, "attempts" is the number of DISTINCT accounts (attempted usernames) it targeted - the fan-out
         # signal, never raw request volume, so a busy shared egress is judged only by how many accounts it fails on.
         "count_mode": CountMode.DISTINCT_USERS,
         "reset_on_success": False,
         "counter_types_to_track": list(_IP_AUTH_FAILURES),
         "stages": [
-            {"failure_threshold": 20, "priority": 1,
-             "actions": [{"action_type": LockoutAction.DENY}]},
+            {"failure_threshold": 20,
+             "actions": [{"action_type": ConditionalAccessAction.DENY}]},
         ],
     })
 
-IP_RATE_LIMITING = LockoutPolicyTemplate(
+IP_RATE_LIMITING = ConditionalAccessPolicyTemplate(
     key="ip_rate_limiting",
     description=lazy_gettext("Rate-limit a source IP by how many different accounts it authenticates as in a short "
                              "window, regardless of success."),
@@ -273,13 +271,13 @@ IP_RATE_LIMITING = LockoutPolicyTemplate(
         # Dry-run by default: this is the one IP template that counts successes, so a legitimate shared-egress IP can
         # trip it. It logs the decision it *would* make and enforces nothing until an admin turns dry_run off.
         "dry_run": True,
-        "target": LockoutTarget.SOURCE_IP,
+        "target": ConditionalAccessTarget.SOURCE_IP,
         "count_mode": CountMode.DISTINCT_USERS,
         "reset_on_success": False,
         "counter_types_to_track": list(TRACKABLE_EVENT_TYPES),
         "stages": [
-            {"failure_threshold": 30, "priority": 1,
-             "actions": [{"action_type": LockoutAction.DENY}]},
+            {"failure_threshold": 30,
+             "actions": [{"action_type": ConditionalAccessAction.DENY}]},
         ],
     })
 
@@ -289,7 +287,7 @@ _TEMPLATES = (PASSWORD_BRUTEFORCE, MFA_BRUTEFORCE, USER_RATE_LIMITING, USER_FAIL
 
 
 @log_with(log)
-def list_lockout_policy_templates() -> list:
+def list_conditional_access_policy_templates() -> list:
     """
     Return the whole shipped catalog, each entry as
     ``{"key": str, "description": str, "policy": dict}`` where ``policy`` is the

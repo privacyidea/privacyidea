@@ -17,15 +17,16 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, inject, input, output } from "@angular/core";
+import { Component, computed, inject, input, output } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatIconModule } from "@angular/material/icon";
 import {
   ConditionalAccessPolicyService,
   ConditionalAccessPolicyServiceInterface,
-  LockoutStageAction,
-  LockoutTarget
+  ConditionalAccessStageAction,
+  ConditionalAccessTarget,
+  REDUNDANT_RESTRICTION_PAIRS
 } from "@services/conditional-access/conditional-access-policy.service";
 import { ConditionalAccessActionItemComponent } from "./action-item/conditional-access-action-item.component";
 
@@ -39,19 +40,29 @@ import { ConditionalAccessActionItemComponent } from "./action-item/conditional-
 export class ConditionalAccessActionsListComponent {
   private readonly policyService: ConditionalAccessPolicyServiceInterface = inject(ConditionalAccessPolicyService);
 
-  readonly actions = input.required<LockoutStageAction[]>();
-  readonly target = input<LockoutTarget>("user");
-  readonly actionsChange = output<LockoutStageAction[]>();
+  readonly actions = input.required<ConditionalAccessStageAction[]>();
+  readonly target = input<ConditionalAccessTarget>("user");
+  readonly actionsChange = output<ConditionalAccessStageAction[]>();
+
+  // The pairs this stage actually configures, so the warning can name them. The timed half is dead
+  // configuration - it changes nothing an admin can observe - and naming both ends is what makes the warning
+  // act on: a stage with several actions would otherwise leave the admin to work out which two conflict.
+  readonly redundantRestrictionPairs = computed(() => {
+    const configured = new Set(this.actions().map((action) => action.action_type));
+    return REDUNDANT_RESTRICTION_PAIRS.filter(
+      ([timed, permanent]) => configured.has(timed) && configured.has(permanent)
+    );
+  });
 
   onAddAction(): void {
-    // Default a new action to one that is valid for the current target, so it is
-    // never born incompatible (e.g. LOCK_USER under a source_ip policy).
+    // Defaults a new action to one valid for the current target, so it is never born incompatible
+    // (e.g. LOCK_USER under a source_ip policy).
     const allowed = this.policyService.actionsForTarget(this.target());
     const actionType = allowed[0] ?? "LOCK_USER";
     this.actionsChange.emit([...this.actions(), { action_type: actionType, action_value: null }]);
   }
 
-  onUpdateAction(index: number, partial: Partial<LockoutStageAction>): void {
+  onUpdateAction(index: number, partial: Partial<ConditionalAccessStageAction>): void {
     this.actionsChange.emit(this.actions().map((action, i) => (i === index ? { ...action, ...partial } : action)));
   }
 

@@ -12,11 +12,12 @@ from privacyidea.config import TestingConfig
 from privacyidea.lib.auth import create_db_admin
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.config import set_privacyidea_config, SYSCONF
+from privacyidea.api.lib.utils import GENERIC_AUTH_FAILURE
 from privacyidea.lib.error import ResourceNotFoundError, Error
 from privacyidea.lib.event import set_event, delete_event
 from privacyidea.lib.eventhandler.base import CONDITION
 from privacyidea.lib.policies.actions import PolicyAction
-from privacyidea.lib.policy import set_policy, SCOPE, REMOTE_USER, delete_policy
+from privacyidea.lib.policy import set_policy, SCOPE, REMOTE_USER, delete_policy, delete_policies
 from privacyidea.lib.realm import (set_realm, set_default_realm, delete_realm,
                                    get_default_realm)
 from privacyidea.lib.resolver import save_resolver, delete_resolver
@@ -25,7 +26,7 @@ from privacyidea.lib.tokenclass import FAILCOUNTER_EXCEEDED, DATE_FORMAT, FAILCO
 from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import to_unicode, AUTH_RESPONSE
-from privacyidea.models import Realm, NodeName, db
+from privacyidea.models import Audit, Realm, NodeName, db
 from . import ldap3mock
 from .base import MyApiTestCase, OverrideConfigTestCase
 
@@ -61,7 +62,7 @@ class AuthApiTestCase(MyApiTestCase):
             result = res.json.get("result")
             self.assertFalse(result.get("status"), result)
             self.assertEqual(4031, result['error']['code'], result)
-            self.assertEqual('Authentication failure. Wrong credentials',
+            self.assertEqual('Authentication failed.',
                              result['error']['message'], result)
         aentry = self.find_most_recent_audit_entry(action='POST /auth')
         self.assertEqual(aentry['action'], 'POST /auth', aentry)
@@ -192,7 +193,7 @@ class AuthApiTestCase(MyApiTestCase):
                 result = res.json.get("result")
                 self.assertFalse(result.get("status"), result)
                 self.assertEqual(4031, result['error']['code'], result)
-                self.assertEqual('Authentication failure. Wrong credentials',
+                self.assertEqual('Authentication failed.',
                                  result['error']['message'], result)
             # the realm will be split from the login name
             expected = "The user User(login='selfservice', " \
@@ -224,7 +225,7 @@ class AuthApiTestCase(MyApiTestCase):
             result = res.json.get("result")
             self.assertFalse(result.get("status"), result)
             self.assertEqual(4031, result['error']['code'], result)
-            self.assertEqual('Authentication failure. Wrong credentials',
+            self.assertEqual('Authentication failed.',
                              result['error']['message'], result)
 
         # test failed auth no password
@@ -236,7 +237,7 @@ class AuthApiTestCase(MyApiTestCase):
             result = res.json.get("result")
             self.assertFalse(result.get("status"), result)
             self.assertEqual(4031, result['error']['code'], result)
-            self.assertEqual('Authentication failure. Wrong credentials',
+            self.assertEqual('Authentication failed.',
                              result['error']['message'], result)
 
         # test with realm added to user. This fails since we do not split
@@ -250,7 +251,7 @@ class AuthApiTestCase(MyApiTestCase):
                 result = res.json.get("result")
                 self.assertFalse(result.get("status"), result)
                 self.assertEqual(4031, result['error']['code'], result)
-                self.assertEqual('Authentication failure. Wrong credentials',
+                self.assertEqual('Authentication failed.',
                                  result['error']['message'], result)
             expected = "The user User(login='cornelius@realm1', " \
                        "realm='realm1', resolver='') exists in NO resolver."
@@ -370,7 +371,7 @@ class AuthApiTestCase(MyApiTestCase):
                 result = res.json.get("result")
                 self.assertFalse(result.get("status"), result)
                 self.assertEqual(4031, result['error']['code'], result)
-                self.assertEqual('Authentication failure. Wrong credentials',
+                self.assertEqual('Authentication failed.',
                                  result['error']['message'], result)
             # the realm will be split from the login name
             expected = "The user User(login='selfservice@realm1', " \
@@ -453,7 +454,7 @@ class AuthApiTestCase(MyApiTestCase):
             self.assertFalse(result.get("status"), result)
             self.assertEqual(result.get("error").get('code'), 4031, result)
             self.assertEqual(result.get("error").get('message'),
-                             'Authentication failure. Wrong credentials', result)
+                             'Authentication failed.', result)
         aentry = self.find_most_recent_audit_entry(action='POST /auth')
         self.assertEqual(aentry['action'], 'POST /auth', aentry)
         self.assertEqual(aentry['success'], 0, aentry)
@@ -471,7 +472,7 @@ class AuthApiTestCase(MyApiTestCase):
             self.assertFalse(result.get("status"), result)
             self.assertEqual(result.get("error").get('code'), 4031, result)
             self.assertEqual(result.get("error").get('message'),
-                             'Authentication failure. Wrong credentials', result)
+                             'Authentication failed.', result)
         aentry = self.find_most_recent_audit_entry(action='POST /auth')
         self.assertEqual(aentry['action'], 'POST /auth', aentry)
         self.assertEqual(aentry['success'], 0, aentry)
@@ -704,7 +705,7 @@ class AuthApiTestCase(MyApiTestCase):
             self.assertFalse(result.get("status"), result)
             error = result.get("error")
             self.assertEqual(4031, error.get("code"))
-            self.assertEqual("Authentication failure. Wrong credentials", error.get("message"))
+            self.assertEqual("Authentication failed.", error.get("message"))
 
         # set a policy to authenticate against privacyIDEA
         set_policy("piLogin", scope=SCOPE.WEBUI, action="{0!s}=privacyIDEA".format(PolicyAction.LOGINMODE))
@@ -720,7 +721,7 @@ class AuthApiTestCase(MyApiTestCase):
             self.assertFalse(result.get("status"), result)
             error = result.get("error")
             self.assertEqual(4031, error.get("code"))
-            self.assertEqual("Authentication failure. Wrong credentials", error.get("message"))
+            self.assertEqual("Authentication failed.", error.get("message"))
 
         # cleanup
         delete_policy("piLogin")
@@ -772,7 +773,7 @@ class AuthApiTestCase(MyApiTestCase):
             result = res.json.get("result")
             self.assertFalse(result.get("status"), result)
             self.assertEqual(4031, result['error']['code'], result)
-            self.assertEqual('Authentication failure. Wrong credentials',
+            self.assertEqual('Authentication failed.',
                              result['error']['message'], result)
 
         # Clean-up
@@ -817,7 +818,7 @@ class AuthApiTestCase(MyApiTestCase):
             self.assertEqual(401, res.status_code, res.json)
             error = res.json.get("result").get("error")
             self.assertEqual(4031, error.get("code"), error)
-            self.assertEqual("Authentication failure. Wrong credentials", error.get("message"), error)
+            self.assertEqual("Authentication failed.", error.get("message"), error)
             details = res.json.get("detail")
             self.assertEqual("The user has no tokens assigned", details.get("message"), details)
 
@@ -831,7 +832,7 @@ class AuthApiTestCase(MyApiTestCase):
                 self.assertEqual(401, res.status_code, res.json)
                 error = res.json.get("result").get("error")
                 self.assertEqual(4031, error.get("code"), error)
-                self.assertEqual("Authentication failure. Wrong credentials", error.get("message"), error)
+                self.assertEqual("Authentication failed.", error.get("message"), error)
             log_msg = ("Error authenticating user against privacyIDEA: UserError(description='User <hans@realm3> does "
                        "not exist.', id=904)")
             capture.check_present(("privacyidea.lib.auth", "DEBUG", log_msg))
@@ -1256,7 +1257,7 @@ class AuthApiTestCase(MyApiTestCase):
             result = res.json.get("result")
             error = result.get("error")
             self.assertEqual(4031, error.get("code"))
-            self.assertEqual("Authentication failure. Wrong credentials", error.get("message"))
+            self.assertEqual("Authentication failed.", error.get("message"))
 
         # With the hide_specific_error_message_policy set, the response contains the fields defined
         # in _assert_unspecific_message. It should be the same for every wrong input param
@@ -1573,6 +1574,184 @@ class AuthApiTestCase(MyApiTestCase):
         delete_policy("notoken_ignore")
         delete_policy("pi-login")
 
+    def test_18_max_auth_fail_locks_out_user(self):
+        """
+        Wrong passwords at /auth are counted by the authmaxfail policy: after the
+        configured number of failures, even the correct password is rejected.
+        """
+        self.setUp_user_realms()
+        Audit.query.delete()
+        db.session.commit()
+        set_policy("max_fail", scope=SCOPE.AUTHZ, action=f"{PolicyAction.AUTHMAXFAIL}=3/1m")
+        self.addCleanup(delete_policies, ["max_fail"])
+
+        # Two failed authentications stay below the limit
+        for _ in range(2):
+            with self.app.test_request_context('/auth',
+                                               method='POST',
+                                               data={"username": "cornelius",
+                                                     "realm": self.realm1,
+                                                     "password": "wrong"}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(401, res.status_code, res.json)
+                # This PR reports the generic failure for every failed login here; see READ_BEFORE_UPDATE.md.
+                self.assertEqual(str(GENERIC_AUTH_FAILURE),
+                                 res.json.get("result").get("error").get("message"), res.json)
+
+        # ... so the correct password still authenticates
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "cornelius",
+                                                 "realm": self.realm1,
+                                                 "password": "test"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+
+        # The third wrong password reaches the limit
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "cornelius",
+                                                 "realm": self.realm1,
+                                                 "password": "wrong"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(401, res.status_code, res.json)
+
+        # The failed logins are written with the user and the REJECT marker
+        failed_entries = Audit.query.filter(Audit.action == "POST /auth", Audit.success == 0).all()
+        self.assertEqual(3, len(failed_entries), failed_entries)
+        for entry in failed_entries:
+            self.assertEqual(AUTH_RESPONSE.REJECT, entry.authentication, entry.id)
+            self.assertEqual("cornelius", entry.user, entry.id)
+            self.assertEqual(self.realm1, entry.realm, entry.id)
+
+        # The correct password is now rejected by the policy
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "cornelius",
+                                                 "realm": self.realm1,
+                                                 "password": "test"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(401, res.status_code, res.json)
+            self.assertEqual("Only 3 failed authentications per 0:01:00 allowed.",
+                             res.json.get("detail").get("message"), res.json)
+
+        # Without the policy the failed logins do not block the user anymore
+        delete_policy("max_fail")
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "cornelius",
+                                                 "realm": self.realm1,
+                                                 "password": "test"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+
+        Audit.query.delete()
+        db.session.commit()
+
+    def test_19_max_auth_fail_counts_unmarked_entries(self):
+        """
+        The lockout must not depend on the REJECT marker: entries written before
+        privacyIDEA 3.10 added the "authentication" column have it unset, and the
+        "!CHALLENGE" filter of check_max_auth_fail has to count those as failures.
+        This applies to both searches of the policy, /auth and /validate/check, and only
+        inside its time window.
+        """
+        self.setUp_user_realms()
+        Audit.query.delete()
+        db.session.commit()
+        set_policy("max_fail", scope=SCOPE.AUTHZ, action=f"{PolicyAction.AUTHMAXFAIL}=3/1m")
+        self.addCleanup(delete_policies, ["max_fail"])
+
+        # Reach the limit at /auth and strip the marker from the entries afterwards
+        for _ in range(3):
+            with self.app.test_request_context('/auth',
+                                               method='POST',
+                                               data={"username": "cornelius",
+                                                     "realm": self.realm1,
+                                                     "password": "wrong"}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(401, res.status_code, res.json)
+        unmarked = Audit.query.filter(Audit.action == "POST /auth").update({Audit.authentication: None})
+        self.assertEqual(3, unmarked)
+        db.session.commit()
+
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "cornelius",
+                                                 "realm": self.realm1,
+                                                 "password": "test"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(401, res.status_code, res.json)
+            self.assertEqual("Only 3 failed authentications per 0:01:00 allowed.",
+                             res.json.get("detail").get("message"), res.json)
+
+        # check_max_auth_fail counts the failures at /validate/check with a second, separate
+        # search that negates the same way. Two unmarked failures at /auth and one at
+        # /validate/check have to add up to the limit.
+        token = init_token({"type": "spass", "pin": "spass"}, user=User("cornelius", self.realm1))
+        self.addCleanup(remove_token, token.get_serial())
+        Audit.query.delete()
+        db.session.commit()
+        for _ in range(2):
+            with self.app.test_request_context('/auth',
+                                               method='POST',
+                                               data={"username": "cornelius",
+                                                     "realm": self.realm1,
+                                                     "password": "wrong"}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(401, res.status_code, res.json)
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "realm": self.realm1,
+                                                 "pass": "wrong"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            self.assertFalse(res.json.get("result").get("value"), res.json)
+        unmarked = Audit.query.filter(Audit.success == 0).update({Audit.authentication: None})
+        self.assertEqual(3, unmarked)
+        db.session.commit()
+
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "cornelius",
+                                                 "realm": self.realm1,
+                                                 "password": "test"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(401, res.status_code, res.json)
+            self.assertEqual("Only 3 failed authentications per 0:01:00 allowed.",
+                             res.json.get("detail").get("message"), res.json)
+
+        # Unmarked entries outside of the time window of the policy must not count, which is
+        # what lets the lockout of an upgraded installation expire again
+        Audit.query.delete()
+        db.session.commit()
+        for _ in range(3):
+            with self.app.test_request_context('/auth',
+                                               method='POST',
+                                               data={"username": "cornelius",
+                                                     "realm": self.realm1,
+                                                     "password": "wrong"}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(401, res.status_code, res.json)
+        outdated = Audit.query.filter(Audit.action == "POST /auth").all()
+        self.assertEqual(3, len(outdated), outdated)
+        for entry in outdated:
+            entry.authentication = None
+            entry.date = entry.date - datetime.timedelta(minutes=2)
+        db.session.commit()
+
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "cornelius",
+                                                 "realm": self.realm1,
+                                                 "password": "test"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+
+        Audit.query.delete()
+        db.session.commit()
+
 
 class AdminFromUserstore(OverrideConfigTestCase):
     class Config(TestingConfig):
@@ -1676,7 +1855,7 @@ class DuplicateUserApiTestCase(MyApiTestCase):
                 self.assertFalse(result.get("status"), result)
                 self.assertEqual(result.get("error").get('code'), 4031, result)
                 self.assertEqual(result.get("error").get('message'),
-                                 'Authentication failure. Wrong credentials', result)
+                                 'Authentication failed.', result)
             # check if we have the correct log entry
             mock_log.assert_called_with("user uid 1004 failed to authenticate")
 

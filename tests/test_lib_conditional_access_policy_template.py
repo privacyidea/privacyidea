@@ -16,9 +16,9 @@
 # SPDX-FileCopyrightText: 2026 NetKnights GmbH <https://netknights.it>
 # SPDX-License-Identifier: AGPL-3.0-or-later
 """
-Tests for the conditional-access lockout policy templates: that the
+Tests for the conditional-access policy templates: that the
 catalog is listed correctly and that every template is a valid policy that
-round-trips through ``create_lockout_policy`` (the create request a client
+round-trips through ``create_conditional_access_policy`` (the create request a client
 sends after prefilling from a template).
 """
 from datetime import timedelta
@@ -28,47 +28,48 @@ from privacyidea.lib.conditional_access.authentication_event_types import (AuthE
 from privacyidea.lib.conditional_access.context import CAContext
 from privacyidea.lib.conditional_access.engine import (
     AccessDecision,
-    LockoutAction,
-    LockoutTarget,
+    ConditionalAccessAction,
+    ConditionalAccessTarget,
     evaluate_access_decision,
-    evaluate_lockout_policies,
+    evaluate_conditional_access_policies,
     get_ip_block,
-    get_user_lockout,
+    get_user_lock,
     is_ip_blocked,
     is_user_locked,
 )
-from privacyidea.lib.conditional_access.lockout_policy import create_lockout_policy, get_lockout_policy
-from privacyidea.lib.conditional_access.lockout_policy_template import list_lockout_policy_templates
+from privacyidea.lib.conditional_access.policy import create_conditional_access_policy, get_conditional_access_policy
+from privacyidea.lib.conditional_access.policy_template import list_conditional_access_policy_templates
 from privacyidea.lib.smtpserver import add_smtpserver, delete_smtpserver
 from privacyidea.models import Admin, db
-from privacyidea.models.lockout_policy import (
-    LockoutPolicy,
-    LockoutPolicyCounterType,
-    LockoutPolicyStage,
-    LockoutStageAction,
+from privacyidea.models.conditional_access_policy import (
+    ConditionalAccessPolicy,
+    ConditionalAccessPolicyCounterType,
+    ConditionalAccessPolicyStage,
+    ConditionalAccessStageAction,
 )
 from privacyidea.models.utils import utc_now
 from . import smtpmock
 from .base import MyTestCase
-from .conditional_access_lockout_base import LockoutTestCase
+from .conditional_access_base import ConditionalAccessTestCase
 
 VALID_EVENT_TYPES = {event_type.value for event_type in AuthEventType}
-VALID_ACTIONS = {action.value for action in LockoutAction}
+VALID_ACTIONS = {action.value for action in ConditionalAccessAction}
 
 
-class LockoutPolicyTemplateTestCase(MyTestCase):
+class ConditionalAccessPolicyTemplateTestCase(MyTestCase):
 
     def tearDown(self):
-        for model in (LockoutStageAction, LockoutPolicyStage, LockoutPolicyCounterType, LockoutPolicy):
+        for model in (ConditionalAccessStageAction, ConditionalAccessPolicyStage, ConditionalAccessPolicyCounterType,
+                ConditionalAccessPolicy):
             db.session.query(model).delete()
         db.session.commit()
         super().tearDown()
 
     def _policy(self, key):
-        return next(entry["policy"] for entry in list_lockout_policy_templates() if entry["key"] == key)
+        return next(entry["policy"] for entry in list_conditional_access_policy_templates() if entry["key"] == key)
 
     def test_catalog_lists_the_shipped_templates(self):
-        catalog = {entry["key"]: entry for entry in list_lockout_policy_templates()}
+        catalog = {entry["key"]: entry for entry in list_conditional_access_policy_templates()}
         self.assertIn("password_bruteforce", catalog, "template missing from catalog")
         self.assertIn("mfa_bruteforce", catalog, "template missing from catalog")
         self.assertIn("password_spraying", catalog, "template missing from catalog")
@@ -83,21 +84,20 @@ class LockoutPolicyTemplateTestCase(MyTestCase):
             self.assertIsInstance(entry["policy"], dict, f"{key}: policy not a dict")
 
     def test_every_template_is_a_valid_policy(self):
-        # Each template must use only known event types and actions and must be
-        # accepted by the real create path (fail-closed validation), so a broken
-        # shipped template is caught here rather than at admin runtime.
-        for index, entry in enumerate(list_lockout_policy_templates(), start=1):
+        # Each template must use only known event types and actions and must be accepted by the real create path
+        # (fail-closed validation), so a broken shipped template is caught here rather than at admin runtime.
+        for index, entry in enumerate(list_conditional_access_policy_templates(), start=1):
             template = entry["policy"]
             self.assertTrue(set(template["counter_types_to_track"]) <= VALID_EVENT_TYPES, entry["key"])
             for stage in template["stages"]:
                 for action in stage["actions"]:
                     self.assertIn(action["action_type"], VALID_ACTIONS,
-                                  f"Invalid action type {action['action_type']} in lockout policy template "
+                                  f"Invalid action type {action['action_type']} in conditional-access policy template "
                                   f"{entry['key']}")
             # templates carry no policy-level priority; the client supplies a unique one on create
-            policy_id = create_lockout_policy(**{**template, "name": f"instance-{entry['key']}",
+            policy_id = create_conditional_access_policy(**{**template, "name": f"instance-{entry['key']}",
                                                  "priority": index})
-            policy = get_lockout_policy(policy_id)
+            policy = get_conditional_access_policy(policy_id)
             self.assertListEqual(template["counter_types_to_track"], policy["counter_types_to_track"],
                                  f"{entry['key']}: counter types not preserved")
             self.assertEqual(len(template["stages"]), len(policy["stages"]),
@@ -106,7 +106,7 @@ class LockoutPolicyTemplateTestCase(MyTestCase):
             # decides what its thresholds mean, and it survives the create path unchanged. A source-IP template can
             # only say False - the create path rejects anything else for that target.
             self.assertIn("reset_on_success", template, f"{entry['key']}: no reset_on_success stated")
-            if template["target"] == LockoutTarget.SOURCE_IP:
+            if template["target"] == ConditionalAccessTarget.SOURCE_IP:
                 self.assertFalse(template["reset_on_success"], f"{entry['key']}: source-IP policies never reset")
             self.assertEqual(template["reset_on_success"], policy["reset_on_success"],
                              f"{entry['key']}: reset_on_success not preserved")
@@ -128,24 +128,24 @@ class LockoutPolicyTemplateTestCase(MyTestCase):
         self.assertTrue(second["stages"], "catalog stages were mutated")
 
     def test_failed_rate_limit_failure_set_is_exhaustively_classified(self):
-        # The failed-attempt rate-limit templates use explicit, curated failure lists (not a dynamic derivation), so a
-        # new failure event type is never silently pulled into a throttle. This guard fails when a FAILURE-outcome
-        # type is neither counted by the per-user failed template nor listed as deliberately excluded here (with the
-        # reason), forcing whoever adds it to decide - add it to _USER_AUTH_FAILURES or exclude it here.
+        # The failed-attempt rate-limit templates use explicit, curated failure lists rather than deriving them from the
+        # FAILURE outcome, so a new failure event type is never silently pulled into a throttle. This guard fails when a
+        # FAILURE-outcome type is neither counted by the per-user failed template nor listed as deliberately excluded
+        # here, forcing whoever adds it to choose one or the other.
         user_excluded = {
             AuthEventType.NOT_AUTHORIZED,           # authorization denial, not an authentication failure
             AuthEventType.USER_UNKNOWN,             # inert for a user target; the per-IP set counts it (enumeration)
             AuthEventType.ENROLLMENT_CANCELED_FAIL,  # enrollment housekeeping, not a credential attempt
-            # The server could not offer a factor (a required policy is missing, or building the challenge failed), so
-            # the fault is the server's: counting it would let a configuration gap throttle and then block the very
-            # clients it is already failing. Trackable, so an admin can still opt in.
+            # The server could not offer a factor (a required policy is missing, or building the challenge failed); this
+            # is the server's fault, so counting it would let a configuration gap throttle and block the very clients it
+            # is already failing -- though it stays trackable so an admin can opt in.
             AuthEventType.CHALLENGE_TRIGGER_FAIL,
             # A request that named no token type the endpoint can initialize - malformed, not a credential attempt.
             AuthEventType.INVALID_TOKEN_TYPE,
         }
-        # Only over the trackable types: conditional access's own rejections (USER_LOCKED, IP_BLOCKED, ACCESS_DENIED)
-        # are FAILURE outcomes too, but they are excluded from the policy vocabulary by construction
-        # (CA_ENFORCEMENT_EVENT_TYPES), so there is no decision to make about them here.
+        # This check covers only the trackable types: conditional access's own rejections (USER_LOCKED, IP_BLOCKED,
+        # ACCESS_DENIED) are FAILURE outcomes too, but CA_ENFORCEMENT_EVENT_TYPES excludes them from the policy
+        # vocabulary by construction, so there is no decision to make about them here.
         all_failures = {event_type.value for event_type in TRACKABLE_EVENT_TYPES
                         if outcome_of(event_type) == AuthEventOutcome.FAILURE}
         user_counted = {str(t) for t in self._policy("user_failed_rate_limiting")["counter_types_to_track"]}
@@ -155,21 +155,21 @@ class LockoutPolicyTemplateTestCase(MyTestCase):
         self.assertSetEqual(all_failures, user_counted | excluded_values,
                             "a new FAILURE event type must be added to _USER_AUTH_FAILURES or excluded in this test")
         self.assertSetEqual(set(), user_counted & excluded_values, "an event type is both counted and excluded")
-        # The per-IP failed set is exactly the per-user set plus USER_UNKNOWN: distinct unknown usernames from one IP
-        # are the enumeration signal, which a per-user target cannot see.
+        # The per-IP failed set is exactly the per-user set plus USER_UNKNOWN, because distinct unknown usernames from
+        # one IP are the enumeration signal that a per-user target cannot see.
         self.assertSetEqual(user_counted | {AuthEventType.USER_UNKNOWN.value}, ip_counted,
                             "the IP failed rate-limit set must be the user set plus USER_UNKNOWN")
 
     def test_template_keys_are_unique(self):
-        keys = [entry["key"] for entry in list_lockout_policy_templates()]
+        keys = [entry["key"] for entry in list_conditional_access_policy_templates()]
         self.assertEqual(len(keys), len(set(keys)), f"duplicate template key: {keys}")
 
 
-class LockoutTemplateBehaviourTestCase(LockoutTestCase):
+class ConditionalAccessTemplateBehaviourTestCase(ConditionalAccessTestCase):
     """
     End-to-end behaviour of the shipped templates: create the real policy from a
     template (exactly as a client does after prefilling), replay authentication
-    failures through :func:`evaluate_lockout_policies`, and assert the right
+    failures through :func:`evaluate_conditional_access_policies`, and assert the right
     action fires - including the edge cases where the policy must *not* apply
     (aged-out failures, a successful login in between, an untracked event type).
     """
@@ -182,29 +182,30 @@ class LockoutTemplateBehaviourTestCase(LockoutTestCase):
         *enforce* a template shipped as ``dry_run`` is turned on (simulating an
         admin who reviewed and enabled it), so the enforcement path can be tested.
         """
-        policy = next(entry["policy"] for entry in list_lockout_policy_templates()
+        policy = next(entry["policy"] for entry in list_conditional_access_policy_templates()
                       if entry["key"] == key)
         if configure_email:
             for stage in policy["stages"]:
                 for action in stage["actions"]:
-                    if action["action_type"] in (LockoutAction.EMAIL_ADMIN, LockoutAction.EMAIL_USER):
-                        action["action_value"]["smtp_identifier"] = "lockoutmail"
+                    if action["action_type"] in (ConditionalAccessAction.EMAIL_ADMIN,
+                            ConditionalAccessAction.EMAIL_USER):
+                        action["action_value"]["smtp_identifier"] = "actionmail"
         if enforce:
             policy["dry_run"] = False
         # templates carry no policy-level priority; supply a unique one on create
-        return create_lockout_policy(**policy, priority=1)
+        return create_conditional_access_policy(**policy, priority=1)
 
     # --- password brute-force template ----------------------------------------
 
     def test_password_bruteforce_locks_after_threshold(self):
-        # The template tracks PASSWORD_FAIL and PIN_FAIL together: 6 + 4 = 10
-        # reaches the threshold although neither type alone does.
+        # The template tracks PASSWORD_FAIL and PIN_FAIL together: 6 + 4 = 10 reaches the threshold although neither
+        # type alone does.
         now = utc_now()
         self._create("password_bruteforce")
         self._seed_events(AuthEventType.PASSWORD_FAIL, 6, timestamp=now)
         self._seed_events(AuthEventType.PIN_FAIL, 4, timestamp=now)
-        evaluate_lockout_policies(CAContext(self.user), AuthEventType.PIN_FAIL, now=now)
-        status = get_user_lockout(self.user, now=now)
+        evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.PIN_FAIL, now=now)
+        status = get_user_lock(self.user, now=now)
         self.assertIsNotNone(status, "user not locked on combined count")
         self.assertFalse(status.permanent, "lock is permanent, expected timed")
         self.assertEqual(900, status.seconds_remaining, "wrong lock duration")
@@ -213,7 +214,7 @@ class LockoutTemplateBehaviourTestCase(LockoutTestCase):
         now = utc_now()
         self._create("password_bruteforce")
         self._seed_events(AuthEventType.PASSWORD_FAIL, 9, timestamp=now)
-        evaluate_lockout_policies(CAContext(self.user), AuthEventType.PASSWORD_FAIL, now=now)
+        evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.PASSWORD_FAIL, now=now)
         self.assertFalse(is_user_locked(self.user, now=now), "user locked below threshold")
 
     def test_password_bruteforce_failures_outside_window_not_counted(self):
@@ -221,85 +222,85 @@ class LockoutTemplateBehaviourTestCase(LockoutTestCase):
         now = utc_now()
         self._create("password_bruteforce")
         self._seed_events(AuthEventType.PASSWORD_FAIL, 10, timestamp=now - timedelta(seconds=1000))
-        evaluate_lockout_policies(CAContext(self.user), AuthEventType.PASSWORD_FAIL, now=now)
+        evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.PASSWORD_FAIL, now=now)
         self.assertFalse(is_user_locked(self.user, now=now), "user locked on aged-out failures")
 
     # --- MFA brute-force template (progressive) -------------------------------
 
     def test_mfa_bruteforce_escalates_across_stages(self):
-        # Replay an attacker whose MFA keeps failing: one policy escalates from a
-        # short lock, to a longer lock, to a permanent lock as failures pile up.
+        # Replay an attacker whose MFA keeps failing: one policy escalates from a short lock to a longer lock to a
+        # permanent lock as failures pile up.
         now = utc_now()
         self._create("mfa_bruteforce")
 
         self._seed_events(AuthEventType.MFA_FAIL, 3, timestamp=now)
-        evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL, now=now)
-        self.assertEqual(600, get_user_lockout(self.user, now=now).seconds_remaining,
+        evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL, now=now)
+        self.assertEqual(600, get_user_lock(self.user, now=now).seconds_remaining,
                          "first stage: wrong lock duration")
 
         self._seed_events(AuthEventType.MFA_FAIL, 2, timestamp=now)  # total 5
-        evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL, now=now)
-        self.assertEqual(1800, get_user_lockout(self.user, now=now).seconds_remaining,
+        evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL, now=now)
+        self.assertEqual(1800, get_user_lock(self.user, now=now).seconds_remaining,
                          "second stage: did not escalate to 1800s")
 
         self._seed_events(AuthEventType.MFA_FAIL, 5, timestamp=now)  # total 10
-        evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL, now=now)
-        self.assertTrue(get_user_lockout(self.user, now=now).permanent,
+        evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL, now=now)
+        self.assertTrue(get_user_lock(self.user, now=now).permanent,
                         "third stage: did not escalate to permanent lock")
 
     @smtpmock.activate
     def test_mfa_bruteforce_second_stage_locks_longer_and_emails_admin(self):
         smtpmock.setdata(response={})
-        add_smtpserver(identifier="lockoutmail", server="1.2.3.4", tls=False)
+        add_smtpserver(identifier="actionmail", server="1.2.3.4", tls=False)
         db.session.add(Admin(username="ca_soc", email="soc@example.com"))
         db.session.commit()
         try:
             now = utc_now()
             self._create("mfa_bruteforce", configure_email=True)
             self._seed_events(AuthEventType.MFA_FAIL, 5, timestamp=now)
-            evaluation = evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL, now=now)
-            status = get_user_lockout(self.user, now=now)
+            evaluation = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL, now=now)
+            status = get_user_lock(self.user, now=now)
             self.assertFalse(status.permanent, "lock is permanent, expected timed")
             self.assertEqual(1800, status.seconds_remaining, "wrong lock duration")
             self.assertIn("soc@example.com", smtpmock.get_sent_recipient(), "admin not emailed")
-            self.assertListEqual(["Your administrator has been notified by email."], evaluation.notices,
-                                 "wrong login notice")
+            # The shipped templates carry no error_message, so nothing is surfaced: the email goes out
+            # and the user is told only that authentication failed.
+            self.assertListEqual([], evaluation.messages, "a shipped template should stay silent")
         finally:
             Admin.query.filter_by(username="ca_soc").delete()
             db.session.commit()
-            delete_smtpserver("lockoutmail")
+            delete_smtpserver("actionmail")
 
     @smtpmock.activate
     def test_mfa_bruteforce_third_stage_permanent_lock_and_emails_admin(self):
         smtpmock.setdata(response={})
-        add_smtpserver(identifier="lockoutmail", server="1.2.3.4", tls=False)
+        add_smtpserver(identifier="actionmail", server="1.2.3.4", tls=False)
         db.session.add(Admin(username="ca_soc", email="soc@example.com"))
         db.session.commit()
         try:
             now = utc_now()
             self._create("mfa_bruteforce", configure_email=True)
             self._seed_events(AuthEventType.MFA_FAIL, 10, timestamp=now)
-            evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL, now=now)
-            status = get_user_lockout(self.user, now=now)
+            evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL, now=now)
+            status = get_user_lock(self.user, now=now)
             self.assertTrue(status.permanent, "lock not permanent")
             self.assertIsNone(status.seconds_remaining, "permanent lock has remaining time")
             self.assertIn("soc@example.com", smtpmock.get_sent_recipient(), "admin not emailed")
         finally:
             Admin.query.filter_by(username="ca_soc").delete()
             db.session.commit()
-            delete_smtpserver("lockoutmail")
+            delete_smtpserver("actionmail")
 
     def test_mfa_bruteforce_shipped_template_locks_without_smtp_configured(self):
-        # The shipped template leaves smtp_identifier blank for the admin to fill
-        # in. Until they do, the EMAIL_ADMIN action is a no-op (no login notice),
-        # but the lock itself must still fire.
+        # The shipped template leaves smtp_identifier blank for the admin to fill in; until they do, the EMAIL_ADMIN
+        # action is a no-op (no login notice), but the lock itself must still fire.
         now = utc_now()
         self._create("mfa_bruteforce")  # email deliberately left unconfigured
         self._seed_events(AuthEventType.MFA_FAIL, 5, timestamp=now)
-        evaluation = evaluate_lockout_policies(CAContext(self.user), AuthEventType.MFA_FAIL, now=now)
-        self.assertEqual(1800, get_user_lockout(self.user, now=now).seconds_remaining,
+        evaluation = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL, now=now)
+        self.assertEqual(1800, get_user_lock(self.user, now=now).seconds_remaining,
                          "lock did not fire without SMTP configured")
-        self.assertListEqual([], evaluation.notices, "unexpected login notice")
+        self.assertListEqual([], evaluation.messages, "a shipped template should stay silent")
 
     # --- per-user rate limit (all attempts, DENY) -----------------------------
 
@@ -331,8 +332,8 @@ class LockoutTemplateBehaviourTestCase(LockoutTestCase):
         self.assertEqual(AccessDecision.DENY, evaluate_access_decision(CAContext(self.user), now=now).decision)
 
     def test_user_failed_rate_limiting_ignores_successful_attempts(self):
-        # Successful attempts reduce to LOGIN_SUCCESS (not a tracked failure type), so a busy successful client is
-        # never throttled: 9 failures stay below the threshold no matter how many successful logins occur alongside.
+        # Successful attempts reduce to LOGIN_SUCCESS (not a tracked failure type), so a busy successful client is never
+        # throttled: 9 failures stay below the threshold no matter how many successful logins occur alongside.
         now = utc_now()
         self._create("user_failed_rate_limiting")
         self._seed_attempts(AuthEventType.MFA_FAIL, 9, timestamp=now, start=0)
@@ -342,19 +343,20 @@ class LockoutTemplateBehaviourTestCase(LockoutTestCase):
     # --- per-IP failed-attempt rate limit (distinct accounts, DENY) - ships dry-run ---
 
     def test_ip_failed_rate_limiting_ships_dry_run(self):
-        # Like the all-outcomes IP template, the failed-fan-out threshold is environment-dependent, so it ships
-        # dry-run: even well past the threshold it enforces nothing until an admin reviews and enables it.
+        # Like the all-outcomes IP template, the failed-fan-out threshold is environment-dependent, so it ships dry-run:
+        # even well past the threshold it enforces nothing until an admin reviews and enables it.
         now = utc_now()
         ip = "203.0.113.43"
         policy_id = self._create("ip_failed_rate_limiting")
-        self.assertTrue(get_lockout_policy(policy_id)["dry_run"], "ip_failed_rate_limiting must ship as dry-run")
+        self.assertTrue(get_conditional_access_policy(policy_id)["dry_run"],
+                "ip_failed_rate_limiting must ship as dry-run")
         self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=25, timestamp=now)
         self.assertEqual(AccessDecision.CONTINUE, evaluate_access_decision(CAContext(self.user, ip), now=now).decision)
 
     def test_ip_failed_rate_limiting_denies_after_distinct_failed_accounts_when_enforced(self):
-        # Once an admin enables enforcement: distinct accounts the IP failed against, real or probed, are counted -
-        # 10 wrong-password real users + 10 unknown-username probes = 20 distinct accounts reach the threshold
-        # (enumeration folds into the failed fan-out signal).
+        # Once an admin enables enforcement, distinct accounts the IP failed against, real or probed, are counted: 10
+        # wrong-password real users + 10 unknown-username probes = 20 distinct accounts reach the threshold (enumeration
+        # folds into the failed fan-out signal).
         now = utc_now()
         ip = "203.0.113.40"
         self._create("ip_failed_rate_limiting", enforce=True)
@@ -378,7 +380,7 @@ class LockoutTemplateBehaviourTestCase(LockoutTestCase):
         now = utc_now()
         ip = "203.0.113.42"
         policy_id = self._create("ip_rate_limiting")
-        self.assertTrue(get_lockout_policy(policy_id)["dry_run"], "ip_rate_limiting must ship as dry-run")
+        self.assertTrue(get_conditional_access_policy(policy_id)["dry_run"], "ip_rate_limiting must ship as dry-run")
         self._seed_ip_events(ip, AuthEventType.LOGIN_SUCCESS, n_users=35, timestamp=now)
         self.assertEqual(AccessDecision.CONTINUE, evaluate_access_decision(CAContext(self.user, ip), now=now).decision)
 
@@ -390,7 +392,7 @@ class LockoutTemplateBehaviourTestCase(LockoutTestCase):
         self._create("user_enumeration")
         self._seed_ip_unknown_events(ip, AuthEventType.USER_UNKNOWN,
                                      [f"ghost{i}" for i in range(10)], timestamp=now)
-        evaluate_lockout_policies(CAContext(self.user, ip), AuthEventType.USER_UNKNOWN, now=now)
+        evaluate_conditional_access_policies(CAContext(self.user, ip), AuthEventType.USER_UNKNOWN, now=now)
         status = get_ip_block(ip, now=now)
         self.assertIsNotNone(status, "IP not blocked after distinct unknown usernames")
         self.assertFalse(status.permanent, "block is permanent, expected timed")
@@ -402,17 +404,17 @@ class LockoutTemplateBehaviourTestCase(LockoutTestCase):
         self._create("user_enumeration")
         self._seed_ip_unknown_events(ip, AuthEventType.USER_UNKNOWN,
                                      [f"ghost{i}" for i in range(9)], timestamp=now)
-        evaluate_lockout_policies(CAContext(self.user, ip), AuthEventType.USER_UNKNOWN, now=now)
+        evaluate_conditional_access_policies(CAContext(self.user, ip), AuthEventType.USER_UNKNOWN, now=now)
         self.assertFalse(is_ip_blocked(ip, now=now), "IP blocked below the distinct-unknown-username threshold")
 
     def test_user_enumeration_repeated_unknown_username_is_one_distinct(self):
-        # Many probes of the *same* nonexistent username are one distinct account, so they must not trip the block
-        # (the signal is fan-out across accounts, not raw volume against one).
+        # Many probes of the *same* nonexistent username are one distinct account, so they must not trip the block; the
+        # signal is fan-out across accounts, not raw volume against one.
         now = utc_now()
         ip = "203.0.113.32"
         self._create("user_enumeration")
         self._seed_ip_unknown_events(ip, AuthEventType.USER_UNKNOWN, ["ghost"] * 30, timestamp=now)
-        evaluate_lockout_policies(CAContext(self.user, ip), AuthEventType.USER_UNKNOWN, now=now)
+        evaluate_conditional_access_policies(CAContext(self.user, ip), AuthEventType.USER_UNKNOWN, now=now)
         self.assertFalse(is_ip_blocked(ip, now=now), "IP blocked on repeated same-username volume")
 
     # --- password spraying template (source_ip target) ------------------------
@@ -422,29 +424,29 @@ class LockoutTemplateBehaviourTestCase(LockoutTestCase):
         ip = "203.0.113.21"
         self._create("password_spraying")
         self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=19, timestamp=now)
-        evaluate_lockout_policies(CAContext(self.user, ip), AuthEventType.PASSWORD_FAIL, now=now)
+        evaluate_conditional_access_policies(CAContext(self.user, ip), AuthEventType.PASSWORD_FAIL, now=now)
         self.assertFalse(is_ip_blocked(ip, now=now), "IP blocked below the distinct-user threshold")
 
     def test_password_spraying_blocks_ip_after_distinct_users(self):
-        # The template tracks PASSWORD_FAIL and PIN_FAIL together: 12 + 8 = 20
-        # distinct users reach the threshold although neither type alone does.
+        # The template tracks PASSWORD_FAIL and PIN_FAIL together: 12 + 8 = 20 distinct users reach the threshold
+        # although neither type alone does.
         now = utc_now()
         ip = "203.0.113.22"
         self._create("password_spraying")
         self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=12, timestamp=now)
         self._seed_ip_events(ip, AuthEventType.PIN_FAIL, n_users=8, timestamp=now, start=12)
-        evaluate_lockout_policies(CAContext(self.user, ip), AuthEventType.PIN_FAIL, now=now)
+        evaluate_conditional_access_policies(CAContext(self.user, ip), AuthEventType.PIN_FAIL, now=now)
         status = get_ip_block(ip, now=now)
         self.assertIsNotNone(status, "IP not blocked on combined distinct-user count")
         self.assertFalse(status.permanent, "block is permanent, expected timed")
         self.assertEqual(3600, status.seconds_remaining, "wrong block duration")
 
     def test_password_spraying_counts_distinct_users_not_events(self):
-        # Many failures from only a few users must not trip the per-IP detection:
-        # 5 users x 10 failures = 50 rows but only 5 distinct users (< 20).
+        # Many failures from only a few users must not trip the per-IP detection: 5 users x 10 failures = 50 rows but
+        # only 5 distinct users (< 20).
         now = utc_now()
         ip = "203.0.113.23"
         self._create("password_spraying")
         self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=5, per_user=10, timestamp=now)
-        evaluate_lockout_policies(CAContext(self.user, ip), AuthEventType.PASSWORD_FAIL, now=now)
+        evaluate_conditional_access_policies(CAContext(self.user, ip), AuthEventType.PASSWORD_FAIL, now=now)
         self.assertFalse(is_ip_blocked(ip, now=now), "IP blocked on event count instead of distinct users")

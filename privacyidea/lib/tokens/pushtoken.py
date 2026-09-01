@@ -311,8 +311,11 @@ def _build_smartphone_data(token: TokenClass, challenge: str, registration_url: 
                            challenge=options.get("challenge"))
     try:
         message_on_mobile = message_on_mobile.format(**tags)
-    except KeyError as e:
-        log.warning(f"Could not format the message: {e}. Using default message.")
+    except Exception as e:
+        # A text that can not be formatted must not fail the authentication. Besides an unknown
+        # tag, this also happens for a positional field, an unbalanced brace, attribute access
+        # or an index into a tag that is not set, so every error falls back to the default.
+        log.warning(f"Could not format the message: {e!r}. Using default message.")
         message_on_mobile = default_message
     log.debug(f"Sending to mobile: {message_on_mobile}")
 
@@ -953,8 +956,8 @@ class PushTokenClass(TokenClass):
             elif result:
                 details[PUSH_AUTH_EVENT] = AuthEventType.CHALLENGE_ANSWERED_OUT_OF_BAND
 
-        # Carry the answered challenge's transaction_id up for the authentication log, so the /ttype/push row correlates
-        # to the rest of the attempt.
+        # Carry the answered challenge's transaction_id up so the /ttype/push row correlates with the rest of the
+        # attempt.
         if matched_transaction_id is None and len(challenges) == 1:
             matched_transaction_id = challenges[0].transaction_id
         details[PUSH_AUTH_TRANSACTION_ID] = matched_transaction_id
@@ -1002,16 +1005,19 @@ class PushTokenClass(TokenClass):
         if all(k in request_data for k in ("fbtoken", "pubkey")):
             return cls._handle_enrollment_step2(serial, request_data)
         elif "signature" in request_data and "new_fb_token" not in request_data:
-            # Conditional-access pre-check runs ONLY here, on the authentication
-            # path (the signed challenge answer), never on enrollment or firebase
-            # token updates. The smartphone sends only the serial, so the token
-            # owner is resolved from it and the answer is rejected (generic
-            # failure, reason recorded only in the audit log) when that owner is
-            # locked, the source IP is blocked, or a DENY policy applies - before
-            # the signature is verified.
-            from privacyidea.api.lib.conditional_access import conditional_access_precheck
-            if conditional_access_precheck(cls._resolve_token_owner(serial)) is not None:
-                return False, {}
+            # The conditional-access pre-check runs ONLY here, on the authentication path (the signed challenge
+            # answer) - never on enrollment or firebase token updates. The smartphone sends only the serial, so
+            # the owner is resolved from it, and the answer is refused before the signature is verified.
+            #
+            # A silent rejection carries no detail, because an ordinary failed answer here carries none either -
+            # the opposite of /validate/*, where every failure has one and a silent rejection needs the generic
+            # message to have one too. Configured wording is surfaced on both. PUSH_ANSWER_REJECTION states that
+            # shape once, so the response hook answers a restriction *this* answer wrote in the same shape.
+            from privacyidea.api.lib.conditional_access import (PUSH_ANSWER_REJECTION,
+                                                                conditional_access_rejection)
+            rejection = conditional_access_rejection(cls._resolve_token_owner(serial), PUSH_ANSWER_REJECTION)
+            if rejection is not None:
+                return False, ({"message": rejection.message} if rejection.message else {})
             return cls._handle_auth_response(serial, request_data)
         elif all(k in request_data for k in ('new_fb_token', 'timestamp', 'signature')):
             return cls._handle_firebase_update(serial, request_data)
@@ -1455,11 +1461,9 @@ class PushTokenClass(TokenClass):
                     # The user will enter the display_code after the smartphone confirms.
                     return True, -1, {"transaction_id": transaction_id, "message": message}
 
-                # push_wait resolves the challenge inside this one blocking request, so log the trigger here (before
-                # the wait) — it has no other request to be recorded on. Written immediately rather than at teardown
-                # because the smartphone's answer arrives during the wait as a separate /ttype/push request: its row
-                # would otherwise be committed first and the attempt's rows, which are ordered by id, would read as an
-                # answer preceding its own trigger.
+                # push_wait writes the CHALLENGE_TRIGGERED row immediately, not at teardown, because the smartphone's
+                # answer can arrive mid-wait as a separate /ttype/push request; since attempt rows are read in id
+                # order, a later commit would otherwise make the answer appear to precede its own trigger.
                 from privacyidea.api.lib.utils import log_authentication
                 log_authentication(AuthEventType.CHALLENGE_TRIGGERED, flask_request, user=user or self.user,
                                    serial=self.token.serial, transaction_id=transaction_id, immediate=True)
@@ -1484,12 +1488,12 @@ class PushTokenClass(TokenClass):
                     time.sleep(POLL_INTERVAL - (elapsed_time % POLL_INTERVAL))
 
                 if otp_counter < 0:
-                    # Timed out: CHALLENGE_TRIGGERED above is the only row. Suppress the default MFA_FAIL — a
-                    # non-response is not a wrong second factor.
+                    # Timed out: suppress the default MFA_FAIL, since a non-response is not a wrong second factor
+                    # (CHALLENGE_TRIGGERED above stays the only row).
                     self.auth_details[SUPPRESS_TERMINAL_EVENT_KEY] = True
                 else:
-                    # Success: correlate the terminal LOGIN_SUCCESS row with the trigger and out-of-band answer via the
-                    # challenge transaction_id.
+                    # Success: the challenge's transaction_id correlates the terminal LOGIN_SUCCESS row with the
+                    # trigger and the out-of-band answer.
                     reply = {LOG_TRANSACTION_ID_KEY: transaction_id}
 
                 # The push_wait transaction_id is never returned to the client, so nothing can

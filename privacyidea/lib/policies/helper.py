@@ -162,7 +162,7 @@ def get_policy_visibility_scopes(action: str) -> list["AuthenticationLogVisibili
     """
     Determine the visibility boundary for *action*: which records the logged-in principal may act on, expressed as
     realm / resolver / user scopes. Used to constrain list/read endpoints — the authentication log
-    (``authentication_log_read``), the conditional-access lockout state (``user_lockout_read``), etc. — to only the
+    (``authentication_log_read``), the conditional-access lock state (``user_lock_read``), etc. — to only the
     entries a scoped admin is allowed to see.
 
     A **user** may only ever act on their own entries, so a single scope built from the logged-in user's realm and
@@ -175,7 +175,7 @@ def get_policy_visibility_scopes(action: str) -> list["AuthenticationLogVisibili
     conditions need no handling here: ``Match.admin(...).policies()`` already returns only the policies applicable to
     the current admin and request.
 
-    :param action: the policy action whose scoping to read (e.g. ``authentication_log_read``, ``user_lockout_read``)
+    :param action: the policy action whose scoping to read (e.g. ``authentication_log_read``, ``user_lock_read``)
     :return: a list of :class:`AuthenticationLogVisibilityScope`, or ``None`` for unrestricted access
     """
     from privacyidea.lib.auth import ROLE

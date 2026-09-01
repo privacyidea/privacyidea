@@ -68,8 +68,8 @@
         [selected]="selectedFilterValues('user_role')"
         (selectionChange)="setFilterValues('user_role', $event)" />
     }
-    <!-- Date-range button: opens the range picker, whose selection sets the start/end of the custom range (below). The
-         connected range input is visually hidden and only holds the picker's model + anchors its overlay to the button. -->
+    <!-- Opens the range picker, whose selection sets the custom range below; the hidden range input only holds the
+      picker's model and anchors its overlay to the button. -->
     <div class="date-range-trigger">
       <button
         (click)="rangePicker.open()"
@@ -192,15 +192,15 @@
                         (selectionChange)="setFilterValues('client_label', $event)"
                         (addCustom)="onAddCustomFilter('client_label')" />
                     } @else if (column.key === "conditional_access_outcomes") {
-                      <!-- The one column with three filter keys: the icon opens a menu of the keys, and each key opens
-                           the control it needs. Nested mat-menus are keyboard-operable as they are. -->
+                      <!-- This is the only filter column with three keys, so the icon opens a menu where each key
+                        opens its own control, and Angular Material's nested menus are already keyboard-operable. -->
                       <button
                         [attr.aria-label]="outcomeFilterLabel"
                         [matMenuTriggerFor]="outcomeFilterMenu"
                         class="filter-button"
                         mat-icon-button>
-                        <!-- The same icon the other selection filters use: this menu sets several keys, so there is no
-                             single "filter set / not set" state for it to show. -->
+                        <!-- Reuses the same icon as the other selection filters, even though this menu sets several
+                          filter keys at once, so there is no single "set / not set" state to show. -->
                         <mat-icon class="keyword-button-icon margin-left-0">filter_list</mat-icon>
                       </button>
                       <mat-menu #outcomeFilterMenu>
@@ -224,15 +224,15 @@
                           mat-menu-item>
                           <span i18n>Action</span>
                         </button>
-                        @if (canReadLockoutPolicies()) {
+                        @if (canReadConditionalAccessPolicies()) {
                           <button
                             [matMenuTriggerFor]="outcomePolicyMenu.matMenu"
                             mat-menu-item>
                             <span i18n>Policy</span>
                           </button>
                         } @else {
-                          <!-- Without lockout_policy_read there is no list to offer, so the key goes into the main
-                               filter input for the admin to type a name into. -->
+                          <!-- Without conditional_access_policy_read there is no policy list to offer, so this key
+                          falls back to the main filter input for the admin to type a name into. -->
                           <button
                             (click)="onAddCustomFilter('ca_policy_name')"
                             mat-menu-item>
@@ -408,8 +408,8 @@
                     @let truncateClass = truncatedClass(column.key);
                     <app-copyable [copyText]="element[column.key]">
                       @if (truncateClass) {
-                        <!-- Clipped to the width its class sets; the tooltip carries the full value, and it stays
-                             copyable and filterable in full. -->
+                        <!-- Clipped to the width its class sets, but the tooltip carries the full value and it
+                          stays fully copyable and filterable. -->
                         <span
                           class="cell-truncate {{ truncateClass }}"
                           [appTruncationTooltip]="element[column.key]">

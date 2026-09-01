@@ -30,14 +30,23 @@ It also contains the error handlers.
 
 import copy
 
-from flask_babel import _
-
-from .lib.utils import (get_all_params, get_before_request_config, get_optional, map_error_to_code,
-                        get_auth_error_status_code, send_error, verify_auth_token, get_auth_token_from_request,
-                        logged_in_user_from_token)
+from .lib.utils import (
+    get_all_params,
+    get_before_request_config,
+    get_optional,
+    map_error_to_code,
+    get_auth_error_status_code,
+    send_error,
+    verify_auth_token,
+    get_auth_token_from_request,
+    logged_in_user_from_token,
+    GENERIC_AUTH_FAILURE,
+)
 from .container import container_blueprint
 from ..lib.container import find_container_for_token, find_container_by_serial
-from ..lib.conditional_access.request_context import peek_ca_context, reset_ca_context
+from .lib.conditional_access import surface_conditional_access_message
+from ..lib.conditional_access.request_context import (peek_ca_context, reset_ca_context,
+                                                      claimed_ca_message)
 from ..lib.framework import get_app_config_value
 from ..lib.clients import identify_client_by_key, touch_client
 from ..models import ClientStatus, db
@@ -562,6 +571,13 @@ def after_request(response):
     This function is called after a request
     :return: The response
     """
+    # Report what conditional access did to this request, if anything. Central rather than per endpoint for two
+    # reasons: this also runs for a response an *error handler* built, where every post-policy is skipped, and no
+    # gated endpoint can forget to opt in. One lookup and it is done for every request. First in this function, because
+    # a restricted request gets a *replacement* response and the headers set below must land on the one actually
+    # returned - and before sign_response, which the decorator above applies to whatever this function returns.
+    response = surface_conditional_access_message(response)
+
     # No caching!
     response.headers['Cache-Control'] = 'no-cache'
 
@@ -613,7 +629,9 @@ def auth_error(error):
             hide_message = Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE,
                                       user_object=request.User if hasattr(request, 'User') else None).any()
             if hide_message:
-                error.message = _("Authentication failed.")
+                # Only the message is conditional access's to keep. The id says nothing about what an admin
+                # configured and everything about *why* the login failed, so it is remapped either way.
+                error.message = claimed_ca_message() or GENERIC_AUTH_FAILURE
                 # Remap to the generic AUTHENTICATE id, so a masked failure is
                 # indistinguishable from any other unspecified auth failure.
                 error.id = Error.AUTHENTICATE

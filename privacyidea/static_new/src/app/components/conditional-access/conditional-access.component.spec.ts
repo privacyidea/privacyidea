@@ -25,7 +25,7 @@ import { ROUTE_PATHS } from "@app/route_paths";
 import { AuthService } from "@services/auth/auth.service";
 import {
   ConditionalAccessPolicyService,
-  LockoutPolicy
+  ConditionalAccessPolicy
 } from "@services/conditional-access/conditional-access-policy.service";
 import { DialogService } from "@services/dialog/dialog.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
@@ -51,7 +51,7 @@ describe("ConditionalAccessComponent", () => {
   let dialogClosed: Subject<ConditionalAccessToggleAction | undefined>;
   let router: Router;
 
-  const samplePolicy: LockoutPolicy = {
+  const samplePolicy: ConditionalAccessPolicy = {
     id: 1,
     name: "Brute Force",
     time_window_seconds: 600,
@@ -62,7 +62,7 @@ describe("ConditionalAccessComponent", () => {
     count_mode: "PER_REQUEST",
     reset_on_success: true,
     counter_types_to_track: ["PIN_FAIL"],
-    stages: [{ failure_threshold: 5, priority: 1, actions: [] }],
+    stages: [{ failure_threshold: 5, actions: [] }],
     conditions: []
   };
 
@@ -143,24 +143,23 @@ describe("ConditionalAccessComponent", () => {
   });
 
   it("should join all stage thresholds for display", () => {
-    const multiStage: LockoutPolicy = {
+    const multiStage: ConditionalAccessPolicy = {
       ...samplePolicy,
       stages: [
-        { failure_threshold: 3, priority: 1, actions: [] },
-        { failure_threshold: 5, priority: 2, actions: [] }
+        { failure_threshold: 3, actions: [] },
+        { failure_threshold: 5, actions: [] }
       ]
     };
     expect(component.thresholdDisplay(multiStage)).toBe("3, 5");
   });
 
   it("should list every action type across all stages", () => {
-    const policy: LockoutPolicy = {
+    const policy: ConditionalAccessPolicy = {
       ...samplePolicy,
       stages: [
-        { failure_threshold: 3, priority: 1, actions: [{ action_type: "LOCK_USER", action_value: 60 }] },
+        { failure_threshold: 3, actions: [{ action_type: "LOCK_USER", action_value: 60 }] },
         {
           failure_threshold: 5,
-          priority: 2,
           actions: [
             { action_type: "EMAIL_ADMIN", action_value: null },
             { action_type: "BLOCK_IP", action_value: 60 }
@@ -172,7 +171,7 @@ describe("ConditionalAccessComponent", () => {
   });
 
   describe("selection", () => {
-    const otherPolicy: LockoutPolicy = { ...samplePolicy, id: 2, name: "Second" };
+    const otherPolicy: ConditionalAccessPolicy = { ...samplePolicy, id: 2, name: "Second" };
 
     beforeEach(() => {
       policyServiceMock.policies.set([samplePolicy, otherPolicy]);
@@ -201,7 +200,7 @@ describe("ConditionalAccessComponent", () => {
   });
 
   describe("delete selected", () => {
-    const otherPolicy: LockoutPolicy = { ...samplePolicy, id: 2, name: "Second" };
+    const otherPolicy: ConditionalAccessPolicy = { ...samplePolicy, id: 2, name: "Second" };
 
     it("should do nothing when nothing is selected", async () => {
       await component.deleteSelected();
@@ -227,8 +226,8 @@ describe("ConditionalAccessComponent", () => {
   });
 
   describe("bulk (de)activate / dry run", () => {
-    const enabledPolicy: LockoutPolicy = { ...samplePolicy, id: 1, enabled: true };
-    const disabledPolicy: LockoutPolicy = { ...samplePolicy, id: 2, name: "Second", enabled: false };
+    const enabledPolicy: ConditionalAccessPolicy = { ...samplePolicy, id: 1, enabled: true };
+    const disabledPolicy: ConditionalAccessPolicy = { ...samplePolicy, id: 2, name: "Second", enabled: false };
 
     function emitAction(action: ConditionalAccessToggleAction | undefined): void {
       dialogClosed.next(action);
@@ -273,8 +272,8 @@ describe("ConditionalAccessComponent", () => {
     });
 
     it("should flip dry_run through the dialog on 'toggle'", () => {
-      const dryRunOff: LockoutPolicy = { ...samplePolicy, id: 1, dry_run: false };
-      const dryRunOn: LockoutPolicy = { ...samplePolicy, id: 2, name: "Second", dry_run: true };
+      const dryRunOff: ConditionalAccessPolicy = { ...samplePolicy, id: 1, dry_run: false };
+      const dryRunOn: ConditionalAccessPolicy = { ...samplePolicy, id: 2, name: "Second", dry_run: true };
       component.policySelection.set([dryRunOff, dryRunOn]);
       component.toggleDryRunSelected();
       emitAction("toggle");
@@ -291,7 +290,7 @@ describe("ConditionalAccessComponent", () => {
   });
 
   describe("reordering", () => {
-    const policyAt = (id: number, priority: number, name: string): LockoutPolicy => ({
+    const policyAt = (id: number, priority: number, name: string): ConditionalAccessPolicy => ({
       ...samplePolicy,
       id,
       name,
@@ -379,8 +378,8 @@ describe("ConditionalAccessComponent", () => {
       expect(buttons[1].getAttribute("aria-disabled")).toBeNull(); // First: down
       expect(buttons[4].getAttribute("aria-disabled")).toBeNull(); // Third: up
       expect(buttons[5].getAttribute("aria-disabled")).toBe("true"); // Third: down
-      // Not the `disabled` property: disabling the button the user just activated would
-      // drop keyboard focus to <body> the moment a row reaches an end.
+      // Not the `disabled` property: disabling the button the user just activated would drop keyboard focus to <body>
+      // the moment a row reaches an end.
       buttons.forEach((button) => expect(button.disabled).toBe(false));
     });
 
@@ -420,8 +419,8 @@ describe("ConditionalAccessComponent", () => {
     });
 
     it("should report pending changes to the navigation guard only while a draft differs", () => {
-      // The route carries pendingChangesGuard (admin.routes.ts), which reads these hooks;
-      // without them a menu click would silently drop the staged order.
+      // The route carries pendingChangesGuard (admin.routes.ts), which reads these hooks; without them a menu click
+      // would silently drop the staged order.
       const hasChanges = pendingChangesServiceMock.registerHasChanges.mock.calls[0][0] as () => boolean;
       expect(hasChanges()).toBe(false); // not in the mode at all
       component.startReorder();
@@ -475,8 +474,8 @@ describe("ConditionalAccessComponent", () => {
       component.startReorder();
       component.moveUp(third); // First stays put; Third and Second swap
       await component.saveReorder();
-      // "First" is absent: leaving it out keeps the conflict check scoped to the rows this
-      // admin actually touched, so a concurrent edit elsewhere in the list does not clash.
+      // "First" is absent: leaving it out keeps the conflict check scoped to the rows this admin actually touched, so a
+      // concurrent edit elsewhere in the list does not clash.
       expect(policyServiceMock.reorderPolicies).toHaveBeenCalledWith([3, 2], [30, 20]);
     });
 
@@ -488,9 +487,8 @@ describe("ConditionalAccessComponent", () => {
     });
 
     it("should stay in the mode on a failed save and adopt the reloaded order", async () => {
-      // The draft was built on an order the server rejected, so it is replaced by the
-      // refreshed list as soon as that arrives - the admin stays in the mode, ready to
-      // redo the move against the real order.
+      // The draft was built on an order the server rejected, so it is replaced by the refreshed list as soon as it
+      // arrives, leaving the admin in the mode to redo the move against the real order.
       policyServiceMock.reorderPolicies.mockResolvedValueOnce(false);
       component.startReorder();
       component.moveUp(second);
@@ -585,7 +583,7 @@ describe("ConditionalAccessComponent", () => {
     });
 
     it("should not flag a policy whose condition values all still exist", () => {
-      const policy: LockoutPolicy = {
+      const policy: ConditionalAccessPolicy = {
         ...samplePolicy,
         conditions: [{ condition_type: "USER_REALM", operator: "IN", value: ["sales"] }]
       };
@@ -593,7 +591,7 @@ describe("ConditionalAccessComponent", () => {
     });
 
     it("should flag a policy referencing a value that is gone", () => {
-      const policy: LockoutPolicy = {
+      const policy: ConditionalAccessPolicy = {
         ...samplePolicy,
         conditions: [{ condition_type: "USER_REALM", operator: "IN", value: ["sales", "deleted"] }]
       };

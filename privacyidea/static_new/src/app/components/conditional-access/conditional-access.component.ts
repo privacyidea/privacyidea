@@ -46,7 +46,7 @@ import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import {
   ConditionalAccessPolicyService,
   ConditionalAccessPolicyServiceInterface,
-  LockoutPolicy
+  ConditionalAccessPolicy
 } from "@services/conditional-access/conditional-access-policy.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
@@ -94,9 +94,9 @@ export class ConditionalAccessComponent implements OnDestroy {
   totalLength = computed(() => this.policyService.policies().length);
 
   // Rows selected via the checkbox column; the "Delete Selected" table action acts on these.
-  policySelection = signal<LockoutPolicy[]>([]);
+  policySelection = signal<ConditionalAccessPolicy[]>([]);
 
-  priorityReorderHint = $localize`Move policies with the arrows in the Priority column to change the order they are evaluated in. Priorities are only relevant for the actions DENY and ALLOW.`;
+  priorityReorderHint = $localize`Move policies with the arrows in the Priority column to change the order they are evaluated in. Priority only decides which DENY policy is named when a request is refused; lock, block and email actions all run regardless of it.`;
   priorityReorderHintAriaLabel = $localize`About rearranging priorities`;
 
   @ViewChild(MatPaginator) paginator!: MatPaginator;
@@ -121,21 +121,21 @@ export class ConditionalAccessComponent implements OnDestroy {
     const dataSource = new MatTableDataSource(policies);
     dataSource.paginator = this.paginator;
     dataSource.sort = this.sort;
-    dataSource.filterPredicate = (policy: LockoutPolicy, filter: string) =>
+    dataSource.filterPredicate = (policy: ConditionalAccessPolicy, filter: string) =>
       policy.name.toLowerCase().includes(filter) ||
       policy.counter_types_to_track.some((type) => type.toLowerCase().includes(filter));
     return dataSource;
   });
 
-  // Reordering is an explicit, opt-in mode rather than always-on controls: it is a rare
-  // operation and the arrows would otherwise clutter every row. While the mode is on the
-  // table shows the draft order (not the sorted/filtered/paginated view, in which "the row
-  // above" would not be the next-higher-precedence policy), moves are staged locally and
-  // nothing is written until Save. Cancel simply drops the draft.
+  // Reordering is an explicit opt-in mode, not always-on controls, since it is a rare operation
+  // and arrows on every row would clutter the table.
+  // While the mode is on, the table shows the draft order rather than the sorted/filtered/paginated
+  // view, where "the row above" would not be the next-higher-precedence policy.
+  // Moves are staged locally and nothing is written until Save; Cancel simply drops the draft.
   reorderMode = signal(false);
-  private readonly draftOrder = signal<LockoutPolicy[]>([]);
+  private readonly draftOrder = signal<ConditionalAccessPolicy[]>([]);
   // The order as it stood when the mode was entered; see startReorder/movedRows.
-  private readonly baselineOrder = signal<LockoutPolicy[]>([]);
+  private readonly baselineOrder = signal<ConditionalAccessPolicy[]>([]);
   reorderSaving = signal(false);
   // Set when a save is rejected: the draft is stale and must be replaced by the reloaded
   // order as soon as it arrives (see the effect in the constructor).
@@ -150,10 +150,10 @@ export class ConditionalAccessComponent implements OnDestroy {
   // While reordering, the table renders the draft array directly so the rows are the draft
   // order; otherwise it renders the normal sorted/filtered/paginated data source.
   reorderDraft = computed(() => this.draftOrder());
-  // Compared against the entry snapshot rather than the live list, so this answers "did
-  // the admin move something", not "does the draft still match the server". A policy
-  // created or deleted in another session therefore does not light up Save or trigger the
-  // discard prompt; a genuinely conflicting order is caught by the save's assertion.
+  // Compared against the baseline snapshot rather than the live list, so this answers "did the
+  // admin move something", not "does the draft still match the server" - a policy created or
+  // deleted elsewhere therefore does not light up Save or the discard prompt.
+  // A genuinely conflicting order is instead caught by the save's assertion.
   hasOrderChanges = computed(() => {
     const baseline = this.baselineOrder();
     const draft = this.draftOrder();
@@ -165,11 +165,11 @@ export class ConditionalAccessComponent implements OnDestroy {
     this.pendingChangesService.registerValidChanges(() => this.hasOrderChanges());
     this.pendingChangesService.registerSave(() => this.saveReorder());
 
-    // A rejected save leaves the mode open on a draft built from an order the server no
-    // longer has, so the reload it triggered has to be adopted before the admin can do
-    // anything meaningful. Only the arrival of fresh data is a trigger (the flag is read
-    // untracked): re-seeding the instant the flag is set would just re-read the stale list
-    // and clear it before the response lands.
+    // A rejected save leaves the mode open on a draft built from an order the server no longer
+    // has, so the triggered reload must be adopted before the admin can do anything meaningful.
+    // Only the arrival of fresh data triggers the re-seed (the flag is read untracked); re-seeding
+    // the instant the flag is set would just re-read the stale list and clear it before the
+    // response lands.
     effect(() => {
       this.policyService.policies();
       untracked(() => {
@@ -198,11 +198,12 @@ export class ConditionalAccessComponent implements OnDestroy {
     this.reorderMode.set(true);
   }
 
-  // The rows whose position changed, in their new relative order, plus the priority each
-  // held when the mode was entered. Sending only these is equivalent to sending the whole
-  // list - the moved rows are the permutation's support, so the values they collectively
-  // hold are unchanged - and it keeps the conflict check scoped to rows this admin
-  // actually touched, so two admins reordering different parts of the list both succeed.
+  // The rows whose position changed, in their new relative order, plus the priority each held
+  // when the mode was entered.
+  // Sending only these is equivalent to sending the whole list, since the moved rows are the
+  // permutation's support and the values they collectively hold are unchanged.
+  // It also keeps the conflict check scoped to rows this admin actually touched, so two admins
+  // reordering different parts of the list both succeed.
   private movedRows(): { ids: number[]; expectedPriorities: number[] } {
     const baseline = this.baselineOrder();
     const moved = this.draftOrder().filter((policy, index) => policy.id !== baseline[index]?.id);
@@ -212,7 +213,7 @@ export class ConditionalAccessComponent implements OnDestroy {
     };
   }
 
-  // Leaving rearrange mode with staged moves would silently throw them away, so confirm
+  // Leaving rearrange mode with staged moves would silently discard them, so this confirms
   // first - but only when the draft actually differs from the persisted order, so simply
   // opening and closing the mode never asks.
   async cancelReorder(): Promise<void> {
@@ -235,9 +236,9 @@ export class ConditionalAccessComponent implements OnDestroy {
     this.baselineOrder.set([]);
   }
 
-  // One request for the whole rearrangement: the draft ids in their new order take the
-  // priority values this same set already holds, so nothing is renumbered and any
-  // numbering scheme (1,2,3 as much as 10,20,30) reorders identically.
+  // One request for the whole rearrangement: the draft ids in their new order take the priority
+  // values this same set already holds, so nothing is renumbered and any numbering scheme (1,2,3
+  // as much as 10,20,30) reorders identically.
   // Returns whether the order is persisted, so the pending-changes guard can offer
   // "Save & Exit" and only let the navigation through once the write succeeded.
   async saveReorder(): Promise<boolean> {
@@ -265,37 +266,37 @@ export class ConditionalAccessComponent implements OnDestroy {
     }
   }
 
-  canMoveUp(policy: LockoutPolicy): boolean {
+  canMoveUp(policy: ConditionalAccessPolicy): boolean {
     return this.draftIndex(policy) > 0;
   }
 
-  canMoveDown(policy: LockoutPolicy): boolean {
+  canMoveDown(policy: ConditionalAccessPolicy): boolean {
     const index = this.draftIndex(policy);
     return index >= 0 && index < this.draftOrder().length - 1;
   }
 
-  moveUpLabel(policy: LockoutPolicy): string {
+  moveUpLabel(policy: ConditionalAccessPolicy): string {
     return $localize`Move ${policy.name} up, so it is evaluated earlier`;
   }
 
-  moveDownLabel(policy: LockoutPolicy): string {
+  moveDownLabel(policy: ConditionalAccessPolicy): string {
     return $localize`Move ${policy.name} down, so it is evaluated later`;
   }
 
-  moveUp(policy: LockoutPolicy): void {
+  moveUp(policy: ConditionalAccessPolicy): void {
     this.swapDraft(this.draftIndex(policy), -1);
   }
 
-  moveDown(policy: LockoutPolicy): void {
+  moveDown(policy: ConditionalAccessPolicy): void {
     this.swapDraft(this.draftIndex(policy), 1);
   }
 
-  // Reordering is the one action here whose entire result is *where* a row sits, and that
-  // is conveyed only visually: the arrows keep their labels, the row content is unchanged,
-  // and the table is re-rendered without moving focus, so nothing a screen reader tracks
-  // changes when a move succeeds. Without this announcement a non-sighted admin pressing
-  // "Move X up" gets no confirmation that anything happened, nor where the policy landed.
-  private announceMove(policy: LockoutPolicy): void {
+  // Reordering is the one action here whose entire result is *where* a row sits, conveyed only
+  // visually: labels stay the same, row content is unchanged, and the table re-renders without
+  // moving focus, so nothing a screen reader tracks changes when a move succeeds.
+  // Without this announcement a non-sighted admin pressing "Move X up" gets no confirmation that
+  // anything happened, or where the policy landed.
+  private announceMove(policy: ConditionalAccessPolicy): void {
     const position = this.draftIndex(policy) + 1;
     const total = this.draftOrder().length;
     this.liveAnnouncer.announce($localize`${policy.name} moved to position ${position} of ${total}`);
@@ -303,7 +304,7 @@ export class ConditionalAccessComponent implements OnDestroy {
 
   // The priority shown per row while reordering: the draft position takes the priority
   // value that position already holds, so the admin sees the numbers the save will write.
-  draftPriority(policy: LockoutPolicy): number {
+  draftPriority(policy: ConditionalAccessPolicy): number {
     const index = this.draftIndex(policy);
     const values = this.draftOrder()
       .map((candidate) => candidate.priority)
@@ -319,28 +320,28 @@ export class ConditionalAccessComponent implements OnDestroy {
     }
     [draft[index], draft[target]] = [draft[target], draft[index]];
     this.draftOrder.set(draft);
-    // The rows are re-rendered silently, so a screen reader would otherwise get no
-    // feedback that anything happened.
+    // The rows are re-rendered silently, so a screen reader would otherwise get no feedback that anything happened.
     this.announceMove(draft[target]);
   }
 
-  private draftIndex(policy: LockoutPolicy): number {
+  private draftIndex(policy: ConditionalAccessPolicy): number {
     return this.draftOrder().findIndex((candidate) => candidate.id === policy.id);
   }
 
-  thresholdDisplay(policy: LockoutPolicy): string {
+  thresholdDisplay(policy: ConditionalAccessPolicy): string {
     return policy.stages.map((stage) => stage.failure_threshold).join(", ");
   }
 
-  actionsDisplay(policy: LockoutPolicy): string {
+  actionsDisplay(policy: ConditionalAccessPolicy): string {
     return policy.stages.flatMap((stage) => stage.actions.map((action) => action.action_type)).join(", ");
   }
 
-  // A policy whose conditions name values that no longer exist - typically a deleted realm - is
-  // flagged here rather than given a column of its own: the table is already wide, and what the admin
-  // needs from the list is only whether a policy needs attention. The condition has silently stopped
-  // doing what it was written to do, and the backend will refuse to save the policy until it is fixed.
-  hasStaleConditions(policy: LockoutPolicy): boolean {
+  // A policy whose conditions name values that no longer exist (typically a deleted realm) is
+  // flagged here rather than given its own column, since the table is already wide and the admin
+  // only needs to know whether a policy needs attention.
+  // Such a condition silently stops doing what it was written to do, and the backend refuses to
+  // save the policy until it is fixed.
+  hasStaleConditions(policy: ConditionalAccessPolicy): boolean {
     return this.policyService.staleConditionValues(policy.conditions).length > 0;
   }
 
@@ -359,7 +360,7 @@ export class ConditionalAccessComponent implements OnDestroy {
     }
   }
 
-  toggleRow(policy: LockoutPolicy): void {
+  toggleRow(policy: ConditionalAccessPolicy): void {
     const current = this.policySelection();
     if (current.includes(policy)) {
       this.policySelection.set(current.filter((row) => row !== policy));
@@ -368,7 +369,7 @@ export class ConditionalAccessComponent implements OnDestroy {
     }
   }
 
-  isSelected(policy: LockoutPolicy): boolean {
+  isSelected(policy: ConditionalAccessPolicy): boolean {
     return this.policySelection().includes(policy);
   }
 
@@ -451,19 +452,19 @@ export class ConditionalAccessComponent implements OnDestroy {
       });
   }
 
-  // Leaving the list for the create page ends the rearrangement either way, so drop the
-  // draft rather than block the action: exiting first also settles the pending-changes
-  // guard, so the admin is not asked to confirm a discard they just chose.
+  // Leaving the list for the create page ends the rearrangement either way, so this drops the
+  // draft rather than blocking the action; exiting first also settles the pending-changes guard,
+  // so the admin is not asked to confirm a discard they just chose.
   onCreatePolicy(): void {
     this.exitReorderMode();
     this.router.navigateByUrl(ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS_NEW);
   }
 
-  onEditPolicy(policy: LockoutPolicy): void {
+  onEditPolicy(policy: ConditionalAccessPolicy): void {
     this.router.navigateByUrl(ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS_DETAILS + policy.id);
   }
 
-  onToggleEnabled(policy: LockoutPolicy): void {
+  onToggleEnabled(policy: ConditionalAccessPolicy): void {
     if (policy.enabled) {
       this.policyService.disablePolicy(policy.id);
     } else {
@@ -471,7 +472,7 @@ export class ConditionalAccessComponent implements OnDestroy {
     }
   }
 
-  onToggleDryRun(policy: LockoutPolicy): void {
+  onToggleDryRun(policy: ConditionalAccessPolicy): void {
     this.policyService.setDryRun(policy.id, !policy.dry_run);
   }
 
