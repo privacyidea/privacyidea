@@ -30,6 +30,7 @@ import {
   ConditionalAccessPolicySaveParams,
   ConditionalAccessPolicyTemplate,
   ConditionalAccessTarget,
+  DefaultErrorMessage,
   StaleConditionValues,
   TargetConstraints
 } from "@services/conditional-access/conditional-access-policy.service";
@@ -64,6 +65,10 @@ export class MockConditionalAccessPolicyService implements ConditionalAccessPoli
   templatesResource = new MockHttpResourceRef(MockPiResponse.fromValue<ConditionalAccessPolicyTemplate[]>([]));
 
   templates = signal<ConditionalAccessPolicyTemplate[]>([]);
+
+  defaultErrorMessagesResource = new MockHttpResourceRef(MockPiResponse.fromValue<DefaultErrorMessage[]>([]));
+
+  defaultErrorMessages = signal<DefaultErrorMessage[]>([]);
 
   conditionTypesResource = new MockHttpResourceRef(MockPiResponse.fromValue<Record<string, ConditionTypeMeta>>({}));
 

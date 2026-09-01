@@ -214,7 +214,7 @@
           *matCellDef="let row"
           mat-cell>
           @if (row.permanent) {
-            <span>&mdash;</span>
+            <span>-</span>
           } @else {
             <span>
               {{ row.block_expires_at | date: "yyyy-MM-dd HH:mm:ss" }}
@@ -247,6 +247,21 @@
           <span>
             {{ row.blocked_at | date: "yyyy-MM-dd HH:mm:ss" }}
           </span>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="error_message">
+        <th
+          *matHeaderCellDef
+          mat-header-cell>
+          <span class="header-cell">
+            <span i18n>Error Message</span>
+          </span>
+        </th>
+        <td
+          *matCellDef="let row"
+          mat-cell>
+          <app-expandable-message [text]="row.error_message" />
         </td>
       </ng-container>
 

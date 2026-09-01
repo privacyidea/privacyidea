@@ -61,7 +61,7 @@ describe("ConditionalAccessComponent", () => {
     target: "user",
     count_mode: "PER_REQUEST",
     counter_types_to_track: ["PIN_FAIL"],
-    stages: [{ failure_threshold: 5, priority: 1, actions: [] }],
+    stages: [{ failure_threshold: 5, actions: [] }],
     conditions: []
   };
 
@@ -145,8 +145,8 @@ describe("ConditionalAccessComponent", () => {
     const multiStage: ConditionalAccessPolicy = {
       ...samplePolicy,
       stages: [
-        { failure_threshold: 3, priority: 1, actions: [] },
-        { failure_threshold: 5, priority: 2, actions: [] }
+        { failure_threshold: 3, actions: [] },
+        { failure_threshold: 5, actions: [] }
       ]
     };
     expect(component.thresholdDisplay(multiStage)).toBe("3, 5");
@@ -156,10 +156,9 @@ describe("ConditionalAccessComponent", () => {
     const policy: ConditionalAccessPolicy = {
       ...samplePolicy,
       stages: [
-        { failure_threshold: 3, priority: 1, actions: [{ action_type: "LOCK_USER", action_value: 60 }] },
+        { failure_threshold: 3, actions: [{ action_type: "LOCK_USER", action_value: 60 }] },
         {
           failure_threshold: 5,
-          priority: 2,
           actions: [
             { action_type: "EMAIL_ADMIN", action_value: null },
             { action_type: "BLOCK_IP", action_value: 60 }
@@ -378,8 +377,8 @@ describe("ConditionalAccessComponent", () => {
       expect(buttons[1].getAttribute("aria-disabled")).toBeNull(); // First: down
       expect(buttons[4].getAttribute("aria-disabled")).toBeNull(); // Third: up
       expect(buttons[5].getAttribute("aria-disabled")).toBe("true"); // Third: down
-      // Not the `disabled` property: disabling the button the user just activated would
-      // drop keyboard focus to <body> the moment a row reaches an end.
+      // Not the `disabled` property: disabling the button the user just activated would drop keyboard focus to <body>
+      // the moment a row reaches an end.
       buttons.forEach((button) => expect(button.disabled).toBe(false));
     });
 
@@ -419,8 +418,8 @@ describe("ConditionalAccessComponent", () => {
     });
 
     it("should report pending changes to the navigation guard only while a draft differs", () => {
-      // The route carries pendingChangesGuard (admin.routes.ts), which reads these hooks;
-      // without them a menu click would silently drop the staged order.
+      // The route carries pendingChangesGuard (admin.routes.ts), which reads these hooks; without them a menu click
+      // would silently drop the staged order.
       const hasChanges = pendingChangesServiceMock.registerHasChanges.mock.calls[0][0] as () => boolean;
       expect(hasChanges()).toBe(false); // not in the mode at all
       component.startReorder();
@@ -474,8 +473,8 @@ describe("ConditionalAccessComponent", () => {
       component.startReorder();
       component.moveUp(third); // First stays put; Third and Second swap
       await component.saveReorder();
-      // "First" is absent: leaving it out keeps the conflict check scoped to the rows this
-      // admin actually touched, so a concurrent edit elsewhere in the list does not clash.
+      // "First" is absent: leaving it out keeps the conflict check scoped to the rows this admin actually touched, so a
+      // concurrent edit elsewhere in the list does not clash.
       expect(policyServiceMock.reorderPolicies).toHaveBeenCalledWith([3, 2], [30, 20]);
     });
 
@@ -487,9 +486,8 @@ describe("ConditionalAccessComponent", () => {
     });
 
     it("should stay in the mode on a failed save and adopt the reloaded order", async () => {
-      // The draft was built on an order the server rejected, so it is replaced by the
-      // refreshed list as soon as that arrives - the admin stays in the mode, ready to
-      // redo the move against the real order.
+      // The draft was built on an order the server rejected, so it is replaced by the refreshed list as soon as it
+      // arrives, leaving the admin in the mode to redo the move against the real order.
       policyServiceMock.reorderPolicies.mockResolvedValueOnce(false);
       component.startReorder();
       component.moveUp(second);

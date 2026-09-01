@@ -285,16 +285,15 @@ class UtilsTestCase(MyApiTestCase):
         remove_token(serial)
 
     def test_08b_build_ca_context_without_client_ip(self):
-        # A request context is no guarantee that before_request got as far as setting g.client_ip: an
-        # error raised early leaves it unset, and the conditional-access engine is also reached from
-        # post-response and error-handling paths. Reading it must not turn an authentication into a
-        # 500, so an absent client IP yields source_ip None (source_ip-target policies then simply do
-        # not apply) rather than an AttributeError.
+        # g.client_ip is not guaranteed by a request context alone: an early error, or reaching the engine from
+        # post-response/error-handling paths, can leave it unset. Reading it must never crash the authentication -
+        # an absent client IP yields source_ip=None (source_ip-target policies then simply do not apply), not an
+        # AttributeError.
         with self.app.test_request_context('/auth', method='POST'):
             # The app context is pushed once per class, so without this an earlier test's /auth leaves
             # resolved_user.is_local_admin set and the role below comes back as admin-internal.
             self.reset_flask_g()
-            # The bare g.client_ip read this replaced raised AttributeError here.
+            # A bare g.client_ip read would raise AttributeError here; build_ca_context must not.
             context = build_ca_context(User())
             self.assertIsNone(context.source_ip)
             # An empty user object is collapsed to None, so a condition on the user reads "no value"

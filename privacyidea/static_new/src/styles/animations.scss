@@ -28,3 +28,18 @@
     grid-template-rows: 0fr;
   }
 }
+
+.delayed-reveal {
+  animation: delayed-reveal-in 500ms ease-out 500ms both;
+}
+
+@keyframes delayed-reveal-in {
+  from {
+    opacity: 0;
+    visibility: hidden;
+  }
+  to {
+    opacity: 1;
+    visibility: visible;
+  }
+}

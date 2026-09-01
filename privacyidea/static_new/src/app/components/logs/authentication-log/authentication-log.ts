@@ -81,21 +81,20 @@ import { ContentService, ContentServiceInterface } from "@services/content/conte
 import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 
-// CSS highlight class per event outcome (defined in styles/table.scss). Outcome values mirror AuthEventOutcome in
-// privacyidea/lib/conditional_access/authentication_event_types.py. The event-type list and each type's outcome come
-// from the backend (GET /authenticationlog/eventtypes); the WebUI only maps an outcome to its color here.
+// CSS highlight class per event outcome; outcome values come from the backend's AuthEventOutcome (GET
+// /authenticationlog/eventtypes), and this file only maps each one to a color.
 const OUTCOME_CLASS: Record<string, string> = {
   success: "highlight-true",
   failure: "highlight-false",
   pending: "highlight-warning"
 };
 
-// User-identifying columns hidden in self-service: every row is the logged-in user (redundant), and their realm/user
-// links point to admin-only pages.
+// User-identifying columns hidden in self-service: every row is already the logged-in user, and their realm/user
+// links target admin-only pages.
 const USER_SCOPED_COLUMN_KEYS = ["username", "realm"];
 
-// Single source for all user roles: filter-menu label, and badge metadata for admin roles.
-// Regular users get no badge (they are the default and appear on almost every row).
+// Single source for user roles: filter-menu label plus badge metadata for admin roles; regular users get no badge
+// since they are the default, appearing on almost every row.
 const ROLE_CONFIG: readonly {
   value: string;
   filterLabel: string;
@@ -126,14 +125,14 @@ const USER_ROLE_BADGES: Record<string, { label: string; tooltip: string; class: 
   ROLE_CONFIG.filter((role) => role.badge).map((r) => [r.value, r.badge!])
 );
 
-// `sortable` mirrors SORTABLE_COLUMNS in privacyidea/lib/conditional_access/authentication_log.py. Every column is
-// sortable except `other_info`, which is a JSON column the backend cannot order on meaningfully.
+// `sortable` mirrors SORTABLE_COLUMNS in privacyidea/lib/conditional_access/authentication_log.py; every column is
+// sortable except `other_info`, a JSON column the backend cannot order on meaningfully.
 const columnKeysMap: { key: string; label: string; filterable: boolean; sortable: boolean }[] = [
-  // The timestamp filter lives in the table-action row (preset menu + custom-range slider), not in the column header,
-  // so the header only offers sorting.
+  // The timestamp filter lives in the table-action row (preset menu + custom-range slider), not the column header, so
+  // the header only offers sorting.
   { key: "timestamp", label: $localize`Timestamp`, filterable: false, sortable: true },
   // Directly after the timestamp: the attempt id groups the rows of one logical attempt, so it reads as part of
-  // locating a row rather than as a detail of it.
+  // locating a row rather than a detail of it.
   { key: "attempt_id", label: $localize`Attempt ID`, filterable: true, sortable: true },
   { key: "event_type", label: $localize`Event Type`, filterable: true, sortable: true },
   { key: "username", label: $localize`User`, filterable: true, sortable: true },
@@ -142,10 +141,8 @@ const columnKeysMap: { key: string; label: string; filterable: boolean; sortable
   { key: "client_label", label: $localize`Client`, filterable: true, sortable: true },
   { key: "serial", label: $localize`Serial`, filterable: true, sortable: true },
   { key: "transaction_id", label: $localize`Transaction ID`, filterable: true, sortable: true },
-  // Neither is backed by a sortable column: other_info is JSON, and the conditional-access outcomes live in their own
-  // table, read alongside each entry.
-  // The only column whose filter is not a single key: its header menu offers the three ca_* keys (see
-  // OUTCOME_FILTER_KEYS). Not sortable - the outcomes live in their own table, read alongside each entry.
+  // Neither is sortable: other_info is JSON, and conditional-access outcomes live in their own table, read alongside
+  // each entry (its filter menu is documented at OUTCOME_FILTER_KEYS below).
   {
     key: "conditional_access_outcomes",
     label: $localize`Conditional Access Outcome`,
@@ -155,27 +152,26 @@ const columnKeysMap: { key: string; label: string; filterable: boolean; sortable
   { key: "other_info", label: $localize`Info`, filterable: false, sortable: false }
 ];
 
-// The columns that render a list rather than a scalar, each by its own cell component (see ./cells). They share the
-// width treatment and the scrolling, decided here because it depends on the whole page, and their looks (cells/
-// _info-list.scss) - not their rendering.
+// The columns that render a list rather than a scalar, each via its own cell component (see ./cells): they share their
+// width/scroll behavior (decided here, since it depends on the whole page) and their look (cells/_info-list.scss), not
+// their rendering logic.
 const INFO_COLUMN_KEYS = ["conditional_access_outcomes", "other_info"];
 
-// What the Conditional access column filters on: three keys on one column, which is why its header offers a menu of
-// them instead of the single-key toggle the other columns have. They are backend filter params (_FILTER_PARAMS in
-// api/authentication_log.py) and also typeable in the main filter input, since the log service lists them as advanced
-// filters.
+// The Conditional access column filters on three keys at once, hence a header menu instead of the single-key toggle
+// other columns use; the keys mirror the backend's _FILTER_PARAMS (api/authentication_log.py) and are also typeable in
+// the main filter input as advanced filters.
 const OUTCOME_FILTER_KEYS = ["ca_action_type", "ca_policy_name", "ca_dry_run"];
 
-// The two values of the dry-run filter. "Both" is the absence of the key, so it is reached by clearing the filter -
-// the same affordance every other filter menu offers - rather than by a third pseudo-value.
+// The two values of the dry-run filter; "Both" is the absence of the key, reached the same way every other filter is
+// cleared, rather than by a third pseudo-value.
 const DRY_RUN_OPTIONS: readonly MultiSelectFilterOption[] = [
   { label: $localize`Enforced only`, value: "false" },
   { label: $localize`Dry run only`, value: "true" }
 ];
 
-// Local start-of-day / end-of-day ISO bounds for a date chosen in the range picker. The picker yields a native Date
-// at local midnight; the log renders timestamps in local time, so the bounds are the local day edges (inclusive end
-// at 23:59:59) converted to the ISO the API filter expects.
+// Local start/end-of-day ISO bounds for a date chosen in the range picker: the picker yields a native Date at local
+// midnight, and since the log renders timestamps in local time, the bounds are the local day's edges (inclusive end at
+// 23:59:59) converted to the ISO string the API filter expects.
 function startOfDayIso(date: Date): string {
   const day = new Date(date);
   day.setHours(0, 0, 0, 0);
@@ -188,8 +184,8 @@ function endOfDayIso(date: Date): string {
   return day.toISOString();
 }
 
-// The custom-range slider has a fixed number of positions (its resolution); the time span they cover is dynamic (the
-// window). It defaults to the span from the oldest entry to now, or the widest fallback until that loads.
+// The custom-range slider has a fixed number of positions (its resolution) mapped onto a dynamic time span (the
+// window), which defaults to the span from the oldest entry to now, or the widest fallback until that loads.
 const RANGE_SLIDER_STEPS = 200;
 const MS_PER_DAY = 86_400_000;
 const DEFAULT_SLIDER_WINDOW_MS = 365 * MS_PER_DAY;
@@ -211,8 +207,8 @@ function toFilterDisplay(isoString: string): string {
   return formatDate(isoString, "yyyy-MM-dd HH:mm:ss ZZZZZ", "en-US");
 }
 
-// Inverse of toFilterDisplay for the editable start_time/end_time chips: parse the mirrored display, plain ISO, or a
-// partial datetime the user typed into an ISO string. Returns null for an empty or unparsable value.
+// Inverse of toFilterDisplay for the editable start_time/end_time chips: parses the mirrored display, plain ISO, or a
+// partial typed datetime into an ISO string, returning null for an empty or unparsable value.
 function parseFilterTimestamp(value: string | null | undefined): string | null {
   const trimmed = (value ?? "").trim();
   if (!trimmed) {
@@ -229,9 +225,9 @@ function parseFilterTimestamp(value: string | null | undefined): string | null {
   return null;
 }
 
-// Full, independently-translatable tooltip per column that has an inline filter button. Kept as complete sentences
-// (not noun-interpolated) so each language can phrase determiner/grammar correctly; a column without an entry falls
-// back to the button's generic default.
+// Full, independently-translatable tooltip per column with an inline filter button, kept as complete sentences (not
+// noun-interpolated) so each language can phrase its grammar correctly; a column with no entry falls back to the
+// button's generic default.
 const FILTER_TOOLTIPS: Record<string, string> = {
   username: $localize`Filter by this user`,
   source_ip: $localize`Filter by this source IP`,
@@ -240,10 +236,10 @@ const FILTER_TOOLTIPS: Record<string, string> = {
   attempt_id: $localize`Filter by this attempt ID`
 };
 
-// Columns whose value is clipped instead of widening the table: the full value stays available in the truncation
-// tooltip, the copy button and the inline filter button. The classes carry the width (see the .cell-truncate-* rules):
-// the two opaque ids are read by their leading characters, while a client label reads as a name. Neither narrows its
-// column past the header (label + filter + sort icons), which is the real floor.
+// Columns whose value is clipped instead of widening the table: the full value stays reachable via the truncation
+// tooltip, the copy button and the inline filter. Width classes (see .cell-truncate-* rules) differ per column - ids
+// read by their leading characters, a client label read as a name - but never narrow a column past its header's own
+// width (label + filter + sort icons).
 const TRUNCATED_COLUMN_CLASSES: Record<string, string> = {
   attempt_id: "cell-truncate-id",
   transaction_id: "cell-truncate-id",
@@ -300,10 +296,10 @@ export class AuthenticationLog {
   readonly columnKeysMap = columnKeysMap;
   // Cells whose content can grow tall (stacked serials, long JSON) get a capped, scrollable cell.
   readonly scrollableColumnKeys = ["serial", ...INFO_COLUMN_KEYS];
-  // Client filter: show the friendly user-agent name, filter by its identifier prefix (a trailing "*" is applied by
-  // the multi-select component since client_label stores the full user-agent string incl. version).
-  // REVIEW: once selected, the shared filter input shows the raw stored value (e.g. `client_label: privacyIDEA-Keycloak*`)
-  // rather than the friendly name the user picked; consider mapping it back for display.
+  // Client filter: shows the friendly user-agent name but filters by its identifier prefix, since client_label stores
+  // the full user-agent string including the version; the multi-select component appends the trailing "*". REVIEW: once
+  // selected, the shared filter input displays the raw stored value (e.g. `client_label: privacyIDEA-Keycloak*`) not
+  // the friendly name the user picked; consider mapping it back for display.
   readonly clientLabelOptions: readonly MultiSelectFilterOption[] = USER_AGENT_PRESETS.map((preset) => ({
     label: preset.displayName,
     value: preset.identifier
@@ -331,7 +327,7 @@ export class AuthenticationLog {
   );
 
   // Columns to render: a self-service user only ever sees their own entries, so the user-identifying columns are
-  // hidden (redundant, and their realm/user links target admin-only pages).
+  // hidden, since their realm/user links target admin-only pages anyway.
   readonly visibleColumns = computed(() =>
     this.authService.isSelfServiceUser()
       ? this.columnKeysMap.filter((column) => !USER_SCOPED_COLUMN_KEYS.includes(column.key))
@@ -339,9 +335,8 @@ export class AuthenticationLog {
   );
   readonly visibleColumnKeys = computed(() => this.visibleColumns().map((column) => column.key));
 
-  // Source-IP filter options come from the known clients (requires the `clienttype` right, hence may be empty). IPs
-  // match exactly and display == value, so plain strings suffice. When empty (no right or no known clients) the
-  // column falls back to free text.
+  // Source-IP filter options come from the known clients, which requires the `clienttype` right and so may be empty;
+  // IPs match exactly and display equals value, so plain strings suffice, and an empty list falls back to free text.
   readonly sourceIpOptions = computed<string[]>(() => {
     const dict = this.clientsService.clientsResource.value()?.result?.value ?? {};
     const ips = new Set<string>();
@@ -360,9 +355,9 @@ export class AuthenticationLog {
   private readonly hasTimeFilter = computed(
     () => !!(this.authenticationLogService.timestampFrom() || this.authenticationLogService.timestampTo())
   );
-  // The date-range picker's start/end mirror the slider *window* (its min/max), not the narrowed filter, so dragging
-  // the slider leaves the picked range in place — the picker only ever defines the outer bounds. Empty when no time
-  // filter is active; the end stays open while the window runs up to "now".
+  // The date-range picker's start/end mirror the slider window's min/max, not the narrowed filter, so dragging the
+  // slider never moves the picked range; it is empty with no time filter active, with an open end while the window runs
+  // up to "now".
   readonly rangePickerStart = computed<Date | null>(() =>
     this.hasTimeFilter() ? new Date(this.windowStartMs()) : null
   );
@@ -395,8 +390,8 @@ export class AuthenticationLog {
   });
 
   readonly rangeSliderSteps = RANGE_SLIDER_STEPS;
-  // A "now" reference for open-ended windows (those running up to the present). Re-sampled when a new window starts so
-  // the math below reads a stable now.
+  // A "now" reference for open-ended windows (those running up to the present), re-sampled when a new window starts
+  // so the math below reads a stable value.
   private readonly nowAnchorMs = signal(Date.now());
   // Default window start: the oldest recorded entry (kept at least a day back), or the widest fallback until it loads.
   readonly defaultWindowStartMs = computed(() => {
@@ -404,21 +399,21 @@ export class AuthenticationLog {
     const end = this.nowAnchorMs();
     return oldest ? Math.min(end - MS_PER_DAY, new Date(oldest).getTime()) : end - DEFAULT_SLIDER_WINDOW_MS;
   });
-  // The slider window [start, end] — its zoom. Defaults to oldest→now; a date-range selection zooms it to the picked
-  // span so e.g. a single day fills the whole track. Writable so dragging the thumbs does not re-zoom it.
+  // The slider window [start, end] is its zoom, defaulting to oldest→now; a date-range selection zooms it to the picked
+  // span (e.g. a single day fills the whole track), and it stays writable so dragging the thumbs never re-zooms it.
   readonly windowStartMs = linkedSignal(() => this.defaultWindowStartMs());
   readonly windowEndMs = linkedSignal(() => this.nowAnchorMs());
-  // Whether the window runs up to "now" (an open upper bound): true for the default / start-only window, false once an
-  // end date bounds it. Governs whether the end thumb at its max means "now"/open (no end_time) or that concrete end.
+  // Whether the window runs up to "now" (an open upper bound): true for the default or start-only window, false once
+  // an end date bounds it; this governs whether the end thumb at its max means open/"now" or a concrete end.
   private readonly openEndedWindow = signal(true);
-  // Thumb positions (0 = window start .. RANGE_SLIDER_STEPS = window end), derived from the active time filter
-  // (relative to the window). Writable during a drag; each recomputes on the next timestamp/window change.
+  // Thumb positions (0 = window start .. RANGE_SLIDER_STEPS = window end) derive from the active time filter relative
+  // to the window, staying writable during a drag and recomputing on the next timestamp or window change.
   readonly rangeStart = linkedSignal(() => this.isoToSliderPos(this.authenticationLogService.timestampFrom(), 0));
   readonly rangeEnd = linkedSignal(() =>
     this.isoToSliderPos(this.authenticationLogService.timestampTo(), RANGE_SLIDER_STEPS)
   );
   // The range summary shows the window's extent (its min/max), not the dragged thumbs, so it stays a stable reference
-  // for the axis. The time-of-day is dropped once the window spans more than a day; an open window reads "now" at its
+  // for the axis; it drops the time-of-day once the window spans more than a day, and an open window reads "now" at its
   // max.
   private summaryFormat(ms: number): string {
     const format = this.windowEndMs() - this.windowStartMs() > MS_PER_DAY ? "yyyy-MM-dd" : "yyyy-MM-dd HH:mm";
@@ -430,8 +425,8 @@ export class AuthenticationLog {
     this.openEndedWindow() ? $localize`now` : this.summaryFormat(this.windowEndMs())
   );
 
-  // Activity histogram drawn behind the slider: the loaded entries' timestamps bucketed across the slider window,
-  // each bar normalized (0..1) to the busiest bucket. Reflects the current page only, so it is an indication of
+  // Activity histogram drawn behind the slider: the loaded entries' timestamps are bucketed across the slider window,
+  // with each bar normalized (0..1) to the busiest bucket; it reflects the current page only, an indication of
   // activity, not the full total.
   readonly activityBinCount = 48;
   readonly activityHistogram = computed<number[]>(() => {
@@ -456,8 +451,8 @@ export class AuthenticationLog {
     // Keep the time filter in sync with edits made directly to the start_time/end_time entries in the main filter
     // text (the slider/date picker write the same signals via applyTimeRange).
     effect(() => this.syncTimeFilterFromText());
-    // "All" is the default page size: the first response tells us how many entries there are, and the page size is
-    // widened to that once. Only once, so a page size the user picks afterwards stands.
+    // "All" is the default page size: the first response tells us how many entries there are, and the page size widens
+    // to that exactly once, so a size the user picks afterwards stands.
     effect(() => this.applyDefaultPageSize());
   }
 
@@ -474,9 +469,9 @@ export class AuthenticationLog {
     }
   }
 
-  // Drive the time filter from the start_time/end_time entries in the filter text. Guards keep re-mirroring the signal
-  // into the chip from looping and leave an unparsable, in-progress edit untouched instead of clearing an active
-  // filter; removing or emptying an entry clears its bound.
+  // Drives the time filter from the start_time/end_time entries in the filter text; guards keep the signal-to-chip
+  // mirroring from looping, leave an unparsable in-progress edit untouched without clearing an active filter, and clear
+  // a bound only when its entry is removed or emptied.
   private syncTimeFilterFromText(): void {
     const map = this.authenticationLogService.authenticationLogFilter().filterMap;
     this.syncBoundFromText(map, "start_time", this.authenticationLogService.timestampFrom);
@@ -581,9 +576,9 @@ export class AuthenticationLog {
     return this.authenticationLogService.authenticationLogFilter().hasKey(keyword) ? "filter_alt_off" : "filter_alt";
   }
 
-  // The real action vocabulary and the existing policy names, both from the backend so no list is duplicated here.
-  // Empty until the resources have loaded, or for an admin without `conditional_access_policy_read` - which is what
-  // canReadConditionalAccessPolicies decides the Policy entry's shape on.
+  // The real action vocabulary and the existing policy names both come from the backend, so neither list is duplicated
+  // here; they read empty until the resources load, or when the admin lacks `conditional_access_policy_read` (see
+  // canReadConditionalAccessPolicies below).
   readonly outcomeActionOptions = computed<string[]>(() => this.conditionalAccessPolicyService.actionTypes());
   readonly outcomePolicyOptions = computed<string[]>(() =>
     [...new Set(this.conditionalAccessPolicyService.policies().map((policy) => policy.name))].sort((a, b) =>
@@ -593,19 +588,19 @@ export class AuthenticationLog {
   readonly canReadConditionalAccessPolicies = computed(() =>
     this.authService.actionAllowed("conditional_access_policy_read")
   );
-  // How an outcome's policy name becomes a link: the id each existing policy has *now*, from the list this page already
-  // loads. Without `conditional_access_policy_read` the list is empty, so the cell renders the name as text (see its
-  // `policyIdsByName`).
+  // How an outcome's policy name becomes a link: it looks up the id of a currently-existing policy with that name from
+  // the list this page already loads; without `conditional_access_policy_read` that list is empty, so the cell renders
+  // the name as plain text (see policyIdsByName).
   readonly policyIdsByName = computed<ReadonlyMap<string, number>>(
     () => new Map(this.conditionalAccessPolicyService.policies().map((policy) => [policy.name, policy.id]))
   );
 
   readonly dryRunOptions = DRY_RUN_OPTIONS;
-  // The trigger's accessible name carries the rule as well as the purpose, so it is heard before the menu is opened
-  // (the menu states it too, see the `note` in the template). Built here rather than as an i18n-marked attribute
-  // because a bound label is the only form the component tests can read back.
+  // The trigger's accessible name states both the rule and the purpose, so it is heard before the menu opens (the
+  // menu's own `note` states it too); it is a bound label rather than an i18n-marked attribute, since only a bound
+  // label is something the component's tests can read back.
   readonly outcomeFilterLabel = $localize`Filter by conditional access outcome. All conditions must match one and the same outcome.`;
-  // "" when the filter is not set, which is what a cleared dry-run filter means: both kinds of outcome.
+  // "" means the dry-run filter is unset, i.e. both kinds of outcome match.
   readonly dryRunFilter = computed<string>(
     () => this.authenticationLogService.authenticationLogFilter().getValueOfKey("ca_dry_run") ?? ""
   );
@@ -628,8 +623,8 @@ export class AuthenticationLog {
     this.tableUtilsService.onSortButtonClick(columnKey, this.sort, { active: "timestamp", direction: "" });
   }
 
-  // Clears both the text and the time filter, bound to the input's clear (X) button. The time filter lives in its own
-  // signals, so it must be cleared alongside the text.
+  // Clears both the text and the time filter, bound to the input's clear (X) button; the time filter lives in its own
+  // signals, so it needs its own explicit clear alongside the text.
   clearAllFilters(): void {
     this.clearTimeFilter();
     this.authenticationLogService.clearFilter();
@@ -644,9 +639,9 @@ export class AuthenticationLog {
     this.applyTimeRange(null, null);
   }
 
-  // Date-range picker edits: a chosen date sets the whole local day as the bound (inclusive), while the other bound is
-  // preserved; clearing a field (null) drops that bound. The picked range also zooms the slider window so the selected
-  // span fills the track (e.g. a single day -> 24 hours).
+  // Date-range picker edits: choosing a date sets the whole local day as that bound (inclusive) while preserving the
+  // other bound, and clearing a field (null) drops its bound; the picked range also zooms the slider window so the
+  // selected span fills the track (e.g. a single day becomes 24 hours).
   onRangeStartDateChange(date: Date | null): void {
     const fromIso = date ? startOfDayIso(date) : null;
     const toIso = this.authenticationLogService.timestampTo();
@@ -661,8 +656,8 @@ export class AuthenticationLog {
     this.applyTimeRange(fromIso, toIso);
   }
 
-  // Zoom the slider window to the picked range so the selected span fills the whole track. A missing bound widens the
-  // window to that edge: no start -> back to the default oldest edge; no end -> an open window running up to now.
+  // Zoom the slider window to the picked range so the selected span fills the whole track; a missing bound widens the
+  // window to that edge - no start reverts to the default oldest edge, no end opens the window running up to now.
   private zoomSliderToRange(fromIso: string | null, toIso: string | null): void {
     this.nowAnchorMs.set(Date.now());
     this.openEndedWindow.set(!toIso);
@@ -684,8 +679,8 @@ export class AuthenticationLog {
     this.applyTimeRange(this.sliderPosToIso(this.rangeStart(), false), this.sliderPosToIso(this.rangeEnd(), true));
   }
 
-  // Thumb value indicator. The format tracks the window's zoom so the label is useful at every span: time-of-day for
-  // short windows, day for medium, month for the widest. The precise from/to is always shown in the summary line.
+  // Thumb value indicator: the format tracks the window's zoom - time-of-day for short windows, day for medium, month
+  // for the widest - while the exact from/to is always shown in the summary line.
   readonly formatSliderThumb = (pos: number): string => {
     const iso = this.sliderPosToIso(pos, false)!;
     const windowMs = this.windowEndMs() - this.windowStartMs();
@@ -698,8 +693,8 @@ export class AuthenticationLog {
     return formatDate(iso, "MMM", "en-US");
   };
 
-  // Single writer of the time filter: set timestampFrom/To (the source of truth for the API params) and mirror them
-  // into the filter text as start_time/end_time chips. A null bound removes its chip and its API param.
+  // Single writer of the time filter: sets timestampFrom/To (the source of truth for the API params) and mirrors them
+  // into the filter text as start_time/end_time chips; a null bound removes both its chip and its API param.
   private applyTimeRange(fromIso: string | null, toIso: string | null): void {
     this.authenticationLogService.timestampFrom.set(fromIso);
     this.authenticationLogService.timestampTo.set(toIso);
@@ -709,8 +704,8 @@ export class AuthenticationLog {
     this.authenticationLogService.authenticationLogFilter.set(filter);
   }
 
-  // Map a slider position (0 = window start, max = window end) to an ISO timestamp, spread linearly over the window.
-  // For an open-ended window the end thumb at its maximum means "up to now" -> null (no upper bound, no end_time).
+  // Maps a slider position (0 = window start, max = window end) to an ISO timestamp, spread linearly over the window;
+  // for an open-ended window the end thumb at its maximum means "up to now", so it maps to null (no end_time).
   private sliderPosToIso(pos: number, isEnd: boolean): string | null {
     if (isEnd && pos >= RANGE_SLIDER_STEPS && this.openEndedWindow()) {
       return null;
@@ -718,14 +713,14 @@ export class AuthenticationLog {
     const start = this.windowStartMs();
     const span = this.windowEndMs() - start;
     const ms = start + (pos / RANGE_SLIDER_STEPS) * span;
-    // Emit whole-second precision to match the seconds shown in the chip/summary: a sub-second value looks identical
-    // to the display yet silently mismatches an entry (which carries sub-second precision). Floor the inclusive start
-    // so a boundary entry stays >= it (includes the oldest); ceil the inclusive end so it stays <= it.
+    // Emits whole-second precision to match the seconds shown in the chip/summary, since a sub-second value would look
+    // identical there yet silently mismatch an entry's real timestamp; flooring the inclusive start keeps a boundary
+    // entry >= it, and ceiling the inclusive end keeps it <= it.
     const seconds = isEnd ? Math.ceil(ms / 1000) : Math.floor(ms / 1000);
     return new Date(seconds * 1000).toISOString();
   }
 
-  // Inverse of sliderPosToIso: place an ISO timestamp on the slider axis (relative to the current window), clamped to
+  // Inverse of sliderPosToIso: places an ISO timestamp on the slider axis relative to the current window, clamped to
   // the visible range. A null bound falls back to the given edge (start -> window start, end -> window end).
   private isoToSliderPos(iso: string | null, fallback: number): number {
     if (!iso) {
@@ -751,8 +746,8 @@ export class AuthenticationLog {
     this.authenticationLogService.authenticationLogFilter.set(newFilter);
   }
 
-  // Whether a @default cell shows the inline "filter by this value" button. Columns whose header already offers a
-  // value picker don't need it, which is dynamic for the client_label.
+  // Whether a @default cell shows the inline "filter by this value" button: columns whose header already offers a
+  // value picker don't need it. client_label never needs it; source_ip needs it only when its own IP menu is hidden.
   showInlineCellFilter(columnKey: string): boolean {
     if (columnKey === "client_label") return false;
     if (columnKey === "source_ip") return !this.showSourceIpMenu();
@@ -777,10 +772,9 @@ export class AuthenticationLog {
     }
   }
 
-  // "Enter custom value" from a selection menu: ensure the key is present in the main filter input and focus it, so
-  // the user can type a free value (no wildcard) just like the plain free-text filter columns. The focus is deferred
-  // because the menu item click closes the menu, which restores focus to its trigger afterwards — a synchronous
-  // focus() would be overridden.
+  // "Enter custom value" from a selection menu: ensures the key is present in the main filter input and focuses it, so
+  // the user can type a free value (no wildcard) like the plain free-text filter columns. Focus is deferred because the
+  // menu closes on click and restores focus to its trigger afterward, which would override a synchronous focus() call.
   onAddCustomFilter(keyword: string): void {
     this.authenticationLogService.authenticationLogFilter.set(
       this.authenticationLogService.authenticationLogFilter().addKey(keyword)

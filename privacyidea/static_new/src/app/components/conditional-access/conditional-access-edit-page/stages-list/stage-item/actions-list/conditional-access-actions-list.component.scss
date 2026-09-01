@@ -11,6 +11,11 @@
   margin: 16px 0 8px 8px;
 }
 
+.ca-actions-list-warning {
+  color: var(--mat-sys-error);
+  margin: 0 0 4px 8px;
+}
+
 .ca-actions-list-empty {
   color: var(--mat-sys-on-surface-variant);
   font-style: italic;

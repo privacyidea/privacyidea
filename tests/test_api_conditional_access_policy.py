@@ -32,7 +32,9 @@ from privacyidea.lib.conditional_access.authentication_event_types import (AuthE
                                                                            CA_ENFORCEMENT_EVENT_TYPES,
                                                                            TRACKABLE_EVENT_TYPES, CountMode)
 from privacyidea.lib.conditional_access.engine import ConditionalAccessAction
-from privacyidea.lib.conditional_access.policy import create_conditional_access_policy, list_conditional_access_policies
+from privacyidea.lib.conditional_access.policy import (create_conditional_access_policy,
+                                                               get_default_error_messages,
+                                                               list_conditional_access_policies)
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import SCOPE, set_policy, delete_policy
 from privacyidea.models import db
@@ -169,7 +171,7 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
         self.assertEqual(400, res.status_code, res.json)
 
     def test_create_source_ip_deny_is_allowed(self):
-        # ALLOW/DENY are valid on a source_ip policy (IP-scoped pre-auth decision).
+        # DENY is valid on a source_ip policy (IP-scoped pre-auth decision).
         body = self._policy_body(name="IP deny", target="source_ip",
                                  counter_types_to_track=[str(AuthEventType.PASSWORD_FAIL)],
                                  stages=[{"failure_threshold": 20,
@@ -262,8 +264,7 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
         self.assertFalse(policy["stages"][0]["actions"][0]["retrigger_above_threshold"])
 
     def test_create_action_retrigger_flag_round_trips(self):
-        # One stage, two actions with independent modes: the lock re-triggers, the
-        # email fires once.
+        # One stage, two actions with independent modes: the lock re-triggers, the email fires once.
         body = self._policy_body(
             name="Retrig",
             stages=[{"failure_threshold": 8,
@@ -336,6 +337,22 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
                              constraints["user"]["count_modes"])
         self.assertListEqual([str(CountMode.DISTINCT_USERS), str(CountMode.PER_ATTEMPT), str(CountMode.PER_REQUEST)],
                              constraints["source_ip"]["count_modes"])
+
+    def test_list_default_error_messages(self):
+        # Only the transport seam here: that the endpoint serves the catalog in the documented shape, and
+        # that the lazy_gettext error message survives JSON encoding. Its ordering and tag placement
+        # are contracts of the catalog itself and are asserted in test_lib_conditional_access_policy.
+        res = self._request("defaulterrormessages")
+        self.assertEqual(200, res.status_code, res.json)
+        suggestions = res.json["result"]["value"]
+        self.assertEqual(len(get_default_error_messages()), len(suggestions))
+        for entry in suggestions:
+            self.assertSetEqual({"action_type", "message"}, set(entry))
+            self.assertTrue(entry["message"])
+
+    def test_list_default_error_messages_requires_admin(self):
+        res = self._request("defaulterrormessages", auth_token="not-a-token")
+        self.assertEqual(401, res.status_code, res.json)
 
     # --- PATCH /policy/<id> (update) -------------------------------------------
 
@@ -504,10 +521,8 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
         self.assertListEqual([("P1", 1), ("P2", 2)], self._order())
 
     def test_reorder_route_coexists_with_the_policy_id_route(self):
-        # 'policy/<policy_id>' uses a string converter, so the literal 'policy/order'
-        # also matches it. Only PUT is routed to the reorder endpoint; the other verbs
-        # fall through to the id route and must fail cleanly on the non-numeric id
-        # rather than acting on some policy.
+        # The id route's string converter also matches the literal path 'policy/order'; only PUT binds to the
+        # reorder endpoint, so other verbs fall through to the id route and must fail cleanly on a non-numeric id.
         first, second = self._numbered(1, 2)
         self.assertEqual(200, self._request("policy/order", method="PUT",
                                             json_data={"policy_ids": [second, first]}).status_code)
@@ -542,16 +557,14 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
                             json_data={"policy_ids": [second, first], "expected_priorities": [2, 1]})
         self.assertEqual(409, res.status_code, res.json)
         message = res.json["result"]["error"]["message"]
-        # Names the mismatching policy; deliberately no priority numbers and no advice
-        # about what the client should do next.
+        # Names the mismatching policy; deliberately omits priority numbers and advice on what to do next.
         self.assertIn("P2", message)
         self.assertIn("expected priorities", message)
         self.assertNotIn("Reload", message)
         self.assertListEqual([("P2", 1), ("P1", 2)], self._order())
 
     def test_reorder_of_disjoint_rows_does_not_conflict(self):
-        # Two admins rearranging different parts of the list both succeed - the whole
-        # reason the client sends only the rows it moved.
+        # Two admins rearranging different parts of the list both succeed: the client sends only the rows it moved.
         self._numbered(1, 2, 3, 4)
         ids = {policy["name"]: policy["id"] for policy in list_conditional_access_policies()}
         self.assertEqual(200, self._request("policy/order", method="PUT",
@@ -662,3 +675,39 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
         # An empty list removes every condition, widening the policy to all requests.
         self._request(f"policy/{policy_id}", method="PATCH", json_data={"conditions": []})
         self.assertListEqual([], self._request(f"policy/{policy_id}").json["result"]["value"]["conditions"])
+
+    def test_create_with_stage_error_message_round_trips(self):
+        message = "Your account is locked. Please try again in about {duration}."
+        stages = self._policy_body()["stages"]
+        stages[0]["error_message"] = message
+        policy_id = self._create_policy(stages=stages)
+        stages = self._request(f"policy/{policy_id}").json["result"]["value"]["stages"]
+        self.assertEqual(message, stages[0]["error_message"])
+
+    def test_create_without_stage_error_message_yields_none(self):
+        # The default is silence: with no message the rejection stays generic.
+        policy_id = self._create_policy()
+        stages = self._request(f"policy/{policy_id}").json["result"]["value"]["stages"]
+        self.assertIsNone(stages[0]["error_message"])
+
+    def test_create_with_over_long_stage_error_message_is_400(self):
+        body = self._policy_body()
+        body["stages"][0]["error_message"] = "x" * 501
+        res = self._request("policy", method="POST", json_data=body)
+        self.assertEqual(400, res.status_code, res.json)
+        self.assertIn("500", res.json["result"]["error"]["message"])
+
+    def test_patch_replaces_and_clears_the_stage_error_message(self):
+        stages = self._policy_body()["stages"]
+        stages[0]["error_message"] = "Old."
+        policy_id = self._create_policy(stages=stages)
+        patched = [{**stages[0], "error_message": "New."}]
+        res = self._request(f"policy/{policy_id}", method="PATCH", json_data={"stages": patched})
+        self.assertEqual(200, res.status_code, res.json)
+        stages = self._request(f"policy/{policy_id}").json["result"]["value"]["stages"]
+        self.assertEqual("New.", stages[0]["error_message"])
+        # Stages are replaced wholesale, so a stage sent without a message clears it.
+        cleared = [{key: value for key, value in patched[0].items() if key != "error_message"}]
+        self._request(f"policy/{policy_id}", method="PATCH", json_data={"stages": cleared})
+        stages = self._request(f"policy/{policy_id}").json["result"]["value"]["stages"]
+        self.assertIsNone(stages[0]["error_message"])

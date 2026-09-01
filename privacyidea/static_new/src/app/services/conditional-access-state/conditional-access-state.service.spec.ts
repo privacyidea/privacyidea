@@ -52,7 +52,8 @@ const lockStatus = (): LockedUserEntry => ({
   lock_expires_at: "2030-01-01T10:00:00Z",
   seconds_remaining: 120,
   lock_cause: "POLICY",
-  locked_at: "2030-01-01T09:58:00Z"
+  locked_at: "2030-01-01T09:58:00Z",
+  error_message: null
 });
 
 const blocklistEntry = (identifier: string): BlocklistEntry => ({
@@ -61,7 +62,8 @@ const blocklistEntry = (identifier: string): BlocklistEntry => ({
   block_expires_at: "2030-01-01T10:00:00Z",
   seconds_remaining: 120,
   block_cause: "POLICY",
-  blocked_at: "2030-01-01T09:58:00Z"
+  blocked_at: "2030-01-01T09:58:00Z",
+  error_message: null
 });
 
 // A fully-formed HttpErrorResponse whose nested body carries the API error message the catchError branch reads.
@@ -129,6 +131,13 @@ describe("ConditionalAccessStateService", () => {
       realms: "realm1",
       states: "permanent,temporary"
     });
+  });
+
+  it("passes an error_messages filter through", () => {
+    // Wording is stored per row, so an admin who rewrites a stage's text needs a way to find the locks still
+    // quoting the old one - those users go on reading it until the lock is rewritten.
+    service.lockedUsersFilter.set(new FilterValue({ value: "error_messages: *administrator*" }));
+    expect(service.lockedUsersFilterParams()).toEqual({ error_messages: "*administrator*" });
   });
 
   it("resets pageIndex to 1 when the filter changes", () => {

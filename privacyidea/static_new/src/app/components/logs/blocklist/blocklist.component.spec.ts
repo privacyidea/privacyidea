@@ -46,7 +46,8 @@ const activeEntry: BlocklistEntry = {
   seconds_remaining: 3600,
   permanent: false,
   block_cause: "POLICY",
-  blocked_at: "2026-01-01T09:00:00Z"
+  blocked_at: "2026-01-01T09:00:00Z",
+  error_message: "Your address is blocked. Try again in about {duration}."
 };
 
 const permanentEntry: BlocklistEntry = {
@@ -55,7 +56,8 @@ const permanentEntry: BlocklistEntry = {
   seconds_remaining: null,
   permanent: true,
   block_cause: "POLICY",
-  blocked_at: "2026-01-01T08:00:00Z"
+  blocked_at: "2026-01-01T08:00:00Z",
+  error_message: null
 };
 
 const expiredEntry: BlocklistEntry = {
@@ -64,7 +66,8 @@ const expiredEntry: BlocklistEntry = {
   seconds_remaining: 0,
   permanent: false,
   block_cause: "POLICY",
-  blocked_at: "2025-05-01T00:00:00Z"
+  blocked_at: "2025-05-01T00:00:00Z",
+  error_message: null
 };
 
 describe("BlocklistComponent", () => {
@@ -324,6 +327,27 @@ describe("BlocklistComponent", () => {
     component.onSortEvent("state");
     expect(component.sort().active).toBe("state");
     expect(component.dataSource().data.length).toBe(3);
+  });
+
+  it("lists the stored wording as a column", () => {
+    // An admin looking at a blocked address should see what that address is actually told, without opening the
+    // policy - and the row carries the message stored at block time, not what the stage says now.
+    // Material throws on a displayed column with no matColumnDef, and the table renders here, so this also
+    // covers the template wiring.
+    casService.setBlocklistEntries([activeEntry, permanentEntry]);
+    expect(component.displayedColumns).toContain("error_message");
+    const byIp = new Map(component.dataSource().data.map((row) => [row.identifier, row.error_message]));
+    expect(byIp.get(activeEntry.identifier)).toBe("Your address is blocked. Try again in about {duration}.");
+    expect(byIp.get(permanentEntry.identifier)).toBeNull();
+  });
+
+  it("matches the stored wording in the free-text filter", () => {
+    // The blocklist filters client-side, so the message has to be part of the predicate for an admin to find
+    // every address still quoting wording they have since changed.
+    casService.setBlocklistEntries([activeEntry, permanentEntry]);
+    const predicate = component.blockFilterPredicate();
+    expect(predicate(activeEntry, "try again")).toBe(true);
+    expect(predicate(permanentEntry, "try again")).toBe(false);
   });
 
   it("getSortIcon reflects the active column and direction", () => {

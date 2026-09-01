@@ -477,6 +477,26 @@ added to the ``PI_ENABLE_TOKEN_TYPE_ENROLLMENT`` list in ``pi.cfg``::
    ``tokentype='deprecated'`` and handled via ``pi-tokenjanitor deprecated``
    - see the developer note ``dev/token-deprecation-strategy.md``.
 
+.. _picfg_allowed_ssh_key_types:
+
+Allowed SSH key types
+.....................
+
+.. versionadded:: 3.14
+
+The SSH key token only accepts a set of well known SSH key types (``ssh-rsa``,
+``ssh-ed25519``, ``ecdsa-sha2-nistp256``,
+``sk-ecdsa-sha2-nistp256@openssh.com`` and
+``sk-ssh-ed25519@openssh.com``). If you need to enroll SSH keys of other
+types, you can add them as a list in ``pi.cfg``::
+
+    PI_ALLOWED_SSH_KEY_TYPES = ['ssh-dss', 'ecdsa-sha2-nistp521']
+
+
+The configured key types are added to the default key types. privacyIDEA does
+not evaluate the key type itself, the SSH server decides which key types it
+accepts (see ``PubkeyAcceptedAlgorithms``).
+
 .. _picfg_email_validators:
 
 3rd party email validators
@@ -906,9 +926,9 @@ subscription overview makes.
 Conditional access never-block list
 -----------------------------------
 
-.. index:: conditional access, lockout, never-block
+.. index:: conditional access, lock, never-block
 
-The conditional access lockout policies can block a source IP (the ``BLOCK_IP``
+The conditional access policies can block a source IP (the ``BLOCK_IP``
 action). ``PI_CONDITIONAL_ACCESS_NEVER_BLOCK`` lists the addresses and networks
 that must never be blocked by that machinery::
 
@@ -946,8 +966,8 @@ environment last, so there the variable wins.
 
 It is deliberately not a system setting, and there is no WebUI or API for it. It
 is the safety net that keeps an administrator from being locked out, so it must
-not be reachable through the same API that an attacker, or a mistaken lockout
-policy, could be acting on. Changes take effect after a restart of the web
+not be reachable through the same API that an attacker, or a mistaken
+conditional access policy, could be acting on. Changes take effect after a restart of the web
 server.
 
 .. versionadded:: 3.14

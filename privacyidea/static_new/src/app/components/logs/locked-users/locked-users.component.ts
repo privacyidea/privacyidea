@@ -27,6 +27,7 @@ import { MatInput } from "@angular/material/input";
 import { MatPaginatorModule, PageEvent } from "@angular/material/paginator";
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
 import { MatTooltipModule } from "@angular/material/tooltip";
+import { ExpandableMessageComponent } from "@components/shared/expandable-message/expandable-message.component";
 import { RouterLink } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { FilterValue } from "@core/models/filter_value/filter_value";
@@ -67,6 +68,7 @@ import { concatMap, reduce } from "rxjs/operators";
     MatButtonModule,
     MatIconModule,
     MatTooltipModule,
+    ExpandableMessageComponent,
     MatCheckboxModule,
     MatPaginatorModule,
     MatFormField,
@@ -105,7 +107,8 @@ export class LockedUsersComponent {
     "state",
     "cause",
     "lock_expires_at",
-    "locked_at"
+    "locked_at",
+    "error_message"
   ];
 
   // Alias for the template (sort icon + sort handler fallback).
@@ -160,9 +163,9 @@ export class LockedUsersComponent {
     return row.username || row.uid;
   }
 
-  // Pre-seed the authentication-log filter with this user's identity and jump there. Matches by username when
-  // known (falling back to uid for username-less rows), scoped to the same realm/resolver so the log shows only
-  // that user's events. Navigation to the auth-log route itself is done by the template's routerLink.
+  // Pre-seeds the authentication-log filter with this user's identity - username, or uid for username-less rows, scoped
+  // to the same realm/resolver - so the log shows only that user's events; the template's routerLink does the
+  // navigation.
   showAuthenticationLog(row: LockedUserEntry): void {
     const identity = row.username
       ? new FilterValue().addEntry("username", row.username)
@@ -313,9 +316,9 @@ export class LockedUsersComponent {
   }
 
   deleteExpired(): void {
-    // Generic confirmation only: the set of expired records is evaluated server-side at purge time, so listing a
-    // snapshot here could be misleading (more may expire in between). Admins can inspect them via the "Expired"
-    // state filter beforehand.
+    // Generic confirmation only: the set of expired records is evaluated server-side at purge time, so a snapshot
+    // listed here could be misleading (more may expire meanwhile); admins can inspect them via the "Expired" state
+    // filter beforehand.
     this.dialogService
       .openDialog({
         component: SimpleConfirmationDialogComponent,

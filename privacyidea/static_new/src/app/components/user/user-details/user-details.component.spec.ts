@@ -690,7 +690,8 @@ describe("UserDetailsComponent", () => {
       lock_expires_at: "2030-01-01T10:00:00Z",
       seconds_remaining: 120,
       lock_cause: "POLICY",
-      locked_at: "2030-01-01T09:58:00Z"
+      locked_at: "2030-01-01T09:58:00Z",
+      error_message: null
     });
     dialogServiceMock.openDialog = jest.fn().mockReturnValue({
       afterClosed: () => of(true)
@@ -719,7 +720,8 @@ describe("UserDetailsComponent", () => {
       lock_expires_at: null,
       seconds_remaining: null,
       lock_cause: "POLICY",
-      locked_at: "2030-01-01T09:58:00Z"
+      locked_at: "2030-01-01T09:58:00Z",
+      error_message: null
     });
     expect(component.lockStatusText()).toBe("Locked permanently");
   });
@@ -734,7 +736,8 @@ describe("UserDetailsComponent", () => {
       lock_expires_at: null,
       seconds_remaining: null,
       lock_cause: "POLICY",
-      locked_at: "2030-01-01T09:58:00Z"
+      locked_at: "2030-01-01T09:58:00Z",
+      error_message: null
     });
     expect(component.lockStatusText()).toBe("Locked");
   });
@@ -759,7 +762,8 @@ describe("UserDetailsComponent", () => {
       lock_expires_at: "2030-01-01T10:00:00Z",
       seconds_remaining: 120,
       lock_cause: "POLICY",
-      locked_at: "2030-01-01T09:58:00Z"
+      locked_at: "2030-01-01T09:58:00Z",
+      error_message: null
     });
     dialogServiceMock.openDialog = jest.fn().mockReturnValue({ afterClosed: () => of(true) });
     (conditionalAccessStateServiceMock.resetUserLock as jest.Mock).mockReturnValue(of(false));
@@ -828,7 +832,8 @@ describe("UserDetailsComponent", () => {
       lock_expires_at: null,
       seconds_remaining: null,
       lock_cause: "MANUAL",
-      locked_at: "2030-01-01T09:58:00Z"
+      locked_at: "2030-01-01T09:58:00Z",
+      error_message: null
     });
     expect(component.lockCauseLabel()).toBe("Locked by an administrator");
   });
@@ -843,7 +848,8 @@ describe("UserDetailsComponent", () => {
       lock_expires_at: "2030-01-01T10:00:00Z",
       seconds_remaining: 120,
       lock_cause: "POLICY",
-      locked_at: "2030-01-01T09:58:00Z"
+      locked_at: "2030-01-01T09:58:00Z",
+      error_message: null
     });
     dialogServiceMock.openDialog = jest.fn().mockReturnValue({ afterClosed: () => of(false) });
 

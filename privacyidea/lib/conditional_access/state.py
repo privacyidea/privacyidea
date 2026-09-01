@@ -46,10 +46,8 @@ log = logging.getLogger(__name__)
 
 DEFAULT_PAGE_SIZE = 15
 
-# The lock "state" is derived from lock_expires_at vs. now:
-#   permanent  -> lock_expires_at IS NULL
-#   temporary  -> lock_expires_at in the future  (actively locked, will lift on its own)
-#   expired    -> lock_expires_at in the past     (stale record, no longer enforced)
+# The lock state is derived from lock_expires_at vs. now: permanent means NULL, temporary means the expiry is
+# still ahead (in force, lifts on its own), and expired means it has passed (a stale record, no longer enforced).
 LOCK_STATES = ("permanent", "temporary", "expired")
 
 # Who imposed the restriction now in force; see :class:`RestrictionCause`.
@@ -130,11 +128,16 @@ def _locked_user_dict(row: UserLockState, now: datetime) -> dict:
         "seconds_remaining": _seconds_remaining(row.lock_expires_at, now),
         # Whether a policy or an administrator imposed the lock now in force.
         "lock_cause": row.lock_cause,
-        "locked_at": row.locked_at
+        "locked_at": row.locked_at,
+        # The error message this user is being shown, as stored when the lock was written - a snapshot, so it can differ
+        # from what the policy says now. Empty when the stage configured none, which is the silent default.
+        "error_message": row.error_message
     }
 
 
 def _blocklist_dict(row: BlockList, now: datetime) -> dict:
+    # Reported as "identifier", not "ip": the API shape is already the generic one the table will grow into when
+    # non-IP entries (device, API key) become blockable.
     return {
         "identifier": row.ip,
         "permanent": row.block_expires_at is None,
@@ -142,6 +145,8 @@ def _blocklist_dict(row: BlockList, now: datetime) -> dict:
         "seconds_remaining": _seconds_remaining(row.block_expires_at, now),
         "block_cause": row.block_cause,
         "blocked_at": row.blocked_at,
+        # See _locked_user_dict: the wording stored on the row, not what the policy carries now.
+        "error_message": row.error_message,
     }
 
 
@@ -218,7 +223,8 @@ def _lock_conditions(realms: list[str] | None, resolvers: list[str] | None,
                         usernames: list[str] | None, states: list[str] | None,
                         visibility_scopes: list | None, now: datetime,
                         case_insensitive: bool,
-                        causes: list[str] | None = None) -> list[ColumnElement[bool]]:
+                        causes: list[str] | None = None,
+                        error_messages: list[str] | None = None) -> list[ColumnElement[bool]]:
     """
     Build the WHERE conditions for a locked-users query.
 
@@ -228,6 +234,9 @@ def _lock_conditions(realms: list[str] | None, resolvers: list[str] | None,
     :param realms: realm(s) to match (wildcard ``*`` per value); ``None``/empty means no realm filter
     :param resolvers: resolver(s) to match (wildcard ``*`` per value); ``None``/empty means no resolver filter
     :param usernames: login(s) to match (wildcard ``*`` per value); ``None``/empty means no username filter
+    :param error_messages: wording to match (wildcard ``*`` per value); ``None``/empty means no message filter.
+        Matches the text stored on the row - what those users are actually being shown - so an admin can find
+        every lock still quoting a message they have since changed.
     :param states: lock state(s) to include (see :func:`_state_condition`); ``None``/empty means no state
         filter (all states, including expired)
     :param causes: lock cause(s) to include (see :func:`_cause_condition`); ``None``/empty means no cause
@@ -241,7 +250,8 @@ def _lock_conditions(realms: list[str] | None, resolvers: list[str] | None,
     conditions: list[ColumnElement[bool]] = []
     for column, value in ((UserLockState.realm, realms),
                           (UserLockState.resolver, resolvers),
-                          (UserLockState.username, usernames)):
+                          (UserLockState.username, usernames),
+                          (UserLockState.error_message, error_messages)):
         condition = match_condition(column, value, case_insensitive)
         if condition is not None:
             conditions.append(condition)
@@ -260,7 +270,8 @@ def _lock_conditions(realms: list[str] | None, resolvers: list[str] | None,
 def list_locked_users(realms: list[str] | None = None, resolvers: list[str] | None = None,
                       usernames: list[str] | None = None, states: list[str] | None = None,
                       visibility_scopes: list | None = None, case_insensitive: bool = False,
-                      now: datetime | None = None, causes: list[str] | None = None) -> list[dict]:
+                      now: datetime | None = None, causes: list[str] | None = None,
+                      error_messages: list[str] | None = None) -> list[dict]:
     """
     Return all matching locked users (no pagination), most recently updated first. See
     :func:`_lock_conditions` for the filter/scoping semantics and
@@ -268,7 +279,7 @@ def list_locked_users(realms: list[str] | None = None, resolvers: list[str] | No
     """
     moment = now if now is not None else utc_now()
     conditions = _lock_conditions(realms, resolvers, usernames, states,
-                                     visibility_scopes, moment, case_insensitive, causes)
+                                     visibility_scopes, moment, case_insensitive, causes, error_messages)
     stmt = select(UserLockState).where(*conditions).order_by(UserLockState.locked_at.desc())
     return [_locked_user_dict(row, moment) for row in get_ca_session().scalars(stmt).all()]
 
@@ -279,7 +290,8 @@ def list_locked_users_paginate(realms: list[str] | None = None, resolvers: list[
                                visibility_scopes: list | None = None, case_insensitive: bool = False,
                                page: int = 1, page_size: int = DEFAULT_PAGE_SIZE,
                                sort_column: str = "locked_at", sort_order: str = "desc",
-                               now: datetime | None = None, causes: list[str] | None = None) -> dict:
+                               now: datetime | None = None, causes: list[str] | None = None,
+                               error_messages: list[str] | None = None) -> dict:
     """
     Return one page of matching locked users plus pagination metadata
     ``{locked_users, count, current, prev, next}`` — the counterpart of
@@ -290,7 +302,7 @@ def list_locked_users_paginate(realms: list[str] | None = None, resolvers: list[
     """
     moment = now if now is not None else utc_now()
     conditions = _lock_conditions(realms, resolvers, usernames, states,
-                                     visibility_scopes, moment, case_insensitive, causes)
+                                     visibility_scopes, moment, case_insensitive, causes, error_messages)
     count = get_ca_session().scalar(
         select(func.count()).select_from(UserLockState).where(*conditions))
     order_column = SORTABLE_COLUMNS.get(sort_column)

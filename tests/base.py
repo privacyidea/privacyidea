@@ -187,11 +187,9 @@ class MyTestCase(unittest.TestCase):
             self.app.config[f"PI_REDIS_CACHE_{feature.upper()}"] = False
 
     def tearDown(self):
-        # Close the conditional-access session, which a real request would close in teardown. A test class shares
-        # one app context across all its tests, so without this the session (and its identity map) would outlive
-        # the test that opened it and serve stale rows to the next one - sqlite reuses primary keys of deleted
-        # rows, so a cached object can even come back under a new row's identity. The staged conditional-access
-        # events go with it, for the same reason - a real request buffers them on its own ``g``.
+        # Closes the conditional-access session, mirroring what a real request does at teardown: with one app
+        # context shared across a whole test class, an unclosed session would outlive its test and serve stale
+        # rows next time (SQLite reuses deleted rows' primary keys); staged events are cleared for the same reason.
         close_ca_session()
         reset_ca_context()
         # Rollback uncommitted changes to the DB and close the session to

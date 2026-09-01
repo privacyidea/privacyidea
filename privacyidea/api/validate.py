@@ -172,9 +172,8 @@ def before_request():
     g.request_data = get_all_params(request)
     request.all_data = copy.deepcopy(g.request_data)
 
-    # Join the attempt an answered challenge belongs to. This happens here because the attempt id is recorded in the
-    # challenge, and the token logic deletes a challenge it answers successfully - by the time the outcome is logged
-    # there would be nothing left to read it from. ``state`` is the RADIUS alias of ``transaction_id``.
+    # Join the attempt here because the attempt id lives in the challenge, which the token logic deletes once
+    # answered, leaving nothing to read it from later. ``state`` is the RADIUS alias of ``transaction_id``.
     continue_attempt(get_optional_one_of(request.all_data, ["transaction_id", "state"]))
 
     privacyidea_server = get_app_config_value("PI_AUDIT_SERVERNAME", get_privacyidea_node(request.host))
@@ -315,13 +314,18 @@ def offlinerefill():
 
 def _conditional_access_identity():
     """
-    Resolve the identity the /validate/check conditional-access pre-check must gate
-    on. ``before_request`` builds ``request.User`` from the ``user`` parameter only,
-    so a username-less passkey request (identified by ``credential_id``) or a
-    serial-only request arrives with an empty user — and the user-lock / DENY checks
-    would be silently skipped, letting a locked user authenticate by credential id or
-    serial. Resolve the token owner in that case so the lock is enforced before any
-    token work runs. Falls back to the (empty) request user when no owner can be
+    Resolve the identity the conditional-access pre-check must gate on, for the endpoints that accept a token
+    instead of a user: ``/validate/check`` and ``/validate/triggerchallenge``.
+
+    ``before_request`` builds ``request.User`` from the ``user`` parameter only, so a username-less passkey request
+    (identified by ``credential_id``) or a serial-only request arrives with an empty user — and the user-lock / DENY
+    checks would be silently skipped, letting a locked user authenticate by credential id or serial, or an admin
+    trigger a challenge that pushes a prompt to a locked user's phone. Resolve the token owner in that case so the
+    lock is enforced before any token work runs.
+
+    Both endpoints require a ``user``, a ``serial`` or a ``credential_id``
+    (:class:`~privacyidea.lib.decorators.check_user_serial_or_cred_id_in_request`), so between them these three
+    cover every request that can reach the gate. Falls back to the (empty) request user when no owner can be
     resolved, so the IP-block check still applies.
     """
     if request.User:
@@ -356,22 +360,6 @@ def _challenge_owner(challenge) -> User:
         return User()
 
 
-def _poll_transaction_identity() -> User:
-    """
-    Resolve the identity the /validate/polltransaction conditional-access
-    pre-check must gate on: the owner of the (first valid) challenge for the
-    polled transaction. The poll carries only a transaction id, so the owner is
-    looked up from it; an empty :class:`User` (IP-block still applies) is
-    returned when the transaction has no valid challenge.
-    """
-    transaction_id = (request.view_args or {}).get("transaction_id") or get_optional(request.all_data, "transaction_id")
-    if not transaction_id:
-        return User()
-    valid_challenges = [challenge for challenge in get_challenges(transaction_id=transaction_id)
-                        if challenge.is_valid()]
-    return _challenge_owner(valid_challenges[0]) if valid_challenges else User()
-
-
 @validate_blueprint.route('/check', methods=['POST', 'GET'])
 @validate_blueprint.route('/radiuscheck', methods=['POST', 'GET'])
 @postpolicy(hide_specific_error_message, request=request)
@@ -393,6 +381,9 @@ def _poll_transaction_identity() -> User:
 @prepolicy(pushtoken_validate, request=request)
 @prepolicy(set_realm, request=request)
 @prepolicy(mangle, request=request)
+# Below set_realm and mangle in particular, because both *rewrite the identity*
+# Besides of them, CA gate should the first step to run before any other authentication step starts
+@conditional_access_gate(_conditional_access_identity)
 @prepolicy(increase_failcounter_on_challenge, request=request)
 @prepolicy(save_client_application_type, request=request)
 @prepolicy(webauthntoken_request, request=request)
@@ -404,7 +395,6 @@ def _poll_transaction_identity() -> User:
 @CheckSubscription(request)
 @prepolicy(api_key_required, request=request)
 @event("validate_check", request, g)
-@conditional_access_gate(_conditional_access_identity)
 def check():
     """
     Verify an authentication attempt.
@@ -539,11 +529,6 @@ def check():
 
 
     """
-    # The conditional-access pre-check runs in the @conditional_access_gate
-    # decorator above (resolving the identity via _conditional_access_identity),
-    # so a locked user, blocked source IP or DENY decision is rejected before the
-    # body runs.
-
     # Handle Enrollment Cancellation (Immediate Return)
     if is_true(request.all_data.get("cancel_enrollment")):
         return _handle_enrollment_cancellation(request.all_data)
@@ -578,13 +563,13 @@ def check():
             _handle_standard_auth(context)
         response = _finalize_auth_response(context)
     except TokenAdminError as error:
-        # classify locked token which raises an error and hence can not be classified on lib layer
+        # A locked token raises before the lib can classify it, so classify it here instead.
         if error.id == Error.TOKEN_LOCKED:
             context[AUTH_EVENT_TYPE_KEY] = AuthEventType.NO_USABLE_TOKEN
         raise
     finally:
-        # Stage the single authentication-log row for this request. It is written at request teardown, which then
-        # lets the conditional-access engine react to the classified outcome.
+        # Stage the single authentication-log row for this request; it is written at teardown, which then lets the
+        # conditional-access engine react to the classified outcome.
         _log_authentication_event(context)
     return response
 
@@ -596,7 +581,8 @@ def _handle_enrollment_cancellation(data: dict) -> Response:
     """
     transaction_id = get_required(data, "transaction_id")
 
-    # Resolve the user from the open enrollment challenge before cancelling for logging
+    # Resolve the user from the open enrollment challenge before cancelling, so the cancellation is logged
+    # against the right user.
     user = request.User
     if not user or not user.login:
         challenges = get_challenges(transaction_id=transaction_id)
@@ -631,7 +617,6 @@ def _handle_enrollment_cancellation(data: dict) -> Response:
         "action_detail": message,
     })
 
-    # write to the authentication log
     log_authentication(
         AuthEventType.LOGIN_SUCCESS if success else AuthEventType.ENROLLMENT_CANCELED_FAIL,
         request,
@@ -746,8 +731,8 @@ def _handle_fido2_auth(context: dict, credential_id: str):
         try:
             fido_verification_result = verify_fido2_challenge(transaction_id, token, request.all_data)
         except (ResourceNotFoundError, AuthError):
-            # The challenge could not be verified (e.g. answered for the wrong serial or expired) and propagates as a
-            # failure. Record the outcome on the context; check() logs it once in its finally.
+            # A challenge that fails to verify (wrong serial, expired) propagates as a failure; record it on the
+            # context since check() logs it once in its finally.
             context[AUTH_EVENT_TYPE_KEY] = AuthEventType.MFA_FAIL
             context["serial_list"].append(token.get_serial())
             raise
@@ -791,8 +776,8 @@ def _handle_serial_auth(context: dict, serial: str):
         except ResourceNotFoundError:
             raise ParameterError(_("Given serial does not belong to given user!"))
 
-    # Resolve the token owner so the auth log, audit log and per-user policies see the
-    # authenticating user even when the request only carries a serial.
+    # Resolve the token owner so the auth log, audit log and per-user policies see the authenticating user even
+    # when the request only carries a serial.
     if not user or not user.exist():
         token = get_one_token(serial=serial, silent_fail=True)
         if token and token.user:
@@ -838,19 +823,18 @@ def _handle_standard_auth(context: dict):
             success, details = check_user_pass(context["user"], get_optional(request.all_data, "pass"),
                                                options=context["options"])
         except (UserError, AuthError):
-            # An unknown user is rejected by the auth_user_does_not_exist policy decorator before check_user_pass can
-            # classify it. Record the outcome on the context; check() logs it once in its finally.
+            # The auth_user_does_not_exist policy decorator rejects an unknown user before check_user_pass can
+            # classify it, so classify it here; check() logs it once in its finally.
             if not context["user"] or not context["user"].exist():
                 context[AUTH_EVENT_TYPE_KEY] = AuthEventType.USER_UNKNOWN
             raise
 
     if AUTH_EVENT_TYPE_KEY not in details:
-        # The key being absent means nothing classified this request. A token that deliberately suppressed its
-        # terminal event (push_wait timeout) instead leaves the key present with value None, which we must keep so
-        # no terminal row is logged on top of the CHALLENGE_TRIGGERED the token already wrote.
+        # An absent key means nothing classified this request; a token suppressing its own terminal event (push_wait
+        # timeout) leaves it present but None, which must survive so nothing overwrites the logged CHALLENGE_TRIGGERED.
         if success:
-            # A successful container challenge (handled above) or a policy decorator (passthru, passonnouser,
-            # authcache, accept-no-token) can accept the login without the token layer classifying it -> LOGIN_SUCCESS.
+            # A successful container challenge or a policy decorator (passthru, passonnouser, authcache,
+            # accept-no-token) can accept a login the token layer never classified, defaulting to LOGIN_SUCCESS.
             details[AUTH_EVENT_TYPE_KEY] = AuthEventType.LOGIN_SUCCESS
         else:
             details[AUTH_EVENT_TYPE_KEY] = AuthEventType.UNKNOWN_FAIL_REASON
@@ -947,10 +931,11 @@ def _log_authentication_event(context):
     runs after this - enroll_via_multichallenge, is_authorized - can still correct the staged event.
     """
     request_txn = request.all_data.get("transaction_id") or request.all_data.get("state")
-    # The log-only TXN (push_wait success) stands in for the challenge TXN that the response does not carry.
+    # The log-only transaction id (push_wait success) stands in for the challenge transaction id, which the
+    # response never carries.
     details_txn = context["details"].get("transaction_id") or context.get(LOG_TRANSACTION_ID_KEY)
-    # Prefer the newly-created challenge TXN (details) over the answered-challenge TXN (request); the rows of one
-    # attempt share an attempt_id regardless, so the answered challenge is still correlated via that.
+    # The newly-created challenge's transaction id is preferred over the answered challenge's; both share the same
+    # attempt_id, so the answered challenge remains correlated regardless.
     logged_txn = details_txn or request_txn
     log_authentication(
         context[AUTH_EVENT_TYPE_KEY],
@@ -1180,6 +1165,10 @@ def check_remember_device():
 @postpolicy(mangle_challenge_response, request=request)
 @postpolicy(preferred_client_mode, request=request)
 @add_serial_from_response_to_g
+# First decorator to act on the request; see conditional_access_gate for why it sits exactly here.
+# rejection_value=0: result.value here is the number of challenges triggered, not a boolean, so a rejection answers
+# with this endpoint's own kind of nothing rather than changing the field's type.
+@conditional_access_gate(_conditional_access_identity, rejection_value=0)
 @check_user_serial_or_cred_id_in_request(request)
 @prepolicy(check_application_tokentype, request=request)
 @prepolicy(increase_failcounter_on_challenge, request=request)
@@ -1188,7 +1177,6 @@ def check_remember_device():
 @prepolicy(load_challenge_text, request=request)
 @prepolicy(fido2_auth, request=request)
 @event("validate_triggerchallenge", request, g)
-@conditional_access_gate()
 def trigger_challenge():
     """
     Trigger a fresh challenge for every challenge-response token
@@ -1306,9 +1294,6 @@ def trigger_challenge():
 
     """
     user = request.User
-    # The conditional-access pre-check runs in the @conditional_access_gate
-    # decorator above (gating on request.User), so a locked user, blocked source
-    # IP or DENY decision is rejected before a challenge is triggered.
     serial = get_optional(request.all_data, "serial")
     token_type = get_optional(request.all_data, "type")
     details = {"messages": [], "transaction_ids": []}
@@ -1327,8 +1312,8 @@ def trigger_challenge():
     triggered_challenges = len(details.get("multi_challenge"))
 
     event_type = AuthEventType.CHALLENGE_TRIGGERED if triggered_challenges else AuthEventType.NO_TOKEN
-    # Record every challenged serial, not just details["serial"] (which create_challenges_from_tokens leaves as the
-    # last challenge it created).
+    # Record every challenged serial, not just details["serial"], which create_challenges_from_tokens leaves as
+    # only the last challenge it created.
     challenge_serials = [challenge_info["serial"] for challenge_info in details["multi_challenge"]]
 
     log_authentication(
@@ -1359,14 +1344,10 @@ def trigger_challenge():
 @CheckSubscription(request)
 @prepolicy(api_key_required, request=request)
 @event("validate_poll_transaction", request, g)
-# log_rejection=False: a poll carries no new authentication event, so a rejection row here would not *replace* the
-# row this request writes - it would create one where there is none, once per poll, for a client that cannot tell from
-# the generic response why it is failing. The restriction's own history is the outcome row that created it.
-@conditional_access_gate(_poll_transaction_identity, log_rejection=False)
 def poll_transaction(transaction_id=None):
     """
     Report whether a challenge has been answered. Out-of-band tokens
-    (push, container) poll this endpoint to learn when the user has
+    (push) poll this endpoint to learn when the user has
     interacted with the challenge so that the calling client can
     follow up with :http:post:`/validate/check`.
 
@@ -1435,12 +1416,8 @@ def poll_transaction(transaction_id=None):
                 "realm": user.realm,
             })
 
-    # The conditional-access pre-check runs in the @conditional_access_gate
-    # decorator above (resolving the challenge owner via _poll_transaction_identity),
-    # so the poll of a locked user, a blocked source IP or a DENY decision is
-    # rejected before this body runs. The poll outcome is deliberately NOT written
-    # to the authentication log or fed to the engine — the smartphone's answer was
-    # already logged at /ttype/push, so polling only gates, it does not accumulate.
+    # The poll outcome is deliberately NOT written to the authentication log or fed to the engine: the smartphone's
+    # answer was already logged at /ttype/push, so polling would double-count what that row already records.
 
     # In any case, we log the transaction ID
     g.audit_object.log({
@@ -1453,9 +1430,10 @@ def poll_transaction(transaction_id=None):
 
 
 @validate_blueprint.route('/initialize', methods=['POST', 'GET'])
+# First decorator to act on the request; see conditional_access_gate for why it sits exactly here.
+@conditional_access_gate()
 @prepolicy(fido2_auth, request=request)
 @prepolicy(disabled_token_types, request=request)
-@conditional_access_gate()
 def initialize():
     """
     Initialize an authentication by requesting a fresh challenge for
@@ -1484,8 +1462,8 @@ def initialize():
         is missing.
     """
     details = {}
-    # Covers both ways the request can fail to name a type this endpoint can initialize: the parameter missing (which
-    # get_required raises on, before any assignment of ours could run) and a type that is not passkey.
+    # Covers both ways the request can fail to name an initializable type: the missing parameter (get_required
+    # raises before we can assign) and a type that is not passkey.
     event_type = AuthEventType.INVALID_TOKEN_TYPE
     try:
         token_type = get_required(request.all_data, "type")
@@ -1499,9 +1477,8 @@ def initialize():
                 )
             )
 
-        # A valid passkey initialization from here on, so any failure below is the server failing to produce the
-        # challenge rather than the client failing a factor - the missing policy, and anything that goes wrong
-        # building the challenge itself.
+        # From here on the type is a valid passkey, so any failure below is the server failing to produce the
+        # challenge (missing policy, or an error building it), not the client failing a factor.
         event_type = AuthEventType.CHALLENGE_TRIGGER_FAIL
         rp_id = request.all_data[FIDO2PolicyAction.RELYING_PARTY_ID]
         if not rp_id:

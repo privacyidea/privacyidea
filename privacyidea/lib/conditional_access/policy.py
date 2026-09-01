@@ -40,9 +40,9 @@ A policy is passed around as a plain dict::
         "stages": [
             {
                 "failure_threshold": 5,
-                "priority": 1,
+                "error_message": "Your account is locked. Please try again in about {duration}.",
                 "actions": [
-                    {"action_type": "LOCK_USER", "action_value": {"lock_duration_seconds": 600},
+                    {"action_type": "LOCK_USER", "action_value": {"duration_seconds": 600},
                      "retrigger_above_threshold": True},
                     {"action_type": "EMAIL_ADMIN", "action_value": {"smtp_identifier": "..."},
                      "retrigger_above_threshold": False},
@@ -62,6 +62,15 @@ must be :class:`~privacyidea.lib.conditional_access.engine.ConditionalAccessActi
 :class:`~privacyidea.lib.error.ParameterError` (fail-closed - a typo must not silently create a policy that never
 matches or an action that never fires).
 
+A stage's optional ``error_message`` is the text an end user sees when a request is turned away by that stage. It is
+opt-in: without one the rejection carries only the generic "Authentication failed.", so privacyIDEA never volunteers
+that an account is locked or an IP blocked unless an admin chose to say so - either by writing this field, or by
+setting the ``show_default_ca_error_message`` policy, which fills in the default wording for the stage's actions
+(:data:`DEFAULT_ERROR_MESSAGES`). ``{duration}`` is substituted with the remaining
+time at rejection, and only where there is one: on a permanent lock, a ``DENY`` or a notify-only stage it
+is left as written, like any other tag that is not substituted. Every other brace expression is left exactly
+as written - braces in prose need no escaping - so only the length is validated here.
+
 ``conditions`` is the *applicability* axis, orthogonal to the counting one: it restricts which requests the policy
 applies to at all, while the counter types and thresholds decide what trips it. It is optional - a policy without
 conditions applies to every request - and is validated against the registries in
@@ -70,18 +79,21 @@ unknown realm or a misspelled role would otherwise silently never match.
 """
 
 import logging
+from collections.abc import Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
+from privacyidea.lib import _, lazy_gettext
 from privacyidea.lib.conditional_access.authentication_event_types import (
     TRACKABLE_EVENT_TYPES,
     CountMode,
 )
 from privacyidea.lib.conditional_access.conditions import CONDITION_TYPES
-from privacyidea.lib.conditional_access.engine import ConditionalAccessAction, ConditionalAccessTarget
+from privacyidea.lib.conditional_access.engine import (ACTION_SEVERITY, ConditionalAccessAction,
+                                                       ConditionalAccessTarget, NOTIFYING_ACTIONS)
 from privacyidea.lib.error import ConflictError, ParameterError, ResourceNotFoundError
 from privacyidea.lib.log import log_with
 from privacyidea.models import db
@@ -90,14 +102,18 @@ from privacyidea.models.conditional_access_policy import (ConditionalAccessPolic
 
 log = logging.getLogger(__name__)
 
-# name is Unicode(255) in the model; checked here so an over-long name is a
-# clean ParameterError instead of a DB-dependent truncation or error.
+# The model column is Unicode(255); checked here so an over-long name raises a clean ParameterError
+# instead of a DB-dependent truncation.
 MAX_NAME_LENGTH = 255
 
-# The pre-auth ALLOW/DENY actions: standing decisions that apply while the count
-# stays at or above the threshold, so they default to re-triggering (the
-# post-response lock/email/block effects default to fire-once).
-DECISION_ACTIONS = frozenset({str(ConditionalAccessAction.ALLOW), str(ConditionalAccessAction.DENY)})
+# Same for a user-facing error message, which is Unicode(500) wherever it is stored - on a stage, and
+# on the lock/block state rows that copy it. Shared, so any path taking one as input validates alike.
+MAX_ERROR_MESSAGE_LENGTH = 500
+
+# DENY is a standing pre-auth decision, so it defaults to re-triggering while the count stays at or above the
+# threshold; the post-response lock/email/block actions default to firing once. A set because both the threshold-0 rule
+# and the retrigger default ask "is this a standing verdict?".
+DECISION_ACTIONS = frozenset({str(ConditionalAccessAction.DENY)})
 
 
 @dataclass
@@ -133,9 +149,9 @@ class StageDefinition:
     """
 
     failure_threshold: int
-    priority: int
     actions: list[StageActionDefinition] = field(default_factory=list)
     name: str | None = None
+    error_message: str | None = None
 
 
 def conditional_access_policy_to_dict(policy: ConditionalAccessPolicy) -> dict:
@@ -144,19 +160,12 @@ def conditional_access_policy_to_dict(policy: ConditionalAccessPolicy) -> dict:
     its stages and actions into the plain-dict shape documented in the module
     docstring (plus the ``id`` of each row).
     """
-    # The scalar columns (id, name, time_window_seconds, enabled, dry_run,
-    # priority) map straight through; counter_types_to_track (an association
-    # proxy) and stages (a relationship) are not table columns, so they are
-    # serialized explicitly.
+    # Scalar columns (id, name, time_window_seconds, enabled, dry_run, priority) map straight through, while
+    # counter_types_to_track and stages are not table columns, so both are serialized explicitly below.
     result = {column: getattr(policy, column) for column in policy.__table__.columns.keys()}
     result["counter_types_to_track"] = list(policy.counter_types_to_track)
-    # Conditions restrict which requests the policy applies to; an empty list means
-    # it applies to everyone. Unlike a stage, a condition carries no id here: nothing
-    # addresses one (no foreign key points at the table, and within a policy the
-    # condition type is already unique), and an update replaces them wholesale, so an
-    # id would only be a value that churns on every write. They are served in
-    # condition_type order - a canonical order for an ANDed set, so the same
-    # conditions always serialize identically and a client can diff the response.
+    # An empty list means the policy applies to everyone; conditions carry no id because updates replace them wholesale.
+    # They serialize in condition_type order (canonical for an ANDed set), so identical conditions diff cleanly.
     result["conditions"] = [
         {
             "condition_type": condition.condition_type,
@@ -164,16 +173,14 @@ def conditional_access_policy_to_dict(policy: ConditionalAccessPolicy) -> dict:
             "value": condition.value,
         } for condition in policy.conditions
     ]
-    # Stages are ordered for display by ascending failure_threshold (the stage
-    # that triggers first comes first). This is independent of the engine's
-    # evaluation order (highest priority first, see the model relationship),
-    # which is why we sort here rather than relying on policy.stages order.
+    # Stages are listed in ascending failure_threshold order for display, the reverse of the engine's evaluation
+    # order, so this sorts explicitly rather than relying on policy.stages' relationship order.
     result["stages"] = [
         {
             "id": stage.id,
             "name": stage.name,
+            "error_message": stage.error_message,
             "failure_threshold": stage.failure_threshold,
-            "priority": stage.priority,
             "actions": [
                 {
                     "id": action.id,
@@ -267,10 +274,36 @@ def _validate_stage_name(name) -> str | None:
     return name
 
 
-# The actions each target may carry. A user-targeted policy locks/notifies the
-# user; a source-IP policy blocks the IP or alerts the admin - LOCK_USER /
-# EMAIL_USER would have no user to act on. Both targets may decide the request
-# pre-auth via ALLOW/DENY (keyed on the user, resp. the source IP).
+def validate_error_message(error_message: str | None) -> str | None:
+    """
+    Validate an optional user-facing error message - the text surfaced to the end user
+    when a request is turned away. ``None`` or an empty/blank string
+    means "say nothing" and returns ``None``, which is the default: a rejection
+    reveals no conditional-access detail unless an admin writes it here.
+
+    Only the length is checked. Brace expressions are deliberately *not*
+    validated: ``{duration}`` is the one tag substituted at rejection time and
+    everything else - ``{}``, ``{whatever}`` - is left literal, so an admin can
+    write braces in ordinary prose without escaping them. The WebUI hints at an
+    unrecognized tag; it is not an error here.
+    """
+    if error_message is None:
+        return None
+    if not isinstance(error_message, str):
+        raise ParameterError(_("The error message must be a string."))
+    stripped = error_message.strip()
+    if not stripped:
+        return None
+    if len(stripped) > MAX_ERROR_MESSAGE_LENGTH:
+        # .format, not an f-string: gettext extracts the literal msgid, so the
+        # placeholder has to survive into the translated string.
+        raise ParameterError(_("The error message must not exceed {length} characters.").format(
+            length=MAX_ERROR_MESSAGE_LENGTH))
+    return stripped
+
+
+# The actions each target permits: a user policy locks/notifies the user, a source-IP policy blocks the IP or alerts
+# the admin (LOCK_USER/EMAIL_USER have no user to act on); both may also refuse the request pre-auth via DENY.
 _ACTIONS_BY_TARGET = {
     ConditionalAccessTarget.USER: {
         ConditionalAccessAction.LOCK_USER,
@@ -278,24 +311,92 @@ _ACTIONS_BY_TARGET = {
         ConditionalAccessAction.EMAIL_USER,
         ConditionalAccessAction.EMAIL_ADMIN,
         ConditionalAccessAction.DENY,
-        ConditionalAccessAction.ALLOW,
     },
     ConditionalAccessTarget.SOURCE_IP: {
         ConditionalAccessAction.BLOCK_IP,
         ConditionalAccessAction.PERMANENT_BLOCK_IP,
         ConditionalAccessAction.EMAIL_ADMIN,
         ConditionalAccessAction.DENY,
-        ConditionalAccessAction.ALLOW,
     },
 }
 
 
-def get_actions_by_target() -> dict[str, list[str]]:
+# The default error message for a stage's ``error_message``, per action. Used for two things, which is the point
+# of having one table: the policy editor suggests from it, and the runtime falls back to it for a stage that
+# carries no error message of its own when the ``show_default_ca_error_message`` policy is on. So an action reads
+# the same wherever it is met, and an admin who edits the suggestion is editing the thing they would otherwise
+# have got by default. The severity order is not repeated here - it is ``ACTION_SEVERITY``, the one ordering
+# there is.
+#
+# lazy_gettext, not _(): module-level constants are evaluated at import, long before a request and its
+# locale exist; ``str()`` at serialization resolves them per admin. That only decides what an admin starts
+# editing from - the stored message is a literal shown to the end user in whatever language it was written.
+DEFAULT_ERROR_MESSAGES: dict[str, object] = {
+    ConditionalAccessAction.PERMANENT_LOCK_USER:
+        lazy_gettext("Your account has been locked. Please contact your administrator."),
+    ConditionalAccessAction.PERMANENT_BLOCK_IP:
+        lazy_gettext("Access from your IP address has been blocked. Please contact your administrator."),
+    ConditionalAccessAction.LOCK_USER:
+        lazy_gettext("Your account is temporarily locked. Please try again in about {duration}."),
+    ConditionalAccessAction.BLOCK_IP:
+        lazy_gettext("Access from your IP address is temporarily blocked. Please try again in about {duration}."),
+    ConditionalAccessAction.DENY:
+        lazy_gettext("Access has been denied."),
+    ConditionalAccessAction.EMAIL_USER:
+        lazy_gettext("A notification email has been sent to your email address."),
+    ConditionalAccessAction.EMAIL_ADMIN:
+        lazy_gettext("Your administrator has been notified by email."),
+}
+
+
+def default_error_message(action: str) -> str | None:
     """
-    The stage actions each target permits, as ``{target_value: [action_value, ...]}``
-    (see :data:`_ACTIONS_BY_TARGET`).
+    The default error message for *action*, translated against the request locale, or ``None`` where it has none.
+
+    ``None`` covers any action without error message - one that turns nobody away, or one added later - so a caller
+    falling back to this never has to know which actions are covered.
     """
-    return {target.value: sorted(action.value for action in actions) for target, actions in _ACTIONS_BY_TARGET.items()}
+    message = DEFAULT_ERROR_MESSAGES.get(action)
+    return str(message) if message else None
+
+
+def compose_default_error_message(action_types: Sequence[str]) -> str | None:
+    """
+    The default error message for a stage that only reported something, given the *action_types* that ran:
+    one sentence per action, most severe first.
+
+    Notifications only. A restriction is described from the row it left behind (see
+    :func:`~privacyidea.lib.conditional_access.engine._restrictions_in_force`), so composing one here would tell
+    the user twice - and with a ``{duration}`` this side cannot substitute. ``None`` when none of the actions has
+    an error message, which keeps such a stage silent.
+    """
+    carried = set(action_types)
+    sentences = [default_error_message(action) for action in ACTION_SEVERITY
+                 if action in NOTIFYING_ACTIONS and action in carried]
+    return " ".join(sentences) if sentences else None
+
+
+def get_default_error_messages() -> list[dict[str, str]]:
+    """
+    The suggested stage error messages, ordered by :data:`~privacyidea.lib.conditional_access.engine.
+    ACTION_SEVERITY`, as ``[{"action_type": ..., "message": ...}]``. Translated on each call against the
+    request locale.
+
+    An authoring aid for the policy editor, which composes one suggestion for a stage carrying several actions:
+    one sentence per action, kept in this order. That is the concatenation the runtime performs too - a request
+    reports one sentence per thing that happened to it, ranked the same way - so the wording the editor offers is
+    the wording a user would be shown, and the client needs no rule of its own beyond the order it is given.
+
+    The same table backs the runtime fallback under ``show_default_ca_error_message`` (:func:`default_error_message`,
+    :func:`compose_default_error_message`), so an admin who edits a suggestion is editing the thing they would
+    otherwise have got by default.
+
+    Deliberately not scoped by target: the binding is action to message, and a client picks the entry
+    whose action the stage actually carries, so error message for an action a target cannot hold simply never
+    matches.
+    """
+    return [{"action_type": action.value, "message": default_error_message(action)}
+            for action in ACTION_SEVERITY if action in DEFAULT_ERROR_MESSAGES]
 
 
 def get_target_constraints() -> dict[str, dict[str, list[str]]]:
@@ -344,11 +445,8 @@ def _validate_target_actions(stage_defs: list["StageDefinition"], target: "Condi
         )
 
 
-# The count modes each target may use, and the default when the caller does not specify one. Both targets support the
-# volume modes (per request or per whole attempt); a ``source_ip`` target additionally offers ``DISTINCT_USERS`` - the
-# distinct targeted accounts (spraying / enumeration) signal - and defaults to it, since that is the characteristic
-# per-IP threat, while the volume modes give plain per-IP rate limiting. Mirrors the per-target ``_ACTIONS_BY_TARGET``
-# registration.
+# Count modes each target may use, and its default; both support the volume modes (per-request, per-attempt).
+# source_ip also offers DISTINCT_USERS, the spraying/enumeration signal, defaulting to it as the characteristic threat.
 _COUNT_MODES_BY_TARGET = {
     ConditionalAccessTarget.USER: {CountMode.PER_REQUEST, CountMode.PER_ATTEMPT},
     ConditionalAccessTarget.SOURCE_IP: {CountMode.DISTINCT_USERS, CountMode.PER_REQUEST, CountMode.PER_ATTEMPT},
@@ -408,21 +506,63 @@ def _validate_counter_types(counter_types) -> list[str]:
     return seen
 
 
+def _validate_threshold_for_actions(threshold: int, actions: list[StageActionDefinition]) -> None:
+    """
+    Check a stage's ``failure_threshold`` against what its actions do.
+
+    A threshold counts failures, so 1 is the lowest meaningful value for anything
+    that reacts to a count. "Lock the user after 0 failures" is not a rule, it is
+    a typo, so :attr:`ConditionalAccessAction.LOCK_USER`, ``BLOCK_IP``, the ``PERMANENT_*``
+    variants and the ``EMAIL_*`` actions all require at least 1.
+
+    ``DENY`` is the exception, because it does not react to a count at all - it
+    states a standing verdict, and re-triggers by default, so at threshold 0 it
+    applies to every request the policy covers. That is the lockdown idiom: refuse
+    everything the policy covers, whatever the subject has done.
+
+    Scope such a policy with conditions - a ``USER_ROLE NOT_IN [admin-internal]``
+    carve-out is the break-glass pattern - because a ``DENY`` writes no state, so no
+    ``pi-manage conditionalaccess`` reset command can lift it; recovering from an
+    unscoped one means disabling the policy in the database.
+
+    A stage with no actions at all is refused at 0 as well: at any other threshold
+    it is merely inert, but at 0 it is indistinguishable from an unfinished rule.
+
+    :raises ParameterError: if the threshold is 0 and the stage has no actions, or
+        any action that is not a standing decision
+    """
+    if threshold > 0:
+        return
+    offenders = sorted({str(action.action_type) for action in actions
+                        if str(action.action_type) not in DECISION_ACTIONS})
+    if not actions or offenders:
+        listed = ", ".join(offenders) if offenders else "no action"
+        raise ParameterError(
+            f"A failure_threshold of 0 is only allowed on a stage whose every action is one of "
+            f"{', '.join(sorted(DECISION_ACTIONS))} - those state a standing verdict instead of counting "
+            f"failures; this stage has {listed}. Use a threshold of 1 or more."
+        )
+
+
 def _validate_stages(stages) -> list[StageDefinition]:
     """
-    Validate the stage definitions: a non-empty list of dicts, each with a
-    unique non-negative ``failure_threshold``, an optional positive ``priority``
-    (default 1) and a list of actions whose ``action_type`` is a valid
-    :class:`ConditionalAccessAction`. ``action_value`` may be any JSON-serializable value
+    Validate the stage definitions: a non-empty list of dicts, each with a unique
+    ``failure_threshold``, an optional user-facing ``error_message`` and a list of actions whose ``action_type`` is a
+    valid :class:`ConditionalAccessAction`. ``action_value`` may be any JSON-serializable value
     (its action-specific interpretation happens in the engine); unknown keys in
     a stage or action dict are rejected so typos fail loudly.
+
+    A threshold counts failures, so it starts at 1. The exception is a stage whose
+    every action is a standing ``DENY``: threshold 0 then means "always", the
+    lockdown idiom. Any action that reacts to a count is refused at 0 - see
+    :func:`_validate_threshold_for_actions`.
 
     :return: normalized list of :class:`StageDefinition` (without ids)
     """
     if not isinstance(stages, list) or not stages:
         raise ParameterError("'stages' must be a non-empty list of stage definitions.")
     valid_actions = {action.value for action in ConditionalAccessAction}
-    allowed_stage_keys = {"name", "failure_threshold", "priority", "actions"}
+    allowed_stage_keys = {"name", "error_message", "failure_threshold", "actions"}
     allowed_action_keys = {"action_type", "action_value", "retrigger_above_threshold"}
     normalized = []
     thresholds = set()
@@ -432,8 +572,8 @@ def _validate_stages(stages) -> list[StageDefinition]:
         unknown = set(stage) - allowed_stage_keys - {"id"}
         if unknown:
             raise ParameterError(f"Unknown stage key(s): {', '.join(sorted(unknown))}.")
-        # A threshold of 0 always matches (e.g. an ALLOW allowlist / default-allow
-        # stage); higher thresholds fire at count >= threshold. So 0 is valid.
+        # Range-checked here, then checked against the stage's actions once those are known: only an all-DENY
+        # stage may use 0 (see _validate_threshold_for_actions).
         threshold = stage.get("failure_threshold")
         if isinstance(threshold, bool) or not isinstance(threshold, int) or threshold < 0:
             raise ParameterError("'failure_threshold' must be a non-negative integer.")
@@ -441,7 +581,7 @@ def _validate_stages(stages) -> list[StageDefinition]:
             raise ParameterError(f"Duplicate failure_threshold {threshold}: thresholds must be unique within a policy.")
         thresholds.add(threshold)
         name = _validate_stage_name(stage.get("name"))
-        priority = _validate_positive_int(stage.get("priority", 1), "priority")
+        error_message = validate_error_message(stage.get("error_message"))
         actions = stage.get("actions", [])
         if not isinstance(actions, list):
             raise ParameterError("'actions' must be a list of action definitions.")
@@ -457,9 +597,8 @@ def _validate_stages(stages) -> list[StageDefinition]:
                 raise ParameterError(
                     f"Unknown action type '{action_type}'. Valid types: {', '.join(sorted(valid_actions))}."
                 )
-            # retrigger_above_threshold is a per-action checkbox (coerced like the
-            # policy-level enabled/dry_run booleans). An omitted flag stays None
-            # and is resolved to the action-aware default by :func:`_build_stages`.
+            # retrigger_above_threshold is a per-action flag, coerced like the policy-level enabled/dry_run booleans;
+            # left unset it stays None, and _build_stages resolves it to the action-aware default.
             retrigger_raw = action.get("retrigger_above_threshold")
             retrigger = None if retrigger_raw is None else bool(retrigger_raw)
             normalized_actions.append(
@@ -469,8 +608,10 @@ def _validate_stages(stages) -> list[StageDefinition]:
                     retrigger_above_threshold=retrigger,
                 )
             )
+        _validate_threshold_for_actions(threshold, normalized_actions)
         normalized.append(
-            StageDefinition(failure_threshold=threshold, priority=priority, name=name, actions=normalized_actions)
+            StageDefinition(failure_threshold=threshold, name=name,
+                            error_message=error_message, actions=normalized_actions)
         )
     return normalized
 
@@ -591,8 +732,8 @@ def _build_stages(stage_defs: list[StageDefinition]) -> list[ConditionalAccessPo
     return [
         ConditionalAccessPolicyStage(
             name=stage.name,
+            error_message=stage.error_message,
             failure_threshold=stage.failure_threshold,
-            priority=stage.priority,
             actions=[
                 ConditionalAccessStageAction(
                     action_type=action.action_type,
@@ -695,10 +836,8 @@ def create_conditional_access_policy(
     counter_types = _validate_counter_types(counter_types_to_track)
     stage_defs = _validate_stages(stages)
     _validate_target_actions(stage_defs, conditional_access_target)
-    # `is None`, not `or []`: only an *omitted* conditions parameter means "applies to everyone". Any other
-    # value goes through _validate_conditions, so a falsy non-list (0, False, {}) is a 400 rather than
-    # being silently read as "no conditions" - which would widen an access-control policy to every request
-    # on malformed input. Mirrors the `is not None` discipline of update_conditional_access_policy.
+    # Checked with `is None`, not `or []`: only an omitted conditions parameter means "applies to everyone";
+    # any other falsy value is a 400, not silently "no conditions" - which would widen the policy to every request.
     condition_defs = _validate_conditions([] if conditions is None else conditions)
 
     policy = ConditionalAccessPolicy(
@@ -757,9 +896,7 @@ def update_conditional_access_policy(
     :raises ResourceNotFoundError: if no policy with this id exists
     """
     policy = _get_policy(policy_id)
-    # Validate everything first: an invalid stage list must not leave a
-    # half-applied rename behind (nothing is flushed before the commit below,
-    # but keeping validation up front makes that invariant obvious).
+    # Validates everything up front, so an invalid stage list cannot leave a half-applied rename behind.
     if name is not None:
         name = _validate_name(name, exclude_id=policy.id)
     if time_window_seconds is not None:
@@ -815,10 +952,8 @@ def update_conditional_access_policy(
             policy.count_mode = count_mode
             changed_fields.append("count_mode")
         if counter_types_to_track is not None:
-            # Delete the existing rows and flush before inserting the replacements,
-            # so a single flush never holds two rows with the same
-            # (policy_id, counter_type). This keeps a replacement that reuses a
-            # counter type within the (policy_id, counter_type) unique constraint.
+            # Deletes the existing rows and flushes before inserting the replacements, so a flush never holds two rows
+            # with the same (policy_id, counter_type), even when a replacement reuses a counter type.
             policy.counter_types = []
             db.session.flush()
             policy.counter_types_to_track = counter_types_to_track
@@ -831,9 +966,8 @@ def update_conditional_access_policy(
             policy.stages = _build_stages(stages)
             changed_fields.append("stages")
         if conditions is not None:
-            # Same split-flush replacement, keeping the
-            # (policy_id, condition_type) unique constraint when a condition type
-            # is reused across the update.
+            # Same split-flush replacement, keeping the (policy_id, condition_type) unique constraint when a
+            # condition type is reused across the update.
             policy.conditions = []
             db.session.flush()
             policy.conditions = _build_conditions(conditions)
@@ -897,7 +1031,6 @@ def reorder_conditional_access_policies(policy_ids: list[int], expected_prioriti
     if expected_priorities is not None:
         stale = [policy.name for policy, expected in zip(policies, expected_priorities) if policy.priority != expected]
         if stale:
-            # Raise error for mismatching policy priorities.
             names = ", ".join(f"'{name}'" for name in stale)
             raise ConflictError(
                 "The submitted expected priorities do not match the current "
@@ -906,11 +1039,8 @@ def reorder_conditional_access_policies(policy_ids: list[int], expected_prioriti
     # The values these policies hold, lowest first: reassigned in the requested order.
     priorities = sorted(policy.priority for policy in policies)
     with _unique_conflict_as_400():
-        # Park every policy on a value that cannot collide with a live one (ids are
-        # unique and priorities are validated >= 1) before assigning the new ones: the
-        # uniqueness constraint is checked per statement, so writing the final values
-        # straight away would collide with whichever policy still holds them. The
-        # flushes force the statement order rather than leaving it to the unit of work.
+        # Parks every policy on a value that can't collide with a live one (ids unique, priorities >= 1), then
+        # assigns the new ones, since uniqueness is checked per statement; the flushes force that statement order.
         for policy in policies:
             policy.priority = -policy.id
         db.session.flush()

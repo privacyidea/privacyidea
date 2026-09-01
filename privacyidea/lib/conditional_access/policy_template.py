@@ -70,7 +70,7 @@ PASSWORD_BRUTEFORCE = ConditionalAccessPolicyTemplate(
         "counter_types_to_track": [AuthEventType.PASSWORD_FAIL,
                                    AuthEventType.PIN_FAIL],
         "stages": [
-            {"failure_threshold": 10, "priority": 1,
+            {"failure_threshold": 10,
              "actions": [{"action_type": ConditionalAccessAction.LOCK_USER,
                           "action_value": {"duration_seconds": 900}}]},
         ],
@@ -89,10 +89,10 @@ MFA_BRUTEFORCE = ConditionalAccessPolicyTemplate(
         "count_mode": CountMode.PER_REQUEST,
         "counter_types_to_track": [AuthEventType.MFA_FAIL],
         "stages": [
-            {"failure_threshold": 3, "priority": 1,
+            {"failure_threshold": 3,
              "actions": [{"action_type": ConditionalAccessAction.LOCK_USER,
                           "action_value": {"duration_seconds": 600}}]},
-            {"failure_threshold": 5, "priority": 2,
+            {"failure_threshold": 5,
              "actions": [
                  {"action_type": ConditionalAccessAction.LOCK_USER,
                   "action_value": {"duration_seconds": 1800}},
@@ -106,7 +106,7 @@ MFA_BRUTEFORCE = ConditionalAccessPolicyTemplate(
                                "{event_type} events. Time: {time}.")}},
              ]},
 
-            {"failure_threshold": 10, "priority": 3,
+            {"failure_threshold": 10,
              "actions": [
                  {"action_type": ConditionalAccessAction.PERMANENT_LOCK_USER},
                  {"action_type": ConditionalAccessAction.EMAIL_ADMIN,
@@ -121,10 +121,8 @@ MFA_BRUTEFORCE = ConditionalAccessPolicyTemplate(
         ],
     })
 
-# The authentication-failure event types the failed-attempt rate limits count. Explicit and curated on purpose -
-# deliberately NOT derived from the FAILURE outcome class - because a "FAILURE" outcome does not by itself mean a
-# type belongs in an authentication rate limit: a new failure type must be a conscious decision, never silently
-# pulled in.
+# The failure event types the failed-attempt rate limits count, curated by hand rather than derived from the
+# FAILURE outcome class, so adding a new failure type here is always a conscious decision, never automatic.
 _USER_AUTH_FAILURES = [
     AuthEventType.PASSWORD_FAIL,
     AuthEventType.PIN_FAIL,
@@ -156,7 +154,7 @@ USER_RATE_LIMITING = ConditionalAccessPolicyTemplate(
         "count_mode": CountMode.PER_ATTEMPT,
         "counter_types_to_track": list(TRACKABLE_EVENT_TYPES),
         "stages": [
-            {"failure_threshold": 20, "priority": 1,
+            {"failure_threshold": 20,
              "actions": [{"action_type": ConditionalAccessAction.DENY}]},
         ],
     })
@@ -175,7 +173,7 @@ USER_FAILED_RATE_LIMITING = ConditionalAccessPolicyTemplate(
         "count_mode": CountMode.PER_ATTEMPT,
         "counter_types_to_track": list(_USER_AUTH_FAILURES),
         "stages": [
-            {"failure_threshold": 10, "priority": 1,
+            {"failure_threshold": 10,
              "actions": [{"action_type": ConditionalAccessAction.DENY}]},
         ],
     })
@@ -194,7 +192,7 @@ PASSWORD_SPRAYING = ConditionalAccessPolicyTemplate(
         "count_mode": CountMode.DISTINCT_USERS,
         "counter_types_to_track": [AuthEventType.PASSWORD_FAIL, AuthEventType.PIN_FAIL],
         "stages": [
-            {"failure_threshold": 20, "priority": 1,
+            {"failure_threshold": 20,
              "actions": [{"action_type": ConditionalAccessAction.BLOCK_IP,
                           "action_value": {"duration_seconds": 3600}}]},
         ],
@@ -215,7 +213,7 @@ USER_ENUMERATION = ConditionalAccessPolicyTemplate(
         "count_mode": CountMode.DISTINCT_USERS,
         "counter_types_to_track": [AuthEventType.USER_UNKNOWN],
         "stages": [
-            {"failure_threshold": 10, "priority": 1,
+            {"failure_threshold": 10,
              "actions": [{"action_type": ConditionalAccessAction.BLOCK_IP,
                           "action_value": {"duration_seconds": 3600}}]},
         ],
@@ -239,7 +237,7 @@ IP_FAILED_RATE_LIMITING = ConditionalAccessPolicyTemplate(
         "count_mode": CountMode.DISTINCT_USERS,
         "counter_types_to_track": list(_IP_AUTH_FAILURES),
         "stages": [
-            {"failure_threshold": 20, "priority": 1,
+            {"failure_threshold": 20,
              "actions": [{"action_type": ConditionalAccessAction.DENY}]},
         ],
     })
@@ -259,7 +257,7 @@ IP_RATE_LIMITING = ConditionalAccessPolicyTemplate(
         "count_mode": CountMode.DISTINCT_USERS,
         "counter_types_to_track": list(TRACKABLE_EVENT_TYPES),
         "stages": [
-            {"failure_threshold": 30, "priority": 1,
+            {"failure_threshold": 30,
              "actions": [{"action_type": ConditionalAccessAction.DENY}]},
         ],
     })

@@ -35,12 +35,13 @@ const LOCKED_USERS_DEFAULT_PAGE_SIZE = 15;
 // The locked-users list supports these filter keys (comma-separated / wildcard values, matched
 // case-insensitively by the backend). Plural to match the API query parameters (`usernames`, `realms`,
 // `resolvers`), which each accept a list of values. `states` selects the lock state(s)
-// (permanent / temporary / expired) and replaces the former "show expired" toggle.
-const LOCKED_USERS_FILTER_KEYS = ["usernames", "realms", "resolvers", "states", "causes"];
+// (permanent / temporary / expired) and replaces the former "show expired" toggle; `causes` selects
+// policy vs. manual restrictions, and `error_messages` matches the wording stored on the row.
+const LOCKED_USERS_FILTER_KEYS = ["usernames", "realms", "resolvers", "states", "causes", "error_messages"];
 
 // The lock states a record can be in, as accepted by the `states` query parameter of `lock/users`:
-// permanent (no expiry), temporary (expiry still ahead) and expired (a stale row a purge removes).
-// Mirrors privacyidea.lib.conditional_access.state.LOCK_STATES.
+// permanent (no expiry), temporary (expiry still ahead) and expired (a stale row a purge removes);
+// mirrors LOCK_STATES in the Python backend.
 export type LockState = "permanent" | "temporary" | "expired";
 
 // Who imposed the restriction now in force: a conditional-access policy, or an administrator by hand.
@@ -53,7 +54,7 @@ function shallowEqualRecord(a: Record<string, string>, b: Record<string, string>
   return aKeys.length === Object.keys(b).length && aKeys.every((key) => a[key] === b[key]);
 }
 
-// One user-lock record. Both `lock/user` (single lookup) and `lock/users` (list)
+// One user-lock record, as returned by both `lock/user` (single lookup) and `lock/users` (list).
 export interface LockedUserEntry {
   resolver: string;
   uid: string;
@@ -64,6 +65,9 @@ export interface LockedUserEntry {
   seconds_remaining: number | null;
   lock_cause: LockCause;
   locked_at: string;
+  // What this user is told when a request is turned away, as stored when the lock was written. A snapshot, so
+  // it can differ from what the stage carries now; null when the stage configured none, which is the default.
+  error_message: string | null;
 }
 
 export type ResetUserLockRequest =
@@ -108,6 +112,8 @@ export interface BlocklistEntry {
   seconds_remaining: number | null;
   block_cause: LockCause;
   blocked_at: string;
+  // See LockedUserEntry: the wording stored on the row, not what the policy carries now.
+  error_message: string | null;
 }
 
 export interface ConditionalAccessStateServiceInterface {
@@ -174,8 +180,8 @@ export class ConditionalAccessStateService implements ConditionalAccessStateServ
   lockedUsersSort = signal<Sort>({ active: "locked_at", direction: "desc" });
   lockedUsersPageSize = signal(LOCKED_USERS_DEFAULT_PAGE_SIZE);
 
-  // 1-based (matches the API's page param). Reset to the first page whenever the effective filter, sort,
-  // page size or the show-expired toggle changes.
+  // 1-based (matches the API's page param); resets to the first page whenever the effective filter,
+  // sort or page size changes.
   lockedUsersPageIndex = linkedSignal({
     source: () => ({
       filterParams: this.lockedUsersFilterParams(),
@@ -236,9 +242,10 @@ export class ConditionalAccessStateService implements ConditionalAccessStateServ
     };
   });
 
-  // Count the locks in the given state(s) without pulling the records themselves: the page metadata carries the
-  // total, so the smallest page is enough. Used by the dashboard widget, whose summary needs one number per state
-  // (the paginated resource above is bound to the locked-users page and its filters).
+  // Counts the locks in the given state(s) without pulling the records themselves: the page metadata
+  // carries the total, so the smallest page is enough.
+  // Used by the dashboard widget, whose summary needs one number per state (the paginated resource
+  // above is bound to the locked-users page and its filters).
   countLockedUsers(states: LockState[]): Observable<PiResponse<LockedUsersPage>> {
     return this.http.get<PiResponse<LockedUsersPage>>(this.conditionalAccessBaseUrl + "lock/users", {
       headers: this.authService.getHeaders(),

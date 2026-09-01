@@ -601,9 +601,8 @@ class ConditionalAccessStateApiTestCase(MyApiTestCase):
         self.assertEqual(2, UserLockState.query.count())
 
     def test_reset_only_clears_rows_inside_the_resolver_scope(self):
-        # The boundary must be part of the delete criterion, not a pre-flight check on one identity:
-        # a resolver-scoped admin resetting by login+realm (no resolver) matches rows in every
-        # resolver of the realm, and must only clear their own.
+        # The boundary must be part of the delete criterion, not a pre-flight check on one identity: resetting by
+        # login+realm with no resolver matches rows in every resolver of the realm, so only the admin's own may clear.
         self._lock_user(utc_now() + timedelta(seconds=600))
         db.session.add(UserLockState(resolver="otherresolver", uid="99", realm=self.realm1,
                                         username="cornelius",

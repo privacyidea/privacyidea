@@ -59,7 +59,8 @@ export class MockConditionalAccessStateService implements ConditionalAccessState
         lock_expires_at: null,
         seconds_remaining: request.duration_seconds ?? null,
         lock_cause: "MANUAL",
-        locked_at: ""
+        locked_at: "",
+        error_message: null
       })
   );
 
@@ -128,7 +129,8 @@ export class MockConditionalAccessStateService implements ConditionalAccessState
         block_expires_at: null,
         seconds_remaining: request.duration_seconds ?? null,
         block_cause: "MANUAL",
-        blocked_at: ""
+        blocked_at: "",
+        error_message: null
       })
   );
   purgeBlocklist = jest.fn().mockImplementation((): Observable<number> => of(0));

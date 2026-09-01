@@ -128,9 +128,9 @@ describe("TruncationTooltipDirective", () => {
     const element = elementOf("with-link");
     setWidths(element, 300, 100);
 
-    // Real focus, not a synthetic focusin: this only reaches the host because it wraps something focusable. A clipped
-    // leaf value (a table cell's plain text) has no focus path, and does not need one - the string is in the DOM in
-    // full, so nothing is gated behind the pointer.
+    // Real focus, not a synthetic focusin: it reaches the host only because the host wraps a focusable child like this
+    // link. A clipped leaf value such as plain table-cell text has no focus path and needs none, since its full string
+    // already sits in the DOM.
     element.querySelector("a")!.focus();
     jest.advanceTimersByTime(0);
 

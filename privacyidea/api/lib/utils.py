@@ -36,6 +36,7 @@ import jwt
 from flask import jsonify, current_app, Response, Request, request, g, has_request_context
 from flask_babel import _
 
+from privacyidea.lib import lazy_gettext
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
 from privacyidea.lib.conditional_access.authentication_log import AuthLogUserRole, PendingAuthEvent
 from privacyidea.lib.conditional_access.request_context import AuthPrincipal, get_ca_context
@@ -68,6 +69,9 @@ if TYPE_CHECKING:
     from privacyidea.lib.conditional_access.context import CAContext
 
 log = logging.getLogger(__name__)
+
+# The error message of an ordinary failed authentication
+GENERIC_AUTH_FAILURE = lazy_gettext("Authentication failed.")
 ENCODING = "utf-8"
 TRUSTED_JWT_ALGOS = ["ES256", "ES384", "ES512",
                      "RS256", "RS384", "RS512",
@@ -131,13 +135,12 @@ def send_result(obj, rid=1, details=None, **kwargs) -> Response:
     :param details: optional parameter, which allows to provide more detail
     :type  details: None or simple type like dict, list or string/unicode
 
-    :return: json rendered string result
-    :rtype: string
+    :return: the result response, a :class:`~flask.Response` with a status of ``200``
     """
     return jsonify(prepare_result(obj, rid, details, **kwargs))
 
 
-def send_error(errstring, rid=1, context=None, error_code=-311, details=None):
+def send_error(errstring, rid=1, context=None, error_code=-311, details=None) -> Response:
     """
     sendError - return a json error result document
 
@@ -160,9 +163,8 @@ def send_error(errstring, rid=1, context=None, error_code=-311, details=None):
         challenges)
     :type details: dict
 
-    :return: json rendered sting result
-    :rtype: string
-
+    :return: the error response. A :class:`~flask.Response`, not a string - it carries a status of its own, which
+        a caller building an error outside an error handler has to set (they default to ``200``).
     """
     if details:
         details["threadid"] = threading.current_thread().ident
@@ -285,9 +287,8 @@ def _determine_user_role(user: User | None, internal_admin: bool) -> AuthLogUser
 
 def log_authentication(event_type: AuthEventType | None, request: Request | None = None, user: User | None = None,
                        serial: str | None = None, transaction_id: str | None = None,
-                       username: str | None = None,
-                       internal_admin: bool = False,
-                       immediate: bool = False) -> "PendingAuthEvent | None":
+                       username: str | None = None, internal_admin: bool = False,
+                       immediate: bool = False, other_info: dict | None = None) -> "PendingAuthEvent | None":
     """
     Record one authentication_log entry for the current request.
 
@@ -343,8 +344,8 @@ def log_authentication(event_type: AuthEventType | None, request: Request | None
     # TODO: replace by user function (after related PR is merged)
     resolved = bool(user and user.resolver)
     if not resolved and serial and "," not in serial:
-        # The request carried a single serial but no (resolved) user. Resolve the token owner so the user is logged
-        # alongside the serial. A failure here must not break the logging, so it is swallowed.
+        # The request has a serial but no resolved user, so resolve the token owner here to log the user alongside the
+        # serial; any failure here is swallowed so it can never break logging.
         try:
             from privacyidea.lib.token import get_one_token
             token = get_one_token(serial=serial, silent_fail=True)
@@ -354,24 +355,23 @@ def log_authentication(event_type: AuthEventType | None, request: Request | None
         except Exception as ex:
             log.debug(f"Could not resolve the token owner for the authentication log: {ex!r}")
     context = get_ca_context()
-    # Fall back to the row's own transaction when nothing has established the attempt yet. ``before_request`` covers
-    # the requests that answer a challenge - it must, since the token logic deletes a challenge it answered
-    # successfully - so this catches the callers that only learn their transaction here: the out-of-band /ttype/push
-    # answer, and a challenge triggered and resolved inside one request (push_wait).
+    # Falls back to this row's own transaction id when before_request has not already resolved the attempt;
+    # before_request must resolve a challenge-answering request's attempt before the token logic deletes that challenge,
+    # so this only catches /ttype/push's out-of-band answer and a challenge triggered and resolved within one request
+    # (push_wait).
     context.continue_attempt(transaction_id)
     if not context.attempt_resolved:
         answered = get_optional_one_of(getattr(request, "all_data", None) or {}, ["transaction_id", "state"])
         if answered:
-            # The request continues a transaction, yet no challenge of it records an attempt, so this row starts one of
-            # its own instead of joining the transaction's other rows. Expected for a stale or forged transaction_id.
-            # Otherwise it is the fingerprint of a broken invariant, and the reason this is logged at all: an endpoint
-            # that answers a challenge without ``before_request`` resolving the attempt before the token logic consumes
-            # the challenge, or a ``set_data`` that replaced a challenge's data rather than updating it.
+            # A continued transaction with no challenge recording an attempt starts a new attempt of its own - expected
+            # for a stale or forged transaction_id, but otherwise the fingerprint of a broken invariant: an endpoint
+            # that answers a challenge before before_request resolves the attempt, or a set_data call that replaces a
+            # challenge's data instead of updating it.
             log.debug(f"Transaction {answered} has no challenge recording an authentication attempt. The log row for "
                       f"this request starts a new attempt rather than joining that transaction's.")
-    # Record who this request is authenticating on the request's context, so the policy evaluation acts on the same
-    # principal the row is written for - including the token owner resolved just above, which the caller does not know
-    # about. Kept as an AuthPrincipal rather than a bare User because a local database admin has no user object.
+    # Records the authenticating principal, including the token owner resolved just above that the caller doesn't know
+    # about, on the request context so policy evaluation and the logged row agree on the same subject; kept as an
+    # AuthPrincipal rather than a bare User because a local database admin has no user object.
     context.principal = AuthPrincipal(user=user or User(), username=username, internal_admin=internal_admin)
     context.source_ip = source_ip
     event = PendingAuthEvent(
@@ -387,6 +387,7 @@ def log_authentication(event_type: AuthEventType | None, request: Request | None
         serial=serial,
         attempt_id=context.attempt_id,
         immediate=immediate,
+        other_info=other_info,
     )
     context.stage(event)
     if immediate:
@@ -430,10 +431,9 @@ def build_ca_context(user, internal_admin: bool | None = None) -> "CAContext":
     from privacyidea.lib.conditional_access.context import CAContext
     source_ip = None
     if has_request_context():
-        # g.get, not g.client_ip: a request context is not a guarantee that before_request got as far
-        # as setting it (an AuthError raised early leaves it unset, which is why
-        # hardening_action_active re-derives it), and this must never turn an authentication into a
-        # 500. A missing source IP simply means source_ip-target policies do not apply.
+        # Uses g.get, not g.client_ip, because an AuthError raised early in before_request can leave client_ip unset -
+        # the same reason hardening_action_active re-derives it - and this must never turn an authentication into a 500;
+        # a missing source IP simply means source_ip-target policies do not apply.
         source_ip = g.get("client_ip")
         if internal_admin is None:
             internal_admin = g.get("resolved_user", {}).get("is_local_admin", False)

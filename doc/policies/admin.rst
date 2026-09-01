@@ -501,6 +501,24 @@ allowed to calculate the token serial number for a given OTP
 value.
 
 
+.. _policy_sshkey_read:
+
+sshkey_read
+~~~~~~~~~~~
+
+type: ``bool``
+
+.. index:: sshkey_read
+
+If the ``sshkey_read`` action is defined, the administrator is allowed to read
+the public SSH key of an SSH key token via ``GET /token/sshkey/<serial>``.
+
+The public key of an SSH key token is stored encrypted and is therefore only
+contained in encrypted form in the token list, so this action is the way to
+retrieve it. The administrator is restricted to the realms of their policies,
+and only active tokens hand out their key. See :ref:`sshkey_token`.
+
+
 .. _policy_getrandom:
 
 getrandom
@@ -864,6 +882,131 @@ For example a value ``sig_check log_level`` will hide these two columns.
 
 The list of available columns can be checked by examining the response of the
 request to the :ref:`rest_audit`.
+
+.. _policy_authentication_log_read:
+
+authentication_log_read
+~~~~~~~~~~~~~~~~~~~~~~~
+
+type: ``bool``
+
+The administrators are allowed to read the :ref:`authentication_log`. If the
+policy is scoped to realms, resolvers or users, the administrator only sees
+entries matching that scope. An administrator always also sees their own
+entries.
+
+.. versionadded:: 3.14
+
+.. _policy_conditional_access_policy_read:
+
+conditional_access_policy_read
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: ``bool``
+
+The administrators are allowed to view the policies of
+:ref:`conditional_access`, the vocabulary they are built from (event types,
+action types, condition types and targets) and the shipped policy templates.
+
+.. versionadded:: 3.14
+
+.. _policy_conditional_access_policy_write:
+
+conditional_access_policy_write
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: ``bool``
+
+The administrators are allowed to create, edit, reorder and delete the policies
+of :ref:`conditional_access`.
+
+.. versionadded:: 3.14
+
+.. _policy_user_lock_read:
+
+user_lock_read
+~~~~~~~~~~~~~~
+
+type: ``bool``
+
+The administrators are allowed to see whether a user is locked and to list the
+locked users. If the policy is scoped to realms, resolvers or users, only
+matching users are shown.
+
+.. versionadded:: 3.14
+
+.. _policy_user_lock_reset:
+
+user_lock_reset
+~~~~~~~~~~~~~~~
+
+type: ``bool``
+
+The administrators are allowed to unlock a user that was locked by
+:ref:`conditional_access` and to purge the stale records of locks that have
+already expired.
+
+.. versionadded:: 3.14
+
+.. _policy_user_lock_set:
+
+user_lock_set
+~~~~~~~~~~~~~
+
+type: ``bool``
+
+The administrator is allowed to lock a user by hand, independently of the
+conditional-access policies - permanently, or for a chosen duration. The lock is
+recorded with the cause *Manual* and is enforced exactly like a policy lock.
+
+Kept separate from :ref:`policy_user_lock_reset` because clearing a
+restriction is recoverable and imposing one is not. The target user must lie
+within the scope of the policy granting the right.
+
+.. versionadded:: 3.14
+
+.. _policy_blocklist_read:
+
+blocklist_read
+~~~~~~~~~~~~~~
+
+type: ``bool``
+
+The administrators are allowed to view the source IP addresses blocked by
+:ref:`conditional_access`.
+
+.. versionadded:: 3.14
+
+.. _policy_blocklist_reset:
+
+blocklist_reset
+~~~~~~~~~~~~~~~
+
+type: ``bool``
+
+The administrators are allowed to remove entries from the blocklist of
+:ref:`conditional_access` and to purge the stale records of blocks that have
+already expired.
+
+.. versionadded:: 3.14
+
+.. _policy_blocklist_set:
+
+blocklist_set
+~~~~~~~~~~~~~
+
+type: ``bool``
+
+The administrator is allowed to add a source IP to the conditional-access
+blocklist by hand, independently of the conditional-access policies -
+permanently, or for a chosen duration. The block is recorded with the cause
+*Manual* and is enforced exactly like a policy block.
+
+Kept separate from :ref:`policy_blocklist_reset` because clearing a restriction
+is recoverable and imposing one is not. This is the IP counterpart of
+:ref:`policy_user_lock_set`.
+
+.. versionadded:: 3.14
 
 .. _policy_triggerchallenge:
 
@@ -1397,113 +1540,5 @@ type: ``bool``
 The administrator is allowed to revoke remembered devices: a single device, all
 of a client's devices, or - across all clients - every device of a realm or of a
 single user. Realm-scoped admins can only revoke within their allowed realms.
-
-.. versionadded:: 3.14
-
-.. _policy_conditional_access_policy_read:
-
-conditional_access_policy_read
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-type: ``bool``
-
-The administrator is allowed to read the conditional-access policies, the
-vocabulary they are built from (event types, action types, condition types,
-targets) and the shipped policy templates.
-
-.. versionadded:: 3.14
-
-.. _policy_conditional_access_policy_write:
-
-conditional_access_policy_write
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-type: ``bool``
-
-The administrator is allowed to create, change, reorder and delete
-conditional-access policies.
-
-.. versionadded:: 3.14
-
-.. _policy_user_lock_read:
-
-user_lock_read
-~~~~~~~~~~~~~~~
-
-type: ``bool``
-
-The administrator is allowed to see which users are currently locked by
-conditional access.
-
-.. versionadded:: 3.14
-
-.. _policy_user_lock_reset:
-
-user_lock_reset
-~~~~~~~~~~~~~~~~
-
-type: ``bool``
-
-The administrator is allowed to unlock a locked user and to purge the stale
-records of locks that have already expired.
-
-.. versionadded:: 3.14
-
-.. _policy_user_lock_set:
-
-user_lock_set
-~~~~~~~~~~~~~
-
-type: ``bool``
-
-The administrator is allowed to lock a user by hand, independently of the
-conditional-access policies - permanently, or for a chosen duration. The lock is
-recorded with the cause *Manual* and is enforced exactly like a policy lock.
-
-Kept separate from :ref:`policy_user_lock_reset` because clearing a
-restriction is recoverable and imposing one is not. The target user must lie
-within the scope of the policy granting the right.
-
-.. versionadded:: 3.14
-
-.. _policy_blocklist_read:
-
-blocklist_read
-~~~~~~~~~~~~~~~
-
-type: ``bool``
-
-The administrator is allowed to see the conditional-access blocklist, i.e. the
-source IPs currently blocked.
-
-.. versionadded:: 3.14
-
-.. _policy_blocklist_reset:
-
-blocklist_reset
-~~~~~~~~~~~~~~~~
-
-type: ``bool``
-
-The administrator is allowed to unblock a blocked IP and to purge the stale
-records of blocks that have already expired.
-
-.. versionadded:: 3.14
-
-.. _policy_blocklist_set:
-
-blocklist_set
-~~~~~~~~~~~~~
-
-type: ``bool``
-
-The administrator is allowed to add a source IP to the conditional-access
-blocklist by hand, independently of the conditional-access policies -
-permanently, or for a chosen duration. The block is recorded with the cause
-*Manual* and is enforced exactly like a policy block.
-
-Kept separate from :ref:`policy_blocklist_reset` because clearing a restriction
-is recoverable and imposing one is not. This is the IP counterpart of
-:ref:`policy_user_lock_set`.
 
 .. versionadded:: 3.14

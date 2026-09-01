@@ -62,6 +62,7 @@ def upgrade():
         sa.Column('username', _unicode_case_sensitive(255), nullable=True),
         sa.Column('lock_expires_at', sa.DateTime(), nullable=True),
         sa.Column('lock_cause', sa.Unicode(length=20), nullable=False, server_default='POLICY'),
+        sa.Column('error_message', sa.Unicode(length=500), nullable=True),
         sa.Column('locked_at', sa.DateTime(), nullable=False),
         sa.PrimaryKeyConstraint('resolver', 'uid', 'realm'),
     )

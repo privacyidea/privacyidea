@@ -163,8 +163,8 @@ OPERATORS: dict[str, OperatorSpec] = {
         label=lazy_gettext("is not one of"),
         apply=lambda actual, values: actual not in values,
         matches_missing=True,
-        # A NULL column is not in anything, so it must count - which NOT IN alone
-        # would not do (see the sql docstring above).
+        # A NULL column is not in anything, so it must count, which plain NOT IN alone would not do (see the sql
+        # docstring above).
         sql=lambda column, values: or_(column.is_(None), column.notin_(values))),
 }
 

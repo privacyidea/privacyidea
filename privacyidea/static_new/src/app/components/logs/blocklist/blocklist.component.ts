@@ -26,6 +26,7 @@ import { MatIconModule } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
 import { MatTooltipModule } from "@angular/material/tooltip";
+import { ExpandableMessageComponent } from "@components/shared/expandable-message/expandable-message.component";
 import { Sort } from "@angular/material/sort";
 import { RouterLink } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
@@ -60,6 +61,7 @@ import { concatMap, reduce } from "rxjs/operators";
     MatButtonModule,
     MatIconModule,
     MatTooltipModule,
+    ExpandableMessageComponent,
     MatCheckboxModule,
     MatFormField,
     MatLabel,
@@ -81,7 +83,15 @@ export class BlocklistComponent {
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
 
-  readonly displayedColumns: string[] = ["select", "identifier", "state", "cause", "block_expires_at", "blocked_at"];
+  readonly displayedColumns: string[] = [
+    "select",
+    "identifier",
+    "state",
+    "cause",
+    "block_expires_at",
+    "blocked_at",
+    "error_message"
+  ];
 
   // Keep the previous rows while a reload is in flight to avoid flicker.
   readonly dataSource = linkedSignal<PiResponse<BlocklistEntry[]> | undefined, MatTableDataSource<BlocklistEntry>>({
@@ -110,8 +120,8 @@ export class BlocklistComponent {
   readonly filterText = signal("");
   readonly sort: WritableSignal<Sort> = signal({ active: "identifier", direction: "asc" });
 
-  // Pre-seed the authentication-log filter with this entry's source IP and jump there, so the log shows only
-  // that IP's events. Navigation to the auth-log route itself is done by the template's routerLink.
+  // Pre-seeds the authentication-log filter with this entry's source IP, so the log shows only that IP's events; the
+  // template's routerLink does the navigation.
   showAuthenticationLog(row: BlocklistEntry): void {
     this.authenticationLogService.authenticationLogFilter.set(new FilterValue().addEntry("source_ip", row.identifier));
   }
@@ -163,7 +173,10 @@ export class BlocklistComponent {
         element.blocked_at.toLowerCase().includes(lowerFilter) ||
         (element.block_expires_at ?? "").toLowerCase().includes(lowerFilter) ||
         this.blockState(element).toLowerCase().includes(lowerFilter) ||
-        this.blockCauseLabel(element).toLowerCase().includes(lowerFilter)
+        this.blockCauseLabel(element).toLowerCase().includes(lowerFilter) ||
+        // The wording this address is being shown, so an admin can find every block still quoting a message
+        // they have since changed.
+        (element.error_message ?? "").toLowerCase().includes(lowerFilter)
       );
     };
   }

@@ -51,9 +51,8 @@
   </div>
 
   @if (authService.actionAllowed("conditional_access_policy_write")) {
-    <!-- The regular actions stay in place while rearranging and are only disabled, so the
-         toolbar does not change shape when the mode is entered. Save/Cancel take over the
-         trailing slot the "Reorder Priorities" button occupies otherwise. -->
+    <!-- The regular action buttons stay in place but disabled during reorder mode, so the toolbar keeps its shape,
+      and Save/Cancel take over the trailing slot the "Reorder Priorities" button otherwise occupies. -->
     <div class="flex-row margin-bottom-16 gap-8 ali-center">
       <button
         (click)="onCreatePolicy()"
@@ -177,14 +176,10 @@
                {{ policy.name }}
              </a>
              @if (hasStaleConditions(policy)) {
-               <!--
-                 aria-hidden="false" is load-bearing and must stay a static attribute: mat-icon is
-                 decorative by default and sets aria-hidden="true" on itself unless it finds a *static*
-                 one (it reads the attribute, not a binding). Without it this icon is out of the
-                 accessibility tree, the aria-label below is never announced, and the stale-condition
-                 warning becomes sighted-only - the sole cue that the policy names something that no
-                 longer exists. mat-icon already carries role="img", so the label is valid on it.
-               -->
+               <!-- aria-hidden="false" must stay a static attribute, not a binding: mat-icon is decorative by
+                 default and only recognizes a static aria-hidden attribute, so a binding here would let it force
+                 aria-hidden="true" and silence the aria-label below, the only cue that this policy names a
+                 since-deleted condition. -->
                <mat-icon
                  aria-hidden="false"
                  [attr.aria-label]="staleConditionsTooltip"

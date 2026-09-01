@@ -96,8 +96,8 @@ def upgrade():
         _id_column(),
         sa.Column('policy_id', sa.Integer(), nullable=False),
         sa.Column('name', sa.Unicode(length=255), nullable=True),
+        sa.Column('error_message', sa.Unicode(length=500), nullable=True),
         sa.Column('failure_threshold', sa.Integer(), nullable=False),
-        sa.Column('priority', sa.Integer(), nullable=False),
         sa.ForeignKeyConstraint(['policy_id'], ['conditional_access_policies.id'], ondelete='CASCADE'),
         sa.PrimaryKeyConstraint('id'),
         sa.UniqueConstraint('policy_id', 'failure_threshold',
@@ -117,8 +117,8 @@ def upgrade():
 
 
 def downgrade():
-    # Drop children before parents because of the foreign keys. The indexes, the
-    # foreign keys and the identities all go with their table.
+    # Drop children before parents because of the foreign keys.
+    # The indexes, foreign keys and identities all go with their table.
     for table_name in TABLES:
         try:
             op.drop_table(table_name)
