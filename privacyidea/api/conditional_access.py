@@ -506,7 +506,7 @@ def get_user_lock():
     username = get_optional(request.all_data, "username") or get_optional(request.all_data, "user")
     realm = get_required(request.all_data, "realm")
     resolver = get_optional(request.all_data, "resolver")
-    if user_id and not resolver:
+    if user_id is not None and not resolver:
         # User() refuses a uid without a resolver (a uid is only unique per resolver), even when a username is
         # also given: the two are not cross-checked against each other, so the uid alone still needs its
         # resolver to be unambiguous. Reject it here so the caller gets a ParameterError instead of a
@@ -514,16 +514,16 @@ def get_user_lock():
         raise ParameterError("The parameter 'resolver' is required when looking a user up by 'user_id'.")
     visibility_scopes = get_policy_visibility_scopes(PolicyAction.USER_LOCK_READ)
 
-    # User is already resolved in before request, but only for the login, realm, resolver triplet. If the uid is given
-    # instead we need to resolve the user here
-    user = request.User
-    if not user or not user.exist():
-        user = User(uid=user_id, login=username, realm=realm, resolver=resolver)
+    # Built fresh from the request parameters rather than reused from request.User: that object is
+    # resolved from the legacy 'user' key only (see get_user_from_param), so trusting it here would let
+    # a caller's 'user' silently outrank the 'username' they actually sent whenever 'user' also happens
+    # to resolve to a real account.
+    user = User(uid=user_id, login=username, realm=realm, resolver=resolver)
 
     value = None
     if not user.is_empty() and user.exist() and user_matches_scopes(user, visibility_scopes):
         value = get_user_lock_dict(user)
-    g.audit_object.log({"success": True})
+    g.audit_object.log({"success": True, "user": user.login, "realm": user.realm, "resolver": user.resolver})
     return send_result(value)
 
 
@@ -565,7 +565,7 @@ def set_user_lock():
     username = get_optional(params, "username") or get_optional(params, "user")
     realm = get_required(params, "realm")
     resolver = get_optional(params, "resolver")
-    if user_id and not resolver:
+    if user_id is not None and not resolver:
         # User() refuses a uid without a resolver (a uid is only unique per resolver), even when a username is
         # also given: the two are not cross-checked against each other, so the uid alone still needs its
         # resolver to be unambiguous. Reject it here so the caller gets a ParameterError instead of a
@@ -577,8 +577,10 @@ def set_user_lock():
     # whether the user exists. Perform the scope check before attempting to resolve existence.
     user = User(uid=user_id, login=username, realm=realm, resolver=resolver)
     if not user_matches_scopes(user, get_policy_visibility_scopes(PolicyAction.USER_LOCK_SET)):
-        # Do not include resolved identifiers; echo only the provided parameters
-        target = (username or user_id or "<unspecified>")
+        # Do not include resolved identifiers; echo only the provided parameters. `username` and
+        # `user_id` are checked with `is not None`, not truthiness, so a uid of 0 is not mistaken for
+        # "neither was given".
+        target = username if username is not None else (user_id if user_id is not None else "<unspecified>")
         raise PolicyError(f"You are not allowed to lock the requested user '{target}' in realm '{realm}'.")
 
     # Now it is safe to resolve and validate the user existence
@@ -587,6 +589,7 @@ def set_user_lock():
 
     lock = lock_user(user, duration_seconds=duration_seconds)
     g.audit_object.log({"success": True,
+                        "user": user.login, "realm": user.realm, "resolver": user.resolver,
                         "info": f"locked {user.login}@{user.realm} "
                                 f"({'permanent' if duration_seconds is None else f'{duration_seconds}s'})"})
     return send_result(lock)
@@ -648,15 +651,19 @@ def reset_user_lock():
     resolver = get_optional(params, "resolver")
     visibility_scopes = get_policy_visibility_scopes(PolicyAction.USER_LOCK_RESET)
     resolver_suffix = f", resolver={resolver}" if resolver else ""
-    if user_id:
-        removed = unlock_user_by_id(user_id, realm, resolver, visibility_scopes=visibility_scopes)
+    # `is not None`, not truthiness: a resolver-local uid of 0 is a valid identifier, not "none given".
+    # unlock_user_by_id compares directly against the stored (string) column, so a JSON integer is cast.
+    if user_id is not None:
+        removed = unlock_user_by_id(str(user_id), realm, resolver, visibility_scopes=visibility_scopes)
         target = f"uid={user_id}, realm={realm}{resolver_suffix}"
     else:
         removed = unlock_user_by_username(login, realm, resolver, visibility_scopes=visibility_scopes)
         target = f"{login}@{realm}{resolver_suffix}"
     # Name the boundary in the audit log so a scoped-out attempt is distinguishable from a missing lock.
     scope_suffix = "" if visibility_scopes is None else ", within visibility scope"
-    g.audit_object.log({"success": removed, "info": f"reset lock ({target}{scope_suffix})"})
+    g.audit_object.log({"success": removed, "user": login if login is not None else str(user_id),
+                        "realm": realm, "resolver": resolver or "",
+                        "info": f"reset lock ({target}{scope_suffix})"})
     return send_result(removed)
 
 
