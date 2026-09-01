@@ -96,6 +96,7 @@ def upgrade():
         _id_column(),
         sa.Column('policy_id', sa.Integer(), nullable=False),
         sa.Column('name', sa.Unicode(length=255), nullable=True),
+        sa.Column('error_message', sa.Unicode(length=500), nullable=True),
         sa.Column('failure_threshold', sa.Integer(), nullable=False),
         sa.ForeignKeyConstraint(['policy_id'], ['conditional_access_policies.id'], ondelete='CASCADE'),
         sa.PrimaryKeyConstraint('id'),

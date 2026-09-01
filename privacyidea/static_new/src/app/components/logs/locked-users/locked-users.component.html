@@ -276,7 +276,7 @@
           *matCellDef="let row"
           mat-cell>
           @if (row.permanent) {
-            <span class="lock-date">&mdash;</span>
+            <span class="lock-date">-</span>
           } @else {
             {{ row.lock_expires_at | date: "yyyy-MM-dd HH:mm:ss" }}
           }
@@ -304,6 +304,30 @@
           *matCellDef="let row"
           mat-cell>
           {{ row.locked_at | date: "yyyy-MM-dd HH:mm:ss" }}
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="error_message">
+        <th
+          *matHeaderCellDef
+          mat-header-cell>
+          <span class="header-cell">
+            <span i18n>Error Message</span>
+            <button
+              (click)="onKeywordClick('error_messages')"
+              aria-label="Filter by message"
+              class="filter-button"
+              i18n-aria-label
+              mat-icon-button
+              type="button">
+              <mat-icon class="keyword-button-icon margin-left-0">filter_alt</mat-icon>
+            </button>
+          </span>
+        </th>
+        <td
+          *matCellDef="let row"
+          mat-cell>
+          <app-expandable-message [text]="row.error_message" />
         </td>
       </ng-container>
 

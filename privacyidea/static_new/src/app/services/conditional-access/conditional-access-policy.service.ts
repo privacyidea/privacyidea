@@ -70,6 +70,30 @@ export type CountMode = "PER_REQUEST" | "PER_ATTEMPT" | "DISTINCT_USERS";
 
 // Per-target constraints served by /conditionalaccess/targets: the stage actions it allows and the
 // count modes it supports (both sorted; the UI treats the first count mode as the default).
+// Suggested wording for a stage's error_message, bound to the action it describes and served by
+// /conditionalaccess/defaulterrormessages, most severe first. Composing a suggestion for a stage is one sentence
+// per action it carries, kept in this order - the same concatenation the server performs at runtime, so what the
+// editor offers reads as what a user would actually be shown (ACTION_SEVERITY in
+// privacyidea.lib.conditional_access.engine is the one ordering behind both). Not scoped by target - an entry for
+// an action a target cannot hold simply never matches.
+export interface DefaultErrorMessage {
+  action_type: ConditionalAccessActionType;
+  message: string;
+}
+
+// Timed actions paired with the permanent action that writes the same row. Configuring both is redundant: a
+// restriction is never weakened, so the permanent one wins whichever order they run in - which is why the timed
+// half is both warned about and left out of a composed suggestion. Listed as explicit pairs rather than derived
+// from "any timed action plus any permanent one", which would only be equivalent while a stage's actions are
+// confined to a single target - true today (_ACTIONS_BY_TARGET on the server), but it would silently mis-flag a
+// timed user lock beside a permanent IP block if that ever changes.
+export const REDUNDANT_RESTRICTION_PAIRS: readonly (readonly [ConditionalAccessActionType, ConditionalAccessActionType])[] = [
+  ["LOCK_USER", "PERMANENT_LOCK_USER"],
+  ["BLOCK_IP", "PERMANENT_BLOCK_IP"]
+];
+
+// Per-target constraints served by /conditionalaccess/targets: the stage actions it allows and the
+// count modes it supports (both sorted; the UI treats the first count mode as the default).
 export interface TargetConstraints {
   actions: ConditionalAccessActionType[];
   count_modes: CountMode[];
@@ -87,6 +111,11 @@ export interface ConditionalAccessStageAction {
 export interface ConditionalAccessPolicyStage {
   id?: number;
   name?: string | null;
+  // Text shown to the end user when this stage turns a request away. Absent, null or empty
+  // means nothing is surfaced, which is the default: a rejection reveals no conditional-access
+  // detail unless an admin wrote it here. "{duration}" is replaced with the remaining time;
+  // every other brace expression is shown as written.
+  error_message?: string | null;
   failure_threshold: number;
   actions: ConditionalAccessStageAction[];
 }
@@ -196,6 +225,8 @@ export interface ConditionalAccessPolicyServiceInterface {
   readonly targetsResource: HttpResourceRef<PiResponse<Record<string, TargetConstraints>> | undefined>;
   readonly actionsByTarget: Signal<Record<ConditionalAccessTarget, ConditionalAccessActionType[]>>;
   readonly countModesByTarget: Signal<Record<ConditionalAccessTarget, CountMode[]>>;
+  readonly defaultErrorMessagesResource: HttpResourceRef<PiResponse<DefaultErrorMessage[]> | undefined>;
+  readonly defaultErrorMessages: Signal<DefaultErrorMessage[]>;
   readonly targets: Signal<ConditionalAccessTarget[]>;
   readonly templatesResource: HttpResourceRef<PiResponse<ConditionalAccessPolicyTemplate[]> | undefined>;
   readonly templates: Signal<ConditionalAccessPolicyTemplate[]>;
@@ -245,6 +276,7 @@ export class ConditionalAccessPolicyService implements ConditionalAccessPolicySe
   readonly targetsUrl = environment.proxyUrl + "/conditionalaccess/targets";
   readonly templatesUrl = environment.proxyUrl + "/conditionalaccess/template";
   readonly conditionTypesUrl = environment.proxyUrl + "/conditionalaccess/conditiontypes";
+  readonly defaultErrorMessagesUrl = environment.proxyUrl + "/conditionalaccess/defaulterrormessages";
 
   // Routes that read the conditional-access configuration: its own pages, and the authentication log's
   // Conditional access filter, which needs the real policy names and action types rather than a hardcoded list.
@@ -340,6 +372,23 @@ export class ConditionalAccessPolicyService implements ConditionalAccessPolicySe
       Object.fromEntries(
         Object.entries(this.targetConstraints()).map(([target, entry]) => [target, entry.count_modes])
       ) as Record<ConditionalAccessTarget, CountMode[]>
+  );
+
+  // Suggested error-message wording per stage action, most severe first. Fetched rather than hard-coded so the
+  // suggestions stay translated by the server and in step with the actions the engine actually supports.
+  readonly defaultErrorMessagesResource = httpResource<PiResponse<DefaultErrorMessage[]>>(() => {
+    if (!this.authService.actionAllowed("conditional_access_policy_read") || !this.contentService.onConditionalAccess()) {
+      return undefined;
+    }
+    return {
+      url: this.defaultErrorMessagesUrl,
+      method: "GET",
+      headers: this.authService.getHeaders()
+    };
+  });
+
+  readonly defaultErrorMessages: Signal<DefaultErrorMessage[]> = computed(
+    () => this.defaultErrorMessagesResource.value()?.result?.value ?? []
   );
 
   readonly targets: Signal<ConditionalAccessTarget[]> = computed(

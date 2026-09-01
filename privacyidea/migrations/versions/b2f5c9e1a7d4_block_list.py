@@ -41,6 +41,7 @@ def upgrade():
         'block_list',
         sa.Column('ip', sa.Unicode(length=50), nullable=False),
         sa.Column('block_expires_at', sa.DateTime(), nullable=True),
+        sa.Column('error_message', sa.Unicode(length=500), nullable=True),
         sa.Column('blocked_at', sa.DateTime(), nullable=False),
         sa.PrimaryKeyConstraint('ip'),
     )

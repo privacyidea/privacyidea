@@ -249,6 +249,7 @@ class SCOPE:
     CONTAINER = "container"
     TOKEN = "token"
     HARDENING = "hardening"
+    CONDITIONAL_ACCESS = "conditional_access"
 
     @classmethod
     def get_all_scopes(cls) -> list[str]:
@@ -256,7 +257,7 @@ class SCOPE:
         Return all valid scopes as a list
         """
         valid_scopes = [cls.AUTHZ, cls.ADMIN, cls.AUTH, cls.AUDIT, cls.USER, cls.ENROLL, cls.WEBUI, cls.REGISTER,
-                        cls.CONTAINER, cls.TOKEN, cls.HARDENING]
+                        cls.CONTAINER, cls.TOKEN, cls.HARDENING, cls.CONDITIONAL_ACCESS]
         return valid_scopes
 
 
@@ -3258,6 +3259,18 @@ def get_static_policy_definitions(scope=None):
                           'the impact on your integrations. This policy is evaluated without '
                           'user/realm/resolver/time conditions (client IP and user agent matching still apply).'),
                 'group': GROUP.SYSTEM,
+            }
+        },
+        SCOPE.CONDITIONAL_ACCESS: {
+            PolicyAction.SHOW_DEFAULT_CA_ERROR_MESSAGE: {
+                'type': 'bool',
+                'desc': _('Tell the user why conditional access turned their request away, using the default '
+                          'wording for the action that did it. Without this, a rejection says only what a stage '
+                          'was given its own error message to say, and the generic "Authentication failed." '
+                          'where none was written. A stage\'s own error message always takes precedence over '
+                          'this. Note: this is independent of "hide_specific_error_message" (in the '
+                          'authentication scope), which never applies to conditional-access wording.'),
+                'group': GROUP.GENERAL,
             }
         }
 

@@ -36,6 +36,7 @@ import jwt
 from flask import jsonify, current_app, Response, Request, request, g, has_request_context
 from flask_babel import _
 
+from privacyidea.lib import lazy_gettext
 from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType,
                                                                           AUTH_EVENT_REASON_KEY,
                                                                           AUTH_EVENT_REASON_DETAIL_KEY,
@@ -71,6 +72,9 @@ if TYPE_CHECKING:
     from privacyidea.lib.conditional_access.context import CAContext
 
 log = logging.getLogger(__name__)
+
+# The error message of an ordinary failed authentication
+GENERIC_AUTH_FAILURE = lazy_gettext("Authentication failed.")
 ENCODING = "utf-8"
 TRUSTED_JWT_ALGOS = ["ES256", "ES384", "ES512",
                      "RS256", "RS384", "RS512",
@@ -134,13 +138,12 @@ def send_result(obj, rid=1, details=None, **kwargs) -> Response:
     :param details: optional parameter, which allows to provide more detail
     :type  details: None or simple type like dict, list or string/unicode
 
-    :return: json rendered string result
-    :rtype: string
+    :return: the result response, a :class:`~flask.Response` with a status of ``200``
     """
     return jsonify(prepare_result(obj, rid, details, **kwargs))
 
 
-def send_error(errstring, rid=1, context=None, error_code=-311, details=None):
+def send_error(errstring, rid=1, context=None, error_code=-311, details=None) -> Response:
     """
     sendError - return a json error result document
 
@@ -163,9 +166,8 @@ def send_error(errstring, rid=1, context=None, error_code=-311, details=None):
         challenges)
     :type details: dict
 
-    :return: json rendered sting result
-    :rtype: string
-
+    :return: the error response. A :class:`~flask.Response`, not a string - it carries a status of its own, which
+        a caller building an error outside an error handler has to set (they default to ``200``).
     """
     if details:
         details["threadid"] = threading.current_thread().ident
@@ -330,7 +332,8 @@ def log_authentication(event_type: AuthEventType | None, request: Request | None
                        internal_admin: bool = False,
                        immediate: bool = False,
                        reasons: list[str] | None = None,
-                       reason_detail: dict | None = None) -> "PendingAuthEvent | None":
+                       reason_detail: dict | None = None,
+                       other_info: dict | None = None) -> "PendingAuthEvent | None":
     """
     Record one authentication_log entry for the current request.
 
@@ -374,7 +377,9 @@ def log_authentication(event_type: AuthEventType | None, request: Request | None
     :class:`~privacyidea.lib.conditional_access.authentication_event_types.AuthEventReason` the request produced,
     highest signal first, each becoming a row of its own. ``reason_detail`` carries what is specific to this request -
     the deciding policies, the per-serial reasons - into ``other_info`` under its own :data:`REASON_DETAIL_INFO_KEY`
-    key. Both are optional: an event nobody found a reason for is logged without any.
+    key. Both are optional: an event nobody found a reason for is logged without any. ``other_info`` is whatever the
+    caller has to say about the row itself (a conditional-access rejection records what it did), and shares
+    ``other_info`` with the reason detail without either overwriting the other.
 
     ``user_role`` records whether the principal is a regular user or an admin (see :class:`AuthLogUserRole`). Pass
     ``internal_admin=True`` for a local database admin (``/auth`` only); an admin-realm admin is detected from the
@@ -429,10 +434,14 @@ def log_authentication(event_type: AuthEventType | None, request: Request | None
     # AuthPrincipal rather than a bare User because a local database admin has no user object.
     context.principal = AuthPrincipal(user=user or User(), username=username, internal_admin=internal_admin)
     context.source_ip = source_ip
+    # The caller's own info and the reason detail share the row's other_info, the detail under a key of its own
+    # (see REASON_DETAIL_INFO_KEY), so neither has to know about the other.
+    info = dict(other_info) if other_info else {}
+    if reason_detail:
+        info[REASON_DETAIL_INFO_KEY] = reason_detail
     event = PendingAuthEvent(
         event_type=event_type,
         reasons=list(reasons or []),
-        other_info={REASON_DETAIL_INFO_KEY: reason_detail} if reason_detail else None,
         transaction_id=transaction_id,
         resolver=user.resolver if resolved else None,
         uid=user.uid if resolved else None,
@@ -445,6 +454,7 @@ def log_authentication(event_type: AuthEventType | None, request: Request | None
         serial=serial,
         attempt_id=context.attempt_id,
         immediate=immediate,
+        other_info=info or None,
     )
     context.stage(event)
     if immediate:

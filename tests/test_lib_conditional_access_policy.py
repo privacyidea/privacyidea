@@ -28,14 +28,20 @@ from privacyidea.lib.conditional_access.authentication_event_types import AuthEv
 from privacyidea.lib.conditional_access.authentication_log import AuthLogUserRole
 from privacyidea.lib.conditional_access.conditions import (AUTHENTICATING_ENDPOINTS, ConditionOperator, ConditionType,
                                                            get_condition_types)
-from privacyidea.lib.conditional_access.engine import ConditionalAccessAction, ConditionalAccessTarget
+from privacyidea.lib.conditional_access.engine import (ACTION_SEVERITY, ConditionalAccessAction, ConditionalAccessTarget,
+                                                       RESTRICTION_ACTIONS)
 from privacyidea.lib.conditional_access.policy import (
+    DEFAULT_ERROR_MESSAGES,
     _ACTIONS_BY_TARGET,
     _COUNT_MODES_BY_TARGET,
     _DEFAULT_COUNT_MODE_BY_TARGET,
+    MAX_ERROR_MESSAGE_LENGTH,
+    compose_default_error_message,
     create_conditional_access_policy,
+    default_error_message,
     delete_conditional_access_policy,
     enable_conditional_access_policy,
+    get_default_error_messages,
     get_conditional_access_policy,
     get_target_constraints,
     list_conditional_access_policies,
@@ -543,6 +549,78 @@ class ConditionalAccessPolicyCrudTestCase(MyTestCase):
         self.assertIn(ConditionalAccessAction.LOCK_USER.value,
                 constraints[ConditionalAccessTarget.USER.value]["actions"])
 
+    def test_10a_default_error_messages_are_ordered_most_severe_first(self):
+        # The exact list, because both membership and order are contracts: the order is ACTION_SEVERITY, the
+        # one ordering there is, an action that rejects nothing is absent for having nothing to say, and the
+        # EMAIL_* pair comes last. A new action added here has to be a deliberate decision, not a surprise.
+        suggestions = get_default_error_messages()
+        self.assertListEqual([ConditionalAccessAction.PERMANENT_LOCK_USER.value, ConditionalAccessAction.PERMANENT_BLOCK_IP.value,
+                              ConditionalAccessAction.LOCK_USER.value, ConditionalAccessAction.BLOCK_IP.value,
+                              ConditionalAccessAction.DENY.value, ConditionalAccessAction.EMAIL_USER.value,
+                              ConditionalAccessAction.EMAIL_ADMIN.value],
+                             [entry["action_type"] for entry in suggestions])
+        # Resolved to plain strings, not lazy proxies the JSON encoder would choke on.
+        for entry in suggestions:
+            self.assertIsInstance(entry["message"], str)
+            self.assertTrue(entry["message"])
+
+    def test_10a3_the_table_and_the_severity_ordering_cover_the_same_actions(self):
+        # One thing seen twice: every action that ranks has a message, and every message belongs to an action
+        # that ranks. Nothing may be reachable from only one of them.
+        self.assertSetEqual(set(ACTION_SEVERITY), set(DEFAULT_ERROR_MESSAGES))
+
+    def test_10a3b_a_suggestion_is_the_entries_joined_in_the_order_served(self):
+        # The order is the whole composition rule, so a client needs nothing but the list: joining the entries a
+        # stage carries is what the runtime reports for it. Asserted against the runtime's own composition, so
+        # the two cannot drift - here for a notify-only stage, which is all the runtime composes stage-side.
+        served = {entry["action_type"]: entry["message"] for entry in get_default_error_messages()}
+        actions = [ConditionalAccessAction.EMAIL_USER, ConditionalAccessAction.EMAIL_ADMIN]
+        self.assertEqual(" ".join(served[action.value] for action in actions),
+                         compose_default_error_message(actions))
+
+    def test_10a4_a_restriction_row_finds_its_error_message_by_shape(self):
+        # A stored restriction remembers its expiry and its subject, not which action wrote it. Those two
+        # facts name the action exactly, which is what lets a row be described without reading the policy.
+        self.assertEqual(ConditionalAccessAction.LOCK_USER, RESTRICTION_ACTIONS[(ConditionalAccessTarget.USER, False)])
+        self.assertEqual(ConditionalAccessAction.PERMANENT_LOCK_USER, RESTRICTION_ACTIONS[(ConditionalAccessTarget.USER, True)])
+        self.assertEqual(ConditionalAccessAction.BLOCK_IP, RESTRICTION_ACTIONS[(ConditionalAccessTarget.SOURCE_IP, False)])
+        self.assertEqual(ConditionalAccessAction.PERMANENT_BLOCK_IP, RESTRICTION_ACTIONS[(ConditionalAccessTarget.SOURCE_IP, True)])
+        for (target, permanent), action in RESTRICTION_ACTIONS.items():
+            self.assertEqual(str(default_error_message(action)),
+                             str(DEFAULT_ERROR_MESSAGES[action]), f"{target}/{permanent}")
+
+    def test_10a5_an_action_without_an_error_message_falls_back_to_nothing(self):
+        # An action the table does not cover has nothing to say, and a caller must not have to know which
+        # those are - so the lookup answers for any action, not only the ones with error message.
+        self.assertIsNone(default_error_message("SOME_FUTURE_ACTION"))
+        self.assertIsNone(compose_default_error_message(["SOME_FUTURE_ACTION"]))
+        self.assertIsNone(compose_default_error_message([]))
+
+    def test_10a6_a_stage_composes_its_notifications_most_severe_first(self):
+        # The order is ACTION_SEVERITY, not the order the actions were configured in, so a stage falling back
+        # to the default reads like the one next to it that had the suggestion written in.
+        composed = compose_default_error_message([ConditionalAccessAction.EMAIL_ADMIN, ConditionalAccessAction.EMAIL_USER])
+        self.assertEqual(" ".join([str(DEFAULT_ERROR_MESSAGES[ConditionalAccessAction.EMAIL_USER]),
+                                   str(DEFAULT_ERROR_MESSAGES[ConditionalAccessAction.EMAIL_ADMIN])]), composed)
+
+    def test_10a6b_the_restriction_is_left_to_the_row_that_holds_it(self):
+        # A restriction is described from the row it left behind, so composing a stage's fallback never
+        # includes one - otherwise the user reads it twice, once per source, and with a {duration} this side
+        # cannot substitute.
+        self.assertEqual(str(DEFAULT_ERROR_MESSAGES[ConditionalAccessAction.EMAIL_USER]),
+                         compose_default_error_message([ConditionalAccessAction.LOCK_USER, ConditionalAccessAction.EMAIL_USER]))
+        # A stage that only restricted has nothing left to say from here.
+        self.assertIsNone(compose_default_error_message([ConditionalAccessAction.LOCK_USER]))
+        self.assertIsNone(compose_default_error_message([ConditionalAccessAction.PERMANENT_BLOCK_IP, ConditionalAccessAction.DENY]))
+
+    def test_10b_only_timed_restrictions_suggest_the_duration_tag(self):
+        # A permanent lock has no remaining time, and DENY is not a restriction at all, so
+        # {duration} must appear only where the engine can substitute it.
+        timed = {ConditionalAccessAction.LOCK_USER, ConditionalAccessAction.BLOCK_IP}
+        for action, message in DEFAULT_ERROR_MESSAGES.items():
+            self.assertEqual(action in timed, "{duration}" in str(message),
+                             f"{action} duration tag mismatch")
+
     def test_11_duplicate_priority_rejected(self):
         # priority must be unique across policies: a second policy reusing a
         # priority is rejected and nothing is persisted.
@@ -879,7 +957,75 @@ class ConditionalAccessPolicyCrudTestCase(MyTestCase):
                              metadata[ConditionType.USER_ROLE.value]["choices"])
         self.assertListEqual(sorted(AUTHENTICATING_ENDPOINTS), metadata[ConditionType.ENDPOINT.value]["choices"])
 
-    def test_43_endpoint_condition_values_come_from_the_endpoint_vocabulary(self):
+    def test_43_stage_error_message_round_trips(self):
+        message = "Your account is locked. Please try again in about {duration}."
+        policy_id = create_conditional_access_policy(
+            "Message", 600, ["PIN_FAIL"],
+            stages=[{"failure_threshold": 5, "error_message": message,
+                     "actions": [{"action_type": "LOCK_USER",
+                                  "action_value": {"lock_duration_seconds": 600}}]}],
+            target=ConditionalAccessTarget.USER, priority=1)
+        self.assertEqual(message, get_conditional_access_policy(policy_id)["stages"][0]["error_message"])
+
+    def test_44_stage_error_message_defaults_to_none(self):
+        # No message means the rejection stays generic: nothing is surfaced unless
+        # an admin wrote it.
+        policy_id = create_conditional_access_policy("NoMessage", 600, ["PIN_FAIL"], stages=[_stage(5)],
+                                          target=ConditionalAccessTarget.USER, priority=1)
+        self.assertIsNone(get_conditional_access_policy(policy_id)["stages"][0]["error_message"])
+
+    def test_45_blank_stage_error_message_is_stored_as_none(self):
+        for blank in ("", "   ", "\n\t"):
+            policy_id = create_conditional_access_policy(f"Blank{len(blank)}", 600, ["PIN_FAIL"],
+                                              stages=[{**_stage(5), "error_message": blank}],
+                                              target=ConditionalAccessTarget.USER, priority=1)
+            self.assertIsNone(get_conditional_access_policy(policy_id)["stages"][0]["error_message"])
+            delete_conditional_access_policy(policy_id)
+
+    def test_46_stage_error_message_is_stripped(self):
+        policy_id = create_conditional_access_policy("Strip", 600, ["PIN_FAIL"],
+                                          stages=[{**_stage(5), "error_message": "  Locked.  "}],
+                                          target=ConditionalAccessTarget.USER, priority=1)
+        self.assertEqual("Locked.", get_conditional_access_policy(policy_id)["stages"][0]["error_message"])
+
+    def test_47_unknown_brace_expressions_are_kept_verbatim(self):
+        # Brace expressions other than {duration} are deliberately not validated:
+        # only {duration} is substituted at rejection time, so an admin can write
+        # braces in ordinary prose without escaping them.
+        message = "Locked {} for {duration} — see {unknown} or {{escaped}}."
+        policy_id = create_conditional_access_policy("Braces", 600, ["PIN_FAIL"],
+                                          stages=[{**_stage(5), "error_message": message}],
+                                          target=ConditionalAccessTarget.USER, priority=1)
+        self.assertEqual(message, get_conditional_access_policy(policy_id)["stages"][0]["error_message"])
+
+    def test_48_stage_error_message_validation_errors(self):
+        for invalid in (123, [], {}, True):
+            self.assertRaises(ParameterError, create_conditional_access_policy, "Invalid", 600, ["PIN_FAIL"],
+                              stages=[{**_stage(5), "error_message": invalid}],
+                              target=ConditionalAccessTarget.USER, priority=1)
+        # Over the model's Unicode(500), rejected here rather than truncated by the DB.
+        self.assertRaises(ParameterError, create_conditional_access_policy, "TooLong", 600, ["PIN_FAIL"],
+                          stages=[{**_stage(5), "error_message": "x" * (MAX_ERROR_MESSAGE_LENGTH + 1)}],
+                          target=ConditionalAccessTarget.USER, priority=1)
+
+    def test_49_stage_error_message_at_the_length_limit_is_accepted(self):
+        message = "x" * MAX_ERROR_MESSAGE_LENGTH
+        policy_id = create_conditional_access_policy("AtLimit", 600, ["PIN_FAIL"],
+                                          stages=[{**_stage(5), "error_message": message}],
+                                          target=ConditionalAccessTarget.USER, priority=1)
+        self.assertEqual(message, get_conditional_access_policy(policy_id)["stages"][0]["error_message"])
+
+    def test_50_update_replaces_and_clears_the_stage_error_message(self):
+        policy_id = create_conditional_access_policy("Update", 600, ["PIN_FAIL"],
+                                          stages=[{**_stage(5), "error_message": "Old."}],
+                                          target=ConditionalAccessTarget.USER, priority=1)
+        update_conditional_access_policy(policy_id, stages=[{**_stage(5), "error_message": "New."}])
+        self.assertEqual("New.", get_conditional_access_policy(policy_id)["stages"][0]["error_message"])
+        # Stages are replaced wholesale, so omitting the message clears it.
+        update_conditional_access_policy(policy_id, stages=[_stage(5)])
+        self.assertIsNone(get_conditional_access_policy(policy_id)["stages"][0]["error_message"])
+
+    def test_51_endpoint_condition_values_come_from_the_endpoint_vocabulary(self):
         policy_id = self._create_with_conditions(
             "Endpoint scoped", [self._condition(ConditionType.ENDPOINT, value=["/auth"])])
         self.assertListEqual(["/auth"], get_conditional_access_policy(policy_id)["conditions"][0]["value"])
@@ -887,7 +1033,6 @@ class ConditionalAccessPolicyCrudTestCase(MyTestCase):
         # match - so it is reported at write time like an unknown realm or role.
         self.assertRaises(ParameterError, self._create_with_conditions,
                           "Bad endpoint", [self._condition(ConditionType.ENDPOINT, value=["/validate/unknown"])])
-
 
 class EndpointConditionChoicesTestCase(MyTestCase):
     """The ENDPOINT condition's vocabulary against the routes this app actually serves."""

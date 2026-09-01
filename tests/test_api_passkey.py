@@ -21,6 +21,7 @@ from unittest.mock import patch
 
 from webauthn.helpers.structs import AttestationConveyancePreference
 
+from privacyidea.api.lib.utils import GENERIC_AUTH_FAILURE
 from privacyidea.config import TestingConfig
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventReason, AuthEventType
 from privacyidea.lib.conditional_access.authentication_log import get_authentication_logs
@@ -1684,15 +1685,43 @@ class PasskeyAPITest(PasskeyAPITestBase):
                 res = self.app.full_dispatch_request()
                 self.assertEqual(200, res.status_code, res.json)
                 self.assertFalse(res.json["result"]["value"], res.json)
-                # Generic reject: no reason leaked in the detail.
-                self.assertFalse(res.json.get("detail"), res.json)
-            # This row is the only place an admin sees why it failed, since no token work logs an outcome of its own.
+                # Generic reject: the detail says what any failed authentication says and nothing more. Not an
+                # empty detail - that would be a tell in itself, since every other failure carries one.
+                self.assertEqual(str(GENERIC_AUTH_FAILURE), res.json["detail"]["message"], res.json)
+                self.assertNotIn("passkey", res.json["detail"], res.json)
+            # The rejection classifies the request: this row is the only place an admin can see why it failed, since
+            # no token work ran to log an outcome of its own.
             self.assertListEqual([AuthEventType.USER_LOCKED],
                                  [entry.event_type for entry in get_authentication_logs()])
         finally:
             db.session.query(UserLockState).delete()
             db.session.commit()
             remove_token(serial)
+
+    def test_29_restrict_authenticator_device_type_scoped_to_realm_on_auth(self):
+        """
+        The same realm-scoped SCOPE.AUTH restriction as test_26, but for the WebUI login endpoint. /auth
+        resolves the credential_id to its owner in before_request, which runs before the prepolicies, so
+        unlike /validate/check it needs no second policy evaluation. If that ordering ever changed, the
+        restriction would silently downgrade to matching only unscoped policies.
+        """
+        self.set_policy_with_cleanup("restrict_device_type", scope=SCOPE.AUTH, realm=self.realm1,
+                                     action=f"{PasskeyAction.AllowedAuthenticatorDeviceTypes}=multi_device")
+        serial = self._enroll_static_passkey()
+
+        passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_uv)
+        data = self.authentication_response_uv
+        data["transaction_id"] = passkey_challenge["transaction_id"]
+        self.assertNotIn("user", data)
+        with self.app.test_request_context('/auth', method='POST',
+                                           data=data,
+                                           headers={"Origin": self.expected_origin}):
+            res = self.app.full_dispatch_request()
+            # The enrolled fixture credential is single_device, so the realm-scoped restriction to
+            # multi_device must refuse the login, even though the request never named a user.
+            self._verify_auth_fail_with_error(res, 4031)
+
+        remove_token(serial)
 
 
 class PasskeyAuthAPITest(PasskeyAPITestBase, OverrideConfigTestCase):

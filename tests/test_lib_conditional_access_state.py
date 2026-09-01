@@ -69,18 +69,20 @@ class UserLockStateTestCase(MyTestCase):
             db.session.query(model).delete()
         db.session.commit()
 
-    def _lock(self, lock_expires_at, user=None, resolver=None, uid=None, realm=None, username=None):
+    def _lock(self, lock_expires_at, user=None, resolver=None, uid=None, realm=None, username=None,
+              error_message=None):
         user = user or self.user
         db.session.add(UserLockState(
             resolver=resolver if resolver is not None else user.resolver,
             uid=uid if uid is not None else user.uid,
             realm=realm if realm is not None else user.realm,
             username=username if username is not None else user.login,
-            lock_expires_at=lock_expires_at))
+            lock_expires_at=lock_expires_at,
+            error_message=error_message))
         db.session.commit()
 
-    def _block(self, ip, block_expires_at):
-        db.session.add(BlockList(ip=ip, block_expires_at=block_expires_at))
+    def _block(self, ip, block_expires_at, error_message=None):
+        db.session.add(BlockList(ip=ip, block_expires_at=block_expires_at, error_message=error_message))
         db.session.commit()
 
     # --- list_locked_users ----------------------------------------------------
@@ -99,6 +101,28 @@ class UserLockStateTestCase(MyTestCase):
         self.assertEqual("cornelius", entry["username"])
         self.assertFalse(entry["permanent"])
         self.assertGreater(entry["seconds_remaining"], 0)
+
+    def test_list_locked_users_reports_the_stored_wording(self):
+        # The wording this user is actually being shown, so an admin can see it without reading the policy -
+        # and can tell a stale snapshot from what the stage carries now.
+        self._lock(utc_now() + timedelta(seconds=600), error_message="Locked. Try again in about {duration}.")
+        self.assertEqual("Locked. Try again in about {duration}.", list_locked_users()[0]["error_message"])
+
+    def test_list_locked_users_reports_no_wording_when_the_stage_configured_none(self):
+        # Silent is the default, and the table has to show that as plainly as it shows a message.
+        self._lock(utc_now() + timedelta(seconds=600))
+        self.assertIsNone(list_locked_users()[0]["error_message"])
+
+    def test_list_locked_users_filters_on_the_stored_wording(self):
+        # So an admin can find every lock still quoting wording they have since changed - the row keeps a
+        # snapshot, so those users go on reading it until the lock is rewritten.
+        self._lock(utc_now() + timedelta(seconds=600), error_message="Locked. Contact your administrator.")
+        self._lock(utc_now() + timedelta(seconds=600), username="bob", uid="uid002",
+                   error_message="Blocked for a while.")
+        self._lock(utc_now() + timedelta(seconds=600), username="carol", uid="uid003")
+        matched = list_locked_users(error_messages=["*administrator*"])
+        self.assertEqual(1, len(matched))
+        self.assertEqual("cornelius", matched[0]["username"])
 
     def test_list_locked_users_default_returns_all_states(self):
         # No states filter -> everything, including expired records.
@@ -316,6 +340,13 @@ class UserLockStateTestCase(MyTestCase):
         self._block("203.0.113.8", utc_now() - timedelta(seconds=60))
         entries = list_blocklist()
         self.assertSetEqual({"203.0.113.7", "203.0.113.8"}, {entry["identifier"] for entry in entries})
+
+    def test_list_blocklist_reports_the_stored_wording(self):
+        self._block("203.0.113.7", utc_now() + timedelta(seconds=600), error_message="Blocked for {duration}.")
+        self._block("203.0.113.8", utc_now() + timedelta(seconds=600))
+        by_ip = {entry["identifier"]: entry["error_message"] for entry in list_blocklist()}
+        self.assertEqual("Blocked for {duration}.", by_ip["203.0.113.7"])
+        self.assertIsNone(by_ip["203.0.113.8"])
 
     def test_list_blocklist_excludes_expired_on_request(self):
         self._block("203.0.113.7", utc_now() + timedelta(seconds=600))
