@@ -113,6 +113,7 @@ describe("ConditionalAccessPolicyService", () => {
       httpMock.expectOne(service.actionTypesUrl).flush(MockPiResponse.fromValue(["LOCK_USER"]));
       httpMock.expectNone(service.eventTypesUrl);
       httpMock.expectNone(service.targetsUrl);
+      httpMock.expectNone(service.defaultErrorMessagesUrl);
       httpMock.expectNone(service.templatesUrl);
       await TestBed.inject(ApplicationRef).whenStable();
 
@@ -140,6 +141,7 @@ describe("ConditionalAccessPolicyService", () => {
       httpMock.expectOne(service.targetsUrl).flush(MockPiResponse.fromValue({}));
       httpMock.expectOne(service.templatesUrl).flush(MockPiResponse.fromValue([]));
       httpMock.expectOne(service.conditionTypesUrl).flush(MockPiResponse.fromValue({}));
+      httpMock.expectOne(service.defaultErrorMessagesUrl).flush(MockPiResponse.fromValue([]));
       await Promise.resolve();
 
       expect(service.policies()).toEqual([samplePolicy]);
@@ -156,6 +158,7 @@ describe("ConditionalAccessPolicyService", () => {
       httpMock.expectOne(service.targetsUrl).flush(MockPiResponse.fromValue({}));
       httpMock.expectOne(service.templatesUrl).flush(MockPiResponse.fromValue([]));
       httpMock.expectOne(service.conditionTypesUrl).flush(MockPiResponse.fromValue({}));
+      httpMock.expectOne(service.defaultErrorMessagesUrl).flush(MockPiResponse.fromValue([]));
       await Promise.resolve();
 
       expect(service.policies()).toEqual([]);
@@ -187,6 +190,7 @@ describe("ConditionalAccessPolicyService", () => {
       httpMock.expectOne(service.targetsUrl).flush(MockPiResponse.fromValue({}));
       httpMock.expectOne(service.templatesUrl).flush(MockPiResponse.fromValue([]));
       httpMock.expectOne(service.conditionTypesUrl).flush(MockPiResponse.fromValue({}));
+      httpMock.expectOne(service.defaultErrorMessagesUrl).flush(MockPiResponse.fromValue([]));
       await Promise.resolve();
 
       expect(service.eventTypes()).toEqual(["PIN_FAIL", "MFA_FAIL"]);
@@ -258,6 +262,7 @@ describe("ConditionalAccessPolicyService", () => {
       httpMock.expectOne(service.targetsUrl).flush(MockPiResponse.fromValue(targetConstraints));
       httpMock.expectOne(service.templatesUrl).flush(MockPiResponse.fromValue([sampleTemplate]));
       httpMock.expectOne(service.conditionTypesUrl).flush(MockPiResponse.fromValue(conditionTypeMeta));
+      httpMock.expectOne(service.defaultErrorMessagesUrl).flush(MockPiResponse.fromValue([]));
       await Promise.resolve();
     }
 
@@ -353,6 +358,7 @@ describe("ConditionalAccessPolicyService", () => {
       httpMock.expectOne(service.targetsUrl).flush(MockPiResponse.fromValue({}));
       httpMock.expectOne(service.templatesUrl).flush(MockPiResponse.fromValue([]));
       httpMock.expectOne(service.conditionTypesUrl).flush(MockPiResponse.fromValue({}));
+      httpMock.expectOne(service.defaultErrorMessagesUrl).flush(MockPiResponse.fromValue([]));
       await Promise.resolve();
 
       expect(service.actionsForTarget("user")).toEqual(["LOCK_USER", "DENY"]);
@@ -363,6 +369,7 @@ describe("ConditionalAccessPolicyService", () => {
       contentServiceMock.onConditionalAccess = signal(true);
       TestBed.tick();
       httpMock.expectNone(service.targetsUrl);
+      httpMock.expectNone(service.defaultErrorMessagesUrl);
       httpMock.expectNone(service.templatesUrl);
     });
 
@@ -370,6 +377,7 @@ describe("ConditionalAccessPolicyService", () => {
       contentServiceMock.onConditionalAccess = signal(false);
       TestBed.tick();
       httpMock.expectNone(service.targetsUrl);
+      httpMock.expectNone(service.defaultErrorMessagesUrl);
       httpMock.expectNone(service.templatesUrl);
     });
   });

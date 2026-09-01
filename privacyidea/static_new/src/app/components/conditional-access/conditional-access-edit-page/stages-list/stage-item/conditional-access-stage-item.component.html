@@ -106,6 +106,60 @@
         >
       }
     </mat-form-field>
+
+    <div class="ca-stage-error-message">
+      <div class="ca-stage-error-message-toggle padding-top-8">
+        <mat-checkbox
+          [checked]="hasCustomErrorMessage()"
+          (change)="toggleErrorMessage($event.checked)"
+          i18n>
+          Show specific error message
+        </mat-checkbox>
+        <app-info-hint
+          [text]="errorMessageHint"
+          ariaLabel="About the specific error message"
+          i18n-ariaLabel />
+      </div>
+
+      <div class="ca-stage-error-message-row">
+        <mat-form-field
+          appearance="fill"
+          subscriptSizing="dynamic"
+          class="input-width-xl">
+          <mat-label i18n>Error Message</mat-label>
+          <textarea
+            matInput
+            rows="1"
+            [attr.maxlength]="maxErrorMessageLength"
+            [disabled]="!hasCustomErrorMessage()"
+            [value]="stage().error_message ?? ''"
+            (input)="onErrorMessageInput($any($event.target).value)"></textarea>
+          <mat-hint>
+            <span i18n>{{ durationTag }} is replaced with the remaining time for temporary lock/block actions.</span>
+            @if (unknownTags().length) {
+              <span
+                class="ca-stage-message-warning"
+                i18n>
+                {{ unknownTags().join(", ") }} is an unknown tag and will be shown as written.
+              </span>
+            }
+            @if (durationTagUnusable()) {
+              <span class="ca-stage-message-warning">{{ durationTagUnusableHint }}</span>
+            }
+          </mat-hint>
+          <mat-hint align="end">{{ errorMessageLength() }}/{{ maxErrorMessageLength }}</mat-hint>
+        </mat-form-field>
+        <button
+          class="margin-top-8"
+          mat-icon-button
+          [disabled]="!canResetErrorMessage() || !hasCustomErrorMessage()"
+          [matTooltip]="resetErrorMessageLabel"
+          [attr.aria-label]="resetErrorMessageLabel"
+          (click)="resetErrorMessageToSuggestion()">
+          <mat-icon>refresh</mat-icon>
+        </button>
+      </div>
+    </div>
   </div>
 
   <app-conditional-access-actions-list

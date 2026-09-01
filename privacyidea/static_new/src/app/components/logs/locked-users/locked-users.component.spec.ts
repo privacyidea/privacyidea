@@ -53,7 +53,8 @@ const mockEntry: LockedUserEntry = {
   permanent: false,
   lock_expires_at: "2026-01-01T10:00:00Z",
   seconds_remaining: 3600,
-  locked_at: "2026-01-01T09:00:00Z"
+  locked_at: "2026-01-01T09:00:00Z",
+  error_message: null
 };
 
 const permanentEntry: LockedUserEntry = {
@@ -311,6 +312,20 @@ describe("LockedUsersComponent", () => {
   it("handleFilterInput writes the raw input into the shared filter", () => {
     component.handleFilterInput({ target: { value: "usernames: alice" } } as unknown as Event);
     expect(casService.lockedUsersFilter().getValueOfKey("usernames")).toBe("alice");
+  });
+
+  it("lists the stored wording as a column", () => {
+    // An admin looking at a locked user should see what that user is actually told, without opening the policy -
+    // and the row carries the message stored at lock time, not what the stage says now. Material throws on a
+    // displayed column with no matColumnDef, so this also covers the template wiring.
+    casService.setLockedUsers([
+      { ...mockEntry, error_message: "Locked. Try again in about {duration}." },
+      { ...mockEntry, username: "bob", uid: "uid002" }
+    ]);
+    expect(component.displayedColumns).toContain("error_message");
+    const byUser = new Map(component.dataSource().data.map((row) => [row.username, row.error_message]));
+    expect(byUser.get("alice")).toBe("Locked. Try again in about {duration}.");
+    expect(byUser.get("bob")).toBeNull();
   });
 
   it("clearFilter empties the shared filter", () => {

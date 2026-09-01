@@ -28,7 +28,7 @@ session it writes on.
 import logging
 import secrets
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, TYPE_CHECKING
 
 from flask import has_request_context
 
@@ -41,6 +41,11 @@ from privacyidea.lib.conditional_access.outcome_log import record_outcomes
 from privacyidea.lib.framework import get_request_local_store
 from privacyidea.lib.user import User
 from privacyidea.models import ConditionalAccessOutcome
+
+if TYPE_CHECKING:
+    # Only for the annotation below: importing the engine at module level would risk an import-order cycle
+    # during app startup, which is why run_post_eval imports it inside the function instead.
+    from privacyidea.lib.conditional_access.engine import StageMessage
 
 log = logging.getLogger(__name__)
 
@@ -74,6 +79,55 @@ class AuthPrincipal:
     internal_admin: bool = False
 
 
+@dataclass(frozen=True)
+class PostEvaluation:
+    """
+    What the post-response evaluation left for the current response to say.
+
+    :ivar messages: the user-facing wording the triggered stages carry, most severe first. Empty when nothing was
+        triggered *and* when what was triggered carries no wording - silent by default holds here as everywhere.
+    :ivar restricted: whether this request left a restriction in force. Independent of :attr:`messages`, and that
+        is the whole reason it exists: a silent restriction produces no wording, yet the request still has to be
+        answered as the rejection it now is, exactly like every request the pre-check refuses after it.
+    """
+    messages: list["StageMessage"] = field(default_factory=list)
+    restricted: bool = False
+
+
+@dataclass(frozen=True)
+class RejectionShape:
+    """
+    How one endpoint answers a request conditional access refuses.
+
+    Recorded by whichever gate guards the endpoint, so a request restricted by *itself* is answered exactly as the
+    gate answers every request after it - the whole response, not just the wording, and whatever the view was about
+    to return. Looking like an ordinary failed authentication is the whole requirement, and what one looks like
+    differs per endpoint.
+
+    :ivar value: what ``result.value`` says. ``False`` everywhere except ``/validate/triggerchallenge``, where the
+        value is the number of challenges triggered and a boolean would change the type of a field its callers may
+        be reading as a number.
+    :ivar rid: the response id this endpoint renders with. ``prepare_result`` adds ``result.authentication`` only
+        for ``rid > 1``, so a rejection at ``/ttype/push`` - which renders with ``1`` - must not grow a field the
+        endpoint never carries.
+    :ivar carries_detail: whether an ordinary failed authentication here carries a ``detail`` at all. On
+        ``/validate/*`` every failure does, so a silent rejection carries the generic failure to have one too; at
+        ``/ttype/push`` none does, so a silent rejection carries none either - the generic message would be exactly
+        the tell that including it on ``/validate`` avoids.
+    :ivar as_error: ``/auth``, the one entry point whose failed authentication is an error response rather than a
+        ``200`` carrying ``result.value`` false.
+    """
+    value: Any = False
+    rid: int = 2
+    carries_detail: bool = True
+    as_error: bool = False
+
+    @property
+    def reports_authentication(self) -> bool:
+        """Whether this endpoint's responses carry ``result.authentication`` at all (see :attr:`rid`)."""
+        return self.rid > 1
+
+
 class ConditionalAccessContext:
     """
     The conditional-access work of one request: who is authenticating, and the authentication-log rows it will write.
@@ -95,6 +149,26 @@ class ConditionalAccessContext:
         # The classification the engine has already been run for, so a repeated call is skipped but a *corrected*
         # outcome is not (see run_post_eval).
         self._evaluated_as = None
+        # The wording conditional access claims for this response, so the masking actions show it (see claim_message).
+        self.own_message: str | None = None
+        # Whether a rejection with no error message of its own falls back to the default wording for what it did
+        # (see CAContext). Resolved once by the gate, where policies can be matched, and read again at
+        # post-response evaluation so both halves of one request answer the same way.
+        self.use_default_error_message = False
+        # How this endpoint answers a refused request, recorded by whichever gate guards it so the response hook can
+        # answer a *restricted* request the same way - even when the view raised and the body to replace is an error.
+        # The default is the /validate shape, which is also the safest thing to assume for a request no gate ran on.
+        self.rejection_shape = RejectionShape()
+
+    def claim_message(self, message: str) -> None:
+        """
+        Claim *message* as conditional access's own wording for this response, so ``hide_specific_error_message``
+        and ``no_detail_on_fail`` show it instead of their own generic text (see :func:`claimed_ca_message`).
+
+        Only the gates claim: their responses are built inside the decorator stack, where those two actions can
+        still reach them. The ``after_request`` hook needs no claim, since it runs after both.
+        """
+        self.own_message = message
 
     @property
     def has_data(self) -> bool:
@@ -304,10 +378,11 @@ class ConditionalAccessContext:
         for name, value in fields.items():
             setattr(event, name, value)
 
-    def run_post_eval(self) -> list[str]:
+    def run_post_eval(self) -> PostEvaluation:
         """
-        Let the conditional-access engine react to what this request logged, and return the user-facing notices its
-        actions produced.
+        Let the conditional-access engine react to what this request logged, and report back what the current
+        response has to say about it: the wording the triggered stages carry, and whether this request left a
+        restriction in force (see :class:`PostEvaluation`).
 
         Nothing has to be scheduled: staging an authentication event *is* the signal, and everything the engine needs
         is already recorded - the classification comes from the latest staged event, the principal and source IP from
@@ -319,7 +394,7 @@ class ConditionalAccessContext:
         (``push_wait``: the challenge trigger, then the terminal outcome) the earlier ones are still counted - counts
         are taken over the stored rows - they just do not each provoke their own evaluation.
 
-        Runs **once per distinct classification**, not merely once: an endpoint that needs the notices in its own
+        Runs **once per distinct classification**, not merely once: an endpoint that needs the messages in its own
         response can run it early (``/auth`` does) and request teardown will not repeat the same evaluation. Should a
         post-policy correct the outcome in between, however, teardown *does* evaluate again - otherwise the engine
         would be left having judged a classification that no longer holds. A classification counts as evaluated only
@@ -355,26 +430,26 @@ class ConditionalAccessContext:
         """
         event = self.latest
         if event is None or event.event_type == self._evaluated_as:
-            return []
+            return PostEvaluation()
         if event.event_type in CA_ENFORCEMENT_EVENT_TYPES:
             log.debug(f"Not evaluating conditional-access policies for {event.event_type}: this request was rejected "
                       f"by conditional access itself.")
-            return []
+            return PostEvaluation()
         # Deferred import: the engine pulls in the ORM models, so importing it at module level would risk an
         # import-order cycle during app startup.
         from privacyidea.lib.conditional_access.engine import evaluate_conditional_access_policies
         context = CAContext(user=self.principal.user or None, source_ip=self.source_ip,
-                            user_role=event.user_role)
+                            user_role=event.user_role, use_default_error_message=self.use_default_error_message)
         try:
             evaluation = evaluate_conditional_access_policies(context, event.event_type)
         except Exception as ex:
             log.warning(f"Conditional-access policy evaluation failed: {ex!r}")
-            return []
+            return PostEvaluation()
         # Marked evaluated only now: a failure above leaves the classification unevaluated, so the teardown call is
         # the retry rather than a skipped second attempt.
         self._evaluated_as = event.event_type
         record_outcomes(evaluation.outcomes, event.row_id)
-        return evaluation.notices
+        return PostEvaluation(messages=evaluation.messages, restricted=bool(evaluation.enforced_targets))
 
     def finalize(self) -> None:
         """
@@ -425,6 +500,23 @@ def current_attempt_id() -> str | None:
     if not has_request_context():
         return None
     return get_ca_context().attempt_id
+
+
+def claimed_ca_message() -> str | None:
+    """
+    The error message conditional access claims for this response (or ``AuthError``), or ``None`` when it wrote none.
+
+    ``hide_specific_error_message`` and ``no_detail_on_fail`` exist to suppress what privacyIDEA volunteers *by
+    default* - which factor failed, why the token refused. A conditional-access message is the opposite: an admin
+    either wrote it on the stage or turned it on by policy. The two are separate concerns, so both actions show
+    this wording rather than their own generic text, and suppress everything else as usual - which costs a
+    rejection nothing, since it has nothing else to say.
+
+    Read with :func:`peek_ca_context`, so asking the question on a request that never touched conditional access
+    does not bring a buffer into existence.
+    """
+    context = peek_ca_context()
+    return context.own_message if context else None
 
 
 def peek_ca_context() -> ConditionalAccessContext | None:

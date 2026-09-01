@@ -314,13 +314,18 @@ def offlinerefill():
 
 def _conditional_access_identity():
     """
-    Resolve the identity the /validate/check conditional-access pre-check must gate
-    on. ``before_request`` builds ``request.User`` from the ``user`` parameter only,
-    so a username-less passkey request (identified by ``credential_id``) or a
-    serial-only request arrives with an empty user — and the user-lock / DENY checks
-    would be silently skipped, letting a locked user authenticate by credential id or
-    serial. Resolve the token owner in that case so the lock is enforced before any
-    token work runs. Falls back to the (empty) request user when no owner can be
+    Resolve the identity the conditional-access pre-check must gate on, for the endpoints that accept a token
+    instead of a user: ``/validate/check`` and ``/validate/triggerchallenge``.
+
+    ``before_request`` builds ``request.User`` from the ``user`` parameter only, so a username-less passkey request
+    (identified by ``credential_id``) or a serial-only request arrives with an empty user — and the user-lock / DENY
+    checks would be silently skipped, letting a locked user authenticate by credential id or serial, or an admin
+    trigger a challenge that pushes a prompt to a locked user's phone. Resolve the token owner in that case so the
+    lock is enforced before any token work runs.
+
+    Both endpoints require a ``user``, a ``serial`` or a ``credential_id``
+    (:class:`~privacyidea.lib.decorators.check_user_serial_or_cred_id_in_request`), so between them these three
+    cover every request that can reach the gate. Falls back to the (empty) request user when no owner can be
     resolved, so the IP-block check still applies.
     """
     if request.User:
@@ -355,22 +360,6 @@ def _challenge_owner(challenge) -> User:
         return User()
 
 
-def _poll_transaction_identity() -> User:
-    """
-    Resolve the identity the /validate/polltransaction conditional-access
-    pre-check must gate on: the owner of the (first valid) challenge for the
-    polled transaction. The poll carries only a transaction id, so the owner is
-    looked up from it; an empty :class:`User` (IP-block still applies) is
-    returned when the transaction has no valid challenge.
-    """
-    transaction_id = (request.view_args or {}).get("transaction_id") or get_optional(request.all_data, "transaction_id")
-    if not transaction_id:
-        return User()
-    valid_challenges = [challenge for challenge in get_challenges(transaction_id=transaction_id)
-                        if challenge.is_valid()]
-    return _challenge_owner(valid_challenges[0]) if valid_challenges else User()
-
-
 @validate_blueprint.route('/check', methods=['POST', 'GET'])
 @validate_blueprint.route('/radiuscheck', methods=['POST', 'GET'])
 @postpolicy(hide_specific_error_message, request=request)
@@ -392,6 +381,9 @@ def _poll_transaction_identity() -> User:
 @prepolicy(pushtoken_validate, request=request)
 @prepolicy(set_realm, request=request)
 @prepolicy(mangle, request=request)
+# Below set_realm and mangle in particular, because both *rewrite the identity*
+# Besides of them, CA gate should the first step to run before any other authentication step starts
+@conditional_access_gate(_conditional_access_identity)
 @prepolicy(increase_failcounter_on_challenge, request=request)
 @prepolicy(save_client_application_type, request=request)
 @prepolicy(webauthntoken_request, request=request)
@@ -403,10 +395,6 @@ def _poll_transaction_identity() -> User:
 @CheckSubscription(request)
 @prepolicy(api_key_required, request=request)
 @event("validate_check", request, g)
-# Refuses a locked user, a blocked source IP, or a DENY decision before any token logic runs, and answers with a
-# generic failure that leaks no reason; _conditional_access_identity picks whom to gate on from the request's user,
-# serial, or credential id.
-@conditional_access_gate(_conditional_access_identity)
 def check():
     """
     Verify an authentication attempt.
@@ -1177,6 +1165,10 @@ def check_remember_device():
 @postpolicy(mangle_challenge_response, request=request)
 @postpolicy(preferred_client_mode, request=request)
 @add_serial_from_response_to_g
+# First decorator to act on the request; see conditional_access_gate for why it sits exactly here.
+# rejection_value=0: result.value here is the number of challenges triggered, not a boolean, so a rejection answers
+# with this endpoint's own kind of nothing rather than changing the field's type.
+@conditional_access_gate(_conditional_access_identity, rejection_value=0)
 @check_user_serial_or_cred_id_in_request(request)
 @prepolicy(check_application_tokentype, request=request)
 @prepolicy(increase_failcounter_on_challenge, request=request)
@@ -1185,9 +1177,6 @@ def check_remember_device():
 @prepolicy(load_challenge_text, request=request)
 @prepolicy(fido2_auth, request=request)
 @event("validate_triggerchallenge", request, g)
-# Refuses a locked user, a blocked source IP, or a DENY decision before any challenge is triggered, gating on
-# request.User.
-@conditional_access_gate()
 def trigger_challenge():
     """
     Trigger a fresh challenge for every challenge-response token
@@ -1355,14 +1344,10 @@ def trigger_challenge():
 @CheckSubscription(request)
 @prepolicy(api_key_required, request=request)
 @event("validate_poll_transaction", request, g)
-# Gates the poll on the transaction's owner but records nothing: the smartphone's answer is already logged at
-# /ttype/push, so log_rejection=False stops a rejected poll from adding a row per poll to an attempt it did not
-# create, leaving the restriction's own history to the outcome row that imposed it.
-@conditional_access_gate(_poll_transaction_identity, log_rejection=False)
 def poll_transaction(transaction_id=None):
     """
     Report whether a challenge has been answered. Out-of-band tokens
-    (push, container) poll this endpoint to learn when the user has
+    (push) poll this endpoint to learn when the user has
     interacted with the challenge so that the calling client can
     follow up with :http:post:`/validate/check`.
 
@@ -1431,6 +1416,9 @@ def poll_transaction(transaction_id=None):
                 "realm": user.realm,
             })
 
+    # The poll outcome is deliberately NOT written to the authentication log or fed to the engine: the smartphone's
+    # answer was already logged at /ttype/push, so polling would double-count what that row already records.
+
     # In any case, we log the transaction ID
     g.audit_object.log({
         "info": f"status: {details.get('challenge_status')}",
@@ -1442,11 +1430,10 @@ def poll_transaction(transaction_id=None):
 
 
 @validate_blueprint.route('/initialize', methods=['POST', 'GET'])
+# First decorator to act on the request; see conditional_access_gate for why it sits exactly here.
+@conditional_access_gate()
 @prepolicy(fido2_auth, request=request)
 @prepolicy(disabled_token_types, request=request)
-# Refuses a locked user, a blocked source IP, or a DENY decision before a challenge is issued, gating on request.User -
-# which is empty for a usernameless passkey login, where only source_ip-target policies can apply.
-@conditional_access_gate()
 def initialize():
     """
     Initialize an authentication by requesting a fresh challenge for

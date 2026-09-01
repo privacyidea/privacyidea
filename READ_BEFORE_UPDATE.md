@@ -246,6 +246,15 @@
 
   Installations that do not use the User Agent condition are unaffected.
 
+* **`/auth` failure message change** — A failed login at `POST /auth` now reports
+  `"Authentication failed."` instead of `"Authentication failure. Wrong credentials"`. The old wording was returned for
+  *every* kind of failed login, not only for wrong credentials: a missing `password` parameter, a user who exists in no
+  resolver, a user with no tokens assigned, a disabled or revoked token, and failures nothing classified at all.
+  The error id is **unchanged** (`4031`), as is the HTTP status (`401`), so integrations that branch on the error
+  code or status are unaffected. Only clients that match on the literal message string need updating — and the specific
+  reason is still available where it always was: in `detail.message` (unless the `hide_specific_error_message` policy
+  masks it) and, for an admin, in the authentication log's event type.
+
 ## Update from 3.12 to 3.13
 
 * `enrollpin` right enforcement has been made stricter. If you try to enroll a token with a PIN but do not have the the

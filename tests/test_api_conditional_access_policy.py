@@ -32,7 +32,9 @@ from privacyidea.lib.conditional_access.authentication_event_types import (AuthE
                                                                            CA_ENFORCEMENT_EVENT_TYPES,
                                                                            TRACKABLE_EVENT_TYPES, CountMode)
 from privacyidea.lib.conditional_access.engine import ConditionalAccessAction
-from privacyidea.lib.conditional_access.policy import create_conditional_access_policy, list_conditional_access_policies
+from privacyidea.lib.conditional_access.policy import (create_conditional_access_policy,
+                                                               get_default_error_messages,
+                                                               list_conditional_access_policies)
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import SCOPE, set_policy, delete_policy
 from privacyidea.models import db
@@ -335,6 +337,22 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
                              constraints["user"]["count_modes"])
         self.assertListEqual([str(CountMode.DISTINCT_USERS), str(CountMode.PER_ATTEMPT), str(CountMode.PER_REQUEST)],
                              constraints["source_ip"]["count_modes"])
+
+    def test_list_default_error_messages(self):
+        # Only the transport seam here: that the endpoint serves the catalog in the documented shape, and
+        # that the lazy_gettext error message survives JSON encoding. Its ordering and tag placement
+        # are contracts of the catalog itself and are asserted in test_lib_conditional_access_policy.
+        res = self._request("defaulterrormessages")
+        self.assertEqual(200, res.status_code, res.json)
+        suggestions = res.json["result"]["value"]
+        self.assertEqual(len(get_default_error_messages()), len(suggestions))
+        for entry in suggestions:
+            self.assertSetEqual({"action_type", "message"}, set(entry))
+            self.assertTrue(entry["message"])
+
+    def test_list_default_error_messages_requires_admin(self):
+        res = self._request("defaulterrormessages", auth_token="not-a-token")
+        self.assertEqual(401, res.status_code, res.json)
 
     # --- PATCH /policy/<id> (update) -------------------------------------------
 
@@ -657,3 +675,39 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
         # An empty list removes every condition, widening the policy to all requests.
         self._request(f"policy/{policy_id}", method="PATCH", json_data={"conditions": []})
         self.assertListEqual([], self._request(f"policy/{policy_id}").json["result"]["value"]["conditions"])
+
+    def test_create_with_stage_error_message_round_trips(self):
+        message = "Your account is locked. Please try again in about {duration}."
+        stages = self._policy_body()["stages"]
+        stages[0]["error_message"] = message
+        policy_id = self._create_policy(stages=stages)
+        stages = self._request(f"policy/{policy_id}").json["result"]["value"]["stages"]
+        self.assertEqual(message, stages[0]["error_message"])
+
+    def test_create_without_stage_error_message_yields_none(self):
+        # The default is silence: with no message the rejection stays generic.
+        policy_id = self._create_policy()
+        stages = self._request(f"policy/{policy_id}").json["result"]["value"]["stages"]
+        self.assertIsNone(stages[0]["error_message"])
+
+    def test_create_with_over_long_stage_error_message_is_400(self):
+        body = self._policy_body()
+        body["stages"][0]["error_message"] = "x" * 501
+        res = self._request("policy", method="POST", json_data=body)
+        self.assertEqual(400, res.status_code, res.json)
+        self.assertIn("500", res.json["result"]["error"]["message"])
+
+    def test_patch_replaces_and_clears_the_stage_error_message(self):
+        stages = self._policy_body()["stages"]
+        stages[0]["error_message"] = "Old."
+        policy_id = self._create_policy(stages=stages)
+        patched = [{**stages[0], "error_message": "New."}]
+        res = self._request(f"policy/{policy_id}", method="PATCH", json_data={"stages": patched})
+        self.assertEqual(200, res.status_code, res.json)
+        stages = self._request(f"policy/{policy_id}").json["result"]["value"]["stages"]
+        self.assertEqual("New.", stages[0]["error_message"])
+        # Stages are replaced wholesale, so a stage sent without a message clears it.
+        cleared = [{key: value for key, value in patched[0].items() if key != "error_message"}]
+        self._request(f"policy/{policy_id}", method="PATCH", json_data={"stages": cleared})
+        stages = self._request(f"policy/{policy_id}").json["result"]["value"]["stages"]
+        self.assertIsNone(stages[0]["error_message"])

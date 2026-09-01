@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, inject, input, output } from "@angular/core";
+import { Component, computed, inject, input, output } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatIconModule } from "@angular/material/icon";
@@ -25,7 +25,8 @@ import {
   ConditionalAccessPolicyService,
   ConditionalAccessPolicyServiceInterface,
   ConditionalAccessStageAction,
-  ConditionalAccessTarget
+  ConditionalAccessTarget,
+  REDUNDANT_RESTRICTION_PAIRS
 } from "@services/conditional-access/conditional-access-policy.service";
 import { ConditionalAccessActionItemComponent } from "./action-item/conditional-access-action-item.component";
 
@@ -42,6 +43,16 @@ export class ConditionalAccessActionsListComponent {
   readonly actions = input.required<ConditionalAccessStageAction[]>();
   readonly target = input<ConditionalAccessTarget>("user");
   readonly actionsChange = output<ConditionalAccessStageAction[]>();
+
+  // The pairs this stage actually configures, so the warning can name them. The timed half is dead
+  // configuration - it changes nothing an admin can observe - and naming both ends is what makes the warning
+  // act on: a stage with several actions would otherwise leave the admin to work out which two conflict.
+  readonly redundantRestrictionPairs = computed(() => {
+    const configured = new Set(this.actions().map((action) => action.action_type));
+    return REDUNDANT_RESTRICTION_PAIRS.filter(
+      ([timed, permanent]) => configured.has(timed) && configured.has(permanent)
+    );
+  });
 
   onAddAction(): void {
     // Defaults a new action to one valid for the current target, so it is never born incompatible

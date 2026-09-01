@@ -43,7 +43,8 @@ from privacyidea.lib.conditional_access.policy import (list_conditional_access_p
                                                                update_conditional_access_policy,
                                                                delete_conditional_access_policy,
                                                                reorder_conditional_access_policies,
-                                                               get_target_constraints)
+                                                               get_target_constraints,
+                                                               get_default_error_messages)
 from privacyidea.lib.conditional_access.conditions import get_condition_types
 from privacyidea.lib.conditional_access.policy_template import list_conditional_access_policy_templates
 from privacyidea.lib.conditional_access.state import (list_locked_users_paginate, DEFAULT_PAGE_SIZE,
@@ -144,6 +145,35 @@ def list_action_types():
     action_types = [action.value for action in ConditionalAccessAction]
     g.audit_object.log({"success": True, "info": f"{len(action_types)} action types"})
     return send_result(action_types)
+
+
+@conditional_access_blueprint.route('defaulterrormessages', methods=['GET'])
+@prepolicy(check_base_action, request, PolicyAction.CONDITIONAL_ACCESS_POLICY_READ)
+@log_with(log)
+def list_default_error_messages():
+    """
+    Return the suggested error message for a stage's ``error_message``, per stage action, as
+    ``[{"action_type": ..., "message": ...}]`` **ordered most severe first** (see
+    :func:`~privacyidea.lib.conditional_access.policy.get_default_error_messages`).
+
+    An authoring aid for the policy editor, which composes one suggestion for a stage carrying several actions:
+    one sentence per action, kept in the order given. The order is the whole rule, because it is the same
+    concatenation the runtime performs - a request reports one sentence per thing that happened to it, ranked the
+    same way - so a client needs nothing beyond this list to offer the wording a user would be shown. An action
+    that rejects nothing has no entry, there being nothing to say for it.
+
+    The same wording is what the ``show_default_ca_error_message`` policy falls back to at runtime for a stage
+    that carries no ``error_message`` of its own, so an admin who edits a suggestion is editing the thing they
+    would otherwise have got by default. Without that policy a stage without an ``error_message`` reveals
+    nothing to the user, whatever its actions.
+
+    Requires the admin policy action :ref:`policy_conditional_access_policy_read`.
+
+    :status 200: list of ``{"action_type", "message"}`` objects, most severe first
+    """
+    default_error_messages = get_default_error_messages()
+    g.audit_object.log({"success": True})
+    return send_result(default_error_messages)
 
 
 @conditional_access_blueprint.route('conditiontypes', methods=['GET'])
@@ -424,7 +454,7 @@ def get_locked_users():
 
     Requires the admin policy action :ref:`policy_user_lock_read`.
 
-    The ``realms`` / ``resolvers`` / ``usernames`` filters accept a comma-separated list
+    The ``realms`` / ``resolvers`` / ``usernames`` / ``error_messages`` filters accept a comma-separated list
     and a ``*`` wildcard per value (matched with ``LIKE``); with ``case_insensitive``
     the plain values match case-insensitively too. These search filters are applied on
     top of — and never widen — the visibility scope.
@@ -432,6 +462,8 @@ def get_locked_users():
     :query realms: realm(s) to filter by
     :query resolvers: resolver(s) to filter by
     :query usernames: login(s) to filter by
+    :query error_messages: message text to filter by - the error message stored on the lock, i.e. what those users
+        are actually shown
     :query states: lock state(s) to include — any of ``permanent``, ``temporary``,
         ``expired`` (comma-separated). Any other value is a ``ParameterError``.
     :query case_insensitive: match the filter values case-insensitively
@@ -447,6 +479,7 @@ def get_locked_users():
         realms=to_list_param(get_optional(params, "realms")),
         resolvers=to_list_param(get_optional(params, "resolvers")),
         usernames=to_list_param(get_optional(params, "usernames")),
+        error_messages=to_list_param(get_optional(params, "error_messages")),
         states=to_list_param(get_optional(params, "states")),
         case_insensitive=is_true(get_optional(params, "case_insensitive")),
         visibility_scopes=visibility_scopes,

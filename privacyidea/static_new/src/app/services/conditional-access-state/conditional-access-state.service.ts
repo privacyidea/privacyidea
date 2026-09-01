@@ -36,7 +36,7 @@ const LOCKED_USERS_DEFAULT_PAGE_SIZE = 15;
 // case-insensitively by the backend); plural to match the API query parameters (`usernames`,
 // `realms`, `resolvers`), which each accept a list of values.
 // `states` selects which lock state(s) to show (permanent / temporary / expired).
-const LOCKED_USERS_FILTER_KEYS = ["usernames", "realms", "resolvers", "states"];
+const LOCKED_USERS_FILTER_KEYS = ["usernames", "realms", "resolvers", "states", "error_messages"];
 
 // The lock states a record can be in, as accepted by the `states` query parameter of `lock/users`:
 // permanent (no expiry), temporary (expiry still ahead) and expired (a stale row a purge removes);
@@ -59,6 +59,9 @@ export interface LockedUserEntry {
   lock_expires_at: string | null;
   seconds_remaining: number | null;
   locked_at: string;
+  // What this user is told when a request is turned away, as stored when the lock was written. A snapshot, so
+  // it can differ from what the stage carries now; null when the stage configured none, which is the default.
+  error_message: string | null;
 }
 
 export type ResetUserLockRequest =
@@ -87,6 +90,8 @@ export interface BlocklistEntry {
   block_expires_at: string | null;
   seconds_remaining: number | null;
   blocked_at: string;
+  // See LockedUserEntry: the wording stored on the row, not what the policy carries now.
+  error_message: string | null;
 }
 
 export interface ConditionalAccessStateServiceInterface {

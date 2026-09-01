@@ -36,6 +36,7 @@ import jwt
 from flask import jsonify, current_app, Response, Request, request, g, has_request_context
 from flask_babel import _
 
+from privacyidea.lib import lazy_gettext
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
 from privacyidea.lib.conditional_access.authentication_log import AuthLogUserRole, PendingAuthEvent
 from privacyidea.lib.conditional_access.request_context import AuthPrincipal, get_ca_context
@@ -68,6 +69,9 @@ if TYPE_CHECKING:
     from privacyidea.lib.conditional_access.context import CAContext
 
 log = logging.getLogger(__name__)
+
+# The error message of an ordinary failed authentication
+GENERIC_AUTH_FAILURE = lazy_gettext("Authentication failed.")
 ENCODING = "utf-8"
 TRUSTED_JWT_ALGOS = ["ES256", "ES384", "ES512",
                      "RS256", "RS384", "RS512",
@@ -131,13 +135,12 @@ def send_result(obj, rid=1, details=None, **kwargs) -> Response:
     :param details: optional parameter, which allows to provide more detail
     :type  details: None or simple type like dict, list or string/unicode
 
-    :return: json rendered string result
-    :rtype: string
+    :return: the result response, a :class:`~flask.Response` with a status of ``200``
     """
     return jsonify(prepare_result(obj, rid, details, **kwargs))
 
 
-def send_error(errstring, rid=1, context=None, error_code=-311, details=None):
+def send_error(errstring, rid=1, context=None, error_code=-311, details=None) -> Response:
     """
     sendError - return a json error result document
 
@@ -160,9 +163,8 @@ def send_error(errstring, rid=1, context=None, error_code=-311, details=None):
         challenges)
     :type details: dict
 
-    :return: json rendered sting result
-    :rtype: string
-
+    :return: the error response. A :class:`~flask.Response`, not a string - it carries a status of its own, which
+        a caller building an error outside an error handler has to set (they default to ``200``).
     """
     if details:
         details["threadid"] = threading.current_thread().ident
@@ -285,9 +287,8 @@ def _determine_user_role(user: User | None, internal_admin: bool) -> AuthLogUser
 
 def log_authentication(event_type: AuthEventType | None, request: Request | None = None, user: User | None = None,
                        serial: str | None = None, transaction_id: str | None = None,
-                       username: str | None = None,
-                       internal_admin: bool = False,
-                       immediate: bool = False) -> "PendingAuthEvent | None":
+                       username: str | None = None, internal_admin: bool = False,
+                       immediate: bool = False, other_info: dict | None = None) -> "PendingAuthEvent | None":
     """
     Record one authentication_log entry for the current request.
 
@@ -386,6 +387,7 @@ def log_authentication(event_type: AuthEventType | None, request: Request | None
         serial=serial,
         attempt_id=context.attempt_id,
         immediate=immediate,
+        other_info=other_info,
     )
     context.stage(event)
     if immediate:

@@ -1005,13 +1005,19 @@ class PushTokenClass(TokenClass):
         if all(k in request_data for k in ("fbtoken", "pubkey")):
             return cls._handle_enrollment_step2(serial, request_data)
         elif "signature" in request_data and "new_fb_token" not in request_data:
-            # Conditional-access precheck runs only here, on the signed challenge answer, never on enrollment or
-            # firebase-token updates: the token owner is resolved from the serial the smartphone sends, and the
-            # answer is rejected generically (reason recorded only in the audit log) before the signature is
-            # verified, if that owner is locked, the source IP is blocked, or a DENY policy applies.
-            from privacyidea.api.lib.conditional_access import conditional_access_precheck
-            if conditional_access_precheck(cls._resolve_token_owner(serial)) is not None:
-                return False, {}
+            # The conditional-access pre-check runs ONLY here, on the authentication path (the signed challenge
+            # answer) - never on enrollment or firebase token updates. The smartphone sends only the serial, so
+            # the owner is resolved from it, and the answer is refused before the signature is verified.
+            #
+            # A silent rejection carries no detail, because an ordinary failed answer here carries none either -
+            # the opposite of /validate/*, where every failure has one and a silent rejection needs the generic
+            # message to have one too. Configured wording is surfaced on both. PUSH_ANSWER_REJECTION states that
+            # shape once, so the response hook answers a restriction *this* answer wrote in the same shape.
+            from privacyidea.api.lib.conditional_access import (PUSH_ANSWER_REJECTION,
+                                                                conditional_access_rejection)
+            rejection = conditional_access_rejection(cls._resolve_token_owner(serial), PUSH_ANSWER_REJECTION)
+            if rejection is not None:
+                return False, ({"message": rejection.message} if rejection.message else {})
             return cls._handle_auth_response(serial, request_data)
         elif all(k in request_data for k in ('new_fb_token', 'timestamp', 'signature')):
             return cls._handle_firebase_update(serial, request_data)
