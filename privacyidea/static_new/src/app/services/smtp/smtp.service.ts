@@ -67,16 +67,15 @@ export class SmtpService implements SmtpServiceInterface {
 
   readonly smtpServerBaseUrl = environment.proxyUrl + "/smtpserver/";
   readonly smtpServerResource = httpResource<PiResponse<SmtpServers>>(() => {
-    // Conditional access is in this list for its EMAIL_ADMIN / EMAIL_USER stage actions: each one
-    // picks the SMTP server that sends the notification from these identifiers.
+    // Conditional access appears in this list because its EMAIL_ADMIN / EMAIL_USER stage actions each pick the SMTP
+    // server that sends the notification from these identifiers.
     const onPageUsingTheList =
       this.contentService.onExternalSmtp() ||
       this.contentService.onConfigurationTokenTypes() ||
       this.contentService.onConfigurationSystem() ||
       this.contentService.onConditionalAccess();
-    // smtpserver_read is what /smtpserver/ itself requires, so without it the request can only 403
-    // and raise an error notification. The pages that merely consume the list are reachable without
-    // the right - only the SMTP Servers menu entry is gated on it - so it is checked here.
+    // /smtpserver/ itself requires smtpserver_read, so this guard skips the request rather than letting it 403; only
+    // the SMTP Servers menu entry is gated on that right, so pages that merely consume the list need this check too.
     if (!onPageUsingTheList || !this.authService.actionAllowed("smtpserver_read")) {
       return undefined;
     }

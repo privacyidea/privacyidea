@@ -22,6 +22,13 @@
     i18n>
     Actions to run when this stage triggers
   </p>
+  @for (pair of redundantRestrictionPairs(); track pair[1]) {
+    <p
+      class="ca-actions-list-warning"
+      i18n>
+      Only {{ pair[1] }} takes effect: a restriction is never weakened, so {{ pair[0] }} next to it changes nothing.
+    </p>
+  }
   @if (actions().length === 0) {
     <p
       class="ca-actions-list-empty"

@@ -20,9 +20,9 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { AuthService } from "@services/auth/auth.service";
 import {
   ConditionalAccessPolicyService,
-  LockoutActionType,
-  LockoutStageAction,
-  LockoutTarget
+  ConditionalAccessActionType,
+  ConditionalAccessStageAction,
+  ConditionalAccessTarget
 } from "@services/conditional-access/conditional-access-policy.service";
 import { SmtpServer, SmtpService } from "@services/smtp/smtp.service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
@@ -36,7 +36,7 @@ describe("ConditionalAccessActionItemComponent", () => {
   let authService: MockAuthService;
   let smtpService: MockSmtpService;
 
-  function setAction(action: LockoutStageAction): void {
+  function setAction(action: ConditionalAccessStageAction): void {
     fixture.componentRef.setInput("action", action);
     fixture.detectChanges();
   }
@@ -84,7 +84,7 @@ describe("ConditionalAccessActionItemComponent", () => {
   });
 
   it("should describe every action type", () => {
-    for (const type of ["LOCK_USER", "PERMANENT_LOCK_USER", "BLOCK_IP", "ALLOW", "DENY", "EMAIL_USER"] as const) {
+    for (const type of ["LOCK_USER", "PERMANENT_LOCK_USER", "BLOCK_IP", "DENY", "EMAIL_USER"] as const) {
       setAction({ action_type: type, action_value: null });
       expect(component.actionDescription().length).toBeGreaterThan(0);
     }
@@ -95,7 +95,7 @@ describe("ConditionalAccessActionItemComponent", () => {
     expect(component.valueMode()).toBe("duration");
     setAction({ action_type: "EMAIL_ADMIN", action_value: {} });
     expect(component.valueMode()).toBe("email");
-    setAction({ action_type: "ALLOW", action_value: null });
+    setAction({ action_type: "DENY", action_value: null });
     expect(component.valueMode()).toBe("none");
   });
 
@@ -107,8 +107,8 @@ describe("ConditionalAccessActionItemComponent", () => {
         ConditionalAccessPolicyService
       ) as unknown as MockConditionalAccessPolicyService;
       policyServiceMock.actionsByTarget.set({
-        user: ["LOCK_USER", "PERMANENT_LOCK_USER", "EMAIL_ADMIN", "EMAIL_USER", "ALLOW", "DENY"],
-        source_ip: ["BLOCK_IP", "PERMANENT_BLOCK_IP", "EMAIL_ADMIN", "ALLOW", "DENY"]
+        user: ["LOCK_USER", "PERMANENT_LOCK_USER", "EMAIL_ADMIN", "EMAIL_USER", "DENY"],
+        source_ip: ["BLOCK_IP", "PERMANENT_BLOCK_IP", "EMAIL_ADMIN", "DENY"]
       });
     });
 
@@ -127,7 +127,7 @@ describe("ConditionalAccessActionItemComponent", () => {
     });
 
     it("does not flag while the allowed list is still empty", () => {
-      policyServiceMock.actionsByTarget.set({} as Record<LockoutTarget, LockoutActionType[]>);
+      policyServiceMock.actionsByTarget.set({} as Record<ConditionalAccessTarget, ConditionalAccessActionType[]>);
       policyServiceMock.actionTypes.set([]);
       fixture.componentRef.setInput("target", "source_ip");
       setAction({ action_type: "LOCK_USER", action_value: 600 });
@@ -139,7 +139,7 @@ describe("ConditionalAccessActionItemComponent", () => {
   // (except the emails) nor two actions that contradict each other.
   describe("stage action combinations", () => {
     let policyServiceMock: MockConditionalAccessPolicyService;
-    const action = (actionType: LockoutActionType) => ({ action_type: actionType, action_value: null });
+    const action = (actionType: ConditionalAccessActionType) => ({ action_type: actionType, action_value: null });
 
     beforeEach(() => {
       policyServiceMock = TestBed.inject(
@@ -150,15 +150,12 @@ describe("ConditionalAccessActionItemComponent", () => {
         source_ip: ["EMAIL_ADMIN"]
       });
       policyServiceMock.exclusiveGroupsByTarget.set({
-        user: [
-          ["LOCK_USER", "PERMANENT_LOCK_USER"],
-          ["ALLOW", "DENY"]
-        ],
+        user: [["LOCK_USER", "PERMANENT_LOCK_USER"]],
         source_ip: [["BLOCK_IP", "PERMANENT_BLOCK_IP"]]
       });
     });
 
-    const withSiblings = (siblings: LockoutStageAction[], index: number) => {
+    const withSiblings = (siblings: ConditionalAccessStageAction[], index: number) => {
       fixture.componentRef.setInput("siblingActions", siblings);
       fixture.componentRef.setInput("actionIndex", index);
       setAction(siblings[index]);
@@ -194,8 +191,8 @@ describe("ConditionalAccessActionItemComponent", () => {
     });
 
     it("does not judge while no rules have been served", () => {
-      policyServiceMock.repeatableActionsByTarget.set({} as Record<LockoutTarget, LockoutActionType[]>);
-      policyServiceMock.exclusiveGroupsByTarget.set({} as Record<LockoutTarget, LockoutActionType[][]>);
+      policyServiceMock.repeatableActionsByTarget.set({} as Record<ConditionalAccessTarget, ConditionalAccessActionType[]>);
+      policyServiceMock.exclusiveGroupsByTarget.set({} as Record<ConditionalAccessTarget, ConditionalAccessActionType[][]>);
       withSiblings([action("LOCK_USER"), action("LOCK_USER")], 1);
       expect(component.actionConflict()).toBeNull();
       expect(component.disabledActionTypes().size).toBe(0);
@@ -321,8 +318,8 @@ describe("ConditionalAccessActionItemComponent", () => {
         ConditionalAccessPolicyService
       ) as unknown as MockConditionalAccessPolicyService;
       policyServiceMock.actionsByTarget.set({
-        user: ["LOCK_USER", "PERMANENT_LOCK_USER", "EMAIL_ADMIN", "EMAIL_USER", "ALLOW", "DENY"],
-        source_ip: ["BLOCK_IP", "PERMANENT_BLOCK_IP", "EMAIL_ADMIN", "ALLOW", "DENY"]
+        user: ["LOCK_USER", "PERMANENT_LOCK_USER", "EMAIL_ADMIN", "EMAIL_USER", "DENY"],
+        source_ip: ["BLOCK_IP", "PERMANENT_BLOCK_IP", "EMAIL_ADMIN", "DENY"]
       });
       setRights([]);
     });
@@ -338,8 +335,8 @@ describe("ConditionalAccessActionItemComponent", () => {
     it("keeps one the policy already carries valid for its target", () => {
       setAction({ action_type: "EMAIL_ADMIN", action_value: { smtp_identifier: "primary" } });
       expect(component.allowedActionTypes()).toContain("EMAIL_ADMIN");
-      // The action is still valid for a user-targeted policy: it is the SMTP config that is out of
-      // reach, not the action type, so nothing is flagged as target-incompatible.
+      // The action is still valid for a user-targeted policy: it is the SMTP config that is out of reach, not the
+      // action type, so nothing is flagged as target-incompatible.
       expect(component.isActionAllowedForTarget()).toBe(true);
     });
   });

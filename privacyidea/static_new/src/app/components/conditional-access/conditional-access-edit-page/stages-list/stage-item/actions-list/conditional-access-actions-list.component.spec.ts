@@ -20,7 +20,7 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { AuthService } from "@services/auth/auth.service";
 import {
   ConditionalAccessPolicyService,
-  LockoutStageAction
+  ConditionalAccessStageAction
 } from "@services/conditional-access/conditional-access-policy.service";
 import { SmtpService } from "@services/smtp/smtp.service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
@@ -32,7 +32,7 @@ describe("ConditionalAccessActionsListComponent", () => {
   let component: ConditionalAccessActionsListComponent;
   let fixture: ComponentFixture<ConditionalAccessActionsListComponent>;
 
-  const actions: LockoutStageAction[] = [
+  const actions: ConditionalAccessStageAction[] = [
     { action_type: "LOCK_USER", action_value: { lock_duration_seconds: 600 } },
     { action_type: "EMAIL_ADMIN", action_value: null }
   ];
@@ -68,8 +68,8 @@ describe("ConditionalAccessActionsListComponent", () => {
       ConditionalAccessPolicyService
     ) as unknown as MockConditionalAccessPolicyService;
     policyServiceMock.actionsByTarget.set({
-      user: ["LOCK_USER", "ALLOW", "DENY"],
-      source_ip: ["BLOCK_IP", "ALLOW", "DENY"]
+      user: ["LOCK_USER", "DENY"],
+      source_ip: ["BLOCK_IP", "DENY"]
     });
     fixture.componentRef.setInput("target", "source_ip");
 
@@ -85,18 +85,18 @@ describe("ConditionalAccessActionsListComponent", () => {
       ConditionalAccessPolicyService
     ) as unknown as MockConditionalAccessPolicyService;
     policyServiceMock.actionsByTarget.set({
-      user: ["ALLOW", "DENY", "EMAIL_ADMIN", "LOCK_USER"],
-      source_ip: ["BLOCK_IP", "ALLOW", "DENY"]
+      user: ["LOCK_USER", "PERMANENT_LOCK_USER", "EMAIL_ADMIN", "DENY"],
+      source_ip: ["BLOCK_IP", "DENY"]
     });
     policyServiceMock.repeatableActionsByTarget.set({ user: ["EMAIL_ADMIN"], source_ip: ["EMAIL_ADMIN"] });
-    policyServiceMock.exclusiveGroupsByTarget.set({ user: [["ALLOW", "DENY"]], source_ip: [] });
-    fixture.componentRef.setInput("actions", [{ action_type: "ALLOW", action_value: null }]);
+    policyServiceMock.exclusiveGroupsByTarget.set({ user: [["LOCK_USER", "PERMANENT_LOCK_USER"]], source_ip: [] });
+    fixture.componentRef.setInput("actions", [{ action_type: "LOCK_USER", action_value: null }]);
 
     const spy = jest.spyOn(component.actionsChange, "emit");
     component.onAddAction();
-    // ALLOW is taken and DENY contradicts it, so the first free type wins.
+    // LOCK_USER is taken and PERMANENT_LOCK_USER contradicts it, so the first free type wins.
     expect(spy).toHaveBeenCalledWith([
-      { action_type: "ALLOW", action_value: null },
+      { action_type: "LOCK_USER", action_value: null },
       { action_type: "EMAIL_ADMIN", action_value: null }
     ]);
   });
@@ -111,5 +111,61 @@ describe("ConditionalAccessActionsListComponent", () => {
     const spy = jest.spyOn(component.actionsChange, "emit");
     component.onRemoveAction(0);
     expect(spy).toHaveBeenCalledWith([actions[1]]);
+  });
+
+  describe("redundant restrictions", () => {
+    const withActions = (list: ConditionalAccessStageAction[]) => {
+      fixture.componentRef.setInput("actions", list);
+      fixture.detectChanges();
+    };
+
+    it("should flag a timed restriction that sits next to a permanent one", () => {
+      // The permanent lock wins the row whichever order they run in, so the timed action changes nothing.
+      withActions([
+        { action_type: "LOCK_USER", action_value: 600 },
+        { action_type: "PERMANENT_LOCK_USER", action_value: null }
+      ]);
+      expect(component.redundantRestrictionPairs()).toEqual([["LOCK_USER", "PERMANENT_LOCK_USER"]]);
+
+      withActions([
+        { action_type: "BLOCK_IP", action_value: 600 },
+        { action_type: "PERMANENT_BLOCK_IP", action_value: null }
+      ]);
+      // Both ends are reported, so the warning can name the action that is doing nothing.
+      expect(component.redundantRestrictionPairs()).toEqual([["BLOCK_IP", "PERMANENT_BLOCK_IP"]]);
+    });
+
+    it("should not flag a stage that carries only one kind of restriction", () => {
+      withActions([{ action_type: "LOCK_USER", action_value: 600 }]);
+      expect(component.redundantRestrictionPairs()).toEqual([]);
+
+      withActions([{ action_type: "PERMANENT_BLOCK_IP", action_value: null }]);
+      expect(component.redundantRestrictionPairs()).toEqual([]);
+    });
+
+    it("should not flag a timed and a permanent action that restrict different subjects", () => {
+      // The server confines a stage's actions to one target, so this cannot be saved today - but the pairing
+      // is checked per subject so that it stays correct if a stage is ever allowed to mix them. A user lock
+      // and an IP block are separate rows: neither overrides the other.
+      withActions([
+        { action_type: "LOCK_USER", action_value: 600 },
+        { action_type: "PERMANENT_BLOCK_IP", action_value: null }
+      ]);
+      expect(component.redundantRestrictionPairs()).toEqual([]);
+    });
+
+    it("should name both actions in the rendered warning", () => {
+      // The point of the warning is telling the admin which two of their actions conflict, so the text has to
+      // carry the names - a stage with several actions gives them nothing to go on otherwise.
+      withActions([
+        { action_type: "LOCK_USER", action_value: 600 },
+        { action_type: "EMAIL_ADMIN", action_value: null },
+        { action_type: "PERMANENT_LOCK_USER", action_value: null }
+      ]);
+      const warning = fixture.nativeElement.querySelector(".ca-actions-list-warning");
+      expect(warning).toBeTruthy();
+      expect(warning.textContent).toContain("LOCK_USER");
+      expect(warning.textContent).toContain("PERMANENT_LOCK_USER");
+    });
   });
 });

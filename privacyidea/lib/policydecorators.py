@@ -557,7 +557,7 @@ def auth_otppin(wrapped_function, *args, **kwds):
                                  user_object=user).action_values(unique=True)
         if otppin_dict:
             if list(otppin_dict)[0] == ACTIONVALUE.NONE:
-                # Record that no otppin is used for later correct authentication event classification
+                # Record that no otppin was used, so later authentication-event classification is correct.
                 if token:
                     token.auth_details[NO_FIRST_FACTOR_KEY] = True
                 if pin == "":

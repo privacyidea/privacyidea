@@ -27,6 +27,7 @@ import { MatInput } from "@angular/material/input";
 import { MatPaginatorModule, PageEvent } from "@angular/material/paginator";
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
 import { MatTooltipModule } from "@angular/material/tooltip";
+import { ExpandableMessageComponent } from "@components/shared/expandable-message/expandable-message.component";
 import { RouterLink } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { FilterValue } from "@core/models/filter_value/filter_value";
@@ -67,6 +68,7 @@ import { concatMap, reduce } from "rxjs/operators";
     MatButtonModule,
     MatIconModule,
     MatTooltipModule,
+    ExpandableMessageComponent,
     MatCheckboxModule,
     MatPaginatorModule,
     MatFormField,
@@ -104,7 +106,8 @@ export class LockedUsersComponent {
     "resolver",
     "state",
     "lock_expires_at",
-    "locked_at"
+    "locked_at",
+    "error_message"
   ];
 
   // Alias for the template (sort icon + sort handler fallback).
@@ -153,9 +156,9 @@ export class LockedUsersComponent {
     return row.username || row.uid;
   }
 
-  // Pre-seed the authentication-log filter with this user's identity and jump there. Matches by username when
-  // known (falling back to uid for username-less rows), scoped to the same realm/resolver so the log shows only
-  // that user's events. Navigation to the auth-log route itself is done by the template's routerLink.
+  // Pre-seeds the authentication-log filter with this user's identity - username, or uid for username-less rows, scoped
+  // to the same realm/resolver - so the log shows only that user's events; the template's routerLink does the
+  // navigation.
   showAuthenticationLog(row: LockedUserEntry): void {
     const identity = row.username
       ? new FilterValue().addEntry("username", row.username)
@@ -274,7 +277,7 @@ export class LockedUsersComponent {
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: $localize`Reset User Lockout`,
+          title: $localize`Reset User Lock`,
           items: rows.map((row) => this.displayLogin(row)),
           itemType: "locked user",
           confirmAction: { label: $localize`Reset`, value: true, type: "destruct" }
@@ -288,13 +291,13 @@ export class LockedUsersComponent {
         from(rows)
           .pipe(
             concatMap((row) =>
-              this.casService.resetUserLockout({ uid: row.uid, realm: row.realm, resolver: row.resolver })
+              this.casService.resetUserLock({ uid: row.uid, realm: row.realm, resolver: row.resolver })
             ),
             reduce((count, success) => count + (success ? 1 : 0), 0)
           )
           .subscribe((count) => {
             if (count > 0) {
-              this.notificationService.success($localize`Reset ${count} user lockout(s).`);
+              this.notificationService.success($localize`Reset ${count} user lock(s).`);
             }
             this.casService.lockedUsersResource.reload();
           });
@@ -302,17 +305,17 @@ export class LockedUsersComponent {
   }
 
   deleteExpired(): void {
-    // Generic confirmation only: the set of expired records is evaluated server-side at purge time, so listing a
-    // snapshot here could be misleading (more may expire in between). Admins can inspect them via the "Expired"
-    // state filter beforehand.
+    // Generic confirmation only: the set of expired records is evaluated server-side at purge time, so a snapshot
+    // listed here could be misleading (more may expire meanwhile); admins can inspect them via the "Expired" state
+    // filter beforehand.
     this.dialogService
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: $localize`Delete Expired Lockouts`,
+          title: $localize`Delete Expired Locks`,
           items: [],
-          itemType: "expired lockout record",
-          message: $localize`This permanently deletes all expired lockout records from the database.`,
+          itemType: "expired lock record",
+          message: $localize`This permanently deletes all expired lock records from the database.`,
           confirmAction: { label: $localize`Delete`, value: true, type: "destruct" }
         }
       })
@@ -321,8 +324,8 @@ export class LockedUsersComponent {
         if (!confirmed) {
           return;
         }
-        this.casService.purgeUserLockouts().subscribe((count) => {
-          this.notificationService.success($localize`Deleted ${count} expired lockout(s).`);
+        this.casService.purgeUserLocks().subscribe((count) => {
+          this.notificationService.success($localize`Deleted ${count} expired lock(s).`);
           this.casService.lockedUsersResource.reload();
         });
       });

@@ -76,8 +76,8 @@ export abstract class DashboardWidget {
   static readonly maxSize: WidgetSize = { cols: DASHBOARD_COLUMNS, rows: Number.POSITIVE_INFINITY };
   static readonly pinned: boolean = false;
   static readonly fixedPosition: { x: number; y: number } | null = null;
-  // The right(s) a widget needs to be offered at all. A list means any one of them is enough, for a widget that
-  // summarizes several separately-governed areas: it then shows only the parts the admin may read.
+  // The right(s) a widget needs to be offered at all; a list means any one is enough, for a widget summarizing several
+  // separately-governed areas that then shows only the parts the admin may read.
   static readonly requiredAction: PolicyAction | PolicyAction[] | null = null;
   // Where the widget's title links to, for a widget that summarizes one page. Null leaves the title as plain text.
   static readonly titleLink: string | null = null;

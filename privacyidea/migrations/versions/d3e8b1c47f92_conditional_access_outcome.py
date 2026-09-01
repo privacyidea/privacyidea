@@ -5,7 +5,7 @@ access did. One row per action the engine executed for a request (LOCK_USER,
 BLOCK_IP, EMAIL_*, and the pre-auth DENY decision), plus dry-run rows recording
 what a dry-run policy would have done.
 
-This is the queryable counterpart of the live state in user_lockout_state and
+This is the queryable counterpart of the live state in user_lock_state and
 block_list, which show the restriction currently in force and then forget it:
 only this table can answer "when was this user locked, by which policy, and for
 how long". Each row belongs to the authentication_log row of the request that
@@ -22,8 +22,8 @@ from alembic import op
 from sqlalchemy.dialects import mysql
 from sqlalchemy.exc import OperationalError, ProgrammingError
 
-# Same type the model uses: BigInteger everywhere, but INTEGER on SQLite so the primary key becomes
-# "INTEGER PRIMARY KEY" and SQLite auto-assigns it via rowid. auth_log_id uses it too, so it matches the
+# Same type the model uses: BigInteger everywhere, but INTEGER on SQLite, so the primary key becomes
+# "INTEGER PRIMARY KEY" and SQLite auto-assigns it via rowid; auth_log_id uses it too, matching the
 # authentication_log.id column it references.
 from privacyidea.models.utils import BigIntegerType
 

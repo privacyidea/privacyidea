@@ -23,7 +23,7 @@ input - an API-key status, a request header, the endpoint - is a new *field*
 rather than a new parameter on every entry point and every internal helper along
 the way. The engine's two entry points
 (:func:`~privacyidea.lib.conditional_access.engine.evaluate_access_decision` and
-:func:`~privacyidea.lib.conditional_access.engine.evaluate_lockout_policies`)
+:func:`~privacyidea.lib.conditional_access.engine.evaluate_conditional_access_policies`)
 take it instead of the individual values.
 
 It is deliberately free of Flask: the lib layer must stay usable outside a
@@ -69,6 +69,11 @@ class CAContext:
         exempt an emergency admin from a pre-auth DENY. See
         :func:`~privacyidea.api.lib.utils.build_ca_context` for where it comes
         from.
+    :ivar use_default_error_message: Whether a rejection with no error message of its own falls back to the
+        default wording for what it did (the ``show_default_ca_error_message`` policy), rather than saying nothing.
+        Not about the generic "Authentication failed." - that is what a rejection with nothing to say ends up
+        carrying, decided in the API layer. Resolved there too, because matching a policy needs Flask and this
+        package deliberately does not.
     Note what is deliberately *absent*: the authentication log's ``client_label``
     (the ``client_id`` parameter, falling back to the User-Agent header). It
     identifies the calling application well enough to be worth recording
@@ -80,3 +85,4 @@ class CAContext:
     user: "User | None" = None
     source_ip: str | None = None
     user_role: str | None = None
+    use_default_error_message: bool = False
