@@ -360,8 +360,16 @@ $button-low-contrast-variant: linear-gradient(
     // Material's transparent outlined-button background; otherwise a stroked
     // action button shows its container through and looks darker on a non-white
     // surface (e.g. the recessed stage well) than on the white page.
-    background-color: $bg;
-    color: $color;
+    //
+    // !important on background-color and color: Material's own default outlined-button rule
+    // (.mat-mdc-outlined-button:not(:disabled)) sets the label to the theme's primary color at the same
+    // selector specificity as this one, so which wins is a coin flip decided by stylesheet load order -
+    // it loses inside a dialog's CDK overlay, where the button's compiled styles can be injected after the
+    // global bundle. A secondary button's label color already matches Material's default (both are
+    // primary-colored text), so the loss is invisible there; a primary/delete-primary button's near-white
+    // label does not, and silently renders as unreadable same-color-as-background text.
+    background-color: $bg !important;
+    color: $color !important;
     @if $border {
       border-color: $color;
     }
