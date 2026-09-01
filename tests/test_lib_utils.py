@@ -14,7 +14,7 @@ from privacyidea.lib.crypto import generate_password
 from privacyidea.lib.error import PolicyError, ParameterError
 from privacyidea.lib.utils import (parse_timelimit,
                                    check_time_in_range, parse_proxy,
-                                   check_proxy, get_client_ip_info, MAX_IP_CHAIN_HOPS,
+                                   check_proxy, get_client_ip_info, MAX_IP_CHAIN_HOPS, MAX_IP_CHAIN_HOP_LENGTH,
                                    reduce_realms, is_true,
                                    parse_date, get_data_from_params, parse_legacy_time,
                                    int_to_hex, parse_time_offset_from_now, censor_connect_string,
@@ -739,6 +739,37 @@ class UtilsTestCase(MyTestCase):
         self.assertEqual(40 - MAX_IP_CHAIN_HOPS, info.dropped_hops)
         # The effective hop survives the cap.
         self.assertEqual("10.0.0.1", info.chain[info.effective_index].ip)
+
+    def test_23d_get_client_ip_info_marks_the_actual_hop_when_the_chain_repeats_an_address(self):
+        # The same address can legitimately appear twice in a chain (a client behind two proxies that both
+        # add the same X-Forwarded-For value, say). effective_index must still point at the hop that was
+        # actually walked to, not just the first hop whose (ip, source) happens to match it.
+        class RequestMock:
+            blueprint = "token_blueprint"
+            remote_addr = "9.9.9.9"
+            all_data = {}
+            access_route = ["1.2.3.4", "1.2.3.4", "1.2.3.4"]
+
+        # Trust the peer and all three (duplicated) X-Forwarded-For hops.
+        info = get_client_ip_info(RequestMock(), "9.9.9.9>1.2.3.4>1.2.3.4>0.0.0.0/0")
+        self.assertEqual("1.2.3.4", info.ip)
+        # hops: [peer 9.9.9.9, 1.2.3.4, 1.2.3.4, 1.2.3.4] - the deepest one was chosen, not the first duplicate.
+        self.assertEqual(3, info.effective_index)
+        self.assertEqual("1.2.3.4", info.chain[info.effective_index].ip)
+
+    def test_23e_get_client_ip_info_caps_the_chain_even_without_a_route(self):
+        # An override is configured but the request has no X-Forwarded-For route at all: the ``client``
+        # parameter is still attacker-controlled and must be capped like every other return path.
+        class RequestMock:
+            blueprint = "validate_blueprint"
+            remote_addr = "10.0.0.1"
+            all_data = {"client": "1" * 999}
+            access_route = []
+
+        info = get_client_ip_info(RequestMock(), "10.0.0.1>0.0.0.0/0")
+        self.assertIsNone(info.ip)
+        for hop in info.chain:
+            self.assertLessEqual(len(hop.ip), MAX_IP_CHAIN_HOP_LENGTH)
 
     def test_24_sanity_name_check(self):
         self.assertTrue(sanity_name_check('Hello_World'))

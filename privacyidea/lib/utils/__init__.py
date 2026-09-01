@@ -767,15 +767,17 @@ def get_client_ip_info(request, proxy_settings) -> "ClientIpInfo":
         return _cap_chain(info)
     if not request.access_route:
         # No route at all: get_client_ip has always returned None here, and there is nothing to derive from.
-        return ClientIpInfo(ip=None, peer_ip=peer, source=None, chain=hops)
-    # A falsy peer is dropped rather than handed to IPAddress(), which would raise.
-    addressable = [hop for hop in hops if hop.ip]
-    addresses = [IPAddress(hop.ip) for hop in addressable]
+        return _cap_chain(ClientIpInfo(ip=None, peer_ip=peer, source=None, chain=hops))
+    # A falsy peer is dropped rather than handed to IPAddress(), which would raise. Kept as (hops-index, hop)
+    # pairs so the effective hop can be recovered by position: the same (ip, source) can legitimately appear
+    # more than once in the chain, and a value-based lookup back into ``hops`` would then return the first
+    # match rather than the hop actually chosen.
+    addressable = [(i, hop) for i, hop in enumerate(hops) if hop.ip]
+    addresses = [IPAddress(hop.ip) for _, hop in addressable]
     index = check_proxy_index(addresses, proxy_settings)
-    chosen = addressable[index]
+    effective_index, chosen = addressable[index]
     # Index 0 is the peer: an override is configured, but this peer may not map the client any further.
     source = str(ClientIpSource.REMOTE_ADDR_UNMAPPED) if index == 0 else chosen.source
-    effective_index = hops.index(chosen) if chosen in hops else index
     # str(IPAddress(...)) rather than the raw hop, so a non-canonical spelling normalizes exactly as before.
     return _cap_chain(ClientIpInfo(ip=str(addresses[index]), peer_ip=peer, source=source, chain=hops,
                                    effective_index=effective_index))
