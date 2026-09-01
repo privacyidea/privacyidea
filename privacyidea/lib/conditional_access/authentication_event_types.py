@@ -20,7 +20,18 @@ from enum import Enum
 
 log = logging.getLogger(__name__)
 
-# Key under which the classified AuthEventType is carried from lib to api layer
+# Key under which the classified AuthEventType is carried from lib to api layer.
+#
+# **Every one of these keys travels in a dict the api layer also answers the client with.** A view reads them by
+# popping (this key directly, the reason via :func:`~privacyidea.api.lib.utils.pop_auth_event_reason`), and whatever a
+# view forgets is dropped where the response body is built - see INTERNAL_CLASSIFICATION_KEYS and
+# :func:`strip_internal_classification` below. Popping is therefore how a view *reads* the classification, not what
+# keeps it out of the response: that is the boundary's job, so a new caller cannot leak by forgetting.
+#
+# Carrying it in the reply is what stays, for now. The alternatives - handing it over on ``g``, or giving every policy
+# helper a return type that separates the two halves - are a refactor of the whole policy-helper layer rather than of
+# this feature, and both trade "the view must pop" for "the value must not go stale between two lib calls in one
+# request", which fails more quietly. The channel is the status quo made safe at its exit rather than made ideal.
 AUTH_EVENT_TYPE_KEY = "authentication_event_type"
 
 # Key set on token.auth_details when the token is verified without a first factor (knowledge factor), i.e. otppin=none.
@@ -31,7 +42,9 @@ NO_FIRST_FACTOR_KEY = "no_first_factor"
 # answer ends in challenge_janitor(), which deletes exactly those rows.
 CHALLENGE_LAPSED_KEY = "challenge_lapsed"
 
-# Keys carrying the classified AuthEventReason (and its detail dict) from lib to api, alongside AUTH_EVENT_TYPE_KEY.
+# Keys carrying the classified AuthEventReason (and its detail dict) from lib to api, alongside AUTH_EVENT_TYPE_KEY -
+# stripped at the same boundary. The detail dict is the one of the three that is specific to a request (which policy
+# decided, which serial failed for which reason), so it is the one a leak would actually tell the client something by.
 # The reason travels the same three routes the event type does: token.auth_details for a per-token finding, the
 # reply_dict for the request's classification, and the view's own context dict. A per-token finding is a single
 # reason, while the request-level classification is the list of them (see order_request_reasons); the api layer
@@ -52,6 +65,32 @@ SUPPRESS_TERMINAL_EVENT_KEY = "suppress_terminal_authentication_event"
 # exposing it in the response. push_wait uses it so its LOGIN_SUCCESS row correlates with the trigger and out-of-band
 # answer; the API layer pops it from the response details before sending.
 LOG_TRANSACTION_ID_KEY = "log_transaction_id"
+
+# Every key that travels from the lib layer to the api layer in a dict the response is then built from, and that must
+# never reach the client. The keys a token only ever sets on its own ``auth_details`` (NO_FIRST_FACTOR_KEY,
+# CHALLENGE_LAPSED_KEY, SUPPRESS_TERMINAL_EVENT_KEY) are deliberately not here: that dict is the token layer's own
+# state and is never handed to a client - a key that starts travelling in a reply belongs in this set.
+INTERNAL_CLASSIFICATION_KEYS = frozenset({AUTH_EVENT_TYPE_KEY, AUTH_EVENT_REASON_KEY, AUTH_EVENT_REASON_DETAIL_KEY,
+                                          LOG_TRANSACTION_ID_KEY})
+
+
+def strip_internal_classification(details):
+    """
+    Remove every :data:`INTERNAL_CLASSIFICATION_KEYS` entry from *details*, in place, and return it.
+
+    The last thing that happens to a response body before it is built (see
+    :func:`~privacyidea.lib.utils.prepare_result` and :func:`~privacyidea.api.lib.utils.send_error`), so that a view
+    that forgot to take the classification off a lib call's reply cannot leak it. Views still pop the keys where they
+    read them - this is the backstop, not the mechanism, and it is deliberately at the boundary rather than in each
+    view, because "every future caller remembers" is exactly what a boundary is for.
+
+    :param details: the reply/details dict about to be answered with, or anything that is not a dict (left alone)
+    :return: *details*
+    """
+    if isinstance(details, dict):
+        for key in INTERNAL_CLASSIFICATION_KEYS:
+            details.pop(key, None)
+    return details
 
 
 class AuthEventType(str, Enum):

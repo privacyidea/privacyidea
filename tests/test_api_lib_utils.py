@@ -7,7 +7,14 @@ from privacyidea.api.lib.utils import (check_policy_name,
                                        verify_auth_token, is_fqdn,
                                        attestation_certificate_allowed, get_priority_from_param,
                                        get_required_one_of, get_optional_one_of, get_required, get_optional,
-                                       to_list_param, build_ca_context)
+                                       to_list_param, build_ca_context, send_error)
+from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType, AuthEventReason,
+                                                                           AUTH_EVENT_TYPE_KEY,
+                                                                           AUTH_EVENT_REASON_KEY,
+                                                                           AUTH_EVENT_REASON_DETAIL_KEY,
+                                                                           INTERNAL_CLASSIFICATION_KEYS,
+                                                                           LOG_TRANSACTION_ID_KEY)
+from privacyidea.lib.utils import prepare_result
 from privacyidea.lib.policy import SCOPE, set_policy, delete_policy
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.user import User
@@ -301,6 +308,39 @@ class UtilsTestCase(MyApiTestCase):
             self.assertIsNone(context.user)
             # Nothing marks this principal as a local admin, so it classifies as a regular user.
             self.assertEqual("user", context.user_role)
+
+    def _classified_details(self) -> dict:
+        # What a lib call hands the api layer: the client-facing message plus the classification, which is only ever
+        # meant for the authentication log.
+        return {"message": "wrong otp pin",
+                AUTH_EVENT_TYPE_KEY: AuthEventType.PIN_FAIL,
+                AUTH_EVENT_REASON_KEY: [str(AuthEventReason.WRONG_OTP)],
+                AUTH_EVENT_REASON_DETAIL_KEY: {"reasons": {"TOK1": str(AuthEventReason.WRONG_OTP)}},
+                LOG_TRANSACTION_ID_KEY: "0123456789"}
+
+    def test_08c_a_forgotten_pop_cannot_leak_the_classification(self):
+        # The lib layer hands its classification to the api layer in the very dict the response body is built from,
+        # and a view reads it by popping. This asserts the backstop rather than the habit: a view that popped nothing
+        # still answers without the internal keys, so a new caller cannot leak them by forgetting.
+        details = self._classified_details()
+
+        result = prepare_result(False, rid=2, details=details)
+
+        self.assertEqual("wrong otp pin", result["detail"]["message"], result)
+        for key in INTERNAL_CLASSIFICATION_KEYS:
+            self.assertNotIn(key, result["detail"], result)
+
+    def test_08d_an_error_response_strips_the_classification_too(self):
+        # An error carries the same dict: AuthError hands a lib call's reply straight to the error handler, so the
+        # rejection path needs the same backstop as the successful one.
+        with self.app.test_request_context('/auth', method='POST'):
+            response = send_error("Authentication failure.", rid=2, error_code=403,
+                                  details=self._classified_details())
+
+        detail = response.json["detail"]
+        self.assertEqual("wrong otp pin", detail["message"], detail)
+        for key in INTERNAL_CLASSIFICATION_KEYS:
+            self.assertNotIn(key, detail, detail)
 
     def test_09_check_unquote(self):
         self.setUp_user_realms()

@@ -42,8 +42,10 @@ def check_max_auth_fail(user: User, user_search_dict: dict, check_validate_check
 
     *reply_dict* is handed to the client as the error details, so it carries nothing but the message: the caller
     classifies the refusal for the authentication log itself (``AuthEventReason.AUTH_MAX_FAIL``), which it can,
-    since it knows which of the two checks said no.
-    """
+    since it knows which of the two checks said no. That is this pair's answer to the classification travelling in a
+    client-facing dict elsewhere (see :data:`~privacyidea.lib.conditional_access.authentication_event_types
+    .AUTH_EVENT_TYPE_KEY`, where the response boundary strips it), not a rule the rest of the policy helpers
+    follow yet. """
     result = True
     reply_dict = {}
     max_fail_dict = Match.user(g, scope=SCOPE.AUTHZ, action=PolicyAction.AUTHMAXFAIL,

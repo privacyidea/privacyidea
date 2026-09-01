@@ -409,8 +409,10 @@ def auth_user_timelimit(wrapped_function, user, password, options=None):
     reply_dict = {}
     g = options.get("g")
     result = True
-    # Which limit was hit is classified here, not by the checks: their reply_dict reaches the client as the error
-    # details, so it carries nothing internal (see check_max_auth_fail).
+    # Which limit was hit is classified here rather than by the checks, which the caller can do since it knows which
+    # of the two said no. That keeps the two most-reused policy helpers free of the internal keys; this decorator
+    # still sets them on its own reply_dict below, on the lib-to-api channel every classification uses (see
+    # AUTH_EVENT_TYPE_KEY), which the view pops to read and the response boundary strips whatever is left.
     reason = AuthEventReason.AUTH_MAX_FAIL
     if g:
         user_search_dict = {"user": user.login, "realm": user.realm}

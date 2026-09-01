@@ -2893,9 +2893,10 @@ def auth_timelimit(request, action):
         # normal user
         user_search_dict = {"user": user.login, "realm": user.realm}
 
-    # Check policies. Which limit was hit is classified here rather than by the checks: their reply_dict is handed to
-    # the client as the error details, and an internal key travelling in it is one a later caller has to remember to
-    # take out again.
+    # Check policies. Which limit was hit is classified here rather than by the checks, which this caller can do
+    # since it knows which of the two said no: their reply_dict is handed to the client as the error details, so the
+    # two most-reused policy helpers put nothing internal in it in the first place. The rest of the classification
+    # does travel in the reply (see AUTH_EVENT_TYPE_KEY), where the response boundary is what keeps it in.
     reason = AuthEventReason.AUTH_MAX_FAIL
     result, reply_dict = check_max_auth_fail(user, user_search_dict, check_validate_check=not local_admin)
     if result:

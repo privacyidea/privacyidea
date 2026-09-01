@@ -40,7 +40,8 @@ from privacyidea.lib import lazy_gettext
 from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType,
                                                                           AUTH_EVENT_REASON_KEY,
                                                                           AUTH_EVENT_REASON_DETAIL_KEY,
-                                                                          REASON_DETAIL_INFO_KEY)
+                                                                          REASON_DETAIL_INFO_KEY,
+                                                                          strip_internal_classification)
 from privacyidea.lib.conditional_access.authentication_log import AuthLogUserRole, PendingAuthEvent
 from privacyidea.lib.conditional_access.request_context import AuthPrincipal, get_ca_context
 from privacyidea.lib.user import User
@@ -170,6 +171,9 @@ def send_error(errstring, rid=1, context=None, error_code=-311, details=None) ->
         a caller building an error outside an error handler has to set (they default to ``200``).
     """
     if details:
+        # The same backstop prepare_result applies to a successful response: an error's details are built from the
+        # lib call's reply too (an AuthError carries it straight through), so a forgotten pop cannot leak here either.
+        strip_internal_classification(details)
         details["threadid"] = threading.current_thread().ident
     res = {"jsonrpc": "2.0",
            "detail": details,
@@ -311,6 +315,12 @@ def pop_auth_event_reason(details: dict | None) -> tuple[list[str], dict | None]
     Both are internal keys the lib layer sets alongside the event type (see
     :data:`~privacyidea.lib.conditional_access.authentication_event_types.AUTH_EVENT_REASON_KEY`) and neither may
     reach the client, so they are popped rather than read.
+
+    A view calls this to *read* the classification off a lib call's reply, which is the same dict the response is
+    built from. Forgetting does not leak it - :func:`~privacyidea.lib.conditional_access.authentication_event_types.
+    strip_internal_classification` drops whatever is left when the body is built - it loses it: the row is then logged
+    without a reason. Calling this on a dict that carries none is free, so the habit is to pop unconditionally rather
+    than to reason about whether this particular path classifies anything.
 
     The layer below records either a list of reasons (the request-level classification, ordered by precedence) or a
     single one (a layer that only ever finds one), so both are accepted and a list always comes back.
