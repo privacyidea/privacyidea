@@ -20,6 +20,7 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 
 import { provideHttpClient } from "@angular/common/http";
 import { ActivatedRoute } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { AuthService } from "@services/auth/auth.service";
 import { ContentService } from "@services/content/content.service";
@@ -87,11 +88,15 @@ describe("UserTableComponent", () => {
   it("stops a user load that hangs, and reports it on the panel", () => {
     const authService = TestBed.inject(AuthService) as unknown as MockAuthService;
     authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["userlist"] });
-    mockUserService.usersResource.set(MockPiResponse.fromValue([]) as never);
+    // A request is out and nothing has come back for it yet.
+    mockUserService.usersResource.set(undefined as never);
+    mockUserService.usersResource.isLoading.set(true);
+    expect(component.tableState.status()).toBe("loading");
 
     component.tableState.cancel();
 
     expect(mockUserService.usersResource.hasValue()).toBe(false);
+    expect(mockUserService.usersResource.isLoading()).toBe(false);
     expect(component.tableState.status()).toBe("cancelled");
     expect(component.tableState.showTable()).toBe(false);
 
@@ -99,6 +104,50 @@ describe("UserTableComponent", () => {
 
     expect(mockUserService.usersResource.reload).toHaveBeenCalled();
     expect(component.tableState.status()).toBe("loading");
+  });
+
+  describe("the resolvers the server could not query", () => {
+    // The names run together in one sentence, so the separators matter as much as the names.
+    const warningText = (): string =>
+      (fixture.nativeElement.querySelector(".resolver-warning")?.textContent ?? "").replace(/\s+/g, " ").trim();
+
+    const resolverLinks = (): HTMLAnchorElement[] =>
+      Array.from(fixture.nativeElement.querySelectorAll(".resolver-warning a"));
+
+    const allowResolverRead = (allowed: boolean) => {
+      const authService = TestBed.inject(AuthService) as unknown as MockAuthService;
+      authService.authData.set({
+        ...MockAuthService.MOCK_AUTH_DATA,
+        rights: allowed ? ["userlist", "resolverread"] : ["userlist"]
+      });
+    };
+
+    it("stays out of the way while every resolver answered", () => {
+      expect(fixture.nativeElement.querySelector(".resolver-warning")).toBeNull();
+    });
+
+    it("names them, and points each one at its configuration", () => {
+      allowResolverRead(true);
+      mockUserService.skippedResolvers.set(["ldap1", "sql1"]);
+      fixture.detectChanges();
+
+      expect(warningText()).toContain("incomplete: ldap1, sql1");
+      const links = resolverLinks();
+      expect(links.map((link) => link.textContent?.trim())).toEqual(["ldap1", "sql1"]);
+      expect(links.map((link) => link.getAttribute("href"))).toEqual([
+        ROUTE_PATHS.USERS_RESOLVERS_DETAILS + "ldap1",
+        ROUTE_PATHS.USERS_RESOLVERS_DETAILS + "sql1"
+      ]);
+    });
+
+    it("names them as plain text where their configuration may not be read", () => {
+      allowResolverRead(false);
+      mockUserService.skippedResolvers.set(["ldap1", "sql1"]);
+      fixture.detectChanges();
+
+      expect(warningText()).toContain("incomplete: ldap1, sql1");
+      expect(resolverLinks()).toHaveLength(0);
+    });
   });
 
   it("should create", () => {

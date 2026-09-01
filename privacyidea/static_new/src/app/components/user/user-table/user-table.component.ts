@@ -56,6 +56,7 @@ import { MatFormField, MatHint, MatInput, MatLabel } from "@angular/material/inp
 import { MatPaginator } from "@angular/material/paginator";
 import { Sort } from "@angular/material/sort";
 import { RouterLink } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
@@ -172,7 +173,8 @@ export class UserTableComponent implements OnDestroy {
     source: () => this.filteredUsers(),
     computation: (filtered, previous) => (filtered ? filtered.length : (previous?.value ?? 0))
   });
-  readonly skippedResolverNames = computed(() => this.userService.skippedResolvers().join(", "));
+  /** A skipped resolver is named so it can be fixed, which is only worth linking where its config may be read. */
+  readonly resolverLinkAllowed = computed(() => this.authService.actionAllowed("resolverread"));
 
   readonly tableState = new TableState({
     resource: this.userService.usersResource,
@@ -180,6 +182,8 @@ export class UserTableComponent implements OnDestroy {
     filterActive: () => !this.userService.activeFilter().isEmpty,
     allowed: () => this.authService.actionAllowed("userlist"),
     resetFilter: () => this.userService.clearFilter(),
+    // Aborts the request in flight. The resource is shared, so this empties the user list app-wide
+    // until a request parameter changes or something reloads it.
     cancel: () => this.userService.usersResource.set(undefined)
   });
   usersDataSource: WritableSignal<MatTableDataSource<UserData>> = linkedSignal({
@@ -206,6 +210,10 @@ export class UserTableComponent implements OnDestroy {
   ngOnDestroy(): void {
     // Do not carry a stale (and invisible) filter over to the next visit of the page.
     this.userService.clearFilter();
+  }
+
+  protected resolverLink(resolverName: string): string {
+    return ROUTE_PATHS.USERS_RESOLVERS_DETAILS + resolverName;
   }
 
   toggleFilter(filterKeyword: string): void {

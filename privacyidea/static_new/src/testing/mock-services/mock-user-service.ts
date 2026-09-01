@@ -126,7 +126,6 @@ export class MockUserService implements UserServiceInterface {
   usersResource: HttpResourceRef<PiResponse<UserData[], UserListResponseDetail | undefined> | undefined> =
     new MockHttpResourceRef(MockPiResponse.fromValue([]));
   skippedResolvers = signal<string[]>([]);
-  realmResolverCount = signal(0);
 
   users = signal<UserData[]>([]);
   allUsernames: Signal<string[]> = signal([]);

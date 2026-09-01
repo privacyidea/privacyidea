@@ -28,9 +28,19 @@
         class="inline-warning resolver-warning"
         role="status">
         <mat-icon aria-hidden="true">warning_amber</mat-icon>
-        <span i18n>
-          {{ userService.skippedResolvers().length }} of {{ userService.realmResolverCount() }} resolvers could not be
-          queried, so this list is incomplete: {{ skippedResolverNames() }}
+        <span>
+          <span i18n>These resolvers could not be queried, so the list may be incomplete:</span>
+          <!-- The gap to the first name is whitespace between elements, which the compiler drops unless it is
+               spelled out. -->
+          &ngsp;
+          @for (resolverName of userService.skippedResolvers(); track resolverName) {
+            @if (resolverLinkAllowed()) {
+              <a [routerLink]="resolverLink(resolverName)">{{ resolverName }}</a
+              >{{ $last ? "" : ", " }}
+            } @else {
+              {{ resolverName }}{{ $last ? "" : ", " }}
+            }
+          }
         </span>
       </div>
     }
@@ -172,8 +182,9 @@
         i18n-heading
         i18n-hint
         icon="group">
-        <!-- Holds the realm selector, the only way to get out of an empty realm. -->
-        <app-user-table-actions />
+        <!-- Holds the realm selector, the only way to get out of an empty realm. Nothing else: the panel is
+             too narrow to lay the actions out, so anything more folds away into an overflow menu. -->
+        <app-user-table-actions [showCreateUser]="false" />
       </app-table-state>
     }
   </div>
