@@ -3,8 +3,7 @@
 An authentication request rarely fails for exactly one reason - a user with
 three tokens can have one revoked, one past its failcount and one that simply
 got the wrong OTP - so the log now records *every* reason it classified,
-ordered by precedence (highest signal first), instead of only the top-ranked
-one.
+instead of picking one of them.
 
 Creates authentication_log_reason (one row per reason, cascading on its entry),
 copies the existing authentication_log.reason values into it, and drops that
@@ -85,8 +84,9 @@ def upgrade():
 
 
 def downgrade():
-    # The column comes back with the highest-ranked reason of each entry, which is what it held before: the reason
-    # rows ascend by precedence, so the lowest id of an entry is its top-ranked one.
+    # The column comes back with the first reason of each entry - the lowest id, i.e. the one that comes first in the
+    # AuthEventReason vocabulary. A single column cannot hold what the table does, so a downgrade keeps one of them;
+    # which one is arbitrary, and the first is the reproducible choice.
     try:
         op.add_column(PARENT, sa.Column('reason', _unicode_case_sensitive(40), nullable=True))
         op.execute(sa.text(f"UPDATE {PARENT} SET reason = "

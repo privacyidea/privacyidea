@@ -8,7 +8,7 @@ The migration:
 - Drops that column
 
 upgrade()   — CREATE TABLE authentication_log_reason, INSERT ... SELECT, DROP COLUMN reason
-downgrade() — ADD COLUMN reason, UPDATE it with each entry's top-ranked (lowest-id) reason, DROP TABLE
+downgrade() — ADD COLUMN reason, UPDATE it with each entry's first (lowest-id) reason, DROP TABLE
 """
 
 import os
@@ -69,8 +69,8 @@ class TestMigrationF4a1c2b6d8e3(MigrationTestBase):
         finally:
             engine.dispose()
 
-    def test_downgrade_restores_the_top_ranked_reason(self, flask_app):
-        """The column comes back holding each entry's first (highest-ranked) reason, and NULL where there was none."""
+    def test_downgrade_restores_the_first_reason(self, flask_app):
+        """The column comes back holding each entry's first reason, and NULL where there was none."""
         engine = self._engine()
         try:
             self._load_seed_and_upgrade_to_parent(engine)

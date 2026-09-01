@@ -119,10 +119,10 @@ class AuthenticationLog(MethodsMixin, db.Model):
         "ConditionalAccessOutcome", cascade="all, delete-orphan", lazy="raise",
         order_by="ConditionalAccessOutcome.id")
 
-    # Why this event came out the way it did: zero or more AuthEventReason values, highest signal first (a success
-    # needs none). Declared exactly like the outcomes above and for the same reasons - the cascade covers deleting an
-    # entry as an object on every backend, while the set-based delete paths remove the child rows themselves, and
-    # lazy="raise" keeps the authentication path from ever fanning out a query per row.
+    # Why this event came out the way it did: zero or more AuthEventReason values, in the order that vocabulary
+    # declares them (a success needs none). Declared exactly like the outcomes above and for the same reasons - the
+    # cascade covers deleting an entry as an object on every backend, while the set-based delete paths remove the
+    # child rows themselves, and lazy="raise" keeps the authentication path from ever fanning out a query per row.
     reasons: Mapped[list["AuthenticationLogReason"]] = relationship(
         "AuthenticationLogReason", cascade="all, delete-orphan", lazy="raise",
         order_by="AuthenticationLogReason.id")
@@ -146,8 +146,8 @@ class AuthenticationLog(MethodsMixin, db.Model):
         off by default and only the paginated listing turns it on, because the relationship is ``lazy="raise"``: reading
         it on an entry that was not loaded with its outcomes must fail loudly rather than emit a query per entry.
 
-        *include_reasons* adds the classified reasons as the ``reasons`` list, highest signal first, under the same
-        rule and for the same reason: that relationship is ``lazy="raise"`` too.
+        *include_reasons* adds the classified reasons as the ``reasons`` list, in the order they were recorded,
+        under the same rule and for the same reason: that relationship is ``lazy="raise"`` too.
         """
         auth_log_dict = {name: getattr(self, name) for name in self.__table__.columns.keys()}
         auth_log_dict["timestamp"] = self.aware_timestamp.isoformat()

@@ -401,8 +401,8 @@ def check_token_list(token_object_list: list[TokenClass], passw: str, user: User
     token_reasons: dict[str, str] = {}
     # Serials whose challenge had already lapsed when the answer arrived (see CHALLENGE_LAPSED_KEY).
     lapsed_challenge_serials: set[str] = set()
-    # Which token produced which of the events above, so the row's reason can be taken from the token whose event
-    # won the reduction rather than from whichever token happened to have the highest-ranked reason.
+    # Which token produced which of the events above, so the row's reasons can be taken from the tokens whose event
+    # won the reduction rather than from every token the request happened to look at.
     event_serials: dict[str, set[str]] = {}
     # Set when a token logged its own outcome and no terminal event should be added (push_wait timeout).
     terminal_event_suppressed = False
@@ -735,7 +735,7 @@ def check_token_list(token_object_list: list[TokenClass], passw: str, user: User
         reduced_event = AuthEventType.NO_USABLE_TOKEN if num_all_tokens else AuthEventType.NO_TOKEN
     reply_dict[AUTH_EVENT_TYPE_KEY] = reduced_event
 
-    # Why, alongside what: the row carries every reason the request produced, ordered by REASON_PRECEDENCE, while
+    # Why, alongside what: the row carries every reason the request produced, in the vocabulary's own order, while
     # other_info keeps the whole per-serial map, so which token failed for which reason is not lost either.
     # Only a failed request gets any: a success needs no reason, and the finding of a token that lost to a succeeding
     # one would be noise on that row.

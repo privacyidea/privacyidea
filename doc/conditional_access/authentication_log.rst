@@ -202,12 +202,11 @@ own: a request whose one token is revoked while another merely got the wrong
 OTP is found by either filter, because both are findings an admin may be
 looking for.
 
-They are ordered by how much they narrow down what to do about it, most
-informative first: a policy decision outranks any token state, because it
-applies whatever the tokens look like; a permanent state such as
-``TOKEN_REVOKED`` outranks a transient one such as a failcounter that a reset
-clears; and a wrong credential ranks below every state, since the state is what
-made the credential moot.
+No reason is picked out as the one that counts: they are listed in the order
+the vocabulary above declares them - the token states, then the authorization
+decisions, then the credentials, then challenge-response - so that the same
+findings always read the same way. The order carries no ranking; each reason is
+recorded and each is filterable on its own.
 
 Which token failed for which reason is not lost either: the details of the
 entry keep the finding of every token under ``reason_detail.reasons``, keyed by

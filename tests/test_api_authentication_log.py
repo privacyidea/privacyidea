@@ -346,7 +346,7 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
         db.session.commit()
 
         # The point of the reasons: one event type, several causes, each filterable on its own - including a cause
-        # that was not the entry's highest-ranked one.
+        # that is not the first one the entry lists.
         value = self._get({"reasons": str(AuthEventReason.TOKEN_DISABLED)})["result"]["value"]
         self.assertEqual(1, value["count"])
         self.assertEqual([str(AuthEventReason.TOKEN_DISABLED), str(AuthEventReason.WRONG_OTP)],

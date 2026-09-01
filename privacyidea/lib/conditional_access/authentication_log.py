@@ -212,8 +212,9 @@ class PendingAuthEvent:
     serial: str | None = None
     attempt_id: str | None = None
     other_info: dict | None = None
-    # Why this event came out the way it did: every classified reason (see AuthEventReason), highest signal first;
-    # empty when nothing classified one. Not a column of the row - they become rows of authentication_log_reason.
+    # Why this event came out the way it did: every classified reason (see AuthEventReason), in the order that
+    # vocabulary declares them; empty when nothing classified one. Not a column of the row - they become rows of
+    # authentication_log_reason.
     reasons: list[str] = field(default_factory=list)
     # A point-in-time record another in-flight request has to see (the push_wait challenge trigger) rather than this
     # request's own classification, and must never be reclassified afterwards - see ConditionalAccessContext.amendable.
@@ -281,9 +282,10 @@ def _row_values(event: PendingAuthEvent) -> dict:
 
 def _reason_rows(event: PendingAuthEvent) -> list[AuthenticationLogReason]:
     """
-    The child rows recording why *event* came out the way it did, in the order the event lists them (highest signal
-    first, see :func:`~privacyidea.lib.conditional_access.authentication_event_types.order_request_reasons`), which is
-    the order their ids then ascend in.
+    The child rows recording why *event* came out the way it did, in the order the event lists them (the
+    vocabulary's own, see
+    :func:`~privacyidea.lib.conditional_access.authentication_event_types.order_request_reasons`), which is the order
+    their ids then ascend in.
 
     Each value is truncated like a column value would be, and empty ones are dropped: a reason column is ``NOT NULL``
     and an unclassified reason is the absence of a row, not a row saying nothing.

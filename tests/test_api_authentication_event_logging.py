@@ -531,8 +531,9 @@ class _AuthLogContractTests(_ContractHost):
 
     def test_the_row_lists_every_reason_while_every_token_keeps_its_own(self):
         # Two tokens, unusable for two different reasons. The row carries both - each is a separate piece of advice
-        # for the admin and each is filterable on its own - ordered by REASON_PRECEDENCE, so the permanent state
-        # leads the transient one. Which token failed for which reason stays in the per-serial map.
+        # for the admin and each is filterable on its own - in the order AuthEventReason declares them, which is what
+        # makes the list deterministic rather than a statement about which matters more. Which token failed for which
+        # reason stays in the per-serial map.
         self._add_second_token(pin=self.pin)
         first = get_one_token(serial=self.serial)
         first.enable(False)
@@ -709,8 +710,8 @@ class _AuthLogContractTests(_ContractHost):
         assert_authentication_log_entry(entries[AuthEventType.CHALLENGE_ANSWERED_FAIL], user=self.user,
                                         serials={questionnaire_serial}, transaction_id=first_transaction_id,
                                         endpoint=self.endpoint_path,
-                                        reason=[AuthEventReason.CHALLENGE_UNKNOWN_TRANSACTION,
-                                                AuthEventReason.CHALLENGE_WRONG_RESPONSE],
+                                        reason=[AuthEventReason.CHALLENGE_WRONG_RESPONSE,
+                                                AuthEventReason.CHALLENGE_UNKNOWN_TRANSACTION],
                                         reasons={self.serial: AuthEventReason.CHALLENGE_UNKNOWN_TRANSACTION,
                                                  questionnaire_serial: AuthEventReason.CHALLENGE_WRONG_RESPONSE})
 
@@ -751,8 +752,8 @@ class _AuthLogContractTests(_ContractHost):
         assert_authentication_log_entry(entries[AuthEventType.CHALLENGE_ANSWERED_FAIL], user=self.user,
                                         serials={questionnaire_serial}, transaction_id=second_transaction_id,
                                         endpoint=self.endpoint_path,
-                                        reason=[AuthEventReason.CHALLENGE_UNKNOWN_TRANSACTION,
-                                                AuthEventReason.CHALLENGE_WRONG_RESPONSE],
+                                        reason=[AuthEventReason.CHALLENGE_WRONG_RESPONSE,
+                                                AuthEventReason.CHALLENGE_UNKNOWN_TRANSACTION],
                                         reasons={self.serial: AuthEventReason.CHALLENGE_UNKNOWN_TRANSACTION,
                                                  questionnaire_serial: AuthEventReason.CHALLENGE_WRONG_RESPONSE})
 

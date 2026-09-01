@@ -214,8 +214,8 @@ def assert_authentication_log_entry(entry: AuthenticationLog, user: User = None,
     :param serials: the entry must carry a comma separated list of these serials (default None: no serial)
     :param client_label: the entry must carry this client_label (default None: no client_label)
     :param endpoint: the entry must carry this endpoint (default None: no endpoint, i.e. a row staged outside a view)
-    :param reason: the entry's reasons must be exactly these, in this order (highest signal first): one
-        AuthEventReason or a list of them (default None: no reason at all)
+    :param reason: the entry's reasons must be exactly these, in this order (the order AuthEventReason declares
+        them): one AuthEventReason or a list of them (default None: no reason at all)
     :param reasons: the ``{serial: reason}`` map in the entry's reason detail (default None: no such map)
     :param policies: the policy names in the entry's reason detail (default None: no policy names)
     :param other_info: the entry must carry this other_info (default None: no other_info)

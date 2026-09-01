@@ -177,10 +177,15 @@ class AuthEventReason(str, Enum):
     specific to one request (which policy denied it, which serial failed for which reason) goes in the row's
     ``other_info`` instead; see :data:`AUTH_EVENT_REASON_DETAIL_KEY`.
 
-    An entry carries **every** reason its request produced, as a list ordered by :data:`REASON_PRECEDENCE` (see
-    :func:`order_request_reasons`) - a user's tokens can fail differently within one request, and each of those is a
-    separate piece of advice. Not every event has one: ``LOGIN_SUCCESS`` needs none, and a request nobody classified
-    simply has an empty list, which is why the reasons are rows of their own and no code path is obliged to add any.
+    An entry carries **every** reason its request produced - a user's tokens can fail differently within one request,
+    and each of those is a separate piece of advice, filterable on its own. They are listed in the order declared
+    below (see :func:`order_request_reasons`), which is for determinism rather than importance: no reason outranks
+    another, and none is dropped in favour of one. Not every event has one: ``LOGIN_SUCCESS`` needs none, and a
+    request nobody classified simply has an empty list, which is why the reasons are rows of their own and no code
+    path is obliged to add any.
+
+    The order the members are declared in therefore *is* the order they are recorded in: keep the groups below
+    together when adding one.
 
     ``str``/``Enum`` (not ``StrEnum``) for Python 3.10, like :class:`AuthEventType`.
     """
@@ -244,64 +249,36 @@ class AuthEventReason(str, Enum):
         return self.value
 
 
-# Request-level precedence of the reasons, highest signal first, used to order the reasons of a request whose tokens
-# failed differently (see order_request_reasons). The order follows how much the reason narrows down what the admin
-# must do: a policy decision outranks any token state, because it applies whatever the tokens look like; a permanent
-# token state (revoked) outranks a transient one (failcount, which a reset clears); and a wrong credential ranks below
-# every state, since a state is the thing that made the credential moot.
-REASON_PRECEDENCE: list[AuthEventReason] = [
-    AuthEventReason.AUTHORIZATION_DENIED,
-    AuthEventReason.AUTH_MAX_FAIL,
-    AuthEventReason.AUTH_MAX_SUCCESS,
-    AuthEventReason.LAST_AUTH_TOO_OLD,
-    AuthEventReason.TOKEN_TYPE_DISABLED,
-    AuthEventReason.TOKEN_REVOKED,
-    AuthEventReason.TOKEN_DISABLED,
-    AuthEventReason.TOKEN_OUTSIDE_VALIDITY_PERIOD,
-    AuthEventReason.TOKEN_NOT_YET_ENROLLED,
-    AuthEventReason.TOKEN_AUTH_COUNTER_EXCEEDED,
-    AuthEventReason.TOKEN_FAILCOUNT_EXCEEDED,
-    AuthEventReason.TOKEN_NOT_APPLICABLE,
-    AuthEventReason.TOKEN_NOT_FIT_FOR_CHALLENGE,
-    AuthEventReason.CHALLENGE_UNKNOWN_TRANSACTION,
-    AuthEventReason.CHALLENGE_EXPIRED,
-    AuthEventReason.CHALLENGE_DECLINED_ON_DEVICE,
-    AuthEventReason.CHALLENGE_WRONG_RESPONSE,
-    AuthEventReason.WRONG_OTP,
-]
-
-_REASON_RANK: dict[AuthEventReason, int] = {reason: rank for rank, reason in enumerate(REASON_PRECEDENCE)}
-
-
 def order_request_reasons(reasons) -> list[AuthEventReason]:
     """
-    Order the per-token reasons of one request into the list that goes in the entry's reason rows, highest signal
-    first by the fixed :data:`REASON_PRECEDENCE`, with duplicates removed. A request rarely fails for one reason - a
-    user with three tokens can have one revoked, one past its failcount and one that simply got the wrong OTP - and
-    every one of them is recorded, so a filter on any of them finds the request. Which token failed for which reason
-    stays in ``other_info`` (see :data:`AUTH_EVENT_REASON_DETAIL_KEY`).
+    Order the per-token reasons of one request into the list that goes in the entry's reason rows, in the order
+    :class:`AuthEventReason` declares them (token state, then authorization, then the credentials, then
+    challenge-response), with duplicates removed. A request rarely fails for one reason - a user with three tokens can
+    have one revoked, one past its failcount and one that simply got the wrong OTP - and every one of them is
+    recorded, so a filter on any of them finds the request. Which token failed for which reason stays in
+    ``other_info`` (see :data:`AUTH_EVENT_REASON_DETAIL_KEY`).
 
-    Reasons without a defined precedence, and values that are not a member at all, are logged and dropped - so a new
-    member that was not ranked, or a caller that recorded a bare string on ``token.auth_details``, degrades the
-    classification rather than breaking the authentication (mirrors :func:`reduce_request_events`). Accepting plain
-    strings is what keeps that promise: converting them in the *caller's* generator would raise ``ValueError`` past
-    this guard and turn a mislabelled reason into a failed authentication.
+    The order is the vocabulary's own, deliberately, and says nothing about which reason matters more: they are all
+    recorded and all filterable, so ranking them would be a judgement nobody needs made - and a second list to keep in
+    step with this enum, which a new member could be forgotten from. What the order does buy is determinism: the same
+    findings always read the same way, in the log and in the WebUI.
+
+    Values that are not a member are logged and dropped, so a caller that recorded a bare string on
+    ``token.auth_details`` degrades the classification rather than breaking the authentication (mirrors
+    :func:`reduce_request_events`). Accepting plain strings is what keeps that promise: converting them in the
+    *caller's* generator would raise ``ValueError`` past this guard and turn a mislabelled reason into a failed
+    authentication.
 
     :param reasons: an iterable of :class:`AuthEventReason` members or of their values
-    :return: the known reasons, ordered by precedence and deduplicated; empty if *reasons* holds none
+    :return: the known reasons, in vocabulary order and deduplicated; empty if *reasons* holds none
     """
-    ranked: set[AuthEventReason] = set()
+    known: set[AuthEventReason] = set()
     for reason in reasons:
         try:
-            reason = AuthEventReason(reason)
+            known.add(AuthEventReason(reason))
         except ValueError:
             log.debug(f"Ignoring authentication reason {reason!r}, which is not an AuthEventReason.")
-            continue
-        if reason not in _REASON_RANK:
-            log.debug(f"Ignoring authentication reason {reason!r} without a defined precedence in REASON_PRECEDENCE.")
-            continue
-        ranked.add(reason)
-    return [reason for reason in REASON_PRECEDENCE if reason in ranked]
+    return [reason for reason in AuthEventReason if reason in known]
 
 
 def build_reason_detail(reasons: dict | None = None, policies: list | None = None) -> dict | None:

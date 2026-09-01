@@ -322,8 +322,8 @@ def pop_auth_event_reason(details: dict | None) -> tuple[list[str], dict | None]
     without a reason. Calling this on a dict that carries none is free, so the habit is to pop unconditionally rather
     than to reason about whether this particular path classifies anything.
 
-    The layer below records either a list of reasons (the request-level classification, ordered by precedence) or a
-    single one (a layer that only ever finds one), so both are accepted and a list always comes back.
+    The layer below records either a list of reasons (the request-level classification) or a single one (a layer that
+    only ever finds one), so both are accepted and a list always comes back.
 
     :param details: the reply/details dict a lib call returned, or None
     :return: ``(reasons, reason_detail)`` - an empty list and None when the layer below classified none
@@ -385,8 +385,9 @@ def log_authentication(event_type: AuthEventType | None, request: Request | None
 
     ``reasons`` says *why* the event came out this way: every
     :class:`~privacyidea.lib.conditional_access.authentication_event_types.AuthEventReason` the request produced,
-    highest signal first, each becoming a row of its own. ``reason_detail`` carries what is specific to this request -
-    the deciding policies, the per-serial reasons - into ``other_info`` under its own :data:`REASON_DETAIL_INFO_KEY`
+    in the order that vocabulary declares them, each becoming a row of its own. ``reason_detail`` carries what is
+    specific to this request - the deciding policies, the per-serial reasons - into ``other_info`` under its own
+    :data:`REASON_DETAIL_INFO_KEY`
     key. Both are optional: an event nobody found a reason for is logged without any. ``other_info`` is whatever the
     caller has to say about the row itself (a conditional-access rejection records what it did), and shares
     ``other_info`` with the reason detail without either overwriting the other.

@@ -33,12 +33,12 @@ authentication_log_reason_column_length = {
 class AuthenticationLogReason(db.Model):
     """
     Why an authentication-log row came out the way it did: one row per :class:`AuthEventReason` the request produced,
-    ordered by :data:`~privacyidea.lib.conditional_access.authentication_event_types.REASON_PRECEDENCE` (highest
-    signal first) as their ids ascend.
+    in the order the vocabulary declares them (see
+    :func:`~privacyidea.lib.conditional_access.authentication_event_types.order_request_reasons`) as their ids ascend.
 
     A request rarely fails for exactly one reason - a user with three tokens can have one revoked, one past its
-    failcount and one that simply got the wrong OTP - so the reasons are a **list**, not the single highest-ranked
-    one. Kept in a table of its own rather than as a column on the parent for the reason the parent's column existed
+    failcount and one that simply got the wrong OTP - so the reasons are a **list**, and no reason is picked over
+    another: each is recorded and each is filterable on its own. Kept in a table of its own rather than as a column on the parent for the reason the parent's column existed
     at all: "every NO_USABLE_TOKEN caused by the failcounter" has to be a plain indexed predicate, and neither a
     separator-joined string (``LIKE`` scans, a length limit) nor a JSON array (predicates differ per backend) offers
     one. What is specific to one request - the deciding policy's name, which serial failed for which reason - still
