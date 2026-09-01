@@ -2168,6 +2168,8 @@ def fido2_auth(request, action):
     - WEBAUTHNACTION.ALLOWED_TRANSPORTS
     - ACTION.CHALLENGETEXT for WebAuthn and Passkey token
     - PasskeyAction.EnableTriggerByPIN
+    - PasskeyAction.AllowedAuthenticatorDeviceTypes (SCOPE.AUTH)
+    - PasskeyAction.EnforceUserHandle (SCOPE.AUTH)
     """
     user_object = request.User if hasattr(request, "User") else None
     allowed_transports_policies = (Match.user(g,
@@ -2204,6 +2206,17 @@ def fido2_auth(request, action):
                                          user_object=user_object).any())
     request.all_data[PasskeyAction.EnableTriggerByPIN] = passkey_trigger_by_pin
 
+    # Checking policy scope=SCOPE.AUTH, action=PasskeyAction.AllowedAuthenticatorDeviceTypes. Independent of the
+    # same-named ENROLL scope policy: an admin may allow enrolling both device types but only allow authentication
+    # with one of them, or vice versa.
+    request.all_data[PasskeyAction.AllowedAuthenticatorDeviceTypes] = get_policy_value_set(
+        PasskeyAction.AllowedAuthenticatorDeviceTypes, scope=SCOPE.AUTH, user=user_object)
+
+    request.all_data[PasskeyAction.EnforceUserHandle] = (Match.user(g,
+                                                                     scope=SCOPE.AUTH,
+                                                                     action=PasskeyAction.EnforceUserHandle,
+                                                                     user_object=user_object).any())
+
     return True
 
 
@@ -2219,6 +2232,16 @@ def get_first_policy_value(policy_action: str, default: str, scope: str, user: U
     if allowed_values and policy_value not in allowed_values:
         raise PolicyError(f"{policy_value} must be one of {', '.join(allowed_values)}")
     return policy_value
+
+
+def get_policy_value_set(policy_action: str, scope: str, user: User | None = None) -> list:
+    """
+    Get the deduplicated set of space-separated values from every matching policy for the given action and
+    scope, using Match.user. An empty list means no policy is set, i.e. no restriction.
+    """
+    policies = (Match.user(g, scope=scope, action=policy_action, user_object=user)
+               .action_values(unique=False, allow_white_space_in_action=True))
+    return list(set(value for policy in policies for value in policy.split()))
 
 
 def fido2_enroll(request, action):
@@ -2359,6 +2382,14 @@ def fido2_enroll(request, action):
 
     request.all_data[PasskeyAction.UserLabel] = get_first_policy_value(
         PasskeyAction.UserLabel, default=DEFAULT_USER_LABEL, scope=SCOPE.ENROLL, user=user_object)
+
+    # Checking policy scope=SCOPE.ENROLL, action=PasskeyAction.AllowedAuthenticatorDeviceTypes. The device type
+    # cannot be requested up front (unlike resident_key/user_verification), it is only known once the
+    # authenticator has responded, so PasskeyTokenClass.update() rejects the registration after the fact if it
+    # does not match.
+    request.all_data[PasskeyAction.AllowedAuthenticatorDeviceTypes] = get_policy_value_set(
+        PasskeyAction.AllowedAuthenticatorDeviceTypes, scope=SCOPE.ENROLL, user=user_object)
+
     if request and hasattr(request, "environ"):
         request.all_data['HTTP_ORIGIN'] = request.environ.get('HTTP_ORIGIN')
     else:

@@ -12,9 +12,9 @@
       <ng-content></ng-content>
     </div>
   </mat-dialog-content>
-  @if (showCancelButton() || actions().length > 0) {
+  @if (showCloseButton() || actions().length > 0) {
     <div class="pi-dialog-footer">
-      @if (showCancelButton()) {
+      @if (showCloseButton()) {
         <button
           [attr.cdkFocusInitial]="cancelButtonPrimary() || null"
           class="action-button-secondary button-width-s"
