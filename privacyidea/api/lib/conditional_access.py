@@ -84,8 +84,8 @@ from privacyidea.lib.conditional_access.engine import (get_user_lockout, get_ip_
                                                        render_error_message, restriction_messages, AccessDecision,
                                                        LockoutAction, RestrictionStatus, StageMessage)
 from privacyidea.lib.conditional_access.lockout_policy import default_error_message
-from privacyidea.lib.conditional_access.request_context import (ConditionalAccessContext, RejectionShape,
-                                                                 get_ca_context, peek_ca_context)
+from privacyidea.lib.conditional_access.request_context import (ConditionalAccessContext, PostEvaluation,
+                                                                 RejectionShape, get_ca_context, peek_ca_context)
 from privacyidea.lib.error import AuthError, Error
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import Match, SCOPE
@@ -350,7 +350,8 @@ def _rejection_response(context: "ConditionalAccessContext", message: str | None
 
 def surface_conditional_access_message(response):
     """
-    Report on the response what conditional access just did to this request.
+    Report on the response what conditional access just did to this request: refuse it if this very request wrote a
+    restriction, or add what a stage that only notified did.
 
     Called from :func:`~privacyidea.api.before_after.after_request`: the last point that can still shape a body,
     and - unlike a decorator - one that also runs for a response an *error handler* built. Being central also means
@@ -358,95 +359,88 @@ def surface_conditional_access_message(response):
 
     Reads the buffer with :func:`~privacyidea.lib.conditional_access.request_context.peek_ca_context` rather than
     creating one. This runs on every response of every blueprint, and "has no buffer" is exactly the question to
-    ask - a request that authenticated nothing has none - answered in a single lookup. Creating one would allocate a
-    buffer for every administrative request and leave teardown work to undo.
+    ask - a request that authenticated nothing has none - answered in a single lookup.
 
     Running after the post-policies rather than among them is what makes ``hide_specific_error_message`` and
     ``no_detail_on_fail`` a non-issue here: they have already had their say, so a notification composes onto
-    whatever survived them - the generic failure when masking is on, the token's own reason when it is not - and
-    needs no claim to protect it. The gates still claim, their responses being built where those actions can reach
-    them.
-
-    A stage can be tripped by any event a policy tracks, a challenge trigger included, and a restriction written on
-    such a request refuses it like any other. What a rejection says never depends on what the request happened to be
-    doing when it was refused. A stage that only notified changes none of that: it refused nothing, so its message
-    is appended and everything the response carried - a challenge included - stays.
-
-    Withdrawing a challenge from the response is not invalidating it: the row is left to expire unanswered, and the
-    client is never told the ``transaction_id``, so it could not use it anyway. The next request carries it into the
-    pre-check, which refuses it with the same wording.
+    whatever survived them and needs no claim to protect it. The gates still claim, their responses being built
+    where those actions can reach them.
     """
     context = peek_ca_context()
     if context is None or not response or not response.is_json:
         return response
-    content = response.json
     try:
         context.flush()
-        # Anything already in force was refused by the pre-check, which returns its own response, so this
-        # evaluation is the whole story and nothing has to be read back. A request the pre-check did refuse still
-        # reaches here; run_post_eval declines to evaluate conditional access's own rejections, so there is
-        # nothing to add and the gate's wording stands.
         evaluation = context.run_post_eval()
-        result = content.get("result") or {}
-        detail = content.get("detail") or {}
-        # An error-shaped body means the view raised and an error handler built this response.
-        errored = "error" in result
+        content = response.json
         if evaluation.restricted:
-            shape = context.rejection_shape
-            # Rendered rather than edited in place when this endpoint answers a refusal with an error response, or
-            # when the body already is one. /auth is the first case and needs it even on a 200: it returns its
-            # challenge (auth.py) before it evaluates, so a restriction written on that request arrives here with a
-            # 200 in hand, and editing it would answer with value false and REJECT - a shape no failed login there
-            # ever has, and therefore the one thing that identifies a rejection. The second case is an error that
-            # must not survive: "ERR1007: the token is locked" states the very reason a rejection withholds.
-            replacing = errored or shape.as_error
-            # A body about to be replaced never met the post-policies, so a detail missing there says nothing about
-            # them. On any other response one that is gone was stripped by no_detail_on_fail, and a silent
-            # restriction then has nothing to say - the pre-check answers such a request with no detail either.
-            message = rejection_message(shape, evaluation.messages,
-                                        detail_stripped=not replacing and "detail" not in content)
-            if replacing:
-                return _rejection_response(context, message)
-            # Answered as the pre-check answers every request after this one. Keyed on the restriction rather than
-            # on having something to say, because a silent lock refuses this request too - and rather than on the
-            # response looking like a failure, because ``result.value`` is a *count* on
-            # /validate/triggerchallenge, where a request that triggers a challenge and trips a lock in one breath
-            # reads as a success.
-            #
-            # The rest of the detail describes what the rejection overtook: the token attempt that failed, or the
-            # challenge about to be handed out. The threadid stays - it identifies the request rather than
-            # describing it.
-            detail = {"threadid": detail["threadid"]} if "threadid" in detail else {}
-            # A refusal now, whatever it was on its way to being: a falsy value in the type this endpoint uses,
-            # and REJECT - but only where the endpoint reports an authentication verdict at all. /ttype/push
-            # renders with rid 1 and has no such field, and a rejection there must not be the one response that
-            # grows one.
-            result["value"] = _rejected_value(result.get("value"))
-            if shape.reports_authentication:
-                result["authentication"] = AUTH_RESPONSE.REJECT
-        elif errored:
-            # Only a restriction overtakes an error. A notification refused nothing, so the error it merely
-            # coincided with is still why the request failed, and speaks for itself.
-            return response
-        elif evaluation.messages and not result.get("value"):
-            # A stage that only notified, on a response that did fail.
-            message = compose_failure_message(detail.get("message"), evaluation.messages)
-        else:
-            # Nothing happened, or a notification on a response that did not fail: the message is failure-only and
-            # never shown on a successful authentication.
-            return response
-        content["result"] = result
-        if message is None:
-            # A rejection with nothing to say on an endpoint whose failures carry no detail: it says what one of
-            # those says, which is nothing at all (see _rejection_wording).
-            content.pop("detail", None)
-        else:
-            detail["message"] = message
-            content["detail"] = detail
-        response.set_data(json.dumps(content))
+            return _refuse(response, content, context, evaluation)
+        if evaluation.messages:
+            return _append_notification(response, content, evaluation)
     except Exception as ex:
         # Never break an authentication response over the error message of its own rejection.
         log.warning(f"Could not surface the conditional-access message on this response: {ex!r}")
+    return response
+
+
+def _refuse(response: Response, content: dict, context: "ConditionalAccessContext",
+            evaluation: PostEvaluation) -> Response:
+    """
+    Answer a request that has just written a restriction as the rejection it now is - word for word the answer the
+    pre-check gives every request the restriction refuses after it.
+
+    Keyed on the restriction rather than on having something to say, because a silent lock refuses this request
+    too; and rather than on the response looking like a failure, because ``result.value`` is a *count* on
+    ``/validate/triggerchallenge``, where a request that triggers a challenge and trips a lock in one breath reads
+    as a success. Withdrawing that challenge is not invalidating it: the row is left to expire unanswered, and the
+    client never learns the ``transaction_id``, so it could not use it anyway.
+    """
+    result = content.get("result") or {}
+    detail = content.get("detail") or {}
+    shape = context.rejection_shape
+    if "error" in result or shape.as_error:
+        # The body is the wrong kind to edit into a rejection, so one is built instead. An error body has no
+        # value to falsify - and must not survive anyway, "ERR1007: the token is locked" stating the very reason a
+        # rejection withholds. On /auth the reverse: a refusal there *is* an error response, so even the 200 a
+        # challenge returned before the engine ran (auth.py) has to be replaced by one.
+        return _rejection_response(context, rejection_message(shape, evaluation.messages))
+    # Editable: this endpoint answers a refusal with an ordinary result body, which is what is already in hand.
+    # A detail that is gone was stripped by no_detail_on_fail, and a silent restriction then says nothing rather
+    # than putting a generic message where that action left none.
+    message = rejection_message(shape, evaluation.messages, detail_stripped="detail" not in content)
+    result["value"] = _rejected_value(result.get("value"))
+    if shape.reports_authentication:
+        # Only where the endpoint reports a verdict at all - /ttype/push renders with rid 1 and has no such field.
+        result["authentication"] = AUTH_RESPONSE.REJECT
+    content["result"] = result
+    if message is None:
+        content.pop("detail", None)
+    else:
+        # The threadid stays - it identifies the request rather than describing it. Everything else described what
+        # the rejection overtook: the attempt that failed, or the challenge about to be handed out.
+        kept = {"threadid": detail["threadid"]} if "threadid" in detail else {}
+        content["detail"] = {**kept, "message": message}
+    response.set_data(json.dumps(content))
+    return response
+
+
+def _append_notification(response: Response, content: dict, evaluation: PostEvaluation) -> Response:
+    """
+    Add what a stage that only *notified* did to a response it did not refuse.
+
+    It refused nothing, so the credential failure is still why the request failed and keeps its own id, message and
+    details - a challenge included - with the notification following it (see :func:`compose_failure_message`).
+
+    Left alone on a response that did not fail, the message being failure-only, and on an error, which failed for a
+    reason of its own that the notification merely coincided with.
+    """
+    result = content.get("result") or {}
+    if "error" in result or result.get("value"):
+        return response
+    detail = content.get("detail") or {}
+    detail["message"] = compose_failure_message(detail.get("message"), evaluation.messages)
+    content["detail"] = detail
+    response.set_data(json.dumps(content))
     return response
 
 
