@@ -1124,17 +1124,8 @@ myApp.factory("ConfigFactory", ["AuthFactory", "$http", "$state", "$rootScope",
                     AuthFactory.authError(error.data)
                 });
             },
-            revokeAllClientRememberedDevices: function (clientId, callback) {
+            revokeAllClientRememberedDevices: function (clientId, params, callback) {
                 $http.delete(clientsUrl + "/" + clientId + "/remembered_devices", {
-                    headers: {'PI-Authorization': AuthFactory.getAuthToken()}
-                }).then(function (response) {
-                    callback(response.data)
-                }, function (error) {
-                    AuthFactory.authError(error.data)
-                });
-            },
-            revokeRememberedDevices: function (params, callback) {
-                $http.delete(clientsUrl + "/remembered_devices", {
                     params: params,
                     headers: {'PI-Authorization': AuthFactory.getAuthToken()}
                 }).then(function (response) {

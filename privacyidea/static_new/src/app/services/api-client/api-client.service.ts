@@ -88,8 +88,6 @@ export interface ApiClientServiceInterface {
   revokeDevice(clientId: string, deviceId: string): Promise<void>;
 
   revokeAllForClient(clientId: string, options?: { realm?: string; user?: string }): Promise<number>;
-
-  revokeAllInRealmAcrossClients(realm: string, user?: string): Promise<number>;
 }
 
 @Injectable()
@@ -266,26 +264,6 @@ export class ApiClientService implements ApiClientServiceInterface {
         const message = error.error?.result?.error?.message || "";
         this.notificationService.error($localize`Failed to revoke remembered devices. ` + message);
         throw new Error("revoke-all-failed");
-      });
-  }
-
-  async revokeAllInRealmAcrossClients(realm: string, user?: string): Promise<number> {
-    let params = new HttpParams().set("realm", realm);
-    if (user) params = params.set("user", user);
-    const request = this.http.delete<PiResponse<number>>(`${environment.proxyUrl}/clients/remembered_devices`, {
-      headers: this.authService.getHeaders(),
-      params
-    });
-    return lastValueFrom(request)
-      .then((response) => {
-        const count = response.result?.value ?? 0;
-        this.notificationService.success($localize`Revoked ${count} remembered device(s) in realm ${realm}.`);
-        return count;
-      })
-      .catch((error) => {
-        const message = error.error?.result?.error?.message || "";
-        this.notificationService.error($localize`Failed to revoke remembered devices. ` + message);
-        throw new Error("revoke-realm-failed");
       });
   }
 }

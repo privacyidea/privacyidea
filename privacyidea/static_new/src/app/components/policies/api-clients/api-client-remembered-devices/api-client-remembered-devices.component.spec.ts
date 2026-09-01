@@ -180,12 +180,15 @@ describe("ApiClientRememberedDevicesComponent", () => {
     expect(apiClientServiceMock.revokeDevice).not.toHaveBeenCalled();
   });
 
-  it("should revoke all devices for a user across all clients", async () => {
+  it("should revoke every device a user holds on this client", async () => {
     component.revokeAllForUser(device1);
     confirmClosed.next(true);
     confirmClosed.complete();
     await fixture.whenStable();
-    expect(apiClientServiceMock.revokeAllInRealmAcrossClients).toHaveBeenCalledWith("realm1", "alice");
+    expect(apiClientServiceMock.revokeAllForClient).toHaveBeenCalledWith("client1", {
+      realm: "realm1",
+      user: "alice"
+    });
   });
 
   it("should do nothing when revoking all for a user without a resolved account", () => {
@@ -200,7 +203,6 @@ describe("ApiClientRememberedDevicesComponent", () => {
     confirmClosed.complete();
     await fixture.whenStable();
     expect(apiClientServiceMock.revokeAllForClient).toHaveBeenCalledWith("client1", { realm: undefined });
-    expect(apiClientServiceMock.revokeAllInRealmAcrossClients).not.toHaveBeenCalled();
   });
 
   it("should do nothing when revoking all with no devices", async () => {
@@ -225,7 +227,6 @@ describe("ApiClientRememberedDevicesComponent", () => {
     confirmClosed.complete();
     await fixture.whenStable();
     expect(apiClientServiceMock.revokeAllForClient).toHaveBeenCalledWith("client1", { realm: "realm1" });
-    expect(apiClientServiceMock.revokeAllInRealmAcrossClients).not.toHaveBeenCalled();
   });
 
   it("should navigate to the resolved user's details", () => {

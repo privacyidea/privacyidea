@@ -43,7 +43,8 @@ from privacyidea.lib.config import get_from_config, set_privacyidea_config
 from privacyidea.lib.crypto import Sign
 from privacyidea.lib.error import SubscriptionError
 from privacyidea.lib.framework import get_app_config_value, get_app_local_store
-from privacyidea.lib.integrations import DASHBOARD_INTEGRATIONS, PRODUCTS, product_names, resolve_product
+from privacyidea.lib.integrations import (AGENT_TO_INTEGRATION, DASHBOARD_INTEGRATIONS, PRODUCTS,
+                                          product_names, resolve_product)
 from privacyidea.lib.token import get_tokens
 from .log import log_with
 from .utils import get_plugin_info_from_useragent, get_version_number, is_true
@@ -445,7 +446,11 @@ def get_plugin_subscription_status(token_users: int | None = None) -> list[dict]
         plugin, version, _comment = get_plugin_info_from_useragent(clienttype)
         if not plugin:
             continue
-        key = plugin.lower()
+        # The dashboard rows are keyed by integration id, but an integration may be
+        # known by several wire names (e.g. "pam-privacyidea" for the "pam" row), so
+        # the observed agent is resolved to its integration first. An unknown name
+        # keys itself and simply matches no row.
+        key = AGENT_TO_INTEGRATION.get(plugin.lower(), plugin.lower())
         current = last_seen_by_plugin.get(key)
         if current is None or max_lastseen > current:
             last_seen_by_plugin[key] = max_lastseen
@@ -796,10 +801,15 @@ def check_subscription(application, max_free_subscriptions=None):
         # A subscription file signed before two products were merged into this one (see
         # privacyidea.lib.integrations.PRODUCT_ALIASES) still carries the pre-merge
         # application name, so every name this product has ever been known as is checked.
-        subscriptions = [subscription
-                         for name in product_names(application)
-                         for subscription in get_subscription(name)
-                         if subscription.get("date_till")]
+        # Sorted by date_till, latest first, so the record that actually entitles the
+        # client wins: a valid subscription always outranks an expired one, and the
+        # choice does not depend on which of the product's names it was filed under.
+        subscriptions = sorted([subscription
+                                for name in product_names(application)
+                                for subscription in get_subscription(name)
+                                if subscription.get("date_till")],
+                               key=lambda s: s.get("date_till"),
+                               reverse=True)
         free_subscriptions = max_free_subscriptions or APPLICATIONS.get(application)
         # The users are counted in the branches below rather than here, so that the
         # number can be reused only while it stays within the limit that branch applies

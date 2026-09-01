@@ -42,7 +42,13 @@ myApp.factory("InfoFactory", ["AuthFactory", "$http", "$state", "$rootScope", "i
                 }).then(function (response) {
                     callback(response.data.result.value)
                 }, function (error) {
-                    AuthFactory.authError(error.data)
+                    AuthFactory.authError(error.data);
+                    // Callers gate further initialisation on this callback (the policy
+                    // controller waits for it before presetting a policy's edit values),
+                    // so it also runs on failure - with an empty catalog. The pickers
+                    // merge into what they already have, so they stay usable with their
+                    // existing and custom entries instead of never initialising at all.
+                    callback([])
                 });
             }
         };

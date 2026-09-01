@@ -294,36 +294,6 @@ describe("ApiClientService", () => {
     expect(notifyMock.error).toHaveBeenCalledWith("Failed to revoke remembered devices. Something went wrong");
   });
 
-  it("should revoke all remembered devices in a realm across all clients", async () => {
-    const promise = service.revokeAllInRealmAcrossClients("realm1");
-
-    const req = httpMock.expectOne(
-      (request) =>
-        request.url === `${environment.proxyUrl}/clients/remembered_devices` && request.params.get("realm") === "realm1"
-    );
-    expect(req.request.method).toBe("DELETE");
-    req.flush(MockPiResponse.fromValue(5));
-
-    const count = await promise;
-    expect(count).toBe(5);
-  });
-
-  it("should show error notification when revoking all remembered devices in a realm fails", async () => {
-    const promise = service.revokeAllInRealmAcrossClients("realm1");
-
-    const req = httpMock.expectOne(
-      (request) =>
-        request.url === `${environment.proxyUrl}/clients/remembered_devices` && request.params.get("realm") === "realm1"
-    );
-    req.flush(MockPiResponse.fromError({ message: "Something went wrong" }), {
-      status: 400,
-      statusText: "Bad Request"
-    });
-
-    await expect(promise).rejects.toThrow();
-    expect(notifyMock.error).toHaveBeenCalledWith("Failed to revoke remembered devices. Something went wrong");
-  });
-
   it("apiClientResource should not do a request and return undefined on unexpected route", () => {
     contentService.routeUrl.set(ROUTE_PATHS.EVENTS);
     const resource = service.apiClientResource.value();

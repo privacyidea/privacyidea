@@ -53,5 +53,4 @@ export class MockApiClientService implements ApiClientServiceInterface {
   );
   revokeDevice = jest.fn(async (): Promise<void> => Promise.resolve());
   revokeAllForClient = jest.fn(async (): Promise<number> => Promise.resolve(0));
-  revokeAllInRealmAcrossClients = jest.fn(async (): Promise<number> => Promise.resolve(0));
 }

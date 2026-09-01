@@ -117,7 +117,7 @@ export class ApiClientRememberedDevicesComponent {
   readonly isLoading = computed<boolean>(() => this.devicesResource.isLoading());
 
   userDevicesTooltip(): string {
-    return $localize`Revoke this user's remembered devices on all clients`;
+    return $localize`Revoke all of this user's remembered devices on this client`;
   }
 
   goToUser(device: RememberedDevice): void {
@@ -172,6 +172,9 @@ export class ApiClientRememberedDevicesComponent {
       });
   }
 
+  // One user can hold several remembered devices on the same client (one per
+  // browser/device they logged in from), so this revokes every one of them -
+  // still only on the client being viewed.
   revokeAllForUser(device: RememberedDevice): void {
     if (!device.user) return;
     const user = device.user;
@@ -182,14 +185,14 @@ export class ApiClientRememberedDevicesComponent {
           title: $localize`Revoke All Devices For User`,
           items: [`${user}@${device.realm}`],
           itemType: "remembered-device",
-          confirmAction: { label: $localize`Revoke all (across all clients)`, value: true, type: "destruct" }
+          confirmAction: { label: $localize`Revoke all for this client`, value: true, type: "destruct" }
         }
       })
       .afterClosed()
       .subscribe((result) => {
         if (result) {
           void this.apiClientService
-            .revokeAllInRealmAcrossClients(device.realm, user)
+            .revokeAllForClient(this.clientId(), { realm: device.realm, user })
             .then(() => this.reloadFromFirstPage());
         }
       });

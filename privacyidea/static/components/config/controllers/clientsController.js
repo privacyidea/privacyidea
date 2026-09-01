@@ -163,36 +163,24 @@ myApp.controller("clientsController", ["$scope", "$stateParams", "inform",
         };
 
         // The trigger button keeps a short, fixed-width label (revokeAllLabel above),
-        // but the confirm step names the actual realm and - critically - spells out
-        // that a realm-scoped revoke crosses client boundaries, unlike the client-scoped
-        // one, so this is not lost at the one place an admin can still back out.
+        // while the confirm step names the actual realm, so an admin sees exactly
+        // what is about to be revoked at the one place they can still back out.
         $scope.revokeAllConfirmText = function () {
             return $scope.ui.realm
-                ? gettextCatalog.getString("Revoke all remembered devices in realm {{realm}} (across all clients)",
+                ? gettextCatalog.getString("Revoke this client's remembered devices in realm {{realm}}",
                     {realm: $scope.ui.realm})
                 : gettextCatalog.getString("Revoke all remembered devices for this client");
         };
 
-        // Bulk revoke. "For this client" is scoped to the client being viewed;
-        // "in realm" revokes across all clients (realm-wide incident response), so
-        // it reloads the current list after. One button drives both: which one
-        // runs depends on whether a realm is selected (see revokeAll()).
+        // Bulk revoke, always scoped to the client being viewed - this is that
+        // client's page, so the button cannot reach another client's devices. A
+        // selected realm narrows it further to that realm's devices on this client.
+        // Revoking one user everywhere is the per-row action instead (revokeAllForUser).
         $scope.revokeAll = function () {
             $scope.ui.revokeAllDialog = false;
-            if ($scope.ui.realm) {
-                ConfigFactory.revokeRememberedDevices({realm: $scope.ui.realm}, function (data) {
-                    if (data.result.status === true) {
-                        inform.add(gettextCatalog.getString("Revoked {{count}} remembered device(s) in the realm.",
-                            {count: data.result.value}), {type: "info"});
-                        // Reset the realm selection and page so the view returns to
-                        // "all realms", page 1 after the revoke.
-                        $scope.ui.realm = null;
-                        $scope.ui.page = 1;
-                        $scope.loadRememberedDevices($scope.rememberedDevicesClientId);
-                    }
-                });
-            } else {
-                ConfigFactory.revokeAllClientRememberedDevices($scope.rememberedDevicesClientId, function (data) {
+            var params = $scope.ui.realm ? {realm: $scope.ui.realm} : {};
+            ConfigFactory.revokeAllClientRememberedDevices($scope.rememberedDevicesClientId, params,
+                function (data) {
                     if (data.result.status === true) {
                         inform.add(gettextCatalog.getString("Revoked {{count}} remembered device(s).",
                             {count: data.result.value}), {type: "info"});
@@ -200,18 +188,21 @@ myApp.controller("clientsController", ["$scope", "$stateParams", "inform",
                         $scope.loadRememberedDevices($scope.rememberedDevicesClientId);
                     }
                 });
-            }
         };
 
+        // One user can hold several remembered devices on the same client (one per
+        // browser/device they logged in from), so this revokes every one of them -
+        // still only on the client being viewed.
         $scope.revokeAllForUser = function (device) {
             $scope.showRevokeDialog[device.device_id] = false;
-            ConfigFactory.revokeRememberedDevices({user: device.user, realm: device.realm}, function (data) {
-                if (data.result.status === true) {
-                    inform.add(gettextCatalog.getString("Revoked {{count}} remembered device(s) for the user.",
-                        {count: data.result.value}), {type: "info"});
-                    $scope.loadRememberedDevices($scope.rememberedDevicesClientId);
-                }
-            });
+            ConfigFactory.revokeAllClientRememberedDevices($scope.rememberedDevicesClientId,
+                {user: device.user, realm: device.realm}, function (data) {
+                    if (data.result.status === true) {
+                        inform.add(gettextCatalog.getString("Revoked {{count}} remembered device(s) for the user.",
+                            {count: data.result.value}), {type: "info"});
+                        $scope.loadRememberedDevices($scope.rememberedDevicesClientId);
+                    }
+                });
         };
 
         // Deep-link or page refresh directly onto the remembered-devices view: the
