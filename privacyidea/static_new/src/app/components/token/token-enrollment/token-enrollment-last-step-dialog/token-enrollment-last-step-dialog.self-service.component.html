@@ -27,9 +27,10 @@
     [rollover]="data.rollover ?? false"
     [serial]="serial"></app-token-enrolled-text>
 
-  @if (data.showEnrollData !== false) {
+  @if (data.showEnrollData !== false && data.response) {
     <app-token-enrollment-data
-      [enrolledInputData]="data.response?.detail"
+      (enrollmentResponseChange)="onEnrollmentResponseChange($event)"
+      [enrolledInputData]="data.response.detail"
       [enrollmentParameters]="data.enrollParameters"
       [tokenType]="data.tokenType"></app-token-enrollment-data>
   }

@@ -24,6 +24,8 @@ import { signal } from "@angular/core";
 import { MatDialog } from "@angular/material/dialog";
 import { Router } from "@angular/router";
 import { PiResponse } from "@app/app.component";
+import { TokenEnrollmentPayload } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { getTokenApiPayloadMapper } from "@app/mappers/token-api-payload/token-api-payload-mapper-registry";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ContainerRegistrationCompletedDialogComponent } from "@components/container/container-create/container-registration-completed-dialog/container-registration-completed-dialog.component";
 import { ContainerRegistrationCompletedDialogWizardComponent } from "@components/container/container-create/container-registration-completed-dialog/container-registration-completed-dialog.wizard.component";
@@ -41,7 +43,7 @@ import { DialogService } from "@services/dialog/dialog.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { RealmService } from "@services/realm/realm.service";
-import { TokenService } from "@services/token/token.service";
+import { EnrollTokenArguments, TokenService, TokenTypeKey } from "@services/token/token.service";
 import { UserService } from "@services/user/user.service";
 import { VersioningService } from "@services/version/version.service";
 import {
@@ -59,11 +61,17 @@ import {
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockPendingChangesService } from "@testing/mock-services/mock-pending-changes-service";
 import { ContainerCreateComponent } from "./container-create.component";
+import { ContainerTokensEnrolledDialogData } from "./container-tokens-enrolled-dialog/container-tokens-enrolled-dialog.component";
 import { ContainerCreateSelfServiceComponent } from "./container-create.self-service.component";
 import { ContainerCreateWizardComponent } from "./container-create.wizard.component";
 import { ContainerCreatedDialogWizardComponent } from "./container-created-dialog/container-created-dialog.wizard.component";
 
 interface ComponentPrivates {
+  buildEnrollmentParameters: (
+    tokenType: TokenTypeKey,
+    serial: string,
+    templateTokens: TokenEnrollmentPayload[]
+  ) => EnrollTokenArguments;
   registerContainer: (serial: string, regenerate?: boolean) => void;
   openRegistrationDialog: (response: PiResponse<ContainerRegisterData>, serial: string) => void;
   registrationConfigComponent: {
@@ -236,6 +244,87 @@ describe("ContainerCreateComponent", () => {
         user: "",
         realm: userService.selectedUserRealm()
       })
+    );
+  });
+
+  describe("buildEnrollmentParameters", () => {
+    const buildFor = (tokenType: TokenTypeKey, serial: string, templateTokens: TokenEnrollmentPayload[]) =>
+      (component as unknown as ComponentPrivates).buildEnrollmentParameters(tokenType, serial, templateTokens);
+
+    it("takes the token options from the template and targets the enrolled serial", () => {
+      const templateTokens = [{ type: "hotp", hashlib: "sha256", otplen: 8 }] as TokenEnrollmentPayload[];
+
+      const parameters = buildFor("hotp", "OATH0001", templateTokens);
+
+      expect(parameters.data).toEqual(
+        expect.objectContaining({
+          type: "hotp",
+          serial: "OATH0001",
+          hashAlgorithm: "sha256",
+          otpLength: 8
+        })
+      );
+      expect(parameters.mapper).toBe(getTokenApiPayloadMapper("hotp"));
+    });
+
+    it("always asks the server for a new secret so the regenerated QR code really changes", () => {
+      const templateTokens = [{ type: "hotp" }] as TokenEnrollmentPayload[];
+
+      const parameters = buildFor("hotp", "OATH0001", templateTokens);
+
+      expect(parameters.data["generateOnServer"]).toBe(true);
+      expect(parameters.mapper.toApiPayload(parameters.data)).toEqual(
+        expect.objectContaining({ serial: "OATH0001", genkey: 1 })
+      );
+    });
+
+    it("consumes one template entry per token so tokens of the same type keep their own options", () => {
+      const templateTokens = [
+        { type: "hotp", otplen: 6 },
+        { type: "hotp", otplen: 8 }
+      ] as TokenEnrollmentPayload[];
+
+      const first = buildFor("hotp", "OATH0001", templateTokens);
+      const second = buildFor("hotp", "OATH0002", templateTokens);
+
+      expect(first.data["otpLength"]).toBe(6);
+      expect(second.data["otpLength"]).toBe(8);
+      expect(templateTokens).toEqual([]);
+    });
+
+    it("falls back to the bare token type when the template holds no matching entry", () => {
+      const parameters = buildFor("paper", "PPR0001", []);
+
+      expect(parameters.data).toEqual(expect.objectContaining({ type: "paper", serial: "PPR0001" }));
+      expect(parameters.mapper).toBe(getTokenApiPayloadMapper("paper"));
+    });
+  });
+
+  it("hands the enrollment parameters of every enrolled token to the tokens-enrolled dialog", () => {
+    containerServiceMock.selectedContainerType.set({ containerType: "generic", description: "", token_types: [] });
+    component.selectedTemplate.set({
+      container_type: "generic",
+      default: false,
+      name: "two-factor",
+      template_options: { tokens: [{ type: "hotp", hashlib: "sha256" }] as TokenEnrollmentPayload[] }
+    });
+    (containerServiceMock.createContainer as jest.Mock).mockReturnValueOnce(
+      of({
+        result: {
+          value: {
+            container_serial: "C-001",
+            tokens: { OATH0001: { type: "hotp", serial: "OATH0001", googleurl: { img: "img", value: "url" } } }
+          }
+        }
+      } as unknown as PiResponse<ContainerCreateResult>)
+    );
+
+    component.createContainer();
+
+    const dialogData = dialogServiceMock.openDialog.mock.calls.at(-1)?.[0].data as ContainerTokensEnrolledDialogData;
+    expect(dialogData.enrolledTokens).toHaveLength(1);
+    expect(dialogData.enrolledTokens[0].enrollmentParameters.data).toEqual(
+      expect.objectContaining({ type: "hotp", serial: "OATH0001", hashAlgorithm: "sha256", generateOnServer: true })
     );
   });
 

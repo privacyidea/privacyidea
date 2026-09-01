@@ -26,3 +26,64 @@ Definitions :ref:`application_ssh`.
    distribute the SSH keys to all machines. You rather store the SSH keys
    centrally in privacyIDEA and use **privacyidea-authorizedkeys** to fetch
    the keys in real time during the login process.
+
+Reading the public key
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. versionadded:: 3.14
+
+The public SSH key is stored encrypted in the database and is therefore only
+contained in encrypted form in the token list. To
+retrieve the assembled public key (``<type> <key> [<comment>]``), use the
+endpoint ``GET /token/sshkey/<serial>``. Access is guarded by the policy
+action ``sshkey_read`` in the scopes ``admin`` and ``user``. A user may only
+read the SSH key of their own tokens.
+
+Only active tokens hand out their key. Disabling or revoking an SSH key token
+stops the key from being read here, just like it stops the key from appearing
+in the authorized keys of a machine.
+
+Integrity protection
+~~~~~~~~~~~~~~~~~~~~~~
+
+.. versionadded:: 3.14
+
+The public SSH key is stored encrypted in the database. In addition,
+privacyIDEA stores an integrity checksum of the SSH key data (serial, key
+type, public key and comment) in the encrypted OTP key field of the token.
+The checksum is verified whenever the SSH key is fetched. This way a
+manipulation of the database entries - e.g. a database administrator
+replacing the public key to gain access to SSH servers - is detected and the
+SSH key is not handed out.
+
+The checksum covers the SSH key data wherever it is written, including the
+generic ``POST /token/info/<serial>/<key>`` endpoint. Changing the key type or
+the comment of an SSH key token that way keeps the checksum in sync, and the
+public key is kept encrypted even though that endpoint takes no value type.
+
+.. note:: SSH key tokens enrolled with privacyIDEA versions before 3.14 get
+   their checksum computed by the database migration during the update. If
+   the checksum is missing (e.g. the migration was not run), the token will
+   refuse to hand out the SSH key.
+
+.. note:: A token whose checksum is present but unreadable is reported as
+   possibly corrupted rather than as unmigrated - rerunning the migration
+   would not repair it. Such a token, and one that lost its public key, keeps
+   refusing to hand out the SSH key until it is re-enrolled.
+
+.. _sshkey_allowed_key_types:
+
+Allowed key types
+~~~~~~~~~~~~~~~~~~
+
+By default the following SSH key types can be enrolled:
+
+* ``ssh-rsa``
+* ``ssh-ed25519``
+* ``ecdsa-sha2-nistp256``
+* ``sk-ecdsa-sha2-nistp256@openssh.com``
+* ``sk-ssh-ed25519@openssh.com``
+
+Additional key types can be allowed with the configuration entry
+``PI_ALLOWED_SSH_KEY_TYPES`` in ``pi.cfg``, see
+:ref:`picfg_allowed_ssh_key_types`.

@@ -18,15 +18,18 @@
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
+import { By } from "@angular/platform-browser";
 import { ContentService } from "@services/content/content.service";
 import {
   BaseApiPayloadMapper,
+  EnrollmentResponse,
   TokenEnrollmentData
 } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { TokenEnrollmentDialogData, TokenService } from "@services/token/token.service";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
 import { MockContentService, MockTokenService } from "@testing/mock-services";
 import { TokenEnrollmentLastStepDialogComponent } from "./token-enrollment-last-step-dialog.component";
+import { TokenEnrollmentLastStepDialogSelfServiceComponent } from "./token-enrollment-last-step-dialog.self-service.component";
 
 describe("TokenEnrollmentLastStepDialogComponent", () => {
   let component: TokenEnrollmentLastStepDialogComponent;
@@ -51,8 +54,23 @@ describe("TokenEnrollmentLastStepDialogComponent", () => {
     enrollParameters: {
       data: {} as unknown as TokenEnrollmentData,
       mapper: {} as unknown as BaseApiPayloadMapper
-    }
+    },
+    onEnrollmentResponseChange: jest.fn()
   });
+
+  const regeneratedResponse: EnrollmentResponse = {
+    type: "totp",
+    detail: {
+      type: "totp",
+      serial: "1234567890",
+      googleurl: {
+        description: "Google Authenticator URL",
+        img: "regenerated-img",
+        value: "otpauth://totp/Example:user?secret=REGENERATED&issuer=Example"
+      }
+    },
+    result: { status: true }
+  };
 
   const setup = async (dialogData: TokenEnrollmentDialogData): Promise<void> => {
     TestBed.resetTestingModule();
@@ -120,10 +138,46 @@ describe("TokenEnrollmentLastStepDialogComponent", () => {
     ).toBe(true);
   });
 
+  it("should report a regenerated QR code to the opener of the dialog", () => {
+    const enrollmentData = fixture.debugElement.query(By.css("app-token-enrollment-data"));
+    enrollmentData.triggerEventHandler("enrollmentResponseChange", regeneratedResponse);
+
+    expect(component.data.onEnrollmentResponseChange).toHaveBeenCalledWith(regeneratedResponse);
+  });
+
   it("should render title for rollover", async () => {
     await setup({ ...createDialogData(), rollover: true });
 
     expect(component["rollover"]).toBe(true);
     expect(component.title()).toBe("Token Successfully Rolled Over");
+  });
+
+  describe("self service", () => {
+    let selfServiceFixture: ComponentFixture<TokenEnrollmentLastStepDialogSelfServiceComponent>;
+    let dialogData: TokenEnrollmentDialogData;
+
+    beforeEach(async () => {
+      dialogData = createDialogData();
+      TestBed.resetTestingModule();
+      await TestBed.configureTestingModule({
+        imports: [TokenEnrollmentLastStepDialogSelfServiceComponent],
+        providers: [
+          { provide: MatDialogRef, useClass: MockMatDialogRef },
+          { provide: MAT_DIALOG_DATA, useValue: dialogData },
+          { provide: ContentService, useClass: MockContentService },
+          { provide: TokenService, useClass: MockTokenService }
+        ]
+      }).compileComponents();
+
+      selfServiceFixture = TestBed.createComponent(TokenEnrollmentLastStepDialogSelfServiceComponent);
+      selfServiceFixture.detectChanges();
+    });
+
+    it("should report a regenerated QR code to the opener of the dialog", () => {
+      const enrollmentData = selfServiceFixture.debugElement.query(By.css("app-token-enrollment-data"));
+      enrollmentData.triggerEventHandler("enrollmentResponseChange", regeneratedResponse);
+
+      expect(dialogData.onEnrollmentResponseChange).toHaveBeenCalledWith(regeneratedResponse);
+    });
   });
 });
