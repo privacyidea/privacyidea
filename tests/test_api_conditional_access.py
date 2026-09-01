@@ -1782,7 +1782,7 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
         self.assertNotIn("restriction", res.json.get("detail") or {}, res.json)
         # The login is still classified, so an admin can see why it failed even though the user cannot.
         entries = assert_authentication_log([AuthEventType.USER_LOCKED])
-        assert_authentication_log_entry(entries[AuthEventType.USER_LOCKED], user=self.user)
+        assert_authentication_log_entry(entries[AuthEventType.USER_LOCKED], user=self.user, endpoint='/auth')
 
     def test_the_rejection_joins_the_transaction_it_refused(self):
         # A passkey or push login answers its challenge at /auth carrying the transaction, so a rejection there
@@ -1792,7 +1792,7 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
         self.assertEqual(401, res.status_code, res)
         entries = assert_authentication_log([AuthEventType.USER_LOCKED])
         assert_authentication_log_entry(entries[AuthEventType.USER_LOCKED], user=self.user,
-                                        transaction_id="0123456789")
+                                        transaction_id="0123456789", endpoint='/auth')
 
     def test_a_silent_lock_says_nothing_a_wrong_password_does_not(self):
         # The silent default: a locked account volunteers nothing a wrong password would not. Compared end to end
@@ -2367,8 +2367,11 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
             target=ConditionalAccessTarget.SOURCE_IP, priority=1)
 
         res = self._auth("cornelius", "test", remote_addr="10.0.0.6")
+        # A pre-auth DENY answers 401 with the policy error code and, with no message configured, says nothing
+        # beyond the generic failure - what identifies it here is that the correct password did not get in.
         self.assertEqual(401, res.status_code, res.json)
-        self.assertIn("conditional-access", res.json["result"]["error"]["message"])
+        self.assertEqual(403, res.json["result"]["error"]["code"], res.json)
+        self.assertEqual(GENERIC_AUTH_FAILURE, res.json["result"]["error"]["message"], res.json)
 
         with self.app.test_request_context('/validate/check', method='POST',
                                            data={"user": "cornelius", "pass": "test"},
