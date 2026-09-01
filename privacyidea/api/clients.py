@@ -36,7 +36,7 @@ from flask import Blueprint, request, g
 
 from .lib.utils import send_result
 from ..lib.error import ParameterError, PolicyError, ResourceNotFoundError
-from ..lib.params import get_optional, get_required
+from ..lib.params import get_optional, get_pagination_params, get_required
 from ..lib.log import log_with
 from ..lib.event import event
 from ..lib.policies.actions import PolicyAction
@@ -249,8 +249,8 @@ def list_client_remembered_devices_api(client_id):
     Requires admin authentication and the policy action :ref:`policy_remembered_device_list`.
 
     :param client_id: path component, the id of the client.
-    :query page: 1-indexed page number, default ``1``.
-    :query pagesize: page size, default ``50``.
+    :query page: 1-indexed page number, default ``1``; values below 1 are treated as 1.
+    :query pagesize: page size, default ``50``, capped at ``1000``.
     :query realm: optional realm name to narrow the listing to.
     :status 200: ``result.value`` is a dict with ``devices`` (this page),
         ``count`` (total matching devices), ``prev`` and ``next`` (page numbers,
@@ -263,8 +263,7 @@ def list_client_remembered_devices_api(client_id):
     # it: restrict the listing to the admin's allowed realms so a realm-scoped
     # remembered_device_list admin does not see every realm's devices.
     allowed_realm_ids = _allowed_realm_ids(PolicyAction.REMEMBERED_DEVICE_LIST)
-    page = int(get_optional(request.all_data, "page", default=1))
-    page_size = int(get_optional(request.all_data, "pagesize", default=50))
+    page, page_size = get_pagination_params(request.all_data, default_page_size=50)
     realm = get_optional(request.all_data, "realm")
     realm_id = None
     if realm:

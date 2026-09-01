@@ -29,6 +29,11 @@ import re
 
 from privacyidea.lib.error import ParameterError
 
+# Upper bound for the ``pagesize`` of a paginated listing, see get_pagination_params().
+# Well above anything the WebUI asks for (its largest page size is 100), so it only ever
+# bounds a hand-crafted request.
+MAX_PAGE_SIZE = 1000
+
 
 def _get_param(dictionary, key, default=None):
     """
@@ -114,6 +119,57 @@ def get_optional_one_of(param, keys, default=None):
         if ret is not None:
             return ret
     return default
+
+
+def get_optional_int(param, key, default=None):
+    """
+    Get an optional integer parameter from the dictionary.
+
+    Request parameters arrive as strings, so a caller that wants a number has to
+    convert. A bare ``int()`` on a non-numeric value raises ``ValueError``, which
+    no error handler covers and which therefore surfaces as an HTTP 500 instead
+    of telling the caller which parameter was wrong.
+
+    :param param: the parameter dictionary
+    :param key: the key to look up
+    :param default: value to return when the key is absent (default: None)
+    :raises ParameterError: if the value is present but is not an integer
+    :return: the value as an int, or *default* if the key is absent or empty
+    """
+    value = _get_param(param, key, default)
+    if value is None or value == "":
+        # An empty value carries no number. Treating it as absent rather than as
+        # an error keeps a caller that always appends the parameter working, and
+        # matches how get_required() treats an empty string as a missing value.
+        return default
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        raise ParameterError(f"Invalid value for parameter {key}: expected an integer.", id=905)
+
+
+def get_pagination_params(param, default_page_size=15):
+    """
+    Get the ``page`` and ``pagesize`` parameters of a paginated listing.
+
+    Both are floored at 1: the paginating queries compute their offset as
+    ``(page - 1) * pagesize``, and a page below 1 makes that offset negative.
+    SQLite silently treats a negative OFFSET as 0, but PostgreSQL rejects it
+    ("OFFSET must not be negative"), so an unfloored value answers on one
+    backend and fails on another.
+
+    ``pagesize`` is capped at :data:`MAX_PAGE_SIZE` so a single request cannot
+    ask the database and the serializer for an unbounded number of rows, which
+    is what paginating these listings is meant to prevent in the first place.
+
+    :param param: the parameter dictionary
+    :param default_page_size: page size to use when ``pagesize`` is absent
+    :raises ParameterError: if either value is present but is not an integer
+    :return: a ``(page, page_size)`` tuple
+    """
+    page = max(1, get_optional_int(param, "page", default=1))
+    page_size = min(MAX_PAGE_SIZE, max(1, get_optional_int(param, "pagesize", default=default_page_size)))
+    return page, page_size
 
 
 def attestation_certificate_allowed(cert_info, allowed_certs_pols):

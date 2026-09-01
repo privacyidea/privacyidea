@@ -6,6 +6,7 @@ from privacyidea.lib.clients import hash_api_key, create_client
 from privacyidea.lib.remembered_device import create_remembered_device, user_identity
 from privacyidea.lib.policy import set_policy, delete_policy, SCOPE
 from privacyidea.lib.policies.actions import PolicyAction
+from privacyidea.lib.params import MAX_PAGE_SIZE
 from privacyidea.lib.realm import set_realm
 from privacyidea.lib.user import User
 from privacyidea.models import Client, RememberedDevice
@@ -401,6 +402,43 @@ class APIClientRememberedDevicesTestCase(MyApiTestCase):
             self.assertEqual(1, len(page['devices']))
             self.assertEqual(2, page['prev'])
             self.assertIsNone(page['next'])
+
+    def test_01c2_list_devices_rejects_invalid_pagination(self):
+        client, _key = create_client("pagination guard client", "privacyidea-cp")
+        for _ in range(3):
+            self._device(client.id)
+
+        # A non-numeric value is answered with a parameter error naming the
+        # offending parameter.
+        for query in ({"page": "abc"}, {"pagesize": "abc"}):
+            with self.app.test_request_context(f'/clients/{client.id}/remembered_devices',
+                                               method='GET', query_string=query,
+                                               headers={'Authorization': self.at}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(400, res.status_code, res)
+                self.assertEqual(905, res.json['result']['error']['code'])
+
+        # Values below 1 are floored to the first page rather than producing a
+        # negative OFFSET, which PostgreSQL rejects outright.
+        for query in ({"page": "0", "pagesize": "2"}, {"page": "-4", "pagesize": "2"}):
+            with self.app.test_request_context(f'/clients/{client.id}/remembered_devices',
+                                               method='GET', query_string=query,
+                                               headers={'Authorization': self.at}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res)
+                page = res.json['result']['value']
+                self.assertEqual(3, page['count'])
+                self.assertEqual(2, len(page['devices']))
+                self.assertIsNone(page['prev'])
+
+        # An oversized page size is capped, so one request cannot ask for an
+        # unbounded number of rows.
+        with self.app.test_request_context(f'/clients/{client.id}/remembered_devices',
+                                           method='GET', query_string={"pagesize": str(MAX_PAGE_SIZE + 500)},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            self.assertEqual(3, res.json['result']['value']['count'])
 
     def test_01d_list_devices_realm_filter(self):
         set_realm("xclistfilter", [{"name": self.resolvername1}])
