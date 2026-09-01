@@ -379,6 +379,21 @@ class AuthenticationLogTestCase(MyTestCase):
         self.assertIsNone(get_authentication_log_event(old_id))
         self.assertIsNotNone(get_authentication_log_event(recent_id))
 
+    def test_cleanup_removes_the_reasons_of_the_entries_it_deletes(self):
+        from unittest.mock import patch
+
+        # The retention path deletes set-based, which runs no ORM cascade and cannot rely on the foreign key
+        # (SQLite does not enforce it): an orphaned reason row would be picked up by the next entry that reuses the
+        # freed id.
+        now = datetime.now(timezone.utc).replace(tzinfo=None)
+        with patch('privacyidea.models.utils.datetime') as mock_dt:
+            mock_dt.now.return_value.replace.return_value = now - timedelta(days=30)
+            old_id = log_authentication_event(event_type=AuthEventType.NO_USABLE_TOKEN, resolver="res1", uid="u1",
+                                              realm="r1", reasons=["TOKEN_DISABLED", "WRONG_OTP"])
+
+        self.assertEqual(1, cleanup_authentication_log(older_than=now - timedelta(days=7)))
+        self.assertEqual(0, db.session.query(AuthenticationLogReason).filter_by(auth_log_id=old_id).count())
+
     def test_cleanup_returns_zero_when_nothing_to_delete(self):
         log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1")
 

@@ -169,10 +169,12 @@ Challenge-response
    ``CHALLENGE_DECLINED_ON_DEVICE``
      the challenge was rejected on the device.
    ``TOKEN_NOT_FIT_FOR_CHALLENGE``
-     the response matched, but the token may no longer complete a challenge -
-     its state changed between the trigger and the answer, so one of the token
-     states above now holds (it was disabled or revoked, its validity period
-     ended, or its failcounter filled up in the meantime).
+     the response matched, but the token may no longer complete the challenge:
+     its state changed between the trigger and the answer. That check is the
+     same one every token passes before it is used at all, so the entry normally
+     names the state itself - one of the token states above, such as a token
+     disabled or a failcounter filled up in the meantime. This reason is the
+     fallback for a token type that refuses the answer without naming a state.
 
 A successful authentication needs no reason, and neither does one still in
 flight. An entry is also without one where nothing determined a cause, so no
