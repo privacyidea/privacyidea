@@ -392,15 +392,20 @@ def surface_conditional_access_message(response):
         # An error-shaped body means the view raised and an error handler built this response.
         errored = "error" in result
         if evaluation.restricted:
-            # An error body never met the post-policies, so a detail missing *there* says nothing about them. On
-            # any other response one that is gone was stripped by no_detail_on_fail, and a silent restriction then
-            # has nothing to say - the pre-check answers such a request with no detail either.
-            message = rejection_message(context.rejection_shape, evaluation.messages,
-                                        detail_stripped=not errored and "detail" not in content)
-            if errored:
-                # Answered the way this endpoint answers a refusal rather than as the error it was about to be.
-                # That error must not survive: "ERR1007: the token is locked" states the very reason a rejection
-                # withholds, and would sit beside the wording meant to replace it.
+            shape = context.rejection_shape
+            # Rendered rather than edited in place when this endpoint answers a refusal with an error response, or
+            # when the body already is one. /auth is the first case and needs it even on a 200: it returns its
+            # challenge (auth.py) before it evaluates, so a restriction written on that request arrives here with a
+            # 200 in hand, and editing it would answer with value false and REJECT - a shape no failed login there
+            # ever has, and therefore the one thing that identifies a rejection. The second case is an error that
+            # must not survive: "ERR1007: the token is locked" states the very reason a rejection withholds.
+            replacing = errored or shape.as_error
+            # A body about to be replaced never met the post-policies, so a detail missing there says nothing about
+            # them. On any other response one that is gone was stripped by no_detail_on_fail, and a silent
+            # restriction then has nothing to say - the pre-check answers such a request with no detail either.
+            message = rejection_message(shape, evaluation.messages,
+                                        detail_stripped=not replacing and "detail" not in content)
+            if replacing:
                 return _rejection_response(context, message)
             # Answered as the pre-check answers every request after this one. Keyed on the restriction rather than
             # on having something to say, because a silent lock refuses this request too - and rather than on the
@@ -417,7 +422,7 @@ def surface_conditional_access_message(response):
             # renders with rid 1 and has no such field, and a rejection there must not be the one response that
             # grows one.
             result["value"] = _rejected_value(result.get("value"))
-            if context.rejection_shape.reports_authentication:
+            if shape.reports_authentication:
                 result["authentication"] = AUTH_RESPONSE.REJECT
         elif errored:
             # Only a restriction overtakes an error. A notification refused nothing, so the error it merely

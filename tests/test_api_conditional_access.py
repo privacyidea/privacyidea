@@ -1924,6 +1924,38 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
         finally:
             delete_policy("ca_pi_login")
 
+    def test_a_challenge_at_auth_that_trips_a_lock_is_refused_as_a_login_failure_is(self):
+        # /auth hands back a challenge as a 200 and returns before it evaluates, so a restriction written on that
+        # request reaches the response hook with a success-shaped body in hand. Editing it in place would answer
+        # with value false and REJECT - a shape no failed login here ever has, and so the one field that would
+        # identify a rejection. It has to be rendered as the error response every failure here is.
+        init_token({"serial": "CA_AUTH_HOTP", "type": "hotp", "otpkey": self.otpkey, "pin": "pin"}, user=self.user)
+        set_policy("ca_webui_login", scope=SCOPE.WEBUI, action=f"{PolicyAction.LOGINMODE}=privacyIDEA")
+        set_policy("ca_cr", scope=SCOPE.AUTH, action=f"{PolicyAction.CHALLENGERESPONSE}=hotp")
+        create_lockout_policy(
+            name="ca_chal", time_window_seconds=3600,
+            counter_types_to_track=[str(AuthEventType.CHALLENGE_TRIGGERED)],
+            stages=[{"failure_threshold": 1, "priority": 1, "error_message": None,
+                     "actions": [{"action_type": str(LockoutAction.LOCK_USER), "action_value": 600}]}],
+            target=LockoutTarget.USER, priority=1)
+        try:
+            tripping = self._auth("cornelius", "pin")
+            self.assertEqual(401, tripping.status_code, tripping)
+            self.assertEqual(Error.AUTHENTICATE, tripping.json["result"]["error"]["code"], tripping.json)
+            self.assertTrue(is_user_locked(self.user))
+            # The challenge goes with it: a transaction_id the next request would refuse is not handed out.
+            self.assertFalse(tripping.json.get("detail"), tripping.json)
+
+            # And it reads exactly as the rejection the lock produces from now on, which is the whole promise.
+            refused = self._auth("cornelius", "pin")
+            self.assertEqual(tripping.status_code, refused.status_code, refused.json)
+            self.assertEqual(tripping.json["result"], refused.json["result"], refused.json)
+            self.assertEqual(tripping.json.get("detail"), refused.json.get("detail"), refused.json)
+        finally:
+            remove_token("CA_AUTH_HOTP")
+            delete_policy("ca_webui_login")
+            delete_policy("ca_cr")
+
     def test_ip_block_trip_message_at_auth(self):
         # The failure that trips the BLOCK_IP stage (by crossing the distinct-user
         # threshold) already tells the user about the block instead of "Wrong
