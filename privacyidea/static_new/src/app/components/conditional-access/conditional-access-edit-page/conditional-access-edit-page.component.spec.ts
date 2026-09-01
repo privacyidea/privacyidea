@@ -832,6 +832,17 @@ describe("ConditionalAccessEditPageComponent — new mode", () => {
       expect(component.stageActionsValid()).toBe(false);
     });
 
+    it("should render the stage-conflict error naming only the real exclusive pairs", () => {
+      // There is no ALLOW action type (the pre-auth verdict is DENY/CONTINUE, not a stage action), so the
+      // rendered hint must not claim a stage can be invalid for "both allow and deny".
+      component.onStagesChange(stageWith("LOCK_USER", "PERMANENT_LOCK_USER"));
+      fixture.detectChanges();
+      const errorText = fixture.nativeElement.querySelector(".ca-stages-error")?.textContent ?? "";
+      expect(errorText).not.toContain("allow");
+      expect(errorText).toContain("lock temporarily and permanently");
+      expect(errorText).toContain("block temporarily and permanently");
+    });
+
     it("should not block while no rules have been served", () => {
       policyServiceMock.repeatableActionsByTarget.set({} as Record<ConditionalAccessTarget, ConditionalAccessActionType[]>);
       policyServiceMock.exclusiveGroupsByTarget.set({} as Record<ConditionalAccessTarget, ConditionalAccessActionType[][]>);

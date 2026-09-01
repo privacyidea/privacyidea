@@ -31,6 +31,7 @@ from werkzeug.test import TestResponse
 from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType,
                                                                            CA_ENFORCEMENT_EVENT_TYPES,
                                                                            TRACKABLE_EVENT_TYPES, CountMode)
+from privacyidea.api.conditional_access import create_policy
 from privacyidea.lib.conditional_access.engine import ConditionalAccessAction
 from privacyidea.lib.conditional_access.policy import (create_conditional_access_policy,
                                                                get_default_error_messages,
@@ -134,6 +135,15 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
         res = self._request("policy", method="POST", json_data=body)
         self.assertEqual(400, res.status_code, res.json)
         self.assertIn("mutually exclusive", res.json["result"]["error"]["message"])
+
+    def test_create_policy_docstring_only_documents_the_real_exclusive_pairs(self):
+        # The docstring is the admin-facing contract for which action pairs are mutually exclusive; it must not
+        # promise a rule that does not exist. ALLOW is not a ConditionalAccessAction (the pre-auth verdict is
+        # AccessDecision.DENY/CONTINUE, not a stage action), so it can never form an exclusive pair with DENY.
+        doc = create_policy.__doc__
+        self.assertNotIn("ALLOW", doc)
+        self.assertIn("``LOCK_USER``/``PERMANENT_LOCK_USER``", doc)
+        self.assertIn("``BLOCK_IP``/``PERMANENT_BLOCK_IP``", doc)
 
     def test_create_two_email_actions_in_one_stage_is_accepted(self):
         # The exception the rule exists around: one stage notifying two different recipient groups.

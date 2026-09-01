@@ -305,8 +305,8 @@ def create_policy():
         (highest first). A threshold starts at 1, except on a stage whose every
         action is ``DENY``, where 0 means "always". Required. Within one stage an
         action type may appear only once, except ``EMAIL_ADMIN``/``EMAIL_USER``;
-        and ``LOCK_USER``/``PERMANENT_LOCK_USER``, ``BLOCK_IP``/``PERMANENT_BLOCK_IP``
-        and ``ALLOW``/``DENY`` may not be combined in the same stage.
+        and ``LOCK_USER``/``PERMANENT_LOCK_USER`` and ``BLOCK_IP``/``PERMANENT_BLOCK_IP``
+        may not be combined in the same stage.
     :jsonparam enabled: whether the policy is evaluated (default true).
     :jsonparam dry_run: log-only mode, nothing is enforced (default false).
     :jsonparam priority: evaluation priority; lower numbers are evaluated first.
