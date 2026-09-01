@@ -35,7 +35,7 @@ let nextId = 0;
  * mouse-only, cannot be selected or copied, and never reaches a keyboard or touch user. This clamps to one line
  * and offers a real button to reveal the rest, so the full text stays reachable and selectable by anyone.
  *
- * Renders an em dash when there is no text, so an empty value reads as deliberate rather than missing.
+ * Renders an hyphon when there is no text, so an empty value reads as deliberate rather than missing.
  */
 @Component({
   selector: "app-expandable-message",
