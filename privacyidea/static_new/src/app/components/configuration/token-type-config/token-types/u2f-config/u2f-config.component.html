@@ -31,7 +31,7 @@
         <mat-label i18n>AppID</mat-label>
         <input
           #appIdInput
-          (input)="updateFormData('u2f.appId', $any($event.target).value)"
+          (input)="updateFormData(U2F_APP_ID, $any($event.target).value)"
           [value]="appId()"
           matInput
           placeholder="https://pi.server.com"

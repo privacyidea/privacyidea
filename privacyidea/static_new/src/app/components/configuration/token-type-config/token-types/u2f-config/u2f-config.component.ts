@@ -21,6 +21,7 @@ import { Component, computed, input, output } from "@angular/core";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
+import { U2F_APP_ID } from "@constants/token.constants";
 
 @Component({
   selector: "app-u2f-config",
@@ -30,10 +31,12 @@ import { MatInputModule } from "@angular/material/input";
   styleUrl: "./u2f-config.component.scss"
 })
 export class U2fConfigComponent {
+  protected readonly U2F_APP_ID = U2F_APP_ID;
+
   formData = input.required<Record<string, string | undefined>>();
   formDataChange = output<Record<string, string | undefined>>();
 
-  appId = computed(() => this.formData()["u2f.appId"] ?? "");
+  appId = computed(() => this.formData()[U2F_APP_ID] ?? "");
 
   updateFormData(fieldName: string, value: string): void {
     const newValue = { ...this.formData(), [fieldName]: value };

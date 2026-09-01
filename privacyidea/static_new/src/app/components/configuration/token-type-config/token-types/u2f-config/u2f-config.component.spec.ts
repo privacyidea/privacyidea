@@ -19,6 +19,7 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { provideRouter } from "@angular/router";
 import { U2fConfigComponent } from "@components/configuration/token-type-config/token-types/u2f-config/u2f-config.component";
+import { U2F_APP_ID } from "@constants/token.constants";
 
 describe("U2fConfigComponent", () => {
   let fixture: ComponentFixture<U2fConfigComponent>;
@@ -41,8 +42,8 @@ describe("U2fConfigComponent", () => {
 
   it("should emit formDataChange when updateFormData is called", () => {
     jest.spyOn(component.formDataChange, "emit");
-    component.updateFormData("u2f.appId", "https://pi.server.com");
-    expect(component.formDataChange.emit).toHaveBeenCalledWith({ "u2f.appId": "https://pi.server.com" });
+    component.updateFormData(U2F_APP_ID, "https://pi.server.com");
+    expect(component.formDataChange.emit).toHaveBeenCalledWith({ [U2F_APP_ID]: "https://pi.server.com" });
   });
 
   it("renders an empty input and no warning when the key is missing", () => {
@@ -52,7 +53,7 @@ describe("U2fConfigComponent", () => {
   });
 
   it("shows the configured appId in the input", () => {
-    fixture.componentRef.setInput("formData", { "u2f.appId": "https://pi.server.com" });
+    fixture.componentRef.setInput("formData", { [U2F_APP_ID]: "https://pi.server.com" });
     fixture.detectChanges();
 
     const input: HTMLInputElement = fixture.nativeElement.querySelector("input");
@@ -61,7 +62,7 @@ describe("U2fConfigComponent", () => {
   });
 
   it("warns about a non-https appId and about a trailing slash", () => {
-    fixture.componentRef.setInput("formData", { "u2f.appId": "http://pi.server.com/" });
+    fixture.componentRef.setInput("formData", { [U2F_APP_ID]: "http://pi.server.com/" });
     fixture.detectChanges();
 
     const warnings = Array.from(
