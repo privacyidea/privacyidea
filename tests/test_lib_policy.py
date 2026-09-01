@@ -3487,16 +3487,18 @@ class PolicyTemplateTestCase(MyTestCase):
     still exist and values the action definition accepts, otherwise a policy
     created from a template cannot be saved."""
 
-    template_directories = [pathlib.Path("privacyidea/static/policy-templates"),
-                            pathlib.Path("privacyidea/static_new/public/policy-templates")]
+    repository_root = pathlib.Path(__file__).resolve().parent.parent
+    template_directories = [repository_root / "privacyidea/static/policy-templates",
+                            repository_root / "privacyidea/static_new/public/policy-templates"]
 
-    @staticmethod
-    def _read_templates(directory):
+    def _read_templates(self, directory):
         templates = {}
         for template_file in sorted(directory.glob("*.json")):
             if template_file.name == "index.json":
                 continue
             templates[template_file.name] = json.loads(template_file.read_text())
+        # without this the tests below would silently check nothing
+        self.assertTrue(templates, f"No policy templates found in {directory}")
         return templates
 
     @staticmethod
@@ -3510,9 +3512,11 @@ class PolicyTemplateTestCase(MyTestCase):
             for file_name, template in self._read_templates(directory).items():
                 scope = template["scope"]
                 for action_name, action_value in template["action"].items():
-                    self.assertTrue(validate_actions(scope, {action_name: action_value}),
-                                    f"{directory / file_name}: '{action_name}' is not a valid "
-                                    f"action in scope '{scope}'")
+                    try:
+                        validate_actions(scope, {action_name: action_value})
+                    except ParameterError as error:
+                        self.fail(f"{directory / file_name}: '{action_name}' is not a valid "
+                                  f"action in scope '{scope}': {error.message}")
 
     def test_02_template_action_values_match_the_definition(self):
         for directory in self.template_directories:
@@ -3520,6 +3524,8 @@ class PolicyTemplateTestCase(MyTestCase):
                 definitions = self._action_definitions(template["scope"])
                 for action_name, action_value in template["action"].items():
                     where = f"{directory / file_name}: '{action_name}'"
+                    if action_name not in definitions:
+                        self.fail(f"{where} is not a valid action in scope '{template['scope']}'")
                     definition = definitions[action_name]
                     action_type = definition.get("type")
                     if action_type == "bool":
