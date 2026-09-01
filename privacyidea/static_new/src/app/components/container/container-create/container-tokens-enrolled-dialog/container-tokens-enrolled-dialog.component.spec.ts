@@ -17,25 +17,33 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { NO_ERRORS_SCHEMA } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { ContentService } from "@services/content/content.service";
 import { MockContentService } from "@testing/mock-services/mock-content-service";
 import {
   ContainerTokensEnrolledDialogComponent,
-  ContainerTokensEnrolledDialogData
+  ContainerTokensEnrolledDialogData,
+  EnrolledTokenInfo
 } from "./container-tokens-enrolled-dialog.component";
-import { TokenService } from "@services/token/token.service";
+import { BaseApiPayloadMapper, EnrollmentResponse } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { By } from "@angular/platform-browser";
+import { TokenEnrollmentDataComponent } from "@components/token/token-enrollment/token-enrollment-data/token-enrollment-data.component";
+import { TokenService, TokenTypeKey } from "@services/token/token.service";
+import { of } from "rxjs";
 import { MockTokenService } from "@testing/mock-services";
 
 const dialogClose = jest.fn();
 const dialogRefMock = { close: dialogClose };
 
-const makeToken = (serial: string, type: string) => ({
+const makeToken = (serial: string, type: TokenTypeKey): EnrolledTokenInfo => ({
   serial,
   type,
-  googleurl: { img: "img", value: "url", description: "" }
+  googleurl: { img: "img", value: "url", description: "" },
+  enrollmentParameters: {
+    data: { type, serial, generateOnServer: true },
+    mapper: new BaseApiPayloadMapper()
+  }
 });
 
 const threeTokens: ContainerTokensEnrolledDialogData = {
@@ -57,8 +65,7 @@ describe("ContainerTokensEnrolledDialogComponent", () => {
         { provide: MAT_DIALOG_DATA, useValue: threeTokens },
         { provide: ContentService, useClass: MockContentService },
         { provide: TokenService, useClass: MockTokenService }
-      ],
-      schemas: [NO_ERRORS_SCHEMA]
+      ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(ContainerTokensEnrolledDialogComponent);
@@ -69,6 +76,133 @@ describe("ContainerTokensEnrolledDialogComponent", () => {
 
   it("creates", () => {
     expect(component).toBeTruthy();
+  });
+
+  describe("regenerating one of the tokens", () => {
+    const regenerated = (detail: Record<string, unknown>): EnrollmentResponse =>
+      ({
+        type: "hotp",
+        result: { status: true },
+        detail: { type: "hotp", ...detail }
+      }) as unknown as EnrollmentResponse;
+
+    const emitRegenerated = (response: EnrollmentResponse) => {
+      fixture.debugElement
+        .query(By.css("app-token-enrollment-data"))
+        .triggerEventHandler("enrollmentResponseChange", response);
+      fixture.detectChanges();
+    };
+
+    it("passes the enrollment parameters of the current token to the enrollment data", () => {
+      const enrollmentData = fixture.debugElement.query(By.directive(TokenEnrollmentDataComponent))
+        .componentInstance as TokenEnrollmentDataComponent;
+
+      expect(enrollmentData.enrollmentParameters()).toBe(threeTokens.enrolledTokens[0].enrollmentParameters);
+      expect(enrollmentData.enrolledInputData()).toBe(threeTokens.enrolledTokens[0]);
+    });
+
+    it("regenerating via the button keeps the new QR code while paging through the tokens", () => {
+      const tokenService = TestBed.inject(TokenService) as unknown as MockTokenService;
+      tokenService.enrollToken = jest
+        .fn()
+        .mockReturnValue(
+          of(regenerated({ serial: "TOK-1", googleurl: { img: "regenerated-img", value: "regenerated-url" } }))
+        );
+      const regenerateButton = Array.from(fixture.nativeElement.querySelectorAll("button")).find((button) =>
+        (button as HTMLButtonElement).textContent?.includes("Regenerate QR Code")
+      ) as HTMLButtonElement;
+      expect(regenerateButton).toBeTruthy();
+
+      regenerateButton.click();
+      fixture.detectChanges();
+
+      expect(tokenService.enrollToken).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ serial: "TOK-1", generateOnServer: true }) })
+      );
+      expect(component.currentToken().googleurl?.img).toBe("regenerated-img");
+
+      component.next();
+      component.previous();
+      fixture.detectChanges();
+
+      expect(component.currentToken().googleurl?.img).toBe("regenerated-img");
+      const enrollmentData = fixture.debugElement.query(By.directive(TokenEnrollmentDataComponent))
+        .componentInstance as TokenEnrollmentDataComponent;
+      expect(enrollmentData.enrolledData().googleurl?.img).toBe("regenerated-img");
+    });
+
+    it("applies a response to the token it belongs to even when another one is on screen", () => {
+      component.next();
+      fixture.detectChanges();
+      expect(component.currentToken().serial).toBe("TOK-2");
+
+      emitRegenerated(regenerated({ serial: "TOK-1", googleurl: { img: "late-img", value: "late-url" } }));
+
+      expect(component.enrolledTokens()[0].googleurl?.img).toBe("late-img");
+      expect(component.enrolledTokens()[1].googleurl?.img).toBe("img");
+      expect(component.currentToken().serial).toBe("TOK-2");
+    });
+
+    it("ignores a response that carries no serial", () => {
+      emitRegenerated(regenerated({ googleurl: { img: "unattributable", value: "url" } }));
+
+      expect(component.enrolledTokens().map((token) => token.googleurl?.img)).toEqual(["img", "img", "img"]);
+    });
+
+    it("shows the regenerated data and leaves the other tokens untouched", () => {
+      emitRegenerated(
+        regenerated({ serial: "TOK-1", googleurl: { img: "regenerated-img", value: "regenerated-url" } })
+      );
+
+      expect(component.currentToken().googleurl?.img).toBe("regenerated-img");
+      expect(component.enrolledTokens()[1].googleurl?.img).toBe("img");
+      expect(component.total()).toBe(3);
+    });
+
+    it("keeps the regenerated data when paging away and back", () => {
+      emitRegenerated(
+        regenerated({ serial: "TOK-1", googleurl: { img: "regenerated-img", value: "regenerated-url" } })
+      );
+
+      component.next();
+      component.previous();
+
+      expect(component.currentToken().googleurl?.img).toBe("regenerated-img");
+    });
+
+    it("keeps regenerated OTP values of a value based token when paging away and back", () => {
+      emitRegenerated(regenerated({ serial: "TOK-1", otps: { "0": "111111", "1": "222222" } }));
+
+      component.next();
+      component.previous();
+
+      expect(component.currentToken()["otps"]).toEqual({ "0": "111111", "1": "222222" });
+    });
+
+    it("keeps serial, type and enrollment parameters of the regenerated token", () => {
+      emitRegenerated(
+        regenerated({ serial: "TOK-1", googleurl: { img: "regenerated-img", value: "regenerated-url" } })
+      );
+
+      expect(component.currentToken().serial).toBe("TOK-1");
+      expect(component.currentToken().type).toBe("hotp");
+      expect(component.currentToken().enrollmentParameters).toBe(threeTokens.enrolledTokens[0].enrollmentParameters);
+    });
+
+    it("regenerating the second token does not affect the first one", () => {
+      component.next();
+      fixture.detectChanges();
+
+      emitRegenerated(
+        regenerated({ serial: "TOK-2", googleurl: { img: "regenerated-img", value: "regenerated-url" } })
+      );
+
+      expect(component.currentToken().serial).toBe("TOK-2");
+      expect(component.currentToken().googleurl?.img).toBe("regenerated-img");
+
+      component.previous();
+      expect(component.currentToken().googleurl?.img).toBe("img");
+    });
   });
 
   it("starts on first token with correct total and progress", () => {

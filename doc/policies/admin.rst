@@ -501,6 +501,24 @@ allowed to calculate the token serial number for a given OTP
 value.
 
 
+.. _policy_sshkey_read:
+
+sshkey_read
+~~~~~~~~~~~
+
+type: ``bool``
+
+.. index:: sshkey_read
+
+If the ``sshkey_read`` action is defined, the administrator is allowed to read
+the public SSH key of an SSH key token via ``GET /token/sshkey/<serial>``.
+
+The public key of an SSH key token is stored encrypted and is therefore only
+contained in encrypted form in the token list, so this action is the way to
+retrieve it. The administrator is restricted to the realms of their policies,
+and only active tokens hand out their key. See :ref:`sshkey_token`.
+
+
 .. _policy_getrandom:
 
 getrandom

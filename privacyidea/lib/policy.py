@@ -1844,6 +1844,11 @@ def get_static_policy_definitions(scope=None):
                                                ' for a given OTP value.'),
                                      'mainmenu': [MAIN_MENU.TOKENS],
                                      "group": GROUP.TOOLS},
+            PolicyAction.SSHKEY_READ: {'type': 'bool',
+                                       'desc': _('Admin is allowed to read the public SSH key '
+                                                 'of an SSH key token.'),
+                                       'mainmenu': [MAIN_MENU.TOKENS],
+                                       'group': GROUP.TOKEN},
             PolicyAction.GETRANDOM: {'type': 'bool',
                                      'desc': _('Admin is allowed to retrieve '
                                                'random keys from privacyIDEA.'),
@@ -2337,6 +2342,11 @@ def get_static_policy_definitions(scope=None):
                                   "desc": _('The user is allowed to delete his own tokens.'),
                                   'mainmenu': [MAIN_MENU.TOKENS],
                                   'group': GROUP.TOKEN},
+            PolicyAction.SSHKEY_READ: {'type': 'bool',
+                                       'desc': _('The user is allowed to read the public SSH key '
+                                                 'of his own SSH key token.'),
+                                       'mainmenu': [MAIN_MENU.TOKENS],
+                                       'group': GROUP.TOKEN},
             PolicyAction.UNASSIGN: {'type': 'bool',
                                     'desc': _('The user is allowed to unassign his own tokens.'),
                                     'mainmenu': [MAIN_MENU.TOKENS],

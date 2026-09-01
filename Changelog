@@ -14,6 +14,13 @@ Version 3.14dev1
     subscription, with links to the documentation and the products (#4057, #5383)
 
   Enhancements:
+  * The decrypted public SSH key of an SSH key token can be retrieved via the new endpoint `GET /token/sshkey/<serial>`,
+    guarded by the new policy action `sshkey_read` (admin and user scope).
+  * SSH key tokens now store an integrity checksum of the SSH key data in the encrypted OTP key field. Manipulations
+    of the database entries (e.g. a database admin changing the public key to gain access to SSH servers) are
+    detected when the key is fetched. The migration adds the checksum to existing tokens
+  * Additional SSH key types accepted by the SSH key token can be configured with `PI_ALLOWED_SSH_KEY_TYPES`
+    in `pi.cfg`. The configured types are added to the built-in ones
   * Added a new policy scope "hardening". The action `hide_version` removes the version number from responses to
     unauthenticated requests and `hide_auth_error_status` returns a uniform 401 for failed authentications, so the
     status code no longer reveals the reason (#5390, #5630)

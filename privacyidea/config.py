@@ -112,6 +112,8 @@ class ConfigKey:
     NO_RESPONSE_SIGN = "PI_NO_RESPONSE_SIGN"
     RESPONSE_NO_PRIVATE_KEY_CHECK = "PI_RESPONSE_NO_PRIVATE_KEY_CHECK"
 
+    ALLOWED_SSH_KEY_TYPES = "PI_ALLOWED_SSH_KEY_TYPES"
+
 
 class DefaultConfigValues:
     UUID_FILE = "/etc/privacyidea/uuid.txt"
