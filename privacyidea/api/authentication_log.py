@@ -104,7 +104,7 @@ def get_authentication_log():
     :query case_insensitive: if set, plain (non-wildcard) filter values match case-insensitively (wildcard values
         always match case-insensitively).
     :query ca_action_types: only entries with a conditional-access outcome of one of these action types
-        (e.g. ``LOCK_USER_TEMPORARY``). Takes a list and a wildcard like the other filters, so ``ca_action_types=*``
+        (e.g. ``LOCK_USER``). Takes a list and a wildcard like the other filters, so ``ca_action_types=*``
         means "conditional access acted on this request at all".
     :query ca_policy_names: only entries with an outcome recorded for one of these conditional-access policy names.
     :query ca_dry_run: ``true`` for only entries with a dry-run outcome, ``false`` for only entries with an enforced

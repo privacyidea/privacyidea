@@ -570,7 +570,7 @@ def _outcome_condition(ca_action_types: str | list[str] | None = None,
     acted on at all".
 
     **All conditions apply to the same outcome row.** An entry matches when *one* of its outcomes satisfies all of
-    them, which is what the filter says: ``ca_action_types=LOCK_USER_TEMPORARY`` with ``ca_policy_names=Notify`` must
+    them, which is what the filter says: ``ca_action_types=LOCK_USER`` with ``ca_policy_names=Notify`` must
     not match a request where *Notify* sent an email and some other policy locked the user.
 
     An ``EXISTS`` rather than a join, for the reason the listing reads the outcomes with ``selectinload``
@@ -578,7 +578,8 @@ def _outcome_condition(ca_action_types: str | list[str] | None = None,
     page's ``LIMIT`` and the ``count`` that shares these conditions -- an entry with three matching outcomes would be
     counted three times and appear three times.
 
-    :param ca_action_types: match outcomes with one of these ``action_type`` values (``LockoutAction`` values)
+    :param ca_action_types: match outcomes with one of these ``action_type`` values (``ConditionalAccessAction``
+        values)
     :param ca_policy_names: match outcomes recorded for one of these policy names (the denormalized copy, so a
         deleted policy is still matchable)
     :param ca_dry_run: match only dry-run outcomes (``True``) or only enforced ones (``False``)

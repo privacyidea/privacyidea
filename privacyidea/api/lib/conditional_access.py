@@ -50,7 +50,7 @@ from flask_babel import _
 
 from privacyidea.api.lib.utils import (log_authentication, build_ca_context, send_result, get_optional_one_of)
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
-from privacyidea.lib.conditional_access.engine import (get_user_lockout, get_ip_block, evaluate_access_decision,
+from privacyidea.lib.conditional_access.engine import (get_user_lock, get_ip_block, evaluate_access_decision,
                                                       AccessDecision, RestrictionStatus, is_user_locked, is_ip_blocked)
 from privacyidea.lib.conditional_access.request_context import get_ca_context
 from privacyidea.lib.error import AuthError, Error
@@ -74,7 +74,7 @@ def conditional_access_precheck(user: User, log_rejection: bool = True) -> Respo
     for the admin, as this request's authentication-log row.
 
     A currently-locked user is rejected first, then a source IP blocked by a
-    ``BLOCK_IP_TEMPORARY`` action. The pre-auth conditional-access DENY decision is evaluated
+    ``BLOCK_IP`` action. The pre-auth conditional-access DENY decision is evaluated
     last, after the lock/block pre-checks; a
     DENY rejects this single request without persisting state, while
     CONTINUE falls through. ``g.client_ip`` is the source IP checked.
@@ -149,18 +149,18 @@ def conditional_access_gate(identity_resolver: Callable[[], User] | None = None,
 
 # --- /auth: a rejection that explains itself ------------------------------------------------------------------------
 
-def _lockout_error_message(lockout: RestrictionStatus) -> str:
+def _locked_user_error_message(lock: RestrictionStatus) -> str:
     """
     Build the user-facing message for a login rejected by the conditional-access
-    lockout. *lockout* is the :class:`RestrictionStatus` returned by
-    :func:`~privacyidea.lib.conditional_access.engine.get_user_lockout`: a
+    lock. *lock* is the :class:`RestrictionStatus` returned by
+    :func:`~privacyidea.lib.conditional_access.engine.get_user_lock`: a
     permanent lock points the user at the administrator, a timed lock states the
     approximate remaining time (rounded up to whole minutes, at least one).
     """
-    if lockout.permanent:
+    if lock.permanent:
         return _("Your account has been permanently locked. Please contact your administrator.")
     # Ceiling remaining minutes
-    minutes = max(1, -(-lockout.seconds_remaining // 60))
+    minutes = max(1, -(-lock.seconds_remaining // 60))
     return _("Your account is temporarily locked due to too many failed login attempts. "
              "Please try again in about {minutes} minute(s).").format(minutes=minutes)
 
@@ -168,7 +168,7 @@ def _lockout_error_message(lockout: RestrictionStatus) -> str:
 def _blocked_ip_error_message(client_ip: str | None, block: RestrictionStatus) -> str:
     """
     Build the user-facing message for a login rejected because the source IP is
-    blocked by a conditional-access ``BLOCK_IP_TEMPORARY`` action. *block* is the
+    blocked by a conditional-access ``BLOCK_IP`` action. *block* is the
     :class:`RestrictionStatus` returned by
     :func:`~privacyidea.lib.conditional_access.engine.get_ip_block`:
     a permanent block points the user at the administrator, a timed block states
@@ -197,9 +197,9 @@ def _restriction_kind(state: RestrictionStatus) -> str:
     return "permanent" if state.permanent else "temporary"
 
 
-def _binding_restriction(lockout: RestrictionStatus | None, ip_block: RestrictionStatus | None) -> str | None:
+def _binding_restriction(lock: RestrictionStatus | None, ip_block: RestrictionStatus | None) -> str | None:
     """
-    When both a user lockout and a source-IP block are in force, decide which one
+    When both a user lock and a source-IP block are in force, decide which one
     to report to the user. The binding constraint is the one that lasts longest (a
     permanent restriction outranks any timed one), so that is what we surface:
     telling a permanently-blocked user to "try again in 1 minute" because a shorter
@@ -208,7 +208,7 @@ def _binding_restriction(lockout: RestrictionStatus | None, ip_block: Restrictio
     request. On a tie the user lock wins, matching the lock-before-block order of
     the pre-check.
 
-    :param lockout: the :class:`RestrictionStatus` from :func:`get_user_lockout`, or ``None``
+    :param lock: the :class:`RestrictionStatus` from :func:`get_user_lock`, or ``None``
     :param ip_block: the :class:`RestrictionStatus` from :func:`get_ip_block`, or ``None``
     :return: ``"lock"`` or ``"block"`` for the restriction to report, or ``None``
         if neither is in force
@@ -219,7 +219,7 @@ def _binding_restriction(lockout: RestrictionStatus | None, ip_block: Restrictio
             return None
         return float("inf") if state.permanent else state.seconds_remaining
 
-    lock_rem = _remaining(lockout)
+    lock_rem = _remaining(lock)
     block_rem = _remaining(ip_block)
     if lock_rem is None and block_rem is None:
         return None
@@ -249,13 +249,13 @@ def login_restriction(user: User, client_ip: str | None) -> LoginRestriction | N
     credentials". A pure read - unlike the pre-auth gate it does not clear a stale row, because the engine has just
     written this one.
     """
-    lockout = get_user_lockout(user)
+    lock = get_user_lock(user)
     ip_block = get_ip_block(client_ip)
-    restriction = _binding_restriction(lockout, ip_block)
+    restriction = _binding_restriction(lock, ip_block)
     if restriction == "block":
         return LoginRestriction(_blocked_ip_error_message(client_ip, ip_block), _restriction_kind(ip_block))
     if restriction == "lock":
-        return LoginRestriction(_lockout_error_message(lockout), _restriction_kind(lockout))
+        return LoginRestriction(_locked_user_error_message(lock), _restriction_kind(lock))
     return None
 
 
@@ -280,9 +280,9 @@ def _reject_restricted_login(user: User) -> None:
     message a user saw cannot disagree. ``internal_admin`` comes from the flag ``before_request`` already resolved, so
     a blocked local admin is recorded as ``admin-internal`` rather than falling back to ``user``.
     """
-    lockout = get_user_lockout(user, clear_expired=True)
+    lock = get_user_lock(user, clear_expired=True)
     ip_block = get_ip_block(g.client_ip, clear_expired=True)
-    restriction = _binding_restriction(lockout, ip_block)
+    restriction = _binding_restriction(lock, ip_block)
 
     def log_rejection(event_type: AuthEventType) -> None:
         """Classify this login in the authentication log. Staged, so request teardown writes it even though the
@@ -301,9 +301,9 @@ def _reject_restricted_login(user: User) -> None:
         log.info(f"Rejecting /auth login for locked user {user!r}.")
         g.audit_object.log({"info": "Rejected: account is temporarily locked"})
         log_rejection(AuthEventType.USER_LOCKED)
-        raise AuthError(_lockout_error_message(lockout),
+        raise AuthError(_locked_user_error_message(lock),
                         id=Error.AUTHENTICATE_WRONG_CREDENTIALS,
-                        details={"restriction": _restriction_kind(lockout)})
+                        details={"restriction": _restriction_kind(lock)})
     decision = evaluate_access_decision(build_ca_context(user))
     # The decision belongs to this request's history before its log row exists, so the context keeps its outcomes until
     # the login stages an event; a dry-run DENY lets the login continue and lands on that later row.

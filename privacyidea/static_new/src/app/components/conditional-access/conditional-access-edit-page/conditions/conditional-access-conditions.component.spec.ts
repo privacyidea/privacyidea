@@ -21,7 +21,7 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import {
   ConditionalAccessPolicyService,
   ConditionTypeMeta,
-  LockoutPolicyCondition
+  ConditionalAccessPolicyCondition
 } from "@services/conditional-access/conditional-access-policy.service";
 import { MockConditionalAccessPolicyService } from "@testing/mock-services/mock-conditional-access-policy-service";
 import { ConditionalAccessConditionsComponent } from "./conditional-access-conditions.component";
@@ -58,7 +58,7 @@ describe("ConditionalAccessConditionsComponent", () => {
   let fixture: ComponentFixture<ConditionalAccessConditionsComponent>;
   let policyServiceMock: MockConditionalAccessPolicyService;
 
-  const setConditions = (conditions: LockoutPolicyCondition[]): void => {
+  const setConditions = (conditions: ConditionalAccessPolicyCondition[]): void => {
     fixture.componentRef.setInput("conditions", conditions);
     fixture.detectChanges();
   };
@@ -238,7 +238,7 @@ describe("ConditionalAccessConditionsComponent", () => {
   });
 
   it("should report no change after a condition is removed and re-added", () => {
-    const original: LockoutPolicyCondition[] = [
+    const original: ConditionalAccessPolicyCondition[] = [
       { condition_type: "USER_REALM", operator: "IN", value: ["sales"] },
       { condition_type: "USER_ROLE", operator: "IN", value: ["user"] }
     ];

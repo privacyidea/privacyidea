@@ -25,7 +25,7 @@ from sqlalchemy import select
 
 from privacyidea.lib.challenge import delete_challenges
 from privacyidea.lib.conditional_access.authentication_event_types import (CA_ENFORCEMENT_EVENT_TYPES, AuthEventType)
-from privacyidea.lib.conditional_access.engine import LockoutAction, LockoutEvaluation
+from privacyidea.lib.conditional_access.engine import ConditionalAccessAction, ConditionalAccessEvaluation
 from privacyidea.lib.conditional_access.outcome_log import get_outcomes
 from privacyidea.lib.conditional_access.authentication_log import (AuthLogUserRole, PendingAuthEvent,
                                                                   get_authentication_logs,
@@ -290,8 +290,8 @@ class ConditionalAccessContextTestCase(MyTestCase):
         context.flush()
 
         context.reclassify(AuthEventType.NOT_AUTHORIZED)
-        with mock.patch("privacyidea.lib.conditional_access.engine.evaluate_lockout_policies") as evaluate:
-            evaluate.return_value = LockoutEvaluation()
+        with mock.patch("privacyidea.lib.conditional_access.engine.evaluate_conditional_access_policies") as evaluate:
+            evaluate.return_value = ConditionalAccessEvaluation()
             context.run_post_eval()
 
         # The engine is handed only the classification and the subject, as a CAContext describing the identity the row
@@ -309,8 +309,8 @@ class ConditionalAccessContextTestCase(MyTestCase):
         event.user_role = str(AuthLogUserRole.ADMIN_INTERNAL)
         context.principal = AuthPrincipal(username="admin", internal_admin=True)
 
-        with mock.patch("privacyidea.lib.conditional_access.engine.evaluate_lockout_policies") as evaluate:
-            evaluate.return_value = LockoutEvaluation()
+        with mock.patch("privacyidea.lib.conditional_access.engine.evaluate_conditional_access_policies") as evaluate:
+            evaluate.return_value = ConditionalAccessEvaluation()
             context.run_post_eval()
 
         ca_context = evaluate.call_args.args[0]
@@ -327,8 +327,8 @@ class ConditionalAccessContextTestCase(MyTestCase):
         event.endpoint = "/validate/check"
         context.principal = AuthPrincipal(user=User("cornelius", self.realm1))
 
-        with mock.patch("privacyidea.lib.conditional_access.engine.evaluate_lockout_policies") as evaluate:
-            evaluate.return_value = LockoutEvaluation()
+        with mock.patch("privacyidea.lib.conditional_access.engine.evaluate_conditional_access_policies") as evaluate:
+            evaluate.return_value = ConditionalAccessEvaluation()
             context.run_post_eval()
 
         self.assertEqual("/validate/check", evaluate.call_args.args[0].endpoint)
@@ -375,7 +375,7 @@ class ConditionalAccessContextTestCase(MyTestCase):
     def test_22c_reclassify_leaves_a_conditional_access_rejection_alone(self):
         # The gate is the innermost decorator, so the post-policies still run on its rejection response, and that row is
         # the only record of why the request was refused; relabelling it would slip the refused request past the
-        # CA_ENFORCEMENT_EVENT_TYPES guard in run_post_eval and into the lockout counters.
+        # CA_ENFORCEMENT_EVENT_TYPES guard in run_post_eval and into the conditional-access counters.
         for event_type in CA_ENFORCEMENT_EVENT_TYPES:
             with self.subTest(event_type=event_type):
                 context = ConditionalAccessContext()
@@ -394,7 +394,7 @@ class ConditionalAccessContextTestCase(MyTestCase):
     def test_23_post_eval_without_a_staged_event_does_nothing(self):
         # Staging an event is the signal to evaluate, so a request that logged nothing evaluates nothing.
         context = ConditionalAccessContext()
-        with mock.patch("privacyidea.lib.conditional_access.engine.evaluate_lockout_policies") as evaluate:
+        with mock.patch("privacyidea.lib.conditional_access.engine.evaluate_conditional_access_policies") as evaluate:
             self.assertListEqual([], context.run_post_eval())
         evaluate.assert_not_called()
 
@@ -402,8 +402,8 @@ class ConditionalAccessContextTestCase(MyTestCase):
         # /auth runs it in-view for the notices; request teardown must not repeat that same evaluation.
         context = ConditionalAccessContext()
         context.stage(self._event("alice"))
-        with mock.patch("privacyidea.lib.conditional_access.engine.evaluate_lockout_policies") as evaluate:
-            evaluate.return_value = LockoutEvaluation(notices=["a notice"])
+        with mock.patch("privacyidea.lib.conditional_access.engine.evaluate_conditional_access_policies") as evaluate:
+            evaluate.return_value = ConditionalAccessEvaluation(notices=["a notice"])
             self.assertListEqual(["a notice"], context.run_post_eval())
             self.assertListEqual([], context.run_post_eval())
         self.assertEqual(1, evaluate.call_count)
@@ -414,8 +414,8 @@ class ConditionalAccessContextTestCase(MyTestCase):
         # outcome that no longer holds.
         context = ConditionalAccessContext()
         context.stage(self._event("alice", AuthEventType.LOGIN_SUCCESS))
-        with mock.patch("privacyidea.lib.conditional_access.engine.evaluate_lockout_policies") as evaluate:
-            evaluate.return_value = LockoutEvaluation()
+        with mock.patch("privacyidea.lib.conditional_access.engine.evaluate_conditional_access_policies") as evaluate:
+            evaluate.return_value = ConditionalAccessEvaluation()
             context.run_post_eval()
             context.reclassify(AuthEventType.NOT_AUTHORIZED)
             context.run_post_eval()
@@ -430,7 +430,7 @@ class ConditionalAccessContextTestCase(MyTestCase):
         # that already completed.
         context = ConditionalAccessContext()
         context.stage(self._event("alice"))
-        with mock.patch("privacyidea.lib.conditional_access.engine.evaluate_lockout_policies",
+        with mock.patch("privacyidea.lib.conditional_access.engine.evaluate_conditional_access_policies",
                         side_effect=RuntimeError("engine boom")):
             self.assertListEqual([], context.run_post_eval())
 
@@ -439,12 +439,12 @@ class ConditionalAccessContextTestCase(MyTestCase):
         # engine returns, so a transient failure in the early call does not cost the evaluation entirely.
         context = ConditionalAccessContext()
         context.stage(self._event("alice"))
-        with mock.patch("privacyidea.lib.conditional_access.engine.evaluate_lockout_policies",
+        with mock.patch("privacyidea.lib.conditional_access.engine.evaluate_conditional_access_policies",
                         side_effect=RuntimeError("engine boom")):
             self.assertListEqual([], context.run_post_eval())
 
-        with mock.patch("privacyidea.lib.conditional_access.engine.evaluate_lockout_policies") as evaluate:
-            evaluate.return_value = LockoutEvaluation(notices=["locked"], outcomes=[])
+        with mock.patch("privacyidea.lib.conditional_access.engine.evaluate_conditional_access_policies") as evaluate:
+            evaluate.return_value = ConditionalAccessEvaluation(notices=["locked"], outcomes=[])
             self.assertListEqual(["locked"], context.run_post_eval())
         evaluate.assert_called_once()
 
@@ -457,8 +457,8 @@ class ConditionalAccessContextTestCase(MyTestCase):
         get_ca_session().execute(select(AuthenticationLog)).all()
         self.assertTrue(get_ca_session().in_transaction())
 
-        with mock.patch("privacyidea.lib.conditional_access.engine.evaluate_lockout_policies") as evaluate:
-            evaluate.return_value = LockoutEvaluation()
+        with mock.patch("privacyidea.lib.conditional_access.engine.evaluate_conditional_access_policies") as evaluate:
+            evaluate.return_value = ConditionalAccessEvaluation()
             context.finalize()
 
         evaluate.assert_called_once()
@@ -468,7 +468,7 @@ class ConditionalAccessContextTestCase(MyTestCase):
     # --- conditional-access outcomes: the outcomes a request produces ----------
 
     @staticmethod
-    def _make_outcome(action_type: str = LockoutAction.LOCK_USER_TEMPORARY) -> ConditionalAccessOutcome:
+    def _make_outcome(action_type: str = ConditionalAccessAction.LOCK_USER) -> ConditionalAccessOutcome:
         return ConditionalAccessOutcome(action_type=str(action_type), policy_name="p", threshold=3,
                                         event_count=3)
 
@@ -484,7 +484,7 @@ class ConditionalAccessContextTestCase(MyTestCase):
         self.assertEqual(1, len(event.outcomes))
 
         self.assertTrue(context.flush())
-        self.assertListEqual([str(LockoutAction.LOCK_USER_TEMPORARY)],
+        self.assertListEqual([str(ConditionalAccessAction.LOCK_USER)],
                              [outcome.action_type for outcome in get_outcomes(event.row_id)])
 
     def test_31_recorded_outcomes_are_not_written_twice(self):
@@ -527,7 +527,7 @@ class ConditionalAccessContextTestCase(MyTestCase):
         context.stage(self._event("alice", AuthEventType.USER_LOCKED))
         context.flush()
 
-        with mock.patch("privacyidea.lib.conditional_access.engine.evaluate_lockout_policies") as evaluate:
+        with mock.patch("privacyidea.lib.conditional_access.engine.evaluate_conditional_access_policies") as evaluate:
             self.assertListEqual([], context.run_post_eval())
         evaluate.assert_not_called()
 
@@ -535,13 +535,15 @@ class ConditionalAccessContextTestCase(MyTestCase):
         context = ConditionalAccessContext()
         event = context.stage(self._event("alice"))
         context.flush()
-        with mock.patch("privacyidea.lib.conditional_access.engine.evaluate_lockout_policies") as evaluate:
-            evaluate.return_value = LockoutEvaluation(notices=["a notice"],
-                                                      outcomes=[self._make_outcome(LockoutAction.LOCK_USER_PERMANENT)])
+        with mock.patch("privacyidea.lib.conditional_access.engine.evaluate_conditional_access_policies") as evaluate:
+            evaluate.return_value = ConditionalAccessEvaluation(notices=["a notice"],
+                                                      outcomes=[self._make_outcome(
+                                                          ConditionalAccessAction.PERMANENT_LOCK_USER)])
             self.assertListEqual(["a notice"], context.run_post_eval())
 
         outcomes = get_outcomes(event.row_id)
-        self.assertListEqual([str(LockoutAction.LOCK_USER_PERMANENT)], [outcome.action_type for outcome in outcomes])
+        self.assertListEqual([str(ConditionalAccessAction.PERMANENT_LOCK_USER)],
+                [outcome.action_type for outcome in outcomes])
 
     def test_40_an_unreadable_challenge_leaves_the_attempt_unresolved(self):
         # Correlating an attempt must never break the authentication it describes: a challenge store that raises leaves

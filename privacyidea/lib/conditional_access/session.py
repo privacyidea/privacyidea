@@ -17,7 +17,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 __doc__ = """The database session the conditional-access subsystem writes on.
 
-The authentication log and the lockout/blocklist state are written while an authentication response is still in
+The authentication log and the lock/blocklist state are written while an authentication response is still in
 flight, and they must never interfere with the request's own work. On the shared ``db.session`` they do: committing
 a log entry commits whatever else the request has pending at that moment, and rolling back a failed write discards
 it. Both effects are invisible at the call site, which is why these writes get a session of their own.
@@ -95,11 +95,11 @@ def guarded_write(description: str, session: Session | None = None,
     Run a block of conditional-access writes as one transaction: commit it on success, roll it back on failure.
 
     Failures are swallowed by default, because these writes happen while an authentication response is in flight and
-    must never break it -- a lost log entry or lockout row is bad, a failed authentication is worse. The session is
+    must never break it -- a lost log entry or lock row is bad, a failed authentication is worse. The session is
     left usable either way, so the rest of the request (and the audit entry it still has to write) is unaffected.
 
     Wrap **one** write per block, not a whole group of them: committing each separately means only one row lock is
-    ever held at a time. A block that locked a ``UserLockoutState`` row and a ``BlockList`` row together (as one
+    ever held at a time. A block that locked a ``UserLockState`` row and a ``BlockList`` row together (as one
     triggered stage can) would let two concurrent requests acquire them in opposite order and deadlock on InnoDB.
 
     Note the caller must not hold a flushed-but-uncommitted write on ``db.session`` when this runs: on SQLite, which
@@ -107,7 +107,7 @@ def guarded_write(description: str, session: Session | None = None,
     ``GuardedWriteTestCase.test_07``). Reads on ``db.session`` are harmless.
 
     :param description: what is being written, as a noun phrase for the log message, e.g.
-        ``f"the user lockout state for {user!r}"``
+        ``f"the user lock state for {user!r}"``
     :param session: the session to write on; defaults to the conditional-access session
     :param reraise: propagate the failure after rolling back. For management and CLI paths, where an admin is
         waiting for the outcome and a silent failure would be indistinguishable from "nothing matched".

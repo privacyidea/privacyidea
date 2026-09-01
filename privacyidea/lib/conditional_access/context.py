@@ -23,7 +23,7 @@ input - an API-key status, a request header - is a new *field*
 rather than a new parameter on every entry point and every internal helper along
 the way. The engine's two entry points
 (:func:`~privacyidea.lib.conditional_access.engine.evaluate_access_decision` and
-:func:`~privacyidea.lib.conditional_access.engine.evaluate_lockout_policies`)
+:func:`~privacyidea.lib.conditional_access.engine.evaluate_conditional_access_policies`)
 take it instead of the individual values.
 
 It is deliberately free of Flask: the lib layer must stay usable outside a

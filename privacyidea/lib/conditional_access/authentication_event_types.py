@@ -112,12 +112,12 @@ class AuthEventType(str, Enum):
     # request, like USER_UNKNOWN or NO_TOKEN above.
     #
     # A user lock in force turned the request away. Note the word order: USER_LOCKED is the rejection, while the
-    # LOCK_USER_TEMPORARY action (in conditional_access_outcome.action_type) is the lock being created.
+    # LOCK_USER action (in conditional_access_outcome.action_type) is the lock being created.
     USER_LOCKED = "USER_LOCKED"
     # A source-IP block in force turned the request away.
     IP_BLOCKED = "IP_BLOCKED"
     # A conditional-access policy's DENY action decided this single request. Named after the effect rather than the
-    # action, because DENY is a LockoutAction value stored in the adjacent outcome table.
+    # action, because DENY is a ConditionalAccessAction value stored in the adjacent outcome table.
     ACCESS_DENIED = "ACCESS_DENIED"
 
     def __str__(self) -> str:
@@ -335,14 +335,14 @@ EVENT_TYPE_OUTCOME: dict[AuthEventType, AuthEventOutcome] = {
 # The event types conditional access writes itself, when its pre-check rejects a request before any credential check.
 #
 # They are deliberately **not trackable** by a policy. Counting them would let a lock feed itself: a locked user's
-# rejected requests would keep the count at or above the threshold, so a timed LOCK_USER_TEMPORARY with
+# rejected requests would keep the count at or above the threshold, so a timed LOCK_USER with
 # retrigger_above_threshold would refresh itself on every rejection and never expire. A successful login cannot clear
 # it either (since_last_success is unreachable for a locked user, so the count only ever grows), and a DENY policy
 # tracking ACCESS_DENIED would be judging its own prior denials. The legitimate use case - escalate to an IP block
 # after repeated attempts - is a second, higher-threshold stage on the underlying failure events.
 #
 # Excluding them from the vocabulary makes that structural rather than a warning: the policy-selection join in
-# evaluate_lockout_policies can then never match one.
+# evaluate_conditional_access_policies can then never match one.
 CA_ENFORCEMENT_EVENT_TYPES: frozenset[AuthEventType] = frozenset({
     AuthEventType.USER_LOCKED,
     AuthEventType.IP_BLOCKED,

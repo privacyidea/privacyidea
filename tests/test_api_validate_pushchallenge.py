@@ -11,7 +11,8 @@ from passlib.hash import argon2
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
 from privacyidea.lib.policy import SCOPE, set_policy, delete_policy
 from privacyidea.lib.token import (remove_token)
-from privacyidea.lib.tokens.pushtoken import PushAction, strip_pem_headers
+from privacyidea.lib.tokens.pushtoken import (PushAction, POLL_ONLY, strip_pem_headers,
+                                              DEFAULT_MOBILE_TEXT)
 from privacyidea.lib.user import (User)
 from privacyidea.lib.utils import to_unicode
 from .authlog_utils import assert_authentication_log, assert_authentication_log_entry
@@ -50,26 +51,20 @@ class PushChallengeTags(MyApiTestCase):
     smartphone_public_key_pem_urlsafe = strip_pem_headers(smartphone_public_key_pem).replace("+", "-").replace("/", "_")
     serial_push = "PIPU001"
     user = "selfservice"
+    registration_url = "http://test/ttype/push"
+    ttl = "10"
 
     def setUp(self):
         self.setUp_user_realms()
 
-    def test_01_push_challenge_tags(self):
-        # Test the challenge tags of a push token
-        pin = "otppin"
-        REGISTRATION_URL = "http://test/ttype/push"
-        TTL = "10"
-
-        # set policy
-        from privacyidea.lib.tokens.pushtoken import POLL_ONLY
+    def _enroll_poll_only_push_token(self, pin):
+        """
+        Enroll a poll only push token for the user and return its serial.
+        """
         set_policy("push2", scope=SCOPE.ENROLL,
-                   action="{0!s}={1!s},{2!s}={3!s},{4!s}={5!s}".format(
-                       PushAction.FIREBASE_CONFIG, POLL_ONLY,
-                       PushAction.REGISTRATION_URL, REGISTRATION_URL,
-                       PushAction.TTL, TTL))
-
-        set_policy("push1", scope=SCOPE.AUTH,
-                   action=PushAction.MOBILE_TEXT + "=Login von UserAgent: {ua_string} via {client_ip}/{tokentype}.")
+                   action=f"{PushAction.FIREBASE_CONFIG}={POLL_ONLY},"
+                          f"{PushAction.REGISTRATION_URL}={self.registration_url},"
+                          f"{PushAction.TTL}={self.ttl}")
 
         # create push token for user with PIN
         # 1st step
@@ -83,7 +78,7 @@ class PushChallengeTags(MyApiTestCase):
                                                  "genkey": 1},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code, 200)
+            self.assertEqual(200, res.status_code)
             detail = res.json.get("detail")
             serial = detail.get("serial")
             enrollment_credential = detail.get("enrollment_credential")
@@ -96,18 +91,21 @@ class PushChallengeTags(MyApiTestCase):
                                                  "pubkey": self.smartphone_public_key_pem_urlsafe,
                                                  "fbtoken": "firebaseT"}):
             res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 200, res)
-            detail = res.json.get("detail")
-            serial = detail.get("serial")
-            enrollment_credential = detail.get("enrollment_credential")
+            self.assertEqual(200, res.status_code, res)
+            serial = res.json.get("detail").get("serial")
 
-        # Run authentication with push token
+        return serial
+
+    def _get_question_of_challenge(self, pin, serial):
+        """
+        Trigger a challenge and return the question the smartphone receives when polling.
+        """
         with self.app.test_request_context('/validate/check',
                                            method='POST',
                                            data={"user": self.user,
                                                  "pass": pin}):
             res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 200, res)
+            self.assertEqual(200, res.status_code, res)
             detail = res.json.get("detail")
             transaction_id = detail.get("transaction_id")
             self.assertEqual("Please confirm the authentication on your mobile device!", detail.get("message"))
@@ -119,22 +117,48 @@ class PushChallengeTags(MyApiTestCase):
                                         transaction_id=transaction_id, endpoint='/validate/check')
 
         # We do poll only, so we need to poll
-        ts = datetime.datetime.utcnow().isoformat()
-        sign_string = "{serial}|{timestamp}".format(serial=serial, timestamp=ts)
-        sig = self.smartphone_private_key.sign(sign_string.encode('utf8'),
-                                               padding.PKCS1v15(),
-                                               hashes.SHA256())
-        # now check that we receive the challenge when polling
+        timestamp = datetime.datetime.utcnow().isoformat()
+        sign_string = f"{serial}|{timestamp}"
+        signature = self.smartphone_private_key.sign(sign_string.encode('utf8'),
+                                                     padding.PKCS1v15(),
+                                                     hashes.SHA256())
         with self.app.test_request_context('/ttype/push',
                                            method='GET',
                                            query_string={"serial": serial,
-                                                         "timestamp": ts,
-                                                         "signature": b32encode(sig)}):
+                                                         "timestamp": timestamp,
+                                                         "signature": b32encode(signature)}):
             res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 200, res)
-            result = res.json.get("result")
-            value = result.get("value")
-            self.assertEqual("Login von UserAgent:  via None/push.", value[0].get("question"))
+            self.assertEqual(200, res.status_code, res)
+            value = res.json.get("result").get("value")
+            return value[0].get("question")
+
+    def test_01_push_challenge_tags(self):
+        # Test the challenge tags of a push token
+        pin = "otppin"
+        serial = self._enroll_poll_only_push_token(pin)
+
+        set_policy("push1", scope=SCOPE.AUTH,
+                   action=PushAction.MOBILE_TEXT + "=Login von UserAgent: {ua_string} via {client_ip}/{tokentype}.")
+
+        # A polling request contains no client information, so the user agent and the
+        # client IP are not available for the tags
+        self.assertEqual("Login von UserAgent:  via /push.", self._get_question_of_challenge(pin, serial))
+
+        remove_token(self.serial_push)
+        delete_policy("push2")
+        delete_policy("push1")
+
+    def test_02_push_challenge_text_that_can_not_be_formatted(self):
+        # A text with an unknown tag, a positional field or an unbalanced brace falls
+        # back to the default message instead of failing the authentication
+        pin = "otppin"
+        serial = self._enroll_poll_only_push_token(pin)
+
+        for text in ["Please confirm the login of {unknown_tag}",
+                     "Please confirm the login of {0}",
+                     "Please confirm the login with a 50{ discount"]:
+            set_policy("push1", scope=SCOPE.AUTH, action=f"{PushAction.MOBILE_TEXT}={text}")
+            self.assertEqual(str(DEFAULT_MOBILE_TEXT), self._get_question_of_challenge(pin, serial), text)
 
         remove_token(self.serial_push)
         delete_policy("push2")

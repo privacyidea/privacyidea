@@ -115,13 +115,19 @@ class postpolicy:
     The postpolicy decorator is to be used in the API calls.
     """
 
-    def __init__(self, function, request=None):
+    def __init__(self, function: callable, request: Request):
         """
         :param function: This is the policy function the is to be called
         :type function: function
         :param request: The original request object, that needs to be passed
         :type request: Request Object
         """
+        if request is None:
+            # A missing request is not a usable default: policy functions
+            # match on request.User, so a silently-None request disables
+            # every user/realm-scoped condition of the wrapped policy
+            # function instead of raising.
+            raise ValueError(f"postpolicy({function.__name__}, ...) requires a request to be passed explicitly.")
         self.request = request
         self.function = function
 
@@ -149,13 +155,19 @@ class postrequest:
     Decorator that is supposed to be used with after_request.
     """
 
-    def __init__(self, function, request=None):
+    def __init__(self, function: callable, request: Request):
         """
         :param function: This is the policy function the is to be called
         :type function: function
         :param request: The original request object, that needs to be passed
         :type request: Request Object
         """
+        if request is None:
+            # A missing request is not a usable default: policy functions
+            # match on request.User, so a silently-None request disables
+            # every user/realm-scoped condition of the wrapped policy
+            # function instead of raising.
+            raise ValueError(f"postrequest({function.__name__}, ...) requires request= to be passed explicitly.")
         self.request = request
         self.function = function
 
@@ -1277,7 +1289,7 @@ def is_authorized(request, response):
             context = get_ca_context()
             # Nothing to classify when conditional access already turned the request away before any token logic ran:
             # its rejection row already records why, and a NOT_AUTHORIZED row here would bury that reason and hand the
-            # lockout counters an attempt the lock itself produced.
+            # conditional-access counters an attempt the lock itself produced.
             if not context.rejected_by_conditional_access:
                 # Name the policy that denied it: with several authorization policies in play, "which rule do I
                 # have to change" is the whole question the log has to answer.

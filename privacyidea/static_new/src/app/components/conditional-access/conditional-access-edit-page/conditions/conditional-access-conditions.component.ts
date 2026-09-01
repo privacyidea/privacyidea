@@ -29,7 +29,7 @@ import {
   ConditionOperatorMeta,
   KnownConditionOperator,
   KnownConditionType,
-  LockoutPolicyCondition
+  ConditionalAccessPolicyCondition
 } from "@services/conditional-access/conditional-access-policy.service";
 
 // Hand-written wording for one condition type that the API does not supply -- its value label,
@@ -150,8 +150,8 @@ const NO_VALUES: string[] = [];
 export class ConditionalAccessConditionsComponent {
   protected readonly policyService: ConditionalAccessPolicyServiceInterface = inject(ConditionalAccessPolicyService);
 
-  readonly conditions = input.required<LockoutPolicyCondition[]>();
-  readonly conditionsChange = output<LockoutPolicyCondition[]>();
+  readonly conditions = input.required<ConditionalAccessPolicyCondition[]>();
+  readonly conditionsChange = output<ConditionalAccessPolicyCondition[]>();
 
   // Rows come from /conditiontypes rather than a local list, so a type added to the backend registry
   // appears here without a WebUI change. Two rules decide what gets a row:
@@ -184,7 +184,7 @@ export class ConditionalAccessConditionsComponent {
     )
   );
 
-  conditionFor(type: string): LockoutPolicyCondition | undefined {
+  conditionFor(type: string): ConditionalAccessPolicyCondition | undefined {
     return this.conditions().find((condition) => condition.condition_type === type);
   }
 
@@ -270,7 +270,7 @@ export class ConditionalAccessConditionsComponent {
   // Emitted in condition_type order, the backend's canonical order; conditions are ANDed so order
   // carries no meaning, but without a fixed one, removing and re-adding a condition would make the
   // edit page's JSON diff report a change that is not one.
-  private emitUpsert(type: string, condition: LockoutPolicyCondition): void {
+  private emitUpsert(type: string, condition: ConditionalAccessPolicyCondition): void {
     const others = this.conditions().filter((existing) => existing.condition_type !== type);
     this.conditionsChange.emit([...others, condition].sort((a, b) => a.condition_type.localeCompare(b.condition_type)));
   }

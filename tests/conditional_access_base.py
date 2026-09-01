@@ -16,39 +16,39 @@
 # SPDX-FileCopyrightText: 2026 NetKnights GmbH <https://netknights.it>
 # SPDX-License-Identifier: AGPL-3.0-or-later
 """
-Shared test fixtures for the conditional-access lockout tests.
+Shared test fixtures for the conditional-access lock tests.
 
-:class:`LockoutTestCase` is the common base for the engine and template suites:
-it resolves a real test user, wipes every lockout table before and after each
+:class:`ConditionalAccessTestCase` is the common base for the engine and template suites:
+it resolves a real test user, wipes every lock table before and after each
 test, and offers helpers to seed ``authentication_log`` events and read back
 the resulting lock / block state.
 
 This module is deliberately **not** named ``test_*`` so pytest does not collect
-it; the concrete suites import :class:`LockoutTestCase` and add their own tests.
+it; the concrete suites import :class:`ConditionalAccessTestCase` and add their own tests.
 """
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
 from privacyidea.lib.conditional_access.context import CAContext
-from privacyidea.lib.conditional_access.engine import evaluate_lockout_policies
+from privacyidea.lib.conditional_access.engine import evaluate_conditional_access_policies
 from privacyidea.lib.user import User
 from privacyidea.models import db
 from privacyidea.models.authentication_log import AuthenticationLog
-from privacyidea.models.lockout_policy import (
+from privacyidea.models.conditional_access_policy import (
     BlockList,
-    LockoutPolicy,
-    LockoutPolicyCondition,
-    LockoutPolicyCounterType,
-    LockoutPolicyStage,
-    LockoutStageAction,
-    UserLockoutState,
+    ConditionalAccessPolicy,
+    ConditionalAccessPolicyCondition,
+    ConditionalAccessPolicyCounterType,
+    ConditionalAccessPolicyStage,
+    ConditionalAccessStageAction,
+    UserLockState,
 )
 from privacyidea.models.utils import utc_now
 from .base import MyTestCase
 
 
-class LockoutTestCase(MyTestCase):
+class ConditionalAccessTestCase(MyTestCase):
     """
-    Base for conditional-access lockout tests: a resolved test user plus a clean
-    slate of all lockout tables - and of Flask's ``g`` - around every test.
+    Base for conditional-access lock tests: a resolved test user plus a clean
+    slate of all conditional-access tables - and of Flask's ``g`` - around every test.
     """
 
     def setUp(self):
@@ -68,8 +68,8 @@ class LockoutTestCase(MyTestCase):
 
     @staticmethod
     def _clear():
-        for model in (UserLockoutState, BlockList, LockoutStageAction, LockoutPolicyStage,
-                      LockoutPolicyCondition, LockoutPolicyCounterType, LockoutPolicy,
+        for model in (UserLockState, BlockList, ConditionalAccessStageAction, ConditionalAccessPolicyStage,
+                      ConditionalAccessPolicyCondition, ConditionalAccessPolicyCounterType, ConditionalAccessPolicy,
                       AuthenticationLog):
             db.session.query(model).delete()
         db.session.commit()
@@ -123,9 +123,9 @@ class LockoutTestCase(MyTestCase):
                 username=username, source_ip=source_ip, timestamp=timestamp))
         db.session.commit()
 
-    def _state(self, user: User | None = None) -> UserLockoutState | None:
+    def _state(self, user: User | None = None) -> UserLockState | None:
         user = user or self.user
-        return db.session.get(UserLockoutState, (user.resolver, user.uid, user.realm))
+        return db.session.get(UserLockState, (user.resolver, user.uid, user.realm))
 
     def _block(self, ip: str) -> BlockList | None:
         return db.session.get(BlockList, ip)
@@ -138,5 +138,5 @@ class LockoutTestCase(MyTestCase):
         The threshold is a stage's natural key within its policy, so this identifies which stage acted without
         depending on a surrogate id that a policy edit would replace. Empty when nothing fired.
         """
-        evaluation = evaluate_lockout_policies(CAContext(self.user, source_ip), event_type)
+        evaluation = evaluate_conditional_access_policies(CAContext(self.user, source_ip), event_type)
         return [outcome.threshold for outcome in evaluation.outcomes]

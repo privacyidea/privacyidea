@@ -115,6 +115,42 @@ describe("TokenRolloverComponent", () => {
     expect(reloadSpy).toHaveBeenCalled();
   });
 
+  it("should keep the regenerated response for a reopened last step dialog", async () => {
+    const mockEnrollResp = {
+      result: { status: true },
+      detail: { rollout_state: "done", serial: "ABC123", googleurl: { img: "initial-img", value: "initial-url" } }
+    } as unknown as EnrollmentResponse;
+
+    component.token.set({ type: "hotp", serial: "ABC123" });
+    installStrategy(component, {
+      buildEnrollmentArgs: jest.fn().mockReturnValue({
+        data: {},
+        mapper: { map: (x: unknown) => x }
+      })
+    });
+    tokenService.enrollToken.mockReturnValue(of(mockEnrollResp));
+
+    await component.rolloverToken();
+
+    const regenerated = {
+      result: { status: true },
+      detail: { rollout_state: "done", serial: "ABC123", googleurl: { img: "regenerated-img", value: "regen-url" } }
+    } as unknown as EnrollmentResponse;
+    component.enrolledDialogData()?.onEnrollmentResponseChange?.(regenerated);
+
+    expect(component.enrollResponse()).toBe(regenerated);
+    expect(component.enrolledDialogData()?.response).toBe(regenerated);
+
+    dialogService.openDialog.mockClear();
+    (component as unknown as { openLastStepDialog: (response: EnrollmentResponse | null) => void }).openLastStepDialog(
+      component.enrolledDialogData()?.response ?? null
+    );
+
+    expect(dialogService.openDialog).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ response: regenerated }) })
+    );
+  });
+
   it("should show snackbar if no token is set", async () => {
     component.token.set(null);
     await component.rolloverToken();
@@ -155,7 +191,8 @@ describe("TokenRolloverComponent", () => {
 
       expect(dialogService.openDialog).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({ response: enrollResponse })
+          data: expect.objectContaining({ response: enrollResponse }),
+          configOverride: { autoFocus: "input", disableClose: true }
         })
       );
       expect(verifySpy).toHaveBeenCalledWith(completeResponse);
@@ -209,7 +246,8 @@ describe("TokenRolloverComponent", () => {
 
       expect(dialogService.openDialog).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({ response: enrollResponse })
+          data: expect.objectContaining({ response: enrollResponse }),
+          configOverride: { autoFocus: "input", disableClose: true }
         })
       );
       expect(finalizeSpy).toHaveBeenCalledWith(verifiedResponse);

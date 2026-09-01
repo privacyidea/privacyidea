@@ -351,7 +351,7 @@ describe("AuthenticationLog", () => {
           event_type: "USER_LOCKED",
           timestamp: "2026-08-03T09:00:00Z",
           other_info: null,
-          conditional_access_outcomes: [{ policy_name: "Brute Force PIN Lockout" }]
+          conditional_access_outcomes: [{ policy_name: "Brute Force PIN Lock" }]
         }
       ] as AuthenticationLogEntry[])
     );
@@ -426,7 +426,7 @@ describe("AuthenticationLog", () => {
 
   it("offers the action vocabulary and the policy names the backend serves, not a hardcoded list", () => {
     expect(component.outcomeActionOptions()).toEqual([]);
-    policyService.actionTypes.set(["LOCK_USER_TEMPORARY", "BLOCK_IP_TEMPORARY"] as never);
+    policyService.actionTypes.set(["LOCK_USER", "BLOCK_IP"] as never);
     policyService.policies.set([
       { id: 2, name: "Notify" },
       { id: 1, name: "Brute force" },
@@ -434,22 +434,22 @@ describe("AuthenticationLog", () => {
       { id: 3, name: "Notify" }
     ] as never);
 
-    expect(component.outcomeActionOptions()).toEqual(["LOCK_USER_TEMPORARY", "BLOCK_IP_TEMPORARY"]);
+    expect(component.outcomeActionOptions()).toEqual(["LOCK_USER", "BLOCK_IP"]);
     expect(component.outcomePolicyOptions()).toEqual(["Brute force", "Notify"]);
   });
 
   it("falls back to typing a policy name for an admin who may not read the policies", () => {
-    // Without lockout_policy_read there is no list to offer, so the menu entry has to lead somewhere else.
+    // Without conditional_access_policy_read there is no list to offer, so the menu entry has to lead somewhere else.
     const authData = authService.authData()!;
-    authService.authData.set({ ...authData, rights: ["authentication_log_read", "lockout_policy_read"] });
-    expect(component.canReadLockoutPolicies()).toBe(true);
+    authService.authData.set({ ...authData, rights: ["authentication_log_read", "conditional_access_policy_read"] });
+    expect(component.canReadConditionalAccessPolicies()).toBe(true);
 
     authService.authData.set({ ...authData, rights: ["authentication_log_read"] });
-    expect(component.canReadLockoutPolicies()).toBe(false);
+    expect(component.canReadConditionalAccessPolicies()).toBe(false);
   });
 
   it("clearing the Conditional access filter drops all three of its keys at once", () => {
-    component.setFilterValues("ca_action_type", ["LOCK_USER_TEMPORARY"]);
+    component.setFilterValues("ca_action_type", ["LOCK_USER"]);
     component.setFilterValues("ca_policy_name", ["Brute force"]);
     component.setDryRunFilter("false");
     // A filter on another column is not part of this menu and must survive.
@@ -484,18 +484,18 @@ describe("AuthenticationLog", () => {
   it("stores the outcome filters as ordinary filter entries", () => {
     // Which is what makes them typeable in the main filter input too; the service turns them into query params (see
     // its own spec).
-    component.setFilterValues("ca_action_type", ["LOCK_USER_TEMPORARY", "BLOCK_IP_TEMPORARY"]);
+    component.setFilterValues("ca_action_type", ["LOCK_USER", "BLOCK_IP"]);
     component.setFilterValues("ca_policy_name", ["Brute force"]);
     component.setDryRunFilter("false");
 
     const filter = service.authenticationLogFilter();
-    expect(filter.getValueOfKey("ca_action_type")).toBe("LOCK_USER_TEMPORARY,BLOCK_IP_TEMPORARY");
+    expect(filter.getValueOfKey("ca_action_type")).toBe("LOCK_USER,BLOCK_IP");
     expect(filter.getValueOfKey("ca_policy_name")).toBe("Brute force");
     expect(filter.getValueOfKey("ca_dry_run")).toBe("false");
   });
 
   it("renders the Conditional access filter as one menu of its three keys, behind the shared filter icon", () => {
-    policyService.actionTypes.set(["LOCK_USER_TEMPORARY"] as never);
+    policyService.actionTypes.set(["LOCK_USER"] as never);
     fixture.detectChanges();
     const header: HTMLElement = fixture.nativeElement.querySelector("th.mat-column-conditional_access_outcomes");
     const trigger: HTMLButtonElement = header.querySelector("button.filter-button")!;

@@ -112,11 +112,11 @@ describe("AuthenticationLogService", () => {
     // plural like every other list filter; ca_dry_run is a single tri-state boolean, so its absence means "both".
     service.authenticationLogFilter.set(
       new FilterValue({
-        value: "ca_action_type: LOCK_USER_TEMPORARY,BLOCK_IP_TEMPORARY ca_policy_name: Brute* ca_dry_run: false"
+        value: "ca_action_type: LOCK_USER,BLOCK_IP ca_policy_name: Brute* ca_dry_run: false"
       })
     );
     expect(service.filterParams()).toEqual({
-      ca_action_types: "LOCK_USER_TEMPORARY,BLOCK_IP_TEMPORARY",
+      ca_action_types: "LOCK_USER,BLOCK_IP",
       ca_policy_names: "Brute*",
       ca_dry_run: "false"
     });

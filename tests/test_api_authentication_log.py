@@ -141,14 +141,14 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
     def test_entry_carries_its_conditional_access_outcomes(self):
         event_id = log_authentication_event(event_type=AuthEventType.MFA_FAIL, resolver="res1", uid="u1",
                                             realm=self.realm1)
-        record_outcomes([ConditionalAccessOutcome(action_type="LOCK_USER_TEMPORARY", policy_name="Brute force",
+        record_outcomes([ConditionalAccessOutcome(action_type="LOCK_USER", policy_name="Brute force",
                                                  threshold=3, event_count=3, stage_name="Second strike",
                                                  info={"expires_at": "2026-08-07T12:00:00+00:00"})], event_id)
         try:
             entry = next(e for e in self._get({"page_size": 50})["result"]["value"]["auth_logs"]
                          if e["id"] == event_id)
             outcome = entry["conditional_access_outcomes"][0]
-            self.assertEqual("LOCK_USER_TEMPORARY", outcome["action_type"])
+            self.assertEqual("LOCK_USER", outcome["action_type"])
             self.assertEqual("Brute force", outcome["policy_name"])
             self.assertEqual("Second strike", outcome["stage_name"])
             self.assertEqual(3, outcome["threshold"])
@@ -180,9 +180,9 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
                                                   realm=self.realm1),
         }
         db.session.commit()
-        record_outcomes([self._make_outcome("LOCK_USER_TEMPORARY", "Brute force")], ids["locked"])
+        record_outcomes([self._make_outcome("LOCK_USER", "Brute force")], ids["locked"])
         record_outcomes([self._make_outcome("EMAIL_ADMIN", "Notify")], ids["notified"])
-        record_outcomes([self._make_outcome("LOCK_USER_TEMPORARY", "Notify", dry_run=True)], ids["simulated"])
+        record_outcomes([self._make_outcome("LOCK_USER", "Notify", dry_run=True)], ids["simulated"])
         return ids
 
     @staticmethod
@@ -197,12 +197,12 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
     def test_filter_by_outcome_action_type(self):
         ids = self._seed_outcomes()
         try:
-            value = self._get({"ca_action_types": "LOCK_USER_TEMPORARY"})["result"]["value"]
+            value = self._get({"ca_action_types": "LOCK_USER"})["result"]["value"]
             self.assertEqual(2, value["count"])
             self.assertSetEqual({ids["locked"], ids["simulated"]}, self._returned_ids(value))
             # A list and a wildcard work as for every other filter, and "*" means "acted on at all".
             self.assertSetEqual({ids["locked"], ids["notified"], ids["simulated"]},
-                                self._returned_ids(self._get({"ca_action_types": "LOCK_USER_TEMPORARY,EMAIL_ADMIN"})
+                                self._returned_ids(self._get({"ca_action_types": "LOCK_USER,EMAIL_ADMIN"})
                                                    ["result"]["value"]))
             self.assertSetEqual({ids["notified"]},
                                 self._returned_ids(self._get({"ca_action_types": "EMAIL*"})["result"]["value"]))
@@ -237,18 +237,18 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
             self._clear_outcomes()
 
     def test_outcome_filters_apply_to_one_and_the_same_outcome(self):
-        # The entry has two outcomes: LOCK_USER_TEMPORARY by "Brute force" and EMAIL_ADMIN by "Notify". Asking for
-        # a LOCK_USER_TEMPORARY *by Notify* must not match it, even though each half is true of a different outcome of
+        # The entry has two outcomes: LOCK_USER by "Brute force" and EMAIL_ADMIN by "Notify". Asking for
+        # a LOCK_USER *by Notify* must not match it, even though each half is true of a different outcome of
         # the same entry.
         event_id = log_authentication_event(event_type=AuthEventType.MFA_FAIL, resolver="res", uid="9",
                                             realm=self.realm1)
         db.session.commit()
-        record_outcomes([self._make_outcome("LOCK_USER_TEMPORARY", "Brute force"),
+        record_outcomes([self._make_outcome("LOCK_USER", "Brute force"),
                          self._make_outcome("EMAIL_ADMIN", "Notify")], event_id)
         try:
-            self.assertEqual(0, self._get({"ca_action_types": "LOCK_USER_TEMPORARY", "ca_policy_names": "Notify"})
+            self.assertEqual(0, self._get({"ca_action_types": "LOCK_USER", "ca_policy_names": "Notify"})
                              ["result"]["value"]["count"])
-            self.assertEqual(1, self._get({"ca_action_types": "LOCK_USER_TEMPORARY", "ca_policy_names": "Brute force"})
+            self.assertEqual(1, self._get({"ca_action_types": "LOCK_USER", "ca_policy_names": "Brute force"})
                              ["result"]["value"]["count"])
         finally:
             self._clear_outcomes()
@@ -258,11 +258,11 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
         event_id = log_authentication_event(event_type=AuthEventType.MFA_FAIL, resolver="res", uid="8",
                                             realm=self.realm1)
         db.session.commit()
-        record_outcomes([self._make_outcome("LOCK_USER_TEMPORARY", "P1"),
-                         self._make_outcome("LOCK_USER_TEMPORARY", "P2"),
-                         self._make_outcome("LOCK_USER_TEMPORARY", "P3")], event_id)
+        record_outcomes([self._make_outcome("LOCK_USER", "P1"),
+                         self._make_outcome("LOCK_USER", "P2"),
+                         self._make_outcome("LOCK_USER", "P3")], event_id)
         try:
-            value = self._get({"ca_action_types": "LOCK_USER_TEMPORARY"})["result"]["value"]
+            value = self._get({"ca_action_types": "LOCK_USER"})["result"]["value"]
             self.assertEqual(1, value["count"])
             self.assertListEqual([event_id], [entry["id"] for entry in value["auth_logs"]])
         finally:
@@ -272,9 +272,9 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
         ids = self._seed_outcomes()
         try:
             self.assertSetEqual({ids["locked"]},
-                                self._returned_ids(self._get({"ca_action_types": "LOCK_USER_TEMPORARY", "uids": "1"})
+                                self._returned_ids(self._get({"ca_action_types": "LOCK_USER", "uids": "1"})
                                                    ["result"]["value"]))
-            self.assertEqual(0, self._get({"ca_action_types": "LOCK_USER_TEMPORARY",
+            self.assertEqual(0, self._get({"ca_action_types": "LOCK_USER",
                                            "event_types": AuthEventType.LOGIN_SUCCESS})["result"]["value"]["count"])
         finally:
             self._clear_outcomes()

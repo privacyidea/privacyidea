@@ -24,8 +24,8 @@ import { MatIconModule } from "@angular/material/icon";
 import {
   ConditionalAccessPolicyService,
   ConditionalAccessPolicyServiceInterface,
-  LockoutStageAction,
-  LockoutTarget
+  ConditionalAccessStageAction,
+  ConditionalAccessTarget
 } from "@services/conditional-access/conditional-access-policy.service";
 import { ConditionalAccessActionItemComponent } from "./action-item/conditional-access-action-item.component";
 
@@ -39,19 +39,19 @@ import { ConditionalAccessActionItemComponent } from "./action-item/conditional-
 export class ConditionalAccessActionsListComponent {
   private readonly policyService: ConditionalAccessPolicyServiceInterface = inject(ConditionalAccessPolicyService);
 
-  readonly actions = input.required<LockoutStageAction[]>();
-  readonly target = input<LockoutTarget>("user");
-  readonly actionsChange = output<LockoutStageAction[]>();
+  readonly actions = input.required<ConditionalAccessStageAction[]>();
+  readonly target = input<ConditionalAccessTarget>("user");
+  readonly actionsChange = output<ConditionalAccessStageAction[]>();
 
   onAddAction(): void {
     // Default a new action to one that is valid for the current target, so it is
-    // never born incompatible (e.g. LOCK_USER_TEMPORARY under a source_ip policy).
+    // never born incompatible (e.g. LOCK_USER under a source_ip policy).
     const allowed = this.policyService.actionsForTarget(this.target());
-    const actionType = allowed[0] ?? "LOCK_USER_TEMPORARY";
+    const actionType = allowed[0] ?? "LOCK_USER";
     this.actionsChange.emit([...this.actions(), { action_type: actionType, action_value: null }]);
   }
 
-  onUpdateAction(index: number, partial: Partial<LockoutStageAction>): void {
+  onUpdateAction(index: number, partial: Partial<ConditionalAccessStageAction>): void {
     this.actionsChange.emit(this.actions().map((action, i) => (i === index ? { ...action, ...partial } : action)));
   }
 

@@ -501,6 +501,24 @@ allowed to calculate the token serial number for a given OTP
 value.
 
 
+.. _policy_sshkey_read:
+
+sshkey_read
+~~~~~~~~~~~
+
+type: ``bool``
+
+.. index:: sshkey_read
+
+If the ``sshkey_read`` action is defined, the administrator is allowed to read
+the public SSH key of an SSH key token via ``GET /token/sshkey/<serial>``.
+
+The public key of an SSH key token is stored encrypted and is therefore only
+contained in encrypted form in the token list, so this action is the way to
+retrieve it. The administrator is restricted to the realms of their policies,
+and only active tokens hand out their key. See :ref:`sshkey_token`.
+
+
 .. _policy_getrandom:
 
 getrandom
@@ -879,34 +897,35 @@ entries.
 
 .. versionadded:: 3.14
 
-.. _policy_lockout_policy_read:
+.. _policy_conditional_access_policy_read:
 
-lockout_policy_read
-~~~~~~~~~~~~~~~~~~~
-
-type: ``bool``
-
-The administrators are allowed to view the lockout policies of
-:ref:`conditional_access`.
-
-.. versionadded:: 3.14
-
-.. _policy_lockout_policy_write:
-
-lockout_policy_write
-~~~~~~~~~~~~~~~~~~~~
+conditional_access_policy_read
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 type: ``bool``
 
-The administrators are allowed to create, edit, reorder and delete the lockout
-policies of :ref:`conditional_access`.
+The administrators are allowed to view the policies of
+:ref:`conditional_access`, the vocabulary they are built from (event types,
+action types, condition types and targets) and the shipped policy templates.
 
 .. versionadded:: 3.14
 
-.. _policy_user_lockout_read:
+.. _policy_conditional_access_policy_write:
 
-user_lockout_read
-~~~~~~~~~~~~~~~~~
+conditional_access_policy_write
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: ``bool``
+
+The administrators are allowed to create, edit, reorder and delete the policies
+of :ref:`conditional_access`.
+
+.. versionadded:: 3.14
+
+.. _policy_user_lock_read:
+
+user_lock_read
+~~~~~~~~~~~~~~
 
 type: ``bool``
 
@@ -916,15 +935,16 @@ matching users are shown.
 
 .. versionadded:: 3.14
 
-.. _policy_user_lockout_reset:
+.. _policy_user_lock_reset:
 
-user_lockout_reset
-~~~~~~~~~~~~~~~~~~
+user_lock_reset
+~~~~~~~~~~~~~~~
 
 type: ``bool``
 
 The administrators are allowed to unlock a user that was locked by
-:ref:`conditional_access`.
+:ref:`conditional_access` and to purge the stale records of locks that have
+already expired.
 
 .. versionadded:: 3.14
 
@@ -948,7 +968,8 @@ blocklist_reset
 type: ``bool``
 
 The administrators are allowed to remove entries from the blocklist of
-:ref:`conditional_access`.
+:ref:`conditional_access` and to purge the stale records of blocks that have
+already expired.
 
 .. versionadded:: 3.14
 

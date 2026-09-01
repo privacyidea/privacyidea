@@ -41,8 +41,9 @@ from privacyidea.lib.conditional_access.conditions import (condition_sql_filters
 from privacyidea.lib.conditional_access.context import CAContext
 from privacyidea.lib.conditional_access.outcome_log import outcome_for_stage
 from privacyidea.lib.conditional_access.session import get_ca_session, guarded_write
-from privacyidea.models import (AuthenticationLog, BlockList, ConditionalAccessOutcome, LockoutPolicy,
-                                LockoutPolicyCounterType, LockoutPolicyStage, LockoutStageAction, UserLockoutState)
+from privacyidea.models import (AuthenticationLog, BlockList, ConditionalAccessOutcome, ConditionalAccessPolicy,
+                                ConditionalAccessPolicyCounterType, ConditionalAccessPolicyStage,
+                                ConditionalAccessStageAction, UserLockState)
 from privacyidea.models.utils import utc_now
 
 if TYPE_CHECKING:
@@ -57,8 +58,8 @@ log = logging.getLogger(__name__)
 #   evaluate_access_decision()  - pre-auth, before any credential check. Counts the subject's prior events and
 #                                 answers DENY / CONTINUE. A DENY refuses this one request and persists
 #                                 nothing, so it lifts by itself as the failures age out of the window.
-#   evaluate_lockout_policies() - post-response, once this request's authentication_log row exists so the count
-#                                 includes it. Runs the actions of the single triggered stage: lock, block, email.
+#   evaluate_conditional_access_policies() - post-response, once this request's authentication_log row exists so the
+#                                 count includes it. Runs the actions of the single triggered stage: lock, block, email.
 #
 # Callers gate in a fixed order - locked user, then blocked source IP, then the DENY decision (see
 # api/lib/conditional_access.py). A subject is exempted from a policy by an applicability condition on that policy
@@ -81,14 +82,14 @@ log = logging.getLogger(__name__)
 # ----------------------------------------------------------------------------------------------------------------------
 
 
-class LockoutAction(str, Enum):
+class ConditionalAccessAction(str, Enum):
     """
-    Action types a :class:`~privacyidea.models.lockout_policy.LockoutPolicyStage`
+    Action types a :class:`~privacyidea.models.conditional_access_policy.ConditionalAccessPolicyStage`
     can execute when its failure threshold is met.
 
-    :attr:`LOCK_USER_TEMPORARY`, :attr:`LOCK_USER_PERMANENT`, :attr:`EMAIL_ADMIN`,
-    :attr:`EMAIL_USER`, :attr:`BLOCK_IP_TEMPORARY` and :attr:`BLOCK_IP_PERMANENT` are
-    post-response side effects executed by :func:`evaluate_lockout_policies`.
+    :attr:`LOCK_USER`, :attr:`PERMANENT_LOCK_USER`, :attr:`EMAIL_ADMIN`,
+    :attr:`EMAIL_USER`, :attr:`BLOCK_IP` and :attr:`PERMANENT_BLOCK_IP` are
+    post-response side effects executed by :func:`evaluate_conditional_access_policies`.
     :attr:`DENY` decides the *current* request and is therefore handled by the
     pre-auth decision step (:func:`evaluate_access_decision`) instead. The action
     table stores the string value, so the enum can grow without a schema change.
@@ -99,24 +100,21 @@ class LockoutAction(str, Enum):
     skipped in both phases, so the exemption covers the lock, block and email
     actions as well as the :attr:`DENY`.
 
-    Each restriction comes in a pair, named subject first and duration second:
-    the permanent variants (:attr:`LOCK_USER_PERMANENT`,
-    :attr:`BLOCK_IP_PERMANENT`) ignore ``action_value`` and never expire (only an
-    admin reset clears them), while the timed ones
-    (:attr:`LOCK_USER_TEMPORARY`, :attr:`BLOCK_IP_TEMPORARY`) read a duration
-    from ``action_value`` - a missing or invalid one is a skipped
-    misconfiguration, never silently permanent.
+    The ``PERMANENT_*`` variants ignore ``action_value`` and never expire (only an
+    admin reset clears them); the timed :attr:`LOCK_USER` / :attr:`BLOCK_IP` read
+    a duration from ``action_value`` and a missing/invalid one is a skipped
+    misconfiguration (never silently permanent).
 
     ``str`` is used instead of ``StrEnum`` (3.11+) for compatibility with Python
     3.10, mirroring
     :class:`~privacyidea.lib.conditional_access.authentication_event_types.AuthEventType`.
     """
-    LOCK_USER_TEMPORARY = "LOCK_USER_TEMPORARY"
-    LOCK_USER_PERMANENT = "LOCK_USER_PERMANENT"
+    LOCK_USER = "LOCK_USER"
+    PERMANENT_LOCK_USER = "PERMANENT_LOCK_USER"
     EMAIL_ADMIN = "EMAIL_ADMIN"
     EMAIL_USER = "EMAIL_USER"
-    BLOCK_IP_TEMPORARY = "BLOCK_IP_TEMPORARY"
-    BLOCK_IP_PERMANENT = "BLOCK_IP_PERMANENT"
+    BLOCK_IP = "BLOCK_IP"
+    PERMANENT_BLOCK_IP = "PERMANENT_BLOCK_IP"
     DENY = "DENY"
 
     def __str__(self) -> str:
@@ -131,8 +129,8 @@ class AccessDecision(str, Enum):
     :attr:`DENY` rejects the current request outright (no persistent state is
     written); :attr:`CONTINUE` is the default ("no policy denied this request")
     and lets the normal flow proceed. It maps to the
-    :attr:`LockoutAction.DENY` stage action, which - unlike the
-    lockout/email/block actions - decides the current request and so is handled
+    :attr:`ConditionalAccessAction.DENY` stage action, which - unlike the
+    lock/email/block actions - decides the current request and so is handled
     here, before authentication, rather than in the post-response engine.
 
     Two states rather than a bool, because "no policy had an opinion" and "a
@@ -146,7 +144,7 @@ class AccessDecision(str, Enum):
         return self.value
 
 
-class LockoutTarget(str, Enum):
+class ConditionalAccessTarget(str, Enum):
     """
     The identity a policy counts, thresholds, and enforces against.
 
@@ -159,7 +157,7 @@ class LockoutTarget(str, Enum):
     a target is a separate axis (see :class:`CountMode`).
 
     ``str`` is used instead of ``StrEnum`` (3.11+) for compatibility with Python
-    3.10, mirroring :class:`LockoutAction`.
+    3.10, mirroring :class:`ConditionalAccessAction`.
     """
     USER = "user"
     SOURCE_IP = "source_ip"
@@ -172,7 +170,7 @@ class LockoutTarget(str, Enum):
 class RestrictionStatus:
     """
     The state of an active conditional-access restriction on a single identity:
-    a user lock (:func:`get_user_lockout`) or a source-IP block
+    a user lock (:func:`get_user_lock`) or a source-IP block
     (:func:`get_ip_block`). Both return this same shape so callers (e.g. the
     ``/auth`` rejection messages) can treat them uniformly.
 
@@ -188,7 +186,7 @@ class RestrictionStatus:
 
 
 @dataclass
-class LockoutEvaluation:
+class ConditionalAccessEvaluation:
     """
     What one post-response evaluation produced: the notices to surface on the current response, and the outcomes to
     record as the request's conditional-access history.
@@ -214,9 +212,10 @@ class AccessDecisionResult:
     nothing to record.
 
     One type for a single policy's contribution (:func:`_policy_access_decision`) and for the whole evaluation
-    (:func:`evaluate_access_decision`), the way :class:`LockoutEvaluation` serves one policy and all of them. Hence the
-    default: :attr:`AccessDecision.CONTINUE` reads "this policy has no opinion" for the one and "no policy decided" for
-    the other - which is what ``CONTINUE`` already means, so nothing needs a separate ``None`` to say it.
+    (:func:`evaluate_access_decision`), the way :class:`ConditionalAccessEvaluation` serves one policy and all of
+    them. Hence the default: :attr:`AccessDecision.CONTINUE` reads "this policy has no opinion" for the one and
+    "no policy decided" for the other - which is what ``CONTINUE`` already means, so nothing needs a separate
+    ``None`` to say it.
     """
     decision: AccessDecision = AccessDecision.CONTINUE
     outcomes: list[ConditionalAccessOutcome] = field(default_factory=list)
@@ -225,7 +224,7 @@ class AccessDecisionResult:
 def _resolved(user: "User") -> bool:
     """
     Return ``True`` only for a fully resolved user, i.e. one with a complete
-    ``(resolver, uid, realm)`` identity tuple. The lockout state and the
+    ``(resolver, uid, realm)`` identity tuple. The lock state and the
     authentication-log count are both keyed by that tuple, so an unresolved user
     (e.g. ``USER_UNKNOWN``, which has ``uid=None``) is never counted or locked
     here. TODO replace later with #5170
@@ -587,7 +586,7 @@ def count_ip_attempts(source_ip: str, event_types: list[str], window_seconds: in
                            event_types, window_seconds, window_end, row_filter=row_filter)
 
 
-def _count_scoping(policy: LockoutPolicy) -> "tuple[list | None, Callable[[AuthenticationLog], bool] | None]":
+def _count_scoping(policy: ConditionalAccessPolicy) -> "tuple[list | None, Callable[[AuthenticationLog], bool] | None]":
     """
     The policy's conditions as the two things a counter can consume: SQL predicates for the row counters, and a row
     predicate for the attempt counters.
@@ -607,12 +606,12 @@ def _count_scoping(policy: LockoutPolicy) -> "tuple[list | None, Callable[[Authe
     return condition_sql_filters(policy), lambda row: conditions_match_row(policy, row)
 
 
-def _policy_count(policy: LockoutPolicy, user: "User", window_end: datetime,
+def _policy_count(policy: ConditionalAccessPolicy, user: "User", window_end: datetime,
                   since_last_success: bool = False) -> int:
     """
     Count a user-target policy's events (``PER_REQUEST``) or attempts (``PER_ATTEMPT``) over its window, per the
-    policy's :attr:`~privacyidea.models.lockout_policy.LockoutPolicy.count_mode`, scoped to the rows the policy's
-    conditions describe (:func:`_count_scoping`). (Source-IP policies dispatch separately via
+    policy's :attr:`~privacyidea.models.conditional_access_policy.ConditionalAccessPolicy.count_mode`, scoped to the
+    rows the policy's conditions describe (:func:`_count_scoping`). (Source-IP policies dispatch separately via
     :func:`_policy_count_ip`.)
 
     :param policy: the policy whose ``time_window_seconds`` and ``counter_types_to_track`` are counted over
@@ -636,10 +635,10 @@ def _policy_count(policy: LockoutPolicy, user: "User", window_end: datetime,
                              extra_filters=sql_filters)
 
 
-def _policy_count_ip(policy: LockoutPolicy, source_ip: str, window_end: datetime) -> int:
+def _policy_count_ip(policy: ConditionalAccessPolicy, source_ip: str, window_end: datetime) -> int:
     """
     Count a source-IP-target policy's subject over its window, per the policy's
-    :attr:`~privacyidea.models.lockout_policy.LockoutPolicy.count_mode`: distinct targeted accounts
+    :attr:`~privacyidea.models.conditional_access_policy.ConditionalAccessPolicy.count_mode`: distinct targeted accounts
     (``DISTINCT_USERS``, the default and spraying/enumeration signal), individual events (``PER_REQUEST``) or whole
     attempts (``PER_ATTEMPT``, the two volume modes = plain per-IP rate limiting), scoped to what the policy's
     conditions describe (:func:`_count_scoping`). None of the three resets on a successful login - a legit login by
@@ -666,7 +665,7 @@ def _policy_count_ip(policy: LockoutPolicy, source_ip: str, window_end: datetime
                                        extra_filters=sql_filters)
 
 
-def get_user_lockout(user: "User", now: datetime | None = None, *,
+def get_user_lock(user: "User", now: datetime | None = None, *,
                      clear_expired: bool = False) -> "RestrictionStatus | None":
     """
     Return information about *user*'s **current** lock, or ``None`` if the user
@@ -681,7 +680,7 @@ def get_user_lockout(user: "User", now: datetime | None = None, *,
     row is already loaded and known expired, cleans it up on the user's next login
     without a second lookup. The authentication pre-checks opt in; nothing that
     merely inspects a user's status does. Permanent and still-active locks are
-    never deleted. The delete is defensive (see :func:`_delete_user_lockout_state`).
+    never deleted. The delete is defensive (see :func:`_delete_user_lock_state`).
 
     A row with ``lock_expires_at IS NULL`` is a permanent lock.
 
@@ -693,7 +692,7 @@ def get_user_lockout(user: "User", now: datetime | None = None, *,
     """
     if not _resolved(user):
         return None
-    state = get_ca_session().get(UserLockoutState, (user.resolver, user.uid, user.realm))
+    state = get_ca_session().get(UserLockState, (user.resolver, user.uid, user.realm))
     if not state:
         return None
     if state.lock_expires_at is None:
@@ -702,7 +701,7 @@ def get_user_lockout(user: "User", now: datetime | None = None, *,
     now = _naive_utc(now) if now is not None else utc_now()
     if state.lock_expires_at <= now:
         if clear_expired:
-            _delete_user_lockout_state(state)
+            _delete_user_lock_state(state)
         return None
     remaining = int((state.lock_expires_at - now).total_seconds())
     return RestrictionStatus(permanent=False, expires_at=state.lock_expires_at,
@@ -712,7 +711,7 @@ def get_user_lockout(user: "User", now: datetime | None = None, *,
 def is_user_locked(user: "User", now: datetime | None = None, *, clear_expired: bool = False) -> bool:
     """
     Return whether *user* is currently locked. Thin boolean wrapper over
-    :func:`get_user_lockout` for the authentication pre-check hot path; see that
+    :func:`get_user_lock` for the authentication pre-check hot path; see that
     function for the expiry, permanent-lock, and *clear_expired* semantics.
 
     :param user: the user to check; an unresolved user is never locked
@@ -720,44 +719,62 @@ def is_user_locked(user: "User", now: datetime | None = None, *, clear_expired: 
     :param clear_expired: delete the row if it is a stale (timed, expired) lock
     :return: ``True`` if the user is currently locked
     """
-    return get_user_lockout(user, now=now, clear_expired=clear_expired) is not None
+    return get_user_lock(user, now=now, clear_expired=clear_expired) is not None
 
 
-# Built-in never-block networks: blocking loopback would lock out a same-host
-# reverse proxy — and when OVERRIDECLIENT is unset every client is seen as that
-# proxy — turning one BLOCK_IP_TEMPORARY action into a self-inflicted outage. Admins extend
-# this via the CONDITIONAL_ACCESS_NEVER_BLOCK system config (proxy / load-balancer
-# / NAT / management CIDRs).
+# Built-in never-block networks: with OVERRIDECLIENT unset, every client appears as the same-host reverse proxy, so
+# blocking loopback would turn one BLOCK_IP action into a self-inflicted outage. PI_CONDITIONAL_ACCESS_NEVER_BLOCK
+# extends this list with admin-configured proxy, load-balancer, NAT, or management CIDRs.
 _DEFAULT_NEVER_BLOCK_NETWORKS = ("127.0.0.0/8", "::1/128")
+
+#: App-config key holding the never-block allowlist, set in pi.cfg or through the
+#: PRIVACYIDEA_-prefixed environment variable of the same name. This lives in the
+#: server configuration and not in the system config on purpose: it is the safety
+#: net that keeps an admin from locking themselves out, so it must not be reachable
+#: through the very API an attacker (or a mistaken BLOCK_IP policy) could be attacking.
+NEVER_BLOCK_CONFIG_KEY = "PI_CONDITIONAL_ACCESS_NEVER_BLOCK"
 
 
 def _never_block_networks() -> "list[ipaddress._BaseNetwork]":
     """
     The never-block networks: the built-in loopback defaults plus the CIDRs (or
-    bare IPs) configured in the ``CONDITIONAL_ACCESS_NEVER_BLOCK`` system config.
-    Invalid config entries are logged and ignored rather than breaking the engine.
+    bare IPs) configured as ``PI_CONDITIONAL_ACCESS_NEVER_BLOCK`` in the server
+    configuration (``pi.cfg`` or the environment).
+    The setting is either a list of entries or a single comma/whitespace-separated
+    string. A malformed setting is logged and ignored rather than breaking the
+    engine: this runs on every authentication, so a typo in the configuration must
+    degrade to the loopback defaults, not answer 500 to every request.
     """
-    # Imported lazily because config loads very early in app startup; importing it at module load risks an
-    # import-order cycle.
-    from privacyidea.lib.config import get_from_config, SYSCONF
+    # Lazy import: framework pulls in the app context machinery; importing it at
+    # module load would risk an import-order cycle.
+    from privacyidea.lib.framework import get_app_config_value
     networks = [ipaddress.ip_network(cidr) for cidr in _DEFAULT_NEVER_BLOCK_NETWORKS]
-    configured = get_from_config(SYSCONF.CONDITIONAL_ACCESS_NEVER_BLOCK) or ""
-    for entry in re.split(r"[,\s]+", configured.strip()):
+    configured = get_app_config_value(NEVER_BLOCK_CONFIG_KEY) or []
+    if isinstance(configured, str):
+        configured = re.split(r"[,\s]+", configured.strip())
+    elif not isinstance(configured, (list, tuple, set, frozenset)):
+        # Anything else is a pi.cfg mistake. Only these types are accepted rather than
+        # "any iterable": an ip_network object, for one, iterates over its 16.7M hosts.
+        log.warning(f"Ignoring {NEVER_BLOCK_CONFIG_KEY}: expected a list or a string, "
+                    f"got {type(configured).__name__}.")
+        configured = []
+    for entry in configured:
+        entry = str(entry).strip()
         if not entry:
             continue
         try:
             networks.append(ipaddress.ip_network(entry, strict=False))
         except ValueError:
-            log.warning(f"Ignoring invalid network {entry!r} in {SYSCONF.CONDITIONAL_ACCESS_NEVER_BLOCK}.")
+            log.warning(f"Ignoring invalid network {entry!r} in {NEVER_BLOCK_CONFIG_KEY}.")
     return networks
 
 
 def is_ip_never_block(source_ip: str | None) -> bool:
     """
     Return whether *source_ip* must never be blocked by the conditional-access
-    engine: it is loopback (built-in) or matches the ``CONDITIONAL_ACCESS_NEVER_BLOCK``
-    system config. A falsy or unparsable IP is treated as never-block as well —
-    fail safe: never block an address the engine cannot positively identify.
+    engine: it is loopback (built-in) or matches the ``PI_CONDITIONAL_ACCESS_NEVER_BLOCK``
+    allowlist from the server configuration. A falsy or unparsable IP is treated as never-block as
+    well — fail safe: never block an address the engine cannot positively identify.
     """
     if not source_ip:
         return True
@@ -772,13 +789,14 @@ def is_ip_never_block(source_ip: str | None) -> bool:
 def get_ip_block(source_ip: str | None, now: datetime | None = None, *,
                  clear_expired: bool = False) -> "RestrictionStatus | None":
     """
-    Return information about *source_ip*'s **current** block by the ``BLOCK_IP_TEMPORARY``
+    Return information about *source_ip*'s **current** block by the ``BLOCK_IP``
     action, or ``None`` if the IP is not currently blocked. This is the IP
-    counterpart of :func:`get_user_lockout` and is meant for the authentication
+    counterpart of :func:`get_user_lock` and is meant for the authentication
     pre-check hot path.
 
-    By default this is a **pure read**: a stale row whose ``block_expires_at`` lies
-    in the past simply reads as *not blocked* and is left in place.
+    By default this is a **pure read**: a row that is not enforced — its
+    ``block_expires_at`` lies in the past, or the IP is on the never-block
+    allowlist — simply reads as *not blocked* and is left in place.
 
     With *clear_expired* the observed stale row is deleted on the spot, an expired
     timed block carries no enforced state (the authentication log is the record),
@@ -795,8 +813,9 @@ def get_ip_block(source_ip: str | None, now: datetime | None = None, *,
 
     :param source_ip: the client IP to check; a falsy value is never blocked
     :param now: the reference time; defaults to :func:`utc_now`
-    :param clear_expired: delete the row if it is a stale (timed, expired) block;
-        off by default to keep this a pure read for non-auth callers
+    :param clear_expired: delete the row if it no longer restricts anything - a stale
+        (timed, expired) block, or any block on a never-block IP; off by default to keep
+        this a pure read for non-auth callers
     :return: ``None`` if not blocked, else a :class:`RestrictionStatus`
     """
     if not source_ip:
@@ -805,8 +824,13 @@ def get_ip_block(source_ip: str | None, now: datetime | None = None, *,
     if not state:
         return None
     # A block row exists, but the never-block allowlist is honored here too, so adding an IP to it immediately stops
-    # enforcing any stale or mistaken block on that IP.
+    # enforcing any stale or mistaken block on that IP. With clear_expired the row itself is dropped here — the
+    # allowlist can never be outvoted, so the record is dead weight and the auth pre-check is the one caller that
+    # reliably sees the IP again.
     if is_ip_never_block(source_ip):
+        if clear_expired:
+            log.info(f"Removing the block for IP {source_ip!r}: it is on the never-block allowlist.")
+            _delete_ip_block(state)
         return None
     if state.block_expires_at is None:
         # Permanent block; only an admin reset clears it.
@@ -823,14 +847,15 @@ def get_ip_block(source_ip: str | None, now: datetime | None = None, *,
 
 def is_ip_blocked(source_ip: str | None, now: datetime | None = None, *, clear_expired: bool = False) -> bool:
     """
-    Return whether *source_ip* is currently blocked by the ``BLOCK_IP_TEMPORARY`` action.
+    Return whether *source_ip* is currently blocked by the ``BLOCK_IP`` action.
     Thin boolean wrapper over :func:`get_ip_block` for the authentication
     pre-check hot path; see that function for the expiry, permanent-block, and
     *clear_expired* semantics.
 
     :param source_ip: the client IP to check; a falsy value is never blocked
     :param now: the reference time; defaults to :func:`utc_now`
-    :param clear_expired: delete the row if it is a stale (timed, expired) block
+    :param clear_expired: delete the row if it is a stale (timed, expired) block or a
+        block on a never-block IP
     :return: ``True`` if the IP is currently blocked
     """
     return get_ip_block(source_ip, now=now, clear_expired=clear_expired) is not None
@@ -839,12 +864,12 @@ def is_ip_blocked(source_ip: str | None, now: datetime | None = None, *, clear_e
 def evaluate_access_decision(context: CAContext, now: datetime | None = None) -> "AccessDecisionResult":
     """
     Pre-auth conditional-access decision for the current request: should it be
-    denied, explicitly allowed, or left to the normal flow?
+    denied, or left to the normal flow?
 
     This runs **before** the credential check, and after the persistent
     :func:`is_user_locked` / :func:`is_ip_blocked` pre-checks. It handles only the
-    :attr:`LockoutAction.DENY` action; the lockout/email/block actions are
-    post-response side effects handled by :func:`evaluate_lockout_policies`.
+    :attr:`ConditionalAccessAction.DENY` action; the lock/email/block actions are
+    post-response side effects handled by :func:`evaluate_conditional_access_policies`.
 
     Because there is no event for the current request yet, the decision is keyed
     on the user's **prior** event history: for each enabled policy the events of
@@ -853,9 +878,9 @@ def evaluate_access_decision(context: CAContext, now: datetime | None = None) ->
     supplies the decision. A ``DENY`` action therefore rejects this single request
     without persisting any state — a stateless, self-healing reject that lifts on
     its own as the failures age out of the window (contrast the durable
-    :attr:`LockoutAction.LOCK_USER_TEMPORARY`). Because ``DENY`` defaults to
-    re-triggering (``count >= threshold``), a stage with ``failure_threshold`` 0
-    always matches, which is the lockdown idiom - scope it with conditions.
+    :attr:`ConditionalAccessAction.LOCK_USER`). Because ``DENY`` defaults to re-triggering
+    (``count >= threshold``), a stage with ``failure_threshold`` 0 always matches,
+    which is the lockdown idiom - scope it with conditions.
 
     Policies are evaluated by ascending ``priority`` (a lower number means higher
     precedence, matching privacyIDEA's policy engine) and the first one that denies
@@ -871,7 +896,7 @@ def evaluate_access_decision(context: CAContext, now: datetime | None = None) ->
     admin - is never decided by a user policy), while a ``source_ip`` policy is
     keyed on the context's source IP and therefore applies even when the user is
     unresolved (the spraying/enumeration case). A never-block source IP is exempt
-    from an IP ``DENY``, mirroring the ``BLOCK_IP_TEMPORARY`` allowlist.
+    from an IP ``DENY``, mirroring the ``BLOCK_IP`` allowlist.
 
     :param context: what is known about the request under evaluation (see
         :class:`~privacyidea.lib.conditional_access.context.CAContext`); a
@@ -883,10 +908,10 @@ def evaluate_access_decision(context: CAContext, now: datetime | None = None) ->
     """
     now = _naive_utc(now) if now is not None else utc_now()
     policies = get_ca_session().scalars(
-        select(LockoutPolicy)
-        .options(selectinload(LockoutPolicy.conditions))
-        .where(LockoutPolicy.enabled.is_(True))
-        .order_by(LockoutPolicy.priority.asc())
+        select(ConditionalAccessPolicy)
+        .options(selectinload(ConditionalAccessPolicy.conditions))
+        .where(ConditionalAccessPolicy.enabled.is_(True))
+        .order_by(ConditionalAccessPolicy.priority.asc())
     ).all()
     outcomes: list[ConditionalAccessOutcome] = []
     for policy in policies:
@@ -899,7 +924,7 @@ def evaluate_access_decision(context: CAContext, now: datetime | None = None) ->
     return AccessDecisionResult(outcomes=outcomes)
 
 
-def _policy_access_decision(policy: LockoutPolicy, context: CAContext,
+def _policy_access_decision(policy: ConditionalAccessPolicy, context: CAContext,
                             now: datetime) -> "AccessDecisionResult":
     """
     What a single policy contributes to the pre-auth decision: whether it denies the request, and the outcome to
@@ -923,10 +948,9 @@ def _policy_access_decision(policy: LockoutPolicy, context: CAContext,
     # Counts here are scoped to the policy's conditions via _count_scoping, exactly like the post-response path.
     # Both paths must count the same subject over the same window, or a policy could deny based on one history and
     # act on another.
-    if policy.target == LockoutTarget.SOURCE_IP:
-        # IP-scoped: decide on the source IP regardless of user resolution. A
-        # never-block IP is never denied by an IP policy (mirrors the BLOCK_IP_TEMPORARY
-        # allowlist), so it contributes no decision.
+    if policy.target == ConditionalAccessTarget.SOURCE_IP:
+        # IP-scoped: decides on the source IP regardless of user resolution; a never-block IP is never denied here
+        # either, mirroring the BLOCK_IP allowlist.
         if not context.source_ip or is_ip_never_block(context.source_ip):
             return AccessDecisionResult()
         count = _policy_count_ip(policy, context.source_ip, now)
@@ -942,7 +966,7 @@ def _policy_access_decision(policy: LockoutPolicy, context: CAContext,
         return AccessDecisionResult()
     decision = AccessDecision.DENY
     types = _types_label(policy.counter_types_to_track)
-    outcomes = [outcome_for_stage(policy, deciding_stage, LockoutAction.DENY, count, dry_run=policy.dry_run)]
+    outcomes = [outcome_for_stage(policy, deciding_stage, ConditionalAccessAction.DENY, count, dry_run=policy.dry_run)]
     if policy.dry_run:
         # A dry-run policy never decides the request, but the pre-auth decision runs before the log row exists, so
         # the caller buffers this outcome and records it once that row is written (see ConditionalAccessContext.stage).
@@ -954,7 +978,7 @@ def _policy_access_decision(policy: LockoutPolicy, context: CAContext,
     return AccessDecisionResult(decision, outcomes)
 
 
-def _stage_denies(stage: LockoutPolicyStage, count: int) -> bool:
+def _stage_denies(stage: ConditionalAccessPolicyStage, count: int) -> bool:
     """
     Whether *stage* refuses the request at *count*: it carries a ``DENY`` action
     whose per-action threshold condition is met. An unparsable action type is
@@ -962,20 +986,20 @@ def _stage_denies(stage: LockoutPolicyStage, count: int) -> bool:
     """
     for action in stage.actions:
         try:
-            action_type = LockoutAction(action.action_type)
+            action_type = ConditionalAccessAction(action.action_type)
         except ValueError:
             continue
-        if action_type != LockoutAction.DENY:
+        if action_type != ConditionalAccessAction.DENY:
             continue
         if _action_threshold_met(action, stage.failure_threshold, count):
             return True
     return False
 
 
-def evaluate_lockout_policies(context: CAContext, event_type: AuthEventType | None,
-                              now: datetime | None = None) -> "LockoutEvaluation":
+def evaluate_conditional_access_policies(context: CAContext, event_type: AuthEventType | None,
+                              now: datetime | None = None) -> "ConditionalAccessEvaluation":
     """
-    Evaluate every enabled lockout policy that tracks *event_type* and execute
+    Evaluate every enabled conditional-access policy that tracks *event_type* and execute
     the actions of the triggered stage, if any. This runs post-response, *after*
     the request's ``authentication_log`` row has been written (so the count
     includes it).
@@ -995,9 +1019,9 @@ def evaluate_lockout_policies(context: CAContext, event_type: AuthEventType | No
     a short user-facing notice (e.g. "Your administrator has been notified by
     email."); those notices are returned so the caller can surface them on the
     current response — the login screen shows them next to the rejection, exactly
-    as it shows a lockout message. Any error is the caller's to swallow; this
+    as it shows a lock message. Any error is the caller's to swallow; this
     function itself only guards individual DB writes (see
-    :func:`_upsert_user_lockout_state`).
+    :func:`_upsert_user_lock_state`).
 
     Alongside the notices, every action that actually ran (or, in dry run, would have run) is returned as a
     :class:`~privacyidea.models.conditional_access_outcome.ConditionalAccessOutcome` for the caller to record as this
@@ -1007,28 +1031,28 @@ def evaluate_lockout_policies(context: CAContext, event_type: AuthEventType | No
     :param context: what is known about the request under evaluation (see
         :class:`~privacyidea.lib.conditional_access.context.CAContext`);
         ``user``-target policies need its user resolved, ``source_ip``-target
-        policies act on its source IP regardless, and the ``BLOCK_IP_TEMPORARY`` action
+        policies act on its source IP regardless, and the ``BLOCK_IP`` action
         blocks that IP
     :param event_type: the classified outcome of the request
         (:class:`AuthEventType`)
     :param now: the reference time; defaults to :func:`utc_now`
-    :return: a :class:`LockoutEvaluation` holding the de-duplicated, order-preserving user-facing notices produced by
-        executed actions, and the outcomes to record (both empty if nothing was triggered)
+    :return: a :class:`ConditionalAccessEvaluation` holding the de-duplicated, order-preserving user-facing notices
+        produced by executed actions, and the outcomes to record (both empty if nothing was triggered)
     """
     if not event_type:
-        return LockoutEvaluation()
+        return ConditionalAccessEvaluation()
     now = _naive_utc(now) if now is not None else utc_now()
     event_type = str(event_type)
     # Selects only enabled policies tracking the current event type via an indexed equality filter on the normalized
-    # lockout_policy_counter_types table; (policy_id, counter_type) is unique, so a policy matches at most once.
-    # _evaluate_policy then computes the combined count over all of a matched policy's tracked types.
+    # conditional_access_policy_counter_types table; (policy_id, counter_type) is unique, so a policy matches at most
+    # once. _evaluate_policy then computes the combined count over all of a matched policy's tracked types.
     policies = get_ca_session().scalars(
-        select(LockoutPolicy)
-        .options(selectinload(LockoutPolicy.conditions))
-        .join(LockoutPolicy.counter_types)
-        .where(LockoutPolicy.enabled.is_(True),
-               LockoutPolicyCounterType.counter_type == event_type)
-        .order_by(LockoutPolicy.priority.asc())
+        select(ConditionalAccessPolicy)
+        .options(selectinload(ConditionalAccessPolicy.conditions))
+        .join(ConditionalAccessPolicy.counter_types)
+        .where(ConditionalAccessPolicy.enabled.is_(True),
+               ConditionalAccessPolicyCounterType.counter_type == event_type)
+        .order_by(ConditionalAccessPolicy.priority.asc())
     ).all()
     notices: list[str] = []
     outcomes: list[ConditionalAccessOutcome] = []
@@ -1039,7 +1063,7 @@ def evaluate_lockout_policies(context: CAContext, event_type: AuthEventType | No
         try:
             evaluation = _evaluate_policy(policy, context, event_type, now)
         except Exception as ex:
-            log.warning(f"Lockout policy {policy.name!r} failed to evaluate: {ex!r}; skipping it.")
+            log.warning(f"Conditional-access policy {policy.name!r} failed to evaluate: {ex!r}; skipping it.")
             continue
         notices.extend(evaluation.notices)
         outcomes.extend(evaluation.outcomes)
@@ -1052,10 +1076,10 @@ def evaluate_lockout_policies(context: CAContext, event_type: AuthEventType | No
         if notice not in seen:
             seen.add(notice)
             unique.append(notice)
-    return LockoutEvaluation(notices=unique, outcomes=outcomes)
+    return ConditionalAccessEvaluation(notices=unique, outcomes=outcomes)
 
 
-def _action_threshold_met(action: LockoutStageAction, threshold: int, count: int) -> bool:
+def _action_threshold_met(action: ConditionalAccessStageAction, threshold: int, count: int) -> bool:
     """
     Whether *action* fires at the given failure *count*, for its stage's
     *threshold*.
@@ -1063,7 +1087,7 @@ def _action_threshold_met(action: LockoutStageAction, threshold: int, count: int
     Default (``retrigger_above_threshold`` unset): the action fires only when the
     count equals the threshold exactly, so it triggers once as the count climbs
     past it. With ``retrigger_above_threshold`` the action fires whenever the count
-    is at or above the threshold (the classic re-triggering lockout). The flag is
+    is at or above the threshold (the classic re-triggering lock). The flag is
     per action, so one stage can e.g. email once at its threshold while keeping the
     user locked as long as the count stays at or above it.
     """
@@ -1072,14 +1096,14 @@ def _action_threshold_met(action: LockoutStageAction, threshold: int, count: int
     return count == threshold
 
 
-def _stage_pending_actions(stage: LockoutPolicyStage, count: int) -> list[LockoutStageAction]:
+def _stage_pending_actions(stage: ConditionalAccessPolicyStage, count: int) -> list[ConditionalAccessStageAction]:
     """The actions of *stage* whose per-action condition is met at *count*."""
     return [action for action in stage.actions
             if _action_threshold_met(action, stage.failure_threshold, count)]
 
 
-def _evaluate_policy(policy: LockoutPolicy, context: CAContext, event_type: str,
-                     now: datetime) -> "LockoutEvaluation":
+def _evaluate_policy(policy: ConditionalAccessPolicy, context: CAContext, event_type: str,
+                     now: datetime) -> "ConditionalAccessEvaluation":
     """
     Evaluate a single policy: count the user's events over the policy window,
     find the triggered stage, then execute the stage's *pending* actions (or, in
@@ -1092,14 +1116,14 @@ def _evaluate_policy(policy: LockoutPolicy, context: CAContext, event_type: str,
     threshold. So one stage can, for example, email once at threshold 8 while
     keeping the user locked for every further failure at 8 or more.
 
-    :return: a :class:`LockoutEvaluation` with the user-facing notices produced by the executed actions and the
-        outcomes describing what was done (both empty if no stage triggered; in dry run there are outcomes but no
-        notices, since nothing ran)
+    :return: a :class:`ConditionalAccessEvaluation` with the user-facing notices produced by the executed actions
+        and the outcomes describing what was done (both empty if no stage triggered; in dry run there are outcomes
+        but no notices, since nothing ran)
     """
     # Applicability is checked first: a policy whose conditions exclude this request neither counts nor acts, and
     # costs no counting query.
     if not policy_matches_context(policy, context):
-        return LockoutEvaluation()
+        return ConditionalAccessEvaluation()
     # A policy's conditions scope what is counted, not just whether it applies (see _count_scoping); matches_missing
     # and the SQL filter treat a missing value the same way, so the gate and the count never disagree.
     # This matters for a source-IP policy, whose rows span many identities and roles and would otherwise count the
@@ -1109,11 +1133,11 @@ def _evaluate_policy(policy: LockoutPolicy, context: CAContext, event_type: str,
     window = policy.time_window_seconds
     user = context.user
     source_ip = context.source_ip
-    if policy.target == LockoutTarget.SOURCE_IP:
+    if policy.target == ConditionalAccessTarget.SOURCE_IP:
         if not source_ip:
             # An IP-targeted policy cannot count or act without a source IP.
             log.debug(f"Skipping source-IP policy {policy.name!r}: the request carries no source IP.")
-            return LockoutEvaluation()
+            return ConditionalAccessEvaluation()
         # Counts per the policy's mode: distinct targeted accounts (spraying) or plain per-IP volume; no mode resets
         # on success, since one account's login must not clear a signal aggregated across the whole IP (see
         # _policy_count_ip).
@@ -1123,7 +1147,7 @@ def _evaluate_policy(policy: LockoutPolicy, context: CAContext, event_type: str,
         if not _resolved(user):
             # A user-target policy is keyed on the resolved (resolver, uid, realm) user, so an unresolved user
             # (unknown login, local admin) is never locked; source-IP policies above still run for such requests.
-            return LockoutEvaluation()
+            return ConditionalAccessEvaluation()
         # The lock counts consecutive failures since the user's last completed login, so a legitimate user is not
         # re-locked by stale pre-login failures (the pre-auth DENY decision deliberately does not reset on success —
         # see _policy_access_decision).
@@ -1142,24 +1166,23 @@ def _evaluate_policy(policy: LockoutPolicy, context: CAContext, event_type: str,
     triggered_stage = next((stage for stage in policy.stages
                             if _stage_pending_actions(stage, count)), None)
     if triggered_stage is None:
-        return LockoutEvaluation()
+        return ConditionalAccessEvaluation()
     pending_actions = _stage_pending_actions(triggered_stage, count)
 
     if policy.dry_run:
         log.info(f"[dry-run] policy {policy.name!r} would trigger stage {triggered_stage.id} "
                  f"(threshold {triggered_stage.failure_threshold}) for {subject_label}: "
                  f"{count} event(s) of {_types_label(policy.counter_types_to_track)} in {window}s.")
-        # One outcome per action that would have run, carrying the expiry it would have written - which is the whole
-        # point of dry run: the history shows what enforcing this policy would have done to real traffic. A
-        # LOCK_USER_TEMPORARY or BLOCK_IP_TEMPORARY whose duration is misconfigured records no expiry, so dry run
-        # surfaces that too.
-        # DENY is left out: it decides the request pre-auth and is recorded there (_policy_access_decision), so
-        # recording it again here would double-count the same decision.
+        # One outcome is recorded per action that would have run, carrying the expiry it would have written, so the
+        # history shows what enforcing this policy would have done (a misconfigured LOCK_USER/BLOCK_IP duration
+        # surfaces as a missing expiry).
+        # DENY is excluded here since it is already recorded pre-auth by _policy_access_decision; recording it
+        # again would double-count the same decision.
         outcomes = [outcome_for_stage(policy, triggered_stage, action.action_type, count, dry_run=True,
                                       expires_at=_action_expiry(action, now))
                     for action in pending_actions
-                    if action.action_type != LockoutAction.DENY]
-        return LockoutEvaluation(outcomes=outcomes)
+                    if action.action_type != ConditionalAccessAction.DENY]
+        return ConditionalAccessEvaluation(outcomes=outcomes)
 
     log.info(f"Policy {policy.name!r} triggered stage {triggered_stage.id} "
              f"(threshold {triggered_stage.failure_threshold}) for {subject_label}: "
@@ -1168,16 +1191,16 @@ def _evaluate_policy(policy: LockoutPolicy, context: CAContext, event_type: str,
     return _execute_stage_actions(policy, triggered_stage, pending_actions, context, now, count, tags)
 
 
-def _action_expiry(stage_action: LockoutStageAction, now: datetime) -> datetime | None:
+def _action_expiry(stage_action: ConditionalAccessStageAction, now: datetime) -> datetime | None:
     """
     When the restriction written by *stage_action* ends, or ``None`` when there is nothing to expire.
 
-    ``None`` covers three different cases, which the action type tells apart: a permanent action (never expires),
+    ``None`` covers three different cases, which the action type tells apart: a ``PERMANENT_*`` action (never expires),
     an action that creates no restriction at all (``EMAIL_*``, ``DENY``), and a timed action whose configured
     duration is missing or invalid - which is a misconfiguration the enforced path skips and logs, and which a dry-run
     outcome surfaces as "would have locked, but for how long is not configured".
     """
-    if stage_action.action_type not in (LockoutAction.LOCK_USER_TEMPORARY, LockoutAction.BLOCK_IP_TEMPORARY):
+    if stage_action.action_type not in (ConditionalAccessAction.LOCK_USER, ConditionalAccessAction.BLOCK_IP):
         return None
     duration = _lock_duration_seconds(stage_action.action_value)
     return now + timedelta(seconds=duration) if duration is not None else None
@@ -1185,7 +1208,7 @@ def _action_expiry(stage_action: LockoutStageAction, now: datetime) -> datetime 
 
 def _lock_duration_seconds(action_value: Any) -> int | None:
     """
-    Parse the ``LOCK_USER_TEMPORARY`` lock duration (in seconds) from a stage action's
+    Parse the ``LOCK_USER`` lock duration (in seconds) from a stage action's
     JSON ``action_value``. Accepts a plain integer, a numeric string, or a dict
     carrying ``duration_seconds`` / ``duration``. Returns ``None`` for anything
     that is not a positive integer number of seconds.
@@ -1223,13 +1246,13 @@ def _safe_format(template: str, tags: dict) -> str:
         return template
 
 
-def _base_action_tags(policy: LockoutPolicy, stage: LockoutPolicyStage, context: CAContext, event_type: str,
-                      count: int, now: datetime) -> dict:
+def _base_action_tags(policy: ConditionalAccessPolicy, stage: ConditionalAccessPolicyStage, context: CAContext,
+                      event_type: str, count: int, now: datetime) -> dict:
     """
     Build the ``{tag}`` substitution context available to EMAIL_* templates. Only
     fields already loaded on the request are included here; the resolver-backed
     user attributes (email, givenname, surname) are added lazily in
-    :func:`_send_lockout_email`, so a non-email action never triggers a resolver
+    :func:`_send_action_email`, so a non-email action never triggers a resolver
     lookup.
 
     There is exactly one canonical name per value — no aliases — so a template
@@ -1280,10 +1303,10 @@ def _resolve_admin_recipients(recipient_group: str | None) -> list[str]:
     return []
 
 
-def _login_notice(action_type: "LockoutAction", email_config: dict, render_tags: dict) -> str:
+def _login_notice(action_type: "ConditionalAccessAction", email_config: dict, render_tags: dict) -> str:
     """
     Build the short message shown to the user on the login screen once an
-    ``EMAIL_*`` action has been sent, mirroring how a lockout rejection is
+    ``EMAIL_*`` action has been sent, mirroring how a lock rejection is
     surfaced. An admin can override it per action with a ``login_notice``
     template in ``action_value`` (``{tag}`` substitution applies); otherwise a
     default keyed by the action type is used. The wording never reveals the
@@ -1292,12 +1315,12 @@ def _login_notice(action_type: "LockoutAction", email_config: dict, render_tags:
     custom = email_config.get("login_notice")
     if custom:
         return _safe_format(str(custom), render_tags)
-    if action_type == LockoutAction.EMAIL_USER:
+    if action_type == ConditionalAccessAction.EMAIL_USER:
         return _("A notification email has been sent to your email address.")
     return _("Your administrator has been notified by email.")
 
 
-def _send_lockout_email(action_type: "LockoutAction", stage_action: LockoutStageAction,
+def _send_action_email(action_type: "ConditionalAccessAction", stage_action: ConditionalAccessStageAction,
                         user: "User | None", tags: dict) -> str | None:
     """
     Send the EMAIL_ADMIN / EMAIL_USER notification for a triggered stage action.
@@ -1333,7 +1356,7 @@ def _send_lockout_email(action_type: "LockoutAction", stage_action: LockoutStage
     render_tags = {**tags, "email": info.get("email") or "",
                    "givenname": info.get("givenname") or "", "surname": info.get("surname") or ""}
 
-    if action_type == LockoutAction.EMAIL_USER:
+    if action_type == ConditionalAccessAction.EMAIL_USER:
         recipients = [info["email"]] if info.get("email") else []
         if not recipients:
             log.warning(f"EMAIL_USER action {stage_action.id}: user {user!r} has no email address; skipping.")
@@ -1357,9 +1380,9 @@ def _send_lockout_email(action_type: "LockoutAction", stage_action: LockoutStage
     return None
 
 
-def _execute_stage_actions(policy: LockoutPolicy, stage: LockoutPolicyStage,
-                           actions: Sequence[LockoutStageAction], context: CAContext,
-                           now: datetime, count: int, tags: dict) -> "LockoutEvaluation":
+def _execute_stage_actions(policy: ConditionalAccessPolicy, stage: ConditionalAccessPolicyStage,
+                           actions: Sequence[ConditionalAccessStageAction], context: CAContext,
+                           now: datetime, count: int, tags: dict) -> "ConditionalAccessEvaluation":
     """
     Execute the given *actions* of a triggered *stage* (the stage's pending
     actions, i.e. those whose per-action threshold condition is met). Each action
@@ -1379,8 +1402,8 @@ def _execute_stage_actions(policy: LockoutPolicy, stage: LockoutPolicyStage,
 
     :param policy: the triggering policy, for the outcomes
     :param count: the count that tripped the stage, for the outcomes
-    :return: a :class:`LockoutEvaluation` with the user-facing notices produced by executed ``EMAIL_*`` actions and one
-        outcome per action that ran (both empty if every action was skipped).
+    :return: a :class:`ConditionalAccessEvaluation` with the user-facing notices produced by executed ``EMAIL_*``
+        actions and one outcome per action that ran (both empty if every action was skipped).
     """
     notices: list[str] = []
     outcomes: list[ConditionalAccessOutcome] = []
@@ -1393,98 +1416,97 @@ def _execute_stage_actions(policy: LockoutPolicy, stage: LockoutPolicyStage,
 
     for action in actions:
         try:
-            action_type = LockoutAction(action.action_type)
+            action_type = ConditionalAccessAction(action.action_type)
         except ValueError:
-            log.warning(f"Unknown lockout action type {action.action_type!r} on stage {stage.id}; skipping.")
+            log.warning(f"Unknown conditional-access action type {action.action_type!r} on stage {stage.id}; skipping.")
             continue
 
         try:
-            if action_type == LockoutAction.LOCK_USER_TEMPORARY:
+            if action_type == ConditionalAccessAction.LOCK_USER:
                 duration = _lock_duration_seconds(action.action_value)
                 if duration is None:
-                    log.warning(f"LOCK_USER_TEMPORARY action {action.id} on stage {stage.id} has no valid duration "
+                    log.warning(f"LOCK_USER action {action.id} on stage {stage.id} has no valid duration "
                                 f"({action.action_value!r}); skipping.")
                     continue
                 lock_expires_at = now + timedelta(seconds=duration)
-                if _upsert_user_lockout_state(user, lock_expires_at=lock_expires_at):
+                if _upsert_user_lock_state(user, lock_expires_at=lock_expires_at):
                     record(action_type, expires_at=lock_expires_at)
-            elif action_type == LockoutAction.LOCK_USER_PERMANENT:
-                if _upsert_user_lockout_state(user, lock_expires_at=None):
+            elif action_type == ConditionalAccessAction.PERMANENT_LOCK_USER:
+                if _upsert_user_lock_state(user, lock_expires_at=None):
                     record(action_type)
-            elif action_type in (LockoutAction.EMAIL_ADMIN, LockoutAction.EMAIL_USER):
-                notice = _send_lockout_email(action_type, action, user, tags)
+            elif action_type in (ConditionalAccessAction.EMAIL_ADMIN, ConditionalAccessAction.EMAIL_USER):
+                notice = _send_action_email(action_type, action, user, tags)
                 if notice:
                     # A notice is returned exactly when the mail was accepted, so it doubles as "this action ran".
                     notices.append(notice)
                     record(action_type)
-            elif action_type in (LockoutAction.BLOCK_IP_TEMPORARY, LockoutAction.BLOCK_IP_PERMANENT):
-                # Failures are counted per user, so this blocks the source IP
-                # of the request that tripped a *per-user* policy. It does not
-                # detect password spraying (failures from one IP across many
-                # users); it simply blocks the offending request's IP.
+            elif action_type in (ConditionalAccessAction.BLOCK_IP, ConditionalAccessAction.PERMANENT_BLOCK_IP):
+                # BLOCK_IP on a per-user policy blocks only the source IP of the request that tripped it; it is not
+                # a password-spraying detector (failures from one IP across many users).
                 if not source_ip:
                     log.warning(f"{action_type} action {action.id} on stage {stage.id}: this request "
                                 f"has no source IP; skipping.")
                     continue
-                if action_type == LockoutAction.BLOCK_IP_PERMANENT:
-                    # Permanent block; action_value is ignored (mirrors LOCK_USER_PERMANENT).
+                if action_type == ConditionalAccessAction.PERMANENT_BLOCK_IP:
+                    # Permanent block; action_value is ignored (mirrors PERMANENT_LOCK_USER).
                     block_expires_at = None
                 else:
                     duration = _lock_duration_seconds(action.action_value)
                     if duration is None:
-                        log.warning(f"BLOCK_IP_TEMPORARY action {action.id} on stage {stage.id} has no valid duration "
+                        log.warning(f"BLOCK_IP action {action.id} on stage {stage.id} has no valid duration "
                                     f"({action.action_value!r}); skipping.")
                         continue
                     block_expires_at = now + timedelta(seconds=duration)
                 if _upsert_ip_block(source_ip, block_expires_at=block_expires_at):
                     record(action_type, expires_at=block_expires_at)
-            elif action_type == LockoutAction.DENY:
+            elif action_type == ConditionalAccessAction.DENY:
                 # DENY decides the current request pre-auth (see evaluate_access_decision), so there is nothing to
                 # do or record here — the decision is already recorded as its own outcome in
                 # _policy_access_decision.
                 log.debug(f"{action_type} is a pre-auth access decision; skipping in the "
                           f"post-response engine.")
             else:
-                log.info(f"Lockout action {action_type} is recognized but not implemented yet; skipping.")
+                log.info(f"Conditional-access action {action_type} is recognized but not implemented yet; skipping.")
         except Exception as ex:
-            log.warning(f"Lockout action {action_type} (id {action.id}) on stage {stage.id} "
+            log.warning(f"Conditional-access action {action_type} (id {action.id}) on stage {stage.id} "
                         f"failed: {ex!r}; skipping.")
-    return LockoutEvaluation(notices=notices, outcomes=outcomes)
+    return ConditionalAccessEvaluation(notices=notices, outcomes=outcomes)
 
 
-def _delete_user_lockout_state(state: UserLockoutState) -> None:
+def _delete_user_lock_state(state: UserLockState) -> None:
     """
-    Delete a stale :class:`UserLockoutState` row.
+    Delete a stale :class:`UserLockState` row.
 
-    Used by :func:`get_user_lockout` to drop a timed lock the auth pre-check finds
+    Used by :func:`get_user_lock` to drop a timed lock the auth pre-check finds
     already expired: the row is no longer enforced and the authentication log is
     the record, so it carries nothing worth keeping. The write is defensive — a
     failure is logged and rolled back so cleaning up can never break the
     authentication response that is still in flight.
     """
-    with guarded_write("the deletion of the expired user lockout state "
+    with guarded_write("the deletion of the expired user lock state "
                        f"({state.resolver!r}, {state.uid!r}, {state.realm!r})"):
         get_ca_session().delete(state)
 
 
 def _delete_ip_block(state: BlockList) -> None:
     """
-    Delete a stale :class:`BlockList` row. The IP counterpart of
-    :func:`_delete_user_lockout_state`: used by :func:`get_ip_block` to drop a
-    timed block the auth pre-check finds already expired. Defensive — a failure is
-    logged and rolled back so cleaning up can never break the authentication
+    Delete a :class:`BlockList` row that no longer restricts anything. The IP
+    counterpart of :func:`_delete_user_lock_state`: used by :func:`get_ip_block`
+    to drop a timed block the auth pre-check finds already expired, or a block on an
+    IP that has since been added to the never-block allowlist. Defensive — a failure
+    is logged and rolled back so cleaning up can never break the authentication
     response that is still in flight.
     """
-    with guarded_write(f"the deletion of the expired IP block {state.ip!r}"):
+    with guarded_write(f"the deletion of the unenforced IP block {state.ip!r}"):
         get_ca_session().delete(state)
 
 
-def _upsert_user_lockout_state(user: "User", *, lock_expires_at: datetime | None) -> bool:
+def _upsert_user_lock_state(user: "User", *, lock_expires_at: datetime | None) -> bool:
     """
-    Create or update the :class:`UserLockoutState` row for *user*.
+    Create or update the :class:`UserLockState` row for *user*.
 
     The write is defensive: a failure is logged and rolled back so that writing
-    the lockout state can never break the authentication response that already
+    the lock state can never break the authentication response that already
     completed. An existing **permanent** lock is never downgraded to a timed
     lock.
 
@@ -1493,11 +1515,11 @@ def _upsert_user_lockout_state(user: "User", *, lock_expires_at: datetime | None
         actually changed something.
     """
     downgrade_declined = False
-    with guarded_write(f"the user lockout state for {user!r}") as write:
+    with guarded_write(f"the user lock state for {user!r}") as write:
         session = get_ca_session()
-        state = session.get(UserLockoutState, (user.resolver, user.uid, user.realm))
+        state = session.get(UserLockState, (user.resolver, user.uid, user.realm))
         if state is None:
-            state = UserLockoutState(resolver=user.resolver, uid=user.uid, realm=user.realm)
+            state = UserLockState(resolver=user.resolver, uid=user.uid, realm=user.realm)
             session.add(state)
         elif state.lock_expires_at is None and lock_expires_at is not None:
             log.info(f"Not downgrading the existing permanent lock for {user!r} to a timed lock.")
@@ -1512,13 +1534,13 @@ def _upsert_ip_block(source_ip: str, *, block_expires_at: datetime | None) -> bo
     """
     Create or update the :class:`BlockList` row for *source_ip*.
 
-    The IP counterpart of :func:`_upsert_user_lockout_state`: the write is
+    The IP counterpart of :func:`_upsert_user_lock_state`: the write is
     defensive (a failure is logged and rolled back so that blocking an IP can
     never break the authentication response that already completed) and an
     existing **permanent** block is never downgraded to a timed one.
 
-    Never-block IPs (loopback and the ``CONDITIONAL_ACCESS_NEVER_BLOCK`` config)
-    are skipped: blocking shared infrastructure (a reverse proxy, NAT egress, or
+    Never-block IPs (loopback and the ``PI_CONDITIONAL_ACCESS_NEVER_BLOCK``
+    allowlist) are skipped: blocking shared infrastructure (a reverse proxy, NAT egress, or
     a load balancer) would lock out everyone behind it.
 
     :return: whether the block was written. ``False`` for a never-block IP, for a declined downgrade of a permanent

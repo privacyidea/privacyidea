@@ -1844,6 +1844,11 @@ def get_static_policy_definitions(scope=None):
                                                ' for a given OTP value.'),
                                      'mainmenu': [MAIN_MENU.TOKENS],
                                      "group": GROUP.TOOLS},
+            PolicyAction.SSHKEY_READ: {'type': 'bool',
+                                       'desc': _('Admin is allowed to read the public SSH key '
+                                                 'of an SSH key token.'),
+                                       'mainmenu': [MAIN_MENU.TOKENS],
+                                       'group': GROUP.TOKEN},
             PolicyAction.GETRANDOM: {'type': 'bool',
                                      'desc': _('Admin is allowed to retrieve '
                                                'random keys from privacyIDEA.'),
@@ -1984,23 +1989,23 @@ def get_static_policy_definitions(scope=None):
                                                              "policy is scoped to realms, resolvers or users, the "
                                                              "admin only sees entries matching that scope."),
                                                    "group": GROUP.SYSTEM},
-            PolicyAction.LOCKOUT_POLICY_READ: {'type': 'bool',
-                                               "desc": _("Admin is allowed to read the conditional-access "
-                                                         "lockout policies."),
-                                               "group": GROUP.SYSTEM},
-            PolicyAction.LOCKOUT_POLICY_WRITE: {'type': 'bool',
-                                                "desc": _("Admin is allowed to create, edit and delete the "
-                                                          "conditional-access lockout policies."),
-                                                "group": GROUP.SYSTEM},
-            PolicyAction.USER_LOCKOUT_READ: {'type': 'bool',
-                                             "desc": _("Admin is allowed to read the conditional-access user "
-                                                       "lockout state: view a user's lock and list the locked "
-                                                       "users."),
-                                             "group": GROUP.SYSTEM},
-            PolicyAction.USER_LOCKOUT_RESET: {'type': 'bool',
-                                              "desc": _("Admin is allowed to reset (unlock) a conditional-access "
-                                                        "user lockout."),
-                                              "group": GROUP.SYSTEM},
+            PolicyAction.CONDITIONAL_ACCESS_POLICY_READ: {
+                'type': 'bool',
+                "desc": _("Admin is allowed to read the conditional-access policies."),
+                "group": GROUP.SYSTEM},
+            PolicyAction.CONDITIONAL_ACCESS_POLICY_WRITE: {
+                'type': 'bool',
+                "desc": _("Admin is allowed to create, edit and delete the conditional-access policies."),
+                "group": GROUP.SYSTEM},
+            PolicyAction.USER_LOCK_READ: {
+                'type': 'bool',
+                "desc": _("Admin is allowed to read the conditional-access user lock state: view a user's "
+                          "lock and list the locked users."),
+                "group": GROUP.SYSTEM},
+            PolicyAction.USER_LOCK_RESET: {
+                'type': 'bool',
+                "desc": _("Admin is allowed to reset (unlock) a conditional-access user lock."),
+                "group": GROUP.SYSTEM},
             PolicyAction.BLOCKLIST_READ: {'type': 'bool',
                                           "desc": _("Admin is allowed to read the conditional-access blocklist."),
                                           "group": GROUP.SYSTEM},
@@ -2337,6 +2342,11 @@ def get_static_policy_definitions(scope=None):
                                   "desc": _('The user is allowed to delete his own tokens.'),
                                   'mainmenu': [MAIN_MENU.TOKENS],
                                   'group': GROUP.TOKEN},
+            PolicyAction.SSHKEY_READ: {'type': 'bool',
+                                       'desc': _('The user is allowed to read the public SSH key '
+                                                 'of his own SSH key token.'),
+                                       'mainmenu': [MAIN_MENU.TOKENS],
+                                       'group': GROUP.TOKEN},
             PolicyAction.UNASSIGN: {'type': 'bool',
                                     'desc': _('The user is allowed to unassign his own tokens.'),
                                     'mainmenu': [MAIN_MENU.TOKENS],

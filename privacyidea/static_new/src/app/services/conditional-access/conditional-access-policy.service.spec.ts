@@ -26,7 +26,7 @@ import { DialogService } from "@services/dialog/dialog.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { MockContentService, MockDialogService, MockNotificationService, MockPiResponse } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
-import { ConditionalAccessPolicyService, LockoutPolicy } from "./conditional-access-policy.service";
+import { ConditionalAccessPolicyService, ConditionalAccessPolicy } from "./conditional-access-policy.service";
 
 describe("ConditionalAccessPolicyService", () => {
   let service: ConditionalAccessPolicyService;
@@ -36,7 +36,7 @@ describe("ConditionalAccessPolicyService", () => {
   let authServiceMock: MockAuthService;
   let dialogServiceMock: MockDialogService;
 
-  const samplePolicy: LockoutPolicy = {
+  const samplePolicy: ConditionalAccessPolicy = {
     id: 1,
     name: "Brute Force",
     time_window_seconds: 600,
@@ -50,7 +50,7 @@ describe("ConditionalAccessPolicyService", () => {
       {
         id: 1,
         failure_threshold: 5,
-        actions: [{ id: 1, action_type: "LOCK_USER_TEMPORARY", action_value: { lock_duration_seconds: 600 } }]
+        actions: [{ id: 1, action_type: "LOCK_USER", action_value: { lock_duration_seconds: 600 } }]
       }
     ],
     conditions: [{ condition_type: "USER_REALM", operator: "IN", value: ["sales"] }]
@@ -110,14 +110,14 @@ describe("ConditionalAccessPolicyService", () => {
 
       httpMock.expectOne(service.baseUrl).flush(MockPiResponse.fromValue([samplePolicy]));
       // The action types come along for the same filter; the editor-only vocabulary does not.
-      httpMock.expectOne(service.actionTypesUrl).flush(MockPiResponse.fromValue(["LOCK_USER_TEMPORARY"]));
+      httpMock.expectOne(service.actionTypesUrl).flush(MockPiResponse.fromValue(["LOCK_USER"]));
       httpMock.expectNone(service.eventTypesUrl);
       httpMock.expectNone(service.targetsUrl);
       httpMock.expectNone(service.templatesUrl);
       await TestBed.inject(ApplicationRef).whenStable();
 
       expect(service.policies()).toEqual([samplePolicy]);
-      expect(service.actionTypes()).toEqual(["LOCK_USER_TEMPORARY"]);
+      expect(service.actionTypes()).toEqual(["LOCK_USER"]);
     });
 
     it("should not fetch on a route that reads neither the policies nor the log", () => {
@@ -165,7 +165,7 @@ describe("ConditionalAccessPolicyService", () => {
   describe("getPolicies", () => {
     it("should read the policy list on demand, off the conditional-access route", () => {
       contentServiceMock.onConditionalAccess = signal(false);
-      let policies: LockoutPolicy[] | undefined;
+      let policies: ConditionalAccessPolicy[] | undefined;
       service.getPolicies().subscribe((response) => (policies = response.result?.value));
 
       const req = httpMock.expectOne(service.baseUrl);
@@ -183,14 +183,14 @@ describe("ConditionalAccessPolicyService", () => {
 
       httpMock.expectOne(service.baseUrl).flush(MockPiResponse.fromValue([]));
       httpMock.expectOne(service.eventTypesUrl).flush(MockPiResponse.fromValue(["PIN_FAIL", "MFA_FAIL"]));
-      httpMock.expectOne(service.actionTypesUrl).flush(MockPiResponse.fromValue(["LOCK_USER_TEMPORARY", "DENY"]));
+      httpMock.expectOne(service.actionTypesUrl).flush(MockPiResponse.fromValue(["LOCK_USER", "DENY"]));
       httpMock.expectOne(service.targetsUrl).flush(MockPiResponse.fromValue({}));
       httpMock.expectOne(service.templatesUrl).flush(MockPiResponse.fromValue([]));
       httpMock.expectOne(service.conditionTypesUrl).flush(MockPiResponse.fromValue({}));
       await Promise.resolve();
 
       expect(service.eventTypes()).toEqual(["PIN_FAIL", "MFA_FAIL"]);
-      expect(service.actionTypes()).toEqual(["LOCK_USER_TEMPORARY", "DENY"]);
+      expect(service.actionTypes()).toEqual(["LOCK_USER", "DENY"]);
     });
 
     it("should not fetch the lists without the read right", () => {
@@ -204,15 +204,15 @@ describe("ConditionalAccessPolicyService", () => {
 
   describe("targets and templates", () => {
     const targetConstraints = {
-      user: { actions: ["LOCK_USER_TEMPORARY", "DENY"], count_modes: ["PER_ATTEMPT", "PER_REQUEST"] },
+      user: { actions: ["LOCK_USER", "DENY"], count_modes: ["PER_ATTEMPT", "PER_REQUEST"] },
       source_ip: {
-        actions: ["BLOCK_IP_TEMPORARY", "DENY"],
+        actions: ["BLOCK_IP", "DENY"],
         count_modes: ["DISTINCT_USERS", "PER_ATTEMPT", "PER_REQUEST"]
       }
     };
     const expectedActionsByTarget = {
-      user: ["LOCK_USER_TEMPORARY", "DENY"],
-      source_ip: ["BLOCK_IP_TEMPORARY", "DENY"]
+      user: ["LOCK_USER", "DENY"],
+      source_ip: ["BLOCK_IP", "DENY"]
     };
     const expectedCountModesByTarget = {
       user: ["PER_ATTEMPT", "PER_REQUEST"],
@@ -246,7 +246,7 @@ describe("ConditionalAccessPolicyService", () => {
         count_mode: "PER_REQUEST" as const,
         counter_types_to_track: ["PASSWORD_FAIL" as const],
         stages: [
-          { failure_threshold: 10, actions: [{ action_type: "LOCK_USER_TEMPORARY" as const, action_value: null }] }
+          { failure_threshold: 10, actions: [{ action_type: "LOCK_USER" as const, action_value: null }] }
         ]
       }
     };
@@ -256,7 +256,7 @@ describe("ConditionalAccessPolicyService", () => {
       TestBed.tick();
       httpMock.expectOne(service.baseUrl).flush(MockPiResponse.fromValue([]));
       httpMock.expectOne(service.eventTypesUrl).flush(MockPiResponse.fromValue([]));
-      httpMock.expectOne(service.actionTypesUrl).flush(MockPiResponse.fromValue(["LOCK_USER_TEMPORARY", "DENY"]));
+      httpMock.expectOne(service.actionTypesUrl).flush(MockPiResponse.fromValue(["LOCK_USER", "DENY"]));
       httpMock.expectOne(service.targetsUrl).flush(MockPiResponse.fromValue(targetConstraints));
       httpMock.expectOne(service.templatesUrl).flush(MockPiResponse.fromValue([sampleTemplate]));
       httpMock.expectOne(service.conditionTypesUrl).flush(MockPiResponse.fromValue(conditionTypeMeta));
@@ -284,8 +284,8 @@ describe("ConditionalAccessPolicyService", () => {
 
     it("should return the allowed actions for a known target", async () => {
       await load();
-      expect(service.actionsForTarget("user")).toEqual(["LOCK_USER_TEMPORARY", "DENY"]);
-      expect(service.actionsForTarget("source_ip")).toEqual(["BLOCK_IP_TEMPORARY", "DENY"]);
+      expect(service.actionsForTarget("user")).toEqual(["LOCK_USER", "DENY"]);
+      expect(service.actionsForTarget("source_ip")).toEqual(["BLOCK_IP", "DENY"]);
     });
 
     it("should return the supported count modes for a known target", async () => {
@@ -351,13 +351,13 @@ describe("ConditionalAccessPolicyService", () => {
       TestBed.tick();
       httpMock.expectOne(service.baseUrl).flush(MockPiResponse.fromValue([]));
       httpMock.expectOne(service.eventTypesUrl).flush(MockPiResponse.fromValue([]));
-      httpMock.expectOne(service.actionTypesUrl).flush(MockPiResponse.fromValue(["LOCK_USER_TEMPORARY", "DENY"]));
+      httpMock.expectOne(service.actionTypesUrl).flush(MockPiResponse.fromValue(["LOCK_USER", "DENY"]));
       httpMock.expectOne(service.targetsUrl).flush(MockPiResponse.fromValue({}));
       httpMock.expectOne(service.templatesUrl).flush(MockPiResponse.fromValue([]));
       httpMock.expectOne(service.conditionTypesUrl).flush(MockPiResponse.fromValue({}));
       await Promise.resolve();
 
-      expect(service.actionsForTarget("user")).toEqual(["LOCK_USER_TEMPORARY", "DENY"]);
+      expect(service.actionsForTarget("user")).toEqual(["LOCK_USER", "DENY"]);
     });
 
     it("should not fetch targets or templates without the read right", () => {

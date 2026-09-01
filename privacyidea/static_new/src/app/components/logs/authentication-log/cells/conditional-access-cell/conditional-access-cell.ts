@@ -78,7 +78,7 @@ export class ConditionalAccessCell {
   readonly entryId = input<number | undefined>(undefined);
   // The current id of each existing policy, by name: an outcome stores the policy's name and no id (a deleted policy's
   // id could be reused by another policy), so this turns a name into a link only while one still exists under it. An
-  // empty map (e.g. without lockout_policy_read) means link nothing, and the name still reads as plain text.
+  // empty map (e.g. without conditional_access_policy_read) means link nothing, and the name still reads as plain text.
   readonly policyIdsByName = input<ReadonlyMap<string, number>>(new Map<string, number>());
 
   // Anything that is not a list yields nothing. The guard is not redundant with the input's type: the table's skeleton

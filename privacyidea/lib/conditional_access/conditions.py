@@ -87,7 +87,7 @@ from privacyidea.models import AuthenticationLog
 
 if TYPE_CHECKING:
     from privacyidea.lib.conditional_access.context import CAContext
-    from privacyidea.models.lockout_policy import LockoutPolicy, LockoutPolicyCondition
+    from privacyidea.models.conditional_access_policy import ConditionalAccessPolicy, ConditionalAccessPolicyCondition
 
 log = logging.getLogger(__name__)
 
@@ -296,7 +296,7 @@ CONDITION_TYPES: dict[str, ConditionTypeSpec] = {
 }
 
 
-def _values_are_well_formed(condition: "LockoutPolicyCondition", policy_name: str) -> bool:
+def _values_are_well_formed(condition: "ConditionalAccessPolicyCondition", policy_name: str) -> bool:
     """
     Whether a stored condition's ``value`` has the shape its operator takes - today a list, for the two
     set-membership operators. Checked with the unknown-type/operator checks rather than at comparison
@@ -304,7 +304,7 @@ def _values_are_well_formed(condition: "LockoutPolicyCondition", policy_name: st
 
     ``value`` is a JSON column, so its Python type is guaranteed by the CRUD layer and not by the schema.
     The shape accepted here is therefore exactly the one
-    :func:`~privacyidea.lib.conditional_access.lockout_policy._validate_condition_value` writes - a
+    :func:`~privacyidea.lib.conditional_access.policy._validate_condition_value` writes - a
     **non-empty list of strings** - and nothing weaker: an empty list, or one holding non-strings,
     compares as cleanly as a well-formed one and so would pass a mere "is it a list?" test while meaning
     nothing.
@@ -331,7 +331,7 @@ def _values_are_well_formed(condition: "LockoutPolicyCondition", policy_name: st
     return False
 
 
-def condition_matches(condition: "LockoutPolicyCondition", context: "CAContext",
+def condition_matches(condition: "ConditionalAccessPolicyCondition", context: "CAContext",
                       policy_name: str = "") -> bool:
     """
     Whether a single condition holds for *context*.
@@ -366,7 +366,7 @@ def condition_matches(condition: "LockoutPolicyCondition", context: "CAContext",
         return False
 
 
-def conditions_match_row(policy: "LockoutPolicy", row) -> bool:
+def conditions_match_row(policy: "ConditionalAccessPolicy", row) -> bool:
     """
     Whether every condition of *policy* holds for a single ``authentication_log`` *row*.
 
@@ -423,7 +423,7 @@ def get_condition_types() -> dict[str, dict]:
     """
     Describe every available condition type, so the policy editor is built from
     server metadata instead of a hard-coded client-side list (mirroring
-    :func:`~privacyidea.lib.conditional_access.lockout_policy.get_target_constraints`).
+    :func:`~privacyidea.lib.conditional_access.policy.get_target_constraints`).
 
     Each entry carries the translated ``label``, the ``operators`` the type
     permits (each with its own label), and the currently valid ``choices``
@@ -443,7 +443,7 @@ def get_condition_types() -> dict[str, dict]:
     }
 
 
-def policy_conditions_are_scopable(policy: "LockoutPolicy") -> bool:
+def policy_conditions_are_scopable(policy: "ConditionalAccessPolicy") -> bool:
     """
     Whether *every* condition of *policy* can be expressed as a predicate on the
     authentication log, so the policy's count can be narrowed to the rows its
@@ -475,7 +475,7 @@ def policy_conditions_are_scopable(policy: "LockoutPolicy") -> bool:
     )
 
 
-def condition_sql_filters(policy: "LockoutPolicy") -> list:
+def condition_sql_filters(policy: "ConditionalAccessPolicy") -> list:
     """
     The policy's conditions as SQL predicates on ``authentication_log``, for
     narrowing which rows a count considers.
@@ -515,7 +515,7 @@ def condition_sql_filters(policy: "LockoutPolicy") -> list:
     return filters
 
 
-def policy_matches_context(policy: "LockoutPolicy", context: "CAContext") -> bool:
+def policy_matches_context(policy: "ConditionalAccessPolicy", context: "CAContext") -> bool:
     """
     Whether *policy* applies to the request described by *context* at all.
 

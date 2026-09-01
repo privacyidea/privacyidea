@@ -870,7 +870,7 @@ class AuthenticationLogOutcomeJoinTestCase(MyTestCase):
         """Write one authentication-log row plus *count* conditional-access outcomes, and return the row id."""
         event_id = log_authentication_event(event_type=AuthEventType.MFA_FAIL, resolver="res1", uid="u1",
                                             realm="realm1", **kwargs)
-        record_outcomes([ConditionalAccessOutcome(action_type="LOCK_USER_TEMPORARY", policy_name="p",
+        record_outcomes([ConditionalAccessOutcome(action_type="LOCK_USER", policy_name="p",
                                                  threshold=3, event_count=3) for _ in range(count)], event_id)
         return event_id
 
@@ -898,7 +898,7 @@ class AuthenticationLogOutcomeJoinTestCase(MyTestCase):
         self.assertEqual(2, len(entry.outcomes))
         # to_dict of the *page* opts in, so a client sees them alongside the entry.
         self.assertEqual(2, len(page.to_dict()["auth_logs"][0]["conditional_access_outcomes"]))
-        self.assertEqual("LOCK_USER_TEMPORARY", page.to_dict()["auth_logs"][0]["conditional_access_outcomes"][0]["action_type"])
+        self.assertEqual("LOCK_USER", page.to_dict()["auth_logs"][0]["conditional_access_outcomes"][0]["action_type"])
 
     def test_an_entry_without_outcomes_carries_an_empty_list(self):
         log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="realm1")

@@ -20,7 +20,7 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { AuthService } from "@services/auth/auth.service";
 import {
   ConditionalAccessPolicyService,
-  LockoutStageAction
+  ConditionalAccessStageAction
 } from "@services/conditional-access/conditional-access-policy.service";
 import { SmtpService } from "@services/smtp/smtp.service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
@@ -32,8 +32,8 @@ describe("ConditionalAccessActionsListComponent", () => {
   let component: ConditionalAccessActionsListComponent;
   let fixture: ComponentFixture<ConditionalAccessActionsListComponent>;
 
-  const actions: LockoutStageAction[] = [
-    { action_type: "LOCK_USER_TEMPORARY", action_value: { lock_duration_seconds: 600 } },
+  const actions: ConditionalAccessStageAction[] = [
+    { action_type: "LOCK_USER", action_value: { lock_duration_seconds: 600 } },
     { action_type: "EMAIL_ADMIN", action_value: null }
   ];
 
@@ -60,7 +60,7 @@ describe("ConditionalAccessActionsListComponent", () => {
   it("should emit a new array with an appended action on add", () => {
     const spy = jest.spyOn(component.actionsChange, "emit");
     component.onAddAction();
-    expect(spy).toHaveBeenCalledWith([...actions, { action_type: "LOCK_USER_TEMPORARY", action_value: null }]);
+    expect(spy).toHaveBeenCalledWith([...actions, { action_type: "LOCK_USER", action_value: null }]);
   });
 
   it("should default the new action to the first action allowed for the target", () => {
@@ -68,14 +68,14 @@ describe("ConditionalAccessActionsListComponent", () => {
       ConditionalAccessPolicyService
     ) as unknown as MockConditionalAccessPolicyService;
     policyServiceMock.actionsByTarget.set({
-      user: ["LOCK_USER_TEMPORARY", "DENY"],
-      source_ip: ["BLOCK_IP_TEMPORARY", "DENY"]
+      user: ["LOCK_USER", "DENY"],
+      source_ip: ["BLOCK_IP", "DENY"]
     });
     fixture.componentRef.setInput("target", "source_ip");
 
     const spy = jest.spyOn(component.actionsChange, "emit");
     component.onAddAction();
-    expect(spy).toHaveBeenCalledWith([...actions, { action_type: "BLOCK_IP_TEMPORARY", action_value: null }]);
+    expect(spy).toHaveBeenCalledWith([...actions, { action_type: "BLOCK_IP", action_value: null }]);
   });
 
   it("should emit a merged action on update by index", () => {

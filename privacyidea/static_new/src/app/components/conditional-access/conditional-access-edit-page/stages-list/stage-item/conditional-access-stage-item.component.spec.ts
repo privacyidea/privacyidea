@@ -20,7 +20,7 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { AuthService } from "@services/auth/auth.service";
 import {
   ConditionalAccessPolicyService,
-  LockoutPolicyStage
+  ConditionalAccessPolicyStage
 } from "@services/conditional-access/conditional-access-policy.service";
 import { SmtpService } from "@services/smtp/smtp.service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
@@ -32,9 +32,9 @@ describe("ConditionalAccessStageItemComponent", () => {
   let component: ConditionalAccessStageItemComponent;
   let fixture: ComponentFixture<ConditionalAccessStageItemComponent>;
 
-  const stage: LockoutPolicyStage = {
+  const stage: ConditionalAccessPolicyStage = {
     failure_threshold: 5,
-    actions: [{ action_type: "LOCK_USER_TEMPORARY", action_value: { lock_duration_seconds: 600 } }]
+    actions: [{ action_type: "LOCK_USER", action_value: { lock_duration_seconds: 600 } }]
   };
 
   beforeEach(async () => {

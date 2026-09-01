@@ -1,11 +1,11 @@
-"""v3.14: Add conditional access lockout policy tables
+"""v3.14: Add conditional-access policy tables
 
-Create the five tables of the lockout policy framework:
-lockout_policies (the policy container), lockout_policy_counter_types (the
+Create the five tables of the conditional-access policy framework:
+conditional_access_policies (the policy container), conditional_access_policy_counter_types (the
 failure counter types a policy tracks, normalized for an indexed per-request
-lookup), lockout_policy_conditions (the restrictions on which requests a policy
-applies to at all), lockout_policy_stages (the failure thresholds within a
-policy) and lockout_stage_actions (the reactions when a stage is triggered).
+lookup), conditional_access_policy_conditions (the restrictions on which requests a policy
+applies to at all), conditional_access_policy_stages (the failure thresholds within a
+policy) and conditional_access_stage_actions (the reactions when a stage is triggered).
 
 Revision ID: 173d32328846
 Revises: 0147d78cbace
@@ -23,9 +23,9 @@ branch_labels = None
 depends_on = None
 
 # Drop order: children before parents (foreign keys).
-TABLES = ['lockout_stage_actions', 'lockout_policy_stages',
-          'lockout_policy_conditions', 'lockout_policy_counter_types',
-          'lockout_policies']
+TABLES = ['conditional_access_stage_actions', 'conditional_access_policy_stages',
+          'conditional_access_policy_conditions', 'conditional_access_policy_counter_types',
+          'conditional_access_policies']
 
 
 def _id_column():
@@ -54,7 +54,7 @@ def _create_table(table_name, *columns):
 
 def upgrade():
     _create_table(
-        'lockout_policies',
+        'conditional_access_policies',
         _id_column(),
         sa.Column('name', sa.Unicode(length=255), nullable=False),
         sa.Column('time_window_seconds', sa.Integer(), nullable=False),
@@ -65,54 +65,53 @@ def upgrade():
         sa.Column('target', sa.Unicode(length=100), nullable=False),
         sa.PrimaryKeyConstraint('id'),
         sa.UniqueConstraint('name'),
-        sa.UniqueConstraint('priority', name='uq_lockout_policy_priority'),
+        sa.UniqueConstraint('priority', name='uq_ca_policy_priority'),
     )
     _create_table(
-        'lockout_policy_counter_types',
+        'conditional_access_policy_counter_types',
         _id_column(),
         sa.Column('policy_id', sa.Integer(), nullable=False),
         sa.Column('counter_type', sa.Unicode(length=100), nullable=False),
-        sa.ForeignKeyConstraint(['policy_id'], ['lockout_policies.id'], ondelete='CASCADE'),
+        sa.ForeignKeyConstraint(['policy_id'], ['conditional_access_policies.id'], ondelete='CASCADE'),
         sa.PrimaryKeyConstraint('id'),
-        sa.UniqueConstraint('policy_id', 'counter_type', name='uq_lockout_counter_type_policy'),
-        sa.Index('ix_lockout_counter_type_lookup', 'counter_type', 'policy_id'),
+        sa.UniqueConstraint('policy_id', 'counter_type', name='uq_ca_counter_type_policy'),
+        sa.Index('ix_ca_counter_type_lookup', 'counter_type', 'policy_id'),
     )
     _create_table(
-        'lockout_policy_conditions',
+        'conditional_access_policy_conditions',
         _id_column(),
         sa.Column('policy_id', sa.Integer(), nullable=False),
         sa.Column('condition_type', sa.Unicode(length=50), nullable=False),
         sa.Column('operator', sa.Unicode(length=20), nullable=False),
         sa.Column('value', sa.JSON(), nullable=True),
-        sa.ForeignKeyConstraint(['policy_id'], ['lockout_policies.id'], ondelete='CASCADE'),
+        sa.ForeignKeyConstraint(['policy_id'], ['conditional_access_policies.id'], ondelete='CASCADE'),
         sa.PrimaryKeyConstraint('id'),
         # A policy carries at most one condition of each type; they are ANDed, so a
         # second one on the same value could only narrow to a contradiction.
-        sa.UniqueConstraint('policy_id', 'condition_type', name='uq_lockout_condition_policy'),
-        sa.Index('ix_lockout_policy_conditions_policy_id', 'policy_id'),
+        sa.UniqueConstraint('policy_id', 'condition_type', name='uq_ca_condition_policy'),
+        sa.Index('ix_conditional_access_policy_conditions_policy_id', 'policy_id'),
     )
     _create_table(
-        'lockout_policy_stages',
+        'conditional_access_policy_stages',
         _id_column(),
         sa.Column('policy_id', sa.Integer(), nullable=False),
         sa.Column('name', sa.Unicode(length=255), nullable=True),
         sa.Column('failure_threshold', sa.Integer(), nullable=False),
-        sa.Column('priority', sa.Integer(), nullable=False),
-        sa.ForeignKeyConstraint(['policy_id'], ['lockout_policies.id'], ondelete='CASCADE'),
+        sa.ForeignKeyConstraint(['policy_id'], ['conditional_access_policies.id'], ondelete='CASCADE'),
         sa.PrimaryKeyConstraint('id'),
         sa.UniqueConstraint('policy_id', 'failure_threshold',
-                            name='uq_lockout_stage_policy_threshold'),
+                            name='uq_ca_stage_policy_threshold'),
     )
     _create_table(
-        'lockout_stage_actions',
+        'conditional_access_stage_actions',
         _id_column(),
         sa.Column('stage_id', sa.Integer(), nullable=False),
         sa.Column('action_type', sa.Unicode(length=100), nullable=False),
         sa.Column('action_value', sa.JSON(), nullable=True),
         sa.Column('retrigger_above_threshold', sa.Boolean(), nullable=False),
-        sa.ForeignKeyConstraint(['stage_id'], ['lockout_policy_stages.id'], ondelete='CASCADE'),
+        sa.ForeignKeyConstraint(['stage_id'], ['conditional_access_policy_stages.id'], ondelete='CASCADE'),
         sa.PrimaryKeyConstraint('id'),
-        sa.Index('ix_lockout_stage_actions_stage_id', 'stage_id'),
+        sa.Index('ix_conditional_access_stage_actions_stage_id', 'stage_id'),
     )
 
 
