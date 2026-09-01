@@ -35,9 +35,9 @@ from privacyidea.lib.conditional_access.authentication_event_types import (AuthE
                                                                            CountMode)
 from privacyidea.lib.conditional_access.authentication_log import _naive_utc
 from privacyidea.lib.conditional_access.conditions import (condition_sql_filters,
-                                                          conditions_match_row,
-                                                          policy_conditions_are_scopable,
-                                                          policy_matches_context)
+                                                           conditions_match_row,
+                                                           policy_conditions_are_scopable,
+                                                           policy_matches_context)
 from privacyidea.lib.conditional_access.context import CAContext
 from privacyidea.lib.conditional_access.outcome_log import outcome_for_stage
 from privacyidea.lib.conditional_access.session import get_ca_session, guarded_write
@@ -50,6 +50,7 @@ if TYPE_CHECKING:
     from privacyidea.lib.user import User
 
 log = logging.getLogger(__name__)
+
 
 # --- What this module is ----------------------------------------------------------------------------------------------
 # The conditional-access engine: it decides whether a request may proceed, then reacts to how that request turned
@@ -870,7 +871,7 @@ def _policy_count_ip(policy: ConditionalAccessPolicy, source_ip: str, window_end
 
 
 def get_user_lock(user: "User", now: datetime | None = None, *,
-                     clear_expired: bool = False) -> "RestrictionStatus | None":
+                  clear_expired: bool = False) -> "RestrictionStatus | None":
     """
     Return information about *user*'s **current** lock, or ``None`` if the user
     is not currently locked. Intended for the authentication pre-check hot path.
@@ -1233,7 +1234,7 @@ def _restrictions_in_force(context: CAContext, targets: set[ConditionalAccessTar
 
 
 def evaluate_conditional_access_policies(context: CAContext, event_type: AuthEventType | None,
-                              now: datetime | None = None) -> "ConditionalAccessEvaluation":
+                                         now: datetime | None = None) -> "ConditionalAccessEvaluation":
     """
     Evaluate every enabled conditional-access policy that tracks *event_type* and execute
     the actions of the triggered stage, if any. This runs post-response, *after*
@@ -1542,7 +1543,7 @@ def _resolve_admin_recipients(recipient_group: str | None) -> list[str]:
 
 
 def _send_action_email(action_type: "ConditionalAccessAction", stage_action: ConditionalAccessStageAction,
-                        user: "User | None", tags: dict) -> bool:
+                       user: "User | None", tags: dict) -> bool:
     """
     Send the EMAIL_ADMIN / EMAIL_USER notification for a triggered stage action.
 
@@ -1677,11 +1678,11 @@ def _execute_stage_actions(policy: ConditionalAccessPolicy, stage: ConditionalAc
                     continue
                 lock_expires_at = now + timedelta(seconds=duration)
                 if _upsert_user_lock_state(user, lock_expires_at=lock_expires_at,
-                                              error_message=stage.error_message, policy_name=policy.name):
+                                           error_message=stage.error_message, policy_name=policy.name):
                     record(action_type, expires_at=lock_expires_at)
             elif action_type == ConditionalAccessAction.PERMANENT_LOCK_USER:
                 if _upsert_user_lock_state(user, lock_expires_at=None,
-                                              error_message=stage.error_message, policy_name=policy.name):
+                                           error_message=stage.error_message, policy_name=policy.name):
                     record(action_type)
             elif action_type in (ConditionalAccessAction.EMAIL_ADMIN, ConditionalAccessAction.EMAIL_USER):
                 if _send_action_email(action_type, action, user, tags):
@@ -1771,7 +1772,7 @@ def _delete_ip_block(state: BlockList) -> None:
 
 
 def _upsert_user_lock_state(user: "User", *, lock_expires_at: datetime | None, error_message: str | None,
-                               policy_name: str | None = None) -> bool:
+                            policy_name: str | None = None) -> bool:
     """
     Create or update the :class:`UserLockState` row for *user*.
 
