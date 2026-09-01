@@ -96,6 +96,7 @@ class PolicyAction:
     SETRANDOMPIN = "setrandompin"
     SETREALM = "setrealm"
     SERIAL = "serial"
+    SSHKEY_READ = "sshkey_read"
     SYSTEMDELETE = "configdelete"
     SYSTEMWRITE = "configwrite"
     SYSTEMREAD = "configread"

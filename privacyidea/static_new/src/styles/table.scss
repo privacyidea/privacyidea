@@ -474,13 +474,6 @@ th:nth-child(even) {
   width: 42px;
 }
 
-// Placeholder rows shown while a table loads for the first time: the row keeps its
-// height so the table does not jump, but no cell content is visible or interactive.
-.cdk-overlay-pane {
-  position: absolute !important;
-  z-index: 1;
-}
-
 .details-card {
   display: flex;
   flex-direction: column;

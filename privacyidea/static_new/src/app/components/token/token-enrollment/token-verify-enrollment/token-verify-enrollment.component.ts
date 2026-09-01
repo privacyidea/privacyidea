@@ -127,6 +127,10 @@ export class TokenVerifyEnrollmentComponent extends AbstractDialogComponent<
     });
   }
 
+  onEnrollmentResponseChange(response: EnrollmentResponse): void {
+    this.data.onEnrollmentResponseChange?.(response);
+  }
+
   onSwitchRoute() {
     this.dialogRef.close();
   }

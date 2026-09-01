@@ -34,7 +34,6 @@ import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
-import { NAVIGATION_ACCESSIBLE_DIALOG_CLASS } from "@constants/global.constants";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 
@@ -79,9 +78,6 @@ const EMPTY_SMTP_FORM: SmtpFormModel = {
 @Component({
   selector: "app-smtp-edit-dialog",
   standalone: true,
-  host: {
-    class: NAVIGATION_ACCESSIBLE_DIALOG_CLASS
-  },
   imports: [
     FormField,
     MatFormFieldModule,

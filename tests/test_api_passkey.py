@@ -1686,6 +1686,31 @@ class PasskeyAPITest(PasskeyAPITestBase):
             db.session.commit()
             remove_token(serial)
 
+    def test_29_restrict_authenticator_device_type_scoped_to_realm_on_auth(self):
+        """
+        The same realm-scoped SCOPE.AUTH restriction as test_26, but for the WebUI login endpoint. /auth
+        resolves the credential_id to its owner in before_request, which runs before the prepolicies, so
+        unlike /validate/check it needs no second policy evaluation. If that ordering ever changed, the
+        restriction would silently downgrade to matching only unscoped policies.
+        """
+        self.set_policy_with_cleanup("restrict_device_type", scope=SCOPE.AUTH, realm=self.realm1,
+                                     action=f"{PasskeyAction.AllowedAuthenticatorDeviceTypes}=multi_device")
+        serial = self._enroll_static_passkey()
+
+        passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_uv)
+        data = self.authentication_response_uv
+        data["transaction_id"] = passkey_challenge["transaction_id"]
+        self.assertNotIn("user", data)
+        with self.app.test_request_context('/auth', method='POST',
+                                           data=data,
+                                           headers={"Origin": self.expected_origin}):
+            res = self.app.full_dispatch_request()
+            # The enrolled fixture credential is single_device, so the realm-scoped restriction to
+            # multi_device must refuse the login, even though the request never named a user.
+            self._verify_auth_fail_with_error(res, 4031)
+
+        remove_token(serial)
+
 
 class PasskeyAuthAPITest(PasskeyAPITestBase, OverrideConfigTestCase):
     """

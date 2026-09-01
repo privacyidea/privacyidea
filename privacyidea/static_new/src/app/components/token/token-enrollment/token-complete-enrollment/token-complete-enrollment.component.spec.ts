@@ -20,6 +20,7 @@
 import { NO_ERRORS_SCHEMA } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
+import { By } from "@angular/platform-browser";
 import { EnrollmentResponse } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { ENROLLMENT_CANCELLED } from "@components/token/token-enrollment/token-enrollment.constants";
 import { AuthService } from "@services/auth/auth.service";
@@ -40,7 +41,8 @@ describe("TokenCompleteEnrollmentComponent", () => {
 
   const dialogData = {
     response: { detail: { serial: "123" }, type: "hotp" },
-    enrollParameters: { data: { type: "hotp", twoStepInit: true } }
+    enrollParameters: { data: { type: "hotp", twoStepInit: true } },
+    onEnrollmentResponseChange: jest.fn()
   };
 
   beforeEach(async () => {
@@ -63,6 +65,18 @@ describe("TokenCompleteEnrollmentComponent", () => {
 
   it("should create", () => {
     expect(component).toBeTruthy();
+  });
+
+  it("should report a regenerated QR code to the opener of the dialog", () => {
+    const regenerated = {
+      type: "hotp",
+      detail: { type: "hotp", serial: "123", googleurl: { img: "regenerated-img", value: "regenerated-url" } },
+      result: { status: true }
+    } as EnrollmentResponse;
+    const enrollmentData = fixture.debugElement.query(By.css("app-token-enrollment-data"));
+    enrollmentData.triggerEventHandler("enrollmentResponseChange", regenerated);
+
+    expect(dialogData.onEnrollmentResponseChange).toHaveBeenCalledWith(regenerated);
   });
 
   it("should disable enroll action if input is invalid", () => {
