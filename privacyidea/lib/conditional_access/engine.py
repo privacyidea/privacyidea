@@ -1459,7 +1459,7 @@ def parse_lock_duration_seconds(action_value: Any) -> int | None:
     ``None`` for anything that is not a positive integer number of seconds.
 
     This is also the write path's validator
-    (:func:`~privacyidea.lib.conditional_access.lockout_policy._validate_duration_action_value`),
+    (:func:`~privacyidea.lib.conditional_access.policy._validate_duration_action_value`),
     so what can be stored and what the engine can act on are the same set by
     construction rather than by two descriptions agreeing.
     """

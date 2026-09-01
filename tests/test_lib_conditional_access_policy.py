@@ -509,10 +509,18 @@ class ConditionalAccessPolicyCrudTestCase(MyTestCase):
             ParameterError, "must be a string",
             self._create_with_action, {"action_type": "EMAIL_ADMIN", "action_value": {**base, "subject": 5}},
         )
+        # A key nothing in the engine reads (however plausible-sounding) is rejected like any other typo,
+        # rather than silently accepted as a no-op - the same trap as the duration validator's
+        # ``lock_duration_seconds`` example, reintroduced under a new key.
+        self.assertRaisesRegex(
+            ParameterError, "login_notice",
+            self._create_with_action,
+            {"action_type": "EMAIL_ADMIN", "action_value": {**base, "login_notice": "Check your mail."}},
+        )
         # The groups the engine resolves, an address list, and the optional keys it reads are all accepted.
         for index, extra in enumerate(({"recipient_group": "internal_admins"},
                                        {"recipient_group": "soc@example.com, ops@example.com"},
-                                       {"mimetype": "html", "login_notice": "Check your mail."},
+                                       {"mimetype": "html"},
                                        {"identifier": "alias"}), start=1):
             self._create_with_action({"action_type": "EMAIL_ADMIN", "action_value": {**base, **extra}},
                                      name=f"Mail{index}", priority=index)
@@ -1181,3 +1189,36 @@ class ConditionalAccessPolicyCrudTestCase(MyTestCase):
         # Stages are replaced wholesale, so omitting the message clears it.
         update_conditional_access_policy(policy_id, stages=[_stage(5)])
         self.assertIsNone(get_conditional_access_policy(policy_id)["stages"][0]["error_message"])
+
+    def test_51_docstrings_do_not_reference_the_nonexistent_lockout_policy_module(self):
+        # The write-CRUD module is `privacyidea.lib.conditional_access.policy` (file policy.py) and its
+        # bundled template module is `policy_template.py`; a `lockout_policy[_template]` module has never
+        # existed. A Sphinx cross-reference to it renders as a dead link, so guard against the name
+        # leaking back into a docstring or comment.
+        import inspect
+
+        from privacyidea.lib.conditional_access import engine as engine_module
+        from privacyidea.lib.conditional_access import policy_template as policy_template_module
+        from privacyidea.models import conditional_access_policy as models_module
+
+        sources = {
+            "engine.parse_lock_duration_seconds": inspect.getsource(engine_module.parse_lock_duration_seconds),
+            "policy._validate_email_action_value": inspect.getsource(policy_module._validate_email_action_value),
+            "models.ConditionalAccessStageAction": inspect.getsource(models_module.ConditionalAccessStageAction),
+        }
+        for name, source in sources.items():
+            self.assertNotIn("lockout_policy", source, f"{name} still references the nonexistent "
+                                                        f"'lockout_policy' module.")
+        # The real modules exist under the names the fixed references point to.
+        self.assertTrue(hasattr(policy_module, "_validate_duration_action_value"))
+        self.assertTrue(hasattr(policy_template_module, "MFA_BRUTEFORCE"))
+
+    def test_52_stage_action_docstring_does_not_claim_allow_is_a_storable_action(self):
+        # ALLOW is only ever a value of the separate AccessDecision enum (the pre-auth evaluation
+        # outcome); it is not, and never was, a member of ConditionalAccessAction, so a stage's
+        # action list can never actually carry one. The docstring must not imply otherwise.
+        import inspect
+
+        self.assertNotIn("ALLOW", ConditionalAccessAction.__members__)
+        doc = inspect.getdoc(ConditionalAccessStageAction) or ""
+        self.assertNotIn("``ALLOW``", doc)

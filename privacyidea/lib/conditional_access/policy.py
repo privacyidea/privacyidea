@@ -70,7 +70,7 @@ matches or an action that never fires).
   ``duration_seconds`` (``duration`` is an accepted alias). There is no default; without a duration the engine
   skips the action rather than locking permanently.
 * ``EMAIL_ADMIN`` / ``EMAIL_USER`` - an object with a non-empty ``subject`` and ``body``, optionally
-  ``mimetype`` (``plain``/``html``), ``login_notice`` and - for ``EMAIL_ADMIN`` - ``recipient_group``.
+  ``mimetype`` (``plain``/``html``) and - for ``EMAIL_ADMIN`` - ``recipient_group``.
   ``smtp_identifier`` names the SMTP server that sends it and may be left blank until one is configured, which
   is the one thing the engine needs that the write path does not insist on.
 * ``PERMANENT_LOCK_USER`` / ``PERMANENT_BLOCK_IP`` / ``DENY`` - no value. These never expire and never read
@@ -525,11 +525,10 @@ def _validate_counter_types(counter_types) -> list[str]:
 #
 # The timed restrictions take a duration; the email actions take the SMTP settings
 # :func:`~privacyidea.lib.conditional_access.engine._send_lockout_email` reads. ``identifier`` is the
-# accepted alias for ``smtp_identifier`` and ``login_notice`` overrides the message shown on the login
-# screen, so both are known keys even though the editor writes neither.
+# accepted alias for ``smtp_identifier``.
 _DURATION_KEYS = ("duration_seconds", "duration")
 _EMAIL_KEYS = frozenset({"smtp_identifier", "identifier", "recipient_group", "subject", "body",
-                         "mimetype", "login_notice"})
+                         "mimetype"})
 # The email fields with no sensible default: without them the engine has nothing to send and skips.
 _EMAIL_REQUIRED_TEXT = ("subject", "body")
 _EMAIL_MIMETYPES = frozenset({"plain", "html"})
@@ -568,7 +567,7 @@ def _validate_email_action_value(action_type: str, action_value) -> None:
     ``smtp_identifier`` is deliberately **not** required, even though the engine needs it to send: the SMTP
     server is a separate configuration object that may legitimately not exist yet, which is why the shipped
     ``MFA_BRUTEFORCE`` template ships it blank for the admin to fill in
-    (:mod:`~privacyidea.lib.conditional_access.lockout_policy_template`) and why the editor flags a blank or
+    (:mod:`~privacyidea.lib.conditional_access.policy_template`) and why the editor flags a blank or
     stale identifier inline rather than refusing to save. ``subject`` and ``body`` have no such excuse - nothing
     else can supply them.
 
