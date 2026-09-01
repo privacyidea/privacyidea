@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, inject } from "@angular/core";
+import { Component, computed, inject, input } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
@@ -44,6 +44,9 @@ export class UserTableActionsComponent {
   private readonly router = inject(Router);
   protected readonly resolverService: ResolverServiceInterface = inject(ResolverService);
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
+
+  /** Off where the actions stand in for the table itself, which is no place to start creating a user. */
+  readonly showCreateUser = input(true);
 
   anyEditableResolver = computed(() => this.resolverService.editableResolvers().length > 0);
 
