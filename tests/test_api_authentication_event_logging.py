@@ -27,6 +27,8 @@ test_api_authentication_log.py.
 import datetime
 from typing import TYPE_CHECKING
 
+import mock
+
 from flask import Response
 
 from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType, AUTH_EVENT_TYPE_KEY,
@@ -39,6 +41,7 @@ from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction
 from privacyidea.lib.policy import set_policy, delete_policy, SCOPE, PolicyAction, AUTHORIZED
 from privacyidea.lib.realm import set_realm, delete_realm
 from privacyidea.lib.token import init_token, remove_token, get_one_token, revoke_token
+from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.user import User
 from privacyidea.models import Challenge, db
 from .authlog_utils import AuthLogTestCase, assert_authentication_log, assert_authentication_log_entry
@@ -328,6 +331,30 @@ class _AuthLogContractTests(_ContractHost):
                                         serials={self.serial}, transaction_id=transaction_id,
                                         reason=AuthEventReason.CHALLENGE_WRONG_RESPONSE,
                                         reasons={self.serial: AuthEventReason.CHALLENGE_WRONG_RESPONSE},
+                                        endpoint=self.endpoint_path)
+
+    def test_a_token_that_refuses_the_answer_without_naming_a_state(self):
+        # The fitness check is check_all, so a token that lost its fitness between the trigger and the answer
+        # normally names the state itself. TOKEN_NOT_FIT_FOR_CHALLENGE is the fallback for a token type that refuses
+        # without naming one - patched here, since no shipped type does that, and the row would otherwise blame the
+        # answer for something the token decided.
+        self._enable_challenge_response()
+        try:
+            transaction_id = self._trigger_challenge()
+            with mock.patch.object(TokenClass, "is_fit_for_challenge", return_value=False):
+                self._assert_failed(self._authenticate("755224", transaction_id=transaction_id))
+        finally:
+            delete_policy("authlog_cr")
+        entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.CHALLENGE_ANSWERED_FAIL],
+                                            transaction_id=transaction_id)
+        assert_authentication_log_entry(entries[AuthEventType.CHALLENGE_TRIGGERED], user=self.user,
+                                        serials={self.serial}, transaction_id=transaction_id,
+                                        endpoint=self.endpoint_path)
+        # The response matched, so the reason is the token's refusal rather than a wrong answer.
+        assert_authentication_log_entry(entries[AuthEventType.CHALLENGE_ANSWERED_FAIL], user=self.user,
+                                        serials={self.serial}, transaction_id=transaction_id,
+                                        reason=AuthEventReason.TOKEN_NOT_FIT_FOR_CHALLENGE,
+                                        reasons={self.serial: AuthEventReason.TOKEN_NOT_FIT_FOR_CHALLENGE},
                                         endpoint=self.endpoint_path)
 
     def test_challenge_expired_answered_fail(self):

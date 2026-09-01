@@ -7,7 +7,7 @@ from privacyidea.api.lib.utils import (check_policy_name,
                                        verify_auth_token, is_fqdn,
                                        attestation_certificate_allowed, get_priority_from_param,
                                        get_required_one_of, get_optional_one_of, get_required, get_optional,
-                                       to_list_param, build_ca_context, send_error)
+                                       to_list_param, build_ca_context, send_error, request_endpoint)
 from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType, AuthEventReason,
                                                                            AUTH_EVENT_TYPE_KEY,
                                                                            AUTH_EVENT_REASON_KEY,
@@ -308,6 +308,14 @@ class UtilsTestCase(MyApiTestCase):
             self.assertIsNone(context.user)
             # Nothing marks this principal as a local admin, so it classifies as a regular user.
             self.assertEqual("user", context.user_role)
+
+    def test_08e_request_endpoint_outside_a_request_context(self):
+        # Read from the request, so lib code that records an event without one (tests, a CLI caller) gets None
+        # instead of an exception - the column is then simply empty, and the event is not lost over it.
+        self.assertIsNone(request_endpoint())
+        with self.app.test_request_context('/validate/check/', method='POST'):
+            # The trailing slash is normalized away, so one endpoint is one value however it was called.
+            self.assertEqual("/validate/check", request_endpoint())
 
     def _classified_details(self) -> dict:
         # What a lib call hands the api layer: the client-facing message plus the classification, which is only ever

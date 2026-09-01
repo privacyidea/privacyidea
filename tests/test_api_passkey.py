@@ -1723,6 +1723,38 @@ class PasskeyAPITest(PasskeyAPITestBase):
 
         remove_token(serial)
 
+    def test_30_disabled_token_type_on_auth(self):
+        """
+        The same disabled_token_types policy as test_21, at the WebUI login endpoint. /auth refuses the answer
+        before any token work, and the row says which type was turned off - the only place an admin can see why a
+        login that never named a user failed.
+        """
+        serial = self._enroll_static_passkey()
+        passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_no_uv)
+        transaction_id = passkey_challenge["transaction_id"]
+        self.set_policy_with_cleanup("disable_passkey_auth", scope=SCOPE.AUTH,
+                                     action=f"{PolicyAction.DISABLED_TOKEN_TYPES}=passkey")
+        data = self.authentication_response_no_uv
+        data["transaction_id"] = transaction_id
+        with self.app.test_request_context('/auth', method='POST',
+                                           data=data,
+                                           headers={"Origin": self.expected_origin}):
+            res = self.app.full_dispatch_request()
+            self._verify_auth_fail_with_error(res, 4031)
+
+        # No token was usable for this login, and the type is why: NO_TOKEN rather than NO_USABLE_TOKEN, since the
+        # type was turned off rather than this particular token.
+        auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.NO_TOKEN],
+                                                     transaction_id=transaction_id)
+        assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_TRIGGERED],
+                                        transaction_id=transaction_id, endpoint='/validate/initialize')
+        assert_authentication_log_entry(auth_log_entries[AuthEventType.NO_TOKEN], user=self.user,
+                                        transaction_id=transaction_id, endpoint='/auth',
+                                        reason=AuthEventReason.TOKEN_TYPE_DISABLED,
+                                        reasons={serial: AuthEventReason.TOKEN_TYPE_DISABLED})
+
+        remove_token(serial)
+
 
 class PasskeyAuthAPITest(PasskeyAPITestBase, OverrideConfigTestCase):
     """

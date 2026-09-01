@@ -266,6 +266,24 @@ describe("AuthenticationLogService", () => {
     expect(service.endpoints()).toEqual(["/auth", "/validate/check"]);
   });
 
+  it("a vocabulary response without a value reads as an empty list", async () => {
+    // The endpoint answers with a body of its own shape; a response that carries no list at all (an older server,
+    // an error the resource still resolved) must leave the filter with nothing to offer rather than undefined,
+    // which the multi-select would choke on.
+    service.authenticationLogResource.reload();
+    TestBed.tick();
+    httpMock.match(isPageRequest).forEach((r) => r.flush(emptyPage()));
+    flushOldest();
+    httpMock.match((r) => r.url.endsWith("/eventtypes")).forEach((r) => r.flush(MockPiResponse.fromValue([])));
+    httpMock.match((r) => r.url.endsWith("/reasons")).forEach((r) => r.flush({ result: {} }));
+    httpMock.match((r) => r.url.endsWith("/endpoints")).forEach((r) => r.flush({ result: {} }));
+    await Promise.resolve();
+    TestBed.tick();
+
+    expect(service.reasons()).toEqual([]);
+    expect(service.endpoints()).toEqual([]);
+  });
+
   it("forwards the reason filter as the plural reasons parameter", () => {
     service.authenticationLogFilter.set(new FilterValue({ value: "reason: TOKEN_DISABLED,TOKEN_REVOKED" }));
     expect(service.filterParams()).toEqual({ reasons: "TOKEN_DISABLED,TOKEN_REVOKED" });

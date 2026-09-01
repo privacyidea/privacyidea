@@ -38,11 +38,11 @@ class AuthenticationLogReason(db.Model):
 
     A request rarely fails for exactly one reason - a user with three tokens can have one revoked, one past its
     failcount and one that simply got the wrong OTP - so the reasons are a **list**, and no reason is picked over
-    another: each is recorded and each is filterable on its own. Kept in a table of its own rather than as a column on the parent for the reason the parent's column existed
-    at all: "every NO_USABLE_TOKEN caused by the failcounter" has to be a plain indexed predicate, and neither a
-    separator-joined string (``LIKE`` scans, a length limit) nor a JSON array (predicates differ per backend) offers
-    one. What is specific to one request - the deciding policy's name, which serial failed for which reason - still
-    stays in the parent's ``other_info``.
+    another: each is recorded and each is filterable on its own. Kept in a table of its own rather than as a column on
+    the parent for the reason the parent's column existed at all: "every NO_USABLE_TOKEN caused by the failcounter" has
+    to be a plain indexed predicate, and neither a separator-joined string (``LIKE`` scans, a length limit) nor a JSON
+    array (predicates differ per backend) offers one. What is specific to one request - the deciding policy's name,
+    which serial failed for which reason - still stays in the parent's ``other_info``.
 
     Like :class:`~privacyidea.models.conditional_access_outcome.ConditionalAccessOutcome`, a row belongs to its
     ``authentication_log`` row (``auth_log_id``, a real foreign key that cascades), is only ever read together with

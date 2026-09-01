@@ -152,7 +152,7 @@ export class AuthenticationLogService implements AuthenticationLogServiceInterfa
       const allowed = [...this.apiFilter, ...this.advancedApiFilter];
       const entries = Array.from(this.authenticationLogFilter().filterMap.entries())
         .filter(([key]) => allowed.includes(key))
-        .map(([key, value]) => [apiParamOf(key), (value ?? "").toString().trim()] as const)
+        .map(([key, value]) => [apiParamOf(key), value.trim()] as const)
         .filter(([, value]) => StringUtils.validFilterValue(value));
       return Object.fromEntries(entries) as Record<string, string>;
     },
