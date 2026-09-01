@@ -1395,7 +1395,7 @@ def _evaluate_policy(policy: ConditionalAccessPolicy, context: CAContext, event_
             # A user-target policy is keyed on the resolved (resolver, uid, realm)
             # user, so an unresolved user (unknown login, local admin) is never
             # locked. Source-IP policies above still run for such requests.
-            return LockoutEvaluation()
+            return ConditionalAccessEvaluation()
         # With the policy's reset_on_success (the default) the lock counts consecutive
         # failures since the user's last completed login: a successful authentication
         # clears the slate, so a legitimate user is not re-locked by stale pre-login
