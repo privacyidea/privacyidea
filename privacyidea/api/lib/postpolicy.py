@@ -114,13 +114,19 @@ class postpolicy:
     The postpolicy decorator is to be used in the API calls.
     """
 
-    def __init__(self, function, request=None):
+    def __init__(self, function: callable, request: Request):
         """
         :param function: This is the policy function the is to be called
         :type function: function
         :param request: The original request object, that needs to be passed
         :type request: Request Object
         """
+        if request is None:
+            # A missing request is not a usable default: policy functions
+            # match on request.User, so a silently-None request disables
+            # every user/realm-scoped condition of the wrapped policy
+            # function instead of raising.
+            raise ValueError(f"postpolicy({function.__name__}, ...) requires a request to be passed explicitly.")
         self.request = request
         self.function = function
 
@@ -148,13 +154,19 @@ class postrequest:
     Decorator that is supposed to be used with after_request.
     """
 
-    def __init__(self, function, request=None):
+    def __init__(self, function: callable, request: Request):
         """
         :param function: This is the policy function the is to be called
         :type function: function
         :param request: The original request object, that needs to be passed
         :type request: Request Object
         """
+        if request is None:
+            # A missing request is not a usable default: policy functions
+            # match on request.User, so a silently-None request disables
+            # every user/realm-scoped condition of the wrapped policy
+            # function instead of raising.
+            raise ValueError(f"postrequest({function.__name__}, ...) requires request= to be passed explicitly.")
         self.request = request
         self.function = function
 
@@ -1184,7 +1196,7 @@ def multichallenge_enroll_via_validate(request, response):
         content.get("detail", {})["enroll_via_multichallenge"] = True
         content.get("detail", {})["enroll_via_multichallenge_optional"] = enrollment_optional
 
-        # Re-classify staged authentication log event or create new if non exists
+        # Reclassifies the staged authentication-log event, or creates one if none exists yet
         enrolled_serial = content.get("detail", {}).get("serial")
         context = get_ca_context()
         if context.amendable is not None:
@@ -1299,11 +1311,10 @@ def is_authorized(request, response):
         if list(authorized_pol)[0] == AUTHORIZED.DENY:
             context = get_ca_context()
             # Nothing to classify when conditional access already turned the request away before any token logic ran:
-            # its rejection row records why, and a NOT_AUTHORIZED row of our own would bury that reason and hand the
-            # lockout counters an attempt the lock itself produced.
+            # its rejection row already records why, and a NOT_AUTHORIZED row here would bury that reason and hand the
+            # conditional-access counters an attempt the lock itself produced.
             if not context.rejected_by_conditional_access:
                 if context.amendable is not None:
-                    # Correcting the staged event
                     context.reclassify(AuthEventType.NOT_AUTHORIZED)
                 else:
                     log_authentication(AuthEventType.NOT_AUTHORIZED, request, user=request.User)

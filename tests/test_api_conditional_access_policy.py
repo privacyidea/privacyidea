@@ -17,8 +17,8 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 """
 CRUD tests for the ``/conditionalaccess/policy`` REST endpoints: create (POST),
-read (GET), update (PATCH) and delete (DELETE) lockout policies, plus the
-admin-policy gate (``lockout_policy_read`` / ``lockout_policy_write``) and the
+read (GET), update (PATCH) and delete (DELETE) conditional-access policies, plus the
+admin-policy gate (``conditional_access_policy_read`` / ``conditional_access_policy_write``) and the
 admin-only access restriction.
 
 Each endpoint x case has its own test method so a failure names exactly the
@@ -31,24 +31,24 @@ from werkzeug.test import TestResponse
 from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType,
                                                                            CA_ENFORCEMENT_EVENT_TYPES,
                                                                            TRACKABLE_EVENT_TYPES, CountMode)
-from privacyidea.lib.conditional_access.engine import LockoutAction
-from privacyidea.lib.conditional_access.lockout_policy import (create_lockout_policy,
+from privacyidea.lib.conditional_access.engine import ConditionalAccessAction
+from privacyidea.lib.conditional_access.policy import (create_conditional_access_policy,
                                                                get_default_error_messages,
-                                                               list_lockout_policies)
+                                                               list_conditional_access_policies)
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import SCOPE, set_policy, delete_policy
 from privacyidea.models import db
 from privacyidea.lib.conditional_access.authentication_log import AuthLogUserRole
 from privacyidea.lib.conditional_access.conditions import ConditionOperator, ConditionType
 from privacyidea.models.authentication_log import AuthenticationLog
-from privacyidea.models.lockout_policy import (
+from privacyidea.models.conditional_access_policy import (
     BlockList,
-    LockoutPolicy,
-    LockoutPolicyCondition,
-    LockoutPolicyCounterType,
-    LockoutPolicyStage,
-    LockoutStageAction,
-    UserLockoutState,
+    ConditionalAccessPolicy,
+    ConditionalAccessPolicyCondition,
+    ConditionalAccessPolicyCounterType,
+    ConditionalAccessPolicyStage,
+    ConditionalAccessStageAction,
+    UserLockState,
 )
 from .base import MyApiTestCase
 
@@ -66,8 +66,8 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
 
     @staticmethod
     def _clear() -> None:
-        for model in (UserLockoutState, BlockList, LockoutStageAction, LockoutPolicyStage,
-                      LockoutPolicyCondition, LockoutPolicyCounterType, LockoutPolicy,
+        for model in (UserLockState, BlockList, ConditionalAccessStageAction, ConditionalAccessPolicyStage,
+                      ConditionalAccessPolicyCondition, ConditionalAccessPolicyCounterType, ConditionalAccessPolicy,
                       AuthenticationLog):
             db.session.query(model).delete()
         db.session.commit()
@@ -88,7 +88,7 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
                 "priority": 1,
                 "counter_types_to_track": [str(AuthEventType.PIN_FAIL)],
                 "stages": [{"failure_threshold": 5,
-                            "actions": [{"action_type": str(LockoutAction.LOCK_USER),
+                            "actions": [{"action_type": str(ConditionalAccessAction.LOCK_USER),
                                          "action_value": {"lock_duration_seconds": 300}}]}]}
         body.update(overrides)
         return body
@@ -145,7 +145,7 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
         body = self._policy_body(name="Spray", target="source_ip",
                                  counter_types_to_track=[str(AuthEventType.PASSWORD_FAIL)],
                                  stages=[{"failure_threshold": 20,
-                                          "actions": [{"action_type": str(LockoutAction.BLOCK_IP),
+                                          "actions": [{"action_type": str(ConditionalAccessAction.BLOCK_IP),
                                                        "action_value": {"duration_seconds": 3600}}]}])
         res = self._request("policy", method="POST", json_data=body)
         self.assertEqual(200, res.status_code, res.json)
@@ -171,11 +171,11 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
         self.assertEqual(400, res.status_code, res.json)
 
     def test_create_source_ip_deny_is_allowed(self):
-        # ALLOW/DENY are valid on a source_ip policy (IP-scoped pre-auth decision).
+        # DENY is valid on a source_ip policy (IP-scoped pre-auth decision).
         body = self._policy_body(name="IP deny", target="source_ip",
                                  counter_types_to_track=[str(AuthEventType.PASSWORD_FAIL)],
                                  stages=[{"failure_threshold": 20,
-                                          "actions": [{"action_type": str(LockoutAction.DENY)}]}])
+                                          "actions": [{"action_type": str(ConditionalAccessAction.DENY)}]}])
         res = self._request("policy", method="POST", json_data=body)
         self.assertEqual(200, res.status_code, res.json)
 
@@ -190,7 +190,7 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
     def test_create_block_ip_under_user_target_is_400(self):
         body = self._policy_body(name="Bad2",
                                  stages=[{"failure_threshold": 5,
-                                          "actions": [{"action_type": str(LockoutAction.BLOCK_IP),
+                                          "actions": [{"action_type": str(ConditionalAccessAction.BLOCK_IP),
                                                        "action_value": {"duration_seconds": 60}}]}])
         res = self._request("policy", method="POST", json_data=body)
         self.assertEqual(400, res.status_code, res.json)
@@ -203,7 +203,7 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
                             json_data={"target": "source_ip",
                                        "count_mode": str(CountMode.DISTINCT_USERS),
                                        "stages": [{"failure_threshold": 20,
-                                                   "actions": [{"action_type": str(LockoutAction.BLOCK_IP),
+                                                   "actions": [{"action_type": str(ConditionalAccessAction.BLOCK_IP),
                                                                 "action_value": {"duration_seconds": 60}}]}]})
         self.assertEqual(200, res.status_code, res.json)
         result = self._request(f"policy/{policy_id}").json["result"]["value"]
@@ -239,7 +239,7 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
         # the spraying template is source_ip-targeted and blocks the IP
         spray = catalog["password_spraying"]
         self.assertEqual("source_ip", spray["policy"]["target"])
-        self.assertEqual(str(LockoutAction.BLOCK_IP),
+        self.assertEqual(str(ConditionalAccessAction.BLOCK_IP),
                          spray["policy"]["stages"][0]["actions"][0]["action_type"])
 
     def test_template_policy_posts_verbatim(self):
@@ -259,28 +259,27 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
         self.assertEqual("API Policy", policy["name"])
         self.assertListEqual([str(AuthEventType.PIN_FAIL)], policy["counter_types_to_track"])
         self.assertEqual(5, policy["stages"][0]["failure_threshold"])
-        self.assertEqual(str(LockoutAction.LOCK_USER), policy["stages"][0]["actions"][0]["action_type"])
+        self.assertEqual(str(ConditionalAccessAction.LOCK_USER), policy["stages"][0]["actions"][0]["action_type"])
         # retrigger_above_threshold defaults to False on a lock action when omitted.
         self.assertFalse(policy["stages"][0]["actions"][0]["retrigger_above_threshold"])
 
     def test_create_action_retrigger_flag_round_trips(self):
-        # One stage, two actions with independent modes: the lock re-triggers, the
-        # email fires once.
+        # One stage, two actions with independent modes: the lock re-triggers, the email fires once.
         body = self._policy_body(
             name="Retrig",
             stages=[{"failure_threshold": 8,
-                     "actions": [{"action_type": str(LockoutAction.LOCK_USER),
+                     "actions": [{"action_type": str(ConditionalAccessAction.LOCK_USER),
                                   "action_value": {"lock_duration_seconds": 300},
                                   "retrigger_above_threshold": True},
-                                 {"action_type": str(LockoutAction.EMAIL_ADMIN),
+                                 {"action_type": str(ConditionalAccessAction.EMAIL_ADMIN),
                                   "action_value": {"smtp_identifier": "x"},
                                   "retrigger_above_threshold": False}]}])
         res = self._request("policy", method="POST", json_data=body)
         self.assertEqual(200, res.status_code, res.json)
         policy = self._request(f"policy/{res.json['result']['value']}").json["result"]["value"]
         by_type = {action["action_type"]: action for action in policy["stages"][0]["actions"]}
-        self.assertTrue(by_type[str(LockoutAction.LOCK_USER)]["retrigger_above_threshold"])
-        self.assertFalse(by_type[str(LockoutAction.EMAIL_ADMIN)]["retrigger_above_threshold"])
+        self.assertTrue(by_type[str(ConditionalAccessAction.LOCK_USER)]["retrigger_above_threshold"])
+        self.assertFalse(by_type[str(ConditionalAccessAction.EMAIL_ADMIN)]["retrigger_above_threshold"])
 
     def test_get_unknown_id_is_404(self):
         res = self._request("policy/424242")
@@ -320,8 +319,8 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
         res = self._request("actiontypes")
         self.assertEqual(200, res.status_code, res.json)
         values = res.json["result"]["value"]
-        self.assertListEqual([action.value for action in LockoutAction], values)
-        self.assertIn(str(LockoutAction.LOCK_USER), values)
+        self.assertListEqual([action.value for action in ConditionalAccessAction], values)
+        self.assertIn(str(ConditionalAccessAction.LOCK_USER), values)
 
     def test_list_targets(self):
         res = self._request("targets")
@@ -329,10 +328,10 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
         constraints = res.json["result"]["value"]
         self.assertSetEqual({"user", "source_ip"}, set(constraints))
         # Each target carries its allowed actions and supported count modes.
-        self.assertIn(str(LockoutAction.LOCK_USER), constraints["user"]["actions"])
-        self.assertNotIn(str(LockoutAction.LOCK_USER), constraints["source_ip"]["actions"])
-        self.assertIn(str(LockoutAction.BLOCK_IP), constraints["source_ip"]["actions"])
-        self.assertNotIn(str(LockoutAction.BLOCK_IP), constraints["user"]["actions"])
+        self.assertIn(str(ConditionalAccessAction.LOCK_USER), constraints["user"]["actions"])
+        self.assertNotIn(str(ConditionalAccessAction.LOCK_USER), constraints["source_ip"]["actions"])
+        self.assertIn(str(ConditionalAccessAction.BLOCK_IP), constraints["source_ip"]["actions"])
+        self.assertNotIn(str(ConditionalAccessAction.BLOCK_IP), constraints["user"]["actions"])
         # Volume modes are valid for both; DISTINCT_USERS is source_ip-only.
         self.assertListEqual([str(CountMode.PER_ATTEMPT), str(CountMode.PER_REQUEST)],
                              constraints["user"]["count_modes"])
@@ -418,7 +417,7 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
         res = self._request(f"policy/{policy_id}", method="DELETE")
         self.assertEqual(200, res.status_code, res.json)
         self.assertEqual(404, self._request(f"policy/{policy_id}").status_code)
-        self.assertEqual(0, db.session.query(LockoutPolicyStage).count())
+        self.assertEqual(0, db.session.query(ConditionalAccessPolicyStage).count())
 
     def test_delete_unknown_id_is_404(self):
         res = self._request("policy/424242", method="DELETE")
@@ -458,17 +457,17 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
         """
         The current evaluation order as (name, priority) pairs.
         """
-        return [(policy["name"], policy["priority"]) for policy in list_lockout_policies()]
+        return [(policy["name"], policy["priority"]) for policy in list_conditional_access_policies()]
 
     def _numbered(self, *priorities) -> list[int]:
         """
         Create one policy per given priority, named after it, and return their ids.
         """
-        return [create_lockout_policy(
+        return [create_conditional_access_policy(
             name=f"P{priority}", time_window_seconds=600,
             counter_types_to_track=[str(AuthEventType.PIN_FAIL)],
             stages=[{"failure_threshold": 5,
-                     "actions": [{"action_type": str(LockoutAction.LOCK_USER),
+                     "actions": [{"action_type": str(ConditionalAccessAction.LOCK_USER),
                                   "action_value": {"lock_duration_seconds": 300}}]}],
             target="user", priority=priority) for priority in priorities]
 
@@ -481,7 +480,7 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
 
     def test_reorder_subset_leaves_other_policies_untouched(self):
         self._numbered(1, 2, 3)
-        ids = {policy["name"]: policy["id"] for policy in list_lockout_policies()}
+        ids = {policy["name"]: policy["id"] for policy in list_conditional_access_policies()}
         res = self._request("policy/order", method="PUT",
                             json_data={"policy_ids": [ids["P3"], ids["P2"]]})
         self.assertEqual(200, res.status_code, res.json)
@@ -522,10 +521,8 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
         self.assertListEqual([("P1", 1), ("P2", 2)], self._order())
 
     def test_reorder_route_coexists_with_the_policy_id_route(self):
-        # 'policy/<policy_id>' uses a string converter, so the literal 'policy/order'
-        # also matches it. Only PUT is routed to the reorder endpoint; the other verbs
-        # fall through to the id route and must fail cleanly on the non-numeric id
-        # rather than acting on some policy.
+        # The id route's string converter also matches the literal path 'policy/order'; only PUT binds to the
+        # reorder endpoint, so other verbs fall through to the id route and must fail cleanly on a non-numeric id.
         first, second = self._numbered(1, 2)
         self.assertEqual(200, self._request("policy/order", method="PUT",
                                             json_data={"policy_ids": [second, first]}).status_code)
@@ -538,7 +535,7 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
 
     def test_reorder_requires_write_permission(self):
         first, second = self._numbered(1, 2)
-        set_policy("ca_read_only", scope=SCOPE.ADMIN, action=str(PolicyAction.LOCKOUT_POLICY_READ))
+        set_policy("ca_read_only", scope=SCOPE.ADMIN, action=str(PolicyAction.CONDITIONAL_ACCESS_POLICY_READ))
         try:
             res = self._request("policy/order", method="PUT", json_data={"policy_ids": [second, first]})
             self.assertEqual(403, res.status_code, res.json)
@@ -560,18 +557,16 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
                             json_data={"policy_ids": [second, first], "expected_priorities": [2, 1]})
         self.assertEqual(409, res.status_code, res.json)
         message = res.json["result"]["error"]["message"]
-        # Names the mismatching policy; deliberately no priority numbers and no advice
-        # about what the client should do next.
+        # Names the mismatching policy; deliberately omits priority numbers and advice on what to do next.
         self.assertIn("P2", message)
         self.assertIn("expected priorities", message)
         self.assertNotIn("Reload", message)
         self.assertListEqual([("P2", 1), ("P1", 2)], self._order())
 
     def test_reorder_of_disjoint_rows_does_not_conflict(self):
-        # Two admins rearranging different parts of the list both succeed - the whole
-        # reason the client sends only the rows it moved.
+        # Two admins rearranging different parts of the list both succeed: the client sends only the rows it moved.
         self._numbered(1, 2, 3, 4)
-        ids = {policy["name"]: policy["id"] for policy in list_lockout_policies()}
+        ids = {policy["name"]: policy["id"] for policy in list_conditional_access_policies()}
         self.assertEqual(200, self._request("policy/order", method="PUT",
                                             json_data={"policy_ids": [ids["P4"], ids["P3"]],
                                                        "expected_priorities": [4, 3]}).status_code)
@@ -603,7 +598,7 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
 
     def test_read_only_admin_policy_allows_read(self):
         set_policy("ca_read_only", scope=SCOPE.ADMIN,
-                   action=str(PolicyAction.LOCKOUT_POLICY_READ))
+                   action=str(PolicyAction.CONDITIONAL_ACCESS_POLICY_READ))
         try:
             self.assertEqual(200, self._request("policy").status_code)
         finally:
@@ -611,7 +606,7 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
 
     def test_read_only_admin_policy_blocks_write(self):
         set_policy("ca_read_only", scope=SCOPE.ADMIN,
-                   action=str(PolicyAction.LOCKOUT_POLICY_READ))
+                   action=str(PolicyAction.CONDITIONAL_ACCESS_POLICY_READ))
         try:
             res = self._request("policy", method="POST", json_data=self._policy_body())
             self.assertEqual(403, res.status_code, res.json)
@@ -620,8 +615,8 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
 
     def test_write_admin_policy_allows_write(self):
         set_policy("ca_write", scope=SCOPE.ADMIN,
-                   action=f"{PolicyAction.LOCKOUT_POLICY_READ},"
-                          f"{PolicyAction.LOCKOUT_POLICY_WRITE}")
+                   action=f"{PolicyAction.CONDITIONAL_ACCESS_POLICY_READ},"
+                          f"{PolicyAction.CONDITIONAL_ACCESS_POLICY_WRITE}")
         try:
             res = self._request("policy", method="POST", json_data=self._policy_body(name="Gated"))
             self.assertEqual(200, res.status_code, res.json)

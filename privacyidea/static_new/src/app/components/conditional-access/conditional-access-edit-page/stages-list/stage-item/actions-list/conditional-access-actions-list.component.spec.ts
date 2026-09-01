@@ -20,7 +20,7 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { AuthService } from "@services/auth/auth.service";
 import {
   ConditionalAccessPolicyService,
-  LockoutStageAction
+  ConditionalAccessStageAction
 } from "@services/conditional-access/conditional-access-policy.service";
 import { SmtpService } from "@services/smtp/smtp.service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
@@ -32,7 +32,7 @@ describe("ConditionalAccessActionsListComponent", () => {
   let component: ConditionalAccessActionsListComponent;
   let fixture: ComponentFixture<ConditionalAccessActionsListComponent>;
 
-  const actions: LockoutStageAction[] = [
+  const actions: ConditionalAccessStageAction[] = [
     { action_type: "LOCK_USER", action_value: { lock_duration_seconds: 600 } },
     { action_type: "EMAIL_ADMIN", action_value: null }
   ];
@@ -68,8 +68,8 @@ describe("ConditionalAccessActionsListComponent", () => {
       ConditionalAccessPolicyService
     ) as unknown as MockConditionalAccessPolicyService;
     policyServiceMock.actionsByTarget.set({
-      user: ["LOCK_USER", "ALLOW", "DENY"],
-      source_ip: ["BLOCK_IP", "ALLOW", "DENY"]
+      user: ["LOCK_USER", "DENY"],
+      source_ip: ["BLOCK_IP", "DENY"]
     });
     fixture.componentRef.setInput("target", "source_ip");
 

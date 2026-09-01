@@ -252,7 +252,7 @@ export class NavigationComponent implements AfterViewInit, OnDestroy {
             "auditlog",
             "authentication_log_read",
             "clienttype",
-            "user_lockout_read",
+            "user_lock_read",
             "blocklist_read"
           ]);
         case "external_services":

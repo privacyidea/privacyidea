@@ -214,19 +214,19 @@ describe("LockedUsersComponent", () => {
     expect(component.selection()).toEqual([]);
   });
 
-  it("resets the selected lockouts after confirmation", () => {
+  it("resets the selected locks after confirmation", () => {
     casService.setLockedUsers([mockEntry, permanentEntry]);
     component.selection.set([mockEntry, permanentEntry]);
     const dialogRef = new MockMatDialogRef<unknown, boolean>();
     (dialogService.openDialog as jest.Mock).mockReturnValue(dialogRef);
-    (casService.resetUserLockout as jest.Mock).mockReturnValue(of(true));
+    (casService.resetUserLock as jest.Mock).mockReturnValue(of(true));
 
     component.resetSelected();
     dialogRef.close(true);
 
     expect(dialogService.openDialog).toHaveBeenCalled();
-    expect(casService.resetUserLockout).toHaveBeenCalledTimes(2);
-    expect(casService.resetUserLockout).toHaveBeenCalledWith({
+    expect(casService.resetUserLock).toHaveBeenCalledTimes(2);
+    expect(casService.resetUserLock).toHaveBeenCalledWith({
       uid: mockEntry.uid,
       realm: mockEntry.realm,
       resolver: mockEntry.resolver
@@ -243,7 +243,7 @@ describe("LockedUsersComponent", () => {
     component.resetSelected();
     dialogRef.close(false);
 
-    expect(casService.resetUserLockout).not.toHaveBeenCalled();
+    expect(casService.resetUserLock).not.toHaveBeenCalled();
   });
 
   it("does nothing when resetSelected is called with an empty selection", () => {
@@ -285,16 +285,16 @@ describe("LockedUsersComponent", () => {
     expect(component.totalLength()).toBe(2);
   });
 
-  it("confirms, then deletes expired lockouts and reloads", () => {
+  it("confirms, then deletes expired locks and reloads", () => {
     const dialogRef = new MockMatDialogRef<unknown, boolean>();
     (dialogService.openDialog as jest.Mock).mockReturnValue(dialogRef);
-    (casService.purgeUserLockouts as jest.Mock).mockReturnValue(of(3));
+    (casService.purgeUserLocks as jest.Mock).mockReturnValue(of(3));
 
     component.deleteExpired();
     dialogRef.close(true);
 
     expect(dialogService.openDialog).toHaveBeenCalled();
-    expect(casService.purgeUserLockouts).toHaveBeenCalled();
+    expect(casService.purgeUserLocks).toHaveBeenCalled();
     expect(notificationService.success).toHaveBeenCalled();
     expect(casService.lockedUsersResource.reload).toHaveBeenCalled();
   });
@@ -306,7 +306,7 @@ describe("LockedUsersComponent", () => {
     component.deleteExpired();
     dialogRef.close(false);
 
-    expect(casService.purgeUserLockouts).not.toHaveBeenCalled();
+    expect(casService.purgeUserLocks).not.toHaveBeenCalled();
   });
 
   it("handleFilterInput writes the raw input into the shared filter", () => {

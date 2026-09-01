@@ -28,11 +28,12 @@ import { InfoHintComponent } from "@components/shared/info-hint/info-hint.compon
 import {
   ConditionalAccessPolicyService,
   ConditionalAccessPolicyServiceInterface,
-  LockoutPolicyStage,
-  LockoutStageAction,
-  LockoutTarget,
+  ConditionalAccessPolicyStage,
+  ConditionalAccessStageAction,
+  ConditionalAccessTarget,
   REDUNDANT_RESTRICTION_PAIRS
 } from "@services/conditional-access/conditional-access-policy.service";
+import { ErrorStateDirective } from "@components/shared/directives/error-state.directive";
 import { ConditionalAccessActionsListComponent } from "./actions-list/conditional-access-actions-list.component";
 
 // The one tag the server substitutes into a stage's error message.
@@ -46,6 +47,11 @@ const MAX_ERROR_MESSAGE_LENGTH = 500;
 // not match "{}" or an empty brace pair: only a named placeholder could have been meant as a tag.
 const TAG_PATTERN = /\{[A-Za-z_][A-Za-z0-9_]*\}/g;
 
+// The actions that state a standing verdict instead of reacting to a failure count. Only a stage
+// carrying nothing but these may use threshold 0, mirroring _validate_threshold_for_actions in
+// lib/conditional_access/policy.py.
+const STANDING_DECISION_ACTIONS: string[] = ["DENY"];
+
 @Component({
   selector: "app-conditional-access-stage-item",
   standalone: true,
@@ -56,6 +62,7 @@ const TAG_PATTERN = /\{[A-Za-z_][A-Za-z0-9_]*\}/g;
     MatIconModule,
     MatInputModule,
     MatTooltipModule,
+    ErrorStateDirective,
     ConditionalAccessActionsListComponent,
     InfoHintComponent
   ],
@@ -65,17 +72,17 @@ const TAG_PATTERN = /\{[A-Za-z_][A-Za-z0-9_]*\}/g;
 export class ConditionalAccessStageItemComponent {
   private readonly policyService: ConditionalAccessPolicyServiceInterface = inject(ConditionalAccessPolicyService);
 
-  readonly stage = input.required<LockoutPolicyStage>();
+  readonly stage = input.required<ConditionalAccessPolicyStage>();
   // 1-based trigger order (lowest threshold = Stage 1), shown as "Stage N".
   readonly stageNumber = input.required<number>();
-  // The identity the policy acts on; passed down to the action editor so it can
-  // offer only the action types valid for this target.
-  readonly target = input<LockoutTarget>("user");
-  readonly updateStage = output<Partial<LockoutPolicyStage>>();
+  // The identity the policy acts on, passed down to the action editor so it can offer only the
+  // action types valid for this target.
+  readonly target = input<ConditionalAccessTarget>("user");
+  readonly updateStage = output<Partial<ConditionalAccessPolicyStage>>();
   readonly removeStage = output<void>();
 
-  // A saved stage (with an id) shows its name as text plus an edit button; an
-  // unsaved stage has no id and stays in the name input until the policy is saved.
+  // A saved stage (with an id) shows its name as text plus an edit button; an unsaved stage has no
+  // id and stays in the name input until the policy is saved.
   readonly editingName = signal(false);
 
   readonly durationTag = DURATION_TAG;
@@ -163,9 +170,22 @@ stage's actions.`;
     this.editingName.set(false);
   }
 
+  // A threshold counts failures, so it starts at 1. Threshold 0 means "always", which only makes
+  // sense for a stage whose every action is a standing DENY verdict - anything reacting to a
+  // count would fire at zero failures. The backend enforces the same rule, so the minimum moves with
+  // the actions the admin has picked rather than letting the save fail later.
+  readonly zeroThresholdAllowed = computed(() => {
+    const actions = this.stage().actions;
+    return actions.length > 0 && actions.every((action) => STANDING_DECISION_ACTIONS.includes(action.action_type));
+  });
+  readonly minThreshold = computed(() => (this.zeroThresholdAllowed() ? 0 : 1));
+  // True when the stage sits at 0 with actions that do not permit it - typically because an action
+  // was added to, or changed on, an existing DENY stage.
+  readonly zeroThresholdInvalid = computed(() => this.stage().failure_threshold === 0 && !this.zeroThresholdAllowed());
+
   onFailureThresholdInput(value: string): void {
     const parsed = parseInt(value, 10);
-    // 0 is allowed: an ALLOW/DENY allowlist stage always matches at threshold 0.
+    // 0 is allowed: an all-DENY lockdown stage always matches at threshold 0.
     if (!isNaN(parsed) && parsed >= 0) {
       this.updateStage.emit({ failure_threshold: parsed });
     }
@@ -203,7 +223,7 @@ stage's actions.`;
     this.updateStage.emit({ error_message: this.suggestedErrorMessage() });
   }
 
-  onActionsChange(actions: LockoutStageAction[]): void {
+  onActionsChange(actions: ConditionalAccessStageAction[]): void {
     this.updateStage.emit({ actions });
   }
 

@@ -24,13 +24,13 @@ import {
   ConditionOperatorMeta,
   ConditionTypeMeta,
   CountMode,
+  ConditionalAccessActionType,
+  ConditionalAccessPolicy,
+  ConditionalAccessPolicyCondition,
+  ConditionalAccessPolicySaveParams,
+  ConditionalAccessPolicyTemplate,
+  ConditionalAccessTarget,
   DefaultErrorMessage,
-  LockoutActionType,
-  LockoutPolicy,
-  LockoutPolicyCondition,
-  LockoutPolicySaveParams,
-  LockoutPolicyTemplate,
-  LockoutTarget,
   StaleConditionValues,
   TargetConstraints
 } from "@services/conditional-access/conditional-access-policy.service";
@@ -38,9 +38,9 @@ import { MockHttpResourceRef, MockPiResponse } from "@testing/mock-services/mock
 import { Observable, of } from "rxjs";
 
 export class MockConditionalAccessPolicyService implements ConditionalAccessPolicyServiceInterface {
-  policiesResource = new MockHttpResourceRef(MockPiResponse.fromValue<LockoutPolicy[]>([]));
+  policiesResource = new MockHttpResourceRef(MockPiResponse.fromValue<ConditionalAccessPolicy[]>([]));
 
-  policies = signal<LockoutPolicy[]>([]);
+  policies = signal<ConditionalAccessPolicy[]>([]);
 
   eventTypesResource = new MockHttpResourceRef(MockPiResponse.fromValue<string[]>([]));
 
@@ -48,21 +48,23 @@ export class MockConditionalAccessPolicyService implements ConditionalAccessPoli
 
   actionTypesResource = new MockHttpResourceRef(MockPiResponse.fromValue<string[]>([]));
 
-  actionTypes = signal<LockoutActionType[]>([]);
+  actionTypes = signal<ConditionalAccessActionType[]>([]);
 
   targetsResource = new MockHttpResourceRef(MockPiResponse.fromValue<Record<string, TargetConstraints>>({}));
 
-  actionsByTarget = signal<Record<LockoutTarget, LockoutActionType[]>>(
-    {} as Record<LockoutTarget, LockoutActionType[]>
+  actionsByTarget = signal<Record<ConditionalAccessTarget, ConditionalAccessActionType[]>>(
+    {} as Record<ConditionalAccessTarget, ConditionalAccessActionType[]>
   );
 
-  countModesByTarget = signal<Record<LockoutTarget, CountMode[]>>({} as Record<LockoutTarget, CountMode[]>);
+  countModesByTarget = signal<Record<ConditionalAccessTarget, CountMode[]>>(
+    {} as Record<ConditionalAccessTarget, CountMode[]>
+  );
 
-  targets = signal<LockoutTarget[]>([]);
+  targets = signal<ConditionalAccessTarget[]>([]);
 
-  templatesResource = new MockHttpResourceRef(MockPiResponse.fromValue<LockoutPolicyTemplate[]>([]));
+  templatesResource = new MockHttpResourceRef(MockPiResponse.fromValue<ConditionalAccessPolicyTemplate[]>([]));
 
-  templates = signal<LockoutPolicyTemplate[]>([]);
+  templates = signal<ConditionalAccessPolicyTemplate[]>([]);
 
   defaultErrorMessagesResource = new MockHttpResourceRef(MockPiResponse.fromValue<DefaultErrorMessage[]>([]));
 
@@ -80,7 +82,7 @@ export class MockConditionalAccessPolicyService implements ConditionalAccessPoli
     (conditionType: string): string[] | null => this.conditionTypes()[conditionType]?.choices ?? null
   );
 
-  staleConditionValues = jest.fn((conditions: LockoutPolicyCondition[] | undefined): StaleConditionValues[] =>
+  staleConditionValues = jest.fn((conditions: ConditionalAccessPolicyCondition[] | undefined): StaleConditionValues[] =>
     (conditions ?? [])
       .map((condition) => {
         const choices = this.choicesForConditionType(condition.condition_type);
@@ -93,16 +95,20 @@ export class MockConditionalAccessPolicyService implements ConditionalAccessPoli
   );
 
   actionsForTarget = jest.fn(
-    (target: LockoutTarget): LockoutActionType[] => this.actionsByTarget()[target] ?? this.actionTypes()
+    (target: ConditionalAccessTarget): ConditionalAccessActionType[] =>
+      this.actionsByTarget()[target] ?? this.actionTypes()
   );
 
-  countModesForTarget = jest.fn((target: LockoutTarget): CountMode[] => this.countModesByTarget()[target] ?? []);
+  countModesForTarget = jest.fn(
+    (target: ConditionalAccessTarget): CountMode[] => this.countModesByTarget()[target] ?? []
+  );
 
   getPolicies = jest.fn(
-    (): Observable<PiResponse<LockoutPolicy[]>> => of(MockPiResponse.fromValue<LockoutPolicy[]>(this.policies()))
+    (): Observable<PiResponse<ConditionalAccessPolicy[]>> =>
+      of(MockPiResponse.fromValue<ConditionalAccessPolicy[]>(this.policies()))
   );
 
-  savePolicy = jest.fn(async (_: LockoutPolicySaveParams): Promise<number | undefined> => Promise.resolve(1));
+  savePolicy = jest.fn(async (_: ConditionalAccessPolicySaveParams): Promise<number | undefined> => Promise.resolve(1));
 
   deletePolicy = jest.fn(async (): Promise<void> => Promise.resolve());
 

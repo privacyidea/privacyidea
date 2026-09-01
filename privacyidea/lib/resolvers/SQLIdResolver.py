@@ -299,17 +299,28 @@ class IdResolver (UserIdResolver):
 
         try:
             conditions = [self._get_userid_filter(user_id)]
-            conditions = self._append_where_filter(conditions, self.TABLE,
-                                                   self.where)
-            filter_condition = and_(*conditions)
+        except ValueError as error:
+            # e.g. a non-numeric ID against an integer column -- same as get_user_info_batch
+            log.info(f"Could not look up user id {user_id!r}: {error}")
+            return userinfo
+        conditions = self._append_where_filter(conditions, self.TABLE, self.where)
+        filter_condition = and_(*conditions)
+        try:
+            # A DB error here must propagate rather than being logged and swallowed: callers
+            # like getUsername() rely on it to tell "the user does not exist" (an empty
+            # result) apart from "the backend could not be reached" (an exception). The
+            # session is cached for the lifetime of the request (get_resolver_object), so
+            # it must be rolled back here or a later call would fail with a stale,
+            # unrelated "pending rollback" error instead.
             result = self.session.execute(select(self.TABLE).filter(filter_condition))
+        except Exception:
+            self.session.rollback()
+            raise
 
-            for r in result.mappings():
-                if userinfo:  # pragma: no cover
-                    raise Exception(f"More than one user with userid {user_id!s} found!")
-                userinfo = self._get_user_from_mapped_object(r, attributes)
-        except Exception as exx:  # pragma: no cover
-            log.error(f"Could not get the user information: {exx!r}")
+        for r in result.mappings():
+            if userinfo:  # pragma: no cover
+                raise Exception(f"More than one user with userid {user_id!s} found!")
+            userinfo = self._get_user_from_mapped_object(r, attributes)
 
         return userinfo
 
@@ -345,20 +356,21 @@ class IdResolver (UserIdResolver):
             if not userid_filters:
                 continue
 
-            try:
-                conditions = [or_(*userid_filters)]
-                conditions = self._append_where_filter(conditions, self.TABLE, self.where)
-                result = self.session.execute(select(self.TABLE).filter(and_(*conditions)))
+            # A DB error here must propagate rather than being logged and swallowed: the caller
+            # (_resolve_owner_logins) catches it to fall back to a one-by-one lookup that marks only
+            # the users which keep failing as unresolvable. Swallowing it here would make a chunk's
+            # worth of users indistinguishable from ones that genuinely don't exist.
+            conditions = [or_(*userid_filters)]
+            conditions = self._append_where_filter(conditions, self.TABLE, self.where)
+            result = self.session.execute(select(self.TABLE).filter(and_(*conditions)))
 
-                for row in result.mappings():
-                    returned_id = convert_column_to_unicode(row.get(userid_column))
-                    user_id = requested_ids.get(returned_id)
-                    if user_id is None:  # pragma: no cover
-                        log.info(f"Ignoring row with user id {returned_id!r}, which was not searched for.")
-                        continue
-                    user_info_map[user_id] = self._get_user_from_mapped_object(row, attributes)
-            except Exception as error:  # pragma: no cover
-                log.error(f"Could not get the user information: {error!r}")
+            for row in result.mappings():
+                returned_id = convert_column_to_unicode(row.get(userid_column))
+                user_id = requested_ids.get(returned_id)
+                if user_id is None:  # pragma: no cover
+                    log.info(f"Ignoring row with user id {returned_id!r}, which was not searched for.")
+                    continue
+                user_info_map[user_id] = self._get_user_from_mapped_object(row, attributes)
 
         return user_info_map
 
@@ -371,8 +383,7 @@ class IdResolver (UserIdResolver):
         :return: dictionary mapping each user ID to its login name. IDs without a matching row are
                  mapped to an empty string, as getUsername does for a single user.
         """
-        user_info_map = self.get_user_info_batch(user_ids, attributes=["username"])
-        return {user_id: user_info_map.get(user_id, {}).get("username", "") for user_id in user_ids}
+        return self._usernames_via_user_info_batch(user_ids)
 
     def get_available_info_keys(self) -> list[str]:
         """

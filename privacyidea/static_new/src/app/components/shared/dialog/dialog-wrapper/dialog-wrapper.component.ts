@@ -38,7 +38,7 @@ export class DialogWrapperComponent<R = unknown> implements OnInit {
 
   title = input.required<string>();
   icon = input<string>();
-  showCancelButton = input<boolean>(false);
+  showCloseButton = input<boolean>(true);
   // Empty by default so the template falls back to the translated <div i18n>Cancel</div>.
   // A hardcoded "Cancel" here would bypass i18n and always render in English.
   cancelButtonLabel = input<string>("");
@@ -64,8 +64,8 @@ export class DialogWrapperComponent<R = unknown> implements OnInit {
 
   ngOnInit() {
     assert(
-      this.actions().length !== 0 || this.showCancelButton(),
-      "Dialog must have at least one action or a cancel button."
+      this.actions().length !== 0 || this.showCloseButton(),
+      "Dialog must have at least one action or a close button."
     );
   }
 }

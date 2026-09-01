@@ -121,9 +121,8 @@ def before_request():
     g.request_data = get_all_params(request)
     request.all_data = copy.deepcopy(g.request_data)
 
-    # Join the attempt an answered challenge belongs to. This happens here because the attempt id is recorded in the
-    # challenge, and the token logic deletes a challenge it answers successfully - by the time the outcome is logged
-    # there would be nothing left to read it from.
+    # Join the attempt here because the attempt id lives in the challenge, which the token logic deletes once
+    # answered, leaving nothing to read it from later.
     continue_attempt(get_optional(request.all_data, "transaction_id"))
 
     privacyidea_server = get_app_config_value("PI_AUDIT_SERVERNAME", get_privacyidea_node(request.host))
@@ -182,8 +181,8 @@ def before_request():
 
 
 @jwtauth.route('', methods=['POST'])
-# Keep the conditional-access gate above the pre-policies: decorators run top-down, and it has to refuse a locked user
-# before auth_timelimit can log a trackable event for them (see conditional_access_login_gate).
+# The conditional-access gate sits above the pre-policies (decorators run top-down) so it can refuse a locked user
+# before auth_timelimit logs a trackable event for them; see conditional_access_login_gate.
 @conditional_access_login_gate()
 @prepolicy(auth_timelimit, request=request)
 @prepolicy(increase_failcounter_on_challenge, request=request)
@@ -293,9 +292,6 @@ def get_auth_token():
     #  maybe a new user object that is not directly evaluated against the user store and where we can store some more
     #  information like the role (local / external admin) would be helpful
     user = request.User or User()
-    # The conditional-access pre-check and this login's audit subject are handled by the outermost decorator,
-    # @conditional_access_login_gate, so a locked user, a blocked source IP or a DENY decision is rejected before any
-    # pre-policy runs - auth_timelimit included, which would otherwise log a trackable event first.
     username = get_optional(request.all_data, "username")
     password = get_optional(request.all_data, "password")
     realm_param = get_optional(request.all_data, "realm")
@@ -354,8 +350,8 @@ def get_auth_token():
         try:
             passkey_login_result = verify_fido2_challenge(transaction_id, token, request.all_data)
         except (ResourceNotFoundError, AuthError):
-            # The challenge could not be verified (e.g. answered for the wrong serial or expired).
-            # It propagates as a failure response, so log the failed attempt here.
+            # A challenge that fails to verify (wrong serial, expired) propagates as a failure response, so log
+            # the failed attempt here.
             log_authentication(AuthEventType.MFA_FAIL, request, user=token.user, transaction_id=transaction_id)
             raise
         if passkey_login_result.success > 0:
@@ -414,7 +410,7 @@ def get_auth_token():
     # Verify the password
     admin_auth = False
     user_auth = False
-    # record for the auth log if it is an internal or external admin
+    # Records whether the authenticated admin is internal or external, for the auth log.
     internal_admin = False
 
     if passkey_login_success:
@@ -507,20 +503,21 @@ def get_auth_token():
             user_auth, role, details = check_webui_user(user, password, options=options,
                                                         superuser_realms=superuser_realms)
             details = details or {}
-            # Classification stashed by the lib layer: captured for the authentication log and
-            # popped so it is never returned to the client. A present-but-None value means a token suppressed its
-            # terminal event (push_wait timeout); absent means nothing classified the request.
+            # The lib layer stashes the classification in details; capture it for the authentication log, then
+            # pop it so it never reaches the client.
+            # A present-but-None value means a token suppressed its terminal event (push_wait timeout); an absent
+            # key means nothing classified the request.
             terminal_event_suppressed = AUTH_EVENT_TYPE_KEY in details and details[AUTH_EVENT_TYPE_KEY] is None
             auth_event_type = details.pop(AUTH_EVENT_TYPE_KEY, None)
-            # Pop the log-only transaction_id (push_wait success) so it is never returned to the client, mirroring
-            # /validate/check. It stands in for the challenge transaction_id the response does not carry.
+            # Pop the log-only transaction_id (push_wait success) so it never reaches the client, mirroring
+            # /validate/check; it stands in for the challenge transaction_id the response doesn't carry.
             log_transaction_id = details.pop(LOG_TRANSACTION_ID_KEY, None)
             if 'multi_challenge' in details:
                 serials = ",".join([challenge_info["serial"] for challenge_info in details["multi_challenge"]])
                 token_types = ",".join([challenge_info["type"] for challenge_info in details["multi_challenge"]
                                         if challenge_info.get("type")])
-                # The lib distinguishes an initial challenge (CHALLENGE_TRIGGERED) from a continuation that answered
-                # one challenge and created the next (CHALLENGE_CONTINUED). Keep the latter; only default to TRIGGERED.
+                # The lib distinguishes an initial challenge (CHALLENGE_TRIGGERED) from one that answered a
+                # challenge and created the next (CHALLENGE_CONTINUED); keep the latter and only default to TRIGGERED.
                 if auth_event_type != AuthEventType.CHALLENGE_CONTINUED:
                     auth_event_type = AuthEventType.CHALLENGE_TRIGGERED
             else:
@@ -543,13 +540,12 @@ def get_auth_token():
             else:
                 g.audit_object.log({"user": user.login})
 
-            # A username that matches a local DB admin (verify_db_admin above already rejected the password) with no
-            # user of that name in the (default) realm can only be that admin failing with a wrong password. Classify
-            # it as an internal-admin password failure.
+            # A username matching a local DB admin (verify_db_admin already rejected the password), with no same-named
+            # realm user, can only be that admin's wrong password, so classify it as an internal-admin password failure.
             if local_admin_exist and not user_auth and not user.exist():
                 auth_event_type = AuthEventType.PASSWORD_FAIL
                 internal_admin = True
-                # local admins do not have any user attributes, login name is logged separately
+                # A local admin has no user attributes; its login name is logged separately.
                 user = User()
 
             if not user_auth and "multi_challenge" in details and len(details["multi_challenge"]) > 0:
@@ -564,11 +560,11 @@ def get_auth_token():
 
     # Authentication log
     if auth_event_type is None and not terminal_event_suppressed:
-        # Nothing along the way classified this request. A successful login that no handler labelled is a
-        # LOGIN_SUCCESS; an unclassified failure is logged as UNKNOWN_FAIL_REASON (not PASSWORD_FAIL, which would
-        # misattribute it to a wrong userstore password and skew password-failure lockout counters), mirroring
-        # /validate/check. A deliberately suppressed terminal event (push_wait) keeps auth_event_type None, so
-        # log_authentication below is a no-op and no row is added over the one the token already wrote.
+        # When nothing classified the request: a success defaults to LOGIN_SUCCESS, and an unclassified failure logs
+        # as UNKNOWN_FAIL_REASON rather than PASSWORD_FAIL, which would wrongly skew password-failure
+        # conditional-access counters.
+        # A push_wait-suppressed terminal event leaves auth_event_type None, so log_authentication below is a
+        # no-op and adds no row on top of the one the token already wrote.
         auth_event_type = AuthEventType.LOGIN_SUCCESS if (
                 admin_auth or user_auth) else AuthEventType.UNKNOWN_FAIL_REASON
     log_authentication(auth_event_type, request, user=user,

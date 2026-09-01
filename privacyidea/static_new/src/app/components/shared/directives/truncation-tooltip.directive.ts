@@ -19,8 +19,8 @@
 import { Directive, ElementRef, inject, input } from "@angular/core";
 import { MatTooltip } from "@angular/material/tooltip";
 
-// How long the pointer has to rest on the element before the tooltip appears. A pointer crossing a dense table - while
-// scanning it or scrolling it - passes over many clipped cells on its way, and none of them should pop a tooltip.
+// How long the pointer must rest before the tooltip appears, so a pointer crossing a dense table while scanning or
+// scrolling it does not pop a tooltip over every clipped cell it passes.
 const HOVER_SHOW_DELAY_MS = 500;
 
 @Directive({
@@ -46,8 +46,8 @@ export class TruncationTooltipDirective {
   private readonly elementRef = inject<ElementRef<HTMLElement>>(ElementRef);
 
   constructor() {
-    // Set on the tooltip rather than only passed to show() below: once it has a message,
-    // MatTooltip's own mouseenter listener opens it too, and that path reads showDelay.
+    // Set on the tooltip itself, not only passed to show() below, because once it has a message MatTooltip's own
+    // mouseenter listener also opens it and reads showDelay.
     this.tooltip.showDelay = HOVER_SHOW_DELAY_MS;
   }
 

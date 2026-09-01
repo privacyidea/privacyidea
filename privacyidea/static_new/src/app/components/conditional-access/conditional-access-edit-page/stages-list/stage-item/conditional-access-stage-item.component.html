@@ -20,9 +20,9 @@
   <div class="ca-stage-header margin-left-8">
     <span
       class="ca-stage-number"
-      i18n>
-      Stage {{ stageNumber() }}
-    </span>
+      i18n
+      >Stage {{ stageNumber() }}</span
+    >
     <div class="ca-stage-name">
       @if (!stage().id || editingName()) {
         <mat-form-field
@@ -91,10 +91,20 @@
       <input
         matInput
         type="number"
-        min="0"
+        required
+        [appErrorState]="zeroThresholdInvalid()"
+        [min]="minThreshold()"
         [value]="stage().failure_threshold"
         (input)="onFailureThresholdInput($any($event.target).value)" />
-      <mat-hint i18n>Number of tracked events that trigger this stage (0 = always, for an allow/deny rule).</mat-hint>
+      @if (zeroThresholdInvalid()) {
+        <mat-error i18n> A threshold of 0 means "always" and needs a stage carrying only DENY. </mat-error>
+      } @else if (zeroThresholdAllowed()) {
+        <mat-hint i18n>Number of tracked events that trigger this stage. 0 means always, for this DENY rule.</mat-hint>
+      } @else {
+        <mat-hint i18n
+          >Number of tracked events that trigger this stage. At least 1, since it counts failures.</mat-hint
+        >
+      }
     </mat-form-field>
 
     <div class="ca-stage-error-message">

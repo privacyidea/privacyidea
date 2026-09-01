@@ -35,12 +35,12 @@ describe("ConditionalAccessCell", () => {
     fixture = TestBed.createComponent(ConditionalAccessCell);
     component = fixture.componentInstance;
     fixture.componentRef.setInput("entryId", 42);
-    // The policies these tests link to, with the id each has *now*. An outcome stores only the policy's name, so this
-    // map is what makes a link possible - and only for a name that still exists (see the deleted-policy test).
+    // The policies these tests link to, keyed by each one's current id: an outcome stores only the policy's name, so
+    // this map is what makes a link possible, and only for a name that still exists (see the deleted-policy test).
     fixture.componentRef.setInput(
       "policyIdsByName",
       new Map([
-        ["Brute Force PIN Lockout", 7],
+        ["Brute Force PIN Lock", 7],
         ["Permanent IP Block", 7],
         ["Email Notification Test", 3],
         ["Notify", 3],
@@ -62,7 +62,7 @@ describe("ConditionalAccessCell", () => {
           auth_log_id: 1,
           action_type: "LOCK_USER",
           dry_run: true,
-          policy_name: "Brute Force PIN Lockout",
+          policy_name: "Brute Force PIN Lock",
           threshold: 5,
           event_count: 5,
           stage_name: "Lock 10 min",
@@ -72,7 +72,7 @@ describe("ConditionalAccessCell", () => {
     ).toEqual([
       {
         key: "12",
-        policy: "Brute Force PIN Lockout",
+        policy: "Brute Force PIN Lock",
         policyLink: `${ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS_DETAILS}7`,
         dryRun: true,
         action: "LOCK_USER",
@@ -116,18 +116,18 @@ describe("ConditionalAccessCell", () => {
   });
 
   it("identifies an unnamed stage by its threshold", () => {
-    // stage_name is the one nullable identifier of a stage, so the threshold has to be shown: it is what an admin
-    // recognizes the stage by when they never named one.
+    // stage_name is the one nullable identifier of a stage, so the threshold has to be shown as well: it is what an
+    // admin recognizes the stage by when it has no name.
     const [view] = viewsFor([
-      { policy_name: "Brute Force PIN Lockout", action_type: "LOCK_USER", threshold: 5, dry_run: false }
+      { policy_name: "Brute Force PIN Lock", action_type: "LOCK_USER", threshold: 5, dry_run: false }
     ]);
     expect(view.threshold).toBe(5);
     expect(view.stage).toBeUndefined();
   });
 
   it("takes the expiry out of info, and only a usable one", () => {
-    // Shown in the details, because once the lockout/block state row has lapsed this is the only record of how long the
-    // restriction lasted. It is validated here and not in the template: `info` is free-form JSON and the date pipe
+    // Shown in the details because once the lock/block state row lapses, this is the only record of how long the
+    // restriction lasted; validated here rather than in the template because `info` is free-form JSON and the date pipe
     // throws on a value it cannot parse.
     const views = viewsFor([
       { action_type: "LOCK_USER", info: { expires_at: "2026-08-03T09:10:00+00:00" } },
@@ -149,14 +149,14 @@ describe("ConditionalAccessCell", () => {
 
   it("keys an outcome by its row id, and by entry and position when it has none", () => {
     // The key addresses one outcome's details: it is what the expand toggle records and what its aria-controls points
-    // at, so two outcomes of one cell must never share it.
+    // at, so two outcomes in one cell must never share it.
     const views = viewsFor([{ id: 12, action_type: "LOCK_USER" }, { action_type: "EMAIL_ADMIN" }]);
     expect(views.map((view) => view.key)).toEqual(["12", "42-1"]);
   });
 
   it("omits the policy link when no policy of that name exists any more", () => {
-    // The outcome names its policy and stores no id, precisely because a deleted policy's id can be handed to another
-    // one. So a link is a lookup: no policy of that name, no link - and the denormalized name still reads.
+    // The outcome names its policy but stores no id, because a deleted policy's id can be reassigned to another one; a
+    // link is therefore a name lookup, so a missing policy name means no link while the denormalized name still reads.
     const [view] = viewsFor([{ policy_name: "Deleted policy", action_type: "LOCK_USER", dry_run: true }]);
     expect(view.policy).toBe("Deleted policy");
     expect(view.policyLink).toBeUndefined();
@@ -164,8 +164,8 @@ describe("ConditionalAccessCell", () => {
   });
 
   it("omits every policy link for an admin who may not read the policies", () => {
-    // Then the caller passes no policies at all, so the column degrades to names without links rather than to links
-    // that land on a page the admin cannot open.
+    // If the caller passes no policies at all, the column degrades to names without links rather than to links that
+    // land on a page the admin cannot open.
     fixture.componentRef.setInput("policyIdsByName", new Map<string, number>());
     const [view] = viewsFor([{ policy_name: "Brute force", action_type: "LOCK_USER" }]);
     expect(view.policy).toBe("Brute force");
@@ -173,7 +173,7 @@ describe("ConditionalAccessCell", () => {
   });
 
   it("is empty for a request conditional access did nothing to, and for anything that is not a list", () => {
-    // The table's skeleton rows set every column to "", which the nullish default does not catch - a list column must
+    // The table's skeleton rows set every column to "", which a nullish default would not catch, so a list column must
     // render nothing there instead of throwing.
     expect(viewsFor([])).toEqual([]);
     expect(viewsFor(null)).toEqual([]);
@@ -215,7 +215,7 @@ describe("ConditionalAccessCell", () => {
         id: 12,
         action_type: "LOCK_USER",
         dry_run: false,
-        policy_name: "Brute Force PIN Lockout",
+        policy_name: "Brute Force PIN Lock",
         threshold: 5,
         event_count: 5,
         stage_name: "Lock 10 min",
@@ -229,13 +229,13 @@ describe("ConditionalAccessCell", () => {
     expect(toggle.getAttribute("aria-controls")).toBe("ca-outcome-12");
     // Collapsed, the cell answers "what happened" and nothing else.
     expect(fixture.nativeElement.textContent).toContain("LOCK_USER");
-    expect(fixture.nativeElement.textContent).not.toContain("Brute Force PIN Lockout");
+    expect(fixture.nativeElement.textContent).not.toContain("Brute Force PIN Lock");
 
     toggle.click();
     fixture.detectChanges();
     expect(toggle.getAttribute("aria-expanded")).toBe("true");
     const details: HTMLElement = fixture.nativeElement.querySelector("#ca-outcome-12");
-    expect(details.textContent).toContain("Brute Force PIN Lockout");
+    expect(details.textContent).toContain("Brute Force PIN Lock");
     expect(details.textContent).toContain("Lock 10 min");
     expect(details.textContent).toContain("5");
     expect(details.querySelector("a")?.getAttribute("href")).toContain(ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS_DETAILS);

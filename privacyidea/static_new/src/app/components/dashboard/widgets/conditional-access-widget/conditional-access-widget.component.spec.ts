@@ -29,7 +29,7 @@ import {
 } from "@services/conditional-access-state/conditional-access-state.service";
 import {
   ConditionalAccessPolicyService,
-  LockoutPolicy
+  ConditionalAccessPolicy
 } from "@services/conditional-access/conditional-access-policy.service";
 import { DashboardDataStore } from "@services/dashboard/dashboard-data-store.service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
@@ -49,7 +49,7 @@ const instance: WidgetInstance = {
   rows: 6
 };
 
-function makePolicy(overrides: Partial<LockoutPolicy>): LockoutPolicy {
+function makePolicy(overrides: Partial<ConditionalAccessPolicy>): ConditionalAccessPolicy {
   return {
     id: 1,
     name: "policy",
@@ -67,8 +67,8 @@ function makePolicy(overrides: Partial<LockoutPolicy>): LockoutPolicy {
 
 const MS_PER_HOUR = 3_600_000;
 
-// Timestamps relative to the moment the test runs: the widget's window ends at "now", so a fixture dated in the
-// future would fall outside it.
+// Timestamps are relative to the moment the test runs, since the widget's window ends at "now" and a future-dated
+// fixture would fall outside it.
 function hoursAgo(hours: number): string {
   return new Date(Date.now() - hours * MS_PER_HOUR).toISOString();
 }
@@ -93,7 +93,7 @@ describe("ConditionalAccessWidgetComponent", () => {
   let stateMock: MockConditionalAccessStateService;
   let store: DashboardDataStore;
 
-  // The badge in the value cell of the count row carrying *label*, so a class assertion names the row it is about.
+  // Finds the badge in the value cell of the row labeled *label*, so an assertion can name which row it checks.
   function rowBadge(label: string): HTMLElement | null {
     const rows: HTMLTableRowElement[] = Array.from(fixture.nativeElement.querySelectorAll(".ca-table tr"));
     const row = rows.find((candidate) => candidate.cells[0]?.textContent?.trim() === label);
@@ -113,7 +113,7 @@ describe("ConditionalAccessWidgetComponent", () => {
       imports: [ConditionalAccessWidgetComponent],
       providers: [
         provideZonelessChangeDetection(),
-        // A catch-all so a click on one of the widget's links resolves instead of failing to match a route.
+        // A catch-all route so the test router always finds a match when a widget link is clicked.
         provideRouter([{ path: "**", children: [] }]),
         { provide: AuthService, useClass: MockAuthService },
         { provide: AuthenticationLogService, useClass: MockAuthenticationLogService },
@@ -162,8 +162,8 @@ describe("ConditionalAccessWidgetComponent", () => {
 
   it("should require any one of the three conditional-access read rights", () => {
     expect(ConditionalAccessWidgetComponent.requiredAction).toEqual([
-      "lockout_policy_read",
-      "user_lockout_read",
+      "conditional_access_policy_read",
+      "user_lock_read",
       "blocklist_read"
     ]);
   });
@@ -247,7 +247,7 @@ describe("ConditionalAccessWidgetComponent", () => {
     expect(component.highlightLink(highlights[0])).toBe(ROUTE_PATHS.LOCKED_USERS);
     expect(component.highlightLink(highlights[1])).toBe(ROUTE_PATHS.AUTHENTICATION_LOG);
     expect(fixture.nativeElement.textContent).toContain("cornelius@defrealm");
-    // A blocked IP is marked by "IP" reading through the block glyph; a locked user by the lock icon alone.
+    // A blocked IP shows an "IP" label over the block icon; a locked user shows only the lock icon.
     expect(fixture.nativeElement.querySelectorAll(".icon-block-ip-text")).toHaveLength(2);
     expect(fixture.nativeElement.querySelector(".icon-block-ip-text").textContent).toBe("IP");
   });
@@ -479,7 +479,7 @@ describe("ConditionalAccessWidgetComponent", () => {
     });
 
     it("should not count the skipped areas as failures", () => {
-      authMock.actionAllowed.mockImplementation((action: string) => action === "lockout_policy_read");
+      authMock.actionAllowed.mockImplementation((action: string) => action === "conditional_access_policy_read");
       create();
 
       expect(component.state()).toBe("ready");
@@ -498,7 +498,9 @@ describe("ConditionalAccessWidgetComponent", () => {
     });
 
     it("should report an error when a response carries a failed status", () => {
-      policyMock.getPolicies.mockReturnValue(of(MockPiResponse.fromError<LockoutPolicy[]>({ message: "nope" })));
+      policyMock.getPolicies.mockReturnValue(
+        of(MockPiResponse.fromError<ConditionalAccessPolicy[]>({ message: "nope" }))
+      );
       create();
 
       expect(component.state()).toBe("error");

@@ -46,9 +46,9 @@ export interface InfoEntry {
 /**
  * The authentication log's Info cell: `other_info` as "Key: value" rows.
  *
- * Scalars are shown as they are, and one level of nesting - a dict (the `truncated` overflow, the only thing the backend
- * puts here) or a list - becomes a bulleted sub-list under its key. Anything deeper is folded into compact JSON, which
- * is honest for a payload nothing writes today and better than silently dropping it.
+ * Scalars are shown as they are, and one level of nesting - a dict (the `truncated` overflow, the only thing the
+ * backend puts here) or a list - becomes a bulleted sub-list under its key. Anything deeper is folded into compact
+ * JSON, which is honest for a payload nothing writes today and better than silently dropping it.
  *
  * Deliberately generic, and deliberately *not* shared with the Conditional access cell: this one walks arbitrary JSON,
  * while an outcome has one known shape. They share their looks (../info-list), not their rendering.

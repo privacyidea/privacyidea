@@ -36,7 +36,7 @@ from privacyidea.lib.user import User
 from privacyidea.lib.utils import AUTH_RESPONSE
 from privacyidea.models import db
 from privacyidea.models.authentication_log import AuthenticationLog
-from privacyidea.models.lockout_policy import UserLockoutState
+from privacyidea.models.conditional_access_policy import UserLockState
 from privacyidea.models.utils import utc_now
 from tests.authlog_utils import assert_authentication_log, assert_authentication_log_entry
 from tests.base import MyApiTestCase, OverrideConfigTestCase
@@ -558,8 +558,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
 
                 self.assertIn("client_mode", challenge1)
                 self.assertEqual("webauthn", challenge1["client_mode"])
-        # triggerchallenge writes a single CHALLENGE_TRIGGERED row for the shared transaction, carrying one of the
-        # challenged passkey serials
+        # triggerchallenge writes one CHALLENGE_TRIGGERED row for the shared transaction with one of the serials.
         auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED], transaction_id=transaction_id)
         entry = auth_log_entries[AuthEventType.CHALLENGE_TRIGGERED]
         assert_authentication_log_entry(entry, user=self.user, serials={serial1, serial2},
@@ -836,10 +835,8 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self.assertEqual(public_key, response["pubKey"])
             credential_id = token.token.get_otpkey().getKey().decode("utf-8")
             self.assertEqual(credential_id, response["credentialId"])
-        # Correlated by the enrollment transaction_id: the postpolicy logs ENROLLMENT_TRIGGERED when it injects the
-        # passkey enrollment challenge, and the enrollment answer then completes the login on the new passkey ->
-        # LOGIN_SUCCESS. (The initial spass authentication also logged LOGIN_SUCCESS, but with no transaction_id,
-        # because the enroll challenge is created by a postpolicy after that log is written.)
+        # The postpolicy's ENROLLMENT_TRIGGERED and the answering LOGIN_SUCCESS share the enrollment transaction_id.
+        # The earlier spass LOGIN_SUCCESS carries none, because it is logged before that challenge is created.
         auth_log_entries = assert_authentication_log([AuthEventType.ENROLLMENT_TRIGGERED, AuthEventType.LOGIN_SUCCESS],
                                                      transaction_id=transaction_id)
         assert_authentication_log_entry(auth_log_entries[AuthEventType.ENROLLMENT_TRIGGERED], user=self.user,
@@ -1056,8 +1053,8 @@ class PasskeyAPITest(PasskeyAPITestBase):
                                                      transaction_id=passkey_transaction_id)
         assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_TRIGGERED],
                                         transaction_id=passkey_transaction_id)
-        # The successful passkey answer turned into an enrollment challenge, so its row was reclassified to
-        # ENROLLMENT_TRIGGERED and re-pointed at the enrolled token + enrollment transaction.
+        # The successful passkey answer turns into an enrollment challenge, reclassifying its row to
+        # ENROLLMENT_TRIGGERED and re-pointing it at the enrolled token and enrollment transaction.
         auth_log_entries = assert_authentication_log([AuthEventType.ENROLLMENT_TRIGGERED],
                                                      transaction_id=enroll_transaction_id)
         assert_authentication_log_entry(auth_log_entries[AuthEventType.ENROLLMENT_TRIGGERED], user=self.user,
@@ -1071,7 +1068,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
             j = res.json
             self._assert_result_value_true(j)
             self.assertIn("Cancelled enrollment via multichallenge", j.get("detail", {}).get("message"), "")
-        # check auth log
+        # Check the authentication log.
         auth_log_entries = assert_authentication_log([AuthEventType.ENROLLMENT_TRIGGERED, AuthEventType.LOGIN_SUCCESS],
                                                      transaction_id=enroll_transaction_id)
         assert_authentication_log_entry(auth_log_entries[AuthEventType.LOGIN_SUCCESS], user=self.user,
@@ -1449,8 +1446,10 @@ class PasskeyAPITest(PasskeyAPITestBase):
                                                      transaction_id=transaction_id)
         assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_TRIGGERED],
                                         transaction_id=transaction_id)
+        # The policy check now runs after the credential_id resolved the token, so the owner is known
+        # and recorded on the row that says why the answer was refused.
         assert_authentication_log_entry(auth_log_entries[AuthEventType.NO_USABLE_TOKEN],
-                                        transaction_id=transaction_id)
+                                        user=self.user, transaction_id=transaction_id)
 
         remove_token(serial)
 
@@ -1596,14 +1595,72 @@ class PasskeyAPITest(PasskeyAPITestBase):
         remove_token(serial)
         remove_token(other_token.get_serial())
 
-    def test_26_locked_owner_rejected_before_token_work(self):
+    def test_26_authenticate_restrict_authenticator_device_type_scoped_to_realm(self):
+        """
+        A SCOPE.AUTH passkey_allowed_authenticator_device_types policy scoped to the token owner's realm must
+        still be enforced on the usernameless/discoverable login path, where the request never contains a user
+        parameter and the owner is only known once the credential_id resolves to a token.
+        """
+        self.set_policy_with_cleanup("restrict_device_type", scope=SCOPE.AUTH, realm=self.realm1,
+                                     action=f"{PasskeyAction.AllowedAuthenticatorDeviceTypes}=multi_device")
+        serial = self._enroll_static_passkey()
+
+        passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_no_uv)
+        transaction_id = passkey_challenge["transaction_id"]
+        data = self.authentication_response_no_uv
+        data["transaction_id"] = transaction_id
+        self.assertNotIn("user", data)
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data=data,
+                                           headers={"Origin": self.expected_origin}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code)
+            self.assertTrue(res.json["result"]["status"])
+            # The enrolled fixture credential is single_device, so the realm-scoped restriction to
+            # multi_device must reject it, even though the request never named a user.
+            self.assertFalse(res.json["result"]["value"])
+            self.assertEqual(AUTH_RESPONSE.REJECT, res.json["result"]["authentication"])
+
+        remove_token(serial)
+
+    def test_27_disabled_token_type_scoped_to_realm(self):
+        """
+        A SCOPE.AUTH disabled_token_types policy scoped to the token owner's realm must still be enforced on
+        the usernameless/discoverable login path, where the request never contains a user parameter and the
+        owner is only known once the credential_id resolves to a token.
+        """
+        self.set_policy_with_cleanup("disable_passkey", scope=SCOPE.AUTH, realm=self.realm1,
+                                     action=f"{PolicyAction.DISABLED_TOKEN_TYPES}=passkey")
+        serial = self._enroll_static_passkey()
+
+        delete_policy("disable_passkey")  # Temporarily disable to allow triggering a challenge
+        passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_no_uv)
+        self.set_policy_with_cleanup("disable_passkey", scope=SCOPE.AUTH, realm=self.realm1,
+                                     action=f"{PolicyAction.DISABLED_TOKEN_TYPES}=passkey")  # Re-enable
+        transaction_id = passkey_challenge["transaction_id"]
+        data = self.authentication_response_no_uv
+        data["transaction_id"] = transaction_id
+        self.assertNotIn("user", data)
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data=data,
+                                           headers={"Origin": self.expected_origin}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(403, res.status_code)
+            result = res.json["result"]
+            self.assertIn("error", result)
+            self.assertEqual(303, result["error"]["code"])
+            self.assertEqual("The authentication method is not available.", result["error"]["message"])
+
+        remove_token(serial)
+
+    def test_28_locked_owner_rejected_before_token_work(self):
         """A locked passkey owner is rejected at /validate/check by the
         conditional-access pre-check. The request is username-less, so the owner is
         resolved from the credential_id before any token work runs — closing the
         credential/serial lock-evasion gap. Generic failure to the client, and the log
         records the lock as the reason rather than a passkey outcome."""
         serial = self._enroll_static_passkey()
-        db.session.add(UserLockoutState(resolver=self.user.resolver, uid=self.user.uid,
+        db.session.add(UserLockState(resolver=self.user.resolver, uid=self.user.uid,
                                         realm=self.user.realm, lock_expires_at=utc_now() + timedelta(seconds=600)))
         db.session.commit()
         db.session.query(AuthenticationLog).delete()
@@ -1625,7 +1682,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self.assertListEqual([AuthEventType.USER_LOCKED],
                                  [entry.event_type for entry in get_authentication_logs()])
         finally:
-            db.session.query(UserLockoutState).delete()
+            db.session.query(UserLockState).delete()
             db.session.commit()
             remove_token(serial)
 

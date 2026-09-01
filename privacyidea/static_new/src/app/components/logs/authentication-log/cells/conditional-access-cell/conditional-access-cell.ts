@@ -24,14 +24,10 @@ import { RouterLink } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { AuthenticationLogEntry } from "@services/authentication-log/authentication-log.service";
 
-// One conditional-access outcome as its column shows it. The fields are an **allow-list**: the table carries more (the
-// count behind the decision, the rest of the action-specific `info`) and the API still returns all of it, but a log
-// column answers "which policy did what" - and picking fields rather than hiding them means a new column on the table
-// cannot leak into the UI by accident.
-//
-// Only `action` and `dryRun` are shown right away, because that is the answer to "what happened to this request"; the
-// remaining fields explain *why* and are revealed by the expand toggle. Twelve columns share this table, so a four-line
-// cell per outcome would push everything else off-screen for a detail most readers do not want.
+// OutcomeView deliberately allow-lists an outcome's fields, since a log column only needs to answer which policy did
+// what - so a new backend column cannot leak into the UI by accident. Only `action` and `dryRun` show up front (what
+// happened); the rest explains why and sits behind the expand toggle, since this table has eleven other columns and a
+// four-line cell would push them off-screen.
 export interface OutcomeView {
   // Identifies this outcome for the expand toggle and the aria-controls of its details. The row's own id when the
   // backend sent one; otherwise the entry and the position, which is unique within the rendered page.
@@ -43,9 +39,9 @@ export interface OutcomeView {
   // Marked in the column because it is the exception: a dry-run outcome describes what *would* have happened.
   dryRun: boolean;
   action: string;
-  // When the action created a timed restriction: the ISO-8601 timestamp it lapses at. This is the only remaining record
-  // of how long a lock or block lasted once the state row has expired - and its absence is what a PERMANENT_* action (or
-  // one that restricts nothing) is recognized by. The one field read out of `info`.
+  // When the action created a timed restriction: the ISO-8601 timestamp it lapses at - the only remaining record of how
+  // long a lock/block lasted once the state row expires, and its absence is how a PERMANENT_* action (or one that
+  // restricts nothing) is recognized. The one field read out of `info`.
   expiresAt?: string;
   stage?: string;
   // The triggered stage's failure threshold: shown next to the name because it is what identifies the stage when the
@@ -70,17 +66,15 @@ export interface OutcomeView {
   styleUrl: "./conditional-access-cell.scss"
 })
 export class ConditionalAccessCell {
-  // The entry's conditional_access_outcomes exactly as the backend sent them - *not* OutcomeView, which is what this
-  // cell derives from them (its key, the policy link, a validated expiry). The element type stays a plain record: the
-  // API returns every column of the row and picking the displayed ones is this cell's job, so a new column needs no
-  // change anywhere above.
+  // The entry's raw conditional_access_outcomes exactly as the backend sent them - not OutcomeView, which this cell
+  // derives from them (key, policy link, validated expiry). The type stays a plain record because the API returns every
+  // column of the row, and picking which to display is this cell's job, so a new column needs no change above.
   readonly outcomes = input<AuthenticationLogEntry["conditional_access_outcomes"]>(null);
   // Only used to build a key for outcomes the backend sent without an id.
   readonly entryId = input<number | undefined>(undefined);
-  // The current id of each existing policy, by name. An outcome stores the policy's *name* and no id (a deleted
-  // policy's id can be handed to another one), so this is what turns a name into a link - and only for a policy that
-  // still exists under that name. An empty map means "link nothing", which is also the right answer for an admin
-  // without lockout_policy_read: the name is still readable as text.
+  // The current id of each existing policy, by name: an outcome stores the policy's name and no id (a deleted policy's
+  // id could be reused by another policy), so this turns a name into a link only while one still exists under it. An
+  // empty map (e.g. without conditional_access_policy_read) means link nothing, and the name still reads as plain text.
   readonly policyIdsByName = input<ReadonlyMap<string, number>>(new Map<string, number>());
 
   // Anything that is not a list yields nothing. The guard is not redundant with the input's type: the table's skeleton
@@ -108,9 +102,9 @@ export class ConditionalAccessCell {
     });
   });
 
-  // Which outcomes show their details, by OutcomeView.key. Collapsed again whenever the cell is handed different
-  // outcomes - a table row is reused across pages, and a cell that silently kept its height would be the more
-  // surprising behaviour.
+  // Which outcomes show their details, by OutcomeView.key; collapses again whenever the cell is handed different
+  // outcomes, since a table row is reused across pages and silently keeping its height would be the more surprising
+  // behavior.
   private readonly expanded = linkedSignal<AuthenticationLogEntry["conditional_access_outcomes"], Set<string>>({
     source: () => this.outcomes(),
     computation: () => new Set<string>()
@@ -136,9 +130,9 @@ export class ConditionalAccessCell {
       : $localize`Show the details of ${outcome.action}`;
   }
 
-  // The expiry an action recorded in its `info`, or undefined when it created no timed restriction. Validated here
-  // rather than in the template: the date pipe throws on a value it cannot parse, and `info` is a free-form JSON column
-  // whose only rule is what the writer puts in it.
+  // The expiry an action recorded in its `info`, or undefined when it created no timed restriction; validated here
+  // rather than in the template, since the date pipe throws on an unparsable value and `info` is a free-form JSON
+  // column whose only rule is what the writer puts in it.
   private expiry(info: unknown): string | undefined {
     if (typeof info !== "object" || info === null || Array.isArray(info)) return undefined;
     const expiresAt = (info as Record<string, unknown>)["expires_at"];

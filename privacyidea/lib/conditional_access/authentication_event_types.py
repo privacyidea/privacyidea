@@ -52,9 +52,8 @@ class AuthEventType(str, Enum):
     PIN_FAIL = "PIN_FAIL"
     # PIN skipped (otppin=none / otponly=1) but the OTP itself is wrong.
     TOKEN_ONLY_FAIL = "TOKEN_ONLY_FAIL"
-    # Correct first factor (pin / password), but the second factor failed, e.g. wrong otp
-    # Note: We also log this for a failed passkey authentication, even thought we can not be sure what exactly failed
-    # there.
+    # Correct first factor (pin / password), but the second factor failed, e.g. wrong OTP.
+    # Also used for a failed passkey authentication, since the exact cause of failure cannot be determined there.
     MFA_FAIL = "MFA_FAIL"
     # Username not found in any resolver, or the resolved user is empty.
     USER_UNKNOWN = "USER_UNKNOWN"
@@ -86,7 +85,7 @@ class AuthEventType(str, Enum):
     ENROLLMENT_TRIGGERED = "ENROLLMENT_TRIGGERED"
     # cancelling the enrollment failed (unknown or already-consumed transaction_id).
     ENROLLMENT_CANCELED_FAIL = "ENROLLMENT_CANCELED_FAIL"
-    # Default fallback, if no auth event was set somewhere, but authentication failed we log this to have failed attempt
+    # Fallback used when authentication fails but no other event type was set, so the failure is still recorded.
     UNKNOWN_FAIL_REASON = "UNKNOWN_FAIL_REASON"
 
     # --- written by conditional access itself, before any credential check ---------------------------------------
@@ -100,7 +99,7 @@ class AuthEventType(str, Enum):
     # A source-IP block in force turned the request away.
     IP_BLOCKED = "IP_BLOCKED"
     # A conditional-access policy's DENY action decided this single request. Named after the effect rather than the
-    # action, because DENY is a LockoutAction value stored in the adjacent outcome table.
+    # action, because DENY is a ConditionalAccessAction value stored in the adjacent outcome table.
     ACCESS_DENIED = "ACCESS_DENIED"
 
     def __str__(self) -> str:
@@ -155,15 +154,14 @@ EVENT_TYPE_OUTCOME: dict[AuthEventType, AuthEventOutcome] = {
 
 # The event types conditional access writes itself, when its pre-check rejects a request before any credential check.
 #
-# They are deliberately **not trackable** by a policy. Counting them would let a lock feed itself: a locked user's
-# rejected requests would keep the count at or above the threshold, so a timed LOCK_USER with
-# retrigger_above_threshold would refresh itself on every rejection and never expire. A successful login cannot clear
-# it either (since_last_success is unreachable for a locked user, so the count only ever grows), and a DENY policy
-# tracking ACCESS_DENIED would be judging its own prior denials. The legitimate use case - escalate to an IP block
-# after repeated attempts - is a second, higher-threshold stage on the underlying failure events.
+# They are deliberately not trackable by any policy: counting one would let a lock feed itself, since a locked
+# user's own rejections would hold a retriggering LOCK_USER's count at or above threshold, and since_last_success
+# can never reset it either because a locked user never succeeds. A DENY policy tracking ACCESS_DENIED would
+# likewise be judging its own prior denials. The legitimate escalation - blocking an IP after repeated failures -
+# is a second, higher-threshold stage on the underlying failure events.
 #
 # Excluding them from the vocabulary makes that structural rather than a warning: the policy-selection join in
-# evaluate_lockout_policies can then never match one.
+# evaluate_conditional_access_policies can then never match one.
 CA_ENFORCEMENT_EVENT_TYPES: frozenset[AuthEventType] = frozenset({
     AuthEventType.USER_LOCKED,
     AuthEventType.IP_BLOCKED,

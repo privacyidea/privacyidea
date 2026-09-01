@@ -15,11 +15,11 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-REST API for conditional-access lockout policies (admin only).
+REST API for conditional-access policies (admin only).
 
 These endpoints are the write path for the policies evaluated by
 :mod:`privacyidea.lib.conditional_access.engine`. All business logic and
-validation lives in :mod:`privacyidea.lib.conditional_access.lockout_policy`;
+validation lives in :mod:`privacyidea.lib.conditional_access.policy`;
 this module only parses the request and writes the audit log.
 
 The blueprint is registered under ``/conditionalaccess`` and runs behind
@@ -36,20 +36,20 @@ from privacyidea.api.auth import admin_required
 from privacyidea.api.lib.prepolicy import prepolicy, check_base_action
 from privacyidea.api.lib.utils import send_result, to_list_param
 from privacyidea.lib.conditional_access.authentication_event_types import TRACKABLE_EVENT_TYPES
-from privacyidea.lib.conditional_access.engine import LockoutAction
-from privacyidea.lib.conditional_access.lockout_policy import (list_lockout_policies,
-                                                               get_lockout_policy,
-                                                               create_lockout_policy,
-                                                               update_lockout_policy,
-                                                               delete_lockout_policy,
-                                                               reorder_lockout_policies,
+from privacyidea.lib.conditional_access.engine import ConditionalAccessAction
+from privacyidea.lib.conditional_access.policy import (list_conditional_access_policies,
+                                                               get_conditional_access_policy,
+                                                               create_conditional_access_policy,
+                                                               update_conditional_access_policy,
+                                                               delete_conditional_access_policy,
+                                                               reorder_conditional_access_policies,
                                                                get_target_constraints,
                                                                get_default_error_messages)
 from privacyidea.lib.conditional_access.conditions import get_condition_types
-from privacyidea.lib.conditional_access.lockout_policy_template import list_lockout_policy_templates
-from privacyidea.lib.conditional_access.lockout_state import (list_locked_users_paginate, DEFAULT_PAGE_SIZE,
-                                                              user_matches_scopes, get_user_lockout_dict,
-                                                              purge_expired_user_lockouts, unlock_user_by_id,
+from privacyidea.lib.conditional_access.policy_template import list_conditional_access_policy_templates
+from privacyidea.lib.conditional_access.state import (list_locked_users_paginate, DEFAULT_PAGE_SIZE,
+                                                              user_matches_scopes, get_user_lock_dict,
+                                                              purge_expired_user_locks, unlock_user_by_id,
                                                               unlock_user_by_username,
                                                               list_blocklist, purge_expired_blocklist,
                                                               remove_blocklist_entry)
@@ -105,7 +105,7 @@ def _int_policy_id(policy_id) -> int:
 
 
 @conditional_access_blueprint.route('eventtypes', methods=['GET'])
-@prepolicy(check_base_action, request, PolicyAction.LOCKOUT_POLICY_READ)
+@prepolicy(check_base_action, request, PolicyAction.CONDITIONAL_ACCESS_POLICY_READ)
 @log_with(log)
 def list_event_types():
     """
@@ -120,7 +120,7 @@ def list_event_types():
     The authentication log's own ``/authentication_log/eventtypes`` still lists
     every type, since an admin must be able to filter for a rejection.
 
-    Requires the admin policy action :ref:`policy_lockout_policy_read`.
+    Requires the admin policy action :ref:`policy_conditional_access_policy_read`.
 
     :status 200: list of event-type name strings in ``result.value``, in definition order
     """
@@ -130,31 +130,31 @@ def list_event_types():
 
 
 @conditional_access_blueprint.route('actiontypes', methods=['GET'])
-@prepolicy(check_base_action, request, PolicyAction.LOCKOUT_POLICY_READ)
+@prepolicy(check_base_action, request, PolicyAction.CONDITIONAL_ACCESS_POLICY_READ)
 @log_with(log)
 def list_action_types():
     """
     Return the authoritative list of stage action types (the
-    :class:`LockoutAction` values), so the WebUI does not duplicate the list and
+    :class:`ConditionalAccessAction` values), so the WebUI does not duplicate the list and
     automatically picks up newly added actions.
 
-    Requires the admin policy action :ref:`policy_lockout_policy_read`.
+    Requires the admin policy action :ref:`policy_conditional_access_policy_read`.
 
     :status 200: list of action-type name strings in ``result.value``, in definition order
     """
-    action_types = [action.value for action in LockoutAction]
+    action_types = [action.value for action in ConditionalAccessAction]
     g.audit_object.log({"success": True, "info": f"{len(action_types)} action types"})
     return send_result(action_types)
 
 
 @conditional_access_blueprint.route('defaulterrormessages', methods=['GET'])
-@prepolicy(check_base_action, request, PolicyAction.LOCKOUT_POLICY_READ)
+@prepolicy(check_base_action, request, PolicyAction.CONDITIONAL_ACCESS_POLICY_READ)
 @log_with(log)
 def list_default_error_messages():
     """
     Return the suggested error message for a stage's ``error_message``, per stage action, as
     ``[{"action_type": ..., "message": ...}]`` **ordered most severe first** (see
-    :func:`~privacyidea.lib.conditional_access.lockout_policy.get_default_error_messages`).
+    :func:`~privacyidea.lib.conditional_access.policy.get_default_error_messages`).
 
     An authoring aid for the policy editor, which composes one suggestion for a stage carrying several actions:
     one sentence per action, kept in the order given. The order is the whole rule, because it is the same
@@ -167,7 +167,7 @@ def list_default_error_messages():
     would otherwise have got by default. Without that policy a stage without an ``error_message`` reveals
     nothing to the user, whatever its actions.
 
-    Requires the admin policy action :ref:`policy_lockout_policy_read`.
+    Requires the admin policy action :ref:`policy_conditional_access_policy_read`.
 
     :status 200: list of ``{"action_type", "message"}`` objects, most severe first
     """
@@ -177,7 +177,7 @@ def list_default_error_messages():
 
 
 @conditional_access_blueprint.route('conditiontypes', methods=['GET'])
-@prepolicy(check_base_action, request, PolicyAction.LOCKOUT_POLICY_READ)
+@prepolicy(check_base_action, request, PolicyAction.CONDITIONAL_ACCESS_POLICY_READ)
 @log_with(log)
 def list_condition_types():
     """
@@ -188,7 +188,7 @@ def list_condition_types():
     ``choices`` is resolved per call, so a realm created or deleted since the last
     request is reflected immediately.
 
-    Requires the admin policy action :ref:`policy_lockout_policy_read`.
+    Requires the admin policy action :ref:`policy_conditional_access_policy_read`.
 
     :status 200: mapping of condition type to its metadata in ``result.value``
     """
@@ -198,15 +198,15 @@ def list_condition_types():
 
 
 @conditional_access_blueprint.route('targets', methods=['GET'])
-@prepolicy(check_base_action, request, PolicyAction.LOCKOUT_POLICY_READ)
+@prepolicy(check_base_action, request, PolicyAction.CONDITIONAL_ACCESS_POLICY_READ)
 @log_with(log)
 def list_targets():
     """
     Return the policy targets and, for each, the constraints that depend on the target - the stage actions it allows
     and the count modes it supports - as ``{target: {"actions": [...], "count_modes": [...]}}`` (both sorted; see
-    :func:`~privacyidea.lib.conditional_access.lockout_policy.get_target_constraints`).
+    :func:`~privacyidea.lib.conditional_access.policy.get_target_constraints`).
 
-    Requires the admin policy action :ref:`policy_lockout_policy_read`.
+    Requires the admin policy action :ref:`policy_conditional_access_policy_read`.
 
     :status 200: mapping of target name to its allowed actions and supported count modes
     """
@@ -216,15 +216,15 @@ def list_targets():
 
 
 @conditional_access_blueprint.route('policy', methods=['GET'])
-@prepolicy(check_base_action, request, PolicyAction.LOCKOUT_POLICY_READ)
+@prepolicy(check_base_action, request, PolicyAction.CONDITIONAL_ACCESS_POLICY_READ)
 @log_with(log)
 def list_policies():
     """
-    Return all conditional-access lockout policies with their stages and
+    Return all conditional-access policies with their stages and
     actions, ordered by ascending priority (the engine's evaluation order: a
     lower priority number means higher precedence).
 
-    Requires the admin policy action :ref:`policy_lockout_policy_read`.
+    Requires the admin policy action :ref:`policy_conditional_access_policy_read`.
 
     :query enabled: if given, only return policies whose enabled state matches
         this boolean.
@@ -233,56 +233,56 @@ def list_policies():
     enabled = get_optional(request.all_data, "enabled")
     if enabled is not None:
         enabled = is_true(enabled)
-    policies = list_lockout_policies(enabled=enabled)
+    policies = list_conditional_access_policies(enabled=enabled)
     g.audit_object.log({"success": True, "info": f"{len(policies)} policies"})
     return send_result(policies)
 
 
 @conditional_access_blueprint.route('policy/<policy_id>', methods=['GET'])
-@prepolicy(check_base_action, request, PolicyAction.LOCKOUT_POLICY_READ)
+@prepolicy(check_base_action, request, PolicyAction.CONDITIONAL_ACCESS_POLICY_READ)
 @log_with(log)
 def get_policy(policy_id):
     """
-    Return a single conditional-access lockout policy with its stages and
+    Return a single conditional-access policy with its stages and
     actions.
 
-    Requires the admin policy action :ref:`policy_lockout_policy_read`.
+    Requires the admin policy action :ref:`policy_conditional_access_policy_read`.
 
     :status 200: the policy dict in ``result.value``
     :status 404: no policy with this id exists
     """
-    policy = get_lockout_policy(_int_policy_id(policy_id))
+    policy = get_conditional_access_policy(_int_policy_id(policy_id))
     g.audit_object.log({"success": True, "info": f"policy {policy_id}"})
     return send_result(policy)
 
 
 @conditional_access_blueprint.route('template', methods=['GET'])
-@prepolicy(check_base_action, request, PolicyAction.LOCKOUT_POLICY_READ)
+@prepolicy(check_base_action, request, PolicyAction.CONDITIONAL_ACCESS_POLICY_READ)
 @log_with(log)
 def list_templates():
     """
-    Return the whole shipped lockout policy template catalog in one call. Each
+    Return the whole shipped conditional-access policy template catalog in one call. Each
     entry is ``{"key", "description", "policy"}`` where ``policy`` is a payload
     ready to be prefilled, edited and POSTed to
     :http:post:`/conditionalaccess/policy`.
 
-    Requires the admin policy action :ref:`policy_lockout_policy_read`.
+    Requires the admin policy action :ref:`policy_conditional_access_policy_read`.
 
     :status 200: the list of template entries in ``result.value``
     """
-    templates = list_lockout_policy_templates()
+    templates = list_conditional_access_policy_templates()
     g.audit_object.log({"success": True, "info": f"{len(templates)} templates"})
     return send_result(templates)
 
 
 @conditional_access_blueprint.route('policy', methods=['POST'])
-@prepolicy(check_base_action, request, PolicyAction.LOCKOUT_POLICY_WRITE)
+@prepolicy(check_base_action, request, PolicyAction.CONDITIONAL_ACCESS_POLICY_WRITE)
 @log_with(log)
 def create_policy():
     """
-    Create a conditional-access lockout policy with its stages and actions.
+    Create a conditional-access policy with its stages and actions.
 
-    Requires the admin policy action :ref:`policy_lockout_policy_write`.
+    Requires the admin policy action :ref:`policy_conditional_access_policy_write`.
 
     :jsonparam name: unique policy name. Required.
     :jsonparam time_window_seconds: sliding window (in seconds) over which the
@@ -297,9 +297,11 @@ def create_policy():
         types (e.g. ``["PIN_FAIL", "MFA_FAIL"]``) counted together against the
         stage thresholds. Required.
     :jsonparam stages: non-empty list of stage definitions, each
-        ``{"failure_threshold": <int>, "priority": <int, optional>,
-        "actions": [{"action_type": <LockoutAction>, "action_value": <any>}]}``.
-        Required.
+        ``{"failure_threshold": <int>, "name": <str, optional>,
+        "actions": [{"action_type": <ConditionalAccessAction>, "action_value": <any>}]}``.
+        Thresholds must be unique within the policy and are the evaluation order
+        (highest first). A threshold starts at 1, except on a stage whose every
+        action is ``DENY``, where 0 means "always". Required.
     :jsonparam enabled: whether the policy is evaluated (default true).
     :jsonparam dry_run: log-only mode, nothing is enforced (default false).
     :jsonparam priority: evaluation priority; lower numbers are evaluated first.
@@ -319,7 +321,7 @@ def create_policy():
     name = get_required(params, "name")
     enabled = get_optional(params, "enabled")
     dry_run = get_optional(params, "dry_run")
-    policy_id = create_lockout_policy(
+    policy_id = create_conditional_access_policy(
         name=name,
         time_window_seconds=get_required(params, "time_window_seconds"),
         counter_types_to_track=_get_json_param(params, "counter_types_to_track", required=True),
@@ -335,11 +337,11 @@ def create_policy():
 
 
 @conditional_access_blueprint.route('policy/<policy_id>', methods=['PATCH'])
-@prepolicy(check_base_action, request, PolicyAction.LOCKOUT_POLICY_WRITE)
+@prepolicy(check_base_action, request, PolicyAction.CONDITIONAL_ACCESS_POLICY_WRITE)
 @log_with(log)
 def update_policy(policy_id):
     """
-    Partially update a conditional-access lockout policy. Only the given
+    Partially update a conditional-access policy. Only the given
     parameters are changed and all others are left untouched;
     ``counter_types_to_track``, ``stages`` and ``conditions`` are replaced as a
     whole when given - sending ``{"conditions": []}`` therefore removes every
@@ -347,7 +349,7 @@ def update_policy(policy_id):
     policy is done through this endpoint by sending ``{"enabled": true}`` /
     ``{"enabled": false}``.
 
-    Requires the admin policy action :ref:`policy_lockout_policy_write`.
+    Requires the admin policy action :ref:`policy_conditional_access_policy_write`.
     Parameters are as for creating a policy, all optional. ``target`` may be
     changed, but the resulting target/action combination must stay compatible
     (otherwise a 400).
@@ -360,7 +362,7 @@ def update_policy(policy_id):
     enabled = get_optional(params, "enabled")
     dry_run = get_optional(params, "dry_run")
     policy_id = _int_policy_id(policy_id)
-    policy_id, changed_fields = update_lockout_policy(
+    policy_id, changed_fields = update_conditional_access_policy(
         policy_id,
         name=get_optional(params, "name"),
         time_window_seconds=get_optional(params, "time_window_seconds"),
@@ -379,11 +381,11 @@ def update_policy(policy_id):
 
 
 @conditional_access_blueprint.route('policy/order', methods=['PUT'])
-@prepolicy(check_base_action, request, PolicyAction.LOCKOUT_POLICY_WRITE)
+@prepolicy(check_base_action, request, PolicyAction.CONDITIONAL_ACCESS_POLICY_WRITE)
 @log_with(log)
 def reorder_policies():
     """
-    Rearrange the evaluation order of conditional-access lockout policies.
+    Rearrange the evaluation order of conditional-access policies.
 
     The listed policies take the priority values this same set of policies
     already holds, in ascending order: the first id gets the lowest of those
@@ -395,7 +397,7 @@ def reorder_policies():
     sends two ids and a full rearrangement sends all of them. Sending an
     already-sorted order is a no-op, so the request is idempotent.
 
-    Requires the admin policy action :ref:`policy_lockout_policy_write`.
+    Requires the admin policy action :ref:`policy_conditional_access_policy_write`.
 
     :jsonparam policy_ids: the policies to rearrange, as a list of ids in the
         wanted evaluation order (highest precedence first). Required, non-empty
@@ -415,32 +417,32 @@ def reorder_policies():
     params = request.all_data
     policy_ids = _get_json_param(params, "policy_ids", required=True)
     old_priorities = _get_json_param(params, "expected_priorities")
-    reorder_lockout_policies(policy_ids, old_priorities)
+    reorder_conditional_access_policies(policy_ids, old_priorities)
     g.audit_object.log({"success": True})
     return send_result(True)
 
 
 @conditional_access_blueprint.route('policy/<policy_id>', methods=['DELETE'])
-@prepolicy(check_base_action, request, PolicyAction.LOCKOUT_POLICY_WRITE)
+@prepolicy(check_base_action, request, PolicyAction.CONDITIONAL_ACCESS_POLICY_WRITE)
 @log_with(log)
 def delete_policy(policy_id):
     """
-    Delete a conditional-access lockout policy with all its stages and actions.
+    Delete a conditional-access policy with all its stages and actions.
     Existing locks and blocks written by the policy stay in force.
 
-    Requires the admin policy action :ref:`policy_lockout_policy_write`.
+    Requires the admin policy action :ref:`policy_conditional_access_policy_write`.
 
     :status 200: the id of the deleted policy in ``result.value``
     :status 404: no policy with this id exists
     """
-    delete_lockout_policy(_int_policy_id(policy_id))
+    delete_conditional_access_policy(_int_policy_id(policy_id))
     g.audit_object.log({"success": True, "info": f"deleted policy {policy_id}"})
     return send_result(policy_id)
 
 
-@conditional_access_blueprint.route('lockout/users', methods=['GET'])
+@conditional_access_blueprint.route('lock/users', methods=['GET'])
 @admin_required
-@prepolicy(check_base_action, request, PolicyAction.USER_LOCKOUT_READ)
+@prepolicy(check_base_action, request, PolicyAction.USER_LOCK_READ)
 @log_with(log)
 def get_locked_users():
     """
@@ -448,9 +450,9 @@ def get_locked_users():
     force *and* stale rows whose timed lock has already expired; each row carries the expiry
     fields so the caller can tell them apart, and ``states`` narrows to a subset. Results are
     constrained to the admin's policy visibility scope (the realm / resolver / user
-    conditions on the ``user_lockout_read`` policies), mirroring the authentication log.
+    conditions on the ``user_lock_read`` policies), mirroring the authentication log.
 
-    Requires the admin policy action :ref:`policy_user_lockout_read`.
+    Requires the admin policy action :ref:`policy_user_lock_read`.
 
     The ``realms`` / ``resolvers`` / ``usernames`` / ``error_messages`` filters accept a comma-separated list
     and a ``*`` wildcard per value (matched with ``LIKE``); with ``case_insensitive``
@@ -472,7 +474,7 @@ def get_locked_users():
     :status 200: ``{locked_users, count, current, prev, next}`` in ``result.value``
     """
     params = request.all_data
-    visibility_scopes = get_policy_visibility_scopes(PolicyAction.USER_LOCKOUT_READ)
+    visibility_scopes = get_policy_visibility_scopes(PolicyAction.USER_LOCK_READ)
     page = list_locked_users_paginate(
         realms=to_list_param(get_optional(params, "realms")),
         resolvers=to_list_param(get_optional(params, "resolvers")),
@@ -489,16 +491,16 @@ def get_locked_users():
     return send_result(page)
 
 
-@conditional_access_blueprint.route('lockout/user', methods=['GET'])
+@conditional_access_blueprint.route('lock/user', methods=['GET'])
 @admin_required
-@prepolicy(check_base_action, request, PolicyAction.USER_LOCKOUT_READ)
+@prepolicy(check_base_action, request, PolicyAction.USER_LOCK_READ)
 @log_with(log)
-def get_user_lockout():
+def get_user_lock():
     """
     Return the current lock of a single user (or ``null`` if not locked).
     Constrained to the admin's policy visibility scope.
 
-    Requires the admin policy action :ref:`policy_user_lockout_read`.
+    Requires the admin policy action :ref:`policy_user_lock_read`.
 
     One user identifier is required: user or user_id
 
@@ -515,58 +517,58 @@ def get_user_lockout():
     realm = get_required(request.all_data, "realm")
     resolver = get_optional(request.all_data, "resolver")
     if user_id and not username and not resolver:
-        # User() refuses a uid without a resolver (a uid is only unique per resolver); reject it here so
-        # the caller gets a ParameterError instead of a UserError from deep inside the resolver lookup.
+        # User() needs a resolver to look up a uid (a uid is unique only per resolver), so this rejects early with a
+        # clean ParameterError rather than a deep UserError from the resolver lookup.
         raise ParameterError("The parameter 'resolver' is required when looking a user up by 'user_id'.")
-    visibility_scopes = get_policy_visibility_scopes(PolicyAction.USER_LOCKOUT_READ)
+    visibility_scopes = get_policy_visibility_scopes(PolicyAction.USER_LOCK_READ)
 
-    # User is already resolved in before request, but only for the login, realm, resolver triplet. If the uid is given
-    # instead we need to resolve the user here
+    # before_request already resolves the user for a login/realm/resolver triplet, so a user given only by uid still
+    # needs resolving here.
     user = request.User
     if not user or not user.exist():
         user = User(uid=user_id, login=username, realm=realm, resolver=resolver)
 
     value = None
     if not user.is_empty() and user.exist() and user_matches_scopes(user, visibility_scopes):
-        value = get_user_lockout_dict(user)
+        value = get_user_lock_dict(user)
     g.audit_object.log({"success": True})
     return send_result(value)
 
 
-@conditional_access_blueprint.route('lockout/users/purge', methods=['POST'])
+@conditional_access_blueprint.route('lock/users/purge', methods=['POST'])
 @admin_required
-@prepolicy(check_base_action, request, PolicyAction.USER_LOCKOUT_RESET)
+@prepolicy(check_base_action, request, PolicyAction.USER_LOCK_RESET)
 @log_with(log)
-def purge_user_lockouts():
+def purge_user_locks():
     """
-    Delete stale user-lockout records (expired or already-unlocked rows).
+    Delete stale user-lock records (expired or already-unlocked rows).
 
-    Requires the admin policy action :ref:`policy_user_lockout_reset`. Constrained to
+    Requires the admin policy action :ref:`policy_user_lock_reset`. Constrained to
     the admin's policy visibility scope: a scoped admin only purges the stale rows
     inside their realm / resolver / user boundary.
 
     :status 200: the number of rows removed, in ``result.value``
     """
-    visibility_scopes = get_policy_visibility_scopes(PolicyAction.USER_LOCKOUT_RESET)
-    count = purge_expired_user_lockouts(visibility_scopes=visibility_scopes)
-    g.audit_object.log({"success": True, "info": f"purged {count} stale user lockout(s)"})
+    visibility_scopes = get_policy_visibility_scopes(PolicyAction.USER_LOCK_RESET)
+    count = purge_expired_user_locks(visibility_scopes=visibility_scopes)
+    g.audit_object.log({"success": True, "info": f"purged {count} stale user lock(s)"})
     return send_result(count)
 
 
-@conditional_access_blueprint.route('lockout/user', methods=['DELETE'])
+@conditional_access_blueprint.route('lock/user', methods=['DELETE'])
 @admin_required
-@prepolicy(check_base_action, request, PolicyAction.USER_LOCKOUT_RESET)
+@prepolicy(check_base_action, request, PolicyAction.USER_LOCK_RESET)
 @log_with(log)
-def reset_user_lockout():
+def reset_user_lock():
     """
-    Reset (unlock) a user's conditional-access lockout. Identified by either the
+    Reset (unlock) a user's conditional-access lock. Identified by either the
     login (``user``) or the resolver-local id (``user_id``); ``realm`` is
     required and ``resolver`` is optional — it only narrows the match.
     Omitting it clears every matching lock in the realm.
 
-    Requires the admin policy action :ref:`policy_user_lockout_reset`. Constrained to
+    Requires the admin policy action :ref:`policy_user_lock_reset`. Constrained to
     the admin's policy visibility scope (the realm / resolver / user conditions on the
-    ``user_lockout_reset`` policies), mirroring the read endpoints. The boundary is part
+    ``user_lock_reset`` policies), mirroring the read endpoints. The boundary is part
     of the delete criterion, so a call that matches several rows only clears the ones
     inside the scope, and a target outside it is indistinguishable from an absent lock
     (both return ``false``).
@@ -586,7 +588,7 @@ def reset_user_lockout():
     login = get_optional(params, "user")
     realm = get_required(params, "realm")
     resolver = get_optional(params, "resolver")
-    visibility_scopes = get_policy_visibility_scopes(PolicyAction.USER_LOCKOUT_RESET)
+    visibility_scopes = get_policy_visibility_scopes(PolicyAction.USER_LOCK_RESET)
     resolver_suffix = f", resolver={resolver}" if resolver else ""
     if user_id:
         removed = unlock_user_by_id(user_id, realm, resolver, visibility_scopes=visibility_scopes)
@@ -596,7 +598,7 @@ def reset_user_lockout():
         target = f"{login}@{realm}{resolver_suffix}"
     # Name the boundary in the audit log so a scoped-out attempt is distinguishable from a missing lock.
     scope_suffix = "" if visibility_scopes is None else ", within visibility scope"
-    g.audit_object.log({"success": removed, "info": f"reset lockout ({target}{scope_suffix})"})
+    g.audit_object.log({"success": removed, "info": f"reset lock ({target}{scope_suffix})"})
     return send_result(removed)
 
 

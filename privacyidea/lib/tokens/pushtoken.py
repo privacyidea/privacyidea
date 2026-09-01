@@ -311,8 +311,11 @@ def _build_smartphone_data(token: TokenClass, challenge: str, registration_url: 
                            challenge=options.get("challenge"))
     try:
         message_on_mobile = message_on_mobile.format(**tags)
-    except KeyError as e:
-        log.warning(f"Could not format the message: {e}. Using default message.")
+    except Exception as e:
+        # A text that can not be formatted must not fail the authentication. Besides an unknown
+        # tag, this also happens for a positional field, an unbalanced brace, attribute access
+        # or an index into a tag that is not set, so every error falls back to the default.
+        log.warning(f"Could not format the message: {e!r}. Using default message.")
         message_on_mobile = default_message
     log.debug(f"Sending to mobile: {message_on_mobile}")
 
@@ -953,8 +956,8 @@ class PushTokenClass(TokenClass):
             elif result:
                 details[PUSH_AUTH_EVENT] = AuthEventType.CHALLENGE_ANSWERED_OUT_OF_BAND
 
-        # Carry the answered challenge's transaction_id up for the authentication log, so the /ttype/push row correlates
-        # to the rest of the attempt.
+        # Carry the answered challenge's transaction_id up so the /ttype/push row correlates with the rest of the
+        # attempt.
         if matched_transaction_id is None and len(challenges) == 1:
             matched_transaction_id = challenges[0].transaction_id
         details[PUSH_AUTH_TRANSACTION_ID] = matched_transaction_id
@@ -1458,11 +1461,9 @@ class PushTokenClass(TokenClass):
                     # The user will enter the display_code after the smartphone confirms.
                     return True, -1, {"transaction_id": transaction_id, "message": message}
 
-                # push_wait resolves the challenge inside this one blocking request, so log the trigger here (before
-                # the wait) — it has no other request to be recorded on. Written immediately rather than at teardown
-                # because the smartphone's answer arrives during the wait as a separate /ttype/push request: its row
-                # would otherwise be committed first and the attempt's rows, which are ordered by id, would read as an
-                # answer preceding its own trigger.
+                # push_wait writes the CHALLENGE_TRIGGERED row immediately, not at teardown, because the smartphone's
+                # answer can arrive mid-wait as a separate /ttype/push request; since attempt rows are read in id
+                # order, a later commit would otherwise make the answer appear to precede its own trigger.
                 from privacyidea.api.lib.utils import log_authentication
                 log_authentication(AuthEventType.CHALLENGE_TRIGGERED, flask_request, user=user or self.user,
                                    serial=self.token.serial, transaction_id=transaction_id, immediate=True)
@@ -1487,12 +1488,12 @@ class PushTokenClass(TokenClass):
                     time.sleep(POLL_INTERVAL - (elapsed_time % POLL_INTERVAL))
 
                 if otp_counter < 0:
-                    # Timed out: CHALLENGE_TRIGGERED above is the only row. Suppress the default MFA_FAIL — a
-                    # non-response is not a wrong second factor.
+                    # Timed out: suppress the default MFA_FAIL, since a non-response is not a wrong second factor
+                    # (CHALLENGE_TRIGGERED above stays the only row).
                     self.auth_details[SUPPRESS_TERMINAL_EVENT_KEY] = True
                 else:
-                    # Success: correlate the terminal LOGIN_SUCCESS row with the trigger and out-of-band answer via the
-                    # challenge transaction_id.
+                    # Success: the challenge's transaction_id correlates the terminal LOGIN_SUCCESS row with the
+                    # trigger and the out-of-band answer.
                     reply = {LOG_TRANSACTION_ID_KEY: transaction_id}
 
                 # The push_wait transaction_id is never returned to the client, so nothing can

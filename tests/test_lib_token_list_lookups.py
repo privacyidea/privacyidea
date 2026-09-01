@@ -272,3 +272,32 @@ class TokenListLookupTestCase(MyTestCase):
             self.assertEqual("user00", usernames["LIST00"], usernames)
         finally:
             remove_token("LISTSHARED")
+
+    @ldap3mock.activate
+    def test_09_a_failing_owner_batch_query_falls_back_per_token(self):
+        ldap3mock.setLDAPDirectory(LDAP_DIRECTORY)
+        original_scalars = db.session.scalars
+        batch_query_failed = False
+
+        def failing_batch_query(stmt, *args, **kwargs):
+            nonlocal batch_query_failed
+            # The very first query selecting TokenOwner is the page-wide batch lookup (any
+            # per-token fallback queries only run afterwards, once it has already failed), so
+            # this fails only that one call and leaves everything else -- including the token
+            # listing query itself, which also selects rows involving TokenOwner -- untouched.
+            entities = [d["entity"] for d in getattr(stmt, "column_descriptions", [])]
+            if not batch_query_failed and entities == [TokenOwner]:
+                batch_query_failed = True
+                raise Exception("the owner query for the whole page failed")
+            return original_scalars(stmt, *args, **kwargs)
+
+        # The page-wide owner query fails once (transient DB error); the fallback looks each
+        # token's owner up individually, so the page still renders instead of failing outright.
+        with mock.patch.object(db.session, "scalars", side_effect=failing_batch_query):
+            result = get_tokens_paginate(serial=self.serial_wildcard, psize=NUM_TOKENS, page=1)
+
+        self.assertTrue(batch_query_failed)
+        self.assertEqual(NUM_TOKENS, len(result["tokens"]), result)
+        usernames = {token["serial"]: token["username"] for token in result["tokens"]}
+        self.assertEqual(NUM_TOKENS, len(set(usernames.values())), usernames)
+        self.assertEqual("user00", usernames["LIST00"], usernames)

@@ -26,6 +26,7 @@ import { EnrollTokenTypeSwitchComponent } from "@components/shared/enroll-token-
 import { TokenCompleteEnrollmentComponent } from "@components/token/token-enrollment/token-complete-enrollment/token-complete-enrollment.component";
 import { TokenEnrollmentLastStepDialogComponent } from "@components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
 import { TokenVerifyEnrollmentComponent } from "@components/token/token-enrollment/token-verify-enrollment/token-verify-enrollment.component";
+import { ENROLLMENT_CANCELLED } from "@components/token/token-enrollment/token-enrollment.constants";
 import { DialogAction } from "@models/dialog";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
@@ -135,7 +136,8 @@ export class TokenRolloverComponent extends AbstractDialogComponent<
     // Complete rollover
     // Push, passkey, webauthn (TODO: maybe we can integrate this into the complete enrollment dialog component)
     if (strategy.onEnrollmentResponse && enrollmentResponse) {
-      enrollmentResponse = await strategy.onEnrollmentResponse(enrollmentResponse, enrollmentArgs.data);
+      const stepResult = await strategy.onEnrollmentResponse(enrollmentResponse, enrollmentArgs.data);
+      enrollmentResponse = stepResult === ENROLLMENT_CANCELLED ? null : stepResult;
     }
 
     // two step enrollment + handles further enrollment steps (verify + success dialog)
@@ -158,11 +160,12 @@ export class TokenRolloverComponent extends AbstractDialogComponent<
 
     const dialogRef = this.dialogService.openDialog({
       component: TokenCompleteEnrollmentComponent,
-      data: this.enrolledDialogData()
+      data: this.enrolledDialogData(),
+      configOverride: { autoFocus: "input", disableClose: true }
     });
     dialogRef.afterClosed().subscribe((result) => {
       this.tokenService.tokenDetailResource.reload();
-      if (result) {
+      if (result && result !== ENROLLMENT_CANCELLED) {
         this.enrollResponse.set(result);
         this.enrolledDialogData.set({
           ...this.enrolledDialogData()!,
@@ -190,11 +193,12 @@ export class TokenRolloverComponent extends AbstractDialogComponent<
     // Open verify dialog
     const dialogRef = this.dialogService.openDialog({
       component: TokenVerifyEnrollmentComponent,
-      data: this.enrolledDialogData()
+      data: this.enrolledDialogData(),
+      configOverride: { autoFocus: "input", disableClose: true }
     });
     dialogRef.afterClosed().subscribe((result) => {
       this.tokenService.tokenDetailResource.reload();
-      if (result) {
+      if (result && result !== ENROLLMENT_CANCELLED) {
         this.enrollResponse.set(result);
         this._handleEnrollmentResponse(result);
       }

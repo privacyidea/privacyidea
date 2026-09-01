@@ -51,7 +51,7 @@
   </div>
 
   <div class="toolbar">
-    @if (authService.actionAllowed("user_lockout_reset")) {
+    @if (authService.actionAllowed("user_lock_reset")) {
       <button
         (click)="resetSelected()"
         [disabled]="selection().length === 0"
@@ -79,7 +79,6 @@
       class="locked-users-table"
       i18n-aria-label
       mat-table>
-      <!-- Selection column -->
       <ng-container matColumnDef="select">
         <th
           *matHeaderCellDef
@@ -101,7 +100,6 @@
         </td>
       </ng-container>
 
-      <!-- Username column -->
       <ng-container matColumnDef="username">
         <th
           *matHeaderCellDef
@@ -168,7 +166,6 @@
         </td>
       </ng-container>
 
-      <!-- Realm column -->
       <ng-container matColumnDef="realm">
         <th
           *matHeaderCellDef
@@ -203,7 +200,6 @@
         </td>
       </ng-container>
 
-      <!-- Resolver column -->
       <ng-container matColumnDef="resolver">
         <th
           *matHeaderCellDef
@@ -238,7 +234,6 @@
         </td>
       </ng-container>
 
-      <!-- State column -->
       <ng-container matColumnDef="state">
         <th
           *matHeaderCellDef
@@ -260,7 +255,6 @@
         </td>
       </ng-container>
 
-      <!-- Lock expiry column -->
       <ng-container matColumnDef="lock_expires_at">
         <th
           *matHeaderCellDef
@@ -289,7 +283,6 @@
         </td>
       </ng-container>
 
-      <!-- Locked at column -->
       <ng-container matColumnDef="locked_at">
         <th
           *matHeaderCellDef

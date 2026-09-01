@@ -15,9 +15,9 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-Management layer for the live conditional-access state: user lockouts
-(:class:`~privacyidea.models.lockout_policy.UserLockoutState`) and the blocklist
-(:class:`~privacyidea.models.lockout_policy.BlockList`).
+Management layer for the live conditional-access state: user locks
+(:class:`~privacyidea.models.conditional_access_policy.UserLockState`) and the blocklist
+(:class:`~privacyidea.models.conditional_access_policy.BlockList`).
 
 The engine (:mod:`privacyidea.lib.conditional_access.engine`) *writes* this state
 when a policy stage fires and *reads* it on the authentication pre-check. This
@@ -31,31 +31,29 @@ from datetime import datetime
 from sqlalchemy import and_, delete, false, func, or_, select, ColumnElement
 
 from privacyidea.lib.conditional_access.authentication_log import match_condition
-from privacyidea.lib.conditional_access.engine import get_user_lockout
+from privacyidea.lib.conditional_access.engine import get_user_lock
 from privacyidea.lib.conditional_access.session import get_ca_session, guarded_write
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.log import log_with
 from privacyidea.lib.user import User
-from privacyidea.models.lockout_policy import BlockList, UserLockoutState
+from privacyidea.models.conditional_access_policy import BlockList, UserLockState
 from privacyidea.models.utils import utc_now
 
 log = logging.getLogger(__name__)
 
 DEFAULT_PAGE_SIZE = 15
 
-# The lock "state" is derived from lock_expires_at vs. now:
-#   permanent  -> lock_expires_at IS NULL
-#   temporary  -> lock_expires_at in the future  (actively locked, will lift on its own)
-#   expired    -> lock_expires_at in the past     (stale record, no longer enforced)
+# The lock state is derived from lock_expires_at vs. now: permanent means NULL, temporary means the expiry is
+# still ahead (in force, lifts on its own), and expired means it has passed (a stale record, no longer enforced).
 LOCK_STATES = ("permanent", "temporary", "expired")
 
 # Columns the locked-users list may be sorted by (any other value falls back to locked_at).
 SORTABLE_COLUMNS = {
-    "username": UserLockoutState.username,
-    "realm": UserLockoutState.realm,
-    "resolver": UserLockoutState.resolver,
-    "lock_expires_at": UserLockoutState.lock_expires_at,
-    "locked_at": UserLockoutState.locked_at,
+    "username": UserLockState.username,
+    "realm": UserLockState.realm,
+    "resolver": UserLockState.resolver,
+    "lock_expires_at": UserLockState.lock_expires_at,
+    "locked_at": UserLockState.locked_at,
 }
 
 
@@ -101,17 +99,17 @@ def _state_condition(states: list[str] | None, now: datetime) -> ColumnElement[b
     clauses = []
     for state in (states or []):
         if state == "permanent":
-            clauses.append(UserLockoutState.lock_expires_at.is_(None))
+            clauses.append(UserLockState.lock_expires_at.is_(None))
         elif state == "temporary":
-            clauses.append(and_(UserLockoutState.lock_expires_at.isnot(None),
-                                UserLockoutState.lock_expires_at > now))
+            clauses.append(and_(UserLockState.lock_expires_at.isnot(None),
+                                UserLockState.lock_expires_at > now))
         elif state == "expired":
-            clauses.append(and_(UserLockoutState.lock_expires_at.isnot(None),
-                                UserLockoutState.lock_expires_at <= now))
+            clauses.append(and_(UserLockState.lock_expires_at.isnot(None),
+                                UserLockState.lock_expires_at <= now))
     return or_(*clauses) if clauses else None
 
 
-def _locked_user_dict(row: UserLockoutState, now: datetime) -> dict:
+def _locked_user_dict(row: UserLockState, now: datetime) -> dict:
     return {
         "resolver": row.resolver,
         "uid": row.uid,
@@ -129,6 +127,8 @@ def _locked_user_dict(row: UserLockoutState, now: datetime) -> dict:
 
 
 def _blocklist_dict(row: BlockList, now: datetime) -> dict:
+    # Reported as "identifier", not "ip": the API shape is already the generic one the table will grow into when
+    # non-IP entries (device, API key) become blockable.
     return {
         "identifier": row.ip,
         "permanent": row.block_expires_at is None,
@@ -142,28 +142,28 @@ def _blocklist_dict(row: BlockList, now: datetime) -> dict:
 
 def _visibility_condition(scopes: list) -> ColumnElement[bool]:
     """
-    Build a WHERE clause restricting the lockout query to the admin's visibility
+    Build a WHERE clause restricting the lock query to the admin's visibility
     *scopes*: a row matches all dimensions a scope sets (AND) and is included if
     it matches any scope (OR); an empty/unsatisfiable boundary returns ``false()``
     so it fails closed.
 
     Realm, resolver and username are all enforced (username via the denormalized
-    ``UserLockoutState.username`` column, honoring the policy's
+    ``UserLockState.username`` column, honoring the policy's
     ``user_case_insensitive`` option like the auth log).
     """
     scope_conditions = []
     for scope in scopes:
         dimensions = []
         if scope.realms:
-            dimensions.append(UserLockoutState.realm.in_(scope.realms))
+            dimensions.append(UserLockState.realm.in_(scope.realms))
         if scope.resolvers:
-            dimensions.append(UserLockoutState.resolver.in_(scope.resolvers))
+            dimensions.append(UserLockState.resolver.in_(scope.resolvers))
         if scope.usernames:
             if scope.username_case_insensitive:
-                dimensions.append(func.lower(UserLockoutState.username).in_(
+                dimensions.append(func.lower(UserLockState.username).in_(
                     [name.lower() for name in scope.usernames]))
             else:
-                dimensions.append(UserLockoutState.username.in_(scope.usernames))
+                dimensions.append(UserLockState.username.in_(scope.usernames))
         if dimensions:
             scope_conditions.append(and_(*dimensions))
     if not scope_conditions:
@@ -194,7 +194,7 @@ def user_matches_scopes(user: User, scopes: list | None) -> bool:
     return False
 
 
-def _lockout_conditions(realms: list[str] | None, resolvers: list[str] | None,
+def _lock_conditions(realms: list[str] | None, resolvers: list[str] | None,
                         usernames: list[str] | None, states: list[str] | None,
                         visibility_scopes: list | None, now: datetime,
                         case_insensitive: bool,
@@ -220,10 +220,10 @@ def _lockout_conditions(realms: list[str] | None, resolvers: list[str] | None,
     :return: the list of SQLAlchemy ``where`` conditions (AND-ed by the caller)
     """
     conditions: list[ColumnElement[bool]] = []
-    for column, value in ((UserLockoutState.realm, realms),
-                          (UserLockoutState.resolver, resolvers),
-                          (UserLockoutState.username, usernames),
-                          (UserLockoutState.error_message, error_messages)):
+    for column, value in ((UserLockState.realm, realms),
+                          (UserLockState.resolver, resolvers),
+                          (UserLockState.username, usernames),
+                          (UserLockState.error_message, error_messages)):
         condition = match_condition(column, value, case_insensitive)
         if condition is not None:
             conditions.append(condition)
@@ -243,13 +243,13 @@ def list_locked_users(realms: list[str] | None = None, resolvers: list[str] | No
                       error_messages: list[str] | None = None) -> list[dict]:
     """
     Return all matching locked users (no pagination), most recently updated first. See
-    :func:`_lockout_conditions` for the filter/scoping semantics and
+    :func:`_lock_conditions` for the filter/scoping semantics and
     :func:`list_locked_users_paginate` for the paginated variant.
     """
     moment = now if now is not None else utc_now()
-    conditions = _lockout_conditions(realms, resolvers, usernames, states,
+    conditions = _lock_conditions(realms, resolvers, usernames, states,
                                      visibility_scopes, moment, case_insensitive, error_messages)
-    stmt = select(UserLockoutState).where(*conditions).order_by(UserLockoutState.locked_at.desc())
+    stmt = select(UserLockState).where(*conditions).order_by(UserLockState.locked_at.desc())
     return [_locked_user_dict(row, moment) for row in get_ca_session().scalars(stmt).all()]
 
 
@@ -265,22 +265,22 @@ def list_locked_users_paginate(realms: list[str] | None = None, resolvers: list[
     Return one page of matching locked users plus pagination metadata
     ``{locked_users, count, current, prev, next}`` — the counterpart of
     :func:`list_locked_users` for the WebUI table. Filter/scoping semantics are as
-    :func:`_lockout_conditions`; sorting is by one of :data:`SORTABLE_COLUMNS`
+    :func:`_lock_conditions`; sorting is by one of :data:`SORTABLE_COLUMNS`
     (fallback ``locked_at``), always tie-broken by the primary key for a stable
     order across pages.
     """
     moment = now if now is not None else utc_now()
-    conditions = _lockout_conditions(realms, resolvers, usernames, states,
+    conditions = _lock_conditions(realms, resolvers, usernames, states,
                                      visibility_scopes, moment, case_insensitive, error_messages)
     count = get_ca_session().scalar(
-        select(func.count()).select_from(UserLockoutState).where(*conditions))
+        select(func.count()).select_from(UserLockState).where(*conditions))
     order_column = SORTABLE_COLUMNS.get(sort_column)
     if order_column is None:
         log.warning(f"Unknown sort column '{sort_column}'. Using 'locked_at' instead.")
-        order_column = UserLockoutState.locked_at
-    tiebreak = (UserLockoutState.resolver, UserLockoutState.uid, UserLockoutState.realm)
+        order_column = UserLockState.locked_at
+    tiebreak = (UserLockState.resolver, UserLockState.uid, UserLockState.realm)
     direction = (lambda col: col.asc()) if sort_order == "asc" else (lambda col: col.desc())
-    stmt = (select(UserLockoutState).where(*conditions)
+    stmt = (select(UserLockState).where(*conditions)
             .order_by(direction(order_column), *[direction(col) for col in tiebreak]))
     page = max(1, page)
     page_size = max(1, page_size)
@@ -295,17 +295,17 @@ def list_locked_users_paginate(realms: list[str] | None = None, resolvers: list[
     }
 
 
-def get_user_lockout_dict(user: User, now: datetime | None = None) -> dict | None:
+def get_user_lock_dict(user: User, now: datetime | None = None) -> dict | None:
     """
     Return *user*'s current lock in the same shape as :func:`list_locked_users`,
     or ``None`` if the user is not currently locked. The active/expiry decision
-    is delegated to :func:`~privacyidea.lib.conditional_access.engine.get_user_lockout`
+    is delegated to :func:`~privacyidea.lib.conditional_access.engine.get_user_lock`
     so this always agrees with the authentication pre-check.
     """
-    status = get_user_lockout(user, now=now)
+    status = get_user_lock(user, now=now)
     if status is None:
         return None
-    row = get_ca_session().get(UserLockoutState, (user.resolver, user.uid, user.realm))
+    row = get_ca_session().get(UserLockState, (user.resolver, user.uid, user.realm))
     return _locked_user_dict(row, now if now is not None else utc_now())
 
 
@@ -331,12 +331,12 @@ def unlock_user_by_id(uid: str, realm: str, resolver: str | None = None,
     call that also matches one inside it. An out-of-scope target is therefore
     indistinguishable from an absent lock — both return ``False``.
     """
-    conditions = [UserLockoutState.uid == uid, UserLockoutState.realm == realm]
+    conditions = [UserLockState.uid == uid, UserLockState.realm == realm]
     if resolver:
-        conditions.append(UserLockoutState.resolver == resolver)
+        conditions.append(UserLockState.resolver == resolver)
     if visibility_scopes is not None:
         conditions.append(_visibility_condition(visibility_scopes))
-    return _delete_and_commit(delete(UserLockoutState).where(*conditions)) > 0
+    return _delete_and_commit(delete(UserLockState).where(*conditions)) > 0
 
 
 @log_with(log)
@@ -353,12 +353,12 @@ def unlock_user_by_username(username: str, realm: str, resolver: str | None = No
     ``visibility_scopes`` restricts the delete to the caller's authorization
     boundary exactly as in :func:`unlock_user_by_id`.
     """
-    conditions = [UserLockoutState.username == username, UserLockoutState.realm == realm]
+    conditions = [UserLockState.username == username, UserLockState.realm == realm]
     if resolver:
-        conditions.append(UserLockoutState.resolver == resolver)
+        conditions.append(UserLockState.resolver == resolver)
     if visibility_scopes is not None:
         conditions.append(_visibility_condition(visibility_scopes))
-    return _delete_and_commit(delete(UserLockoutState).where(*conditions)) > 0
+    return _delete_and_commit(delete(UserLockState).where(*conditions)) > 0
 
 
 @log_with(log)
@@ -368,7 +368,9 @@ def list_blocklist(include_expired: bool = True, now: datetime | None = None) ->
     expiry fields (``permanent`` / ``block_expires_at`` / ``seconds_remaining``),
     so the caller can tell a currently-enforced block from a stale, expired record.
     The never-block allowlist is an enforcement-time concern and is *not* applied
-    here, so an admin can see and clean up a row even for a never-enforced IP.
+    here, so an admin can see a row even for a never-enforced IP - until the next
+    authentication from that IP, which drops it (see
+    :func:`~privacyidea.lib.conditional_access.engine.get_ip_block`).
 
     :param include_expired: also return stale rows whose timed block has expired.
         Defaults to ``True``: a management view lists what is *on record* and the
@@ -394,9 +396,9 @@ def remove_blocklist_entry(entry: str) -> bool:
 
 
 @log_with(log)
-def purge_expired_user_lockouts(now: datetime | None = None, visibility_scopes: list | None = None) -> int:
+def purge_expired_user_locks(now: datetime | None = None, visibility_scopes: list | None = None) -> int:
     """
-    Delete user-lockout rows that are no longer in force — a timed lock past its
+    Delete user-lock rows that are no longer in force — a timed lock past its
     expiry. Permanent locks (``lock_expires_at IS NULL``) and active timed locks
     are kept. Nothing writes these rows off on its own, so this is the
     housekeeping that clears stale records. Returns the number of rows removed.
@@ -407,10 +409,10 @@ def purge_expired_user_lockouts(now: datetime | None = None, visibility_scopes: 
     is the number they were allowed to remove.
     """
     now = now or utc_now()
-    conditions = [UserLockoutState.lock_expires_at.isnot(None), UserLockoutState.lock_expires_at <= now]
+    conditions = [UserLockState.lock_expires_at.isnot(None), UserLockState.lock_expires_at <= now]
     if visibility_scopes is not None:
         conditions.append(_visibility_condition(visibility_scopes))
-    return _delete_and_commit(delete(UserLockoutState).where(and_(*conditions)))
+    return _delete_and_commit(delete(UserLockState).where(and_(*conditions)))
 
 
 @log_with(log)

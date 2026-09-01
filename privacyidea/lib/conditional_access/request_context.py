@@ -52,7 +52,7 @@ log = logging.getLogger(__name__)
 # Key the context is cached under in the app-context-local store.
 _CONTEXT_KEY = "conditional_access_context"
 
-# The key under which a challenge records the authentication attempt it was triggered for. Written by
+# The key under which a challenge records the attempt it was triggered for, written by
 # :func:`~privacyidea.lib.token.auth.create_challenge`, read back by :meth:`ConditionalAccessContext.continue_attempt`.
 ATTEMPT_ID_CHALLENGE_KEY = "attempt_id"
 
@@ -143,8 +143,8 @@ class ConditionalAccessContext:
         self.source_ip: str | None = None
         # The attempt this request belongs to, once it is known (see attempt_id).
         self._attempt_id: str | None = None
-        # Outcomes produced before any event was staged, i.e. by the pre-auth decision. The first event staged after
-        # them takes them over (see stage), because that is the row they belong to.
+        # Outcomes produced before any event was staged (the pre-auth decision), taken over by the first event
+        # staged afterward (see stage), because that is the row they belong to.
         self.pending_outcomes: list[ConditionalAccessOutcome] = []
         # The classification the engine has already been run for, so a repeated call is skipped but a *corrected*
         # outcome is not (see run_post_eval).
@@ -229,7 +229,7 @@ class ConditionalAccessContext:
         The gate is the innermost decorator, so the post-policies still run on its rejection response and would
         otherwise classify a request that never reached any token logic. There is nothing for them to say about it:
         the request was refused for a reason already recorded, and logging their own outcome on top would both bury
-        that reason and hand the lockout counters an attempt the lock itself produced.
+        that reason and hand the conditional-access counters an attempt the lock itself produced.
         """
         event = self.latest
         return event is not None and event.event_type in CA_ENFORCEMENT_EVENT_TYPES
@@ -437,11 +437,11 @@ class ConditionalAccessContext:
             return PostEvaluation()
         # Deferred import: the engine pulls in the ORM models, so importing it at module level would risk an
         # import-order cycle during app startup.
-        from privacyidea.lib.conditional_access.engine import evaluate_lockout_policies
+        from privacyidea.lib.conditional_access.engine import evaluate_conditional_access_policies
         context = CAContext(user=self.principal.user or None, source_ip=self.source_ip,
                             user_role=event.user_role, use_default_error_message=self.use_default_error_message)
         try:
-            evaluation = evaluate_lockout_policies(context, event.event_type)
+            evaluation = evaluate_conditional_access_policies(context, event.event_type)
         except Exception as ex:
             log.warning(f"Conditional-access policy evaluation failed: {ex!r}")
             return PostEvaluation()

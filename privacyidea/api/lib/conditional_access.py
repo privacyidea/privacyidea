@@ -80,10 +80,10 @@ from flask import request, g, Response
 from privacyidea.api.lib.utils import (GENERIC_AUTH_FAILURE, log_authentication, build_ca_context,
                                       send_error, send_result, get_optional_one_of)
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
-from privacyidea.lib.conditional_access.engine import (get_user_lockout, get_ip_block, evaluate_access_decision,
+from privacyidea.lib.conditional_access.engine import (get_user_lock, get_ip_block, evaluate_access_decision,
                                                        render_error_message, restriction_messages, AccessDecision,
-                                                       LockoutAction, RestrictionStatus, StageMessage)
-from privacyidea.lib.conditional_access.lockout_policy import default_error_message
+                                                       ConditionalAccessAction, RestrictionStatus, StageMessage)
+from privacyidea.lib.conditional_access.policy import default_error_message
 from privacyidea.lib.conditional_access.request_context import (ConditionalAccessContext, PostEvaluation,
                                                                  RejectionShape, get_ca_context, peek_ca_context)
 from privacyidea.lib.error import AuthError, Error
@@ -145,7 +145,7 @@ def _evaluate_rejection(user: User) -> "Rejection | None":
     # rejection the same way.
     context = get_ca_context()
     context.use_default_error_message = show_default_ca_error_message(user)
-    lockout = get_user_lockout(user, clear_expired=True)
+    lockout = get_user_lock(user, clear_expired=True)
     ip_block = get_ip_block(g.client_ip, clear_expired=True)
     binding = _binding_event_type(lockout, ip_block)
     if binding:
@@ -170,7 +170,7 @@ def _evaluate_rejection(user: User) -> "Rejection | None":
         # the default error message for a denial.
         template = decision.error_message
         if not template and context.use_default_error_message:
-            template = default_error_message(LockoutAction.DENY)
+            template = default_error_message(ConditionalAccessAction.DENY)
         return Rejection(AuthEventType.ACCESS_DENIED, "Rejected: denied by conditional-access policy",
                          render_error_message(template))
     return None
@@ -497,7 +497,7 @@ def _binding_event_type(lockout: RestrictionStatus | None,
     on - so one of the two has to stand for the rejection. What the *user* is told is a separate question with a
     separate answer: every restriction that carries one is reported (see :func:`_evaluate_rejection`).
 
-    :param lockout: the :class:`RestrictionStatus` from :func:`get_user_lockout`, or ``None``
+    :param lock: the :class:`RestrictionStatus` from :func:`get_user_lock`, or ``None``
     :param ip_block: the :class:`RestrictionStatus` from :func:`get_ip_block`, or ``None``
     :return: the :class:`AuthEventType` to file the rejection under, or ``None`` if neither is in force
     """

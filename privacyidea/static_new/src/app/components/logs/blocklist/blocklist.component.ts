@@ -118,8 +118,8 @@ export class BlocklistComponent {
   readonly filterText = signal("");
   readonly sort: WritableSignal<Sort> = signal({ active: "identifier", direction: "asc" });
 
-  // Pre-seed the authentication-log filter with this entry's source IP and jump there, so the log shows only
-  // that IP's events. Navigation to the auth-log route itself is done by the template's routerLink.
+  // Pre-seeds the authentication-log filter with this entry's source IP, so the log shows only that IP's events; the
+  // template's routerLink does the navigation.
   showAuthenticationLog(row: BlocklistEntry): void {
     this.authenticationLogService.authenticationLogFilter.set(new FilterValue().addEntry("source_ip", row.identifier));
   }
