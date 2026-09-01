@@ -23,7 +23,7 @@ import { TestBed } from "@angular/core/testing";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { AuthService, JwtData } from "@services/auth/auth.service";
 import { ContainerDetailToken } from "@services/container/container.service";
-import { TableUtilsService } from "./table-utils.service";
+import { TableCellValue, TableUtilsService } from "./table-utils.service";
 import { TokenService } from "@services/token/token.service";
 import { MockTokenService } from "@testing/mock-services";
 
@@ -192,13 +192,27 @@ describe("TableUtilsService", () => {
 
   describe("getDisplayText", () => {
     it.each([
-      [{ active: true }, "active"],
-      [{ active: false }, "deactivated"],
-      [{ active: true, locked: true }, "locked"],
-      [{ active: false, revoked: true }, "revoked"],
+      [{ active: true }, "Active"],
+      [{ active: false }, "Deactivated"],
+      [{ active: true, locked: true }, "Locked"],
+      [{ active: false, revoked: true }, "Revoked"],
       [{ active: "" }, ""]
     ])('maps element → "%s"', (element, expected) => {
       expect(service.getDisplayText("active", element)).toBe(expected);
+    });
+
+    const rolloutStateCases: [string, string][] = [
+      ["clientwait", "Client wait"],
+      ["pending", "Pending"],
+      ["enrolled", "Enrolled"],
+      ["mystery", "mystery"]
+    ];
+    it.each(rolloutStateCases)('maps rollout_state "%s" → "%s"', (state, expected) => {
+      expect(service.getDisplayText("rollout_state", { rollout_state: state })).toBe(expected);
+    });
+
+    it("returns an empty string for a rollout_state that is not a string", () => {
+      expect(service.getDisplayText("rollout_state", {})).toBe("");
     });
 
     it("returns raw value for non‑special column", () => {
@@ -252,12 +266,32 @@ describe("TableUtilsService", () => {
 
   it.each([
     ["active", "", false, ""],
-    ["active", true, false, "active"],
-    ["active", false, false, "deactivated"],
-    ["active", true, true, "revoked"],
+    ["active", true, false, "Active"],
+    ["active", false, false, "Deactivated"],
+    ["active", true, true, "Revoked"],
     ["title", "hello", false, "hello"]
   ])("getDisplayTextForKeyAndRevoked(%s, %s, %s) → %s", (k, v, r, expected) => {
     expect(service.getDisplayTextForKeyAndRevoked(k, v, r)).toBe(expected);
+  });
+
+  const displayTextForKeyCases: [string, TableCellValue, string][] = [
+    ["success", true, "Yes"],
+    ["success", false, "No"],
+    ["success", 1, "Yes"],
+    ["success", 0, "No"],
+    ["authentication", "accept", "Accept"],
+    ["authentication", "challenge", "Challenge"],
+    ["authentication", "reject", "Reject"],
+    ["authentication", "declined", "Declined"],
+    ["authentication", "DECLINED", "Declined"],
+    ["authentication", "mystery", "mystery"],
+    ["action", "/auth", "/auth"],
+    ["success", "", ""],
+    ["success", null, ""],
+    ["success", undefined, ""]
+  ];
+  it.each(displayTextForKeyCases)('getDisplayTextForKey("%s", %s) → "%s"', (key, value, expected) => {
+    expect(service.getDisplayTextForKey(key, value)).toBe(expected);
   });
 
   it.each([
@@ -285,8 +319,10 @@ describe("TableUtilsService", () => {
   });
 
   it.each([
-    ["active", "active"],
-    ["disabled", "deactivated"],
+    ["active", "Active"],
+    ["disabled", "Deactivated"],
+    ["lost", "Lost"],
+    ["damaged", "Damaged"],
     ["mystery", "mystery"]
   ])('getDisplayTextForState("%s") → %s', (state, expected) => {
     expect(service.getDisplayTextForState(state)).toBe(expected);

@@ -17,6 +17,8 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { MatSelect } from "@angular/material/select";
+import { By } from "@angular/platform-browser";
 import { provideRouter } from "@angular/router";
 import { HOTP_HASHLIB } from "@constants/token.constants";
 import { HotpConfigComponent } from "./hotp-config.component";
@@ -41,6 +43,25 @@ describe("HotpConfigComponent", () => {
 
   it("should create", () => {
     expect(component).toBeTruthy();
+  });
+
+  it("emits the raw hashlib key when a labelled option is picked", () => {
+    const emitSpy = jest.spyOn(component.formDataChange, "emit");
+    const select = fixture.debugElement.query(By.directive(MatSelect));
+    select.componentInstance.open();
+    fixture.detectChanges();
+
+    const options = fixture.debugElement.queryAll(By.css("mat-option"));
+    expect(options.map((option) => [option.componentInstance.value, option.nativeElement.textContent.trim()])).toEqual([
+      ["sha1", "SHA-1"],
+      ["sha256", "SHA-256"],
+      ["sha512", "SHA-512"]
+    ]);
+
+    options[1].nativeElement.click();
+    fixture.detectChanges();
+
+    expect(emitSpy).toHaveBeenCalledWith({ [HOTP_HASHLIB]: "sha256" });
   });
 
   it("should emit formDataChange when updateFormData is called", () => {

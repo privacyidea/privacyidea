@@ -360,6 +360,38 @@ describe("PoliciesTableComponent", () => {
       expect(filterBy("actions: totp")).toEqual(["auth-totp"]);
     });
 
+    it("matches the display label of an action value as well as its raw value", () => {
+      const labeledPolicy = {
+        name: "labeled",
+        priority: 40,
+        scope: "enrollment",
+        active: true,
+        description: "",
+        action: { otppin: "1", hashlib: "sha256" },
+        realm: [],
+        user: [],
+        adminrealm: [],
+        adminuser: [],
+        pinode: [],
+        client: [],
+        user_agents: [],
+        time: "",
+        conditions: []
+      } as unknown as PolicyDetail;
+      mockPolicyService.getDetailsOfAction.mockImplementation((name: string) => {
+        if (name === "otppin") return { value: ["0", "1"] };
+        if (name === "hashlib") return { value: ["sha1", "sha256", "sha512"] };
+        return null;
+      });
+      mockPolicyService.allPolicies.set([...richPolicies, labeledPolicy]);
+      fixture.detectChanges();
+
+      expect(filterBy("actions: on")).toEqual(["labeled"]);
+      expect(filterBy("actions: sha-256")).toEqual(["labeled"]);
+      expect(filterBy("actions: sha256")).toEqual(["labeled"]);
+      expect(filterBy("actions: off")).toEqual([]);
+    });
+
     it("excludes policies without any actions from an actions keyword filter", () => {
       const noActionPolicy = {
         name: "no-actions",

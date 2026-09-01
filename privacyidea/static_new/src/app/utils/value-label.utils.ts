@@ -17,6 +17,8 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
+import { tokenTypeLabel } from "./token.utils";
+
 export type DisplayableValue = string | number | boolean;
 
 export type BooleanValueLabelPreset = "switch" | "predicate";
@@ -34,28 +36,46 @@ const BOOLEAN_PRESET_LABELS: Record<BooleanValueLabelPreset, readonly [string, s
 const VALUE_VOCABULARY: Record<string, string> = {
   accept: $localize`:@@valueLabelAccept:Accept`,
   active: $localize`:@@valueLabelActive:Active`,
+  admin: $localize`:@@valueLabelAdministrator:Administrator`,
+  allowed: $localize`:@@valueLabelAllowed:Allowed`,
   any_pin: $localize`:@@valueLabelAnyPin:Any PIN`,
+  background: $localize`:@@valueLabelInBackground:In background`,
   challenge: $localize`:@@valueLabelChallenge:Challenge`,
   clientwait: $localize`:@@valueLabelClientWait:Client wait`,
   damaged: $localize`:@@valueLabelDamaged:Damaged`,
   deactivated: $localize`:@@valueLabelDeactivated:Deactivated`,
-  disabled: $localize`:@@valueLabelDeactivated:Deactivated`,
+  declined: $localize`:@@valueLabelDeclined:Declined`,
   deny_access: $localize`:@@valueLabelDenyAccess:Deny access`,
+  disable: $localize`:@@valueLabelDisabled:Disabled`,
+  disabled: $localize`:@@valueLabelDeactivated:Deactivated`,
+  force: $localize`:@@valueLabelForced:Forced`,
+  generic: $localize`:@@valueLabelGeneric:Generic`,
   grant_access: $localize`:@@valueLabelGrantAccess:Grant access`,
+  hide: $localize`:@@valueLabelHide:Hide`,
+  html: "HTML",
   locked: $localize`:@@valueLabelLocked:Locked`,
   lockscreen: $localize`:@@valueLabelLockScreen:Lock screen`,
   logged_in_user: $localize`:@@valueLabelLoggedInUser:Logged-in user`,
   lost: $localize`:@@valueLabelLost:Lost`,
+  luks: "LUKS",
+  offline: $localize`:@@valueLabelOffline:Offline`,
   pin: $localize`:@@valueLabelPin:PIN`,
+  plain: $localize`:@@valueLabelPlainText:Plain text`,
   reject: $localize`:@@valueLabelReject:Reject`,
   require_and_verify: $localize`:@@valueLabelRequireAndVerify:Require and verify`,
   revoked: $localize`:@@valueLabelRevoked:Revoked`,
-  sha1: $localize`:@@valueLabelSha1:SHA-1`,
-  sha256: $localize`:@@valueLabelSha256:SHA-256`,
-  sha512: $localize`:@@valueLabelSha512:SHA-512`,
+  sha1: "SHA-1",
+  sha256: "SHA-256",
+  sha512: "SHA-512",
+  show: $localize`:@@valueLabelShow:Show`,
+  smartphone: $localize`:@@valueLabelSmartphone:Smartphone`,
+  ssh: "SSH",
   tokenowner: $localize`:@@valueLabelTokenOwner:Token owner`,
   tokenpin: $localize`:@@valueLabelTokenPin:Token PIN`,
-  userstore: $localize`:@@valueLabelUserStore:User store`
+  user: $localize`:@@valueLabelUser:User`,
+  userstore: $localize`:@@valueLabelUserStore:User store`,
+  wait: $localize`:@@valueLabelWait:Wait`,
+  yubikey: "Yubikey"
 };
 
 function normalizeValue(value: DisplayableValue): string {
@@ -70,6 +90,11 @@ function matchingBooleanPair(values: readonly DisplayableValue[] | undefined): r
 
 function hasVocabularyEntry(values: readonly DisplayableValue[] | undefined): boolean {
   return !!values?.some((value) => normalizeValue(value) in VALUE_VOCABULARY);
+}
+
+function holdsTokenTypes(values: readonly DisplayableValue[] | undefined): boolean {
+  const tokenTypeCount = values?.filter((value) => !!tokenTypeLabel(normalizeValue(value))).length ?? 0;
+  return tokenTypeCount >= 2;
 }
 
 function capitalize(value: string): string {
@@ -91,6 +116,11 @@ export function valueDisplayLabel(
     const index = booleanPair.indexOf(normalized);
     if (index >= 0) return BOOLEAN_PRESET_LABELS[preset][index];
     return raw;
+  }
+
+  if (holdsTokenTypes(values)) {
+    const tokenLabel = tokenTypeLabel(normalized);
+    if (tokenLabel) return tokenLabel;
   }
 
   const vocabularyLabel = VALUE_VOCABULARY[normalized];

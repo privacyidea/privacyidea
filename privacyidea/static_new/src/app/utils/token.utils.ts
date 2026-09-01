@@ -202,3 +202,19 @@ export const tokenTypes: TokenType[] = [
     rollover: false
   } as TokenType
 ];
+
+const displayOnlyTokenTypeLabels: Record<string, string> = {
+  daplug: "Daplug",
+  deprecated: "Deprecated",
+  ocra: "OCRA",
+  pw: "Static Password"
+};
+
+const tokenTypeLabels: Record<string, string> = {
+  ...displayOnlyTokenTypeLabels,
+  ...Object.fromEntries(tokenTypes.map((tokenType) => [tokenType.key.toLowerCase(), tokenType.name]))
+};
+
+export function tokenTypeLabel(key: string): string | undefined {
+  return tokenTypeLabels[key.toLowerCase()];
+}

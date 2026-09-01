@@ -134,7 +134,7 @@ export interface TableUtilsServiceInterface {
 
 const TOKEN_STATE_VALUES = ["active", "deactivated", "revoked", "locked"];
 const CONTAINER_STATE_VALUES = ["active", "disabled", "lost", "damaged"];
-const AUTHENTICATION_VALUES = ["accept", "challenge", "reject"];
+const AUTHENTICATION_VALUES = ["accept", "challenge", "reject", "declined"];
 const ROLLOUT_STATE_VALUES = ["clientwait", "pending", "verify", "enrolled", "broken", "failed", "denied"];
 
 function tokenStateLabel(state: string): string {
