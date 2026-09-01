@@ -707,8 +707,9 @@ def get_authentication_logs_paginate(resolvers: str | list[str] | None = None,
 
     The filter parameters -- ``resolvers``, ``uids``, ``realms``, ``usernames``, ``user_roles``, ``event_types``,
     ``reasons``, ``source_ips``, ``serials``, ``transaction_ids``, ``attempt_ids``, ``client_labels``,
-    ``endpoints``, ``start_time`` and ``end_time`` -- behave exactly like :func:`get_authentication_logs`. The ``ca_*`` parameters filter on what conditional access *did* to the
-    request and are only offered here, since this is the endpoint that reads the outcomes:
+    ``endpoints``, ``start_time`` and ``end_time`` -- behave exactly like :func:`get_authentication_logs`. The
+    ``ca_*`` parameters filter on what conditional access *did* to the request and are only offered here, since this
+    is the endpoint that reads the outcomes:
 
     :param ca_action_types: only entries with an outcome of one of these action types; ``"*"`` reads as "conditional
         access acted on this request at all"
@@ -860,8 +861,8 @@ def delete_authentication_logs(resolvers: str | list[str] | None = None,
     The filter parameters -- ``resolvers``, ``uids``, ``realms``, ``usernames``, ``user_roles``, ``event_types``,
     ``reasons``, ``source_ips``, ``serials``, ``transaction_ids``, ``attempt_ids``, ``client_labels``,
     ``endpoints``, ``start_time`` and ``end_time`` -- behave exactly like :func:`get_authentication_logs` (to delete
-    entries older than a point in time, pass ``end_time``). The caller must pass at least one filter: with no filter this would delete the entire log,
-    which this function refuses.
+    entries older than a point in time, pass ``end_time``). The caller must pass at least one filter: with no filter
+    this would delete the entire log, which this function refuses.
 
     :param visibility_scopes: restrict the deletion to entries matching any of these scopes
         (see :func:`_visibility_condition`); ``None`` means no restriction
