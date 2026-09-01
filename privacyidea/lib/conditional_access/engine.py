@@ -1647,11 +1647,11 @@ def _execute_stage_actions(policy: LockoutPolicy, stage: LockoutPolicyStage,
                     continue
                 lock_expires_at = now + timedelta(seconds=duration)
                 if _upsert_user_lockout_state(user, lock_expires_at=lock_expires_at,
-                                              error_message=stage.error_message):
+                                              error_message=stage.error_message, policy_name=policy.name):
                     record(action_type, expires_at=lock_expires_at)
             elif action_type == LockoutAction.PERMANENT_LOCK_USER:
                 if _upsert_user_lockout_state(user, lock_expires_at=None,
-                                              error_message=stage.error_message):
+                                              error_message=stage.error_message, policy_name=policy.name):
                     record(action_type)
             elif action_type in (LockoutAction.EMAIL_ADMIN, LockoutAction.EMAIL_USER):
                 if _send_lockout_email(action_type, action, user, tags):
@@ -1675,7 +1675,8 @@ def _execute_stage_actions(policy: LockoutPolicy, stage: LockoutPolicyStage,
                                     f"({action.action_value!r}); skipping.")
                         continue
                     block_expires_at = now + timedelta(seconds=duration)
-                if _upsert_ip_block(source_ip, block_expires_at=block_expires_at, error_message=stage.error_message):
+                if _upsert_ip_block(source_ip, block_expires_at=block_expires_at,
+                                    error_message=stage.error_message, policy_name=policy.name):
                     record(action_type, expires_at=block_expires_at)
             elif action_type in (LockoutAction.ALLOW, LockoutAction.DENY):
                 # ALLOW/DENY decide the current request pre-auth (see
@@ -1741,7 +1742,8 @@ def _delete_ip_block(state: BlockList) -> None:
         get_ca_session().delete(state)
 
 
-def _upsert_user_lockout_state(user: "User", *, lock_expires_at: datetime | None, error_message: str | None) -> bool:
+def _upsert_user_lockout_state(user: "User", *, lock_expires_at: datetime | None, error_message: str | None,
+                               policy_name: str | None = None) -> bool:
     """
     Create or update the :class:`UserLockoutState` row for *user*.
 
@@ -1749,40 +1751,51 @@ def _upsert_user_lockout_state(user: "User", *, lock_expires_at: datetime | None
     the lockout state can never break the authentication response that already
     completed.
 
-    A lock is never **weakened**: a permanent lock is not downgraded to a timed one, and a timed lock is not
-    shortened. Several policies can lock the same user in one request (:func:`evaluate_lockout_policies` runs
-    every policy tracking the event), and a stage can carry more than one lock action; without this rule the
-    last write would win regardless of severity, so a one-hour lock followed by a ten-minute one would leave
-    the user locked for ten minutes.
+    Only a **strictly stronger** lock is written. A permanent lock is not downgraded to a timed one, a timed lock
+    is not shortened, and a write that merely restates the lock in force changes nothing. Several policies can lock
+    the same user in one request (:func:`evaluate_lockout_policies` runs every policy tracking the event), and a
+    stage can carry more than one lock action; without this rule the last write would win regardless of severity,
+    so a one-hour lock followed by a ten-minute one would leave the user locked for ten minutes.
+
+    Restating matters for the *error message*, which travels with the expiry. Policies run in priority order, so the
+    first to lock a subject is the highest-priority one that did, and a later policy writing the same lock again
+    would otherwise replace its wording - with its own, or with none at all, silently overriding an admin who chose
+    to say something. Since the restriction is unchanged, the wording describing it stands, and the policy whose
+    message was not applied is logged.
 
     :return: whether the lock was written. ``False`` when the write failed, or when it was declined because a
         stronger lock is already in force - the caller uses this to record the action in the history only if it
         actually changed something.
     """
-    weakening_declined = False
+    declined = False
     with guarded_write(f"the user lockout state for {user!r}") as write:
         session = get_ca_session()
         state = session.get(UserLockoutState, (user.resolver, user.uid, user.realm))
         if state is None:
             state = UserLockoutState(resolver=user.resolver, uid=user.uid, realm=user.realm)
             session.add(state)
+        elif state.lock_expires_at == lock_expires_at:
+            log.info(f"Policy {policy_name!r} restates the lock already in force for {user!r}; the error message of "
+                     "the higher-priority policy that wrote it stands.")
+            declined = True
         elif state.lock_expires_at is None and lock_expires_at is not None:
             log.info(f"Not downgrading the existing permanent lock for {user!r} to a timed lock.")
-            weakening_declined = True
+            declined = True
         elif lock_expires_at is not None and lock_expires_at < state.lock_expires_at:
             log.info(f"Not shortening the existing lock for {user!r}: it already runs until "
                      f"{state.lock_expires_at}.")
-            weakening_declined = True
-        if not weakening_declined:
+            declined = True
+        if not declined:
             state.username = user.login
             state.lock_expires_at = lock_expires_at
-            # Written together with the expiry, so the error message always describes the lock now in force. A write
-            # that would weaken the lock is declined above, its error message with it.
+            # Written together with the expiry, so the error message always describes the lock now in force. Only a
+            # write that strengthens the lock gets here, and its error message comes with it.
             state.error_message = error_message
-    return write.succeeded and not weakening_declined
+    return write.succeeded and not declined
 
 
-def _upsert_ip_block(source_ip: str, *, block_expires_at: datetime | None, error_message: str | None) -> bool:
+def _upsert_ip_block(source_ip: str, *, block_expires_at: datetime | None, error_message: str | None,
+                     policy_name: str | None = None) -> bool:
     """
     Create or update the :class:`BlockList` row for *source_ip*.
 
@@ -1803,22 +1816,26 @@ def _upsert_ip_block(source_ip: str, *, block_expires_at: datetime | None, error
     if is_ip_never_block(source_ip):
         log.info(f"Not blocking IP {source_ip!r}: it is on the conditional-access never-block list.")
         return False
-    weakening_declined = False
+    declined = False
     with guarded_write(f"the IP block for {source_ip!r}") as write:
         session = get_ca_session()
         state = session.get(BlockList, source_ip)
         if state is None:
             state = BlockList(ip=source_ip)
             session.add(state)
+        elif state.block_expires_at == block_expires_at:
+            log.info(f"Policy {policy_name!r} restates the block already in force for IP {source_ip!r}; the error "
+                     f"message of the higher-priority policy that wrote it stands.")
+            declined = True
         elif state.block_expires_at is None and block_expires_at is not None:
             log.info(f"Not downgrading the existing permanent block for IP {source_ip!r} to a timed block.")
-            weakening_declined = True
+            declined = True
         elif block_expires_at is not None and block_expires_at < state.block_expires_at:
             log.info(f"Not shortening the existing block for IP {source_ip!r}: it already runs until "
                      f"{state.block_expires_at}.")
-            weakening_declined = True
-        if not weakening_declined:
+            declined = True
+        if not declined:
             state.block_expires_at = block_expires_at
             # See _upsert_user_lockout_state: written together with the expiry.
             state.error_message = error_message
-    return write.succeeded and not weakening_declined
+    return write.succeeded and not declined

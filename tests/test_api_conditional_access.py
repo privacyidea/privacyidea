@@ -30,6 +30,7 @@ from privacyidea.lib.conditional_access.conditions import ConditionOperator, Con
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, CountMode
 from privacyidea.lib.conditional_access.authentication_log import AuthLogUserRole, get_authentication_logs
 from privacyidea.lib.conditional_access.engine import is_user_locked, is_ip_blocked
+from privacyidea.lib.conditional_access.engine import get_user_lockout, get_ip_block
 from privacyidea.lib.conditional_access.engine import LockoutAction, LockoutTarget
 from privacyidea.lib.conditional_access.engine import _upsert_user_lockout_state
 from privacyidea.lib.conditional_access.lockout_policy import create_lockout_policy, default_error_message
@@ -75,6 +76,10 @@ def _rows_since(before: int) -> list[str]:
     a rejection must *not* carry are proven empty).
     """
     return [entry.event_type for entry in get_authentication_logs()[before:]]
+
+
+#: The source IP the block tests use - not loopback, which is on the never-block list.
+BLOCKED_IP = "203.0.113.9"
 
 
 def _counter_types(counter_type):
@@ -1470,6 +1475,105 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         # Rejected before any token work: the fail counter is unmoved and the rejection classifies the request.
         self.assertListEqual([AuthEventType.USER_LOCKED], _rows_since(logs_after_success))
         self.assertEqual(0, self._failcount())
+
+    # --- two policies restricting the same subject in one request ---------------
+
+    def _lock_policy_named(self, name, priority, message, duration, action=LockoutAction.LOCK_USER) -> None:
+        create_lockout_policy(
+            name=name, time_window_seconds=3600,
+            counter_types_to_track=_counter_types(AuthEventType.PIN_FAIL),
+            stages=[{"failure_threshold": 1, "priority": 1, "error_message": message,
+                     "actions": [{"action_type": str(action), "action_value": duration}]}],
+            target=LockoutTarget.USER, priority=priority)
+
+    def test_a_policy_restating_the_lock_does_not_replace_its_wording(self):
+        # Two policies lock the same user for the same duration in one request, so the second changes nothing about
+        # the restriction. Policies run in priority order, so the wording in force is the higher-priority one's -
+        # and stays that way, rather than being replaced by a silence the second policy may well have chosen
+        # deliberately.
+        self._lock_policy_named("ca_worded", 1, "Locked. Try again in about {duration}.", 600)
+        self._lock_policy_named("ca_silent", 2, None, 600)
+
+        body = self._check({"user": "cornelius", "pass": "wrongpin"})
+        self.assertEqual("Locked. Try again in about 10 minute(s).", body["detail"]["message"], body)
+        self.assertEqual("Locked. Try again in about {duration}.", get_user_lockout(self.user).error_message)
+        # Only the write that took effect is history; the one that changed nothing is not.
+        entries = get_authentication_logs()
+        self.assertListEqual(["ca_worded"], [outcome.policy_name for outcome in get_outcomes(entries[-1].id)])
+
+    def test_a_permanent_lock_restated_keeps_the_first_wording(self):
+        # The same for two permanent locks, where there is no expiry to compare at all.
+        self._lock_policy_named("ca_worded", 1, "Your account is locked.", None,
+                                action=LockoutAction.PERMANENT_LOCK_USER)
+        self._lock_policy_named("ca_silent", 2, None, None, action=LockoutAction.PERMANENT_LOCK_USER)
+
+        body = self._check({"user": "cornelius", "pass": "wrongpin"})
+        self.assertEqual("Your account is locked.", body["detail"]["message"], body)
+
+    def test_a_stronger_lock_still_brings_its_own_wording(self):
+        # Unchanged by the above: strengthening is not restating, so the policy that lengthens the lock describes
+        # the lock it left behind - the message travels with the expiry.
+        self._lock_policy_named("ca_short", 1, "Locked. Try again in about {duration}.", 600)
+        self._lock_policy_named("ca_long", 2, "Locked for a while.", 3600)
+
+        body = self._check({"user": "cornelius", "pass": "wrongpin"})
+        self.assertEqual("Locked for a while.", body["detail"]["message"], body)
+        self.assertAlmostEqual(3600, get_user_lockout(self.user).seconds_remaining, delta=10)
+
+    def test_a_weaker_lock_is_still_declined_wording_and_all(self):
+        # And so is declining: the shorter lock neither shortens the restriction nor gets to describe it.
+        self._lock_policy_named("ca_long", 1, "Locked for a while.", 3600)
+        self._lock_policy_named("ca_short", 2, "Locked. Try again in about {duration}.", 600)
+
+        body = self._check({"user": "cornelius", "pass": "wrongpin"})
+        self.assertEqual("Locked for a while.", body["detail"]["message"], body)
+        self.assertAlmostEqual(3600, get_user_lockout(self.user).seconds_remaining, delta=10)
+
+    def _block_policy_named(self, name, priority, message, duration,
+                            action=LockoutAction.BLOCK_IP) -> None:
+        create_lockout_policy(
+            name=name, time_window_seconds=3600,
+            counter_types_to_track=_counter_types(AuthEventType.PIN_FAIL),
+            stages=[{"failure_threshold": 1, "priority": 1, "error_message": message,
+                     "actions": [{"action_type": str(action), "action_value": duration}]}],
+            target=LockoutTarget.SOURCE_IP, count_mode=CountMode.PER_REQUEST, priority=priority)
+
+    def test_a_policy_restating_the_block_does_not_replace_its_wording(self):
+        # The source-IP counterpart: two policies block the same address for the same duration in one request, so
+        # the second changes nothing and the higher-priority policy's wording - or its deliberate silence - stands.
+        self._block_policy_named("ca_ip_worded", 1, "Blocked. Try again in about {duration}.", 600)
+        self._block_policy_named("ca_ip_silent", 2, None, 600)
+
+        body = self._check({"user": "cornelius", "pass": "wrongpin"}, remote_addr=BLOCKED_IP)
+        self.assertEqual("Blocked. Try again in about 10 minute(s).", body["detail"]["message"], body)
+        self.assertEqual("Blocked. Try again in about {duration}.", get_ip_block(BLOCKED_IP).error_message)
+        # Only the write that took effect is history.
+        entries = get_authentication_logs()
+        self.assertListEqual(["ca_ip_worded"], [outcome.policy_name for outcome in get_outcomes(entries[-1].id)])
+
+    def test_a_permanent_block_restated_keeps_the_first_wording(self):
+        self._block_policy_named("ca_ip_worded", 1, "Access from your address is blocked.", None,
+                                 action=LockoutAction.PERMANENT_BLOCK_IP)
+        self._block_policy_named("ca_ip_silent", 2, None, None, action=LockoutAction.PERMANENT_BLOCK_IP)
+
+        body = self._check({"user": "cornelius", "pass": "wrongpin"}, remote_addr=BLOCKED_IP)
+        self.assertEqual("Access from your address is blocked.", body["detail"]["message"], body)
+
+    def test_a_stronger_block_still_brings_its_own_wording(self):
+        self._block_policy_named("ca_ip_short", 1, "Blocked. Try again in about {duration}.", 600)
+        self._block_policy_named("ca_ip_long", 2, "Blocked for a while.", 3600)
+
+        body = self._check({"user": "cornelius", "pass": "wrongpin"}, remote_addr=BLOCKED_IP)
+        self.assertEqual("Blocked for a while.", body["detail"]["message"], body)
+        self.assertAlmostEqual(3600, get_ip_block(BLOCKED_IP).seconds_remaining, delta=10)
+
+    def test_a_weaker_block_is_still_declined_wording_and_all(self):
+        self._block_policy_named("ca_ip_long", 1, "Blocked for a while.", 3600)
+        self._block_policy_named("ca_ip_short", 2, "Blocked. Try again in about {duration}.", 600)
+
+        body = self._check({"user": "cornelius", "pass": "wrongpin"}, remote_addr=BLOCKED_IP)
+        self.assertEqual("Blocked for a while.", body["detail"]["message"], body)
+        self.assertAlmostEqual(3600, get_ip_block(BLOCKED_IP).seconds_remaining, delta=10)
 
     # --- identity rewriting (legacy setrealm / mangle) --------------------------
 
