@@ -640,8 +640,14 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
         authentication_response = dict(self.authentication_response_no_uv)
         authentication_response["HTTP_ORIGIN"] = self.expected_origin
         authentication_response[PasskeyAction.AllowedAuthenticatorDeviceTypes] = ["multi_device"]
-        verification_result = verify_fido2_challenge(challenge["transaction_id"], token, authentication_response)
+        with self.assertLogs("privacyidea.lib.tokens.passkeytoken", level="WARNING") as log_capture:
+            verification_result = verify_fido2_challenge(challenge["transaction_id"], token, authentication_response)
         self.assertEqual(-1, verification_result.success)
+        # check_otp answers every kind of refusal with -1 (an invalid signature, a sign count regression, any
+        # other policy), so only the log entry pins the rejection to this policy in particular.
+        self.assertTrue(any(f"is not allowed to authenticate due to policy restriction "
+                            f"{PasskeyAction.AllowedAuthenticatorDeviceTypes!s}" in message
+                            for message in log_capture.output), log_capture.output)
 
         # A different, higher-sign-count fixture is used here: the sign count of a cryptographically valid
         # response is persisted even when a policy above then still denies it (it is genuine proof of possession,
@@ -673,8 +679,11 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
         authentication_response = dict(self.authentication_response_no_uv)
         authentication_response["HTTP_ORIGIN"] = self.expected_origin
         authentication_response[PasskeyAction.EnforceUserHandle] = True
-        verification_result = verify_fido2_challenge(challenge["transaction_id"], token, authentication_response)
+        with self.assertLogs("privacyidea.lib.tokens.passkeytoken", level="WARNING") as log_capture:
+            verification_result = verify_fido2_challenge(challenge["transaction_id"], token, authentication_response)
         self.assertEqual(-1, verification_result.success)
+        self.assertTrue(any("userHandle does not match the FIDO2 user ID recorded" in message
+                            for message in log_capture.output), log_capture.output)
 
         # Match: self.user_handle is standard base64 (with padding), the stored value is base64url (unpadded) -
         # same bytes, different alphabet. Uses the "uv" fixture (higher sign count) since the "no_uv" fixture's
@@ -704,8 +713,12 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
         authentication_response = dict(self.authentication_response_multi_device_reject)
         authentication_response["HTTP_ORIGIN"] = self.expected_origin
         authentication_response[PasskeyAction.AllowedAuthenticatorDeviceTypes] = ["single_device"]
-        verification_result = verify_fido2_challenge(challenge["transaction_id"], token, authentication_response)
+        with self.assertLogs("privacyidea.lib.tokens.passkeytoken", level="WARNING") as log_capture:
+            verification_result = verify_fido2_challenge(challenge["transaction_id"], token, authentication_response)
         self.assertEqual(-1, verification_result.success)
+        self.assertTrue(any(f"is not allowed to authenticate due to policy restriction "
+                            f"{PasskeyAction.AllowedAuthenticatorDeviceTypes!s}" in message
+                            for message in log_capture.output), log_capture.output)
 
         challenge = self._initialize_authentication_multi_device(self.authentication_challenge_multi_device_accept)
         authentication_response = dict(self.authentication_response_multi_device_accept)
