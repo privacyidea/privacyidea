@@ -22,7 +22,14 @@ import { FilterValue } from "@core/models/filter_value/filter_value";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContainerDetailToken } from "@services/container/container.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
-import { booleanDisplayLabel, valueDisplayLabel } from "@utils/value-label.utils";
+import {
+  AUTHENTICATION_VALUES,
+  booleanDisplayLabel,
+  CONTAINER_STATE_VALUES,
+  ROLLOUT_STATE_VALUES,
+  TOKEN_STATE_VALUES,
+  valueDisplayLabel
+} from "@utils/value-label.utils";
 
 export interface FilterPair {
   key: string;
@@ -131,11 +138,6 @@ export interface TableUtilsServiceInterface {
 
   clientsideSortTokenData(data: ContainerDetailToken[], s: Sort): ContainerDetailToken[];
 }
-
-const TOKEN_STATE_VALUES = ["active", "deactivated", "revoked", "locked"];
-const CONTAINER_STATE_VALUES = ["active", "disabled", "lost", "damaged"];
-const AUTHENTICATION_VALUES = ["accept", "challenge", "reject", "declined"];
-const ROLLOUT_STATE_VALUES = ["clientwait", "pending", "verify", "enrolled", "broken", "failed", "denied"];
 
 function tokenStateLabel(state: string): string {
   return valueDisplayLabel(state, TOKEN_STATE_VALUES);

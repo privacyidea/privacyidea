@@ -39,7 +39,7 @@ import { ClearButtonComponent } from "@components/shared/clear-button/clear-butt
 import { EventConditionMultiValue, EventService } from "@services/event/event.service";
 import { valueDisplayLabel } from "@utils/value-label.utils";
 
-const RAW_VALUE_CONDITIONS = ["result_value", "result_status"];
+const RAW_VALUE_CONDITIONS: readonly string[] = ["result_value", "result_status"];
 
 @Component({
   selector: "app-event-condition-list",

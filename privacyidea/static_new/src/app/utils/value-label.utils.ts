@@ -78,6 +78,22 @@ const VALUE_VOCABULARY: Record<string, string> = {
   yubikey: "Yubikey"
 };
 
+export const TOKEN_STATE_VALUES = ["active", "deactivated", "revoked", "locked"] as const;
+
+export const CONTAINER_STATE_VALUES = ["active", "disabled", "lost", "damaged"] as const;
+
+export const AUTHENTICATION_VALUES = ["accept", "challenge", "reject", "declined"] as const;
+
+export const ROLLOUT_STATE_VALUES = [
+  "clientwait",
+  "pending",
+  "verify",
+  "enrolled",
+  "broken",
+  "failed",
+  "denied"
+] as const;
+
 function normalizeValue(value: DisplayableValue): string {
   return String(value).toLowerCase();
 }
@@ -102,7 +118,7 @@ function capitalize(value: string): string {
 }
 
 export function valueDisplayLabel(
-  value: DisplayableValue | undefined,
+  value: DisplayableValue | undefined | null,
   values: readonly DisplayableValue[] | undefined,
   preset: BooleanValueLabelPreset = "switch"
 ): string {

@@ -16,7 +16,15 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { booleanDisplayLabel, valueDisplayLabel, valueDisplayLabels } from "./value-label.utils";
+import {
+  AUTHENTICATION_VALUES,
+  booleanDisplayLabel,
+  CONTAINER_STATE_VALUES,
+  ROLLOUT_STATE_VALUES,
+  TOKEN_STATE_VALUES,
+  valueDisplayLabel,
+  valueDisplayLabels
+} from "./value-label.utils";
 
 describe("valueDisplayLabel", () => {
   it("maps a numeric pair to the switch labels", () => {
@@ -155,12 +163,18 @@ describe("valueDisplayLabels", () => {
     expect(valueDisplayLabels([false, true], "predicate")).toEqual(["No", "Yes"]);
   });
 
-  it("labels every known vocabulary value", () => {
-    expect(valueDisplayLabels(["active", "deactivated", "revoked", "locked"])).toEqual([
-      "Active",
-      "Deactivated",
-      "Revoked",
-      "Locked"
+  it("labels every value of the shared value lists", () => {
+    expect(valueDisplayLabels(TOKEN_STATE_VALUES)).toEqual(["Active", "Deactivated", "Revoked", "Locked"]);
+    expect(valueDisplayLabels(CONTAINER_STATE_VALUES)).toEqual(["Active", "Deactivated", "Lost", "Damaged"]);
+    expect(valueDisplayLabels(AUTHENTICATION_VALUES)).toEqual(["Accept", "Challenge", "Reject", "Declined"]);
+    expect(valueDisplayLabels(ROLLOUT_STATE_VALUES)).toEqual([
+      "Client wait",
+      "Pending",
+      "Verify",
+      "Enrolled",
+      "Broken",
+      "Failed",
+      "Denied"
     ]);
   });
 
