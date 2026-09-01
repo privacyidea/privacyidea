@@ -584,8 +584,8 @@ def _policy_count(policy: LockoutPolicy, user: "User", window_end: datetime,
     :param user: the resolved user to count for
     :param window_end: the instant the window ends (reference time)
     :param since_last_success: True to floor the count at the user's last completed login in the window (a successful
-        login resets the counter); the post-response caller passes the policy's
-        :attr:`~privacyidea.models.lockout_policy.LockoutPolicy.reset_on_success`. Applies to both user modes —
+        login resets the counter); both callers - the pre-auth decision and the post-response evaluation - pass the
+        policy's :attr:`~privacyidea.models.lockout_policy.LockoutPolicy.reset_on_success`. Applies to both user modes —
         ``PER_REQUEST`` floors at the last ``LOGIN_SUCCESS`` row, ``PER_ATTEMPT`` at the last successful attempt.
         (Source-IP ``DISTINCT_USERS`` deliberately never resets, which is why it is a separate mode and does not go
         through here.)
@@ -823,7 +823,9 @@ def evaluate_access_decision(context: CAContext, now: datetime | None = None) ->
     ALLOW/DENY action supplies the decision. A
     ``DENY`` action therefore rejects this single request without persisting any
     state — a stateless, self-healing reject that lifts on its own as the
-    failures age out of the window (contrast the durable :attr:`LockoutAction.LOCK_USER`).
+    failures age out of the window (contrast the durable :attr:`LockoutAction.LOCK_USER`). With the policy's
+    ``reset_on_success`` the count is floored at the user's last completed login, so a ``DENY`` also lifts on a
+    successful authentication and not only with the passage of time.
     Because ALLOW/DENY actions default to re-triggering (``count >= threshold``), a
     stage with ``failure_threshold`` 0 always matches, so an ``ALLOW`` action at
     threshold 0 acts as a default-allow / allowlist exception.
@@ -905,10 +907,11 @@ def _policy_access_decision(policy: LockoutPolicy, context: CAContext,
         subject_label = f"source IP {context.source_ip}"
     else:
         # User-scoped: keyed on the resolved user, so an unresolved user is never
-        # decided by a user policy.
+        # decided by a user policy. The count honours the policy's reset_on_success, exactly as the post-response
+        # path does: both must read the same history, or a policy would deny on one count and act on another.
         if not _resolved(context.user):
             return AccessDecisionResult()
-        count = _policy_count(policy, context.user, now)
+        count = _policy_count(policy, context.user, now, since_last_success=policy.reset_on_success)
         subject_label = repr(context.user)
     decision, deciding_stage = None, None
     for stage in policy.stages:
@@ -1125,8 +1128,8 @@ def _evaluate_policy(policy: LockoutPolicy, context: CAContext, event_type: str,
         # clears the slate, so a legitimate user is not re-locked by stale pre-login
         # failures on their next single typo. Without it every tracked event in the raw
         # window counts, which is what an admin wants when the threshold is meant to
-        # measure total failures rather than a run of them. (The DENY decision never
-        # resets on success — see _policy_access_decision.)
+        # measure total failures rather than a run of them. The pre-auth ALLOW/DENY
+        # decision counts the same way (see _policy_access_decision).
         # The count is the *combined* total over all of the policy's tracked types,
         # not just the current request's event_type, so a policy tracking several
         # failure types trips on their sum.

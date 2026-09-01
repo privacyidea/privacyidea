@@ -728,7 +728,7 @@ describe("ConditionalAccessEditPageComponent — new mode", () => {
       expect(checkbox.disabled).toBe(true);
     });
 
-    // The shipped templates carry no choice here, so a prefill falls back to the backend's default.
+    // A template that carries no choice here falls back to the backend's default.
     it("should default a template prefill to resetting", () => {
       policyServiceMock.templates.set([
         {
@@ -739,6 +739,19 @@ describe("ConditionalAccessEditPageComponent — new mode", () => {
       ]);
       component.applyTemplate("no_reset_key");
       expect(component.editPolicy().reset_on_success).toBe(true);
+    });
+
+    // A template that does carry one (the rate limits, which must not have their count cleared by a success) keeps it.
+    it("should keep a template's explicit reset-on-success choice", () => {
+      policyServiceMock.templates.set([
+        {
+          key: "rate_limit_key",
+          description: "d",
+          policy: { ...EMPTY_TEMPLATE_POLICY, reset_on_success: false }
+        }
+      ]);
+      component.applyTemplate("rate_limit_key");
+      expect(component.editPolicy().reset_on_success).toBe(false);
     });
   });
 

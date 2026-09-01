@@ -154,6 +154,10 @@ USER_RATE_LIMITING = LockoutPolicyTemplate(
         # PER_ATTEMPT so a multichallenge / push login counts as one attempt; every *trackable* event type is counted
         # so successes and abandoned (pending) attempts count too - this caps the request rate, it does not lock.
         "count_mode": CountMode.PER_ATTEMPT,
+        # No reset on success: a rate limit caps attempts per window, and successful attempts are part of what it
+        # caps - letting one of them clear the count would make the cap unreachable for exactly the traffic it means
+        # to throttle.
+        "reset_on_success": False,
         "counter_types_to_track": list(TRACKABLE_EVENT_TYPES),
         "stages": [
             {"failure_threshold": 20, "priority": 1,
@@ -173,6 +177,9 @@ USER_FAILED_RATE_LIMITING = LockoutPolicyTemplate(
         "dry_run": False,
         "target": LockoutTarget.USER,
         "count_mode": CountMode.PER_ATTEMPT,
+        # No reset on success either: the threshold means "this many failed attempts in the window", so a success
+        # in between must not hand the burst a fresh budget.
+        "reset_on_success": False,
         "counter_types_to_track": list(_USER_AUTH_FAILURES),
         "stages": [
             {"failure_threshold": 10, "priority": 1,

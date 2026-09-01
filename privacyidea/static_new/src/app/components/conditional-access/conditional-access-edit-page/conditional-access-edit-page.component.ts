@@ -258,8 +258,8 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
   });
 
   // Only a user policy resets on a successful login: a source-IP policy aggregates a signal across accounts,
-  // where one account's legitimate login must not clear it, so the checkbox is shown but inert there rather
-  // than disappearing when the target changes.
+  // where one account's legitimate login must not clear it, and the backend rejects the flag on that target.
+  // The checkbox is therefore shown but disabled there rather than disappearing when the target changes.
   resetOnSuccessApplies = computed(() => this.editPolicy().target === "user");
 
   hasChanges = computed(() => JSON.stringify(this.policy()) !== JSON.stringify(this.editPolicy()));
@@ -370,8 +370,8 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
     // rather than silently rewriting the user's selection - mirroring how an incompatible stage action is handled
     // (targetActionsValid).
     //
-    // reset_on_success is cleared, because unlike the count mode it is not invalid for the new target but inert:
-    // a source-IP policy never resets, so a checkbox left ticked would describe something the policy does not do.
+    // reset_on_success is cleared rather than surfaced as an error like the count mode, because there is nothing
+    // for the admin to choose: a source-IP policy never resets, and the backend rejects a save that asks it to.
     // It stays cleared when switching back, where the control is enabled again and shows what it is set to.
     this.updateEditPolicy({ target, reset_on_success: false });
   }
@@ -389,8 +389,8 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
     const prefill = template ? deepCopy(template.policy) : deepCopy(EMPTY_LOCKOUT_POLICY);
     delete prefill.id;
     // Templates carry no priority: the admin must pick a unique one, so normalize the
-    // missing key to null and leave the field empty (see priorityValid). They carry no
-    // reset-on-success choice either: it falls back to the backend's default for a user
+    // missing key to null and leave the field empty (see priorityValid). A template that
+    // states no reset-on-success choice falls back to the backend's default for a user
     // policy, and to cleared for a source-IP one, which never resets - the same rule
     // onTargetChange applies, so a prefilled policy cannot start out ticked and disabled.
     // Spelling the target type out here makes the compiler enforce both normalizations.

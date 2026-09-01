@@ -63,6 +63,13 @@ def _stage(threshold=5, priority=1, actions=None, retrigger=False):
     return {"failure_threshold": threshold, "priority": priority, "actions": actions}
 
 
+def _block_ip_stage(threshold=5, priority=1):
+    """A stage whose action is valid under a source_ip target (BLOCK_IP), unlike _stage's LOCK_USER default."""
+    return _stage(threshold, priority,
+                  actions=[{"action_type": str(LockoutAction.BLOCK_IP),
+                            "action_value": {"duration_seconds": 60}}])
+
+
 class LockoutPolicyCrudTestCase(MyTestCase):
     def setUp(self):
         self._clear()
@@ -524,6 +531,35 @@ class LockoutPolicyCrudTestCase(MyTestCase):
         _, changed = update_lockout_policy(policy_id, name="NoReset renamed")
         self.assertNotIn("reset_on_success", changed)
         self.assertTrue(get_lockout_policy(policy_id)["reset_on_success"])
+
+    def test_10c_reset_on_success_rejected_for_source_ip(self):
+        # A source-IP policy never resets on a successful login, so asking for it is a ParameterError rather than a
+        # setting that is stored and then ignored.
+        self.assertRaises(ParameterError, create_lockout_policy, "IPReset", 600, ["PASSWORD_FAIL"],
+                          [_block_ip_stage()],
+                          LockoutTarget.SOURCE_IP, 1, reset_on_success=True)
+        # Omitting it (or sending it off) is fine and stores the only value that target can have.
+        policy_id = create_lockout_policy("IPNoReset", 600, ["PASSWORD_FAIL"], [_block_ip_stage()],
+                                          LockoutTarget.SOURCE_IP, 2)
+        self.assertFalse(get_lockout_policy(policy_id)["reset_on_success"])
+        self.assertRaises(ParameterError, update_lockout_policy, policy_id, reset_on_success=True)
+        self.assertFalse(get_lockout_policy(policy_id)["reset_on_success"])
+
+    def test_10d_switching_to_source_ip_clears_reset_on_success(self):
+        # The stored reset is not carried into a target that cannot honour it: the switch clears it and says so,
+        # so the policy never claims a reset it does not perform.
+        policy_id = create_lockout_policy("Switcher", 600, ["PASSWORD_FAIL"], [_stage()], LockoutTarget.USER, 1)
+        self.assertTrue(get_lockout_policy(policy_id)["reset_on_success"])
+        _, changed = update_lockout_policy(
+            policy_id, target=LockoutTarget.SOURCE_IP, count_mode=CountMode.DISTINCT_USERS,
+            stages=[_block_ip_stage()])
+        self.assertIn("reset_on_success", changed)
+        self.assertFalse(get_lockout_policy(policy_id)["reset_on_success"])
+        # Switching back leaves it off: the admin re-enables it deliberately.
+        _, changed = update_lockout_policy(policy_id, target=LockoutTarget.USER,
+                                           count_mode=CountMode.PER_REQUEST, stages=[_stage()])
+        self.assertNotIn("reset_on_success", changed)
+        self.assertFalse(get_lockout_policy(policy_id)["reset_on_success"])
 
     def test_11_duplicate_priority_rejected(self):
         # priority must be unique across policies: a second policy reusing a

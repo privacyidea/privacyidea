@@ -80,9 +80,10 @@ class LockoutPolicy(MethodsMixin, db.Model):
     # Whether a completed login clears the events counted so far: with it set (the default) the count is
     # floored at the user's most recent LOGIN_SUCCESS inside the window, so the stage thresholds apply to
     # consecutive failures since that login rather than to every failure that happens to fall in the raw
-    # window. Only a "user" target resets - a source-IP policy aggregates a signal across accounts, where one
-    # account's legitimate login must not clear it (see engine._policy_count_ip), and the pre-auth ALLOW/DENY
-    # decision never resets either (see engine._policy_access_decision).
+    # window. It governs every count the policy makes, the pre-auth ALLOW/DENY decision included (see
+    # engine._policy_access_decision). Only a "user" target resets - a source-IP policy aggregates a signal across
+    # accounts, where one account's legitimate login must not clear it (see engine._policy_count_ip), so it is always
+    # False there and setting it is rejected (see lockout_policy._validate_reset_on_success).
     reset_on_success: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
     stages: Mapped[list["LockoutPolicyStage"]] = relationship(

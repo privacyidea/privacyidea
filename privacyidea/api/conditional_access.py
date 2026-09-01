@@ -274,9 +274,10 @@ def create_policy():
     :jsonparam dry_run: log-only mode, nothing is enforced (default false).
     :jsonparam reset_on_success: whether a completed login clears the events
         counted for this policy, so the thresholds apply to consecutive failures
-        since that login (default true). Only a ``user`` target resets: a
-        ``source_ip`` policy aggregates across accounts and never does, and the
-        pre-auth ALLOW/DENY decision never does either.
+        since that login (default true), including for the pre-auth ALLOW/DENY
+        decision. Only a ``user`` target resets: a ``source_ip`` policy
+        aggregates across accounts and never does, so sending it as true with
+        that target is a 400.
     :jsonparam priority: evaluation priority; lower numbers are evaluated first.
         Required and must be unique across policies (no default).
     :jsonparam target: the identity the policy counts and acts on - ``user``
@@ -303,7 +304,7 @@ def create_policy():
         conditions=_get_json_param(params, "conditions"),
         enabled=is_true(enabled) if enabled is not None else True,
         dry_run=is_true(dry_run) if dry_run is not None else False,
-        reset_on_success=is_true(reset_on_success) if reset_on_success is not None else True,
+        reset_on_success=is_true(reset_on_success) if reset_on_success is not None else None,
         priority=get_required(params, "priority"),
         count_mode=get_optional(params, "count_mode"),
         target=get_required(params, "target"))
