@@ -92,8 +92,8 @@ from privacyidea.lib.conditional_access.authentication_event_types import (
     CountMode,
 )
 from privacyidea.lib.conditional_access.conditions import CONDITION_TYPES
-from privacyidea.lib.conditional_access.engine import (ACTION_SEVERITY, ConditionalAccessAction, ConditionalAccessTarget,
-                                                       NOTIFYING_ACTIONS)
+from privacyidea.lib.conditional_access.engine import (ACTION_SEVERITY, ConditionalAccessAction,
+                                                       ConditionalAccessTarget, NOTIFYING_ACTIONS)
 from privacyidea.lib.error import ConflictError, ParameterError, ResourceNotFoundError
 from privacyidea.lib.log import log_with
 from privacyidea.models import db

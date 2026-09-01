@@ -147,8 +147,8 @@ NOTIFYING_ACTIONS = frozenset({ConditionalAccessAction.EMAIL_USER, ConditionalAc
 def most_severe_action(action_types: Iterable[str]) -> ConditionalAccessAction | None:
     """
     The most severe of *action_types* by :data:`ACTION_SEVERITY`, or ``None`` when none of them ranks - an
-    action with nothing to say, or one added to :class:`ConditionalAccessAction` without an entry there. So a caller never
-    has to know which actions are covered.
+    action with nothing to say, or one added to :class:`ConditionalAccessAction` without an entry there. So a
+    caller never has to know which actions are covered.
     """
     carried = {str(action_type) for action_type in action_types}
     return next((action for action in ACTION_SEVERITY if action.value in carried), None)
@@ -1270,8 +1270,8 @@ def evaluate_conditional_access_policies(context: CAContext, event_type: AuthEve
     :param event_type: the classified outcome of the request
         (:class:`AuthEventType`)
     :param now: the reference time; defaults to :func:`utc_now`
-    :return: a :class:`ConditionalAccessEvaluation` holding the de-duplicated, order-preserving user-facing messages produced by
-        executed actions, and the outcomes to record (both empty if nothing was triggered)
+    :return: a :class:`ConditionalAccessEvaluation` holding the de-duplicated, order-preserving user-facing
+        messages produced by executed actions, and the outcomes to record (both empty if nothing was triggered)
     """
     if not event_type:
         return ConditionalAccessEvaluation()
@@ -1313,7 +1313,8 @@ def evaluate_conditional_access_policies(context: CAContext, event_type: AuthEve
     # enforced_targets is carried out of here, not just used above: it is the only thing that says this request was
     # restricted at all, and a *silent* restriction produces no message to infer it from. The caller needs it to
     # answer such a request as the rejection it now is.
-    return ConditionalAccessEvaluation(messages=rank_and_deduplicate(messages), outcomes=outcomes, enforced_targets=enforced)
+    return ConditionalAccessEvaluation(messages=rank_and_deduplicate(messages), outcomes=outcomes,
+                                       enforced_targets=enforced)
 
 
 def _action_threshold_met(action: ConditionalAccessStageAction, threshold: int, count: int) -> bool:
@@ -1353,9 +1354,9 @@ def _evaluate_policy(policy: ConditionalAccessPolicy, context: CAContext, event_
     threshold. So one stage can, for example, email once at threshold 8 while
     keeping the user locked for every further failure at 8 or more.
 
-    :return: a :class:`ConditionalAccessEvaluation` with the user-facing messages produced by the executed actions and the
-        outcomes describing what was done (both empty if no stage triggered; in dry run there are outcomes but no
-        messages, since nothing ran)
+    :return: a :class:`ConditionalAccessEvaluation` with the user-facing messages produced by the executed actions
+        and the outcomes describing what was done (both empty if no stage triggered; in dry run there are outcomes
+        but no messages, since nothing ran)
     """
     # Applicability is checked first: a policy whose conditions exclude this request neither counts nor acts, and
     # costs no counting query.
@@ -1624,8 +1625,8 @@ def _execute_stage_actions(policy: ConditionalAccessPolicy, stage: ConditionalAc
 
     :param policy: the triggering policy, for the outcomes
     :param count: the count that tripped the stage, for the outcomes
-    :return: a :class:`ConditionalAccessEvaluation` with this stage's message when it only notified, one outcome per action
-        that ran, and the targets those actions restricted (all empty if every action was skipped).
+    :return: a :class:`ConditionalAccessEvaluation` with this stage's message when it only notified, one outcome
+        per action that ran, and the targets those actions restricted (all empty if every action was skipped).
     """
     outcomes: list[ConditionalAccessOutcome] = []
     # Which rows this stage left a restriction on - noted for an action that actually restricted one, not for one
@@ -1637,8 +1638,8 @@ def _execute_stage_actions(policy: ConditionalAccessPolicy, stage: ConditionalAc
     # only a stronger restriction in force declines one, and that one was written either by an earlier action here
     # or by another policy in this same evaluation - which recorded the target. (It cannot have been in force
     # beforehand: the pre-check would have refused the request, and a rejection is never evaluated.) The union
-    # evaluate_conditional_access_policies collects therefore holds it, and the message comes from whatever stands on that
-    # row - never from the action that aimed at it.
+    # evaluate_conditional_access_policies collects therefore holds it, and the message comes from whatever stands
+    # on that row - never from the action that aimed at it.
     enforced: set[ConditionalAccessTarget] = set()
     # Whether the stage *aimed* at a restriction or a denial, which is a different question from what it achieved
     # and is why these two are not read off `enforced`. The stage's one error message describes whatever the stage
@@ -1780,9 +1781,9 @@ def _upsert_user_lock_state(user: "User", *, lock_expires_at: datetime | None, e
 
     Only a **strictly stronger** lock is written. A permanent lock is not downgraded to a timed one, a timed lock
     is not shortened, and a write that merely restates the lock in force changes nothing. Several policies can lock
-    the same user in one request (:func:`evaluate_conditional_access_policies` runs every policy tracking the event), and a
-    stage can carry more than one lock action; without this rule the last write would win regardless of severity,
-    so a one-hour lock followed by a ten-minute one would leave the user locked for ten minutes.
+    the same user in one request (:func:`evaluate_conditional_access_policies` runs every policy tracking the
+    event), and a stage can carry more than one lock action; without this rule the last write would win regardless
+    of severity, so a one-hour lock followed by a ten-minute one would leave the user locked for ten minutes.
 
     Restating matters for the *error message*, which travels with the expiry. Policies run in priority order, so the
     first to lock a subject is the highest-priority one that did, and a later policy writing the same lock again
