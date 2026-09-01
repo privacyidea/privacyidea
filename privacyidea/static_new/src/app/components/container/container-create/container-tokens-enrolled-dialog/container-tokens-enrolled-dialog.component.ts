@@ -20,14 +20,19 @@
 import { TitleCasePipe } from "@angular/common";
 import { Component, computed, inject, signal } from "@angular/core";
 import { MatProgressBar } from "@angular/material/progress-bar";
-import { EnrollmentResponseDetail } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { EnrollmentResponse, EnrollmentResponseDetail } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
 import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
 import { TokenEnrollmentDataComponent } from "@components/token/token-enrollment/token-enrollment-data/token-enrollment-data.component";
 import { DialogAction } from "@models/dialog";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { EnrollTokenArguments } from "@services/token/token.service";
 
-export type EnrolledTokenInfo = EnrollmentResponseDetail & { type: string; serial: string };
+export type EnrolledTokenInfo = EnrollmentResponseDetail & {
+  type: string;
+  serial: string;
+  enrollmentParameters: EnrollTokenArguments;
+};
 
 export interface ContainerTokensEnrolledDialogData {
   enrolledTokens: EnrolledTokenInfo[];
@@ -44,9 +49,10 @@ export class ContainerTokensEnrolledDialogComponent extends AbstractDialogCompon
   private readonly contentService: ContentServiceInterface = inject(ContentService);
 
   readonly currentIndex = signal(0);
+  readonly enrolledTokens = signal<EnrolledTokenInfo[]>(this.data.enrolledTokens);
 
-  readonly currentToken = computed(() => this.data.enrolledTokens[this.currentIndex()]);
-  readonly total = computed(() => this.data.enrolledTokens.length);
+  readonly currentToken = computed(() => this.enrolledTokens()[this.currentIndex()]);
+  readonly total = computed(() => this.enrolledTokens().length);
   readonly progress = computed(() => ((this.currentIndex() + 1) / this.total()) * 100);
   readonly isFirst = computed(() => this.currentIndex() === 0);
   readonly isLast = computed(() => this.currentIndex() === this.total() - 1);
@@ -63,6 +69,19 @@ export class ContainerTokensEnrolledDialogComponent extends AbstractDialogCompon
       ? { type: "confirm", label: $localize`Go to Container`, value: "finish", primary: true, icon: "check" }
       : { type: "auxiliary", label: $localize`Next`, value: "next", primary: true, icon: "arrow_forward" }
   ]);
+
+  onEnrollmentResponseChange(response: EnrollmentResponse) {
+    // Match on the serial rather than the current index: regenerating is asynchronous and the
+    // user can page to another token before the response arrives, which would otherwise write
+    // the regenerated secret and QR code into the token that happens to be shown by then.
+    const serial = response.detail?.serial;
+    if (!serial) {
+      return;
+    }
+    this.enrolledTokens.update((tokens) =>
+      tokens.map((token) => (token.serial === serial ? { ...token, ...response.detail } : token))
+    );
+  }
 
   onDialogAction(value: string) {
     if (value === "previous") this.previous();

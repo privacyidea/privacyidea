@@ -86,7 +86,7 @@ from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action, check_t
                                            check_container_action, check_user_params,
                                            force_server_generate_key)
 from privacyidea.lib.challenge import (cancel_challenge, get_challenges, get_challenges_for_user,
-                                        get_challenges_paginate, cleanup_expired_challenges)
+                                       get_challenges_paginate, cleanup_expired_challenges)
 from privacyidea.lib.error import (ParameterError, TokenAdminError,
                                    ResourceNotFoundError, PolicyError, Error)
 from privacyidea.lib.event import event
@@ -1645,6 +1645,48 @@ def get_serial_by_otp_api(otp=None):
 
     return send_result({"serial": serial,
                         "count": count})
+
+
+@token_blueprint.route('/sshkey/<serial>', methods=['GET'])
+@prepolicy(check_token_action, request, action=PolicyAction.SSHKEY_READ)
+@event("token_sshkey", request, g)
+@log_with(log)
+def get_sshkey_api(serial=None):
+    """
+    Return the decrypted public SSH key of an SSH key token.
+
+    The public key of an SSH key token is stored encrypted in the database
+    and is therefore not returned in the token list. This endpoint returns
+    the assembled public key (``<type> <key> [<comment>]``) so that it can
+    be imported into an ``authorized_keys`` file.
+
+    Before returning, the integrity checksum of the token is verified, so a
+    manipulation of the SSH key data in the database is detected.
+
+    Only active tokens are returned. Disabling or revoking an SSH key token
+    stops its key from being handed out here, just like it stops the key from
+    appearing in the authorized keys of a machine.
+
+    Requires authentication and the policy action ``sshkey_read``. Admins
+    are restricted by the realms of their policies, users can only read the
+    SSH key of their own tokens.
+
+    :param serial: path component, the serial of the SSH key token.
+    :status 200: ``{"sshkey": "<type> <key> <comment>"}`` in
+        ``result.value``.
+    """
+    user = request.User
+    toks = get_tokens(serial=serial, user=user if user and not user.is_empty() else None,
+                      tokentype="sshkey", active=True)
+    if not toks:
+        raise ResourceNotFoundError(f"No active SSH key token with serial {serial!s} found.")
+    token = toks[0]
+
+    sshkey = token.get_sshkey()
+    g.audit_object.log({"serial": serial,
+                        "token_type": "sshkey",
+                        "success": True})
+    return send_result({"sshkey": sshkey})
 
 
 @token_blueprint.route('/info/<serial>/<key>', methods=['POST'])
