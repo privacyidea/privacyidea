@@ -21,7 +21,7 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import {
   ConditionalAccessPolicyService,
   ConditionTypeMeta,
-  LockoutPolicyCondition
+  ConditionalAccessPolicyCondition
 } from "@services/conditional-access/conditional-access-policy.service";
 import { MockConditionalAccessPolicyService } from "@testing/mock-services/mock-conditional-access-policy-service";
 import { ConditionalAccessConditionsComponent } from "./conditional-access-conditions.component";
@@ -50,7 +50,7 @@ describe("ConditionalAccessConditionsComponent", () => {
   let fixture: ComponentFixture<ConditionalAccessConditionsComponent>;
   let policyServiceMock: MockConditionalAccessPolicyService;
 
-  const setConditions = (conditions: LockoutPolicyCondition[]): void => {
+  const setConditions = (conditions: ConditionalAccessPolicyCondition[]): void => {
     fixture.componentRef.setInput("conditions", conditions);
     fixture.detectChanges();
   };
@@ -83,8 +83,8 @@ describe("ConditionalAccessConditionsComponent", () => {
     expect(renderedLabels()).toEqual(["User realm", "User role"]);
   });
 
-  // The point of driving the rows off the endpoint: the backend registry is designed so a new
-  // condition kind is a registry entry, and it must not need a WebUI change to become usable.
+  // Rows are driven off the endpoint because the backend registry is designed so a new condition kind is just a
+  // registry entry, requiring no WebUI change to become usable.
   it("should render a condition type the WebUI does not know, with generic wording", () => {
     policyServiceMock.conditionTypes.set({
       ...CONDITION_TYPE_META,
@@ -98,8 +98,8 @@ describe("ConditionalAccessConditionsComponent", () => {
     expect(component.hintFor(unknownRow)).toBe("Restrict the values this policy is applied to.");
   });
 
-  // A multi-select cannot represent an open value space, so offering an empty one would be worse than
-  // offering nothing at all.
+  // A multi-select cannot represent an open value space, so offering an empty one would be worse than offering nothing
+  // at all.
   it("should skip a condition type whose values cannot be enumerated", () => {
     policyServiceMock.conditionTypes.set({
       USER_REALM: CONDITION_TYPE_META["USER_REALM"],
@@ -139,8 +139,8 @@ describe("ConditionalAccessConditionsComponent", () => {
     expect(spy).toHaveBeenCalledWith([{ condition_type: "USER_REALM", operator: "IN", value: ["sales", "support"] }]);
   });
 
-  // Without the pending-operator state the choice would be lost: a row with no values emits no
-  // condition, so there is nowhere in the policy to keep the operator until values arrive.
+  // Without the pending-operator state the choice would be lost: a row with no values emits no condition, so there is
+  // nowhere in the policy to keep the operator until values arrive.
   it("should keep an operator picked before any value was selected", () => {
     component.onOperatorChange("USER_REALM", "NOT_IN");
     expect(component.selectedOperator("USER_REALM")).toBe("NOT_IN");
@@ -156,8 +156,8 @@ describe("ConditionalAccessConditionsComponent", () => {
     expect(spy).not.toHaveBeenCalled();
   });
 
-  // The stored operator has to win over the remembered one, or loading a policy into an instance
-  // where an operator was picked for an empty row would display an operator the policy does not have.
+  // The stored operator has to win over the remembered one, or loading a policy into an instance where an operator was
+  // picked for an empty row would display an operator the policy does not have.
   it("should show the loaded condition's operator over a previously remembered one", () => {
     component.onOperatorChange("USER_REALM", "NOT_IN");
     setConditions([{ condition_type: "USER_REALM", operator: "IN", value: ["sales"] }]);
@@ -178,8 +178,8 @@ describe("ConditionalAccessConditionsComponent", () => {
     expect(spy).toHaveBeenCalledWith([{ condition_type: "USER_REALM", operator: "NOT_IN", value: ["support"] }]);
   });
 
-  // The backend rejects an empty value list, so "no restriction" has to be the absence of the
-  // condition rather than a condition with nothing in it.
+  // The backend rejects an empty value list, so "no restriction" has to be the absence of the condition rather than a
+  // condition with nothing in it.
   it("should remove the condition when its last value is deselected", () => {
     setConditions([
       { condition_type: "USER_REALM", operator: "IN", value: ["sales"] },
@@ -216,9 +216,9 @@ describe("ConditionalAccessConditionsComponent", () => {
     ]);
   });
 
-  // Emitted in condition_type order, matching how the backend serves them: appending in edit order
-  // would let "remove then re-add" reorder the array, which the edit page's JSON diff would read as
-  // an unsaved change even though the conditions are identical (they are ANDed, so order is nothing).
+  // Conditions are emitted in condition_type order, matching the backend: appending in edit order would let a
+  // remove-then-re-add reorder the array, and since conditions are ANDed and order-independent, the edit page's JSON
+  // diff would misread that reordering as an unsaved change.
   it("should emit a newly added condition in condition_type order, not appended", () => {
     setConditions([{ condition_type: "USER_ROLE", operator: "IN", value: ["user"] }]);
     const spy = jest.spyOn(component.conditionsChange, "emit");
@@ -230,7 +230,7 @@ describe("ConditionalAccessConditionsComponent", () => {
   });
 
   it("should report no change after a condition is removed and re-added", () => {
-    const original: LockoutPolicyCondition[] = [
+    const original: ConditionalAccessPolicyCondition[] = [
       { condition_type: "USER_REALM", operator: "IN", value: ["sales"] },
       { condition_type: "USER_ROLE", operator: "IN", value: ["user"] }
     ];
@@ -261,8 +261,8 @@ describe("ConditionalAccessConditionsComponent", () => {
     expect(fixture.nativeElement.querySelector(".ca-condition-stale")).toBeNull();
   });
 
-  // Before /conditiontypes answers there is no vocabulary to judge against, so nothing may be
-  // called unknown - otherwise every value would flash as broken on first paint.
+  // Before /conditiontypes answers there is no vocabulary to judge against, so nothing may be called unknown, or every
+  // value would flash as broken on first paint.
   it("should treat no loaded vocabulary as nothing being stale", () => {
     policyServiceMock.conditionTypes.set({});
     setConditions([{ condition_type: "USER_REALM", operator: "IN", value: ["sales"] }]);
@@ -276,8 +276,8 @@ describe("ConditionalAccessConditionsComponent", () => {
     expect(component.operatorOptions("USER_REALM").map((operator) => operator.name)).toEqual(["IN", "NOT_IN"]);
   });
 
-  // The same selection restricts under IN and exempts under NOT_IN, so the hint has to follow the
-  // operator - and it stays visible either way, unlike the stale-value warning that replaces it.
+  // The same selection restricts under IN and exempts under NOT_IN, so the hint follows the operator and stays visible
+  // either way, unlike the stale-value warning that replaces it.
   it("should show a hint that follows the operator, selected or not", () => {
     const [realmRow] = component.rows();
     expect(component.hintFor(realmRow)).toBe("Restrict the realms this policy is applied to.");
@@ -289,8 +289,7 @@ describe("ConditionalAccessConditionsComponent", () => {
     expect(fixture.nativeElement.querySelector("mat-hint").textContent.trim()).toBe("Exclude realms from this policy.");
   });
 
-  // The operator is whatever the backend served, so the wording table can be missing an entry for it.
-  // Before the types were widened this indexed a union-keyed record and rendered a blank hint.
+  // The operator is whatever the backend serves, so the wording table can be missing an entry for it.
   it("should fall back to a neutral hint for an operator it has no wording for", () => {
     policyServiceMock.conditionTypes.set({
       USER_REALM: {

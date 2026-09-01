@@ -19,7 +19,7 @@
 <app-dialog-wrapper
   [title]="data.rollover ? 'Container Rollover' : 'Register Container'"
   [actions]="[getAction()]"
-  (wrapperClose)="close()"
+  [showCloseButton]="false"
   (actionTriggered)="onAction($event)">
   <mat-dialog-content>
     <app-container-registration-config

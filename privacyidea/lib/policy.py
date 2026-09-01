@@ -249,6 +249,7 @@ class SCOPE:
     CONTAINER = "container"
     TOKEN = "token"
     HARDENING = "hardening"
+    CONDITIONAL_ACCESS = "conditional_access"
 
     @classmethod
     def get_all_scopes(cls) -> list[str]:
@@ -256,7 +257,7 @@ class SCOPE:
         Return all valid scopes as a list
         """
         valid_scopes = [cls.AUTHZ, cls.ADMIN, cls.AUTH, cls.AUDIT, cls.USER, cls.ENROLL, cls.WEBUI, cls.REGISTER,
-                        cls.CONTAINER, cls.TOKEN, cls.HARDENING]
+                        cls.CONTAINER, cls.TOKEN, cls.HARDENING, cls.CONDITIONAL_ACCESS]
         return valid_scopes
 
 
@@ -1844,6 +1845,11 @@ def get_static_policy_definitions(scope=None):
                                                ' for a given OTP value.'),
                                      'mainmenu': [MAIN_MENU.TOKENS],
                                      "group": GROUP.TOOLS},
+            PolicyAction.SSHKEY_READ: {'type': 'bool',
+                                       'desc': _('Admin is allowed to read the public SSH key '
+                                                 'of an SSH key token.'),
+                                       'mainmenu': [MAIN_MENU.TOKENS],
+                                       'group': GROUP.TOKEN},
             PolicyAction.GETRANDOM: {'type': 'bool',
                                      'desc': _('Admin is allowed to retrieve '
                                                'random keys from privacyIDEA.'),
@@ -1984,23 +1990,23 @@ def get_static_policy_definitions(scope=None):
                                                              "policy is scoped to realms, resolvers or users, the "
                                                              "admin only sees entries matching that scope."),
                                                    "group": GROUP.SYSTEM},
-            PolicyAction.LOCKOUT_POLICY_READ: {'type': 'bool',
-                                               "desc": _("Admin is allowed to read the conditional-access "
-                                                         "lockout policies."),
-                                               "group": GROUP.SYSTEM},
-            PolicyAction.LOCKOUT_POLICY_WRITE: {'type': 'bool',
-                                                "desc": _("Admin is allowed to create, edit and delete the "
-                                                          "conditional-access lockout policies."),
-                                                "group": GROUP.SYSTEM},
-            PolicyAction.USER_LOCKOUT_READ: {'type': 'bool',
-                                             "desc": _("Admin is allowed to read the conditional-access user "
-                                                       "lockout state: view a user's lock and list the locked "
-                                                       "users."),
-                                             "group": GROUP.SYSTEM},
-            PolicyAction.USER_LOCKOUT_RESET: {'type': 'bool',
-                                              "desc": _("Admin is allowed to reset (unlock) a conditional-access "
-                                                        "user lockout."),
-                                              "group": GROUP.SYSTEM},
+            PolicyAction.CONDITIONAL_ACCESS_POLICY_READ: {
+                'type': 'bool',
+                "desc": _("Admin is allowed to read the conditional-access policies."),
+                "group": GROUP.SYSTEM},
+            PolicyAction.CONDITIONAL_ACCESS_POLICY_WRITE: {
+                'type': 'bool',
+                "desc": _("Admin is allowed to create, edit and delete the conditional-access policies."),
+                "group": GROUP.SYSTEM},
+            PolicyAction.USER_LOCK_READ: {
+                'type': 'bool',
+                "desc": _("Admin is allowed to read the conditional-access user lock state: view a user's "
+                          "lock and list the locked users."),
+                "group": GROUP.SYSTEM},
+            PolicyAction.USER_LOCK_RESET: {
+                'type': 'bool',
+                "desc": _("Admin is allowed to reset (unlock) a conditional-access user lock."),
+                "group": GROUP.SYSTEM},
             PolicyAction.BLOCKLIST_READ: {'type': 'bool',
                                           "desc": _("Admin is allowed to read the conditional-access blocklist."),
                                           "group": GROUP.SYSTEM},
@@ -2337,6 +2343,11 @@ def get_static_policy_definitions(scope=None):
                                   "desc": _('The user is allowed to delete his own tokens.'),
                                   'mainmenu': [MAIN_MENU.TOKENS],
                                   'group': GROUP.TOKEN},
+            PolicyAction.SSHKEY_READ: {'type': 'bool',
+                                       'desc': _('The user is allowed to read the public SSH key '
+                                                 'of his own SSH key token.'),
+                                       'mainmenu': [MAIN_MENU.TOKENS],
+                                       'group': GROUP.TOKEN},
             PolicyAction.UNASSIGN: {'type': 'bool',
                                     'desc': _('The user is allowed to unassign his own tokens.'),
                                     'mainmenu': [MAIN_MENU.TOKENS],
@@ -3248,6 +3259,18 @@ def get_static_policy_definitions(scope=None):
                           'the impact on your integrations. This policy is evaluated without '
                           'user/realm/resolver/time conditions (client IP and user agent matching still apply).'),
                 'group': GROUP.SYSTEM,
+            }
+        },
+        SCOPE.CONDITIONAL_ACCESS: {
+            PolicyAction.SHOW_DEFAULT_CA_ERROR_MESSAGE: {
+                'type': 'bool',
+                'desc': _('Tell the user why conditional access turned their request away, using the default '
+                          'wording for the action that did it. Without this, a rejection says only what a stage '
+                          'was given its own error message to say, and the generic "Authentication failed." '
+                          'where none was written. A stage\'s own error message always takes precedence over '
+                          'this. Note: this is independent of "hide_specific_error_message" (in the '
+                          'authentication scope), which never applies to conditional-access wording.'),
+                'group': GROUP.GENERAL,
             }
         }
 

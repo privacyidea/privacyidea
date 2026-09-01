@@ -34,7 +34,7 @@ from privacyidea.lib.lifecycle import call_finalizers
 from privacyidea.lib.resolver import (save_resolver, delete_resolver,
                                       get_resolver_list)
 from privacyidea.models import db, Challenge, AuthenticationLog, ConditionalAccessOutcome
-from privacyidea.models.lockout_policy import BlockList, UserLockoutState
+from privacyidea.models.conditional_access_policy import BlockList, UserLockState
 from privacyidea.models.utils import utc_now
 from .base import CliTestCase
 from ..base import PWFILE
@@ -932,8 +932,7 @@ class PIManageAuthLogTestCase(CliTestCase):
     """
 
     def _insert(self, age_days, outcomes=0):
-        # Insert one authentication-log entry aged the given number of days, with *outcomes* conditional-access
-        # outcomes hanging off it.
+        # Insert an authentication-log entry aged age_days days, with outcomes conditional-access outcomes attached.
         entry = AuthenticationLog(event_type=AuthEventType.LOGIN_SUCCESS, resolver="r", uid="u", realm="rlm",
                                   timestamp=utc_now() - dt.timedelta(days=age_days))
         entry.save()
@@ -1026,7 +1025,7 @@ class PIManageConditionalAccessTestCase(CliTestCase):
 
     def tearDown(self):
         BlockList.query.delete()
-        UserLockoutState.query.delete()
+        UserLockState.query.delete()
         db.session.commit()
         super().tearDown()
 
@@ -1061,7 +1060,7 @@ class PIManageConditionalAccessTestCase(CliTestCase):
 
     def test_04_list_and_unlock_by_id(self):
         runner = self.app.test_cli_runner()
-        db.session.add(UserLockoutState(resolver="reso1", uid="42", realm="realm1",
+        db.session.add(UserLockState(resolver="reso1", uid="42", realm="realm1",
                                         lock_expires_at=utc_now() + dt.timedelta(seconds=600)))
         db.session.commit()
 
@@ -1072,19 +1071,19 @@ class PIManageConditionalAccessTestCase(CliTestCase):
         res = runner.invoke(pi_manage, ["conditionalaccess", "unlock-by-id",
                                         "--resolver", "reso1", "--uid", "42", "--realm", "realm1"])
         self.assertIn("Unlocked", res.output, res)
-        self.assertIsNone(UserLockoutState.query.filter_by(resolver="reso1", uid="42",
+        self.assertIsNone(UserLockState.query.filter_by(resolver="reso1", uid="42",
                                                            realm="realm1").first())
 
     def test_04b_unlock_by_id_without_resolver(self):
         # --resolver is optional (disambiguator only); unlock-by-id must work on (uid, realm) alone.
         runner = self.app.test_cli_runner()
-        db.session.add(UserLockoutState(resolver="reso1", uid="42", realm="realm1",
+        db.session.add(UserLockState(resolver="reso1", uid="42", realm="realm1",
                                         lock_expires_at=utc_now() + dt.timedelta(seconds=600)))
         db.session.commit()
         res = runner.invoke(pi_manage, ["conditionalaccess", "unlock-by-id", "--uid", "42", "--realm", "realm1"])
         self.assertEqual(0, res.exit_code, res.output)
         self.assertIn("Unlocked", res.output, res)
-        self.assertIsNone(UserLockoutState.query.filter_by(uid="42", realm="realm1").first())
+        self.assertIsNone(UserLockState.query.filter_by(uid="42", realm="realm1").first())
 
     def test_05_clear_blocks(self):
         runner = self.app.test_cli_runner()
@@ -1097,24 +1096,24 @@ class PIManageConditionalAccessTestCase(CliTestCase):
         self.assertEqual(0, BlockList.query.count())
 
     def test_06_unlock_non_existing_user_works(self):
-        db.session.add(UserLockoutState(resolver="test", realm="nope", username="ghost", uid="1234"))
+        db.session.add(UserLockState(resolver="test", realm="nope", username="ghost", uid="1234"))
         db.session.commit()
         runner = self.app.test_cli_runner()
         res = runner.invoke(pi_manage,
                             ["conditionalaccess", "unlock-user", "ghost", "--realm", "nope", "--resolver", "test"])
         self.assertEqual(0, res.exit_code, res.output)
-        self.assertEqual(0, UserLockoutState.query.count())
+        self.assertEqual(0, UserLockState.query.count())
         self.assertIn("Unlocked user ghost@nope (resolver=test)", res.output, res)
 
     def test_06_unlock_user_without_resolver(self):
-        # Regression: --resolver is optional (only disambiguates), so unlock-user must still
-        # unlock without it. It used to compile to ``resolver IS NULL`` and silently do nothing.
-        db.session.add(UserLockoutState(resolver="test", realm="nope", username="ghost", uid="1234"))
+        # Regression guard: --resolver only disambiguates, so unlock-user must still unlock without it;
+        # filtering on resolver IS NULL would silently match nothing.
+        db.session.add(UserLockState(resolver="test", realm="nope", username="ghost", uid="1234"))
         db.session.commit()
         runner = self.app.test_cli_runner()
         res = runner.invoke(pi_manage, ["conditionalaccess", "unlock-user", "ghost", "--realm", "nope"])
         self.assertEqual(0, res.exit_code, res.output)
-        self.assertEqual(0, UserLockoutState.query.count())
+        self.assertEqual(0, UserLockState.query.count())
         self.assertIn("Unlocked user ghost@nope", res.output, res)
 
     def test_06_unlock_user_without_entry(self):
@@ -1139,25 +1138,25 @@ class PIManageConditionalAccessTestCase(CliTestCase):
     def test_09_clear_locks(self):
         runner = self.app.test_cli_runner()
         for uid in ("1", "2", "3"):
-            db.session.add(UserLockoutState(resolver="reso1", uid=uid, realm="realm1",
+            db.session.add(UserLockState(resolver="reso1", uid=uid, realm="realm1",
                                             lock_expires_at=utc_now() + dt.timedelta(seconds=600)))
         db.session.commit()
         res = runner.invoke(pi_manage, ["conditionalaccess", "clear-locks", "--yes"])
         self.assertIn("Removed 3 user lock(s).", res.output, res)
-        self.assertEqual(0, UserLockoutState.query.count())
+        self.assertEqual(0, UserLockState.query.count())
 
     def test_09b_clear_locks_by_realm(self):
         runner = self.app.test_cli_runner()
-        db.session.add(UserLockoutState(resolver="reso1", uid="1", realm="realm1",
+        db.session.add(UserLockState(resolver="reso1", uid="1", realm="realm1",
                                         lock_expires_at=utc_now() + dt.timedelta(seconds=600)))
-        db.session.add(UserLockoutState(resolver="reso2", uid="2", realm="realm2",
+        db.session.add(UserLockState(resolver="reso2", uid="2", realm="realm2",
                                         lock_expires_at=utc_now() + dt.timedelta(seconds=600)))
         db.session.commit()
         res = runner.invoke(pi_manage, ["conditionalaccess", "clear-locks", "--realm", "realm1", "--yes"])
         self.assertIn("Removed 1 user lock(s) in realm 'realm1'.", res.output, res)
         # Only the realm1 lock was removed; realm2 is untouched.
-        self.assertEqual(0, UserLockoutState.query.filter_by(realm="realm1").count())
-        self.assertEqual(1, UserLockoutState.query.filter_by(realm="realm2").count())
+        self.assertEqual(0, UserLockState.query.filter_by(realm="realm1").count())
+        self.assertEqual(1, UserLockState.query.filter_by(realm="realm2").count())
 
     def test_09c_purge_expired_blocks(self):
         runner = self.app.test_cli_runner()
@@ -1172,11 +1171,11 @@ class PIManageConditionalAccessTestCase(CliTestCase):
 
     def test_09d_purge_expired_locks(self):
         runner = self.app.test_cli_runner()
-        db.session.add(UserLockoutState(resolver="reso1", uid="1", realm="realm1",
+        db.session.add(UserLockState(resolver="reso1", uid="1", realm="realm1",
                                         lock_expires_at=utc_now() - dt.timedelta(seconds=60)))  # expired
-        db.session.add(UserLockoutState(resolver="reso1", uid="2", realm="realm1",
+        db.session.add(UserLockState(resolver="reso1", uid="2", realm="realm1",
                                         lock_expires_at=utc_now() + dt.timedelta(seconds=600)))  # active
         db.session.commit()
         res = runner.invoke(pi_manage, ["conditionalaccess", "purge-expired-locks"])
         self.assertIn("Removed 1 stale user lock(s).", res.output, res)
-        self.assertEqual(1, UserLockoutState.query.count())
+        self.assertEqual(1, UserLockState.query.count())

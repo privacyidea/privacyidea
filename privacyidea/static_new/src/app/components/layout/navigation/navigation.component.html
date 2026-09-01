@@ -553,7 +553,7 @@
         <span i18n>Known Clients</span>
       </a>
     }
-    @if (authService.actionAllowed("user_lockout_read")) {
+    @if (authService.actionAllowed("user_lock_read")) {
       <a
         [ngClass]="contentService.routeUrl() === ROUTE_PATHS.LOCKED_USERS ? 'sub-nav-active' : ''"
         [routerLink]="[ROUTE_PATHS.LOCKED_USERS]">

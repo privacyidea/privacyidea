@@ -98,6 +98,18 @@ describe("LdapResolverComponent", () => {
     expect(component.model().EDITABLE).toBe(true);
   });
 
+  it("should default TLS_VERSION to the negotiate protocol value", () => {
+    expect(component.model().TLS_VERSION).toBe("2");
+  });
+
+  it("should coerce a numeric TLS_VERSION from data input to a string", () => {
+    componentRef.setInput("data", { TLS_VERSION: 5 });
+
+    fixture.detectChanges();
+
+    expect(component.model().TLS_VERSION).toBe("5");
+  });
+
   it("should apply LDAP presets", () => {
     const preset = component.ldapPresets[0];
     component.applyLdapPreset(preset);

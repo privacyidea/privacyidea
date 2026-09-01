@@ -145,9 +145,9 @@ export class AuthenticationLogService implements AuthenticationLogServiceInterfa
 
   authenticationLogFilter = signal(new FilterValue());
 
-  // The backend matches these filters exactly, so values are sent verbatim (no wildcard wrapping, unlike the audit log).
-  // Value-based equality so adding/clearing a filter *key* without a value (e.g. "username: ") yields the same
-  // effective params object and does NOT re-notify -> no needless reload. A changed value still propagates.
+  // The backend matches these filters exactly, so values are sent verbatim (no wildcard wrapping, unlike the audit
+  // log). Value-based equality means adding/clearing a filter *key* with no value (e.g. "username: ") yields the same
+  // params object and skips a reload; a changed value still propagates.
   filterParams = computed<Record<string, string>>(
     () => {
       const allowed = [...this.apiFilter, ...this.advancedApiFilter];

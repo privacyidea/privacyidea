@@ -53,7 +53,8 @@ const mockEntry: LockedUserEntry = {
   permanent: false,
   lock_expires_at: "2026-01-01T10:00:00Z",
   seconds_remaining: 3600,
-  locked_at: "2026-01-01T09:00:00Z"
+  locked_at: "2026-01-01T09:00:00Z",
+  error_message: null
 };
 
 const permanentEntry: LockedUserEntry = {
@@ -213,19 +214,19 @@ describe("LockedUsersComponent", () => {
     expect(component.selection()).toEqual([]);
   });
 
-  it("resets the selected lockouts after confirmation", () => {
+  it("resets the selected locks after confirmation", () => {
     casService.setLockedUsers([mockEntry, permanentEntry]);
     component.selection.set([mockEntry, permanentEntry]);
     const dialogRef = new MockMatDialogRef<unknown, boolean>();
     (dialogService.openDialog as jest.Mock).mockReturnValue(dialogRef);
-    (casService.resetUserLockout as jest.Mock).mockReturnValue(of(true));
+    (casService.resetUserLock as jest.Mock).mockReturnValue(of(true));
 
     component.resetSelected();
     dialogRef.close(true);
 
     expect(dialogService.openDialog).toHaveBeenCalled();
-    expect(casService.resetUserLockout).toHaveBeenCalledTimes(2);
-    expect(casService.resetUserLockout).toHaveBeenCalledWith({
+    expect(casService.resetUserLock).toHaveBeenCalledTimes(2);
+    expect(casService.resetUserLock).toHaveBeenCalledWith({
       uid: mockEntry.uid,
       realm: mockEntry.realm,
       resolver: mockEntry.resolver
@@ -242,7 +243,7 @@ describe("LockedUsersComponent", () => {
     component.resetSelected();
     dialogRef.close(false);
 
-    expect(casService.resetUserLockout).not.toHaveBeenCalled();
+    expect(casService.resetUserLock).not.toHaveBeenCalled();
   });
 
   it("does nothing when resetSelected is called with an empty selection", () => {
@@ -284,16 +285,16 @@ describe("LockedUsersComponent", () => {
     expect(component.totalLength()).toBe(2);
   });
 
-  it("confirms, then deletes expired lockouts and reloads", () => {
+  it("confirms, then deletes expired locks and reloads", () => {
     const dialogRef = new MockMatDialogRef<unknown, boolean>();
     (dialogService.openDialog as jest.Mock).mockReturnValue(dialogRef);
-    (casService.purgeUserLockouts as jest.Mock).mockReturnValue(of(3));
+    (casService.purgeUserLocks as jest.Mock).mockReturnValue(of(3));
 
     component.deleteExpired();
     dialogRef.close(true);
 
     expect(dialogService.openDialog).toHaveBeenCalled();
-    expect(casService.purgeUserLockouts).toHaveBeenCalled();
+    expect(casService.purgeUserLocks).toHaveBeenCalled();
     expect(notificationService.success).toHaveBeenCalled();
     expect(casService.lockedUsersResource.reload).toHaveBeenCalled();
   });
@@ -305,12 +306,26 @@ describe("LockedUsersComponent", () => {
     component.deleteExpired();
     dialogRef.close(false);
 
-    expect(casService.purgeUserLockouts).not.toHaveBeenCalled();
+    expect(casService.purgeUserLocks).not.toHaveBeenCalled();
   });
 
   it("handleFilterInput writes the raw input into the shared filter", () => {
     component.handleFilterInput({ target: { value: "usernames: alice" } } as unknown as Event);
     expect(casService.lockedUsersFilter().getValueOfKey("usernames")).toBe("alice");
+  });
+
+  it("lists the stored wording as a column", () => {
+    // An admin looking at a locked user should see what that user is actually told, without opening the policy -
+    // and the row carries the message stored at lock time, not what the stage says now. Material throws on a
+    // displayed column with no matColumnDef, so this also covers the template wiring.
+    casService.setLockedUsers([
+      { ...mockEntry, error_message: "Locked. Try again in about {duration}." },
+      { ...mockEntry, username: "bob", uid: "uid002" }
+    ]);
+    expect(component.displayedColumns).toContain("error_message");
+    const byUser = new Map(component.dataSource().data.map((row) => [row.username, row.error_message]));
+    expect(byUser.get("alice")).toBe("Locked. Try again in about {duration}.");
+    expect(byUser.get("bob")).toBeNull();
   });
 
   it("clearFilter empties the shared filter", () => {

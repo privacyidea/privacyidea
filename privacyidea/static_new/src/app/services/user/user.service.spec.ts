@@ -146,15 +146,16 @@ describe("UserService", () => {
 
   it("selectedUserRealm switches to the default realm when it resolves after the realm options", () => {
     contentServiceMock.routeUrl.set(ROUTE_PATHS.USERS);
-    realmService.defaultRealmResource.isLoading.set(true);
     realmService.defaultRealmResource.set(MockPiResponse.fromValue<Realms>({}));
+    realmService.defaultRealmResource.isLoading.set(true);
     realmService.realmOptions.set(["aRealm", "zRealm"]);
     expect(userService.selectedUserRealm()).toBe("aRealm");
 
+    // The answer settles the resource, so the load ends with the value rather than after it.
     realmService.defaultRealmResource.set(
       MockPiResponse.fromValue<Realms>({ zRealm: { default: true, id: 1, option: "", resolver: [] } })
     );
-    realmService.defaultRealmResource.isLoading.set(false);
+    expect(realmService.defaultRealmResource.isLoading()).toBe(false);
     expect(userService.selectedUserRealm()).toBe("zRealm");
   });
 

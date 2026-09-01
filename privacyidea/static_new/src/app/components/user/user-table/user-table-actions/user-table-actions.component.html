@@ -29,7 +29,7 @@
     </mat-select>
   </mat-form-field>
 
-  @if (authService.actionAllowed("adduser") && anyEditableResolver()) {
+  @if (showCreateUser() && authService.actionAllowed("adduser") && anyEditableResolver()) {
     <button
       (click)="navigateToCreateUser()" class="action-button-primary button-width-m" mat-stroked-button>
       <span class="icon-badge">

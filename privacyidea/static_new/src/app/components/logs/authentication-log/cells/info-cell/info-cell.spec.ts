@@ -82,9 +82,8 @@ describe("InfoCell", () => {
   });
 
   it("gives a list one bullet per element, and folds an element's own nesting into JSON", () => {
-    // A list is one layer of nesting like a dict, so it reads the same way. Its elements have no key of their own -
-    // the bullet is what relates them to the key above - and an element that is itself a dict is as deep as the
-    // rendering goes.
+    // A list nests one level like a dict, but its elements have no key of their own (only the bullet marks them), so a
+    // dict element folds to JSON instead of being rendered further.
     expect(entriesFor({ items: [{ a: 1 }, { a: 2 }] })).toEqual([
       {
         key: "Items",
@@ -104,15 +103,16 @@ describe("InfoCell", () => {
   });
 
   it("renders nothing for a value that is not a dict", () => {
-    // The table's skeleton rows set every column to "", which is neither null nor a dict, and a cell that walks JSON
-    // must not throw on one.
+    // The table's skeleton rows set every column to "" (neither null nor a dict), so a cell that walks JSON must not
+    // throw on that value.
     expect(entriesFor("")).toEqual([]);
     expect(entriesFor(["a", "b"])).toEqual([]);
     expect(entriesFor(undefined)).toEqual([]);
   });
 
   it("shows a list in the DOM as bullets under its key", () => {
-    // Also the guard against tracking the sub-list by key: elements of a list have none, so two of them would collide.
+    // This also verifies the sub-list is not tracked by key: list elements have no key, so two of them would collide if
+    // it were.
     fixture.componentRef.setInput("info", { policies_applied: ["otppin=userstore", "challenge_response=hotp"] });
     fixture.detectChanges();
 

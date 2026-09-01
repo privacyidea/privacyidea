@@ -43,7 +43,6 @@ export interface ConditionalAccessToggleDialogData {
       [title]="data.title"
       (wrapperClose)="close()"
       [actions]="actions"
-      [showCancelButton]="true"
       (actionTriggered)="onAction($event)">
       <div class="margin-right-16">
         <p>{{ data.intro }}</p>

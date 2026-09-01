@@ -224,9 +224,9 @@ class AuthenticationLogTestCase(MyTestCase):
         log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1",
                                  username="Alice", serial="TOK1")
 
-        # All string columns use a case-sensitive collation, so the unflagged default is case-sensitive on every
-        # backend: a differently-cased value does not match without the flag, and matches with it. This holds for a
-        # non-boundary column (serial) too, confirming the behaviour is uniform across columns.
+        # Every string column uses a case-sensitive collation on every backend, so matching is case-sensitive unless
+        # case_insensitive is set; this holds for a non-boundary column (serial) too, confirming the behaviour is
+        # uniform across columns.
         self.assertEqual(0, get_authentication_logs_paginate(username="alice").count)
         self.assertEqual(1, get_authentication_logs_paginate(username="alice", case_insensitive=True).count)
         self.assertEqual(1, get_authentication_logs_paginate(username="Alice").count)
@@ -419,8 +419,8 @@ class AuthenticationLogTestCase(MyTestCase):
         self.assertEqual(0, deleted)
 
     def test_cleanup_accepts_timezone_aware_cutoff(self):
-        # The timestamp column is naive UTC; a timezone-aware cutoff must be normalized to UTC, not rejected or
-        # mis-compared. An entry now (naive UTC) must survive a cutoff of "one hour ago" expressed in a +02:00 zone.
+        # The timestamp column stores naive UTC, so a timezone-aware cutoff must be normalized to UTC rather than
+        # rejected or mis-compared.
         log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1")
         tz = timezone(timedelta(hours=2))
         cutoff_aware = datetime.now(tz) - timedelta(hours=1)
@@ -439,8 +439,8 @@ class AuthenticationLogTestCase(MyTestCase):
         self.assertEqual(entry.timestamp, entry.aware_timestamp.replace(tzinfo=None))
 
     def test_failed_write_is_swallowed_and_not_persisted(self):
-        # event_type is NOT NULL, so passing None makes the insert fail at flush. The failure must be swallowed
-        # (return None, no exception) and no row must be written.
+        # event_type is NOT NULL, so passing None fails the insert at flush; the failure is swallowed (returns None, no
+        # exception) and no row is written.
         from privacyidea.models import db
 
         event_id = log_authentication_event(event_type=None, resolver="res1", uid="u1", realm="r1")
@@ -450,8 +450,8 @@ class AuthenticationLogTestCase(MyTestCase):
         self.assertEqual([], get_authentication_logs())
 
     def test_failed_write_leaves_prior_pending_write_pending(self):
-        # The insert runs on the conditional-access session, so a failing entry must neither roll back nor commit
-        # an earlier, still-uncommitted write of the *request* session.
+        # The insert runs on the conditional-access session, so a failing entry neither rolls back nor commits an
+        # earlier, still-uncommitted write on the request session.
         from privacyidea.models import db
         from privacyidea.models.authentication_log import AuthenticationLog
 
@@ -474,9 +474,9 @@ class AuthenticationLogTestCase(MyTestCase):
         self.assertEqual("prior", results[0].resolver)
 
     def test_values_are_truncated_to_column_length(self):
-        # A value longer than its column is truncated instead of overflowing the column on insert. Cover a
-        # size-constrained indexed column (resolver) and the generously-sized free columns (client_label, serial,
-        # which hold a raw User-Agent and a comma-joined serial list).
+        # A value longer than its column is truncated on insert rather than overflowing it; this covers a
+        # size-constrained indexed column (resolver) and generously-sized free columns (client_label, holding a raw
+        # User-Agent, and serial, holding a comma-joined list).
         def over(column):
             return "X" * (authentication_log_column_length[column] + 50)
 
@@ -494,8 +494,8 @@ class AuthenticationLogTestCase(MyTestCase):
                          entry.transaction_id)
 
     def test_overflow_is_preserved_in_other_info(self):
-        # The part of a value that does not fit the column is preserved under other_info["truncated"][column] (as the
-        # cut-off remainder, not the full value) instead of being lost.
+        # The part of a value that does not fit the column is preserved as the cut-off remainder under
+        # other_info["truncated"][column] instead of being lost.
         max_resolver = authentication_log_column_length["resolver"]
         event_id = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS,
                                             resolver="R" * max_resolver + "OVERFLOW")
@@ -523,9 +523,8 @@ class AuthenticationLogTestCase(MyTestCase):
         self.assertEqual({"reason": "policy"}, entry.other_info)
 
     def test_serial_overflow_splits_on_separator(self):
-        # A comma-joined serial list is cut on a comma boundary so whole serials stay in the column (filterable via a
-        # wildcard) and the dropped serials land in the overflow whole. Build a list whose last serial straddles the
-        # column limit.
+        # A comma-joined serial list is cut on a comma boundary so whole serials remain filterable in the column, with
+        # the dropped serials preserved whole in the overflow; here the last serial straddles the column limit.
         max_serial = authentication_log_column_length["serial"]
         head = "S" * (max_serial - 4)  # leaves room for ",AAA" but not the next serial
         serial = f"{head},AAA,BBBBBBBBBB"
@@ -537,7 +536,7 @@ class AuthenticationLogTestCase(MyTestCase):
 
     def test_serial_overflow_falls_back_to_char_split_when_no_separator_fits(self):
         # A single serial longer than the column has no comma boundary to cut on, so it falls back to a character split
-        # rather than dropping everything.
+        # rather than dropping the value entirely.
         max_serial = authentication_log_column_length["serial"]
         serial = "S" * (max_serial + 5)
         event_id = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, serial=serial)
@@ -547,8 +546,8 @@ class AuthenticationLogTestCase(MyTestCase):
         self.assertEqual({"truncated": {"serial": "SSSSS"}}, entry.other_info)
 
     def test_amending_a_written_event_preserves_serial_overflow(self):
-        # An amended row truncates the same way as the insert and preserves the serial overflow into the entry's
-        # existing other_info.
+        # An amended row truncates the same way as an insert and folds the serial overflow into the entry's existing
+        # other_info.
         event = PendingAuthEvent(event_type=AuthEventType.LOGIN_SUCCESS, serial="TOK001")
         write_authentication_events([event])
         max_serial = authentication_log_column_length["serial"]
@@ -564,7 +563,7 @@ class AuthenticationLogTestCase(MyTestCase):
         self.assertEqual({"truncated": {"serial": "BBBBBBBBBB"}}, entry.other_info)
 
     def test_amending_only_the_event_type_keeps_the_serial(self):
-        # Amending just the classification must leave the rest of the row alone, e.g. the authorized=deny post-policy
+        # Amending only the classification leaves the rest of the row alone, e.g. the authorized=deny post-policy
         # corrects a successful login to NOT_AUTHORIZED without touching the serial.
         event = PendingAuthEvent(event_type=AuthEventType.LOGIN_SUCCESS, serial="TOK001")
         write_authentication_events([event])
@@ -591,8 +590,8 @@ class AuthenticationLogTestCase(MyTestCase):
         self.assertEqual({"reason": "after", "note": "updated"}, entry.other_info)
 
     def test_outcomes_on_an_event_are_not_row_content(self):
-        # An event carries its conditional-access outcomes until the row id they are recorded against exists. They are
-        # not columns, so attaching them to an already-written event must not mark it changed and provoke an UPDATE.
+        # An event holds its conditional-access outcomes until the row id they attach to exists; since outcomes are not
+        # columns, setting them on an already-written event must not mark it changed and trigger an UPDATE.
         event = PendingAuthEvent(event_type=AuthEventType.LOGIN_SUCCESS)
         write_authentication_events([event])
         self.assertFalse(event.changed)
@@ -754,9 +753,9 @@ class AuthenticationLogPaginateTestCase(MyTestCase):
         self.assertEqual(2, restricted.count)
 
     def test_visibility_scope_resolver_matches_case_sensitively(self):
-        # The boundary columns are pinned to a case-sensitive collation (utf8mb4_bin on MySQL/MariaDB; SQLite, Postgres
-        # and Oracle are case-sensitive by default), so a resolver scope never leaks a case-variant resolver on any
-        # backend -- the boundary fails closed.
+        # Boundary columns are pinned to a case-sensitive collation on every backend (utf8mb4_bin on MySQL/MariaDB;
+        # case-sensitive by default on SQLite, Postgres and Oracle), so a resolver scope never leaks a case-variant
+        # resolver -- the boundary fails closed.
         log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="realm1")
         log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="RES1", uid="u2", realm="realm1")
         scope = AuthenticationLogVisibilityScope(realms=[], resolvers=["res1"], usernames=[])
@@ -765,8 +764,8 @@ class AuthenticationLogPaginateTestCase(MyTestCase):
         self.assertEqual("res1", restricted.auth_logs[0].resolver)
 
     def test_visibility_scope_username_matches_case_sensitively_by_default(self):
-        # Without the policy's user_case_insensitive option, an admin scoped to "alice" must not see "Alice" -- and the
-        # case-sensitive collation makes this hold on every backend, not just on a case-sensitive DB collation.
+        # Without the policy's user_case_insensitive option, an admin scoped to "alice" must not see "Alice", and the
+        # case-sensitive collation guarantees this holds on every backend.
         log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", realm="realm1",
                                  username="alice")
         log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", realm="realm1",
@@ -777,8 +776,8 @@ class AuthenticationLogPaginateTestCase(MyTestCase):
         self.assertEqual("alice", restricted.auth_logs[0].username)
 
     def test_visibility_scope_username_case_insensitive_when_policy_set(self):
-        # With user_case_insensitive carried on the scope, the username dimension is forced case-insensitive via
-        # LOWER() on both sides, so the admin scoped to "alice" also sees the "Alice" entry.
+        # With user_case_insensitive set on the scope, the username dimension is forced case-insensitive via LOWER() on
+        # both sides, so the admin scoped to "alice" also sees the "Alice" entry.
         log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", realm="realm1",
                                  username="alice")
         log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", realm="realm1",
@@ -789,8 +788,8 @@ class AuthenticationLogPaginateTestCase(MyTestCase):
         self.assertEqual(2, restricted.count)
 
     def test_visibility_scope_user_roles_dimension(self):
-        # The user_roles dimension is AND-ed with the others; it lets a local admin's own entries be matched by
-        # username + admin-internal, so a same-named user entry is excluded.
+        # The user_roles dimension is AND-ed with the others, so a local admin's own entries are matched by username +
+        # admin-internal and a same-named regular-user entry is excluded.
         log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, username="testadmin",
                                  user_role=AuthLogUserRole.ADMIN_INTERNAL)
         log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, realm="realm1", username="testadmin",
@@ -901,9 +900,9 @@ class AuthenticationLogOutcomeJoinTestCase(MyTestCase):
         self.assertListEqual([], page.to_dict()["auth_logs"][0]["conditional_access_outcomes"])
 
     def test_the_outcomes_of_a_whole_page_cost_one_statement(self):
-        # selectinload fetches the page's outcomes in a single extra query, so the statement count does not grow with
-        # the page size. A lazy relationship would pass every content assertion above while emitting one query per
-        # entry, which is why this asserts on statements rather than on the payload.
+        # selectinload fetches a whole page's outcomes in one extra query regardless of page size; a lazy relationship
+        # would pass every content assertion above while issuing one query per entry, so this asserts on statement count
+        # rather than on the payload.
         for _ in range(5):
             self._entry_with_outcomes()
 
@@ -913,8 +912,8 @@ class AuthenticationLogOutcomeJoinTestCase(MyTestCase):
         self.assertEqual(1, len(statements), statements)
 
     def test_the_unpaginated_query_does_not_load_the_outcomes(self):
-        # get_authentication_logs is used by lib callers and tests, not by the log view, so it must not pay for the
-        # join - and reading the relationship afterwards is an error rather than a silent query.
+        # get_authentication_logs is used by lib callers and tests, not the log view, so it must not pay for the join;
+        # reading the relationship afterward is an error, not a silent query.
         self._entry_with_outcomes()
 
         with self._statements("conditional_access_outcome") as statements:
@@ -923,8 +922,8 @@ class AuthenticationLogOutcomeJoinTestCase(MyTestCase):
         self.assertRaises(InvalidRequestError, lambda: entries[0].outcomes)
 
     def test_to_dict_of_a_single_entry_leaves_the_outcomes_out(self):
-        # The default is off precisely because the relationship raises: an entry that was not loaded with its outcomes
-        # must not try to fetch them while being serialized.
+        # The default is off because the relationship raises: an entry loaded without its outcomes must not try to fetch
+        # them while being serialized.
         event_id = self._entry_with_outcomes()
         entry = get_authentication_log_event(event_id)
         self.assertNotIn("conditional_access_outcomes", entry.to_dict())
@@ -949,10 +948,9 @@ class AuthenticationLogOutcomeJoinTestCase(MyTestCase):
         self.assertEqual(1, len(get_outcomes(kept)))
 
     def test_deleting_an_entry_as_an_object_takes_its_outcomes(self):
-        # The relationship cascade covers every caller that deletes an entry as an object, not just the one delete
-        # function in this module - including MethodsMixin.delete(), which this model offers and which a future caller
-        # may well reach for. Without the cascade those paths would orphan the outcomes on SQLite, where the foreign
-        # key is not enforced.
+        # The cascade covers every caller that deletes an entry as an object, including the model's own
+        # MethodsMixin.delete(), not only this module's delete function; without it, those paths would orphan the
+        # outcomes on SQLite, which does not enforce foreign keys.
         kept = self._entry_with_outcomes()
         removed = self._entry_with_outcomes()
 

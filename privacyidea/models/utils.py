@@ -25,8 +25,8 @@ from sqlalchemy.sql.sqltypes import BigInteger, Unicode
 
 from privacyidea.models import db
 
-# Use a variant type for sqlite since it does not allow auto-increment with BigInteger type.
-# (See https://docs.sqlalchemy.org/en/20/dialects/sqlite.html#allowing-autoincrement-behavior-sqlalchemy-types-other-than-integer-integer)
+# SQLite cannot auto-increment a BigInteger column, so the type is declared as a variant that maps to INTEGER there.
+# https://docs.sqlalchemy.org/en/20/dialects/sqlite.html#allowing-autoincrement-behavior-sqlalchemy-types-other-than-integer-integer  # noqa: E501
 BigIntegerType = BigInteger()
 BigIntegerType = BigIntegerType.with_variant(sqlite.INTEGER(), "sqlite")
 

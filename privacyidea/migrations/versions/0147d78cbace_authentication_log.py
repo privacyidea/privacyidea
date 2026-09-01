@@ -1,7 +1,7 @@
 """v3.14: Add authentication log table
 
 Revision ID: 0147d78cbace
-Revises: d9e0f1a2b3c4
+Revises: b8c9d0e1f2a3
 Create Date: 2026-06-01 08:37:51.884173
 
 """
@@ -16,7 +16,7 @@ from privacyidea.models.utils import BigIntegerType
 
 # revision identifiers, used by Alembic.
 revision = '0147d78cbace'
-down_revision = 'd9e0f1a2b3c4'
+down_revision = 'b8c9d0e1f2a3'
 branch_labels = None
 depends_on = None
 
@@ -37,11 +37,9 @@ def _unicode_case_sensitive(length):
 
 def upgrade():
     try:
-        # The column lengths must match privacyidea.models.authentication_log.authentication_log_column_length.
-        # The columns in the composite index below (resolver, uid, realm, event_type) are kept small enough that the
-        # index stays below the 3072-byte InnoDB key limit of MySQL/MariaDB with utf8mb4:
-        # (120+320+255+40)*4 + 8 (timestamp) = 2948 bytes. The non-indexed columns (client_label, serial) are sized
-        # generously to avoid truncation. transaction_id matches the challenge table's 64 chars.
+        # Column lengths must match privacyidea.models.authentication_log.authentication_log_column_length. The
+        # composite-index columns (resolver, uid, realm, event_type) stay under MySQL/MariaDB's 3072-byte utf8mb4
+        # InnoDB key limit: (120+320+255+40)*4 + 8 (timestamp) = 2948 bytes.
         op.create_table(
             'authentication_log',
             sa.Column('id', BigIntegerType, sa.Identity(always=False), nullable=False),
