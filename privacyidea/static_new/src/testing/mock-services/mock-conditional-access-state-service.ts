@@ -26,24 +26,24 @@ import {
   LockedUsersPage,
   LockedUserEntry,
   LockState,
-  ResetUserLockoutRequest
+  ResetUserLockRequest
 } from "@services/conditional-access-state/conditional-access-state.service";
 import { Observable, of } from "rxjs";
 import { MockHttpResourceRef, MockPiResponse } from "./mock-utils";
 
 export class MockConditionalAccessStateService implements ConditionalAccessStateServiceInterface {
-  userLockoutResource = new MockHttpResourceRef<PiResponse<LockedUserEntry | null> | undefined>(
+  userLockResource = new MockHttpResourceRef<PiResponse<LockedUserEntry | null> | undefined>(
     MockPiResponse.fromValue<LockedUserEntry | null>(null)
   );
 
-  userLockoutStatus = computed<LockedUserEntry | null>(() => {
-    if (!this.userLockoutResource.hasValue()) {
+  userLockStatus = computed<LockedUserEntry | null>(() => {
+    if (!this.userLockResource.hasValue()) {
       return null;
     }
-    return this.userLockoutResource.value()?.result?.value ?? null;
+    return this.userLockResource.value()?.result?.value ?? null;
   });
 
-  resetUserLockout = jest.fn().mockImplementation((_: ResetUserLockoutRequest): Observable<boolean> => of(true));
+  resetUserLock = jest.fn().mockImplementation((_: ResetUserLockRequest): Observable<boolean> => of(true));
 
   lockedUsersFilter = signal(new FilterValue());
   lockedUsersFilterParams = computed<Record<string, string>>(() => ({}));
@@ -86,7 +86,7 @@ export class MockConditionalAccessStateService implements ConditionalAccessState
       )
   );
 
-  purgeUserLockouts = jest.fn().mockImplementation((): Observable<number> => of(0));
+  purgeUserLocks = jest.fn().mockImplementation((): Observable<number> => of(0));
 
   // Blocklist — flat list
   blocklistResource = new MockHttpResourceRef<PiResponse<BlocklistEntry[]> | undefined>(
@@ -103,8 +103,8 @@ export class MockConditionalAccessStateService implements ConditionalAccessState
   removeBlocklistEntry = jest.fn().mockImplementation((_: BlocklistEntry): Observable<boolean> => of(true));
   purgeBlocklist = jest.fn().mockImplementation((): Observable<number> => of(0));
 
-  setUserLockoutStatus(value: LockedUserEntry | null): void {
-    this.userLockoutResource.set(MockPiResponse.fromValue<LockedUserEntry | null>(value));
+  setUserLockStatus(value: LockedUserEntry | null): void {
+    this.userLockResource.set(MockPiResponse.fromValue<LockedUserEntry | null>(value));
   }
 
   setLockedUsers(entries: LockedUserEntry[]): void {

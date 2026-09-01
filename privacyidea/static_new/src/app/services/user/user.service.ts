@@ -55,6 +55,11 @@ export interface UserData {
   [key: string]: unknown; // Allow additional custom properties
 }
 
+/** Partial-failure report the /user/ endpoint attaches when a resolver of the realm could not be queried. */
+export interface UserListResponseDetail {
+  skipped_resolvers?: string[];
+}
+
 export interface EditUserData {
   username: string;
   description?: string;
@@ -106,8 +111,9 @@ export interface UserServiceInterface extends FilterableTableServiceInterface {
 
   userResource: HttpResourceRef<PiResponse<UserData[]> | undefined>;
   user: WritableSignal<UserData>;
-  usersResource: HttpResourceRef<PiResponse<UserData[]> | undefined>;
+  usersResource: HttpResourceRef<PiResponse<UserData[], UserListResponseDetail | undefined> | undefined>;
   users: WritableSignal<UserData[]>;
+  skippedResolvers: Signal<string[]>;
 
   detailsUser: WritableSignal<DetailsUser>;
 
@@ -424,7 +430,7 @@ export class UserService extends FilterableTableService implements UserServiceIn
     }
   });
 
-  usersResource = httpResource<PiResponse<UserData[]>>(() => {
+  usersResource = httpResource<PiResponse<UserData[], UserListResponseDetail | undefined>>(() => {
     const selectedUserRealm = this.selectedUserRealm();
     // Do not load users if the action is not allowed.
     if (!this.authService.actionAllowed("userlist")) {
@@ -463,6 +469,11 @@ export class UserService extends FilterableTableService implements UserServiceIn
       }
     };
   });
+
+  /** Resolvers of the selected realm that the server could not query, so the list on screen is incomplete. */
+  skippedResolvers = computed<string[]>(() =>
+    this.usersResource.hasValue() ? (this.usersResource.value()?.detail?.skipped_resolvers ?? []) : []
+  );
 
   users: WritableSignal<UserData[]> = linkedSignal({
     source: () => ({

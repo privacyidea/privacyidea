@@ -1,6 +1,6 @@
-"""v3.14: Add user_lockout_state live-state table
+"""v3.14: Add user_lock_state live-state table
 
-Create the user_lockout_state table that records the current locked status
+Create the user_lock_state table that records the current locked status
 of a user, keyed by the same (resolver, uid, realm) tuple used in
 authentication_log. There is deliberately no failure-counter column: failure
 counts are derived by querying authentication_log over the policy's time
@@ -23,14 +23,14 @@ down_revision = '173d32328846'
 branch_labels = None
 depends_on = None
 
-TABLES = ['user_lockout_state']
+TABLES = ['user_lock_state']
 
 
 def _unicode_case_sensitive(length):
     """
     A case-sensitive string column type (mirrors models.utils.case_sensitive_unicode).
 
-    The identity columns (resolver/uid/realm/username) are the user-lockout visibility boundary: a
+    The identity columns (resolver/uid/realm/username) are the user-lock visibility boundary: a
     user-scoped read policy filters on them. On MySQL/MariaDB the server-default collation is typically
     case-insensitive (*_ci), which would make that boundary match case-insensitively -- a fail-open
     authorization risk. Pinning to utf8mb4_bin makes matching case-sensitive; SQLite, PostgreSQL and Oracle
@@ -54,12 +54,13 @@ def _create_table(table_name, *columns):
 
 def upgrade():
     _create_table(
-        'user_lockout_state',
+        'user_lock_state',
         sa.Column('resolver', _unicode_case_sensitive(120), nullable=False),
         sa.Column('uid', _unicode_case_sensitive(320), nullable=False),
         sa.Column('realm', _unicode_case_sensitive(255), nullable=False),
         sa.Column('username', _unicode_case_sensitive(255), nullable=True),
         sa.Column('lock_expires_at', sa.DateTime(), nullable=True),
+        sa.Column('error_message', sa.Unicode(length=500), nullable=True),
         sa.Column('locked_at', sa.DateTime(), nullable=False),
         sa.PrimaryKeyConstraint('resolver', 'uid', 'realm'),
     )

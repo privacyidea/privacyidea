@@ -16,7 +16,7 @@ from privacyidea.config import TestingConfig
 from privacyidea.lib.audit import getAudit, search
 from privacyidea.lib.auditmodules.containeraudit import Audit as ContainerAudit
 from privacyidea.lib.auditmodules.loggeraudit import Audit as LoggerAudit
-from privacyidea.lib.auditmodules.sqlaudit import Audit as SQLAudit, column_length
+from privacyidea.lib.auditmodules.sqlaudit import Audit as SQLAudit, column_length, LogEntry
 from privacyidea.lib.utils import AUTH_RESPONSE
 from .base import MyTestCase, OverrideConfigTestCase
 from testfixtures import log_capture
@@ -240,6 +240,59 @@ class AuditTestCase(MyTestCase):
             r = self.Audit.get_count({"action": "/validate/check"}, success=True,
                                      timedelta=datetime.timedelta(seconds=1))
             self.assertEqual(1, r)
+
+    def test_02a_negation_matches_unset_columns(self):
+        # Columns that are unset are written as "" by the audit module, but entries that
+        # were written before a column existed contain NULL (the migration adds the column
+        # without a default). A negated filter must not silently drop those entries.
+        self.Audit.log({"action": "/validate/check", "authentication": AUTH_RESPONSE.CHALLENGE,
+                        "user": "alice", "success": False})
+        self.Audit.finalize_log()
+
+        self.Audit = getAudit(self.app.config)
+        self.Audit.log({"action": "/validate/check", "authentication": AUTH_RESPONSE.REJECT,
+                        "user": "bob", "success": False})
+        self.Audit.finalize_log()
+
+        self.Audit = getAudit(self.app.config)
+        self.Audit.log({"action": "/validate/check", "success": False})
+        self.Audit.finalize_log()
+        # turn the entry with the unset columns into a pre-migration one
+        self.Audit.session.query(LogEntry).filter(LogEntry.authentication == "").update(
+            {LogEntry.authentication: None, LogEntry.user: None})
+        self.Audit.session.commit()
+
+        # the NULL entry is counted as "not a challenge", in the exact and the wildcard branch
+        r = self.Audit.get_count({"action": "/validate/check", "authentication": f"!{AUTH_RESPONSE.CHALLENGE}"},
+                                 success=False)
+        self.assertEqual(2, r)
+        r = self.Audit.get_count({"action": "/validate/check", "authentication": "!CHAL*"}, success=False)
+        self.assertEqual(2, r)
+
+        # a positive filter still does not match the NULL entry
+        r = self.Audit.get_count({"action": "/validate/check", "authentication": AUTH_RESPONSE.CHALLENGE},
+                                 success=False)
+        self.assertEqual(1, r)
+        r = self.Audit.get_count({"action": "/validate/check", "authentication": "CHAL*"}, success=False)
+        self.assertEqual(1, r)
+
+        # this is not specific to the "authentication" column
+        r = self.Audit.get_count({"action": "/validate/check", "user": "!alice"}, success=False)
+        self.assertEqual(2, r)
+        r = self.Audit.get_count({"action": "/validate/check", "user": "!ali*"}, success=False)
+        self.assertEqual(2, r)
+
+        # the download uses the same filter
+        csv_lines = list(self.Audit.csv_generator({"action": "/validate/check",
+                                                   "authentication": f"!{AUTH_RESPONSE.CHALLENGE}"}))
+        self.assertEqual(2, len(csv_lines), csv_lines)
+
+        # the date columns are cast to a string before comparing, the NULL check runs on the
+        # column itself. The dates are set, so all three entries match the negation.
+        r = self.Audit.get_count({"action": "/validate/check", "date": "!1970-01-01 00:00:00"})
+        self.assertEqual(3, r)
+        r = self.Audit.get_count({"action": "/validate/check", "date": "!1970-01-01*"})
+        self.assertEqual(3, r)
 
     def test_03_lib_search(self):
         res = search(self.app.config, {"page": 1, "page_size": 10,

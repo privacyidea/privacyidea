@@ -210,6 +210,17 @@ view older entries.
 
 Can be something like 10m (10 minutes), 10h (10 hours) or 10d (ten days).
 
+authentication_log_read
+~~~~~~~~~~~~~~~~~~~~~~~
+
+type: ``bool``
+
+The user is allowed to read their own entries from the
+:ref:`authentication_log`. The columns identifying the user are hidden, since
+every entry is the user's own.
+
+.. versionadded:: 3.14
+
 hide_audit_columns
 ~~~~~~~~~~~~~~~~~~
 
@@ -242,6 +253,20 @@ type: ``bool``
 
 If the ``userlist`` action is defined, the user is
 allowed to view their own user information.
+
+.. _user_policy_sshkey_read:
+
+sshkey_read
+~~~~~~~~~~~
+
+type: ``bool``
+
+If the ``sshkey_read`` action is defined, the user is allowed to read the
+public SSH key of their own SSH key tokens via ``GET /token/sshkey/<serial>``.
+
+The public key of an SSH key token is stored encrypted and is therefore only
+contained in encrypted form in the token list, so this action is the way to
+retrieve it. Only active tokens hand out their key. See :ref:`sshkey_token`.
 
 revoke
 ~~~~~~

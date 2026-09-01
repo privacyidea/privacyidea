@@ -477,6 +477,26 @@ added to the ``PI_ENABLE_TOKEN_TYPE_ENROLLMENT`` list in ``pi.cfg``::
    ``tokentype='deprecated'`` and handled via ``pi-tokenjanitor deprecated``
    - see the developer note ``dev/token-deprecation-strategy.md``.
 
+.. _picfg_allowed_ssh_key_types:
+
+Allowed SSH key types
+.....................
+
+.. versionadded:: 3.14
+
+The SSH key token only accepts a set of well known SSH key types (``ssh-rsa``,
+``ssh-ed25519``, ``ecdsa-sha2-nistp256``,
+``sk-ecdsa-sha2-nistp256@openssh.com`` and
+``sk-ssh-ed25519@openssh.com``). If you need to enroll SSH keys of other
+types, you can add them as a list in ``pi.cfg``::
+
+    PI_ALLOWED_SSH_KEY_TYPES = ['ssh-dss', 'ecdsa-sha2-nistp521']
+
+
+The configured key types are added to the default key types. privacyIDEA does
+not evaluate the key type itself, the SSH server decides which key types it
+accepts (see ``PubkeyAcceptedAlgorithms``).
+
 .. _picfg_email_validators:
 
 3rd party email validators
@@ -898,5 +918,56 @@ paying the timeout for it is pointless. Switch it off with::
 The overview still lists every component with its usage and subscription state,
 only the latest-release column stays empty. This is the only outbound request the
 subscription overview makes.
+
+.. versionadded:: 3.14
+
+.. _ini_conditional_access_never_block:
+
+Conditional access never-block list
+-----------------------------------
+
+.. index:: conditional access, lock, never-block
+
+The conditional access policies can block a source IP (the ``BLOCK_IP``
+action). ``PI_CONDITIONAL_ACCESS_NEVER_BLOCK`` lists the addresses and networks
+that must never be blocked by that machinery::
+
+    PI_CONDITIONAL_ACCESS_NEVER_BLOCK = ["10.0.0.0/8", "192.0.2.15"]
+
+The value is either a list of entries or a single string of entries separated by
+commas or whitespace. Each entry is a CIDR network or a bare IP address; an entry
+that cannot be parsed is written to the log and ignored. Loopback (``127.0.0.0/8``
+and ``::1/128``) is always on the list and cannot be removed. Blocking it would
+lock out a reverse proxy running on the same host, and when ``OverrideAuthorizationClient``
+is unset every client is seen as that proxy.
+
+Put the addresses of your reverse proxies, load balancers, NAT gateways and
+management networks here. Blocking shared infrastructure locks out everyone
+behind it.
+
+The list wins over an existing block: if an IP is already blocked and is added to
+this list afterwards, the block is no longer enforced, and the block entry itself
+is removed the next time that IP authenticates. Removing the IP from the list
+again does not bring the old block back.
+
+This setting can **only** be configured on the server, either in ``pi.cfg`` or
+through the ``PRIVACYIDEA_PI_CONDITIONAL_ACCESS_NEVER_BLOCK`` environment
+variable, which is the usual path in a container::
+
+    PRIVACYIDEA_PI_CONDITIONAL_ACCESS_NEVER_BLOCK='["10.0.0.0/8", "192.0.2.15"]'
+
+The environment variable is read as JSON where possible and otherwise taken as a
+plain string, so both a JSON list and ``10.0.0.0/8,192.0.2.15`` work.
+
+Set the list in one place only. The two sources do not merge, and which one wins
+depends on the entry point: the standard server reads ``pi.cfg`` after the
+environment, so the file wins, while the container entry point reads the
+environment last, so there the variable wins.
+
+It is deliberately not a system setting, and there is no WebUI or API for it. It
+is the safety net that keeps an administrator from being locked out, so it must
+not be reachable through the same API that an attacker, or a mistaken
+conditional access policy, could be acting on. Changes take effect after a restart of the web
+server.
 
 .. versionadded:: 3.14

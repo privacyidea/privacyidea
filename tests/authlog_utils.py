@@ -74,10 +74,9 @@ class AuthLogTestCase(MyApiTestCase):
 
     @staticmethod
     def _clear_audit_log() -> None:
-        # Cleared only at the test boundary (setUp/tearDown), never mid-test: the classic AUTHMAXFAIL /
-        # AUTHMAXSUCCESS policies count from the audit log over a time window, so leftover entries from a preceding
-        # test (methods run alphabetically, sharing one audit table) would make those counts order-dependent. It must
-        # not be cleared inside a test (unlike _clear_log), where those very entries are what the policy counts.
+        # Cleared only at the test boundary (setUp/tearDown), never mid-test: AUTHMAXFAIL/AUTHMAXSUCCESS count from the
+        # audit log over a time window, so leftover entries from a preceding test (alphabetical, shared table) would
+        # make counts order-dependent; unlike _clear_log, mid-test entries are exactly what the policy counts.
         db.session.query(Audit).delete()
         db.session.commit()
 

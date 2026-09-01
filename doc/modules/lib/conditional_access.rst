@@ -6,7 +6,7 @@ Conditional Access Module
 .. index:: Conditional Access, Authentication Log
 
 The conditional-access package classifies each authentication request, records the
-outcome in the authentication log and feeds it to the lockout engine.
+outcome in the authentication log and feeds it to the conditional-access engine.
 
 Authentication event types
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -36,10 +36,10 @@ Conditional access engine
    :members:
    :undoc-members:
 
-Lockout policies
-~~~~~~~~~~~~~~~~~
+Conditional access policies
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. automodule:: privacyidea.lib.conditional_access.lockout_policy
+.. automodule:: privacyidea.lib.conditional_access.policy
    :members:
    :undoc-members:
 
@@ -53,7 +53,14 @@ Policy conditions
 Shipped policy templates
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. automodule:: privacyidea.lib.conditional_access.lockout_policy_template
+.. automodule:: privacyidea.lib.conditional_access.policy_template
+   :members:
+   :undoc-members:
+
+Live lock and block state
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. automodule:: privacyidea.lib.conditional_access.state
    :members:
    :undoc-members:
 

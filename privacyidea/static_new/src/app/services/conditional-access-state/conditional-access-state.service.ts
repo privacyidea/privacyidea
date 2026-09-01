@@ -33,14 +33,14 @@ import { catchError, map } from "rxjs/operators";
 const LOCKED_USERS_DEFAULT_PAGE_SIZE = 15;
 
 // The locked-users list supports these filter keys (comma-separated / wildcard values, matched
-// case-insensitively by the backend). Plural to match the API query parameters (`usernames`, `realms`,
-// `resolvers`), which each accept a list of values. `states` selects the lock state(s)
-// (permanent / temporary / expired) and replaces the former "show expired" toggle.
-const LOCKED_USERS_FILTER_KEYS = ["usernames", "realms", "resolvers", "states"];
+// case-insensitively by the backend); plural to match the API query parameters (`usernames`,
+// `realms`, `resolvers`), which each accept a list of values.
+// `states` selects which lock state(s) to show (permanent / temporary / expired).
+const LOCKED_USERS_FILTER_KEYS = ["usernames", "realms", "resolvers", "states", "error_messages"];
 
-// The lock states a record can be in, as accepted by the `states` query parameter of `lockout/users`:
-// permanent (no expiry), temporary (expiry still ahead) and expired (a stale row a purge removes).
-// Mirrors privacyidea.lib.conditional_access.lockout_state.LOCK_STATES.
+// The lock states a record can be in, as accepted by the `states` query parameter of `lock/users`:
+// permanent (no expiry), temporary (expiry still ahead) and expired (a stale row a purge removes);
+// mirrors LOCK_STATES in the Python backend.
 export type LockState = "permanent" | "temporary" | "expired";
 
 // Shallow value-equality for the flat filter-params record, so a value-less key edit does not re-notify.
@@ -49,7 +49,7 @@ function shallowEqualRecord(a: Record<string, string>, b: Record<string, string>
   return aKeys.length === Object.keys(b).length && aKeys.every((key) => a[key] === b[key]);
 }
 
-// One user-lockout record. Both `lockout/user` (single lookup) and `lockout/users` (list)
+// One user-lock record, as returned by both `lock/user` (single lookup) and `lock/users` (list).
 export interface LockedUserEntry {
   resolver: string;
   uid: string;
@@ -59,9 +59,12 @@ export interface LockedUserEntry {
   lock_expires_at: string | null;
   seconds_remaining: number | null;
   locked_at: string;
+  // What this user is told when a request is turned away, as stored when the lock was written. A snapshot, so
+  // it can differ from what the stage carries now; null when the stage configured none, which is the default.
+  error_message: string | null;
 }
 
-export type ResetUserLockoutRequest =
+export type ResetUserLockRequest =
   | {
       uid: string;
       realm: string;
@@ -87,12 +90,14 @@ export interface BlocklistEntry {
   block_expires_at: string | null;
   seconds_remaining: number | null;
   blocked_at: string;
+  // See LockedUserEntry: the wording stored on the row, not what the policy carries now.
+  error_message: string | null;
 }
 
 export interface ConditionalAccessStateServiceInterface {
-  userLockoutResource: HttpResourceRef<PiResponse<LockedUserEntry | null> | undefined>;
-  userLockoutStatus: Signal<LockedUserEntry | null>;
-  resetUserLockout(request: ResetUserLockoutRequest): Observable<boolean>;
+  userLockResource: HttpResourceRef<PiResponse<LockedUserEntry | null> | undefined>;
+  userLockStatus: Signal<LockedUserEntry | null>;
+  resetUserLock(request: ResetUserLockRequest): Observable<boolean>;
   lockedUsersFilter: WritableSignal<FilterValue>;
   lockedUsersFilterParams: () => Record<string, string>;
   lockedUsersSort: WritableSignal<Sort>;
@@ -101,7 +106,7 @@ export interface ConditionalAccessStateServiceInterface {
   lockedUsersResource: HttpResourceRef<PiResponse<LockedUsersPage> | undefined>;
   countLockedUsers(states: LockState[]): Observable<PiResponse<LockedUsersPage>>;
   fetchLockedUsers(states: LockState[], pageSize?: number): Observable<PiResponse<LockedUsersPage>>;
-  purgeUserLockouts(): Observable<number>;
+  purgeUserLocks(): Observable<number>;
   blocklistResource: HttpResourceRef<PiResponse<BlocklistEntry[]> | undefined>;
   fetchBlocklist(includeExpired?: boolean): Observable<PiResponse<BlocklistEntry[]>>;
   removeBlocklistEntry(entry: BlocklistEntry): Observable<boolean>;
@@ -118,12 +123,12 @@ export class ConditionalAccessStateService implements ConditionalAccessStateServ
 
   private readonly conditionalAccessBaseUrl = environment.proxyUrl + "/conditionalaccess/";
 
-  private readonly canReadUserLockout = computed(() => this.authService.actionAllowed("user_lockout_read"));
+  private readonly canReadUserLock = computed(() => this.authService.actionAllowed("user_lock_read"));
   private readonly canReadBlocklist = computed(() => this.authService.actionAllowed("blocklist_read"));
 
   constructor() {
     effect(() => {
-      this.notificationService.handleResourceError(this.userLockoutResource.error(), "user lockout state");
+      this.notificationService.handleResourceError(this.userLockResource.error(), "user lock state");
     });
     effect(() => {
       this.notificationService.handleResourceError(this.lockedUsersResource.error(), "locked users");
@@ -151,8 +156,8 @@ export class ConditionalAccessStateService implements ConditionalAccessStateServ
   lockedUsersSort = signal<Sort>({ active: "locked_at", direction: "desc" });
   lockedUsersPageSize = signal(LOCKED_USERS_DEFAULT_PAGE_SIZE);
 
-  // 1-based (matches the API's page param). Reset to the first page whenever the effective filter, sort,
-  // page size or the show-expired toggle changes.
+  // 1-based (matches the API's page param); resets to the first page whenever the effective filter,
+  // sort or page size changes.
   lockedUsersPageIndex = linkedSignal({
     source: () => ({
       filterParams: this.lockedUsersFilterParams(),
@@ -162,8 +167,8 @@ export class ConditionalAccessStateService implements ConditionalAccessStateServ
     computation: () => 1
   });
 
-  userLockoutResource = httpResource<PiResponse<LockedUserEntry | null>>(() => {
-    if (!this.contentService.onUserDetails() || !this.canReadUserLockout()) {
+  userLockResource = httpResource<PiResponse<LockedUserEntry | null>>(() => {
+    if (!this.contentService.onUserDetails() || !this.canReadUserLock()) {
       return undefined;
     }
     const selectedUser = this.contentService.detailsUser();
@@ -179,26 +184,26 @@ export class ConditionalAccessStateService implements ConditionalAccessStateServ
       params["resolver"] = resolver;
     }
     return {
-      url: this.conditionalAccessBaseUrl + "lockout/user",
+      url: this.conditionalAccessBaseUrl + "lock/user",
       method: "GET",
       headers: this.authService.getHeaders(),
       params
     };
   });
 
-  userLockoutStatus = computed<LockedUserEntry | null>(() => {
-    if (!this.userLockoutResource.hasValue()) {
+  userLockStatus = computed<LockedUserEntry | null>(() => {
+    if (!this.userLockResource.hasValue()) {
       return null;
     }
-    return this.userLockoutResource.value()?.result?.value ?? null;
+    return this.userLockResource.value()?.result?.value ?? null;
   });
 
   lockedUsersResource = httpResource<PiResponse<LockedUsersPage>>(() => {
-    if (!this.contentService.onLockedUsers() || !this.canReadUserLockout()) {
+    if (!this.contentService.onLockedUsers() || !this.canReadUserLock()) {
       return undefined;
     }
     return {
-      url: this.conditionalAccessBaseUrl + "lockout/users",
+      url: this.conditionalAccessBaseUrl + "lock/users",
       method: "GET",
       headers: this.authService.getHeaders(),
       params: {
@@ -213,11 +218,12 @@ export class ConditionalAccessStateService implements ConditionalAccessStateServ
     };
   });
 
-  // Count the locks in the given state(s) without pulling the records themselves: the page metadata carries the
-  // total, so the smallest page is enough. Used by the dashboard widget, whose summary needs one number per state
-  // (the paginated resource above is bound to the locked-users page and its filters).
+  // Counts the locks in the given state(s) without pulling the records themselves: the page metadata
+  // carries the total, so the smallest page is enough.
+  // Used by the dashboard widget, whose summary needs one number per state (the paginated resource
+  // above is bound to the locked-users page and its filters).
   countLockedUsers(states: LockState[]): Observable<PiResponse<LockedUsersPage>> {
-    return this.http.get<PiResponse<LockedUsersPage>>(this.conditionalAccessBaseUrl + "lockout/users", {
+    return this.http.get<PiResponse<LockedUsersPage>>(this.conditionalAccessBaseUrl + "lock/users", {
       headers: this.authService.getHeaders(),
       params: { states: states.join(","), page: 1, page_size: 1 }
     });
@@ -226,45 +232,45 @@ export class ConditionalAccessStateService implements ConditionalAccessStateServ
   // The most recently locked users in the given state(s), for callers that need the records rather than only the
   // total (the dashboard widget's highlights list).
   fetchLockedUsers(states: LockState[], pageSize = 20): Observable<PiResponse<LockedUsersPage>> {
-    return this.http.get<PiResponse<LockedUsersPage>>(this.conditionalAccessBaseUrl + "lockout/users", {
+    return this.http.get<PiResponse<LockedUsersPage>>(this.conditionalAccessBaseUrl + "lock/users", {
       headers: this.authService.getHeaders(),
       params: { states: states.join(","), page: 1, page_size: pageSize, sort_column: "locked_at", sort_order: "desc" }
     });
   }
 
-  resetUserLockout(request: ResetUserLockoutRequest): Observable<boolean> {
+  resetUserLock(request: ResetUserLockRequest): Observable<boolean> {
     const payload =
       "uid" in request
         ? { user_id: request.uid, realm: request.realm, resolver: request.resolver }
         : { user: request.login, realm: request.realm, resolver: request.resolver };
 
     return this.http
-      .delete<PiResponse<boolean>>(this.conditionalAccessBaseUrl + "lockout/user", {
+      .delete<PiResponse<boolean>>(this.conditionalAccessBaseUrl + "lock/user", {
         headers: this.authService.getHeaders(),
         body: payload
       })
       .pipe(
         map((response) => response.result?.value ?? false),
         catchError((error) => {
-          console.error("Failed to reset user lockout.", error);
+          console.error("Failed to reset the user lock.", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.error($localize`Failed to reset user lockout. ` + message);
+          this.notificationService.error($localize`Failed to reset the user lock. ` + message);
           return of(false);
         })
       );
   }
 
-  purgeUserLockouts(): Observable<number> {
+  purgeUserLocks(): Observable<number> {
     return this.http
-      .post<PiResponse<number>>(this.conditionalAccessBaseUrl + "lockout/users/purge", null, {
+      .post<PiResponse<number>>(this.conditionalAccessBaseUrl + "lock/users/purge", null, {
         headers: this.authService.getHeaders()
       })
       .pipe(
         map((response) => response.result?.value ?? 0),
         catchError((error) => {
-          console.error("Failed to purge user lockouts.", error);
+          console.error("Failed to purge expired user locks.", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.error($localize`Failed to purge expired user lockouts. ` + message);
+          this.notificationService.error($localize`Failed to purge expired user locks. ` + message);
           return of(0);
         })
       );

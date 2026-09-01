@@ -20,18 +20,17 @@
 <app-dialog-wrapper
   title="Copy Container Template"
   i18n-title
-  [showCancelButton]="true"
-  [handleCloseExternally]="true"
-  (wrapperClose)="close()"
   [actions]="actions()"
-  (actionTriggered)="onAction($event)">
+  [handleCloseExternally]="true"
+  (actionTriggered)="onAction($event)"
+  (wrapperClose)="close()">
   <div class="flex-column">
     <p i18n>
       Please enter a unique name for the new copy of <b>{{ data }}</b
       >.
     </p>
 
-    <mat-form-field>
+    <mat-form-field class="input-width-l">
       <mat-label i18n>New Template Name</mat-label>
       <input
         matInput

@@ -1,7 +1,6 @@
 import { Component, computed } from "@angular/core";
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
 import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
-import { NAVIGATION_BLOCKING_DIALOG_CLASS } from "@constants/global.constants";
 import { DialogAction } from "@models/dialog";
 
 /**
@@ -35,7 +34,6 @@ export type SaveAndExitDialogResult = "discard" | "save-exit";
 
 @Component({
   selector: "app-save-and-exit-dialog",
-  host: { class: NAVIGATION_BLOCKING_DIALOG_CLASS },
   templateUrl: "./save-and-exit-dialog.component.html",
   styleUrls: ["./save-and-exit-dialog.component.scss"],
   standalone: true,
