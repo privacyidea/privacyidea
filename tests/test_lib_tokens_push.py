@@ -43,7 +43,8 @@ from privacyidea.lib.tokens.pushtoken import (PushTokenClass, PushAction,
                                               AVAILABLE_PRESENCE_OPTIONS_NUMERIC,
                                               PushAllowPolling, POLLING_ALLOWED, POLL_ONLY,
                                               PushPresenceOptions, strip_pem_headers,
-                                              SERVER_PUSH_CAPABILITIES, _build_smartphone_data)
+                                              SERVER_PUSH_CAPABILITIES, _build_smartphone_data,
+                                              _get_push_gateways)
 from privacyidea.lib.user import (User)
 from privacyidea.lib.utils import to_bytes, b32encode_and_unicode, to_unicode, AUTH_RESPONSE
 from privacyidea.models import Token, Challenge, db
@@ -215,6 +216,24 @@ class PushTokenTestCase(MyTestCase):
         self.assertEqual(parsed_server_pubkey.public_numbers(), parsed_stripped_server_pubkey.public_numbers())
         remove_token(self.serial1)
 
+    def test_01a_list_push_capable_gateways(self):
+        http_gateway = "push-http"
+        smtp_gateway = "sms-smtp"
+        set_smsgateway(http_gateway,
+                       "privacyidea.lib.smsprovider.HttpSMSProvider.HttpSMSProvider",
+                       options={"URL": "https://push.example.com", "HTTP_METHOD": "POST",
+                                "SEND_DATA_AS_JSON": "yes"})
+        set_smsgateway(smtp_gateway,
+                       "privacyidea.lib.smsprovider.SmtpSMSProvider.SmtpSMSProvider",
+                       options={"SMTPIDENTIFIER": "mail", "MAILTO": "user@example.com"})
+
+        self.assertEqual([http_gateway],
+                         [gateway.identifier for gateway in _get_push_gateways(http_gateway)])
+        self.assertEqual([], _get_push_gateways(smtp_gateway))
+
+        delete_smsgateway(http_gateway)
+        delete_smsgateway(smtp_gateway)
+
     def test_01a_enroll_with_app_pin(self):
         token_param = {"type": "push", "genkey": 1}
         token_param.update(FB_CONFIG_VALS)
@@ -234,6 +253,38 @@ class PushTokenTestCase(MyTestCase):
                    action=f"{PushAction.FIREBASE_CONFIG}={self.firebase_config_name}")
         token = self._create_push_token()
         remove_token(token.get_serial())
+
+    @responses.activate
+    def test_02b_send_push_via_http_gateway(self):
+        gateway_identifier = "push-http"
+        set_smsgateway(gateway_identifier,
+                       "privacyidea.lib.smsprovider.HttpSMSProvider.HttpSMSProvider",
+                       options={"URL": "https://push.example.com/send",
+                                "HTTP_METHOD": "POST",
+                                "SEND_DATA_AS_JSON": "yes",
+                                "device_token": "{phone}",
+                                "push_payload": "{message}"})
+        set_policy("push-http", scope=SCOPE.ENROLL,
+                   action=f"{PushAction.FIREBASE_CONFIG}={gateway_identifier},"
+                          f"{PushAction.REGISTRATION_URL}={REGISTRATION_URL}")
+        token = self._create_push_token()
+        token.add_tokeninfo(PushAction.FIREBASE_CONFIG, gateway_identifier)
+        responses.add(responses.POST, "https://push.example.com/send", status=200)
+        g = FakeFlaskG()
+        g.policy_object = PolicyClass()
+        g.audit_object = mock.MagicMock(audit_data={})
+        g.serial = token.get_serial()
+
+        success, _, transaction_id, _ = token.create_challenge(options={"g": g})
+
+        self.assertTrue(success)
+        self.assertTrue(transaction_id)
+        request_body = json.loads(responses.calls[0].request.body)
+        self.assertEqual("firebaseT", request_body["device_token"])
+        self.assertEqual(token.get_serial(), request_body["push_payload"]["serial"])
+        remove_token(token.get_serial())
+        delete_policy("push-http")
+        delete_smsgateway(gateway_identifier)
 
     @responses.activate
     def test_03a_api_authenticate_fail(self):
@@ -280,7 +331,7 @@ class PushTokenTestCase(MyTestCase):
                     self.assertFalse(result.get("value"))
                     self.assertEqual("CHALLENGE", result.get("authentication"))
                     # Check that the warning was written to the log file.
-                    mock_log.assert_called_with(f"Failed to submit message to Firebase service for token {serial}.")
+                    mock_log.assert_called_with(f"Failed to submit message to push gateway for token {serial}.")
                     # Check that the user was informed about the need to poll
                     detail = res.json.get("detail")
                     self.assertEqual("Please confirm the authentication on your mobile device! "
@@ -312,7 +363,7 @@ class PushTokenTestCase(MyTestCase):
                 self.assertFalse(result.get("status"))
                 error = result.get("error")
                 self.assertEqual(401, error.get("code"))
-                self.assertEqual("ERR401: Failed to submit message to Firebase service.", error.get("message"))
+                self.assertEqual("ERR401: Failed to submit message to push gateway.", error.get("message"))
 
             # Remove the created challenge
             challenge = get_challenges(serial=token.token.serial)
@@ -337,7 +388,7 @@ class PushTokenTestCase(MyTestCase):
                     self.assertFalse(result.get("value"))
                     self.assertEqual("CHALLENGE", result.get("authentication"))
                     # Check that the warning was written to the log file.
-                    mock_log.assert_called_with(f"Failed to submit message to Firebase service for token {serial}.")
+                    mock_log.assert_called_with(f"Failed to submit message to push gateway for token {serial}.")
             self.assertEqual(len(get_challenges(serial=token.token.serial)), 0)
             # disallow polling the specific token through a policy
             set_policy("push_poll", SCOPE.AUTH,
@@ -356,7 +407,7 @@ class PushTokenTestCase(MyTestCase):
                     self.assertFalse(result.get("value"))
                     self.assertEqual("CHALLENGE", result.get("authentication"))
                     # Check that the warning was written to the log file.
-                    mock_log.assert_called_with(f"Failed to submit message to Firebase service for token {serial}.")
+                    mock_log.assert_called_with(f"Failed to submit message to push gateway for token {serial}.")
             self.assertEqual(len(get_challenges(serial=token.token.serial)), 0)
 
             # Do the same with the parameter "exception", so that we receive an Error on HTTP
@@ -372,7 +423,7 @@ class PushTokenTestCase(MyTestCase):
                 self.assertFalse(result.get("status"))
                 error = result.get("error")
                 self.assertEqual(401, error.get("code"))
-                self.assertEqual("ERR401: Failed to submit message to Firebase service.", error.get("message"))
+                self.assertEqual("ERR401: Failed to submit message to push gateway.", error.get("message"))
 
             # Check that the challenge is created if the request to firebase
             # succeeded even though polling is disabled

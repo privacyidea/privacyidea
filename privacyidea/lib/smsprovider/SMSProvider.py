@@ -82,7 +82,14 @@ class SMSError(Exception):
 
 
 class ISMSProvider:
-    """ the SMS Provider Interface - BaseClass """
+    """
+    The SMS provider interface.
+
+    Providers that accept structured push payloads opt in by setting
+    ``supports_push_messages`` to ``True``.
+    """
+
+    supports_push_messages = False
 
     regexp_description = lazy_gettext("Regular expression to modify the phone number to make it compatible with"
                                       " the provider. For example to remove pluses and slashes"

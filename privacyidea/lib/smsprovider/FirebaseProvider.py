@@ -92,6 +92,8 @@ class FirebaseConfig:
 
 class FirebaseProvider(ISMSProvider):
 
+    supports_push_messages = True
+
     def __init__(self, db_smsprovider_object=None, smsgateway=None):
         ISMSProvider.__init__(self, db_smsprovider_object, smsgateway)
         self.access_token_info = None
