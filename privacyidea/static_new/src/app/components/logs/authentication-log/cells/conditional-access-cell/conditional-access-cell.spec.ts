@@ -119,7 +119,7 @@ describe("ConditionalAccessCell", () => {
     // stage_name is the one nullable identifier of a stage, so the threshold has to be shown as well: it is what an
     // admin recognizes the stage by when it has no name.
     const [view] = viewsFor([
-      { policy_name: "Brute Force PIN Lockout", action_type: "LOCK_USER", threshold: 5, dry_run: false }
+      { policy_name: "Brute Force PIN Lock", action_type: "LOCK_USER", threshold: 5, dry_run: false }
     ]);
     expect(view.threshold).toBe(5);
     expect(view.stage).toBeUndefined();
@@ -203,18 +203,18 @@ describe("ConditionalAccessCell", () => {
 
   it("names the expand toggle after the action and its policy, in both states", () => {
     // One button per outcome and no visible text on it, so the accessible name has to say which outcome it opens.
-    const [view] = viewsFor([{ id: 12, policy_name: "Brute Force PIN Lockout", action_type: "LOCK_USER" }]);
-    expect(component.toggleLabel(view)).toBe("Show the details of LOCK_USER by Brute Force PIN Lockout");
+    const [view] = viewsFor([{ id: 12, policy_name: "Brute Force PIN Lock", action_type: "LOCK_USER" }]);
+    expect(component.toggleLabel(view)).toBe("Show the details of LOCK_USER by Brute Force PIN Lock");
     component.toggle(view.key);
-    expect(component.toggleLabel(view)).toBe("Hide the details of LOCK_USER by Brute Force PIN Lockout");
+    expect(component.toggleLabel(view)).toBe("Hide the details of LOCK_USER by Brute Force PIN Lock");
   });
 
   it("tells two actions of one policy apart, since the visible line names only the policy", () => {
     // A policy that ran two actions renders two rows under one name (the shipped brute-force template locks and
     // mails), so the action is the only thing distinguishing their toggles.
     const views = viewsFor([
-      { id: 1, policy_name: "Brute Force PIN Lockout", action_type: "LOCK_USER" },
-      { id: 2, policy_name: "Brute Force PIN Lockout", action_type: "EMAIL_ADMIN" }
+      { id: 1, policy_name: "Brute Force PIN Lock", action_type: "LOCK_USER" },
+      { id: 2, policy_name: "Brute Force PIN Lock", action_type: "EMAIL_ADMIN" }
     ]);
     const labels = views.map((view) => component.toggleLabel(view));
     expect(new Set(labels).size).toBe(2);
@@ -241,7 +241,7 @@ describe("ConditionalAccessCell", () => {
     expect(toggle.getAttribute("aria-expanded")).toBe("false");
     expect(toggle.getAttribute("aria-controls")).toBe("ca-outcome-12");
     // Collapsed, the cell names the policy that acted and nothing else.
-    expect(fixture.nativeElement.textContent).toContain("Brute Force PIN Lockout");
+    expect(fixture.nativeElement.textContent).toContain("Brute Force PIN Lock");
     expect(fixture.nativeElement.textContent).not.toContain("LOCK_USER");
     expect(fixture.nativeElement.querySelector("a")?.getAttribute("href")).toContain(
       ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS_DETAILS
