@@ -37,8 +37,8 @@ export class RadiusConfigComponent {
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
   protected readonly RADIUS_SERVER = RADIUS_SERVER;
 
-  formData = input.required<Record<string, string>>();
-  formDataChange = output<Record<string, string>>();
+  formData = input.required<Record<string, string | undefined>>();
+  formDataChange = output<Record<string, string | undefined>>();
   radiusServers = input.required<string[]>();
   expanded = input<boolean>(false);
 

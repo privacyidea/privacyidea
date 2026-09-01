@@ -39,7 +39,7 @@
         <mat-label i18n>Default Remote Server</mat-label>
         <input
           #remoteServerInput
-          [value]="formData()[REMOTE_SERVER]"
+          [value]="formData()[REMOTE_SERVER] ?? ''"
           (input)="updateFormData(REMOTE_SERVER, $any($event.target).value)"
           matInput
           placeholder="https://your.other.privacyidea.server"

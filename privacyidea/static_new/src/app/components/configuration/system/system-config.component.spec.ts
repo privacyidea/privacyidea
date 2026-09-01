@@ -217,4 +217,20 @@ describe("SystemConfigComponent", () => {
     component.ngOnDestroy();
     expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
   });
+
+  it("shows no input as 'undefined' for config keys the backend does not return", () => {
+    const offenders = Array.from(fixture.nativeElement.querySelectorAll("input") as NodeListOf<HTMLInputElement>)
+      .filter((input) => input.value === "undefined")
+      .map((input) => input.getAttribute("placeholder") ?? input.getAttribute("name") ?? input.outerHTML);
+
+    expect(offenders).toEqual([]);
+  });
+
+  it("shows the value the backend returns for a default token setting", () => {
+    systemService.systemConfig.set({ DefaultOtpLen: "8" });
+    fixture.detectChanges();
+
+    const otpLenInput: HTMLInputElement = fixture.nativeElement.querySelector('input[placeholder="6"]');
+    expect(otpLenInput.value).toBe("8");
+  });
 });

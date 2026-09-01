@@ -11,7 +11,7 @@ import { MockPendingChangesService, MockSystemService } from "@testing/mock-serv
 import { Observable, of } from "rxjs";
 import { TokenTypeConfigComponent } from "./token-type-config.component";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
-import { QUESTION_NUMBER_OF_ANSWERS } from "@constants/token.constants";
+import { QUESTION_NUMBER_OF_ANSWERS, TIQR_REG_SERVER } from "@constants/token.constants";
 
 class MockActivatedRoute {
   fragment: Observable<string | undefined> = of();
@@ -285,6 +285,37 @@ describe("TokenTypeConfigComponent", () => {
         component.ngAfterViewInit();
         expect(scrollSpy).toHaveBeenCalledWith({ behavior: "smooth" });
       });
+    });
+  });
+
+  describe("missing config keys", () => {
+    it("shows no input as 'undefined' for keys the backend does not return", () => {
+      const inputs = Array.from(fixture.nativeElement.querySelectorAll("input") as NodeListOf<HTMLInputElement>);
+      expect(inputs.length).toBeGreaterThan(0);
+
+      const offenders = inputs
+        .filter((input) => input.value === "undefined")
+        .map((input) => input.getAttribute("placeholder") ?? input.getAttribute("name") ?? input.outerHTML);
+
+      expect(offenders).toEqual([]);
+    });
+
+    it("shows the value the backend returns for a token type setting", () => {
+      const systemService = TestBed.inject(SystemService) as unknown as MockSystemService;
+      systemService.systemConfig.set({ [TIQR_REG_SERVER]: "https://pi.example/ttype/tiqr" });
+      fixture.detectChanges();
+
+      const regServerInput: HTMLInputElement = fixture.nativeElement.querySelector(
+        'input[placeholder="http://pi.server/ttype/tiqr"]'
+      );
+      expect(regServerInput.value).toBe("https://pi.example/ttype/tiqr");
+    });
+
+    it("drops undefined values instead of persisting them as the string 'undefined'", () => {
+      component.onFormDataChange({ "tiqr.something": undefined, "tiqr.other": "kept" });
+
+      expect(component.formData()).not.toHaveProperty("tiqr.something");
+      expect(component.formData()["tiqr.other"]).toBe("kept");
     });
   });
 });

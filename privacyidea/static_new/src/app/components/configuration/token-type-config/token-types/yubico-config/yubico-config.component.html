@@ -43,7 +43,7 @@
         <mat-label i18n>API Key</mat-label>
         <input
           #apiKeyInput
-          [value]="formData()[YUBICO_SECRET]"
+          [value]="formData()[YUBICO_SECRET] ?? ''"
           (input)="updateFormData(YUBICO_SECRET, $any($event.target).value)"
           matInput
           placeholder="API Key"
@@ -59,7 +59,7 @@
         <mat-label i18n>API Client ID</mat-label>
         <input
           #clientIdInput
-          [value]="formData()[YUBICO_ID]"
+          [value]="formData()[YUBICO_ID] ?? ''"
           (input)="updateFormData(YUBICO_ID, $any($event.target).value)"
           matInput
           placeholder="The client ID"
@@ -77,7 +77,7 @@
         <mat-label i18n>Yubico URL</mat-label>
         <input
           #urlInput
-          [value]="formData()[YUBICO_URL]"
+          [value]="formData()[YUBICO_URL] ?? ''"
           (input)="updateFormData(YUBICO_URL, $any($event.target).value)"
           matInput
           placeholder="https://api.yubico.com/wsapi/2.0/verify"

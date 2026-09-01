@@ -194,7 +194,7 @@
             <mat-form-field class="input-width-s">
               <mat-label i18n>OTP Length</mat-label>
               <input
-                [value]="params()['DefaultOtpLen']"
+                [value]="params()['DefaultOtpLen'] ?? ''"
                 (input)="updateParam('DefaultOtpLen', $any($event.target).value)"
                 matInput
                 placeholder="6" />
@@ -203,7 +203,7 @@
             <mat-form-field class="input-width-s">
               <mat-label i18n>Count Window</mat-label>
               <input
-                [value]="params()['DefaultCountWindow']"
+                [value]="params()['DefaultCountWindow'] ?? ''"
                 (input)="updateParam('DefaultCountWindow', $any($event.target).value)"
                 matInput
                 placeholder="10" />
@@ -212,7 +212,7 @@
             <mat-form-field class="input-width-s">
               <mat-label i18n>Max Failcount</mat-label>
               <input
-                [value]="params()['DefaultMaxFailCount']"
+                [value]="params()['DefaultMaxFailCount'] ?? ''"
                 (input)="updateParam('DefaultMaxFailCount', $any($event.target).value)"
                 matInput
                 placeholder="10" />
@@ -223,7 +223,7 @@
             <mat-form-field class="input-width-s">
               <mat-label i18n>Sync Window</mat-label>
               <input
-                [value]="params()['DefaultSyncWindow']"
+                [value]="params()['DefaultSyncWindow'] ?? ''"
                 (input)="updateParam('DefaultSyncWindow', $any($event.target).value)"
                 matInput
                 placeholder="1000" />
@@ -232,7 +232,7 @@
             <mat-form-field class="input-width-s">
               <mat-label i18n>Challenge Validity</mat-label>
               <input
-                [value]="params()['DefaultChallengeValidityTime']"
+                [value]="params()['DefaultChallengeValidityTime'] ?? ''"
                 (input)="updateParam('DefaultChallengeValidityTime', $any($event.target).value)"
                 matInput
                 placeholder="120" />

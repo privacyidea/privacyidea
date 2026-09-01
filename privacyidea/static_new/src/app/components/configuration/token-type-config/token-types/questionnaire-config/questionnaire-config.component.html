@@ -36,7 +36,7 @@
         <mat-label i18n>Number of Answers</mat-label>
         <input
           #numAnswersInput
-          [value]="formData()[QUESTION_NUMBER_OF_ANSWERS]"
+          [value]="formData()[QUESTION_NUMBER_OF_ANSWERS] ?? ''"
           (input)="updateFormData(QUESTION_NUMBER_OF_ANSWERS, $event.target.value)"
           (keydown)="blockNonNumeric($event)"
           matInput
@@ -73,7 +73,7 @@
             <mat-label i18n>Question</mat-label>
             <input
               #questionInput
-              [value]="formData()[key]"
+              [value]="formData()[key] ?? ''"
               (input)="updateFormData(key, $event.target.value)"
               matInput
               required />
