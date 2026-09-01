@@ -311,9 +311,9 @@ describe("AuthenticationLog", () => {
       })
     );
     fixture.detectChanges();
-    const rendered = Array.from(fixture.nativeElement.querySelectorAll(".reason-entry")).map((element: any) =>
-      element.textContent.trim()
-    );
+    const rendered = Array.from(
+      fixture.nativeElement.querySelectorAll<HTMLElement>(".reason-entry")
+    ).map((element) => element.textContent!.trim());
     expect(rendered).toEqual(["TOKEN_DISABLED", "WRONG_OTP"]);
   });
 
