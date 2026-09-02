@@ -25,7 +25,8 @@ import datetime
 import mock
 
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
-from privacyidea.lib.conditional_access.authentication_log import log_authentication_event, AuthLogUserRole
+from privacyidea.lib.conditional_access.authentication_log import (log_authentication_event, AuthLogUserRole,
+                                                                  MAX_STATISTICS_BINS)
 from privacyidea.lib.conditional_access.outcome_log import record_outcomes
 from privacyidea.lib.policy import set_policy, delete_policy, SCOPE, PolicyAction
 from privacyidea.lib.realm import set_realm, delete_realm
@@ -720,8 +721,13 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
                            "window must end after it starts")
 
     def test_statistics_rejects_an_out_of_range_bin_count(self):
-        self._assert_error(self._statistics({"bins": 1000}, status=400), 905,
-                           "The number of bins must be between 1 and 100.")
+        # The documented maximum itself is accepted, and only the value past it is refused: a caller asking for a
+        # resolution the endpoint will not serve is told the limit rather than handed a coarser answer silently.
+        self.assertEqual(MAX_STATISTICS_BINS,
+                         self._statistics({"bins": MAX_STATISTICS_BINS})["result"]["value"]["bins"]["count"])
+        for bins in (MAX_STATISTICS_BINS + 1, 1000):
+            self._assert_error(self._statistics({"bins": bins}, status=400), 905,
+                               f"The number of bins must be between 1 and {MAX_STATISTICS_BINS}.")
 
     def test_statistics_clamps_a_non_positive_bin_count(self):
         # A non-positive or unparsable bins falls back to the default, as page_size does on the listing, rather than

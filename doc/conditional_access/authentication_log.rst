@@ -184,9 +184,12 @@ the same edge a policy's sliding window has.
 
 The window is given by ``start_time`` and ``end_time``, both required ISO 8601
 timestamps and both inclusive, and ``bins`` sets how many equal-width buckets
-the window is split into. Every filter the log listing accepts on a column of
-its own row can be given as well, under its plural name and with the same
-comma-separated lists and ``*`` wildcards, for example
+the window is split into - between 1 and 100, 48 by default. Asking for more
+than 100 is refused rather than quietly reduced, so a caller is never handed a
+coarser resolution than it asked for without being told; a value that is not a
+positive number at all falls back to the default. Every filter the log listing
+accepts on a column of its own row can be given as well, under its plural name
+and with the same comma-separated lists and ``*`` wildcards, for example
 ``event_types=MFA_FAIL,PIN_FAIL`` or ``realms=realm1``. The filters apply to the
 entry that classifies each attempt. The ``ca_*`` filters are not offered: they
 match what conditional access did to a single request, which an attempt-level

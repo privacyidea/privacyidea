@@ -189,7 +189,10 @@ def get_authentication_log_statistics_endpoint():
 
     :query start_time: start of the window, an ISO 8601 timestamp (required).
     :query end_time: end of the window, an ISO 8601 timestamp (required). Both ends are inclusive.
-    :query bins: how many equal-width buckets to split the window into (default 48).
+    :query bins: how many equal-width buckets to split the window into, between 1 and 100 (default 48). More than the
+        maximum is rejected with a 400 naming the limit rather than quietly reduced, so a caller is never handed a
+        coarser resolution than it asked for without being told. A value that is not a positive number at all falls
+        back to the default, as ``page_size`` does on the listing.
     :query case_insensitive: if set, plain (non-wildcard) filter values match case-insensitively.
     :status 200: ``result.value`` holds ``window`` (``start_time``, ``end_time``, ``total``), ``bins`` (``count`` and
         the ``starts`` of each bucket) and ``events``, one entry per classification present in the window with its
