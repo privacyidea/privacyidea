@@ -739,21 +739,28 @@ describe("EventService", () => {
       conditions: {}
     };
 
-    it("posts every planned handler with its new ordering", () => {
+    it("posts one handler at a time, starting at the highest ordering", () => {
       const other: EventHandler = { ...handler, id: 8, name: "other", ordering: 5, options: {} };
+      const done: unknown[] = [];
 
       service
         .updateOrderings([
           { handler, ordering: 5 },
           { handler: other, ordering: 6 }
         ])
-        .subscribe();
+        .subscribe((responses) => done.push(...responses));
 
-      const requests = httpMock.match(service.eventBaseUrl);
-      expect(requests.length).toBe(2);
-      expect(requests[0].request.body).toMatchObject({ id: "7", ordering: 5, "option.subject": "Hello" });
-      expect(requests[1].request.body).toMatchObject({ id: "8", ordering: 6 });
-      requests.forEach((req, index) => req.flush({ result: { value: index } }));
+      const first = httpMock.expectOne(service.eventBaseUrl);
+      expect(first.request.body).toMatchObject({ id: "8", ordering: 6 });
+
+      httpMock.verify();
+      first.flush({ result: { value: 8 } });
+
+      const second = httpMock.expectOne(service.eventBaseUrl);
+      expect(second.request.body).toMatchObject({ id: "7", ordering: 5, "option.subject": "Hello" });
+      second.flush({ result: { value: 7 } });
+
+      expect(done.length).toBe(2);
     });
 
     it("does not call the backend without updates", () => {

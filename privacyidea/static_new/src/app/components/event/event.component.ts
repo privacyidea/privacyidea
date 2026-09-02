@@ -112,7 +112,7 @@ export class EventComponent {
     }
     return keys;
   });
-  /** The handler whose ordering is being edited in place; only one row is open at a time. */
+
   editedOrderingId = signal<number | null>(null);
   detailedView = signal(false);
   @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: ElementRef<HTMLInputElement>;
@@ -225,7 +225,7 @@ export class EventComponent {
     const ordering = Number(input.value);
     if (!Number.isInteger(ordering) || ordering < 0 || input.value.trim() === "") {
       input.value = String(eventHandler.ordering);
-      this.notificationService.warning($localize`The ordering has to be a whole number of 0 or higher.`);
+      this.notificationService.warning($localize`The ordering has to be a whole number, 0 or higher.`);
       return;
     }
     if (ordering === eventHandler.ordering) {
@@ -265,10 +265,16 @@ export class EventComponent {
     this.cancelOrderingEdit();
     this.eventService.updateOrderings(updates).subscribe((responses) => {
       this.eventService.allEventsResource.reload();
-      if (responses.some((response) => response?.result?.value === undefined)) {
+      const failed = responses.filter((response) => response?.result?.value === undefined).length;
+      if (failed === 0) {
+        this.notificationService.success($localize`Updated the ordering of ${eventHandler.name}.`);
         return;
       }
-      this.notificationService.success($localize`Updated the ordering of ${eventHandler.name}.`);
+      if (failed < responses.length) {
+        this.notificationService.warning(
+          $localize`Only part of the new ordering was saved. Please check the orderings of the event handlers.`
+        );
+      }
     });
   }
 

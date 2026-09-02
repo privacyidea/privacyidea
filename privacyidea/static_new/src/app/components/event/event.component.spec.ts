@@ -22,18 +22,23 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { provideHttpClient } from "@angular/common/http";
 import { Sort } from "@angular/material/sort";
 import { provideRouter, Router } from "@angular/router";
-import { EventHandler, EventService } from "@services/event/event.service";
-import { MockEventService } from "@testing/mock-services/mock-event-service";
-import { EventComponent } from "./event.component";
-import { TableUtilsService } from "@services/table-utils/table-utils.service";
-import { MockDialogService, MockNotificationService, MockTableUtilsService } from "@testing/mock-services";
 import { AuthService } from "@services/auth/auth.service";
-import { NotificationService } from "@services/notification/notification.service";
 import { DialogService } from "@services/dialog/dialog.service";
+import { EventHandler, EventService } from "@services/event/event.service";
+import { NotificationService } from "@services/notification/notification.service";
+import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
+import {
+  MockDialogService,
+  MockNotificationService,
+  MockPiResponse,
+  MockTableUtilsService
+} from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { MockEventService } from "@testing/mock-services/mock-event-service";
 import { expectsTableStateGating } from "@testing/table-state-gating";
 import { of } from "rxjs";
+import { EventComponent } from "./event.component";
 
 describe("EventComponent", () => {
   let component: EventComponent;
@@ -753,6 +758,18 @@ describe("EventComponent", () => {
       component.commitOrdering(first, inputWith("5"));
 
       expect(notificationService.success).not.toHaveBeenCalled();
+      expect(notificationService.warning).not.toHaveBeenCalled();
+    });
+
+    it("warns when only part of the chain was saved", () => {
+      mockEventService.updateOrderings.mockReturnValueOnce(of([MockPiResponse.fromValue<number>(1), undefined]));
+
+      component.commitOrdering(first, inputWith("5"));
+
+      expect(notificationService.success).not.toHaveBeenCalled();
+      expect(notificationService.warning).toHaveBeenCalledWith(
+        "Only part of the new ordering was saved. Please check the orderings of the event handlers."
+      );
     });
 
     it.each([
@@ -767,7 +784,7 @@ describe("EventComponent", () => {
 
       expect(mockEventService.updateOrderings).not.toHaveBeenCalled();
       expect(input.value).toBe("1");
-      expect(notificationService.warning).toHaveBeenCalledWith("The ordering has to be a whole number of 0 or higher.");
+      expect(notificationService.warning).toHaveBeenCalledWith("The ordering has to be a whole number, 0 or higher.");
     });
 
     it("saves nothing when the ordering did not change", () => {

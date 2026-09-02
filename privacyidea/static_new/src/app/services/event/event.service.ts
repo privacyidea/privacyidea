@@ -26,8 +26,8 @@ import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { NotificationService } from "@services/notification/notification.service";
-import { forkJoin, lastValueFrom, Observable, of, throwError } from "rxjs";
-import { catchError } from "rxjs/operators";
+import { from, lastValueFrom, Observable, of, throwError } from "rxjs";
+import { catchError, concatMap, toArray } from "rxjs/operators";
 
 export interface EventHandler {
   id: number | null;
@@ -369,8 +369,9 @@ export class EventService implements EventServiceInterface {
     if (updates.length === 0) {
       return of([]);
     }
-    return forkJoin(
-      updates.map(({ handler, ordering }) => this.saveEventHandler(toEventHandlerSaveParams({ ...handler, ordering })))
+    return from([...updates].reverse()).pipe(
+      concatMap(({ handler, ordering }) => this.saveEventHandler(toEventHandlerSaveParams({ ...handler, ordering }))),
+      toArray()
     );
   }
 
