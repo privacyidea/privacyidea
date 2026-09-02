@@ -8,7 +8,7 @@ from privacyidea.api.lib.utils import (check_policy_name,
                                        attestation_certificate_allowed, get_priority_from_param,
                                        get_required_one_of, get_optional_one_of, get_required, get_optional,
                                        to_list_param, build_ca_context)
-from privacyidea.lib.params import get_required_timestamp
+from privacyidea.lib.params import get_optional_timestamp, get_required_timestamp
 from privacyidea.lib.policy import SCOPE, set_policy, delete_policy
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.user import User
@@ -479,3 +479,19 @@ class UtilsTestCase(MyApiTestCase):
         with self.assertRaises(ParameterError) as caught:
             get_required_timestamp({"end_time": "nope"}, "end_time")
         self.assertIn("end_time", str(caught.exception))
+
+    def test_15_get_optional_timestamp(self):
+        self.assertEqual(datetime.datetime(2026, 3, 1, 12, 30, tzinfo=datetime.timezone.utc),
+                         get_optional_timestamp({"start": "2026-03-01T12:30:00+00:00"}, "start"))
+
+        # Absent and empty both fall back, since neither expresses a filter.
+        self.assertIsNone(get_optional_timestamp({}, "start"))
+        self.assertIsNone(get_optional_timestamp({"start": ""}, "start"))
+        fallback = datetime.datetime(2020, 1, 1)
+        self.assertEqual(fallback, get_optional_timestamp({}, "start", default=fallback))
+        self.assertEqual(fallback, get_optional_timestamp({"start": ""}, "start", default=fallback))
+
+        # A present but malformed value is an error rather than a silent fallback: ignoring it would answer a
+        # different question than the caller asked.
+        for value in ("not-a-time", "31-12-2026", "2026-13-01"):
+            self.assertRaises(ParameterError, get_optional_timestamp, {"start": value}, "start")

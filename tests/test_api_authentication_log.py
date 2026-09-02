@@ -349,6 +349,21 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
         self.assertEqual(1, value["count"])
         self.assertEqual("att-x", value["auth_logs"][0]["attempt_id"])
 
+    def test_rejects_a_malformed_timestamp(self):
+        # The filters are optional, but a present value that cannot be parsed must not escape as the ValueError
+        # isoparse raises, nor be dropped so the page answers an unfiltered question.
+        for key in ("start_time", "end_time"):
+            with self.app.test_request_context("/authenticationlog/", method="GET", query_string={key: "not-a-time"},
+                                               headers={"Authorization": self.at}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(400, res.status_code, res.json)
+                self.assertEqual(905, res.json["result"]["error"]["code"], res.json)
+                self.assertIn(f"Invalid ISO 8601 timestamp for {key}", res.json["result"]["error"]["message"])
+
+    def test_blank_timestamp_does_not_filter(self):
+        ids = self._seed()
+        self.assertEqual(len(ids), self._get({"start_time": "", "end_time": ""})["result"]["value"]["count"])
+
     def test_policy_gate_denies_without_action(self):
         # Admin policies exist but none grant authentication_log_read -> the admin is denied.
         set_policy("authlog_other", scope=SCOPE.ADMIN, action=PolicyAction.ENABLE)

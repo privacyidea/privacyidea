@@ -17,7 +17,6 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 import logging
-from dateutil.parser import isoparse
 from flask import Blueprint, request, g
 
 from privacyidea.api.auth import user_required
@@ -32,7 +31,7 @@ from privacyidea.lib.conditional_access.authentication_log import (get_authentic
                                                                    DEFAULT_PAGE_SIZE,
                                                                    DEFAULT_STATISTICS_BINS)
 from privacyidea.lib.log import log_with
-from privacyidea.lib.params import get_optional, get_required_timestamp
+from privacyidea.lib.params import get_optional, get_optional_timestamp, get_required_timestamp
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policies.helper import get_policy_visibility_scopes
 from privacyidea.lib.utils import is_true
@@ -146,10 +145,8 @@ def get_authentication_log():
     ca_dry_run = get_optional(params, "ca_dry_run")
     filters["ca_dry_run"] = is_true(ca_dry_run) if ca_dry_run not in (None, "") else None
 
-    start_time = get_optional(params, "start_time")
-    start_time = isoparse(start_time) if start_time else None
-    end_time = get_optional(params, "end_time")
-    end_time = isoparse(end_time) if end_time else None
+    start_time = get_optional_timestamp(params, "start_time")
+    end_time = get_optional_timestamp(params, "end_time")
 
     visibility_scopes = _get_visibility_scopes()
 
