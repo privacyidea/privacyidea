@@ -33,7 +33,6 @@ import { ROUTE_PATHS } from "@app/route_paths";
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { ContainerTemplateEditComponent } from "@components/container/container-templates/container-template-edit/container-template-edit.component";
 import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
-import { NAVIGATION_ACCESSIBLE_DIALOG_CLASS } from "@constants/global.constants";
 import { DialogAction } from "@models/dialog";
 import {
   ContainerTemplateService,
@@ -52,9 +51,6 @@ import { deepCopy } from "@utils/deep-copy.utils";
 @Component({
   selector: "app-container-template-edit-page",
   standalone: true,
-  host: {
-    class: NAVIGATION_ACCESSIBLE_DIALOG_CLASS
-  },
   imports: [
     MatInputModule,
     MatCardModule,

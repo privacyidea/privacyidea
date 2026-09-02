@@ -143,8 +143,12 @@ class PasskeyTokenClass(TokenClass):
                                   "default, privacyIDEA identifies the user solely via the credential ID and its "
                                   "assignment to a user in privacyIDEA, so a passkey that is unassigned and then "
                                   "assigned to a different user will authenticate as that different user. "
-                                  "Enabling this closes that gap, at the cost of the authentication failing for "
-                                  "any passkey that was enrolled before this attribute was recorded."),
+                                  "Enabling this detects such a reassignment for regular clients, at the cost of "
+                                  "the authentication failing for any passkey that was enrolled before this "
+                                  "attribute was recorded. Note that, unlike the device type, the userHandle is "
+                                  "not covered by the WebAuthn assertion signature: it is a safeguard against an "
+                                  "unintended reassignment, not a defense against a client that deliberately "
+                                  "sends a forged value."),
                     }
                 },
                 SCOPE.ENROLL: {

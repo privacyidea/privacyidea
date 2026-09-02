@@ -24,7 +24,6 @@ import { form, FormField, validate } from "@angular/forms/signals";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
-import { NAVIGATION_ACCESSIBLE_DIALOG_CLASS } from "@constants/global.constants";
 import { DialogAction } from "@models/dialog";
 
 @Component({
@@ -32,9 +31,6 @@ import { DialogAction } from "@models/dialog";
   templateUrl: "./copy-policy-dialog.component.html",
   styleUrls: ["./copy-policy-dialog.component.scss"],
   standalone: true,
-  host: {
-    class: NAVIGATION_ACCESSIBLE_DIALOG_CLASS
-  },
   imports: [DialogWrapperComponent, FormField, MatFormFieldModule, MatInputModule]
 })
 export class CopyPolicyDialogComponent extends AbstractDialogComponent<string, string | null> {

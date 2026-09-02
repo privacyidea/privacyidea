@@ -243,6 +243,20 @@ type: ``bool``
 If the ``userlist`` action is defined, the user is
 allowed to view their own user information.
 
+.. _user_policy_sshkey_read:
+
+sshkey_read
+~~~~~~~~~~~
+
+type: ``bool``
+
+If the ``sshkey_read`` action is defined, the user is allowed to read the
+public SSH key of their own SSH key tokens via ``GET /token/sshkey/<serial>``.
+
+The public key of an SSH key token is stored encrypted and is therefore only
+contained in encrypted form in the token list, so this action is the way to
+retrieve it. Only active tokens hand out their key. See :ref:`sshkey_token`.
+
 revoke
 ~~~~~~
 

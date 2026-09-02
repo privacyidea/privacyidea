@@ -21,6 +21,30 @@ import { writeCookie } from "@core/cookie";
 /** Mount point of the new WebUI; locale bundles live at APP_PREFIX or APP_PREFIX + "<locale>/". */
 export const APP_PREFIX = "/app/v2/";
 
+/** Meta tag through which the backend passes the mount prefix; written by _serve_locale(). */
+export const SCRIPT_ROOT_META_NAME = "pi-script-root";
+
+/**
+ * The SCRIPT_NAME prefix the backend is mounted under (e.g. "/pi" behind an Apache
+ * WSGIScriptAlias), read from the meta tag _serve_locale() injects into the served
+ * index.html. Empty string when mounted at the web server root, and when the dev
+ * server serves the bundle without the backend templating it.
+ *
+ * A meta tag rather than an injected global, because the backend's CSP allows only
+ * script-src 'self' and would block the inline script that set one.
+ */
+export function scriptRoot(): string {
+  const meta = document.querySelector(`meta[name="${SCRIPT_ROOT_META_NAME}"]`);
+  return meta?.getAttribute("content") ?? "";
+}
+
+/** window.location.pathname with the sub-path mount prefix (if any) stripped. */
+function pathWithoutScriptRoot(): string {
+  const root = scriptRoot();
+  const path = window.location.pathname;
+  return root && path.startsWith(root) ? path.slice(root.length) : path;
+}
+
 /**
  * Base href for a compiled locale bundle. The source locale (English) is served at the app
  * root without a locale subpath; every other locale lives under /app/v2/<locale>/.
@@ -73,7 +97,7 @@ export function isKnownLocale(code: string): boolean {
  * locale segment (the source-locale bundle is served without one).
  */
 export function localeSegmentFromPath(): string | null {
-  const path = window.location.pathname;
+  const path = pathWithoutScriptRoot();
   if (!path.startsWith(APP_PREFIX)) {
     return null;
   }
@@ -92,7 +116,7 @@ export function localeFromPath(): string {
 
 /** The in-app route after the /app/v2/ prefix and any leading locale segment. */
 export function currentSubPath(): string {
-  const path = window.location.pathname;
+  const path = pathWithoutScriptRoot();
   if (!path.startsWith(APP_PREFIX)) {
     return "";
   }
@@ -106,7 +130,7 @@ export function currentSubPath(): string {
  * hash), so applying a language does not bounce the user through the root redirect.
  */
 export function localeTargetUrl(code: string): string {
-  return localeBaseHref(code) + currentSubPath() + window.location.search + window.location.hash;
+  return scriptRoot() + localeBaseHref(code) + currentSubPath() + window.location.search + window.location.hash;
 }
 
 /** Records the explicit language choice for a year, so it survives reloads and deep links. */

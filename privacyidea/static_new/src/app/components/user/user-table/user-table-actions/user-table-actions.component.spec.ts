@@ -21,10 +21,12 @@ import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { provideRouter, Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
+import { AuthService } from "@services/auth/auth.service";
 import { DialogService } from "@services/dialog/dialog.service";
 import { ResolverService } from "@services/resolver/resolver.service";
 import { UserService } from "@services/user/user.service";
 import { MockContentService, MockDialogService, MockRealmService, MockUserService } from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockResolverService } from "@testing/mock-services/mock-resolver-service";
 import { UserTableActionsComponent } from "./user-table-actions.component";
 import { ContentService } from "@services/content/content.service";
@@ -35,6 +37,7 @@ describe("UserTableActionsComponent", () => {
   let fixture: ComponentFixture<UserTableActionsComponent>;
   let resolverService: MockResolverService;
   let userService: MockUserService;
+  let authService: MockAuthService;
   let router: Router;
 
   beforeEach(async () => {
@@ -43,6 +46,7 @@ describe("UserTableActionsComponent", () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         provideRouter([]),
+        { provide: AuthService, useClass: MockAuthService },
         { provide: ResolverService, useClass: MockResolverService },
         { provide: UserService, useClass: MockUserService },
         { provide: DialogService, useClass: MockDialogService },
@@ -54,6 +58,7 @@ describe("UserTableActionsComponent", () => {
 
     resolverService = TestBed.inject(ResolverService) as unknown as MockResolverService;
     userService = TestBed.inject(UserService) as unknown as MockUserService;
+    authService = TestBed.inject(AuthService) as unknown as MockAuthService;
     router = TestBed.inject(Router);
     jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
 
@@ -80,5 +85,31 @@ describe("UserTableActionsComponent", () => {
     userService.selectedUserRealm.set("testRealm");
     component.navigateToCreateUser();
     expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.USERS_NEW);
+  });
+
+  describe("the offer to create a user", () => {
+    const createUserButton = (): HTMLElement | undefined =>
+      Array.from(fixture.nativeElement.querySelectorAll("button") as NodeListOf<HTMLElement>).find((button) =>
+        button.textContent?.includes("Create User")
+      );
+
+    beforeEach(() => {
+      authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["adduser"] });
+      resolverService.editableResolvers.set(["resolver1"]);
+    });
+
+    it("stands beside the realm selector where the actions carry the table", () => {
+      fixture.detectChanges();
+      expect(createUserButton()).toBeDefined();
+    });
+
+    it("is left out where the actions stand in for the table", () => {
+      fixture.componentRef.setInput("showCreateUser", false);
+      fixture.detectChanges();
+
+      expect(createUserButton()).toBeUndefined();
+      // The realm selector is the reason the panel projects the actions at all, so it has to stay.
+      expect(fixture.nativeElement.textContent).toContain("Select Realm");
+    });
   });
 });

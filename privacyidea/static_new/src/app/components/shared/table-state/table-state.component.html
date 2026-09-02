@@ -28,6 +28,16 @@
         i18n-aria-label="@@common.loading"
         mode="indeterminate" />
     </div>
+    <!-- Held back by the animation's delay, so a load that answers right away never flashes a button. -->
+    @if (table().canCancel) {
+      <button
+        (click)="table().cancel()"
+        class="action-button-secondary button-width-m delayed-reveal"
+        mat-stroked-button>
+        <mat-icon>close</mat-icon>
+        <span i18n>Cancel</span>
+      </button>
+    }
   } @else {
     @if (resolvedIcon()) {
       <span
@@ -102,6 +112,27 @@
               <span i18n="@@common.resetFilter">Reset Filter</span>
             </button>
           }
+        </div>
+      }
+      @case ("cancelled") {
+        <h2
+          class="table-state-heading"
+          i18n>
+          Loading cancelled
+        </h2>
+        <p
+          class="table-state-hint"
+          i18n>
+          The request was stopped before the server answered. Nothing was loaded.
+        </p>
+        <div class="table-state-actions">
+          <button
+            (click)="table().retry()"
+            class="action-button-secondary button-width-m"
+            mat-stroked-button>
+            <mat-icon>refresh</mat-icon>
+            <span i18n>Try Again</span>
+          </button>
         </div>
       }
       @case ("denied") {
