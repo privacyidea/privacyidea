@@ -26,7 +26,7 @@ import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { NotificationService } from "@services/notification/notification.service";
-import { lastValueFrom, Observable, of, throwError } from "rxjs";
+import { forkJoin, lastValueFrom, Observable, of, throwError } from "rxjs";
 import { catchError } from "rxjs/operators";
 
 export interface EventHandler {
@@ -104,6 +104,45 @@ export interface EventHandlerSaveParams {
   [key: string]: unknown;
 }
 
+export function toEventHandlerSaveParams(handler: EventHandler): EventHandlerSaveParams {
+  const { options, ...rest } = handler;
+  const params: EventHandlerSaveParams = {
+    ...rest,
+    id: handler.id == null ? undefined : String(handler.id)
+  };
+  for (const [optionKey, optionValue] of Object.entries(options ?? {})) {
+    params["option." + optionKey] = optionValue;
+  }
+  return params;
+}
+
+export interface EventHandlerOrderingUpdate {
+  handler: EventHandler;
+  ordering: number;
+}
+
+export function planOrderingInsert(
+  handlers: EventHandler[],
+  handler: EventHandler,
+  ordering: number
+): EventHandlerOrderingUpdate[] {
+  const updates: EventHandlerOrderingUpdate[] = [{ handler, ordering }];
+  const others = handlers.filter((other) => other.id !== handler.id).sort((a, b) => a.ordering - b.ordering);
+
+  let taken = ordering;
+  for (const other of others) {
+    if (other.ordering < ordering) {
+      continue;
+    }
+    if (other.ordering > taken) {
+      break;
+    }
+    taken += 1;
+    updates.push({ handler: other, ordering: taken });
+  }
+  return updates;
+}
+
 export interface EventServiceInterface {
   selectedHandlerModule: WritableSignal<string | null>;
   readonly allEventsResource: HttpResourceRef<PiResponse<EventHandler[]> | undefined>;
@@ -125,6 +164,8 @@ export interface EventServiceInterface {
   getEventHandlers(): Observable<PiResponse<EventHandler[]>>;
 
   saveEventHandler(event: EventHandlerSaveParams): Observable<PiResponse<number> | undefined>;
+
+  updateOrderings(updates: EventHandlerOrderingUpdate[]): Observable<(PiResponse<number> | undefined)[]>;
 
   enableEvent(eventId: number | null): Promise<object | undefined>;
 
@@ -324,6 +365,15 @@ export class EventService implements EventServiceInterface {
     });
   }
 
+  updateOrderings(updates: EventHandlerOrderingUpdate[]): Observable<(PiResponse<number> | undefined)[]> {
+    if (updates.length === 0) {
+      return of([]);
+    }
+    return forkJoin(
+      updates.map(({ handler, ordering }) => this.saveEventHandler(toEventHandlerSaveParams({ ...handler, ordering })))
+    );
+  }
+
   saveEventHandler(event: EventHandlerSaveParams): Observable<PiResponse<number> | undefined> {
     const headers = this.authService.getHeaders();
     const params = { ...event };
@@ -422,6 +472,4 @@ export class EventService implements EventServiceInterface {
       return;
     }
   }
-
 }
-

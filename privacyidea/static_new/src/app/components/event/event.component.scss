@@ -65,3 +65,48 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+.event-handler-table {
+  th.mat-mdc-header-cell.mat-column-ordering,
+  td.mat-mdc-cell.mat-column-ordering {
+    width: 144px;
+  }
+
+  td.mat-mdc-cell.mat-column-ordering:has(.ordering-edit) {
+    padding-left: 0;
+    padding-right: 0;
+  }
+}
+
+.ordering-cell {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.ordering-edit {
+  display: flex;
+  align-items: center;
+  --mdc-icon-button-state-layer-size: 32px;
+
+  input[type="number"] {
+    appearance: textfield;
+
+    &::-webkit-inner-spin-button,
+    &::-webkit-outer-spin-button {
+      appearance: none;
+      margin: 0;
+    }
+  }
+}
+
+.ordering-edit-button {
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.ordering-cell:hover .ordering-edit-button,
+.ordering-edit-button:focus-visible {
+  opacity: 1;
+}
