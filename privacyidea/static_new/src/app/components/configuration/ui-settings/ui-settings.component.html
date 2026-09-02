@@ -71,6 +71,29 @@
     </app-details-card>
 
     <app-details-card
+      class="settings-card-s"
+      i18n-title="@@uiSettings.landingPage"
+      title="Landing Page">
+      <div class="settings-row">
+        <mat-form-field
+          class="input-width-m"
+          subscriptSizing="dynamic">
+          <mat-select
+            (selectionChange)="selectLandingPage($event.value)"
+            [value]="landingPage()"
+            aria-label="Landing page"
+            i18n-aria-label="@@uiSettings.landingPage">
+            @for (page of availableLandingPages(); track page) {
+              <mat-option [value]="page">
+                {{ landingPageLabels[page] }}
+              </mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      </div>
+    </app-details-card>
+
+    <app-details-card
       class="settings-card-m"
       i18n-title="@@uiSettings.pendingRequests"
       title="Pending Requests">

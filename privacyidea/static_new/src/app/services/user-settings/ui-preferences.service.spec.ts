@@ -437,4 +437,72 @@ describe("UiPreferencesService", () => {
       expect(navigateSpy).toHaveBeenCalledWith("/app/v2/de/tokens");
     });
   });
+
+  describe("landingPage", () => {
+    it("should default to the dashboard when the admin_dashboard policy allows it", () => {
+      create("en");
+      authService.authData.set({ ...authService.authData()!, admin_dashboard: true });
+      userSettingsService.settings.set({});
+
+      expect(service.landingPage()).toBe("dashboard");
+    });
+
+    it("should default to the token list without the admin_dashboard policy", () => {
+      create("en");
+      authService.authData.set({ ...authService.authData()!, admin_dashboard: false });
+      userSettingsService.settings.set({});
+
+      expect(service.landingPage()).toBe("tokens");
+    });
+
+    it("should report the stored landing page when it is still available", () => {
+      create("en");
+      authService.authData.set({ ...authService.authData()!, admin_dashboard: false, rights: ["auditlog"] });
+      userSettingsService.settings.set({ starting_page: "audit" });
+
+      expect(service.landingPage()).toBe("audit");
+    });
+
+    it("should fall back to the policy default when the stored page is no longer available", () => {
+      create("en");
+      // Stored while admin_dashboard was on; the policy was withdrawn since.
+      authService.authData.set({ ...authService.authData()!, admin_dashboard: false, rights: [] });
+      userSettingsService.settings.set({ starting_page: "dashboard" });
+
+      expect(service.landingPage()).toBe("tokens");
+    });
+
+    it("should ignore a stored value that is not a known landing page", () => {
+      create("en");
+      authService.authData.set({ ...authService.authData()!, admin_dashboard: false });
+      userSettingsService.settings.set({ starting_page: "policies" });
+
+      expect(service.landingPage()).toBe("tokens");
+    });
+
+    it("should offer only the pages the principal currently has the rights to see", () => {
+      create("en");
+      authService.authData.set({ ...authService.authData()!, admin_dashboard: true, rights: ["userlist"] });
+
+      expect(service.availableLandingPages()).toEqual(["dashboard", "tokens", "users"]);
+    });
+
+    it("should persist a picked landing page", () => {
+      create("en");
+
+      service.setLandingPage("users");
+
+      expect(userSettingsService.settings()?.["starting_page"]).toBe("users");
+    });
+
+    it("should clear the stored landing page on reset", (done) => {
+      create("en");
+      userSettingsService.settings.set({ starting_page: "audit" });
+
+      service.resetLandingPage().subscribe(() => {
+        expect(userSettingsService.settings()?.["starting_page"]).toBeUndefined();
+        done();
+      });
+    });
+  });
 });
