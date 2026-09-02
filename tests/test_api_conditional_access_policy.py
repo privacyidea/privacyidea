@@ -120,6 +120,71 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
         res = self._request("policy", method="POST", json_data=body)
         self.assertEqual(400, res.status_code, res.json)
 
+    def test_create_defaults_reset_on_success_to_true(self):
+        policy_id = self._create_policy()
+        res = self._request(f"policy/{policy_id}")
+        self.assertTrue(res.json["result"]["value"]["reset_on_success"])
+
+    def test_create_accepts_reset_on_success_false(self):
+        # An explicit JSON false must reach the CRUD layer rather than being read as "not given".
+        policy_id = self._create_policy(reset_on_success=False)
+        res = self._request(f"policy/{policy_id}")
+        self.assertFalse(res.json["result"]["value"]["reset_on_success"])
+
+    def test_patch_toggles_reset_on_success(self):
+        policy_id = self._create_policy()
+        for value in (False, True):
+            res = self._request(f"policy/{policy_id}", method="PATCH", json_data={"reset_on_success": value})
+            self.assertEqual(200, res.status_code, res.json)
+            res = self._request(f"policy/{policy_id}")
+            self.assertEqual(value, res.json["result"]["value"]["reset_on_success"])
+
+    def test_create_source_ip_with_reset_on_success_is_400(self):
+        # A source-IP policy never resets on a successful login: asking for it is rejected instead of being stored
+        # and ignored.
+        body = self._policy_body(name="IP reset", target="source_ip", reset_on_success=True,
+                                 counter_types_to_track=[str(AuthEventType.PASSWORD_FAIL)],
+                                 stages=[{"failure_threshold": 20,
+                                          "actions": [{"action_type": str(ConditionalAccessAction.BLOCK_IP),
+                                                       "action_value": {"duration_seconds": 60}}]}])
+        res = self._request("policy", method="POST", json_data=body)
+        self.assertEqual(400, res.status_code, res.json)
+        self.assertIn("reset_on_success", res.json["result"]["error"]["message"])
+
+    def test_create_source_ip_defaults_reset_on_success_to_false(self):
+        body = self._policy_body(name="IP noreset", target="source_ip",
+                                 counter_types_to_track=[str(AuthEventType.PASSWORD_FAIL)],
+                                 stages=[{"failure_threshold": 20,
+                                          "actions": [{"action_type": str(ConditionalAccessAction.BLOCK_IP),
+                                                       "action_value": {"duration_seconds": 60}}]}])
+        res = self._request("policy", method="POST", json_data=body)
+        self.assertEqual(200, res.status_code, res.json)
+        policy = self._request(f"policy/{res.json['result']['value']}").json["result"]["value"]
+        self.assertFalse(policy["reset_on_success"])
+
+    def test_patch_reset_on_success_on_source_ip_policy_is_400(self):
+        policy_id = self._create_policy(name="IP patch", target="source_ip",
+                                        counter_types_to_track=[str(AuthEventType.PASSWORD_FAIL)],
+                                        stages=[{"failure_threshold": 20,
+                                                 "actions": [{"action_type": str(ConditionalAccessAction.BLOCK_IP),
+                                                              "action_value": {"duration_seconds": 60}}]}])
+        res = self._request(f"policy/{policy_id}", method="PATCH", json_data={"reset_on_success": True})
+        self.assertEqual(400, res.status_code, res.json)
+        self.assertFalse(self._request(f"policy/{policy_id}").json["result"]["value"]["reset_on_success"])
+
+    def test_patch_to_source_ip_clears_reset_on_success(self):
+        # Switching a resetting user policy to source_ip clears the flag rather than leaving the policy claiming a
+        # reset it cannot perform.
+        policy_id = self._create_policy()
+        res = self._request(f"policy/{policy_id}", method="PATCH",
+                            json_data={"target": "source_ip",
+                                       "count_mode": str(CountMode.DISTINCT_USERS),
+                                       "stages": [{"failure_threshold": 20,
+                                                   "actions": [{"action_type": str(ConditionalAccessAction.BLOCK_IP),
+                                                                "action_value": {"duration_seconds": 60}}]}]})
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertFalse(self._request(f"policy/{policy_id}").json["result"]["value"]["reset_on_success"])
+
     def test_create_duplicate_name_is_400(self):
         self._create_policy(name="Dup")
         res = self._request("policy", method="POST", json_data=self._policy_body(name="Dup"))

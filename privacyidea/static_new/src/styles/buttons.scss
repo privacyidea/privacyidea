@@ -370,6 +370,10 @@ $button-low-contrast-variant: linear-gradient(
     // label does not, and silently renders as unreadable same-color-as-background text.
     background-color: $bg !important;
     color: $color !important;
+    // Material reads the label color from this variable, not from the plain
+    // `color` property above, so without it the outlined-button label stays
+    // the theme's primary color regardless of $color.
+    --mat-button-outlined-label-text-color: #{$color};
     @if $border {
       border-color: $color;
     }

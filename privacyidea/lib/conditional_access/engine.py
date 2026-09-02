@@ -824,9 +824,12 @@ def _policy_count(policy: ConditionalAccessPolicy, user: "User", window_end: dat
     :param user: the resolved user to count for
     :param window_end: the instant the window ends (reference time)
     :param since_last_success: True to floor the count at the user's last completed login in the window (a successful
-        login resets the counter). Applies to both user modes — ``PER_REQUEST`` floors at the last ``LOGIN_SUCCESS``
-        row, ``PER_ATTEMPT`` at the last successful attempt. (Source-IP ``DISTINCT_USERS`` deliberately never resets,
-        which is why it is a separate mode and does not go through here.)
+        login resets the counter); both callers - the pre-auth decision and the post-response evaluation - pass the
+        policy's :attr:`~privacyidea.models.conditional_access_policy.ConditionalAccessPolicy.reset_on_success`.
+        Applies to both user modes —
+        ``PER_REQUEST`` floors at the last ``LOGIN_SUCCESS`` row, ``PER_ATTEMPT`` at the last successful attempt.
+        (Source-IP ``DISTINCT_USERS`` deliberately never resets, which is why it is a separate mode and does not go
+        through here.)
     :return: the event count (``PER_REQUEST``) or the attempt count (``PER_ATTEMPT``)
     """
     sql_filters, row_filter = _count_scoping(policy)
@@ -1088,7 +1091,10 @@ def evaluate_access_decision(context: CAContext, now: datetime | None = None) ->
     supplies the decision. A ``DENY`` action therefore rejects this single request
     without persisting any state — a stateless, self-healing reject that lifts on
     its own as the failures age out of the window (contrast the durable
-    :attr:`ConditionalAccessAction.LOCK_USER`). Because ``DENY`` defaults to re-triggering
+    :attr:`ConditionalAccessAction.LOCK_USER`). With the policy's
+    ``reset_on_success`` the count is floored at the user's last completed
+    login, so a ``DENY`` also lifts on a successful authentication and not only
+    with the passage of time. Because ``DENY`` defaults to re-triggering
     (``count >= threshold``), a stage with ``failure_threshold`` 0 always matches,
     which is the lockdown idiom - scope it with conditions.
 
@@ -1166,10 +1172,11 @@ def _policy_access_decision(policy: ConditionalAccessPolicy, context: CAContext,
         count = _policy_count_ip(policy, context.source_ip, now)
         subject_label = f"source IP {context.source_ip}"
     else:
-        # User-scoped: keyed on the resolved user, so an unresolved user is never decided by a user policy.
+        # User-scoped: keyed on the resolved user, so an unresolved user is never decided by a user policy. The
+        # count honours the policy's reset_on_success, exactly as the post-response path does.
         if not _resolved(context.user):
             return AccessDecisionResult()
-        count = _policy_count(policy, context.user, now)
+        count = _policy_count(policy, context.user, now, since_last_success=policy.reset_on_success)
         subject_label = repr(context.user)
     deciding_stage = next((stage for stage in policy.stages if _stage_denies(stage, count)), None)
     if deciding_stage is None:
@@ -1248,8 +1255,9 @@ def evaluate_conditional_access_policies(context: CAContext, event_type: AuthEve
     ``retrigger_above_threshold`` fires whenever the count is at or above the
     threshold, so a single stage can email once at threshold 8 while keeping the
     user locked for every further failure (see :func:`_action_threshold_met`). The
-    count climbs by one per tracked failure and resets after a successful login
-    (see :func:`count_user_events`), so a fresh burst re-triggers the fire-once
+    count climbs by one per tracked failure and, for a policy with
+    ``reset_on_success``, resets after a successful login (see
+    :func:`count_user_events`), so a fresh burst re-triggers the fire-once
     actions too.
 
     The persistent side effects (lock state) are consulted by the *next* inbound
@@ -1385,15 +1393,21 @@ def _evaluate_policy(policy: ConditionalAccessPolicy, context: CAContext, event_
         subject_label = f"source IP {source_ip}"
     else:
         if not _resolved(user):
-            # A user-target policy is keyed on the resolved (resolver, uid, realm) user, so an unresolved user
-            # (unknown login, local admin) is never locked; source-IP policies above still run for such requests.
+            # A user-target policy is keyed on the resolved (resolver, uid, realm)
+            # user, so an unresolved user (unknown login, local admin) is never
+            # locked. Source-IP policies above still run for such requests.
             return ConditionalAccessEvaluation()
-        # The lock counts consecutive failures since the user's last completed login, so a legitimate user is not
-        # re-locked by stale pre-login failures (the pre-auth DENY decision deliberately does not reset on success —
-        # see _policy_access_decision).
-        # The count is the combined total across all of the policy's tracked types, not just the current
-        # event_type, so a policy tracking several failure types trips on their sum.
-        count = _policy_count(policy, user, now, since_last_success=True)
+        # With the policy's reset_on_success (the default) the lock counts consecutive
+        # failures since the user's last completed login: a successful authentication
+        # clears the slate, so a legitimate user is not re-locked by stale pre-login
+        # failures on their next single typo. Without it every tracked event in the raw
+        # window counts, which is what an admin wants when the threshold is meant to
+        # measure total failures rather than a run of them. The pre-auth DENY decision
+        # counts the same way (see _policy_access_decision).
+        # The count is the *combined* total over all of the policy's tracked types,
+        # not just the current request's event_type, so a policy tracking several
+        # failure types trips on their sum.
+        count = _policy_count(policy, user, now, since_last_success=policy.reset_on_success)
         subject_label = repr(user)
 
     # Picks the triggered stage: the highest-threshold stage with at least one action whose per-action condition is
