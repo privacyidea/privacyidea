@@ -9,12 +9,13 @@ from alembic import op
 import sqlalchemy as sa
 
 from privacyidea.lib.smsprovider.SMSProvider import get_smsgateway, delete_smsgateway_option
-from privacyidea.lib.tokens.pushtoken import GWTYPE, PushAction
+from privacyidea.lib.tokens.pushtoken import PushAction
 from privacyidea.lib.policy import PolicyClass, set_policy, SCOPE
 
 # revision identifiers, used by Alembic.
 revision = 'fa07bd604a75'
 down_revision = '3ba618f6b820'
+FIREBASE_PROVIDER = 'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider'
 
 
 def upgrade():
@@ -26,7 +27,7 @@ def upgrade():
                       sa.column("description", sa.Unicode(1024)),
                       sa.column("providermodule", sa.Unicode(1024)))
     res = conn.execute(
-        sms_gw.select().where(sms_gw.c.providermodule == GWTYPE)
+        sms_gw.select().where(sms_gw.c.providermodule == FIREBASE_PROVIDER)
     )
     # Somehow this does not work with Oracle. The query is correct, but the
     # result is empty even though the same query gives a result when issued directly.
@@ -37,7 +38,7 @@ def upgrade():
           f"migration was successful")
 
     # 1. Read the push_registration_url and ttl from the Firebase Config
-    fb_gateways = get_smsgateway(gwtype=GWTYPE)
+    fb_gateways = get_smsgateway(gwtype=FIREBASE_PROVIDER)
     # 2. Check which policy contains this Firebase Config
     P = PolicyClass()
     pols = P.list_policies(scope=SCOPE.ENROLL,
