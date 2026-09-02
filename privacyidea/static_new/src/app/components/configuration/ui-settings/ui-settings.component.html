@@ -39,16 +39,7 @@
 
   <div class="details-cards-grid">
     <app-details-card
-      class="settings-card-xs"
-      i18n-title="@@uiSettings.theme"
-      title="Theme">
-      <div class="settings-row">
-        <app-theme-toggle />
-      </div>
-    </app-details-card>
-
-    <app-details-card
-      class="settings-card-s"
+      class="settings-card-s spaced-body"
       i18n-title="@@uiSettings.language"
       title="Language">
       <div class="settings-row">
@@ -71,7 +62,16 @@
     </app-details-card>
 
     <app-details-card
-      class="settings-card-s"
+      class="settings-card-xs"
+      i18n-title="@@uiSettings.theme"
+      title="Theme">
+      <div class="settings-row">
+        <app-theme-toggle />
+      </div>
+    </app-details-card>
+
+    <app-details-card
+      class="settings-card-s spaced-body"
       i18n-title="@@uiSettings.landingPage"
       title="Landing Page">
       <div class="settings-row">
@@ -94,7 +94,7 @@
     </app-details-card>
 
     <app-details-card
-      class="settings-card-m"
+      class="settings-card-s"
       i18n-title="@@uiSettings.pendingRequests"
       title="Pending Requests">
       <div class="settings-row">
