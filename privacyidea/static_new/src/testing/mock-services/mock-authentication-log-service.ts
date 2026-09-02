@@ -23,9 +23,21 @@ import { FilterValue } from "@core/models/filter_value/filter_value";
 import {
   AuthenticationLogEventType,
   AuthenticationLogPage,
-  AuthenticationLogServiceInterface
+  AuthenticationLogServiceInterface,
+  AuthenticationLogStatistics
 } from "@services/authentication-log/authentication-log.service";
+import { of } from "rxjs";
 import { MockHttpResourceRef, MockPiResponse } from "./mock-utils";
+
+// An empty window: no attempt ended in any classification, so `events` is empty rather than holding zeroed series.
+export const emptyStatistics = (bins = 4): AuthenticationLogStatistics => ({
+  window: { start_time: "2026-03-01T00:00:00+00:00", end_time: "2026-03-02T00:00:00+00:00", total: 0 },
+  bins: {
+    count: bins,
+    starts: Array.from({ length: bins }, (_, index) => `2026-03-01T${String(index * 6).padStart(2, "0")}:00:00+00:00`)
+  },
+  events: []
+});
 
 export class MockAuthenticationLogService implements AuthenticationLogServiceInterface {
   apiFilter = ["username", "event_type", "serial"];
@@ -62,6 +74,10 @@ export class MockAuthenticationLogService implements AuthenticationLogServiceInt
   eventTypesResource = new MockHttpResourceRef<PiResponse<AuthenticationLogEventType[]> | undefined>(
     MockPiResponse.fromValue<AuthenticationLogEventType[]>([])
   );
+
+  fetchStatistics = jest
+    .fn()
+    .mockReturnValue(of(MockPiResponse.fromValue<AuthenticationLogStatistics>(emptyStatistics())));
 
   clearFilter = jest.fn().mockImplementation(() => {
     this.authenticationLogFilter.set(new FilterValue());
