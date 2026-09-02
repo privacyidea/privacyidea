@@ -51,8 +51,8 @@ export class MultiSelectOnlyComponent<T = string | number> {
    * Localized labels for the toggle action.
    */
   protected readonly toggleLabels = {
-    select: $localize`Select all`,
-    deselect: $localize`Deselect all`
+    select: $localize`:@@common.selectAll:Select all`,
+    deselect: $localize`:@@common.deselectAll:Deselect all`
   };
 
   /**

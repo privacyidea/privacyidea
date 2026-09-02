@@ -128,6 +128,24 @@ describe("EventService", () => {
     await expect(promise).resolves.toBeDefined();
   });
 
+  it("should not call the API and show error when enabling with a missing ID", async () => {
+    const promise = service.enableEvent(null);
+    httpMock.expectNone(service.eventBaseUrl + "/enable/null");
+    await expect(promise).resolves.toBeUndefined();
+    expect(notificationMock.error).toHaveBeenCalledWith(
+      expect.stringContaining("Can not enable event handler due to missing ID")
+    );
+  });
+
+  it("should not call the API and show warning when disabling with a missing ID", async () => {
+    const promise = service.disableEvent(null);
+    httpMock.expectNone(service.eventBaseUrl + "/disable/null");
+    await expect(promise).resolves.toBeUndefined();
+    expect(notificationMock.warning).toHaveBeenCalledWith(
+      expect.stringContaining("Can not disable event handler due to missing ID")
+    );
+  });
+
   it("should handle error when enabling an event handler", async () => {
     service.allEventsResource.reload = jest.fn();
     const eventId = 123;
@@ -206,6 +224,21 @@ describe("EventService", () => {
 
       expect(deleteSpy).toHaveBeenCalledWith(event.id);
       expect(notificationMock.success).toHaveBeenCalledWith("Successfully deleted event handler.");
+    });
+
+    it("should show error and not call delete when the event has no ID", async () => {
+      const deleteSpy = jest.spyOn(service, "deleteEvent");
+      const noIdEvent = { id: null, name: "Test Event" } as unknown as EventHandler;
+
+      const deletePromise = service.deleteWithConfirmDialog(noIdEvent);
+      confirmClosed.next(true);
+      confirmClosed.complete();
+      await expect(deletePromise).resolves.toBeUndefined();
+
+      expect(deleteSpy).not.toHaveBeenCalled();
+      expect(notificationMock.error).toHaveBeenCalledWith(
+        expect.stringContaining("Failed to delete event handler: Missing ID.")
+      );
     });
 
     it("should open confirmation dialog and do nothing on cancel", async () => {

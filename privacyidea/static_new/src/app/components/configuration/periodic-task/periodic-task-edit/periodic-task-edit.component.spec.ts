@@ -85,11 +85,13 @@ describe("PeriodicTaskEditComponent", () => {
       const { component } = await createComponent({});
       expect(component.isNewTask()).toBe(true);
       expect(component.editTask().name).toBe("");
+      expect(component.title()).toBe("Create Periodic Task");
     });
 
     it("initializes in edit mode when a name param is present", async () => {
       const { component } = await createComponent({ name: "my-task" });
       expect(component.isNewTask()).toBe(false);
+      expect(component.title()).toBe("Edit Periodic Task");
     });
   });
 

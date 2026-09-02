@@ -19,16 +19,16 @@
 <div
   aria-label="Container Details Token Table"
   class="container-details-token-table-layout"
-  i18n-aria-label>
+  i18n-aria-label="@@container.containerDetailsToken">
   <div class="flex-column">
     <!-- The card title keeps its place next to the actions; only the actions themselves,
          which all operate on existing tokens, go away with the table. -->
     <div class="flex-row ali-center gap-8">
       <h4
         class="details-card-title"
-        i18n>
-        Tokens in Container
-      </h4>
+        i18n="@@container.tokensContainer"
+        >Tokens in Container</h4
+      >
       @if (tableState.showTable()) {
         <app-container-details-token-actions
           [containerSerial]="containerSerial()"
@@ -42,7 +42,7 @@
           <mat-form-field
             class="container-details-token-table-filter width-50"
             subscriptSizing="dynamic">
-            <mat-label i18n>Filter Token...</mat-label>
+            <mat-label i18n="@@container.filterToken">Filter Token...</mat-label>
             <app-clearable-input
               (clearButtonClick)="clearFilter()"
               [showClearButton]="filterInput.value !== ''">
@@ -50,8 +50,8 @@
                 #filterInput
                 (keyup)="handleFilterInput($event)"
                 aria-label="Filter Input"
-                i18n-aria-label
-                i18n-placeholder
+                i18n-aria-label="@@common.filterInput"
+                i18n-placeholder="@@common.filterAcrossAll"
                 matInput
                 placeholder="Filter across all columns." />
             </app-clearable-input>
@@ -73,7 +73,7 @@
         [dataSource]="dataSource()"
         aria-label="Token of Container Data Table"
         class="container-details-token-table"
-        i18n-aria-label
+        i18n-aria-label="@@container.tokenContainer"
         mat-table>
         @for (column of columnsKeyMap; track column) {
           <ng-container [matColumnDef]="column.key">
@@ -107,8 +107,7 @@
                         <a
                           (click)="contentService.tokenSelected(element.token.serial)"
                           (keydown.enter)="contentService.tokenSelected(element.token.serial)"
-                          attr.aria-label="{{ column.label }} Link"
-                          i18n-attr.aria-label
+                          [attr.aria-label]="linkLabel(column.label)"
                           class="cursor-pointer"
                           role="button"
                           tabindex="0">
@@ -143,8 +142,7 @@
                             (keydown.enter)="
                               contentService.userSelected(element.token[column.key], element.token['user_realm'])
                             "
-                            attr.aria-label="{{ column.label }} Link"
-                            i18n-attr.aria-label
+                            [attr.aria-label]="linkLabel(column.label)"
                             class="cursor-pointer"
                             role="button"
                             tabindex="0">
@@ -156,7 +154,7 @@
                             color="primary"
                             (click)="assignUserToToken(element.token)"
                             matTooltip="Assign Owner"
-                            i18n-matTooltip>
+                            i18n-matTooltip="@@container.assignOwner">
                             <mat-icon>person_add</mat-icon>
                           </button>
                         }
@@ -167,8 +165,7 @@
                     @if (element.status !== "missing") {
                       @if (tableUtilsService.isLink(column.key)) {
                         <a
-                          attr.aria-label="{{ column.label }} Link"
-                          i18n-attr.aria-label
+                          [attr.aria-label]="linkLabel(column.label)"
                           href="#">
                           {{ element.token[column.key] }}
                         </a>
@@ -191,9 +188,9 @@
             mat-header-cell>
             <div
               class="flex just-center"
-              i18n>
-              Actions
-            </div>
+              i18n="@@common.actions"
+              >Actions</div
+            >
           </th>
           <td
             *matCellDef="let element"
@@ -203,7 +200,7 @@
                 @if (authService.actionAllowed("container_remove_token")) {
                   <button
                     (click)="removeTokenFromContainer(containerSerial(), element.token.serial)"
-                    i18n-matTooltip
+                    i18n-matTooltip="@@common.removeTokenFrom"
                     mat-icon-button
                     matTooltip="Remove Token from Container">
                     <mat-icon>remove_circle_outline</mat-icon>
@@ -212,7 +209,7 @@
                 @if (authService.actionAllowed("delete")) {
                   <button
                     (click)="deleteTokenFromContainer(element.token.serial)"
-                    i18n-matTooltip
+                    i18n-matTooltip="@@common.deleteToken"
                     mat-icon-button
                     matTooltip="Delete Token">
                     <mat-icon>delete</mat-icon>
@@ -237,8 +234,8 @@
               [table]="tableState"
               heading="No tokens in this container"
               hint="Add a token to this container to see it here."
-              i18n-heading
-              i18n-hint />
+              i18n-heading="@@container.noTokensContainer"
+              i18n-hint="@@container.addTokenContainerHint" />
           </td>
         </tr>
       </table>
@@ -248,7 +245,7 @@
       [table]="tableState"
       heading="No tokens in this container"
       hint="Add a token to this container to see it here."
-      i18n-heading
-      i18n-hint />
+      i18n-heading="@@container.noTokensContainer"
+      i18n-hint="@@container.addTokenContainerHint" />
   }
 </div>

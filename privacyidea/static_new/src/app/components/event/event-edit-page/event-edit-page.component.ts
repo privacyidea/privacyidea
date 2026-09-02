@@ -108,7 +108,9 @@ export class EventEditPageComponent implements OnDestroy {
   editEvent = signal(EMPTY_EVENT);
   isNewEvent = signal(false);
   readonly title = computed(() =>
-    this.isNewEvent() ? $localize`Create New Event Handler` : $localize`Edit Event Handler`
+    this.isNewEvent()
+      ? $localize`:@@event.createNewEvent:Create New Event Handler`
+      : $localize`:@@event.editEventHandler:Edit Event Handler`
   );
   hasChanges = signal(false);
   // Set once the user operates the "abort on error" toggle, so the default of the handler module stops applying
@@ -262,8 +264,8 @@ export class EventEditPageComponent implements OnDestroy {
             this.pendingChangesService.clearAllRegistrations();
             this.router.navigateByUrl(ROUTE_PATHS.EVENTS);
             const message = this.isNewEvent()
-              ? $localize`Event handler created successfully.`
-              : $localize`Event handler updated successfully.`;
+              ? $localize`:@@event.eventHandlerCreated:Event handler created successfully.`
+              : $localize`:@@event.eventHandlerUpdated:Event handler updated successfully.`;
             this.notificationService.success(message);
             resolve(true);
           } else {

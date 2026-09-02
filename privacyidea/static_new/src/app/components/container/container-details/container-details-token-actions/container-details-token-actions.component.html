@@ -22,9 +22,9 @@
     class="action-button-secondary"
     [matMenuTriggerFor]="tokenActionsMenu"
     aria-label="Token Actions"
-    i18n-aria-label>
+    i18n-aria-label="@@container.tokenActions">
     <mat-icon>checklist</mat-icon>
-    <span i18n>Actions</span>
+    <span i18n="@@common.actions">Actions</span>
     <mat-icon iconPositionEnd>arrow_drop_down</mat-icon>
   </button>
   <mat-menu #tokenActionsMenu="matMenu">
@@ -34,7 +34,7 @@
         (click)="assignToAllToken()"
         [disabled]="!isAssignableToAllToken()">
         <mat-icon>playlist_add</mat-icon>
-        <span i18n>Assign All</span>
+        <span i18n="@@container.assignAll">Assign All</span>
       </button>
     }
     @if (authService.actionAllowed("unassign")) {
@@ -43,7 +43,7 @@
         (click)="unassignFromAllToken()"
         [disabled]="!isUnassignableFromAllToken()">
         <mat-icon>playlist_remove</mat-icon>
-        <span i18n>Unassign All</span>
+        <span i18n="@@container.unassignAll">Unassign All</span>
       </button>
     }
 
@@ -56,7 +56,7 @@
         (click)="toggleAll('activate')"
         [disabled]="!anyDisabledTokens()">
         <mat-icon>playlist_play</mat-icon>
-        <span i18n>Activate All</span>
+        <span i18n="@@container.activateAll">Activate All</span>
       </button>
     }
     @if (authService.actionAllowed("disable")) {
@@ -65,7 +65,7 @@
         (click)="toggleAll('deactivate')"
         [disabled]="!anyActiveTokens()">
         <mat-icon class="mdi--list-lock" />
-        <span i18n>Deactivate All</span>
+        <span i18n="@@container.deactivateAll">Deactivate All</span>
       </button>
     }
 
@@ -81,7 +81,7 @@
         (click)="removeAll()"
         [disabled]="tokenData().data.length === 0">
         <mat-icon>playlist_remove</mat-icon>
-        <span i18n>Remove All</span>
+        <span i18n="@@container.removeAll">Remove All</span>
       </button>
     }
     @if (authService.actionAllowed("delete")) {
@@ -90,7 +90,7 @@
         (click)="deleteAllTokens()"
         [disabled]="tokenData().data.length === 0">
         <mat-icon>delete_sweep</mat-icon>
-        <span i18n>Delete All</span>
+        <span i18n="@@container.deleteAll">Delete All</span>
       </button>
     }
   </mat-menu>

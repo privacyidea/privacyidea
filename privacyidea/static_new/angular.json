@@ -21,7 +21,10 @@
           "ta": { "translation": "src/locale/messages.ta.xlf" },
           "pt": { "translation": "src/locale/messages.pt.xlf" },
           "ru": { "translation": "src/locale/messages.ru.xlf" },
-          "uk": { "translation": "src/locale/messages.uk.xlf" }
+          "uk": { "translation": "src/locale/messages.uk.xlf" },
+          "da": { "translation": "src/locale/messages.da.xlf" },
+          "lo": { "translation": "src/locale/messages.lo.xlf" },
+          "pl": { "translation": "src/locale/messages.pl.xlf" }
         }
       },
       "projectType": "application",
@@ -110,70 +113,117 @@
               "sourceMap": true,
               "localize": ["nl"],
               "baseHref": "/app/v2/nl/",
-              "fileReplacements": [{ "replace": "src/environments/environment.ts", "with": "src/environments/environment.development.ts" }]
+              "fileReplacements": [
+                { "replace": "src/environments/environment.ts", "with": "src/environments/environment.development.ts" }
+              ]
             },
             "zh-Hant": {
               "optimization": false,
               "sourceMap": true,
               "localize": ["zh-Hant"],
               "baseHref": "/app/v2/zh-Hant/",
-              "fileReplacements": [{ "replace": "src/environments/environment.ts", "with": "src/environments/environment.development.ts" }]
+              "fileReplacements": [
+                { "replace": "src/environments/environment.ts", "with": "src/environments/environment.development.ts" }
+              ]
             },
             "es": {
               "optimization": false,
               "sourceMap": true,
               "localize": ["es"],
               "baseHref": "/app/v2/es/",
-              "fileReplacements": [{ "replace": "src/environments/environment.ts", "with": "src/environments/environment.development.ts" }]
+              "fileReplacements": [
+                { "replace": "src/environments/environment.ts", "with": "src/environments/environment.development.ts" }
+              ]
             },
             "tr": {
               "optimization": false,
               "sourceMap": true,
               "localize": ["tr"],
               "baseHref": "/app/v2/tr/",
-              "fileReplacements": [{ "replace": "src/environments/environment.ts", "with": "src/environments/environment.development.ts" }]
+              "fileReplacements": [
+                { "replace": "src/environments/environment.ts", "with": "src/environments/environment.development.ts" }
+              ]
             },
             "cs": {
               "optimization": false,
               "sourceMap": true,
               "localize": ["cs"],
               "baseHref": "/app/v2/cs/",
-              "fileReplacements": [{ "replace": "src/environments/environment.ts", "with": "src/environments/environment.development.ts" }]
+              "fileReplacements": [
+                { "replace": "src/environments/environment.ts", "with": "src/environments/environment.development.ts" }
+              ]
             },
             "it": {
               "optimization": false,
               "sourceMap": true,
               "localize": ["it"],
               "baseHref": "/app/v2/it/",
-              "fileReplacements": [{ "replace": "src/environments/environment.ts", "with": "src/environments/environment.development.ts" }]
+              "fileReplacements": [
+                { "replace": "src/environments/environment.ts", "with": "src/environments/environment.development.ts" }
+              ]
             },
             "ta": {
               "optimization": false,
               "sourceMap": true,
               "localize": ["ta"],
               "baseHref": "/app/v2/ta/",
-              "fileReplacements": [{ "replace": "src/environments/environment.ts", "with": "src/environments/environment.development.ts" }]
+              "fileReplacements": [
+                { "replace": "src/environments/environment.ts", "with": "src/environments/environment.development.ts" }
+              ]
             },
             "pt": {
               "optimization": false,
               "sourceMap": true,
               "localize": ["pt"],
               "baseHref": "/app/v2/pt/",
-              "fileReplacements": [{ "replace": "src/environments/environment.ts", "with": "src/environments/environment.development.ts" }]
+              "fileReplacements": [
+                { "replace": "src/environments/environment.ts", "with": "src/environments/environment.development.ts" }
+              ]
             },
             "ru": {
               "optimization": false,
               "sourceMap": true,
               "localize": ["ru"],
               "baseHref": "/app/v2/ru/",
-              "fileReplacements": [{ "replace": "src/environments/environment.ts", "with": "src/environments/environment.development.ts" }]
+              "fileReplacements": [
+                { "replace": "src/environments/environment.ts", "with": "src/environments/environment.development.ts" }
+              ]
             },
             "uk": {
               "optimization": false,
               "sourceMap": true,
               "localize": ["uk"],
               "baseHref": "/app/v2/uk/",
-              "fileReplacements": [{ "replace": "src/environments/environment.ts", "with": "src/environments/environment.development.ts" }]
+              "fileReplacements": [
+                { "replace": "src/environments/environment.ts", "with": "src/environments/environment.development.ts" }
+              ]
+            },
+            "da": {
+              "optimization": false,
+              "sourceMap": true,
+              "localize": ["da"],
+              "baseHref": "/app/v2/da/",
+              "fileReplacements": [
+                { "replace": "src/environments/environment.ts", "with": "src/environments/environment.development.ts" }
+              ]
+            },
+            "lo": {
+              "optimization": false,
+              "sourceMap": true,
+              "localize": ["lo"],
+              "baseHref": "/app/v2/lo/",
+              "fileReplacements": [
+                { "replace": "src/environments/environment.ts", "with": "src/environments/environment.development.ts" }
+              ]
+            },
+            "pl": {
+              "optimization": false,
+              "sourceMap": true,
+              "localize": ["pl"],
+              "baseHref": "/app/v2/pl/",
+              "fileReplacements": [
+                { "replace": "src/environments/environment.ts", "with": "src/environments/environment.development.ts" }
+              ]
             }
           },
           "defaultConfiguration": "production"
@@ -201,12 +251,41 @@
             "ta": { "buildTarget": "privacyidea-webui:build:ta" },
             "pt": { "buildTarget": "privacyidea-webui:build:pt" },
             "ru": { "buildTarget": "privacyidea-webui:build:ru" },
-            "uk": { "buildTarget": "privacyidea-webui:build:uk" }
+            "uk": { "buildTarget": "privacyidea-webui:build:uk" },
+            "da": { "buildTarget": "privacyidea-webui:build:da" },
+            "lo": { "buildTarget": "privacyidea-webui:build:lo" },
+            "pl": { "buildTarget": "privacyidea-webui:build:pl" }
           },
           "defaultConfiguration": "development"
         },
         "extract-i18n": {
-          "builder": "@angular-devkit/build-angular:extract-i18n"
+          "builder": "ng-extract-i18n-merge:ng-extract-i18n-merge",
+          "options": {
+            "buildTarget": "privacyidea-webui:build",
+            "format": "xlf",
+            "outputPath": "src/locale",
+            "sourceFile": "messages.xlf",
+            "targetFiles": [
+              "messages.cs.xlf",
+              "messages.da.xlf",
+              "messages.de.xlf",
+              "messages.es.xlf",
+              "messages.fr.xlf",
+              "messages.it.xlf",
+              "messages.lo.xlf",
+              "messages.nl.xlf",
+              "messages.pl.xlf",
+              "messages.pt.xlf",
+              "messages.ru.xlf",
+              "messages.ta.xlf",
+              "messages.tr.xlf",
+              "messages.uk.xlf",
+              "messages.zh-Hant.xlf"
+            ],
+            "includeContext": true,
+            "sort": "stableAppendNew",
+            "trim": true
+          }
         },
         "test": {
           "builder": "@angular-builders/jest:run",

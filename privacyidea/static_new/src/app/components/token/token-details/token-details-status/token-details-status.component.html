@@ -19,16 +19,16 @@
 <app-details-card
   class="details-card--identity"
   title="Status"
-  i18n-title>
+  i18n-title="@@common.status">
   <div class="details-field-list">
     <app-detail-field
       label="Type"
-      i18n-label
+      i18n-label="@@common.type"
       [displayText]="str(tokenDetails().tokentype)" />
     @if (selfService()) {
       <app-detail-field
         label="Status"
-        i18n-label
+        i18n-label="@@common.status"
         [displayText]="tableUtilsService.getDisplayTextForKeyAndRevoked('active', tokenIsActive(), tokenIsRevoked())"
         [spanClass]="
           tableUtilsService.getSpanClassForKey({ key: 'active', value: tokenIsActive(), maxfail: maxfail() })
@@ -36,14 +36,15 @@
     } @else {
       <app-detail-field-row
         label="Status"
-        i18n-label>
+        i18n-label="@@common.status">
         <ng-container fieldValue>
           @if (!isAnyEditingOrRevoked() && authService.actionAllowed(tokenIsActive() ? "disable" : "enable")) {
             <button
               type="button"
               class="status-toggle"
               (click)="toggleActive()"
-              i18n-aria-label="Toggle Status">
+              aria-label="Toggle Status"
+              i18n-aria-label="@@token.toggleStatus">
               <span
                 [ngClass]="[
                   tableUtilsService.getSpanClassForKey({ key: 'active', value: tokenIsActive(), maxfail: maxfail() })
@@ -66,11 +67,11 @@
     }
     <app-detail-field
       label="Rollout State"
-      i18n-label
+      i18n-label="@@token.rolloutState"
       [displayText]="str(tokenDetails().rollout_state)" />
     <app-detail-field-row
       label="Fail Count"
-      i18n-label>
+      i18n-label="@@token.failCount">
       <div
         fieldValue
         [ngClass]="[tableUtilsService.getDivClassForKey('failcount')]">
@@ -92,7 +93,8 @@
           <button
             mat-icon-button
             (click)="resetFailCount()"
-            i18n-aria-label="Reset Fail Count">
+            aria-label="Reset Fail Count"
+            i18n-aria-label="@@token.resetFailCount">
             <mat-icon>lock_reset</mat-icon>
           </button>
         }
@@ -101,13 +103,13 @@
     @if (createdDisplay()) {
       <app-detail-field
         label="Created"
-        i18n-label
+        i18n-label="@@token.created"
         [displayText]="createdDisplay()" />
     }
     @if (lastAuthDisplay()) {
       <app-detail-field
         label="Last Authentication"
-        i18n-label
+        i18n-label="@@common.lastAuthentication"
         [displayText]="lastAuthDisplay()" />
     }
   </div>

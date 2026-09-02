@@ -32,6 +32,8 @@ import { ValidateService, ValidateServiceInterface } from "@services/validate/va
   styleUrl: "./test-otp-pin-action.component.scss"
 })
 export class TestOtpPinActionComponent {
+  protected readonly showValueLabel = $localize`:@@common.showValue:Show value`;
+  protected readonly hideValueLabel = $localize`:@@common.hideValue:Hide value`;
   private readonly validateService: ValidateServiceInterface = inject(ValidateService);
   private readonly tokenService: TokenServiceInterface = inject(TokenService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
@@ -42,9 +44,13 @@ export class TestOtpPinActionComponent {
     this.validateService.testToken(this.tokenService.tokenSerial(), this.otpOrPinToTest()).subscribe({
       next: (response) => {
         if (response.result?.authentication === "ACCEPT") {
-          this.notificationService.success($localize`OTP or Pin tested with token was accepted.`);
+          this.notificationService.success(
+            $localize`:@@token.otpPinTestedToken:OTP or Pin tested with token was accepted.`
+          );
         } else {
-          this.notificationService.warning($localize`OTP or Pin tested with token was rejected.`);
+          this.notificationService.warning(
+            $localize`:@@token.otpPinTestedTokenWas:OTP or Pin tested with token was rejected.`
+          );
         }
         this.tokenService.tokenDetailResource.reload();
       }

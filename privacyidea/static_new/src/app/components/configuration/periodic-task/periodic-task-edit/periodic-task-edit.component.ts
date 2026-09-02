@@ -110,7 +110,11 @@ export class PeriodicTaskEditComponent implements OnDestroy {
   isNewTask = signal<boolean>(false);
   editTask = signal<PeriodicTaskEdit>({ ...EMPTY_PERIODIC_TASK });
 
-  readonly title = computed(() => (this.isNewTask() ? $localize`Create Periodic Task` : $localize`Edit Periodic Task`));
+  readonly title = computed(() =>
+    this.isNewTask()
+      ? $localize`:@@common.createPeriodic:Create Periodic Task`
+      : $localize`:@@periodicTask.editPeriodicTask:Edit Periodic Task`
+  );
 
   private originalTask: PeriodicTaskEdit = { ...EMPTY_PERIODIC_TASK };
   private editName: string | null = null;
@@ -262,7 +266,7 @@ export class PeriodicTaskEditComponent implements OnDestroy {
       .openDialog({
         component: SaveAndExitDialogComponent,
         data: {
-          title: $localize`Discard changes`,
+          title: $localize`:@@common.discardChanges:Discard changes`,
           allowSaveExit: true,
           saveExitDisabled: !this.canSave()
         }

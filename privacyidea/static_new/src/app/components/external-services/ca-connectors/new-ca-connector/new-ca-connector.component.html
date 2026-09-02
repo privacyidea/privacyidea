@@ -24,15 +24,15 @@
     @if (isEditMode()) {
       <h3
         class="margin-8"
-        i18n>
-        Edit CA Connector
-      </h3>
+        i18n="@@caConnector.editCaConnector"
+        >Edit CA Connector</h3
+      >
     } @else {
       <h3
         class="margin-8"
-        i18n>
-        Create CA Connector
-      </h3>
+        i18n="@@common.createCaConnector"
+        >Create CA Connector</h3
+      >
     }
 
     <div
@@ -43,7 +43,7 @@
           (click)="onCancel()"
           class="action-button-secondary button-width-s"
           mat-stroked-button>
-          <span i18n>Cancel</span>
+          <span i18n="@@common.cancel">Cancel</span>
         </button>
         <button
           (click)="save()"
@@ -51,7 +51,7 @@
           class="action-button-primary button-width-s"
           mat-stroked-button>
           <mat-icon>save</mat-icon>
-          <span i18n>Save</span>
+          <span i18n="@@common.save">Save</span>
         </button>
       </div>
     </div>
@@ -61,7 +61,7 @@
         <mat-form-field
           appearance="fill"
           class="input-width-l">
-          <mat-label i18n>Connector Name</mat-label>
+          <mat-label i18n="@@caConnector.connectorName">Connector Name</mat-label>
           <app-clearable-input
             (clearButtonClick)="caConnectorModel.update(m => ({...m, connectorname: ''}))"
             [showClearButton]="!isEditMode() && !!caConnectorModel().connectorname">
@@ -71,48 +71,52 @@
               placeholder="MyConnector1" />
           </app-clearable-input>
           @if (caConnectorForm.connectorname().errors().some(e => e.kind === 'required')) {
-            <mat-error i18n>Connector Name is <strong>required</strong></mat-error>
+            <mat-error i18n="@@caConnector.connectorNameRequired"
+              >Connector Name is <strong>required</strong></mat-error
+            >
           }
           @if (caConnectorForm.connectorname().errors().some(e => e.kind === 'pattern')) {
-            <mat-error
-              i18n>Connector Name contains <strong>invalid characters</strong>. Only alphanumeric characters, dots,
-                   underscores and hyphens are allowed.
-            </mat-error>
+            <mat-error i18n="@@caConnector.connectorNameContains"
+              >Connector Name contains <strong>invalid characters</strong>. Only alphanumeric characters, dots,
+              underscores and hyphens are allowed.</mat-error
+            >
           }
         </mat-form-field>
 
         <mat-form-field
           appearance="fill"
           class="input-width-l">
-          <mat-label i18n>Type</mat-label>
+          <mat-label i18n="@@common.type">Type</mat-label>
           <mat-select
             [value]="caConnectorModel().type"
             (selectionChange)="caConnectorModel.update(m => ({...m, type: $event.value}))"
             [disabled]="isEditMode()"
             required>
             <mat-option
-              i18n
-              value="local">Local
-            </mat-option>
+              i18n="@@caConnector.local"
+              value="local"
+              >Local</mat-option
+            >
             <mat-option
-              i18n
-              value="microsoft">Microsoft
-            </mat-option>
+              i18n="@@caConnector.microsoft"
+              value="microsoft"
+              >Microsoft</mat-option
+            >
           </mat-select>
           @if (caConnectorForm.type().errors().some(e => e.kind === 'required')) {
-            <mat-error i18n>Type is <strong>required</strong></mat-error>
+            <mat-error i18n="@@caConnector.typeRequired">Type is <strong>required</strong></mat-error>
           }
         </mat-form-field>
       </div>
 
       @if (caConnectorModel().type === "local") {
-        <h4 i18n>Base Config</h4>
+        <h4 i18n="@@caConnector.baseConfig">Base Config</h4>
 
         <div class="flex-row gap-16 margin-bottom-16">
           <mat-form-field
             appearance="fill"
             class="input-width-l">
-            <mat-label i18n>CA Certificate</mat-label>
+            <mat-label i18n="@@common.caCertificate">CA Certificate</mat-label>
             <app-clearable-input
               (clearButtonClick)="caConnectorModel.update(m => ({...m, cacert: ''}))"
               [showClearButton]="!!caConnectorModel().cacert">
@@ -122,14 +126,16 @@
                 placeholder="/etc/cacert.pem" />
             </app-clearable-input>
             @if (caConnectorForm.cacert().errors().some(e => e.kind === 'required')) {
-              <mat-error i18n>CA Certificate is <strong>required</strong></mat-error>
+              <mat-error i18n="@@caConnector.caCertificateRequired"
+                >CA Certificate is <strong>required</strong></mat-error
+              >
             }
           </mat-form-field>
 
           <mat-form-field
             appearance="fill"
             class="input-width-l">
-            <mat-label i18n>CA Key</mat-label>
+            <mat-label i18n="@@caConnector.caKey">CA Key</mat-label>
             <app-clearable-input
               (clearButtonClick)="caConnectorModel.update(m => ({...m, cakey: ''}))"
               [showClearButton]="!!caConnectorModel().cakey">
@@ -139,7 +145,7 @@
                 placeholder="/etc/cakey.pem" />
             </app-clearable-input>
             @if (caConnectorForm.cakey().errors().some(e => e.kind === 'required')) {
-              <mat-error i18n>CA Key is <strong>required</strong></mat-error>
+              <mat-error i18n="@@caConnector.caKeyRequired">CA Key is <strong>required</strong></mat-error>
             }
           </mat-form-field>
         </div>
@@ -147,7 +153,7 @@
           <mat-form-field
             appearance="fill"
             class="input-width-l">
-            <mat-label i18n>OpenSSL Config File</mat-label>
+            <mat-label i18n="@@caConnector.opensslConfig">OpenSSL Config File</mat-label>
             <app-clearable-input
               (clearButtonClick)="caConnectorModel.update(m => ({...m, 'openssl.cnf': ''}))"
               [showClearButton]="!!caConnectorModel()['openssl.cnf']">
@@ -157,14 +163,16 @@
                 placeholder="/etc/openssl.cnf" />
             </app-clearable-input>
             @if (caConnectorForm['openssl.cnf']().errors().some(e => e.kind === 'required')) {
-              <mat-error i18n>OpenSSL Config File is <strong>required</strong></mat-error>
+              <mat-error i18n="@@caConnector.opensslConfigFile"
+                >OpenSSL Config File is <strong>required</strong></mat-error
+              >
             }
           </mat-form-field>
 
           <mat-form-field
             appearance="fill"
             class="input-width-l">
-            <mat-label i18n>Certificates Templates File</mat-label>
+            <mat-label i18n="@@caConnector.certificatesTemplates">Certificates Templates File</mat-label>
             <app-clearable-input
               (clearButtonClick)="caConnectorModel.update(m => ({...m, templates: ''}))"
               [showClearButton]="!!caConnectorModel().templates">
@@ -179,7 +187,7 @@
           <mat-form-field
             appearance="fill"
             class="input-width-l">
-            <mat-label i18n>Working Directory</mat-label>
+            <mat-label i18n="@@caConnector.workingDirectory">Working Directory</mat-label>
             <app-clearable-input
               (clearButtonClick)="caConnectorModel.update(m => ({...m, WorkingDir: ''}))"
               [showClearButton]="!!caConnectorModel().WorkingDir">
@@ -193,7 +201,7 @@
           <mat-form-field
             appearance="fill"
             class="input-width-l">
-            <mat-label i18n>Certificate Signing Request Directory</mat-label>
+            <mat-label i18n="@@caConnector.certificateSigning">Certificate Signing Request Directory</mat-label>
             <app-clearable-input
               (clearButtonClick)="caConnectorModel.update(m => ({...m, CSRDir: ''}))"
               [showClearButton]="!!caConnectorModel().CSRDir">
@@ -208,7 +216,7 @@
         <mat-form-field
           appearance="fill"
           class="input-width-l">
-          <mat-label i18n>Certificate Directory</mat-label>
+          <mat-label i18n="@@caConnector.certificateDirectory">Certificate Directory</mat-label>
           <app-clearable-input
             (clearButtonClick)="caConnectorModel.update(m => ({...m, CertificateDir: ''}))"
             [showClearButton]="!!caConnectorModel().CertificateDir">
@@ -217,18 +225,20 @@
               matInput
               placeholder="/opt/myCA/certs" />
           </app-clearable-input>
-          <mat-hint i18n>This is the directory where certificates get written to.</mat-hint>
+          <mat-hint i18n="@@caConnector.directoryWhere"
+            >This is the directory where certificates get written to.</mat-hint
+          >
         </mat-form-field>
 
         <h4
           class="margin-top-32"
-          i18n>
-          CRL Configuration
-        </h4>
+          i18n="@@caConnector.crlConfiguration"
+          >CRL Configuration</h4
+        >
         <mat-form-field
           appearance="fill"
           class="input-width-xl">
-          <mat-label i18n>Certificate Revocation List</mat-label>
+          <mat-label i18n="@@caConnector.certificateRevocation">Certificate Revocation List</mat-label>
           <app-clearable-input
             (clearButtonClick)="caConnectorModel.update(m => ({...m, CRL: ''}))"
             [showClearButton]="!!caConnectorModel().CRL">
@@ -237,9 +247,10 @@
               matInput
               placeholder="/opt/myCA/certs/crl.pem" />
           </app-clearable-input>
-          <mat-hint
-            i18n>This is the CRL file, which is written when a certificate is revoked or the CRL is created otherwise.
-          </mat-hint>
+          <mat-hint i18n="@@caConnector.crlFileWhichWritten"
+            >This is the CRL file, which is written when a certificate is revoked or the CRL is created
+            otherwise.</mat-hint
+          >
         </mat-form-field>
 
         <div class="flex-row gap-16 margin-top-16 margin-bottom-32">
@@ -247,34 +258,38 @@
             appearance="fill"
             class="input-width-m"
             subscriptSizing="dynamic">
-            <mat-label i18n>Validity Period</mat-label>
+            <mat-label i18n="@@caConnector.validityPeriod">Validity Period</mat-label>
             <input
               [formField]="caConnectorForm.CRL_Validity_Period"
               matInput
               placeholder="30"
               type="number" />
-            <mat-hint i18n>Number of days the generated CRL should be valid.</mat-hint>
+            <mat-hint i18n="@@caConnector.numberDaysGenerated"
+              >Number of days the generated CRL should be valid.</mat-hint
+            >
           </mat-form-field>
 
           <mat-form-field
             appearance="fill"
             class="input-width-m margin-bottom-16">
-            <mat-label i18n>Overlap Period</mat-label>
+            <mat-label i18n="@@caConnector.overlapPeriod">Overlap Period</mat-label>
             <input
               [formField]="caConnectorForm.CRL_Overlap_Period"
               matInput
               placeholder="10"
               type="number" />
-            <mat-hint i18n>Number of days a new CRL should be generated before the current CRL expires.</mat-hint>
+            <mat-hint i18n="@@caConnector.numberDaysNew"
+              >Number of days a new CRL should be generated before the current CRL expires.</mat-hint
+            >
           </mat-form-field>
         </div>
       } @else if (caConnectorModel().type === "microsoft") {
-        <h4 i18n>Base Config</h4>
+        <h4 i18n="@@caConnector.baseConfig">Base Config</h4>
         <div class="flex-row gap-16">
           <mat-form-field
             appearance="fill"
             class="input-width-l">
-            <mat-label i18n>Microsoft CA Worker Hostname</mat-label>
+            <mat-label i18n="@@caConnector.microsoftCaWorker">Microsoft CA Worker Hostname</mat-label>
             <app-clearable-input
               (clearButtonClick)="caConnectorModel.update(m => ({...m, hostname: ''}))"
               [showClearButton]="!!caConnectorModel().hostname">
@@ -284,21 +299,21 @@
                 placeholder="example.net" />
             </app-clearable-input>
             @if (caConnectorForm.hostname().errors().some(e => e.kind === 'required')) {
-              <mat-error i18n>Hostname is <strong>required</strong></mat-error>
+              <mat-error i18n="@@caConnector.hostnameRequired">Hostname is <strong>required</strong></mat-error>
             }
           </mat-form-field>
 
           <mat-form-field
             appearance="fill"
             class="input-width-l">
-            <mat-label i18n>Microsoft CA Worker Port</mat-label>
+            <mat-label i18n="@@caConnector.microsoftCaWorkerPort">Microsoft CA Worker Port</mat-label>
             <input
               [formField]="caConnectorForm.port"
               matInput
               placeholder="1234"
               type="number" />
             @if (caConnectorForm.port().errors().some(e => e.kind === 'required')) {
-              <mat-error i18n>Port is <strong>required</strong></mat-error>
+              <mat-error i18n="@@caConnector.portRequired">Port is <strong>required</strong></mat-error>
             }
           </mat-form-field>
         </div>
@@ -306,22 +321,24 @@
         <mat-checkbox
           [checked]="caConnectorModel().http_proxy"
           (change)="caConnectorModel.update(m => ({...m, http_proxy: $event.checked}))"
-          i18n>Use HTTP proxy
-        </mat-checkbox>
+          i18n="@@caConnector.useHttpProxy"
+          >Use HTTP proxy</mat-checkbox
+        >
 
-        <h4 i18n>SSL Config</h4>
+        <h4 i18n="@@caConnector.sslConfig">SSL Config</h4>
         <mat-checkbox
           [checked]="caConnectorModel().use_ssl"
           (change)="caConnectorModel.update(m => ({...m, use_ssl: $event.checked}))"
-          i18n>Use SSL
-        </mat-checkbox>
+          i18n="@@caConnector.useSsl"
+          >Use SSL</mat-checkbox
+        >
 
         @if (caConnectorModel().use_ssl) {
           <div class="flex-row gap-16">
             <mat-form-field
               appearance="fill"
               class="input-width-l">
-              <mat-label i18n>CA Certificate (Filename)</mat-label>
+              <mat-label i18n="@@caConnector.caCertificate">CA Certificate (Filename)</mat-label>
               <app-clearable-input
                 (clearButtonClick)="caConnectorModel.update(m => ({...m, ssl_ca_cert: ''}))"
                 [showClearButton]="!!caConnectorModel().ssl_ca_cert">
@@ -335,7 +352,7 @@
             <mat-form-field
               appearance="fill"
               class="input-width-l">
-              <mat-label i18n>Client Certificate (Filename)</mat-label>
+              <mat-label i18n="@@caConnector.clientCertificate">Client Certificate (Filename)</mat-label>
               <app-clearable-input
                 (clearButtonClick)="caConnectorModel.update(m => ({...m, ssl_client_cert: ''}))"
                 [showClearButton]="!!caConnectorModel().ssl_client_cert">
@@ -351,7 +368,7 @@
             <mat-form-field
               appearance="fill"
               class="input-width-l">
-              <mat-label i18n>Client Private Key (Filename)</mat-label>
+              <mat-label i18n="@@caConnector.clientPrivate">Client Private Key (Filename)</mat-label>
               <app-clearable-input
                 (clearButtonClick)="caConnectorModel.update(m => ({...m, ssl_client_key: ''}))"
                 [showClearButton]="!!caConnectorModel().ssl_client_key">
@@ -365,13 +382,14 @@
             <mat-form-field
               appearance="fill"
               class="input-width-l">
-              <mat-label i18n>Password of Encrypted Client Private Key</mat-label>
+              <mat-label i18n="@@caConnector.passwordEncrypted">Password of Encrypted Client Private Key</mat-label>
               <app-clearable-input
                 (clearButtonClick)="caConnectorModel.update(m => ({...m, ssl_client_key_password: ''}))"
                 [showClearButton]="!!caConnectorModel().ssl_client_key_password">
                 <input
                   [formField]="caConnectorForm.ssl_client_key_password"
                   matInput
+                  i18n-placeholder="@@caConnector.topSecretPlaceholder"
                   placeholder="top secret"
                   type="password" />
               </app-clearable-input>
@@ -384,7 +402,7 @@
             <mat-form-field
               appearance="fill"
               class="input-width-l">
-              <mat-label i18n>Domain CA</mat-label>
+              <mat-label i18n="@@caConnector.domainCa">Domain CA</mat-label>
               <mat-select
                 [value]="caConnectorModel().ca"
                 (selectionChange)="caConnectorModel.update(m => ({...m, ca: $event.value}))"
@@ -394,7 +412,7 @@
                 }
               </mat-select>
               @if (caConnectorForm.ca().errors().some(e => e.kind === 'required')) {
-                <mat-error i18n>Domain CA is <strong>required</strong></mat-error>
+                <mat-error i18n="@@caConnector.domainCaRequired">Domain CA is <strong>required</strong></mat-error>
               }
             </mat-form-field>
           }
@@ -405,7 +423,7 @@
             class="action-button-secondary button-width-l margin-bottom-16"
             mat-stroked-button>
             <mat-icon>assured_workload</mat-icon>
-            <span i18n>Get Available CAs</span>
+            <span i18n="@@caConnector.getAvailableCas">Get Available CAs</span>
           </button>
         </div>
       }

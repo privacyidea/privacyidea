@@ -20,13 +20,13 @@
   appScrollToTop
   aria-label="Event Handlers"
   class="events-table-container"
-  i18n-aria-label>
+  i18n-aria-label="@@event.eventHandlers">
   @if (tableState.showTable()) {
     <div class="filter-paginator-container">
       <mat-form-field
         class="event-handler-table-filter"
         subscriptSizing="dynamic">
-        <mat-label i18n>Filter Event Handlers ...</mat-label>
+        <mat-label i18n="@@event.filterEventHandlers">Filter Event Handlers ...</mat-label>
         <app-clearable-input
           (clearButtonClick)="onClearFilter()"
           [showClearButton]="filterHTMLInputElement.value.length > 0">
@@ -35,8 +35,8 @@
             (input)="onFilterInput(filterHTMLInputElement.value)"
             [value]="filterString()"
             aria-label="Filter Input"
-            i18n-aria-label
-            i18n-placeholder
+            i18n-aria-label="@@common.filterInput"
+            i18n-placeholder="@@common.exampleQueryUsername"
             matInput
             placeholder="Example query: 'username: root'" />
         </app-clearable-input>
@@ -58,15 +58,15 @@
             <mat-icon class="padding-right-3">flag</mat-icon>
             <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
           </span>
-          <span i18n>Create New Event Handler</span>
+          <span i18n="@@event.createNewEvent">Create New Event Handler</span>
         </button>
       }
       <mat-slide-toggle
         (change)="toggleDetailedView()"
         [checked]="detailedView()"
-        i18n
-        >Detailed View
-      </mat-slide-toggle>
+        i18n="@@common.detailedView"
+        >Detailed View</mat-slide-toggle
+      >
     </div>
 
     <table
@@ -172,13 +172,13 @@
                     [checked]="element.active"
                     [disableRipple]="true"
                     [disabled]="!authService.actionAllowed('eventhandling_write')"
-                    i18n-matTooltip
+                    i18n-matTooltip="@@common.toggleActiveStatus"
                     matTooltip="Toggle Active Status"></mat-slide-toggle>
                 }
                 @case ("delete") {
                   <button
                     (click)="onDeleteEventHandler(element); $event.stopPropagation()"
-                    i18n-matTooltip
+                    i18n-matTooltip="@@event.deleteEventHandler"
                     mat-icon-button
                     matTooltip="Delete Event Handler">
                     <mat-icon>delete</mat-icon>
@@ -267,8 +267,8 @@
       [table]="tableState"
       heading="No event handlers yet"
       hint="Create an event handler to react to events, for example to notify a user after an enrollment."
-      i18n-heading
-      i18n-hint
+      i18n-heading="@@event.noEventHandlers"
+      i18n-hint="@@event.createEventHandler"
       icon="flag">
       @if (authService.actionAllowed("eventhandling_write")) {
         <button
@@ -279,7 +279,7 @@
             <mat-icon class="padding-right-3">flag</mat-icon>
             <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
           </span>
-          <span i18n>Create New Event Handler</span>
+          <span i18n="@@event.createNewEvent">Create New Event Handler</span>
         </button>
       }
     </app-table-state>

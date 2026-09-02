@@ -45,7 +45,7 @@ export class NewsComponent {
 
   protected readonly newsDisabled = computed(() => this.authService.rssAge() <= 0);
 
-  protected readonly newsFetchErrorMessage = $localize`Failed to fetch news.`;
+  protected readonly newsFetchErrorMessage = $localize`:@@news.failedToFetchNews:Failed to fetch news.`;
 
   protected readonly pageState = computed<WidgetState>(() => {
     const resource = this.infoService.newsResource;

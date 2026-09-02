@@ -18,12 +18,12 @@
 -->
 <app-details-card
   title="User"
-  i18n-title>
+  i18n-title="@@common.user">
   <table
     [dataSource]="userData()"
     aria-label="User Detail Data Table"
     class="details-table"
-    i18n-aria-label
+    i18n-aria-label="@@common.userDetailData"
     mat-table>
     <ng-container matColumnDef="key">
       <td
@@ -48,7 +48,7 @@
                   <mat-form-field
                     class="input-width-m height-52"
                     subscriptSizing="dynamic">
-                    <mat-label i18n>Enter User</mat-label>
+                    <mat-label i18n="@@common.enterUser">Enter User</mat-label>
                     <app-clearable-input
                       (clearButtonClick)="userService.selectionFilter.set('')"
                       [showClearButton]="userService.selectionFilter() !== ''">
@@ -73,7 +73,7 @@
                       (click)="contentService.userSelected(element.value, userRealm())"
                       (keydown.enter)="contentService.userSelected(element.value, userRealm())"
                       (keydown.space)="$event.preventDefault(); contentService.userSelected(element.value, userRealm())"
-                      i18n-aria-label="{{ element.keyMap.label }} Link"
+                      [attr.aria-label]="linkLabel(element.keyMap.label)"
                       role="button"
                       tabindex="0">
                       {{ element.value }}
@@ -86,7 +86,7 @@
                   <mat-form-field
                     class="input-width-m height-52"
                     subscriptSizing="dynamic">
-                    <mat-label i18n>Select Realm of User</mat-label>
+                    <mat-label i18n="@@common.selectRealmUser">Select Realm of User</mat-label>
                     <mat-select
                       (selectionChange)="userService.selectedUserRealm.set($event.value)"
                       [value]="userService.selectedUserRealm()">
@@ -114,7 +114,7 @@
                     (click)="host().unassignUser()"
                     aria-label="Unassign User"
                     class="yellow"
-                    i18n-aria-label
+                    i18n-aria-label="@@container.unassignUser"
                     mat-icon-button>
                     <mat-icon>person_remove</mat-icon>
                   </button>
@@ -131,7 +131,7 @@
                   <button
                     (click)="host().toggleContainerEdit(element)"
                     aria-label="Assign User"
-                    i18n-aria-label
+                    i18n-aria-label="@@container.assignUser"
                     mat-icon-button>
                     <mat-icon>person_add</mat-icon>
                   </button>

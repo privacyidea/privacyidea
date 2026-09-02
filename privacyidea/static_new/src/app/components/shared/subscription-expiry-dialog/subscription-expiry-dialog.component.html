@@ -1,7 +1,9 @@
 <div class="expiry-container">
-  <h2 i18n>Subscription expires soon</h2>
+  <h2 i18n="@@subscription.subscriptionExpires">Subscription expires soon</h2>
   <div class="content">
-    <p i18n>One or more subscriptions will expire within the next month. Please review your subscriptions.</p>
+    <p i18n="@@subscription.oneMoreSubscriptions"
+      >One or more subscriptions will expire within the next month. Please review your subscriptions.</p
+    >
 
     <ul class="items">
       @for (item of data.items; track item.application) {
@@ -10,13 +12,13 @@
             <span class="app">{{ item.application }}</span>
             <span
               class="date"
-              i18n
+              i18n="@@subscription.validUntil"
               >Valid until:</span
             >
             <span class="value">{{ item.date_till }}</span>
             <span
               class="days"
-              i18n
+              i18n="@@subscription.remainingDays"
               >Remaining days:</span
             >
             <span class="value">{{ remainingDays(item) }}</span>
@@ -30,8 +32,8 @@
     <button
       mat-stroked-button
       matDialogClose
-      i18n>
-      Close
-    </button>
+      i18n="@@common.close"
+      >Close</button
+    >
   </div>
 </div>

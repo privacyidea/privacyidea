@@ -25,7 +25,7 @@
         appearance="fill"
         class="smtp-table-filter"
         subscriptSizing="dynamic">
-        <mat-label i18n>Filter SMTP Servers...</mat-label>
+        <mat-label i18n="@@smtpServer.filterSmtpServers">Filter SMTP Servers...</mat-label>
         <app-clearable-input
           (clearButtonClick)="resetFilter()"
           [showClearButton]="filterString().length > 0">
@@ -34,8 +34,8 @@
             (input)="onFilterInput(filterHTMLInputElement.value)"
             [value]="filterString()"
             aria-label="Filter Input"
-            i18n-aria-label
-            i18n-placeholder
+            i18n-aria-label="@@common.filterInput"
+            i18n-placeholder="@@common.filterByNameType"
             matInput
             placeholder="Filter by name or type" />
         </app-clearable-input>
@@ -55,7 +55,7 @@
           <mat-icon class="padding-right-3">email</mat-icon>
           <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
         </span>
-        <span i18n>Create SMTP Server</span>
+        <span i18n="@@common.createSmtpServer">Create SMTP Server</span>
       </button>
       <button
         (click)="deleteSelected()"
@@ -63,7 +63,7 @@
         class="action-button-delete-secondary button-width-l"
         mat-stroked-button>
         <mat-icon>delete_sweep</mat-icon>
-        <span i18n>Delete</span>
+        <span i18n="@@common.delete">Delete</span>
       </button>
     </div>
     <table
@@ -96,11 +96,11 @@
       <ng-container matColumnDef="identifier">
         <th
           *matHeaderCellDef
-          i18n
+          i18n="@@common.identifier"
           mat-header-cell
-          mat-sort-header>
-          Identifier
-        </th>
+          mat-sort-header
+          >Identifier</th
+        >
         <td
           *matCellDef="let server"
           mat-cell>
@@ -120,11 +120,11 @@
       <ng-container matColumnDef="server">
         <th
           *matHeaderCellDef
-          i18n
+          i18n="@@common.ipFqdnColumn"
           mat-header-cell
-          mat-sort-header>
-          IP/FQDN
-        </th>
+          mat-sort-header
+          >IP/FQDN</th
+        >
         <td
           *matCellDef="let server"
           mat-cell>
@@ -135,11 +135,11 @@
       <ng-container matColumnDef="sender">
         <th
           *matHeaderCellDef
-          i18n
+          i18n="@@smtpServer.sender"
           mat-header-cell
-          mat-sort-header>
-          Sender
-        </th>
+          mat-sort-header
+          >Sender</th
+        >
         <td
           *matCellDef="let server"
           mat-cell>
@@ -150,11 +150,11 @@
       <ng-container matColumnDef="tls">
         <th
           *matHeaderCellDef
-          i18n
+          i18n="@@smtpServer.starttls"
           mat-header-cell
-          mat-sort-header>
-          StartTLS
-        </th>
+          mat-sort-header
+          >StartTLS</th
+        >
         <td
           *matCellDef="let server"
           mat-cell>
@@ -169,11 +169,11 @@
       <ng-container matColumnDef="description">
         <th
           *matHeaderCellDef
-          i18n
+          i18n="@@common.description"
           mat-header-cell
-          mat-sort-header>
-          Description
-        </th>
+          mat-sort-header
+          >Description</th
+        >
         <td
           *matCellDef="let server"
           mat-cell>
@@ -201,8 +201,8 @@
       [table]="tableState"
       heading="No SMTP servers yet"
       hint="Create an SMTP server to send emails and one-time passwords."
-      i18n-heading
-      i18n-hint
+      i18n-heading="@@smtpServer.noSMTPServers"
+      i18n-hint="@@smtpServer.createSMTPServer"
       icon="email">
       <button
         (click)="onCreateNewServer()"
@@ -212,7 +212,7 @@
           <mat-icon class="padding-right-3">email</mat-icon>
           <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
         </span>
-        <span i18n>Create SMTP Server</span>
+        <span i18n="@@common.createSmtpServer">Create SMTP Server</span>
       </button>
     </app-table-state>
   }

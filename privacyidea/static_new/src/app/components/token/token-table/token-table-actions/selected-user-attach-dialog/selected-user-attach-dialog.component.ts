@@ -77,7 +77,7 @@ export class SelectedUserAssignDialogComponent extends AbstractDialogComponent<
   pinsMatch = computed(() => this.pin() === this.pinRepeat());
   readonly actions = computed<DialogAction<"submit" | null>[]>(() => [
     {
-      label: $localize`Assign to Selected Token`,
+      label: $localize`:@@token.assignSelected:Assign to Selected Token`,
       value: "submit",
       type: "confirm",
       className: "input-width-m",
