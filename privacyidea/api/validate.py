@@ -580,7 +580,8 @@ def check():
     return response
 
 
-def _record_context_reason(context: dict, reason: AuthEventReason, serial: str | None = None) -> None:
+def _record_context_reason(context: dict, reason: AuthEventReason, serial: str | None = None,
+                           policies: list[str] | None = None) -> None:
     """
     Record *reason* on the request context, for a handler that classifies an event itself instead of taking it off a
     lib call's details.
@@ -588,11 +589,14 @@ def _record_context_reason(context: dict, reason: AuthEventReason, serial: str |
     Those handlers know exactly why they turned the request away, and a row with no reason there would answer "no
     cause recorded" for a cause the code had in hand - so filtering by reason would silently miss the endpoint. Such a
     handler knows exactly one reason, so it *replaces* the list. *serial* also puts the reason in the per-serial
-    detail, matching what the token layer records.
+    detail, matching what the token layer records. *policies* does the same for a policy-decided reason, matching
+    how :func:`~privacyidea.lib.policydecorators.auth_lastauth` attributes the same LASTAUTH check.
     """
     context[AUTH_EVENT_REASON_KEY] = [reason]
     if serial:
         context[AUTH_EVENT_REASON_DETAIL_KEY] = build_reason_detail(reasons={serial: reason})
+    elif policies:
+        context[AUTH_EVENT_REASON_DETAIL_KEY] = build_reason_detail(policies=policies)
 
 
 def _handle_enrollment_cancellation(data: dict) -> Response:
@@ -727,13 +731,14 @@ def _handle_fido2_auth(context: dict, credential_id: str):
         # above for the enrollment branch.
         fido2_auth(request, None)
 
-        if not check_last_auth_policy(g, token):
+        last_auth_ok, last_auth_policies = check_last_auth_policy(g, token)
+        if not last_auth_ok:
             log.debug(f"Last authentication policy check failed for token {token.get_serial()}.")
             context["details"]["message"] = _(
                 "Last authentication policy check failed for token {serial}").format(
                 serial=token.get_serial())
             context[AUTH_EVENT_TYPE_KEY] = AuthEventType.NOT_AUTHORIZED
-            _record_context_reason(context, AuthEventReason.LAST_AUTH_TOO_OLD)
+            _record_context_reason(context, AuthEventReason.LAST_AUTH_TOO_OLD, policies=last_auth_policies)
             return
 
         if not token.is_active():

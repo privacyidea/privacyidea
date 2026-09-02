@@ -390,6 +390,29 @@ class _AuthLogContractTests(_ContractHost):
                                         reasons={self.serial: AuthEventReason.CHALLENGE_UNKNOWN_TRANSACTION},
                                         endpoint=self.endpoint_path)
 
+    def test_unknown_transaction_is_dropped_from_the_row_next_to_a_live_wrong_response(self):
+        # A second token that never issued this transaction also reports CHALLENGE_UNKNOWN_TRANSACTION for it, but
+        # the first token did have a live challenge and the answer was simply wrong for it - the credentials could
+        # still have been right, just for the wrong transaction, so pairing both on the row would read as two
+        # separate problems rather than one. The row's main reason therefore names only the live finding
+        # (CHALLENGE_WRONG_RESPONSE); the per-serial detail keeps both, since which token said what is still worth
+        # recording there.
+        self._enable_challenge_response()
+        try:
+            transaction_id = self._trigger_challenge()
+        finally:
+            delete_policy("authlog_cr")
+        self._add_second_token(pin=self.pin)
+        self._assert_failed(self._authenticate("000000", transaction_id=transaction_id))
+        entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.CHALLENGE_ANSWERED_FAIL],
+                                            transaction_id=transaction_id)
+        assert_authentication_log_entry(entries[AuthEventType.CHALLENGE_ANSWERED_FAIL], user=self.user,
+                                        serials={self.serial}, transaction_id=transaction_id,
+                                        reason=AuthEventReason.CHALLENGE_WRONG_RESPONSE,
+                                        reasons={self.serial: AuthEventReason.CHALLENGE_WRONG_RESPONSE,
+                                                 self.second_serial: AuthEventReason.CHALLENGE_UNKNOWN_TRANSACTION},
+                                        endpoint=self.endpoint_path)
+
     def test_answering_a_challenge_with_a_disabled_token_reports_disabled(self):
         # The token is dropped by check_all before the answer is even looked at, so this is NO_USABLE_TOKEN - and the
         # reason names the state rather than the challenge. (The is_fit_for_challenge branch, which reports
@@ -732,13 +755,13 @@ class _AuthLogContractTests(_ContractHost):
         assert_authentication_log_entry(entries[AuthEventType.CHALLENGE_TRIGGERED], user=self.user,
                                         serials={questionnaire_serial}, transaction_id=first_transaction_id,
                                         endpoint=self.endpoint_path)
-        # The user's HOTP token holds no challenge in this transaction, which is a finding of its own next to the
-        # wrong answer the questionnaire token gave.
+        # The user's HOTP token holds no challenge in this transaction, but the questionnaire token did and its
+        # answer was simply wrong - the credentials could still have been right, just for the wrong transaction, so
+        # the row's main reason names only that live finding. Which token said what is still kept in the detail.
         assert_authentication_log_entry(entries[AuthEventType.CHALLENGE_ANSWERED_FAIL], user=self.user,
                                         serials={questionnaire_serial}, transaction_id=first_transaction_id,
                                         endpoint=self.endpoint_path,
-                                        reason=[AuthEventReason.CHALLENGE_WRONG_RESPONSE,
-                                                AuthEventReason.CHALLENGE_UNKNOWN_TRANSACTION],
+                                        reason=AuthEventReason.CHALLENGE_WRONG_RESPONSE,
                                         reasons={self.serial: AuthEventReason.CHALLENGE_UNKNOWN_TRANSACTION,
                                                  questionnaire_serial: AuthEventReason.CHALLENGE_WRONG_RESPONSE})
 
@@ -776,11 +799,12 @@ class _AuthLogContractTests(_ContractHost):
         assert_authentication_log_entry(entries[AuthEventType.CHALLENGE_CONTINUED], user=self.user,
                                         serials={questionnaire_serial}, transaction_id=second_transaction_id,
                                         endpoint=self.endpoint_path)
+        # Same as the intermediate-challenge case above: the HOTP token's unknown-transaction finding is dropped from
+        # the row's main reason next to the questionnaire token's live wrong answer, but kept in the detail.
         assert_authentication_log_entry(entries[AuthEventType.CHALLENGE_ANSWERED_FAIL], user=self.user,
                                         serials={questionnaire_serial}, transaction_id=second_transaction_id,
                                         endpoint=self.endpoint_path,
-                                        reason=[AuthEventReason.CHALLENGE_WRONG_RESPONSE,
-                                                AuthEventReason.CHALLENGE_UNKNOWN_TRANSACTION],
+                                        reason=AuthEventReason.CHALLENGE_WRONG_RESPONSE,
                                         reasons={self.serial: AuthEventReason.CHALLENGE_UNKNOWN_TRANSACTION,
                                                  questionnaire_serial: AuthEventReason.CHALLENGE_WRONG_RESPONSE})
 

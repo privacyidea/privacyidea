@@ -748,6 +748,13 @@ def check_token_list(token_object_list: list[TokenClass], passw: str, user: User
     deciding_serials = event_producers & token_reasons.keys()
     deciding_reasons = ([token_reasons[serial] for serial in deciding_serials] if event_producers
                         else list(token_reasons.values()))
+    if challenge_response_token_list:
+        # A stale transaction_id next to a live one is not a finding worth surfacing: the credentials could still
+        # have been right, just for the wrong (expired/foreign) transaction, and pairing CHALLENGE_WRONG_RESPONSE
+        # with CHALLENGE_UNKNOWN_TRANSACTION on the same row would read as two separate problems rather than one.
+        # The per-serial detail keeps it regardless, since which token said what is still worth recording there.
+        deciding_reasons = [reason for reason in deciding_reasons
+                            if reason != str(AuthEventReason.CHALLENGE_UNKNOWN_TRANSACTION)]
     # Passed as recorded: order_request_reasons coerces and drops what it cannot, while converting here would raise
     # past that guard, from inside the generator, and fail the authentication over a mislabelled reason.
     ordered_reasons = order_request_reasons(deciding_reasons)

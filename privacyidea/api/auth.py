@@ -351,11 +351,13 @@ def get_auth_token():
                 _("Authentication failure. The token type {token_type} is disabled.").format(
                     token_type=token.get_type()),
                 id=Error.AUTHENTICATE_WRONG_CREDENTIALS)
-        if not check_last_auth_policy(g, token):
+        last_auth_ok, last_auth_policies = check_last_auth_policy(g, token)
+        if not last_auth_ok:
             log.debug(f"Last authentication policy check failed for token {token.get_serial()}.")
             log_authentication(AuthEventType.NOT_AUTHORIZED, request, user=token.user,
                                transaction_id=transaction_id,
-                               reasons=[AuthEventReason.LAST_AUTH_TOO_OLD])
+                               reasons=[AuthEventReason.LAST_AUTH_TOO_OLD],
+                               reason_detail=build_reason_detail(policies=last_auth_policies))
             raise AuthError(
                 _("Authentication failure. Last authentication policy check failed for token {serial}").format(
                     serial=token.get_serial()), id=Error.AUTHENTICATE_MISSING_RIGHT)

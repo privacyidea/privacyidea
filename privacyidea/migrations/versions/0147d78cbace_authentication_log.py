@@ -52,7 +52,6 @@ def upgrade():
             sa.Column('username', _unicode_case_sensitive(255), nullable=True),
             sa.Column('user_role', _unicode_case_sensitive(30), nullable=True),
             sa.Column('event_type', _unicode_case_sensitive(40), nullable=False),
-            sa.Column('reason', _unicode_case_sensitive(40), nullable=True),
             sa.Column('timestamp', sa.DateTime(), nullable=False),
             sa.Column('source_ip', _unicode_case_sensitive(50), nullable=True),
             sa.Column('client_label', _unicode_case_sensitive(1024), nullable=True),
@@ -81,8 +80,45 @@ def upgrade():
             print("Could not add table 'authentication_log' to database.")
             raise
 
+    try:
+        # Why an authentication rarely fails for exactly one reason is on AuthenticationLogReason itself. A table of
+        # its own rather than a column on the parent: "every NO_USABLE_TOKEN caused by the failcounter" has to be a
+        # plain indexed predicate, and a request can produce more than one reason.
+        op.create_table(
+            'authentication_log_reason',
+            sa.Column('id', BigIntegerType, sa.Identity(always=False), nullable=False),
+            sa.Column('auth_log_id', BigIntegerType, nullable=False),
+            sa.Column('reason', _unicode_case_sensitive(40), nullable=False),
+            sa.ForeignKeyConstraint(['auth_log_id'], ['authentication_log.id'], ondelete='CASCADE'),
+            sa.PrimaryKeyConstraint('id'),
+        )
+        # The lookup that loads a log page's reasons and the one the delete paths use to remove an entry's
+        # reasons with it.
+        op.create_index('ix_authlog_reason_authlog', 'authentication_log_reason', ['auth_log_id'])
+        # The filter "every entry with this reason": reason first, so the EXISTS that matches it seeks rather than
+        # scans, with auth_log_id alongside so it is answered from the index.
+        op.create_index('ix_authlog_reason_reason', 'authentication_log_reason', ['reason', 'auth_log_id'])
+
+    except (OperationalError, ProgrammingError) as ex:
+        if "already exists" in str(ex.orig).lower():
+            print("Table 'authentication_log_reason' already exists.")
+        else:
+            print("Could not add table 'authentication_log_reason' to database.")
+            raise
+
 
 def downgrade():
+    try:
+        op.drop_table('authentication_log_reason')
+
+    except (OperationalError, ProgrammingError) as ex:
+        msg = str(ex.orig).lower()
+        if "no such table" in msg or "unknown table" in msg or "does not exist" in msg:
+            print("Table 'authentication_log_reason' already removed.")
+        else:
+            print("Could not remove table 'authentication_log_reason'.")
+            raise
+
     try:
         with op.batch_alter_table('authentication_log', schema=None) as batch_op:
             batch_op.drop_index('ix_authlog_user_event_time')

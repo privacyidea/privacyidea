@@ -58,8 +58,9 @@ class AuthenticationLogReason(db.Model):
         # The lookup that loads a log page's reasons and the one the delete paths use to remove an entry's reasons
         # with it.
         Index("ix_authlog_reason_authlog", "auth_log_id"),
-        # The filter "every entry with this reason": reason first, so the EXISTS that matches it seeks rather than
-        # scans, with auth_log_id alongside so it is answered from the index.
+        # The filter "every entry with this reason" - used by the reason search in
+        # authentication_log._reason_condition, not a hypothetical: reason first, so the EXISTS that matches it seeks
+        # rather than scans, with auth_log_id alongside so it is answered from the index.
         Index("ix_authlog_reason_reason", "reason", "auth_log_id"),
     )
     # The database generates the id (Oracle/PostgreSQL IDENTITY, MySQL/MariaDB AUTO_INCREMENT, SQLite's rowid alias),
