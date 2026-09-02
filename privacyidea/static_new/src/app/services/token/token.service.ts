@@ -827,6 +827,8 @@ export class TokenService extends FilterableTableService implements TokenService
                 messages.push(
                   pluralize(this.localeId, count_success, {
                     one: $localize`:@@token.successfullyDeletedOne:Successfully deleted 1 token.`,
+                    few: $localize`:@@token.successfullyDeletedFew:Successfully deleted ${count_success}:COUNT: tokens.`,
+                    many: $localize`:@@token.successfullyDeletedMany:Successfully deleted ${count_success}:COUNT: tokens.`,
                     other: $localize`:@@token.successfullyDeletedOther:Successfully deleted ${count_success}:COUNT: tokens.`
                   })
                 );

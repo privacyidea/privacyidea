@@ -215,6 +215,8 @@ export class TokenTableActionsComponent {
                   this.notificationService.success(
                     pluralize(this.localeId, selectedTokens.length, {
                       one: $localize`:@@token.successfullyResetOne:Successfully reset the failcounter for 1 token.`,
+                      few: $localize`:@@token.successfullyResetFew:Successfully reset the failcounter for ${selectedTokens.length}:COUNT: tokens.`,
+                      many: $localize`:@@token.successfullyResetMany:Successfully reset the failcounter for ${selectedTokens.length}:COUNT: tokens.`,
                       other: $localize`:@@token.successfullyResetOther:Successfully reset the failcounter for ${selectedTokens.length}:COUNT: tokens.`
                     })
                   );
@@ -297,6 +299,8 @@ export class TokenTableActionsComponent {
                   messages.push(
                     pluralize(this.localeId, count_success, {
                       one: $localize`:@@token.successfullyUnassignedOne:Successfully unassigned 1 token.`,
+                      few: $localize`:@@token.successfullyUnassignedFew:Successfully unassigned ${count_success}:COUNT: tokens.`,
+                      many: $localize`:@@token.successfullyUnassignedMany:Successfully unassigned ${count_success}:COUNT: tokens.`,
                       other: $localize`:@@token.successfullyUnassignedOther:Successfully unassigned ${count_success}:COUNT: tokens.`
                     })
                   );
@@ -419,16 +423,22 @@ export class TokenTableActionsComponent {
       case "activate":
         return pluralize(this.localeId, count, {
           one: $localize`:@@token.successfullyActivatedOne:Successfully activated 1 token.`,
+          few: $localize`:@@token.successfullyActivatedFew:Successfully activated ${count}:COUNT: tokens.`,
+          many: $localize`:@@token.successfullyActivatedMany:Successfully activated ${count}:COUNT: tokens.`,
           other: $localize`:@@token.successfullyActivatedOther:Successfully activated ${count}:COUNT: tokens.`
         });
       case "deactivate":
         return pluralize(this.localeId, count, {
           one: $localize`:@@token.successfullyDeactivatedOne:Successfully deactivated 1 token.`,
+          few: $localize`:@@token.successfullyDeactivatedFew:Successfully deactivated ${count}:COUNT: tokens.`,
+          many: $localize`:@@token.successfullyDeactivatedMany:Successfully deactivated ${count}:COUNT: tokens.`,
           other: $localize`:@@token.successfullyDeactivatedOther:Successfully deactivated ${count}:COUNT: tokens.`
         });
       default:
         return pluralize(this.localeId, count, {
           one: $localize`:@@token.successfullyToggledOne:Successfully toggled 1 token.`,
+          few: $localize`:@@token.successfullyToggledFew:Successfully toggled ${count}:COUNT: tokens.`,
+          many: $localize`:@@token.successfullyToggledMany:Successfully toggled ${count}:COUNT: tokens.`,
           other: $localize`:@@token.successfullyToggledOther:Successfully toggled ${count}:COUNT: tokens.`
         });
     }

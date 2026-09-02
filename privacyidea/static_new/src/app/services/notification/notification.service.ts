@@ -132,23 +132,31 @@ export class NotificationService implements NotificationServiceInterface {
     if (severity === "error") {
       return pluralize(this.localeId, count, {
         one: $localize`:@@common.error:1 error:`,
+        few: $localize`:@@common.errorsFew:${count}:COUNT: errors:`,
+        many: $localize`:@@common.errorsMany:${count}:COUNT: errors:`,
         other: $localize`:@@common.errors:${count}:COUNT: errors:`
       });
     }
     if (severity === "warning") {
       return pluralize(this.localeId, count, {
         one: $localize`:@@common.warning:1 warning:`,
+        few: $localize`:@@common.warningsFew:${count}:COUNT: warnings:`,
+        many: $localize`:@@common.warningsMany:${count}:COUNT: warnings:`,
         other: $localize`:@@common.warnings:${count}:COUNT: warnings:`
       });
     }
     if (severity === "success") {
       return pluralize(this.localeId, count, {
         one: $localize`:@@common.success:1 success:`,
+        few: $localize`:@@common.successesFew:${count}:COUNT: successes:`,
+        many: $localize`:@@common.successesMany:${count}:COUNT: successes:`,
         other: $localize`:@@common.successes:${count}:COUNT: successes:`
       });
     }
     return pluralize(this.localeId, count, {
       one: $localize`:@@common.info:1 info:`,
+      few: $localize`:@@common.infosFew:${count}:COUNT: info:`,
+      many: $localize`:@@common.infosMany:${count}:COUNT: info:`,
       other: $localize`:@@common.infos:${count}:COUNT: info:`
     });
   }

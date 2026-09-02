@@ -323,11 +323,15 @@ export class SubscriptionsWidgetComponent extends DashboardWidget implements OnI
     if (daysLeft < 0) {
       return pluralize(this.locale, -daysLeft, {
         one: $localize`:@@dashboard.stateOneDayAgo:${state}:STATE:, 1 day ago`,
+        few: $localize`:@@dashboard.stateDaysAgoFew:${state}:STATE:, ${-daysLeft}:DAYS: days ago`,
+        many: $localize`:@@dashboard.stateDaysAgoMany:${state}:STATE:, ${-daysLeft}:DAYS: days ago`,
         other: $localize`:@@dashboard.stateDaysAgo:${state}:STATE:, ${-daysLeft}:DAYS: days ago`
       });
     }
     return pluralize(this.locale, daysLeft, {
       one: $localize`:@@dashboard.stateOneDayLeft:${state}:STATE:, 1 day left`,
+      few: $localize`:@@dashboard.stateDaysLeftFew:${state}:STATE:, ${daysLeft}:DAYS: days left`,
+      many: $localize`:@@dashboard.stateDaysLeftMany:${state}:STATE:, ${daysLeft}:DAYS: days left`,
       other: $localize`:@@dashboard.stateDaysLeft:${state}:STATE:, ${daysLeft}:DAYS: days left`
     });
   }
