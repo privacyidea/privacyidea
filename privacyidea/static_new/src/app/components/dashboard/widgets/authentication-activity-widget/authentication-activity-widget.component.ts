@@ -125,14 +125,15 @@ challenge-response login count once, classified by how the attempt ended.`;
 
   readonly binStarts = computed<string[]>(() => this.statistics()?.bins?.starts ?? []);
 
-  // The window's own start, so the axis labels what was actually queried rather than recomputing it. The time of day
-  // is noise once the window spans more than a day, matching how the conditional-access widget labels its range.
+  // The window's own start, so the axis labels what was actually queried rather than recomputing it. The time is
+  // always shown, for the same reason binTooltip shows it: the window is measured back from now rather than snapped
+  // to midnight, so a date on its own would claim a calendar day the window only partly covers.
   readonly windowStart = computed<string>(() => {
     const start = this.statistics()?.window?.start_time;
     if (!start) {
       return "";
     }
-    return formatDate(start, this.selectedRange().hours >= 24 ? "yyyy-MM-dd" : "HH:mm", "en-US");
+    return formatDate(start, "yyyy-MM-dd HH:mm", "en-US");
   });
 
   // The tallest bin across both rows. The rows share it so their heights stay comparable: a failure row scaled to its

@@ -358,6 +358,23 @@ describe("AuthenticationActivityWidgetComponent", () => {
     }
   });
 
+  it("names a time on the axis label, whatever the range", () => {
+    // Same reason as a bucket label: the window is measured back from now rather than snapped to midnight, so a bare
+    // date would claim a calendar day the chart only partly covers.
+    const starts = Array.from({ length: 4 }, (_, index) => new Date(Date.UTC(2026, 2, 1, 8 + index, 37)).toISOString());
+    seedBuckets(starts, new Date(Date.UTC(2026, 2, 1, 12, 37)).toISOString());
+    create();
+
+    for (const range of ACTIVITY_RANGES) {
+      component.selectRange(range.hours);
+      fixture.detectChanges();
+      expect(component.windowStart()).toMatch(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/);
+      // Every zone offset is a whole quarter hour, so a label reading midnight would mean the time was dropped.
+      expect(component.windowStart()).not.toMatch(/00:00$/);
+      expect(text(".axis-labels")).toContain(component.windowStart());
+    }
+  });
+
   it("names the second date only for the bucket that crosses midnight", () => {
     // Twenty-four hourly buckets over one day: whatever the zone, exactly one of them straddles midnight, and only
     // that one has to name a second date.
