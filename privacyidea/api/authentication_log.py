@@ -44,9 +44,10 @@ authentication_log_blueprint = Blueprint("authentication_log_blueprint", __name_
 _ROW_FILTER_PARAMS = ["resolver", "uid", "realm", "username", "user_role", "event_type", "source_ip", "serial",
                       "transaction_id", "attempt_id", "client_label"]
 # The same filters as the statistics endpoint names them, and passes straight through to the lib. Plural, because each
-# takes a list of values: the name says so to the caller as much as it does in the signature behind it.
-_STATISTICS_FILTER_PARAMS = ["resolvers", "uids", "realms", "usernames", "user_roles", "event_types", "source_ips",
-                             "serials", "transaction_ids", "attempt_ids", "client_labels"]
+# takes a list of values: the name says so to the caller as much as it does in the signature behind it. Derived rather
+# than spelled out a second time, so a filter added to the listing reaches the summary as well instead of being
+# quietly dropped from it.
+_STATISTICS_FILTER_PARAMS = [f"{name}s" for name in _ROW_FILTER_PARAMS]
 # The ca_* filters match the entry's conditional-access outcomes rather than a column of its own row, so only the
 # listing offers them; ca_dry_run is parsed separately because it is a boolean, not a list of values.
 _OUTCOME_FILTER_PARAMS = ["ca_action_type", "ca_policy_name"]
@@ -184,8 +185,10 @@ def get_authentication_log_statistics_endpoint():
     The attempts counted may be filtered on any column of the classifying row: ``resolvers``, ``uids``, ``realms``,
     ``usernames``, ``user_roles``, ``event_types``, ``source_ips``, ``serials``, ``transaction_ids``, ``attempt_ids``
     and ``client_labels``. Each is named in the plural because it takes a comma-separated list of values and matches
-    an attempt equal to any of them, a value containing a ``*`` wildcard matching by pattern instead. The ``ca_*``
-    filters are not offered: they match the conditional-access outcomes of a request rather than the attempt itself.
+    an attempt equal to any of them, a value containing a ``*`` wildcard matching by pattern instead. The plural is
+    the only name recognized: a listing query reused here, ``source_ip=10.0.0.1`` rather than ``source_ips=``, is no
+    filter at all and the summary then covers every attempt in the window. The ``ca_*`` filters are not offered: they
+    match the conditional-access outcomes of a request rather than the attempt itself.
 
     :query start_time: start of the window, an ISO 8601 timestamp (required).
     :query end_time: end of the window, an ISO 8601 timestamp (required). Both ends are inclusive.

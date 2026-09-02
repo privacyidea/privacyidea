@@ -21,11 +21,14 @@ the policy gate) and user-scope GET. Rows are seeded directly; the recording of 
 covered in test_api_authentication_event_logging.py.
 """
 import datetime
+import inspect
 
 import mock
 
+from privacyidea.api.authentication_log import _ROW_FILTER_PARAMS, _STATISTICS_FILTER_PARAMS
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
 from privacyidea.lib.conditional_access.authentication_log import (log_authentication_event, AuthLogUserRole,
+                                                                  get_authentication_log_statistics,
                                                                   MAX_STATISTICS_BINS)
 from privacyidea.lib.conditional_access.outcome_log import record_outcomes
 from privacyidea.lib.policy import set_policy, delete_policy, SCOPE, PolicyAction
@@ -749,6 +752,30 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
         # The singular name the listing uses is not a filter here, so it must not silently narrow the result.
         self.assertDictEqual({str(AuthEventType.MFA_FAIL): 2},
                              self._statistics_totals(self._statistics({"source_ip": "10.0.0.1"})))
+
+    def test_statistics_counts_only_a_user_role_caller_own_attempts(self):
+        # The listing has this covered in test_user_sees_only_own_entries; the summary derives its restriction the
+        # same way, and getting that wrong would hand a self-service user the whole deployment's counts.
+        self.authenticate_selfservice_user()
+        self._clear_log()
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver=self.resolvername1, uid="1",
+                                 realm=self.realm1, username="selfservice")
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver=self.resolvername1, uid="2",
+                                 realm=self.realm1, username="hans")
+        db.session.commit()
+        set_policy("authlog_user", scope=SCOPE.USER, action=PolicyAction.AUTHENTICATION_LOG_READ)
+        try:
+            self.assertDictEqual({str(AuthEventType.LOGIN_SUCCESS): 1},
+                                 self._statistics_totals(self._statistics(token=self.at_user)))
+        finally:
+            delete_policy("authlog_user")
+
+    def test_statistics_filter_names_match_the_lib_signature(self):
+        # The plural names are derived from the listing's singular ones and passed straight through as keyword
+        # arguments, so a filter renamed on either side has to fail here rather than stop filtering silently.
+        parameters = inspect.signature(get_authentication_log_statistics).parameters
+        self.assertListEqual([f"{name}s" for name in _ROW_FILTER_PARAMS], _STATISTICS_FILTER_PARAMS)
+        self.assertSetEqual(set(), set(_STATISTICS_FILTER_PARAMS) - set(parameters))
 
     def test_statistics_respects_the_visibility_scope(self):
         self._seed()

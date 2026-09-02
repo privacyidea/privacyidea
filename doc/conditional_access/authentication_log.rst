@@ -190,10 +190,12 @@ coarser resolution than it asked for without being told; a value that is not a
 positive number at all falls back to the default. Every filter the log listing
 accepts on a column of its own row can be given as well, under its plural name
 and with the same comma-separated lists and ``*`` wildcards, for example
-``event_types=MFA_FAIL,PIN_FAIL`` or ``realms=realm1``. The filters apply to the
-entry that classifies each attempt. The ``ca_*`` filters are not offered: they
-match what conditional access did to a single request, which an attempt-level
-summary has no notion of.
+``event_types=MFA_FAIL,PIN_FAIL`` or ``realms=realm1``. The plural is the only
+name recognised, so a listing query reused here - ``realm=realm1`` rather than
+``realms=`` - is no filter at all and the summary then covers every attempt in
+the window. The filters apply to the entry that classifies each attempt. The
+``ca_*`` filters are not offered: they match what conditional access did to a
+single request, which an attempt-level summary has no notion of.
 
 Who sees what
 -------------
