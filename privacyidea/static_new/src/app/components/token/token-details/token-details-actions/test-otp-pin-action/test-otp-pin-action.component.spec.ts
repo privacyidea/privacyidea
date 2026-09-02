@@ -20,15 +20,18 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
+import { NotificationService } from "@services/notification/notification.service";
 import { TokenService } from "@services/token/token.service";
 import { ValidateService } from "@services/validate/validate.service";
-import { MockTokenService } from "@testing/mock-services";
+import { MockNotificationService, MockTokenService, MockValidateService } from "@testing/mock-services";
+import { of } from "rxjs";
 import { TestOtpPinActionComponent } from "./test-otp-pin-action.component";
 
 describe("TestOtpPinActionComponent", () => {
   let component: TestOtpPinActionComponent;
   let fixture: ComponentFixture<TestOtpPinActionComponent>;
   let validateService: ValidateService;
+  let notificationService: NotificationService;
   let tokenService: TokenService;
 
   beforeEach(async () => {
@@ -38,13 +41,16 @@ describe("TestOtpPinActionComponent", () => {
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
-        { provide: TokenService, useClass: MockTokenService }
+        { provide: TokenService, useClass: MockTokenService },
+        { provide: ValidateService, useClass: MockValidateService },
+        { provide: NotificationService, useClass: MockNotificationService }
       ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(TestOtpPinActionComponent);
     component = fixture.componentInstance;
     validateService = TestBed.inject(ValidateService);
+    notificationService = TestBed.inject(NotificationService);
     tokenService = TestBed.inject(TokenService);
     fixture.detectChanges();
   });
@@ -62,5 +68,25 @@ describe("TestOtpPinActionComponent", () => {
     component.verifyOTPValue();
 
     expect(testSpy).toHaveBeenCalledWith("Mock serial", "1234");
+  });
+
+  it("should notify success when the token is accepted", () => {
+    jest
+      .spyOn(validateService, "testToken")
+      .mockReturnValue(of({ result: { authentication: "ACCEPT" } }) as any);
+
+    component.testToken();
+
+    expect(notificationService.success).toHaveBeenCalled();
+  });
+
+  it("should notify a warning when the token is rejected", () => {
+    jest
+      .spyOn(validateService, "testToken")
+      .mockReturnValue(of({ result: { authentication: "REJECT" } }) as any);
+
+    component.testToken();
+
+    expect(notificationService.warning).toHaveBeenCalled();
   });
 });

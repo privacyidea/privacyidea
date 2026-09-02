@@ -20,6 +20,7 @@ import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { provideLocationMocks } from "@angular/common/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { MatDialog } from "@angular/material/dialog";
 import { MatSnackBar } from "@angular/material/snack-bar";
 import { provideRouter } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
@@ -35,6 +36,7 @@ import { MockPendingChangesService } from "@testing/mock-services/mock-pending-c
 import { MockSystemService } from "@testing/mock-services/mock-system-service";
 import { of, throwError } from "rxjs";
 import { SystemConfigComponent } from "./system-config.component";
+import { SystemDocumentationDialogComponent } from "./system-documentation-dialog/system-documentation-dialog.component";
 
 describe("SystemConfigComponent", () => {
   let component: SystemConfigComponent;
@@ -128,6 +130,15 @@ describe("SystemConfigComponent", () => {
     expect(notificationSpy).toHaveBeenCalledWith("Failed to save system configuration.");
   });
 
+  it("should handle save system config HTTP error", () => {
+    jest.spyOn(systemService, "saveSystemConfig").mockReturnValueOnce(throwError(() => new Error("Network error")));
+    const notificationSpy = jest.spyOn(notificationService, "error");
+
+    component.saveSystemConfig();
+
+    expect(notificationSpy).toHaveBeenCalledWith("Error saving system configuration.");
+  });
+
   it("should delete user cache successfully", () => {
     const deleteSpy = jest.spyOn(systemService, "deleteUserCache");
     const notificationSpy = jest.spyOn(notificationService, "success");
@@ -149,6 +160,44 @@ describe("SystemConfigComponent", () => {
     component.deleteUserCache();
 
     expect(notificationSpy).toHaveBeenCalledWith("Failed to delete user cache.");
+  });
+
+  it("should handle delete user cache HTTP error", () => {
+    jest.spyOn(systemService, "deleteUserCache").mockReturnValueOnce(throwError(() => new Error("Network error")));
+    const notificationSpy = jest.spyOn(notificationService, "error");
+
+    component.deleteUserCache();
+
+    expect(notificationSpy).toHaveBeenCalledWith("Error deleting user cache.");
+  });
+
+  it("should handle openDocumentationDialog HTTP error", () => {
+    jest.spyOn(systemService, "getDocumentation").mockReturnValueOnce(throwError(() => new Error("Network error")));
+    const notificationSpy = jest.spyOn(notificationService, "error");
+
+    (component as unknown as { openDocumentationDialog: () => void }).openDocumentationDialog();
+
+    expect(notificationSpy).toHaveBeenCalledWith("Error loading system documentation.");
+  });
+
+  it("should open the documentation dialog once the documentation loads", () => {
+    jest.spyOn(systemService, "getDocumentation").mockReturnValueOnce(of("<p>Docs</p>"));
+    const dialog = TestBed.inject(MatDialog);
+    const openSpy = jest.spyOn(dialog, "open");
+
+    (component as unknown as { openDocumentationDialog: () => void }).openDocumentationDialog();
+
+    expect(openSpy).toHaveBeenCalledWith(
+      SystemDocumentationDialogComponent,
+      expect.objectContaining({ data: { documentation: "<p>Docs</p>" } })
+    );
+  });
+
+  it("should mark the form dirty when a parameter is updated", () => {
+    component.updateParam("SomeKey", "SomeValue");
+
+    expect(component.isDirty()).toBe(true);
+    expect(component.params()["SomeKey"]).toBe("SomeValue");
   });
 
   it("should check config write permission", () => {
