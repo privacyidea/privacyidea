@@ -22,10 +22,23 @@ import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { NotificationService } from "@services/notification/notification.service";
 import { TokenService } from "@services/token/token.service";
-import { ValidateService } from "@services/validate/validate.service";
+import { ValidateCheckResponse, ValidateService } from "@services/validate/validate.service";
 import { MockNotificationService, MockTokenService, MockValidateService } from "@testing/mock-services";
 import { of } from "rxjs";
 import { TestOtpPinActionComponent } from "./test-otp-pin-action.component";
+
+function mockValidateCheckResponse(authentication: "ACCEPT" | "REJECT"): ValidateCheckResponse {
+  return {
+    id: 1,
+    jsonrpc: "2.0",
+    detail: {},
+    result: { authentication, status: true },
+    signature: "",
+    time: Date.now(),
+    version: "1.0",
+    versionnumber: "1.0"
+  };
+}
 
 describe("TestOtpPinActionComponent", () => {
   let component: TestOtpPinActionComponent;
@@ -73,7 +86,7 @@ describe("TestOtpPinActionComponent", () => {
   it("should notify success when the token is accepted", () => {
     jest
       .spyOn(validateService, "testToken")
-      .mockReturnValue(of({ result: { authentication: "ACCEPT" } }) as any);
+      .mockReturnValue(of(mockValidateCheckResponse("ACCEPT")));
 
     component.testToken();
 
@@ -83,7 +96,7 @@ describe("TestOtpPinActionComponent", () => {
   it("should notify a warning when the token is rejected", () => {
     jest
       .spyOn(validateService, "testToken")
-      .mockReturnValue(of({ result: { authentication: "REJECT" } }) as any);
+      .mockReturnValue(of(mockValidateCheckResponse("REJECT")));
 
     component.testToken();
 

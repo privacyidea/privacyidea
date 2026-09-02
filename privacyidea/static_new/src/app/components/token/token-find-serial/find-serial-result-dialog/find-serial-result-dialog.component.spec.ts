@@ -60,6 +60,8 @@ describe("GetSerialResultDialogComponent", () => {
   });
 
   it("should build a link label from the given label", () => {
-    expect((component as any).linkLabel("Mock serial")).toContain("Mock serial");
+    expect((component as unknown as { linkLabel: (label: string) => string }).linkLabel("Mock serial")).toContain(
+      "Mock serial"
+    );
   });
 });

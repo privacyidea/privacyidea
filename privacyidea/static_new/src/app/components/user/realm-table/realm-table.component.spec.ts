@@ -678,7 +678,9 @@ describe("RealmTableComponent", () => {
   });
 
   it("linkLabel should build a link label from the given label", () => {
-    expect((component as any).linkLabel("realmA")).toContain("realmA");
+    expect((component as unknown as { linkLabel: (label: string) => string }).linkLabel("realmA")).toContain(
+      "realmA"
+    );
   });
 
   it("onClickResolver should redirect to resolver details page", () => {
