@@ -20,7 +20,7 @@
 import { Component, computed, inject, signal } from "@angular/core";
 import { form, FormField, required } from "@angular/forms/signals";
 import { MatInput } from "@angular/material/input";
-import { MatFormField, MatHint, MatLabel } from "@angular/material/select";
+import { MatFormField, MatLabel } from "@angular/material/select";
 import { EnrollmentResponse, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
 import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
@@ -41,7 +41,6 @@ import { TokenEnrollmentDialogData, TokenService, TokenServiceInterface } from "
     DialogWrapperComponent,
     TokenEnrollmentDataComponent,
     MatFormField,
-    MatHint,
     MatInput,
     MatLabel,
     TokenEnrolledTextComponent,
