@@ -28,7 +28,6 @@ import { MatSlideToggleModule } from "@angular/material/slide-toggle";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { UI_LOCALES } from "@core/locale";
 import { LandingPage } from "@core/landing-page";
-import { DetailsCardComponent } from "@components/shared/details-shared/details-card/details-card.component";
 import {
   LightSourceDialComponent,
   LightSourceDialItem
@@ -48,7 +47,6 @@ import { UiPreferencesService, UiPreferencesServiceInterface } from "@services/u
 @Component({
   selector: "app-ui-settings",
   imports: [
-    DetailsCardComponent,
     LightSourceDialComponent,
     MatButtonModule,
     MatButtonToggleModule,

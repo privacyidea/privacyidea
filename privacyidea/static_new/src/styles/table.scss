@@ -559,12 +559,6 @@ app-details-card .details-header {
   }
 }
 
-// Language and Landing Page in UI Settings: their body only holds a single mat-form-field, which
-// sits flush against the title and the card's bottom edge without this.
-app-details-card.spaced-body .details-card-body {
-  margin: 4px 0 16px;
-}
-
 .details-cards-column {
   flex: 1 1 auto;
   min-width: 0;

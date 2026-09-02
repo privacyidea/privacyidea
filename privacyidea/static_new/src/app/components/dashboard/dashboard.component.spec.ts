@@ -129,23 +129,23 @@ describe("DashboardComponent", () => {
 
   describe("layout geometry helpers", () => {
     it("should build the left offset for a column index", () => {
-      expect(component['leftCss'](2)).toBe("calc(2 * ((100% - 92px) / 24 + 4px))");
+      expect(component['leftCss'](2)).toBe("calc(2 * ((100% - 184px) / 24 + 8px))");
     });
 
     it("should build the width for a column span", () => {
-      expect(component['widthCss'](3)).toBe("calc(3 * (100% - 92px) / 24 + 8px)");
+      expect(component['widthCss'](3)).toBe("calc(3 * (100% - 184px) / 24 + 16px)");
     });
 
     it("should compute the top offset from the row pitch", () => {
-      expect(component['topPx'](3)).toBe(132);
+      expect(component['topPx'](3)).toBe(144);
     });
 
     it("should compute the height for a row span", () => {
-      expect(component['heightPx'](2)).toBe(84);
+      expect(component['heightPx'](2)).toBe(88);
     });
 
     it("should expose the dot-grid background size", () => {
-      expect(component['anchorBackgroundSize']()).toBe("calc((100% + 4px) / 24) 44px");
+      expect(component['anchorBackgroundSize']()).toBe("calc((100% + 8px) / 24) 48px");
     });
   });
 
@@ -184,7 +184,7 @@ describe("DashboardComponent", () => {
     it("should track the top visible row as the preferred insert row", () => {
       stubScroll(440, 400, 2000);
       component['onFieldScroll']();
-      expect(layoutService.insertRow()).toBe(10);
+      expect(layoutService.insertRow()).toBe(9);
     });
   });
 
