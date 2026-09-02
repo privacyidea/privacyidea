@@ -49,6 +49,22 @@ from privacyidea.models.utils import utc_now
 from .base import MyTestCase
 
 
+@contextmanager
+def statements_against(table: str):
+    """Collect the SQL statements executed against *table* while the block runs."""
+    seen: list[str] = []
+
+    def listener(conn, cursor, statement, parameters, context, executemany):
+        if table in statement:
+            seen.append(statement)
+
+    event.listen(db.engine, "before_cursor_execute", listener)
+    try:
+        yield seen
+    finally:
+        event.remove(db.engine, "before_cursor_execute", listener)
+
+
 class AuthenticationLogTestCase(MyTestCase):
 
     def tearDown(self):
@@ -827,22 +843,6 @@ class AuthenticationLogOutcomeJoinTestCase(MyTestCase):
                                                  threshold=3, event_count=3) for _ in range(count)], event_id)
         return event_id
 
-    @staticmethod
-    @contextmanager
-    def _statements(table: str):
-        """Collect the SQL statements executed against *table* while the block runs."""
-        seen: list[str] = []
-
-        def listener(conn, cursor, statement, parameters, context, executemany):
-            if table in statement:
-                seen.append(statement)
-
-        event.listen(db.engine, "before_cursor_execute", listener)
-        try:
-            yield seen
-        finally:
-            event.remove(db.engine, "before_cursor_execute", listener)
-
     def test_the_page_carries_the_outcomes_of_each_entry(self):
         self._entry_with_outcomes(2)
         page = get_authentication_logs_paginate()
@@ -865,7 +865,7 @@ class AuthenticationLogOutcomeJoinTestCase(MyTestCase):
         for _ in range(5):
             self._entry_with_outcomes()
 
-        with self._statements("conditional_access_outcome") as statements:
+        with statements_against("conditional_access_outcome") as statements:
             page = get_authentication_logs_paginate(page_size=5)
             self.assertEqual(5, len(page.auth_logs))
         self.assertEqual(1, len(statements), statements)
@@ -875,7 +875,7 @@ class AuthenticationLogOutcomeJoinTestCase(MyTestCase):
         # reading the relationship afterward is an error, not a silent query.
         self._entry_with_outcomes()
 
-        with self._statements("conditional_access_outcome") as statements:
+        with statements_against("conditional_access_outcome") as statements:
             entries = get_authentication_logs()
         self.assertListEqual([], statements)
         self.assertRaises(InvalidRequestError, lambda: entries[0].outcomes)
@@ -892,7 +892,7 @@ class AuthenticationLogOutcomeJoinTestCase(MyTestCase):
         # eagerly configured relationship would add a fan-out query per count.
         self._entry_with_outcomes()
 
-        with self._statements("conditional_access_outcome") as statements:
+        with statements_against("conditional_access_outcome") as statements:
             count_user_events("res1", "u1", "realm1", [str(AuthEventType.MFA_FAIL)], 3600)
             count_user_attempts("res1", "u1", "realm1", [str(AuthEventType.MFA_FAIL)], 3600)
         self.assertListEqual([], statements)
@@ -1069,6 +1069,42 @@ class AuthenticationLogStatisticsTestCase(MyTestCase):
         self.assertDictEqual({str(AuthEventType.LOGIN_SUCCESS): 1},
                              self._totals(self._statistics(event_types=[str(AuthEventType.LOGIN_SUCCESS)])))
         self.assertDictEqual({}, self._totals(self._statistics(event_types=[str(AuthEventType.PIN_FAIL)])))
+
+    def test_a_filter_narrows_the_attempts_reduced_but_not_their_rows(self):
+        # The reduction only groups attempts with a matching row, or a filtered summary would make the database group
+        # every row in the window first. What it must not do is reduce an attempt from its matching rows *alone*: this
+        # attempt answered from a second address, so filtering by the first one has to exclude it (its representative
+        # is the success from the other address) rather than report it as the failure its first row was.
+        self._log(AuthEventType.MFA_FAIL, source_ip="10.0.0.1")
+        self._log(AuthEventType.LOGIN_SUCCESS, source_ip="10.0.0.2")
+
+        self.assertDictEqual({}, self._totals(self._statistics(source_ips=["10.0.0.1"])))
+        self.assertDictEqual({str(AuthEventType.LOGIN_SUCCESS): 1},
+                             self._totals(self._statistics(source_ips=["10.0.0.2"])))
+
+    def test_a_visibility_scope_narrows_the_attempts_reduced_but_not_their_rows(self):
+        # The same for the scope, whose dimensions exclude a NULL: the rejection that ended this attempt carries no
+        # realm, so reducing the attempt from its in-scope row alone would report a challenge still in flight.
+        self._log(AuthEventType.CHALLENGE_TRIGGERED, realm="visible")
+        self._log(AuthEventType.USER_LOCKED, realm=None)
+
+        scope = AuthenticationLogVisibilityScope(realms=["visible"], resolvers=[], usernames=[])
+
+        self.assertDictEqual({}, self._totals(self._statistics(visibility_scopes=[scope])))
+
+    def test_the_reduction_is_narrowed_by_attempt_only_when_something_filters(self):
+        # A performance property no count can show: with a filter the reduction is restricted to the matching
+        # attempts, and without one it is not wrapped at all, because summarising a whole deployment does have to
+        # group every row of the window.
+        self._log(AuthEventType.LOGIN_SUCCESS)
+
+        with statements_against("authentication_log") as statements:
+            self._statistics(usernames=["alice"])
+        self.assertIn("attempt_id IN (SELECT", statements[-1])
+
+        with statements_against("authentication_log") as statements:
+            self._statistics()
+        self.assertNotIn("attempt_id IN (SELECT", statements[-1])
 
     def test_visibility_scope_restricts_the_counts(self):
         self._log(AuthEventType.PIN_FAIL, realm="visible", attempt_id="a")

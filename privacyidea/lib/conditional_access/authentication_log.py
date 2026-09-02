@@ -827,8 +827,11 @@ def get_authentication_log_statistics(start_time: datetime,
       a row without an ``attempt_id`` counts as its own attempt here.
 
     Every filter except the window applies to the **representative** row, not to the rows feeding the reduction:
-    narrowing the inner query would reduce an attempt from a subset of its own rows, which misclassifies it rather
-    than excluding it (the same trap :func:`~privacyidea.lib.conditional_access.engine._count_attempts` documents).
+    dropping rows from the inner query would reduce an attempt from a subset of its own rows, which misclassifies it
+    rather than excluding it (the same trap :func:`~privacyidea.lib.conditional_access.engine._count_attempts`
+    documents). Which *attempts* are reduced is narrowed, though - to those holding at least one matching row, an
+    attempt without one having no matching representative either - so a filtered or visibility-scoped summary does
+    not group every row the window holds across the deployment before answering about a few.
     ``event_types`` therefore reads as "attempts that *ended* like this", which is the only meaning it can have once
     rows are collapsed. Each filter takes a list, matching an attempt whose representative equals any of its values or
     matches any value carrying a ``*`` wildcard (see :func:`match_condition`). An attempt straddling ``start_time``
@@ -852,22 +855,40 @@ def get_authentication_log_statistics(start_time: datetime,
         raise ParameterError(f"The number of bins must be between 1 and {MAX_STATISTICS_BINS}.")
     edges = _bin_edges(window_start, window_end, bins)
 
-    # Rows carrying an attempt_id group by it; rows without group by their own id and so count individually. A
-    # COALESCE of the two would have to cast the id to a string and mix collations, which MySQL rejects outright.
-    attempts = (select(func.max(case((AuthenticationLog.event_type == str(AuthEventType.LOGIN_SUCCESS),
-                                      AuthenticationLog.id))).label("success_id"),
-                       func.max(AuthenticationLog.id).label("latest_id"))
-                .where(AuthenticationLog.timestamp >= window_start, AuthenticationLog.timestamp <= window_end)
-                .group_by(AuthenticationLog.attempt_id,
-                          case((AuthenticationLog.attempt_id.is_(None), AuthenticationLog.id)))
-                .subquery())
-
+    window = (AuthenticationLog.timestamp >= window_start, AuthenticationLog.timestamp <= window_end)
     conditions = _filter_conditions(resolver=resolvers, uid=uids, realm=realms, username=usernames,
                                     user_role=user_roles, event_type=event_types, source_ip=source_ips,
                                     serial=serials, transaction_id=transaction_ids, attempt_id=attempt_ids,
                                     client_label=client_labels, case_insensitive=case_insensitive)
     if visibility_scopes is not None:
         conditions.append(_visibility_condition(visibility_scopes))
+
+    reduced = [*window]
+    if conditions:
+        # Narrow *which attempts* are reduced to those with at least one matching row, while still reducing each of
+        # them from all of its rows. Without this the reduction groups every row of the window in the deployment
+        # before the caller's filters and the visibility scope are applied to the representatives, so a self-service
+        # user reading their own 30 days makes the database group everyone's.
+        #
+        # This cannot change a single count. The representative is one of the attempt's own rows, so an attempt with
+        # no matching row has no matching representative either and the outer filter would drop it anyway; every
+        # attempt that survives still contributes all of its rows, which is what keeps the reduction from
+        # reclassifying one (see the note on the representative filters below). A row without an attempt_id *is* its
+        # own representative, so for those the filters apply directly.
+        matching_attempts = select(AuthenticationLog.attempt_id).where(*window,
+                                                                       AuthenticationLog.attempt_id.is_not(None),
+                                                                       *conditions)
+        reduced.append(or_(AuthenticationLog.attempt_id.in_(matching_attempts),
+                           and_(AuthenticationLog.attempt_id.is_(None), *conditions)))
+    # Rows carrying an attempt_id group by it; rows without group by their own id and so count individually. A
+    # COALESCE of the two would have to cast the id to a string and mix collations, which MySQL rejects outright.
+    attempts = (select(func.max(case((AuthenticationLog.event_type == str(AuthEventType.LOGIN_SUCCESS),
+                                      AuthenticationLog.id))).label("success_id"),
+                       func.max(AuthenticationLog.id).label("latest_id"))
+                .where(*reduced)
+                .group_by(AuthenticationLog.attempt_id,
+                          case((AuthenticationLog.attempt_id.is_(None), AuthenticationLog.id)))
+                .subquery())
 
     stmt = (select(AuthenticationLog.event_type,
                    *[_bin_column(edges, index).label(f"bin_{index}") for index in range(bins)])
