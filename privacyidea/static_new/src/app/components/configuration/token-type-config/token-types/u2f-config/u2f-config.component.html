@@ -18,17 +18,21 @@
 -->
 <mat-expansion-panel>
   <mat-expansion-panel-header>
-    <mat-panel-title i18n>U2F</mat-panel-title>
+    <mat-panel-title i18n="@@tokenTypeConfig.u2f">U2F</mat-panel-title>
   </mat-expansion-panel-header>
   <div class="panel-content expansion-well">
-    <p i18n>The U2F token is a hardware token, that communicates with the browser.</p>
-    <p i18n>You need to set the correct appId, which in fact is the URL of your privacyIDEA installation.</p>
+    <p i18n="@@tokenTypeConfig.u2fTokenHardware"
+      >The U2F token is a hardware token, that communicates with the browser.</p
+    >
+    <p i18n="@@tokenTypeConfig.youNeedSetCorrect"
+      >You need to set the correct appId, which in fact is the URL of your privacyIDEA installation.</p
+    >
 
     <div class="flex-row gap-16 ali-center">
       <mat-form-field
         appearance="fill"
         class="input-width-l">
-        <mat-label i18n>AppID</mat-label>
+        <mat-label i18n="@@tokenTypeConfig.appid">AppID</mat-label>
         <input
           #appIdInput
           (input)="updateFormData('u2f.appId', $any($event.target).value)"
@@ -38,13 +42,13 @@
           required
           type="url" />
         @if (appIdInput.validity.valueMissing) {
-          <mat-error i18n>AppID is <strong>required</strong></mat-error>
+          <mat-error i18n="@@tokenTypeConfig.appidRequired">AppID is <strong>required</strong></mat-error>
         }
       </mat-form-field>
     </div>
     <span
       class="checkbox-hint"
-      i18n
+      i18n="@@tokenTypeConfig.urlYourPrivacyidea"
       >The URL of your privacyIDEA installation.<br />
       This must be a valid FQDN with also a valid top level domain - otherwise you might receive a U2F Error 2 (Bad
       Request).<br
@@ -53,16 +57,16 @@
     @if (formData()["u2f.appId"] && !formData()["u2f.appId"].startsWith("https:")) {
       <div
         class="alert alert-warning"
-        i18n>
-        The AppID needs to start with "https".
-      </div>
+        i18n="@@tokenTypeConfig.appidNeedsStart"
+        >The AppID needs to start with "https".</div
+      >
     }
     @if (formData()["u2f.appId"] && formData()["u2f.appId"].endsWith("/")) {
       <div
         class="alert alert-warning"
-        i18n>
-        The AppID must not end with a "/".
-      </div>
+        i18n="@@tokenTypeConfig.appidMustNotEnd"
+        >The AppID must not end with a "/".</div
+      >
     }
   </div>
 </mat-expansion-panel>

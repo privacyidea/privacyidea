@@ -122,10 +122,10 @@ export class CaConnectorsComponent {
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: $localize`Delete CA Connectors`,
+          title: $localize`:@@caConnector.deleteCaConnectors:Delete CA Connectors`,
           items: selected.map((row) => row.connectorname),
           itemType: "ca-connector",
-          confirmAction: { label: $localize`Delete`, value: true, type: "destruct" }
+          confirmAction: { label: $localize`:@@common.delete:Delete`, value: true, type: "destruct" }
         }
       })
       .afterClosed()

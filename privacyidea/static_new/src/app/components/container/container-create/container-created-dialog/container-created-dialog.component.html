@@ -17,12 +17,12 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <h2
-  i18n
-  mat-dialog-title>
-  Container Successfully Created
-</h2>
+  i18n="@@container.containerSuccessfully"
+  mat-dialog-title
+  >Container Successfully Created</h2
+>
 <mat-dialog-content>
-  <span i18n
+  <span i18n="@@container.containerWasSuccessfullyCreated"
     >The container was successfully created with serial number
     <a
       (click)="navigateContainerDetails(data()!.containerSerial())"
@@ -35,7 +35,7 @@
   <div class="flex-row gap-16">
     @if (data()?.response?.result?.value?.container_url?.img) {
       <img
-        i18n-alt
+        i18n-alt="@@common.qrCode"
         alt="QR Code"
         class="qr-code margin-top-16"
         height="300px"
@@ -43,18 +43,17 @@
         width="300px" />
     }
     <div class="flex-column gap-16">
-      <p i18n>
-        Please scan the QR code with the privacyIDEA Authenticator App or click this
-        <a href="{{ data()?.response?.result?.value?.container_url?.value ?? '' }}">link</a>
-        on your smartphone to register your container. It will send the missing registration data to the configured
-        endpoint.
-      </p>
+      <p i18n="@@container.pleaseScanQrCode"
+        >Please scan the QR code with the privacyIDEA Authenticator App or click this
+        <a href="{{ data()?.response?.result?.value?.container_url?.value ?? '' }}">link</a> on your smartphone to
+        register your container. It will send the missing registration data to the configured endpoint.</p
+      >
       <button
         (click)="regenerateQRCode()"
         class="action-button-secondary button-width-l"
         mat-stroked-button>
         <mat-icon>autorenew</mat-icon>
-        <span i18n>Regenerate QR Code</span>
+        <span i18n="@@common.regenerateQrCode">Regenerate QR Code</span>
       </button>
     </div>
   </div>

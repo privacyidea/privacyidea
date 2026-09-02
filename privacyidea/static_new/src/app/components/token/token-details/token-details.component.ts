@@ -437,10 +437,10 @@ export class TokenDetailsComponent implements OnInit, AfterViewInit, OnDestroy {
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: $localize`Delete Token`,
+          title: $localize`:@@common.deleteToken:Delete Token`,
           items: [this.tokenSerial()],
           itemType: "token",
-          confirmAction: { label: $localize`Delete`, value: true, type: "destruct" }
+          confirmAction: { label: $localize`:@@common.delete:Delete`, value: true, type: "destruct" }
         }
       })
       .afterClosed()
@@ -463,10 +463,10 @@ export class TokenDetailsComponent implements OnInit, AfterViewInit, OnDestroy {
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: $localize`Revoke Token`,
+          title: $localize`:@@token.revokeToken:Revoke Token`,
           items: [this.tokenSerial()],
           itemType: "token",
-          confirmAction: { label: $localize`Revoke`, value: true, type: "destruct" }
+          confirmAction: { label: $localize`:@@token.revoke:Revoke`, value: true, type: "destruct" }
         }
       })
       .afterClosed()
@@ -498,10 +498,10 @@ export class TokenDetailsComponent implements OnInit, AfterViewInit, OnDestroy {
       .subscribe({
         next: async (checkResponse) => {
           if (!checkResponse.result?.value) {
-            this.passkeyTestResult.set({ kind: "warning", message: $localize`No user found.` });
+            this.passkeyTestResult.set({ kind: "warning", message: $localize`:@@token.noUserFound:No user found.` });
             return;
           }
-          const username = checkResponse.detail?.username ?? $localize`Unknown User`;
+          const username = checkResponse.detail?.username ?? $localize`:@@token.unknownUser:Unknown User`;
           const authenticatedSerial = checkResponse.detail?.serial;
           const isAdmin = this.authService.role() === "admin";
           let mismatch = false;
@@ -513,7 +513,7 @@ export class TokenDetailsComponent implements OnInit, AfterViewInit, OnDestroy {
             const matchedSerial = authenticatedSerial ?? "";
             this.passkeyTestResult.set({
               kind: "warning",
-              message: $localize`You authenticated with a different passkey than the one shown on this page.`,
+              message: $localize`:@@token.youAuthenticated:You authenticated with a different passkey than the one shown on this page.`,
               mismatch: { serial: matchedSerial, username }
             });
             if (matchedSerial) {
@@ -533,7 +533,7 @@ export class TokenDetailsComponent implements OnInit, AfterViewInit, OnDestroy {
           } else {
             this.passkeyTestResult.set({
               kind: "success",
-              message: $localize`Authentication successful. You would have been logged in as: ` + username
+              message: $localize`:@@token.authenticationSuccessful:Authentication successful. You would have been logged in as: ${username}:USERNAME:`
             });
           }
         }

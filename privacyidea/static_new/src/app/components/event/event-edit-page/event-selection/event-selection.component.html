@@ -20,18 +20,20 @@
   <div class="selected-events-container">
     <mat-expansion-panel [expanded]="true">
       <mat-expansion-panel-header>
-        <mat-panel-title i18n>Selected Events</mat-panel-title>
+        <mat-panel-title i18n="@@event.selectedEvents">Selected Events</mat-panel-title>
       </mat-expansion-panel-header>
 
       <div class="panel-content">
         @if (selectedEvents().length > 0) {
           <mat-chip-set
-            aria-label="Selected events" i18n-aria-label>
+            aria-label="Selected events"
+            i18n-aria-label="@@event.selectedEventsAria">
             @for (event of selectedEvents(); track $index) {
               <mat-chip (removed)="removeEvent(event)">
                 {{ event }}
                 <button
-                  [attr.aria-label]="'remove ' + event" matChipRemove>
+                  [attr.aria-label]="'remove ' + event"
+                  matChipRemove>
                   <mat-icon>cancel</mat-icon>
                 </button>
               </mat-chip>
@@ -39,9 +41,10 @@
           </mat-chip-set>
         } @else {
           <p
-            class="selected-events-empty" i18n>
-            At least one event must be selected.
-          </p>
+            class="selected-events-empty"
+            i18n="@@event.leastOneEvent"
+            >At least one event must be selected.</p
+          >
         }
       </div>
     </mat-expansion-panel>
@@ -50,18 +53,19 @@
   <div class="add-events-container">
     <mat-expansion-panel [expanded]="true">
       <mat-expansion-panel-header>
-        <mat-panel-title i18n>Add Events</mat-panel-title>
+        <mat-panel-title i18n="@@event.addEvents">Add Events</mat-panel-title>
       </mat-expansion-panel-header>
 
       <div class="panel-content">
         <app-clearable-input
-          (clearButtonClick)="searchTerm.set('')" [showClearButton]="searchTerm() !== ''">
+          (clearButtonClick)="searchTerm.set('')"
+          [showClearButton]="searchTerm() !== ''">
           <input
             (ngModelChange)="searchTerm.set($event)"
             [ngModel]="searchTerm()"
             class="search-input"
             clearableInput
-            i18n-placeholder
+            i18n-placeholder="@@event.searchEvents"
             placeholder="Search events..."
             type="text" />
         </app-clearable-input>
@@ -78,14 +82,17 @@
                 tabindex="0">
                 <span class="event-name">{{ event }}</span>
                 <button
-                  (click)="$event.stopPropagation(); addEvent(event)" aria-hidden="true" mat-icon-button tabindex="-1">
+                  (click)="$event.stopPropagation(); addEvent(event)"
+                  aria-hidden="true"
+                  mat-icon-button
+                  tabindex="-1">
                   <mat-icon>add</mat-icon>
                 </button>
               </div>
             }
           </div>
         } @else {
-          <p i18n>No events available.</p>
+          <p i18n="@@event.noEventsAvailable">No events available.</p>
         }
       </div>
     </mat-expansion-panel>

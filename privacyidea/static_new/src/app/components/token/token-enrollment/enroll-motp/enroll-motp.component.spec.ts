@@ -23,6 +23,7 @@ import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ValidationError } from "@angular/forms/signals";
 import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { MotpEnrollmentData } from "@app/mappers/token-api-payload/motp-token-api-payload.mapper";
+import { EnrollTokenBase } from "@components/token/token-enrollment/enroll-token-base";
 import { EnrollMotpComponent } from "./enroll-motp.component";
 import { TokenService } from "@services/token/token.service";
 import { MockTokenService } from "@testing/mock-services";
@@ -57,6 +58,10 @@ describe("EnrollMotpComponent", () => {
 
   it("should create", () => {
     expect(component).toBeTruthy();
+  });
+
+  it("should register itself as the EnrollTokenBase for this token type", () => {
+    expect(fixture.debugElement.injector.get(EnrollTokenBase)).toBe(component);
   });
 
   it("should initially have generateOnServer true and otpKey form disabled", () => {

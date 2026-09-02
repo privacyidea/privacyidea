@@ -58,10 +58,10 @@ export class PoliciesTableActionsComponent {
         .openDialog({
           component: SimpleConfirmationDialogComponent,
           data: {
-            title: $localize`Delete Policies`,
+            title: $localize`:@@policy.deletePolicies:Delete Policies`,
             items: selection,
-            itemType: $localize`Policies`,
-            confirmAction: { label: $localize`Delete`, value: true, type: "destruct" }
+            itemType: $localize`:@@common.policies:Policies`,
+            confirmAction: { label: $localize`:@@common.delete:Delete`, value: true, type: "destruct" }
           }
         })
         .afterClosed()

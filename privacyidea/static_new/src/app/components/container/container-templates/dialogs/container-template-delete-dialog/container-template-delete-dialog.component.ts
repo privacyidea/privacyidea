@@ -34,7 +34,7 @@ import { ContainerTemplate } from "@services/container/container.service";
 export class ContainerTemplateDeleteDialogComponent extends AbstractDialogComponent<ContainerTemplate[], boolean> {
   readonly actions = computed<DialogAction<string>[]>(() => [
     {
-      label: $localize`Delete`,
+      label: $localize`:@@common.delete:Delete`,
       value: "delete",
       icon: "delete_forever",
       type: "destruct"

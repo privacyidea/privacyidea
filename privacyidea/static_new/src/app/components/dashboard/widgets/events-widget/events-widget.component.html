@@ -21,7 +21,7 @@
   <table class="events-table">
     <tbody>
       <tr>
-        <td i18n>Active Events</td>
+        <td i18n="@@dashboard.activeEvents">Active Events</td>
         <td>{{ events().active.length }}</td>
       </tr>
       @if (events().active.length) {
@@ -37,7 +37,7 @@
         </tr>
       }
       <tr>
-        <td i18n>Inactive Events</td>
+        <td i18n="@@dashboard.inactiveEvents">Inactive Events</td>
         <td>{{ events().inactive.length }}</td>
       </tr>
       @if (events().inactive.length) {

@@ -19,56 +19,60 @@
 <div class="margin-bottom-16">
   <div class="margin-left-16 margin-bottom-16">
     <h4
-      class="margin-bottom-16" i18n>
-      Connection Details
-    </h4>
+      class="margin-bottom-16"
+      i18n="@@resolver.connectionDetails"
+      >Connection Details</h4
+    >
     <div class="flex-column">
       <mat-form-field class="input-width-s">
-        <mat-label i18n>Scope</mat-label>
+        <mat-label i18n="@@common.scope">Scope</mat-label>
         <mat-select
-          (selectionChange)="model.update(m => ({ ...m, SCOPE: $event.value }))" [value]="model().SCOPE">
+          (selectionChange)="model.update(m => ({ ...m, SCOPE: $event.value }))"
+          [value]="model().SCOPE">
           <mat-option
-            i18n value="SUBTREE">
-            SUBTREE
-          </mat-option>
+            i18n="@@resolver.subtree"
+            value="SUBTREE"
+            >SUBTREE</mat-option
+          >
           <mat-option
-            i18n value="BASE">
-            BASE
-          </mat-option>
+            i18n="@@resolver.base"
+            value="BASE"
+            >BASE</mat-option
+          >
           <mat-option
-            i18n value="LEVEL">
-            LEVEL
-          </mat-option>
+            i18n="@@resolver.level"
+            value="LEVEL"
+            >LEVEL</mat-option
+          >
         </mat-select>
       </mat-form-field>
 
       <mat-form-field class="input-width-xl margin-bottom-16">
-        <mat-label i18n>Base DN</mat-label>
+        <mat-label i18n="@@common.baseDn">Base DN</mat-label>
         <app-clearable-input
-          (clearButtonClick)="model.update(m => ({ ...m, LDAPBASE: '' }))" [showClearButton]="!!model().LDAPBASE">
+          (clearButtonClick)="model.update(m => ({ ...m, LDAPBASE: '' }))"
+          [showClearButton]="!!model().LDAPBASE">
           <input
-            [formField]="ldapForm.LDAPBASE" matInput />
+            [formField]="ldapForm.LDAPBASE"
+            matInput />
         </app-clearable-input>
         @if (ldapForm.LDAPBASE().errors().some(e => e.kind === 'required') && ldapForm.LDAPBASE().touched()) {
-          <mat-error i18n>
-            Base DN is <strong>required</strong> .
-          </mat-error>
+          <mat-error i18n="@@resolver.baseDnRequired">Base DN is <strong>required</strong>.</mat-error>
         }
       </mat-form-field>
 
       <mat-form-field class="input-width-xl">
-        <mat-label i18n>Server URI</mat-label>
+        <mat-label i18n="@@common.serverUri">Server URI</mat-label>
         <app-clearable-input
-          (clearButtonClick)="model.update(m => ({ ...m, LDAPURI: '' }))" [showClearButton]="!!model().LDAPURI">
+          (clearButtonClick)="model.update(m => ({ ...m, LDAPURI: '' }))"
+          [showClearButton]="!!model().LDAPURI">
           <input
             [formField]="ldapForm.LDAPURI"
             matInput
             placeholder="ldap://privacyidea.server1, ldap://privacyidea.server2" />
         </app-clearable-input>
         @if (ldapForm.LDAPURI().errors().some(e => e.kind === 'required') && ldapForm.LDAPURI().touched()) {
-          <mat-error i18n>
-            Server URI is <strong>required</strong> .
-          </mat-error>
+          <mat-error i18n="@@resolver.serverUriRequired">Server URI is <strong>required</strong>.</mat-error>
         }
       </mat-form-field>
 
@@ -79,32 +83,20 @@
             [checked]="model().START_TLS"
             [disabled]="startTlsDisabled()"
             class="checkbox-inline input-width-l"
-            i18n>
-            STARTTLS
-          </mat-checkbox>
+            i18n="@@resolver.starttls"
+            >STARTTLS</mat-checkbox
+          >
 
           <mat-form-field class="input-width-s">
-            <mat-label i18n>TLS Version</mat-label>
+            <mat-label i18n="@@resolver.tlsVersion">TLS Version</mat-label>
             <mat-select
               (selectionChange)="model.update(m => ({ ...m, TLS_VERSION: $event.value }))"
               [disabled]="tlsVersionDisabled()"
               [value]="model().TLS_VERSION">
-              <mat-option
-                i18n value="3">
-                TLS v1.0
-              </mat-option>
-              <mat-option
-                i18n value="4">
-                TLS v1.1
-              </mat-option>
-              <mat-option
-                i18n value="5">
-                TLS v1.2
-              </mat-option>
-              <mat-option
-                i18n value="2">
-                TLS v1.3
-              </mat-option>
+              <mat-option value="3"> TLS v1.0 </mat-option>
+              <mat-option value="4"> TLS v1.1 </mat-option>
+              <mat-option value="5"> TLS v1.2 </mat-option>
+              <mat-option value="2"> TLS v1.3 </mat-option>
             </mat-select>
           </mat-form-field>
         </div>
@@ -115,19 +107,23 @@
             [checked]="model().TLS_VERIFY"
             [disabled]="tlsVerifyDisabled()"
             class="checkbox-inline input-width-l"
-            i18n>
-            Verify TLS certificate of the server.
-          </mat-checkbox>
+            i18n="@@resolver.verifyTlsCertificate"
+            >Verify TLS certificate of the server.</mat-checkbox
+          >
 
           <mat-form-field class="margin-bottom-16 input-width-l">
-            <mat-label i18n>CA Certificate</mat-label>
-            <mat-hint i18n>The file containing the CA certificate which signed the LDAP TLS certificate.</mat-hint>
+            <mat-label i18n="@@common.caCertificate">CA Certificate</mat-label>
+            <mat-hint i18n="@@resolver.fileContaining"
+              >The file containing the CA certificate which signed the LDAP TLS certificate.</mat-hint
+            >
             <app-clearable-input
               (clearButtonClick)="model.update(m => ({ ...m, TLS_CA_FILE: '' }))"
               [disabled]="tlsCaFileDisabled()"
               [showClearButton]="!!model().TLS_CA_FILE">
               <input
-                [formField]="ldapForm.TLS_CA_FILE" matInput placeholder="/etc/privacyidea/ldap-ca.crt" />
+                [formField]="ldapForm.TLS_CA_FILE"
+                matInput
+                placeholder="/etc/privacyidea/ldap-ca.crt" />
             </app-clearable-input>
           </mat-form-field>
         </div>
@@ -137,48 +133,41 @@
 
   <div class="margin-left-16">
     <h4
-      class="margin-bottom-16" i18n>
-      Credentials
-    </h4>
+      class="margin-bottom-16"
+      i18n="@@resolver.credentials"
+      >Credentials</h4
+    >
 
     <div class="flex-column">
       <div class="flex-row gap-16">
         <mat-form-field class="input-width-l">
-          <mat-label i18n>Bind Type</mat-label>
+          <mat-label i18n="@@common.bindType">Bind Type</mat-label>
           <mat-select
-            (selectionChange)="model.update(m => ({ ...m, AUTHTYPE: $event.value }))" [value]="model().AUTHTYPE">
-            <mat-option
-              i18n value="Simple">
-              Simple
-            </mat-option>
-            <mat-option
-              i18n value="Anonymous">
-              Anonymous
-            </mat-option>
-            <mat-option
-              i18n value="SASL Digest-MD5">
-              SASL Digest-MD5
-            </mat-option>
-            <mat-option
-              i18n value="NTLM">
-              NTLM
-            </mat-option>
-            <mat-option
-              i18n value="SASL Kerberos">
-              SASL Kerberos
-            </mat-option>
+            (selectionChange)="model.update(m => ({ ...m, AUTHTYPE: $event.value }))"
+            [value]="model().AUTHTYPE">
+            <mat-option value="Simple"> Simple </mat-option>
+            <mat-option value="Anonymous"> Anonymous </mat-option>
+            <mat-option value="SASL Digest-MD5"> SASL Digest-MD5 </mat-option>
+            <mat-option value="NTLM"> NTLM </mat-option>
+            <mat-option value="SASL Kerberos"> SASL Kerberos </mat-option>
           </mat-select>
         </mat-form-field>
 
         @if (model().AUTHTYPE !== "Anonymous") {
           <mat-form-field class="input-width-l">
-            <mat-label i18n>
-              {{ model().AUTHTYPE === "SASL Kerberos" ? "Keyfile Path" : "Bind password" }}
-            </mat-label>
+            @if (model().AUTHTYPE === "SASL Kerberos") {
+              <mat-label i18n="@@resolver.keyfilePath">Keyfile Path</mat-label>
+            } @else {
+              <mat-label i18n="@@resolver.bindPassword">Bind password</mat-label>
+            }
             <app-clearable-input
-              (clearButtonClick)="model.update(m => ({ ...m, BINDPW: '' }))" [showClearButton]="!!model().BINDPW">
+              (clearButtonClick)="model.update(m => ({ ...m, BINDPW: '' }))"
+              [showClearButton]="!!model().BINDPW">
               <input
-                [formField]="ldapForm.BINDPW" matInput placeholder="topsecret" type="password" />
+                [formField]="ldapForm.BINDPW"
+                matInput
+                placeholder="topsecret"
+                type="password" />
             </app-clearable-input>
           </mat-form-field>
         }
@@ -186,11 +175,14 @@
 
       @if (model().AUTHTYPE !== "Anonymous") {
         <mat-form-field class="input-width-xl">
-          <mat-label i18n>Bind DN</mat-label>
+          <mat-label i18n="@@common.bindDn">Bind DN</mat-label>
           <app-clearable-input
-            (clearButtonClick)="model.update(m => ({ ...m, BINDDN: '' }))" [showClearButton]="!!model().BINDDN">
+            (clearButtonClick)="model.update(m => ({ ...m, BINDDN: '' }))"
+            [showClearButton]="!!model().BINDDN">
             <input
-              [formField]="ldapForm.BINDDN" matInput placeholder="cn=admin,ou=user,dc=domain,dc=tld" />
+              [formField]="ldapForm.BINDDN"
+              matInput
+              placeholder="cn=admin,ou=user,dc=domain,dc=tld" />
           </app-clearable-input>
         </mat-form-field>
       }
@@ -200,42 +192,52 @@
 
 <div class="margin-bottom-16">
   <div class="margin-left-16">
-    <h4 i18n>Settings</h4>
+    <h4 i18n="@@resolver.settings">Settings</h4>
 
     <div class="flex-column gap-16">
       <div class="flex-row gap-16">
         <mat-form-field class="input-width-s">
-          <mat-label i18n>Timeout</mat-label>
+          <mat-label i18n="@@common.timeout">Timeout</mat-label>
           <input
-            [formField]="ldapForm.TIMEOUT" matInput type="number" />
-          <mat-hint i18n>In seconds.</mat-hint>
+            [formField]="ldapForm.TIMEOUT"
+            matInput
+            type="number" />
+          <mat-hint i18n="@@resolver.inSeconds">In seconds.</mat-hint>
         </mat-form-field>
         <mat-form-field class="input-width-s">
-          <mat-label i18n>Cache Timeout</mat-label>
+          <mat-label i18n="@@resolver.cacheTimeout">Cache Timeout</mat-label>
           <input
-            [formField]="ldapForm.CACHE_TIMEOUT" matInput type="number" />
-          <mat-hint i18n>In seconds.</mat-hint>
+            [formField]="ldapForm.CACHE_TIMEOUT"
+            matInput
+            type="number" />
+          <mat-hint i18n="@@resolver.inSeconds">In seconds.</mat-hint>
         </mat-form-field>
 
         <mat-form-field class="input-width-s">
-          <mat-label i18n>Size Limit</mat-label>
+          <mat-label i18n="@@common.sizeLimit">Size Limit</mat-label>
           <input
-            [formField]="ldapForm.SIZELIMIT" matInput type="number" />
+            [formField]="ldapForm.SIZELIMIT"
+            matInput
+            type="number" />
         </mat-form-field>
       </div>
 
       <div class="flex-row gap-16">
         <mat-form-field class="input-width-s">
-          <mat-label i18n>Server Pool Retry Rounds</mat-label>
+          <mat-label i18n="@@resolver.serverPoolRetry">Server Pool Retry Rounds</mat-label>
           <input
-            [formField]="ldapForm.SERVERPOOL_ROUNDS" matInput type="number" />
+            [formField]="ldapForm.SERVERPOOL_ROUNDS"
+            matInput
+            type="number" />
         </mat-form-field>
 
         <mat-form-field class="input-width-s">
-          <mat-label i18n>Server Pool Skip Timeout</mat-label>
+          <mat-label i18n="@@resolver.serverPoolSkip">Server Pool Skip Timeout</mat-label>
           <input
-            [formField]="ldapForm.SERVERPOOL_SKIP" matInput type="number" />
-          <mat-hint i18n>In seconds.</mat-hint>
+            [formField]="ldapForm.SERVERPOOL_SKIP"
+            matInput
+            type="number" />
+          <mat-hint i18n="@@resolver.inSeconds">In seconds.</mat-hint>
         </mat-form-field>
       </div>
     </div>
@@ -244,41 +246,52 @@
       <mat-checkbox
         (change)="model.update(m => ({ ...m, SERVERPOOL_PERSISTENT: $event.checked }))"
         [checked]="model().SERVERPOOL_PERSISTENT"
-        i18n>
-        Per-Process Server Pool
-      </mat-checkbox>
+        i18n="@@resolver.perProcessServer"
+        >Per-Process Server Pool</mat-checkbox
+      >
       <span
-        class="hint" i18n>This setting activates an LDAP server pool which persists between requests.</span>
+        class="hint"
+        i18n="@@resolver.settingActivates"
+        >This setting activates an LDAP server pool which persists between requests.</span
+      >
     </div>
 
     <div class="flex-column">
       <mat-checkbox
-        (change)="model.update(m => ({ ...m, EDITABLE: $event.checked }))" [checked]="model().EDITABLE" i18n>
-        Edit User Store
-      </mat-checkbox>
+        (change)="model.update(m => ({ ...m, EDITABLE: $event.checked }))"
+        [checked]="model().EDITABLE"
+        i18n="@@resolver.editUserStore"
+        >Edit User Store</mat-checkbox
+      >
       <span
-        class="hint" i18n>The user data in this database can be modified from within privacyIDEA.</span>
+        class="hint"
+        i18n="@@resolver.userDataDatabase"
+        >The user data in this database can be modified from within privacyIDEA.</span
+      >
     </div>
 
     @if (model().EDITABLE) {
       <div class="flex-column">
         <mat-form-field class="input-width-xl">
-          <mat-label i18n>Object Classes of a New Created User Object</mat-label>
+          <mat-label i18n="@@resolver.objectClasses">Object Classes of a New Created User Object</mat-label>
           <app-clearable-input
             (clearButtonClick)="model.update(m => ({ ...m, OBJECT_CLASSES: '' }))"
             [showClearButton]="!!model().OBJECT_CLASSES">
             <input
-              [formField]="ldapForm.OBJECT_CLASSES" matInput />
+              [formField]="ldapForm.OBJECT_CLASSES"
+              matInput />
           </app-clearable-input>
         </mat-form-field>
 
         <mat-form-field class="input-width-xl">
-          <mat-label i18n>DN of a New Created User Object</mat-label>
+          <mat-label i18n="@@resolver.dnNewCreatedUser">DN of a New Created User Object</mat-label>
           <app-clearable-input
             (clearButtonClick)="model.update(m => ({ ...m, DN_TEMPLATE: '' }))"
             [showClearButton]="!!model().DN_TEMPLATE">
             <input
-              [formField]="ldapForm.DN_TEMPLATE" matInput placeholder="CN=<username>,<basendn>" />
+              [formField]="ldapForm.DN_TEMPLATE"
+              matInput
+              placeholder="CN=<username>,<basendn>" />
           </app-clearable-input>
         </mat-form-field>
       </div>
@@ -286,12 +299,13 @@
   </div>
 
   <div class="margin-left-16">
-    <h4 i18n>Attributes & Mapping</h4>
+    <h4 i18n="@@resolver.attributesMapping">Attributes & Mapping</h4>
     @if (!isEditMode()) {
       <h4
-        class="margin-bottom-8" i18n>
-        Presets:
-      </h4>
+        class="margin-bottom-8"
+        i18n="@@resolver.presets"
+        >Presets:</h4
+      >
       <div class="preset-buttons-container margin-bottom-16">
         <div class="preset-buttons">
           @for (preset of ldapPresets; track preset.name) {
@@ -310,122 +324,148 @@
     <div class="flex-column">
       <div class="flex-row gap-16 margin-bottom-16">
         <mat-form-field class="input-width-l">
-          <mat-label i18n>Loginname Attribute</mat-label>
+          <mat-label i18n="@@resolver.loginnameAttribute">Loginname Attribute</mat-label>
           <app-clearable-input
             (clearButtonClick)="model.update(m => ({ ...m, LOGINNAMEATTRIBUTE: '' }))"
             [showClearButton]="!!model().LOGINNAMEATTRIBUTE">
             <input
-              [formField]="ldapForm.LOGINNAMEATTRIBUTE" matInput placeholder="sAMAccountName" />
+              [formField]="ldapForm.LOGINNAMEATTRIBUTE"
+              matInput
+              placeholder="sAMAccountName" />
           </app-clearable-input>
-          @if (ldapForm.LOGINNAMEATTRIBUTE().errors().some(e => e.kind === 'required') && ldapForm.LOGINNAMEATTRIBUTE().touched()) {
-            <mat-error i18n>
-              Loginname attribute is <strong>required</strong> .
-            </mat-error>
+          @if (
+            ldapForm.LOGINNAMEATTRIBUTE().errors().some(e => e.kind === 'required') && ldapForm.LOGINNAMEATTRIBUTE().touched()
+          ) {
+            <mat-error i18n="@@resolver.loginnameAttributeRequired"
+              >Loginname attribute is <strong>required</strong>.</mat-error
+            >
           }
         </mat-form-field>
 
         <mat-form-field class="input-width-s">
-          <mat-label i18n>UID Type</mat-label>
+          <mat-label i18n="@@resolver.uidType">UID Type</mat-label>
           <app-clearable-input
-            (clearButtonClick)="model.update(m => ({ ...m, UIDTYPE: '' }))" [showClearButton]="!!model().UIDTYPE">
+            (clearButtonClick)="model.update(m => ({ ...m, UIDTYPE: '' }))"
+            [showClearButton]="!!model().UIDTYPE">
             <input
-              [formField]="ldapForm.UIDTYPE" matInput placeholder="DN" />
+              [formField]="ldapForm.UIDTYPE"
+              matInput
+              placeholder="DN" />
           </app-clearable-input>
         </mat-form-field>
       </div>
 
       <mat-form-field class="input-width-xl margin-bottom-16">
-        <mat-label i18n>Search Filter</mat-label>
+        <mat-label i18n="@@common.searchFilter">Search Filter</mat-label>
         <app-clearable-input
           (clearButtonClick)="model.update(m => ({ ...m, LDAPSEARCHFILTER: '' }))"
           [showClearButton]="!!model().LDAPSEARCHFILTER">
           <input
-            [formField]="ldapForm.LDAPSEARCHFILTER" matInput placeholder="(sAMAccountName=*)(objectClass=person)" />
+            [formField]="ldapForm.LDAPSEARCHFILTER"
+            matInput
+            placeholder="(sAMAccountName=*)(objectClass=person)" />
         </app-clearable-input>
-        @if (ldapForm.LDAPSEARCHFILTER().errors().some(e => e.kind === 'required') && ldapForm.LDAPSEARCHFILTER().touched()) {
-          <mat-error i18n>
-            Search filter is <strong>required</strong> .
-          </mat-error>
+        @if (
+          ldapForm.LDAPSEARCHFILTER().errors().some(e => e.kind === 'required') && ldapForm.LDAPSEARCHFILTER().touched()
+        ) {
+          <mat-error i18n="@@resolver.searchFilterRequired">Search filter is <strong>required</strong>.</mat-error>
         }
       </mat-form-field>
 
       <mat-form-field class="input-width-xl margin-bottom-16">
-        <mat-label i18n>Attribute Mapping</mat-label>
+        <mat-label i18n="@@resolver.attributeMapping">Attribute Mapping</mat-label>
         <textarea
-          [formField]="ldapForm.USERINFO" matInput placeholder='{"phone:" : "telephoneNumber", "mobile": "mobile", "email" : "mail", "surname" : "sn",
+          [formField]="ldapForm.USERINFO"
+          matInput
+          placeholder='{"phone:" : "telephoneNumber", "mobile": "mobile", "email" : "mail", "surname" : "sn",
              "givenname" : "givenName"}'></textarea>
         @if (ldapForm.USERINFO().errors().some(e => e.kind === 'required') && ldapForm.USERINFO().touched()) {
-          <mat-error i18n>
-            Attribute mapping is <strong>required</strong> .
-          </mat-error>
+          <mat-error i18n="@@resolver.attributeMappingRequired"
+            >Attribute mapping is <strong>required</strong>.</mat-error
+          >
         }
       </mat-form-field>
 
       <mat-form-field class="input-width-xl">
-        <mat-label i18n>Multivalue Attributes</mat-label>
+        <mat-label i18n="@@resolver.multivalueAttributes">Multivalue Attributes</mat-label>
         <app-clearable-input
           (clearButtonClick)="model.update(m => ({ ...m, MULTIVALUEATTRIBUTES: '' }))"
           [showClearButton]="!!model().MULTIVALUEATTRIBUTES">
           <input
-            [formField]="ldapForm.MULTIVALUEATTRIBUTES" matInput placeholder='["mobile"]' />
+            [formField]="ldapForm.MULTIVALUEATTRIBUTES"
+            matInput
+            placeholder='["mobile"]' />
         </app-clearable-input>
       </mat-form-field>
 
       <mat-checkbox
         (change)="model.update(m => ({ ...m, recursive_group_search: $event.checked }))"
         [checked]="model().recursive_group_search"
-        i18n>
-        Recursive Search of User Groups
-      </mat-checkbox>
+        i18n="@@resolver.recursiveSearch"
+        >Recursive Search of User Groups</mat-checkbox
+      >
 
       @if (model().recursive_group_search) {
         <mat-form-field class="input-width-xl margin-bottom-32">
-          <mat-label i18n>Base DN of User Groups</mat-label>
-          <mat-hint i18n>
-            Enter the base DN for the user groups. Leave this field empty if the groups are located in the same base DN
-            as defined for the users above.
-          </mat-hint>
+          <mat-label i18n="@@resolver.baseDnUserGroups">Base DN of User Groups</mat-label>
+          <mat-hint i18n="@@resolver.enterBaseDnUser"
+            >Enter the base DN for the user groups. Leave this field empty if the groups are located in the same base DN
+            as defined for the users above.</mat-hint
+          >
           <app-clearable-input
             (clearButtonClick)="model.update(m => ({ ...m, group_base_dn: '' }))"
             [showClearButton]="!!model().group_base_dn">
             <input
-              [formField]="ldapForm.group_base_dn" matInput placeholder="ou=groups,dc=domain,dc=tld" />
+              [formField]="ldapForm.group_base_dn"
+              matInput
+              placeholder="ou=groups,dc=domain,dc=tld" />
           </app-clearable-input>
         </mat-form-field>
 
         <mat-form-field class="input-width-xl margin-bottom-16">
-          <mat-label i18n>Search Filter for User Groups</mat-label>
-          <mat-hint i18n>Possible tags: {{ "{" }}base_dn{{ "}" }}, {{ "{" }}username{{ "}" }}</mat-hint>
+          <mat-label i18n="@@resolver.searchFilterUser">Search Filter for User Groups</mat-label>
+          <mat-hint i18n="@@resolver.possibleTagsBase"
+            >Possible tags: {{ "{" }}base_dn{{ "}" }}, {{ "{" }}username{{ "}" }}</mat-hint
+          >
           <app-clearable-input
             (clearButtonClick)="model.update(m => ({ ...m, group_search_filter: '' }))"
             [showClearButton]="!!model().group_search_filter">
             <input
-              [formField]="ldapForm.group_search_filter" matInput placeholder="(&(sAMAccountName=*)(objectCategory=group)
+              [formField]="ldapForm.group_search_filter"
+              matInput
+              placeholder="(&(sAMAccountName=*)(objectCategory=group)
               (member:1.2.840.113556.1.4.1941:=cn={distinguishedName},{base_dn}))" />
           </app-clearable-input>
         </mat-form-field>
 
         <div class="flex-row gap-16 margin-bottom-32">
           <mat-form-field class="input-width-l">
-            <mat-label i18n>Group Name Attribute</mat-label>
-            <mat-hint i18n>Group attribute defining the group's name, which should be stored in the user info.
-            </mat-hint>
+            <mat-label i18n="@@resolver.groupNameAttribute">Group Name Attribute</mat-label>
+            <mat-hint i18n="@@resolver.groupAttribute"
+              >Group attribute defining the group's name, which should be stored in the user info.</mat-hint
+            >
             <app-clearable-input
               (clearButtonClick)="model.update(m => ({ ...m, group_name_attribute: '' }))"
               [showClearButton]="!!model().group_name_attribute">
               <input
-                [formField]="ldapForm.group_name_attribute" matInput placeholder="distinguishedName" />
+                [formField]="ldapForm.group_name_attribute"
+                matInput
+                placeholder="distinguishedName" />
             </app-clearable-input>
           </mat-form-field>
 
           <mat-form-field class="input-width-l">
-            <mat-label i18n>User Info Key</mat-label>
-            <mat-hint i18n>The key to store the groups in the user info (attribute mapping key).</mat-hint>
+            <mat-label i18n="@@resolver.userInfoKey">User Info Key</mat-label>
+            <mat-hint i18n="@@resolver.keyStoreGroupsUser"
+              >The key to store the groups in the user info (attribute mapping key).</mat-hint
+            >
             <app-clearable-input
               (clearButtonClick)="model.update(m => ({ ...m, group_attribute_mapping_key: '' }))"
               [showClearButton]="!!model().group_attribute_mapping_key">
               <input
-                [formField]="ldapForm.group_attribute_mapping_key" matInput placeholder="groups" />
+                [formField]="ldapForm.group_attribute_mapping_key"
+                matInput
+                placeholder="groups" />
             </app-clearable-input>
           </mat-form-field>
         </div>
@@ -433,14 +473,18 @@
 
       <div class="flex-column margin-bottom-16">
         <mat-checkbox
-          (change)="model.update(m => ({ ...m, NOREFERRALS: $event.checked }))" [checked]="model().NOREFERRALS" i18n>
-          No Anonymous Referral Chasing
-        </mat-checkbox>
+          (change)="model.update(m => ({ ...m, NOREFERRALS: $event.checked }))"
+          [checked]="model().NOREFERRALS"
+          i18n="@@resolver.noAnonymousReferral"
+          >No Anonymous Referral Chasing</mat-checkbox
+        >
 
         <mat-checkbox
-          (change)="model.update(m => ({ ...m, NOSCHEMAS: $event.checked }))" [checked]="model().NOSCHEMAS" i18n>
-          No Retrieval of Schema Information
-        </mat-checkbox>
+          (change)="model.update(m => ({ ...m, NOSCHEMAS: $event.checked }))"
+          [checked]="model().NOSCHEMAS"
+          i18n="@@resolver.noRetrievalSchema"
+          >No Retrieval of Schema Information</mat-checkbox
+        >
       </div>
     </div>
   </div>

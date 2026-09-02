@@ -44,9 +44,11 @@ export class LostTokenComponent extends AbstractDialogComponent<
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   lostTokenData?: LostTokenData;
-  protected readonly dialogTitle = computed(() => $localize`Token ${this.data.tokenSerial()}:serial: is lost?`);
+  protected readonly dialogTitle = computed(
+    () => $localize`:@@token.tokenSerialLost:Token ${this.data.tokenSerial()}:SERIAL: is lost?`
+  );
   protected closeAction: DialogAction<void> = {
-    label: $localize`Close`,
+    label: $localize`:@@common.close:Close`,
     type: "cancel",
     value: undefined,
     primary: this.data.isLost()
@@ -64,14 +66,18 @@ export class LostTokenComponent extends AbstractDialogComponent<
       next: (response) => {
         this.data.isLost.set(true);
         this.lostTokenData = response?.result?.value;
-        this.notificationService.success($localize`Token marked as lost: ` + this.data.tokenSerial());
+        this.notificationService.success(
+          $localize`:@@token.tokenMarkedAs:Token marked as lost: ${this.data.tokenSerial()}:SERIAL:`
+        );
       }
     });
   }
 
   tokenSelected(tokenSerial?: string) {
     if (!tokenSerial) {
-      this.notificationService.warning($localize`No token selected, please select a token.`);
+      this.notificationService.warning(
+        $localize`:@@token.noTokenSelectedPlease:No token selected, please select a token.`
+      );
       return;
     }
     this.dialogRef.close();

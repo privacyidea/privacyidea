@@ -31,6 +31,7 @@ import { expectsTableStateGating } from "@testing/table-state-gating";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockContentService } from "@testing/mock-services/mock-content-service";
 import { MockResolverService } from "@testing/mock-services/mock-resolver-service";
+import { MockPiResponse } from "@testing/mock-services/mock-utils";
 import { MockTableUtilsService } from "@testing/mock-services/mock-table-utils-service";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { of, throwError } from "rxjs";
@@ -174,6 +175,17 @@ describe("UserSourcesComponent", () => {
 
     expect(dialog.open).toHaveBeenCalled();
     expect(resolverService.deleteResolver).not.toHaveBeenCalled();
+  });
+
+  it("onDeleteResolver should show a not-found error when the deleted count is negative", () => {
+    dialog.result$ = of(true);
+    const resolver = { resolvername: "res1", type: "passwdresolver", censor_keys: [], data: {} } as Resolver;
+    resolverService.deleteResolver.mockReturnValue(of(MockPiResponse.fromValue<number>(-1)));
+
+    component.onDeleteResolver(resolver);
+
+    expect(notificationService.error).toHaveBeenCalledWith(expect.stringContaining("not found"));
+    expect(notificationService.success).not.toHaveBeenCalled();
   });
 
   it("onDeleteResolver should show error if delete fails", () => {

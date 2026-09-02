@@ -66,6 +66,8 @@ interface BulkActionResult {
   ok: boolean;
 }
 
+type BulkAction = "unassign" | "toggleActive" | "resetFailCount";
+
 @Component({
   selector: "app-user-details-token-table",
   imports: [
@@ -94,6 +96,11 @@ interface BulkActionResult {
   styleUrl: "./user-details-token-table.component.scss"
 })
 export class UserDetailsTokenTableComponent {
+
+  protected linkLabel(label: string): string {
+    return $localize`:@@common.linkLabel:${label}:LABEL: link`;
+  }
+
   /**
    * The two ways out of the empty state. They are passed as templates rather than projected content
    * because this component renders them in a different place depending on the table's state, and a
@@ -156,13 +163,13 @@ export class UserDetailsTokenTableComponent {
     const canEnroll = this.authService.tokenEnrollmentAllowed();
     const canAssign = this.authService.actionAllowed("assign");
     if (canEnroll && canAssign) {
-      return $localize`Enroll a new token for this user, or assign an existing one.`;
+      return $localize`:@@user.enrollNewTokenHint:Enroll a new token for this user, or assign an existing one.`;
     }
     if (canEnroll) {
-      return $localize`Enroll a new token for this user.`;
+      return $localize`:@@user.enrollNewTokenOnly:Enroll a new token for this user.`;
     }
     if (canAssign) {
-      return $localize`Assign an existing token to this user.`;
+      return $localize`:@@user.assignExistingToken:Assign an existing token to this user.`;
     }
     return "";
   });
@@ -206,14 +213,14 @@ export class UserDetailsTokenTableComponent {
     forkJoin(
       rows.map((r) => this.runBulkAction(r.serial, this.tokenService.toggleActive(r.serial, r.active, false)))
     ).subscribe({
-      next: (results) => this.finishBulkAction("toggle active", results)
+      next: (results) => this.finishBulkAction("toggleActive", results)
     });
   }
 
   resetFailcountSelected(): void {
     const serials = this.selector.selectedRows().map((r) => r.serial);
     forkJoin(serials.map((s) => this.runBulkAction(s, this.tokenService.resetFailCount(s, false)))).subscribe({
-      next: (results) => this.finishBulkAction("reset fail count", results)
+      next: (results) => this.finishBulkAction("resetFailCount", results)
     });
   }
 
@@ -245,11 +252,23 @@ export class UserDetailsTokenTableComponent {
     );
   }
 
-  private finishBulkAction(action: string, results: BulkActionResult[]): void {
+  private finishBulkAction(action: BulkAction, results: BulkActionResult[]): void {
     this.tokenService.userTokenResource.reload();
     const failed = results.filter((r) => !r.ok).map((r) => r.serial);
     if (failed.length > 0) {
-      this.notificationService.error(`${failed.length}/${results.length} ${action} failed: ${failed.join(", ")}`);
+      this.notificationService.error(this.bulkFailureMessage(action, failed, results.length));
+    }
+  }
+
+  private bulkFailureMessage(action: BulkAction, failed: string[], total: number): string {
+    const serials = failed.join(", ");
+    switch (action) {
+      case "unassign":
+        return $localize`:@@user.bulkUnassignFailed:${failed.length}:COUNT:/${total}:TOTAL: unassign failed: ${serials}:SERIALS:`;
+      case "toggleActive":
+        return $localize`:@@user.bulkToggleActiveFailed:${failed.length}:COUNT:/${total}:TOTAL: toggle active failed: ${serials}:SERIALS:`;
+      default:
+        return $localize`:@@user.bulkResetFailCountFailed:${failed.length}:COUNT:/${total}:TOTAL: reset fail count failed: ${serials}:SERIALS:`;
     }
   }
 }
