@@ -32,7 +32,8 @@ from sqlalchemy.sql import ColumnElement
 from privacyidea.lib import _
 from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType,
                                                                            CA_ENFORCEMENT_EVENT_TYPES,
-                                                                           CountMode)
+                                                                           CountMode,
+                                                                           RestrictionCause)
 from privacyidea.lib.conditional_access.authentication_log import _naive_utc
 from privacyidea.lib.conditional_access.conditions import (condition_sql_filters,
                                                            conditions_match_row,
@@ -1831,6 +1832,10 @@ def _upsert_user_lock_state(user: "User", *, lock_expires_at: datetime | None, e
         if not declined:
             state.username = user.login
             state.lock_expires_at = lock_expires_at
+            # The cause travels with the expiry, so the row always names whoever imposed the lock now in
+            # force: a policy lock that strengthens an administrator's timed one becomes a policy lock, while
+            # a manual permanent lock is never downgraded and keeps its cause.
+            state.lock_cause = RestrictionCause.POLICY
             # Written together with the expiry, so the error message always describes the lock now in force. Only a
             # write that strengthens the lock gets here, and its error message comes with it.
             state.error_message = error_message
@@ -1879,6 +1884,8 @@ def _upsert_ip_block(source_ip: str, *, block_expires_at: datetime | None, error
             declined = True
         if not declined:
             state.block_expires_at = block_expires_at
+            # The cause travels with the expiry, exactly as for a user lock.
+            state.block_cause = RestrictionCause.POLICY
             # See _upsert_user_lock_state: written together with the expiry.
             state.error_message = error_message
     return write.succeeded and not declined

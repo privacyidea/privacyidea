@@ -21,17 +21,20 @@ Management layer for the live conditional-access state: user locks
 
 The engine (:mod:`privacyidea.lib.conditional_access.engine`) *writes* this state
 when a policy stage fires and *reads* it on the authentication pre-check. This
-module is the *management* path — listing the current state and clearing single
-entries — shared by the REST API (``/conditionalaccess``) and the
-``pi-manage conditionalaccess`` CLI, so both go through one implementation.
+module is the *management* path — listing the current state, imposing a
+restriction by administrator decision and clearing single entries — shared by the
+REST API (``/conditionalaccess``) and the ``pi-manage conditionalaccess`` CLI, so
+both go through one implementation.
 """
+import ipaddress
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from sqlalchemy import and_, delete, false, func, or_, select, ColumnElement
 
+from privacyidea.lib.conditional_access.authentication_event_types import RestrictionCause
 from privacyidea.lib.conditional_access.authentication_log import match_condition
-from privacyidea.lib.conditional_access.engine import get_user_lock
+from privacyidea.lib.conditional_access.engine import get_user_lock, is_ip_never_block
 from privacyidea.lib.conditional_access.session import get_ca_session, guarded_write
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.log import log_with
@@ -47,12 +50,16 @@ DEFAULT_PAGE_SIZE = 15
 # still ahead (in force, lifts on its own), and expired means it has passed (a stale record, no longer enforced).
 LOCK_STATES = ("permanent", "temporary", "expired")
 
+# Who imposed the restriction now in force; see :class:`RestrictionCause`.
+LOCK_CAUSES = tuple(cause.value for cause in RestrictionCause)
+
 # Columns the locked-users list may be sorted by (any other value falls back to locked_at).
 SORTABLE_COLUMNS = {
     "username": UserLockState.username,
     "realm": UserLockState.realm,
     "resolver": UserLockState.resolver,
     "lock_expires_at": UserLockState.lock_expires_at,
+    "lock_cause": UserLockState.lock_cause,
     "locked_at": UserLockState.locked_at,
 }
 
@@ -119,6 +126,8 @@ def _locked_user_dict(row: UserLockState, now: datetime) -> dict:
         "permanent": row.lock_expires_at is None,
         "lock_expires_at": row.lock_expires_at,
         "seconds_remaining": _seconds_remaining(row.lock_expires_at, now),
+        # Whether a policy or an administrator imposed the lock now in force.
+        "lock_cause": row.lock_cause,
         "locked_at": row.locked_at,
         # The error message this user is being shown, as stored when the lock was written - a snapshot, so it can differ
         # from what the policy says now. Empty when the stage configured none, which is the silent default.
@@ -134,6 +143,7 @@ def _blocklist_dict(row: BlockList, now: datetime) -> dict:
         "permanent": row.block_expires_at is None,
         "block_expires_at": row.block_expires_at,
         "seconds_remaining": _seconds_remaining(row.block_expires_at, now),
+        "block_cause": row.block_cause,
         "blocked_at": row.blocked_at,
         # See _locked_user_dict: the wording stored on the row, not what the policy carries now.
         "error_message": row.error_message,
@@ -194,10 +204,26 @@ def user_matches_scopes(user: User, scopes: list | None) -> bool:
     return False
 
 
+def _cause_condition(causes: list[str] | None) -> ColumnElement[bool] | None:
+    """
+    WHERE clause selecting the requested lock *causes* (see :data:`LOCK_CAUSES`). An unknown value is a
+    :class:`ParameterError` for the same reason :func:`_state_condition` rejects one: silently ignoring it
+    would widen the result to every cause, so a typo would return more than the caller asked for.
+
+    :raises ParameterError: if *causes* contains a value outside :data:`LOCK_CAUSES`
+    """
+    unknown = [cause for cause in (causes or []) if cause not in LOCK_CAUSES]
+    if unknown:
+        raise ParameterError(f"Unknown lock cause(s) {', '.join(sorted(unknown))}. "
+                             f"Allowed values: {', '.join(LOCK_CAUSES)}.")
+    return UserLockState.lock_cause.in_(causes) if causes else None
+
+
 def _lock_conditions(realms: list[str] | None, resolvers: list[str] | None,
                         usernames: list[str] | None, states: list[str] | None,
                         visibility_scopes: list | None, now: datetime,
                         case_insensitive: bool,
+                        causes: list[str] | None = None,
                         error_messages: list[str] | None = None) -> list[ColumnElement[bool]]:
     """
     Build the WHERE conditions for a locked-users query.
@@ -213,6 +239,8 @@ def _lock_conditions(realms: list[str] | None, resolvers: list[str] | None,
         every lock still quoting a message they have since changed.
     :param states: lock state(s) to include (see :func:`_state_condition`); ``None``/empty means no state
         filter (all states, including expired)
+    :param causes: lock cause(s) to include (see :func:`_cause_condition`); ``None``/empty means no cause
+        filter (both policy and manual locks)
     :param visibility_scopes: the admin's policy visibility boundary (see :func:`_visibility_condition`);
         ``None`` means unrestricted
     :param now: the reference time used to classify temporary vs. expired
@@ -230,6 +258,9 @@ def _lock_conditions(realms: list[str] | None, resolvers: list[str] | None,
     state_condition = _state_condition(states, now)
     if state_condition is not None:
         conditions.append(state_condition)
+    cause_condition = _cause_condition(causes)
+    if cause_condition is not None:
+        conditions.append(cause_condition)
     if visibility_scopes is not None:
         conditions.append(_visibility_condition(visibility_scopes))
     return conditions
@@ -239,7 +270,7 @@ def _lock_conditions(realms: list[str] | None, resolvers: list[str] | None,
 def list_locked_users(realms: list[str] | None = None, resolvers: list[str] | None = None,
                       usernames: list[str] | None = None, states: list[str] | None = None,
                       visibility_scopes: list | None = None, case_insensitive: bool = False,
-                      now: datetime | None = None,
+                      now: datetime | None = None, causes: list[str] | None = None,
                       error_messages: list[str] | None = None) -> list[dict]:
     """
     Return all matching locked users (no pagination), most recently updated first. See
@@ -248,7 +279,7 @@ def list_locked_users(realms: list[str] | None = None, resolvers: list[str] | No
     """
     moment = now if now is not None else utc_now()
     conditions = _lock_conditions(realms, resolvers, usernames, states,
-                                     visibility_scopes, moment, case_insensitive, error_messages)
+                                     visibility_scopes, moment, case_insensitive, causes, error_messages)
     stmt = select(UserLockState).where(*conditions).order_by(UserLockState.locked_at.desc())
     return [_locked_user_dict(row, moment) for row in get_ca_session().scalars(stmt).all()]
 
@@ -259,7 +290,7 @@ def list_locked_users_paginate(realms: list[str] | None = None, resolvers: list[
                                visibility_scopes: list | None = None, case_insensitive: bool = False,
                                page: int = 1, page_size: int = DEFAULT_PAGE_SIZE,
                                sort_column: str = "locked_at", sort_order: str = "desc",
-                               now: datetime | None = None,
+                               now: datetime | None = None, causes: list[str] | None = None,
                                error_messages: list[str] | None = None) -> dict:
     """
     Return one page of matching locked users plus pagination metadata
@@ -271,7 +302,7 @@ def list_locked_users_paginate(realms: list[str] | None = None, resolvers: list[
     """
     moment = now if now is not None else utc_now()
     conditions = _lock_conditions(realms, resolvers, usernames, states,
-                                     visibility_scopes, moment, case_insensitive, error_messages)
+                                     visibility_scopes, moment, case_insensitive, causes, error_messages)
     count = get_ca_session().scalar(
         select(func.count()).select_from(UserLockState).where(*conditions))
     order_column = SORTABLE_COLUMNS.get(sort_column)
@@ -307,6 +338,107 @@ def get_user_lock_dict(user: User, now: datetime | None = None) -> dict | None:
         return None
     row = get_ca_session().get(UserLockState, (user.resolver, user.uid, user.realm))
     return _locked_user_dict(row, now if now is not None else utc_now())
+
+
+def _restriction_expiry(duration_seconds: int | None, moment: datetime) -> datetime | None:
+    """
+    The expiry of a manually imposed restriction: ``None`` for a permanent one, otherwise *moment* plus the
+    duration. A non-positive or non-integer duration is a :class:`ParameterError` rather than a silently
+    permanent restriction - the two are the opposite of each other, so guessing is not an option.
+    """
+    if duration_seconds is None:
+        return None
+    if isinstance(duration_seconds, bool) or not isinstance(duration_seconds, int) or duration_seconds <= 0:
+        raise ParameterError("'duration_seconds' must be a positive number of seconds, or be omitted for a "
+                             "restriction that does not expire.")
+    return moment + timedelta(seconds=duration_seconds)
+
+
+@log_with(log)
+def lock_user(user: User, duration_seconds: int | None = None, now: datetime | None = None) -> dict:
+    """
+    Lock *user* by administrator decision, replacing whatever lock is currently on record, and return the new
+    lock in the shape of :func:`_locked_user_dict`.
+
+    ``duration_seconds`` omitted writes a permanent lock (only an unlock clears it); a positive value writes a
+    timed one. Permanent is the default because an administrator locking by hand is normally reacting to an
+    incident: a lock that quietly expires on its own is the surprising outcome.
+
+    Unlike the engine's ``_upsert_user_lock_state`` this write is **authoritative**: it never declines as a
+    weakening, so an admin may replace a permanent policy lock with a two-hour one. The engine's never-weaken
+    rule exists so that the order in which two automatic policies happen to fire cannot decide the outcome; an
+    administrator setting a lock by hand *is* the decision. It is also not defensive - a management caller is
+    waiting for the result, so a failed write raises instead of being indistinguishable from success.
+
+    The row is stamped :attr:`RestrictionCause.MANUAL`. Nothing else is needed to enforce it: the
+    authentication pre-check reads the state row whoever wrote it.
+
+    :param user: the user to lock; must resolve to a ``(resolver, uid, realm)`` identity, which is the row's key
+    :param duration_seconds: how long the lock lasts, or ``None`` for a permanent lock
+    :param now: the reference time; defaults to :func:`utc_now`
+    :raises ParameterError: if the user does not resolve, or the duration is not a positive integer
+    """
+    if not (user and user.resolver and user.uid and user.realm):
+        raise ParameterError(f"Cannot lock {user!r}: the lock is keyed on a resolved user "
+                             f"(resolver, uid, realm).")
+    moment = now if now is not None else utc_now()
+    lock_expires_at = _restriction_expiry(duration_seconds, moment)
+    with guarded_write(f"the manual user lock for {user!r}", reraise=True):
+        session = get_ca_session()
+        state = session.get(UserLockState, (user.resolver, user.uid, user.realm))
+        if state is None:
+            state = UserLockState(resolver=user.resolver, uid=user.uid, realm=user.realm)
+            session.add(state)
+        state.username = user.login
+        state.lock_expires_at = lock_expires_at
+        state.lock_cause = RestrictionCause.MANUAL
+    log.info(f"Locked {user!r} by administrator decision "
+             f"({'permanently' if lock_expires_at is None else f'until {lock_expires_at}'}).")
+    return _locked_user_dict(state, moment)
+
+
+@log_with(log)
+def block_ip(ip: str, duration_seconds: int | None = None, now: datetime | None = None) -> dict:
+    """
+    Block *ip* by administrator decision, replacing whatever block is currently on record, and return the new
+    block in the shape of :func:`_blocklist_dict`. The user-lock counterpart is :func:`lock_user`, and the same
+    authoritative-write reasoning applies.
+
+    A never-block address (loopback, or one covered by ``CONDITIONAL_ACCESS_NEVER_BLOCK``) is **refused
+    loudly**. The engine skips such an address silently, which is right for an automatic action - it must not
+    break an authentication over an allowlisted proxy - but wrong here: an administrator who asks for a block
+    and gets a silent no-op has no way to tell it apart from success.
+
+    :param ip: the source IP to block
+    :param duration_seconds: how long the block lasts, or ``None`` for a permanent block
+    :param now: the reference time; defaults to :func:`utc_now`
+    :raises ParameterError: if the IP is unparsable or on the never-block list, or the duration is not a
+        positive integer
+    """
+    try:
+        # Store the canonical form: an IPv6 address has many spellings, while the engine looks blocks up by
+        # exact string against the request's client IP, which is already canonical. Keeping the typed spelling
+        # would file a block the pre-check never matches, and let a later engine block of the same address add
+        # a second row for it.
+        ip = str(ipaddress.ip_address(ip))
+    except ValueError:
+        raise ParameterError(f"{ip!r} is not a valid IP address.")
+    if is_ip_never_block(ip):
+        raise ParameterError(f"{ip} is on the never-block list (loopback, or CONDITIONAL_ACCESS_NEVER_BLOCK) "
+                             f"and cannot be blocked.")
+    moment = now if now is not None else utc_now()
+    block_expires_at = _restriction_expiry(duration_seconds, moment)
+    with guarded_write(f"the manual IP block for {ip}", reraise=True):
+        session = get_ca_session()
+        state = session.get(BlockList, ip)
+        if state is None:
+            state = BlockList(ip=ip)
+            session.add(state)
+        state.block_expires_at = block_expires_at
+        state.block_cause = RestrictionCause.MANUAL
+    log.info(f"Blocked IP {ip} by administrator decision "
+             f"({'permanently' if block_expires_at is None else f'until {block_expires_at}'}).")
+    return _blocklist_dict(state, moment)
 
 
 @log_with(log)

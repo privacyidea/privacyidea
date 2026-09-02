@@ -50,10 +50,10 @@ from privacyidea.lib.conditional_access.policy_template import list_conditional_
 from privacyidea.lib.conditional_access.state import (list_locked_users_paginate, DEFAULT_PAGE_SIZE,
                                                               user_matches_scopes, get_user_lock_dict,
                                                               purge_expired_user_locks, unlock_user_by_id,
-                                                              unlock_user_by_username,
+                                                              unlock_user_by_username, lock_user, block_ip,
                                                               list_blocklist, purge_expired_blocklist,
                                                               remove_blocklist_entry)
-from privacyidea.lib.error import ParameterError
+from privacyidea.lib.error import ParameterError, PolicyError
 from privacyidea.lib.log import log_with
 from privacyidea.lib.params import get_optional, get_required, get_required_one_of
 from privacyidea.lib.policies.actions import PolicyAction
@@ -80,6 +80,26 @@ def _get_json_param(params: dict, name: str, required: bool = False):
             value = json.loads(value)
         except ValueError:
             raise ParameterError(f"'{name}' must be valid JSON.")
+    return value
+
+
+def _duration_param(params: dict) -> int | None:
+    """
+    Parse the optional ``duration_seconds`` of a manual lock or block, or ``None`` when it is absent.
+
+    A form-encoded request delivers the duration as a string, so a string is cast here. Anything else is
+    passed through untouched, so that whether a value is an acceptable duration is decided in exactly one
+    place: the positive-integer check in
+    :func:`~privacyidea.lib.conditional_access.state._restriction_expiry`. Casting first would defeat it -
+    ``int()`` turns JSON's ``true`` into a one-second restriction and truncates ``3.9`` to three seconds,
+    both of which that check refuses when it gets to see the original value.
+    """
+    value = get_optional(params, "duration_seconds")
+    if isinstance(value, str):
+        try:
+            return int(value)
+        except ValueError:
+            raise ParameterError("'duration_seconds' must be a positive number of seconds.")
     return value
 
 
@@ -476,10 +496,12 @@ def get_locked_users():
         are actually shown
     :query states: lock state(s) to include — any of ``permanent``, ``temporary``,
         ``expired`` (comma-separated). Any other value is a ``ParameterError``.
+    :query causes: lock cause(s) to include — any of ``POLICY``, ``MANUAL``
+        (comma-separated). Any other value is a ``ParameterError``.
     :query case_insensitive: match the filter values case-insensitively
     :query page: page number, 1-indexed (default 1)
     :query page_size: entries per page (default 15)
-    :query sort_column: one of username, realm, resolver, lock_expires_at, locked_at
+    :query sort_column: one of username, realm, resolver, lock_expires_at, lock_cause, locked_at
     :query sort_order: ``asc`` or ``desc`` (default desc)
     :status 200: ``{locked_users, count, current, prev, next}`` in ``result.value``
     """
@@ -491,6 +513,7 @@ def get_locked_users():
         usernames=to_list_param(get_optional(params, "usernames")),
         error_messages=to_list_param(get_optional(params, "error_messages")),
         states=to_list_param(get_optional(params, "states")),
+        causes=to_list_param(get_optional(params, "causes")),
         case_insensitive=is_true(get_optional(params, "case_insensitive")),
         visibility_scopes=visibility_scopes,
         page=_int_param(get_optional(params, "page"), 1),
@@ -526,23 +549,87 @@ def get_user_lock():
     username = get_optional(request.all_data, "user")
     realm = get_required(request.all_data, "realm")
     resolver = get_optional(request.all_data, "resolver")
-    if user_id and not username and not resolver:
-        # User() needs a resolver to look up a uid (a uid is unique only per resolver), so this rejects early with a
-        # clean ParameterError rather than a deep UserError from the resolver lookup.
+    if user_id is not None and not resolver:
+        # User() refuses a uid without a resolver (a uid is only unique per resolver), even when a username is
+        # also given: the two are not cross-checked against each other, so the uid alone still needs its
+        # resolver to be unambiguous. Reject it here so the caller gets a ParameterError instead of a
+        # UserError from deep inside the resolver lookup.
         raise ParameterError("The parameter 'resolver' is required when looking a user up by 'user_id'.")
     visibility_scopes = get_policy_visibility_scopes(PolicyAction.USER_LOCK_READ)
 
-    # before_request already resolves the user for a login/realm/resolver triplet, so a user given only by uid still
-    # needs resolving here.
-    user = request.User
-    if not user or not user.exist():
-        user = User(uid=user_id, login=username, realm=realm, resolver=resolver)
+    user = User(uid=user_id, login=username, realm=realm, resolver=resolver)
 
     value = None
     if not user.is_empty() and user.exist() and user_matches_scopes(user, visibility_scopes):
         value = get_user_lock_dict(user)
-    g.audit_object.log({"success": True})
+    g.audit_object.log({"success": True, "user": user.login, "realm": user.realm, "resolver": user.resolver})
     return send_result(value)
+
+
+@conditional_access_blueprint.route('lock/user', methods=['POST'])
+@admin_required
+@prepolicy(check_base_action, request, PolicyAction.USER_LOCK_SET)
+@log_with(log)
+def set_user_lock():
+    """
+    Lock a single user by administrator decision, replacing whatever lock is currently on record, and return
+    the new lock.
+
+    This is the manual counterpart of what a ``LOCK_USER`` policy action does, and it is enforced by exactly
+    the same pre-check: the lock is recorded with the cause ``MANUAL`` so the two can be told apart on the
+    Locked Users page, but nothing in the authentication path treats it differently. Unlike a policy lock it
+    is authoritative - it replaces a stronger lock rather than declining as a weakening.
+
+    Requires the admin policy action :ref:`policy_user_lock_set`, which is deliberately separate from
+    ``user_lock_reset``: clearing a restriction is recoverable, imposing one is not.
+
+    One user identifier is required: user or user_id
+
+    :jsonparam user: login of the user to lock.
+    :jsonparam user_id: user id of the user to lock. Requires ``resolver``: a uid is only unique within its
+        resolver, so a user object cannot be built from a uid alone.
+    :jsonparam realm: realm of the user. Required.
+    :jsonparam resolver: resolver of the user; optional alongside ``user``, required with ``user_id``
+    :jsonparam duration_seconds: how long the lock lasts. Omitted, the lock is permanent and lifts only when
+        an admin unlocks the user - which is the usual intent when locking by hand.
+    :status 200: the new lock dict in ``result.value``
+    :status 400: invalid or missing parameter, or an unresolvable user
+    :status 403: the user is outside the admin's policy visibility scope
+    """
+    params = request.all_data
+    get_required_one_of(params, ["user", "user_id"])
+    user_id = get_optional(params, "user_id")
+    username = get_optional(params, "user")
+    realm = get_required(params, "realm")
+    resolver = get_optional(params, "resolver")
+    if user_id is not None and not resolver:
+        # User() refuses a uid without a resolver (a uid is only unique per resolver), even when a username is
+        # also given: the two are not cross-checked against each other, so the uid alone still needs its
+        # resolver to be unambiguous. Reject it here so the caller gets a ParameterError instead of a
+        # UserError from deep inside the resolver lookup.
+        raise ParameterError("The parameter 'resolver' is required when looking a user up by 'user_id'.")
+    duration_seconds = _duration_param(params)
+
+    # Build a minimal User object from request parameters only; scope authorization must not disclose
+    # whether the user exists. Perform the scope check before attempting to resolve existence.
+    user = User(uid=user_id, login=username, realm=realm, resolver=resolver)
+    if not user_matches_scopes(user, get_policy_visibility_scopes(PolicyAction.USER_LOCK_SET)):
+        # Do not include resolved identifiers; echo only the provided parameters. `username` and
+        # `user_id` are checked with `is not None`, not truthiness, so a uid of 0 is not mistaken for
+        # "neither was given".
+        target = username if username is not None else (user_id if user_id is not None else "<unspecified>")
+        raise PolicyError(f"You are not allowed to lock the requested user '{target}' in realm '{realm}'.")
+
+    # Now it is safe to resolve and validate the user existence
+    if user.is_empty() or not user.exist():
+        raise ParameterError("The requested user does not exist.")
+
+    lock = lock_user(user, duration_seconds=duration_seconds)
+    g.audit_object.log({"success": True,
+                        "user": user.login, "realm": user.realm, "resolver": user.resolver,
+                        "info": f"locked {user.login}@{user.realm} "
+                                f"({'permanent' if duration_seconds is None else f'{duration_seconds}s'})"})
+    return send_result(lock)
 
 
 @conditional_access_blueprint.route('lock/users/purge', methods=['POST'])
@@ -583,9 +670,9 @@ def reset_user_lock():
     inside the scope, and a target outside it is indistinguishable from an absent lock
     (both return ``false``).
 
-    One of user or user_id is required.
+    One user identifier is required: user or user_id
 
-    :jsonparam user: login of the user to unlock
+    :jsonparam user: login of the user to unlock.
     :jsonparam realm: realm of the user (required)
     :jsonparam resolver: resolver of the user (optional; only disambiguates)
     :jsonparam user_id: resolver-local user id
@@ -600,15 +687,19 @@ def reset_user_lock():
     resolver = get_optional(params, "resolver")
     visibility_scopes = get_policy_visibility_scopes(PolicyAction.USER_LOCK_RESET)
     resolver_suffix = f", resolver={resolver}" if resolver else ""
-    if user_id:
-        removed = unlock_user_by_id(user_id, realm, resolver, visibility_scopes=visibility_scopes)
+    # `is not None`, not truthiness: a resolver-local uid of 0 is a valid identifier, not "none given".
+    # unlock_user_by_id compares directly against the stored (string) column, so a JSON integer is cast.
+    if user_id is not None:
+        removed = unlock_user_by_id(str(user_id), realm, resolver, visibility_scopes=visibility_scopes)
         target = f"uid={user_id}, realm={realm}{resolver_suffix}"
     else:
         removed = unlock_user_by_username(login, realm, resolver, visibility_scopes=visibility_scopes)
         target = f"{login}@{realm}{resolver_suffix}"
     # Name the boundary in the audit log so a scoped-out attempt is distinguishable from a missing lock.
     scope_suffix = "" if visibility_scopes is None else ", within visibility scope"
-    g.audit_object.log({"success": removed, "info": f"reset lock ({target}{scope_suffix})"})
+    g.audit_object.log({"success": removed, "user": login if login is not None else str(user_id),
+                        "realm": realm, "resolver": resolver or "",
+                        "info": f"reset lock ({target}{scope_suffix})"})
     return send_result(removed)
 
 
@@ -633,6 +724,37 @@ def get_blocklist():
     entries = list_blocklist(include_expired=include_expired)
     g.audit_object.log({"success": True, "info": f"{len(entries)} blocklist entr(y/ies)"})
     return send_result(entries)
+
+
+@conditional_access_blueprint.route('blocklist', methods=['POST'])
+@admin_required
+@prepolicy(check_base_action, request, PolicyAction.BLOCKLIST_SET)
+@log_with(log)
+def add_blocklist_entry():
+    """
+    Block a source IP by administrator decision, replacing whatever block is currently on record, and return
+    the new entry. The IP counterpart of ``POST lock/user``.
+
+    A never-block address (loopback, or one covered by ``CONDITIONAL_ACCESS_NEVER_BLOCK``) is refused with a
+    400 rather than silently skipped: the engine skips one so an automatic action cannot lock everyone out
+    behind a shared proxy, but an admin asking for a block needs to be told it did not happen.
+
+    Requires the admin policy action :ref:`policy_blocklist_set`. The blocklist is IP-keyed and has no
+    realm/resolver dimension, so no visibility scoping applies - as for reading and clearing it.
+
+    :jsonparam ip: the source IP to block. Required.
+    :jsonparam duration_seconds: how long the block lasts. Omitted, the block is permanent.
+    :status 200: the new blocklist entry in ``result.value``
+    :status 400: the IP is unparsable or on the never-block list, or the duration is not positive
+    """
+    params = request.all_data
+    ip = get_required(params, "ip")
+    duration_seconds = _duration_param(params)
+    entry = block_ip(ip, duration_seconds=duration_seconds)
+    g.audit_object.log({"success": True,
+                        "info": f"blocked IP {ip} "
+                                f"({'permanent' if duration_seconds is None else f'{duration_seconds}s'})"})
+    return send_result(entry)
 
 
 @conditional_access_blueprint.route('blocklist/purge', methods=['POST'])
