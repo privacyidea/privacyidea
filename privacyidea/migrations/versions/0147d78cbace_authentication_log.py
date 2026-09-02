@@ -68,6 +68,10 @@ def upgrade():
                         ['resolver', 'uid', 'realm', 'timestamp'])
         op.create_index('ix_authlog_ip_time', 'authentication_log',
                         ['source_ip', 'timestamp'])
+        # Serves the deployment-wide reads that carry no subject predicate: the authentication-log statistics query
+        # behind the dashboard's activity widget, and the retention delete in `pi-manage authlog cleanup`. The four
+        # indexes above cannot, since each leads with a subject column that such a query leaves unconstrained.
+        op.create_index('ix_authlog_time', 'authentication_log', ['timestamp'])
 
     except (OperationalError, ProgrammingError) as ex:
         if "already exists" in str(ex.orig).lower():
@@ -84,6 +88,7 @@ def downgrade():
             batch_op.drop_index('ix_authlog_ip_event_time')
             batch_op.drop_index('ix_authlog_user_time')
             batch_op.drop_index('ix_authlog_ip_time')
+            batch_op.drop_index('ix_authlog_time')
 
         op.drop_table('authentication_log')
 
