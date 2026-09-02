@@ -29,12 +29,20 @@ import {
 import { of } from "rxjs";
 import { MockHttpResourceRef, MockPiResponse } from "./mock-utils";
 
+const WINDOW_START = Date.UTC(2026, 2, 1);
+const WINDOW_SPAN = 24 * 3_600_000;
+// The endpoint spells its timestamps with an explicit offset rather than a Z, so the mock does too.
+const utcIso = (ms: number) => new Date(ms).toISOString().replace("Z", "+00:00");
+
 // An empty window: no attempt ended in any classification, so `events` is empty rather than holding zeroed series.
+// The bucket starts divide the window by the bin count instead of stepping in fixed hours, so they stay valid dates
+// for the counts the widget actually asks for - a fixed six-hour step runs past 23:00 at seven buckets and formatDate
+// then throws on the label.
 export const emptyStatistics = (bins = 4): AuthenticationLogStatistics => ({
-  window: { start_time: "2026-03-01T00:00:00+00:00", end_time: "2026-03-02T00:00:00+00:00", total: 0 },
+  window: { start_time: utcIso(WINDOW_START), end_time: utcIso(WINDOW_START + WINDOW_SPAN), total: 0 },
   bins: {
     count: bins,
-    starts: Array.from({ length: bins }, (_, index) => `2026-03-01T${String(index * 6).padStart(2, "0")}:00:00+00:00`)
+    starts: Array.from({ length: bins }, (_, index) => utcIso(WINDOW_START + (index * WINDOW_SPAN) / bins))
   },
   events: []
 });
