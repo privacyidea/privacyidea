@@ -1100,6 +1100,85 @@ describe("TokenService", () => {
     });
   });
 
+  describe("bulkUnassignTokens()", () => {
+    it("notifies on error", (done) => {
+      const boom = new HttpErrorResponse({
+        error: { result: { error: { message: "bu" } } },
+        status: 500
+      });
+      postSpy.mockReturnValue(throwError(() => boom));
+
+      tokenService.bulkUnassignTokens([{ serial: "SER" } as unknown as import("./token.service").TokenDetails]).subscribe({
+        error: (e) => {
+          expect(e).toBe(boom);
+          expect(notificationService.error).toHaveBeenCalledWith("Failed to unassign tokens. bu");
+          done();
+        }
+      });
+    });
+  });
+
+  describe("enrollToken()", () => {
+    it("notifies on error", (done) => {
+      const boom = new HttpErrorResponse({
+        error: { result: { error: { message: "et" } } },
+        status: 500
+      });
+      postSpy.mockReturnValue(throwError(() => boom));
+
+      tokenService
+        .enrollToken({
+          data: {} as unknown as import("./token.service").TokenEnrollmentData,
+          mapper: { toApiPayload: () => ({}) } as unknown as import("./token.service").TokenApiPayloadMapper<
+            import("./token.service").TokenEnrollmentData
+          >
+        })
+        .subscribe({
+          error: (e) => {
+            expect(e).toBe(boom);
+            expect(notificationService.error).toHaveBeenCalledWith("Failed to enroll token. et");
+            done();
+          }
+        });
+    });
+  });
+
+  describe("verifyToken()", () => {
+    it("notifies on error", (done) => {
+      const boom = new HttpErrorResponse({
+        error: { result: { error: { message: "vt" } } },
+        status: 500
+      });
+      postSpy.mockReturnValue(throwError(() => boom));
+
+      tokenService.verifyToken({} as unknown as import("./token.service").TokenEnrollmentData).subscribe({
+        error: (e) => {
+          expect(e).toBe(boom);
+          expect(notificationService.error).toHaveBeenCalledWith("Failed to verify token. vt");
+          done();
+        }
+      });
+    });
+  });
+
+  describe("importTokens()", () => {
+    it("notifies on error", (done) => {
+      const boom = new HttpErrorResponse({
+        error: { result: { error: { message: "it" } } },
+        status: 500
+      });
+      postSpy.mockReturnValue(throwError(() => boom));
+
+      tokenService.importTokens("tokens.pskc", new FormData()).subscribe({
+        error: (e) => {
+          expect(e).toBe(boom);
+          expect(notificationService.error).toHaveBeenCalledWith("Failed to import tokens. it");
+          done();
+        }
+      });
+    });
+  });
+
   describe("setTokengroup()", () => {
     it("notifies on error", (done) => {
       const boom = new HttpErrorResponse({

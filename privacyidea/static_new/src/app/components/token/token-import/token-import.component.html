@@ -21,18 +21,18 @@
   appScrollToTop
   aria-label="Import Tokens"
   class="token-import-container"
-  i18n-aria-label>
+  i18n-aria-label="@@token.importTokens">
   <h3
     class="margin-8"
-    i18n>
-    Import Tokens
-  </h3>
+    i18n="@@token.importTokens"
+    >Import Tokens</h3
+  >
   <div
     [appStickyHeader]="scrollContainer"
     class="sticky-header">
     <div class="sticky-controls">
       <mat-form-field class="input-width-xl">
-        <mat-label i18n>File Type</mat-label>
+        <mat-label i18n="@@token.fileType">File Type</mat-label>
         <mat-select
           (selectionChange)="fileType.set($event.value)"
           [panelClass]="'single-column-panel'"
@@ -52,7 +52,7 @@
         class="action-button-primary button-width-m"
         mat-stroked-button>
         <mat-icon>input</mat-icon>
-        <span i18n>Import File</span>
+        <span i18n="@@token.importFile">Import File</span>
       </button>
     </div>
   </div>
@@ -60,84 +60,87 @@
   <div class="margin-top-16 margin-left-16">
     @switch (fileType()) {
       @case ("aladdin-xml") {
-        <div i18n>
-          Here you can upload an XML file from Aladdin or SafeNet as it was used with Aladdin TMS or SafeNet SAM.
-        </div>
+        <div i18n="@@token.hereYouUpload"
+          >Here you can upload an XML file from Aladdin or SafeNet as it was used with Aladdin TMS or SafeNet SAM.</div
+        >
       }
       @case ("OATH CSV") {
         <div
           class="margin-bottom-16"
-          i18n>
-          The file is supposed to contain one token per line. At least the serial number and the seed are required.
+          i18n="@@token.fileSupposedContainOne"
+          >The file is supposed to contain one token per line. At least the serial number and the seed are required.
           Other parameters are optional. If not defined, the following default values are used:
           <ul>
             <li>Type: hotp</li>
             <li>OTP length: 6</li>
             <li>Time Step: 30</li>
-          </ul>
-        </div>
+          </ul></div
+        >
 
-        <div i18n>HOTP and TOTP tokens:</div>
+        <div i18n="@@token.hotpTotpTokens">HOTP and TOTP tokens:</div>
         <div
           class="italic margin-bottom-16"
-          i18n>
-          serial number, seed, type, otp length, time step
-        </div>
+          i18n="@@token.serialNumberSeedType"
+          >serial number, seed, type, otp length, time step</div
+        >
 
-        <div i18n>OCRA tokens:</div>
+        <div i18n="@@token.ocraTokens">OCRA tokens:</div>
         <div
           class="italic"
-          i18n>
-          serial number, seed, type, ocrasuite
-        </div>
+          i18n="@@token.serialNumberSeed"
+          >serial number, seed, type, ocrasuite</div
+        >
       }
       @case ("Yubikey CSV") {
-        <div i18n>
-          The file is supposed to contain one token per line. If you are enrolling the Yubikey in HOTP mode, you should
-          use the PSKC file format in the newer version of the Yubikey GUI.
-        </div>
+        <div i18n="@@token.fileSupposedContain"
+          >The file is supposed to contain one token per line. If you are enrolling the Yubikey in HOTP mode, you should
+          use the PSKC file format in the newer version of the Yubikey GUI.</div
+        >
       }
       @case ("pskc") {
         <div
           class="margin-bottom-32"
-          i18n>
-          This is an RFC6030 OATH compliant PSKC file. Values in the PSKC files may be unencrypted or either encrypted
+          i18n="@@token.rfc6030OathCompliant"
+          >This is an RFC6030 OATH compliant PSKC file. Values in the PSKC files may be unencrypted or either encrypted
           with a Pre Shared Key or password. If the values are encrypted, please specify the Pre Shared Key in hex
-          format or the password.
-        </div>
+          format or the password.</div
+        >
         <div>
           <mat-form-field class="input-width-xl margin-bottom-16">
-            <mat-label i18n>Pre Shared Key</mat-label>
+            <mat-label i18n="@@token.preSharedKey">Pre Shared Key</mat-label>
             <input
               (input)="preSharedKey.set($any($event.target).value)"
               [value]="preSharedKey()"
-              i18n-placeholder
+              i18n-placeholder="@@token.preSharedKeyHex"
               matInput
               placeholder="Pre Shared Key in hex format" />
-            <mat-hint i18n
-              >As the values are encrypted with AES128-CBC, you need to give a 32 characters long hex string.
-            </mat-hint>
+            <mat-hint i18n="@@token.asValuesEncrypted"
+              >As the values are encrypted with AES128-CBC, you need to give a 32 characters long hex string.</mat-hint
+            >
             @if (!preSharedKeyValid()) {
-              <mat-error i18n
-                >As the values are encrypted with AES128-CBC, you need to give a 32 characters long hex string.
-              </mat-error>
+              <mat-error i18n="@@token.asValuesEncrypted"
+                >As the values are encrypted with AES128-CBC, you need to give a 32 characters long hex
+                string.</mat-error
+              >
             }
           </mat-form-field>
         </div>
         <div>
           <mat-form-field class="input-width-xl">
-            <mat-label i18n>Password</mat-label>
+            <mat-label i18n="@@common.password">Password</mat-label>
             <input
               (input)="pskPassword.set($any($event.target).value)"
               [value]="pskPassword()"
-              i18n-placeholder
+              i18n-placeholder="@@common.password"
               matInput
               placeholder="Password" />
           </mat-form-field>
         </div>
         <div>
           <mat-form-field class="input-width-xl">
-            <mat-label i18n>Verification Method for the Authenticity of Imported Tokens</mat-label>
+            <mat-label i18n="@@token.verificationMethod"
+              >Verification Method for the Authenticity of Imported Tokens</mat-label
+            >
             <mat-select
               (selectionChange)="pskValidation.set($event.value)"
               [value]="pskValidation()">
@@ -152,9 +155,9 @@
   </div>
 
   <div class="margin-bottom-16 margin-left-16">
-    <h4 i18n>Realm</h4>
+    <h4 i18n="@@common.realm">Realm</h4>
     <mat-form-field class="input-width-l">
-      <mat-label i18n>Select Realm for Tokens</mat-label>
+      <mat-label i18n="@@token.selectRealmTokens">Select Realm for Tokens</mat-label>
       <mat-select
         (selectionChange)="selectedRealms.set($event.value)"
         [value]="selectedRealms()"
@@ -164,12 +167,12 @@
           <mat-option [value]="option">{{ option }}</mat-option>
         }
       </mat-select>
-      <mat-hint i18n> All imported tokens will be added to these realms.</mat-hint>
+      <mat-hint i18n="@@token.allImportedTokens">All imported tokens will be added to these realms.</mat-hint>
     </mat-form-field>
   </div>
 
   <div class="margin-left-16">
-    <h4 i18n>Select File</h4>
+    <h4 i18n="@@token.selectFile">Select File</h4>
 
     <div class="input-container file-input-container">
       @if (fileName()) {
@@ -183,7 +186,7 @@
       } @else {
         <span
           class="file-name not-selected"
-          i18n
+          i18n="@@token.noFileSelected"
           >No file selected yet</span
         >
       }
@@ -194,7 +197,7 @@
         <div class="flex just-center margin-bottom-8">
           <mat-icon>upload_file</mat-icon>
         </div>
-        <span i18n>Drag and Drop file here or</span>
+        <span i18n="@@token.dragDropFileHere">Drag and Drop file here or</span>
       </div>
 
       <input
@@ -209,7 +212,7 @@
           class="action-button-secondary text-center just-center button-width-l"
           mat-stroked-button>
           <mat-icon>folder_open</mat-icon>
-          <span i18n>Browse Files</span>
+          <span i18n="@@token.browseFiles">Browse Files</span>
         </button>
       </div>
     </div>

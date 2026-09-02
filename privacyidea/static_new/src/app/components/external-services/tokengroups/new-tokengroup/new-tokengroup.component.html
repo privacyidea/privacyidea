@@ -20,15 +20,15 @@
   @if (isEditMode()) {
     <h3
       class="margin-8"
-      i18n>
-      Edit Tokengroup
-    </h3>
+      i18n="@@tokenGroup.editTokengroup"
+      >Edit Tokengroup</h3
+    >
   } @else {
     <h3
       class="margin-8"
-      i18n>
-      Create Tokengroup
-    </h3>
+      i18n="@@common.createTokengroup"
+      >Create Tokengroup</h3
+    >
   }
 
   <div class="header-row">
@@ -36,7 +36,7 @@
       (click)="onCancel()"
       class="action-button-secondary button-width-s"
       mat-stroked-button>
-      <span i18n>Cancel</span>
+      <span i18n="@@common.cancel">Cancel</span>
     </button>
     <button
       (click)="save()"
@@ -44,7 +44,7 @@
       class="action-button-primary button-width-s"
       mat-stroked-button>
       <mat-icon>save</mat-icon>
-      <span i18n>Save</span>
+      <span i18n="@@common.save">Save</span>
     </button>
   </div>
 
@@ -54,7 +54,7 @@
         <mat-form-field
           appearance="fill"
           class="input-width-l margin-bottom-16">
-          <mat-label i18n>Identifier</mat-label>
+          <mat-label i18n="@@common.identifier">Identifier</mat-label>
           <app-clearable-input
             (clearButtonClick)="tokengroupModel.update(m => ({...m, groupname: ''}))"
             [showClearButton]="!isEditMode() && !!tokengroupModel().groupname">
@@ -63,22 +63,24 @@
               matInput
               placeholder="myNewGroup" />
           </app-clearable-input>
-          <mat-hint i18n>This is the unique identifying name for this group definition.</mat-hint>
+          <mat-hint i18n="@@tokenGroup.uniqueIdentifying"
+            >This is the unique identifying name for this group definition.</mat-hint
+          >
           @if (tokengroupForm.groupname().errors().some(e => e.kind === 'required')) {
-            <mat-error i18n>Identifier is <strong>required</strong>.</mat-error>
+            <mat-error i18n="@@common.identifierRequiredError">Identifier is <strong>required</strong>.</mat-error>
           }
           @if (tokengroupForm.groupname().errors().some(e => e.kind === 'pattern')) {
-            <mat-error i18n
+            <mat-error i18n="@@common.identifierContains"
               >Identifier contains <strong>invalid characters</strong>. Only alphanumeric characters, dots, underscores
-              and hyphens are allowed.
-            </mat-error>
+              and hyphens are allowed.</mat-error
+            >
           }
         </mat-form-field>
 
         <mat-form-field
           appearance="fill"
           class="input-width-xl">
-          <mat-label i18n>Description</mat-label>
+          <mat-label i18n="@@common.description">Description</mat-label>
           <app-clearable-input
             (clearButtonClick)="tokengroupModel.update(m => ({...m, description: ''}))"
             [showClearButton]="!!tokengroupModel().description">

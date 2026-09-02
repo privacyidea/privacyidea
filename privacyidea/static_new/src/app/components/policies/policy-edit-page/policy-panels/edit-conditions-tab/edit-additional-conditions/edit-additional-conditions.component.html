@@ -20,27 +20,27 @@
 <div class="conditions-container">
   <h2
     class="conditions-title"
-    i18n>
-    Additional Conditions
-  </h2>
+    i18n="@@policy.additionalConditions"
+    >Additional Conditions</h2
+  >
 
   @if (additionalConditions().length > 0) {
     <div class="additional-condition-header">
       <div
         class="center"
-        i18n>
-        Active
-      </div>
-      <div i18n>Section</div>
-      <div i18n>Key</div>
-      <div i18n>Comparator</div>
-      <div i18n>Value</div>
-      <div i18n>Missing Data</div>
+        i18n="@@common.active"
+        >Active</div
+      >
+      <div i18n="@@policy.section">Section</div>
+      <div i18n="@@common.key">Key</div>
+      <div i18n="@@policy.comparator">Comparator</div>
+      <div i18n="@@common.value">Value</div>
+      <div i18n="@@policy.missingData">Missing Data</div>
       <div
         class="center"
-        i18n>
-        Actions
-      </div>
+        i18n="@@common.actions"
+        >Actions</div
+      >
     </div>
   }
 
@@ -89,8 +89,10 @@
   @if (showAddConditionForm()) {
     <div class="new-condition-form">
       <div class="form-row">
-        <mat-form-field appearance="outline" class="margin-bottom-16">
-          <mat-label i18n>Section</mat-label>
+        <mat-form-field
+          appearance="outline"
+          class="margin-bottom-16">
+          <mat-label i18n="@@policy.section">Section</mat-label>
           <mat-select
             [value]="conditionSection()"
             (selectionChange)="conditionSection.set($event.value)">
@@ -100,8 +102,10 @@
           </mat-select>
         </mat-form-field>
 
-        <mat-form-field appearance="outline" class="margin-bottom-16">
-          <mat-label i18n>If Data Missing</mat-label>
+        <mat-form-field
+          appearance="outline"
+          class="margin-bottom-16">
+          <mat-label i18n="@@policy.ifDataMissing">If Data Missing</mat-label>
           <mat-select
             [value]="conditionHandleMissingData()"
             (selectionChange)="conditionHandleMissingData.set($event.value)">
@@ -112,8 +116,10 @@
         </mat-form-field>
       </div>
       <div class="form-row">
-        <mat-form-field appearance="outline" class="margin-bottom-16">
-          <mat-label i18n>Key</mat-label>
+        <mat-form-field
+          appearance="outline"
+          class="margin-bottom-16">
+          <mat-label i18n="@@common.key">Key</mat-label>
           @if (availableKeys().length > 0) {
             <input
               type="text"
@@ -137,8 +143,10 @@
           }
         </mat-form-field>
 
-        <mat-form-field appearance="outline" class="margin-bottom-16">
-          <mat-label i18n>Comparator</mat-label>
+        <mat-form-field
+          appearance="outline"
+          class="margin-bottom-16">
+          <mat-label i18n="@@policy.comparator">Comparator</mat-label>
           <mat-select
             [value]="conditionComparator()"
             (selectionChange)="conditionComparator.set($event.value)">
@@ -148,8 +156,10 @@
           </mat-select>
         </mat-form-field>
 
-        <mat-form-field appearance="outline" class="margin-bottom-16">
-          <mat-label i18n>Value</mat-label>
+        <mat-form-field
+          appearance="outline"
+          class="margin-bottom-16">
+          <mat-label i18n="@@common.value">Value</mat-label>
           <input
             matInput
             [value]="conditionValue()"
@@ -162,17 +172,17 @@
           mat-stroked-button
           class="action-button-secondary button-width-m"
           (click)="cancelEdit()"
-          i18n>
-          Cancel
-        </button>
+          i18n="@@common.cancel"
+          >Cancel</button
+        >
         <button
           mat-stroked-button
           class="action-button-primary button-width-m"
           (click)="saveCondition()">
           @if (editIndex() !== null) {
-            <span i18n>Update Condition</span>
+            <span i18n="@@policy.updateCondition">Update Condition</span>
           } @else {
-            <span i18n>Add Condition</span>
+            <span i18n="@@common.addCondition">Add Condition</span>
           }
         </button>
       </div>
@@ -183,7 +193,7 @@
         mat-stroked-button
         class="action-button-secondary button-width-l"
         (click)="showAddConditionForm.set(true)">
-        <mat-icon>add</mat-icon> <span i18n>Create New Condition</span>
+        <mat-icon>add</mat-icon> <span i18n="@@policy.createNewCondition">Create New Condition</span>
       </button>
     </div>
   }

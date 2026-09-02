@@ -76,6 +76,30 @@ describe("SaveAndExitDialogComponent", () => {
       expect(saveAction?.icon).toBeUndefined();
       expect(actions.some((a) => a.value === "discard")).toBeTruthy();
     });
+
+    it("should fall back to default labels, title and message when data omits them", async () => {
+      await TestBed.resetTestingModule();
+      await TestBed.configureTestingModule({
+        imports: [SaveAndExitDialogComponent],
+        providers: [
+          {
+            provide: MAT_DIALOG_DATA,
+            useValue: { allowSaveExit: true, saveExitDisabled: false } as SaveAndExitDialogData
+          },
+          { provide: MatDialogRef, useClass: MockMatDialogRef }
+        ]
+      }).compileComponents();
+
+      const defaultsFixture = TestBed.createComponent(SaveAndExitDialogComponent);
+      const defaultsComponent = defaultsFixture.componentInstance;
+      defaultsFixture.detectChanges();
+
+      const actions = defaultsComponent.actions();
+      expect(actions.find((a) => a.value === "save-exit")?.label).toBe("Save");
+      expect(actions.find((a) => a.value === "discard")?.label).toBe("Discard");
+      expect(defaultsComponent.title()).toBe("Discard changes");
+      expect(defaultsComponent.message()).toBe("You have unsaved changes. Do you want to save them before exiting?");
+    });
   });
 
   describe("Interactions", () => {

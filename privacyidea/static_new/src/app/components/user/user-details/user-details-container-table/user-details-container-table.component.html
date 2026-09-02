@@ -19,9 +19,9 @@
 <div
   aria-label="User Details Container Table"
   class="user-details-container-table-layout"
-  i18n-aria-label>
+  i18n-aria-label="@@user.userDetailsContainer">
   <div class="details-header">
-    <h4 i18n>Containers of User</h4>
+    <h4 i18n="@@user.containersUser">Containers of User</h4>
     <h4 class="username-header">&nbsp;{{ userService.detailsUser().username }}</h4>
     <h4>:</h4>
   </div>
@@ -37,7 +37,7 @@
           class="action-button-delete-secondary button-width-l"
           mat-stroked-button>
           <mat-icon>delete_sweep</mat-icon>
-          <span i18n>Delete</span>
+          <span i18n="@@common.delete">Delete</span>
         </button>
       }
       @if (authService.actionAllowed("container_unassign_user")) {
@@ -47,7 +47,7 @@
           class="action-button-secondary button-width-l"
           mat-stroked-button>
           <mat-icon>person_remove</mat-icon>
-          <span i18n>Unassign</span>
+          <span i18n="@@common.unassign">Unassign</span>
         </button>
       }
       @if (authService.actionAllowed("container_state")) {
@@ -57,7 +57,7 @@
           class="action-button-secondary button-width-l"
           mat-stroked-button>
           <mat-icon>toggle_on</mat-icon>
-          <span i18n>(De)activate</span>
+          <span i18n="@@common.deActivate">(De)activate</span>
         </button>
       }
     </div>
@@ -68,7 +68,7 @@
         [dataSource]="dataSource"
         aria-label="Containers for Selected User"
         class="user-details-container-table"
-        i18n-aria-label
+        i18n-aria-label="@@user.containersSelected"
         mat-table>
         <ng-container matColumnDef="select">
           <th
@@ -123,7 +123,7 @@
                       <a
                         (click)="contentService.navigateContainerDetails(element.serial)"
                         (keydown.enter)="contentService.navigateContainerDetails(element.serial)"
-                        attr.aria-label="{{ column.label }} Link"
+                        [attr.aria-label]="linkLabel(column.label)"
                         role="button"
                         tabindex="0">
                         {{ element.serial }}
@@ -180,8 +180,8 @@
               [table]="tableState"
               heading="No containers assigned to this user"
               hint="Assign a container to this user to see it here."
-              i18n-heading
-              i18n-hint />
+              i18n-heading="@@user.noContainersAssigned"
+              i18n-hint="@@user.assignContainerUser" />
           </td>
         </tr>
       </table>
@@ -191,7 +191,7 @@
       [hint]="emptyHint()"
       [table]="tableState"
       heading="No containers assigned to this user"
-      i18n-heading
+      i18n-heading="@@user.noContainersAssigned"
       icon="folder">
       <div class="table-state-actions">
         <ng-container *ngTemplateOutlet="createAction() ?? null"></ng-container>

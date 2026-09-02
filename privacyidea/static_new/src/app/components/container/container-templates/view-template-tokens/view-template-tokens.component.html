@@ -21,7 +21,7 @@
     @for (token of templateTokens(); track token) {
       <div class="token-container">
         @if (token.type) {
-          <span class="token-item"> <strong i18n>Type:</strong>&nbsp;{{ token.type }} </span>
+          <span class="token-item"> <strong i18n="@@container.type">Type:</strong>&nbsp;{{ token.type }} </span>
         }
 
         @for (entry of token | keyvalue; track entry.key) {

@@ -64,6 +64,10 @@ import { UserService, UserServiceInterface } from "@services/user/user.service";
   styleUrl: "./token-details-user.component.scss"
 })
 export class TokenDetailsUserComponent {
+  protected linkLabel(label: string): string {
+    return $localize`:@@common.linkLabel:${label}:LABEL: link`;
+  }
+
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly realmService: RealmServiceInterface = inject(RealmService);
   protected readonly userService: UserServiceInterface = inject(UserService);

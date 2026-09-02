@@ -73,7 +73,7 @@ export class EnrollPasskeyComponent extends EnrollTokenBase<PasskeyEnrollmentDat
 
   buildEnrollmentArgs(basicEnrollmentData: TokenEnrollmentData): EnrollmentArgs<PasskeyEnrollmentData> | null {
     if (!navigator.credentials?.create) {
-      const errorMsg = $localize`Passkey/WebAuthn is not supported by this browser.`;
+      const errorMsg = $localize`:@@token.passkeyWebauthn:Passkey/WebAuthn is not supported by this browser.`;
       this.notificationService.error(errorMsg);
       throw new Error(errorMsg);
     }
@@ -98,7 +98,9 @@ export class EnrollPasskeyComponent extends EnrollTokenBase<PasskeyEnrollmentDat
       return null;
     }
     if (!enrollmentResponse.detail?.passkey_registration) {
-      this.notificationService.error($localize`Failed to initiate Passkey registration: Invalid server response.`);
+      this.notificationService.error(
+        $localize`:@@token.failedInitiate:Failed to initiate Passkey registration: Invalid server response.`
+      );
       throw new Error("Invalid server response for Passkey initiation.");
     }
 
@@ -175,7 +177,9 @@ export class EnrollPasskeyComponent extends EnrollTokenBase<PasskeyEnrollmentDat
     const detail = responseStepOne.detail;
     const passkeyRegOptions = detail?.passkey_registration;
     if (!passkeyRegOptions) {
-      this.notificationService.error($localize`Failed to initiate Passkey registration: Invalid server response.`);
+      this.notificationService.error(
+        $localize`:@@token.failedInitiate:Failed to initiate Passkey registration: Invalid server response.`
+      );
       return null;
     }
     const excludedCredentials = passkeyRegOptions.excludeCredentials.map((cred) => ({
@@ -202,7 +206,7 @@ export class EnrollPasskeyComponent extends EnrollTokenBase<PasskeyEnrollmentDat
       .create({ publicKey: publicKeyOptions })
       .catch((browserOrCredentialError) => {
         this.notificationService.error(
-          $localize`Passkey credential creation failed: ${browserOrCredentialError.message}`
+          $localize`:@@token.passkeyCredential:Passkey credential creation failed: ${browserOrCredentialError.message}:MESSAGE:`
         );
         return null;
       });
@@ -240,15 +244,17 @@ export class EnrollPasskeyComponent extends EnrollTokenBase<PasskeyEnrollmentDat
     )
       .catch(async (errorStep3) => {
         this.notificationService.error(
-          $localize`Error during final Passkey registration step. Attempting to clean up token.`
+          $localize`:@@token.errorDuringFinal:Error during final Passkey registration step. Attempting to clean up token.`
         );
         await lastValueFrom(this.tokenService.deleteToken(detail.serial)).catch(() => {
           this.notificationService.error(
-            $localize`Failed to delete token ${detail.serial} after registration error. Please check manually.`
+            $localize`:@@token.failedDeleteToken:Failed to delete token ${detail.serial}:SERIAL: after registration error. Please check manually.`
           );
           throw new Error(errorStep3);
         });
-        this.notificationService.error($localize`Token ${detail.serial} deleted due to registration error.`);
+        this.notificationService.error(
+          $localize`:@@token.tokenDeletedDue:Token ${detail.serial}:SERIAL: deleted due to registration error.`
+        );
         throw Error(errorStep3);
       })
       .then((finalResponse) => {

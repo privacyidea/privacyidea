@@ -60,14 +60,26 @@ export class ContainerTokensEnrolledDialogComponent extends AbstractDialogCompon
   readonly dialogActions = computed((): DialogAction<string>[] => [
     {
       type: "auxiliary",
-      label: $localize`Previous`,
+      label: $localize`:@@container.previous:Previous`,
       value: "previous",
       icon: "arrow_back",
       disabled: this.isFirst()
     },
     this.isLast()
-      ? { type: "confirm", label: $localize`Go to Container`, value: "finish", primary: true, icon: "check" }
-      : { type: "auxiliary", label: $localize`Next`, value: "next", primary: true, icon: "arrow_forward" }
+      ? {
+          type: "confirm",
+          label: $localize`:@@container.goContainer:Go to Container`,
+          value: "finish",
+          primary: true,
+          icon: "check"
+        }
+      : {
+          type: "auxiliary",
+          label: $localize`:@@common.next:Next`,
+          value: "next",
+          primary: true,
+          icon: "arrow_forward"
+        }
   ]);
 
   onEnrollmentResponseChange(response: EnrollmentResponse) {

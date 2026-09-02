@@ -25,7 +25,7 @@
       (click)="refreshPage()"
       class="refresh-btn"
       mat-icon-button
-      i18n-matTooltip
+      i18n-matTooltip="@@nav.refreshResources"
       matTooltip="Refresh Resources">
       <mat-icon>refresh</mat-icon>
     </button>
@@ -34,9 +34,9 @@
     (click)="logout()"
     aria-label="Logout"
     class="logout-btn"
-    i18n-aria-label
+    i18n-aria-label="@@common.logout"
     mat-icon-button
-    i18n-matTooltip
+    i18n-matTooltip="@@common.logout"
     matTooltip="Logout">
     <mat-icon>logout</mat-icon>
   </button>
@@ -49,7 +49,7 @@
           : 'on-surface-variant'
     ]"
     class="session-timer padding-8"
-    i18n-matTooltip
+    i18n-matTooltip="@@nav.timeUntilSession"
     matTooltip="Time until session expires">
     @if (sessionOverOneDay()) {
       {{ sessionDaysText() }}

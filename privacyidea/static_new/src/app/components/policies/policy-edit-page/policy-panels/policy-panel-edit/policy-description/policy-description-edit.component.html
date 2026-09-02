@@ -18,8 +18,10 @@
 -->
 
 <div class="action-description-container">
-  <mat-form-field class="input-width-xxl" subscriptSizing="dynamic">
-    <mat-label i18n>Description</mat-label>
+  <mat-form-field
+    class="input-width-xxl"
+    subscriptSizing="dynamic">
+    <mat-label i18n="@@common.description">Description</mat-label>
     <textarea
       matInput
       cdkTextareaAutosize
@@ -27,7 +29,7 @@
       [cdkAutosizeMaxRows]="6"
       [value]="description()"
       (input)="updatePolicyDescription($any($event.target).value)"
-      i18n-placeholder
+      i18n-placeholder="@@policy.optionalEnter"
       placeholder="(optional) Enter a description for this policy...">
     </textarea>
   </mat-form-field>

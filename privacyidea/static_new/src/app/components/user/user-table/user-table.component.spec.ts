@@ -154,6 +154,10 @@ describe("UserTableComponent", () => {
     expect(component).toBeTruthy();
   });
 
+  it("linkLabel should build a link label from the given label", () => {
+    expect((component as unknown as { linkLabel: (label: string) => string }).linkLabel("user1")).toContain("user1");
+  });
+
   it("onClickUsername stores username and the selected realm", () => {
     mockUserService.selectedUserRealm.set("themis");
     component.onClickUsername({ username: "alice" } as never);

@@ -39,7 +39,7 @@ import { forkJoin } from "rxjs";
 export class AdministrationWidgetComponent extends DashboardWidget implements OnInit {
   static override readonly type = "administration";
   static override readonly requiredAction = "auditlog";
-  static override readonly title = $localize`Administration`;
+  static override readonly title = $localize`:@@dashboard.administration:Administration`;
   static override readonly icon = "supervised_user_circle";
   static override readonly titleLink = ROUTE_PATHS.AUDIT;
   static override readonly titleLinkAction = "auditlog";

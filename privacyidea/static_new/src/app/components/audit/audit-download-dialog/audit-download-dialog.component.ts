@@ -30,7 +30,7 @@ import { DialogAction } from "@models/dialog";
 })
 export class AuditDownloadDialogComponent extends AbstractDialogComponent<void, boolean> {
   action: DialogAction<true> = {
-    label: $localize`Proceed`,
+    label: $localize`:@@common.proceed:Proceed`,
     value: true,
     type: "confirm",
     primary: true
