@@ -5,7 +5,6 @@
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 4px;
 }
 
 // Reveals the peer and the claimed path. Sized and styled like the conditional-access cell's toggle so the two
@@ -29,11 +28,13 @@
 // Names where the shown address came from. No badge at all is rendered for an entry that predates the
 // recording, so the badge always states something the row actually says.
 .ip-source-badge {
+  display: inline-block;
   padding: 0 6px;
-  border-radius: 8px;
-  font-size: 0.75em;
+  border-radius: var(--border-radius);
+  font-size: 0.75rem;
   line-height: 1.6;
   white-space: nowrap;
+  vertical-align: middle;
   background: var(--mat-sys-surface-container-highest);
   color: var(--mat-sys-on-surface-variant);
 }
