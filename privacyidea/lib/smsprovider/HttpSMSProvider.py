@@ -42,7 +42,7 @@ It can handle HTTP/HTTPS POST and GET requests also with Proxy support
 The code is tested in tests/test_lib_smsprovider
 """
 
-from privacyidea.lib.smsprovider.SMSProvider import (ISMSProvider, SMSError)
+from privacyidea.lib.smsprovider.SMSProvider import ALLOW_PUSH, ISMSProvider, SMSError
 from privacyidea.lib import _
 import requests
 import json
@@ -295,6 +295,7 @@ class HttpSMSProvider(ISMSProvider):
                                            "as JSON."),
                           "values": ["yes", "no"]
                       },
+                      ALLOW_PUSH: cls.allow_push_parameter(),
                       "REGEXP": {
                           "description": cls.regexp_description
                       },

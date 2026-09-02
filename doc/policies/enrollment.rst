@@ -397,7 +397,8 @@ push_firebase_configuration
 type: ``string``
 
 The push-capable SMS gateway which should be used when enrolling a
-:ref:`push_token`. Firebase, HTTP, and Script providers support PUSH messages.
+:ref:`push_token`. Firebase providers support PUSH messages by default. HTTP and
+Script gateways must have ``ALLOW_PUSH`` set to ``yes``.
 The policy name is retained for backwards compatibility. The administrator can
 create several gateway configurations (see :ref:`sms_gateway_config`), which can
 be selected depending on the user's realm or the IP address.

@@ -17,7 +17,7 @@ from sqlalchemy import select
 from privacyidea.lib.error import ConfigAdminError
 from privacyidea.lib.smsprovider.FirebaseProvider import FirebaseConfig, FirebaseProvider
 from privacyidea.lib.smsprovider.HttpSMSProvider import HttpSMSProvider
-from privacyidea.lib.smsprovider.SMSProvider import ISMSProvider
+from privacyidea.lib.smsprovider.SMSProvider import ALLOW_PUSH, ISMSProvider
 from privacyidea.lib.smsprovider.SMSProvider import (SMSError,
                                                      get_sms_provider_class,
                                                      set_smsgateway,
@@ -884,6 +884,22 @@ class FirebaseProviderTestCase(MyTestCase):
         self.assertTrue(FirebaseProvider.supports_push_messages)
         self.assertTrue(HttpSMSProvider.supports_push_messages)
         self.assertTrue(ScriptSMSProvider.supports_push_messages)
+
+        gateway = mock.MagicMock(option_dict={})
+        self.assertTrue(FirebaseProvider.allows_push_messages(gateway))
+        self.assertFalse(HttpSMSProvider.allows_push_messages(gateway))
+        self.assertFalse(ScriptSMSProvider.allows_push_messages(gateway))
+
+        gateway.option_dict = {ALLOW_PUSH: "yes"}
+        self.assertTrue(HttpSMSProvider.allows_push_messages(gateway))
+        self.assertTrue(ScriptSMSProvider.allows_push_messages(gateway))
+        self.assertFalse(SmtpSMSProvider.allows_push_messages(gateway))
+
+        gateway.option_dict = {ALLOW_PUSH: "no"}
+        self.assertFalse(FirebaseProvider.allows_push_messages(gateway))
+
+        for provider in [FirebaseProvider, HttpSMSProvider, ScriptSMSProvider]:
+            self.assertIn(ALLOW_PUSH, provider.parameters()["parameters"])
 
     def test_set_configuration_success(self):
         valid_file = "tests/testdata/firebase-test.json"

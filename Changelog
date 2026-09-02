@@ -14,8 +14,9 @@ Version 3.14dev1
     subscription, with links to the documentation and the products (#4057, #5383)
 
   Enhancements:
-  * PUSH tokens can use Firebase, HTTP, or Script SMS gateways to deliver signed challenge payloads. HTTP gateways can
-    receive the structured payload as JSON, while Script gateways receive it as JSON on stdin. (#5864)
+  * PUSH tokens can use Firebase, HTTP, or Script SMS gateways to deliver signed challenge payloads. HTTP and Script
+    gateways require `ALLOW_PUSH=yes`; Firebase gateways remain enabled by default. HTTP gateways can receive the
+    structured payload as JSON, while Script gateways receive it as JSON on stdin. (#5864)
   * The decrypted public SSH key of an SSH key token can be retrieved via the new endpoint `GET /token/sshkey/<serial>`,
     guarded by the new policy action `sshkey_read` (admin and user scope).
   * SSH key tokens now store an integrity checksum of the SSH key data in the encrypted OTP key field. Manipulations

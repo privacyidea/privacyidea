@@ -8,7 +8,8 @@ SMS Gateway configuration
 You can centrally define SMS gateways that can be used to send SMS with :ref:`sms_token`
 or to use the SMS gateway for sending notifications.
 Firebase, HTTP, and Script providers can also deliver signed challenge payloads for
-:ref:`push_token`.
+:ref:`push_token`. Firebase gateways allow PUSH by default. HTTP and Script gateways
+require ``ALLOW_PUSH`` to be set to ``yes``.
 
 There are different providers (gateways) to deliver SMS.
 
@@ -22,6 +23,8 @@ Firebase Provider
 
 The Firebase provider was added in privacyIDEA 3.0. It sends notifications
 via the Google Firebase service and this is used for the :ref:`push_token`.
+PUSH delivery is enabled by default and can be disabled by setting ``ALLOW_PUSH``
+to ``no``.
 For an exemplary configuration, you may have a look on the articles on the
 privacyIDEA community website `tagged with push token <https://www.privacyidea.org/tag/push-token/>`_.
 
@@ -115,8 +118,9 @@ parse the values as JSON and either send JSON or strings to the HTTP gateway.
 Using the HTTP provider for PUSH
 .................................
 
-The HTTP provider can be selected as the gateway for a :ref:`push_token`. For a JSON
-POST request, set ``SEND_DATA_AS_JSON`` to ``yes`` and add options such as:
+The HTTP provider can be selected as the gateway for a :ref:`push_token`. Set
+``ALLOW_PUSH`` and ``SEND_DATA_AS_JSON`` to ``yes`` for a JSON POST request,
+then add options such as:
 
 * ``device_token``: ``{phone}``
 * ``push_payload``: ``{message}``
@@ -313,8 +317,9 @@ Script provider
 The *Script provider* calls a script which can take care of sending the SMS.
 The script takes the phone number as the only parameter. The message is expected at stdin.
 
-When the Script provider is selected for a PUSH token, the first command line argument
-contains the device token and stdin contains the structured PUSH payload serialized as JSON.
+Set ``ALLOW_PUSH`` to ``yes`` before selecting a Script gateway for a PUSH token.
+The first command line argument then contains the device token and stdin contains
+the structured PUSH payload serialized as JSON.
 
 Scripts are located in the directory ``/etc/privacyidea/scripts/``. You can change this default
 location by setting the value in ``PI_SCRIPT_SMSPROVIDER_DIRECTORY`` in :ref:`cfgfile`.

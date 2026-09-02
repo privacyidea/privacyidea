@@ -33,7 +33,7 @@ from privacyidea.lib.framework import get_app_local_store
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import (SCOPE, set_policy, delete_policy, LOGINMODE, PolicyClass)
 from privacyidea.lib.smsprovider.FirebaseProvider import FirebaseConfig
-from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway, delete_smsgateway
+from privacyidea.lib.smsprovider.SMSProvider import ALLOW_PUSH, set_smsgateway, delete_smsgateway
 from privacyidea.lib.token import get_tokens, remove_token, init_token, import_tokens
 from privacyidea.lib.tokenclass import ChallengeSession
 from privacyidea.lib.tokens.push_types import PushMode, PushCapability
@@ -234,9 +234,15 @@ class PushTokenTestCase(MyTestCase):
                        "privacyidea.lib.smsprovider.SmtpSMSProvider.SmtpSMSProvider",
                        options={"SMTPIDENTIFIER": "mail", "MAILTO": "user@example.com"})
 
+        self.assertEqual([], _get_push_gateways(http_gateway))
+        self.assertEqual([], _get_push_gateways(smtp_gateway))
+
+        set_smsgateway(http_gateway,
+                       "privacyidea.lib.smsprovider.HttpSMSProvider.HttpSMSProvider",
+                       options={"URL": "https://push.example.com", "HTTP_METHOD": "POST",
+                                "SEND_DATA_AS_JSON": "yes", ALLOW_PUSH: "yes"})
         self.assertEqual([http_gateway],
                          [gateway.identifier for gateway in _get_push_gateways(http_gateway)])
-        self.assertEqual([], _get_push_gateways(smtp_gateway))
 
         delete_smsgateway(http_gateway)
         delete_smsgateway(smtp_gateway)
@@ -269,6 +275,7 @@ class PushTokenTestCase(MyTestCase):
                        options={"URL": "https://push.example.com/send",
                                 "HTTP_METHOD": "POST",
                                 "SEND_DATA_AS_JSON": "yes",
+                                ALLOW_PUSH: "yes",
                                 "device_token": "{phone}",
                                 "push_payload": "{message}"})
         set_policy("push-http", scope=SCOPE.ENROLL,

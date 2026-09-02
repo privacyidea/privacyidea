@@ -13,8 +13,9 @@ from `Google Play Store`_ or `Apple App Store`_.
 
 The token type *push* sends a cryptographic challenge via a configured
 push-capable SMS gateway to the smartphone of the user. The built-in Firebase,
-HTTP, and Script providers support PUSH messages. This push notification is
-displayed on the smartphone of the user with a text
+HTTP, and Script providers support PUSH messages. Firebase gateways are enabled
+by default; HTTP and Script gateways require ``ALLOW_PUSH=yes``. This push
+notification is displayed on the smartphone of the user with a text
 that tells the user that he or somebody else requests to login to a
 service. The user can simply accept this request.
 The smartphone sends a cryptographically signed response to the

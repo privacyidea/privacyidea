@@ -121,7 +121,7 @@ def _get_push_gateways(identifier=None):
         except Exception as ex:
             log.warning(f"Failed to load SMS provider {gateway.providermodule!r}: {ex!r}")
             continue
-        if getattr(provider_class, "supports_push_messages", False):
+        if provider_class.allows_push_messages(gateway):
             push_gateways.append(gateway)
     return push_gateways
 
@@ -1313,7 +1313,7 @@ class PushTokenClass(TokenClass):
             if options.get("session") != ChallengeSession.ENROLLMENT:
                 if push_gateway_identifier != POLL_ONLY:
                     push_gateway = create_sms_instance(push_gateway_identifier)
-                    if not getattr(push_gateway, "supports_push_messages", False):
+                    if not push_gateway.allows_push_messages(push_gateway.smsgateway):
                         raise ConfigAdminError(
                             f'SMS gateway "{push_gateway_identifier}" does not support push messages.')
                     registration_url = get_action_values_from_options(

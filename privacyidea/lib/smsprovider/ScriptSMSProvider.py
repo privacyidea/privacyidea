@@ -17,7 +17,7 @@
 __doc__ = """This is the SMSClass to send SMS via a script.
 """
 
-from privacyidea.lib.smsprovider.SMSProvider import (ISMSProvider, SMSError)
+from privacyidea.lib.smsprovider.SMSProvider import ALLOW_PUSH, ISMSProvider, SMSError
 from privacyidea.lib import _
 from privacyidea.lib.framework import get_app_config_value
 import json
@@ -119,6 +119,7 @@ class ScriptSMSProvider(ISMSProvider):
                       "REGEXP": {
                           "description": cls.regexp_description
                       },
+                      ALLOW_PUSH: cls.allow_push_parameter(),
                       "background": {
                           "required": True,
                           "description": _("Wait for script to complete or run script in background. This will "
