@@ -525,20 +525,18 @@ def get_user_lock():
 
     Requires the admin policy action :ref:`policy_user_lock_read`.
 
-    One user identifier is required: username or user_id
+    One user identifier is required: user or user_id
 
-    :query username: login of the user to look up. For backward compatibility, the legacy key
-        ``user`` is also accepted.
+    :query user: login of the user to look up.
     :query user_id: user id of the user to look up. Requires ``resolver``: a uid is only
         unique within its resolver, so a user object cannot be built from a uid alone.
     :query realm: realm of the user
-    :query resolver: resolver of the user; optional alongside ``username``, required with ``user_id``
+    :query resolver: resolver of the user; optional alongside ``user``, required with ``user_id``
     :status 200: the user's lock dict, or ``null``, in ``result.value``
     """
-    # Prefer the unambiguous name 'username' but keep 'user' for compatibility
-    get_required_one_of(request.all_data, ["username", "user_id", "user"])
+    get_required_one_of(request.all_data, ["user", "user_id"])
     user_id = get_optional(request.all_data, "user_id")
-    username = get_optional(request.all_data, "username") or get_optional(request.all_data, "user")
+    username = get_optional(request.all_data, "user")
     realm = get_required(request.all_data, "realm")
     resolver = get_optional(request.all_data, "resolver")
     if user_id is not None and not resolver:
@@ -549,10 +547,6 @@ def get_user_lock():
         raise ParameterError("The parameter 'resolver' is required when looking a user up by 'user_id'.")
     visibility_scopes = get_policy_visibility_scopes(PolicyAction.USER_LOCK_READ)
 
-    # Built fresh from the request parameters rather than reused from request.User: that object is
-    # resolved from the legacy 'user' key only (see get_user_from_param), so trusting it here would let
-    # a caller's 'user' silently outrank the 'username' they actually sent whenever 'user' also happens
-    # to resolve to a real account.
     user = User(uid=user_id, login=username, realm=realm, resolver=resolver)
 
     value = None
@@ -579,14 +573,13 @@ def set_user_lock():
     Requires the admin policy action :ref:`policy_user_lock_set`, which is deliberately separate from
     ``user_lock_reset``: clearing a restriction is recoverable, imposing one is not.
 
-    One user identifier is required: username or user_id
+    One user identifier is required: user or user_id
 
-    :jsonparam username: login of the user to lock. For backward compatibility, the legacy key
-        ``user`` is also accepted.
+    :jsonparam user: login of the user to lock.
     :jsonparam user_id: user id of the user to lock. Requires ``resolver``: a uid is only unique within its
         resolver, so a user object cannot be built from a uid alone.
     :jsonparam realm: realm of the user. Required.
-    :jsonparam resolver: resolver of the user; optional alongside ``username``, required with ``user_id``
+    :jsonparam resolver: resolver of the user; optional alongside ``user``, required with ``user_id``
     :jsonparam duration_seconds: how long the lock lasts. Omitted, the lock is permanent and lifts only when
         an admin unlocks the user - which is the usual intent when locking by hand.
     :status 200: the new lock dict in ``result.value``
@@ -594,10 +587,9 @@ def set_user_lock():
     :status 403: the user is outside the admin's policy visibility scope
     """
     params = request.all_data
-    # Prefer the unambiguous name 'username' but accept legacy 'user'
-    get_required_one_of(params, ["username", "user_id", "user"])
+    get_required_one_of(params, ["user", "user_id"])
     user_id = get_optional(params, "user_id")
-    username = get_optional(params, "username") or get_optional(params, "user")
+    username = get_optional(params, "user")
     realm = get_required(params, "realm")
     resolver = get_optional(params, "resolver")
     if user_id is not None and not resolver:
@@ -657,7 +649,7 @@ def purge_user_locks():
 def reset_user_lock():
     """
     Reset (unlock) a user's conditional-access lock. Identified by either the
-    login (``username``) or the resolver-local id (``user_id``); ``realm`` is
+    login (``user``) or the resolver-local id (``user_id``); ``realm`` is
     required and ``resolver`` is optional — it only narrows the match.
     Omitting it clears every matching lock in the realm.
 
@@ -668,10 +660,9 @@ def reset_user_lock():
     inside the scope, and a target outside it is indistinguishable from an absent lock
     (both return ``false``).
 
-    One user identifier is required: username or user_id
+    One user identifier is required: user or user_id
 
-    :jsonparam username: login of the user to unlock. For backward compatibility, the legacy key
-        ``user`` is also accepted.
+    :jsonparam user: login of the user to unlock.
     :jsonparam realm: realm of the user (required)
     :jsonparam resolver: resolver of the user (optional; only disambiguates)
     :jsonparam user_id: resolver-local user id
@@ -679,9 +670,9 @@ def reset_user_lock():
         outside the admin's visibility scope
     """
     params = request.all_data
-    get_required_one_of(params, ["username", "user_id", "user"])
+    get_required_one_of(params, ["user", "user_id"])
     user_id = get_optional(params, "user_id")
-    login = get_optional(params, "username") or get_optional(params, "user")
+    login = get_optional(params, "user")
     realm = get_required(params, "realm")
     resolver = get_optional(params, "resolver")
     visibility_scopes = get_policy_visibility_scopes(PolicyAction.USER_LOCK_RESET)

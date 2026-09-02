@@ -127,26 +127,15 @@ class ConditionalAccessStateApiTestCase(MyApiTestCase):
         self.assertEqual(400, res.status_code, res.json)
         self.assertIn("resolver", res.json["result"]["error"]["message"])
 
-    def test_single_user_lookup_by_uid_needs_a_resolver_even_with_username(self):
-        # A username alongside the uid does not relax the requirement: the two are not cross-checked
+    def test_single_user_lookup_by_uid_needs_a_resolver_even_with_user(self):
+        # A login alongside the uid does not relax the requirement: the two are not cross-checked
         # against each other, so the uid alone still needs its resolver to be unambiguous.
         self._lock_user(utc_now() + timedelta(seconds=600))
         res = self._request("lock/user",
-                            query_string={"user_id": self.user.uid, "username": "cornelius",
+                            query_string={"user_id": self.user.uid, "user": "cornelius",
                                           "realm": self.realm1})
         self.assertEqual(400, res.status_code, res.json)
         self.assertIn("resolver", res.json["result"]["error"]["message"])
-
-    def test_single_user_lookup_prefers_username_over_legacy_user(self):
-        # 'username' is the documented, authoritative key; the legacy 'user' must not silently win just
-        # because it also happens to resolve to a real account.
-        hans = User("hans", self.realm1, self.resolvername1)
-        self._lock_user(utc_now() + timedelta(seconds=600), user=hans)
-        res = self._request("lock/user",
-                            query_string={"user": "hans", "username": "cornelius", "realm": self.realm1})
-        self.assertEqual(200, res.status_code, res.json)
-        # cornelius (the 'username' target) is not locked, so the answer is null - not hans's lock.
-        self.assertIsNone(res.json["result"]["value"])
 
     def test_single_user_lookup_by_uid_with_resolver(self):
         self._lock_user(utc_now() + timedelta(seconds=600))
@@ -334,10 +323,10 @@ class ConditionalAccessStateApiTestCase(MyApiTestCase):
         self.assertEqual(RestrictionCause.MANUAL, UserLockState.query.one().lock_cause)
 
     def test_set_user_lock_records_the_username_in_the_audit_log(self):
-        # A request identifying its target by 'username' must not leave the audit log's structured
+        # A request identifying its target by 'user' must not leave the audit log's structured
         # 'user' column blank - the free-text 'info' naming the user is not a substitute for it.
         res = self._request("lock/user", method="POST",
-                            json_data={"username": "cornelius", "realm": self.realm1})
+                            json_data={"user": "cornelius", "realm": self.realm1})
         self.assertEqual(200, res.status_code, res.json)
         entry = Audit.query.order_by(Audit.id.desc()).first()
         self.assertEqual("cornelius", entry.user)
@@ -362,11 +351,11 @@ class ConditionalAccessStateApiTestCase(MyApiTestCase):
                             json_data={"user_id": self.user.uid, "realm": self.realm1})
         self.assertEqual(400, res.status_code, res.json)
 
-    def test_set_user_lock_by_uid_needs_a_resolver_even_with_username(self):
-        # A uid is only unique within its resolver, so it still needs one even when a username is also given -
+    def test_set_user_lock_by_uid_needs_a_resolver_even_with_user(self):
+        # A uid is only unique within its resolver, so it still needs one even when a login is also given -
         # the two are not cross-checked against each other.
         res = self._request("lock/user", method="POST",
-                            json_data={"user_id": self.user.uid, "username": "cornelius", "realm": self.realm1})
+                            json_data={"user_id": self.user.uid, "user": "cornelius", "realm": self.realm1})
         self.assertEqual(400, res.status_code, res.json)
 
     def test_set_user_lock_for_an_unknown_user_is_400(self):
@@ -434,10 +423,10 @@ class ConditionalAccessStateApiTestCase(MyApiTestCase):
 
     def test_set_user_lock_by_uid_zero_still_needs_a_resolver(self):
         # user_id is checked with `is not None`, not truthiness, so a JSON 0 must not be mistaken for
-        # "no user_id was given" and skip the resolver requirement - not even when a username is also
+        # "no user_id was given" and skip the resolver requirement - not even when a login is also
         # given, which would otherwise let User() silently re-resolve by login and ignore the uid.
         res = self._request("lock/user", method="POST",
-                            json_data={"user_id": 0, "username": "cornelius", "realm": self.realm1})
+                            json_data={"user_id": 0, "user": "cornelius", "realm": self.realm1})
         self.assertEqual(400, res.status_code, res.json)
         self.assertIn("resolver", res.json["result"]["error"]["message"])
         self.assertEqual(0, UserLockState.query.count())
@@ -453,30 +442,6 @@ class ConditionalAccessStateApiTestCase(MyApiTestCase):
             self.assertEqual(403, res.status_code, res.json)
         finally:
             delete_policy("ca_state_scoped_set")
-        self.assertEqual(0, UserLockState.query.count())
-
-    # --- the unambiguous 'username' key (with 'user' kept for compatibility) -----
-
-    def test_set_user_lock_accepts_the_username_param(self):
-        # 'username' is the preferred, unambiguous key; 'user' stays accepted (tested elsewhere).
-        res = self._request("lock/user", method="POST",
-                            json_data={"username": "cornelius", "realm": self.realm1})
-        self.assertEqual(200, res.status_code, res.json)
-        self.assertEqual("cornelius", UserLockState.query.one().username)
-
-    def test_get_user_lock_accepts_the_username_param(self):
-        self._lock_user(utc_now() + timedelta(seconds=600))
-        res = self._request("lock/user",
-                            query_string={"username": "cornelius", "realm": self.realm1})
-        self.assertEqual(200, res.status_code, res.json)
-        self.assertEqual("cornelius", res.json["result"]["value"]["username"])
-
-    def test_reset_user_lock_accepts_the_username_param(self):
-        self._lock_user(utc_now() + timedelta(seconds=600))
-        res = self._request("lock/user", method="DELETE",
-                            json_data={"username": "cornelius", "realm": self.realm1})
-        self.assertEqual(200, res.status_code, res.json)
-        self.assertTrue(res.json["result"]["value"])
         self.assertEqual(0, UserLockState.query.count())
 
     def test_set_user_lock_by_uid_locks_the_resolved_user(self):
@@ -496,7 +461,7 @@ class ConditionalAccessStateApiTestCase(MyApiTestCase):
                    user="someoneelse")
         try:
             res = self._request("lock/user", method="POST",
-                                json_data={"username": "cornelius", "realm": self.realm1})
+                                json_data={"user": "cornelius", "realm": self.realm1})
             self.assertEqual(403, res.status_code, res.json)
             message = res.json["result"]["error"]["message"]
             self.assertNotIn(self.resolvername1, message)
@@ -512,9 +477,9 @@ class ConditionalAccessStateApiTestCase(MyApiTestCase):
                    user="someoneelse")
         try:
             existing = self._request("lock/user", method="POST",
-                                     json_data={"username": "cornelius", "realm": self.realm1})
+                                     json_data={"user": "cornelius", "realm": self.realm1})
             missing = self._request("lock/user", method="POST",
-                                    json_data={"username": "nosuchuser", "realm": self.realm1})
+                                    json_data={"user": "nosuchuser", "realm": self.realm1})
             self.assertEqual(403, existing.status_code, existing.json)
             self.assertEqual(403, missing.status_code, missing.json)
         finally:
@@ -528,7 +493,7 @@ class ConditionalAccessStateApiTestCase(MyApiTestCase):
                    resolver=self.resolvername1)
         try:
             res = self._request("lock/user", method="POST",
-                                json_data={"username": "cornelius", "realm": self.realm1})
+                                json_data={"user": "cornelius", "realm": self.realm1})
             self.assertEqual(200, res.status_code, res.json)
         finally:
             delete_policy("ca_state_resolver_ok")
@@ -541,7 +506,7 @@ class ConditionalAccessStateApiTestCase(MyApiTestCase):
                    resolver=self.resolvername3)
         try:
             res = self._request("lock/user", method="POST",
-                                json_data={"username": "cornelius", "realm": self.realm1})
+                                json_data={"user": "cornelius", "realm": self.realm1})
             self.assertEqual(403, res.status_code, res.json)
         finally:
             delete_policy("ca_state_resolver_no")
@@ -554,7 +519,7 @@ class ConditionalAccessStateApiTestCase(MyApiTestCase):
                    realm=self.realm2)
         try:
             res = self._request("lock/user", method="POST",
-                                json_data={"username": "cornelius", "realm": self.realm1})
+                                json_data={"user": "cornelius", "realm": self.realm1})
             self.assertEqual(403, res.status_code, res.json)
         finally:
             delete_policy("ca_state_realm_no")
