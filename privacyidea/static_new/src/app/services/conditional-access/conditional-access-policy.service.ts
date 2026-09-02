@@ -172,6 +172,10 @@ export interface ConditionalAccessPolicy {
   priority: number;
   target: ConditionalAccessTarget;
   count_mode: CountMode;
+  // Whether a completed login clears this policy's counted events, so the thresholds apply to consecutive
+  // failures since that login. Only a "user" target resets: a "source_ip" policy aggregates a signal across
+  // accounts and never does, and the pre-auth allow/deny decision never does either.
+  reset_on_success: boolean;
   counter_types_to_track: AuthEventType[];
   stages: ConditionalAccessPolicyStage[];
   // Which requests the policy applies to. Optional: a policy with no restriction simply omits this
@@ -191,8 +195,11 @@ export type ConditionalAccessPolicySaveParams = Omit<ConditionalAccessPolicy, "i
 // What a shipped template carries: a create payload without priority, which the catalog omits so
 // the admin picks a unique one. Optional, not just nullable, because the key is absent from the
 // response altogether.
-export type ConditionalAccessPolicyTemplateParams = Omit<ConditionalAccessPolicySaveParams, "priority"> & {
+export type ConditionalAccessPolicyTemplateParams = Omit<ConditionalAccessPolicySaveParams, "priority" | "reset_on_success"> & {
   priority?: number | null;
+  // Optional so a template that states no choice still type-checks; every shipped template does state one,
+  // because the value decides what its thresholds mean.
+  reset_on_success?: boolean;
 };
 
 // A ready-made policy the backend ships (GET /conditionalaccess/template); "policy"
@@ -211,6 +218,7 @@ export const EMPTY_CONDITIONAL_ACCESS_POLICY: ConditionalAccessPolicySaveParams 
   priority: null,
   target: "user",
   count_mode: "PER_REQUEST",
+  reset_on_success: true,
   counter_types_to_track: [],
   stages: []
 };

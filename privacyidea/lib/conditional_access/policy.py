@@ -33,6 +33,7 @@ A policy is passed around as a plain dict::
         "priority": 1,
         "target": "user",
         "count_mode": "PER_REQUEST",
+        "reset_on_success": True,
         "counter_types_to_track": ["PIN_FAIL", "MFA_FAIL"],
         "conditions": [
             {"condition_type": "USER_REALM", "operator": "IN", "value": ["sales", "support"]},
@@ -55,7 +56,17 @@ A policy is passed around as a plain dict::
 values depend on the target (see ``_COUNT_MODES_BY_TARGET``): both targets count event volume per ``authentication_log``
 row (``PER_REQUEST``) or per whole authentication attempt (``PER_ATTEMPT``); a ``source_ip`` policy may additionally
 count distinct targeted accounts (``DISTINCT_USERS``, the spraying / enumeration signal). When omitted it defaults to
-the target's default (``PER_REQUEST`` for ``user``, ``DISTINCT_USERS`` for ``source_ip``). ``counter_types_to_track``
+the target's default (``PER_REQUEST`` for ``user``, ``DISTINCT_USERS`` for ``source_ip``).
+
+``reset_on_success`` (default ``True``) decides whether a completed login clears the events counted so far, so the
+stage thresholds apply to consecutive failures since that login rather than to every failure in the raw window.
+Turning it off is how a threshold comes to mean "this many failures in the window" outright. It governs every count
+the policy makes, the pre-auth ``DENY`` decision included. It applies to a ``user`` policy only: a
+``source_ip`` policy aggregates a signal across accounts, where one account's legitimate login must not clear it, so
+setting it on a ``source_ip`` policy is a :class:`~privacyidea.lib.error.ParameterError` rather than an ignored
+setting (the default there is ``False``).
+
+``counter_types_to_track``
 values must be
 :class:`~privacyidea.lib.conditional_access.authentication_event_types.AuthEventType` names and ``action_type`` values
 must be :class:`~privacyidea.lib.conditional_access.engine.ConditionalAccessAction` names; anything else is a
@@ -483,6 +494,26 @@ def _validate_count_mode(count_mode, target: "ConditionalAccessTarget") -> str:
     return mode.value
 
 
+def _validate_reset_on_success(reset_on_success, target: "ConditionalAccessTarget") -> bool:
+    """
+    Validate the policy's ``reset_on_success`` for *target* and return it as a plain bool.
+
+    A ``None`` *reset_on_success* yields the target's default: ``True`` for a ``user`` policy, ``False`` for a
+    ``source_ip`` one, which never resets - it aggregates a signal across accounts, where one account's legitimate
+    login must not clear it (see :func:`~privacyidea.lib.conditional_access.engine._policy_count_ip`). Asking a
+    ``source_ip`` policy for it anyway is a :class:`ParameterError` rather than a silently ignored setting, so a
+    stored policy never claims a behaviour it does not have.
+    """
+    if target == ConditionalAccessTarget.SOURCE_IP:
+        if reset_on_success is not None and bool(reset_on_success):
+            raise ParameterError(
+                "reset_on_success is not available for target 'source_ip': a source-IP policy counts across "
+                "accounts and never resets on a successful login."
+            )
+        return False
+    return True if reset_on_success is None else bool(reset_on_success)
+
+
 def _validate_counter_types(counter_types) -> list[str]:
     """
     Validate the tracked counter types: a non-empty list of :class:`AuthEventType` values. The same vocabulary
@@ -810,6 +841,7 @@ def create_conditional_access_policy(
     priority: int,
     enabled: bool = True,
     dry_run: bool = False,
+    reset_on_success: bool | None = None,
     count_mode: str | None = None,
     conditions: list[dict] | None = None,
 ) -> int:
@@ -822,7 +854,8 @@ def create_conditional_access_policy(
     target/action compatibility is always a deliberate choice. ``priority`` is
     likewise required (no default) and must be unique across policies, so the
     caller always picks a deliberate, unambiguous precedence.
-    ``count_mode`` defaults to the target's default when not given (see :func:`_validate_count_mode`).
+    ``count_mode`` and ``reset_on_success`` default to the target's default when not given (see
+    :func:`_validate_count_mode` and :func:`_validate_reset_on_success`).
     ``conditions`` restricts which requests the policy applies to; omitted (or
     empty) it applies to every request.
 
@@ -833,6 +866,7 @@ def create_conditional_access_policy(
     priority = _validate_priority(priority)
     conditional_access_target = _validate_target(target)
     count_mode = _validate_count_mode(count_mode, conditional_access_target)
+    reset_on_success = _validate_reset_on_success(reset_on_success, conditional_access_target)
     counter_types = _validate_counter_types(counter_types_to_track)
     stage_defs = _validate_stages(stages)
     _validate_target_actions(stage_defs, conditional_access_target)
@@ -845,6 +879,7 @@ def create_conditional_access_policy(
         time_window_seconds=time_window_seconds,
         enabled=bool(enabled),
         dry_run=bool(dry_run),
+        reset_on_success=reset_on_success,
         priority=priority,
         target=conditional_access_target,
         counter_types_to_track=counter_types,
@@ -868,6 +903,7 @@ def update_conditional_access_policy(
     stages: list[dict] | None = None,
     enabled: bool | None = None,
     dry_run: bool | None = None,
+    reset_on_success: bool | None = None,
     priority: int | None = None,
     target: str | None = None,
     count_mode: str | None = None,
@@ -884,7 +920,10 @@ def update_conditional_access_policy(
 
     ``target`` may be changed, but the resulting ``(target, stages)`` combination
     must stay action-compatible (e.g. a ``source_ip`` policy cannot carry
-    ``LOCK_USER``); an incompatible change raises :class:`ParameterError`.
+    ``LOCK_USER``); an incompatible change raises :class:`ParameterError`. The same
+    holds for ``(target, count_mode)``. ``reset_on_success`` is likewise target-bound: asking for it on a
+    ``source_ip`` policy is a :class:`ParameterError`, while switching an existing resetting policy to that target
+    clears the flag (and reports it as changed), since the policy no longer resets.
     Existing locks/blocks written before the change are timed and expire on their
     own, so no stale state is left enforced.
 
@@ -925,6 +964,17 @@ def update_conditional_access_policy(
         validated_mode = _validate_count_mode(effective_mode, effective_target)
         if count_mode is not None:
             count_mode = validated_mode
+    # target and reset_on_success likewise. Asking for the reset on a source_ip target is rejected, so a policy never
+    # stores a setting it does not honour. A target switch that only *inherits* a stored reset is not such a request:
+    # the flag is cleared along with the switch (and reported as changed, so the audit shows it), because a policy
+    # that no longer resets must not keep saying it does.
+    if conditional_access_target is not None or reset_on_success is not None:
+        effective_target = (conditional_access_target if conditional_access_target is not None
+                            else ConditionalAccessTarget(policy.target))
+        if reset_on_success is not None:
+            reset_on_success = _validate_reset_on_success(reset_on_success, effective_target)
+        elif effective_target == ConditionalAccessTarget.SOURCE_IP and policy.reset_on_success:
+            reset_on_success = False
 
     changed_fields = []
     # A name/priority collision can race past the app-level checks and surface at
@@ -948,6 +998,9 @@ def update_conditional_access_policy(
         if dry_run is not None:
             policy.dry_run = bool(dry_run)
             changed_fields.append("dry_run")
+        if reset_on_success is not None:
+            policy.reset_on_success = reset_on_success
+            changed_fields.append("reset_on_success")
         if count_mode is not None:
             policy.count_mode = count_mode
             changed_fields.append("count_mode")

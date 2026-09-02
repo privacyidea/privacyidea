@@ -29,6 +29,7 @@ from privacyidea.lib.conditional_access.context import CAContext
 from privacyidea.lib.conditional_access.engine import (
     AccessDecision,
     ConditionalAccessAction,
+    ConditionalAccessTarget,
     evaluate_access_decision,
     evaluate_conditional_access_policies,
     get_ip_block,
@@ -101,6 +102,14 @@ class ConditionalAccessPolicyTemplateTestCase(MyTestCase):
                                  f"{entry['key']}: counter types not preserved")
             self.assertEqual(len(template["stages"]), len(policy["stages"]),
                              f"{entry['key']}: stage count changed")
+            # Every template states its reset-on-success rather than leaning on the default, because the choice
+            # decides what its thresholds mean, and it survives the create path unchanged. A source-IP template can
+            # only say False - the create path rejects anything else for that target.
+            self.assertIn("reset_on_success", template, f"{entry['key']}: no reset_on_success stated")
+            if template["target"] == ConditionalAccessTarget.SOURCE_IP:
+                self.assertFalse(template["reset_on_success"], f"{entry['key']}: source-IP policies never reset")
+            self.assertEqual(template["reset_on_success"], policy["reset_on_success"],
+                             f"{entry['key']}: reset_on_success not preserved")
 
     def test_mfa_template_stage_shape(self):
         template = self._policy("mfa_bruteforce")
