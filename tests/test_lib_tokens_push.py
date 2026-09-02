@@ -65,25 +65,32 @@ def _create_credential_mock():
     return mock.MagicMock(spec=c, expired=False, expiry=None, access_token='my_new_bearer_token')
 
 
-def _check_firebase_params(request):
-    payload = json.loads(request.body)
-    # check the signature in the payload!
-    data = payload.get("message").get("data")
+def _verify_push_payload_signatures(push_payload):
+    # Check the signature in the payload!
+    sign_string = "{nonce}|{url}|{serial}|{question}|{title}|{sslverify}".format(**push_payload)
+    if push_payload.get("require_presence") is not None:
+        sign_string += f"|{push_payload['require_presence']}"
 
-    sign_string = "{nonce}|{url}|{serial}|{question}|{title}|{sslverify}".format(**data)
-    token = get_tokens(serial=data.get("serial"))[0]
+    token = get_tokens(serial=push_payload["serial"])[0]
     pem_public_key = token.get_tokeninfo(PUBLIC_KEY_SERVER)
     public_key = load_pem_public_key(to_bytes(pem_public_key), backend=default_backend())
-    signature = b32decode(data.get("signature"))
     # If signature does not match it will raise InvalidSignature exception
-    public_key.verify(signature, sign_string.encode("utf8"), padding.PKCS1v15(), hashes.SHA256())
+    public_key.verify(b32decode(push_payload["signature"]), sign_string.encode("utf8"),
+                      padding.PKCS1v15(), hashes.SHA256())
+
     # The capabilities advertisement travels as a JSON string and carries its own
     # detached signature over the canonical form of {capabilities, nonce}, built
     # from the parsed structure. The main signature above is unaffected by it.
-    capabilities = json.loads(data.get("capabilities"))
-    capabilities_sign_input = rfc8785.dumps({"capabilities": capabilities, "nonce": data.get("nonce")})
-    public_key.verify(b32decode(data.get("capabilities_signature")),
+    capabilities = json.loads(push_payload["capabilities"])
+    capabilities_sign_input = rfc8785.dumps({"capabilities": capabilities,
+                                             "nonce": push_payload["nonce"]})
+    public_key.verify(b32decode(push_payload["capabilities_signature"]),
                       capabilities_sign_input, padding.PKCS1v15(), hashes.SHA256())
+
+
+def _check_firebase_params(request):
+    payload = json.loads(request.body)
+    _verify_push_payload_signatures(payload["message"]["data"])
     headers = {"request-id": "728d329e-0e86-11e4-a748-0c84dc037c13"}
     return 200, headers, json.dumps({})
 
@@ -281,7 +288,9 @@ class PushTokenTestCase(MyTestCase):
         self.assertTrue(transaction_id)
         request_body = json.loads(responses.calls[0].request.body)
         self.assertEqual("firebaseT", request_body["device_token"])
-        self.assertEqual(token.get_serial(), request_body["push_payload"]["serial"])
+        push_payload = request_body["push_payload"]
+        self.assertEqual(token.get_serial(), push_payload["serial"])
+        _verify_push_payload_signatures(push_payload)
         remove_token(token.get_serial())
         delete_policy("push-http")
         delete_smsgateway(gateway_identifier)
