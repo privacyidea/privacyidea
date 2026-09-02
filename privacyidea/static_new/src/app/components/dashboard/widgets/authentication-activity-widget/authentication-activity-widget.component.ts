@@ -37,6 +37,7 @@ import {
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { PolicyAction } from "@services/auth/policy-actions";
 import { DashboardDataRef, DashboardDataStore } from "@services/dashboard/dashboard-data-store.service";
+import { toFilterDisplay } from "@utils/date-format.utils";
 
 const LOG_READ: PolicyAction = "authentication_log_read";
 
@@ -110,6 +111,8 @@ challenge-response login count once, classified by how the attempt ended.`;
   readonly selectedRange = signal<ActivityRange>(ACTIVITY_RANGES[1]);
 
   private readonly dataRef = signal<DashboardDataRef<PiResponse<AuthenticationLogStatistics>> | null>(null);
+  // The store key currently in use, so the previous range's entry can be dropped when the range changes.
+  private storeKey: string | null = null;
   override readonly partialLoading = computed(() => this.dataRef()?.revalidating() ?? false);
   override readonly refreshFailed = computed(() => {
     const ref = this.dataRef();
@@ -227,12 +230,22 @@ challenge-response login count once, classified by how the attempt ended.`;
       this.state.set("denied");
       return;
     }
-    const end = new Date();
-    const start = new Date(end.getTime() - range.hours * 3_600_000);
+    const key = `dashboard:auth-activity:${range.hours}`;
+    // Each range needs a key of its own, so switching shows a loading state rather than the previous range's numbers.
+    // The entry left behind has to go, though: DashboardDataStore.refreshAll() refetches every entry it holds, so a
+    // stale key would keep re-querying a window nobody is looking at on each dashboard refresh.
+    if (this.storeKey && this.storeKey !== key) {
+      this.store.invalidate(this.storeKey);
+    }
+    this.storeKey = key;
     this.dataRef.set(
-      this.store.load(`dashboard:auth-activity:${range.hours}`, () =>
-        this.authenticationLogService.fetchStatistics(start.toISOString(), end.toISOString(), range.bins)
-      )
+      this.store.load(key, () => {
+        // Computed per invocation, not once when the factory is registered: DashboardDataStore.refreshAll() replays
+        // the stored factory, and a captured window would make every later refresh ask for the same stale range.
+        const end = new Date();
+        const start = new Date(end.getTime() - range.hours * 3_600_000);
+        return this.authenticationLogService.fetchStatistics(start.toISOString(), end.toISOString(), range.bins);
+      })
     );
   }
 
@@ -253,30 +266,52 @@ challenge-response login count once, classified by how the attempt ended.`;
 
   // The span a column covers. The counts are not repeated here: the row already prints its total and the bar heights
   // compare against it, so the tooltip only has to answer "when is this".
+  //
+  // The time is always shown. Buckets are measured back from now rather than snapped to midnight, so even a bucket a
+  // whole day wide runs from something like 08:37 to 08:37 the next day - a date on its own would claim a calendar
+  // day the bucket does not cover. The date is printed once when both ends fall on it and twice when the bucket
+  // crosses into the next.
   binTooltip(index: number): string {
     const starts = this.binStarts();
     const from = starts[index];
     if (!from) {
       return "";
     }
+    const fromDate = formatDate(from, "yyyy-MM-dd", "en-US");
+    const fromTime = formatDate(from, "HH:mm", "en-US");
     const to = starts[index + 1] ?? this.statistics()?.window?.end_time;
-    const pattern = this.selectedRange().hours > 24 ? "yyyy-MM-dd" : "HH:mm";
-    return to
-      ? `${formatDate(from, pattern, "en-US")} – ${formatDate(to, pattern, "en-US")}`
-      : formatDate(from, pattern, "en-US");
+    if (!to) {
+      return `${fromDate} ${fromTime}`;
+    }
+    const toDate = formatDate(to, "yyyy-MM-dd", "en-US");
+    const toTime = formatDate(to, "HH:mm", "en-US");
+    return fromDate === toDate
+      ? `${fromDate} ${fromTime} – ${toTime}`
+      : `${fromDate} ${fromTime} – ${toDate} ${toTime}`;
   }
 
-  rowAriaLabel(row: ActivityRow): string {
-    return $localize`Activity per time bucket, ${row.label} — ${row.total} in total`;
-  }
-
-  // Rounded to whole percent: at a widget's width the extra digit is noise, and the exact counts sit right beside it.
   shareLabel(row: ActivityRow): string {
     return row.share === null ? "" : `(${Math.round(row.share * 100)}%)`;
   }
 
-  // Opens the log filtered to the attempts behind a row of the reasons table.
+  // Opens the log on the attempts behind a row of the reasons table, carrying the window with the filter: the log
+  // keeps whatever timestamps it was last left with, so without this the count shown here and the rows listed there
+  // could describe different periods.
+  //
+  // The window goes into the filter *chips* as well as the signals. The log derives its time filter from the chip
+  // text and clears a bound whose chip is missing, so setting the signals alone would be undone the moment the page
+  // loads. toFilterDisplay is the form the page itself writes, which is what keeps it from reading the chip as an
+  // edit and reparsing it.
   showEventType(eventType: string): void {
-    this.authenticationLogService.authenticationLogFilter.set(new FilterValue().addEntry("event_type", eventType));
+    const window = this.statistics()?.window;
+    let filter = new FilterValue().addEntry("event_type", eventType);
+    if (window) {
+      filter = filter
+        .addEntry("start_time", toFilterDisplay(window.start_time))
+        .addEntry("end_time", toFilterDisplay(window.end_time));
+    }
+    this.authenticationLogService.authenticationLogFilter.set(filter);
+    this.authenticationLogService.timestampFrom.set(window?.start_time ?? null);
+    this.authenticationLogService.timestampTo.set(window?.end_time ?? null);
   }
 }

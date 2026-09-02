@@ -49,8 +49,7 @@
             [class.bars-success]="row.outcome === 'success'"
             [class.bars-failure]="row.outcome === 'failure'"
             [class.bars-pending]="row.outcome === 'pending'"
-            role="img"
-            [attr.aria-label]="rowAriaLabel(row)">
+            aria-hidden="true">
             @for (count of row.counts; track $index) {
               <span
                 class="bar"
@@ -70,6 +69,40 @@
         </div>
       </div>
     }
+    <!-- The chart's text alternative. The bars carry no text of their own and are hidden from assistive tech, so
+         without this a screen reader would get nothing but the row totals - the shape over time, which is the point
+         of the chart, would have no equivalent. Every bucket appears here with its time span and its count. -->
+    <div class="visually-hidden">
+      <table>
+        <caption i18n>
+          Attempts per time bucket
+        </caption>
+        <thead>
+          <tr>
+            <th
+              scope="col"
+              i18n>
+              Time
+            </th>
+            @for (row of summary().rows; track row.outcome) {
+              <th scope="col">{{ row.label }}</th>
+            }
+          </tr>
+        </thead>
+        <tbody>
+          <!-- The bin index is aliased: inside the inner loop $index would be the row's, not the bucket's. -->
+          @for (start of binStarts(); track $index; let bin = $index) {
+            <tr>
+              <th scope="row">{{ binTooltip(bin) }}</th>
+              @for (row of summary().rows; track row.outcome) {
+                <td>{{ row.counts[bin] }}</td>
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
     <div class="axis-row">
       <span class="chart-label"></span>
       <span class="chart-value"></span>

@@ -30,6 +30,7 @@ import { DashboardDataStore } from "@services/dashboard/dashboard-data-store.ser
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockAuthenticationLogService } from "@testing/mock-services/mock-authentication-log-service";
 import { MockPiResponse } from "@testing/mock-services/mock-utils";
+import { toFilterDisplay } from "@utils/date-format.utils";
 import { of, throwError } from "rxjs";
 import { ACTIVITY_RANGES, AuthenticationActivityWidgetComponent } from "./authentication-activity-widget.component";
 
@@ -93,6 +94,12 @@ describe("AuthenticationActivityWidgetComponent", () => {
     store = TestBed.inject(DashboardDataStore);
     store.invalidate();
     jest.spyOn(authMock, "actionAllowed").mockReturnValue(true);
+    jest.useFakeTimers({ doNotFake: ["nextTick", "queueMicrotask"] });
+    jest.setSystemTime(new Date("2026-03-02T00:00:00Z"));
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
   });
 
   it("sums every series of an outcome into that outcome's headline count", () => {
@@ -256,7 +263,7 @@ describe("AuthenticationActivityWidgetComponent", () => {
     expect(text(".empty")).toContain("No attempt failed in this range.");
   });
 
-  it("refetches with the selected range and bin count, keyed per range", () => {
+  it("refetches with the selected range and keeps only that range in the store", () => {
     seed([]);
     create();
     expect(logMock.fetchStatistics).toHaveBeenLastCalledWith(expect.any(String), expect.any(String), 24);
@@ -265,9 +272,23 @@ describe("AuthenticationActivityWidgetComponent", () => {
     fixture.detectChanges();
 
     expect(logMock.fetchStatistics).toHaveBeenLastCalledWith(expect.any(String), expect.any(String), 30);
-    // A key per range keeps the ranges from evicting one another in the shared store.
-    expect(store.peek("dashboard:auth-activity:24")).not.toBeNull();
+    // The range being shown is cached under its own key; the one left behind is dropped, because refreshAll()
+    // refetches every entry the store holds and would otherwise keep re-querying an unseen window.
     expect(store.peek("dashboard:auth-activity:720")).not.toBeNull();
+    expect(store.peek("dashboard:auth-activity:24")).toBeNull();
+  });
+
+  it("issues one request per dashboard refresh, not one per range ever selected", () => {
+    seed([]);
+    create();
+    component.selectRange(ACTIVITY_RANGES[3].hours);
+    fixture.detectChanges();
+    logMock.fetchStatistics.mockClear();
+
+    store.refreshAll();
+
+    expect(logMock.fetchStatistics).toHaveBeenCalledTimes(1);
+    expect(logMock.fetchStatistics).toHaveBeenCalledWith(expect.any(String), expect.any(String), 30);
   });
 
   it("changes the range from the button toggle group", () => {
@@ -295,6 +316,104 @@ describe("AuthenticationActivityWidgetComponent", () => {
     const spanHours = (Date.parse(end as string) - Date.parse(start as string)) / 3_600_000;
     expect(spanHours).toBeCloseTo(24, 3);
     expect(Date.parse(end as string)).toBeLessThanOrEqual(Date.now());
+  });
+
+  it("advances the window on every refresh instead of replaying the first one", () => {
+    seed([]);
+    create();
+    const first = logMock.fetchStatistics.mock.calls.at(-1) as string[];
+
+    // refreshAll replays the stored factory; a window captured at registration time would repeat these timestamps.
+    jest.advanceTimersByTime(60_000);
+    store.refreshAll();
+
+    const second = logMock.fetchStatistics.mock.calls.at(-1) as string[];
+    expect(Date.parse(second[1])).toBeGreaterThan(Date.parse(first[1]));
+    expect(Date.parse(second[0])).toBeGreaterThan(Date.parse(first[0]));
+  });
+
+  // Bin starts come from the response, not from the selected range, so these seed the buckets directly. The
+  // assertions are patterns and counts rather than fixed strings: formatDate renders in the runner's local zone.
+  function seedBuckets(starts: string[], endTime: string): void {
+    logMock.fetchStatistics.mockReturnValue(
+      of(
+        MockPiResponse.fromValue<AuthenticationLogStatistics>({
+          window: { start_time: starts[0], end_time: endTime, total: 0 },
+          bins: { count: starts.length, starts },
+          events: []
+        })
+      )
+    );
+  }
+
+  it("always names a time in a bucket label", () => {
+    // A bucket runs back from now rather than snapping to midnight, so even a day-wide one spans two clock times and
+    // a date alone would misname it.
+    const starts = Array.from({ length: 4 }, (_, index) => new Date(Date.UTC(2026, 2, 1 + index)).toISOString());
+    seedBuckets(starts, new Date(Date.UTC(2026, 2, 5)).toISOString());
+    create();
+
+    for (let index = 0; index < starts.length; index++) {
+      expect(component.binTooltip(index)).toMatch(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2} – (\d{4}-\d{2}-\d{2} )?\d{2}:\d{2}$/);
+    }
+  });
+
+  it("names the second date only for the bucket that crosses midnight", () => {
+    // Twenty-four hourly buckets over one day: whatever the zone, exactly one of them straddles midnight, and only
+    // that one has to name a second date.
+    const starts = Array.from({ length: 24 }, (_, hour) => new Date(Date.UTC(2026, 2, 1, hour)).toISOString());
+    seedBuckets(starts, new Date(Date.UTC(2026, 2, 2)).toISOString());
+    create();
+
+    const labels = starts.map((_, index) => component.binTooltip(index));
+    expect(labels.filter((label) => /\d{4}-\d{2}-\d{2}.*\d{4}-\d{2}-\d{2}/.test(label))).toHaveLength(1);
+    expect(labels.every((label) => /^\d{4}-\d{2}-\d{2} \d{2}:\d{2} – /.test(label))).toBe(true);
+  });
+
+  it("names both dates for every day-wide bucket", () => {
+    const starts = Array.from({ length: 4 }, (_, index) => new Date(Date.UTC(2026, 2, 1 + index)).toISOString());
+    seedBuckets(starts, new Date(Date.UTC(2026, 2, 5)).toISOString());
+    create();
+
+    for (let index = 0; index < starts.length; index++) {
+      expect(component.binTooltip(index)).toMatch(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2} – \d{4}-\d{2}-\d{2} \d{2}:\d{2}$/);
+    }
+  });
+
+  it("exposes every bucket as a table rather than a one-number image label", () => {
+    seed([series("LOGIN_SUCCESS", "success", [2, 0, 1, 0]), series("PIN_FAIL", "failure", [0, 3, 0, 0])]);
+    create();
+
+    // The bars carry no text, so they are hidden and the table is the text alternative.
+    for (const bars of fixture.nativeElement.querySelectorAll(".bars")) {
+      expect(bars.getAttribute("aria-hidden")).toBe("true");
+    }
+    const rows = Array.from<Element>(fixture.nativeElement.querySelectorAll(".visually-hidden tbody tr"));
+    expect(rows).toHaveLength(BINS);
+    expect(rows.map((row) => Array.from(row.querySelectorAll("td")).map((cell) => cell.textContent?.trim()))).toEqual([
+      ["2", "0", "0"],
+      ["0", "3", "0"],
+      ["1", "0", "0"],
+      ["0", "0", "0"]
+    ]);
+  });
+
+  it("carries the shown window into the log as filter chips, not only as signals", () => {
+    seed([series("PIN_FAIL", "failure", [1, 0, 0, 0])]);
+    create();
+    // A range left over on the log service would otherwise decide what the drill-down shows.
+    logMock.timestampFrom.set("2000-01-01T00:00:00Z");
+    logMock.timestampTo.set("2000-01-02T00:00:00Z");
+
+    fixture.nativeElement.querySelector(".reasons-table a").click();
+
+    expect(logMock.timestampFrom()).toBe("2026-03-01T00:00:00+00:00");
+    expect(logMock.timestampTo()).toBe("2026-03-02T00:00:00+00:00");
+    // The chips matter more than the signals: the log derives its time filter from the chip text and clears a bound
+    // whose chip is missing, so signals alone are wiped when the page loads.
+    const chips = logMock.authenticationLogFilter().filterMap;
+    expect(chips.get("start_time")).toBe(toFilterDisplay("2026-03-01T00:00:00+00:00"));
+    expect(chips.get("end_time")).toBe(toFilterDisplay("2026-03-02T00:00:00+00:00"));
   });
 
   it("pre-seeds the log filter when a failure reason is clicked", () => {
