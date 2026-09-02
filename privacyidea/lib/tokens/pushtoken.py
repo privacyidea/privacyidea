@@ -20,7 +20,7 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 """
-The pushtoken sends a push notification via Firebase service to the registered smartphone.
+The pushtoken sends a notification through a push-capable gateway to the registered smartphone.
 The token is a challenge response token. The smartphone will sign the challenge
 and send it back to the authentication endpoint.
 
@@ -397,7 +397,7 @@ class _PushChallengeState:
 
 class PushTokenClass(TokenClass):
     """
-    The :ref:`push_token` uses the Firebase service to send challenges to the
+    The :ref:`push_token` uses a push-capable gateway to send challenges to the
     user's smartphone. The user confirms on the smartphone, signs the
     challenge and sends it back to privacyIDEA.
 
@@ -677,7 +677,7 @@ class PushTokenClass(TokenClass):
             # We are in step 1:
             upd_param["2stepinit"] = 1
             self.add_tokeninfo("enrollment_credential", geturandom(20, hex=True))
-            # We also store the Firebase config, that was used during the enrollment.
+            # Store the push gateway used during enrollment.
             self.add_tokeninfo(PushAction.FIREBASE_CONFIG, param.get(PushAction.FIREBASE_CONFIG))
         else:
             raise ParameterError("Invalid Parameters. Either provide (genkey) or (serial, fbtoken, pubkey).")
@@ -1327,7 +1327,7 @@ class PushTokenClass(TokenClass):
                     res = push_gateway.submit_message(device_token, push_payload)
 
             # Create the challenge in the challenge table if either the message
-            # was successfully submitted to the Firebase API or if polling is
+            # was successfully submitted to the push gateway or if polling is
             # allowed in general or for this specific token.
             allow_polling = get_action_values_from_options(
                 SCOPE.AUTH, PushAction.ALLOW_POLLING, options=options) or PushAllowPolling.ALLOW
@@ -1562,12 +1562,12 @@ class PushTokenClass(TokenClass):
         :param message: An alternative message displayed to the user during enrollment
         :return: None, the content is modified
         """
-        # Get the firebase configuration from the policies
+        # Get the push gateway configuration from the policies.
         push_params = get_pushtoken_add_config(g, user_obj=user_obj)
         token = init_token({"type": cls.get_class_type(), "genkey": 1, "2stepinit": 1}, user=user_obj)
         # We are in step 1:
         token.add_tokeninfo("enrollment_credential", geturandom(20, hex=True))
-        # We also store the Firebase config, that was used during the enrollment.
+        # Store the push gateway used during enrollment.
         token.add_tokeninfo(PushAction.FIREBASE_CONFIG, push_params.get(PushAction.FIREBASE_CONFIG))
         content.get("result")["value"] = False
         content.get("result")["authentication"] = "CHALLENGE"

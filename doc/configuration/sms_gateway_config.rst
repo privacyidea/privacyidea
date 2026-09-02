@@ -7,6 +7,8 @@ SMS Gateway configuration
 
 You can centrally define SMS gateways that can be used to send SMS with :ref:`sms_token`
 or to use the SMS gateway for sending notifications.
+Firebase, HTTP, and Script providers can also deliver signed challenge payloads for
+:ref:`push_token`.
 
 There are different providers (gateways) to deliver SMS.
 
@@ -109,6 +111,24 @@ parse the values as JSON and either send JSON or strings to the HTTP gateway.
 .. note:: You can use the tags ``{phone}`` to specify the phone number. The tag ``{otp}``
    will be replaced simply with the OTP value or with the contents created
    by the policy :ref:`smstext`.
+
+Using the HTTP provider for PUSH
+.................................
+
+The HTTP provider can be selected as the gateway for a :ref:`push_token`. For a JSON
+POST request, set ``SEND_DATA_AS_JSON`` to ``yes`` and add options such as:
+
+* ``device_token``: ``{phone}``
+* ``push_payload``: ``{message}``
+
+For PUSH messages, ``{phone}`` contains the device token rather than a phone number.
+If an option consists only of ``{message}``, the complete structured PUSH payload is
+preserved as a JSON object. When embedded in another value, the payload is serialized
+as JSON text. The existing ``{otp}`` placeholder remains an alias for ``{message}``
+for compatibility; prefer ``{message}`` in new PUSH gateway configurations.
+
+The gateway must forward the signed payload without modifying its fields, otherwise
+the authenticator cannot verify its signature.
 
 .. todo:: Add description of additional headers
 
@@ -292,6 +312,9 @@ Script provider
 
 The *Script provider* calls a script which can take care of sending the SMS.
 The script takes the phone number as the only parameter. The message is expected at stdin.
+
+When the Script provider is selected for a PUSH token, the first command line argument
+contains the device token and stdin contains the structured PUSH payload serialized as JSON.
 
 Scripts are located in the directory ``/etc/privacyidea/scripts/``. You can change this default
 location by setting the value in ``PI_SCRIPT_SMSPROVIDER_DIRECTORY`` in :ref:`cfgfile`.

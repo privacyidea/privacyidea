@@ -3,7 +3,7 @@
 Push Token
 ----------
 
-.. index:: Push Token, Firebase service
+.. index:: Push Token, Firebase service, push gateway
 
 The push token uses the *privacyIDEA Authenticator* app. You can get it
 from `Google Play Store`_ or `Apple App Store`_.
@@ -11,24 +11,25 @@ from `Google Play Store`_ or `Apple App Store`_.
 .. _Google Play Store: https://play.google.com/store/apps/details?id=it.netknights.piauthenticator
 .. _Apple App Store: https://apps.apple.com/us/app/privacyidea-authenticator/id1445401301
 
-The token type *push* sends a cryptographic challenge via the
-Google Firebase service to the smartphone of the user. This push
-notification is displayed on the smartphone of the user with a text
+The token type *push* sends a cryptographic challenge via a configured
+push-capable SMS gateway to the smartphone of the user. The built-in Firebase,
+HTTP, and Script providers support PUSH messages. This push notification is
+displayed on the smartphone of the user with a text
 that tells the user that he or somebody else requests to login to a
 service. The user can simply accept this request.
 The smartphone sends a cryptographically signed response to the
 privacyIDEA server and the login request gets marked as confirmed
 in the privacyIDEA server. The application checks for this mark and
 logs the user in automatically. For an example of how the components in a
-typical deployment of push tokens interact reference the following diagram.
+typical Firebase deployment of push tokens interact reference the following diagram.
 
 .. figure:: images/push_token_deployment.svg
    :width: 500
 
    A typical push token deployment
 
-To allow privacyIDEA to send push notifications, a Firebase service
-needs to be configured. To do so see :ref:`firebase_provider`.
+To allow privacyIDEA to send push notifications, configure a push-capable SMS
+gateway. See :ref:`sms_gateway_config` and :ref:`firebase_provider`.
 
 The PUSH token implements the :ref:`outofband mode <authentication_mode_outofband>`.
 
@@ -63,7 +64,8 @@ The smartphone stores this data and creates a new key pair.
 Step 2
 ......
 
-The smartphone sends its Firebase ID, the public key of the keypair,
+The smartphone sends its device token (named ``fbtoken`` in the enrollment API
+for compatibility), the public key of the keypair,
 the serial number and an enrollment credential back to the
 enrollment URL of the privacyIDEA server.
 
@@ -81,9 +83,8 @@ challenge response tokens either with the PIN to the
 endpoint ``/validate/check`` or via the endpoint
 ``/validate/triggerchallenge``.
 
-privacyIDEA sends a cryptographic challenge with a signature to
-the Firebase service.
-The firebase service sends the notification to the smartphone,
+privacyIDEA sends a cryptographic challenge with a signature to the configured
+push gateway. The gateway sends the notification to the smartphone,
 which can verify the signature using the public key from enrollment step 2.
 
 Accepting login

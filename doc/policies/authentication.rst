@@ -624,7 +624,7 @@ dependent on the clients IP address and the user agent.
 push_text_on_mobile
 ~~~~~~~~~~~~~~~~~~~
 
-.. index:: push token, Firebase service
+.. index:: push token, push gateway
 
 type: ``string``
 
@@ -668,7 +668,7 @@ The text can contain the following tags, that will be filled:
 
 .. note:: The tags {client_ip}, {ua_browser}, {ua_string} and {action} describe the
    client that triggered the challenge, so they can only be filled in the notification
-   that is sent via Firebase. If the smartphone fetches its open challenges by polling
+   that is sent via the configured push gateway. If the smartphone fetches its open challenges by polling
    instead, the text is rendered again for the request of the smartphone, and no
    information about the client that triggered the challenge is available anymore.
    All four tags are empty then. The tags of the token owner are filled on both ways.
@@ -678,7 +678,7 @@ The text can contain the following tags, that will be filled:
 push_title_on_mobile
 ~~~~~~~~~~~~~~~~~~~~
 
-.. index:: push token, Firebase service
+.. index:: push token, push gateway
 
 type: ``string``
 
