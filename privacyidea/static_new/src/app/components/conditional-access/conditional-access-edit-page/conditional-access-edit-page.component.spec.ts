@@ -254,10 +254,16 @@ describe("ConditionalAccessEditPageComponent — edit mode", () => {
 
   it("should name duplicate stage thresholds", () => {
     component.onStagesChange([
-      { failure_threshold: 5, actions: [{ action_type: "LOCK_USER", action_value: null }] },
-      { failure_threshold: 5, actions: [{ action_type: "LOCK_USER", action_value: null }] }
+      { failure_threshold: 5, actions: [{ action_type: "LOCK_USER", action_value: 60 }] },
+      { failure_threshold: 5, actions: [{ action_type: "LOCK_USER", action_value: 60 }] }
     ]);
     expect(component.saveBlockers()).toEqual(["Each stage must have a different failure threshold."]);
+  });
+
+  it("should name a stage action with an invalid value", () => {
+    component.onStagesChange([{ failure_threshold: 5, actions: [{ action_type: "LOCK_USER", action_value: -1 }] }]);
+    expect(component.saveBlockers()).toContain("Fix the highlighted action value before saving.");
+    expect(component.canSave()).toBe(false);
   });
 
   it("should name an action that the target does not allow", () => {
@@ -627,6 +633,19 @@ describe("ConditionalAccessEditPageComponent — new mode", () => {
     expect(component.isNewPolicy()).toBe(true);
     expect(component.editPolicy().name).toBe("");
     expect(component.canSave()).toBe(false);
+  });
+
+  it("should show the missing-name hint immediately, without the field being touched first", () => {
+    expect(component.nameTouched()).toBe(true);
+    expect(component.showNameError()).toBe(true);
+    // mat-error only renders once the underlying signal-forms field itself is marked touched -
+    // component.nameTouched() alone passing would not catch a missing markAsTouched() call.
+    fixture.detectChanges();
+    expect(
+      Array.from(fixture.nativeElement.querySelectorAll("mat-error")).map((el) =>
+        (el as HTMLElement).textContent!.trim()
+      )
+    ).toContain("Name is required.");
   });
 
   it("should show the create title", () => {
