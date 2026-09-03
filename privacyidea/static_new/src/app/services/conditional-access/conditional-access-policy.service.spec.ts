@@ -260,7 +260,9 @@ describe("ConditionalAccessPolicyService", () => {
         count_mode: "PER_REQUEST" as const,
         reset_on_success: true,
         counter_types_to_track: ["PASSWORD_FAIL" as const],
-        stages: [{ failure_threshold: 10, actions: [{ action_type: "LOCK_USER" as const, action_value: null }] }]
+        stages: [
+          { failure_threshold: 10, actions: [{ action_type: "LOCK_USER" as const, action_value: null }] }
+        ]
       }
     };
 

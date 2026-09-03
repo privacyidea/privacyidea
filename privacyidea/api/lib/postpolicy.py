@@ -56,8 +56,10 @@ from urllib.parse import quote
 from flask import g, current_app, make_response, Request
 from flask_babel import _, lazy_gettext
 
-from privacyidea.api.lib.utils import get_all_params, log_authentication, hardening_action_active, GENERIC_AUTH_FAILURE
-from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
+from privacyidea.api.lib.utils import (get_all_params, log_authentication, hardening_action_active,
+                                       GENERIC_AUTH_FAILURE)
+from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType, AuthEventReason,
+                                                                          build_reason_detail)
 from privacyidea.lib.conditional_access.request_context import get_ca_context, claimed_ca_message
 from privacyidea.config import ConfigKey
 from privacyidea.lib.auth import ROLE
@@ -1314,10 +1316,21 @@ def is_authorized(request, response):
             # its rejection row already records why, and a NOT_AUTHORIZED row here would bury that reason and hand the
             # conditional-access counters an attempt the lock itself produced.
             if not context.rejected_by_conditional_access:
+                # Name the policy that denied it: with several authorization policies in play, "which rule do I
+                # have to change" is the whole question the log has to answer.
+                reason_detail = build_reason_detail(policies=next(iter(authorized_pol.values()), None))
                 if context.amendable is not None:
-                    context.reclassify(AuthEventType.NOT_AUTHORIZED)
+                    # Correcting the staged event. The detail is merged, so the per-serial reasons the token layer
+                    # recorded survive alongside the policy that overrode them.
+                    # The policy applies whatever the tokens looked like, so it *replaces* the token layer's
+                    # reasons rather than joining them: it is the one thing to act on now.
+                    context.reclassify(AuthEventType.NOT_AUTHORIZED,
+                                       reasons=[AuthEventReason.AUTHORIZATION_DENIED],
+                                       reason_detail=reason_detail)
                 else:
-                    log_authentication(AuthEventType.NOT_AUTHORIZED, request, user=request.User)
+                    log_authentication(AuthEventType.NOT_AUTHORIZED, request, user=request.User,
+                                       reasons=[AuthEventReason.AUTHORIZATION_DENIED],
+                                       reason_detail=reason_detail)
             raise ValidateError("User is not authorized to authenticate under these conditions.")
 
     return response

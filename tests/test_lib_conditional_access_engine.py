@@ -1164,8 +1164,8 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
         self.assertTrue(is_user_locked(self.user))
 
     def test_fire_once_and_retrigger_actions_in_one_stage_are_decided_separately(self):
-        # The flag is per action: above the threshold only the re-triggering LOCK_USER still fires while the
-        # fire-once EMAIL_ADMIN stays silent, so one stage keeps a user locked but emails only once.
+        # The flag is per action: above the threshold only the re-triggering LOCK_USER still fires, while the
+        # fire-once EMAIL_ADMIN stays silent - one stage that keeps a user locked but emails only once.
         _, stages = self._make_policy(
             name="mixed", counter_type=AuthEventType.MFA_FAIL,
             stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.LOCK_USER, 600,
@@ -1921,8 +1921,9 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
             delete_smtpserver("actionmail")
 
     def test_email_failure_does_not_break_other_actions(self):
-        # A stage that both locks the user and emails them: the email points at an unknown SMTP server so
-        # sending raises, but per-action guarding must keep the LOCK_USER write intact.
+        # A stage that both locks the user and emails them: the email points at an
+        # unknown SMTP server, so sending raises. Per-action guarding must keep the
+        # LOCK_USER write intact.
         _, stages = self._make_policy(
             name="lockandmail", counter_type=AuthEventType.MFA_FAIL,
             stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.LOCK_USER, 600)]),))
@@ -2103,6 +2104,17 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
         self.assertFalse(policy_matches_context(
             policy, CAContext(self.user, user_role=str(AuthLogUserRole.USER))))
 
+    def test_endpoint_condition_matches_the_context_endpoint(self):
+        # Which way in the request took is an applicability axis of its own: a policy can single out
+        # the WebUI login without touching the /validate traffic of the same users.
+        policy, _ = self._make_policy(
+            name="webui login only", counter_type=AuthEventType.MFA_FAIL,
+            conditions=[self._condition(ConditionType.ENDPOINT, ConditionOperator.IN, ["/auth"])])
+        self.assertTrue(policy_matches_context(policy, CAContext(self.user, endpoint="/auth")))
+        self.assertFalse(policy_matches_context(policy, CAContext(self.user, endpoint="/validate/check")))
+        # No endpoint (an event recorded outside a request) is in no set, like every other missing value.
+        self.assertFalse(policy_matches_context(policy, CAContext(self.user)))
+
     def test_conditions_are_anded(self):
         policy, _ = self._make_policy(
             name="realm and role", counter_type=AuthEventType.MFA_FAIL,
@@ -2207,7 +2219,8 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
                                         values if values is not None else [self.realm1])],
             stages=(StageDefinition(threshold, [StageActionDefinition(ConditionalAccessAction.BLOCK_IP, 600)]),))
 
-    def _seed_ip_accounts(self, ip: str, realms: Sequence[str | None], role: str | None = None) -> None:
+    def _seed_ip_accounts(self, ip: str, realms: Sequence[str | None], role: str | None = None,
+                          endpoint: str | None = None) -> None:
         """
         Insert one MFA_FAIL row per entry of *realms*, each a distinct account (``sprayed0``..) from
         *ip*, so a DISTINCT_USERS count over that IP equals ``len(realms)`` before any scoping.
@@ -2216,12 +2229,13 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
         :param realms: one realm per row; ``None`` writes a NULL realm, which is what a login naming
             no realm produces and what the missing-value rule is exercised against
         :param role: the ``user_role`` to stamp on every row, or ``None`` to leave it unset
+        :param endpoint: the ``endpoint`` to stamp on every row, or ``None`` to leave it unset
         :return: None; the rows are committed
         """
         for index, realm in enumerate(realms):
             db.session.add(AuthenticationLog(event_type=str(AuthEventType.MFA_FAIL), source_ip=ip,
                                              username=f"sprayed{index}", realm=realm, user_role=role,
-                                             timestamp=utc_now()))
+                                             endpoint=endpoint, timestamp=utc_now()))
         db.session.commit()
 
     def test_conditions_scope_a_source_ip_count_to_the_rows_they_describe(self):
@@ -2296,6 +2310,20 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
         self.assertFalse(is_ip_blocked(ip))
 
         self._seed_ip_accounts(ip, (self.realm1, self.realm1), role=str(AuthLogUserRole.USER))
+        evaluate_conditional_access_policies(context, AuthEventType.MFA_FAIL)
+        self.assertTrue(is_ip_blocked(ip))
+
+    def test_endpoint_condition_scopes_a_source_ip_count(self):
+        # The endpoint is recorded per row, so an endpoint condition narrows the count as well as the
+        # gate: spraying seen at /validate/check does not add up against a policy written for /auth.
+        ip = "10.0.0.13"
+        self._spray_policy(threshold=2, condition_type=ConditionType.ENDPOINT, values=["/auth"])
+        context = CAContext(User("cornelius", self.realm1), source_ip=ip, endpoint="/auth")
+        self._seed_ip_accounts(ip, (self.realm1, self.realm1), endpoint="/validate/check")
+        evaluate_conditional_access_policies(context, AuthEventType.MFA_FAIL)
+        self.assertFalse(is_ip_blocked(ip))
+
+        self._seed_ip_accounts(ip, (self.realm1, self.realm1), endpoint="/auth")
         evaluate_conditional_access_policies(context, AuthEventType.MFA_FAIL)
         self.assertTrue(is_ip_blocked(ip))
 

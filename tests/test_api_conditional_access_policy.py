@@ -781,7 +781,7 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
         res = self._request("conditiontypes")
         self.assertEqual(200, res.status_code, res.json)
         metadata = res.json["result"]["value"]
-        self.assertSetEqual({str(ConditionType.USER_REALM), str(ConditionType.USER_ROLE)}, set(metadata))
+        self.assertSetEqual({str(condition_type) for condition_type in ConditionType}, set(metadata))
         realm_entry = metadata[str(ConditionType.USER_REALM)]
         self.assertListEqual([str(ConditionOperator.IN), str(ConditionOperator.NOT_IN)],
                              [operator["name"] for operator in realm_entry["operators"]])

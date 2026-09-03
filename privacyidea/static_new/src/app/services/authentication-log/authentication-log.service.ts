@@ -37,9 +37,13 @@ export interface AuthenticationLogEntry {
   username?: string | null;
   user_role?: string | null;
   event_type: string;
+  // Every reason the request produced, highest signal first; empty for a success. A list, because a request whose
+  // tokens failed differently has one reason per finding (see AuthenticationLogReason in the backend).
+  reasons?: string[] | null;
   timestamp: string;
   source_ip?: string | null;
   client_label?: string | null;
+  endpoint?: string | null;
   serial?: string | null;
   transaction_id?: string | null;
   attempt_id?: string | null;
@@ -91,16 +95,19 @@ function shallowEqualRecord(a: Record<string, string>, b: Record<string, string>
   return aKeys.length === Object.keys(b).length && aKeys.every((key) => a[key] === b[key]);
 }
 
-// Filter parameters that the backend matches exactly (see _FILTER_PARAMS in api/authentication_log.py).
+// Filter keys the backend matches exactly (see _FILTER_PARAMS in api/authentication_log.py). A key is a *column* of
+// the table, which is why it is singular here while the query parameter it is sent as is plural (see apiParamOf).
 const apiFilter = [
   "realm",
   "username",
   "event_type",
+  "reason",
   "source_ip",
   "serial",
   "transaction_id",
   "attempt_id",
-  "client_label"
+  "client_label",
+  "endpoint"
 ];
 
 // Filters not tied to a table column, reached via the "more filters" control: the three ca_* ones filter on the entry's
@@ -108,6 +115,13 @@ const apiFilter = [
 // access column's menu; resolver and uid have no column either - they identify the same user the username column
 // already names - but stay filterable by hand.
 const advancedApiFilter: string[] = ["user_role", "resolver", "uid", "ca_action_type", "ca_policy_name", "ca_dry_run"];
+
+// The query parameter each filter key is sent as. Every one of these filters takes a comma-separated list of values, so
+// the API names them in the plural while a filter key names the single column it matches. ca_dry_run is the exception:
+// it is a single boolean, so its name is already the one the API expects.
+function apiParamOf(filterKey: string): string {
+  return filterKey === "ca_dry_run" ? filterKey : `${filterKey}s`;
+}
 
 export interface AuthenticationLogServiceInterface {
   apiFilter: string[];
@@ -123,6 +137,10 @@ export interface AuthenticationLogServiceInterface {
   authenticationLogResource: HttpResourceRef<PiResponse<AuthenticationLogPage> | undefined>;
   eventTypesResource: HttpResourceRef<PiResponse<AuthenticationLogEventType[]> | undefined>;
   eventTypes: () => AuthenticationLogEventType[];
+  reasonsResource: HttpResourceRef<PiResponse<string[]> | undefined>;
+  reasons: () => string[];
+  endpointsResource: HttpResourceRef<PiResponse<string[]> | undefined>;
+  endpoints: () => string[];
   oldestTimestamp: () => string | null;
 
   fetchStatistics(
@@ -163,7 +181,7 @@ export class AuthenticationLogService implements AuthenticationLogServiceInterfa
       const allowed = [...this.apiFilter, ...this.advancedApiFilter];
       const entries = Array.from(this.authenticationLogFilter().filterMap.entries())
         .filter(([key]) => allowed.includes(key))
-        .map(([key, value]) => [key, (value ?? "").toString().trim()] as const)
+        .map(([key, value]) => [apiParamOf(key), value.trim()] as const)
         .filter(([, value]) => StringUtils.validFilterValue(value));
       return Object.fromEntries(entries) as Record<string, string>;
     },
@@ -230,6 +248,43 @@ export class AuthenticationLogService implements AuthenticationLogServiceInterfa
   eventTypes = computed<AuthenticationLogEventType[]>(() => {
     if (!this.eventTypesResource.hasValue()) return [];
     return this.eventTypesResource.value()?.result?.value ?? [];
+  });
+
+  // Why an event came out the way it did: the reason vocabulary, served by the backend for the same reason the event
+  // types are - the WebUI filters by it and must not keep a second copy of the list. Gated like the log itself.
+  reasonsResource = httpResource<PiResponse<string[]>>(() => {
+    if (!this.contentService.onAuthenticationLog() || !this.canRead()) {
+      return undefined;
+    }
+    return {
+      url: this.authenticationLogBaseUrl + "reasons",
+      method: "GET",
+      headers: this.authService.getHeaders()
+    };
+  });
+
+  reasons = computed<string[]>(() => {
+    if (!this.reasonsResource.hasValue()) return [];
+    return this.reasonsResource.value()?.result?.value ?? [];
+  });
+
+  // The endpoints an authentication can arrive at, served by the backend like the two vocabularies above. A closed
+  // list of request paths, so the endpoint filter is a selection of them rather than a path typed by hand. Gated like
+  // the log itself.
+  endpointsResource = httpResource<PiResponse<string[]>>(() => {
+    if (!this.contentService.onAuthenticationLog() || !this.canRead()) {
+      return undefined;
+    }
+    return {
+      url: this.authenticationLogBaseUrl + "endpoints",
+      method: "GET",
+      headers: this.authService.getHeaders()
+    };
+  });
+
+  endpoints = computed<string[]>(() => {
+    if (!this.endpointsResource.hasValue()) return [];
+    return this.endpointsResource.value()?.result?.value ?? [];
   });
 
   // The single oldest entry (timestamp ascending), used to size the time slider's default window down to the first

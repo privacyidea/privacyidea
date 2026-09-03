@@ -427,6 +427,15 @@ In this tab, the :ref:`audit` log is displayed which lists all events the server
    *Events can be displayed in the Audit log.*
 
 
+.. _webui_authentication_log:
+
+Authentication log
+------------------
+
+In this tab, the :ref:`authentication_log` is displayed which lists how every
+authentication request was decided: the event, the reason behind it, the
+endpoint that served the request and what conditional access did about it.
+
 .. _components:
 
 Components

@@ -127,7 +127,8 @@ const USER_ROLE_BADGES: Record<string, { label: string; tooltip: string; class: 
 );
 
 // `sortable` mirrors SORTABLE_COLUMNS in privacyidea/lib/conditional_access/authentication_log.py; every column is
-// sortable except `other_info`, a JSON column the backend cannot order on meaningfully.
+// sortable except `other_info`, a JSON column the backend cannot order on meaningfully, and `reason`, of which an
+// entry has a list, in a table of its own.
 const columnKeysMap: { key: string; label: string; filterable: boolean; sortable: boolean }[] = [
   // The timestamp filter lives in the table-action row (preset menu + custom-range slider), not the column header, so
   // the header only offers sorting.
@@ -136,10 +137,16 @@ const columnKeysMap: { key: string; label: string; filterable: boolean; sortable
   // locating a row rather than a detail of it.
   { key: "attempt_id", label: $localize`Attempt ID`, filterable: true, sortable: true },
   { key: "event_type", label: $localize`Event Type`, filterable: true, sortable: true },
+  // Why that event: several causes share one event type, and the cause is what an admin acts on. An entry lists every
+  // reason it produced and matches the filter if any of them does, which is also why it cannot be sorted by.
+  { key: "reason", label: $localize`Reasons`, filterable: true, sortable: false },
   { key: "username", label: $localize`User`, filterable: true, sortable: true },
   { key: "realm", label: $localize`Realm`, filterable: true, sortable: true },
   { key: "source_ip", label: $localize`Source IP`, filterable: true, sortable: true },
   { key: "client_label", label: $localize`Client`, filterable: true, sortable: true },
+  // Which endpoint the request authenticated against ("/auth", "/validate/check", ...). Next to the client: both
+  // describe the caller rather than the outcome.
+  { key: "endpoint", label: $localize`Endpoint`, filterable: true, sortable: true },
   { key: "serial", label: $localize`Serial`, filterable: true, sortable: true },
   { key: "transaction_id", label: $localize`Transaction ID`, filterable: true, sortable: true },
   // Neither is sortable: other_info is JSON, and conditional-access outcomes live in their own table, read alongside
@@ -314,6 +321,8 @@ export class AuthenticationLog {
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   sort = this.authenticationLogService.sort;
 
+  readonly reasonOptions = computed<string[]>(() => this.authenticationLogService.reasons());
+  readonly endpointOptions = computed<string[]>(() => this.authenticationLogService.endpoints());
   readonly eventTypeOptions = computed<string[]>(() =>
     this.authenticationLogService.eventTypes().map((entry) => entry.name)
   );
@@ -741,10 +750,11 @@ export class AuthenticationLog {
     this.authenticationLogService.authenticationLogFilter.set(newFilter);
   }
 
-  // Whether a @default cell shows the inline "filter by this value" button: columns whose header already offers a
-  // value picker don't need it. client_label never needs it; source_ip needs it only when its own IP menu is hidden.
+  // Whether a @default cell shows the inline "filter by this value" button. Columns whose header already offers a
+  // value picker don't need it, which is dynamic for the client_label. (event_type and realm never reach this: they
+  // render through their own @case blocks.)
   showInlineCellFilter(columnKey: string): boolean {
-    if (columnKey === "client_label") return false;
+    if (columnKey === "client_label" || columnKey === "reason" || columnKey === "endpoint") return false;
     if (columnKey === "source_ip") return !this.showSourceIpMenu();
     return true;
   }

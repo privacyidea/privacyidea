@@ -16,7 +16,9 @@
 # SPDX-FileCopyrightText: 2026 NetKnights GmbH <https://netknights.it>
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType, AUTH_EVENT_TYPE_KEY,
+from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventReason,
+                                                                          order_request_reasons,
+                                                                          AuthEventType, AUTH_EVENT_TYPE_KEY,
                                                                            CA_ENFORCEMENT_EVENT_TYPES,
                                                                            REQUEST_EVENT_PRECEDENCE,
                                                                            reduce_request_events,
@@ -212,3 +214,39 @@ class EventTypeOutcomeTestCase(MyTestCase):
         # A sanity check on the taxonomy: LOGIN_SUCCESS is the only success outcome.
         success = [event for event, outcome in EVENT_TYPE_OUTCOME.items() if outcome == AuthEventOutcome.SUCCESS]
         self.assertEqual([AuthEventType.LOGIN_SUCCESS], success)
+
+
+class ReasonOrderTestCase(MyTestCase):
+    """Unit tests for the AuthEventReason vocabulary and the order a request's reasons are recorded in."""
+
+    def test_01_every_reason_can_be_recorded(self):
+        # No reason needs a place in a second list to be recorded: ordering follows the vocabulary itself, so a new
+        # member cannot be forgotten from a ranking and silently dropped.
+        self.assertEqual(sorted(reason.value for reason in AuthEventReason),
+                         sorted(reason.value for reason in order_request_reasons(list(AuthEventReason))))
+
+    def test_02_the_order_is_the_vocabulary_order_whatever_the_input_order(self):
+        # The same findings must read the same way however the token walk happened to produce them - and the order
+        # says nothing about importance, so it is simply the one AuthEventReason declares.
+        declared = list(AuthEventReason)
+        for produced in ([AuthEventReason.TOKEN_DISABLED, AuthEventReason.AUTHORIZATION_DENIED],
+                         [AuthEventReason.WRONG_OTP, AuthEventReason.TOKEN_DISABLED],
+                         [AuthEventReason.TOKEN_FAILCOUNT_EXCEEDED, AuthEventReason.TOKEN_REVOKED]):
+            with self.subTest(produced=produced):
+                self.assertEqual(sorted(produced, key=declared.index), order_request_reasons(produced))
+                # Reversing the input cannot change the result.
+                self.assertEqual(order_request_reasons(produced), order_request_reasons(list(reversed(produced))))
+
+    def test_03_the_same_reason_is_listed_once(self):
+        # Several tokens failing the same way is one finding for the admin, not three.
+        self.assertEqual([AuthEventReason.WRONG_OTP],
+                         order_request_reasons([AuthEventReason.WRONG_OTP, "WRONG_OTP", AuthEventReason.WRONG_OTP]))
+
+    def test_04_an_unusable_value_is_dropped_not_raised(self):
+        # This runs on the authentication path, so a value that is not a reason at all - a bare string a token class
+        # recorded, say - must degrade the classification rather than break the authentication.
+        self.assertEqual([AuthEventReason.WRONG_OTP], order_request_reasons(["NOT_A_REASON", "WRONG_OTP"]))
+        self.assertEqual([], order_request_reasons(["NOT_A_REASON"]))
+        self.assertEqual([], order_request_reasons([]))
+        # Values are accepted alongside members, since that is what auth_details carries.
+        self.assertEqual([AuthEventReason.TOKEN_DISABLED], order_request_reasons(["TOKEN_DISABLED"]))

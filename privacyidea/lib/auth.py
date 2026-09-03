@@ -23,7 +23,8 @@ import logging
 
 from sqlalchemy import select
 
-from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, AUTH_EVENT_TYPE_KEY
+from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType, AUTH_EVENT_TYPE_KEY,
+                                                                          AuthEventReason, AUTH_EVENT_REASON_KEY)
 from privacyidea.lib.container import find_container_for_token
 from privacyidea.lib.crypto import hash_with_pepper, verify_with_pepper
 from privacyidea.lib.error import AuthError, Error, TokenAdminError, UserError
@@ -155,6 +156,8 @@ def check_webui_user(user, password, options=None, superuser_realms=None, check_
             details = details or {}
             if isinstance(e, TokenAdminError) and e.id == Error.TOKEN_LOCKED:
                 details[AUTH_EVENT_TYPE_KEY] = AuthEventType.NO_USABLE_TOKEN
+                # TOKEN_LOCKED is raised only for a revoked token, which check_token_list drops before any other check.
+                details[AUTH_EVENT_REASON_KEY] = AuthEventReason.TOKEN_REVOKED
             elif isinstance(e, (UserError, AuthError)) and (not user or not user.exist()):
                 details[AUTH_EVENT_TYPE_KEY] = AuthEventType.USER_UNKNOWN
     else:
@@ -164,6 +167,8 @@ def check_webui_user(user, password, options=None, superuser_realms=None, check_
             user_auth = True
             details[AUTH_EVENT_TYPE_KEY] = AuthEventType.LOGIN_SUCCESS
         else:
+            # LOGINMODE=userstore: the credential checked here *is* the user store password, which PASSWORD_FAIL
+            # already says - no reason of its own.
             details[AUTH_EVENT_TYPE_KEY] = AuthEventType.PASSWORD_FAIL
 
     # If the realm is in the SUPERUSER_REALM then the authorization role

@@ -23,13 +23,15 @@ from privacyidea.api.auth import user_required
 from privacyidea.api.lib.prepolicy import prepolicy, check_base_action
 from privacyidea.api.lib.utils import send_result
 from privacyidea.lib.auth import ROLE
-from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, outcome_of
+from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType, AuthEventReason,
+                                                                           outcome_of)
 from privacyidea.lib.conditional_access.authentication_log import (get_authentication_log_statistics,
                                                                    get_authentication_logs_paginate,
                                                                    AuthenticationLogVisibilityScope,
                                                                    AuthLogUserRole,
                                                                    DEFAULT_PAGE_SIZE,
                                                                    DEFAULT_STATISTICS_BINS)
+from privacyidea.lib.conditional_access.conditions import AUTHENTICATING_ENDPOINTS
 from privacyidea.lib.log import log_with
 from privacyidea.lib.params import get_optional, get_optional_timestamp, get_required_timestamp
 from privacyidea.lib.policies.actions import PolicyAction
@@ -40,19 +42,18 @@ log = logging.getLogger(__name__)
 
 authentication_log_blueprint = Blueprint("authentication_log_blueprint", __name__)
 
-# Filters naming a column of the authentication_log row itself.
-_ROW_FILTER_PARAMS = ["resolver", "uid", "realm", "username", "user_role", "event_type", "source_ip", "serial",
-                      "transaction_id", "attempt_id", "client_label"]
-# The same filters as the statistics endpoint names them, and passes straight through to the lib. Plural, because each
-# takes a list of values: the name says so to the caller as much as it does in the signature behind it. Derived rather
-# than spelled out a second time, so a filter added to the listing reaches the summary as well instead of being
-# quietly dropped from it.
-_STATISTICS_FILTER_PARAMS = [f"{name}s" for name in _ROW_FILTER_PARAMS]
-# The ca_* filters match the entry's conditional-access outcomes rather than a column of its own row, so only the
-# listing offers them; ca_dry_run is parsed separately because it is a boolean, not a list of values.
-_OUTCOME_FILTER_PARAMS = ["ca_action_type", "ca_policy_name"]
+# The filter query parameters naming the entry itself, which are also the lib keyword arguments they feed - every one
+# of them takes a list of values, so both are named in the plural. All but "reasons" filter on a column of the
+# entry's own row; "reasons" filters on its reason rows - an entry matches when any of its reasons does. Both
+# endpoints reading the log offer them, so a filter added here reaches the summary as well instead of being quietly
+# dropped from it.
+_ENTRY_FILTER_PARAMS = ["resolvers", "uids", "realms", "usernames", "user_roles", "event_types", "reasons",
+                        "source_ips", "serials", "transaction_ids", "attempt_ids", "client_labels", "endpoints"]
+# The ca_* filters match the entry's conditional-access outcomes rather than the entry itself, so only the listing
+# offers them; ca_dry_run is parsed separately because it is a boolean, not a list of values.
+_OUTCOME_FILTER_PARAMS = ["ca_action_types", "ca_policy_names"]
 # Each filter parameter maps 1:1 to a get_authentication_logs_paginate keyword argument.
-_FILTER_PARAMS = _ROW_FILTER_PARAMS + _OUTCOME_FILTER_PARAMS
+_FILTER_PARAMS = _ENTRY_FILTER_PARAMS + _OUTCOME_FILTER_PARAMS
 
 
 def _split_csv(value: str | None) -> list[str] | None:
@@ -116,32 +117,34 @@ def get_authentication_log():
     scope may read the log; if the policy is scoped to realms, resolvers and/or users, only entries matching that
     scope are returned. A **user** with the action set in the user scope may read only their own entries.
 
-    Each of ``resolver``, ``uid``, ``realm``, ``username``, ``user_role``, ``event_type``, ``source_ip``, ``serial``,
-    ``transaction_id``, ``attempt_id`` and ``client_label`` may be passed as a query
-    parameter to filter on it. A value may be a comma-separated list (e.g. ``event_type=MFA_FAIL,PIN_FAIL``), matching
-    entries that equal any of the values. A value may contain a ``*`` wildcard (e.g. ``serial=TOTP*``) to match by
+    Each of ``resolvers``, ``uids``, ``realms``, ``usernames``, ``user_roles``, ``event_types``, ``reasons``,
+    ``source_ips``, ``serials``, ``transaction_ids``, ``attempt_ids``, ``client_labels`` and ``endpoints`` may be
+    passed as a query
+    parameter to filter on it. A value may be a comma-separated list (e.g. ``event_types=MFA_FAIL,PIN_FAIL``), matching
+    entries that equal any of the values. A value may contain a ``*`` wildcard (e.g. ``serials=TOTP*``) to match by
     prefix/pattern instead of exactly. Note, using wildcards filtering is always case-insensitive.
 
     :query page: page number, 1-indexed (default 1).
     :query page_size: entries per page (default 15).
-    :query sort_column: column to sort by (id, timestamp, event_type, resolver, uid, realm, username, source_ip,
-        client_label, serial, transaction_id, attempt_id).
+    :query sort_column: column to sort by (id, timestamp, event_type, resolver, uid, realm, username,
+        source_ip, client_label, endpoint, serial, transaction_id, attempt_id). An entry's reasons are a list, so
+        they are not sortable.
     :query sort_order: ``asc`` or ``desc`` (default ``desc``).
     :query start_time: only entries at/after this ISO 8601 timestamp.
     :query end_time: only entries at/before this ISO 8601 timestamp.
     :query case_insensitive: if set, plain (non-wildcard) filter values match case-insensitively (wildcard values
         always match case-insensitively).
-    :query ca_action_type: only entries with a conditional-access outcome of this action type (e.g. ``LOCK_USER``).
-        Takes a list and a wildcard like the other filters, so ``ca_action_type=*`` means "conditional access acted on
-        this request at all".
-    :query ca_policy_name: only entries with an outcome recorded for this conditional-access policy name.
+    :query ca_action_types: only entries with a conditional-access outcome of one of these action types
+        (e.g. ``LOCK_USER``). Takes a list and a wildcard like the other filters, so ``ca_action_types=*``
+        means "conditional access acted on this request at all".
+    :query ca_policy_names: only entries with an outcome recorded for one of these conditional-access policy names.
     :query ca_dry_run: ``true`` for only entries with a dry-run outcome, ``false`` for only entries with an enforced
         one; omit it to get both. The three ``ca_*`` filters apply to the *same* outcome, so an entry matches when one
         of its outcomes satisfies all of them.
     :status 200: paginated result in ``result.value`` with ``auth_logs``, ``count``, ``current``, ``prev``, ``next``.
     """
     params = request.all_data
-    filters = {name: _split_csv(get_optional(params, name)) for name in _FILTER_PARAMS}
+    filters = {param: _split_csv(get_optional(params, param)) for param in _FILTER_PARAMS}
     # A tri-state: absent (or empty) does not filter, so that "both" needs no value of its own.
     ca_dry_run = get_optional(params, "ca_dry_run")
     filters["ca_dry_run"] = is_true(ca_dry_run) if ca_dry_run not in (None, "") else None
@@ -166,6 +169,46 @@ def get_authentication_log():
     return send_result(result.to_dict())
 
 
+@authentication_log_blueprint.route("/reasons", methods=["GET"])
+@user_required
+@prepolicy(check_base_action, request, PolicyAction.AUTHENTICATION_LOG_READ)
+@log_with(log)
+def get_authentication_log_reasons():
+    """
+    Return the list of all defined authentication-log reasons.
+
+    Requires the policy action :ref:`policy_authentication_log_read`, like the log read endpoint. The list is the
+    authoritative set of :class:`AuthEventReason` values - why an event came out the way it did - exposed for the same
+    reason the event types are: so the WebUI offers the vocabulary it can filter on instead of redefining it. It does
+    not depend on the caller or on any logged data.
+
+    :status 200: ``result.value`` is a list of reason names, in definition order.
+    """
+    reasons = [str(reason) for reason in AuthEventReason]
+    g.audit_object.log({"success": True})
+    return send_result(reasons)
+
+
+@authentication_log_blueprint.route("/endpoints", methods=["GET"])
+@user_required
+@prepolicy(check_base_action, request, PolicyAction.AUTHENTICATION_LOG_READ)
+@log_with(log)
+def get_authentication_log_endpoints():
+    """
+    Return the list of endpoints an authentication can arrive at.
+
+    Requires the policy action :ref:`policy_authentication_log_read`, like the log read endpoint. The list is
+    :data:`AUTHENTICATING_ENDPOINTS`, the request paths that record an authentication-log row, so the WebUI offers the
+    ``endpoints`` filter as a selection instead of a path typed by hand. It is not derived from the logged data: a
+    path an admin can select but that nothing has hit yet still belongs in the list, and a filter may still name a
+    value of its own (a wildcard such as ``/validate/*``, or the path of a route that has since been renamed).
+
+    :status 200: ``result.value`` is a sorted list of request paths.
+    """
+    g.audit_object.log({"success": True})
+    return send_result(sorted(AUTHENTICATING_ENDPOINTS))
+
+
 @authentication_log_blueprint.route("/statistics", methods=["GET"])
 @user_required
 @prepolicy(check_base_action, request, PolicyAction.AUTHENTICATION_LOG_READ)
@@ -182,13 +225,14 @@ def get_authentication_log_statistics_endpoint():
     a challenge-response login writes several rows but is a single successful attempt. ``event_type`` therefore
     selects attempts that *ended* that way, rather than every attempt that passed through such an event.
 
-    The attempts counted may be filtered on any column of the classifying row: ``resolvers``, ``uids``, ``realms``,
-    ``usernames``, ``user_roles``, ``event_types``, ``source_ips``, ``serials``, ``transaction_ids``, ``attempt_ids``
-    and ``client_labels``. Each is named in the plural because it takes a comma-separated list of values and matches
-    an attempt equal to any of them, a value containing a ``*`` wildcard matching by pattern instead. The plural is
-    the only name recognized: a listing query reused here, ``source_ip=10.0.0.1`` rather than ``source_ips=``, is no
-    filter at all and the summary then covers every attempt in the window. The ``ca_*`` filters are not offered: they
-    match the conditional-access outcomes of a request rather than the attempt itself.
+    The attempts counted may be filtered on the classifying row by every filter the listing offers on an entry:
+    ``resolvers``, ``uids``, ``realms``, ``usernames``, ``user_roles``, ``event_types``, ``reasons``, ``source_ips``,
+    ``serials``, ``transaction_ids``, ``attempt_ids``, ``client_labels`` and ``endpoints``. Each is named in the plural
+    because it takes a comma-separated list of values and matches an attempt equal to any of them, a value containing
+    a ``*`` wildcard matching by pattern instead. The plural is the only name recognized: a query written in the
+    singular, ``source_ip=10.0.0.1`` rather than ``source_ips=``, is no filter at all and the summary then covers
+    every attempt in the window. The ``ca_*`` filters are not offered: they match the conditional-access outcomes of
+    a request rather than the attempt itself.
 
     :query start_time: start of the window, an ISO 8601 timestamp (required).
     :query end_time: end of the window, an ISO 8601 timestamp (required). Both ends are inclusive.
@@ -202,7 +246,7 @@ def get_authentication_log_statistics_endpoint():
         ``event_type``, ``outcome``, per-bucket ``counts`` and window ``total``, most frequent first.
     """
     params = request.all_data
-    filters = {name: _split_csv(get_optional(params, name)) for name in _STATISTICS_FILTER_PARAMS}
+    filters = {name: _split_csv(get_optional(params, name)) for name in _ENTRY_FILTER_PARAMS}
 
     result = get_authentication_log_statistics(
         **filters,

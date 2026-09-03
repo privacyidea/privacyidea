@@ -391,13 +391,18 @@ def user_is_owner(logged_in_user: User, owner: User, allow_no_owner: bool = Fals
     return is_owner
 
 
-def check_last_auth_policy(g, token: TokenClass) -> bool:
+def check_last_auth_policy(g, token: TokenClass) -> tuple[bool, list[str]]:
     """
     Check if the last_auth policy is enabled and if the token's last_auth is within the allowed time frame.
+
+    :return: a ``(result, policies)`` tuple; *policies* names the deciding LASTAUTH policies, and is only
+        non-empty when *result* is ``False`` - the caller logs it as the reason detail alongside
+        :class:`~privacyidea.lib.conditional_access.authentication_event_types.AuthEventReason.LAST_AUTH_TOO_OLD`,
+        matching how :func:`~privacyidea.lib.policydecorators.auth_lastauth` attributes the same policy check.
     """
     if not token:  # pragma: no cover
         log.error("No token provided to check last_auth policy.")
-        return False
+        return False, []
     last_auth_policy = (Match.user(g, scope=SCOPE.AUTHZ, action=PolicyAction.LASTAUTH, user_object=None)
                         .action_values(unique=True, write_to_audit_log=False))
     if len(last_auth_policy) == 1:
@@ -406,10 +411,12 @@ def check_last_auth_policy(g, token: TokenClass) -> bool:
         last_auth_info = token.get_tokeninfo(PolicyAction.LASTAUTH)
         if not last_auth_info:
             log.debug("Token has not been used for authentication yet, unable to apply last_auth policy.")
-            return True
+            return True, []
         last_auth_token = datetime.fromisoformat(last_auth_info)
-        return last_auth_token <= datetime.now(timezone.utc) <= last_auth_token + time_delta
-    return True
+        if last_auth_token <= datetime.now(timezone.utc) <= last_auth_token + time_delta:
+            return True, []
+        return False, last_auth_policy[timeframe]
+    return True, []
 
 
 def get_realm_for_authentication(g, username: str, realm: str) -> str:

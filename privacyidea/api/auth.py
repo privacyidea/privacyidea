@@ -82,12 +82,14 @@ from privacyidea.api.lib.prepolicy import (is_remote_user_allowed, prepolicy,
                                            disabled_token_types, auth_timelimit, load_challenge_text)
 from privacyidea.api.lib.utils import (GENERIC_AUTH_FAILURE, send_result, get_all_params, INTERNAL_OPTION_KEYS,
                                        verify_auth_token, get_optional, get_required, log_authentication,
-                                       get_auth_token_from_request, logged_in_user_from_token)
+                                       get_auth_token_from_request, logged_in_user_from_token,
+                                       pop_auth_event_reason)
 from privacyidea.lib.audit import getAudit
 from privacyidea.lib.auth import (check_webui_user, ROLE, verify_db_admin,
                                   db_admin_exists)
-from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType, AUTH_EVENT_TYPE_KEY,
-                                                                           LOG_TRANSACTION_ID_KEY)
+from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType, AuthEventReason,
+                                                                          AUTH_EVENT_TYPE_KEY, build_reason_detail,
+                                                                          LOG_TRANSACTION_ID_KEY)
 from privacyidea.lib.conditional_access.request_context import continue_attempt, get_ca_context
 from privacyidea.lib.config import get_from_config, SYSCONF, ensure_no_config_object, get_privacyidea_node
 from privacyidea.lib.crypto import geturandom, init_hsm
@@ -297,6 +299,11 @@ def get_auth_token():
     realm_param = get_optional(request.all_data, "realm")
     details = {}
     auth_event_type = None
+    # Why that event, classified by the layer below (see AuthEventReason): every reason the request produced, highest
+    # signal first. Only the user-login path can produce any; an admin login leaves them empty, so they are
+    # initialised here rather than in that branch.
+    auth_reasons: list[str] = []
+    auth_reason_detail = None
     # A token can deliberately suppress its terminal event (push_wait timeout)
     terminal_event_suppressed = False
     serials = None
@@ -324,7 +331,11 @@ def get_auth_token():
                                 "serial": token.get_serial(),
                                 "token_type": token.get_type()})
             # The user owns this passkey but it is disabled -> NO_USABLE_TOKEN
-            log_authentication(AuthEventType.NO_USABLE_TOKEN, request, user=token.user, transaction_id=transaction_id)
+            log_authentication(AuthEventType.NO_USABLE_TOKEN, request, user=token.user,
+                               transaction_id=transaction_id,
+                               reasons=[AuthEventReason.TOKEN_DISABLED],
+                               reason_detail=build_reason_detail(
+                                   reasons={token.get_serial(): AuthEventReason.TOKEN_DISABLED}))
             return send_result(False, rid=2, details={"message": "Token is disabled"})
 
         if not token.user:
@@ -332,15 +343,21 @@ def get_auth_token():
             raise AuthError(_("Authentication failure. Token has no user."),
                             id=Error.AUTHENTICATE_MISSING_USERNAME)
         if token.get_type() in request.all_data.get("disabled_token_types", []):
-            log_authentication(AuthEventType.NO_TOKEN, request, user=token.user, transaction_id=transaction_id)
+            log_authentication(AuthEventType.NO_TOKEN, request, user=token.user, transaction_id=transaction_id,
+                               reasons=[AuthEventReason.TOKEN_TYPE_DISABLED],
+                               reason_detail=build_reason_detail(
+                                   reasons={token.get_serial(): AuthEventReason.TOKEN_TYPE_DISABLED}))
             raise AuthError(
                 _("Authentication failure. The token type {token_type} is disabled.").format(
                     token_type=token.get_type()),
                 id=Error.AUTHENTICATE_WRONG_CREDENTIALS)
-        if not check_last_auth_policy(g, token):
+        last_auth_ok, last_auth_policies = check_last_auth_policy(g, token)
+        if not last_auth_ok:
             log.debug(f"Last authentication policy check failed for token {token.get_serial()}.")
             log_authentication(AuthEventType.NOT_AUTHORIZED, request, user=token.user,
-                               transaction_id=transaction_id)
+                               transaction_id=transaction_id,
+                               reasons=[AuthEventReason.LAST_AUTH_TOO_OLD],
+                               reason_detail=build_reason_detail(policies=last_auth_policies))
             raise AuthError(
                 _("Authentication failure. Last authentication policy check failed for token {serial}").format(
                     serial=token.get_serial()), id=Error.AUTHENTICATE_MISSING_RIGHT)
@@ -509,6 +526,8 @@ def get_auth_token():
             # key means nothing classified the request.
             terminal_event_suppressed = AUTH_EVENT_TYPE_KEY in details and details[AUTH_EVENT_TYPE_KEY] is None
             auth_event_type = details.pop(AUTH_EVENT_TYPE_KEY, None)
+            # Why it came out that way, classified alongside the event (see AuthEventReason).
+            auth_reasons, auth_reason_detail = pop_auth_event_reason(details)
             # Pop the log-only transaction_id (push_wait success) so it never reaches the client, mirroring
             # /validate/check; it stands in for the challenge transaction_id the response doesn't carry.
             log_transaction_id = details.pop(LOG_TRANSACTION_ID_KEY, None)
@@ -545,6 +564,11 @@ def get_auth_token():
             if local_admin_exist and not user_auth and not user.exist():
                 auth_event_type = AuthEventType.PASSWORD_FAIL
                 internal_admin = True
+                # The reasons classified above describe the *user* attempt this turned out not to be: they were
+                # found while checking a user's tokens, which a local admin has none of. The event alone says what
+                # happened here.
+                auth_reasons = []
+                auth_reason_detail = None
                 # A local admin has no user attributes; its login name is logged separately.
                 user = User()
 
@@ -555,7 +579,8 @@ def get_auth_token():
                 # in validate.py).
                 g.audit_object.log({"authentication": AUTH_RESPONSE.CHALLENGE})
                 log_authentication(auth_event_type, request, user=user, serial=serials,
-                                   transaction_id=details.get("transaction_id"))
+                                   transaction_id=details.get("transaction_id"),
+                                   reasons=auth_reasons, reason_detail=auth_reason_detail)
                 return send_result(False, rid=2, details=details)
 
     # Authentication log
@@ -572,7 +597,8 @@ def get_auth_token():
                        transaction_id=(get_optional(request.all_data, "transaction_id")
                                        or details.get("transaction_id") or log_transaction_id),
                        username=login_name,
-                       internal_admin=internal_admin)
+                       internal_admin=internal_admin,
+                       reasons=auth_reasons, reason_detail=auth_reason_detail)
 
     # Feed the classified outcome to the lockout engine here, in the view, because this endpoint *raises* its
     # rejection: the error message, the error id and the details all go into the AuthError below, and the lock or block

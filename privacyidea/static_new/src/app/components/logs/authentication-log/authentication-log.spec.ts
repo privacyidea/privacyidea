@@ -93,6 +93,32 @@ describe("AuthenticationLog", () => {
     expect(component.visibleColumnKeys().length).toBe(component.columnKeysMap.length);
   });
 
+  it("offers the reason as a column with the backend's vocabulary as its value picker", () => {
+    const reason = component.columnKeysMap.find((column) => column.key === "reason");
+    // Not sortable: an entry has a list of reasons, in a table of its own.
+    expect(reason).toEqual(expect.objectContaining({ filterable: true, sortable: false }));
+    // The options come from the service (i.e. the backend), not from a list held here.
+    expect(component.reasonOptions()).toEqual(service.reasons());
+    expect(component.reasonOptions()).toContain("TOKEN_DISABLED");
+    // The header offers that picker, so the cells must not offer a second, competing affordance.
+    expect(component.showInlineCellFilter("reason")).toBe(false);
+    component.setFilterValues("reason", ["TOKEN_DISABLED", "TOKEN_REVOKED"]);
+    expect(component.selectedFilterValues("reason")).toEqual(["TOKEN_DISABLED", "TOKEN_REVOKED"]);
+  });
+
+  it("offers the endpoint as a column with the backend's path list as its value picker", () => {
+    const endpoint = component.columnKeysMap.find((column) => column.key === "endpoint");
+    expect(endpoint).toEqual(expect.objectContaining({ filterable: true, sortable: true }));
+    // A closed list of six paths, so the options come from the service (i.e. the backend), not a copy held here.
+    expect(component.endpointOptions()).toEqual(service.endpoints());
+    expect(component.endpointOptions()).toContain("/validate/check");
+    // The header offers that picker, so the cells must not offer a second, competing affordance.
+    expect(component.showInlineCellFilter("endpoint")).toBe(false);
+    expect(component.filterTooltip("endpoint")).toBe("Filter by this value");
+    component.setFilterValues("endpoint", ["/auth", "/validate/check"]);
+    expect(component.selectedFilterValues("endpoint")).toEqual(["/auth", "/validate/check"]);
+  });
+
   it("hides the user-identifying columns in self-service", () => {
     authService.role.set("user");
     const keys = component.visibleColumnKeys();
@@ -265,6 +291,32 @@ describe("AuthenticationLog", () => {
     expect(badges[0].classList).toContain("role-badge-admin-internal");
   });
 
+  it("lists every reason of an entry, not just the first", () => {
+    // A request whose tokens failed differently carries one reason per finding, ordered by precedence.
+    service.authenticationLogResource.set(
+      MockPiResponse.fromValue({
+        auth_logs: [
+          {
+            id: 1,
+            event_type: "NO_USABLE_TOKEN",
+            timestamp: "2026-06-22T10:00:00+00:00",
+            reasons: ["TOKEN_DISABLED", "WRONG_OTP"]
+          },
+          { id: 2, event_type: "LOGIN_SUCCESS", timestamp: "2026-06-22T10:01:00+00:00", reasons: [] }
+        ],
+        count: 2,
+        current: 1,
+        prev: null,
+        next: null
+      })
+    );
+    fixture.detectChanges();
+    const rendered = Array.from(
+      fixture.nativeElement.querySelectorAll<HTMLElement>(".reason-entry")
+    ).map((element) => element.textContent!.trim());
+    expect(rendered).toEqual(["TOKEN_DISABLED", "WRONG_OTP"]);
+  });
+
   it("hasInfoValues only reports true when an entry on the page actually carries something to show", () => {
     // The table swaps in a fresh MatTableDataSource per page, so the signal must be re-set rather than mutated in place
     // for the computed to see new rows.
@@ -430,8 +482,8 @@ describe("AuthenticationLog", () => {
   });
 
   it("stores the outcome filters as ordinary filter entries", () => {
-    // This is what makes them typeable in the main filter input too; the service turns them into query params (see its
-    // own spec).
+    // Which is what makes them typeable in the main filter input too; the service turns them into query params (see
+    // its own spec).
     component.setFilterValues("ca_action_type", ["LOCK_USER", "BLOCK_IP"]);
     component.setFilterValues("ca_policy_name", ["Brute force"]);
     component.setDryRunFilter("false");

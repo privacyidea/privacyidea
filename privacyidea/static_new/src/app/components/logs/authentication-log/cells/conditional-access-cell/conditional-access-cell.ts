@@ -24,10 +24,14 @@ import { RouterLink } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { AuthenticationLogEntry } from "@services/authentication-log/authentication-log.service";
 
-// OutcomeView deliberately allow-lists an outcome's fields, since a log column only needs to answer which policy did
-// what - so a new backend column cannot leak into the UI by accident. Only `action` and `dryRun` show up front (what
-// happened); the rest explains why and sits behind the expand toggle, since this table has eleven other columns and a
-// four-line cell would push them off-screen.
+// One conditional-access outcome as its column shows it. The fields are an **allow-list**: the table carries more (the
+// count behind the decision, the rest of the action-specific `info`) and the API still returns all of it, but a log
+// column answers "which policy did what" - and picking fields rather than hiding them means a new column on the table
+// cannot leak into the UI by accident.
+//
+// Only `policy` and `dryRun` are shown right away, because the policy is what the admin recognizes an outcome by; the
+// remaining fields - the action it ran and why - are revealed by the expand toggle. Twelve columns share this table,
+// so a four-line cell per outcome would push everything else off-screen for a detail most readers do not want.
 export interface OutcomeView {
   // Identifies this outcome for the expand toggle and the aria-controls of its details. The row's own id when the
   // backend sent one; otherwise the entry and the position, which is unique within the rendered page.
@@ -39,9 +43,9 @@ export interface OutcomeView {
   // Marked in the column because it is the exception: a dry-run outcome describes what *would* have happened.
   dryRun: boolean;
   action: string;
-  // When the action created a timed restriction: the ISO-8601 timestamp it lapses at - the only remaining record of how
-  // long a lock/block lasted once the state row expires, and its absence is how a PERMANENT_* action (or one that
-  // restricts nothing) is recognized. The one field read out of `info`.
+  // When the action created a timed restriction: the ISO-8601 timestamp it lapses at. This is the only remaining record
+  // of how long a lock or block lasted once the state row has expired - and its absence is what a permanent action (or
+  // one that restricts nothing) is recognized by. The one field read out of `info`.
   expiresAt?: string;
   stage?: string;
   // The triggered stage's failure threshold: shown next to the name because it is what identifies the stage when the
@@ -123,11 +127,12 @@ export class ConditionalAccessCell {
   }
 
   // The toggle carries no visible text, so its accessible name has to say both what it does and which outcome it
-  // belongs to - there is one button per outcome, and "expand" alone would leave them indistinguishable.
+  // belongs to. One outcome is one *action*, so a policy that ran two of them (the shipped brute-force template locks
+  // and mails) shows two rows under one name, and the action is what tells those two buttons apart.
   toggleLabel(outcome: OutcomeView): string {
     return this.isExpanded(outcome.key)
-      ? $localize`Hide the details of ${outcome.action}`
-      : $localize`Show the details of ${outcome.action}`;
+      ? $localize`Hide the details of ${outcome.action} by ${outcome.policy}`
+      : $localize`Show the details of ${outcome.action} by ${outcome.policy}`;
   }
 
   // The expiry an action recorded in its `info`, or undefined when it created no timed restriction; validated here

@@ -149,14 +149,14 @@ describe("ConditionalAccessCell", () => {
 
   it("keys an outcome by its row id, and by entry and position when it has none", () => {
     // The key addresses one outcome's details: it is what the expand toggle records and what its aria-controls points
-    // at, so two outcomes in one cell must never share it.
+    // at, so two outcomes of one cell must never share it.
     const views = viewsFor([{ id: 12, action_type: "LOCK_USER" }, { action_type: "EMAIL_ADMIN" }]);
     expect(views.map((view) => view.key)).toEqual(["12", "42-1"]);
   });
 
   it("omits the policy link when no policy of that name exists any more", () => {
-    // The outcome names its policy but stores no id, because a deleted policy's id can be reassigned to another one; a
-    // link is therefore a name lookup, so a missing policy name means no link while the denormalized name still reads.
+    // The outcome names its policy and stores no id, precisely because a deleted policy's id can be handed to another
+    // one. So a link is a lookup: no policy of that name, no link - and the denormalized name still reads.
     const [view] = viewsFor([{ policy_name: "Deleted policy", action_type: "LOCK_USER", dry_run: true }]);
     expect(view.policy).toBe("Deleted policy");
     expect(view.policyLink).toBeUndefined();
@@ -201,12 +201,25 @@ describe("ConditionalAccessCell", () => {
     expect(component.isExpanded("12")).toBe(false);
   });
 
-  it("names the expand toggle after the action it belongs to, in both states", () => {
+  it("names the expand toggle after the action and its policy, in both states", () => {
     // One button per outcome and no visible text on it, so the accessible name has to say which outcome it opens.
-    const [view] = viewsFor([{ id: 12, action_type: "LOCK_USER" }]);
-    expect(component.toggleLabel(view)).toBe("Show the details of LOCK_USER");
+    const [view] = viewsFor([{ id: 12, policy_name: "Brute Force PIN Lock", action_type: "LOCK_USER" }]);
+    expect(component.toggleLabel(view)).toBe("Show the details of LOCK_USER by Brute Force PIN Lock");
     component.toggle(view.key);
-    expect(component.toggleLabel(view)).toBe("Hide the details of LOCK_USER");
+    expect(component.toggleLabel(view)).toBe("Hide the details of LOCK_USER by Brute Force PIN Lock");
+  });
+
+  it("tells two actions of one policy apart, since the visible line names only the policy", () => {
+    // A policy that ran two actions renders two rows under one name (the shipped brute-force template locks and
+    // mails), so the action is the only thing distinguishing their toggles.
+    const views = viewsFor([
+      { id: 1, policy_name: "Brute Force PIN Lock", action_type: "LOCK_USER" },
+      { id: 2, policy_name: "Brute Force PIN Lock", action_type: "EMAIL_ADMIN" }
+    ]);
+    const labels = views.map((view) => component.toggleLabel(view));
+    expect(new Set(labels).size).toBe(2);
+    expect(labels[0]).toContain("LOCK_USER");
+    expect(labels[1]).toContain("EMAIL_ADMIN");
   });
 
   it("renders one line per outcome and reveals the rest only on the toggle", () => {
@@ -227,17 +240,19 @@ describe("ConditionalAccessCell", () => {
     const toggle: HTMLButtonElement = fixture.nativeElement.querySelector("button.outcome-toggle");
     expect(toggle.getAttribute("aria-expanded")).toBe("false");
     expect(toggle.getAttribute("aria-controls")).toBe("ca-outcome-12");
-    // Collapsed, the cell answers "what happened" and nothing else.
-    expect(fixture.nativeElement.textContent).toContain("LOCK_USER");
-    expect(fixture.nativeElement.textContent).not.toContain("Brute Force PIN Lock");
+    // Collapsed, the cell names the policy that acted and nothing else.
+    expect(fixture.nativeElement.textContent).toContain("Brute Force PIN Lock");
+    expect(fixture.nativeElement.textContent).not.toContain("LOCK_USER");
+    expect(fixture.nativeElement.querySelector("a")?.getAttribute("href")).toContain(
+      ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS_DETAILS
+    );
 
     toggle.click();
     fixture.detectChanges();
     expect(toggle.getAttribute("aria-expanded")).toBe("true");
     const details: HTMLElement = fixture.nativeElement.querySelector("#ca-outcome-12");
-    expect(details.textContent).toContain("Brute Force PIN Lock");
+    expect(details.textContent).toContain("LOCK_USER");
     expect(details.textContent).toContain("Lock 10 min");
     expect(details.textContent).toContain("5");
-    expect(details.querySelector("a")?.getAttribute("href")).toContain(ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS_DETAILS);
   });
 });

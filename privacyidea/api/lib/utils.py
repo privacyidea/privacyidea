@@ -37,7 +37,11 @@ from flask import jsonify, current_app, Response, Request, request, g, has_reque
 from flask_babel import _
 
 from privacyidea.lib import lazy_gettext
-from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
+from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType,
+                                                                          AUTH_EVENT_REASON_KEY,
+                                                                          AUTH_EVENT_REASON_DETAIL_KEY,
+                                                                          REASON_DETAIL_INFO_KEY,
+                                                                          strip_internal_classification)
 from privacyidea.lib.conditional_access.authentication_log import AuthLogUserRole, PendingAuthEvent
 from privacyidea.lib.conditional_access.request_context import AuthPrincipal, get_ca_context
 from privacyidea.lib.user import User
@@ -167,6 +171,9 @@ def send_error(errstring, rid=1, context=None, error_code=-311, details=None) ->
         a caller building an error outside an error handler has to set (they default to ``200``).
     """
     if details:
+        # The same backstop prepare_result applies to a successful response: an error's details are built from the
+        # lib call's reply too (an AuthError carries it straight through), so a forgotten pop cannot leak here either.
+        strip_internal_classification(details)
         details["threadid"] = threading.current_thread().ident
     res = {"jsonrpc": "2.0",
            "detail": details,
@@ -274,7 +281,7 @@ def _determine_user_role(user: User | None, internal_admin: bool) -> AuthLogUser
     caller (``/auth`` via ``verify_db_admin``/``db_admin_exists``) and is signalled by *internal_admin*. Otherwise a
     user whose realm is a configured ``SUPERUSER_REALM`` is an external (admin-realm) admin; everyone else is a
     regular user. The superuser realms are only readable inside an app context, so outside one the principal is
-    treated as a regular user (the only events logged outside a request are user token flows, e.g. push_wait).
+    treated as a regular user - which no authentication reaches, since every authentication is a request.
     """
     if internal_admin:
         return AuthLogUserRole.ADMIN_INTERNAL
@@ -285,17 +292,67 @@ def _determine_user_role(user: User | None, internal_admin: bool) -> AuthLogUser
     return AuthLogUserRole.USER
 
 
+def request_endpoint() -> str | None:
+    """
+    The endpoint of the current request, as its path with a trailing slash removed (``/auth``,
+    ``/validate/check``, ``/ttype/push``) - or ``None`` outside a request context.
+
+    The path rather than the Flask endpoint or the matched URL rule: the rule would read ``/ttype/<ttype>`` where
+    the path names the token type that authenticated, and every route that authenticates has a static path anyway.
+    Normalizing the trailing slash keeps one endpoint one value however it was called - which matters twice over,
+    since this is both what the authentication log stores and what an ``ENDPOINT`` conditional-access condition
+    compares against.
+    """
+    if not has_request_context():
+        return None
+    return request.path.rstrip("/") or request.path
+
+
+def pop_auth_event_reason(details: dict | None) -> tuple[list[str], dict | None]:
+    """
+    Take the classified reasons and their detail dict off *details*, the way the event type itself is taken off it.
+
+    Both are internal keys the lib layer sets alongside the event type (see
+    :data:`~privacyidea.lib.conditional_access.authentication_event_types.AUTH_EVENT_REASON_KEY`) and neither may
+    reach the client, so they are popped rather than read.
+
+    A view calls this to *read* the classification off a lib call's reply, which is the same dict the response is
+    built from. Forgetting does not leak it - :func:`~privacyidea.lib.conditional_access.authentication_event_types.
+    strip_internal_classification` drops whatever is left when the body is built - it loses it: the row is then logged
+    without a reason. Calling this on a dict that carries none is free, so the habit is to pop unconditionally rather
+    than to reason about whether this particular path classifies anything.
+
+    The layer below records either a list of reasons (the request-level classification) or a single one (a layer that
+    only ever finds one), so both are accepted and a list always comes back.
+
+    :param details: the reply/details dict a lib call returned, or None
+    :return: ``(reasons, reason_detail)`` - an empty list and None when the layer below classified none
+    """
+    if not details:
+        return [], None
+    reason = details.pop(AUTH_EVENT_REASON_KEY, None)
+    detail = details.pop(AUTH_EVENT_REASON_DETAIL_KEY, None)
+    reasons = list(reason) if isinstance(reason, (list, tuple)) else ([reason] if reason else [])
+    return [str(item) for item in reasons if item], (detail or None)
+
+
 def log_authentication(event_type: AuthEventType | None, request: Request | None = None, user: User | None = None,
                        serial: str | None = None, transaction_id: str | None = None,
-                       username: str | None = None, internal_admin: bool = False,
-                       immediate: bool = False, other_info: dict | None = None) -> "PendingAuthEvent | None":
+                       username: str | None = None,
+                       internal_admin: bool = False,
+                       immediate: bool = False,
+                       reasons: list[str] | None = None,
+                       reason_detail: dict | None = None,
+                       other_info: dict | None = None) -> "PendingAuthEvent | None":
     """
     Record one authentication_log entry for the current request.
 
     This is the single API-layer persistence point: the lib layer classifies
     the outcome and the views call this to record it. ``source_ip`` uses the
     same client-IP resolution as the audit log; ``client_label`` is the
-    ``client_id`` parameter if supplied, otherwise the User-Agent header.
+    ``client_id`` parameter if supplied, otherwise the User-Agent header;
+    ``endpoint`` is the request path that authenticated (``/auth``,
+    ``/validate/check``, ``/ttype/push``, ...).
 
     The entry is **staged**, not written: it goes into this request's conditional-access buffer and is written once,
     with everything else the request staged, at request teardown. A later stage can therefore still amend it (a
@@ -319,9 +376,21 @@ def log_authentication(event_type: AuthEventType | None, request: Request | None
     serial). In that case the token owner is resolved from the serial, so a row that names a single token always also
     records that token's user, keeping the log symmetric.
 
-    ``source_ip`` (from ``g``) and ``client_label`` (from ``request``) are only read inside a request context, so the
-    lib layer can record an event from outside a view (e.g. push_wait). Worst case those two columns are empty; the
-    event itself is never lost.
+    ``source_ip`` (from ``g``) as well as ``client_label`` and ``endpoint`` (from ``request``) are only read inside a
+    request context, so that a caller outside a view (tests, lib code) records an event rather than raising: worst
+    case those columns are empty and the event itself is never lost. No authentication takes that path - every
+    authentication reaches the server as a request, ``push_wait`` included, which triggers and awaits its challenge
+    within the one request. ``endpoint`` comes from :func:`request_endpoint`, the same
+    reading an ``ENDPOINT`` conditional-access condition is evaluated against.
+
+    ``reasons`` says *why* the event came out this way: every
+    :class:`~privacyidea.lib.conditional_access.authentication_event_types.AuthEventReason` the request produced,
+    in the order that vocabulary declares them, each becoming a row of its own. ``reason_detail`` carries what is
+    specific to this request - the deciding policies, the per-serial reasons - into ``other_info`` under its own
+    :data:`REASON_DETAIL_INFO_KEY`
+    key. Both are optional: an event nobody found a reason for is logged without any. ``other_info`` is whatever the
+    caller has to say about the row itself (a conditional-access rejection records what it did), and shares
+    ``other_info`` with the reason detail without either overwriting the other.
 
     ``user_role`` records whether the principal is a regular user or an admin (see :class:`AuthLogUserRole`). Pass
     ``internal_admin=True`` for a local database admin (``/auth`` only); an admin-realm admin is detected from the
@@ -337,10 +406,12 @@ def log_authentication(event_type: AuthEventType | None, request: Request | None
         return
     client_label = None
     source_ip = None
+    endpoint = None
     if has_request_context():
         source_ip = g.client_ip
         if request is not None:
             client_label = get_optional(request.all_data, "client_id") or (request.user_agent.string or None)
+            endpoint = request_endpoint()
     # TODO: replace by user function (after related PR is merged)
     resolved = bool(user and user.resolver)
     if not resolved and serial and "," not in serial:
@@ -374,8 +445,14 @@ def log_authentication(event_type: AuthEventType | None, request: Request | None
     # AuthPrincipal rather than a bare User because a local database admin has no user object.
     context.principal = AuthPrincipal(user=user or User(), username=username, internal_admin=internal_admin)
     context.source_ip = source_ip
+    # The caller's own info and the reason detail share the row's other_info, the detail under a key of its own
+    # (see REASON_DETAIL_INFO_KEY), so neither has to know about the other.
+    info = dict(other_info) if other_info else {}
+    if reason_detail:
+        info[REASON_DETAIL_INFO_KEY] = reason_detail
     event = PendingAuthEvent(
         event_type=event_type,
+        reasons=list(reasons or []),
         transaction_id=transaction_id,
         resolver=user.resolver if resolved else None,
         uid=user.uid if resolved else None,
@@ -384,10 +461,11 @@ def log_authentication(event_type: AuthEventType | None, request: Request | None
         user_role=_determine_user_role(user, internal_admin),
         source_ip=source_ip,
         client_label=client_label,
+        endpoint=endpoint,
         serial=serial,
         attempt_id=context.attempt_id,
         immediate=immediate,
-        other_info=other_info,
+        other_info=info or None,
     )
     context.stage(event)
     if immediate:
@@ -402,9 +480,9 @@ def build_ca_context(user, internal_admin: bool | None = None) -> "CAContext":
     engine evaluates against.
 
     This is the one place that reads Flask state (``g`` / ``request``) for the
-    engine, keeping the lib layer free of it. Outside a request context (an event
-    recorded from outside a view, e.g. the push_wait flow) the request-scoped
-    fields are simply ``None``; nothing here raises.
+    engine, keeping the lib layer free of it. Outside a request context (a caller
+    that is not a view, such as a test) the request-scoped fields are simply
+    ``None``; nothing here raises.
 
     ``internal_admin`` flags a local database admin, which
     :func:`_determine_user_role` cannot infer from the user object alone (such an
@@ -430,6 +508,7 @@ def build_ca_context(user, internal_admin: bool | None = None) -> "CAContext":
     """
     from privacyidea.lib.conditional_access.context import CAContext
     source_ip = None
+    endpoint = request_endpoint()
     if has_request_context():
         # Uses g.get, not g.client_ip, because an AuthError raised early in before_request can leave client_ip unset -
         # the same reason hardening_action_active re-derives it - and this must never turn an authentication into a 500;
@@ -437,7 +516,7 @@ def build_ca_context(user, internal_admin: bool | None = None) -> "CAContext":
         source_ip = g.get("client_ip")
         if internal_admin is None:
             internal_admin = g.get("resolved_user", {}).get("is_local_admin", False)
-    return CAContext(user=user or None, source_ip=source_ip,
+    return CAContext(user=user or None, source_ip=source_ip, endpoint=endpoint,
                      user_role=str(_determine_user_role(user, bool(internal_admin))))
 
 
