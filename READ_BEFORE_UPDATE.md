@@ -25,7 +25,10 @@
   runs. How long this takes grows with the size of the audit log: on local SSD storage, count roughly 20 seconds per
   million entries that hold a signature, so ten million entries take about three minutes. Slow or network-attached
   storage can be several times slower, so take the size of your audit log into account when you plan the update
-  window, or trim the log before the update. PostgreSQL only changes the column definition and is done immediately.
+  window. Only the entries that are still there are copied, so trimming the log first shortens the migration, e.g.
+  with `pi-manage audit rotate --age 365` to delete everything older than a year (`--dryrun` shows what would go, and
+  `--chunksize` deletes in batches on a large log). PostgreSQL only changes the column definition and is done
+  immediately.
 
   **If your audit log is written to a separate database** (`PI_AUDIT_SQL_URI`), the migration does **not** reach it: it
   runs against the token database only. Apply the change to the audit database yourself, e.g.
