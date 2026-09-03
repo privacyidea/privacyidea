@@ -20,15 +20,15 @@
   appScrollToTop
   aria-label="User Details"
   class="details-container"
-  i18n-aria-label>
+  i18n-aria-label="@@common.userDetails">
   <div class="details-header">
-    <h3 i18n>Your Details</h3>
+    <h3 i18n="@@user.yourDetails">Your Details</h3>
   </div>
 
   <app-details-card
     class="details-card--user-info"
     title="Attributes"
-    i18n-title>
+    i18n-title="@@user.attributes">
     <div class="details-field-list">
       @for (item of detailsEntries(); track item.key) {
         @if (Array.isArray(item.value) && item.value.length > 1) {
@@ -50,10 +50,10 @@
                 type="button">
                 @if (isExpanded(item.key)) {
                   <mat-icon>expand_less</mat-icon>
-                  <span i18n>Show less</span>
+                  <span i18n="@@user.showLess">Show less</span>
                 } @else {
                   <mat-icon>expand_more</mat-icon>
-                  <span i18n>Show {{ item.value.length - 1 }} more</span>
+                  <span i18n="@@user.showMore">Show {{ item.value.length - 1 }} more</span>
                 }
               </button>
             </ng-container>
@@ -77,7 +77,7 @@
           <mat-icon class="padding-right-3">shield</mat-icon>
           <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
         </span>
-        <span i18n>Enroll new token</span>
+        <span i18n="@@user.enrollNewTokenLink">Enroll new token</span>
       </button>
     }
     @if (authService.actionAllowed("container_create")) {
@@ -89,7 +89,7 @@
           <mat-icon class="padding-right-3">folder</mat-icon>
           <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
         </span>
-        <span i18n>Create new container</span>
+        <span i18n="@@user.createNewContainerLink">Create new container</span>
       </button>
     }
   </div>

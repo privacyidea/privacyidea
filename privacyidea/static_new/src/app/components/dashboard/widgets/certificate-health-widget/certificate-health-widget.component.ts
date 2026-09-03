@@ -47,7 +47,7 @@ import { CertificateHealthEntry, SystemService, SystemServiceInterface } from "@
 })
 export class CertificateHealthWidgetComponent extends DashboardWidget implements OnInit {
   static override readonly type = "certificate-health";
-  static override readonly title = $localize`Certificate Health`;
+  static override readonly title = $localize`:@@dashboard.certificateHealth:Certificate Health`;
   static override readonly icon = "verified_user";
   static override readonly defaultSize: WidgetSize = { cols: 8, rows: 5 };
   static override readonly minSize: WidgetSize = { cols: 5, rows: 4 };

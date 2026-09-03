@@ -44,8 +44,8 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
 import { lastValueFrom } from "rxjs";
 
 const columnKeysMap = [
-  { key: "resolvername", label: $localize`Name` },
-  { key: "type", label: $localize`Type` }
+  { key: "resolvername", label: $localize`:@@common.name:Name` },
+  { key: "type", label: $localize`:@@common.type:Type` }
 ];
 
 @Component({
@@ -92,7 +92,7 @@ export class MachineResolverComponent {
   });
   readonly emptyHint = computed(() =>
     this.authService.actionAllowed("mresolverwrite")
-      ? $localize`Create a machine resolver to read machines from a machine store.`
+      ? $localize`:@@machineResolver.createAMachineResolverTo:Create a machine resolver to read machines from a machine store.`
       : ""
   );
 
@@ -143,10 +143,10 @@ export class MachineResolverComponent {
         .openDialog({
           component: SimpleConfirmationDialogComponent,
           data: {
-            title: $localize`Delete Machine Resolver`,
+            title: $localize`:@@machine.deleteMachine:Delete Machine Resolver`,
             items: [machineResolver.resolvername],
             itemType: "machine resolver",
-            confirmAction: { label: $localize`Delete`, value: true, type: "destruct" }
+            confirmAction: { label: $localize`:@@common.delete:Delete`, value: true, type: "destruct" }
           }
         })
         .afterClosed()

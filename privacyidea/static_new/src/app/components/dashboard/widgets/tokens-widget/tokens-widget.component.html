@@ -23,9 +23,14 @@
       <tr>
         <td>
           @if (counts().total > 0) {
-            <a [routerLink]="routePaths.TOKENS" (click)="showAllTokens()" i18n>Total</a>
+            <a
+              [routerLink]="routePaths.TOKENS"
+              (click)="showAllTokens()"
+              i18n="@@dashboard.total"
+              >Total</a
+            >
           } @else {
-            <span i18n>Total</span>
+            <span i18n="@@dashboard.total">Total</span>
           }
         </td>
         <td>{{ counts().total }}</td>
@@ -33,7 +38,12 @@
       @if (showHardware()) {
         <tr>
           <td>
-            <a [routerLink]="routePaths.TOKENS" (click)="showKind('hardware')" i18n>Hardware</a>
+            <a
+              [routerLink]="routePaths.TOKENS"
+              (click)="showKind('hardware')"
+              i18n="@@dashboard.hardware"
+              >Hardware</a
+            >
           </td>
           <td>{{ counts().hardware }}</td>
         </tr>
@@ -41,7 +51,12 @@
       @if (showSoftware()) {
         <tr>
           <td>
-            <a [routerLink]="routePaths.TOKENS" (click)="showKind('software')" i18n>Software</a>
+            <a
+              [routerLink]="routePaths.TOKENS"
+              (click)="showKind('software')"
+              i18n="@@dashboard.software"
+              >Software</a
+            >
           </td>
           <td>{{ counts().software }}</td>
         </tr>
@@ -50,9 +65,14 @@
         <tr>
           <td>
             @if (counts().unassigned_hardware > 0) {
-              <a [routerLink]="routePaths.TOKENS" (click)="showKind('hardware', true)" i18n>Unassigned Hardware</a>
+              <a
+                [routerLink]="routePaths.TOKENS"
+                (click)="showKind('hardware', true)"
+                i18n="@@dashboard.unassignedHardware"
+                >Unassigned Hardware</a
+              >
             } @else {
-              <span i18n>Unassigned Hardware</span>
+              <span i18n="@@dashboard.unassignedHardware">Unassigned Hardware</span>
             }
           </td>
           <td>{{ counts().unassigned_hardware }}</td>
@@ -60,9 +80,14 @@
         <tr>
           <td>
             @if (counts().unassigned_software > 0) {
-              <a [routerLink]="routePaths.TOKENS" (click)="showKind('software', true)" i18n>Unassigned Software</a>
+              <a
+                [routerLink]="routePaths.TOKENS"
+                (click)="showKind('software', true)"
+                i18n="@@dashboard.unassignedSoftware"
+                >Unassigned Software</a
+              >
             } @else {
-              <span i18n>Unassigned Software</span>
+              <span i18n="@@dashboard.unassignedSoftware">Unassigned Software</span>
             }
           </td>
           <td>{{ counts().unassigned_software }}</td>
@@ -71,9 +96,14 @@
         <tr>
           <td>
             @if (unassignedTotal() > 0) {
-              <a [routerLink]="routePaths.TOKENS" (click)="showUnassigned()" i18n>Unassigned</a>
+              <a
+                [routerLink]="routePaths.TOKENS"
+                (click)="showUnassigned()"
+                i18n="@@dashboard.unassigned"
+                >Unassigned</a
+              >
             } @else {
-              <span i18n>Unassigned</span>
+              <span i18n="@@dashboard.unassigned">Unassigned</span>
             }
           </td>
           <td>{{ unassignedTotal() }}</td>

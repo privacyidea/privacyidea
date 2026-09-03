@@ -26,9 +26,9 @@
         [checked]="userAssign()"
         (change)="toggleUserAssign($event.checked)"
         (click)="$event.stopPropagation()"
-        i18n>
-        Assign to user
-      </mat-checkbox>
+        i18n="@@container.assignToUser"
+        >Assign to user</mat-checkbox
+      >
       <button
         mat-icon-button
         (click)="emitRemoveToken(); $event.stopPropagation()">

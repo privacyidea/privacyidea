@@ -168,6 +168,20 @@ describe("EnrollPasskeyComponent", () => {
     expect(dialogService.openDialog).not.toHaveBeenCalled();
   });
 
+  it("readPublicKeyCred rejects when the enrollment response has no passkey_registration", async () => {
+    notif.error.mockClear();
+    const readPublicKeyCred = (
+      component as unknown as {
+        readPublicKeyCred: (r: EnrollmentResponse) => Promise<Credential | null>;
+      }
+    ).readPublicKeyCred.bind(component);
+
+    const result = await readPublicKeyCred({ detail: { serial: "S-9" } } as unknown as EnrollmentResponse);
+
+    expect(result).toBeNull();
+    expect(notif.error).toHaveBeenCalledWith("Failed to initiate Passkey registration: Invalid server response.");
+  });
+
   it("finalize error: deletes token and notifies", async () => {
     const initResp = {
       detail: {

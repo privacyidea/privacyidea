@@ -36,7 +36,7 @@
           <app-multi-select-only
             class="flex-2"
             subscriptSizing="dynamic"
-            i18n-placeholder
+            i18n-placeholder="@@policy.selectOptions"
             placeholder="Select options..."
             [items]="actionValues"
             [selectedItems]="selectedItems()"
@@ -44,7 +44,7 @@
           </app-multi-select-only>
         } @else {
           @if (actionValues.length === 0) {
-            <p i18n>No values available.</p>
+            <p i18n="@@policy.noValuesAvailable">No values available.</p>
           } @else if (actionValues.length <= 3) {
             <app-selector-buttons
               #selectorComponent

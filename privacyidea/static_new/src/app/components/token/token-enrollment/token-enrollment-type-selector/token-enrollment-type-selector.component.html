@@ -47,12 +47,12 @@
         mat-stroked-button
         type="submit">
         <mat-icon>add_moderator</mat-icon>
-        <span i18n>Enroll Token</span>
+        <span i18n="@@common.enrollToken">Enroll Token</span>
       </button>
       <button
         (click)="reopenDialog.emit()"
         matTooltip="Reopen enrollment dialog"
-        i18n-matTooltip
+        i18n-matTooltip="@@common.reopenEnrollment"
         [ngClass]="{ hidden: !canReopenDialog() }"
         mat-icon-button
         type="button">

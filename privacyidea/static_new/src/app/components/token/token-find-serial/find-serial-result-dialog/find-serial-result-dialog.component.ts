@@ -42,12 +42,16 @@ export class FindSerialResultDialogComponent extends AbstractDialogComponent<
   GetSerialResultDialogData,
   GetSerialResultDialogReturn
 > {
+  protected linkLabel(label: string): string {
+    return $localize`:@@common.linkLabel:${label}:LABEL: link`;
+  }
+
   readonly router = inject(Router);
   readonly dialogService: DialogServiceInterface = inject(DialogService);
 
   action: DialogAction<GetSerialResultDialogReturn> = {
     type: "confirm",
-    label: $localize`OK`,
+    label: $localize`:@@common.ok:OK`,
     value: "reset"
   };
 

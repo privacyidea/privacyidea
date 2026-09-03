@@ -71,22 +71,22 @@ const APPEARANCE_PRESETS: readonly AppearancePreset[] = DEPTH_CORNER_PAIRS.map((
 }));
 
 const DEPTH_LABELS: Record<DepthLevel, string> = {
-  flat: $localize`flat`,
-  subtle: $localize`subtle`,
-  default: $localize`default`,
-  strong: $localize`strong`,
-  "very-strong": $localize`very strong`
+  flat: $localize`:@@dashboard.depthFlat:flat depth`,
+  subtle: $localize`:@@dashboard.depthSubtle:subtle depth`,
+  default: $localize`:@@dashboard.depthDefault:default depth`,
+  strong: $localize`:@@dashboard.depthStrong:strong depth`,
+  "very-strong": $localize`:@@dashboard.depthVeryStrong:very strong depth`
 };
 
 const CORNER_LABELS: Record<CornerLevel, string> = {
-  square: $localize`square`,
-  default: $localize`default`,
-  round: $localize`round`,
-  "extra-round": $localize`extra round`
+  square: $localize`:@@dashboard.cornersSquare:square corners`,
+  default: $localize`:@@dashboard.cornersDefault:default corners`,
+  round: $localize`:@@dashboard.cornersRound:round corners`,
+  "extra-round": $localize`:@@dashboard.cornersExtraRound:extra round corners`
 };
 
 function presetLabel(preset: AppearancePreset): string {
-  return $localize`${DEPTH_LABELS[preset.depth]} depth, ${CORNER_LABELS[preset.corner]} corners`;
+  return $localize`:@@dashboard.depthAndCorners:${DEPTH_LABELS[preset.depth]}:DEPTH:, ${CORNER_LABELS[preset.corner]}:CORNERS:`;
 }
 
 /**
@@ -101,7 +101,7 @@ function presetLabel(preset: AppearancePreset): string {
 })
 export class AppearanceWidgetComponent extends DashboardWidget {
   static override readonly type = "appearance";
-  static override readonly title = $localize`Appearance`;
+  static override readonly title = $localize`:@@dashboard.appearance:Appearance`;
   static override readonly icon = "palette";
   // Minimum is the width the three controls need side by side; the fixed-circle dial never grows.
   static override readonly defaultSize: WidgetSize = { cols: 6, rows: 6 };
@@ -111,7 +111,7 @@ export class AppearanceWidgetComponent extends DashboardWidget {
   private readonly appearanceService = inject(AppearanceService);
   private readonly themeService = inject(ThemeService);
 
-  protected readonly resetTooltip = $localize`Reset appearance to defaults`;
+  protected readonly resetTooltip = $localize`:@@dashboard.resetAppearanceToDefaults:Reset appearance to defaults`;
 
   protected readonly items: LightSourceDialItem[] = APPEARANCE_PRESETS.map((preset) => ({
     slot: Number(preset.lightSource),

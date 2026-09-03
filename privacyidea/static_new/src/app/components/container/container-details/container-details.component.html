@@ -20,7 +20,7 @@
   appScrollToTop
   aria-label="Details"
   class="details-container"
-  i18n-aria-label>
+  i18n-aria-label="@@common.details">
   <div class="details-flex-layout flex-column">
     <app-details-header
       [serial]="containerSerial()"
@@ -41,7 +41,7 @@
           class="details-card--description"
           [class.is-editing]="desc.isEditing()"
           title="Description"
-          i18n-title>
+          i18n-title="@@common.description">
           <div class="value-row">
             <div class="value-content">
               @if (desc.isEditing()) {
@@ -51,7 +51,7 @@
                   <textarea
                     [value]="desc.value"
                     (input)="desc.value = $any($event.target).value"
-                    i18n-placeholder
+                    i18n-placeholder="@@common.enterDescription"
                     matInput
                     placeholder="Enter description"
                     rows="3"></textarea>
@@ -79,7 +79,7 @@
       <app-details-card
         class="details-card--group"
         title="Status"
-        i18n-title>
+        i18n-title="@@common.status">
         <div class="details-field-list">
           <app-container-details-states
             [states]="selectedStates()"
@@ -87,19 +87,19 @@
           @if (lastAuthenticationDisplay()) {
             <app-detail-field
               label="Last Authentication"
-              i18n-label
+              i18n-label="@@common.lastAuthentication"
               [displayText]="lastAuthenticationDisplay()" />
           }
           @if (lastSynchronizationDisplay()) {
             <app-detail-field
               label="Last Synchronization"
-              i18n-label
+              i18n-label="@@container.lastSynchronization"
               [displayText]="lastSynchronizationDisplay()" />
           }
           @if (registrationStateDisplay()) {
             <app-detail-field
               label="Registration State"
-              i18n-label
+              i18n-label="@@container.registrationState"
               [displayText]="registrationStateDisplay()" />
           }
         </div>
@@ -108,15 +108,15 @@
       <app-details-card
         class="details-card--group"
         title="Container"
-        i18n-title>
+        i18n-title="@@common.container">
         <div class="details-field-list">
           <app-detail-field
             label="Type"
-            i18n-label
+            i18n-label="@@common.type"
             [displayText]="str(containerDetails().type)" />
           <app-detail-field
             label="Template"
-            i18n-label
+            i18n-label="@@container.template"
             [displayText]="str(containerDetails().template)" />
           <app-container-details-realms
             [realms]="selectedRealms()"
@@ -143,7 +143,7 @@
       <app-details-card
         class="details-info-area"
         title="Information"
-        i18n-title
+        i18n-title="@@common.information"
         [collapsible]="true"
         [collapseLocked]="isEditingInfo()">
         <app-container-details-info
