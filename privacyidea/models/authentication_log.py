@@ -71,6 +71,12 @@ class AuthenticationLog(MethodsMixin, db.Model):
         # event_type predicate, so each needs timestamp right after the subject column(s).
         Index("ix_authlog_user_time", "resolver", "uid", "realm", "timestamp"),
         Index("ix_authlog_ip_time", "source_ip", "timestamp"),
+        # The one index not scoped to a subject: the statistics query
+        # (:func:`~privacyidea.lib.conditional_access.authentication_log.get_authentication_log_statistics`) and the
+        # retention delete (``cleanup_authentication_log``) both range over ``timestamp`` alone, and the four indexes
+        # above cannot serve that - their leading columns are unconstrained, so the rows of a window are scattered
+        # across each of them in subject order rather than lying contiguous.
+        Index("ix_authlog_time", "timestamp"),
     )
     id: Mapped[int] = mapped_column(BigIntegerType, Identity(always=False), primary_key=True)
     resolver: Mapped[str | None] = mapped_column(case_sensitive_unicode(authentication_log_column_length["resolver"]))

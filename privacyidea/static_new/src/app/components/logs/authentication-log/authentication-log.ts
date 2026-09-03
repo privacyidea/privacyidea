@@ -80,6 +80,7 @@ import {
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
+import { toFilterDisplay } from "@utils/date-format.utils";
 
 // CSS highlight class per event outcome; outcome values come from the backend's AuthEventOutcome (GET
 // /authenticationlog/eventtypes), and this file only maps each one to a color.
@@ -207,12 +208,6 @@ const PRESET_LABELS: readonly { ms: number; label: string }[] = [
   { ms: 182 * MS_PER_DAY, label: $localize`Last 6 months` },
   { ms: 365 * MS_PER_DAY, label: $localize`Last year` }
 ];
-
-// Converts an ISO 8601 string to the human-readable format shown in the active-filter chip.
-// Input: ISO 8601, e.g. "2026-06-02T10:00:00.000Z". Output: "2026-06-02 10:00:00 +00:00".
-function toFilterDisplay(isoString: string): string {
-  return formatDate(isoString, "yyyy-MM-dd HH:mm:ss ZZZZZ", "en-US");
-}
 
 // Inverse of toFilterDisplay for the editable start_time/end_time chips: parses the mirrored display, plain ISO, or a
 // partial typed datetime into an ISO string, returning null for an empty or unparsable value.

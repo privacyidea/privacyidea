@@ -135,6 +135,69 @@ describe("ConditionalAccessActionItemComponent", () => {
     });
   });
 
+  // The component's own job here is forwarding siblingActions/actionIndex/target to the policy service and
+  // mapping its verdict to the disabled-types set / conflict message. The rules themselves (which actions are
+  // repeatable, which pairs are exclusive) are the policy service's, and are covered once, against the real
+  // implementation, in conditional-access-policy.service.spec.ts.
+  describe("stage action combinations", () => {
+    let policyServiceMock: MockConditionalAccessPolicyService;
+    const action = (actionType: ConditionalAccessActionType) => ({ action_type: actionType, action_value: null });
+
+    beforeEach(() => {
+      policyServiceMock = TestBed.inject(
+        ConditionalAccessPolicyService
+      ) as unknown as MockConditionalAccessPolicyService;
+    });
+
+    const withSiblings = (siblings: ConditionalAccessStageAction[], index: number) => {
+      fixture.componentRef.setInput("siblingActions", siblings);
+      fixture.componentRef.setInput("actionIndex", index);
+      setAction(siblings[index]);
+    };
+
+    it("forwards siblingActions/actionIndex/target and surfaces a duplicate verdict", () => {
+      const siblings = [action("LOCK_USER"), action("LOCK_USER")];
+      policyServiceMock.actionConflict.mockReturnValue("duplicate");
+      withSiblings(siblings, 1);
+      expect(component.actionConflict()).toBe("duplicate");
+      expect(component.conflictMessage()).not.toBe("");
+      expect(policyServiceMock.actionConflict).toHaveBeenCalledWith(siblings, 1, component.target());
+    });
+
+    it("surfaces a null verdict as no message", () => {
+      policyServiceMock.actionConflict.mockReturnValue(null);
+      withSiblings([action("EMAIL_ADMIN"), action("EMAIL_ADMIN")], 1);
+      expect(component.actionConflict()).toBeNull();
+      expect(component.conflictMessage()).toBe("");
+    });
+
+    it("surfaces an exclusive verdict", () => {
+      policyServiceMock.actionConflict.mockReturnValue("exclusive");
+      withSiblings([action("LOCK_USER"), action("PERMANENT_LOCK_USER")], 1);
+      expect(component.actionConflict()).toBe("exclusive");
+      expect(component.conflictMessage()).not.toBe("");
+    });
+
+    it("forwards the unavailable-types set from the policy service as disabledActionTypes", () => {
+      const siblings = [action("LOCK_USER"), action("EMAIL_ADMIN")];
+      policyServiceMock.unavailableActionTypes.mockReturnValue(new Set(["LOCK_USER", "PERMANENT_LOCK_USER"]));
+      withSiblings(siblings, 1);
+      const disabled = component.disabledActionTypes();
+      expect(disabled.has("LOCK_USER")).toBe(true);
+      expect(disabled.has("PERMANENT_LOCK_USER")).toBe(true);
+      expect(disabled.has("EMAIL_ADMIN")).toBe(false);
+      expect(policyServiceMock.unavailableActionTypes).toHaveBeenCalledWith(siblings, component.target(), 1);
+    });
+
+    it("does not judge while no rules have been served", () => {
+      policyServiceMock.actionConflict.mockReturnValue(null);
+      policyServiceMock.unavailableActionTypes.mockReturnValue(new Set());
+      withSiblings([action("LOCK_USER"), action("LOCK_USER")], 1);
+      expect(component.actionConflict()).toBeNull();
+      expect(component.disabledActionTypes().size).toBe(0);
+    });
+  });
+
   describe("duration", () => {
     it("should read a plain-number duration", () => {
       setAction({ action_type: "LOCK_USER", action_value: 600 });

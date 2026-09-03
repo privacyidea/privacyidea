@@ -28,6 +28,13 @@
           i18n-aria-label>
           warning
         </mat-icon>
+      } @else if (actionConflict()) {
+        <mat-icon
+          class="ca-action-warn-icon"
+          aria-label="Action conflicts with another action on this stage"
+          i18n-aria-label>
+          warning
+        </mat-icon>
       }
       {{ action().action_type }}
     </mat-panel-title>
@@ -53,7 +60,11 @@
         [value]="action().action_type"
         (selectionChange)="onActionTypeChange($event.value)">
         @for (actionType of allowedActionTypes(); track actionType) {
-          <mat-option [value]="actionType">{{ actionType }}</mat-option>
+          <mat-option
+            [value]="actionType"
+            [disabled]="disabledActionTypes().has(actionType)">
+            {{ actionType }}
+          </mat-option>
         }
       </mat-select>
       <mat-hint>{{ actionDescription() }}</mat-hint>
@@ -64,6 +75,9 @@
         i18n>
         This action is not allowed for the policy's target. Choose a different action, or change the target.
       </p>
+    }
+    @if (actionConflict()) {
+      <p class="ca-action-target-error">{{ conflictMessage() }}</p>
     }
 
     <mat-checkbox

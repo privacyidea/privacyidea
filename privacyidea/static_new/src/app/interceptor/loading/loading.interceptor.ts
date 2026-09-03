@@ -19,7 +19,7 @@
 import { HttpInterceptorFn } from "@angular/common/http";
 import { inject } from "@angular/core";
 import { LoadingService, LoadingServiceInterface } from "@services/loading/loading-service";
-import { finalize, share } from "rxjs/operators";
+import { finalize, shareReplay } from "rxjs/operators";
 import { v4 as uuid } from "uuid";
 
 export const loadingInterceptor: HttpInterceptorFn = (req, next) => {
@@ -28,7 +28,7 @@ export const loadingInterceptor: HttpInterceptorFn = (req, next) => {
   const loadingId = uuid();
 
   const sharedRequest$ = next(req).pipe(
-    share(),
+    shareReplay({ bufferSize: 1, refCount: true }),
     finalize(() => {
       loadingService.removeLoading(loadingId);
     })

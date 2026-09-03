@@ -222,13 +222,15 @@ def list_condition_types():
 @log_with(log)
 def list_targets():
     """
-    Return the policy targets and, for each, the constraints that depend on the target - the stage actions it allows
-    and the count modes it supports - as ``{target: {"actions": [...], "count_modes": [...]}}`` (both sorted; see
+    Return the policy targets and, for each, the constraints that depend on the target - the stage actions it allows,
+    the count modes it supports, which of its actions may appear more than once within one stage, and which of its
+    actions contradict each other within one stage - as ``{target: {"actions": [...], "count_modes": [...],
+    "repeatable_actions": [...], "exclusive_action_groups": [[...], ...]}}`` (all sorted; see
     :func:`~privacyidea.lib.conditional_access.policy.get_target_constraints`).
 
     Requires the admin policy action :ref:`policy_conditional_access_policy_read`.
 
-    :status 200: mapping of target name to its allowed actions and supported count modes
+    :status 200: mapping of target name to its allowed actions, supported count modes and per-stage action rules
     """
     target_constraints = get_target_constraints()
     g.audit_object.log({"success": True, "info": f"{len(target_constraints)} targets"})
@@ -321,7 +323,10 @@ def create_policy():
         "actions": [{"action_type": <ConditionalAccessAction>, "action_value": <per action type>}]}``.
         Thresholds must be unique within the policy and are the evaluation order
         (highest first). A threshold starts at 1, except on a stage whose every
-        action is ``DENY``, where 0 means "always". Required. ``action_value`` is checked against what the
+        action is ``DENY``, where 0 means "always". Required. Within one stage an
+        action type may appear only once, except ``EMAIL_ADMIN``/``EMAIL_USER``;
+        and ``LOCK_USER``/``PERMANENT_LOCK_USER`` and ``BLOCK_IP``/``PERMANENT_BLOCK_IP``
+        may not be combined in the same stage. ``action_value`` is checked against what the
         action can actually do: ``LOCK_USER``/``BLOCK_IP`` need a positive number of seconds (an integer, a
         numeric string, or an object with ``duration_seconds``), ``EMAIL_ADMIN``/``EMAIL_USER`` an object with
         a non-empty ``subject`` and ``body``, and the ``PERMANENT_*``/``DENY`` actions no value at all.

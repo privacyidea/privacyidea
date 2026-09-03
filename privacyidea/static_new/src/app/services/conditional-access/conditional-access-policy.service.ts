@@ -97,6 +97,11 @@ export const REDUNDANT_RESTRICTION_PAIRS: readonly (readonly [ConditionalAccessA
 export interface TargetConstraints {
   actions: ConditionalAccessActionType[];
   count_modes: CountMode[];
+  // Which of this target's actions may appear more than once within one stage, and which of them
+  // contradict each other there. Optional so a backend that does not serve them yet - and a spec fixture
+  // that omits them - simply yields no rules rather than a type error.
+  repeatable_actions?: ConditionalAccessActionType[];
+  exclusive_action_groups?: ConditionalAccessActionType[][];
 }
 
 export interface ConditionalAccessStageAction {
@@ -284,6 +289,8 @@ export interface ConditionalAccessPolicyServiceInterface {
   readonly actionTypes: Signal<ConditionalAccessActionType[]>;
   readonly targetsResource: HttpResourceRef<PiResponse<Record<string, TargetConstraints>> | undefined>;
   readonly actionsByTarget: Signal<Record<ConditionalAccessTarget, ConditionalAccessActionType[]>>;
+  readonly repeatableActionsByTarget: Signal<Record<ConditionalAccessTarget, ConditionalAccessActionType[]>>;
+  readonly exclusiveGroupsByTarget: Signal<Record<ConditionalAccessTarget, ConditionalAccessActionType[][]>>;
   readonly countModesByTarget: Signal<Record<ConditionalAccessTarget, CountMode[]>>;
   readonly defaultErrorMessagesResource: HttpResourceRef<PiResponse<DefaultErrorMessage[]> | undefined>;
   readonly defaultErrorMessages: Signal<DefaultErrorMessage[]>;
@@ -296,6 +303,18 @@ export interface ConditionalAccessPolicyServiceInterface {
   actionsForTarget(target: ConditionalAccessTarget): ConditionalAccessActionType[];
 
   countModesForTarget(target: ConditionalAccessTarget): CountMode[];
+
+  unavailableActionTypes(
+    actions: ConditionalAccessStageAction[],
+    target: ConditionalAccessTarget,
+    exceptIndex?: number
+  ): Set<ConditionalAccessActionType>;
+
+  actionConflict(
+    actions: ConditionalAccessStageAction[],
+    index: number,
+    target: ConditionalAccessTarget
+  ): "duplicate" | "exclusive" | null;
 
   getPolicies(): Observable<PiResponse<ConditionalAccessPolicy[]>>;
 
@@ -427,6 +446,25 @@ export class ConditionalAccessPolicyService implements ConditionalAccessPolicySe
       ) as Record<ConditionalAccessTarget, ConditionalAccessActionType[]>
   );
 
+  readonly repeatableActionsByTarget: Signal<Record<ConditionalAccessTarget, ConditionalAccessActionType[]>> =
+    computed(
+      () =>
+        Object.fromEntries(
+          Object.entries(this.targetConstraints()).map(([target, entry]) => [target, entry.repeatable_actions ?? []])
+        ) as Record<ConditionalAccessTarget, ConditionalAccessActionType[]>
+    );
+
+  readonly exclusiveGroupsByTarget: Signal<Record<ConditionalAccessTarget, ConditionalAccessActionType[][]>> =
+    computed(
+      () =>
+        Object.fromEntries(
+          Object.entries(this.targetConstraints()).map(([target, entry]) => [
+            target,
+            entry.exclusive_action_groups ?? []
+          ])
+        ) as Record<ConditionalAccessTarget, ConditionalAccessActionType[][]>
+    );
+
   readonly countModesByTarget: Signal<Record<ConditionalAccessTarget, CountMode[]>> = computed(
     () =>
       Object.fromEntries(
@@ -502,6 +540,65 @@ export class ConditionalAccessPolicyService implements ConditionalAccessPolicySe
 
   countModesForTarget(target: ConditionalAccessTarget): CountMode[] {
     return this.countModesByTarget()[target] ?? [];
+  }
+
+  // The action types that may not be added to a stage already holding `actions`: every non-repeatable type
+  // already present, plus every type mutually exclusive with one that is present. `exceptIndex` leaves one
+  // action out of the judgement, so the type an action already carries is never reported against itself.
+  //
+  // Empty while /targets has not answered: with no rules served, nothing can be judged unavailable, and
+  // guessing would put the rule in a second place (the backend enforces it either way).
+  unavailableActionTypes(
+    actions: ConditionalAccessStageAction[],
+    target: ConditionalAccessTarget,
+    exceptIndex?: number
+  ): Set<ConditionalAccessActionType> {
+    const repeatable = new Set(this.repeatableActionsByTarget()[target] ?? []);
+    const groups = this.exclusiveGroupsByTarget()[target] ?? [];
+    const unavailable = new Set<ConditionalAccessActionType>();
+    if (repeatable.size === 0 && groups.length === 0) {
+      return unavailable;
+    }
+    const present = actions.filter((_, index) => index !== exceptIndex).map((action) => action.action_type);
+    for (const actionType of present) {
+      if (!repeatable.has(actionType)) {
+        unavailable.add(actionType);
+      }
+      for (const group of groups) {
+        if (group.includes(actionType)) {
+          group.forEach((member) => unavailable.add(member));
+        }
+      }
+    }
+    return unavailable;
+  }
+
+  // Why the action at `index` cannot stand next to the ones before it, or null when it can. Only the later
+  // action of a colliding pair is reported, so one collision flags one action rather than both.
+  actionConflict(
+    actions: ConditionalAccessStageAction[],
+    index: number,
+    target: ConditionalAccessTarget
+  ): "duplicate" | "exclusive" | null {
+    const action = actions[index];
+    if (!action) {
+      return null;
+    }
+    const repeatable = new Set(this.repeatableActionsByTarget()[target] ?? []);
+    const groups = this.exclusiveGroupsByTarget()[target] ?? [];
+    if (repeatable.size === 0 && groups.length === 0) {
+      return null;
+    }
+    const earlier = actions.slice(0, index).map((other) => other.action_type);
+    if (!repeatable.has(action.action_type) && earlier.includes(action.action_type)) {
+      return "duplicate";
+    }
+    const conflicting = groups.some(
+      (group) =>
+        group.includes(action.action_type) &&
+        earlier.some((type) => type !== action.action_type && group.includes(type))
+    );
+    return conflicting ? "exclusive" : null;
   }
 
   // One-off read of the policy list for callers outside the conditional-access page, where policiesResource

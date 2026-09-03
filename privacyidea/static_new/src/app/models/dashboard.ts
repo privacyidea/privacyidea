@@ -28,6 +28,7 @@ export type WidgetTypeId =
   | "tokens"
   | "token-types"
   | "authentications"
+  | "authentication-activity"
   | "administration"
   | "policies"
   | "events"
