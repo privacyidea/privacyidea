@@ -38,10 +38,12 @@ export interface AuthenticationLogEntry {
   event_type: string;
   timestamp: string;
   source_ip?: string | null;
+  // TCP peer the request arrived from (REMOTE_ADDR), regardless of whether source_ip was derived from a proxy hop.
+  peer_ip?: string | null;
   // How source_ip was derived. Null means the entry predates the recording - never that the connection was
   // direct. See the AuthenticationLog model.
-  peer_ip?: string | null;
   source_ip_source?: string | null;
+  // Recorded chain of claimed hops (peer first), with the chosen hop marked effective.
   ip_chain?: { ip: string; source: string; effective?: boolean }[] | null;
   client_label?: string | null;
   client_label_source?: string | null;

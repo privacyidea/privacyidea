@@ -768,12 +768,26 @@ def get_client_ip_info(request, proxy_settings) -> "ClientIpInfo":
     if not request.access_route:
         # No route at all: get_client_ip has always returned None here, and there is nothing to derive from.
         return _cap_chain(ClientIpInfo(ip=None, peer_ip=peer, source=None, chain=hops))
-    # A falsy peer is dropped rather than handed to IPAddress(), which would raise. Kept as (hops-index, hop)
-    # pairs so the effective hop can be recovered by position: the same (ip, source) can legitimately appear
-    # more than once in the chain, and a value-based lookup back into ``hops`` would then return the first
-    # match rather than the hop actually chosen.
-    addressable = [(i, hop) for i, hop in enumerate(hops) if hop.ip]
-    addresses = [IPAddress(hop.ip) for _, hop in addressable]
+    # A falsy or unparseable hop is dropped rather than handed to check_proxy_index() - a malformed
+    # X-Forwarded-For entry or client parameter is attacker-controlled and must not turn the request into a
+    # 500. Kept as (hops-index, hop) pairs so the effective hop can be recovered by position: the same
+    # (ip, source) can legitimately appear more than once in the chain, and a value-based lookup back into
+    # ``hops`` would then return the first match rather than the hop actually chosen.
+    addressable = []
+    addresses = []
+    for i, hop in enumerate(hops):
+        if not hop.ip:
+            continue
+        try:
+            addresses.append(IPAddress(hop.ip))
+        except AddrFormatError:
+            continue
+        addressable.append((i, hop))
+    if not addressable:
+        # Every hop was empty or unparseable (e.g. a garbled X-Forwarded-For): there is nothing left to map,
+        # so this is the same as having no route at all. check_proxy_index() would itself raise on an empty
+        # list.
+        return _cap_chain(ClientIpInfo(ip=None, peer_ip=peer, source=None, chain=hops))
     index = check_proxy_index(addresses, proxy_settings)
     effective_index, chosen = addressable[index]
     # Index 0 is the peer: an override is configured, but this peer may not map the client any further.
@@ -785,11 +799,14 @@ def get_client_ip_info(request, proxy_settings) -> "ClientIpInfo":
 
 def _cap_chain(info: "ClientIpInfo") -> "ClientIpInfo":
     """
-    Cap the recorded chain at :data:`MAX_IP_CHAIN_HOPS` and each hop at :data:`MAX_IP_CHAIN_HOP_LENGTH`,
-    always keeping the effective hop. An over-long chain is a client claiming one, so it is truncated rather
-    than stored.
+    Cap the recorded chain at :data:`MAX_IP_CHAIN_HOPS` and each hop at :data:`MAX_IP_CHAIN_HOP_LENGTH`. The
+    cap is a hard bound - an attacker padding X-Forwarded-For to push the effective hop past it must not be
+    able to grow what gets stored, so this never keeps more than :data:`MAX_IP_CHAIN_HOPS` hops even where
+    that drops the effective one from the recorded chain (the effective address itself is still on the row
+    via ``ip``/``source``, only its highlighting in the chain is lost in that edge case). An over-long chain
+    is a client claiming one, so it is truncated rather than stored.
     """
-    keep = MAX_IP_CHAIN_HOPS if info.effective_index is None else max(MAX_IP_CHAIN_HOPS, info.effective_index + 1)
+    keep = min(MAX_IP_CHAIN_HOPS, len(info.chain))
     if len(info.chain) <= keep and all(len(hop.ip) <= MAX_IP_CHAIN_HOP_LENGTH for hop in info.chain):
         return info
     chain = [ClientIpHop(hop.ip[:MAX_IP_CHAIN_HOP_LENGTH], hop.source) for hop in info.chain[:keep]]

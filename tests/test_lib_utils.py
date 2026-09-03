@@ -771,6 +771,55 @@ class UtilsTestCase(MyTestCase):
         for hop in info.chain:
             self.assertLessEqual(len(hop.ip), MAX_IP_CHAIN_HOP_LENGTH)
 
+    def test_23f_get_client_ip_info_ignores_a_malformed_hop_instead_of_raising(self):
+        # X-Forwarded-For is attacker-controlled; a garbled entry must not turn the request into a 500.
+        class RequestMock:
+            blueprint = "token_blueprint"
+            remote_addr = "10.0.0.1"
+            all_data = {}
+            access_route = ["not-an-ip", "172.16.0.5"]
+
+        info = get_client_ip_info(RequestMock(), "10.0.0.1>0.0.0.0/0")
+        self.assertEqual("172.16.0.5", info.ip)
+        # The malformed hop is still recorded for the forensic chain, just excluded from the mapping.
+        self.assertIn("not-an-ip", [hop.ip for hop in info.chain])
+
+    def test_23g_get_client_ip_info_returns_none_when_every_hop_is_unusable(self):
+        # No peer and every claimed hop unparseable: nothing is left to map, which must behave like having
+        # no route at all rather than raising out of check_proxy_index() on an empty list.
+        class RequestMock:
+            blueprint = "token_blueprint"
+            remote_addr = ""
+            all_data = {}
+            access_route = ["garbage", "also-garbage"]
+
+        info = get_client_ip_info(RequestMock(), "10.0.0.1>0.0.0.0/0")
+        self.assertIsNone(info.ip)
+        self.assertIsNone(info.effective_index)
+
+    def test_23h_get_client_ip_info_cap_is_never_exceeded_even_for_the_effective_hop(self):
+        # A permissive override can make the effective hop land deep in an attacker-padded chain; the stored
+        # chain must still never exceed MAX_IP_CHAIN_HOPS, even at the cost of the effective hop falling
+        # outside the recorded (truncated) chain.
+        depth = MAX_IP_CHAIN_HOPS + 5
+        peer = "172.16.0.1"
+        # peer first, then the claimed origin deepest last - matches _path_to_client's hop order.
+        claimed = [f"172.16.0.{i}" for i in range(2, depth + 2)]
+        path_to_client = [peer] + claimed
+
+        class RequestMock:
+            blueprint = "token_blueprint"
+            remote_addr = peer
+            all_data = {}
+            access_route = list(reversed(claimed))
+
+        # Trust the whole chain, so the deepest hop is the effective one.
+        info = get_client_ip_info(RequestMock(), ">".join(path_to_client))
+        self.assertEqual(claimed[-1], info.ip)
+        self.assertEqual(len(path_to_client) - 1, info.effective_index)
+        self.assertLessEqual(len(info.chain), MAX_IP_CHAIN_HOPS)
+        self.assertEqual(len(path_to_client) - MAX_IP_CHAIN_HOPS, info.dropped_hops)
+
     def test_24_sanity_name_check(self):
         self.assertTrue(sanity_name_check('Hello_World'))
         with self.assertRaisesRegex(Exception, "non conformant characters in the name"):
