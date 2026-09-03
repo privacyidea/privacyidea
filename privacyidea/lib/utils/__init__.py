@@ -585,7 +585,7 @@ def parse_proxy(proxy_settings):
     return proxy_set
 
 
-def check_proxy_index(path_to_client, proxy_settings):
+def check_proxy_index(path_to_client: "list[IPAddress]", proxy_settings: str) -> int:
     """
     This function takes a list of IPAddress objects, the so-called "path to client",
     along with the proxy settings from OverrideAuthorizationClient, and determines
@@ -657,7 +657,7 @@ def check_proxy_index(path_to_client, proxy_settings):
     return max_idx
 
 
-def check_proxy(path_to_client, proxy_settings):
+def check_proxy(path_to_client: "list[IPAddress]", proxy_settings: str) -> "IPAddress":
     """
     The mapped client IP for *path_to_client*, i.e. the item :func:`check_proxy_index` selected. See there for
     what is selected and why.

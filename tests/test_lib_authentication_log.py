@@ -277,11 +277,15 @@ class AuthenticationLogTestCase(MyTestCase):
                                  source_ip="203.0.113.5", peer_ip="10.0.0.17")
         log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1",
                                  source_ip="203.0.113.6", peer_ip="10.0.0.18")
+        # Outside the "10.0.0.*" wildcard, so it must not appear in that result.
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1",
+                                 source_ip="203.0.113.7", peer_ip="192.168.1.1")
 
         results = get_authentication_logs(peer_ip="10.0.0.17")
         self.assertEqual(1, len(results))
         self.assertEqual("203.0.113.5", results[0].source_ip)
-        self.assertEqual(2, len(get_authentication_logs(peer_ip="10.0.0.*")))
+        self.assertSetEqual({"203.0.113.5", "203.0.113.6"},
+                            {entry.source_ip for entry in get_authentication_logs(peer_ip="10.0.0.*")})
 
     def test_get_authentication_logs_filter_by_source_ip_source(self):
         log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1",

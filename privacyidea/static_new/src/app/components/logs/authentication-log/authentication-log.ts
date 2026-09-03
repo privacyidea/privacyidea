@@ -763,11 +763,11 @@ export class AuthenticationLog {
   }
 
   // Whether a @default cell shows the inline "filter by this value" button: columns whose header already offers a
-  // value picker don't need it. client_label never needs it; source_ip needs it only when its own IP menu is hidden.
+  // reliable value picker don't need it. client_label never needs it - its menu is always present. source_ip
+  // always needs it: its header menu (showSourceIpMenu) lists known-client addresses, not the log's actual
+  // values, so it may be showing while still not offering this row's IP.
   showInlineCellFilter(columnKey: string): boolean {
-    if (columnKey === "client_label") return false;
-    if (columnKey === "source_ip") return !this.showSourceIpMenu();
-    return true;
+    return columnKey !== "client_label";
   }
 
   // What the Client column's badge says about where the label came from, or null when the entry predates the

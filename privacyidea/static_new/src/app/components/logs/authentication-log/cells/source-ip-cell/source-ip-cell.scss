@@ -48,6 +48,13 @@
 
 .source-ip-details {
   padding-left: 20px;
+
+  // Used standalone here rather than nested in an .info-group, so it never picks up the shared partial's own
+  // reset - the browser's default <ul> block margin was otherwise left in, opening a gap under the list that
+  // the label above it does not get.
+  .info-sublist {
+    margin: 0;
+  }
 }
 
 // The hop the effective address was taken from, marked so the path reads as an answer and not just a list.
