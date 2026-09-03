@@ -115,17 +115,17 @@ export class MockConditionalAccessPolicyService implements ConditionalAccessPoli
   // for those). A spec drives its case with mockReturnValue/mockImplementation.
   unavailableActionTypes = jest.fn(
     (
-      _actions: ConditionalAccessStageAction[],
-      _target: ConditionalAccessTarget,
-      _exceptIndex?: number
+      _: ConditionalAccessStageAction[],
+      __: ConditionalAccessTarget,
+      ___?: number
     ): Set<ConditionalAccessActionType> => new Set()
   );
 
   actionConflict = jest.fn(
     (
-      _actions: ConditionalAccessStageAction[],
-      _index: number,
-      _target: ConditionalAccessTarget
+      _: ConditionalAccessStageAction[],
+      __: number,
+      ___: ConditionalAccessTarget
     ): "duplicate" | "exclusive" | null => null
   );
 
