@@ -21,11 +21,15 @@ the policy gate) and user-scope GET. Rows are seeded directly; the recording of 
 covered in test_api_authentication_event_logging.py.
 """
 import datetime
+import inspect
 
 import mock
 
+from privacyidea.api.authentication_log import _ROW_FILTER_PARAMS, _STATISTICS_FILTER_PARAMS
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
-from privacyidea.lib.conditional_access.authentication_log import log_authentication_event, AuthLogUserRole
+from privacyidea.lib.conditional_access.authentication_log import (log_authentication_event, AuthLogUserRole,
+                                                                  get_authentication_log_statistics,
+                                                                  MAX_STATISTICS_BINS)
 from privacyidea.lib.conditional_access.outcome_log import record_outcomes
 from privacyidea.lib.policy import set_policy, delete_policy, SCOPE, PolicyAction
 from privacyidea.lib.realm import set_realm, delete_realm
@@ -39,6 +43,10 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
     and user-scope GET. All share the same blueprint and seed fixtures."""
 
     OTHER_REALM = "otherrealm"
+    # A window around "now", since seeded rows take the current time and the statistics endpoint requires an explicit
+    # one at both ends.
+    STATS_START = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=1)).isoformat()
+    STATS_END = (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=1)).isoformat()
 
     def _seed(self, include_no_realm=False):
         # Seeds LOGIN_SUCCESS + MFA_FAIL in realm1 and a LOGIN_SUCCESS in another realm, plus an optional null-realm row
@@ -345,6 +353,21 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
         self.assertEqual(1, value["count"])
         self.assertEqual("att-x", value["auth_logs"][0]["attempt_id"])
 
+    def test_rejects_a_malformed_timestamp(self):
+        # The filters are optional, but a present value that cannot be parsed must not escape as the ValueError
+        # isoparse raises, nor be dropped so the page answers an unfiltered question.
+        for key in ("start_time", "end_time"):
+            with self.app.test_request_context("/authenticationlog/", method="GET", query_string={key: "not-a-time"},
+                                               headers={"Authorization": self.at}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(400, res.status_code, res.json)
+                self.assertEqual(905, res.json["result"]["error"]["code"], res.json)
+                self.assertIn(f"Invalid ISO 8601 timestamp for {key}", res.json["result"]["error"]["message"])
+
+    def test_blank_timestamp_does_not_filter(self):
+        ids = self._seed()
+        self.assertEqual(len(ids), self._get({"start_time": "", "end_time": ""})["result"]["value"]["count"])
+
     def test_policy_gate_denies_without_action(self):
         # Admin policies exist but none grant authentication_log_read -> the admin is denied.
         set_policy("authlog_other", scope=SCOPE.ADMIN, action=PolicyAction.ENABLE)
@@ -609,3 +632,167 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
             self.assertFalse(body["result"]["status"], body)
         finally:
             delete_policy("user_other")
+
+    # --- statistics ---
+
+    def _statistics(self, query_string=None, token=None, status=200):
+        query = {"start_time": self.STATS_START, "end_time": self.STATS_END}
+        query.update(query_string or {})
+        with self.app.test_request_context("/authenticationlog/statistics", method="GET", query_string=query,
+                                           headers={"Authorization": token or self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(status, res.status_code, res.json)
+            return res.json
+
+    @staticmethod
+    def _statistics_totals(body):
+        return {series["event_type"]: series["total"] for series in body["result"]["value"]["events"]}
+
+    def _assert_error(self, body, code, message):
+        # A status code alone does not say which check rejected the request - several distinct failures share a 400 -
+        # so the error code and message are what pin a test to the reason it is meant to cover.
+        result = body["result"]
+        self.assertFalse(result["status"], body)
+        self.assertEqual(code, result["error"]["code"], body)
+        self.assertIn(message, result["error"]["message"], body)
+
+    def test_statistics_is_authenticated(self):
+        with self.app.test_request_context("/authenticationlog/statistics", method="GET",
+                                           query_string={"start_time": self.STATS_START,
+                                                         "end_time": self.STATS_END}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(401, res.status_code, res.json)
+            self._assert_error(res.json, 4033, "Missing Authorization header")
+
+    def test_statistics_policy_gate_denies_without_action(self):
+        set_policy("authlog_other", scope=SCOPE.ADMIN, action=PolicyAction.ENABLE)
+        try:
+            self._assert_error(self._statistics(status=403), 303,
+                               f"the action {PolicyAction.AUTHENTICATION_LOG_READ} is not allowed")
+        finally:
+            delete_policy("authlog_other")
+
+    def test_statistics_counts_attempts_not_rows(self):
+        log_authentication_event(event_type=AuthEventType.CHALLENGE_TRIGGERED, resolver="res", uid="1",
+                                 realm=self.realm1, attempt_id="att-1")
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res", uid="1", realm=self.realm1,
+                                 attempt_id="att-1")
+        db.session.commit()
+
+        body = self._statistics()
+
+        self.assertDictEqual({str(AuthEventType.LOGIN_SUCCESS): 1}, self._statistics_totals(body))
+        self.assertEqual(1, body["result"]["value"]["window"]["total"])
+
+    def test_statistics_response_shape(self):
+        log_authentication_event(event_type=AuthEventType.MFA_FAIL, resolver="res", uid="1", realm=self.realm1)
+        db.session.commit()
+
+        value = self._statistics({"bins": 6})["result"]["value"]
+
+        self.assertEqual(6, value["bins"]["count"])
+        self.assertEqual(6, len(value["bins"]["starts"]))
+        self.assertListEqual([str(AuthEventType.MFA_FAIL)], [s["event_type"] for s in value["events"]])
+        series = value["events"][0]
+        self.assertEqual("failure", series["outcome"])
+        self.assertEqual(6, len(series["counts"]))
+        self.assertEqual(1, sum(series["counts"]))
+
+    def test_statistics_requires_a_window(self):
+        # Each end names itself in its own error, so a caller that omitted one is not sent looking at the other.
+        for missing, query in (("start_time", {"end_time": self.STATS_END}),
+                               ("end_time", {"start_time": self.STATS_START}),
+                               ("start_time", {"start_time": "", "end_time": self.STATS_END})):
+            with self.app.test_request_context("/authenticationlog/statistics", method="GET", query_string=query,
+                                               headers={"Authorization": self.at}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(400, res.status_code, res.json)
+                self._assert_error(res.json, 905, f"Missing parameter: {missing}")
+
+    def test_statistics_rejects_a_malformed_timestamp(self):
+        # isoparse raises ValueError, which is not a PrivacyIDEAError: unguarded it escapes the request unhandled
+        # instead of becoming a 400 naming the parameter at fault.
+        self._assert_error(self._statistics({"start_time": "not-a-time"}, status=400), 905,
+                           "Invalid ISO 8601 timestamp for start_time")
+        self._assert_error(self._statistics({"end_time": "31-12-2026"}, status=400), 905,
+                           "Invalid ISO 8601 timestamp for end_time")
+
+    def test_statistics_rejects_an_inverted_window(self):
+        self._assert_error(self._statistics({"start_time": self.STATS_END, "end_time": self.STATS_START},
+                                            status=400), 905, "window must end after it starts")
+        self._assert_error(self._statistics({"end_time": self.STATS_START}, status=400), 905,
+                           "window must end after it starts")
+
+    def test_statistics_rejects_an_out_of_range_bin_count(self):
+        # The documented maximum itself is accepted, and only the value past it is refused: a caller asking for a
+        # resolution the endpoint will not serve is told the limit rather than handed a coarser answer silently.
+        self.assertEqual(MAX_STATISTICS_BINS,
+                         self._statistics({"bins": MAX_STATISTICS_BINS})["result"]["value"]["bins"]["count"])
+        for bins in (MAX_STATISTICS_BINS + 1, 1000):
+            self._assert_error(self._statistics({"bins": bins}, status=400), 905,
+                               f"The number of bins must be between 1 and {MAX_STATISTICS_BINS}.")
+
+    def test_statistics_clamps_a_non_positive_bin_count(self):
+        # A non-positive or unparsable bins falls back to the default, as page_size does on the listing, rather than
+        # reaching the lib's lower-bound guard.
+        for bins in (0, -5, "abc"):
+            self.assertEqual(48, self._statistics({"bins": bins})["result"]["value"]["bins"]["count"])
+
+    def test_statistics_filters_take_a_list_under_a_plural_name(self):
+        log_authentication_event(event_type=AuthEventType.MFA_FAIL, resolver="res", uid="1", realm=self.realm1,
+                                 source_ip="10.0.0.1")
+        log_authentication_event(event_type=AuthEventType.MFA_FAIL, resolver="res", uid="2", realm=self.realm1,
+                                 source_ip="10.0.0.2")
+        db.session.commit()
+
+        self.assertDictEqual({str(AuthEventType.MFA_FAIL): 1},
+                             self._statistics_totals(self._statistics({"source_ips": "10.0.0.1"})))
+        self.assertDictEqual({str(AuthEventType.MFA_FAIL): 2},
+                             self._statistics_totals(self._statistics({"source_ips": "10.0.0.1,10.0.0.2"})))
+        # The singular name the listing uses is not a filter here, so it must not silently narrow the result.
+        self.assertDictEqual({str(AuthEventType.MFA_FAIL): 2},
+                             self._statistics_totals(self._statistics({"source_ip": "10.0.0.1"})))
+
+    def test_statistics_counts_only_a_user_role_caller_own_attempts(self):
+        # The listing has this covered in test_user_sees_only_own_entries; the summary derives its restriction the
+        # same way, and getting that wrong would hand a self-service user the whole deployment's counts.
+        self.authenticate_selfservice_user()
+        self._clear_log()
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver=self.resolvername1, uid="1",
+                                 realm=self.realm1, username="selfservice")
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver=self.resolvername1, uid="2",
+                                 realm=self.realm1, username="hans")
+        db.session.commit()
+        set_policy("authlog_user", scope=SCOPE.USER, action=PolicyAction.AUTHENTICATION_LOG_READ)
+        try:
+            self.assertDictEqual({str(AuthEventType.LOGIN_SUCCESS): 1},
+                                 self._statistics_totals(self._statistics(token=self.at_user)))
+        finally:
+            delete_policy("authlog_user")
+
+    def test_statistics_filter_names_match_the_lib_signature(self):
+        # The plural names are derived from the listing's singular ones and passed straight through as keyword
+        # arguments, so a filter renamed on either side has to fail here rather than stop filtering silently.
+        parameters = inspect.signature(get_authentication_log_statistics).parameters
+        self.assertListEqual([f"{name}s" for name in _ROW_FILTER_PARAMS], _STATISTICS_FILTER_PARAMS)
+        self.assertSetEqual(set(), set(_STATISTICS_FILTER_PARAMS) - set(parameters))
+
+    def test_statistics_respects_the_visibility_scope(self):
+        self._seed()
+        set_policy("authlog_realm", scope=SCOPE.ADMIN, action=PolicyAction.AUTHENTICATION_LOG_READ,
+                   realm=self.realm1)
+        try:
+            # The other realm's LOGIN_SUCCESS must not reach the aggregate, so only realm1's two attempts are counted.
+            self.assertDictEqual({str(AuthEventType.LOGIN_SUCCESS): 1, str(AuthEventType.MFA_FAIL): 1},
+                                 self._statistics_totals(self._statistics()))
+        finally:
+            delete_policy("authlog_realm")
+
+    def test_statistics_ignores_the_outcome_filters(self):
+        # The ca_* filters match a request's conditional-access outcomes, which an attempt-level aggregate has no
+        # notion of, so the endpoint does not offer them and passing one neither filters nor fails.
+        log_authentication_event(event_type=AuthEventType.MFA_FAIL, resolver="res", uid="1", realm=self.realm1)
+        db.session.commit()
+
+        self.assertDictEqual({str(AuthEventType.MFA_FAIL): 1},
+                             self._statistics_totals(self._statistics({"ca_action_type": "LOCK_USER"})))

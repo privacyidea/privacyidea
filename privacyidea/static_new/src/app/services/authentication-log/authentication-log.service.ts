@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { HttpResourceRef, httpResource } from "@angular/common/http";
+import { HttpClient, HttpResourceRef, httpResource } from "@angular/common/http";
 import { Injectable, WritableSignal, computed, effect, inject, linkedSignal, signal } from "@angular/core";
 import { Sort } from "@angular/material/sort";
 import { PiResponse } from "@app/app.component";
@@ -27,6 +27,7 @@ import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { StringUtils } from "@utils/string.utils";
+import { Observable } from "rxjs";
 
 export interface AuthenticationLogEntry {
   id: number;
@@ -52,6 +53,27 @@ export interface AuthenticationLogPage {
   current: number;
   prev: number | null;
   next: number | null;
+}
+
+// One classification of an attempt-level statistics result: how many authentication *attempts* ended as
+// `event_type`, bucketed over the window. `counts` holds one entry per bin, in bin order and always as long as
+// `bins.count`, so a bucket where nothing happened is a 0 rather than a gap and the series charts without realignment.
+// `outcome` is an AuthEventOutcome value ("success" | "failure" | "pending"), null for an event type the backend does
+// not classify.
+export interface AuthenticationEventSeries {
+  event_type: string;
+  outcome: string | null;
+  counts: number[];
+  total: number;
+}
+
+// Attempt-level statistics over one time window. `events` holds one series per classification *present in the window*:
+// a classification no attempt ended with has no series at all, so a missing entry reads as zero. Series come most
+// frequent first. `bins.starts` are the inclusive bucket starts, in the same order as every series' `counts`.
+export interface AuthenticationLogStatistics {
+  window: { start_time: string; end_time: string; total: number };
+  bins: { count: number; starts: string[] };
+  events: AuthenticationEventSeries[];
 }
 
 // One defined authentication-log event type with its outcome class. The authoritative list comes from the backend.
@@ -103,6 +125,12 @@ export interface AuthenticationLogServiceInterface {
   eventTypes: () => AuthenticationLogEventType[];
   oldestTimestamp: () => string | null;
 
+  fetchStatistics(
+    startTime: string,
+    endTime: string,
+    bins?: number
+  ): Observable<PiResponse<AuthenticationLogStatistics>>;
+
   clearFilter(): void;
 
   handleFilterInput($event: Event): void;
@@ -110,6 +138,7 @@ export interface AuthenticationLogServiceInterface {
 
 @Injectable()
 export class AuthenticationLogService implements AuthenticationLogServiceInterface {
+  private readonly http = inject(HttpClient);
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
@@ -221,6 +250,20 @@ export class AuthenticationLogService implements AuthenticationLogServiceInterfa
     if (!this.oldestEntryResource.hasValue()) return null;
     return this.oldestEntryResource.value()?.result?.value?.auth_logs?.[0]?.timestamp ?? null;
   });
+
+  // A one-off read for callers outside the authentication-log route, where the resources above deliberately do not
+  // fetch. An Observable rather than an httpResource because the dashboard widget drives the window itself and caches
+  // the response in the DashboardDataStore.
+  fetchStatistics(
+    startTime: string,
+    endTime: string,
+    bins?: number
+  ): Observable<PiResponse<AuthenticationLogStatistics>> {
+    return this.http.get<PiResponse<AuthenticationLogStatistics>>(this.authenticationLogBaseUrl + "statistics", {
+      headers: this.authService.getHeaders(),
+      params: { start_time: startTime, end_time: endTime, ...(bins ? { bins } : {}) }
+    });
+  }
 
   clearFilter(): void {
     this.authenticationLogFilter.set(this.authenticationLogFilter().copyWith({ value: "" }));

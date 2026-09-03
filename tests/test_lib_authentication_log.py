@@ -31,6 +31,8 @@ from privacyidea.lib.conditional_access.authentication_log import (
     delete_authentication_log_event,
     delete_authentication_logs,
     get_authentication_log_event,
+    MAX_STATISTICS_BINS,
+    get_authentication_log_statistics,
     get_authentication_logs,
     get_authentication_logs_paginate,
     log_authentication_event,
@@ -45,6 +47,22 @@ from privacyidea.models import AuthenticationLog, ConditionalAccessOutcome, db, 
 from privacyidea.models.utils import utc_now
 
 from .base import MyTestCase
+
+
+@contextmanager
+def statements_against(table: str):
+    """Collect the SQL statements executed against *table* while the block runs."""
+    seen: list[str] = []
+
+    def listener(conn, cursor, statement, parameters, context, executemany):
+        if table in statement:
+            seen.append(statement)
+
+    event.listen(db.engine, "before_cursor_execute", listener)
+    try:
+        yield seen
+    finally:
+        event.remove(db.engine, "before_cursor_execute", listener)
 
 
 class AuthenticationLogTestCase(MyTestCase):
@@ -825,22 +843,6 @@ class AuthenticationLogOutcomeJoinTestCase(MyTestCase):
                                                  threshold=3, event_count=3) for _ in range(count)], event_id)
         return event_id
 
-    @staticmethod
-    @contextmanager
-    def _statements(table: str):
-        """Collect the SQL statements executed against *table* while the block runs."""
-        seen: list[str] = []
-
-        def listener(conn, cursor, statement, parameters, context, executemany):
-            if table in statement:
-                seen.append(statement)
-
-        event.listen(db.engine, "before_cursor_execute", listener)
-        try:
-            yield seen
-        finally:
-            event.remove(db.engine, "before_cursor_execute", listener)
-
     def test_the_page_carries_the_outcomes_of_each_entry(self):
         self._entry_with_outcomes(2)
         page = get_authentication_logs_paginate()
@@ -863,7 +865,7 @@ class AuthenticationLogOutcomeJoinTestCase(MyTestCase):
         for _ in range(5):
             self._entry_with_outcomes()
 
-        with self._statements("conditional_access_outcome") as statements:
+        with statements_against("conditional_access_outcome") as statements:
             page = get_authentication_logs_paginate(page_size=5)
             self.assertEqual(5, len(page.auth_logs))
         self.assertEqual(1, len(statements), statements)
@@ -873,7 +875,7 @@ class AuthenticationLogOutcomeJoinTestCase(MyTestCase):
         # reading the relationship afterward is an error, not a silent query.
         self._entry_with_outcomes()
 
-        with self._statements("conditional_access_outcome") as statements:
+        with statements_against("conditional_access_outcome") as statements:
             entries = get_authentication_logs()
         self.assertListEqual([], statements)
         self.assertRaises(InvalidRequestError, lambda: entries[0].outcomes)
@@ -890,7 +892,7 @@ class AuthenticationLogOutcomeJoinTestCase(MyTestCase):
         # eagerly configured relationship would add a fan-out query per count.
         self._entry_with_outcomes()
 
-        with self._statements("conditional_access_outcome") as statements:
+        with statements_against("conditional_access_outcome") as statements:
             count_user_events("res1", "u1", "realm1", [str(AuthEventType.MFA_FAIL)], 3600)
             count_user_attempts("res1", "u1", "realm1", [str(AuthEventType.MFA_FAIL)], 3600)
         self.assertListEqual([], statements)
@@ -948,3 +950,224 @@ class AuthenticationLogOutcomeJoinTestCase(MyTestCase):
         self.assertEqual(3, cleanup_authentication_log(older_than=utc_now() - timedelta(days=1), chunk_size=2))
 
         self.assertEqual(0, get_ca_session().query(ConditionalAccessOutcome).count())
+
+
+class AuthenticationLogStatisticsTestCase(MyTestCase):
+    """
+    Attempt-level statistics over the authentication log: the reduction rule it shares with the conditional-access
+    engine, the two places it deliberately diverges, and the bucketing.
+    """
+
+    window_start = datetime(2026, 3, 1, 0, 0, 0)
+    window_end = window_start + timedelta(hours=24)
+
+    def tearDown(self):
+        db.session.query(AuthenticationLog).delete()
+        db.session.commit()
+        super().tearDown()
+
+    def _log(self, event_type, at=None, attempt_id="attempt-1", **kwargs):
+        """Write one entry at a fixed timestamp, since the column otherwise defaults to the real current time."""
+        kwargs.setdefault("resolver", "res1")
+        kwargs.setdefault("uid", "u1")
+        kwargs.setdefault("realm", "r1")
+        event_id = log_authentication_event(event_type=event_type, attempt_id=attempt_id, **kwargs)
+        session = get_ca_session()
+        session.get(AuthenticationLog, event_id).timestamp = at or (self.window_start + timedelta(hours=1))
+        session.commit()
+        return event_id
+
+    def _statistics(self, **kwargs):
+        kwargs.setdefault("start_time", self.window_start)
+        kwargs.setdefault("end_time", self.window_end)
+        kwargs.setdefault("bins", 4)
+        return get_authentication_log_statistics(**kwargs)
+
+    def _totals(self, statistics):
+        return {series.event_type: series.total for series in statistics.events}
+
+    def test_counts_attempts_not_rows(self):
+        self._log(AuthEventType.CHALLENGE_TRIGGERED)
+        self._log(AuthEventType.LOGIN_SUCCESS)
+
+        self.assertDictEqual({str(AuthEventType.LOGIN_SUCCESS): 1}, self._totals(self._statistics()))
+
+    def test_success_classifies_the_attempt_over_a_later_row(self):
+        self._log(AuthEventType.LOGIN_SUCCESS)
+        self._log(AuthEventType.CHALLENGE_ANSWERED_FAIL)
+
+        self.assertDictEqual({str(AuthEventType.LOGIN_SUCCESS): 1}, self._totals(self._statistics()))
+
+    def test_latest_row_classifies_an_unsuccessful_attempt(self):
+        self._log(AuthEventType.CHALLENGE_ANSWERED_FAIL, attempt_id="in-progress")
+        self._log(AuthEventType.CHALLENGE_CONTINUED, attempt_id="in-progress")
+        self._log(AuthEventType.CHALLENGE_CONTINUED, attempt_id="failed")
+        self._log(AuthEventType.CHALLENGE_ANSWERED_FAIL, attempt_id="failed")
+
+        self.assertDictEqual({str(AuthEventType.CHALLENGE_CONTINUED): 1,
+                              str(AuthEventType.CHALLENGE_ANSWERED_FAIL): 1},
+                             self._totals(self._statistics()))
+
+    def test_enforcement_row_classifies_the_attempt_it_ended(self):
+        self._log(AuthEventType.CHALLENGE_TRIGGERED)
+        self._log(AuthEventType.USER_LOCKED)
+
+        totals = self._totals(self._statistics())
+
+        # Dropping the enforcement row before the reduction would leave CHALLENGE_TRIGGERED as the representative and
+        # report an attempt still in flight, when it was turned away.
+        self.assertDictEqual({str(AuthEventType.USER_LOCKED): 1}, totals)
+
+    def test_rows_without_attempt_id_count_individually(self):
+        for _ in range(3):
+            self._log(AuthEventType.PIN_FAIL, attempt_id=None)
+
+        self.assertDictEqual({str(AuthEventType.PIN_FAIL): 3}, self._totals(self._statistics()))
+
+    def test_agrees_with_the_engine_on_enforcement_free_attempts(self):
+        self._log(AuthEventType.PIN_FAIL, attempt_id="a")
+        self._log(AuthEventType.PIN_FAIL, attempt_id="a")
+        self._log(AuthEventType.PIN_FAIL, attempt_id="b")
+        self._log(AuthEventType.LOGIN_SUCCESS, attempt_id="b")
+        self._log(AuthEventType.MFA_FAIL, attempt_id="c")
+
+        totals = self._totals(self._statistics())
+        for event_type in (AuthEventType.PIN_FAIL, AuthEventType.LOGIN_SUCCESS, AuthEventType.MFA_FAIL):
+            self.assertEqual(count_user_attempts("res1", "u1", "r1", [event_type], 24 * 3600,
+                                                 window_end=self.window_end),
+                             totals.get(str(event_type), 0),
+                             f"statistics and engine disagree on {event_type}")
+
+    def test_buckets_by_the_representative_timestamp(self):
+        self._log(AuthEventType.PIN_FAIL, at=self.window_start + timedelta(hours=1), attempt_id="a")
+        self._log(AuthEventType.MFA_FAIL, at=self.window_start + timedelta(hours=13), attempt_id="b")
+
+        statistics = self._statistics()
+
+        self.assertListEqual([1, 0, 0, 0], next(s.counts for s in statistics.events
+                                                if s.event_type == str(AuthEventType.PIN_FAIL)))
+        self.assertListEqual([0, 0, 1, 0], next(s.counts for s in statistics.events
+                                                if s.event_type == str(AuthEventType.MFA_FAIL)))
+
+    def test_last_bin_includes_the_window_end(self):
+        self._log(AuthEventType.PIN_FAIL, at=self.window_end)
+
+        statistics = self._statistics()
+
+        self.assertListEqual([0, 0, 0, 1], statistics.events[0].counts)
+
+    def test_rows_outside_the_window_are_ignored(self):
+        self._log(AuthEventType.PIN_FAIL, at=self.window_start - timedelta(minutes=1), attempt_id="before")
+        self._log(AuthEventType.MFA_FAIL, at=self.window_end + timedelta(minutes=1), attempt_id="after")
+
+        self.assertDictEqual({}, self._totals(self._statistics()))
+
+    def test_filters_match_the_representative_not_any_row(self):
+        self._log(AuthEventType.PIN_FAIL)
+        self._log(AuthEventType.LOGIN_SUCCESS)
+
+        self.assertDictEqual({str(AuthEventType.LOGIN_SUCCESS): 1},
+                             self._totals(self._statistics(event_types=[str(AuthEventType.LOGIN_SUCCESS)])))
+        self.assertDictEqual({}, self._totals(self._statistics(event_types=[str(AuthEventType.PIN_FAIL)])))
+
+    def test_a_filter_narrows_the_attempts_reduced_but_not_their_rows(self):
+        # The reduction only groups attempts with a matching row, or a filtered summary would make the database group
+        # every row in the window first. What it must not do is reduce an attempt from its matching rows *alone*: this
+        # attempt answered from a second address, so filtering by the first one has to exclude it (its representative
+        # is the success from the other address) rather than report it as the failure its first row was.
+        self._log(AuthEventType.MFA_FAIL, source_ip="10.0.0.1")
+        self._log(AuthEventType.LOGIN_SUCCESS, source_ip="10.0.0.2")
+
+        self.assertDictEqual({}, self._totals(self._statistics(source_ips=["10.0.0.1"])))
+        self.assertDictEqual({str(AuthEventType.LOGIN_SUCCESS): 1},
+                             self._totals(self._statistics(source_ips=["10.0.0.2"])))
+
+    def test_a_visibility_scope_narrows_the_attempts_reduced_but_not_their_rows(self):
+        # The same for the scope, whose dimensions exclude a NULL: the rejection that ended this attempt carries no
+        # realm, so reducing the attempt from its in-scope row alone would report a challenge still in flight.
+        self._log(AuthEventType.CHALLENGE_TRIGGERED, realm="visible")
+        self._log(AuthEventType.USER_LOCKED, realm=None)
+
+        scope = AuthenticationLogVisibilityScope(realms=["visible"], resolvers=[], usernames=[])
+
+        self.assertDictEqual({}, self._totals(self._statistics(visibility_scopes=[scope])))
+
+    def test_the_reduction_is_narrowed_by_attempt_only_when_something_filters(self):
+        # A performance property no count can show: with a filter the reduction is restricted to the matching
+        # attempts, and without one it is not wrapped at all, because summarising a whole deployment does have to
+        # group every row of the window.
+        self._log(AuthEventType.LOGIN_SUCCESS)
+
+        with statements_against("authentication_log") as statements:
+            self._statistics(usernames=["alice"])
+        self.assertIn("attempt_id IN (SELECT", statements[-1])
+
+        with statements_against("authentication_log") as statements:
+            self._statistics()
+        self.assertNotIn("attempt_id IN (SELECT", statements[-1])
+
+    def test_visibility_scope_restricts_the_counts(self):
+        self._log(AuthEventType.PIN_FAIL, realm="visible", attempt_id="a")
+        self._log(AuthEventType.MFA_FAIL, realm="hidden", attempt_id="b")
+
+        scope = AuthenticationLogVisibilityScope(realms=["visible"], resolvers=[], usernames=[])
+
+        self.assertDictEqual({str(AuthEventType.PIN_FAIL): 1},
+                             self._totals(self._statistics(visibility_scopes=[scope])))
+
+    def test_series_carry_the_event_outcome(self):
+        self._log(AuthEventType.LOGIN_SUCCESS, attempt_id="a")
+        self._log(AuthEventType.PIN_FAIL, attempt_id="b")
+        self._log(AuthEventType.CHALLENGE_TRIGGERED, attempt_id="c")
+
+        outcomes = {series.event_type: series.outcome for series in self._statistics().events}
+
+        self.assertDictEqual({str(AuthEventType.LOGIN_SUCCESS): "success",
+                              str(AuthEventType.PIN_FAIL): "failure",
+                              str(AuthEventType.CHALLENGE_TRIGGERED): "pending"}, outcomes)
+
+    def test_series_are_ordered_by_descending_total(self):
+        self._log(AuthEventType.LOGIN_SUCCESS, attempt_id="a")
+        for index in range(3):
+            self._log(AuthEventType.PIN_FAIL, attempt_id=f"fail-{index}")
+
+        statistics = self._statistics()
+
+        self.assertListEqual([str(AuthEventType.PIN_FAIL), str(AuthEventType.LOGIN_SUCCESS)],
+                             [series.event_type for series in statistics.events])
+        self.assertEqual(4, statistics.total)
+
+    def test_rejects_an_empty_window(self):
+        self.assertRaises(ParameterError, get_authentication_log_statistics,
+                          start_time=self.window_end, end_time=self.window_start)
+        self.assertRaises(ParameterError, get_authentication_log_statistics,
+                          start_time=self.window_start, end_time=self.window_start)
+
+    def test_rejects_an_out_of_range_bin_count(self):
+        for bins in (0, -1, MAX_STATISTICS_BINS + 1):
+            self.assertRaises(ParameterError, get_authentication_log_statistics,
+                              start_time=self.window_start, end_time=self.window_end, bins=bins)
+
+    def test_to_dict_shape(self):
+        self._log(AuthEventType.PIN_FAIL)
+
+        result = self._statistics().to_dict()
+
+        self.assertEqual("2026-03-01T00:00:00+00:00", result["window"]["start_time"])
+        self.assertEqual("2026-03-02T00:00:00+00:00", result["window"]["end_time"])
+        self.assertEqual(1, result["window"]["total"])
+        self.assertEqual(4, result["bins"]["count"])
+        self.assertListEqual(["2026-03-01T00:00:00+00:00", "2026-03-01T06:00:00+00:00",
+                              "2026-03-01T12:00:00+00:00", "2026-03-01T18:00:00+00:00"],
+                             result["bins"]["starts"])
+        self.assertListEqual([{"event_type": str(AuthEventType.PIN_FAIL), "outcome": "failure",
+                               "counts": [1, 0, 0, 0], "total": 1}], result["events"])
+
+    def test_rows_with_and_without_attempt_id_are_grouped_independently(self):
+        self._log(AuthEventType.PIN_FAIL, attempt_id="shared")
+        self._log(AuthEventType.PIN_FAIL, attempt_id="shared")
+        self._log(AuthEventType.MFA_FAIL, attempt_id=None)
+        self._log(AuthEventType.MFA_FAIL, attempt_id=None)
+
+        self.assertDictEqual({str(AuthEventType.PIN_FAIL): 1, str(AuthEventType.MFA_FAIL): 2},
+                             self._totals(self._statistics()))

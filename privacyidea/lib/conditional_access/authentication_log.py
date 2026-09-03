@@ -22,12 +22,12 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Any
 
-from sqlalchemy import and_, false, func, or_, select
+from sqlalchemy import and_, case, false, func, or_, select
 from sqlalchemy.orm import InstrumentedAttribute, selectinload
 from sqlalchemy.sql import ColumnElement
 
 from privacyidea.models import AuthenticationLog, ConditionalAccessOutcome, authentication_log_column_length
-from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, outcome_of
 from privacyidea.lib.conditional_access.session import get_ca_session, guarded_write
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.sqlutils import delete_matching_rows
@@ -51,6 +51,11 @@ SORTABLE_COLUMNS: dict[str, InstrumentedAttribute] = {
     "attempt_id": AuthenticationLog.attempt_id,
 }
 DEFAULT_PAGE_SIZE = 15
+
+# Bins the statistics query splits its window into. Each bin becomes one SUM(CASE ...) column, so the cap bounds the
+# width of the generated statement rather than the rows it reads.
+DEFAULT_STATISTICS_BINS = 48
+MAX_STATISTICS_BINS = 100
 
 
 class AuthLogUserRole(str, Enum):
@@ -674,6 +679,233 @@ def get_authentication_logs_paginate(resolver: str | list[str] | None = None,
                                  current=page,
                                  prev=page - 1 if page > 1 else None,
                                  next=page + 1 if offset + page_size < count else None)
+
+
+def _utc_iso(value: datetime) -> str:
+    """Render a naive-UTC datetime as an ISO-8601 string with its timezone, like :meth:`AuthenticationLog.to_dict`."""
+    return value.replace(tzinfo=timezone.utc).isoformat()
+
+
+@dataclass
+class AuthenticationEventSeries:
+    """
+    One classification of an attempt-level statistics result: how many authentication *attempts* ended a given way,
+    bucketed over the window's bins.
+
+    *event_type* is the :class:`AuthEventType` of the event that classified the attempt -- its representative, see
+    :func:`get_authentication_log_statistics` -- so it names how these attempts *ended*, not an event they merely
+    passed through on the way there.
+
+    *outcome* is the :class:`AuthEventOutcome` of *event_type* (``success``, ``failure`` or ``pending``), or ``None``
+    if the stored value is not a known :class:`AuthEventType`. It is resolved here so that grouping the series by
+    result does not mean re-deriving the mapping.
+
+    *counts* holds one attempt count per bin, in bin order, always as many entries as the result has bins: a bucket
+    where nothing happened is a ``0`` rather than a gap, so the series can be charted without being re-aligned. The
+    bins' start times are not repeated here -- every series shares them, so they live on the enclosing
+    :class:`AuthenticationLogStatistics`.
+    """
+    event_type: str
+    outcome: str | None
+    counts: list[int]
+
+    @property
+    def total(self) -> int:
+        """How many attempts this classification holds across the whole window."""
+        return sum(self.counts)
+
+    def to_dict(self) -> dict:
+        """Serialize the series for the API response, including the window total a caller would otherwise re-sum."""
+        return {"event_type": self.event_type, "outcome": self.outcome, "counts": self.counts, "total": self.total}
+
+
+@dataclass
+class AuthenticationLogStatistics:
+    """
+    Attempt-level statistics over one time window: one :class:`AuthenticationEventSeries` per classification, all
+    sharing the same bins.
+
+    *start_time* and *end_time* are the window the result covers, normalized to naive UTC like the ``timestamp``
+    column and inclusive at both ends, so a caller that passed timezone-aware values gets back the instants that were
+    actually queried.
+
+    *bin_starts* holds the inclusive start of each bucket, one entry per bin and in the same order as every series'
+    *counts*, so the two zip together. The buckets are of equal width and cover the window exactly; only the last one
+    closes inclusively, on *end_time*.
+
+    *events* holds one series per classification **present in the window**: a classification no attempt ended with
+    has no series at all rather than an all-zero one, so a missing entry reads as zero. They are ordered by descending
+    window total, ties broken by event type, so a caller wanting the top few can slice. Every classification is
+    offered, :data:`CA_ENFORCEMENT_EVENT_TYPES` included; which of them to show is the view's decision (see
+    :func:`get_authentication_log_statistics` for why they are reduced *with* and dropped only afterwards).
+    """
+    start_time: datetime
+    end_time: datetime
+    bin_starts: list[datetime]
+    events: list[AuthenticationEventSeries]
+
+    @property
+    def total(self) -> int:
+        """How many attempts the window holds across all classifications."""
+        return sum(series.total for series in self.events)
+
+    def to_dict(self) -> dict:
+        """
+        Serialize the statistics for the API response, timestamps as ISO-8601 UTC strings like
+        :meth:`AuthenticationLog.to_dict`.
+
+        The series sit under their own ``events`` key so a second section -- aggregating what conditional access *did*,
+        from ``conditional_access_outcome``, rather than how attempts *ended* -- can be added later without breaking
+        the response.
+        """
+        return {
+            "window": {"start_time": _utc_iso(self.start_time), "end_time": _utc_iso(self.end_time),
+                       "total": self.total},
+            "bins": {"count": len(self.bin_starts), "starts": [_utc_iso(start) for start in self.bin_starts]},
+            "events": [series.to_dict() for series in self.events],
+        }
+
+
+def _bin_edges(start_time: datetime, end_time: datetime, bins: int) -> list[datetime]:
+    """Return the *bins* + 1 boundaries of equal-width buckets spanning ``[start_time, end_time]``."""
+    span = end_time - start_time
+    return [start_time + span * (index / bins) for index in range(bins + 1)]
+
+
+def _bin_column(edges: list[datetime], index: int) -> ColumnElement[int]:
+    """
+    Build the ``SUM(CASE ...)`` column counting the representatives falling into bucket *index*.
+
+    Bucketing this way rather than with a per-dialect date function (``date_trunc`` / ``DATE_FORMAT`` / ``strftime`` /
+    ``TRUNC``) keeps the statistics query to one portable statement on every supported backend. The final bucket
+    closes inclusively, so a representative sitting exactly on ``end_time`` is counted rather than dropped, like every
+    other timestamp filter on the log.
+    """
+    upper = (AuthenticationLog.timestamp <= edges[index + 1] if index == len(edges) - 2
+             else AuthenticationLog.timestamp < edges[index + 1])
+    return func.sum(case((and_(AuthenticationLog.timestamp >= edges[index], upper), 1), else_=0))
+
+
+def get_authentication_log_statistics(start_time: datetime,
+                                      end_time: datetime,
+                                      bins: int = DEFAULT_STATISTICS_BINS,
+                                      resolvers: list[str] | None = None,
+                                      uids: list[str] | None = None,
+                                      realms: list[str] | None = None,
+                                      usernames: list[str] | None = None,
+                                      user_roles: list[str] | None = None,
+                                      event_types: list[str] | None = None,
+                                      source_ips: list[str] | None = None,
+                                      serials: list[str] | None = None,
+                                      transaction_ids: list[str] | None = None,
+                                      attempt_ids: list[str] | None = None,
+                                      client_labels: list[str] | None = None,
+                                      visibility_scopes: list[AuthenticationLogVisibilityScope] | None = None,
+                                      case_insensitive: bool = False) -> AuthenticationLogStatistics:
+    """
+    Summarize the authentication log over ``[start_time, end_time]`` as **attempts**, bucketed into *bins* equal-width
+    buckets and grouped by the event type that classifies each attempt.
+
+    Counting *rows* here would be wrong twice over: a challenge-response login writes both a
+    :attr:`AuthEventType.CHALLENGE_TRIGGERED` and a :attr:`AuthEventType.LOGIN_SUCCESS` row, so one successful login
+    would be counted as both a pending and a successful event. The rows sharing an ``attempt_id`` are therefore
+    reduced to one representative each, by the same rule as
+    :func:`~privacyidea.lib.conditional_access.engine._count_matching_attempts`: the ``LOGIN_SUCCESS`` row if the
+    attempt ever logged in, otherwise the latest row by ``id``. Insertion order, not an event-type ranking, is what
+    distinguishes a wrong answer *then* a continue (in progress) from a continue *then* a wrong answer (failed).
+
+    The reduction deliberately **diverges from the engine's in two ways**, because the engine feeds a threshold while
+    this feeds a human:
+
+    * The engine drops :data:`CA_ENFORCEMENT_EVENT_TYPES` rows *before* reducing, so a rejection cannot replace a
+      tracked failure and stall an escalation. Dropping them first here would classify an attempt of
+      ``[CHALLENGE_TRIGGERED, USER_LOCKED]`` as *pending*, inventing an in-flight attempt out of one that was turned
+      away. They are reduced *with* instead, and every classification is returned; a caller that does not want them
+      drops those series, which is filtering rather than misreporting.
+    * The engine groups rows by ``attempt_id`` in a dict, so rows without one collapse under a single ``None`` key.
+      Harmless for one subject's handful of rows, and badly wrong when aggregating every subject in a deployment, so
+      a row without an ``attempt_id`` counts as its own attempt here.
+
+    Every filter except the window applies to the **representative** row, not to the rows feeding the reduction:
+    dropping rows from the inner query would reduce an attempt from a subset of its own rows, which misclassifies it
+    rather than excluding it (the same trap :func:`~privacyidea.lib.conditional_access.engine._count_attempts`
+    documents). Which *attempts* are reduced is narrowed, though - to those holding at least one matching row, an
+    attempt without one having no matching representative either - so a filtered or visibility-scoped summary does
+    not group every row the window holds across the deployment before answering about a few.
+    ``event_types`` therefore reads as "attempts that *ended* like this", which is the only meaning it can have once
+    rows are collapsed. Each filter takes a list, matching an attempt whose representative equals any of its values or
+    matches any value carrying a ``*`` wildcard (see :func:`match_condition`). An attempt straddling ``start_time``
+    is reduced from its in-window rows alone and may be classified by them; this is the same window-edge
+    approximation the engine's sliding window accepts.
+
+    :param start_time: start of the window, inclusive (naive values are read as UTC)
+    :param end_time: end of the window, inclusive
+    :param bins: how many equal-width buckets to split the window into, at most :data:`MAX_STATISTICS_BINS`
+    :param visibility_scopes: restrict the counted attempts to those whose representative matches any of these scopes
+        (see :func:`_visibility_condition`); ``None`` means no restriction
+    :param case_insensitive: if set, plain (non-wildcard) filter values match case-insensitively
+    :return: an :class:`AuthenticationLogStatistics` holding one series per classification
+    :raises ParameterError: if the window does not end after it starts, or *bins* is out of range
+    """
+    window_start = _naive_utc(start_time)
+    window_end = _naive_utc(end_time)
+    if window_end <= window_start:
+        raise ParameterError("The statistics window must end after it starts.")
+    if not 1 <= bins <= MAX_STATISTICS_BINS:
+        raise ParameterError(f"The number of bins must be between 1 and {MAX_STATISTICS_BINS}.")
+    edges = _bin_edges(window_start, window_end, bins)
+
+    window = (AuthenticationLog.timestamp >= window_start, AuthenticationLog.timestamp <= window_end)
+    conditions = _filter_conditions(resolver=resolvers, uid=uids, realm=realms, username=usernames,
+                                    user_role=user_roles, event_type=event_types, source_ip=source_ips,
+                                    serial=serials, transaction_id=transaction_ids, attempt_id=attempt_ids,
+                                    client_label=client_labels, case_insensitive=case_insensitive)
+    if visibility_scopes is not None:
+        conditions.append(_visibility_condition(visibility_scopes))
+
+    reduced = [*window]
+    if conditions:
+        # Narrow *which attempts* are reduced to those with at least one matching row, while still reducing each of
+        # them from all of its rows. Without this the reduction groups every row of the window in the deployment
+        # before the caller's filters and the visibility scope are applied to the representatives, so a self-service
+        # user reading their own 30 days makes the database group everyone's.
+        #
+        # This cannot change a single count. The representative is one of the attempt's own rows, so an attempt with
+        # no matching row has no matching representative either and the outer filter would drop it anyway; every
+        # attempt that survives still contributes all of its rows, which is what keeps the reduction from
+        # reclassifying one (see the note on the representative filters below). A row without an attempt_id *is* its
+        # own representative, so for those the filters apply directly.
+        matching_attempts = select(AuthenticationLog.attempt_id).where(*window,
+                                                                       AuthenticationLog.attempt_id.is_not(None),
+                                                                       *conditions)
+        reduced.append(or_(AuthenticationLog.attempt_id.in_(matching_attempts),
+                           and_(AuthenticationLog.attempt_id.is_(None), *conditions)))
+    # Rows carrying an attempt_id group by it; rows without group by their own id and so count individually. A
+    # COALESCE of the two would have to cast the id to a string and mix collations, which MySQL rejects outright.
+    attempts = (select(func.max(case((AuthenticationLog.event_type == str(AuthEventType.LOGIN_SUCCESS),
+                                      AuthenticationLog.id))).label("success_id"),
+                       func.max(AuthenticationLog.id).label("latest_id"))
+                .where(*reduced)
+                .group_by(AuthenticationLog.attempt_id,
+                          case((AuthenticationLog.attempt_id.is_(None), AuthenticationLog.id)))
+                .subquery())
+
+    stmt = (select(AuthenticationLog.event_type,
+                   *[_bin_column(edges, index).label(f"bin_{index}") for index in range(bins)])
+            .select_from(attempts)
+            .join(AuthenticationLog,
+                  AuthenticationLog.id == func.coalesce(attempts.c.success_id, attempts.c.latest_id))
+            .where(*conditions)
+            .group_by(AuthenticationLog.event_type))
+
+    known_outcomes = {str(event): str(outcome_of(event)) for event in AuthEventType}
+    series = [AuthenticationEventSeries(event_type=row[0],
+                                        outcome=known_outcomes.get(row[0]),
+                                        counts=[int(count or 0) for count in row[1:]])
+              for row in get_ca_session().execute(stmt).all()]
+    series.sort(key=lambda item: (-item.total, item.event_type))
+    return AuthenticationLogStatistics(start_time=window_start, end_time=window_end, bin_starts=edges[:-1],
+                                       events=series)
 
 
 def _delete_outcomes_of(criterion: ColumnElement[bool], chunk_size: int | None = None) -> int:
