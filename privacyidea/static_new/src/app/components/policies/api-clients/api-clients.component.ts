@@ -130,11 +130,11 @@ export class ApiClientsComponent {
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: $localize`Rotate API Key`,
+          title: $localize`:@@apiClient.rotateApiKey:Rotate API Key`,
           items: [client.display_name],
           itemType: "api-client",
           confirmAction: {
-            label: $localize`Rotate key`,
+            label: $localize`:@@apiClient.rotateKey:Rotate key`,
             value: true,
             type: "destruct"
           }
@@ -153,10 +153,10 @@ export class ApiClientsComponent {
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: $localize`Delete API Client`,
+          title: $localize`:@@apiClient.deleteApiClient:Delete API Client`,
           items: [client.display_name],
           itemType: "api-client",
-          confirmAction: { label: $localize`Delete`, value: true, type: "destruct" }
+          confirmAction: { label: $localize`:@@common.delete:Delete`, value: true, type: "destruct" }
         }
       })
       .afterClosed()
@@ -176,10 +176,10 @@ export class ApiClientsComponent {
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: $localize`Delete API Clients`,
+          title: $localize`:@@apiClient.deleteApiClients:Delete API Clients`,
           items: selected.map((row) => row.display_name),
           itemType: "api-client",
-          confirmAction: { label: $localize`Delete`, value: true, type: "destruct" }
+          confirmAction: { label: $localize`:@@common.delete:Delete`, value: true, type: "destruct" }
         }
       })
       .afterClosed()

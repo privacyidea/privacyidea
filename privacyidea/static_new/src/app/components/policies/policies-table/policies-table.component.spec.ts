@@ -176,7 +176,9 @@ describe("PoliciesTableComponent", () => {
 
     const noDataRow = fixture.debugElement.query(By.css("tr.mat-mdc-no-data-row"));
     expect(noDataRow).toBeTruthy();
-    expect(noDataRow.nativeElement.textContent).toContain($localize`No entries match the filter`);
+    expect(noDataRow.nativeElement.textContent).toContain(
+      $localize`:@@common.noEntriesMatchTheFilter:No entries match the filter`
+    );
   });
 
   it("should toggle filter keys when clicking header filter buttons", () => {

@@ -17,12 +17,13 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { HttpClient, HttpParams, httpResource, HttpResourceRef } from "@angular/common/http";
-import { inject, Injectable, linkedSignal, signal, WritableSignal } from "@angular/core";
+import { inject, Injectable, linkedSignal, LOCALE_ID, signal, WritableSignal } from "@angular/core";
 import { PiResponse } from "@app/app.component";
 import { environment } from "@env/environment";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
+import { pluralize } from "@utils/i18n.utils";
 import { lastValueFrom } from "rxjs";
 
 export type ApiClientStatus = "active" | "suspended";
@@ -96,6 +97,7 @@ export class ApiClientService implements ApiClientServiceInterface {
   private readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly http = inject(HttpClient);
+  private readonly localeId: string = inject(LOCALE_ID);
 
   private readonly clientsBaseUrl = environment.proxyUrl + "/clients/";
 
@@ -147,12 +149,16 @@ export class ApiClientService implements ApiClientServiceInterface {
         if (value) {
           this.lastIssuedKey.set({ displayName: value.display_name, apiKey: value.api_key });
         }
-        this.notificationService.success($localize`Successfully created API client: ${displayName}.`);
+        this.notificationService.success(
+          $localize`:@@apiClient.successfullyCreatedApiClient:Successfully created API client: ${displayName}:NAME:.`
+        );
         this.apiClientResource.reload();
       })
       .catch((error) => {
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.error($localize`Failed to create API client. ` + message);
+        this.notificationService.error(
+          $localize`:@@apiClient.failedToCreateApiClient:Failed to create API client. ${message}:MESSAGE:`
+        );
         throw new Error("create-failed");
       });
   }
@@ -163,12 +169,16 @@ export class ApiClientService implements ApiClientServiceInterface {
     });
     return lastValueFrom(request)
       .then(() => {
-        this.notificationService.success($localize`Successfully saved API client.`);
+        this.notificationService.success(
+          $localize`:@@apiClient.successfullySavedApiClient:Successfully saved API client.`
+        );
         this.apiClientResource.reload();
       })
       .catch((error) => {
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.error($localize`Failed to save API client. ` + message);
+        this.notificationService.error(
+          $localize`:@@apiClient.failedToSaveApiClient:Failed to save API client. ${message}:MESSAGE:`
+        );
         throw new Error("update-failed");
       });
   }
@@ -185,12 +195,16 @@ export class ApiClientService implements ApiClientServiceInterface {
         if (value) {
           this.lastIssuedKey.set({ displayName: value.display_name, apiKey: value.api_key });
         }
-        this.notificationService.success($localize`Successfully rotated the API key for: ${displayName}.`);
+        this.notificationService.success(
+          $localize`:@@apiClient.successfullyRotatedApiKey:Successfully rotated the API key for: ${displayName}:NAME:.`
+        );
         this.apiClientResource.reload();
       })
       .catch((error) => {
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.error($localize`Failed to rotate API key. ` + message);
+        this.notificationService.error(
+          $localize`:@@apiClient.failedToRotateApiKey:Failed to rotate API key. ${message}:MESSAGE:`
+        );
         throw new Error("rotate-failed");
       });
   }
@@ -201,12 +215,16 @@ export class ApiClientService implements ApiClientServiceInterface {
     });
     return lastValueFrom(request)
       .then(() => {
-        this.notificationService.success($localize`Successfully deleted API client.`);
+        this.notificationService.success(
+          $localize`:@@apiClient.successfullyDeletedApiClient:Successfully deleted API client.`
+        );
         this.apiClientResource.reload();
       })
       .catch((error) => {
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.error($localize`Failed to delete API client. ` + message);
+        this.notificationService.error(
+          $localize`:@@apiClient.failedToDeleteApiClient:Failed to delete API client. ${message}:MESSAGE:`
+        );
         throw new Error("delete-failed");
       });
   }
@@ -225,7 +243,9 @@ export class ApiClientService implements ApiClientServiceInterface {
       .then((response) => response.result?.value ?? { devices: [], count: 0, prev: null, next: null })
       .catch((error) => {
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.error($localize`Failed to load remembered devices. ` + message);
+        this.notificationService.error(
+          $localize`:@@apiClient.failedToLoadRememberedDevices:Failed to load remembered devices. ${message}:MESSAGE:`
+        );
         throw new Error("remembered-devices-load-failed");
       });
   }
@@ -237,11 +257,15 @@ export class ApiClientService implements ApiClientServiceInterface {
     );
     return lastValueFrom(request)
       .then(() => {
-        this.notificationService.success($localize`Successfully revoked the remembered device.`);
+        this.notificationService.success(
+          $localize`:@@apiClient.successfullyRevokedRememberedDevice:Successfully revoked the remembered device.`
+        );
       })
       .catch((error) => {
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.error($localize`Failed to revoke the remembered device. ` + message);
+        this.notificationService.error(
+          $localize`:@@apiClient.failedToRevokeRememberedDevice:Failed to revoke the remembered device. ${message}:MESSAGE:`
+        );
         throw new Error("revoke-failed");
       });
   }
@@ -257,12 +281,21 @@ export class ApiClientService implements ApiClientServiceInterface {
     return lastValueFrom(request)
       .then((response) => {
         const count = response.result?.value ?? 0;
-        this.notificationService.success($localize`Revoked ${count} remembered device(s).`);
+        this.notificationService.success(
+          pluralize(this.localeId, count, {
+            one: $localize`:@@apiClient.revokedOneDevice:Revoked 1 remembered device.`,
+            few: $localize`:@@apiClient.revokedDevicesFew:Revoked ${count}:COUNT: remembered devices.`,
+            many: $localize`:@@apiClient.revokedDevicesMany:Revoked ${count}:COUNT: remembered devices.`,
+            other: $localize`:@@apiClient.revokedDevices:Revoked ${count}:COUNT: remembered devices.`
+          })
+        );
         return count;
       })
       .catch((error) => {
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.error($localize`Failed to revoke remembered devices. ` + message);
+        this.notificationService.error(
+          $localize`:@@apiClient.failedToRevokeRememberedDevices:Failed to revoke remembered devices. ${message}:MESSAGE:`
+        );
         throw new Error("revoke-all-failed");
       });
   }

@@ -27,7 +27,7 @@
         appearance="fill"
         class="table-filter"
         subscriptSizing="dynamic">
-        <mat-label i18n>Filter API Clients...</mat-label>
+        <mat-label i18n="@@apiClient.filterApiClients">Filter API Clients...</mat-label>
         <app-clearable-input
           (clearButtonClick)="resetFilter()"
           [showClearButton]="filterString().length > 0">
@@ -36,8 +36,8 @@
             (input)="onFilterInput(filterHTMLInputElement.value)"
             [value]="filterString()"
             aria-label="Filter Input"
-            i18n-aria-label
-            i18n-placeholder
+            i18n-aria-label="@@common.filterInput"
+            i18n-placeholder="@@common.filterByNameType"
             matInput
             placeholder="Filter by name or type" />
         </app-clearable-input>
@@ -57,7 +57,7 @@
             <mat-icon class="padding-right-3">vpn_key</mat-icon>
             <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
           </span>
-          <span i18n>Create API Client</span>
+          <span i18n="@@apiClient.createApiClient">Create API Client</span>
         </button>
       }
       @if (authService.actionAllowed("api_client_delete")) {
@@ -67,13 +67,13 @@
           class="action-button-delete-secondary button-width-l"
           mat-stroked-button>
           <mat-icon>delete_sweep</mat-icon>
-          <span i18n>Delete</span>
+          <span i18n="@@common.delete">Delete</span>
         </button>
       }
 
       <p
         class="margin-bottom-0 margin-top-0"
-        i18n>
+        i18n="@@apiClient.apiClientsIntro">
         API clients authenticate against privacyIDEA with an API key sent in the
         <code>X-API-Key</code> header. Click on a client to see its remembered devices and the users behind them.
       </p>
@@ -109,7 +109,7 @@
       <ng-container matColumnDef="display_name">
         <th
           *matHeaderCellDef
-          i18n
+          i18n="@@common.name"
           mat-header-cell
           mat-sort-header>
           Name
@@ -133,7 +133,7 @@
       <ng-container matColumnDef="client_type">
         <th
           *matHeaderCellDef
-          i18n
+          i18n="@@common.type"
           mat-header-cell
           mat-sort-header>
           Type
@@ -148,7 +148,7 @@
       <ng-container matColumnDef="status">
         <th
           *matHeaderCellDef
-          i18n
+          i18n="@@common.status"
           mat-header-cell
           mat-sort-header>
           Status
@@ -168,7 +168,7 @@
       <ng-container matColumnDef="key_id">
         <th
           *matHeaderCellDef
-          i18n
+          i18n="@@apiClient.keyId"
           mat-header-cell
           mat-sort-header>
           Key ID
@@ -183,7 +183,7 @@
       <ng-container matColumnDef="created_at">
         <th
           *matHeaderCellDef
-          i18n
+          i18n="@@token.created"
           mat-header-cell
           mat-sort-header>
           Created
@@ -198,7 +198,7 @@
       <ng-container matColumnDef="last_used_at">
         <th
           *matHeaderCellDef
-          i18n
+          i18n="@@apiClient.lastUsed"
           mat-header-cell
           mat-sort-header>
           Last used
@@ -222,7 +222,7 @@
               <button
                 (click)="rotateKey(client)"
                 matTooltip="Rotate key"
-                i18n-matTooltip
+                i18n-matTooltip="@@apiClient.rotateKey"
                 mat-icon-button>
                 <mat-icon>refresh</mat-icon>
               </button>
@@ -231,7 +231,7 @@
               <button
                 (click)="deleteClient(client)"
                 matTooltip="Delete"
-                i18n-matTooltip
+                i18n-matTooltip="@@common.delete"
                 mat-icon-button>
                 <mat-icon>delete</mat-icon>
               </button>
@@ -260,8 +260,8 @@
       [table]="tableState"
       heading="No API clients yet"
       hint="Create an API client to let external integrations authenticate with an API key."
-      i18n-heading
-      i18n-hint
+      i18n-heading="@@apiClient.noApiClientsYet"
+      i18n-hint="@@apiClient.noApiClientsHint"
       icon="vpn_key">
       @if (authService.actionAllowed("api_client_add")) {
         <button
@@ -272,7 +272,7 @@
             <mat-icon class="padding-right-3">vpn_key</mat-icon>
             <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
           </span>
-          <span i18n>Create API Client</span>
+          <span i18n="@@apiClient.createApiClient">Create API Client</span>
         </button>
       }
     </app-table-state>

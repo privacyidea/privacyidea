@@ -19,16 +19,16 @@
 @if (apiClientService.lastIssuedKey(); as issuedKey) {
   <div class="inline-success issued-key-panel">
     <div class="issued-key-header">
-      <span i18n>API key for "{{ issuedKey.displayName }}"</span>
+      <span i18n="@@apiClient.apiKeyFor">API key for "{{ issuedKey.displayName }}"</span>
       <button
         (click)="apiClientService.dismissIssuedKey()"
         aria-label="Dismiss"
-        i18n-aria-label
+        i18n-aria-label="@@apiClient.dismiss"
         mat-icon-button>
         <mat-icon>close</mat-icon>
       </button>
     </div>
-    <p i18n>
+    <p i18n="@@apiClient.copyThisKeyNow">
       Copy this key now. For security reasons it is shown only once and cannot be retrieved again. If you lose it,
       rotate the key to generate a new one.
     </p>

@@ -18,8 +18,8 @@
 -->
 @if (authService.actionAllowed("remembered_device_list")) {
   <div class="remembered-devices-container">
-    <h3 i18n>Remembered devices</h3>
-    <p i18n>
+    <h3 i18n="@@apiClient.rememberedDevices">Remembered devices</h3>
+    <p i18n="@@apiClient.rememberedDevicesIntro">
       These are the active "remember this device" entries for this client. Revoking one invalidates that device's cookie
       immediately. The IP address and user agent are those of the API client's request, which for a centralised
       integration (e.g. an IdP) is the integration itself, not the end user's browser or device.
@@ -30,13 +30,13 @@
         appearance="fill"
         class="realm-filter"
         subscriptSizing="dynamic">
-        <mat-label i18n>Realm</mat-label>
+        <mat-label i18n="@@common.realm">Realm</mat-label>
         <mat-select
           [value]="realmFilter()"
           (selectionChange)="onRealmFilterChange($event.value)">
           <mat-option
             value=""
-            i18n
+            i18n="@@apiClient.allRealms"
             >All realms</mat-option
           >
           @for (realm of realmOptions(); track realm) {
@@ -64,7 +64,7 @@
       <ng-container matColumnDef="user">
         <th
           *matHeaderCellDef
-          i18n
+          i18n="@@common.user"
           mat-header-cell>
           User
         </th>
@@ -82,7 +82,7 @@
           } @else {
             <span
               matTooltip="This account no longer resolves."
-              i18n-matTooltip>
+              i18n-matTooltip="@@apiClient.accountNoLongerResolves">
               {{ device.user_id }}@{{ device.realm }}
             </span>
           }
@@ -92,9 +92,9 @@
       <ng-container matColumnDef="ip_address">
         <th
           *matHeaderCellDef
-          i18n
+          i18n="@@common.ipAddress"
           mat-header-cell>
-          IP address
+          IP Address
         </th>
         <td
           *matCellDef="let device"
@@ -106,9 +106,9 @@
       <ng-container matColumnDef="user_agent">
         <th
           *matHeaderCellDef
-          i18n
+          i18n="@@common.userAgent"
           mat-header-cell>
-          User agent
+          User Agent
         </th>
         <td
           *matCellDef="let device"
@@ -120,7 +120,7 @@
       <ng-container matColumnDef="created_at">
         <th
           *matHeaderCellDef
-          i18n
+          i18n="@@token.created"
           mat-header-cell>
           Created
         </th>
@@ -134,7 +134,7 @@
       <ng-container matColumnDef="last_used_at">
         <th
           *matHeaderCellDef
-          i18n
+          i18n="@@apiClient.lastUsed"
           mat-header-cell>
           Last used
         </th>
@@ -148,7 +148,7 @@
       <ng-container matColumnDef="expires_at">
         <th
           *matHeaderCellDef
-          i18n
+          i18n="@@dashboard.expires"
           mat-header-cell>
           Expires
         </th>
@@ -170,7 +170,7 @@
             <button
               (click)="revokeDevice(device)"
               matTooltip="Revoke this device"
-              i18n-matTooltip
+              i18n-matTooltip="@@apiClient.revokeThisDevice"
               mat-icon-button>
               <mat-icon>delete</mat-icon>
             </button>
@@ -196,13 +196,17 @@
       <tr *matNoDataRow>
         <td colspan="7">
           @if (loadFailed()) {
-            <span i18n>The remembered devices could not be loaded. This is not a statement about how many exist.</span>
+            <span i18n="@@apiClient.rememberedDevicesLoadFailed"
+              >The remembered devices could not be loaded. This is not a statement about how many exist.</span
+            >
           } @else if (isLoading()) {
-            <span i18n>Loading remembered devices...</span>
+            <span i18n="@@apiClient.loadingRememberedDevices">Loading remembered devices...</span>
           } @else if (realmFilter()) {
-            <span i18n>This client has no remembered devices in realm {{ realmFilter() }}.</span>
+            <span i18n="@@apiClient.noRememberedDevicesInRealm"
+              >This client has no remembered devices in realm {{ realmFilter() }}.</span
+            >
           } @else {
-            <span i18n>This client has no remembered devices.</span>
+            <span i18n="@@apiClient.noRememberedDevices">This client has no remembered devices.</span>
           }
         </td>
       </tr>

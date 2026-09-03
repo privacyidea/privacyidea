@@ -145,7 +145,7 @@ export class ApiClientEditComponent implements OnDestroy {
   }
 
   cancelLabel(): string {
-    return this.hasChanges ? $localize`Cancel` : $localize`Back`;
+    return this.hasChanges ? $localize`:@@common.cancel:Cancel` : $localize`:@@common.back:Back`;
   }
 
   get canSave(): boolean {
@@ -185,11 +185,11 @@ export class ApiClientEditComponent implements OnDestroy {
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: $localize`Rotate API Key`,
+          title: $localize`:@@apiClient.rotateApiKey:Rotate API Key`,
           items: [displayName],
           itemType: "api-client",
           confirmAction: {
-            label: $localize`Rotate key`,
+            label: $localize`:@@apiClient.rotateKey:Rotate key`,
             value: true,
             type: "destruct"
           }

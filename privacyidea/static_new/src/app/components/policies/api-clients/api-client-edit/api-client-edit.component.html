@@ -21,13 +21,13 @@
     @if (isEditMode()) {
       <h3
         class="margin-8"
-        i18n>
+        i18n="@@apiClient.apiClientNamed">
         API Client "{{ apiClientModel().display_name }}"
       </h3>
     } @else {
       <h3
         class="margin-8"
-        i18n>
+        i18n="@@apiClient.createApiClient">
         Create API Client
       </h3>
     }
@@ -50,7 +50,7 @@
             class="action-button-primary button-width-s"
             mat-stroked-button>
             <mat-icon>save</mat-icon>
-            <span i18n>Save</span>
+            <span i18n="@@common.save">Save</span>
           </button>
         }
         @if (isEditMode() && authService.actionAllowed("api_client_rotate")) {
@@ -59,7 +59,7 @@
             class="action-button-secondary button-width-s"
             mat-stroked-button>
             <mat-icon>refresh</mat-icon>
-            <span i18n>Rotate key</span>
+            <span i18n="@@apiClient.rotateKey">Rotate key</span>
           </button>
         }
       </div>
@@ -72,7 +72,7 @@
         <mat-form-field
           appearance="fill"
           class="input-width-l">
-          <mat-label i18n>Display name</mat-label>
+          <mat-label i18n="@@apiClient.displayName">Display name</mat-label>
           <app-clearable-input
             (clearButtonClick)="apiClientModel.update(m => ({...m, display_name: ''}))"
             [showClearButton]="!!apiClientModel().display_name">
@@ -85,7 +85,7 @@
             apiClientForm.display_name().errors().some(e => e.kind === 'required') &&
             apiClientForm.display_name().touched()
           ) {
-            <mat-error i18n>Display name is <strong>required</strong>.</mat-error>
+            <mat-error i18n="@@apiClient.displayNameRequired">Display name is <strong>required</strong>.</mat-error>
           }
         </mat-form-field>
 
@@ -97,7 +97,7 @@
           <mat-form-field
             appearance="fill"
             class="input-width-l">
-            <mat-label i18n>Client type</mat-label>
+            <mat-label i18n="@@apiClient.clientType">Client type</mat-label>
             <input
               [value]="integrationsService.labelFor(apiClientModel().client_type)"
               disabled
@@ -107,18 +107,20 @@
           <mat-form-field
             appearance="fill"
             class="input-width-l">
-            <mat-label i18n>Client type</mat-label>
+            <mat-label i18n="@@apiClient.clientType">Client type</mat-label>
             <mat-select [formField]="apiClientForm.client_type">
               @for (option of clientTypeOptions(); track option.id) {
                 <mat-option [value]="option.id">{{ option.label }}</mat-option>
               }
             </mat-select>
-            <mat-hint i18n>The kind of integration this client represents. This cannot be changed later.</mat-hint>
+            <mat-hint i18n="@@apiClient.clientTypeHint"
+              >The kind of integration this client represents. This cannot be changed later.</mat-hint
+            >
             @if (
               apiClientForm.client_type().errors().some(e => e.kind === 'required') &&
               apiClientForm.client_type().touched()
             ) {
-              <mat-error i18n>Client type is <strong>required</strong>.</mat-error>
+              <mat-error i18n="@@apiClient.clientTypeRequired">Client type is <strong>required</strong>.</mat-error>
             }
           </mat-form-field>
         }
@@ -127,16 +129,16 @@
           <mat-form-field
             appearance="fill"
             class="input-width-l">
-            <mat-label i18n>Status</mat-label>
+            <mat-label i18n="@@common.status">Status</mat-label>
             <mat-select [formField]="apiClientForm.status">
               <mat-option
                 value="active"
-                i18n
+                i18n="@@common.active"
                 >Active</mat-option
               >
               <mat-option
                 value="suspended"
-                i18n
+                i18n="@@apiClient.suspended"
                 >Suspended</mat-option
               >
             </mat-select>
