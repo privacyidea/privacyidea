@@ -21,12 +21,12 @@
     <button
       [matMenuTriggerFor]="advancedFilterMenu"
       class="action-button-primary button-width-m"
-      i18n-matTooltip
+      i18n-matTooltip="@@common.moreFilter"
       mat-stroked-button
       matTooltip="More Filter"
       type="button">
       <mat-icon> filter_list</mat-icon>
-      <span i18n>More Filter</span>
+      <span i18n="@@common.moreFilter">More Filter</span>
     </button>
     <mat-menu #advancedFilterMenu="matMenu">
       @for (keyword of advancedApiFilterKeys; track keyword) {

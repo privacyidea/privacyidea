@@ -24,7 +24,7 @@
       <mat-form-field
         class="audit-table-filter"
         subscriptSizing="dynamic">
-        <mat-label i18n>Filter Audit Log...</mat-label>
+        <mat-label i18n="@@audit.filterAuditLog">Filter Audit Log...</mat-label>
         <app-clearable-input
           (clearButtonClick)="auditService.clearFilter()"
           [showClearButton]="auditService.filterDraft().isNotEmpty">
@@ -34,8 +34,8 @@
             (input)="auditService.handleFilterInput($event)"
             [value]="auditService.filterDraft().value"
             aria-label="Filter Input"
-            i18n-aria-label
-            i18n-placeholder
+            i18n-aria-label="@@common.filterInput"
+            i18n-placeholder="@@audit.exampleQueryAction"
             matInput
             placeholder="Example query: 'action: GET success: false'" />
         </app-clearable-input>
@@ -47,8 +47,8 @@
           [disabled]="auditService.isDownloading()"
           aria-label="Download Audit Log"
           class="filter-action-button"
-          i18n-aria-label
-          i18n-matTooltip
+          i18n-aria-label="@@audit.downloadAudit"
+          i18n-matTooltip="@@audit.downloadAudit"
           mat-icon-button
           matTooltip="Download Audit Log">
           <mat-icon>download</mat-icon>
@@ -69,7 +69,7 @@
         [dataSource]="auditDataSource()"
         aria-label="Audit Data Table"
         class="audit-table"
-        i18n-aria-label
+        i18n-aria-label="@@audit.auditDataTable"
         mat-table>
         @for (column of columnKeysMap; track column) {
           <ng-container [matColumnDef]="column.key">
@@ -87,7 +87,7 @@
                     <button
                       (click)="onKeywordClick(apiFilterKeyMap[column.key])"
                       aria-label="Filter by {{ column.label }}"
-                      i18n-aria-label
+                      i18n-aria-label="@@common.filterBy"
                       class="filter-button"
                       mat-icon-button>
                       <mat-icon class="keyword-button-icon margin-left-0">
@@ -140,7 +140,7 @@
                     <app-copyable [copyText]="element.serial">
                       <a
                         (click)="contentService.tokenSelected(element.serial)"
-                        attr.aria-label="{{ column.label }} Link"
+                        [attr.aria-label]="linkLabel(column.label)"
                         routerLink="/token">
                         {{ element[column.key] }}
                       </a>
@@ -150,7 +150,7 @@
                     <app-copyable [copyText]="element.container_serial">
                       <a
                         (click)="contentService.navigateContainerDetails(element.container_serial)"
-                        attr.aria-label="{{ column.label }} Link"
+                        [attr.aria-label]="linkLabel(column.label)"
                         routerLink="/token">
                         {{ element[column.key] }}
                       </a>
@@ -165,7 +165,7 @@
                           $event.preventDefault();
                           contentService.userSelected(element[column.key], element['user_realm'])
                         "
-                        attr.aria-label="{{ column.label }} Link"
+                        [attr.aria-label]="linkLabel(column.label)"
                         role="button"
                         tabindex="0">
                         {{ element[column.key] }}
@@ -207,8 +207,8 @@
       [table]="tableState"
       heading="No audit entries yet"
       hint="Every action performed in privacyIDEA is recorded in the audit log."
-      i18n-heading
-      i18n-hint
+      i18n-heading="@@audit.noAuditEntries"
+      i18n-hint="@@audit.everyActionPerformed"
       icon="receipt_long" />
   }
 </div>

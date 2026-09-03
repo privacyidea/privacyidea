@@ -19,7 +19,7 @@
 <div
   aria-label="User Layout"
   class="user-layout"
-  i18n-aria-label>
+  i18n-aria-label="@@user.userLayout">
   <div
     appScrollToTop
     class="user-table-container">
@@ -49,7 +49,7 @@
         <mat-form-field
           class="token-table-filter"
           subscriptSizing="dynamic">
-          <mat-label i18n>Filter Users...</mat-label>
+          <mat-label i18n="@@user.filterUsers">Filter Users...</mat-label>
           <app-clearable-input
             (clearButtonClick)="userService.clearFilter()"
             [showClearButton]="filterHTMLInputElement.value.length > 0">
@@ -59,8 +59,8 @@
               (input)="userService.handleFilterInput($event)"
               [value]="userService.filterDraft().filterString"
               aria-label="Filter Input"
-              i18n-aria-label
-              i18n-placeholder
+              i18n-aria-label="@@common.filterInput"
+              i18n-placeholder="@@user.searchAllColumns"
               matInput
               placeholder="Search all columns, or by column e.g. 'root email: @acme'" />
           </app-clearable-input>
@@ -78,6 +78,7 @@
         class="table-scroll-region">
         <table
           [dataSource]="usersDataSource()"
+          i18n-aria-label="@@user.tableLabel"
           aria-label="User Data Table"
           class="token-table"
           mat-table>
@@ -93,7 +94,7 @@
                       <button
                         (click)="onFilterClick(column.key)"
                         aria-label="Filter by {{ column.label }}"
-                        i18n-aria-label
+                        i18n-aria-label="@@common.filterBy"
                         class="filter-button"
                         mat-icon-button
                         type="button">
@@ -105,7 +106,7 @@
                     <button
                       (click)="tableUtilsService.onSortButtonClick(column.key, userService.sort)"
                       aria-label="Sort by {{ column.label }}"
-                      i18n-aria-label
+                      i18n-aria-label="@@common.sortBy"
                       class="sort-button"
                       mat-icon-button
                       type="button">
@@ -126,7 +127,7 @@
                       <app-copyable [copyText]="element[column.key]">
                         <a
                           (click)="onClickUsername(element)"
-                          attr.aria-label="{{ column.label }} Link"
+                          [attr.aria-label]="linkLabel(column.label)"
                           routerLink="/users/details/{{ element.username }}">
                           {{ element[column.key] }}
                         </a>
@@ -137,7 +138,7 @@
                         <a
                           (click)="onClickResolver(element[column.key]); $event.preventDefault()"
                           (keydown.enter)="onClickResolver(element[column.key]); $event.preventDefault()"
-                          attr.aria-label="{{ column.label }} Link"
+                          [attr.aria-label]="linkLabel(column.label)"
                           role="button"
                           tabindex="0">
                           {{ element[column.key] }}
@@ -167,8 +168,8 @@
                 [table]="tableState"
                 heading="No users in this realm"
                 hint="Users are read from the resolvers of the selected realm."
-                i18n-heading
-                i18n-hint
+                i18n-heading="@@user.noUsersRealm"
+                i18n-hint="@@user.usersReadResolvers"
                 icon="group" />
             </td>
           </tr>
@@ -179,8 +180,8 @@
         [table]="tableState"
         heading="No users in this realm"
         hint="Users are read from the resolvers of the selected realm."
-        i18n-heading
-        i18n-hint
+        i18n-heading="@@user.noUsersRealm"
+        i18n-hint="@@user.usersReadResolvers"
         icon="group">
         <!-- Holds the realm selector, the only way to get out of an empty realm. Nothing else: the panel is
              too narrow to lay the actions out, so anything more folds away into an overflow menu. -->

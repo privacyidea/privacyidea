@@ -29,6 +29,7 @@ import {
   ConditionalAccessPolicyCondition,
   ConditionalAccessPolicySaveParams,
   ConditionalAccessPolicyTemplate,
+  ConditionalAccessStageAction,
   ConditionalAccessTarget,
   DefaultErrorMessage,
   StaleConditionValues,
@@ -111,10 +112,22 @@ export class MockConditionalAccessPolicyService implements ConditionalAccessPoli
   );
 
   // Canned - not a reimplementation of the real service's rules (see conditional-access-policy.service.spec.ts
-  // for those). A spec drives its case with mockReturnValue.
-  unavailableActionTypes = jest.fn((): Set<ConditionalAccessActionType> => new Set());
+  // for those). A spec drives its case with mockReturnValue/mockImplementation.
+  unavailableActionTypes = jest.fn(
+    (
+      _actions: ConditionalAccessStageAction[],
+      _target: ConditionalAccessTarget,
+      _exceptIndex?: number
+    ): Set<ConditionalAccessActionType> => new Set()
+  );
 
-  actionConflict = jest.fn((): "duplicate" | "exclusive" | null => null);
+  actionConflict = jest.fn(
+    (
+      _actions: ConditionalAccessStageAction[],
+      _index: number,
+      _target: ConditionalAccessTarget
+    ): "duplicate" | "exclusive" | null => null
+  );
 
   getPolicies = jest.fn(
     (): Observable<PiResponse<ConditionalAccessPolicy[]>> =>

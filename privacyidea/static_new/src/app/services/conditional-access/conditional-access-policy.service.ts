@@ -177,6 +177,10 @@ export interface ConditionalAccessPolicy {
   priority: number;
   target: ConditionalAccessTarget;
   count_mode: CountMode;
+  // Whether a completed login clears this policy's counted events, so the thresholds apply to consecutive
+  // failures since that login. Only a "user" target resets: a "source_ip" policy aggregates a signal across
+  // accounts and never does, and the pre-auth allow/deny decision never does either.
+  reset_on_success: boolean;
   counter_types_to_track: AuthEventType[];
   stages: ConditionalAccessPolicyStage[];
   // Which requests the policy applies to. Optional: a policy with no restriction simply omits this
@@ -196,8 +200,11 @@ export type ConditionalAccessPolicySaveParams = Omit<ConditionalAccessPolicy, "i
 // What a shipped template carries: a create payload without priority, which the catalog omits so
 // the admin picks a unique one. Optional, not just nullable, because the key is absent from the
 // response altogether.
-export type ConditionalAccessPolicyTemplateParams = Omit<ConditionalAccessPolicySaveParams, "priority"> & {
+export type ConditionalAccessPolicyTemplateParams = Omit<ConditionalAccessPolicySaveParams, "priority" | "reset_on_success"> & {
   priority?: number | null;
+  // Optional so a template that states no choice still type-checks; every shipped template does state one,
+  // because the value decides what its thresholds mean.
+  reset_on_success?: boolean;
 };
 
 // A ready-made policy the backend ships (GET /conditionalaccess/template); "policy"
@@ -208,6 +215,58 @@ export interface ConditionalAccessPolicyTemplate {
   policy: ConditionalAccessPolicyTemplateParams;
 }
 
+// The duration an action_value carries, in seconds, or null when it carries none the backend would accept.
+// Mirrors privacyidea.lib.conditional_access.engine.parse_lock_duration_seconds: a bare number, a numeric
+// string, or an object with duration_seconds (duration is the alias). The editor itself writes a bare number;
+// the other shapes reach the WebUI from policies written through the API.
+export function parseActionDurationSeconds(actionValue: unknown): number | null {
+  let raw = actionValue;
+  if (raw && typeof raw === "object" && !Array.isArray(raw)) {
+    const record = raw as Record<string, unknown>;
+    raw = "duration_seconds" in record ? record["duration_seconds"] : record["duration"];
+  }
+  if (typeof raw === "boolean") {
+    return null;
+  }
+  let seconds: unknown = raw;
+  if (typeof seconds === "string") {
+    const trimmed = seconds.trim();
+    // Matches int(...): only a plain integer literal, not "600.5" or "600abc" - the backend rejects
+    // both, so accepting them here would let Save look valid and then 400.
+    if (!/^-?[0-9]+$/.test(trimmed)) {
+      return null;
+    }
+    seconds = Number.parseInt(trimmed, 10);
+  }
+  return typeof seconds === "number" && Number.isFinite(seconds) && seconds > 0 ? Math.trunc(seconds) : null;
+}
+
+// What is wrong with this action's action_value, or null when the backend would accept it. It is the
+// client-side half of the per-action contract validated in
+// privacyidea.lib.conditional_access.policy._ACTION_VALUE_VALIDATORS, so the editor can say what is
+// missing next to the field instead of surfacing a 400 after the round-trip.
+export function actionValueError(action: ConditionalAccessStageAction): string | null {
+  const value = action.action_value;
+  switch (action.action_type) {
+    case "LOCK_USER":
+    case "BLOCK_IP":
+      return parseActionDurationSeconds(value) === null
+        ? $localize`Enter how long the restriction lasts; without a duration this action never runs.`
+        : null;
+    case "EMAIL_ADMIN":
+    case "EMAIL_USER": {
+      const email =
+        value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
+      const missing = ["subject", "body"].filter((key) => !String(email[key] ?? "").trim());
+      return missing.length > 0 ? $localize`Fill in the subject and body; without them no email is sent.` : null;
+    }
+    default:
+      // The PERMANENT_* restrictions and the DENY decision never read a value, and the backend rejects
+      // one rather than ignoring it: a duration on a permanent lock reads as an expiry that never comes.
+      return value == null ? null : $localize`This action takes no value. Clear it before saving.`;
+  }
+}
+
 export const EMPTY_CONDITIONAL_ACCESS_POLICY: ConditionalAccessPolicySaveParams = {
   name: "",
   time_window_seconds: 600,
@@ -216,6 +275,7 @@ export const EMPTY_CONDITIONAL_ACCESS_POLICY: ConditionalAccessPolicySaveParams 
   priority: null,
   target: "user",
   count_mode: "PER_REQUEST",
+  reset_on_success: true,
   counter_types_to_track: [],
   stages: []
 };

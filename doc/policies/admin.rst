@@ -948,6 +948,23 @@ already expired.
 
 .. versionadded:: 3.14
 
+.. _policy_user_lock_set:
+
+user_lock_set
+~~~~~~~~~~~~~
+
+type: ``bool``
+
+The administrator is allowed to lock a user by hand, independently of the
+conditional-access policies - permanently, or for a chosen duration. The lock is
+recorded with the cause *Manual* and is enforced exactly like a policy lock.
+
+Kept separate from :ref:`policy_user_lock_reset` because clearing a
+restriction is recoverable and imposing one is not. The target user must lie
+within the scope of the policy granting the right.
+
+.. versionadded:: 3.14
+
 .. _policy_blocklist_read:
 
 blocklist_read
@@ -970,6 +987,24 @@ type: ``bool``
 The administrators are allowed to remove entries from the blocklist of
 :ref:`conditional_access` and to purge the stale records of blocks that have
 already expired.
+
+.. versionadded:: 3.14
+
+.. _policy_blocklist_set:
+
+blocklist_set
+~~~~~~~~~~~~~
+
+type: ``bool``
+
+The administrator is allowed to add a source IP to the conditional-access
+blocklist by hand, independently of the conditional-access policies -
+permanently, or for a chosen duration. The block is recorded with the cause
+*Manual* and is enforced exactly like a policy block.
+
+Kept separate from :ref:`policy_blocklist_reset` because clearing a restriction
+is recoverable and imposing one is not. This is the IP counterpart of
+:ref:`policy_user_lock_set`.
 
 .. versionadded:: 3.14
 

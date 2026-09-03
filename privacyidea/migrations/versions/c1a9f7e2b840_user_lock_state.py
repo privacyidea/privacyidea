@@ -6,6 +6,7 @@ authentication_log. There is deliberately no failure-counter column: failure
 counts are derived by querying authentication_log over the policy's time
 window. The load-bearing field is lock_expires_at - a row whose
 lock_expires_at lies in the future means the user is currently locked.
+lock_cause records whether the engine or an administrator imposed that lock.
 
 Revision ID: c1a9f7e2b840
 Revises: 173d32328846
@@ -60,6 +61,7 @@ def upgrade():
         sa.Column('realm', _unicode_case_sensitive(255), nullable=False),
         sa.Column('username', _unicode_case_sensitive(255), nullable=True),
         sa.Column('lock_expires_at', sa.DateTime(), nullable=True),
+        sa.Column('lock_cause', sa.Unicode(length=20), nullable=False, server_default='POLICY'),
         sa.Column('error_message', sa.Unicode(length=500), nullable=True),
         sa.Column('locked_at', sa.DateTime(), nullable=False),
         sa.PrimaryKeyConstraint('resolver', 'uid', 'realm'),

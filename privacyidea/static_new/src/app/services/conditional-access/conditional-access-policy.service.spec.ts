@@ -49,12 +49,13 @@ describe("ConditionalAccessPolicyService", () => {
     priority: 1,
     target: "user",
     count_mode: "PER_REQUEST",
+    reset_on_success: true,
     counter_types_to_track: ["PIN_FAIL"],
     stages: [
       {
         id: 1,
         failure_threshold: 5,
-        actions: [{ id: 1, action_type: "LOCK_USER", action_value: { lock_duration_seconds: 600 } }]
+        actions: [{ id: 1, action_type: "LOCK_USER", action_value: { duration_seconds: 600 } }]
       }
     ],
     conditions: [{ condition_type: "USER_REALM", operator: "IN", value: ["sales"] }]
@@ -257,6 +258,7 @@ describe("ConditionalAccessPolicyService", () => {
         priority: 1,
         target: "user" as const,
         count_mode: "PER_REQUEST" as const,
+        reset_on_success: true,
         counter_types_to_track: ["PASSWORD_FAIL" as const],
         stages: [{ failure_threshold: 10, actions: [{ action_type: "LOCK_USER" as const, action_value: null }] }]
       }
@@ -454,6 +456,7 @@ describe("ConditionalAccessPolicyService", () => {
         priority: 1,
         target: "user",
         count_mode: "PER_REQUEST",
+        reset_on_success: true,
         counter_types_to_track: ["PIN_FAIL"],
         stages: [],
         conditions: []

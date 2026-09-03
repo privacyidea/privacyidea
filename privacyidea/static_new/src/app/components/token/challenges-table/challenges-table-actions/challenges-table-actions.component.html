@@ -25,7 +25,7 @@
     class="action-button-delete-primary button-width-l"
     mat-stroked-button>
     <mat-icon>delete_sweep</mat-icon>
-    <span i18n>Delete Expired</span>
+    <span i18n="@@token.deleteExpired">Delete Expired</span>
   </button>
 
   @if (advancedApiFilterKeys.length > 0) {
@@ -33,12 +33,12 @@
       data-overflow-pinned
       [matMenuTriggerFor]="advancedFilterMenu"
       class="action-button-primary button-width-l"
-      i18n-matTooltip
+      i18n-matTooltip="@@common.moreFilter"
       mat-stroked-button
       matTooltip="More Filter"
       type="submit">
       <mat-icon> filter_list</mat-icon>
-      <span i18n>More Filter</span>
+      <span i18n="@@common.moreFilter">More Filter</span>
     </button>
     <mat-menu #advancedFilterMenu="matMenu">
       @for (keyword of advancedApiFilterKeys; track keyword) {

@@ -21,12 +21,12 @@
   appScrollToTop
   aria-label="Token Enrollment"
   class="token-enrollment-container"
-  i18n-aria-label>
+  i18n-aria-label="@@common.tokenEnrollment">
   <h3
     class="margin-8"
-    i18n>
-    Enroll a New Token
-  </h3>
+    i18n="@@token.enrollNewToken"
+    >Enroll a New Token</h3
+  >
   <form (submit)="$event.preventDefault(); enrollToken()">
     <app-token-enrollment-type-selector
       [canReopenDialog]="canReopenEnrollmentDialog()"
@@ -37,28 +37,30 @@
       <div class="width-948 margin-bottom-0">
         <p>{{ tokenTypeDescription() }}</p>
       </div>
-      <h4 i18n>Token Configuration</h4>
+      <h4 i18n="@@token.tokenConfiguration">Token Configuration</h4>
       <app-enroll-token-type-switch [tokenTypeKey]="tokenService.selectedTokenType().key" />
       <mat-form-field class="input-width-xl margin-top-16">
-        <mat-label i18n>Description</mat-label>
+        <mat-label i18n="@@common.description">Description</mat-label>
         <textarea
           [formField]="descriptionForm"
-          i18n-placeholder
+          i18n-placeholder="@@common.enterDescription"
           matInput
           placeholder="Enter description"
           rows="3"></textarea>
         <mat-hint align="end">{{ description().length }} / {{ tokenService.maxDescriptionLength }} </mat-hint>
         @if (descriptionForm().errors().some(e => e.kind === 'required') && descriptionForm().touched()) {
-          <mat-error i18n> Description is <strong>required</strong>. </mat-error>
+          <mat-error i18n="@@token.descriptionRequired">Description is <strong>required</strong>.</mat-error>
         }
         @if (descriptionForm().errors().some(e => e.kind === 'maxlength') && descriptionForm().touched()) {
-          <mat-error i18n> Description must not exceed {{ tokenService.maxDescriptionLength }} characters. </mat-error>
+          <mat-error i18n="@@token.descriptionMust"
+            >Description must not exceed {{ tokenService.maxDescriptionLength }} characters.</mat-error
+          >
         }
       </mat-form-field>
       <div class="gap-16">
         @if (authService.actionAllowed("userlist")) {
           <div class="width-100">
-            <h4 i18n>Assign Token to a User</h4>
+            <h4 i18n="@@token.assignTokenUser">Assign Token to a User</h4>
             <app-user-assignment
               [required]="isUserRequired()"
               [showOnlyAddToRealm]="
@@ -77,7 +79,7 @@
 
         @if (authService.actionAllowed("container_list")) {
           <div class="flex-column">
-            <h4 i18n>Add Token to a Container</h4>
+            <h4 i18n="@@token.addTokenContainer">Add Token to a Container</h4>
             <mat-form-field class="input-width-l">
               <app-clearable-input
                 (clearButtonClick)="selectedContainer.set(''); trackChange()"
@@ -88,7 +90,7 @@
                   [matAutocomplete]="containerAuto"
                   matInput />
               </app-clearable-input>
-              <mat-label i18n>Container Serial</mat-label>
+              <mat-label i18n="@@common.containerSerial">Container Serial</mat-label>
               <mat-autocomplete
                 #containerAuto="matAutocomplete"
                 (optionSelected)="selectedContainer.set($event.option.value); trackChange()">
@@ -105,19 +107,19 @@
         <mat-accordion>
           <mat-expansion-panel class="expansion-panel margin-bottom-16">
             <mat-expansion-panel-header>
-              <mat-panel-title i18n> Extended Attributes</mat-panel-title>
+              <mat-panel-title i18n="@@token.extendedAttributes">Extended Attributes</mat-panel-title>
             </mat-expansion-panel-header>
             <div class="expansion-well">
               <div class="flex-row gap-16">
                 <mat-form-field class="date-picker input-width-l">
-                  <mat-label i18n>Validity Start Date</mat-label>
+                  <mat-label i18n="@@token.validityStart">Validity Start Date</mat-label>
                   <input
                     [value]="selectedStartDate()"
                     (dateChange)="selectedStartDate.set($event.value); trackChange()"
                     [matDatepicker]="startPicker"
                     matInput
                     placeholder="2026-01-01" />
-                  <mat-hint i18n>Date Format: YYYY-MM-DD</mat-hint>
+                  <mat-hint i18n="@@token.dateFormatYyyy">Date Format: YYYY-MM-DD</mat-hint>
                   <mat-datepicker-toggle
                     [for]="startPicker"
                     matIconSuffix></mat-datepicker-toggle>
@@ -125,7 +127,7 @@
                 </mat-form-field>
 
                 <mat-form-field class="time-picker input-width-l">
-                  <mat-label i18n>Validity Start Time</mat-label>
+                  <mat-label i18n="@@token.validityStartTime">Validity Start Time</mat-label>
                   <input
                     [value]="selectedStartTime()"
                     (input)="selectedStartTime.set($any($event.target).value); trackChange()"
@@ -136,7 +138,7 @@
                 </mat-form-field>
 
                 <mat-form-field class="zone-picker input-width-l">
-                  <mat-label i18n>Timezone</mat-label>
+                  <mat-label i18n="@@token.timezone">Timezone</mat-label>
                   <mat-select
                     [value]="selectedTimezoneOffset()"
                     (selectionChange)="selectedTimezoneOffset.set($event.value); trackChange()">
@@ -148,14 +150,14 @@
               </div>
               <div class="flex-row gap-16 margin-top-16">
                 <mat-form-field class="date-picker input-width-l">
-                  <mat-label i18n>Validity End Date</mat-label>
+                  <mat-label i18n="@@token.validityEndDate">Validity End Date</mat-label>
                   <input
                     [value]="selectedEndDate()"
                     (dateChange)="selectedEndDate.set($event.value); trackChange()"
                     [matDatepicker]="endPicker"
                     matInput
                     placeholder="2027-01-01" />
-                  <mat-hint i18n>Date Format: YYYY-MM-DD</mat-hint>
+                  <mat-hint i18n="@@token.dateFormatYyyy">Date Format: YYYY-MM-DD</mat-hint>
                   <mat-datepicker-toggle
                     [for]="endPicker"
                     matIconSuffix></mat-datepicker-toggle>
@@ -163,7 +165,7 @@
                 </mat-form-field>
 
                 <mat-form-field class="time-picker input-width-l">
-                  <mat-label i18n>Validity End Time</mat-label>
+                  <mat-label i18n="@@token.validityEndTime">Validity End Time</mat-label>
                   <input
                     [value]="selectedEndTime()"
                     (input)="selectedEndTime.set($any($event.target).value); trackChange()"

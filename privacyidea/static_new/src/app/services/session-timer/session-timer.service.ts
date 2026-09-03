@@ -78,7 +78,9 @@ export class SessionTimerService implements SessionTimerServiceInterface {
     effect(() => {
       const remainingTime = this.remainingTime();
       if (remainingTime && remainingTime > 30_000 && remainingTime < 31_000) {
-        this.notificationService.warning("Session will expire in 30 seconds.");
+        this.notificationService.warning(
+          $localize`:@@session.sessionWillExpireIn30:Session will expire in 30 seconds.`
+        );
       }
     });
   }
@@ -120,7 +122,7 @@ export class SessionTimerService implements SessionTimerServiceInterface {
 
   private handleSessionTimeout(): void {
     this.notificationService.warning(
-      $localize`Your session has expired. You will be logged out and redirected to the login page.`
+      $localize`:@@common.yourSessionHas:Your session has expired. You will be logged out and redirected to the login page.`
     );
     // Keep notification visible for 1.5s before logging out to ensure the user sees it
     setTimeout(() => {

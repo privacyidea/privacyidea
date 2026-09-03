@@ -32,10 +32,12 @@ import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearButtonComponent } from "@components/shared/clear-button/clear-button.component";
 import { ErrorStateDirective } from "@components/shared/directives/error-state.directive";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { MatCheckboxModule } from "@angular/material/checkbox";
 import { InfoHintComponent } from "@components/shared/info-hint/info-hint.component";
 import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import {
+  actionValueError,
   ConditionalAccessPolicyService,
   ConditionalAccessPolicyServiceInterface,
   CountMode,
@@ -86,6 +88,7 @@ const COUNT_MODE_LABELS: Record<string, string> = {
   imports: [
     FormField,
     MatButtonModule,
+    MatCheckboxModule,
     MatFormFieldModule,
     MatIconModule,
     MatInputModule,
@@ -155,7 +158,7 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
 
   // Info-hint help text as a $localize string, keeping all of this component's user-facing text in
   // one place and extractable for translation.
-  protected readonly priorityHelp = $localize`Priority decides how this policy ranks against the others: a lower number means higher precedence, so when several policies would deny a request, the one with the lowest priority number is the one named as having refused it. Lock, block and email policies all run regardless of priority. It is required and must be unique across policies so the order is unambiguous.`;
+  protected readonly priorityHelp = $localize`Unique order across policies, lowest first.`;
   protected readonly priorityHelpAriaLabel = $localize`About priority`;
 
   // Templates offered on the create page and the one currently picked, whose description shows as
@@ -259,6 +262,12 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
   // and targetActionsValid.
   readonly staleConditionValues = computed(() => this.policyService.staleConditionValues(this.editPolicy().conditions));
   conditionValuesValid = computed(() => this.staleConditionValues().length === 0);
+  // Every stage action must carry an action_value its type can act on (the backend enforces the same via
+  // _ACTION_VALUE_VALIDATORS and 400s otherwise). Checked here so the missing duration or subject is reported
+  // next to the field instead of as a failed save; the action item shows the per-action message.
+  actionValuesValid = computed(() =>
+    this.editPolicy().stages.every((stage) => stage.actions.every((action) => actionValueError(action) === null))
+  );
   // Only the highest matching threshold ever fires, so two stages sharing a threshold would leave
   // one permanently dead; the backend also rejects this (uq_ca_stage_policy_threshold), so it
   // is blocked here too.
@@ -277,6 +286,10 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
       )
     )
   );
+  // Only a user policy resets on a successful login: a source-IP policy aggregates a signal across accounts,
+  // where one account's legitimate login must not clear it, and the backend rejects the flag on that target.
+  // The checkbox is therefore shown but disabled there rather than disappearing when the target changes.
+  resetOnSuccessApplies = computed(() => this.editPolicy().target === "user");
 
   hasChanges = computed(() => JSON.stringify(this.policy()) !== JSON.stringify(this.editPolicy()));
   canSave = computed(
@@ -290,6 +303,7 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
       this.stageThresholdsUnique() &&
       this.stageActionsValid() &&
       this.targetActionsValid() &&
+      this.actionValuesValid() &&
       this.countModeValid() &&
       this.conditionValuesValid()
   );
@@ -326,6 +340,9 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
     }
     if (!this.targetActionsValid()) {
       blockers.push($localize`Some actions are not allowed for the selected target.`);
+    }
+    if (!this.actionValuesValid()) {
+      blockers.push($localize`Fix the highlighted action value before saving.`);
     }
     if (!this.countModeValid()) {
       blockers.push($localize`The selected count mode is not allowed for the selected target.`);
@@ -366,6 +383,12 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
         this.isNewPolicy.set(true);
         this.editPolicyId = null;
         this.loadPolicy(EMPTY_CONDITIONAL_ACCESS_POLICY);
+        // A brand-new policy starts with an empty (invalid) name; mark it touched immediately - both the
+        // signal-forms field itself (mat-error only renders once Material's own errorState sees it
+        // touched) and the local flag mirroring it - so the "Name is required" hint is visible from the
+        // start instead of only after the field is blurred.
+        this.policyForm.name().markAsTouched();
+        this.nameTouched.set(true);
       }
     });
 
@@ -426,10 +449,15 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
   }
 
   onTargetChange(target: ConditionalAccessTarget): void {
-    // Only the target changes here; the count mode is left as-is, so switching to a target that does
-    // not support it (e.g. DISTINCT_USERS under a user target) surfaces as a countModeValid error
-    // that blocks saving instead of being silently rewritten, mirroring targetActionsValid.
-    this.updateEditPolicy({ target });
+    // Only the target changes here; the count mode is left as-is. Switching to a target that does not support the
+    // current mode (e.g. DISTINCT_USERS under a user target) is surfaced as a validation error (countModeValid) that
+    // blocks saving, rather than silently rewriting the user's selection - mirroring how an incompatible stage action
+    // is handled (targetActionsValid).
+    //
+    // reset_on_success is cleared rather than surfaced as an error like the count mode, because there is nothing
+    // for the admin to choose: a source-IP policy never resets, and the backend rejects a save that asks it to.
+    // It stays cleared when switching back, where the control is enabled again and shows what it is set to.
+    this.updateEditPolicy({ target, reset_on_success: false });
   }
 
   onCountModeChange(count_mode: CountMode): void {
@@ -444,12 +472,16 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
     const template = key ? this.policyService.templates().find((t) => t.key === key) : undefined;
     const prefill = template ? deepCopy(template.policy) : deepCopy(EMPTY_CONDITIONAL_ACCESS_POLICY);
     delete prefill.id;
-    // Templates carry no priority, since the admin must pick a unique one, so the missing key is
-    // normalized to null leaving the field empty (see priorityValid); spelling out the target type
-    // here makes the compiler enforce that normalization.
+    // Templates carry no priority: the admin must pick a unique one, so normalize the
+    // missing key to null and leave the field empty (see priorityValid). A template that
+    // states no reset-on-success choice falls back to the backend's default for a user
+    // policy, and to cleared for a source-IP one, which never resets - the same rule
+    // onTargetChange applies, so a prefilled policy cannot start out ticked and disabled.
+    // Spelling the types out here makes the compiler enforce both normalizations.
     const policy: ConditionalAccessPolicySaveParams = {
       ...prefill,
       priority: prefill.priority ?? null,
+      reset_on_success: prefill.target === "user" ? (prefill.reset_on_success ?? true) : false,
       stages: prefill.stages
     };
     this.editPolicy.set(policy);
@@ -519,6 +551,10 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
 
   toggleDryRun(checked: boolean): void {
     this.updateEditPolicy({ dry_run: checked });
+  }
+
+  onResetOnSuccessChange(checked: boolean): void {
+    this.updateEditPolicy({ reset_on_success: checked });
   }
 
   cancelEdit(): void {

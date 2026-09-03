@@ -263,6 +263,14 @@ describe("ContainerService", () => {
     expect(r.result?.value?.container_serial).toBe("CNEW");
   });
 
+  it("createContainer error surfaces snackbar", async () => {
+    jest.spyOn(http, "post").mockReturnValueOnce(throwError(() => new HttpErrorResponse({ status: 500 })));
+    await expect(
+      lastValueFrom(containerService.createContainer({ type: "generic", description: "d" }))
+    ).rejects.toBeDefined();
+    expect(notificationServiceMock.error).toHaveBeenCalledWith(expect.stringContaining("Failed to create container."));
+  });
+
   it("registerContainer posts registration payload", async () => {
     jest
       .spyOn(http, "post")
@@ -745,6 +753,66 @@ describe("ContainerService", () => {
     jest.spyOn(http, "delete").mockReturnValueOnce(throwError(() => new HttpErrorResponse({ status: 500 })));
     await expect(lastValueFrom(containerService.deleteContainer("cDelErr"))).rejects.toBeDefined();
     expect(notificationServiceMock.error).toHaveBeenCalledWith(expect.stringContaining("Failed to delete container."));
+  });
+
+  it("setContainerRealm / setContainerDescription error paths surface snackbar", async () => {
+    jest
+      .spyOn(http, "post")
+      .mockReturnValueOnce(throwError(() => new HttpErrorResponse({ status: 500 })))
+      .mockReturnValueOnce(throwError(() => new HttpErrorResponse({ status: 500 })));
+
+    await expect(lastValueFrom(containerService.setContainerRealm("cX", ["r1"]))).rejects.toBeDefined();
+    expect(notificationServiceMock.error).toHaveBeenCalledWith(
+      expect.stringContaining("Failed to set container realm.")
+    );
+
+    await expect(lastValueFrom(containerService.setContainerDescription("cX", "d"))).rejects.toBeDefined();
+    expect(notificationServiceMock.error).toHaveBeenCalledWith(
+      expect.stringContaining("Failed to set container description.")
+    );
+  });
+
+  it("toggleAll error path surfaces snackbar", async () => {
+    const details: ContainerDetails = {
+      count: 1,
+      containers: [
+        {
+          serial: "cT",
+          realms: [],
+          states: [],
+          tokens: [{ serial: "t1", active: false, revoked: false } as unknown as ContainerDetailToken],
+          type: "",
+          users: []
+        }
+      ]
+    };
+    containerService.containerDetails.set(details);
+    jest
+      .spyOn(tokenServiceMock, "toggleActive")
+      .mockReturnValue(throwError(() => new HttpErrorResponse({ status: 500 })));
+
+    await expect(lastValueFrom(containerService.toggleAll("activate"))).rejects.toBeDefined();
+    expect(notificationServiceMock.error).toHaveBeenCalledWith(expect.stringContaining("Failed to toggle all."));
+  });
+
+  it("removeAll error path surfaces snackbar", async () => {
+    jest.spyOn(http, "post").mockReturnValueOnce(throwError(() => new HttpErrorResponse({ status: 500 })));
+    const details: ContainerDetails = {
+      count: 1,
+      containers: [
+        {
+          serial: "cR",
+          realms: [],
+          states: [],
+          tokens: [{ serial: "t1" } as unknown as ContainerDetailToken],
+          type: "",
+          users: []
+        }
+      ]
+    };
+    containerService.containerDetails.set(details);
+    await expect(lastValueFrom(containerService.removeAll("cR"))).rejects.toBeDefined();
+    expect(notificationServiceMock.error).toHaveBeenCalledWith(expect.stringContaining("Failed to remove all."));
   });
 
   it("unregister posts to the correct endpoint and returns result", async () => {

@@ -19,33 +19,33 @@
 
 <app-dialog-wrapper
   title="Attach Offline Machine"
-  i18n-title
+  i18n-title="@@token.attachOffline"
   (actionTriggered)="onAction($event)"
   [actions]="[assignAction]">
   <!-- number input field for countForm and roundsForm -->
   <mat-form-field
     appearance="fill"
     class="input-width-m">
-    <mat-label i18n>Count</mat-label>
+    <mat-label i18n="@@token.count">Count</mat-label>
     <input
       [formField]="countForm"
       matInput
       type="number" />
     @if (countForm().touched() && !countForm().valid()) {
-      <mat-error i18n> Count must be a positive integer.</mat-error>
+      <mat-error i18n="@@token.countMustPositive">Count must be a positive integer.</mat-error>
     }
   </mat-form-field>
   <br />
   <mat-form-field
     appearance="fill"
     class="input-width-m">
-    <mat-label i18n>Rounds</mat-label>
+    <mat-label i18n="@@token.rounds">Rounds</mat-label>
     <input
       [formField]="roundsForm"
       matInput
       type="number" />
     @if (roundsForm().touched() && !roundsForm().valid()) {
-      <mat-error i18n> Rounds must be a positive integer.</mat-error>
+      <mat-error i18n="@@token.roundsMustPositive">Rounds must be a positive integer.</mat-error>
     }
   </mat-form-field>
 </app-dialog-wrapper>

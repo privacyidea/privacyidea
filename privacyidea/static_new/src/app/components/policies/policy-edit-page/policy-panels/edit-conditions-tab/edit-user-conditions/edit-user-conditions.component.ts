@@ -102,11 +102,15 @@ export class EditUserConditionsComponent {
   });
 
   readonly selectResolverTooltip = computed(() =>
-    this.availableResolvers().length === 0 ? $localize`No resolvers available for the selected realms.` : ""
+    this.availableResolvers().length === 0
+      ? $localize`:@@policy.noResolversAvailable:No resolvers available for the selected realms.`
+      : ""
   );
 
   readonly selectRealmTooltip = computed(() =>
-    this.availableRealms().length === 0 ? $localize`No realms available for the selected resolvers.` : ""
+    this.availableRealms().length === 0
+      ? $localize`:@@policy.noRealmsAvailable:No realms available for the selected resolvers.`
+      : ""
   );
 
   emitEdits(edits: Partial<PolicyDetail>) {

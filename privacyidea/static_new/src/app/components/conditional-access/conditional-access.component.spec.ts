@@ -60,6 +60,7 @@ describe("ConditionalAccessComponent", () => {
     priority: 1,
     target: "user",
     count_mode: "PER_REQUEST",
+    reset_on_success: true,
     counter_types_to_track: ["PIN_FAIL"],
     stages: [{ failure_threshold: 5, actions: [] }],
     conditions: []

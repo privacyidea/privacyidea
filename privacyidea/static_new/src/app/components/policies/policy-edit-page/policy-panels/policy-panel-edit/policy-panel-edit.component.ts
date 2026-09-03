@@ -60,7 +60,7 @@ export class PolicyPanelEditComponent {
   readonly activeTab = signal<PolicyTab>("actions");
 
   readonly tabValues: PolicyTab[] = ["actions", "conditions"];
-  readonly tabLabels = [$localize`Actions`, $localize`Conditions`];
+  readonly tabLabels = [$localize`:@@common.actions:Actions`, $localize`:@@common.conditions:Conditions`];
 
   /**
    * Puffer for local changes.
@@ -114,9 +114,9 @@ export class PolicyPanelEditComponent {
 
     if (currentActions && Object.keys(currentActions).length > 0) {
       const confirm = await this.dialogService.confirm({
-        title: $localize`Change Policy Scope`,
-        message: $localize`Changing the policy scope will remove all currently added actions. Do you want to proceed?`,
-        confirmButtonText: $localize`Yes, change scope`
+        title: $localize`:@@policy.changePolicyScope:Change Policy Scope`,
+        message: $localize`:@@policy.changingPolicy:Changing the policy scope will remove all currently added actions. Do you want to proceed?`,
+        confirmButtonText: $localize`:@@policy.yesChangeScope:Yes, change scope`
       });
 
       if (!confirm) return;

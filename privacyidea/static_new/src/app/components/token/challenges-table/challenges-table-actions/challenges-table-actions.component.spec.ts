@@ -21,6 +21,7 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { PiResponse } from "@app/app.component";
+import { FilterValue } from "@core/models/filter_value/filter_value";
 import { NotificationService } from "@services/notification/notification.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import { ChallengesService } from "@services/token/challenges/challenges.service";
@@ -32,6 +33,7 @@ describe("ChallengesTableActionsComponent", () => {
   let component: ChallengesTableActionsComponent;
   let fixture: ComponentFixture<ChallengesTableActionsComponent>;
   let challengesService: ChallengesService;
+  let tableUtilsService: MockTableUtilsService;
   let mockNotificationService: MockNotificationService;
 
   beforeEach(async () => {
@@ -49,6 +51,7 @@ describe("ChallengesTableActionsComponent", () => {
     fixture = TestBed.createComponent(ChallengesTableActionsComponent);
     component = fixture.componentInstance;
     challengesService = TestBed.inject(ChallengesService);
+    tableUtilsService = TestBed.inject(TableUtilsService) as unknown as MockTableUtilsService;
     mockNotificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;
     fixture.detectChanges();
   });
@@ -91,5 +94,33 @@ describe("ChallengesTableActionsComponent", () => {
 
     expect(reloadSpy).not.toHaveBeenCalled();
     expect(mockNotificationService.error).toHaveBeenCalledWith("Failed to delete expired challenges.");
+  });
+
+  it("should toggle the keyword in the current filter via the table-utils service", () => {
+    challengesService.activeFilter.set(new FilterValue({ value: "serial: 123" }));
+    (tableUtilsService.toggleKeywordInFilter as jest.Mock).mockReturnValue(new FilterValue({ value: "toggled" }));
+
+    component.toggleFilter("serial");
+
+    expect(tableUtilsService.toggleKeywordInFilter).toHaveBeenCalledWith({
+      keyword: "serial",
+      currentValue: expect.any(FilterValue)
+    });
+    expect(challengesService.activeFilter().value).toBe("toggled");
+  });
+
+  it("should toggle the filter when an advanced filter is clicked", () => {
+    const toggleSpy = jest.spyOn(component, "toggleFilter");
+
+    component.onAdvancedFilterClick("transaction_id");
+
+    expect(toggleSpy).toHaveBeenCalledWith("transaction_id");
+  });
+
+  it("should return the filled icon when the keyword is active and the outline icon otherwise", () => {
+    challengesService.activeFilter.set(new FilterValue({ value: "serial: 123" }));
+
+    expect(component.getFilterIconName("serial")).toBe("filter_alt_off");
+    expect(component.getFilterIconName("transaction_id")).toBe("filter_alt");
   });
 });

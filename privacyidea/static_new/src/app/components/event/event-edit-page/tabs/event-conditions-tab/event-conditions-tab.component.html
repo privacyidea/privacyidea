@@ -22,7 +22,7 @@
     <mat-expansion-panel [expanded]="true">
       <mat-expansion-panel-header>
         <mat-panel-title>
-          <p i18n>Configured Conditions</p>
+          <p i18n="@@event.configuredConditions">Configured Conditions</p>
         </mat-panel-title>
       </mat-expansion-panel-header>
       <div class="configured-list">
@@ -42,7 +42,7 @@
   <mat-expansion-panel [expanded]="true">
     <mat-expansion-panel-header>
       <mat-panel-title>
-        <p i18n>Add New Conditions</p>
+        <p i18n="@@event.addNewConditions">Add New Conditions</p>
       </mat-panel-title>
     </mat-expansion-panel-header>
     <div class="panel-content">
@@ -57,13 +57,14 @@
       }
 
       <app-clearable-input
-        (clearButtonClick)="searchTerm.set('')" [showClearButton]="searchTerm().length > 0">
+        (clearButtonClick)="searchTerm.set('')"
+        [showClearButton]="searchTerm().length > 0">
         <input
           (ngModelChange)="searchTerm.set($event)"
           [ngModel]="searchTerm()"
           class="search-input"
           clearableInput
-          i18n-placeholder
+          i18n-placeholder="@@event.searchConditions"
           placeholder="Search conditions..."
           type="text" />
       </app-clearable-input>
@@ -82,13 +83,15 @@
       } @else {
         <div class="flex-column">
           @if (searchTerm() !== "") {
-            <p i18n>No conditions match the search filter.</p>
+            <p i18n="@@event.noConditionsMatch">No conditions match the search filter.</p>
             <button
-              (click)="searchTerm.set('')" i18n mat-stroked-button>
-              Clear Filter
-            </button>
+              (click)="searchTerm.set('')"
+              i18n="@@common.clearFilter"
+              mat-stroked-button
+              >Clear Filter</button
+            >
           } @else {
-            <p i18n>All available conditions have been configured.</p>
+            <p i18n="@@event.allAvailableConditions">All available conditions have been configured.</p>
           }
         </div>
       }

@@ -127,7 +127,7 @@ export class UserCreateComponent implements OnInit, OnDestroy {
     if (!this.canSave()) {
       this.usernameForm().markAsTouched();
       this.resolverForm().markAsTouched();
-      this.notificationService.warning($localize`Please fill in all required fields.`);
+      this.notificationService.warning($localize`:@@common.pleaseFillAll:Please fill in all required fields.`);
       return false;
     }
     this.editedUserData().username = this.username();
@@ -156,7 +156,7 @@ export class UserCreateComponent implements OnInit, OnDestroy {
       .openDialog({
         component: SaveAndExitDialogComponent,
         data: {
-          title: $localize`Discard changes`,
+          title: $localize`:@@common.discardChanges:Discard changes`,
           allowSaveExit: this.canSave(),
           saveExitDisabled: !this.canSave()
         }

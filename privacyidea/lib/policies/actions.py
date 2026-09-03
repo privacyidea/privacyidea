@@ -244,8 +244,10 @@ class PolicyAction:
     CONDITIONAL_ACCESS_POLICY_WRITE = "conditional_access_policy_write"
     USER_LOCK_READ = "user_lock_read"
     USER_LOCK_RESET = "user_lock_reset"
+    USER_LOCK_SET = "user_lock_set"
     BLOCKLIST_READ = "blocklist_read"
     BLOCKLIST_RESET = "blocklist_reset"
+    BLOCKLIST_SET = "blocklist_set"
 
 
 class PasskeyLoginButtonOptions:
