@@ -29,6 +29,7 @@ It also contains the error handlers.
 """
 
 import copy
+import json
 
 from flask_babel import _
 
@@ -43,7 +44,7 @@ from ..models import ClientStatus, db
 from ..lib.policies.actions import PolicyAction
 from ..lib.user import get_user_from_param
 import logging
-from flask import request, g
+from flask import request, g, make_response
 from privacyidea.lib.policy import Match, SCOPE
 from privacyidea.lib.lifecycle import call_finalizers
 from privacyidea.lib.log import redact_url
@@ -533,6 +534,90 @@ def after_request(response):
     # Strip version information before signing if the hide_version policy
     # is active and no user is logged in.
     response = hide_version(request, response)
+
+    # Re-apply the two /validate post-policies that the error path bypasses
+    # (see shape_validate_error_response). after_request is the single point
+    # every response - including error-handler responses - flows through.
+    response = shape_validate_error_response(request, response)
+
+    return response
+
+
+def shape_validate_error_response(request, response):
+    """
+    Re-apply the two ``@postpolicy`` decorators of ``/validate/check`` and its
+    ``/validate/radiuscheck`` alias that the error path would otherwise bypass.
+
+    The ``@postpolicy`` chain of the ``check()`` view only runs when the view
+    *returns* a response. When it *raises*, the exception is turned into an
+    error response by the error handlers in this module, which never pass it
+    through the chain. Rather than repeating the two relevant post-policies in
+    every error handler, they are applied here once: ``after_request`` is the
+    single choke point every response flows through (this is also how
+    ``sign_response`` manages to sign error responses).
+
+    * ``hide_specific_error_message`` (AUTH scope): mask the specific failure
+      reason (unknown serial, serial/user mismatch, revoked token, FIDO2
+      argument checks, ...) so it does not leak despite the policy being active.
+    * ``construct_radius_response``: ``/validate/radiuscheck`` must answer with
+      an empty body; on an error path this is always the failure case, so an
+      empty ``400``.
+
+    Only *error* responses are touched. A normal response already went through
+    the real ``@postpolicy`` chain: a ``/validate/check`` response carries
+    ``result.status`` ``True`` (set by ``send_result``) while an error carries
+    ``False`` (set by ``send_error``), and a normal ``/validate/radiuscheck``
+    response has already been shaped into a non-JSON empty body. The original,
+    specific message stays in the audit log because the error handlers log it
+    before this runs, so the administrator still sees the real reason.
+
+    :param request: the request object
+    :param response: the response object
+    :return: the (possibly replaced) response
+    """
+    if getattr(request, "blueprint", None) != "validate_blueprint":
+        return response
+    if not response.is_json:
+        # A normal /validate/radiuscheck response was already shaped into an
+        # empty body by the construct_radius_response post-policy - leave it.
+        return response
+    content = response.json
+    if not isinstance(content, dict):
+        return response
+    result = content.get("result") or {}
+    # send_result() sets status True, send_error() sets it False. Only the
+    # error path (a raised view) reaches here with an unshaped JSON body.
+    if result.get("status") is not False:
+        return response
+
+    # hide_specific_error_message
+    user_object = request.User if hasattr(request, "User") else None
+    hide_message = Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE,
+                              user_object=user_object).any()
+    if hide_message:
+        message = str(_("Authentication failed."))
+        error = result.get("error")
+        if isinstance(error, dict):
+            error["message"] = message
+            # Remap to the generic AUTHENTICATE id, so a masked failure is
+            # indistinguishable from any other unspecified auth failure.
+            error["code"] = Error.AUTHENTICATE
+        # Replace the whole detail object, so it always has the same content
+        # and future additions cannot accidentally leak information either.
+        detail = {"message": message}
+        threadid = (content.get("detail") or {}).get("threadid")
+        if threadid:
+            detail["threadid"] = threadid
+        content["detail"] = detail
+        response.set_data(json.dumps(content))
+
+    # construct_radius_response: on the error path the authentication never
+    # succeeded, so the RADIUS shape is always the failure case (empty 400).
+    url_rule = getattr(request, "url_rule", None)
+    if url_rule is not None and url_rule.rule == "/validate/radiuscheck":
+        response = make_response("", 400)
+        # tell other handlers (e.g. sign_response) there is no JSON content
+        response.mimetype = "text/plain"
 
     return response
 
