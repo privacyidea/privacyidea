@@ -29,11 +29,12 @@ from flask import Response
 from privacyidea.lib.cache import redis_feature_enabled
 from privacyidea.lib.cache.redis import redis_client_for_feature, _TXN_KEY
 from privacyidea.lib.challenge import get_challenges
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventReason, REASON_DETAIL_INFO_KEY
 from privacyidea.lib.conditional_access.authentication_log import get_authentication_logs, AuthLogUserRole
 from privacyidea.lib.policy import set_policy, SCOPE, PolicyAction
 from privacyidea.lib.token import init_token, remove_token, get_tokens
 from privacyidea.lib.user import User
-from privacyidea.models import AuthenticationLog, Audit, db
+from privacyidea.models import AuthenticationLog, AuthenticationLogReason, Audit, db
 from privacyidea.models.utils import utc_now
 from .base import MyApiTestCase
 
@@ -60,15 +61,21 @@ class AuthLogTestCase(MyApiTestCase):
         self._clear_audit_log()
 
     def tearDown(self) -> None:
-        for serial in (self.serial, self.second_serial):
-            if get_tokens(serial=serial):
-                remove_token(serial)
+        # Every token of the user, not just the two this fixture names: a test that enrolls one (enroll_via_
+        # multichallenge) or that fails before its own cleanup would otherwise leave it behind, and the next test
+        # would find the user owning a token it never created - which silently changes what is logged.
+        for token in get_tokens(user=self.user):
+            remove_token(token.get_serial())
         self._clear_log()
         self._clear_audit_log()
         super().tearDown()
 
     @staticmethod
     def _clear_log() -> None:
+        # The reasons go first: a bulk delete runs no ORM cascade and SQLite does not enforce the foreign key, so
+        # orphaned reason rows would be picked up by the next entry that reuses the freed id (SQLite hands out
+        # max(rowid)+1).
+        db.session.query(AuthenticationLogReason).delete()
         db.session.query(AuthenticationLog).delete()
         db.session.commit()
 
@@ -166,7 +173,7 @@ def assert_authentication_log(event_types, transaction_id=None, same_attempt=Tru
     :return: an :class:`AuthLogEntries` (a dict of event type -> entry, plus the ordered ``.all`` list)
     """
     if transaction_id is not None:
-        entries = get_authentication_logs(transaction_id=transaction_id)
+        entries = get_authentication_logs(transaction_ids=transaction_id)
     else:
         entries = get_authentication_logs()
     assert [entry.event_type for entry in entries] == event_types
@@ -180,21 +187,26 @@ def assert_authentication_log(event_types, transaction_id=None, same_attempt=Tru
 def assert_authentication_log_entry(entry: AuthenticationLog, user: User = None,
                                     serials: set[str] = None,
                                     client_label: str = None, client_label_source: str = None,
-                                    other_info: dict = None,
+                                    endpoint: str = None, other_info: dict = None,
                                     transaction_id: str = None,
                                     source_ip: str = None, peer_ip: str = None,
                                     source_ip_source: str = None, ip_chain: list = None,
-                                    user_role: AuthLogUserRole = AuthLogUserRole.USER):
+                                    user_role: AuthLogUserRole = AuthLogUserRole.USER,
+                                    reason: AuthEventReason = None, reasons: dict = None,
+                                    policies: list = None):
     """
     Assert a single authentication-log entry carries the expected attributes.
 
     The server-minted ``attempt_id`` is not checked here (its value is not knowable per entry); it is validated at the
     flow level in :func:`assert_authentication_log` (presence on every row, and shared across one attempt).
 
-    Every other column of the authentication_log table is checked. The nullable columns default to their database default
-    (None), so a column that is not passed is asserted to be empty — this enforces that a row carries *only* the data
-    it should and no leftover values. The auto-populated id and timestamp are checked for presence. The non-nullable
-    event_type is covered by the ordered list in :func:`assert_authentication_log`.
+    Every other column of the authentication_log table is checked, **including the endpoint and the reasons**, and
+    every argument defaults to "the row carries nothing here": a value the caller does not pass is asserted to be
+    absent. Nothing about a row is therefore silently missed - what a request logs is spelled out at every call site,
+    under every condition and at every endpoint, which is the whole point of asserting an entry at all.
+
+    The auto-populated id and timestamp are checked for presence. The non-nullable event_type is covered by the
+    ordered list in :func:`assert_authentication_log`.
 
     :param entry: an AuthenticationLog entry (e.g. one returned by :func:`assert_authentication_log`)
     :param user: the expected identity. All four fields — resolver, uid, realm, and username (login) — are read from
@@ -207,6 +219,11 @@ def assert_authentication_log_entry(entry: AuthenticationLog, user: User = None,
     :param client_label_source: where the label came from. Defaults to ``"user_agent"`` whenever a client_label is
         expected, since the test client always sends a User-Agent; pass ``"client_id"`` for a request that named
         itself.
+    :param endpoint: the entry must carry this endpoint (default None: no endpoint, i.e. a row staged outside a view)
+    :param reason: the entry's reasons must be exactly these, in this order (the order AuthEventReason declares
+        them): one AuthEventReason or a list of them (default None: no reason at all)
+    :param reasons: the ``{serial: reason}`` map in the entry's reason detail (default None: no such map)
+    :param policies: the policy names in the entry's reason detail (default None: no policy names)
     :param other_info: the entry must carry this other_info (default None: no other_info)
     :param transaction_id: the entry must carry this transaction_id (default None: no transaction_id)
     :param source_ip: the entry must carry this source_ip (default None: no source_ip)
@@ -227,7 +244,21 @@ def assert_authentication_log_entry(entry: AuthenticationLog, user: User = None,
     if client_label_source is None and client_label:
         client_label_source = "user_agent"
     assert entry.client_label_source == client_label_source
-    assert entry.other_info == other_info
+    assert entry.endpoint == endpoint
+    expected_reasons = [] if reason is None else [str(value) for value in
+                                                 (reason if isinstance(reason, list) else [reason])]
+    assert [row.reason for row in entry.reasons] == expected_reasons
+    stored_info = dict(entry.other_info or {})
+    stored_detail = stored_info.pop(REASON_DETAIL_INFO_KEY, None) or {}
+    expected_detail = {}
+    if reasons is not None:
+        expected_detail["reasons"] = {serial: str(value) for serial, value in reasons.items()}
+    if policies is not None:
+        expected_detail["policies"] = policies
+    assert stored_detail == expected_detail
+    # An empty dict is not None: a row that carries {} in a JSON column is a different thing from one that carries
+    # nothing, and only the reason detail is allowed to be lifted out above.
+    assert stored_info == (other_info or {})
     assert entry.transaction_id == transaction_id
     assert entry.source_ip == source_ip
     assert entry.peer_ip == peer_ip

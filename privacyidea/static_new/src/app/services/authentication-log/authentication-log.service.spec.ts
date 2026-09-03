@@ -65,10 +65,13 @@ describe("AuthenticationLogService", () => {
     httpMock.verify();
   });
 
-  // The event-types resource loads under the same gate as the log page, so a test asserting only the page request must
-  // also flush this one (keeps httpMock.verify() clean).
-  const flushEventTypes = () =>
+  // The vocabulary resources (event types, reasons, endpoints) load under the same gate as the log page, so flush them
+  // where a test only asserts the page request (keeps httpMock.verify() clean).
+  const flushEventTypes = () => {
     httpMock.match((r) => r.url.endsWith("/eventtypes")).forEach((r) => r.flush(MockPiResponse.fromValue([])));
+    httpMock.match((r) => r.url.endsWith("/reasons")).forEach((r) => r.flush(MockPiResponse.fromValue([])));
+    httpMock.match((r) => r.url.endsWith("/endpoints")).forEach((r) => r.flush(MockPiResponse.fromValue([])));
+  };
 
   // The oldest-entry resource (page_size=1, timestamp asc) loads under the same gate as the log page, so a test
   // asserting only the page request must also flush this one.
@@ -81,32 +84,40 @@ describe("AuthenticationLogService", () => {
   const isPageRequest = (r: { url: string; params: { get(k: string): string | null } }) =>
     r.url.endsWith("/authenticationlog/") && r.params.get("page_size") !== "1";
 
-  it("filterParams keeps known keys verbatim and drops unknown/empty ones", () => {
+  it("filterParams sends known keys as their plural query parameter and drops unknown/empty ones", () => {
     expect(service.filterParams()).toEqual({});
 
     service.authenticationLogFilter.set(
       new FilterValue({ value: "foo: bar username: alice event_type: LOGIN_SUCCESS serial:    " })
     );
     expect(service.filterParams()).toEqual({
-      username: "alice",
-      event_type: "LOGIN_SUCCESS"
+      usernames: "alice",
+      event_types: "LOGIN_SUCCESS"
     });
+  });
+
+  it("forwards the endpoint filter as the plural endpoints parameter", () => {
+    // Which endpoint authenticated is a column like any other; the wildcard is what makes "/validate/*" one filter.
+    service.authenticationLogFilter.set(new FilterValue({ value: "endpoint: /validate/*" }));
+    expect(service.filterParams()).toEqual({ endpoints: "/validate/*" });
   });
 
   it("forwards the advanced user_role filter (no column, reached via the more-filters control)", () => {
     service.authenticationLogFilter.set(new FilterValue({ value: "user_role: admin-internal,admin-external" }));
-    expect(service.filterParams()).toEqual({ user_role: "admin-internal,admin-external" });
+    expect(service.filterParams()).toEqual({ user_roles: "admin-internal,admin-external" });
   });
 
   it("forwards the conditional-access outcome filters as flat params", () => {
-    // Three advanced keys are sent as typed; the backend filters on the entry's outcomes with them, and ca_dry_run is a
-    // tri-state there, so its absence means "both".
+    // Three advanced keys: the backend filters on the entry's outcomes with them. The two list filters go out in the
+    // plural like every other list filter; ca_dry_run is a single tri-state boolean, so its absence means "both".
     service.authenticationLogFilter.set(
-      new FilterValue({ value: "ca_action_type: LOCK_USER,BLOCK_IP ca_policy_name: Brute* ca_dry_run: false" })
+      new FilterValue({
+        value: "ca_action_type: LOCK_USER,BLOCK_IP ca_policy_name: Brute* ca_dry_run: false"
+      })
     );
     expect(service.filterParams()).toEqual({
-      ca_action_type: "LOCK_USER,BLOCK_IP",
-      ca_policy_name: "Brute*",
+      ca_action_types: "LOCK_USER,BLOCK_IP",
+      ca_policy_names: "Brute*",
       ca_dry_run: "false"
     });
   });
@@ -152,7 +163,7 @@ describe("AuthenticationLogService", () => {
     expect(req.request.params.get("sort_column")).toBe("timestamp");
     expect(req.request.params.get("sort_order")).toBe("desc");
     expect(req.request.params.get("case_insensitive")).toBe("true");
-    expect(req.request.params.get("serial")).toBe("PISP0001");
+    expect(req.request.params.get("serials")).toBe("PISP0001");
 
     req.flush(emptyPage());
     flushOldest();
@@ -211,12 +222,71 @@ describe("AuthenticationLogService", () => {
     TestBed.tick();
     httpMock.match(isPageRequest).forEach((r) => r.flush(emptyPage()));
     flushOldest();
+    httpMock.match((r) => r.url.endsWith("/reasons")).forEach((r) => r.flush(MockPiResponse.fromValue([])));
+    httpMock.match((r) => r.url.endsWith("/endpoints")).forEach((r) => r.flush(MockPiResponse.fromValue([])));
     httpMock
       .match((r) => r.url.endsWith("/eventtypes"))
       .forEach((r) => r.flush(MockPiResponse.fromValue(["LOGIN_SUCCESS", "AUTHENTICATION_FAIL"])));
     await Promise.resolve();
     TestBed.tick();
     expect(service.eventTypes()).toEqual(["LOGIN_SUCCESS", "AUTHENTICATION_FAIL"]);
+  });
+
+  it("reasons is empty before load and reflects the loaded vocabulary", async () => {
+    // The reason vocabulary comes from the backend for the same reason the event types do: the column filters by it.
+    expect(service.reasons()).toEqual([]);
+    service.authenticationLogResource.reload();
+    TestBed.tick();
+    httpMock.match(isPageRequest).forEach((r) => r.flush(emptyPage()));
+    flushOldest();
+    httpMock.match((r) => r.url.endsWith("/eventtypes")).forEach((r) => r.flush(MockPiResponse.fromValue([])));
+    httpMock.match((r) => r.url.endsWith("/endpoints")).forEach((r) => r.flush(MockPiResponse.fromValue([])));
+    httpMock
+      .match((r) => r.url.endsWith("/reasons"))
+      .forEach((r) => r.flush(MockPiResponse.fromValue(["TOKEN_DISABLED", "WRONG_OTP"])));
+    await Promise.resolve();
+    TestBed.tick();
+    expect(service.reasons()).toEqual(["TOKEN_DISABLED", "WRONG_OTP"]);
+  });
+
+  it("endpoints is empty before load and reflects the loaded list", async () => {
+    // A closed list of request paths, served like the reason vocabulary so the endpoint filter can offer a selection.
+    expect(service.endpoints()).toEqual([]);
+    service.authenticationLogResource.reload();
+    TestBed.tick();
+    httpMock.match(isPageRequest).forEach((r) => r.flush(emptyPage()));
+    flushOldest();
+    httpMock.match((r) => r.url.endsWith("/eventtypes")).forEach((r) => r.flush(MockPiResponse.fromValue([])));
+    httpMock.match((r) => r.url.endsWith("/reasons")).forEach((r) => r.flush(MockPiResponse.fromValue([])));
+    httpMock
+      .match((r) => r.url.endsWith("/endpoints"))
+      .forEach((r) => r.flush(MockPiResponse.fromValue(["/auth", "/validate/check"])));
+    await Promise.resolve();
+    TestBed.tick();
+    expect(service.endpoints()).toEqual(["/auth", "/validate/check"]);
+  });
+
+  it("a vocabulary response without a value reads as an empty list", async () => {
+    // The endpoint answers with a body of its own shape; a response that carries no list at all (an older server,
+    // an error the resource still resolved) must leave the filter with nothing to offer rather than undefined,
+    // which the multi-select would choke on.
+    service.authenticationLogResource.reload();
+    TestBed.tick();
+    httpMock.match(isPageRequest).forEach((r) => r.flush(emptyPage()));
+    flushOldest();
+    httpMock.match((r) => r.url.endsWith("/eventtypes")).forEach((r) => r.flush(MockPiResponse.fromValue([])));
+    httpMock.match((r) => r.url.endsWith("/reasons")).forEach((r) => r.flush({ result: {} }));
+    httpMock.match((r) => r.url.endsWith("/endpoints")).forEach((r) => r.flush({ result: {} }));
+    await Promise.resolve();
+    TestBed.tick();
+
+    expect(service.reasons()).toEqual([]);
+    expect(service.endpoints()).toEqual([]);
+  });
+
+  it("forwards the reason filter as the plural reasons parameter", () => {
+    service.authenticationLogFilter.set(new FilterValue({ value: "reason: TOKEN_DISABLED,TOKEN_REVOKED" }));
+    expect(service.filterParams()).toEqual({ reasons: "TOKEN_DISABLED,TOKEN_REVOKED" });
   });
 
   it("oldestTimestamp is null before load and reflects the oldest entry after", async () => {
@@ -276,7 +346,7 @@ describe("AuthenticationLogService", () => {
 
   it("handleFilterInput sets, and clearFilter empties, the shared filter", () => {
     service.handleFilterInput({ target: { value: "serial: PISP0001" } } as unknown as Event);
-    expect(service.filterParams()).toEqual({ serial: "PISP0001" });
+    expect(service.filterParams()).toEqual({ serials: "PISP0001" });
     service.clearFilter();
     expect(service.filterParams()).toEqual({});
   });

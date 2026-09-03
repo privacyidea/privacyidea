@@ -26,7 +26,7 @@ from privacyidea.models import db
 from privacyidea.models.utils import MethodsMixin, utc_now, BigIntegerType, case_sensitive_unicode
 
 if TYPE_CHECKING:
-    from privacyidea.models import ConditionalAccessOutcome
+    from privacyidea.models import AuthenticationLogReason, ConditionalAccessOutcome
 
 # Maximum length of the string columns; the lib layer truncates values to these lengths before insert (see
 # privacyidea.lib.conditional_access.authentication_log._truncate), so a value can never overflow a column.
@@ -44,6 +44,9 @@ authentication_log_column_length = {
     "source_ip_source": 40,
     "client_label": 1024,
     "client_label_source": 40,
+    # The request path of the authenticating endpoint ("/auth", "/validate/check", ...). Sized well past the longest
+    # route privacyIDEA registers, so a value is never actually cut.
+    "endpoint": 255,
     "serial": 1024,
     # transaction_id (and attempt_id) originate in the challenge table, whose transaction_id is Unicode(64), so a real
     # value never exceeds 64 here either.
@@ -54,7 +57,9 @@ authentication_log_column_length = {
 
 class AuthenticationLog(MethodsMixin, db.Model):
     """
-    Append-only log of authentication events: every authenticated HTTP request produces exactly one row.
+    Append-only log of authentication events: every authenticated HTTP request produces a row, and normally exactly
+    one (a ``push_wait`` request writes two, since it triggers the challenge and awaits the answer within the one
+    request).
     Several rows may share a ``transaction_id`` to correlate the multiple requests of one logical authentication
     attempt (e.g. a challenge trigger and its later response) at query time. Rows of one logical attempt - including a
     multi-challenge flow where answering one challenge triggers another - share an ``attempt_id``; ordering an
@@ -121,6 +126,12 @@ class AuthenticationLog(MethodsMixin, db.Model):
     # ``[{"ip": "...", "source": "REMOTE_ADDR|X_FORWARDED_FOR|CLIENT_PARAM", "effective": true}, ...]``.
     # Written only when there is more than one hop, so NULL means the path was exactly ``[peer_ip]``.
     ip_chain: Mapped[list | None] = mapped_column(JSON)
+    # The endpoint the request authenticated against, as its request path ("/auth", "/validate/check", "/ttype/push").
+    # Every authentication reaches the server as a request - there is no authentication from the CLI, and push_wait
+    # runs inside the request that triggered the challenge - so an entry an authentication wrote always names one.
+    # Nullable only for an entry staged outside a view, which nothing on the authentication path does.
+    endpoint: Mapped[str | None] = mapped_column(
+        case_sensitive_unicode(authentication_log_column_length["endpoint"]))
     serial: Mapped[str | None] = mapped_column(case_sensitive_unicode(authentication_log_column_length["serial"]))
     transaction_id: Mapped[str | None] = mapped_column(
         case_sensitive_unicode(authentication_log_column_length["transaction_id"]))
@@ -148,6 +159,14 @@ class AuthenticationLog(MethodsMixin, db.Model):
         "ConditionalAccessOutcome", cascade="all, delete-orphan", lazy="raise",
         order_by="ConditionalAccessOutcome.id")
 
+    # Why this event came out the way it did: zero or more AuthEventReason values, in the order that vocabulary
+    # declares them (a success needs none). Declared exactly like the outcomes above and for the same reasons - the
+    # cascade covers deleting an entry as an object on every backend, while the set-based delete paths remove the
+    # child rows themselves, and lazy="raise" keeps the authentication path from ever fanning out a query per row.
+    reasons: Mapped[list["AuthenticationLogReason"]] = relationship(
+        "AuthenticationLogReason", cascade="all, delete-orphan", lazy="raise",
+        order_by="AuthenticationLogReason.id")
+
     @property
     def aware_timestamp(self) -> datetime:
         """
@@ -159,16 +178,21 @@ class AuthenticationLog(MethodsMixin, db.Model):
         """
         return self.timestamp.replace(tzinfo=timezone.utc)
 
-    def to_dict(self, include_outcomes: bool = False) -> dict:
+    def to_dict(self, include_outcomes: bool = False, include_reasons: bool = False) -> dict:
         """
         Serialize the entry for the API response, with the timestamp as an ISO-8601 UTC string.
 
         *include_outcomes* adds the conditional-access history of this request as ``conditional_access_outcomes``. It is
         off by default and only the paginated listing turns it on, because the relationship is ``lazy="raise"``: reading
         it on an entry that was not loaded with its outcomes must fail loudly rather than emit a query per entry.
+
+        *include_reasons* adds the classified reasons as the ``reasons`` list, in the order they were recorded,
+        under the same rule and for the same reason: that relationship is ``lazy="raise"`` too.
         """
         auth_log_dict = {name: getattr(self, name) for name in self.__table__.columns.keys()}
         auth_log_dict["timestamp"] = self.aware_timestamp.isoformat()
+        if include_reasons:
+            auth_log_dict["reasons"] = [entry.reason for entry in self.reasons]
         if include_outcomes:
             auth_log_dict["conditional_access_outcomes"] = [outcome.to_dict() for outcome in self.outcomes]
         return auth_log_dict

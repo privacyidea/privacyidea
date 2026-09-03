@@ -50,6 +50,7 @@ from dateutil.tz import tzlocal, tzutc
 from netaddr import IPAddress, IPNetwork, AddrFormatError
 
 from privacyidea.lib.error import ParameterError, ResourceNotFoundError, PolicyError
+from privacyidea.lib.conditional_access.authentication_event_types import strip_internal_classification
 from privacyidea.lib.framework import get_app_config_value, get_base_url
 
 log = logging.getLogger(__name__)
@@ -1361,6 +1362,10 @@ def prepare_result(obj, rid=1, details=None, **kwargs):
            "time": time.time()}
     res.update(kwargs)
     if details is not None and len(details) > 0:
+        # The lib layer hands its classification to the api layer in this very dict (see
+        # INTERNAL_CLASSIFICATION_KEYS); a view reads it by popping, and whatever a view forgot is dropped here
+        # rather than answered with.
+        strip_internal_classification(details)
         details["threadid"] = threading.current_thread().ident
         res["detail"] = details
 

@@ -82,6 +82,18 @@ export class MockAuthenticationLogService implements AuthenticationLogServiceInt
   eventTypesResource = new MockHttpResourceRef<PiResponse<AuthenticationLogEventType[]> | undefined>(
     MockPiResponse.fromValue<AuthenticationLogEventType[]>([])
   );
+  // A representative subset of the reason vocabulary; tests may override via reasons.set(...).
+  reasons = signal<string[]>([
+    "TOKEN_DISABLED",
+    "TOKEN_FAILCOUNT_EXCEEDED",
+    "TOKEN_REVOKED",
+    "AUTHORIZATION_DENIED",
+    "WRONG_OTP"
+  ]);
+  reasonsResource = new MockHttpResourceRef<PiResponse<string[]> | undefined>(MockPiResponse.fromValue<string[]>([]));
+  // The authenticating request paths; tests may override via endpoints.set(...).
+  endpoints = signal<string[]>(["/auth", "/ttype/push", "/validate/check", "/validate/triggerchallenge"]);
+  endpointsResource = new MockHttpResourceRef<PiResponse<string[]> | undefined>(MockPiResponse.fromValue<string[]>([]));
 
   fetchStatistics = jest
     .fn()

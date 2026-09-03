@@ -132,7 +132,7 @@ export interface ConditionalAccessPolicyStage {
 // rejected as a type error, so condition_type and operator stay plain strings below.
 // Their real job is keeping the WebUI's own copy tables complete: a Record keyed on these types
 // turns a missing or mistyped copy entry into a compile error instead of a silent gap.
-export type KnownConditionType = "USER_REALM" | "USER_ROLE";
+export type KnownConditionType = "USER_REALM" | "USER_ROLE" | "ENDPOINT";
 export type KnownConditionOperator = "IN" | "NOT_IN";
 
 // One comparison a condition type permits, with the label the backend has already translated.

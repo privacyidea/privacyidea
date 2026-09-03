@@ -297,7 +297,7 @@ class ConditionalAccessContextTestCase(MyTestCase):
         # The engine is handed only the classification and the subject, as a CAContext describing the identity the row
         # states; the outcomes it returns are recorded by the context against the row it judged.
         evaluate.assert_called_once_with(CAContext(user=context.principal.user, source_ip="10.0.0.1",
-                                                  user_role=event.user_role),
+                                                  user_role=event.user_role, endpoint=event.endpoint),
                                          AuthEventType.NOT_AUTHORIZED)
 
     def test_20a_post_eval_takes_the_user_role_off_the_event(self):
@@ -317,6 +317,21 @@ class ConditionalAccessContextTestCase(MyTestCase):
         self.assertEqual(str(AuthLogUserRole.ADMIN_INTERNAL), ca_context.user_role)
         # A local admin has no user object, so the context carries no user and no user-target policy can lock it.
         self.assertIsNone(ca_context.user)
+
+    def test_20b_post_eval_takes_the_endpoint_off_the_event(self):
+        # A field left out of this context does not read as "unknown" to a condition, it reads as *absent* - which an
+        # IN condition treats as no match and a NOT_IN as a match. So an omitted endpoint would silently invert every
+        # ENDPOINT condition on the post-response path while the pre-auth one (built by build_ca_context) kept working.
+        context = ConditionalAccessContext()
+        event = context.stage(self._event("alice"))
+        event.endpoint = "/validate/check"
+        context.principal = AuthPrincipal(user=User("cornelius", self.realm1))
+
+        with mock.patch("privacyidea.lib.conditional_access.engine.evaluate_conditional_access_policies") as evaluate:
+            evaluate.return_value = ConditionalAccessEvaluation()
+            context.run_post_eval()
+
+        self.assertEqual("/validate/check", evaluate.call_args.args[0].endpoint)
 
     def test_21_reclassify_applies_only_the_fields_given(self):
         context = ConditionalAccessContext()

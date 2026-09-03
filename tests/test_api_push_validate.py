@@ -17,7 +17,7 @@ from testfixtures import LogCapture
 
 from privacyidea.lib.cache import ChallengeDTO
 from privacyidea.lib.challenge import get_challenges, delete_challenges
-from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, AuthEventReason
 from privacyidea.lib.conditional_access.engine import is_user_locked
 from privacyidea.models.conditional_access_policy import (ConditionalAccessPolicy, ConditionalAccessPolicyStage,
                                                           ConditionalAccessStageAction,
@@ -40,6 +40,7 @@ from privacyidea.lib.user import User
 from privacyidea.lib.utils import to_bytes, to_unicode, AUTH_RESPONSE
 from privacyidea.models import db, Challenge
 from privacyidea.models.authentication_log import AuthenticationLog
+from privacyidea.models.authentication_log_reason import AuthenticationLogReason
 from privacyidea.models.utils import utc_now
 from . import ldap3mock
 from .authlog_utils import assert_authentication_log, assert_authentication_log_entry
@@ -57,6 +58,7 @@ TTL = "10"
 
 
 def clear_log():
+    db.session.query(AuthenticationLogReason).delete()
     db.session.query(AuthenticationLog).delete()
     db.session.commit()
 
@@ -908,7 +910,7 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
             self.assertTrue(challenge_text in challenge_messages)
         auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED])
         assert_authentication_log_entry(auth_log_entries.all[0], user=user, serials={self.serial_push},
-                                        transaction_id=transaction_id)
+                                        transaction_id=transaction_id, endpoint='/validate/check')
 
         # Poll for the challenge; polling by itself does not create an auth-log entry.
         timestamp = datetime.datetime.now(tz=datetime.timezone.utc).isoformat()
@@ -951,7 +953,7 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
                                   "answer is not present in the smartphone request!"))
         auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_ANSWERED_FAIL])
         assert_authentication_log_entry(auth_log_entries.all[0], user=user, serials={self.serial_push},
-                                        transaction_id=transaction_id)
+                                        transaction_id=transaction_id, endpoint='/ttype/push')
 
         # Finalize fails since the challenge has not been answered -> CHALLENGE_ANSWERED_FAIL
         clear_log()
@@ -970,7 +972,9 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
                              res.json.get("result").get("authentication"), res.json)
         auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_ANSWERED_FAIL])
         assert_authentication_log_entry(auth_log_entries.all[0], user=user, serials={self.serial_push},
-                                        client_label="privacyidea-cp/2.0", transaction_id=transaction_id)
+                                        client_label="privacyidea-cp/2.0", transaction_id=transaction_id,
+                                        endpoint='/validate/check', reason=AuthEventReason.CHALLENGE_WRONG_RESPONSE,
+                                        reasons={self.serial_push: AuthEventReason.CHALLENGE_WRONG_RESPONSE})
 
         # Answer with the wrong presence_answer: the smartphone /ttype confirm fails -> CHALLENGE_ANSWERED_FAIL
         clear_log()
@@ -993,7 +997,7 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
             self.assertFalse(res.json.get("result").get("value"), res.json)
         auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_ANSWERED_FAIL])
         assert_authentication_log_entry(auth_log_entries.all[0], user=user, serials={self.serial_push},
-                                        transaction_id=transaction_id)
+                                        transaction_id=transaction_id, endpoint='/ttype/push')
 
         # Finalize still fails since the wrong answer was given -> CHALLENGE_ANSWERED_FAIL
         clear_log()
@@ -1012,7 +1016,9 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
                              res.json.get("result").get("authentication"), res.json)
         auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_ANSWERED_FAIL])
         assert_authentication_log_entry(auth_log_entries.all[0], user=user, serials={self.serial_push},
-                                        client_label="privacyidea-cp/2.0", transaction_id=transaction_id)
+                                        client_label="privacyidea-cp/2.0", transaction_id=transaction_id,
+                                        endpoint='/validate/check', reason=AuthEventReason.CHALLENGE_WRONG_RESPONSE,
+                                        reasons={self.serial_push: AuthEventReason.CHALLENGE_WRONG_RESPONSE})
 
         # Answer with the correct presence answer: the smartphone /ttype confirm succeeds -> CHALLENGE_ANSWERED_OK
         clear_log()
@@ -1031,8 +1037,9 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
             self.assertTrue(res.json.get("result").get("status"), res.json)
             self.assertTrue(res.json.get("result").get("value"), res.json)
         auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_ANSWERED_OUT_OF_BAND])
+        # The out-of-band answer is recorded against the endpoint the smartphone called, not the one the user waits on.
         assert_authentication_log_entry(auth_log_entries.all[0], user=user, serials={self.serial_push},
-                                        transaction_id=transaction_id)
+                                        transaction_id=transaction_id, endpoint="/ttype/push")
 
         # Finalize now succeeds -> LOGIN_SUCCESS
         clear_log()
@@ -1049,7 +1056,8 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
                              res.json.get("result").get("authentication"), res.json)
         auth_log_entries = assert_authentication_log([AuthEventType.LOGIN_SUCCESS])
         assert_authentication_log_entry(auth_log_entries.all[0], user=user, serials={self.serial_push},
-                                        client_label="privacyidea-cp/2.0", transaction_id=transaction_id)
+                                        client_label="privacyidea-cp/2.0", transaction_id=transaction_id,
+                                        endpoint='/validate/check')
 
         remove_token(self.serial_push)
         delete_policy("push_config")
@@ -1213,7 +1221,7 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
             self.assertNotIn("display_code", challenge_data)
         auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED])
         assert_authentication_log_entry(auth_log_entries.all[0], user=user, serials={self.serial_push},
-                                        transaction_id=transaction_id)
+                                        transaction_id=transaction_id, endpoint='/validate/check')
 
         # Step 1b: Smartphone polls for the challenge (polling creates no auth-log entry)
         timestamp = datetime.datetime.now(tz=datetime.timezone.utc).isoformat()
@@ -1259,7 +1267,7 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
             self.assertEqual(expected_message, detail["message"])
         auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_CONTINUED])
         assert_authentication_log_entry(auth_log_entries.all[0], user=user, serials={self.serial_push},
-                                        transaction_id=transaction_id)
+                                        transaction_id=transaction_id, endpoint='/ttype/push')
 
         # Verify challenge data was updated
         challenge = get_challenges(serial=self.serial_push, transaction_id=transaction_id)[0]
@@ -1282,7 +1290,8 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
                              res.json.get("result").get("authentication"), res.json)
         auth_log_entries = assert_authentication_log([AuthEventType.LOGIN_SUCCESS])
         assert_authentication_log_entry(auth_log_entries.all[0], user=user, serials={self.serial_push},
-                                        client_label="privacyidea-cp/2.0", transaction_id=transaction_id)
+                                        client_label="privacyidea-cp/2.0", transaction_id=transaction_id,
+                                        endpoint='/validate/check')
 
         # Verify backwards-compat fallback: with the push-specific policy removed,
         # the generic challenge_text policy is honored on the next challenge.
@@ -1392,7 +1401,7 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
             self.assertFalse(challenge_data.get("smartphone_confirmed"))
         auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED])
         assert_authentication_log_entry(auth_log_entries.all[0], user=user, serials={self.serial_push},
-                                        transaction_id=transaction_id)
+                                        transaction_id=transaction_id, endpoint='/validate/check')
 
         # Step 1b: Smartphone polls for the challenge (polling creates no auth-log entry)
         timestamp = datetime.datetime.now(tz=datetime.timezone.utc).isoformat()
@@ -1428,7 +1437,7 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
             self.assertTrue(display_code)
         auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_CONTINUED])
         assert_authentication_log_entry(auth_log_entries.all[0], user=user, serials={self.serial_push},
-                                        transaction_id=transaction_id)
+                                        transaction_id=transaction_id, endpoint='/ttype/push')
 
         # Finalize authentication with the WRONG display_code -> CHALLENGE_ANSWERED_FAIL
         clear_log()
@@ -1450,7 +1459,9 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
             self.assertEqual(1, token.token.failcount)
         auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_ANSWERED_FAIL])
         assert_authentication_log_entry(auth_log_entries.all[0], user=user, serials={self.serial_push},
-                                        client_label="privacyidea-cp/2.0", transaction_id=transaction_id)
+                                        client_label="privacyidea-cp/2.0", transaction_id=transaction_id,
+                                        endpoint='/validate/check', reason=AuthEventReason.CHALLENGE_WRONG_RESPONSE,
+                                        reasons={self.serial_push: AuthEventReason.CHALLENGE_WRONG_RESPONSE})
 
         remove_token(self.serial_push)
         delete_policy("push_config")
@@ -1512,8 +1523,8 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
         # check auth log entries
         auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED])
         assert_authentication_log_entry(auth_log_entries.all[0], user=User("selfservice", self.realm1),
-                                        serials={self.serial_push},
-                                        transaction_id=transaction_id)
+                                        serials={self.serial_push}, transaction_id=transaction_id,
+                                        endpoint='/validate/check')
 
         # Try to finalize authentication with a code BEFORE the smartphone confirms
         clear_log()
@@ -1531,8 +1542,9 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
         # check auth log entries
         auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_ANSWERED_FAIL])
         assert_authentication_log_entry(auth_log_entries.all[0], user=User("selfservice", self.realm1),
-                                        serials={self.serial_push},
-                                        transaction_id=transaction_id)
+                                        serials={self.serial_push}, transaction_id=transaction_id,
+                                        endpoint='/validate/check', reason=AuthEventReason.CHALLENGE_WRONG_RESPONSE,
+                                        reasons={self.serial_push: AuthEventReason.CHALLENGE_WRONG_RESPONSE})
 
         remove_token(self.serial_push)
         delete_policy("push_config")
@@ -1587,7 +1599,7 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
             self.assertTrue(transaction_id)
         auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED])
         assert_authentication_log_entry(auth_log_entries.all[0], user=user, serials={self.serial_push},
-                                        transaction_id=transaction_id)
+                                        transaction_id=transaction_id, endpoint='/validate/check')
 
         # Smartphone polls for the challenge (polling creates no auth-log entry)
         timestamp = datetime.datetime.now(tz=datetime.timezone.utc).isoformat()
@@ -1624,8 +1636,10 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
             detail = res.json.get("detail") or {}
             self.assertNotIn("display_code", detail)
         auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_DECLINED])
+        # The decline is a deliberate act on the phone, and the reason says so rather than leaving the column empty.
         assert_authentication_log_entry(auth_log_entries.all[0], user=user, serials={self.serial_push},
-                                        transaction_id=transaction_id)
+                                        transaction_id=transaction_id,
+                                        reason=AuthEventReason.CHALLENGE_DECLINED_ON_DEVICE, endpoint='/ttype/push')
 
         # Verify challenge was not confirmed
         challenge = get_challenges(serial=self.serial_push, transaction_id=transaction_id)[0]
@@ -1645,7 +1659,9 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
                              res.json.get("result").get("authentication"), res.json)
         auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_ANSWERED_FAIL])
         assert_authentication_log_entry(auth_log_entries.all[0], user=user, serials={self.serial_push},
-                                        transaction_id=transaction_id)
+                                        transaction_id=transaction_id, endpoint='/validate/check',
+                                        reason=AuthEventReason.CHALLENGE_WRONG_RESPONSE,
+                                        reasons={self.serial_push: AuthEventReason.CHALLENGE_WRONG_RESPONSE})
 
         remove_token(self.serial_push)
         delete_policy("push_config")
@@ -1687,6 +1703,7 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
             self.assertEqual(200, self.app.full_dispatch_request().status_code)
 
         def clear_log_and_challenges():
+            db.session.query(AuthenticationLogReason).delete()
             db.session.query(AuthenticationLog).delete()
             db.session.commit()
             # delete_challenges in Redis as well as in the db
@@ -1731,15 +1748,16 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
                                                   AuthEventType.LOGIN_SUCCESS])
         # All three rows share the same transaction_id: the trigger and /validate/check echo the request
         # parameter, while /ttype/push recovers it from the answered challenge.
-        assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_TRIGGERED],
-                                        user=user, serials={self.serial_push}, transaction_id=transaction_id)
+        assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_TRIGGERED], user=user,
+                                        serials={self.serial_push}, transaction_id=transaction_id,
+                                        endpoint='/validate/check')
         # Each event type here occurs once, so indexing auth_log_entries by type returns that row directly.
         assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_ANSWERED_OUT_OF_BAND], user=user,
-                                        serials={self.serial_push},
-                                        transaction_id=transaction_id)
+                                        serials={self.serial_push}, transaction_id=transaction_id,
+                                        endpoint='/ttype/push')
         assert_authentication_log_entry(auth_log_entries[AuthEventType.LOGIN_SUCCESS], user=user,
-                                        serials={self.serial_push},
-                                        transaction_id=transaction_id)
+                                        serials={self.serial_push}, transaction_id=transaction_id,
+                                        endpoint='/validate/check')
 
         # Decline: the phone declines -> CHALLENGE_DECLINED at /ttype/push, correlated by transaction_id.
         clear_log_and_challenges()
@@ -1748,9 +1766,11 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
         auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED,
                                                   AuthEventType.CHALLENGE_DECLINED])
         assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_TRIGGERED], user=user,
-                                        serials={self.serial_push}, transaction_id=transaction_id)
+                                        serials={self.serial_push}, transaction_id=transaction_id,
+                                        endpoint='/validate/check')
         assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_DECLINED], user=user,
-                                        serials={self.serial_push}, transaction_id=transaction_id)
+                                        serials={self.serial_push}, transaction_id=transaction_id,
+                                        endpoint='/ttype/push', reason=AuthEventReason.CHALLENGE_DECLINED_ON_DEVICE)
 
         # Bad signature: verification fails -> CHALLENGE_ANSWERED_FAIL at /ttype/push. No challenge matched the
         # signature, so the transaction_id is recovered via the single-open-challenge fallback.
@@ -1760,9 +1780,11 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
         auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED,
                                                   AuthEventType.CHALLENGE_ANSWERED_FAIL])
         assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_TRIGGERED], user=user,
-                                        serials={self.serial_push}, transaction_id=transaction_id)
+                                        serials={self.serial_push}, transaction_id=transaction_id,
+                                        endpoint='/validate/check')
         assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_ANSWERED_FAIL], user=user,
-                                        serials={self.serial_push}, transaction_id=transaction_id)
+                                        serials={self.serial_push}, transaction_id=transaction_id,
+                                        endpoint='/ttype/push')
         self.assertEqual(transaction_id, auth_log_entries[AuthEventType.CHALLENGE_ANSWERED_FAIL].transaction_id)
 
         remove_token(self.serial_push)
@@ -1795,9 +1817,9 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
             # The bad signature is attributed to the resolved owner and fed to the engine.
             entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED,
                                                  AuthEventType.CHALLENGE_ANSWERED_FAIL])
-            assert_authentication_log_entry(entries[AuthEventType.CHALLENGE_ANSWERED_FAIL],
-                                            user=user, serials={self.serial_push},
-                                            transaction_id=transaction_id)
+            assert_authentication_log_entry(entries[AuthEventType.CHALLENGE_ANSWERED_FAIL], user=user,
+                                            serials={self.serial_push}, transaction_id=transaction_id,
+                                            endpoint='/ttype/push')
         finally:
             self._clear_ca()
             remove_token(self.serial_push)
@@ -2087,7 +2109,8 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
         # check auth log
         auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED])
         assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_TRIGGERED], user=user,
-                                        serials={self.serial_push}, transaction_id=transaction_id)
+                                        serials={self.serial_push}, transaction_id=transaction_id,
+                                        endpoint='/validate/check')
 
         # /polltransaction: challenge not yet answered
         with self.app.test_request_context('/validate/polltransaction',
@@ -2141,7 +2164,8 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
         auth_log_entries = assert_authentication_log(
             [AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.CHALLENGE_ANSWERED_OUT_OF_BAND])
         assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_ANSWERED_OUT_OF_BAND], user=user,
-                                        serials={self.serial_push}, transaction_id=transaction_id)
+                                        serials={self.serial_push}, transaction_id=transaction_id,
+                                        endpoint='/ttype/push')
 
         # /polltransaction: challenge is now answered
         with self.app.test_request_context('/validate/polltransaction',
@@ -2171,7 +2195,7 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
              AuthEventType.LOGIN_SUCCESS])
         assert_authentication_log_entry(auth_log_entries[AuthEventType.LOGIN_SUCCESS], user=user,
                                         serials={self.serial_push}, transaction_id=transaction_id,
-                                        client_label="privacyidea-cp/2.0")
+                                        client_label="privacyidea-cp/2.0", endpoint='/validate/check')
 
         remove_token(self.serial_push)
         delete_policy("push_config")
@@ -2264,9 +2288,8 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
         # check auth log: a timed-out push_wait is recorded only as CHALLENGE_TRIGGERED
         auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED])
         assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_TRIGGERED],
-                                        user=User("selfservice", self.realm1),
-                                        serials={self.serial_push},
-                                        transaction_id=captured.get("transaction_id"))
+                                        user=User("selfservice", self.realm1), serials={self.serial_push},
+                                        transaction_id=captured.get("transaction_id"), endpoint='/validate/check')
 
         remove_token(self.serial_push)
         delete_policy("push_config")
@@ -2311,12 +2334,14 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
                                                       AuthEventType.CHALLENGE_ANSWERED_OUT_OF_BAND,
                                                       AuthEventType.LOGIN_SUCCESS])
         assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_TRIGGERED], user=user,
-                                        serials={self.serial_push}, transaction_id=smartphone.transaction_id)
-        assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_ANSWERED_OUT_OF_BAND],
-                                        user=user, serials={self.serial_push},
-                                        transaction_id=smartphone.transaction_id)
+                                        serials={self.serial_push}, transaction_id=smartphone.transaction_id,
+                                        endpoint='/validate/check')
+        assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_ANSWERED_OUT_OF_BAND], user=user,
+                                        serials={self.serial_push}, transaction_id=smartphone.transaction_id,
+                                        endpoint='/ttype/push')
         assert_authentication_log_entry(auth_log_entries[AuthEventType.LOGIN_SUCCESS], user=user,
-                                        serials={self.serial_push}, transaction_id=smartphone.transaction_id)
+                                        serials={self.serial_push}, transaction_id=smartphone.transaction_id,
+                                        endpoint='/validate/check')
 
         # The answered push_wait challenge is cleaned up, it never outlives the request
         self.assertEqual([], get_challenges(serial=self.serial_push))
@@ -2362,9 +2387,11 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
         auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED,
                                                       AuthEventType.CHALLENGE_DECLINED])
         assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_TRIGGERED], user=user,
-                                        serials={self.serial_push}, transaction_id=smartphone.transaction_id)
+                                        serials={self.serial_push}, transaction_id=smartphone.transaction_id,
+                                        endpoint='/validate/check')
         assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_DECLINED], user=user,
-                                        serials={self.serial_push}, transaction_id=smartphone.transaction_id)
+                                        serials={self.serial_push}, transaction_id=smartphone.transaction_id,
+                                        endpoint='/ttype/push', reason=AuthEventReason.CHALLENGE_DECLINED_ON_DEVICE)
 
         # The decline (valid signature) was accepted by the server
         self.assertTrue(smartphone.response["result"]["value"], smartphone.response)
@@ -2439,9 +2466,11 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
         auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED,
                                                       AuthEventType.CHALLENGE_ANSWERED_FAIL])
         assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_TRIGGERED], user=user,
-                                        serials={self.serial_push}, transaction_id=smartphone.transaction_id)
+                                        serials={self.serial_push}, transaction_id=smartphone.transaction_id,
+                                        endpoint='/validate/check')
         assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_ANSWERED_FAIL], user=user,
-                                        serials={self.serial_push}, transaction_id=smartphone.transaction_id)
+                                        serials={self.serial_push}, transaction_id=smartphone.transaction_id,
+                                        endpoint='/ttype/push')
 
         # The invalid signature was rejected by the server
         self.assertFalse(smartphone.response["result"]["value"], smartphone.response)
@@ -2501,9 +2530,10 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
                                                       AuthEventType.CHALLENGE_ANSWERED_FAIL],
                                                      same_attempt=False)
         assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_TRIGGERED], user=user,
-                                        serials={self.serial_push}, transaction_id=smartphone.transaction_id)
+                                        serials={self.serial_push}, transaction_id=smartphone.transaction_id,
+                                        endpoint='/validate/check')
         assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_ANSWERED_FAIL], user=user,
-                                        serials={self.serial_push})
+                                        serials={self.serial_push}, endpoint='/ttype/push')
 
         remove_token(self.serial_push)
         delete_policy("push_config")
@@ -2582,9 +2612,11 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
         auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED,
                                                       AuthEventType.CHALLENGE_ANSWERED_FAIL])
         assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_TRIGGERED], user=user,
-                                        serials={self.serial_push}, transaction_id=transaction_id)
+                                        serials={self.serial_push}, transaction_id=transaction_id,
+                                        endpoint='/validate/check')
         assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_ANSWERED_FAIL], user=user,
-                                        serials={self.serial_push}, transaction_id=transaction_id)
+                                        serials={self.serial_push}, transaction_id=transaction_id,
+                                        endpoint='/ttype/push')
 
         remove_token(self.serial_push)
         delete_policy("push_config")

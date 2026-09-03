@@ -99,7 +99,7 @@ class ConditionOperator(str, Enum):
 
     Only set membership exists for now, which is deliberate rather than
     provisional: every condition type currently defined reads from a closed,
-    enumerable vocabulary (realm names, roles), where a multi-select of known
+    enumerable vocabulary (realm names, roles, endpoints), where a multi-select of known
     values beats a free-text comparator - it cannot be typo'd into a condition
     that silently never matches. Scalar comparison operators (equality, regex)
     earn their place when a condition type with an *open* value space arrives, and
@@ -213,6 +213,7 @@ class ConditionType(str, Enum):
     """The condition types shipped today. See :data:`CONDITION_TYPES` for their specs."""
     USER_REALM = "USER_REALM"
     USER_ROLE = "USER_ROLE"
+    ENDPOINT = "ENDPOINT"
 
     def __str__(self) -> str:
         return self.value
@@ -238,6 +239,32 @@ def _resolve_user_role(context: "CAContext") -> Any:
     return context.user_role or None
 
 
+def _resolve_endpoint(context: "CAContext") -> Any:
+    """The endpoint the request authenticates against, or ``None`` outside a request (see
+    :func:`~privacyidea.api.lib.utils.request_endpoint`)."""
+    return context.endpoint or None
+
+
+# The endpoints an authentication can arrive at, i.e. the paths that record an authentication-log row. The vocabulary
+# of an ENDPOINT condition and of the log's endpoint filter, so both offer a list instead of a path typed by hand that
+# would silently never match.
+#
+# Hard-coded because it cannot be derived: whether a route authenticates is decided by it calling
+# ``log_authentication``, which no registry records. **A new authenticating endpoint has to be added here**, and
+# EndpointConditionChoicesTestCase asserts every path listed is a route this app actually serves, so a rename cannot
+# leave a dead choice behind.
+AUTHENTICATING_ENDPOINTS: tuple[str, ...] = (
+    "/auth",
+    "/validate/check",
+    "/validate/radiuscheck",
+    "/validate/triggerchallenge",
+    "/validate/initialize",
+    # The out-of-band push answer. The route is /ttype/<ttype>, but push is the only token type that authenticates
+    # through it, so the path it is reached under is what an admin selects.
+    "/ttype/push",
+)
+
+
 def _realm_choices() -> list[str]:
     """The currently configured realm names. Imported lazily to keep this module free of a config import cycle."""
     from privacyidea.lib.realm import get_realms
@@ -259,6 +286,13 @@ CONDITION_TYPES: dict[str, ConditionTypeSpec] = {
         resolve=_resolve_user_role,
         choices=lambda: sorted(AuthLogUserRole),
         log_column=AuthenticationLog.user_role),
+    ConditionType.ENDPOINT: ConditionTypeSpec(
+        name=ConditionType.ENDPOINT,
+        label=lazy_gettext("Endpoint"),
+        operators=frozenset({ConditionOperator.IN, ConditionOperator.NOT_IN}),
+        resolve=_resolve_endpoint,
+        choices=lambda: sorted(AUTHENTICATING_ENDPOINTS),
+        log_column=AuthenticationLog.endpoint),
 }
 
 

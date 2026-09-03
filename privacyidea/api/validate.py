@@ -142,9 +142,11 @@ from privacyidea.lib.utils import get_plugin_info_from_useragent, AUTH_RESPONSE
 from privacyidea.lib.utils import is_true, get_computer_name_from_user_agent
 from .lib.policyhelper import check_last_auth_policy, get_realm_for_authentication
 from .lib.utils import (get_required, get_auth_error_status_code, send_error, send_result,
-                        log_authentication)
-from ..lib.conditional_access.authentication_event_types import (AuthEventType, AUTH_EVENT_TYPE_KEY,
-                                                                 LOG_TRANSACTION_ID_KEY)
+                        log_authentication, pop_auth_event_reason)
+from ..lib.conditional_access.authentication_event_types import (AuthEventType, AuthEventReason,
+                                                                AUTH_EVENT_TYPE_KEY, AUTH_EVENT_REASON_KEY,
+                                                                AUTH_EVENT_REASON_DETAIL_KEY, build_reason_detail,
+                                                                LOG_TRANSACTION_ID_KEY)
 from ..lib.conditional_access.request_context import continue_attempt
 from ..lib.decorators import (check_user_serial_or_cred_id_in_request)
 from ..lib.fido2.challenge import create_fido2_challenge, verify_fido2_challenge
@@ -543,6 +545,8 @@ def check():
         "serial_list": [],
         "is_container_challenge": False,
         AUTH_EVENT_TYPE_KEY: None,
+        AUTH_EVENT_REASON_KEY: [],
+        AUTH_EVENT_REASON_DETAIL_KEY: None,
         # Build the token options from the request, but strip the internal keys
         "options": {k: v for k, v in request.all_data.items() if k not in INTERNAL_OPTION_KEYS}
     }
@@ -566,12 +570,33 @@ def check():
         # A locked token raises before the lib can classify it, so classify it here instead.
         if error.id == Error.TOKEN_LOCKED:
             context[AUTH_EVENT_TYPE_KEY] = AuthEventType.NO_USABLE_TOKEN
+            # TOKEN_LOCKED is raised only for a revoked token: check_token_list drops those before any other check.
+            _record_context_reason(context, AuthEventReason.TOKEN_REVOKED)
         raise
     finally:
         # Stage the single authentication-log row for this request; it is written at teardown, which then lets the
         # conditional-access engine react to the classified outcome.
         _log_authentication_event(context)
     return response
+
+
+def _record_context_reason(context: dict, reason: AuthEventReason, serial: str | None = None,
+                           policies: list[str] | None = None) -> None:
+    """
+    Record *reason* on the request context, for a handler that classifies an event itself instead of taking it off a
+    lib call's details.
+
+    Those handlers know exactly why they turned the request away, and a row with no reason there would answer "no
+    cause recorded" for a cause the code had in hand - so filtering by reason would silently miss the endpoint. Such a
+    handler knows exactly one reason, so it *replaces* the list. *serial* also puts the reason in the per-serial
+    detail, matching what the token layer records. *policies* does the same for a policy-decided reason, matching
+    how :func:`~privacyidea.lib.policydecorators.auth_lastauth` attributes the same LASTAUTH check.
+    """
+    context[AUTH_EVENT_REASON_KEY] = [reason]
+    if serial:
+        context[AUTH_EVENT_REASON_DETAIL_KEY] = build_reason_detail(reasons={serial: reason})
+    elif policies:
+        context[AUTH_EVENT_REASON_DETAIL_KEY] = build_reason_detail(policies=policies)
 
 
 def _handle_enrollment_cancellation(data: dict) -> Response:
@@ -669,6 +694,7 @@ def _handle_fido2_auth(context: dict, credential_id: str):
     if (PolicyAction.DISABLED_TOKEN_TYPES in request.all_data and
             token.get_type() in request.all_data[PolicyAction.DISABLED_TOKEN_TYPES]):
         context[AUTH_EVENT_TYPE_KEY] = AuthEventType.NO_USABLE_TOKEN
+        _record_context_reason(context, AuthEventReason.TOKEN_TYPE_DISABLED, token.get_serial())
         raise PolicyError(_("The authentication method is not available."))
 
     # Handle Enrollment vs Authentication
@@ -705,12 +731,14 @@ def _handle_fido2_auth(context: dict, credential_id: str):
         # above for the enrollment branch.
         fido2_auth(request, None)
 
-        if not check_last_auth_policy(g, token):
+        last_auth_ok, last_auth_policies = check_last_auth_policy(g, token)
+        if not last_auth_ok:
             log.debug(f"Last authentication policy check failed for token {token.get_serial()}.")
             context["details"]["message"] = _(
                 "Last authentication policy check failed for token {serial}").format(
                 serial=token.get_serial())
             context[AUTH_EVENT_TYPE_KEY] = AuthEventType.NOT_AUTHORIZED
+            _record_context_reason(context, AuthEventReason.LAST_AUTH_TOO_OLD, policies=last_auth_policies)
             return
 
         if not token.is_active():
@@ -726,6 +754,7 @@ def _handle_fido2_auth(context: dict, credential_id: str):
             })
             # Owned-but-unusable token (disabled) -> NO_USABLE_TOKEN
             context[AUTH_EVENT_TYPE_KEY] = AuthEventType.NO_USABLE_TOKEN
+            _record_context_reason(context, AuthEventReason.TOKEN_DISABLED, token.get_serial())
             return
 
         try:
@@ -790,6 +819,7 @@ def _handle_serial_auth(context: dict, serial: str):
     if not otp_only:
         success, details = check_serial_pass(serial, password, options=context["options"])
         context[AUTH_EVENT_TYPE_KEY] = details.pop(AUTH_EVENT_TYPE_KEY, None)
+        context[AUTH_EVENT_REASON_KEY], context[AUTH_EVENT_REASON_DETAIL_KEY] = pop_auth_event_reason(details)
         context[LOG_TRANSACTION_ID_KEY] = details.pop(LOG_TRANSACTION_ID_KEY, None)
     else:
         success, details = check_otp(serial, password)
@@ -844,6 +874,8 @@ def _handle_standard_auth(context: dict):
 
     event_type = details.pop(AUTH_EVENT_TYPE_KEY, None)
     context[AUTH_EVENT_TYPE_KEY] = event_type
+    # Why it came out that way, classified by the token layer alongside the event itself.
+    context[AUTH_EVENT_REASON_KEY], context[AUTH_EVENT_REASON_DETAIL_KEY] = pop_auth_event_reason(details)
     # Log-only transaction_id (push_wait): correlate the terminal row without exposing it in the response.
     context[LOG_TRANSACTION_ID_KEY] = details.pop(LOG_TRANSACTION_ID_KEY, None)
 
@@ -943,6 +975,8 @@ def _log_authentication_event(context):
         user=context["user"],
         serial=",".join(context["serial_list"]) or None,
         transaction_id=logged_txn,
+        reasons=context.get(AUTH_EVENT_REASON_KEY),
+        reason_detail=context.get(AUTH_EVENT_REASON_DETAIL_KEY),
     )
 
 

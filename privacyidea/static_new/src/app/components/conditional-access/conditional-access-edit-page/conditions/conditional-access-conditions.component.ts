@@ -86,6 +86,16 @@ const CONDITION_COPY: Partial<Record<KnownConditionType, ConditionRowCopy>> = {
       "admin-internal": $localize`Administrator (internal)`,
       "admin-external": $localize`Administrator (external)`
     }
+  },
+  ENDPOINT: {
+    valuesLabel: $localize`Endpoints`,
+    operatorAriaLabel: $localize`How to compare the endpoint`,
+    hints: {
+      IN: $localize`Restrict the endpoints this policy is applied to.`,
+      NOT_IN: $localize`Exclude endpoints from this policy.`
+    },
+    clearToolTip: $localize`Remove all selected endpoints`
+    // No valueLabels: an endpoint is its request path, and the path is what an admin recognizes it by.
   }
 };
 

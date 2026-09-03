@@ -189,10 +189,10 @@ export class ConditionalAccessActionItemComponent {
     return allowed.includes(current) ? allowed : [...allowed, current];
   });
 
-  // Whether the selected action is valid for the current target; switching the target can leave a
-  // stale, now-incompatible action (e.g. LOCK_USER under source_ip), flagged here so it is fixed
-  // before the backend 400s, though treated as valid while the allowed list is still loading
-  // (empty), since compatibility cannot yet be judged.
+  // Whether the selected action is valid for the current target. Changing the
+  // target can leave a stale, now-incompatible action (e.g. LOCK_USER after
+  // switching to source_ip); flag it so it's fixed before the backend 400s. While
+  // the allowed list is still loading (empty) we cannot judge, so treat as valid.
   readonly isActionAllowedForTarget = computed<boolean>(() => {
     const allowed = this.policyService.actionsForTarget(this.target());
     return allowed.length === 0 || allowed.includes(this.action().action_type);

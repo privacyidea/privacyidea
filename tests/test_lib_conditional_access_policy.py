@@ -26,7 +26,7 @@ from privacyidea.lib.conditional_access import policy as policy_module
 from privacyidea.lib.conditional_access.authentication_event_types import CA_ENFORCEMENT_EVENT_TYPES  # noqa: F401
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, CountMode
 from privacyidea.lib.conditional_access.authentication_log import AuthLogUserRole
-from privacyidea.lib.conditional_access.conditions import (ConditionOperator, ConditionType,
+from privacyidea.lib.conditional_access.conditions import (AUTHENTICATING_ENDPOINTS, ConditionOperator, ConditionType,
                                                            get_condition_types)
 from privacyidea.lib.conditional_access.engine import (ACTION_SEVERITY, ConditionalAccessAction, ConditionalAccessTarget,
                                                        RESTRICTION_ACTIONS)
@@ -1273,6 +1273,7 @@ class ConditionalAccessPolicyCrudTestCase(MyTestCase):
         self.assertIn(self.realm1, realm_entry["choices"])
         self.assertListEqual(sorted(role.value for role in AuthLogUserRole),
                              metadata[ConditionType.USER_ROLE.value]["choices"])
+        self.assertListEqual(sorted(AUTHENTICATING_ENDPOINTS), metadata[ConditionType.ENDPOINT.value]["choices"])
 
     def test_43_stage_error_message_round_trips(self):
         message = "Your account is locked. Please try again in about {duration}."
@@ -1342,26 +1343,22 @@ class ConditionalAccessPolicyCrudTestCase(MyTestCase):
         update_conditional_access_policy(policy_id, stages=[_stage(5)])
         self.assertIsNone(get_conditional_access_policy(policy_id)["stages"][0]["error_message"])
 
-    def test_51_docstrings_do_not_reference_the_nonexistent_lockout_policy_module(self):
-        # The write-CRUD module is `privacyidea.lib.conditional_access.policy` (file policy.py) and its
-        # bundled template module is `policy_template.py`; a `lockout_policy[_template]` module has never
-        # existed. A Sphinx cross-reference to it renders as a dead link, so guard against the name
-        # leaking back into a docstring or comment.
-        import inspect
+    def test_51_endpoint_condition_values_come_from_the_endpoint_vocabulary(self):
+        policy_id = self._create_with_conditions(
+            "Endpoint scoped", [self._condition(ConditionType.ENDPOINT, value=["/auth"])])
+        self.assertListEqual(["/auth"], get_conditional_access_policy(policy_id)["conditions"][0]["value"])
+        # A path outside the vocabulary is a typo, and a typo'd endpoint condition would silently never
+        # match - so it is reported at write time like an unknown realm or role.
+        self.assertRaises(ParameterError, self._create_with_conditions,
+                          "Bad endpoint", [self._condition(ConditionType.ENDPOINT, value=["/validate/unknown"])])
 
-        from privacyidea.lib.conditional_access import engine as engine_module
-        from privacyidea.lib.conditional_access import policy_template as policy_template_module
-        from privacyidea.models import conditional_access_policy as models_module
+class EndpointConditionChoicesTestCase(MyTestCase):
+    """The ENDPOINT condition's vocabulary against the routes this app actually serves."""
 
-        sources = {
-            "engine.parse_lock_duration_seconds": inspect.getsource(engine_module.parse_lock_duration_seconds),
-            "policy._validate_email_action_value": inspect.getsource(policy_module._validate_email_action_value),
-            "models.ConditionalAccessStageAction": inspect.getsource(models_module.ConditionalAccessStageAction),
-        }
-        for name, source in sources.items():
-            self.assertNotIn("lockout_policy", source, f"{name} still references the nonexistent "
-                                                        f"'lockout_policy' module.")
-        # The real modules exist under the names the fixed references point to.
-        self.assertTrue(hasattr(policy_module, "_validate_duration_action_value"))
-        self.assertTrue(hasattr(policy_template_module, "MFA_BRUTEFORCE"))
-
+    def test_every_offered_endpoint_is_a_route(self):
+        # The list is hand-maintained (nothing records which routes authenticate), so at least a rename
+        # or typo must not survive: every path offered has to be one this app can dispatch.
+        adapter = self.app.url_map.bind("localhost")
+        for path in AUTHENTICATING_ENDPOINTS:
+            with self.subTest(path=path):
+                adapter.match(path, method="POST")

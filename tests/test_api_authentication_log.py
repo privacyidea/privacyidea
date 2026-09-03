@@ -25,11 +25,12 @@ import inspect
 
 import mock
 
-from privacyidea.api.authentication_log import _ROW_FILTER_PARAMS, _STATISTICS_FILTER_PARAMS
-from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
+from privacyidea.api.authentication_log import _ENTRY_FILTER_PARAMS
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, AuthEventReason
 from privacyidea.lib.conditional_access.authentication_log import (log_authentication_event, AuthLogUserRole,
                                                                   get_authentication_log_statistics,
                                                                   MAX_STATISTICS_BINS)
+from privacyidea.lib.conditional_access.conditions import AUTHENTICATING_ENDPOINTS
 from privacyidea.lib.conditional_access.outcome_log import record_outcomes
 from privacyidea.lib.policy import set_policy, delete_policy, SCOPE, PolicyAction
 from privacyidea.lib.realm import set_realm, delete_realm
@@ -204,28 +205,28 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
     def test_filter_by_outcome_action_type(self):
         ids = self._seed_outcomes()
         try:
-            value = self._get({"ca_action_type": "LOCK_USER"})["result"]["value"]
+            value = self._get({"ca_action_types": "LOCK_USER"})["result"]["value"]
             self.assertEqual(2, value["count"])
             self.assertSetEqual({ids["locked"], ids["simulated"]}, self._returned_ids(value))
             # A list and a wildcard work as for every other filter, and "*" means "acted on at all".
             self.assertSetEqual({ids["locked"], ids["notified"], ids["simulated"]},
-                                self._returned_ids(self._get({"ca_action_type": "LOCK_USER,EMAIL_ADMIN"})
+                                self._returned_ids(self._get({"ca_action_types": "LOCK_USER,EMAIL_ADMIN"})
                                                    ["result"]["value"]))
             self.assertSetEqual({ids["notified"]},
-                                self._returned_ids(self._get({"ca_action_type": "EMAIL*"})["result"]["value"]))
+                                self._returned_ids(self._get({"ca_action_types": "EMAIL*"})["result"]["value"]))
             self.assertSetEqual({ids["locked"], ids["notified"], ids["simulated"]},
-                                self._returned_ids(self._get({"ca_action_type": "*"})["result"]["value"]))
+                                self._returned_ids(self._get({"ca_action_types": "*"})["result"]["value"]))
         finally:
             self._clear_outcomes()
 
     def test_filter_by_outcome_policy_name(self):
         ids = self._seed_outcomes()
         try:
-            value = self._get({"ca_policy_name": "Notify"})["result"]["value"]
+            value = self._get({"ca_policy_names": "Notify"})["result"]["value"]
             self.assertSetEqual({ids["notified"], ids["simulated"]}, self._returned_ids(value))
             # The outcome columns use the same case-sensitive collation as the log, so the flag is needed here too.
-            self.assertEqual(0, self._get({"ca_policy_name": "notify"})["result"]["value"]["count"])
-            self.assertEqual(2, self._get({"ca_policy_name": "notify", "case_insensitive": "1"})
+            self.assertEqual(0, self._get({"ca_policy_names": "notify"})["result"]["value"]["count"])
+            self.assertEqual(2, self._get({"ca_policy_names": "notify", "case_insensitive": "1"})
                              ["result"]["value"]["count"])
         finally:
             self._clear_outcomes()
@@ -244,17 +245,18 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
             self._clear_outcomes()
 
     def test_outcome_filters_apply_to_one_and_the_same_outcome(self):
-        # The entry has two outcomes, LOCK_USER by "Brute force" and EMAIL_ADMIN by "Notify"; asking for LOCK_USER *by
-        # Notify* must not match it, even though each half is true of a different outcome on the same entry.
+        # The entry has two outcomes: LOCK_USER by "Brute force" and EMAIL_ADMIN by "Notify". Asking for
+        # a LOCK_USER *by Notify* must not match it, even though each half is true of a different outcome of
+        # the same entry.
         event_id = log_authentication_event(event_type=AuthEventType.MFA_FAIL, resolver="res", uid="9",
                                             realm=self.realm1)
         db.session.commit()
         record_outcomes([self._make_outcome("LOCK_USER", "Brute force"),
                          self._make_outcome("EMAIL_ADMIN", "Notify")], event_id)
         try:
-            self.assertEqual(0, self._get({"ca_action_type": "LOCK_USER", "ca_policy_name": "Notify"})
+            self.assertEqual(0, self._get({"ca_action_types": "LOCK_USER", "ca_policy_names": "Notify"})
                              ["result"]["value"]["count"])
-            self.assertEqual(1, self._get({"ca_action_type": "LOCK_USER", "ca_policy_name": "Brute force"})
+            self.assertEqual(1, self._get({"ca_action_types": "LOCK_USER", "ca_policy_names": "Brute force"})
                              ["result"]["value"]["count"])
         finally:
             self._clear_outcomes()
@@ -264,10 +266,11 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
         event_id = log_authentication_event(event_type=AuthEventType.MFA_FAIL, resolver="res", uid="8",
                                             realm=self.realm1)
         db.session.commit()
-        record_outcomes([self._make_outcome("LOCK_USER", "P1"), self._make_outcome("LOCK_USER", "P2"),
+        record_outcomes([self._make_outcome("LOCK_USER", "P1"),
+                         self._make_outcome("LOCK_USER", "P2"),
                          self._make_outcome("LOCK_USER", "P3")], event_id)
         try:
-            value = self._get({"ca_action_type": "LOCK_USER"})["result"]["value"]
+            value = self._get({"ca_action_types": "LOCK_USER"})["result"]["value"]
             self.assertEqual(1, value["count"])
             self.assertListEqual([event_id], [entry["id"] for entry in value["auth_logs"]])
         finally:
@@ -277,22 +280,22 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
         ids = self._seed_outcomes()
         try:
             self.assertSetEqual({ids["locked"]},
-                                self._returned_ids(self._get({"ca_action_type": "LOCK_USER", "uid": "1"})
+                                self._returned_ids(self._get({"ca_action_types": "LOCK_USER", "uids": "1"})
                                                    ["result"]["value"]))
-            self.assertEqual(0, self._get({"ca_action_type": "LOCK_USER",
-                                           "event_type": AuthEventType.LOGIN_SUCCESS})["result"]["value"]["count"])
+            self.assertEqual(0, self._get({"ca_action_types": "LOCK_USER",
+                                           "event_types": AuthEventType.LOGIN_SUCCESS})["result"]["value"]["count"])
         finally:
             self._clear_outcomes()
 
     def test_filter_by_event_type(self):
         self._seed(include_no_realm=True)
-        value = self._get({"event_type": AuthEventType.MFA_FAIL})["result"]["value"]
+        value = self._get({"event_types": AuthEventType.MFA_FAIL})["result"]["value"]
         self.assertEqual(1, value["count"])
         self.assertEqual(AuthEventType.MFA_FAIL, value["auth_logs"][0]["event_type"])
 
     def test_filter_by_event_type_csv_list(self):
         self._seed(include_no_realm=True)
-        value = self._get({"event_type": f"{AuthEventType.MFA_FAIL},{AuthEventType.USER_UNKNOWN}"})["result"]["value"]
+        value = self._get({"event_types": f"{AuthEventType.MFA_FAIL},{AuthEventType.USER_UNKNOWN}"})["result"]["value"]
         self.assertEqual(2, value["count"])
         self.assertSetEqual({AuthEventType.MFA_FAIL, AuthEventType.USER_UNKNOWN},
                             {entry["event_type"] for entry in value["auth_logs"]})
@@ -300,7 +303,7 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
     def test_filter_by_event_type_wildcard(self):
         self._seed(include_no_realm=True)
         # the two LOGIN_SUCCESS rows match the LOGIN* prefix; MFA_FAIL and USER_UNKNOWN do not
-        value = self._get({"event_type": "LOGIN*"})["result"]["value"]
+        value = self._get({"event_types": "LOGIN*"})["result"]["value"]
         self.assertEqual(2, value["count"])
         self.assertSetEqual({AuthEventType.LOGIN_SUCCESS}, {entry["event_type"] for entry in value["auth_logs"]})
 
@@ -313,9 +316,9 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
                                  user_role=AuthLogUserRole.ADMIN_EXTERNAL)
         db.session.commit()
 
-        self.assertEqual(1, self._get({"user_role": AuthLogUserRole.USER})["result"]["value"]["count"])
+        self.assertEqual(1, self._get({"user_roles": AuthLogUserRole.USER})["result"]["value"]["count"])
         # The shared 'admin-' prefix lets one wildcard filter match either admin kind.
-        value = self._get({"user_role": "admin*"})["result"]["value"]
+        value = self._get({"user_roles": "admin*"})["result"]["value"]
         self.assertEqual(2, value["count"])
         self.assertSetEqual({AuthLogUserRole.ADMIN_INTERNAL, AuthLogUserRole.ADMIN_EXTERNAL},
                             {entry["user_role"] for entry in value["auth_logs"]})
@@ -325,11 +328,11 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
                                  username="Alice")
         db.session.commit()
 
-        # The log's string columns use a case-sensitive collation on every backend, so "alice" does not match the stored
-        # "Alice" without the case_insensitive flag, and does with it.
-        self.assertEqual(0, self._get({"username": "alice"})["result"]["value"]["count"])
-        self.assertEqual(1, self._get({"username": "alice", "case_insensitive": "1"})["result"]["value"]["count"])
-        self.assertEqual(1, self._get({"username": "Alice"})["result"]["value"]["count"])
+        # The log's string columns use a case-sensitive collation, so the unflagged default is case-sensitive on every
+        # backend: "alice" does not match the stored "Alice" without the flag, and does with it.
+        self.assertEqual(0, self._get({"usernames": "alice"})["result"]["value"]["count"])
+        self.assertEqual(1, self._get({"usernames": "alice", "case_insensitive": "1"})["result"]["value"]["count"])
+        self.assertEqual(1, self._get({"usernames": "Alice"})["result"]["value"]["count"])
 
     def test_filter_by_client_label(self):
         log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res", uid="1", realm=self.realm1,
@@ -338,7 +341,7 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
                                  client_label="webui")
         db.session.commit()
 
-        value = self._get({"client_label": "vpn"})["result"]["value"]
+        value = self._get({"client_labels": "vpn"})["result"]["value"]
         self.assertEqual(1, value["count"])
         self.assertEqual("vpn", value["auth_logs"][0]["client_label"])
 
@@ -350,10 +353,10 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
                                  source_ip="10.0.0.18", peer_ip="10.0.0.18", source_ip_source="REMOTE_ADDR")
         db.session.commit()
 
-        value = self._get({"peer_ip": "10.0.0.17"})["result"]["value"]
+        value = self._get({"peer_ips": "10.0.0.17"})["result"]["value"]
         self.assertEqual(1, value["count"])
         self.assertEqual("203.0.113.5", value["auth_logs"][0]["source_ip"])
-        value = self._get({"source_ip_source": "REMOTE_ADDR"})["result"]["value"]
+        value = self._get({"source_ip_sources": "REMOTE_ADDR"})["result"]["value"]
         self.assertEqual(1, value["count"])
 
     def test_entries_carry_the_client_derivation(self):
@@ -373,6 +376,49 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
         self.assertEqual(2, len(entry["ip_chain"]))
         self.assertTrue(entry["ip_chain"][1]["effective"])
 
+    def test_filter_by_reason(self):
+        log_authentication_event(event_type=AuthEventType.NO_USABLE_TOKEN, resolver="res", uid="1", realm=self.realm1,
+                                 reasons=[str(AuthEventReason.TOKEN_DISABLED), str(AuthEventReason.WRONG_OTP)])
+        log_authentication_event(event_type=AuthEventType.NO_USABLE_TOKEN, resolver="res", uid="2", realm=self.realm1,
+                                 reasons=[str(AuthEventReason.TOKEN_FAILCOUNT_EXCEEDED)])
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res", uid="3", realm=self.realm1)
+        db.session.commit()
+
+        # The point of the reasons: one event type, several causes, each filterable on its own - including a cause
+        # that is not the first one the entry lists.
+        value = self._get({"reasons": str(AuthEventReason.TOKEN_DISABLED)})["result"]["value"]
+        self.assertEqual(1, value["count"])
+        self.assertEqual([str(AuthEventReason.TOKEN_DISABLED), str(AuthEventReason.WRONG_OTP)],
+                         value["auth_logs"][0]["reasons"])
+        self.assertEqual(1, self._get({"reasons": str(AuthEventReason.WRONG_OTP)})["result"]["value"]["count"])
+        self.assertEqual(2, self._get({"reasons": f"{AuthEventReason.TOKEN_DISABLED},"
+                                                  f"{AuthEventReason.TOKEN_FAILCOUNT_EXCEEDED}"})
+                         ["result"]["value"]["count"])
+        # An entry matches once, however many of its reasons the filter names.
+        self.assertEqual(1, self._get({"reasons": f"{AuthEventReason.TOKEN_DISABLED},{AuthEventReason.WRONG_OTP}"})
+                         ["result"]["value"]["count"])
+        # A wildcard groups a family of reasons - every token-state one, here.
+        self.assertEqual(2, self._get({"reasons": "TOKEN_*"})["result"]["value"]["count"])
+        # The successful row has no reason at all, so no reason filter matches it.
+        self.assertEqual([], self._get({"event_types": str(AuthEventType.LOGIN_SUCCESS)})
+                         ["result"]["value"]["auth_logs"][0]["reasons"])
+
+    def test_filter_by_endpoint(self):
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res", uid="1", realm=self.realm1,
+                                 endpoint="/validate/check")
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res", uid="2", realm=self.realm1,
+                                 endpoint="/auth")
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res", uid="3", realm=self.realm1,
+                                 endpoint="/ttype/push")
+        db.session.commit()
+
+        value = self._get({"endpoints": "/auth"})["result"]["value"]
+        self.assertEqual(1, value["count"])
+        self.assertEqual("/auth", value["auth_logs"][0]["endpoint"])
+        # A list matches either endpoint, a wildcard the whole group below a prefix.
+        self.assertEqual(2, self._get({"endpoints": "/auth,/ttype/push"})["result"]["value"]["count"])
+        self.assertEqual(1, self._get({"endpoints": "/validate/*"})["result"]["value"]["count"])
+
     def test_filter_by_attempt_id(self):
         log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res", uid="1", realm=self.realm1,
                                  attempt_id="att-x")
@@ -380,7 +426,7 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
                                  attempt_id="att-y")
         db.session.commit()
 
-        value = self._get({"attempt_id": "att-x"})["result"]["value"]
+        value = self._get({"attempt_ids": "att-x"})["result"]["value"]
         self.assertEqual(1, value["count"])
         self.assertEqual("att-x", value["auth_logs"][0]["attempt_id"])
 
@@ -430,6 +476,41 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
         self.assertEqual("failure", by_name["USER_LOCKED"])
         self.assertEqual("failure", by_name["IP_BLOCKED"])
         self.assertEqual("failure", by_name["ACCESS_DENIED"])
+
+    def test_reasons_lists_the_whole_vocabulary(self):
+        # Served for the same reason the event types are: the WebUI filters by reason and must not keep its own
+        # copy.
+        with self.app.test_request_context("/authenticationlog/reasons", method="GET",
+                                           headers={"Authorization": self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+        value = res.json["result"]["value"]
+        self.assertListEqual([str(reason) for reason in AuthEventReason], value)
+        self.assertIn("TOKEN_DISABLED", value)
+        self.assertIn("AUTHORIZATION_DENIED", value)
+
+    def test_endpoints_lists_the_authenticating_paths(self):
+        # Served like the reason vocabulary, so the endpoint filter can offer a selection. The list is the configured
+        # one, not a distinct query over the logged rows: a path nothing has hit yet is still selectable.
+        with self.app.test_request_context("/authenticationlog/endpoints", method="GET",
+                                           headers={"Authorization": self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+        value = res.json["result"]["value"]
+        self.assertListEqual(sorted(AUTHENTICATING_ENDPOINTS), value)
+        self.assertIn("/validate/check", value)
+        self.assertIn("/auth", value)
+
+    def test_endpoints_denied_without_action(self):
+        set_policy("authlog_other", scope=SCOPE.ADMIN, action=PolicyAction.ENABLE)
+        try:
+            with self.app.test_request_context("/authenticationlog/endpoints", method="GET",
+                                               headers={"Authorization": self.at}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(403, res.status_code, res.json)
+                self.assertFalse(res.json["result"]["status"], res.json)
+        finally:
+            delete_policy("authlog_other")
 
     def test_event_types_accessible_to_user(self):
         self.authenticate_selfservice_user()
@@ -780,7 +861,8 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
                              self._statistics_totals(self._statistics({"source_ips": "10.0.0.1"})))
         self.assertDictEqual({str(AuthEventType.MFA_FAIL): 2},
                              self._statistics_totals(self._statistics({"source_ips": "10.0.0.1,10.0.0.2"})))
-        # The singular name the listing uses is not a filter here, so it must not silently narrow the result.
+        # The plural is the only name recognized, so the singular is not a filter and must not silently narrow the
+        # result either.
         self.assertDictEqual({str(AuthEventType.MFA_FAIL): 2},
                              self._statistics_totals(self._statistics({"source_ip": "10.0.0.1"})))
 
@@ -801,12 +883,27 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
         finally:
             delete_policy("authlog_user")
 
+    def test_statistics_filters_on_the_reasons_and_the_endpoint(self):
+        # The two filters the listing gained last: reasons matches the classifying row's reason rows rather than a
+        # column of its own, so a summary filtered by it must count the attempt behind those rows, not drop it.
+        log_authentication_event(event_type=AuthEventType.MFA_FAIL, resolver="res", uid="1", realm=self.realm1,
+                                 endpoint="/validate/check", reasons=[str(AuthEventReason.WRONG_OTP)])
+        log_authentication_event(event_type=AuthEventType.MFA_FAIL, resolver="res", uid="2", realm=self.realm1,
+                                 endpoint="/auth", reasons=[str(AuthEventReason.TOKEN_DISABLED)])
+        db.session.commit()
+
+        self.assertDictEqual({str(AuthEventType.MFA_FAIL): 1},
+                             self._statistics_totals(self._statistics({"reasons": str(AuthEventReason.WRONG_OTP)})))
+        self.assertDictEqual({str(AuthEventType.MFA_FAIL): 1},
+                             self._statistics_totals(self._statistics({"endpoints": "/auth"})))
+        both = {"endpoints": "/auth", "reasons": str(AuthEventReason.WRONG_OTP)}
+        self.assertDictEqual({}, self._statistics_totals(self._statistics(both)))
+
     def test_statistics_filter_names_match_the_lib_signature(self):
-        # The plural names are derived from the listing's singular ones and passed straight through as keyword
+        # The entry filters the listing offers are passed straight through to the statistics lib as keyword
         # arguments, so a filter renamed on either side has to fail here rather than stop filtering silently.
         parameters = inspect.signature(get_authentication_log_statistics).parameters
-        self.assertListEqual([f"{name}s" for name in _ROW_FILTER_PARAMS], _STATISTICS_FILTER_PARAMS)
-        self.assertSetEqual(set(), set(_STATISTICS_FILTER_PARAMS) - set(parameters))
+        self.assertSetEqual(set(), set(_ENTRY_FILTER_PARAMS) - set(parameters))
 
     def test_statistics_respects_the_visibility_scope(self):
         self._seed()
@@ -826,4 +923,4 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
         db.session.commit()
 
         self.assertDictEqual({str(AuthEventType.MFA_FAIL): 1},
-                             self._statistics_totals(self._statistics({"ca_action_type": "LOCK_USER"})))
+                             self._statistics_totals(self._statistics({"ca_action_types": "LOCK_USER"})))
