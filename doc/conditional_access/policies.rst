@@ -136,8 +136,14 @@ lock permanently at 20. Thresholds must be unique within a policy.
 By default an action fires **once**, exactly when the count reaches the
 threshold: an email configured at 8 is sent on the 8th failure and not again on
 the 9th. Enable **re-trigger above threshold** for an action that should fire on
-every further request as well. ``DENY`` defaults to re-trigger, as it is a one-time action denying only the current
-request.
+every further request as well. Re-triggering stops where the next stage begins:
+an action re-triggering at threshold 8 fires from the 8th failure up to the one
+before the next stage's threshold, and once the policy has escalated it does not
+resume - not even on the requests the more severe stage itself sits out. Each
+stage therefore owns one range of counts, and escalation is a hand-over rather
+than an overlay. ``DENY`` defaults to re-trigger, as it is a one-time action
+denying only the current request; it follows the same rule, so a more severe
+stage that does not itself deny ends the refusal.
 
 Stages are evaluated from the highest threshold down, so the order follows the
 thresholds themselves and there is nothing else to configure.
@@ -146,7 +152,8 @@ A threshold counts failures and therefore starts at 1. ``DENY`` is the exception
 it states a standing verdict instead of reacting to a count, so a stage carrying
 nothing but ``DENY`` may use threshold ``0``, which then means *always*. That is
 how a lockdown is written - refuse everything the policy covers, whatever the
-subject has done.
+subject has done. Where the policy has further stages, that ``0`` stage hands
+over like any other, so *always* reaches up to the next threshold.
 
 .. warning:: A ``DENY`` at threshold 0 refuses **every** request the policy
    covers, whatever the subject has done. Scope it with conditions, and leave

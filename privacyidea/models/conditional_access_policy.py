@@ -249,13 +249,14 @@ class ConditionalAccessStageAction(MethodsMixin, db.Model):
     ``retrigger_above_threshold`` controls how this action fires as the failure
     count crosses its stage's threshold. False: fire once, when the count equals
     the threshold exactly. True: keep firing while the count stays at or above the
-    threshold (the classic re-triggering lock; de-dup still throttles repeats
-    within one incident). Because it is per action, one stage can e.g. email once
+    threshold and below the next stage's, so escalation ends it for good (the
+    classic re-triggering lock; de-dup still throttles repeats within one
+    incident). Because it is per action, one stage can e.g. email once
     at its threshold while re-triggering the user lock. The CRUD layer picks an
     action-aware default when the client omits it (the DENY decision defaults to
     True, the lock/email/block effects to False); see
     :func:`~privacyidea.lib.conditional_access.policy._validate_stages`
-    and :func:`~privacyidea.lib.conditional_access.engine._action_threshold_met`.
+    and :func:`~privacyidea.lib.conditional_access.engine._action_fires`.
     """
     __tablename__ = 'conditional_access_stage_actions'
     id: Mapped[int] = mapped_column(Integer, Identity(always=False), primary_key=True)

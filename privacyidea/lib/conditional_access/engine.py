@@ -74,7 +74,8 @@ log = logging.getLogger(__name__)
 # pre-auth decision and every source_ip mode deliberately do not.
 #
 # What trips: stages, each with a failure threshold. Only the highest matching stage of a policy fires, and each of
-# its actions decides for itself - once at the exact threshold by default, or on every request at or above it.
+# its actions decides for itself - once at the exact threshold by default, or on every request within the range its
+# stage owns (at or above its threshold, below the next stage's).
 #
 # Policies run by ascending priority and the first one to decide wins. A `dry_run` policy still produces outcomes
 # but changes nothing, which is how an admin measures a policy before enforcing it.
@@ -1100,9 +1101,9 @@ def evaluate_access_decision(context: CAContext, now: datetime | None = None) ->
     :attr:`ConditionalAccessAction.LOCK_USER`). With the policy's
     ``reset_on_success`` the count is floored at the user's last completed
     login, so a ``DENY`` also lifts on a successful authentication and not only
-    with the passage of time. Because ``DENY`` defaults to re-triggering
-    (``count >= threshold``), a stage with ``failure_threshold`` 0 always matches,
-    which is the lockdown idiom - scope it with conditions.
+    with the passage of time. Because ``DENY`` defaults to re-triggering, a stage
+    with ``failure_threshold`` 0 matches every count below the next stage's
+    threshold, which is the lockdown idiom - scope it with conditions.
 
     Policies are evaluated by ascending ``priority`` (a lower number means higher
     precedence, matching privacyIDEA's policy engine) and the first one that denies
@@ -1156,12 +1157,14 @@ def _policy_access_decision(policy: ConditionalAccessPolicy, context: CAContext,
     subject, no ``DENY`` action's threshold condition is met, or the policy is in dry run - a dry-run policy is never
     enforced, but it still yields its outcome, which is how an admin measures what enforcing it would do.
 
-    Each ``DENY`` action decides for itself via :func:`_action_threshold_met`: it
-    defaults to re-triggering (``count >= threshold``, so the refusal stands while
-    the failures are high), which is what makes it a self-healing reject. An admin
-    can switch it to fire-once, in which case it only refuses the request at the
-    exact threshold count. The stage with the highest threshold whose ``DENY``
-    action is met supplies the decision.
+    Each ``DENY`` action decides for itself via :func:`_action_fires`: it
+    defaults to re-triggering, so the refusal stands while the count stays within
+    the range its stage owns, which is what makes it a self-healing reject. An
+    admin can switch it to fire-once, in which case it only refuses the request at
+    the exact threshold count. The stage with the highest threshold whose ``DENY``
+    action is met supplies the decision - and because a re-triggering ``DENY``
+    stops at the next threshold, a more severe stage that does not itself deny
+    lifts the refusal rather than inheriting it.
     """
     # Applicability is checked first: a policy whose conditions exclude this request contributes no decision and
     # costs no counting query.
@@ -1184,8 +1187,9 @@ def _policy_access_decision(policy: ConditionalAccessPolicy, context: CAContext,
             return AccessDecisionResult()
         count = _policy_count(policy, context.user, now, since_last_success=policy.reset_on_success)
         subject_label = repr(context.user)
-    deciding_stage = next((stage for stage in policy.stages if _stage_denies(stage, count)), None)
-    if deciding_stage is None:
+
+    deciding_stage = _stage_in_range(policy, count)
+    if deciding_stage is None or not _stage_denies(deciding_stage, count):
         return AccessDecisionResult()
     decision = AccessDecision.DENY
     types = _types_label(policy.counter_types_to_track)
@@ -1206,9 +1210,9 @@ def _policy_access_decision(policy: ConditionalAccessPolicy, context: CAContext,
 
 def _stage_denies(stage: ConditionalAccessPolicyStage, count: int) -> bool:
     """
-    Whether *stage* refuses the request at *count*: it carries a ``DENY`` action
-    whose per-action threshold condition is met. An unparsable action type is
-    skipped rather than treated as a refusal.
+    Whether *stage* refuses the request at *count*: it carries a ``DENY`` action whose per-action condition is met
+    (see :func:`_action_fires`), given that *stage* is the one :func:`_stage_in_range` returned for it. An
+    unparsable action type is skipped rather than treated as a refusal.
     """
     for action in stage.actions:
         try:
@@ -1217,7 +1221,7 @@ def _stage_denies(stage: ConditionalAccessPolicyStage, count: int) -> bool:
             continue
         if action_type != ConditionalAccessAction.DENY:
             continue
-        if _action_threshold_met(action, stage.failure_threshold, count):
+        if _action_fires(action, stage.failure_threshold, count):
             return True
     return False
 
@@ -1258,13 +1262,14 @@ def evaluate_conditional_access_policies(context: CAContext, event_type: AuthEve
     Each action decides for itself whether it fires. By default an action fires
     once, when the failure count reaches its stage's threshold exactly: an action
     at threshold 8 runs on the 8th failure and not again on the 9th. An action with
-    ``retrigger_above_threshold`` fires whenever the count is at or above the
-    threshold, so a single stage can email once at threshold 8 while keeping the
-    user locked for every further failure (see :func:`_action_threshold_met`). The
-    count climbs by one per tracked failure and, for a policy with
-    ``reset_on_success``, resets after a successful login (see
-    :func:`count_user_events`), so a fresh burst re-triggers the fire-once
-    actions too.
+    ``retrigger_above_threshold`` fires on every request while the count stays
+    within the range its stage owns - at or above threshold 8, but below the next
+    stage's threshold - so a single stage can email once at 8 while keeping the
+    user locked for every further failure until the policy escalates past it (see
+    :func:`_action_fires` and :func:`_stage_in_range`). The count climbs by one per
+    tracked failure and, for a policy with ``reset_on_success``, resets after a
+    successful login (see :func:`count_user_events`), so a fresh burst
+    re-triggers the fire-once actions too.
 
     The persistent side effects (lock state) are consulted by the *next* inbound
     request via the pre-check, which reads the error message back off the row they wrote. A stage that only
@@ -1333,42 +1338,55 @@ def evaluate_conditional_access_policies(context: CAContext, event_type: AuthEve
                                        enforced_targets=enforced)
 
 
-def _action_threshold_met(action: ConditionalAccessStageAction, threshold: int, count: int) -> bool:
+def _stage_in_range(policy: ConditionalAccessPolicy, count: int) -> ConditionalAccessPolicyStage | None:
     """
-    Whether *action* fires at the given failure *count*, for its stage's
-    *threshold*.
+    The stage that owns *count*: the highest ``failure_threshold`` at or below it, or ``None`` when *count* is
+    below every stage's threshold.
 
-    Default (``retrigger_above_threshold`` unset): the action fires only when the
-    count equals the threshold exactly, so it triggers once as the count climbs
-    past it. With ``retrigger_above_threshold`` the action fires whenever the count
-    is at or above the threshold (the classic re-triggering lock). The flag is
-    per action, so one stage can e.g. email once at its threshold while keeping the
-    user locked as long as the count stays at or above it.
+    ``policy.stages`` is ordered by descending ``failure_threshold`` and the ``(policy_id, failure_threshold)``
+    unique constraint makes that a total order - the stages partition every count into disjoint ranges - so the
+    stage that owns *count* is simply the first one in that order whose threshold does not exceed it.
     """
-    if action.retrigger_above_threshold:
-        return count >= threshold
-    return count == threshold
+    return next((stage for stage in policy.stages if stage.failure_threshold <= count), None)
 
 
-def _stage_pending_actions(stage: ConditionalAccessPolicyStage, count: int) -> list[ConditionalAccessStageAction]:
-    """The actions of *stage* whose per-action condition is met at *count*."""
-    return [action for action in stage.actions
-            if _action_threshold_met(action, stage.failure_threshold, count)]
+def _action_fires(action: ConditionalAccessStageAction, threshold: int, count: int) -> bool:
+    """
+    Whether *action* fires at *count*, given that its stage is the one :func:`_stage_in_range` returned for it -
+    this does not itself check that *count* falls in the stage's range.
+
+    Default (``retrigger_above_threshold`` unset): the action fires only when the count equals the threshold
+    exactly, so it triggers once as the count climbs into the stage's range. With ``retrigger_above_threshold`` the
+    action fires on every request for as long as the count stays in that range, so one stage can e.g. email once at
+    its threshold while keeping the user locked for every further failure up to the next one. Escalation therefore
+    hands over for good: once a more severe stage owns the count, :func:`_stage_in_range` no longer returns this
+    stage at all, so its actions stop firing - not even on the requests the more severe stage itself sits out.
+    """
+    return action.retrigger_above_threshold or count == threshold
+
+
+def _pending_actions(stage: ConditionalAccessPolicyStage, count: int) -> list[ConditionalAccessStageAction]:
+    """
+    The actions of *stage* that fire at *count* (see :func:`_action_fires`), given that *stage* is the one
+    :func:`_stage_in_range` returned for it.
+    """
+    return [action for action in stage.actions if _action_fires(action, stage.failure_threshold, count)]
 
 
 def _evaluate_policy(policy: ConditionalAccessPolicy, context: CAContext, event_type: str,
                      now: datetime) -> "ConditionalAccessEvaluation":
     """
     Evaluate a single policy: count the user's events over the policy window,
-    find the triggered stage, then execute the stage's *pending* actions (or, in
-    dry-run, only log what they would have done).
+    find the stage that owns the count (see :func:`_stage_in_range`), then execute
+    that stage's *pending* actions (or, in dry-run, only log what they would have
+    done).
 
-    Each action decides for itself whether it fires (see
-    :func:`_action_threshold_met`): by default an action triggers once, when the
-    count equals the stage's ``failure_threshold``; an action with
-    ``retrigger_above_threshold`` fires whenever the count is at or above the
-    threshold. So one stage can, for example, email once at threshold 8 while
-    keeping the user locked for every further failure at 8 or more.
+    Each action decides for itself whether it fires (see :func:`_action_fires`):
+    by default an action triggers only when the count equals its stage's
+    ``failure_threshold`` exactly; an action with ``retrigger_above_threshold``
+    fires on every request for as long as the count stays in that stage's range.
+    So one stage can, for example, email once at threshold 8 while keeping the
+    user locked for every further failure up to the threshold that supersedes it.
 
     :return: a :class:`ConditionalAccessEvaluation` with the user-facing messages produced by the executed actions
         and the outcomes describing what was done (both empty if no stage triggered; in dry run there are outcomes
@@ -1416,18 +1434,17 @@ def _evaluate_policy(policy: ConditionalAccessPolicy, context: CAContext, event_
         count = _policy_count(policy, user, now, since_last_success=policy.reset_on_success)
         subject_label = repr(user)
 
-    # Picks the triggered stage: the highest-threshold stage with at least one action whose per-action condition is
-    # met (see _action_threshold_met).
-    # By default an action fires once, exactly at the threshold (a threshold-8 email sends on the 8th failure, not
-    # again at 9); retrigger_above_threshold keeps it firing while the count stays at or above the threshold.
-    # Stages are ordered by descending threshold, so the most severe stage with a pending action wins and only that
-    # stage's actions run (one stage per policy per request); contrast the pre-auth DENY decision in
-    # _policy_access_decision.
-    triggered_stage = next((stage for stage in policy.stages
-                            if _stage_pending_actions(stage, count)), None)
-    if triggered_stage is None:
+    # The stage that owns this count (see _stage_in_range) is the only one whose actions can fire - a stage below
+    # it cannot reach its own threshold again (the count has moved past it), and a stage above it has not been
+    # reached yet. One stage per policy per request, therefore, with no severity search needed; contrast the
+    # pre-auth DENY decision in _policy_access_decision, which asks the same owner a narrower question.
+    # By default, an action fires once, exactly at the threshold (a threshold-8 email sends on the 8th failure, not
+    # again at 9); retrigger_above_threshold keeps it firing for as long as this stage owns the count, so
+    # escalation is a hand-over and the milder stage never resumes.
+    triggered_stage = _stage_in_range(policy, count)
+    pending_actions = _pending_actions(triggered_stage, count) if triggered_stage else []
+    if not pending_actions:
         return ConditionalAccessEvaluation()
-    pending_actions = _stage_pending_actions(triggered_stage, count)
 
     if policy.dry_run:
         log.info(f"[dry-run] policy {policy.name!r} would trigger stage {triggered_stage.id} "
