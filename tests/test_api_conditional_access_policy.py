@@ -31,6 +31,7 @@ from werkzeug.test import TestResponse
 from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType,
                                                                            CA_ENFORCEMENT_EVENT_TYPES,
                                                                            TRACKABLE_EVENT_TYPES, CountMode)
+from privacyidea.api.conditional_access import create_policy
 from privacyidea.lib.conditional_access.engine import ConditionalAccessAction
 from privacyidea.lib.conditional_access.policy import (create_conditional_access_policy,
                                                                get_default_error_messages,
@@ -118,6 +119,52 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
         body = self._policy_body()
         body["stages"][0]["actions"][0]["action_type"] = "NOPE"
         res = self._request("policy", method="POST", json_data=body)
+        self.assertEqual(400, res.status_code, res.json)
+
+    def test_create_duplicate_action_in_one_stage_is_400(self):
+        body = self._policy_body()
+        body["stages"][0]["actions"].append({"action_type": str(ConditionalAccessAction.LOCK_USER),
+                                             "action_value": {"duration_seconds": 60}})
+        res = self._request("policy", method="POST", json_data=body)
+        self.assertEqual(400, res.status_code, res.json)
+        self.assertIn("Duplicate action", res.json["result"]["error"]["message"])
+
+    def test_create_timed_and_permanent_lock_in_one_stage_is_400(self):
+        body = self._policy_body()
+        body["stages"][0]["actions"].append({"action_type": str(ConditionalAccessAction.PERMANENT_LOCK_USER)})
+        res = self._request("policy", method="POST", json_data=body)
+        self.assertEqual(400, res.status_code, res.json)
+        self.assertIn("mutually exclusive", res.json["result"]["error"]["message"])
+
+    def test_create_policy_docstring_only_documents_the_real_exclusive_pairs(self):
+        # The docstring is the admin-facing contract for which action pairs are mutually exclusive; it must not
+        # promise a rule that does not exist. ALLOW is not a ConditionalAccessAction (the pre-auth verdict is
+        # AccessDecision.DENY/CONTINUE, not a stage action), so it can never form an exclusive pair with DENY.
+        doc = create_policy.__doc__
+        self.assertNotIn("ALLOW", doc)
+        self.assertIn("``LOCK_USER``/``PERMANENT_LOCK_USER``", doc)
+        self.assertIn("``BLOCK_IP``/``PERMANENT_BLOCK_IP``", doc)
+
+    def test_create_two_email_actions_in_one_stage_is_accepted(self):
+        # The exception the rule exists around: one stage notifying two different recipient groups.
+        body = self._policy_body(stages=[{"failure_threshold": 5, "actions": [
+            {"action_type": str(ConditionalAccessAction.EMAIL_ADMIN),
+             "action_value": {"recipient_group": "admins", "subject": "Alert", "body": "Body"}},
+            {"action_type": str(ConditionalAccessAction.EMAIL_ADMIN),
+             "action_value": {"recipient_group": "soc@example.com", "subject": "Alert", "body": "Body"}}]}])
+        res = self._request("policy", method="POST", json_data=body)
+        self.assertEqual(200, res.status_code, res.json)
+        res = self._request(f"policy/{res.json['result']['value']}")
+        self.assertEqual(2, len(res.json["result"]["value"]["stages"][0]["actions"]))
+
+    def test_patch_duplicate_action_in_one_stage_is_400(self):
+        policy_id = self._create_policy()
+        stages = [{"failure_threshold": 5,
+                   "actions": [{"action_type": str(ConditionalAccessAction.LOCK_USER),
+                                "action_value": {"duration_seconds": 60}},
+                               {"action_type": str(ConditionalAccessAction.LOCK_USER),
+                                "action_value": {"duration_seconds": 120}}]}]
+        res = self._request(f"policy/{policy_id}", method="PATCH", json_data={"stages": stages})
         self.assertEqual(400, res.status_code, res.json)
 
     def test_create_lock_user_without_duration_is_400(self):
@@ -429,6 +476,18 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
                              constraints["user"]["count_modes"])
         self.assertListEqual([str(CountMode.DISTINCT_USERS), str(CountMode.PER_ATTEMPT), str(CountMode.PER_REQUEST)],
                              constraints["source_ip"]["count_modes"])
+        # The per-stage action rules are served too, so the editor enforces them from one definition rather
+        # than from a hand-kept copy. Only the notifications repeat.
+        self.assertListEqual([str(ConditionalAccessAction.EMAIL_ADMIN), str(ConditionalAccessAction.EMAIL_USER)],
+                             constraints["user"]["repeatable_actions"])
+        self.assertListEqual([str(ConditionalAccessAction.EMAIL_ADMIN)], constraints["source_ip"]["repeatable_actions"])
+        # A group is served only for the target whose actions can actually form it.
+        self.assertIn([str(ConditionalAccessAction.LOCK_USER), str(ConditionalAccessAction.PERMANENT_LOCK_USER)],
+                      constraints["user"]["exclusive_action_groups"])
+        self.assertNotIn([str(ConditionalAccessAction.LOCK_USER), str(ConditionalAccessAction.PERMANENT_LOCK_USER)],
+                         constraints["source_ip"]["exclusive_action_groups"])
+        self.assertIn([str(ConditionalAccessAction.BLOCK_IP), str(ConditionalAccessAction.PERMANENT_BLOCK_IP)],
+                      constraints["source_ip"]["exclusive_action_groups"])
 
     def test_list_default_error_messages(self):
         # Only the transport seam here: that the endpoint serves the catalog in the documented shape, and

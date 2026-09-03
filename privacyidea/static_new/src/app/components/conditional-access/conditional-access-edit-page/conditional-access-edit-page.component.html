@@ -332,6 +332,15 @@
         Some actions are not allowed for the selected target. Change the target or remove those actions.
       </p>
     }
+    @if (!stageActionsValid()) {
+      <p
+        class="ca-stages-error"
+        i18n>
+        A stage carries the same action twice, or two actions that contradict each other. Only the email actions
+        may be repeated, and a stage cannot both lock temporarily and permanently, or both block temporarily and
+        permanently.
+      </p>
+    }
     @if (!actionValuesValid()) {
       <p
         class="ca-stages-error"

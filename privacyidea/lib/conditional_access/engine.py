@@ -1804,7 +1804,10 @@ def _upsert_user_lock_state(user: "User", *, lock_expires_at: datetime | None, e
 
     The write is defensive: a failure is logged and rolled back so that writing
     the lock state can never break the authentication response that already
-    completed.
+    completed. An existing **permanent** lock is never downgraded to a timed
+    lock - which guards against a *second policy* (or a stage written before
+    the CRUD rejected the combination), since one stage can never carry both
+    the timed and the permanent variant.
 
     Only a **strictly stronger** lock is written. A permanent lock is not downgraded to a timed one, a timed lock
     is not shortened, and a write that merely restates the lock in force changes nothing. Several policies can lock
@@ -1862,7 +1865,8 @@ def _upsert_ip_block(source_ip: str, *, block_expires_at: datetime | None, error
     defensive (a failure is logged and rolled back so that blocking an IP can
     never break the authentication response that already completed) and a block
     is never weakened - neither downgraded from permanent to timed, nor
-    shortened.
+    shortened, which guards against a second policy rather than a sibling
+    action, since one stage may never carry both variants.
 
     Never-block IPs (loopback and the ``PI_CONDITIONAL_ACCESS_NEVER_BLOCK``
     allowlist) are skipped: blocking shared infrastructure (a reverse proxy, NAT egress, or

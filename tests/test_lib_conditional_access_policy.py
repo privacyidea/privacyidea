@@ -708,9 +708,17 @@ class ConditionalAccessPolicyCrudTestCase(MyTestCase):
         constraints = get_target_constraints()
         self.assertSetEqual({t.value for t in ConditionalAccessTarget}, set(constraints))
         for target, entry in constraints.items():
-            self.assertSetEqual({"actions", "count_modes"}, set(entry))
+            self.assertSetEqual({"actions", "count_modes", "repeatable_actions", "exclusive_action_groups"},
+                                set(entry))
             self.assertListEqual(sorted(entry["actions"]), entry["actions"])
             self.assertListEqual(sorted(entry["count_modes"]), entry["count_modes"])
+            self.assertListEqual(sorted(entry["repeatable_actions"]), entry["repeatable_actions"])
+            # Every served rule is expressible for this target: a group only one of whose members the target
+            # allows could never be violated, so offering it as a rule would be noise.
+            for group in entry["exclusive_action_groups"]:
+                self.assertListEqual(sorted(group), group)
+                self.assertTrue(set(group).issubset(entry["actions"]), group)
+            self.assertTrue(set(entry["repeatable_actions"]).issubset(entry["actions"]))
         self.assertListEqual(
             [CountMode.PER_ATTEMPT.value, CountMode.PER_REQUEST.value],
             constraints[ConditionalAccessTarget.USER.value]["count_modes"],
@@ -719,10 +727,17 @@ class ConditionalAccessPolicyCrudTestCase(MyTestCase):
             [CountMode.DISTINCT_USERS.value, CountMode.PER_ATTEMPT.value, CountMode.PER_REQUEST.value],
             constraints[ConditionalAccessTarget.SOURCE_IP.value]["count_modes"],
         )
-        self.assertIn(ConditionalAccessAction.BLOCK_IP.value,
-                constraints[ConditionalAccessTarget.SOURCE_IP.value]["actions"])
-        self.assertIn(ConditionalAccessAction.LOCK_USER.value,
-                constraints[ConditionalAccessTarget.USER.value]["actions"])
+        self.assertIn(ConditionalAccessAction.BLOCK_IP.value, constraints[ConditionalAccessTarget.SOURCE_IP.value]["actions"])
+        self.assertIn(ConditionalAccessAction.LOCK_USER.value, constraints[ConditionalAccessTarget.USER.value]["actions"])
+        # Only the notifications repeat, and only the pairs that can actually arise for the target are served.
+        self.assertListEqual([ConditionalAccessAction.EMAIL_ADMIN.value, ConditionalAccessAction.EMAIL_USER.value],
+                             constraints[ConditionalAccessTarget.USER.value]["repeatable_actions"])
+        self.assertListEqual([ConditionalAccessAction.EMAIL_ADMIN.value],
+                             constraints[ConditionalAccessTarget.SOURCE_IP.value]["repeatable_actions"])
+        self.assertIn([ConditionalAccessAction.LOCK_USER.value, ConditionalAccessAction.PERMANENT_LOCK_USER.value],
+                      constraints[ConditionalAccessTarget.USER.value]["exclusive_action_groups"])
+        self.assertNotIn([ConditionalAccessAction.LOCK_USER.value, ConditionalAccessAction.PERMANENT_LOCK_USER.value],
+                         constraints[ConditionalAccessTarget.SOURCE_IP.value]["exclusive_action_groups"])
 
     def test_10a_default_error_messages_are_ordered_most_severe_first(self):
         # The exact list, because both membership and order are contracts: the order is ACTION_SEVERITY, the
@@ -796,7 +811,93 @@ class ConditionalAccessPolicyCrudTestCase(MyTestCase):
             self.assertEqual(action in timed, "{duration}" in str(message),
                              f"{action} duration tag mismatch")
 
-    def test_10b_reset_on_success_round_trips(self):
+    def test_10c_duplicate_action_in_one_stage_is_rejected(self):
+        # Two LOCK_USER actions on one stage lock for whichever duration is applied last, which is not a thing
+        # an admin can have meant.
+        self.assertRaisesRegex(
+            ParameterError, "Duplicate action 'LOCK_USER'",
+            create_conditional_access_policy, "Dup", 600, ["PIN_FAIL"],
+            [_stage(5, actions=[{"action_type": "LOCK_USER", "action_value": 60},
+                                {"action_type": "LOCK_USER", "action_value": 120}])],
+            ConditionalAccessTarget.USER, 1,
+        )
+        self.assertEqual(0, db.session.query(ConditionalAccessPolicy).count())
+
+    def test_10d_repeated_email_actions_in_one_stage_are_allowed(self):
+        # The one case a second copy of an action does something the first cannot: a different recipient group.
+        policy_id = create_conditional_access_policy(
+            "Mails", 600, ["PIN_FAIL"],
+            [_stage(5, actions=[{"action_type": "EMAIL_ADMIN",
+                                 "action_value": {"recipient_group": "admins", "subject": "Alert", "body": "Body"}},
+                                {"action_type": "EMAIL_ADMIN",
+                                 "action_value": {"recipient_group": "soc@example.com", "subject": "Alert",
+                                                   "body": "Body"}},
+                                {"action_type": "EMAIL_USER",
+                                 "action_value": {"subject": "Alert", "body": "Body"}}])],
+            ConditionalAccessTarget.USER, 1,
+        )
+        actions = get_conditional_access_policy(policy_id)["stages"][0]["actions"]
+        self.assertEqual(3, len(actions))
+        self.assertSetEqual({"admins", "soc@example.com"},
+                            {action["action_value"]["recipient_group"] for action in actions
+                             if action["action_type"] == "EMAIL_ADMIN"})
+
+    def test_10e_timed_and_permanent_restrictions_cannot_share_a_stage(self):
+        # Both write the same row and the upsert refuses to downgrade a permanent restriction, so which one
+        # wins depends on the order the rows come back in.
+        self.assertRaisesRegex(
+            ParameterError, "mutually exclusive",
+            create_conditional_access_policy, "Both", 600, ["PIN_FAIL"],
+            [_stage(5, actions=[{"action_type": "LOCK_USER", "action_value": 60},
+                                {"action_type": "PERMANENT_LOCK_USER"}])],
+            ConditionalAccessTarget.USER, 1,
+        )
+        self.assertRaisesRegex(
+            ParameterError, "mutually exclusive",
+            create_conditional_access_policy, "BothIP", 600, ["PIN_FAIL"],
+            [_stage(5, actions=[{"action_type": "BLOCK_IP", "action_value": 60},
+                                {"action_type": "PERMANENT_BLOCK_IP"}])],
+            ConditionalAccessTarget.SOURCE_IP, 2,
+        )
+
+    def test_10f_the_same_action_in_different_stages_is_allowed(self):
+        # The rule is per stage: escalating the same action at a higher threshold is the normal shape.
+        policy_id = create_conditional_access_policy(
+            "Escalate", 600, ["PIN_FAIL"],
+            [_stage(5, actions=[{"action_type": "LOCK_USER", "action_value": 60}]),
+             _stage(10, actions=[{"action_type": "LOCK_USER", "action_value": 3600}])],
+            ConditionalAccessTarget.USER, 1,
+        )
+        self.assertEqual(2, len(get_conditional_access_policy(policy_id)["stages"]))
+
+    def test_10g_update_rejects_a_stage_list_with_a_duplicate_action(self):
+        policy_id = create_conditional_access_policy("Ok", 600, ["PIN_FAIL"], [_stage(5)],
+                                                      ConditionalAccessTarget.USER, 1)
+        self.assertRaisesRegex(
+            ParameterError, "Duplicate action",
+            update_conditional_access_policy, policy_id,
+            stages=[_stage(5, actions=[{"action_type": "LOCK_USER", "action_value": 60},
+                                       {"action_type": "LOCK_USER", "action_value": 120}])],
+        )
+        self.assertEqual(1, len(get_conditional_access_policy(policy_id)["stages"][0]["actions"]))
+
+    def test_10h_update_of_other_fields_does_not_revalidate_stored_stages(self):
+        # A policy written before this rule (or straight through the ORM) must stay switchable and renameable:
+        # only submitted stages are judged, which is why the check lives in _validate_stages rather than beside
+        # _validate_target_actions, which deliberately re-reads the stored stages.
+        policy = ConditionalAccessPolicy(name="Legacy", time_window_seconds=600, priority=1,
+                               target=ConditionalAccessTarget.USER.value, counter_types_to_track=["PIN_FAIL"])
+        policy.stages = [ConditionalAccessPolicyStage(
+            failure_threshold=5,
+            actions=[ConditionalAccessStageAction(action_type="LOCK_USER", action_value=60),
+                     ConditionalAccessStageAction(action_type="PERMANENT_LOCK_USER")])]
+        db.session.add(policy)
+        db.session.commit()
+        update_conditional_access_policy(policy.id, enabled=False)
+        update_conditional_access_policy(policy.id, name="Legacy renamed")
+        self.assertEqual("Legacy renamed", get_conditional_access_policy(policy.id)["name"])
+
+    def test_10i_reset_on_success_round_trips(self):
         # Off is storable and readable back; the update reports it as changed only when it was sent, so a
         # PATCH of something else never silently rewrites it.
         policy_id = create_conditional_access_policy("NoReset", 600, ["PIN_FAIL"], [_stage()], ConditionalAccessTarget.USER, 1,
@@ -809,7 +910,7 @@ class ConditionalAccessPolicyCrudTestCase(MyTestCase):
         self.assertNotIn("reset_on_success", changed)
         self.assertTrue(get_conditional_access_policy(policy_id)["reset_on_success"])
 
-    def test_10c_reset_on_success_rejected_for_source_ip(self):
+    def test_10j_reset_on_success_rejected_for_source_ip(self):
         # A source-IP policy never resets on a successful login, so asking for it is a ParameterError rather than a
         # setting that is stored and then ignored.
         self.assertRaises(ParameterError, create_conditional_access_policy, "IPReset", 600, ["PASSWORD_FAIL"],
@@ -822,7 +923,7 @@ class ConditionalAccessPolicyCrudTestCase(MyTestCase):
         self.assertRaises(ParameterError, update_conditional_access_policy, policy_id, reset_on_success=True)
         self.assertFalse(get_conditional_access_policy(policy_id)["reset_on_success"])
 
-    def test_10d_switching_to_source_ip_clears_reset_on_success(self):
+    def test_10k_switching_to_source_ip_clears_reset_on_success(self):
         # The stored reset is not carried into a target that cannot honour it: the switch clears it and says so,
         # so the policy never claims a reset it does not perform.
         policy_id = create_conditional_access_policy("Switcher", 600, ["PASSWORD_FAIL"], [_stage()], ConditionalAccessTarget.USER, 1)
