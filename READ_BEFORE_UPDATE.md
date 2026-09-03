@@ -13,6 +13,13 @@
   (with `PI_AUDIT_SQL_TRUNCATE`) or rejected by the database, in which case the whole audit entry was rolled back and
   lost with only an error in the log. The database migration widens the column, so a user's tokens fit.
 
+  **On MySQL and MariaDB this migration rebuilds the whole `pidea_audit` table**, because neither of them can extend
+  the column in place: they have to copy the table (`ALGORITHM=COPY`), and writes to it are blocked while the copy
+  runs. How long this takes grows with the size of the audit log: on local SSD storage, count roughly 20 seconds per
+  million entries that hold a signature, so ten million entries take about three minutes. Slow or network-attached
+  storage can be several times slower, so take the size of your audit log into account when you plan the update
+  window, or trim the log before the update. PostgreSQL only changes the column definition and is done immediately.
+
   **If your audit log is written to a separate database** (`PI_AUDIT_SQL_URI`), the migration does **not** reach it: it
   runs against the token database only. Apply the change to the audit database yourself, e.g.
   `ALTER TABLE pidea_audit MODIFY serial VARCHAR(200);` (MySQL/MariaDB) or

@@ -14,9 +14,11 @@ Revises: d9e0f1a2b3c4
 Create Date: 2026-08-17 00:00:00.000000
 
 """
+import time
+
 import sqlalchemy as sa
 from alembic import op
-from sqlalchemy.exc import OperationalError, ProgrammingError
+from sqlalchemy.exc import DatabaseError
 
 # revision identifiers, used by Alembic.
 revision = 'e0f1a2b3c4d5'
@@ -26,15 +28,31 @@ depends_on = None
 
 
 def upgrade():
+    bind = op.get_bind()
+    # MySQL and MariaDB can not widen the column in place, they copy the whole table. That
+    # takes minutes for a large audit log without reporting any progress, so the number of
+    # entries is announced beforehand to tell a long-running migration from a hanging one.
+    # The other dialects change the column definition alone, where counting the entries
+    # would cost more than the migration itself.
+    counts_entries = bind.dialect.name in ('mysql', 'mariadb')
+    started = time.monotonic()
     try:
+        if counts_entries:
+            entry_count = bind.execute(sa.text("SELECT COUNT(*) FROM pidea_audit")).scalar()
+            print(f"Updating the 'serial' column of {entry_count} audit entries. The table is rebuilt, "
+                  f"which can take several minutes for a large audit log.")
         with op.batch_alter_table('pidea_audit', schema=None) as batch_op:
             batch_op.alter_column('serial',
                                   existing_type=sa.VARCHAR(length=40),
                                   type_=sa.Unicode(length=200),
                                   existing_nullable=True)
-    except (OperationalError, ProgrammingError) as exx:
+    except DatabaseError as exx:
         print("Could not increase 'serial' column size in 'pidea_audit' table.")
         print(exx)
+        return
+    if counts_entries:
+        print(f"Updated the 'serial' column of {entry_count} audit entries in "
+              f"{time.monotonic() - started:.0f} seconds.")
 
 
 def downgrade():

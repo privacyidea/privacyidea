@@ -177,17 +177,23 @@ value that is too long, which would lose the whole entry. Values that hold a
 list of items, like the serials of all tokens of a request, are shortened per
 item, so that every item stays recognizable.
 
-The length of a column is read from the database, so shortening also matches a
-table whose columns differ from the ones privacyIDEA ships. If you increase a
-column length by the usual database means
+The length of a column is read from the database, so a table whose columns are
+narrower than the ones privacyIDEA ships is handled without any configuration:
+its entries are shortened to what it really accepts instead of being rejected.
+
+Reading the database can only shorten a value further, though, never lengthen
+it: a wider column is not used on its own. So if you increase a column length
+by the usual database means
 (i.e. :code:`ALTER TABLE pidea_audit MODIFY user varchar(1000);` for MariaDB),
 tell privacyIDEA about it in your :ref:`config file <cfgfile>`::
 
     PI_AUDIT_SQL_COLUMN_LENGTH = {"user": 1000,
                                   "policies": 1000}
 
-which allows entries to use the additional space. Check the database schema for
-the available columns here: :class:`privacyidea.models.Audit`.
+which allows entries to use the additional space. Without this setting, values
+are still shortened to the length privacyIDEA ships and the space you added
+stays unused. Check the database schema for the available columns here:
+:class:`privacyidea.models.Audit`.
 
 .. note:: The setting ``PI_AUDIT_SQL_TRUNCATE`` is not needed any more and is
    ignored. Entries are always shortened to what the audit table can hold.
