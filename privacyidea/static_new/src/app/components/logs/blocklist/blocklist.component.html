@@ -41,6 +41,15 @@
   </div>
 
   <div class="toolbar">
+    @if (authService.actionAllowed("blocklist_set")) {
+      <button
+        (click)="blockIp()"
+        class="action-button-secondary button-width-m"
+        mat-stroked-button>
+        <mat-icon>lock</mat-icon>
+        <span i18n>Block IP</span>
+      </button>
+    }
     @if (authService.actionAllowed("blocklist_reset")) {
       <button
         (click)="removeSelected()"
@@ -155,6 +164,31 @@
           <span [ngClass]="blockStateClass(row)">
             {{ blockState(row) | titlecase }}
           </span>
+        </td>
+      </ng-container>
+
+      <!-- Cause column -->
+      <ng-container matColumnDef="cause">
+        <th
+          *matHeaderCellDef
+          mat-header-cell>
+          <div class="header-cell">
+            <span i18n>Cause</span>
+            <button
+              (click)="onSortEvent('cause')"
+              aria-label="Sort by cause"
+              class="sort-button"
+              i18n-aria-label
+              mat-icon-button
+              type="button">
+              <mat-icon>{{ getSortIcon("cause") }}</mat-icon>
+            </button>
+          </div>
+        </th>
+        <td
+          *matCellDef="let row"
+          mat-cell>
+          {{ blockCauseLabel(row) }}
         </td>
       </ng-container>
 

@@ -67,6 +67,9 @@ PASSWORD_BRUTEFORCE = ConditionalAccessPolicyTemplate(
         "dry_run": False,
         "target": ConditionalAccessTarget.USER,
         "count_mode": CountMode.PER_REQUEST,
+        # Reset on success: the threshold means "this many wrong passwords in a row", so a completed login clears
+        # the slate and a legitimate user is not locked by stale failures from before it.
+        "reset_on_success": True,
         "counter_types_to_track": [AuthEventType.PASSWORD_FAIL,
                                    AuthEventType.PIN_FAIL],
         "stages": [
@@ -87,6 +90,9 @@ MFA_BRUTEFORCE = ConditionalAccessPolicyTemplate(
         "dry_run": False,
         "target": ConditionalAccessTarget.USER,
         "count_mode": CountMode.PER_REQUEST,
+        # Reset on success, so the escalating stages measure one uninterrupted burst: a completed login means the
+        # second factor worked, and the next burst starts again at the first stage.
+        "reset_on_success": True,
         "counter_types_to_track": [AuthEventType.MFA_FAIL],
         "stages": [
             {"failure_threshold": 3,
@@ -152,6 +158,10 @@ USER_RATE_LIMITING = ConditionalAccessPolicyTemplate(
         # PER_ATTEMPT so a multichallenge / push login counts as one attempt; every *trackable* event type is counted
         # so successes and abandoned (pending) attempts count too - this caps the request rate, it does not lock.
         "count_mode": CountMode.PER_ATTEMPT,
+        # No reset on success: a rate limit caps attempts per window, and successful attempts are part of what it
+        # caps - letting one of them clear the count would make the cap unreachable for exactly the traffic it means
+        # to throttle.
+        "reset_on_success": False,
         "counter_types_to_track": list(TRACKABLE_EVENT_TYPES),
         "stages": [
             {"failure_threshold": 20,
@@ -171,6 +181,9 @@ USER_FAILED_RATE_LIMITING = ConditionalAccessPolicyTemplate(
         "dry_run": False,
         "target": ConditionalAccessTarget.USER,
         "count_mode": CountMode.PER_ATTEMPT,
+        # No reset on success either: the threshold means "this many failed attempts in the window", so a success
+        # in between must not hand the burst a fresh budget.
+        "reset_on_success": False,
         "counter_types_to_track": list(_USER_AUTH_FAILURES),
         "stages": [
             {"failure_threshold": 10,
@@ -190,6 +203,9 @@ PASSWORD_SPRAYING = ConditionalAccessPolicyTemplate(
         "dry_run": False,
         "target": ConditionalAccessTarget.SOURCE_IP,
         "count_mode": CountMode.DISTINCT_USERS,
+        # The only value a source-IP policy can have: the signal spans many accounts, so one account's legitimate
+        # login must not clear it.
+        "reset_on_success": False,
         "counter_types_to_track": [AuthEventType.PASSWORD_FAIL, AuthEventType.PIN_FAIL],
         "stages": [
             {"failure_threshold": 20,
@@ -211,6 +227,7 @@ USER_ENUMERATION = ConditionalAccessPolicyTemplate(
         # DISTINCT_USERS keys on the attempted username, so each probed non-existent login counts as a distinct
         # targeted account - the enumeration signal, and NAT-safe (fan-out, not raw request volume).
         "count_mode": CountMode.DISTINCT_USERS,
+        "reset_on_success": False,
         "counter_types_to_track": [AuthEventType.USER_UNKNOWN],
         "stages": [
             {"failure_threshold": 10,
@@ -235,6 +252,7 @@ IP_FAILED_RATE_LIMITING = ConditionalAccessPolicyTemplate(
         # For an IP, "attempts" is the number of DISTINCT accounts (attempted usernames) it targeted - the fan-out
         # signal, never raw request volume, so a busy shared egress is judged only by how many accounts it fails on.
         "count_mode": CountMode.DISTINCT_USERS,
+        "reset_on_success": False,
         "counter_types_to_track": list(_IP_AUTH_FAILURES),
         "stages": [
             {"failure_threshold": 20,
@@ -255,6 +273,7 @@ IP_RATE_LIMITING = ConditionalAccessPolicyTemplate(
         "dry_run": True,
         "target": ConditionalAccessTarget.SOURCE_IP,
         "count_mode": CountMode.DISTINCT_USERS,
+        "reset_on_success": False,
         "counter_types_to_track": list(TRACKABLE_EVENT_TYPES),
         "stages": [
             {"failure_threshold": 30,

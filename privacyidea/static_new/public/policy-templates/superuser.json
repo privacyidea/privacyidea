@@ -137,7 +137,9 @@
     "conditional_access_policy_write": true,
     "user_lock_read": true,
     "user_lock_reset": true,
+    "user_lock_set": true,
     "blocklist_read": true,
-    "blocklist_reset": true
+    "blocklist_reset": true,
+    "blocklist_set": true
   }
 }

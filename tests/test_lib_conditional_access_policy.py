@@ -70,6 +70,13 @@ def _stage(threshold=5, actions=None, retrigger=False):
     return {"failure_threshold": threshold, "actions": actions}
 
 
+def _block_ip_stage(threshold=5):
+    """A stage whose action is valid under a source_ip target (BLOCK_IP), unlike _stage's LOCK_USER default."""
+    return _stage(threshold,
+                  actions=[{"action_type": str(ConditionalAccessAction.BLOCK_IP),
+                            "action_value": {"duration_seconds": 60}}])
+
+
 class ConditionalAccessPolicyCrudTestCase(MyTestCase):
     def setUp(self):
         self._clear()
@@ -113,6 +120,8 @@ class ConditionalAccessPolicyCrudTestCase(MyTestCase):
         self.assertEqual(10, policy["stages"][1]["failure_threshold"])
         self.assertEqual(2, len(policy["stages"][1]["actions"]))
         self.assertEqual({"duration_seconds": 600}, policy["stages"][0]["actions"][0]["action_value"])
+        # A successful login clears the counted events unless the policy says otherwise.
+        self.assertTrue(policy["reset_on_success"])
         # retrigger_above_threshold defaults to False on a lock action (fire once).
         self.assertFalse(policy["stages"][0]["actions"][0]["retrigger_above_threshold"])
 
@@ -786,6 +795,48 @@ class ConditionalAccessPolicyCrudTestCase(MyTestCase):
         for action, message in DEFAULT_ERROR_MESSAGES.items():
             self.assertEqual(action in timed, "{duration}" in str(message),
                              f"{action} duration tag mismatch")
+
+    def test_10b_reset_on_success_round_trips(self):
+        # Off is storable and readable back; the update reports it as changed only when it was sent, so a
+        # PATCH of something else never silently rewrites it.
+        policy_id = create_conditional_access_policy("NoReset", 600, ["PIN_FAIL"], [_stage()], ConditionalAccessTarget.USER, 1,
+                                          reset_on_success=False)
+        self.assertFalse(get_conditional_access_policy(policy_id)["reset_on_success"])
+        _, changed = update_conditional_access_policy(policy_id, reset_on_success=True)
+        self.assertIn("reset_on_success", changed)
+        self.assertTrue(get_conditional_access_policy(policy_id)["reset_on_success"])
+        _, changed = update_conditional_access_policy(policy_id, name="NoReset renamed")
+        self.assertNotIn("reset_on_success", changed)
+        self.assertTrue(get_conditional_access_policy(policy_id)["reset_on_success"])
+
+    def test_10c_reset_on_success_rejected_for_source_ip(self):
+        # A source-IP policy never resets on a successful login, so asking for it is a ParameterError rather than a
+        # setting that is stored and then ignored.
+        self.assertRaises(ParameterError, create_conditional_access_policy, "IPReset", 600, ["PASSWORD_FAIL"],
+                          [_block_ip_stage()],
+                          ConditionalAccessTarget.SOURCE_IP, 1, reset_on_success=True)
+        # Omitting it (or sending it off) is fine and stores the only value that target can have.
+        policy_id = create_conditional_access_policy("IPNoReset", 600, ["PASSWORD_FAIL"], [_block_ip_stage()],
+                                          ConditionalAccessTarget.SOURCE_IP, 2)
+        self.assertFalse(get_conditional_access_policy(policy_id)["reset_on_success"])
+        self.assertRaises(ParameterError, update_conditional_access_policy, policy_id, reset_on_success=True)
+        self.assertFalse(get_conditional_access_policy(policy_id)["reset_on_success"])
+
+    def test_10d_switching_to_source_ip_clears_reset_on_success(self):
+        # The stored reset is not carried into a target that cannot honour it: the switch clears it and says so,
+        # so the policy never claims a reset it does not perform.
+        policy_id = create_conditional_access_policy("Switcher", 600, ["PASSWORD_FAIL"], [_stage()], ConditionalAccessTarget.USER, 1)
+        self.assertTrue(get_conditional_access_policy(policy_id)["reset_on_success"])
+        _, changed = update_conditional_access_policy(
+            policy_id, target=ConditionalAccessTarget.SOURCE_IP, count_mode=CountMode.DISTINCT_USERS,
+            stages=[_block_ip_stage()])
+        self.assertIn("reset_on_success", changed)
+        self.assertFalse(get_conditional_access_policy(policy_id)["reset_on_success"])
+        # Switching back leaves it off: the admin re-enables it deliberately.
+        _, changed = update_conditional_access_policy(policy_id, target=ConditionalAccessTarget.USER,
+                                           count_mode=CountMode.PER_REQUEST, stages=[_stage()])
+        self.assertNotIn("reset_on_success", changed)
+        self.assertFalse(get_conditional_access_policy(policy_id)["reset_on_success"])
 
     def test_11_duplicate_priority_rejected(self):
         # priority must be unique across policies: a second policy reusing a
