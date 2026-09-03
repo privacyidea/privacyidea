@@ -29,6 +29,7 @@ import { TruncationTooltipDirective } from "@components/shared/directives/trunca
 import { DashboardWidget, WidgetSize } from "@models/dashboard";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { DashboardDataRef, DashboardDataStore } from "@services/dashboard/dashboard-data-store.service";
+import { IntegrationsService, IntegrationsServiceInterface } from "@services/integrations/integrations.service";
 import { pluralize } from "@utils/i18n.utils";
 import {
   SubscriptionService,
@@ -56,64 +57,32 @@ interface SectionNode {
 }
 
 /**
- * Hierarchy of the overview below the server row. The server is the base component and
- * is rendered on its own at the top; everything else is a use case, some of them grouped
- * under sub-headers. This tree is flattened into rows carrying an indent level.
+ * Display name, section grouping and product-landing-page slug for the server row: it is
+ * not one of the dashboard integrations from the shared catalog (see
+ * services/integrations/integrations.service.ts), just always present on its own at the
+ * top.
  */
-const SECTIONS: SectionNode[] = [
-  {
-    label: $localize`:@@dashboard.useCases:Use Cases`,
-    children: [
-      { application: "privacyidea-app" },
-      { application: "freeradius" },
-      { application: "privacyidea-nextcloud" },
-      {
-        label: $localize`:@@dashboard.systemLogin:System Login`,
-        children: [{ application: "privacyidea-cp" }, { application: "pam" }, { application: "pam-passkey" }]
-      },
-      {
-        label: $localize`:@@dashboard.singleSignOn:Single Sign On`,
-        children: [
-          { application: "privacyidea-keycloak" },
-          { application: "entraid-via-keycloak" },
-          { application: "privacyidea-adfs" },
-          { application: "privacyidea-shibboleth" }
-        ]
-      }
-    ]
-  }
-];
-
-/** Display name per application key. Unknown keys fall back to the raw key. */
-const DISPLAY_NAMES: Record<string, string> = {
-  privacyidea: "privacyIDEA Server",
-  "privacyidea-app": "privacyIDEA Authenticator App",
-  freeradius: "FreeRADIUS",
-  "privacyidea-nextcloud": "Nextcloud",
-  "privacyidea-cp": "Windows Credential Provider",
-  pam: "PAM OTP & Push",
-  "pam-passkey": "PAM Passkey",
-  "privacyidea-keycloak": "Keycloak",
-  "entraid-via-keycloak": "EntraID Integration",
-  "privacyidea-adfs": "AD FS",
-  "privacyidea-shibboleth": "Shibboleth"
-};
-
-/** Slug of each component's product landing page, see componentLink(). */
+const SERVER_DISPLAY_NAME = "privacyIDEA Server";
 const PTL_BASE_URL = "https://netknights.it/plugin-traffic-light";
-const PTL_SLUGS: Record<string, string> = {
-  privacyidea: "privacyidea-server",
-  "privacyidea-app": "privacyidea-authenticator-app",
-  freeradius: "privacyidea-freeradius",
-  "privacyidea-nextcloud": "privacyidea-nextcloud",
-  "privacyidea-cp": "privacyidea-windows-credential-provider",
-  pam: "privacyidea-pam-otp-push",
-  "pam-passkey": "privacyidea-pam-passkey",
-  "privacyidea-keycloak": "privacyidea-keycloak",
-  "entraid-via-keycloak": "privacyidea-entraid-integration",
-  "privacyidea-adfs": "privacyidea-adfs",
-  "privacyidea-shibboleth": "privacyidea-shibboleth"
-};
+const SERVER_PTL_SLUG = "privacyidea-server";
+
+/**
+ * Display label per dashboard section key. The catalog's `Integration.section` is a
+ * stable key (e.g. "system_login"), not display text - the backend has no access to the
+ * admin's UI locale, so each frontend translates it locally.
+ */
+function sectionLabel(section: string): string {
+  switch (section) {
+    case "use_cases":
+      return $localize`:@@dashboard.useCases:Use Cases`;
+    case "system_login":
+      return $localize`:@@dashboard.systemLogin:System Login`;
+    case "single_sign_on":
+      return $localize`:@@dashboard.singleSignOn:Single Sign On`;
+    default:
+      return section;
+  }
+}
 
 @Component({
   selector: "app-subscriptions-widget",
@@ -149,8 +118,25 @@ export class SubscriptionsWidgetComponent extends DashboardWidget implements OnI
 
   private readonly subscriptionService = inject(SubscriptionService);
   private readonly authService: AuthServiceInterface = inject(AuthService);
+  private readonly integrationsService: IntegrationsServiceInterface = inject(IntegrationsService);
   private readonly store = inject(DashboardDataStore);
   private readonly locale = inject(LOCALE_ID);
+
+  /**
+   * Dashboard rows grouped by section, in the order the catalog reports them. Each
+   * distinct section becomes a top-level group (there is no further nesting: "System
+   * Login" and "Single Sign On" are peers of "Use Cases", not children of it).
+   */
+  private readonly sections = computed<SectionNode[]>(() => {
+    const bySection = new Map<string, SectionNode[]>();
+    for (const integration of this.integrationsService.dashboardIntegrations()) {
+      const section = integration.section ?? "";
+      const children = bySection.get(section) ?? [];
+      children.push({ application: integration.id });
+      bySection.set(section, children);
+    }
+    return Array.from(bySection.entries()).map(([section, children]) => ({ label: sectionLabel(section), children }));
+  });
 
   private readonly dataRef = signal<DashboardDataRef<PiResponse<SubscriptionStatus[]>> | null>(null);
   override readonly partialLoading = computed(() => this.dataRef()?.revalidating() ?? false);
@@ -218,7 +204,10 @@ export class SubscriptionsWidgetComponent extends DashboardWidget implements OnI
   }
 
   protected displayName(application: string): string {
-    return DISPLAY_NAMES[application] ?? application;
+    if (application === "privacyidea") {
+      return SERVER_DISPLAY_NAME;
+    }
+    return this.integrationsService.labelFor(application);
   }
 
   /**
@@ -227,7 +216,11 @@ export class SubscriptionsWidgetComponent extends DashboardWidget implements OnI
    * Returns null for components without a slug, which are then rendered as plain text.
    */
   protected componentLink(status: SubscriptionStatus): string | null {
-    const slug = PTL_SLUGS[status.application];
+    const slug =
+      status.application === "privacyidea"
+        ? SERVER_PTL_SLUG
+        : this.integrationsService.integrations().find((integration) => integration.id === status.application)
+            ?.ptl_slug;
     if (!slug) {
       return null;
     }
@@ -396,7 +389,7 @@ export class SubscriptionsWidgetComponent extends DashboardWidget implements OnI
     const rows: SubscriptionRow[] = [
       { kind: "server", indent: 0, status: serverStatus ?? this.unusedStatus("privacyidea") }
     ];
-    this.flattenSections(SECTIONS, 0, rows, statusByApplication);
+    this.flattenSections(this.sections(), 0, rows, statusByApplication);
     return rows;
   }
 
@@ -409,7 +402,9 @@ export class SubscriptionsWidgetComponent extends DashboardWidget implements OnI
     for (const node of nodes) {
       if (node.label) {
         rows.push({ kind: "label", indent: depth, label: node.label });
-        this.flattenSections(node.children ?? [], depth + 1, rows, statusByApplication);
+      }
+      if (node.children?.length) {
+        this.flattenSections(node.children, node.label ? depth + 1 : depth, rows, statusByApplication);
       } else if (node.application) {
         rows.push({
           kind: "component",

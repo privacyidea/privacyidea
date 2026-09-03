@@ -33,7 +33,10 @@ jobs:
         run: npm ci
       - name: Run tests for the new WebUI
         id: jest_run
-        run: npm run test:coverage
+        # maxWorkers is capped in jest.config.ts to avoid OOMing a dev laptop running
+        # ng serve alongside it; that constraint doesn't apply here, and the runner's
+        # 2 CPUs are the whole budget, so use all of them.
+        run: npm run test:coverage -- --maxWorkers=100%
       - name: Codecov upload
         if: ${{ steps.jest_run.outcome == 'success' }}
         uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0

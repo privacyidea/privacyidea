@@ -1,0 +1,223 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+@if (authService.actionAllowed("remembered_device_list")) {
+  <div class="remembered-devices-container">
+    <h3 i18n="@@apiClient.rememberedDevices">Remembered devices</h3>
+    <p i18n="@@apiClient.rememberedDevicesIntro">
+      These are the active "remember this device" entries for this client. Revoking one invalidates that device's cookie
+      immediately. The IP address and user agent are those of the API client's request, which for a centralised
+      integration (e.g. an IdP) is the integration itself, not the end user's browser or device.
+    </p>
+
+    <div class="actions-row">
+      <mat-form-field
+        appearance="fill"
+        class="realm-filter"
+        subscriptSizing="dynamic">
+        <mat-label i18n="@@common.realm">Realm</mat-label>
+        <mat-select
+          [value]="realmFilter()"
+          (selectionChange)="onRealmFilterChange($event.value)">
+          <mat-option
+            value=""
+            i18n="@@apiClient.allRealms"
+            >All realms</mat-option
+          >
+          @for (realm of realmOptions(); track realm) {
+            <mat-option [value]="realm">{{ realm }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      @if (authService.actionAllowed("remembered_device_revoke")) {
+        <button
+          (click)="revokeAll()"
+          [disabled]="count() === 0 || loadFailed()"
+          class="action-button-delete-secondary button-width-l"
+          mat-stroked-button>
+          <mat-icon>delete_sweep</mat-icon>
+          <span>{{ revokeAllLabel() }}</span>
+        </button>
+      }
+    </div>
+
+    <table
+      [dataSource]="devices()"
+      class="remembered-devices-table"
+      mat-table>
+      <ng-container matColumnDef="user">
+        <th
+          *matHeaderCellDef
+          i18n="@@common.user"
+          mat-header-cell>
+          User
+        </th>
+        <td
+          *matCellDef="let device"
+          mat-cell>
+          @if (device.user) {
+            <a
+              role="button"
+              tabindex="0"
+              (click)="goToUser(device)"
+              (keydown.enter)="goToUser(device)">
+              {{ device.user }}@{{ device.realm }}
+            </a>
+          } @else {
+            <span
+              matTooltip="This account no longer resolves."
+              i18n-matTooltip="@@apiClient.accountNoLongerResolves">
+              {{ device.user_id }}@{{ device.realm }}
+            </span>
+          }
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="ip_address">
+        <th
+          *matHeaderCellDef
+          i18n="@@common.ipAddress"
+          mat-header-cell>
+          IP Address
+        </th>
+        <td
+          *matCellDef="let device"
+          mat-cell>
+          {{ device.ip_address || "-" }}
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="user_agent">
+        <th
+          *matHeaderCellDef
+          i18n="@@common.userAgent"
+          mat-header-cell>
+          User Agent
+        </th>
+        <td
+          *matCellDef="let device"
+          mat-cell>
+          {{ device.user_agent || "-" }}
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="created_at">
+        <th
+          *matHeaderCellDef
+          i18n="@@token.created"
+          mat-header-cell>
+          Created
+        </th>
+        <td
+          *matCellDef="let device"
+          mat-cell>
+          {{ device.created_at | date: "yyyy-MM-dd HH:mm" }}
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="last_used_at">
+        <th
+          *matHeaderCellDef
+          i18n="@@apiClient.lastUsed"
+          mat-header-cell>
+          Last used
+        </th>
+        <td
+          *matCellDef="let device"
+          mat-cell>
+          {{ (device.last_used_at | date: "yyyy-MM-dd HH:mm") || "-" }}
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="expires_at">
+        <th
+          *matHeaderCellDef
+          i18n="@@dashboard.expires"
+          mat-header-cell>
+          Expires
+        </th>
+        <td
+          *matCellDef="let device"
+          mat-cell>
+          {{ device.expires_at | date: "yyyy-MM-dd HH:mm" }}
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="actions">
+        <th
+          *matHeaderCellDef
+          mat-header-cell></th>
+        <td
+          *matCellDef="let device"
+          mat-cell>
+          @if (authService.actionAllowed("remembered_device_revoke")) {
+            <button
+              (click)="revokeDevice(device)"
+              matTooltip="Revoke this device"
+              i18n-matTooltip="@@apiClient.revokeThisDevice"
+              mat-icon-button>
+              <mat-icon>delete</mat-icon>
+            </button>
+            @if (device.user) {
+              <button
+                (click)="revokeAllForUser(device)"
+                [matTooltip]="userDevicesTooltip()"
+                mat-icon-button>
+                <mat-icon>delete_sweep</mat-icon>
+              </button>
+            }
+          }
+        </td>
+      </ng-container>
+
+      <tr
+        *matHeaderRowDef="displayedColumns"
+        mat-header-row></tr>
+      <tr
+        *matRowDef="let row; columns: displayedColumns"
+        mat-row></tr>
+
+      <tr *matNoDataRow>
+        <td colspan="7">
+          @if (loadFailed()) {
+            <span i18n="@@apiClient.rememberedDevicesLoadFailed"
+              >The remembered devices could not be loaded. This is not a statement about how many exist.</span
+            >
+          } @else if (isLoading()) {
+            <span i18n="@@apiClient.loadingRememberedDevices">Loading remembered devices...</span>
+          } @else if (realmFilter()) {
+            <span i18n="@@apiClient.noRememberedDevicesInRealm"
+              >This client has no remembered devices in realm {{ realmFilter() }}.</span
+            >
+          } @else {
+            <span i18n="@@apiClient.noRememberedDevices">This client has no remembered devices.</span>
+          }
+        </td>
+      </tr>
+    </table>
+
+    <mat-paginator
+      (page)="onPage($event)"
+      [length]="count()"
+      [pageIndex]="pageIndex()"
+      [pageSize]="pageSize()"
+      [pageSizeOptions]="pageSizeOptions"
+      showFirstLastButtons />
+  </div>
+}

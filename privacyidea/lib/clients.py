@@ -28,10 +28,15 @@ import secrets
 
 from privacyidea.lib.error import ParameterError, ResourceNotFoundError
 from privacyidea.lib.framework import get_app_config_value
+from privacyidea.lib.integrations import CATALOG
 from privacyidea.models import Client, ClientStatus
 from privacyidea.models.utils import utc_now, utc_isoformat
 
 log = logging.getLogger(__name__)
+
+# The client_type values an API client may be created with — every integration flagged
+# as an API client in the shared catalog. See privacyidea.lib.integrations.
+API_CLIENT_TYPES = {integration.id for integration in CATALOG if integration.api_client}
 
 DEFAULT_KEY_PREFIX = "pi"
 # Bytes of entropy in the public key id (identifier only, not a secret).
@@ -153,12 +158,15 @@ def create_client(display_name: str, client_type: str, config: dict | None = Non
     Create a new client with a freshly generated API key and persist it.
 
     :param display_name: a human readable name for the client
-    :param client_type: the type of client, e.g. 'windows_cp', 'keycloak', 'entraid'
+    :param client_type: one of :data:`API_CLIENT_TYPES`, e.g. 'privacyidea-cp',
+        'privacyidea-keycloak', 'entraid-via-keycloak'
     :param config: optional configuration dict for future remote config
     :param prefix: the prefix for the generated API key
     :return: a tuple of the stored ``Client`` and the plaintext API key. The
         plaintext key is returned here only and must be shown to the admin once.
     """
+    if client_type not in API_CLIENT_TYPES:
+        raise ParameterError(f"Unknown client type {client_type!r}.")
     key = generate_api_key(prefix)
     # config may be None here; the Client model normalises it to {} (see its
     # config validator), so client.config is always a dict.

@@ -41,12 +41,12 @@ import { MatSelect, MatSelectChange, MatSelectModule } from "@angular/material/s
 import { ClearButtonComponent } from "@components/shared/clear-button/clear-button.component";
 import { MultiSelectOnlyComponent } from "@components/shared/multi-select-only/multi-select-only.component";
 import { ClientsService, ClientsServiceInterface } from "@services/clients/clients.service";
+import { IntegrationsService, IntegrationsServiceInterface } from "@services/integrations/integrations.service";
 import {
-  getUserAgentLabel,
   PolicyDetail,
   PolicyService,
   PolicyServiceInterface,
-  USER_AGENT_OPTIONS
+  UserAgentOption
 } from "@services/policies/policies.service";
 import { SystemService, SystemServiceInterface } from "@services/system/system.service";
 
@@ -80,6 +80,7 @@ export class EditEnvironmentConditionsComponent implements OnInit {
   readonly policyService: PolicyServiceInterface = inject(PolicyService);
   readonly systemService: SystemServiceInterface = inject(SystemService);
   readonly clientsService: ClientsServiceInterface = inject(ClientsService);
+  readonly integrationsService: IntegrationsServiceInterface = inject(IntegrationsService);
 
   readonly policy = input.required<PolicyDetail>();
   readonly policyEdit = output<Partial<PolicyDetail>>();
@@ -161,8 +162,13 @@ export class EditEnvironmentConditionsComponent implements OnInit {
     return matches.slice(0, 20);
   });
 
-  readonly userAgentOptions = USER_AGENT_OPTIONS;
-  readonly getUserAgentLabel = getUserAgentLabel;
+  readonly userAgentOptions = computed<UserAgentOption[]>(() =>
+    this.integrationsService.integrations().map((integration) => ({
+      key: integration.policy_value,
+      label: integration.label
+    }))
+  );
+  getUserAgentLabel = (identifier: string): string => this.integrationsService.labelForPolicyValue(identifier);
   userAgentSearch = signal<string>("");
 
   readonly availablePinodesList = computed(() => this.systemService.nodes().map((node) => node.name));
@@ -172,7 +178,7 @@ export class EditEnvironmentConditionsComponent implements OnInit {
   filteredUserAgentPresets = computed(() => {
     const selected = this.selectedUserAgents();
     const search = this.userAgentSearch().toLowerCase();
-    return this.userAgentOptions.filter(
+    return this.userAgentOptions().filter(
       (ua) => !selected.includes(ua.key) && ua.label.toLowerCase().includes(search)
     );
   });
