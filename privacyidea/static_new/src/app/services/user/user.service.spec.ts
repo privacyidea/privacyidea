@@ -17,6 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { provideHttpClient } from "@angular/common/http";
+import { lastValueFrom } from "rxjs";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
 import { provideLocationMocks } from "@angular/common/testing";
 import { TestBed } from "@angular/core/testing";
@@ -318,6 +319,34 @@ describe("UserService", () => {
       expect(req.request.headers).toBeTruthy();
 
       req.flush({ result: { status: true, value: true } });
+    });
+
+    it("setUserAttribute notifies on error", async () => {
+      realmService.realmOptions.set(["realm1"]);
+      const result = lastValueFrom(userService.setUserAttribute("department", "finance"));
+
+      const req = httpMock.expectOne((r) => r.method === "POST" && r.url.endsWith("/user/attribute"));
+      req.flush(
+        { result: { error: { message: "denied" } } },
+        { status: 500, statusText: "Server Error" }
+      );
+
+      await expect(result).resolves.toBeUndefined();
+      expect(notificationServiceMock.error).toHaveBeenCalledWith("Failed to set user attribute. denied");
+    });
+
+    it("deleteUserAttribute notifies on error", async () => {
+      realmService.realmOptions.set(["realm1"]);
+      const result = lastValueFrom(userService.deleteUserAttribute("department"));
+
+      const req = httpMock.expectOne((r) => r.method === "DELETE");
+      req.flush(
+        { result: { error: { message: "denied" } } },
+        { status: 500, statusText: "Server Error" }
+      );
+
+      await expect(result).resolves.toBeUndefined();
+      expect(notificationServiceMock.error).toHaveBeenCalledWith("Failed to delete user attribute. denied");
     });
   });
 

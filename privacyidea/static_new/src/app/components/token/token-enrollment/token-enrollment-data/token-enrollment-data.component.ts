@@ -106,8 +106,8 @@ export class TokenEnrollmentDataComponent {
   );
   regenerateButtonText = computed(() =>
     REGENERATE_AS_VALUES_TOKEN_TYPES.includes(this.tokenType())
-      ? $localize`Regenerate Values`
-      : $localize`Regenerate QR Code`
+      ? $localize`:@@token.regenerateValues:Regenerate Values`
+      : $localize`:@@common.regenerateQrCode:Regenerate QR Code`
   );
 
   regenerating = signal(false);

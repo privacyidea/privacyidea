@@ -109,22 +109,42 @@ export class NavigationComponent implements AfterViewInit, OnDestroy {
   private resizeObserver: ResizeObserver | null = null;
   @ViewChild("mainNavRef", { static: false }) mainNavRef!: ElementRef<HTMLElement>;
   primaryNavItems: NavItem[] = [
-    { icon: "dashboard", label: $localize`Dashboard`, route: ROUTE_PATHS.DASHBOARD, section: "dashboard" },
-    { icon: "shield", label: $localize`Token`, route: ROUTE_PATHS.TOKENS, section: "token" },
-    { icon: "folder", label: $localize`Container`, route: ROUTE_PATHS.CONTAINERS, section: "container" },
-    { icon: "supervised_user_circle", label: $localize`Users`, route: ROUTE_PATHS.USERS, section: "users" },
-    { icon: "gavel", label: $localize`Policies`, route: ROUTE_PATHS.POLICIES, section: "policies" },
-    { icon: "event_repeat", label: $localize`Subscription`, route: ROUTE_PATHS.SUBSCRIPTION, section: "subscription" },
-    { icon: "receipt_long", label: $localize`Audit`, route: ROUTE_PATHS.AUDIT, section: "audit" },
+    {
+      icon: "dashboard",
+      label: $localize`:@@nav.dashboard:Dashboard`,
+      route: ROUTE_PATHS.DASHBOARD,
+      section: "dashboard"
+    },
+    { icon: "shield", label: $localize`:@@common.token:Token`, route: ROUTE_PATHS.TOKENS, section: "token" },
+    {
+      icon: "folder",
+      label: $localize`:@@common.container:Container`,
+      route: ROUTE_PATHS.CONTAINERS,
+      section: "container"
+    },
+    {
+      icon: "supervised_user_circle",
+      label: $localize`:@@nav.users:Users`,
+      route: ROUTE_PATHS.USERS,
+      section: "users"
+    },
+    { icon: "gavel", label: $localize`:@@common.policies:Policies`, route: ROUTE_PATHS.POLICIES, section: "policies" },
+    {
+      icon: "event_repeat",
+      label: $localize`:@@nav.subscription:Subscription`,
+      route: ROUTE_PATHS.SUBSCRIPTION,
+      section: "subscription"
+    },
+    { icon: "receipt_long", label: $localize`:@@nav.audit:Audit`, route: ROUTE_PATHS.AUDIT, section: "audit" },
     {
       icon: "hub",
-      label: $localize`External Services`,
+      label: $localize`:@@nav.externalServices:External Services`,
       route: ROUTE_PATHS.EXTERNAL_SERVICES_SMTP,
       section: "external_services"
     },
     {
       icon: "miscellaneous_services",
-      label: $localize`Configuration`,
+      label: $localize`:@@nav.configuration:Configuration`,
       route: ROUTE_PATHS.CONFIGURATION_SYSTEM,
       section: "config"
     }
@@ -139,7 +159,7 @@ export class NavigationComponent implements AfterViewInit, OnDestroy {
   });
   versionPrefix = computed(() => {
     if (this.customLogo()) {
-      return $localize`privacyIDEA` + " ";
+      return "privacyIDEA ";
     }
     return "";
   });

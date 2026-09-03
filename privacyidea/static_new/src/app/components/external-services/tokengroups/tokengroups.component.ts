@@ -117,10 +117,10 @@ export class TokengroupsComponent {
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: $localize`Delete Token Groups`,
+          title: $localize`:@@tokenGroup.deleteTokenGroups:Delete Token Groups`,
           items: selected.map((row) => row.groupname),
           itemType: "tokengroup",
-          confirmAction: { label: $localize`Delete`, value: true, type: "destruct" }
+          confirmAction: { label: $localize`:@@common.delete:Delete`, value: true, type: "destruct" }
         }
       })
       .afterClosed()

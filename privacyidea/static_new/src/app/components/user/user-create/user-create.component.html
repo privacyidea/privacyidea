@@ -21,18 +21,18 @@
   appScrollToTop
   aria-label="Create New User"
   class="create-user-layout"
-  i18n-aria-label>
+  i18n-aria-label="@@user.createNewUser">
   <h3
     class="heading"
-    i18n>
-    Create New User
-  </h3>
+    i18n="@@user.createNewUser"
+    >Create New User</h3
+  >
   <div class="flex-row gap-8">
     <button
       (click)="onCancel()"
       class="action-button-secondary button-width-s"
       mat-stroked-button>
-      <span i18n>Cancel</span>
+      <span i18n="@@common.cancel">Cancel</span>
     </button>
     <button
       (click)="onSave()"
@@ -40,13 +40,13 @@
       class="action-button-primary button-width-s"
       mat-stroked-button>
       <mat-icon>add</mat-icon>
-      <span i18n>Create</span>
+      <span i18n="@@common.create">Create</span>
     </button>
   </div>
 
   <div class="flex-row gap-16 margin-top-16 margin-bottom-16">
     <mat-form-field class="input-width-l">
-      <mat-label i18n>Resolver</mat-label>
+      <mat-label i18n="@@common.resolver">Resolver</mat-label>
       <mat-select
         (selectionChange)="resolver.set($event.value)"
         [value]="resolver()"
@@ -56,21 +56,21 @@
         }
       </mat-select>
       <mat-hint>
-        <span i18n>Corresponding Realms:</span>
+        <span i18n="@@user.correspondingRealms">Corresponding Realms:</span>
         {{ correspondingRealms().join(", ") }}
       </mat-hint>
       @if (resolverForm().errors().some(e => e.kind === 'required') && resolverForm().touched()) {
-        <mat-error i18n> Resolver is <strong>required</strong></mat-error>
+        <mat-error i18n="@@user.resolverRequired">Resolver is <strong>required</strong></mat-error>
       }
     </mat-form-field>
 
     <mat-form-field class="input-width-l">
-      <mat-label i18n>Username</mat-label>
+      <mat-label i18n="@@common.username">Username</mat-label>
       <input
         [formField]="usernameForm"
         matInput />
       @if (usernameForm().errors().some(e => e.kind === 'required') && usernameForm().touched()) {
-        <mat-error i18n> Username is <strong>required</strong></mat-error>
+        <mat-error i18n="@@user.usernameRequired">Username is <strong>required</strong></mat-error>
       }
     </mat-form-field>
   </div>

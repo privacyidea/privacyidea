@@ -73,11 +73,11 @@ export class UISettingsComponent {
   protected readonly lightSource = this.appearanceService.lightSource;
   protected readonly corners = this.appearanceService.corners;
   protected readonly depthLevels: { value: DepthLevel; label: string }[] = [
-    { value: "flat", label: $localize`Flat` },
-    { value: "subtle", label: $localize`Subtle` },
-    { value: "default", label: $localize`Default` },
-    { value: "strong", label: $localize`Strong` },
-    { value: "very-strong", label: $localize`Very strong` }
+    { value: "flat", label: $localize`:@@uiSettings.flat:Flat` },
+    { value: "subtle", label: $localize`:@@uiSettings.subtle:Subtle` },
+    { value: "default", label: $localize`:@@common.default:Default` },
+    { value: "strong", label: $localize`:@@uiSettings.strong:Strong` },
+    { value: "very-strong", label: $localize`:@@uiSettings.veryStrong:Very strong` }
   ];
   // One item per angle stop, so slot and value coincide; the label is the bare angle, untranslated.
   protected readonly lightSourceDialItems: LightSourceDialItem[] = LIGHT_SOURCE_LEVELS.map((value) => ({
@@ -86,13 +86,13 @@ export class UISettingsComponent {
     label: `${Number(value) * LIGHT_SOURCE_STEP_ANGLE}°`
   }));
   protected readonly cornerLevels: { value: CornerLevel; label: string }[] = [
-    { value: "square", label: $localize`Square` },
-    { value: "default", label: $localize`Default` },
-    { value: "round", label: $localize`Round` },
-    { value: "extra-round", label: $localize`Extra round` }
+    { value: "square", label: $localize`:@@uiSettings.square:Square` },
+    { value: "default", label: $localize`:@@common.default:Default` },
+    { value: "round", label: $localize`:@@uiSettings.round:Round` },
+    { value: "extra-round", label: $localize`:@@uiSettings.extraRound:Extra round` }
   ];
-  protected readonly resetTooltip = $localize`Reset UI settings to defaults`;
-  protected readonly appearanceHint = $localize`Changes how the interface looks: corner rounding, shadow depth and the direction the light comes from. Saved for your account.`;
+  protected readonly resetTooltip = $localize`:@@uiSettings.resetUiSettingsToDefaults:Reset UI settings to defaults`;
+  protected readonly appearanceHint = $localize`:@@uiSettings.changesHowTheInterfaceLooks:Changes how the interface looks: corner rounding, shadow depth and the direction the light comes from. Saved for your account.`;
 
   protected resetSettings(): void {
     // Switching locale is a full-page navigation, which would abort the other writes if they

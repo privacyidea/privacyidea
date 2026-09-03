@@ -21,19 +21,20 @@
   <div class="flex-fix-size">
     <mat-card class="default-template-card-row">
       <mat-form-field subscriptSizing="dynamic">
-        <mat-label i18n>Template Name</mat-label>
+        <mat-label i18n="@@container.templateName">Template Name</mat-label>
         <input
           matInput
           type="text"
           placeholder="Template Name"
-          i18n-placeholder
+          i18n-placeholder="@@container.templateName"
+          i18n-aria-label="@@container.templateName"
           aria-label="Template Name"
           [value]="template().name"
           (input)="editTemplate({ name: $any($event.target).value })"
           (keydown)="$event.stopPropagation()"
           [errorStateMatcher]="nameErrorMatcher" />
         @if (nameConflict()) {
-          <mat-error i18n>Another template with this name already exists.</mat-error>
+          <mat-error i18n="@@container.anotherTemplate">Another template with this name already exists.</mat-error>
         }
       </mat-form-field>
 
@@ -43,14 +44,14 @@
           (change)="editTemplate({ default: $event.checked })"
           (click)="$event.stopPropagation()"
           matTooltip="Set as default template"
-          i18n-matTooltip="@@containerTemplate.setAsDefaultTooltip">
-          <span i18n>Set as default template</span>
+          i18n-matTooltip="@@container.setAsDefaultTemplate">
+          <span i18n="@@container.setAsDefaultTemplate">Set as default template</span>
         </mat-checkbox>
       </mat-card-content>
     </mat-card>
 
     <div>
-      <h3 i18n>Container Type</h3>
+      <h3 i18n="@@common.containerType">Container Type</h3>
       <app-selector-buttons
         [values]="containerTypes()"
         [labels]="containerTypesTitleCase()"
@@ -62,7 +63,7 @@
   </div>
 
   <div class="flex-grow">
-    <h3 i18n>Tokens</h3>
+    <h3 i18n="@@common.tokens">Tokens</h3>
     <app-container-template-edit-body
       [template]="template()"
       (templateChange)="editTemplate($event)"

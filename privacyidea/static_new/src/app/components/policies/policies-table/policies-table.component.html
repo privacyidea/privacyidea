@@ -21,7 +21,7 @@
   appScrollToTop
   aria-label="Policy Table"
   class="policies-table-layout"
-  i18n-aria-label>
+  i18n-aria-label="@@policy.policyTable">
   @if (tableState.showTable()) {
     @if (authService.actionAllowed("policyread")) {
       <app-policy-filter
@@ -52,7 +52,7 @@
             [disabled]="!selector.hasVisibleRows()"
             [indeterminate]="selector.someRowsSelected()"
             aria-label="Select all policies"
-            i18n-aria-label></mat-checkbox>
+            i18n-aria-label="@@policy.selectAllPolicies"></mat-checkbox>
         </th>
         <td
           *matCellDef="let policy"
@@ -63,7 +63,7 @@
             [checked]="selector.isRowSelected(policy)"
             [disabled]="!policy.name"
             aria-label="Select policy"
-            i18n-aria-label></mat-checkbox>
+            i18n-aria-label="@@policy.selectPolicy"></mat-checkbox>
         </td>
       </ng-container>
 
@@ -176,7 +176,7 @@
             [status]="tableState.rowStatus()"
             [table]="tableState"
             heading="No policies yet"
-            i18n-heading
+            i18n-heading="@@policy.noPoliciesYet"
             icon="gavel">
             @if (authService.actionAllowed("policywrite")) {
               <button
@@ -187,7 +187,7 @@
                   <mat-icon class="padding-right-4">gavel</mat-icon>
                   <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
                 </span>
-                <span i18n>Create Policy</span>
+                <span i18n="@@policy.createPolicy">Create Policy</span>
               </button>
             }
           </app-table-state>
@@ -199,7 +199,7 @@
       [hint]="emptyHint()"
       [table]="tableState"
       heading="No policies yet"
-      i18n-heading
+      i18n-heading="@@policy.noPoliciesYet"
       icon="gavel">
       @if (authService.actionAllowed("policywrite")) {
         <button
@@ -210,7 +210,7 @@
             <mat-icon class="padding-right-4">gavel</mat-icon>
             <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
           </span>
-          <span i18n>Create Policy</span>
+          <span i18n="@@policy.createPolicy">Create Policy</span>
         </button>
       }
     </app-table-state>

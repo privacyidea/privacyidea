@@ -71,6 +71,10 @@ export interface ContainerDetailsUserHost {
   styleUrl: "./container-details-user.component.scss"
 })
 export class ContainerDetailsUserComponent {
+  protected linkLabel(label: string): string {
+    return $localize`:@@common.linkLabel:${label}:LABEL: link`;
+  }
+
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected readonly userService: UserServiceInterface = inject(UserService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);

@@ -135,4 +135,12 @@ describe("ContainerDetailsActionsComponent", () => {
     expect(mockNotificationService.success).toHaveBeenCalledWith("Container unregistered successfully.");
     expect(mockContainerService.containerDetailsResource.reload).toHaveBeenCalled();
   });
+
+  it("should notify an error when unregisterContainer reports failure", () => {
+    const unregisterResponse = MockPiResponse.fromValue<ContainerUnregisterData>({ success: false });
+    mockContainerService.unregister.mockReturnValue(of(unregisterResponse));
+    jest.spyOn(mockNotificationService, "error");
+    component.unregisterContainer();
+    expect(mockNotificationService.error).toHaveBeenCalledWith("Failed to unregister container.");
+  });
 });

@@ -20,7 +20,7 @@
   <mat-expansion-panel class="otpkey-expansion">
     <mat-expansion-panel-header>
       <mat-panel-title class="gap-16">
-        <span i18n>OTP Values</span>
+        <span i18n="@@token.otpValues">OTP Values</span>
         @if (otpValues()) {
           <button
             (click)="$event.stopPropagation(); printOtps()"

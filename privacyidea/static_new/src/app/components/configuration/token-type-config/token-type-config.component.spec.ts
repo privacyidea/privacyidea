@@ -7,8 +7,8 @@ import { NotificationService } from "@services/notification/notification.service
 import { SmsGatewayService } from "@services/sms-gateway/sms-gateway.service";
 import { SmtpService } from "@services/smtp/smtp.service";
 import { SystemService } from "@services/system/system.service";
-import { MockPendingChangesService, MockSystemService } from "@testing/mock-services";
-import { Observable, of } from "rxjs";
+import { MockPendingChangesService, MockPiResponse, MockSystemService } from "@testing/mock-services";
+import { Observable, of, throwError } from "rxjs";
 import { TokenTypeConfigComponent } from "./token-type-config.component";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { QUESTION_NUMBER_OF_ANSWERS, TIQR_REG_SERVER } from "@constants/token.constants";
@@ -101,6 +101,28 @@ describe("TokenTypeConfigComponent", () => {
 
     expect(saveSpy).toHaveBeenCalledWith(component.formData());
     expect(reloadSpy).toHaveBeenCalled();
+  });
+
+  it("should notify an error when saveSystemConfig reports failure", async () => {
+    const systemService = TestBed.inject(SystemService) as unknown as MockSystemService;
+    const notificationService = TestBed.inject(NotificationService);
+    jest
+      .spyOn(systemService, "saveSystemConfig")
+      .mockReturnValueOnce(of(new MockPiResponse<Record<string, string>>({ result: { status: false } })));
+
+    await component.save();
+
+    expect(notificationService.error).toHaveBeenCalledWith("Failed to save token configuration.");
+  });
+
+  it("should notify an error when saveSystemConfig throws", async () => {
+    const systemService = TestBed.inject(SystemService) as unknown as MockSystemService;
+    const notificationService = TestBed.inject(NotificationService);
+    jest.spyOn(systemService, "saveSystemConfig").mockReturnValueOnce(throwError(() => new Error("Network error")));
+
+    await component.save();
+
+    expect(notificationService.error).toHaveBeenCalledWith("Error saving token configuration.");
   });
 
   it("should add an empty question to formData without saving", () => {

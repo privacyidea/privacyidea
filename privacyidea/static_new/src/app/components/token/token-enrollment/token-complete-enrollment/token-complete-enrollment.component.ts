@@ -69,13 +69,13 @@ export class TokenCompleteEnrollmentComponent extends AbstractDialogComponent<
     const actions: DialogAction<string>[] = [];
     if (this.canCancelEnrollment()) {
       actions.push({
-        label: $localize`Cancel`,
+        label: $localize`:@@common.cancel:Cancel`,
         type: "destruct",
         value: "cancelEnrollment"
       });
     }
     actions.push({
-      label: $localize`Enroll`,
+      label: $localize`:@@token.enroll:Enroll`,
       type: "confirm",
       value: "enroll",
       disabled: this.invalidInputSignal()

@@ -70,9 +70,9 @@ export type HttpResolverInputData = HTTPResolverData &
   Partial<EntraIDResolverData> &
   Partial<KeycloakResolverData> &
   Partial<HTTPRequestConfig> & {
-  username?: string;
-  password?: string;
-};
+    username?: string;
+    password?: string;
+  };
 
 export interface HttpResolverModel {
   // Basic mode fields
@@ -270,7 +270,7 @@ export class HttpResolverComponent {
         if (data.responseMapping === undefined) {
           this.model.update((m) => ({
             ...m,
-            responseMapping: "{\"username\":\"{username}\", \"userid\":\"{userid}\"}"
+            responseMapping: '{"username":"{username}", "userid":"{userid}"}'
           }));
         }
         if (data.verify_tls === undefined) {
@@ -347,10 +347,11 @@ export class HttpResolverComponent {
   getValue = () => this.model();
 
   checkUserPasswordHint = computed(() => {
-    if (this.type() === "entraidresolver") {
-      return $localize`Possible tags: ` + `{userid} {username} {password} {client_id} {client_credential} {tenant}`;
-    }
-    return $localize`Possible tags: ` + `{userid} {username} {password}`;
+    const tags =
+      this.type() === "entraidresolver"
+        ? "{userid} {username} {password} {client_id} {client_credential} {tenant}"
+        : "{userid} {username} {password}";
+    return $localize`:@@resolver.possibleTags:Possible tags: ${tags}:TAGS:`;
   });
   // Signals derived from model for reactive sub-component inputs
   configAuthModel = signal<HttpConfigModel>({ ...EMPTY_HTTP_CONFIG });
@@ -395,7 +396,6 @@ export class HttpResolverComponent {
       return this.privacyideaAttributes.filter((attr) => !selectedAttributes.includes(attr));
     });
   });
-
 
   setCustomAttr(rowIndex: number, customValue: string): void {
     const v = (customValue ?? "").trim();

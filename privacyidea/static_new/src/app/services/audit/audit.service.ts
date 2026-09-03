@@ -28,7 +28,10 @@ import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
-import { FilterableTableService, FilterableTableServiceInterface } from "@services/table-utils/filterable-table-service";
+import {
+  FilterableTableService,
+  FilterableTableServiceInterface
+} from "@services/table-utils/filterable-table-service";
 import { finalize, Observable, Subscription } from "rxjs";
 
 export interface Audit {
@@ -227,7 +230,7 @@ export class AuditService extends FilterableTableService implements AuditService
           window.URL.revokeObjectURL(url);
         },
         error: () => {
-          this.notificationService.error($localize`Failed to download audit log.`);
+          this.notificationService.error($localize`:@@audit.failedDownload:Failed to download audit log.`);
         }
       });
   }

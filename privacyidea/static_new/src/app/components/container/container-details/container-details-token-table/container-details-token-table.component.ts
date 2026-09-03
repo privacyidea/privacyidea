@@ -98,6 +98,10 @@ interface ContainerDetailTokenData {
   styleUrl: "./container-details-token-table.component.scss"
 })
 export class ContainerDetailsTokenTableComponent implements AfterViewInit {
+  protected linkLabel(label: string): string {
+    return $localize`:@@common.linkLabel:${label}:LABEL: link`;
+  }
+
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
@@ -277,10 +281,10 @@ export class ContainerDetailsTokenTableComponent implements AfterViewInit {
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: $localize`Remove Token`,
+          title: $localize`:@@container.removeToken:Remove Token`,
           items: [tokenSerial],
           itemType: "token",
-          confirmAction: { label: $localize`Remove`, value: true, type: "destruct" }
+          confirmAction: { label: $localize`:@@container.remove:Remove`, value: true, type: "destruct" }
         }
       })
       .afterClosed()
@@ -321,10 +325,10 @@ export class ContainerDetailsTokenTableComponent implements AfterViewInit {
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: $localize`Delete Token`,
+          title: $localize`:@@common.deleteToken:Delete Token`,
           items: [tokenSerial],
           itemType: "token",
-          confirmAction: { label: $localize`Delete`, value: true, type: "destruct" }
+          confirmAction: { label: $localize`:@@common.delete:Delete`, value: true, type: "destruct" }
         }
       })
       .afterClosed()
@@ -351,7 +355,7 @@ export class ContainerDetailsTokenTableComponent implements AfterViewInit {
       })
       .subscribe({
         next: () => {
-          this.notificationService.success($localize`User assigned to token`);
+          this.notificationService.success($localize`:@@container.userAssignedToken:User assigned to token`);
           this.containerService.containerDetailsResource.reload();
         }
       });

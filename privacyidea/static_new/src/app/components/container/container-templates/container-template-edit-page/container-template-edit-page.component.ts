@@ -147,7 +147,7 @@ export class ContainerTemplateEditPageComponent {
   // --- Computed - Dialog Actions ---
   readonly actions = computed<DialogAction<string>[]>(() => [
     {
-      label: $localize`Save`,
+      label: $localize`:@@common.save:Save`,
       value: "save",
       icon: "save",
       type: "confirm",
@@ -174,7 +174,9 @@ export class ContainerTemplateEditPageComponent {
     const editComponent = this.editComponent();
     const tokens = editComponent?.collectTokens();
     if (tokens === null || tokens === undefined) {
-      this.notificationService.warning($localize`There are invalid token configurations.`);
+      this.notificationService.warning(
+        $localize`:@@container.thereInvalidToken:There are invalid token configurations.`
+      );
       editComponent?.scrollToFirstInvalid();
       return false;
     }
@@ -194,7 +196,7 @@ export class ContainerTemplateEditPageComponent {
       .openDialog({
         component: SaveAndExitDialogComponent,
         data: {
-          title: $localize`Discard changes`,
+          title: $localize`:@@common.discardChanges:Discard changes`,
           allowSaveExit: this.canSave(),
           saveExitDisabled: !this.canSave()
         }

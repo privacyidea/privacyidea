@@ -19,10 +19,10 @@
 <div
   aria-label="Token Applications Offline"
   class="token-applications-offline"
-  i18n-aria-label>
+  i18n-aria-label="@@token.tokenApplicationsOffline">
   <div class="details-flex-layout flex-column">
     <div class="margin-left-16 margin-bottom-16">
-      <p i18n>HOTP tokens can be attached with offline to e.g. notebooks.</p>
+      <p i18n="@@token.hotpTokensAttached">HOTP tokens can be attached with offline to e.g. notebooks.</p>
     </div>
   </div>
 </div>
@@ -34,7 +34,7 @@
       <mat-form-field
         subscriptSizing="dynamic"
         class="application-table-filter">
-        <mat-label i18n>Filter Offline Applications...</mat-label>
+        <mat-label i18n="@@token.filterOffline">Filter Offline Applications...</mat-label>
         <app-clearable-input
           (clearButtonClick)="machineService.clearFilter()"
           [showClearButton]="machineService.filterDraft().isNotEmpty">
@@ -43,8 +43,8 @@
             (input)="machineService.handleFilterInput($event)"
             [value]="machineService.filterDraft().filterString"
             aria-label="Filter Input"
-            i18n-aria-label
-            i18n-placeholder
+            i18n-aria-label="@@common.filterInput"
+            i18n-placeholder="@@token.exampleQuerySerial"
             id="offline-filter-input"
             matInput
             placeholder="Example query: 'serial: OATH0001'" />
@@ -66,7 +66,7 @@
       [dataSource]="dataSource()"
       aria-label="Token Applications Table"
       class="token-table"
-      i18n-aria-label
+      i18n-aria-label="@@token.tokenApplicationsTable"
       mat-table>
       @for (column of columnsKeyMap; track column) {
         <ng-container [matColumnDef]="column.key">
@@ -80,7 +80,7 @@
                   <button
                     (click)="onKeywordClick(column.key)"
                     aria-label="Filter by {{ column.label }}"
-                    i18n-aria-label
+                    i18n-aria-label="@@common.filterBy"
                     class="filter-button"
                     mat-icon-button
                     type="button">
@@ -92,7 +92,7 @@
                 <button
                   (click)="tableUtilsService.onSortButtonClick(column.key, sort)"
                   aria-label="Sort by {{ column.label }}"
-                  i18n-aria-label
+                  i18n-aria-label="@@common.sortBy"
                   class="sort-button"
                   mat-icon-button
                   type="button">
@@ -112,7 +112,7 @@
                       (click)="contentService.tokenSelected(element.serial)"
                       (keydown.enter)="contentService.tokenSelected(element.serial)"
                       (keydown.space)="$event.preventDefault(); contentService.tokenSelected(element.serial)"
-                      attr.aria-label="{{ column.label }} Link"
+                      [attr.aria-label]="linkLabel(column.label)"
                       role="button"
                       tabindex="0">
                       {{ element[column.key] }}
@@ -122,7 +122,7 @@
                 @default {
                   @if (tableUtilsService.isLink(column.key)) {
                     <a
-                      attr.aria-label="{{ column.label }} Link"
+                      [attr.aria-label]="linkLabel(column.label)"
                       href="#">
                       {{ element[column.key] }}
                     </a>
@@ -156,8 +156,8 @@
       [table]="tableState"
       heading="No offline applications yet"
       hint="Attach a HOTP token to a machine in the token details to see it here."
-      i18n-heading
-      i18n-hint
+      i18n-heading="@@token.noOfflineApplications"
+      i18n-hint="@@token.attachHOTPToken"
       icon="laptop" />
   }
 </div>

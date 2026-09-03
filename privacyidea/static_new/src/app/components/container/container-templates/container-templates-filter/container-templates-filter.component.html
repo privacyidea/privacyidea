@@ -19,7 +19,7 @@
 <mat-form-field
   class="input-width-xxl"
   subscriptSizing="dynamic">
-  <mat-label i18n>Filter Templates...</mat-label>
+  <mat-label i18n="@@container.filterTemplates">Filter Templates...</mat-label>
   <app-clearable-input
     (clearButtonClick)="clearFilter()"
     [showClearButton]="!isEmpty()">
@@ -28,9 +28,9 @@
       (input)="onFilterChange($event)"
       [value]="filter().rawValue"
       aria-label="Filter Input"
-      i18n-aria-label
+      i18n-aria-label="@@common.filterInput"
       matInput
       placeholder="Example query: 'name: example_template container_type: smartphone'"
-      i18n-placeholder="@@filterPlaceholder" />
+      i18n-placeholder="@@container.exampleQueryName" />
   </app-clearable-input>
 </mat-form-field>
