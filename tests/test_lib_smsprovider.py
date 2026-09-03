@@ -772,6 +772,8 @@ class HttpSMSTestCase(MyTestCase):
 
         request_body = json.loads(responses.calls[0].request.body)
         self.assertEqual({"device_token": "device-token", "push_payload": push_payload}, request_body)
+        self.assertEqual('payload={"nonce": "123", "question": "Confirm login?"}',
+                         provider._render_option_value("payload={message}", "device-token", push_payload))
         delete_smsgateway(identifier)
 
 

@@ -27,7 +27,7 @@ from werkzeug.test import EnvironBuilder
 
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.crypto import geturandom
-from privacyidea.lib.error import ConfigAdminError
+from privacyidea.lib.error import ConfigAdminError, ValidateError
 from privacyidea.lib.error import ParameterError, PrivacyIDEAError, PolicyError
 from privacyidea.lib.framework import get_app_local_store
 from privacyidea.lib.policies.actions import PolicyAction
@@ -160,7 +160,11 @@ class PushTokenTestCase(MyTestCase):
         self.assertRaises(ParameterError, token.update, {"otpkey": "1234", "pubkey": "1234"})
 
         # Unknown config
-        self.assertRaises(ParameterError, token.get_init_detail, params={"firebase_config": "bla"})
+        self.assertRaisesRegex(
+            ParameterError, "Unknown or incompatible push gateway configuration!",
+            token.get_init_detail,
+            params={"policies": {PushAction.FIREBASE_CONFIG: "bla",
+                                 PushAction.REGISTRATION_URL: REGISTRATION_URL}})
 
         fb_config = {FirebaseConfig.REGISTRATION_URL: "http://test/ttype/push",
                      FirebaseConfig.JSON_CONFIG: CLIENT_FILE,
@@ -226,6 +230,7 @@ class PushTokenTestCase(MyTestCase):
     def test_01a_list_push_capable_gateways(self):
         http_gateway = "push-http"
         smtp_gateway = "sms-smtp"
+        invalid_gateway = "push-invalid"
         set_smsgateway(http_gateway,
                        "privacyidea.lib.smsprovider.HttpSMSProvider.HttpSMSProvider",
                        options={"URL": "https://push.example.com", "HTTP_METHOD": "POST",
@@ -233,9 +238,14 @@ class PushTokenTestCase(MyTestCase):
         set_smsgateway(smtp_gateway,
                        "privacyidea.lib.smsprovider.SmtpSMSProvider.SmtpSMSProvider",
                        options={"SMTPIDENTIFIER": "mail", "MAILTO": "user@example.com"})
+        set_smsgateway(invalid_gateway, "invalid.Provider")
+        self.addCleanup(delete_smsgateway, invalid_gateway)
 
         self.assertEqual([], _get_push_gateways(http_gateway))
         self.assertEqual([], _get_push_gateways(smtp_gateway))
+        with self.assertLogs("privacyidea.lib.tokens.pushtoken", logging.WARNING) as logs:
+            self.assertEqual([], _get_push_gateways(invalid_gateway))
+        self.assertIn("Failed to load SMS provider", logs.output[0])
 
         set_smsgateway(http_gateway,
                        "privacyidea.lib.smsprovider.HttpSMSProvider.HttpSMSProvider",
@@ -301,6 +311,31 @@ class PushTokenTestCase(MyTestCase):
         remove_token(token.get_serial())
         delete_policy("push-http")
         delete_smsgateway(gateway_identifier)
+
+    def test_02c_reject_push_gateway_without_permission(self):
+        gateway_identifier = "push-disabled"
+        set_smsgateway(gateway_identifier,
+                       "privacyidea.lib.smsprovider.HttpSMSProvider.HttpSMSProvider",
+                       options={"URL": "https://push.example.com/send", "HTTP_METHOD": "POST"})
+        self.addCleanup(delete_smsgateway, gateway_identifier)
+        token = self._create_push_token()
+        self.addCleanup(remove_token, token.get_serial())
+        token.add_tokeninfo(PushAction.FIREBASE_CONFIG, gateway_identifier)
+        g = FakeFlaskG()
+        g.policy_object = PolicyClass()
+
+        with self.assertRaisesRegex(ConfigAdminError, "does not support push messages"):
+            token.create_challenge(options={"g": g})
+
+    def test_02d_challenge_without_gateway_raises_on_exception(self):
+        token = self._create_push_token()
+        self.addCleanup(remove_token, token.get_serial())
+        token.delete_tokeninfo(PushAction.FIREBASE_CONFIG)
+        g = FakeFlaskG()
+        g.policy_object = PolicyClass()
+
+        with self.assertRaisesRegex(ValidateError, "Can not send via push gateway"):
+            token.create_challenge(options={"g": g, "exception": True})
 
     @responses.activate
     def test_03a_api_authenticate_fail(self):
