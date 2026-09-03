@@ -20,35 +20,34 @@
   @if (!defaultRadiusServerIsSet() && authService.role() === "admin") {
     <span
       class="inline-hint"
-      i18n
+      i18n="@@token.easeEnrollmentRadius"
       >To ease the enrollment of RADIUS tokens you can set default values in the
       <a
         role="button"
         tabindex="0"
         aria-label="Go to RADIUS token configuration"
-        i18n-aria-label
+        i18n-aria-label="@@token.goRadiusToken"
         (click)="goToRadiusConfig()"
         (keydown)="onRadiusConfigKeydown($event)">
         RADIUS Token Configuration </a
-      >!
-    </span>
+      >!</span
+    >
   }
   <mat-checkbox
     class="margin-bottom-16"
     [checked]="checkPinLocally()"
     (change)="checkPinLocally.set($event.checked)"
-    i18n>
-    Check the PIN locally
-  </mat-checkbox>
+    i18n="@@token.checkPinLocally"
+    >Check the PIN locally</mat-checkbox
+  >
   <div class="flex-row gap-16">
     @if (!wizard() || !defaultRadiusServerIsSet()) {
       <mat-form-field class="input-width-xl margin-bottom-16">
-        <mat-label i18n>RADIUS server configuration</mat-label>
-        <mat-hint i18n>
-          Select a predefined
-          <a href="#"><strong>RADIUS server configuration.</strong></a>
-          The RADIUS request will be forwarded to this RADIUS server.
-        </mat-hint>
+        <mat-label i18n="@@token.radiusServerConfiguration">RADIUS server configuration</mat-label>
+        <mat-hint i18n="@@token.selectPredefined"
+          >Select a predefined <a href="#"><strong>RADIUS server configuration.</strong></a> The RADIUS request will be
+          forwarded to this RADIUS server.</mat-hint
+        >
         <mat-select
           [value]="radiusServerConfiguration()"
           (selectionChange)="radiusServerConfiguration.set($event.value)"
@@ -57,15 +56,15 @@
             <mat-option [value]="option">{{ option }}</mat-option>
           }
         </mat-select>
-        <mat-error i18n>RADIUS Server is <strong>required</strong></mat-error>
+        <mat-error i18n="@@token.radiusServerRequired">RADIUS Server is <strong>required</strong></mat-error>
       </mat-form-field>
     }
     <mat-form-field class="input-width-l">
-      <mat-label i18n>RADIUS User</mat-label>
+      <mat-label i18n="@@token.radiusUser">RADIUS User</mat-label>
       <input
         [formField]="radiusUserForm"
         matInput />
-      <mat-error i18n>RADIUS User is <strong>required</strong></mat-error>
+      <mat-error i18n="@@token.radiusUserRequired">RADIUS User is <strong>required</strong></mat-error>
     </mat-form-field>
   </div>
 </div>

@@ -285,4 +285,19 @@ describe("ContainerDetailsTokenTableComponent", () => {
     expect(tokenServiceMock.deleteToken).toHaveBeenCalledWith("Another serial");
     expect(containerServiceMock.containerDetailsResource.reload).toHaveBeenCalled();
   });
+
+  it("assignUserToToken assigns the selected user and notifies success", () => {
+    const notificationService = TestBed.inject(NotificationService);
+    component.assignedUser.set({ user_name: "userA", user_realm: "realm1", user_resolver: "", user_id: "" });
+
+    component.assignUserToToken({ serial: "Mock serial", active: true } as ContainerDetailToken);
+
+    expect(tokenServiceMock.assignUser).toHaveBeenCalledWith({
+      tokenSerial: "Mock serial",
+      username: "userA",
+      realm: "realm1"
+    });
+    expect(notificationService.success).toHaveBeenCalledWith("User assigned to token");
+    expect(containerServiceMock.containerDetailsResource.reload).toHaveBeenCalled();
+  });
 });

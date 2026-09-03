@@ -38,6 +38,8 @@ import { MatFormField, MatSelect } from "@angular/material/select";
 import { MatTooltip } from "@angular/material/tooltip";
 import { Router } from "@angular/router";
 import { PiResponse } from "@app/app.component";
+import { BaseApiPayloadMapper, TokenEnrollmentPayload } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { getTokenApiPayloadMapper } from "@app/mappers/token-api-payload/token-api-payload-mapper-registry";
 import { ROUTE_PATHS } from "@app/route_paths";
 import {
   ContainerCreatedDialogComponent,
@@ -69,7 +71,7 @@ import {
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
-import { TokenService, TokenServiceInterface } from "@services/token/token.service";
+import { EnrollTokenArguments, TokenService, TokenServiceInterface, TokenTypeKey } from "@services/token/token.service";
 import { UserService, UserServiceInterface } from "@services/user/user.service";
 import { firstValueFrom } from "rxjs";
 
@@ -253,7 +255,9 @@ export class ContainerCreateComponent implements OnInit, OnDestroy {
       next: (response) => {
         const containerSerial = response.result?.value?.container_serial;
         if (!containerSerial) {
-          this.notificationService.error($localize`Container creation failed. No container serial returned.`);
+          this.notificationService.error(
+            $localize`:@@container.containerCreation:Container creation failed. No container serial returned.`
+          );
           return;
         }
         this.pendingChangesService.clearAllRegistrations();
@@ -261,8 +265,13 @@ export class ContainerCreateComponent implements OnInit, OnDestroy {
           this.registerContainer(containerSerial);
         } else {
           const tokensRecord = response.result?.value?.tokens;
+          const templateTokens = [...(template?.template_options.tokens ?? [])];
           const enrolledTokens = tokensRecord
-            ? Object.entries(tokensRecord).map(([serial, detail]) => ({ ...detail, serial }))
+            ? Object.entries(tokensRecord).map(([serial, detail]) => ({
+                ...detail,
+                serial,
+                enrollmentParameters: this.buildEnrollmentParameters(detail.type, serial, templateTokens)
+              }))
             : [];
           if (enrolledTokens.length > 0) {
             this.openTokensEnrolledDialog({ enrolledTokens, containerSerial });
@@ -272,6 +281,21 @@ export class ContainerCreateComponent implements OnInit, OnDestroy {
         }
       }
     });
+  }
+
+  protected buildEnrollmentParameters(
+    tokenType: TokenTypeKey,
+    serial: string,
+    templateTokens: TokenEnrollmentPayload[]
+  ): EnrollTokenArguments {
+    const mapper = getTokenApiPayloadMapper(tokenType) ?? new BaseApiPayloadMapper();
+    const templateIndex = templateTokens.findIndex((token) => token.type === tokenType);
+    const payload =
+      templateIndex >= 0 ? templateTokens.splice(templateIndex, 1)[0] : ({ type: tokenType } as TokenEnrollmentPayload);
+    return {
+      data: { ...mapper.fromApiPayload(payload), serial: serial, generateOnServer: true },
+      mapper: mapper
+    };
   }
 
   protected onCreationSuccess(serial: string) {

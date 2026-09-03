@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, DOCUMENT, inject } from "@angular/core";
+import { Component, DOCUMENT, inject, LOCALE_ID } from "@angular/core";
 
 import { MatButtonModule } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
@@ -41,6 +41,7 @@ import { Router, RouterLink } from "@angular/router";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { DocumentationService, DocumentationServiceInterface } from "@services/documentation/documentation.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
+import { formatList, pluralize } from "@utils/i18n.utils";
 import { OverflowNavDirective } from "../../../shared/directives/overflow-nav/overflow-nav.directive";
 
 @Component({
@@ -50,6 +51,7 @@ import { OverflowNavDirective } from "../../../shared/directives/overflow-nav/ov
   styleUrl: "./token-table-actions.component.scss"
 })
 export class TokenTableActionsComponent {
+  private readonly localeId: string = inject(LOCALE_ID);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
@@ -81,10 +83,10 @@ export class TokenTableActionsComponent {
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: $localize`Revoke Token`,
+          title: $localize`:@@token.revokeToken:Revoke Token`,
           items: [this.tokenSerial()],
-          itemType: $localize`token`,
-          confirmAction: { label: $localize`Revoke`, value: true, type: "destruct" }
+          itemType: $localize`:@@common.itemTypeToken:token`,
+          confirmAction: { label: $localize`:@@token.revoke:Revoke`, value: true, type: "destruct" }
         }
       })
       .afterClosed()
@@ -109,10 +111,10 @@ export class TokenTableActionsComponent {
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: $localize`Delete Token`,
+          title: $localize`:@@common.deleteToken:Delete Token`,
           items: [this.tokenSerial()],
-          itemType: $localize`token`,
-          confirmAction: { label: $localize`Delete`, value: true, type: "destruct" }
+          itemType: $localize`:@@common.itemTypeToken:token`,
+          confirmAction: { label: $localize`:@@common.delete:Delete`, value: true, type: "destruct" }
         }
       })
       .afterClosed()
@@ -157,7 +159,7 @@ export class TokenTableActionsComponent {
                 ? nonRevokedTokens.filter((t) => t.active)
                 : nonRevokedTokens;
           if (tokensToProcess.length === 0) {
-            this.notificationService.success($localize`No tokens to process.`);
+            this.notificationService.success($localize`:@@token.noTokensProcess:No tokens to process.`);
             return;
           }
           from(tokensToProcess)
@@ -170,19 +172,11 @@ export class TokenTableActionsComponent {
             )
             .subscribe({
               next: () => {
-                const actionLabel =
-                  action === "activate"
-                    ? $localize`activated`
-                    : action === "deactivate"
-                      ? $localize`deactivated`
-                      : $localize`toggled`;
-                this.notificationService.success(
-                  $localize`Successfully ${actionLabel} ${tokensToProcess.length} token(s).`
-                );
+                this.notificationService.success(this.toggleSuccessMessage(action, tokensToProcess.length));
                 this.tokenService.tokenResource.reload();
               },
               error: (err) => {
-                let message = $localize`An error occurred while toggling tokens.`;
+                let message = $localize`:@@token.errorOccurredWhileToggling:An error occurred while toggling tokens.`;
                 if (err.error?.result?.error?.message) {
                   message = err.error.result.error.message;
                 }
@@ -201,10 +195,10 @@ export class TokenTableActionsComponent {
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: $localize`Reset Failcounter for Selected Tokens`,
+          title: $localize`:@@token.resetFailcounter:Reset Failcounter for Selected Tokens`,
           items: selectedTokens.map((token) => token.serial),
-          itemType: $localize`token`,
-          confirmAction: { label: $localize`Reset`, value: true, type: "confirm" }
+          itemType: $localize`:@@common.itemTypeToken:token`,
+          confirmAction: { label: $localize`:@@common.reset:Reset`, value: true, type: "confirm" }
         }
       })
       .afterClosed()
@@ -219,13 +213,18 @@ export class TokenTableActionsComponent {
               .subscribe({
                 next: () => {
                   this.notificationService.success(
-                    $localize`Successfully reset failcounter for ${selectedTokens.length} token(s).`
+                    pluralize(this.localeId, selectedTokens.length, {
+                      one: $localize`:@@token.successfullyResetOne:Successfully reset the failcounter for 1 token.`,
+                      few: $localize`:@@token.successfullyResetFew:Successfully reset the failcounter for ${selectedTokens.length}:COUNT: tokens.`,
+                      many: $localize`:@@token.successfullyResetMany:Successfully reset the failcounter for ${selectedTokens.length}:COUNT: tokens.`,
+                      other: $localize`:@@token.successfullyResetOther:Successfully reset the failcounter for ${selectedTokens.length}:COUNT: tokens.`
+                    })
                   );
                   this.tokenService.tokenResource.reload();
                   this.tokenService.tokenDetailResource.reload();
                 },
                 error: (err) => {
-                  let message = $localize`An error occurred while resetting failcounters.`;
+                  let message = $localize`:@@token.errorOccurredWhile:An error occurred while resetting failcounters.`;
                   if (err.error?.result?.error?.message) {
                     message = err.error.result.error.message;
                   }
@@ -262,7 +261,7 @@ export class TokenTableActionsComponent {
         ),
         tap(() => this.tokenService.tokenResource.reload()),
         catchError((err) => {
-          let message = $localize`An error occurred while assigning tokens.`;
+          let message = $localize`:@@token.errorOccurred:An error occurred while assigning tokens.`;
           if (err.error?.result?.error?.message) {
             message = err.error.result.error.message;
           }
@@ -279,10 +278,10 @@ export class TokenTableActionsComponent {
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: $localize`Unassign Selected Tokens`,
+          title: $localize`:@@token.unassignSelected:Unassign Selected Tokens`,
           items: selectedTokens.map((token) => token.serial),
-          itemType: $localize`token`,
-          confirmAction: { label: $localize`Unassign`, value: true, type: "destruct" }
+          itemType: $localize`:@@common.itemTypeToken:token`,
+          confirmAction: { label: $localize`:@@common.unassign:Unassign`, value: true, type: "destruct" }
         }
       })
       .afterClosed()
@@ -298,17 +297,24 @@ export class TokenTableActionsComponent {
 
                 if (count_success) {
                   messages.push(
-                    $localize`Successfully unassigned ${count_success} token${count_success === 1 ? "" : "s"}.`
+                    pluralize(this.localeId, count_success, {
+                      one: $localize`:@@token.successfullyUnassignedOne:Successfully unassigned 1 token.`,
+                      few: $localize`:@@token.successfullyUnassignedFew:Successfully unassigned ${count_success}:COUNT: tokens.`,
+                      many: $localize`:@@token.successfullyUnassignedMany:Successfully unassigned ${count_success}:COUNT: tokens.`,
+                      other: $localize`:@@token.successfullyUnassignedOther:Successfully unassigned ${count_success}:COUNT: tokens.`
+                    })
                   );
                 }
 
                 if (failedTokens.length > 0) {
-                  messages.push($localize`The following tokens failed to unassign: ${failedTokens.join(", ")}`);
+                  messages.push(
+                    $localize`:@@token.followingTokensFailed:The following tokens failed to unassign: ${formatList(this.localeId, failedTokens)}:TOKENS:`
+                  );
                 }
 
                 if (unauthorizedTokens.length > 0) {
                   messages.push(
-                    $localize`You are not authorized to unassign the following tokens: ${unauthorizedTokens.join(", ")}`
+                    $localize`:@@token.youNotAuthorized:You are not authorized to unassign the following tokens: ${formatList(this.localeId, unauthorizedTokens)}:TOKENS:`
                   );
                 }
 
@@ -318,7 +324,7 @@ export class TokenTableActionsComponent {
                 this.tokenService.tokenResource.reload();
               },
               error: (err) => {
-                let message = $localize`An error occurred while unassigning tokens.`;
+                let message = $localize`:@@token.errorOccurredWhileUnassigning:An error occurred while unassigning tokens.`;
                 if (err.error?.result?.error?.message) {
                   message = err.error.result.error.message;
                 }
@@ -410,5 +416,31 @@ export class TokenTableActionsComponent {
       });
     }
     return newValue;
+  }
+
+  private toggleSuccessMessage(action: ToggleActiveAction, count: number): string {
+    switch (action) {
+      case "activate":
+        return pluralize(this.localeId, count, {
+          one: $localize`:@@token.successfullyActivatedOne:Successfully activated 1 token.`,
+          few: $localize`:@@token.successfullyActivatedFew:Successfully activated ${count}:COUNT: tokens.`,
+          many: $localize`:@@token.successfullyActivatedMany:Successfully activated ${count}:COUNT: tokens.`,
+          other: $localize`:@@token.successfullyActivatedOther:Successfully activated ${count}:COUNT: tokens.`
+        });
+      case "deactivate":
+        return pluralize(this.localeId, count, {
+          one: $localize`:@@token.successfullyDeactivatedOne:Successfully deactivated 1 token.`,
+          few: $localize`:@@token.successfullyDeactivatedFew:Successfully deactivated ${count}:COUNT: tokens.`,
+          many: $localize`:@@token.successfullyDeactivatedMany:Successfully deactivated ${count}:COUNT: tokens.`,
+          other: $localize`:@@token.successfullyDeactivatedOther:Successfully deactivated ${count}:COUNT: tokens.`
+        });
+      default:
+        return pluralize(this.localeId, count, {
+          one: $localize`:@@token.successfullyToggledOne:Successfully toggled 1 token.`,
+          few: $localize`:@@token.successfullyToggledFew:Successfully toggled ${count}:COUNT: tokens.`,
+          many: $localize`:@@token.successfullyToggledMany:Successfully toggled ${count}:COUNT: tokens.`,
+          other: $localize`:@@token.successfullyToggledOther:Successfully toggled ${count}:COUNT: tokens.`
+        });
+    }
   }
 }

@@ -24,21 +24,21 @@ export const USER_TIMESTAMP_INFO_KEYS = ["assignment_date"] as const;
 type TokenDetailGroup = "identity" | "counters" | "assignment";
 
 export const tokenDetailsKeyMap: { key: string; label: string; group: TokenDetailGroup }[] = [
-  { key: "tokentype", label: $localize`Type`, group: "identity" },
-  { key: "active", label: $localize`Status`, group: "identity" },
-  { key: "rollout_state", label: $localize`Rollout State`, group: "identity" },
-  { key: "failcount", label: $localize`Fail Count`, group: "identity" },
-  { key: "creation_date", label: $localize`Created`, group: "identity" },
-  { key: "last_auth", label: $localize`Last Authentication`, group: "identity" },
-  { key: "maxfail", label: $localize`Max Count`, group: "counters" },
-  { key: "otplen", label: $localize`OTP Length`, group: "counters" },
-  { key: "count_window", label: $localize`Count Window`, group: "counters" },
-  { key: "sync_window", label: $localize`Sync Window`, group: "counters" },
-  { key: "count", label: $localize`Count`, group: "counters" },
-  { key: "description", label: $localize`Description`, group: "assignment" },
-  { key: "realms", label: $localize`Token Realms`, group: "assignment" },
-  { key: "tokengroup", label: $localize`Token Groups`, group: "assignment" },
-  { key: "container_serial", label: $localize`Container Serial`, group: "assignment" }
+  { key: "tokentype", label: $localize`:@@common.type:Type`, group: "identity" },
+  { key: "active", label: $localize`:@@common.status:Status`, group: "identity" },
+  { key: "rollout_state", label: $localize`:@@token.rolloutState:Rollout State`, group: "identity" },
+  { key: "failcount", label: $localize`:@@token.failCount:Fail Count`, group: "identity" },
+  { key: "creation_date", label: $localize`:@@token.created:Created`, group: "identity" },
+  { key: "last_auth", label: $localize`:@@common.lastAuthentication:Last Authentication`, group: "identity" },
+  { key: "maxfail", label: $localize`:@@token.maxCount:Max Count`, group: "counters" },
+  { key: "otplen", label: $localize`:@@common.otpLength:OTP Length`, group: "counters" },
+  { key: "count_window", label: $localize`:@@common.countWindow:Count Window`, group: "counters" },
+  { key: "sync_window", label: $localize`:@@common.syncWindow:Sync Window`, group: "counters" },
+  { key: "count", label: $localize`:@@token.count:Count`, group: "counters" },
+  { key: "description", label: $localize`:@@common.description:Description`, group: "assignment" },
+  { key: "realms", label: $localize`:@@token.tokenRealms:Token Realms`, group: "assignment" },
+  { key: "tokengroup", label: $localize`:@@token.tokenGroups:Token Groups`, group: "assignment" },
+  { key: "container_serial", label: $localize`:@@common.containerSerial:Container Serial`, group: "assignment" }
 ];
 
 export function formatTokenTimestamp(value: string | undefined): string | undefined {
@@ -57,11 +57,11 @@ export const tokenDetailsRightsMap = [
 ];
 
 export const userDetailsKeyMap = [
-  { key: "username", label: $localize`User` },
-  { key: "user_realm", label: $localize`Realm` },
-  { key: "assignment_date", label: $localize`Last Assigned` },
-  { key: "resolver", label: $localize`Resolver` },
-  { key: "user_id", label: $localize`User ID` }
+  { key: "username", label: $localize`:@@common.user:User` },
+  { key: "user_realm", label: $localize`:@@common.realm:Realm` },
+  { key: "assignment_date", label: $localize`:@@token.lastAssigned:Last Assigned` },
+  { key: "resolver", label: $localize`:@@common.resolver:Resolver` },
+  { key: "user_id", label: $localize`:@@common.userId:User ID` }
 ];
 
-export const infoDetailsKeyMap = [{ key: "info", label: $localize`Information` }];
+export const infoDetailsKeyMap = [{ key: "info", label: $localize`:@@common.information:Information` }];

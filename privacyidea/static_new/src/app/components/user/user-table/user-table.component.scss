@@ -14,3 +14,13 @@
   flex-direction: column;
   overflow: hidden;
 }
+
+.resolver-warning {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+
+  mat-icon {
+    flex-shrink: 0;
+  }
+}

@@ -21,13 +21,13 @@
   appScrollToTop
   aria-label="Token Table"
   class="token-table-layout"
-  i18n-aria-label>
+  i18n-aria-label="@@token.tokenTable">
   @if (tableState.showTable()) {
     <div class="filter-paginator-container">
       <mat-form-field
         class="token-table-filter"
         subscriptSizing="dynamic">
-        <mat-label i18n>Filter Tokens...</mat-label>
+        <mat-label i18n="@@common.filterTokens">Filter Tokens...</mat-label>
         <app-clearable-input
           (clearButtonClick)="tokenService.clearFilter()"
           [showClearButton]="tokenService.filterDraft().isNotEmpty">
@@ -38,8 +38,8 @@
             (keyup.enter)="tokenService.applyFilterInput($event)"
             [value]="tokenService.filterDraft().filterString"
             aria-label="Filter Input"
-            i18n-aria-label
-            i18n-placeholder
+            i18n-aria-label="@@common.filterInput"
+            i18n-placeholder="@@token.exampleQueryType"
             id="token-filter-input"
             matInput
             placeholder="Example query: 'type: hotp userid: 1000'" />
@@ -48,17 +48,17 @@
         @if (showFilterHint()) {
           <mat-hint
             align="end"
-            i18n>
-            Press enter to apply the filter
-          </mat-hint>
+            i18n="@@common.pressEnterApply"
+            >Press enter to apply the filter</mat-hint
+          >
         }
       </mat-form-field>
       <button
         [matMenuTriggerFor]="advancedFilterMenu"
         aria-label="More Filter"
         class="margin-left-8"
-        i18n-aria-label
-        i18n-matTooltip
+        i18n-aria-label="@@common.moreFilter"
+        i18n-matTooltip="@@common.moreFilter"
         mat-icon-button
         matTooltip="More Filter">
         <mat-icon>filter_list</mat-icon>
@@ -81,7 +81,7 @@
         [dataSource]="tokenDataSource()"
         aria-label="Token Data Table"
         class="token-table"
-        i18n-aria-label
+        i18n-aria-label="@@token.tokenDataTable"
         mat-table>
         @for (column of columnKeysMap; track column) {
           <ng-container [matColumnDef]="column.key">
@@ -93,7 +93,7 @@
                 <mat-checkbox
                   (change)="$event.checked ? tokenSelection.selectAllRows() : tokenSelection.deselectAllRows()"
                   aria-label="Select all tokens"
-                  i18n-aria-label
+                  i18n-aria-label="@@token.selectAllTokens"
                   [checked]="tokenSelection.allRowsSelected()"
                   [disabled]="!tokenSelection.hasVisibleRows()"
                   [indeterminate]="tokenSelection.someRowsSelected()" />
@@ -125,7 +125,7 @@
                           [matMenuTriggerData]="{ keyword: apiFilterKeyMap[column.key] }"
                           [matMenuTriggerFor]="realmMenu"
                           aria-label="Filter by {{ column.label }}"
-                          i18n-aria-label
+                          i18n-aria-label="@@common.filterBy"
                           class="filter-button"
                           mat-icon-button>
                           <mat-icon class="keyword-button-icon margin-left-0"> filter_list</mat-icon>
@@ -134,7 +134,7 @@
                         <button
                           (click)="onKeywordClick(apiFilterKeyMap[column.key])"
                           aria-label="Filter by {{ column.label }}"
-                          i18n-aria-label
+                          i18n-aria-label="@@common.filterBy"
                           class="filter-button"
                           mat-icon-button>
                           <mat-icon class="keyword-button-icon margin-left-0">
@@ -146,7 +146,7 @@
                     <button
                       (click)="tableUtilsService.onSortButtonClick(column.key, sort)"
                       aria-label="Sort by {{ column.label }}"
-                      i18n-aria-label
+                      i18n-aria-label="@@common.sortBy"
                       class="sort-button"
                       mat-icon-button
                       type="button">
@@ -171,7 +171,7 @@
                     <mat-checkbox
                       (change)="tokenSelection.setRowSelected(tokenDetails, $event.checked)"
                       (click)="$event.stopPropagation()"
-                      attr.aria-label="Select token {{ tokenDetails.serial }}"
+                      [attr.aria-label]="selectRowLabel(tokenDetails.serial)"
                       [checked]="tokenSelection.isRowSelected(tokenDetails)"
                       [disabled]="!tokenSelection.hasVisibleRows()" />
                   }
@@ -181,7 +181,7 @@
                         (click)="contentService.tokenSelected(tokenDetails.serial)"
                         (keydown.enter)="contentService.tokenSelected(tokenDetails.serial)"
                         (keydown.space)="$event.preventDefault(); contentService.tokenSelected(tokenDetails.serial)"
-                        attr.aria-label="{{ column.label }} Link"
+                        [attr.aria-label]="linkLabel(column.label)"
                         class="flex ali-center"
                         role="button"
                         tabindex="0">
@@ -219,7 +219,7 @@
                     <div [ngClass]="{ 'realm-list': (tokenDetails[column.key]?.length || 0) > 1 }">
                       @for (realm of tokenDetails[column.key]; track realm; let idx = $index) {
                         <app-copyable [copyText]="realm">
-                          <span attr.aria-label="{{ column.label }} Link">
+                          <span [attr.aria-label]="linkLabel(column.label)">
                             {{ realm }}
                           </span>
                         </app-copyable>
@@ -235,7 +235,7 @@
                           $event.preventDefault();
                           contentService.navigateContainerDetails(tokenDetails.container_serial)
                         "
-                        attr.aria-label="{{ column.label }} Link"
+                        [attr.aria-label]="linkLabel(column.label)"
                         role="button"
                         tabindex="0">
                         {{ tokenDetails[column.key] }}
@@ -253,7 +253,7 @@
                           $event.preventDefault();
                           contentService.userSelected(tokenDetails[column.key], tokenDetails['user_realm'])
                         "
-                        attr.aria-label="{{ column.label }} Link"
+                        [attr.aria-label]="linkLabel(column.label)"
                         role="button"
                         tabindex="0">
                         {{ tokenDetails[column.key] }}
@@ -263,7 +263,7 @@
                   @default {
                     @if (tableUtilsService.isLink(column.key)) {
                       <a
-                        attr.aria-label="{{ column.label }} Link"
+                        [attr.aria-label]="linkLabel(column.label)"
                         href="#">
                         {{ tokenDetails[column.key] }}
                       </a>
@@ -300,7 +300,7 @@
       [hint]="emptyHint()"
       [table]="tableState"
       heading="No tokens yet"
-      i18n-heading
+      i18n-heading="@@token.noTokensYet"
       icon="shield">
       @if (authService.tokenEnrollmentAllowed()) {
         <button
@@ -311,7 +311,7 @@
             <mat-icon class="padding-right-3">shield</mat-icon>
             <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
           </span>
-          <span i18n>Enroll Token</span>
+          <span i18n="@@common.enrollToken">Enroll Token</span>
         </button>
       }
     </app-table-state>
@@ -326,7 +326,7 @@
       (click)="onItemSelected(keyword, '')"
       mat-menu-item>
       <mat-icon>filter_alt_off</mat-icon>
-      <span i18n>Clear Filter</span>
+      <span i18n="@@common.clearFilter">Clear Filter</span>
     </button>
     <mat-divider />
     @for (realm of realmService.realmOptions(); track realm) {

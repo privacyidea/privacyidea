@@ -37,6 +37,8 @@ export class MockHttpResourceRef<T> implements HttpResourceRef<T> {
 
   set(value: T): void {
     this.value.set(value);
+    // A written value settles the resource, as it does on the real one, which aborts the load in flight.
+    this.isLoading.set(false);
   }
 
   update(updater: (value: T) => T): void {
@@ -77,7 +79,6 @@ export class MockHttpResourceRef<T> implements HttpResourceRef<T> {
   error = signal<Error | undefined>(undefined);
   isLoading: WritableSignal<boolean> = signal(false);
   reload = jest.fn().mockReturnValue(true);
-
 }
 
 export class MockBase64Service {

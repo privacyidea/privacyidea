@@ -19,15 +19,15 @@
 <div
   aria-label="Machine Resolver Editor"
   class="machine-resolver-details-layout"
-  i18n-aria-label>
+  i18n-aria-label="@@machine.machineResolverEditor">
   <div
     appScrollToTop
     class="machine-resolver-details-container">
     <h3 class="margin-8 flex-row flex-nowrap ali-center">
       @if (!isEditMode()) {
-        <span i18n>Create Machine Resolver</span>
+        <span i18n="@@common.createMachine">Create Machine Resolver</span>
       } @else {
-        <span i18n>Edit Machine Resolver</span>
+        <span i18n="@@machine.editMachineResolver">Edit Machine Resolver</span>
         <span>:&nbsp;</span>
         <span class="blue-base">{{ currentMachineResolver().resolvername }}</span>
         <app-copy-button [copyText]="currentMachineResolver().resolvername"></app-copy-button>
@@ -42,7 +42,7 @@
             class="action-button-secondary button-width-s"
             mat-stroked-button
             type="button">
-            <span i18n>Cancel</span>
+            <span i18n="@@common.cancel">Cancel</span>
           </button>
           <button
             (click)="saveMachineResolver()"
@@ -51,7 +51,7 @@
             mat-stroked-button
             type="button">
             <mat-icon>save</mat-icon>
-            <span i18n>Save</span>
+            <span i18n="@@common.save">Save</span>
           </button>
         </div>
       }
@@ -61,7 +61,7 @@
           <mat-form-field
             class="input-width-l"
             subscriptSizing="dynamic">
-            <mat-label i18n>Machine Resolver Name</mat-label>
+            <mat-label i18n="@@machine.machineResolverName">Machine Resolver Name</mat-label>
             <app-clearable-input
               (clearButtonClick)="onResolvernameChange('')"
               [showClearButton]="!isEditMode() && !!currentMachineResolver().resolvername">
@@ -72,18 +72,17 @@
                 (input)="onResolvernameChange($any($event.target).value)" />
             </app-clearable-input>
             @if (nameHasPatternError()) {
-              <mat-error i18n>
-                Machine resolver name contains
-                <strong>invalid characters</strong>
-                . Only alphanumeric characters, dots, underscores and hyphens are allowed.
-              </mat-error>
+              <mat-error i18n="@@machine.machineResolverNameContains"
+                >Machine resolver name contains <strong>invalid characters</strong>. Only alphanumeric characters, dots,
+                underscores and hyphens are allowed.</mat-error
+              >
             }
           </mat-form-field>
 
           <mat-form-field
             class="input-width-l machine-resolver-type-select"
             subscriptSizing="dynamic">
-            <mat-label i18n>Type</mat-label>
+            <mat-label i18n="@@common.type">Type</mat-label>
             <mat-select
               [value]="currentMachineResolver().type"
               [disabled]="isEditMode()"
@@ -115,7 +114,7 @@
             (newValidator)="onNewValidator($event)" />
         }
         @default {
-          <p i18n>Unknown machine resolver type: {{ currentMachineResolver().type }}</p>
+          <p i18n="@@machine.unknownMachine">Unknown machine resolver type: {{ currentMachineResolver().type }}</p>
         }
       }
     </div>

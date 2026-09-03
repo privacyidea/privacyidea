@@ -25,6 +25,7 @@ import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper
 import { TokenEnrolledTextComponent } from "@components/token/token-enrollment/token-enrolled-text/token-enrolled-text.component";
 import { TokenEnrollmentDataComponent } from "@components/token/token-enrollment/token-enrollment-data/token-enrollment-data.component";
 import { NO_QR_CODE_TOKEN_TYPES } from "@components/token/token-enrollment/token-enrollment.constants";
+import { EnrollmentResponse } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { TokenEnrollmentDialogData, TokenService, TokenServiceInterface } from "@services/token/token.service";
 
@@ -62,7 +63,9 @@ export class TokenEnrollmentLastStepDialogComponent extends AbstractDialogCompon
   protected readonly rollover = this.data.rollover ?? false;
 
   title: Signal<string> = computed(() =>
-    this.rollover ? $localize`Token Successfully Rolled Over` : $localize`Token Successfully Enrolled`
+    this.rollover
+      ? $localize`:@@token.tokenSuccessfullyRolled:Token Successfully Rolled Over`
+      : $localize`:@@token.tokenSuccessfully:Token Successfully Enrolled`
   );
 
   constructor() {
@@ -76,6 +79,9 @@ export class TokenEnrollmentLastStepDialogComponent extends AbstractDialogCompon
     return !NO_QR_CODE_TOKEN_TYPES.includes(this.data.tokenType);
   }
 
+  onEnrollmentResponseChange(response: EnrollmentResponse): void {
+    this.data.onEnrollmentResponseChange?.(response);
+  }
 
   onSwitchRoute() {
     this.dialogRef.close();

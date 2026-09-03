@@ -46,7 +46,7 @@ import { ViewTemplateTokensComponent } from "./view-template-tokens/view-templat
 const containerTemplateFilterOptions: FilterOption<ContainerTemplate>[] = [
   new FilterOption<ContainerTemplate>({
     key: "name",
-    label: $localize`Name`,
+    label: $localize`:@@common.name:Name`,
     matches: (item, filter) => {
       const filterValue = filter.getFilterOfKey("name");
       return !filterValue || item.name.toLowerCase().includes(filterValue.toLowerCase());
@@ -54,7 +54,7 @@ const containerTemplateFilterOptions: FilterOption<ContainerTemplate>[] = [
   }),
   new FilterOption<ContainerTemplate>({
     key: "container_type",
-    label: $localize`Container Type`,
+    label: $localize`:@@common.containerType:Container Type`,
     matches: (item, filter) => {
       const filterValue = filter.getFilterOfKey("container_type");
       return !filterValue || item.container_type.toLowerCase().includes(filterValue.toLowerCase());
@@ -62,7 +62,7 @@ const containerTemplateFilterOptions: FilterOption<ContainerTemplate>[] = [
   }),
   new FilterOption<ContainerTemplate>({
     key: "default",
-    label: $localize`Default`,
+    label: $localize`:@@common.default:Default`,
     matches: (item, filter) => {
       const filterValue = filter.getFilterOfKey("default");
       return !filterValue || (filterValue === "true" ? item.default === true : item.default === false);
@@ -70,7 +70,7 @@ const containerTemplateFilterOptions: FilterOption<ContainerTemplate>[] = [
   }),
   new FilterOption<ContainerTemplate>({
     key: "tokens",
-    label: $localize`Tokens`,
+    label: $localize`:@@common.tokens:Tokens`,
     matches: (item, filter) => {
       const filterString = filter.getFilterOfKey("tokens");
       if (!filterString) return true;
@@ -104,6 +104,18 @@ const containerTemplateFilterOptions: FilterOption<ContainerTemplate>[] = [
   styleUrl: "./container-templates.component.scss"
 })
 export class ContainerTemplatesComponent {
+  protected selectTemplateLabel(name?: string): string {
+    return name
+      ? $localize`:@@container.selectTemplateNamed:Select template ${name}:NAME:`
+      : $localize`:@@container.selectTemplate:Select template`;
+  }
+
+  protected editTemplateLabel(name?: string): string {
+    return name
+      ? $localize`:@@container.editTemplateNamed:Edit template ${name}:NAME:`
+      : $localize`:@@container.editTemplate:Edit template`;
+  }
+
   readonly containerTemplateService: ContainerTemplateServiceInterface = inject(ContainerTemplateService);
   readonly authService: AuthServiceInterface = inject(AuthService);
   readonly dialogService: DialogServiceInterface = inject(DialogService);
@@ -111,10 +123,10 @@ export class ContainerTemplatesComponent {
   readonly filterComponent = viewChild(ContainerTemplatesFilterComponent);
 
   readonly columns = {
-    name: { label: $localize`Name`, filterable: true, sortable: true },
-    container_type: { label: $localize`Container Type`, filterable: true, sortable: true },
-    default: { label: $localize`Default`, filterable: true, sortable: true },
-    tokens: { label: $localize`Tokens`, filterable: true, sortable: false }
+    name: { label: $localize`:@@common.name:Name`, filterable: true, sortable: true },
+    container_type: { label: $localize`:@@common.containerType:Container Type`, filterable: true, sortable: true },
+    default: { label: $localize`:@@common.default:Default`, filterable: true, sortable: true },
+    tokens: { label: $localize`:@@common.tokens:Tokens`, filterable: true, sortable: false }
   } as const;
 
   readonly columnKeys = computed(() => ["select", ...Object.keys(this.columns)]);

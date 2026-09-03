@@ -74,13 +74,13 @@ export class TokenVerifyEnrollmentComponent extends AbstractDialogComponent<
     const actions: DialogAction<string>[] = [];
     if (this.canCancelEnrollment()) {
       actions.push({
-        label: $localize`Cancel`,
+        label: $localize`:@@common.cancel:Cancel`,
         type: "destruct",
         value: "cancelEnrollment"
       });
     }
     actions.push({
-      label: $localize`Verify`,
+      label: $localize`:@@token.verify:Verify`,
       type: "confirm",
       value: "verify",
       disabled: this.invalidInputSignal()
@@ -125,6 +125,10 @@ export class TokenVerifyEnrollmentComponent extends AbstractDialogComponent<
         }
       }
     });
+  }
+
+  onEnrollmentResponseChange(response: EnrollmentResponse): void {
+    this.data.onEnrollmentResponseChange?.(response);
   }
 
   onSwitchRoute() {

@@ -19,12 +19,12 @@
 <app-details-card
   class="user-container"
   title="User"
-  i18n-title>
+  i18n-title="@@common.user">
   <table
     [dataSource]="userData()"
     aria-label="User Detail Data Table"
     class="user-details-table"
-    i18n-aria-label
+    i18n-aria-label="@@common.userDetailData"
     mat-table>
     <ng-container matColumnDef="key">
       <td
@@ -65,8 +65,9 @@
                     @if (authService.actionAllowed("unassign")) {
                       <button
                         (click)="unassignUser()"
+                        aria-label="Unassign User"
                         class="yellow"
-                        i18n-aria-label="Unassign User"
+                        i18n-aria-label="@@container.unassignUser"
                         mat-icon-button>
                         <mat-icon>person_remove</mat-icon>
                       </button>
@@ -74,8 +75,9 @@
                   } @else if (authService.actionAllowed("assign")) {
                     <button
                       (click)="assignToSelf()"
-                      i18n-aria-label="Assign token to me"
-                      i18n-matTooltip
+                      aria-label="Assign this token to me"
+                      i18n-aria-label="@@token.assignTokenMe"
+                      i18n-matTooltip="@@token.assignTokenMe"
                       matTooltip="Assign this token to me"
                       mat-icon-button>
                       <mat-icon>person_add</mat-icon>

@@ -29,6 +29,8 @@ import { TruncationTooltipDirective } from "@components/shared/directives/trunca
 import { DashboardWidget, WidgetSize } from "@models/dashboard";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { DashboardDataRef, DashboardDataStore } from "@services/dashboard/dashboard-data-store.service";
+import { IntegrationsService, IntegrationsServiceInterface } from "@services/integrations/integrations.service";
+import { pluralize } from "@utils/i18n.utils";
 import {
   SubscriptionService,
   SubscriptionState,
@@ -55,64 +57,32 @@ interface SectionNode {
 }
 
 /**
- * Hierarchy of the overview below the server row. The server is the base component and
- * is rendered on its own at the top; everything else is a use case, some of them grouped
- * under sub-headers. This tree is flattened into rows carrying an indent level.
+ * Display name, section grouping and product-landing-page slug for the server row: it is
+ * not one of the dashboard integrations from the shared catalog (see
+ * services/integrations/integrations.service.ts), just always present on its own at the
+ * top.
  */
-const SECTIONS: SectionNode[] = [
-  {
-    label: $localize`Use Cases`,
-    children: [
-      { application: "privacyidea-app" },
-      { application: "freeradius" },
-      { application: "privacyidea-nextcloud" },
-      {
-        label: $localize`System Login`,
-        children: [{ application: "privacyidea-cp" }, { application: "pam" }, { application: "pam-passkey" }]
-      },
-      {
-        label: $localize`Single Sign On`,
-        children: [
-          { application: "privacyidea-keycloak" },
-          { application: "entraid-via-keycloak" },
-          { application: "privacyidea-adfs" },
-          { application: "privacyidea-shibboleth" }
-        ]
-      }
-    ]
-  }
-];
-
-/** Display name per application key. Unknown keys fall back to the raw key. */
-const DISPLAY_NAMES: Record<string, string> = {
-  privacyidea: "privacyIDEA Server",
-  "privacyidea-app": "privacyIDEA Authenticator App",
-  freeradius: "FreeRADIUS",
-  "privacyidea-nextcloud": "Nextcloud",
-  "privacyidea-cp": "Windows Credential Provider",
-  pam: "PAM OTP & Push",
-  "pam-passkey": "PAM Passkey",
-  "privacyidea-keycloak": "Keycloak",
-  "entraid-via-keycloak": "EntraID Integration",
-  "privacyidea-adfs": "AD FS",
-  "privacyidea-shibboleth": "Shibboleth"
-};
-
-/** Slug of each component's product landing page, see componentLink(). */
+const SERVER_DISPLAY_NAME = "privacyIDEA Server";
 const PTL_BASE_URL = "https://netknights.it/plugin-traffic-light";
-const PTL_SLUGS: Record<string, string> = {
-  privacyidea: "privacyidea-server",
-  "privacyidea-app": "privacyidea-authenticator-app",
-  freeradius: "privacyidea-freeradius",
-  "privacyidea-nextcloud": "privacyidea-nextcloud",
-  "privacyidea-cp": "privacyidea-windows-credential-provider",
-  pam: "privacyidea-pam-otp-push",
-  "pam-passkey": "privacyidea-pam-passkey",
-  "privacyidea-keycloak": "privacyidea-keycloak",
-  "entraid-via-keycloak": "privacyidea-entraid-integration",
-  "privacyidea-adfs": "privacyidea-adfs",
-  "privacyidea-shibboleth": "privacyidea-shibboleth"
-};
+const SERVER_PTL_SLUG = "privacyidea-server";
+
+/**
+ * Display label per dashboard section key. The catalog's `Integration.section` is a
+ * stable key (e.g. "system_login"), not display text - the backend has no access to the
+ * admin's UI locale, so each frontend translates it locally.
+ */
+function sectionLabel(section: string): string {
+  switch (section) {
+    case "use_cases":
+      return $localize`:@@dashboard.useCases:Use Cases`;
+    case "system_login":
+      return $localize`:@@dashboard.systemLogin:System Login`;
+    case "single_sign_on":
+      return $localize`:@@dashboard.singleSignOn:Single Sign On`;
+    default:
+      return section;
+  }
+}
 
 @Component({
   selector: "app-subscriptions-widget",
@@ -132,7 +102,7 @@ const PTL_SLUGS: Record<string, string> = {
 export class SubscriptionsWidgetComponent extends DashboardWidget implements OnInit {
   static override readonly type = "subscriptions";
   static override readonly requiredAction = "managesubscription";
-  static override readonly title = $localize`Subscriptions`;
+  static override readonly title = $localize`:@@common.subscriptions:Subscriptions`;
   static override readonly icon = "event_repeat";
   static override readonly titleLink = ROUTE_PATHS.SUBSCRIPTION;
   static override readonly titleLinkAction = "managesubscription";
@@ -148,8 +118,25 @@ export class SubscriptionsWidgetComponent extends DashboardWidget implements OnI
 
   private readonly subscriptionService = inject(SubscriptionService);
   private readonly authService: AuthServiceInterface = inject(AuthService);
+  private readonly integrationsService: IntegrationsServiceInterface = inject(IntegrationsService);
   private readonly store = inject(DashboardDataStore);
   private readonly locale = inject(LOCALE_ID);
+
+  /**
+   * Dashboard rows grouped by section, in the order the catalog reports them. Each
+   * distinct section becomes a top-level group (there is no further nesting: "System
+   * Login" and "Single Sign On" are peers of "Use Cases", not children of it).
+   */
+  private readonly sections = computed<SectionNode[]>(() => {
+    const bySection = new Map<string, SectionNode[]>();
+    for (const integration of this.integrationsService.dashboardIntegrations()) {
+      const section = integration.section ?? "";
+      const children = bySection.get(section) ?? [];
+      children.push({ application: integration.id });
+      bySection.set(section, children);
+    }
+    return Array.from(bySection.entries()).map(([section, children]) => ({ label: sectionLabel(section), children }));
+  });
 
   private readonly dataRef = signal<DashboardDataRef<PiResponse<SubscriptionStatus[]>> | null>(null);
   override readonly partialLoading = computed(() => this.dataRef()?.revalidating() ?? false);
@@ -163,7 +150,11 @@ export class SubscriptionsWidgetComponent extends DashboardWidget implements OnI
 
   // Localized in the component: a tooltip bound to an expression is not extractable in
   // the template.
-  readonly detailToggleTooltip = computed(() => (this.detailed() ? $localize`Compact view` : $localize`Detailed view`));
+  readonly detailToggleTooltip = computed(() =>
+    this.detailed()
+      ? $localize`:@@dashboard.compactView:Compact view`
+      : $localize`:@@dashboard.detailedView:Detailed view`
+  );
 
   readonly rows = computed<SubscriptionRow[]>(() => this.buildRows(this.dataRef()?.value()?.result?.value ?? []));
 
@@ -213,7 +204,10 @@ export class SubscriptionsWidgetComponent extends DashboardWidget implements OnI
   }
 
   protected displayName(application: string): string {
-    return DISPLAY_NAMES[application] ?? application;
+    if (application === "privacyidea") {
+      return SERVER_DISPLAY_NAME;
+    }
+    return this.integrationsService.labelFor(application);
   }
 
   /**
@@ -222,7 +216,11 @@ export class SubscriptionsWidgetComponent extends DashboardWidget implements OnI
    * Returns null for components without a slug, which are then rendered as plain text.
    */
   protected componentLink(status: SubscriptionStatus): string | null {
-    const slug = PTL_SLUGS[status.application];
+    const slug =
+      status.application === "privacyidea"
+        ? SERVER_PTL_SLUG
+        : this.integrationsService.integrations().find((integration) => integration.id === status.application)
+            ?.ptl_slug;
     if (!slug) {
       return null;
     }
@@ -274,14 +272,14 @@ export class SubscriptionsWidgetComponent extends DashboardWidget implements OnI
    */
   protected usageReason(status: SubscriptionStatus): string {
     if (status.is_server) {
-      return $localize`In use: this is the privacyIDEA server itself.`;
+      return $localize`:@@dashboard.inUseThisIsThe:In use: this is the privacyIDEA server itself.`;
     }
     if (!status.in_use) {
-      return $localize`Not in use: no subscription, and not seen in the last 7 days.`;
+      return $localize`:@@dashboard.notInUseNoSubscription:Not in use: no subscription, and not seen in the last 7 days.`;
     }
     return status.subscription === "none"
-      ? $localize`In use: seen within the last 7 days.`
-      : $localize`In use: covered by a subscription.`;
+      ? $localize`:@@dashboard.inUseSeenWithinThe:In use: seen within the last 7 days.`
+      : $localize`:@@dashboard.inUseCoveredByA:In use: covered by a subscription.`;
   }
 
   protected subscriptionDotClass(state: SubscriptionState): string {
@@ -313,41 +311,52 @@ export class SubscriptionsWidgetComponent extends DashboardWidget implements OnI
     if (daysLeft === 0) {
       // The count is between calendar dates, so zero means the date is today: neither
       // "0 days left" nor "0 days ago" says that.
-      return $localize`${state}:state:, today`;
+      return $localize`:@@dashboard.stateToday:${state}:STATE:, today`;
     }
-    return daysLeft < 0
-      ? $localize`${state}:state:, ${-daysLeft}:days: days ago`
-      : $localize`${state}:state:, ${daysLeft}:days: days left`;
+    if (daysLeft < 0) {
+      return pluralize(this.locale, -daysLeft, {
+        one: $localize`:@@dashboard.stateOneDayAgo:${state}:STATE:, 1 day ago`,
+        few: $localize`:@@dashboard.stateDaysAgoFew:${state}:STATE:, ${-daysLeft}:DAYS: days ago`,
+        many: $localize`:@@dashboard.stateDaysAgoMany:${state}:STATE:, ${-daysLeft}:DAYS: days ago`,
+        other: $localize`:@@dashboard.stateDaysAgo:${state}:STATE:, ${-daysLeft}:DAYS: days ago`
+      });
+    }
+    return pluralize(this.locale, daysLeft, {
+      one: $localize`:@@dashboard.stateOneDayLeft:${state}:STATE:, 1 day left`,
+      few: $localize`:@@dashboard.stateDaysLeftFew:${state}:STATE:, ${daysLeft}:DAYS: days left`,
+      many: $localize`:@@dashboard.stateDaysLeftMany:${state}:STATE:, ${daysLeft}:DAYS: days left`,
+      other: $localize`:@@dashboard.stateDaysLeft:${state}:STATE:, ${daysLeft}:DAYS: days left`
+    });
   }
 
   /** Lower case: the label is read inside the expiry column's note, not on its own. */
   private subscriptionStateLabel(state: SubscriptionState): string {
     switch (state) {
       case "valid":
-        return $localize`valid`;
+        return $localize`:@@dashboard.valid:valid`;
       case "expiring":
-        return $localize`expiring`;
+        return $localize`:@@dashboard.expiring:expiring`;
       case "exceeded":
-        return $localize`exceeded`;
+        return $localize`:@@dashboard.exceeded:exceeded`;
       case "expired":
-        return $localize`expired`;
+        return $localize`:@@dashboard.expired:expired`;
       default:
-        return $localize`no subscription`;
+        return $localize`:@@dashboard.noSubscription:no subscription`;
     }
   }
 
   protected subscriptionReason(state: SubscriptionState): string {
     switch (state) {
       case "valid":
-        return $localize`Valid: subscription in place and no other condition applies.`;
+        return $localize`:@@dashboard.validSubscriptionInPlaceAnd:Valid: subscription in place and no other condition applies.`;
       case "expiring":
-        return $localize`Expiring: the subscription ends in less than 60 days.`;
+        return $localize`:@@dashboard.expiringTheSubscriptionEndsIn:Expiring: the subscription ends in less than 60 days.`;
       case "exceeded":
-        return $localize`Exceeded: subscription is valid, but more tokens are in use than it allows.`;
+        return $localize`:@@dashboard.exceededSubscriptionIsValidBut:Exceeded: subscription is valid, but more tokens are in use than it allows.`;
       case "expired":
-        return $localize`Expired: the subscription's end date has passed.`;
+        return $localize`:@@dashboard.expiredTheSubscriptionSEnd:Expired: the subscription's end date has passed.`;
       default:
-        return $localize`No subscription. Get a subscription for enterprise support.`;
+        return $localize`:@@dashboard.noSubscriptionGetASubscription:No subscription. Get a subscription for enterprise support.`;
     }
   }
 
@@ -380,7 +389,7 @@ export class SubscriptionsWidgetComponent extends DashboardWidget implements OnI
     const rows: SubscriptionRow[] = [
       { kind: "server", indent: 0, status: serverStatus ?? this.unusedStatus("privacyidea") }
     ];
-    this.flattenSections(SECTIONS, 0, rows, statusByApplication);
+    this.flattenSections(this.sections(), 0, rows, statusByApplication);
     return rows;
   }
 
@@ -393,7 +402,9 @@ export class SubscriptionsWidgetComponent extends DashboardWidget implements OnI
     for (const node of nodes) {
       if (node.label) {
         rows.push({ kind: "label", indent: depth, label: node.label });
-        this.flattenSections(node.children ?? [], depth + 1, rows, statusByApplication);
+      }
+      if (node.children?.length) {
+        this.flattenSections(node.children, node.label ? depth + 1 : depth, rows, statusByApplication);
       } else if (node.application) {
         rows.push({
           kind: "component",

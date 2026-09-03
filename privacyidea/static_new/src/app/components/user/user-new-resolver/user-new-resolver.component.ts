@@ -234,15 +234,15 @@ export class UserNewResolverComponent implements OnDestroy {
   async onSave(): Promise<boolean> {
     const name = this.resolverNameModel().resolverName.trim();
     if (!name) {
-      this._notificationService.warning($localize`Please enter a resolver name.`);
+      this._notificationService.warning($localize`:@@resolver.pleaseEnterResolver:Please enter a resolver name.`);
       return false;
     }
     if (!this.resolverType()) {
-      this._notificationService.warning($localize`Please select a resolver type.`);
+      this._notificationService.warning($localize`:@@resolver.pleaseSelectResolver:Please select a resolver type.`);
       return false;
     }
     if (this.isAdditionalFieldsInvalid) {
-      this._notificationService.warning($localize`Please fill in all required fields.`);
+      this._notificationService.warning($localize`:@@common.pleaseFillAll:Please fill in all required fields.`);
       return false;
     }
 
@@ -261,18 +261,20 @@ export class UserNewResolverComponent implements OnDestroy {
           next: (res) => {
             if (res.result?.status === true && (res.result.value ?? 0) >= 0) {
               this._notificationService.success(
-                this.isEditMode() ? $localize`Resolver "${name}" updated.` : $localize`Resolver "${name}" created.`
+                this.isEditMode()
+                  ? $localize`:@@resolver.resolverUpdated:Resolver "${name}:NAME:" updated.`
+                  : $localize`:@@resolver.resolverCreated:Resolver "${name}:NAME:" created.`
               );
               this._resolverService.resolversResource.reload?.();
               this._closeOrReset();
               resolve(true);
             } else {
-              this._notifyError($localize`Failed to save resolver.`, res);
+              this._notifyError($localize`:@@resolver.failedSaveResolver:Failed to save resolver.`, res);
               resolve(false);
             }
           },
           error: (err) => {
-            this._notifyError($localize`Failed to save resolver.`, err);
+            this._notifyError($localize`:@@resolver.failedSaveResolver:Failed to save resolver.`, err);
             resolve(false);
           },
           complete: () => setTimeout(() => this.isSaving.set(false))
@@ -294,7 +296,7 @@ export class UserNewResolverComponent implements OnDestroy {
         .openDialog({
           component: SaveAndExitDialogComponent,
           data: {
-            title: $localize`Discard changes`,
+            title: $localize`:@@common.discardChanges:Discard changes`,
             allowSaveExit: this.canSave,
             saveExitDisabled: !this.canSave
           }
@@ -325,12 +327,12 @@ export class UserNewResolverComponent implements OnDestroy {
 
   private _runTest(quick: boolean): void {
     if (!this.resolverType()) {
-      this._notificationService.warning($localize`Please select a resolver type.`);
+      this._notificationService.warning($localize`:@@resolver.pleaseSelectResolver:Please select a resolver type.`);
       return;
     }
 
     if (this.isAdditionalFieldsInvalid) {
-      this._notificationService.warning($localize`Please fill in all required fields.`);
+      this._notificationService.warning($localize`:@@common.pleaseFillAll:Please fill in all required fields.`);
       return;
     }
 
@@ -359,12 +361,20 @@ export class UserNewResolverComponent implements OnDestroy {
         next: (res) => {
           if (res.result?.status === true && res.result.value === true) {
             const detail = res.detail?.description || "";
-            this._notificationService.success($localize`Resolver test executed: ${detail}`, { duration: 20000 });
+            this._notificationService.success(
+              $localize`:@@resolver.resolverTestExecuted:Resolver test executed: ${detail}:DETAIL:`,
+              { duration: 20000 }
+            );
           } else {
-            this._notifyError($localize`Failed to test resolver.`, res, "Connection test failed.");
+            this._notifyError(
+              $localize`:@@resolver.failedTestResolver:Failed to test resolver.`,
+              res,
+              "Connection test failed."
+            );
           }
         },
-        error: (err) => this._notifyError($localize`Failed to test resolver.`, err, "Network error")
+        error: (err) =>
+          this._notifyError($localize`:@@resolver.failedTestResolver:Failed to test resolver.`, err, "Network error")
       });
   }
 
@@ -381,13 +391,13 @@ export class UserNewResolverComponent implements OnDestroy {
       source.message ||
       source.detail?.description ||
       source.result?.error?.message ||
-      $localize`Unknown server error.`;
+      $localize`:@@resolver.unknownServer:Unknown server error.`;
 
     if (detail.includes("Detailed error")) {
       this._notificationService.error(detail);
     } else if (testFallback && detail.includes(testFallback)) {
       this._notificationService.error(detail);
-    } else if (testFallback && detail === $localize`Unknown server error.`) {
+    } else if (testFallback && detail === $localize`:@@resolver.unknownServer:Unknown server error.`) {
       this._notificationService.error(`${prefix} ${testFallback}`);
     } else {
       this._notificationService.error(`${prefix} ${detail}`);

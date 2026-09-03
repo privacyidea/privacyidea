@@ -29,7 +29,7 @@
       <mat-form-field
         class="input-width-m"
         subscriptSizing="dynamic">
-        <mat-label i18n>PIN</mat-label>
+        <mat-label i18n="@@common.pin">PIN</mat-label>
         <input
           [value]="setPinValue()"
           (input)="setPinValue.set($any($event.target).value)"
@@ -39,7 +39,7 @@
       <mat-form-field
         class="input-width-m"
         subscriptSizing="dynamic">
-        <mat-label i18n>Repeat PIN</mat-label>
+        <mat-label i18n="@@common.repeatPin">Repeat PIN</mat-label>
         <input
           [value]="repeatPinValue()"
           (input)="repeatPinValue.set($any($event.target).value)"
@@ -55,7 +55,7 @@
         class="action-button-secondary button-width-l"
         mat-stroked-button>
         <mat-icon>password</mat-icon>
-        <span i18n>Set PIN</span>
+        <span i18n="@@common.setPin">Set PIN</span>
       </button>
     }
     @if (authService.actionsAllowed(["setrandompin", "otp_pin_set_random"])) {
@@ -64,7 +64,7 @@
         class="action-button-secondary button-width-l"
         mat-stroked-button>
         <mat-icon>casino</mat-icon>
-        <span i18n>Random PIN</span>
+        <span i18n="@@token.randomPin">Random PIN</span>
       </button>
     }
   </div>

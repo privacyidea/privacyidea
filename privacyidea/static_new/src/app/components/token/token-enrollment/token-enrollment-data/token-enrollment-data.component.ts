@@ -17,11 +17,11 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, inject, input, linkedSignal } from "@angular/core";
+import { Component, computed, inject, input, linkedSignal, output, signal } from "@angular/core";
 import { MatButton } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 import {
-  BaseApiPayloadMapper,
+  EnrollmentResponse,
   EnrollmentResponseDetail,
   TokenEnrollmentData
 } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
@@ -36,7 +36,6 @@ import {
   REGENERATE_AS_VALUES_TOKEN_TYPES
 } from "@components/token/token-enrollment/token-enrollment.constants";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
-import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { EnrollTokenArguments, TokenService, TokenServiceInterface } from "@services/token/token.service";
 
 @Component({
@@ -57,11 +56,11 @@ import { EnrollTokenArguments, TokenService, TokenServiceInterface } from "@serv
 export class TokenEnrollmentDataComponent {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
-  protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   protected readonly Object = Object;
-  enrolledInputData = input<EnrollmentResponseDetail>();
-  enrollmentParameters = input<EnrollTokenArguments>();
-  tokenType = input<string>(this.tokenService.selectedTokenType()?.key);
+  enrolledInputData = input.required<EnrollmentResponseDetail>();
+  enrollmentParameters = input.required<EnrollTokenArguments>();
+  tokenType = input.required<string>();
+  enrollmentResponseChange = output<EnrollmentResponse>();
 
   enrolledData = linkedSignal(() => this.enrolledInputData());
   protected readonly serial = computed(() => this.enrolledData()?.serial ?? "");
@@ -98,29 +97,60 @@ export class TokenEnrollmentDataComponent {
         this.enrolledData()?.["otps"]
       )
   );
-  showRegenerateButton = computed(() => !NO_REGENERATE_TOKEN_TYPES.includes(this.tokenType()));
+  // A token waiting for enrollment verification cannot be regenerated: the backend rejects any
+  // further /token/init for it until a valid "verify" value is supplied, so offering the button
+  // would only ever produce an error.
+  protected readonly isVerifyPending = computed(() => this.enrolledData()?.rollout_state === "verify");
+  showRegenerateButton = computed(
+    () => !NO_REGENERATE_TOKEN_TYPES.includes(this.tokenType()) && !this.isVerifyPending()
+  );
   regenerateButtonText = computed(() =>
     REGENERATE_AS_VALUES_TOKEN_TYPES.includes(this.tokenType())
-      ? $localize`Regenerate Values`
-      : $localize`Regenerate QR Code`
+      ? $localize`:@@token.regenerateValues:Regenerate Values`
+      : $localize`:@@common.regenerateQrCode:Regenerate QR Code`
   );
 
+  regenerating = signal(false);
+
   regenerateQRCode() {
-    if (!this.enrollmentParameters()) {
-      this.notificationService.warning($localize`Enrollment parameters are missing. Cannot regenerate token.`);
+    if (this.regenerating()) {
       return;
     }
+    const enrollmentParameters = this.enrollmentParameters();
+    // The component instance is reused when the surrounding dialog pages between tokens, so
+    // remember which token this request belongs to and drop the response if it is no longer
+    // the one on screen.
+    const requestedSerial = this.serial() || enrollmentParameters.data.serial;
     const newEnrollmentData: TokenEnrollmentData = {
-      ...(this.enrollmentParameters()?.data ?? ({} as TokenEnrollmentData))
+      ...enrollmentParameters.data,
+      serial: requestedSerial,
+      // The token already exists, so this call re-initializes it rather than enrolling a new
+      // one. Without "rollover" the backend treats the request as the next step of the original
+      // enrollment and rejects it - for a two-step enrollment the token is still in "clientwait"
+      // and resending "2stepinit" fails. "rollover" resets the rollout state first, so a fresh
+      // secret is generated and, for two-step, a new server component is issued.
+      rollover: true
     };
-    const mapper = this.enrollmentParameters()?.mapper ?? new BaseApiPayloadMapper();
+    // Regenerating replaces the secret and nothing else. The PIN is deliberately not sent
+    // again: the server keeps the existing one when the parameter is absent, and re-submitting
+    // it would re-apply it without the PIN policy checks, which the server skips for rollover
+    // requests.
+    delete newEnrollmentData.pin;
 
-    this.tokenService.enrollToken({ data: newEnrollmentData, mapper: mapper }).subscribe({
+    this.regenerating.set(true);
+    this.tokenService.enrollToken({ data: newEnrollmentData, mapper: enrollmentParameters.mapper }).subscribe({
       next: (response) => {
+        this.regenerating.set(false);
         if (response?.detail) {
-          this.enrolledData.set(response.detail);
+          // The opener keys the update on the serial, so it is always told about the response.
+          // Only the displayed data is left alone when the dialog has moved on to another token.
+          if (this.serial() === requestedSerial) {
+            this.enrolledData.set(response.detail);
+          }
+          this.enrollmentResponseChange.emit(response);
         }
-      }
+      },
+      error: () => this.regenerating.set(false)
     });
   }
 }

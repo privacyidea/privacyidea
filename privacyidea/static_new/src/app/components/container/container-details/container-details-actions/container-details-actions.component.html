@@ -20,9 +20,9 @@
   <div class="actions-otp-container">
     <h4
       class="margin-8"
-      i18n>
-      Container Actions
-    </h4>
+      i18n="@@container.containerActions"
+      >Container Actions</h4
+    >
     <div class="flex-column ali-center gap-8">
       @if (authService.actionAllowed("container_delete")) {
         <button
@@ -30,7 +30,7 @@
           class="action-button-delete-secondary button-width-l"
           mat-stroked-button>
           <mat-icon>delete</mat-icon>
-          <span i18n>Delete</span>
+          <span i18n="@@common.delete">Delete</span>
         </button>
       }
       <button
@@ -41,7 +41,7 @@
           <mat-icon class="padding-right-3">shield</mat-icon>
           <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
         </span>
-        <span i18n>Enroll Token</span>
+        <span i18n="@@common.enrollToken">Enroll Token</span>
       </button>
       @if (containerService.containerDetail()?.template && authService.actionAllowed("container_template_list")) {
         <button
@@ -49,7 +49,7 @@
           class="action-button-secondary button-width-l"
           mat-stroked-button>
           <mat-icon>compare</mat-icon>
-          <span i18n>Compare to Template</span>
+          <span i18n="@@container.compareTemplate">Compare to Template</span>
         </button>
       }
       @if (containerType() === "smartphone") {
@@ -65,7 +65,7 @@
             class="action-button-secondary button-width-l"
             mat-stroked-button>
             <mat-icon>phonelink</mat-icon>
-            <span i18n>Register</span>
+            <span i18n="@@container.register">Register</span>
           </button>
         } @else if (rolloverAllowed()) {
           <button
@@ -73,7 +73,7 @@
             class="action-button-secondary button-width-l"
             mat-stroked-button>
             <mat-icon>sync</mat-icon>
-            <span i18n>Rollover</span>
+            <span i18n="@@common.rollover">Rollover</span>
           </button>
         }
         @if (unregisterAllowed()) {
@@ -82,7 +82,7 @@
             class="action-button-secondary button-width-l"
             mat-stroked-button>
             <mat-icon>phonelink_off</mat-icon>
-            <span i18n>Unregister</span>
+            <span i18n="@@container.unregister">Unregister</span>
           </button>
         }
       }

@@ -17,18 +17,18 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div class="flex-column">
-  <h4 i18n>Set PIN</h4>
+  <h4 i18n="@@common.setPin">Set PIN</h4>
   <div class="flex-column">
     <app-masked-input
       [field]="setPinControl()"
       class="input-width-l"
-      i18n-label
+      i18n-label="@@common.pin"
       label="PIN" />
     <app-masked-input
       [error]="pinMismatchError()"
       [field]="repeatPinControl()"
       class="input-width-l"
-      i18n-label
+      i18n-label="@@common.repeatPin"
       label="Repeat PIN" />
   </div>
 </div>

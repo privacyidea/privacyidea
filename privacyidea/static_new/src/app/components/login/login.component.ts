@@ -75,6 +75,8 @@ const NO_REALM_SENTINEL = "-";
   styleUrl: "./login.component.scss"
 })
 export class LoginComponent implements OnDestroy, AfterViewInit {
+  protected readonly showPasswordLabel = $localize`:@@login.showPassword:Show password`;
+  protected readonly hidePasswordLabel = $localize`:@@login.hidePassword:Hide password`;
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly router = inject(Router);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
@@ -192,7 +194,9 @@ export class LoginComponent implements OnDestroy, AfterViewInit {
 
   remoteLogin(): void {
     if (!this.remoteUser()) {
-      this.notificationService.warning($localize`Remote user not available. Remote Login not possible.`);
+      this.notificationService.warning(
+        $localize`:@@login.remoteUserNot:Remote user not available. Remote Login not possible.`
+      );
       return;
     }
     const params = { username: this.remoteUser() };

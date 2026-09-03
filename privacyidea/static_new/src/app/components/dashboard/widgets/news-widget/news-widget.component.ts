@@ -36,7 +36,7 @@ import { InfoService, InfoServiceInterface, NewsChannels, sortNewsItems } from "
 })
 export class NewsWidgetComponent extends DashboardWidget implements OnInit {
   static override readonly type = "news";
-  static override readonly title = $localize`News`;
+  static override readonly title = $localize`:@@nav.news:News`;
   static override readonly icon = "campaign";
   static override readonly defaultSize: WidgetSize = { cols: 8, rows: 3 };
   static override readonly minSize: WidgetSize = { cols: 6, rows: 3 };

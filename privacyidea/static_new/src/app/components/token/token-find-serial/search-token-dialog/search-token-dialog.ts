@@ -30,7 +30,7 @@ import { DialogAction } from "@models/dialog";
 })
 export class SearchTokenDialogComponent extends AbstractDialogComponent<string, boolean> {
   action: DialogAction<true> = {
-    label: $localize`Start Search`,
+    label: $localize`:@@token.startSearch:Start Search`,
     value: true,
     type: "confirm",
     primary: true

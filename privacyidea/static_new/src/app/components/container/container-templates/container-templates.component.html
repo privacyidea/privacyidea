@@ -19,7 +19,7 @@
 <div
   class="container-templates-layout"
   aria-label="Container Templates Layout"
-  i18n-aria-label>
+  i18n-aria-label="@@container.containerTemplates">
   @if (tableState.showTable()) {
     <div class="filter-paginator-container">
       <app-container-templates-filter
@@ -55,7 +55,7 @@
             [indeterminate]="selector.someRowsSelected()"
             [disabled]="!selector.hasVisibleRows()"
             aria-label="Select all templates"
-            i18n-aria-label>
+            i18n-aria-label="@@container.selectAllTemplates">
           </mat-checkbox>
         </th>
         <td
@@ -66,8 +66,7 @@
             (change)="selector.setRowSelected(row, $event.checked)"
             [checked]="selector.isRowSelected(row)"
             [disabled]="!row.name"
-            [aria-label]="row.name ? 'Select template ' + row.name : 'Select template'"
-            i18n-aria-label>
+            [attr.aria-label]="selectTemplateLabel(row.name)">
           </mat-checkbox>
         </td>
       </ng-container>
@@ -114,8 +113,7 @@
                     (keydown.enter)="$event.stopPropagation(); onClickTemplateName(template)"
                     (keydown.space)="$event.preventDefault(); $event.stopPropagation(); onClickTemplateName(template)"
                     class="text-link-button cursor-pointer"
-                    [attr.aria-label]="template.name ? 'Edit template ' + template.name : 'Edit template'"
-                    i18n-aria-label>
+                    [attr.aria-label]="editTemplateLabel(template.name)">
                     {{ template.name }}
                   </a>
                 }
@@ -149,15 +147,15 @@
             [table]="tableState"
             heading="No container templates yet"
             hint="Create a template to roll out containers with a predefined set of tokens."
-            i18n-heading
-            i18n-hint
+            i18n-heading="@@container.noContainerTemplates"
+            i18n-hint="@@container.createTemplateRoll"
             icon="note_add">
             <button
               [routerLink]="[ROUTE_PATHS.CONTAINERS_TEMPLATES_CREATE]"
               class="action-button-primary button-width-m"
               mat-stroked-button>
               <mat-icon>note_add</mat-icon>
-              <span i18n>Create Template</span>
+              <span i18n="@@common.createTemplate">Create Template</span>
             </button>
           </app-table-state>
         </td>
@@ -168,15 +166,15 @@
       [table]="tableState"
       heading="No container templates yet"
       hint="Create a template to roll out containers with a predefined set of tokens."
-      i18n-heading
-      i18n-hint
+      i18n-heading="@@container.noContainerTemplates"
+      i18n-hint="@@container.createTemplateRoll"
       icon="note_add">
       <button
         [routerLink]="[ROUTE_PATHS.CONTAINERS_TEMPLATES_CREATE]"
         class="action-button-primary button-width-m"
         mat-stroked-button>
         <mat-icon>note_add</mat-icon>
-        <span i18n>Create Template</span>
+        <span i18n="@@common.createTemplate">Create Template</span>
       </button>
     </app-table-state>
   }

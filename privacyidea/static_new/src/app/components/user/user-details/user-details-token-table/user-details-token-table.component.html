@@ -19,10 +19,10 @@
 <div
   aria-label="User Details Token Table"
   class="user-details-token-table-layout"
-  i18n-aria-label>
+  i18n-aria-label="@@user.userDetailsToken">
   <div class="flex-column">
     <div class="details-header">
-      <h4 i18n>Tokens of User</h4>
+      <h4 i18n="@@user.tokensUser">Tokens of User</h4>
       <h4 class="username-header">&nbsp;{{ userService.detailsUser().username }}</h4>
       <h4>:</h4>
     </div>
@@ -38,7 +38,7 @@
             class="action-button-delete-secondary button-width-l"
             mat-stroked-button>
             <mat-icon>delete_sweep</mat-icon>
-            <span i18n>Delete</span>
+            <span i18n="@@common.delete">Delete</span>
           </button>
         }
         @if (authService.actionAllowed("unassign")) {
@@ -48,7 +48,7 @@
             class="action-button-secondary button-width-l"
             mat-stroked-button>
             <mat-icon>person_remove</mat-icon>
-            <span i18n>Unassign</span>
+            <span i18n="@@common.unassign">Unassign</span>
           </button>
         }
         @if (authService.actionAllowed("enable") && authService.actionAllowed("disable")) {
@@ -58,7 +58,7 @@
             class="action-button-secondary button-width-l"
             mat-stroked-button>
             <mat-icon>toggle_on</mat-icon>
-            <span i18n>(De)activate</span>
+            <span i18n="@@common.deActivate">(De)activate</span>
           </button>
         }
         @if (authService.actionAllowed("reset")) {
@@ -68,7 +68,7 @@
             class="action-button-secondary button-width-l"
             mat-stroked-button>
             <mat-icon>restart_alt</mat-icon>
-            <span i18n>Reset Failcounters</span>
+            <span i18n="@@common.resetFailcounters">Reset Failcounters</span>
           </button>
         }
       </div>
@@ -79,7 +79,7 @@
           [dataSource]="dataSource"
           aria-label="Token Table of the User"
           class="user-details-token-table"
-          i18n-aria-label
+          i18n-aria-label="@@user.tokenTableUser"
           mat-table>
           <ng-container matColumnDef="select">
             <th
@@ -133,7 +133,7 @@
                           <a
                             (click)="contentService.tokenSelected(element.serial)"
                             (keydown.enter)="contentService.tokenSelected(element.serial)"
-                            attr.aria-label="{{ column.label }} Link"
+                            [attr.aria-label]="linkLabel(column.label)"
                             role="button"
                             tabindex="0">
                             {{ element[column.key] }}
@@ -173,7 +173,7 @@
                             <a
                               (click)="contentService.navigateContainerDetails(element[column.key])"
                               (keydown.enter)="contentService.navigateContainerDetails(element[column.key])"
-                              attr.aria-label="{{ column.label }} Link"
+                              [attr.aria-label]="linkLabel(column.label)"
                               role="button"
                               tabindex="0">
                               {{ element[column.key] }}
@@ -203,8 +203,8 @@
                 [table]="tableState"
                 heading="No tokens assigned to this user"
                 hint="Assign a token to this user to see it here."
-                i18n-heading
-                i18n-hint />
+                i18n-heading="@@user.noTokensAssigned"
+                i18n-hint="@@user.assignTokenUserHint" />
             </td>
           </tr>
         </table>
@@ -215,7 +215,7 @@
         [hint]="emptyHint()"
         [table]="tableState"
         heading="No tokens assigned to this user"
-        i18n-heading
+        i18n-heading="@@user.noTokensAssigned"
         icon="shield">
         <div class="table-state-actions">
           <ng-container *ngTemplateOutlet="enrollAction() ?? null"></ng-container>

@@ -374,6 +374,17 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
     expect(table.totalLength()).toBe(0);
   });
 
+  it("emptyHint prompts to enroll a token when enrollment is allowed", () => {
+    authServiceMock.tokenEnrollmentAllowed.mockReturnValue(true);
+    expect(table.emptyHint()).toContain("Enroll your first token");
+  });
+
+  it("emptyHint is empty when enrollment is not allowed", () => {
+    authServiceMock.tokenEnrollmentAllowed.mockReturnValue(false);
+    const freshFixture = TestBed.createComponent(TokenTableComponent);
+    expect(freshFixture.componentInstance.emptyHint()).toBe("");
+  });
+
   it("toggleFilter uses the boolean toggler for 'active' and the keyword toggler otherwise", () => {
     const booleanResult = new FilterValue().addEntry("active", "true");
     tableUtilsService.toggleBooleanInFilter.mockReturnValue(booleanResult);

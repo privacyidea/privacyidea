@@ -20,7 +20,7 @@
   appScrollToTop
   aria-label="Subscriptions"
   class="subscription-layout"
-  i18n-aria-label>
+  i18n-aria-label="@@common.subscriptions">
   <!-- Outside the state gate: the zero state's own upload button drives this same input. -->
   <input
     #fileInput
@@ -30,7 +30,7 @@
 
   @if (tableState.showTable()) {
     <div class="flex-row ali-center gap-32 just-space-between">
-      <h3 i18n>Subscriptions</h3>
+      <h3 i18n="@@common.subscriptions">Subscriptions</h3>
 
       <button
         (click)="fileInput.click()"
@@ -38,7 +38,7 @@
         mat-stroked-button
         type="submit">
         <mat-icon>upload</mat-icon>
-        <span i18n>Upload</span>
+        <span i18n="@@subscription.upload">Upload</span>
       </button>
     </div>
 
@@ -46,14 +46,18 @@
       @for (subscription of subscriptions(); track subscription.application) {
         <div class="subscription-details">
           <div class="margin-left-16 flex-row ali-center gap-16">
-            <h4 class="margin-0" i18n>Application:</h4>
+            <h4
+              class="margin-0"
+              i18n="@@subscription.application"
+              >Application:</h4
+            >
             <h4 class="margin-0 application-color">{{ subscription.application }}</h4>
 
             @if (authService.actionAllowed("delete")) {
               <button
                 (click)="deleteSubscription(subscription.application)"
                 class="action-button-delete-secondary button-width-s"
-                i18n-matTooltip
+                i18n-matTooltip="@@subscription.deleteSubscription"
                 mat-stroked-button
                 matTooltip="Delete Subscription">
                 <mat-icon>delete</mat-icon>
@@ -65,56 +69,59 @@
           @if (subscription.timedelta < -14) {
             <div
               class="alert alert-success"
-              i18n>
-              Valid subscription
-            </div>
+              i18n="@@subscription.validSubscription"
+              >Valid subscription</div
+            >
           }
           @if (subscription.timedelta < 0 && subscription.timedelta >= -14) {
             <div
               class="alert alert-warning"
-              i18n>
-              Subscription about to expire
-            </div>
+              i18n="@@subscription.subscriptionAbout"
+              >Subscription about to expire</div
+            >
           }
           @if (subscription.timedelta >= 0) {
             <div
               class="alert alert-danger"
-              i18n>
-              Subscription expired
-            </div>
+              i18n="@@subscription.subscriptionExpired"
+              >Subscription expired</div
+            >
           }
 
           <div class="subscription-info-grid">
-            <strong i18n>Level:</strong>
+            <strong i18n="@@subscription.level">Level:</strong>
             <span> {{ subscription.level }} </span>
 
-            <strong i18n>Users:</strong>
+            <strong i18n="@@subscription.users">Users:</strong>
             <span>
               {{ subscription.num_users }} ({{ subscription.active_users }}
-              <span i18n>distinct users with active tokens</span>,
-              {{ subscription.num_users - subscription.active_users }} <span i18n>remaining</span>)
+              <span i18n="@@subscription.distinctUsers">distinct users with active tokens</span>,
+              {{ subscription.num_users - subscription.active_users }}
+              <span i18n="@@subscription.remaining">remaining</span>)
             </span>
 
-            <strong i18n>Tokens:</strong>
+            <strong i18n="@@subscription.tokens">Tokens:</strong>
             <span>
-              {{ subscription.num_tokens }} ({{ subscription.active_tokens }} <span i18n>active, assigned tokens</span>,
-              {{ subscription.num_tokens - subscription.active_tokens }} <span i18n>remaining</span>)
+              {{ subscription.num_tokens }} ({{ subscription.active_tokens }}
+              <span i18n="@@subscription.activeAssigned">active, assigned tokens</span>,
+              {{ subscription.num_tokens - subscription.active_tokens }}
+              <span i18n="@@subscription.remaining">remaining</span>)
             </span>
 
-            <strong i18n>Clients:</strong>
+            <strong i18n="@@subscription.clients">Clients:</strong>
             <span> {{ subscription.num_clients }} </span>
 
-            <strong i18n>From:</strong>
+            <strong i18n="@@subscription.from">From:</strong>
             <span> {{ subscription.date_from }} </span>
 
-            <strong i18n>To:</strong>
+            <strong i18n="@@subscription.to">To:</strong>
             <span> {{ subscription.date_till }} </span>
           </div>
 
           <div class="info-panels">
             <mat-card>
               <mat-card-header>
-                <mat-card-title i18n>Subscription Issued To:</mat-card-title>
+                <mat-card-title i18n="@@subscription.subscriptionIssued">Subscription Issued To:</mat-card-title>
               </mat-card-header>
               <mat-card-content>
                 {{ subscription.for_name }}
@@ -139,7 +146,7 @@
 
             <mat-card>
               <mat-card-header>
-                <mat-card-title i18n>Issuer:</mat-card-title>
+                <mat-card-title i18n="@@subscription.issuer">Issuer:</mat-card-title>
               </mat-card-header>
               <mat-card-content>
                 {{ subscription.by_name }}
@@ -168,15 +175,15 @@
       [table]="tableState"
       heading="No subscriptions yet"
       hint="Upload a subscription file to record the subscription for an application."
-      i18n-heading
-      i18n-hint
+      i18n-heading="@@subscription.noSubscriptionsYet"
+      i18n-hint="@@subscription.uploadSubscriptionFile"
       icon="workspace_premium">
       <button
         (click)="fileInput.click()"
         class="action-button-primary button-width-m"
         mat-stroked-button>
         <mat-icon>upload</mat-icon>
-        <span i18n>Upload</span>
+        <span i18n="@@subscription.upload">Upload</span>
       </button>
     </app-table-state>
   }

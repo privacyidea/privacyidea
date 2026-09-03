@@ -59,24 +59,24 @@ export type ColumnDef<K extends ColumnKey = ColumnKey> = Readonly<{
 
 export const COLUMN_REGISTRY: Readonly<Record<ColumnKey, ColumnDef>> = {
   select: { key: "select", label: "" },
-  serial: { key: "serial", label: "Serial" },
-  type: { key: "type", label: "Type" },
-  states: { key: "states", label: "Status" },
-  description: { key: "description", label: "Description" },
-  user_name: { key: "user_name", label: "User" },
-  user_realm: { key: "user_realm", label: "Realm" },
-  realms: { key: "realms", label: "Container Realms" },
-  tokentype: { key: "tokentype", label: "Type" },
-  active: { key: "active", label: "Active" },
-  username: { key: "username", label: "User" },
-  failcount: { key: "failcount", label: "Fail Counter" },
-  maxfail: { key: "maxfail", label: "Maxfail" },
-  container_serial: { key: "container_serial", label: "Container" },
-  count: { key: "count", label: "Count" },
-  rounds: { key: "rounds", label: "Rounds" },
-  service_id: { key: "service_id", label: "Service ID" },
-  user: { key: "user", label: "SSH User" },
-  actions: { key: "actions", label: "Actions" }
+  serial: { key: "serial", label: $localize`:@@common.serial:Serial` },
+  type: { key: "type", label: $localize`:@@common.type:Type` },
+  states: { key: "states", label: $localize`:@@common.status:Status` },
+  description: { key: "description", label: $localize`:@@common.description:Description` },
+  user_name: { key: "user_name", label: $localize`:@@common.user:User` },
+  user_realm: { key: "user_realm", label: $localize`:@@common.realm:Realm` },
+  realms: { key: "realms", label: $localize`:@@common.containerRealms:Container Realms` },
+  tokentype: { key: "tokentype", label: $localize`:@@common.type:Type` },
+  active: { key: "active", label: $localize`:@@common.active:Active` },
+  username: { key: "username", label: $localize`:@@common.user:User` },
+  failcount: { key: "failcount", label: $localize`:@@token.failCounter:Fail Counter` },
+  maxfail: { key: "maxfail", label: $localize`:@@token.maxfail:Maxfail` },
+  container_serial: { key: "container_serial", label: $localize`:@@common.container:Container` },
+  count: { key: "count", label: $localize`:@@token.count:Count` },
+  rounds: { key: "rounds", label: $localize`:@@token.rounds:Rounds` },
+  service_id: { key: "service_id", label: $localize`:@@common.serviceId:Service ID` },
+  user: { key: "user", label: $localize`:@@token.sshUser:SSH User` },
+  actions: { key: "actions", label: $localize`:@@common.actions:Actions` }
 } as const;
 
 type ColumnsTuple<K extends readonly ColumnKey[]> = {

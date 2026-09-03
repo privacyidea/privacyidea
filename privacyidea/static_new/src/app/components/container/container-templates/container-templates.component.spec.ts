@@ -45,7 +45,12 @@ describe("ContainerTemplatesComponent", () => {
 
   const mockContainerTemplateService = {
     templates: templatesSignal,
-    templatesResource: { hasValue: () => templatesLoaded(), error: () => null, reload: jest.fn() }
+    templatesResource: {
+      hasValue: () => templatesLoaded(),
+      error: () => null,
+      isLoading: () => false,
+      reload: jest.fn()
+    }
   };
 
   const mockDialogService = {
