@@ -24,15 +24,15 @@
     @if (isEditMode()) {
       <h3
         class="margin-8"
-        i18n>
-        Edit RADIUS Server
-      </h3>
+        i18n="@@radiusServer.editRadiusServer"
+        >Edit RADIUS Server</h3
+      >
     } @else {
       <h3
         class="margin-8"
-        i18n>
-        Create RADIUS Server
-      </h3>
+        i18n="@@common.createRadiusServer"
+        >Create RADIUS Server</h3
+      >
     }
 
     <div
@@ -43,7 +43,7 @@
           (click)="onCancel()"
           class="action-button-secondary button-width-s"
           mat-stroked-button>
-          <span i18n>Cancel</span>
+          <span i18n="@@common.cancel">Cancel</span>
         </button>
         <button
           (click)="save()"
@@ -51,7 +51,7 @@
           class="action-button-primary button-width-s"
           mat-stroked-button>
           <mat-icon>save</mat-icon>
-          <span i18n>Save</span>
+          <span i18n="@@common.save">Save</span>
         </button>
       </div>
     </div>
@@ -60,7 +60,7 @@
       <mat-form-field
         appearance="fill"
         class="input-width-l margin-bottom-32">
-        <mat-label i18n>Identifier</mat-label>
+        <mat-label i18n="@@common.identifier">Identifier</mat-label>
         <app-clearable-input
           (clearButtonClick)="radiusModel.update(m => ({...m, identifier: ''}))"
           [showClearButton]="!isEditMode() && !!radiusModel().identifier">
@@ -69,15 +69,17 @@
             matInput
             placeholder="myRadiusServer" />
         </app-clearable-input>
-        <mat-hint i18n>The unique identifying name of the RADIUS server definition.</mat-hint>
+        <mat-hint i18n="@@radiusServer.uniqueIdentifying"
+          >The unique identifying name of the RADIUS server definition.</mat-hint
+        >
         @if (radiusForm.identifier().errors().some(e => e.kind === 'required')) {
-          <mat-error i18n>Identifier is <strong>required</strong> </mat-error>
+          <mat-error i18n="@@common.identifierRequired">Identifier is <strong>required</strong></mat-error>
         }
         @if (radiusForm.identifier().errors().some(e => e.kind === 'pattern')) {
-          <mat-error i18n
+          <mat-error i18n="@@common.identifierContains"
             >Identifier contains <strong>invalid characters</strong>. Only alphanumeric characters, dots, underscores
-            and hyphens are allowed.
-          </mat-error>
+            and hyphens are allowed.</mat-error
+          >
         }
       </mat-form-field>
 
@@ -85,7 +87,7 @@
         <mat-form-field
           appearance="fill"
           class="input-width-l">
-          <mat-label i18n>IP or FQDN</mat-label>
+          <mat-label i18n="@@common.ipFqdn">IP or FQDN</mat-label>
           <app-clearable-input
             (clearButtonClick)="radiusModel.update(m => ({...m, server: ''}))"
             [showClearButton]="!!radiusModel().server">
@@ -95,14 +97,14 @@
               placeholder="1.2.3.4" />
           </app-clearable-input>
           @if (radiusForm.server().errors().some(e => e.kind === 'required')) {
-            <mat-error i18n>Server is <strong>required</strong> </mat-error>
+            <mat-error i18n="@@common.serverRequired">Server is <strong>required</strong></mat-error>
           }
         </mat-form-field>
 
         <mat-form-field
           appearance="fill"
           class="input-width-s">
-          <mat-label i18n>Port</mat-label>
+          <mat-label i18n="@@common.port">Port</mat-label>
           <input
             [formField]="radiusForm.port"
             matInput
@@ -115,7 +117,7 @@
         <mat-form-field
           appearance="fill"
           class="input-width-l">
-          <mat-label i18n>Secret</mat-label>
+          <mat-label i18n="@@common.secret">Secret</mat-label>
           <app-clearable-input
             (clearButtonClick)="radiusModel.update(m => ({...m, secret: ''}))"
             [showClearButton]="!!radiusModel().secret">
@@ -125,14 +127,14 @@
               type="password" />
           </app-clearable-input>
           @if (radiusForm.secret().errors().some(e => e.kind === 'required')) {
-            <mat-error i18n>Secret is <strong>required</strong> </mat-error>
+            <mat-error i18n="@@radiusServer.secretRequired">Secret is <strong>required</strong></mat-error>
           }
         </mat-form-field>
 
         <mat-form-field
           appearance="fill"
           class="input-width-s">
-          <mat-label i18n>Timeout</mat-label>
+          <mat-label i18n="@@common.timeout">Timeout</mat-label>
           <input
             [formField]="radiusForm.timeout"
             matInput
@@ -145,7 +147,7 @@
         <mat-form-field
           appearance="fill"
           class="input-width-l">
-          <mat-label i18n>RADIUS Dictionary</mat-label>
+          <mat-label i18n="@@radiusServer.radiusDictionary">RADIUS Dictionary</mat-label>
           <app-clearable-input
             (clearButtonClick)="radiusModel.update(m => ({...m, dictionary: ''}))"
             [showClearButton]="!!radiusModel().dictionary">
@@ -159,7 +161,7 @@
         <mat-form-field
           appearance="fill"
           class="input-width-s">
-          <mat-label i18n>Retries</mat-label>
+          <mat-label i18n="@@radiusServer.retries">Retries</mat-label>
           <input
             [formField]="radiusForm.retries"
             matInput
@@ -171,7 +173,7 @@
       <mat-form-field
         appearance="fill"
         class="input-width-xl">
-        <mat-label i18n>Description</mat-label>
+        <mat-label i18n="@@common.description">Description</mat-label>
         <app-clearable-input
           (clearButtonClick)="radiusModel.update(m => ({...m, description: ''}))"
           [showClearButton]="!!radiusModel().description">
@@ -187,18 +189,18 @@
         <mat-checkbox
           [checked]="radiusModel().message_authenticator"
           (change)="radiusModel.update(m => ({...m, message_authenticator: $event.checked}))"
-          i18n
-          >Require Message-Authenticator
-        </mat-checkbox>
+          i18n="@@radiusServer.requireMessage"
+          >Require Message-Authenticator</mat-checkbox
+        >
       </div>
 
-      <h4 i18n>Test RADIUS Server</h4>
+      <h4 i18n="@@radiusServer.testRadiusServer">Test RADIUS Server</h4>
 
       <div class="flex-row gap-16">
         <mat-form-field
           appearance="fill"
           class="input-width-m">
-          <mat-label i18n>Username</mat-label>
+          <mat-label i18n="@@common.username">Username</mat-label>
           <app-clearable-input
             (clearButtonClick)="radiusModel.update(m => ({...m, username: ''}))"
             [showClearButton]="!!radiusModel().username">
@@ -211,7 +213,7 @@
           <mat-form-field
             appearance="fill"
             class="input-width-m">
-            <mat-label i18n>Password</mat-label>
+            <mat-label i18n="@@common.password">Password</mat-label>
             <app-clearable-input
               (clearButtonClick)="radiusModel.update(m => ({...m, password: ''}))"
               [showClearButton]="!!radiusModel().password">
@@ -225,7 +227,7 @@
             (click)="test()"
             [disabled]="isTesting()"
             class="margin-bottom-16 margin-left-16"
-            i18n-matTooltip
+            i18n-matTooltip="@@radiusServer.sendRadiusTest"
             mat-icon-button
             matTooltip="Send RADIUS test request">
             <mat-icon>send</mat-icon>

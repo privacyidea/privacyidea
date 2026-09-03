@@ -3,6 +3,8 @@ This test file tests the lib.policy.py
 
 The lib.policy.py only depends on the database model.
 """
+import json
+import pathlib
 import re
 
 import dateutil
@@ -30,7 +32,7 @@ from privacyidea.lib.policy import (set_policy, delete_policy, delete_policies,
 from privacyidea.lib.realm import (set_realm, delete_realm, get_realms, get_ordered_resolvers)
 from privacyidea.lib.resolver import (save_resolver, get_resolver_list,
                                       delete_resolver)
-from privacyidea.lib.token import init_token
+from privacyidea.lib.token import init_token, get_dynamic_policy_definitions
 from privacyidea.lib.tokens.emailtoken import EMAILACTION
 from privacyidea.lib.user import User
 from privacyidea.lib.utils.compare import PrimaryComparators
@@ -3484,3 +3486,74 @@ class PolicyMatchTestCase(MyTestCase):
     @classmethod
     def tearDownClass(cls):
         delete_all_policies()
+
+
+class PolicyTemplateTestCase(MyTestCase):
+    """The policy templates shipped with the WebUI must only use actions that
+    still exist and values the action definition accepts, otherwise a policy
+    created from a template cannot be saved."""
+
+    repository_root = pathlib.Path(__file__).resolve().parent.parent
+    template_directories = [repository_root / "privacyidea/static/policy-templates",
+                            repository_root / "privacyidea/static_new/public/policy-templates"]
+
+    def _read_templates(self, directory):
+        templates = {}
+        for template_file in sorted(directory.glob("*.json")):
+            if template_file.name == "index.json":
+                continue
+            templates[template_file.name] = json.loads(template_file.read_text())
+        # without this the tests below would silently check nothing
+        self.assertTrue(templates, f"No policy templates found in {directory}")
+        return templates
+
+    @staticmethod
+    def _action_definitions(scope):
+        definitions = dict(get_static_policy_definitions(scope))
+        definitions.update(get_dynamic_policy_definitions(scope))
+        return definitions
+
+    def test_01_template_actions_are_valid(self):
+        for directory in self.template_directories:
+            for file_name, template in self._read_templates(directory).items():
+                scope = template["scope"]
+                for action_name, action_value in template["action"].items():
+                    try:
+                        validate_actions(scope, {action_name: action_value})
+                    except ParameterError as error:
+                        self.fail(f"{directory / file_name}: '{action_name}' is not a valid "
+                                  f"action in scope '{scope}': {error.message}")
+
+    def test_02_template_action_values_match_the_definition(self):
+        for directory in self.template_directories:
+            for file_name, template in self._read_templates(directory).items():
+                definitions = self._action_definitions(template["scope"])
+                for action_name, action_value in template["action"].items():
+                    where = f"{directory / file_name}: '{action_name}'"
+                    if action_name not in definitions:
+                        self.fail(f"{where} is not a valid action in scope '{template['scope']}'")
+                    definition = definitions[action_name]
+                    action_type = definition.get("type")
+                    if action_type == "bool":
+                        self.assertIsInstance(action_value, bool, f"{where} must be a boolean")
+                    elif action_type == "int":
+                        # policy values are stored as strings, so a numeric string is fine
+                        self.assertRegex(str(action_value), r"^-?\d+$", f"{where} must be an integer")
+                    else:
+                        self.assertIsInstance(action_value, str, f"{where} must be a string")
+                    # value lists built from the database (resolvers, realms, servers) are
+                    # empty on a fresh instance and can not be checked
+                    allowed_values = definition.get("value")
+                    if allowed_values:
+                        self.assertIn(str(action_value), [str(value) for value in allowed_values],
+                                      f"{where} is not one of the allowed values")
+
+    def test_03_templates_are_listed_in_the_index(self):
+        for directory in self.template_directories:
+            index = json.loads((directory / "index.json").read_text())
+            template_names = {template["name"] for template in self._read_templates(directory).values()}
+            self.assertEqual(template_names, set(index))
+
+    def test_04_both_webui_copies_are_identical(self):
+        first, second = [self._read_templates(directory) for directory in self.template_directories]
+        self.assertEqual(first, second)

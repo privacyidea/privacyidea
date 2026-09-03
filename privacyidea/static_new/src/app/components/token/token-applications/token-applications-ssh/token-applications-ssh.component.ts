@@ -63,6 +63,10 @@ import { inlineFilterHint } from "@utils/filter-hint.utils";
   styleUrls: ["./token-applications-ssh.component.scss"]
 })
 export class TokenApplicationsSshComponent {
+  protected linkLabel(label: string): string {
+    return $localize`:@@common.linkLabel:${label}:LABEL: link`;
+  }
+
   protected readonly machineService: MachineServiceInterface = inject(MachineService);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);

@@ -17,14 +17,12 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 @if (tokenType() === "tiqr") {
-  <p i18n>
-    Click
-    <a href="{{ url() }}">here</a>
-    or scan the QR Code, if you want to add the Token to your TiQR app.
-  </p>
+  <p i18n="@@token.clickHereScan"
+    >Click <a href="{{ url() }}">here</a> or scan the QR Code, if you want to add the Token to your TiQR app.</p
+  >
 } @else {
-  <p i18n>
-    Click
+  <p i18n="@@token.clickHereScanQr"
+    >Click
     <a href="{{ url() }}">here</a>
     or scan the QR Code, if you want to add the Token to your smartphone authenticator app. The QR Code contains the
     secret key of your token. You need to protect it.

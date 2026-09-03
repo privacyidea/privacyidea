@@ -89,7 +89,7 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
                 "counter_types_to_track": [str(AuthEventType.PIN_FAIL)],
                 "stages": [{"failure_threshold": 5,
                             "actions": [{"action_type": str(ConditionalAccessAction.LOCK_USER),
-                                         "action_value": {"lock_duration_seconds": 300}}]}]}
+                                         "action_value": {"duration_seconds": 300}}]}]}
         body.update(overrides)
         return body
 
@@ -119,6 +119,98 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
         body["stages"][0]["actions"][0]["action_type"] = "NOPE"
         res = self._request("policy", method="POST", json_data=body)
         self.assertEqual(400, res.status_code, res.json)
+
+    def test_create_lock_user_without_duration_is_400(self):
+        # An action the engine cannot act on is rejected at save time rather than stored and skipped at runtime.
+        body = self._policy_body()
+        body["stages"][0]["actions"][0]["action_value"] = None
+        res = self._request("policy", method="POST", json_data=body)
+        self.assertEqual(400, res.status_code, res.json)
+        self.assertIn("duration_seconds", res.json["result"]["error"]["message"])
+
+    def test_create_lock_user_with_legacy_duration_key_is_400(self):
+        # The key the module docstring used to advertise; the engine never read it, so a policy carrying it
+        # locked nobody. The error names it, because that is the mistake the admin made.
+        body = self._policy_body()
+        body["stages"][0]["actions"][0]["action_value"] = {"lock_duration_seconds": 300}
+        res = self._request("policy", method="POST", json_data=body)
+        self.assertEqual(400, res.status_code, res.json)
+        self.assertIn("lock_duration_seconds", res.json["result"]["error"]["message"])
+
+    def test_patch_enable_still_works_with_a_stored_bad_action_value(self):
+        # Validation is on the write path only: a policy whose stored action_value predates this rule stays
+        # switchable instead of being frozen until it is repaired (which is what the WebUI's toggles rely on).
+        policy_id = self._create_policy()
+        action = db.session.query(ConditionalAccessStageAction).one()
+        action.action_value = {"lock_duration_seconds": 300}
+        db.session.commit()
+        res = self._request(f"policy/{policy_id}", method="PATCH", json_data={"enabled": False})
+        self.assertEqual(200, res.status_code, res.json)
+
+    def test_create_defaults_reset_on_success_to_true(self):
+        policy_id = self._create_policy()
+        res = self._request(f"policy/{policy_id}")
+        self.assertTrue(res.json["result"]["value"]["reset_on_success"])
+
+    def test_create_accepts_reset_on_success_false(self):
+        # An explicit JSON false must reach the CRUD layer rather than being read as "not given".
+        policy_id = self._create_policy(reset_on_success=False)
+        res = self._request(f"policy/{policy_id}")
+        self.assertFalse(res.json["result"]["value"]["reset_on_success"])
+
+    def test_patch_toggles_reset_on_success(self):
+        policy_id = self._create_policy()
+        for value in (False, True):
+            res = self._request(f"policy/{policy_id}", method="PATCH", json_data={"reset_on_success": value})
+            self.assertEqual(200, res.status_code, res.json)
+            res = self._request(f"policy/{policy_id}")
+            self.assertEqual(value, res.json["result"]["value"]["reset_on_success"])
+
+    def test_create_source_ip_with_reset_on_success_is_400(self):
+        # A source-IP policy never resets on a successful login: asking for it is rejected instead of being stored
+        # and ignored.
+        body = self._policy_body(name="IP reset", target="source_ip", reset_on_success=True,
+                                 counter_types_to_track=[str(AuthEventType.PASSWORD_FAIL)],
+                                 stages=[{"failure_threshold": 20,
+                                          "actions": [{"action_type": str(ConditionalAccessAction.BLOCK_IP),
+                                                       "action_value": {"duration_seconds": 60}}]}])
+        res = self._request("policy", method="POST", json_data=body)
+        self.assertEqual(400, res.status_code, res.json)
+        self.assertIn("reset_on_success", res.json["result"]["error"]["message"])
+
+    def test_create_source_ip_defaults_reset_on_success_to_false(self):
+        body = self._policy_body(name="IP noreset", target="source_ip",
+                                 counter_types_to_track=[str(AuthEventType.PASSWORD_FAIL)],
+                                 stages=[{"failure_threshold": 20,
+                                          "actions": [{"action_type": str(ConditionalAccessAction.BLOCK_IP),
+                                                       "action_value": {"duration_seconds": 60}}]}])
+        res = self._request("policy", method="POST", json_data=body)
+        self.assertEqual(200, res.status_code, res.json)
+        policy = self._request(f"policy/{res.json['result']['value']}").json["result"]["value"]
+        self.assertFalse(policy["reset_on_success"])
+
+    def test_patch_reset_on_success_on_source_ip_policy_is_400(self):
+        policy_id = self._create_policy(name="IP patch", target="source_ip",
+                                        counter_types_to_track=[str(AuthEventType.PASSWORD_FAIL)],
+                                        stages=[{"failure_threshold": 20,
+                                                 "actions": [{"action_type": str(ConditionalAccessAction.BLOCK_IP),
+                                                              "action_value": {"duration_seconds": 60}}]}])
+        res = self._request(f"policy/{policy_id}", method="PATCH", json_data={"reset_on_success": True})
+        self.assertEqual(400, res.status_code, res.json)
+        self.assertFalse(self._request(f"policy/{policy_id}").json["result"]["value"]["reset_on_success"])
+
+    def test_patch_to_source_ip_clears_reset_on_success(self):
+        # Switching a resetting user policy to source_ip clears the flag rather than leaving the policy claiming a
+        # reset it cannot perform.
+        policy_id = self._create_policy()
+        res = self._request(f"policy/{policy_id}", method="PATCH",
+                            json_data={"target": "source_ip",
+                                       "count_mode": str(CountMode.DISTINCT_USERS),
+                                       "stages": [{"failure_threshold": 20,
+                                                   "actions": [{"action_type": str(ConditionalAccessAction.BLOCK_IP),
+                                                                "action_value": {"duration_seconds": 60}}]}]})
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertFalse(self._request(f"policy/{policy_id}").json["result"]["value"]["reset_on_success"])
 
     def test_create_duplicate_name_is_400(self):
         self._create_policy(name="Dup")
@@ -269,10 +361,10 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
             name="Retrig",
             stages=[{"failure_threshold": 8,
                      "actions": [{"action_type": str(ConditionalAccessAction.LOCK_USER),
-                                  "action_value": {"lock_duration_seconds": 300},
+                                  "action_value": {"duration_seconds": 300},
                                   "retrigger_above_threshold": True},
                                  {"action_type": str(ConditionalAccessAction.EMAIL_ADMIN),
-                                  "action_value": {"smtp_identifier": "x"},
+                                  "action_value": {"smtp_identifier": "x", "subject": "s", "body": "b"},
                                   "retrigger_above_threshold": False}]}])
         res = self._request("policy", method="POST", json_data=body)
         self.assertEqual(200, res.status_code, res.json)
@@ -434,7 +526,7 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
                 "counter_types_to_track": json.dumps(["PIN_FAIL"]),
                 "stages": json.dumps([{"failure_threshold": 5,
                                        "actions": [{"action_type": "LOCK_USER",
-                                                    "action_value": {"lock_duration_seconds": 60}}]}])}
+                                                    "action_value": {"duration_seconds": 60}}]}])}
         with self.app.test_request_context("/conditionalaccess/policy", method="POST", data=data,
                                            headers={"Authorization": self.at}):
             res = self.app.full_dispatch_request()
@@ -468,7 +560,7 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
             counter_types_to_track=[str(AuthEventType.PIN_FAIL)],
             stages=[{"failure_threshold": 5,
                      "actions": [{"action_type": str(ConditionalAccessAction.LOCK_USER),
-                                  "action_value": {"lock_duration_seconds": 300}}]}],
+                                  "action_value": {"duration_seconds": 300}}]}],
             target="user", priority=priority) for priority in priorities]
 
     def test_reorder_swaps_two_policies(self):

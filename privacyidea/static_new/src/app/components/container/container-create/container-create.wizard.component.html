@@ -20,7 +20,7 @@
   appScrollToTop
   aria-label="Create Container"
   class="container-create-container"
-  i18n-aria-label>
+  i18n-aria-label="@@common.createContainer">
   @let preTopHtml = preTopHtml$ | async;
   @if (preTopHtml?.hasContent) {
     <div
@@ -29,9 +29,9 @@
   } @else {
     <h3
       class="margin-8"
-      i18n>
-      Create {{ this.containerService.selectedContainerType()?.containerType | titlecase }} Container
-    </h3>
+      i18n="@@container.createContainer"
+      >Create {{ this.containerService.selectedContainerType()?.containerType | titlecase }} Container</h3
+    >
   }
 
   <div class="enroll-button-container margin-top-16 margin-left-16">
@@ -40,12 +40,12 @@
       class="action-button-primary button-width-m"
       mat-stroked-button>
       <mat-icon>create_new_folder</mat-icon>
-      <span i18n>Create</span>
+      <span i18n="@@common.create">Create</span>
     </button>
     <button
       (click)="reopenEnrollmentDialog()"
       matTooltip="Reopen enrollment dialog"
-      i18n-matTooltip
+      i18n-matTooltip="@@common.reopenEnrollment"
       [ngClass]="{ hidden: !registerResponse() }"
       mat-icon-button
       type="button">

@@ -1,0 +1,89 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<app-dialog-wrapper
+  (actionTriggered)="onAction($event)"
+  (wrapperClose)="close()"
+  [actions]="dialogActions()"
+  i18n-title
+  title="Block IP Address">
+  <p
+    class="block-dialog-intro"
+    i18n>
+    A blocked IP is rejected before any credential is checked. Loopback and any address covered by
+    CONDITIONAL_ACCESS_NEVER_BLOCK cannot be blocked.
+  </p>
+
+  <mat-form-field
+    appearance="fill"
+    subscriptSizing="dynamic"
+    class="block-dialog-ip input-width-l">
+    <mat-label i18n>IP address</mat-label>
+    <input
+      matInput
+      [value]="ip()"
+      (input)="ip.set($any($event.target).value)" />
+  </mat-form-field>
+
+  <mat-radio-group
+    class="block-dialog-modes"
+    [value]="mode()"
+    (change)="mode.set($event.value)">
+    <mat-radio-button
+      value="permanent"
+      i18n>
+      Until an administrator unblocks it
+    </mat-radio-button>
+    <mat-radio-button
+      value="timed"
+      i18n>
+      For a limited time
+    </mat-radio-button>
+  </mat-radio-group>
+
+  <div class="block-dialog-duration">
+    <mat-form-field
+      appearance="fill"
+      subscriptSizing="dynamic"
+      class="input-width-s">
+      <mat-label i18n>Duration</mat-label>
+      <input
+        matInput
+        type="number"
+        min="1"
+        [disabled]="durationDisabled()"
+        [value]="durationInput()"
+        (input)="durationInput.set($any($event.target).value)" />
+    </mat-form-field>
+
+    <mat-form-field
+      appearance="fill"
+      subscriptSizing="dynamic"
+      class="input-width-s">
+      <mat-label i18n>Unit</mat-label>
+      <mat-select
+        [disabled]="durationDisabled()"
+        [value]="durationUnit()"
+        (selectionChange)="durationUnit.set($event.value)">
+        @for (unit of durationUnits; track unit) {
+          <mat-option [value]="unit">{{ unit }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+  </div>
+</app-dialog-wrapper>

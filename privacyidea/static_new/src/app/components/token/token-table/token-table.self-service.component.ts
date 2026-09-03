@@ -73,15 +73,17 @@ export class TokenTableSelfServiceComponent extends TokenTableComponent {
   });
   columnKeysMapSelfService = computed(() => {
     const columnKeys = [
-      { key: "serial", label: $localize`Serial` },
-      { key: "tokentype", label: $localize`Type` },
-      { key: "description", label: $localize`Description` },
-      { key: "container_serial", label: $localize`Container` },
-      { key: "active", label: $localize`Active` },
-      { key: "failcount", label: $localize`Fail Counter` }
+      { key: "serial", label: $localize`:@@common.serial:Serial` },
+      { key: "tokentype", label: $localize`:@@common.type:Type` },
+      { key: "description", label: $localize`:@@common.description:Description` },
+      { key: "container_serial", label: $localize`:@@common.container:Container` },
+      { key: "active", label: $localize`:@@common.active:Active` },
+      { key: "failcount", label: $localize`:@@token.failCounter:Fail Counter` }
     ];
-    if (this.authService.actionAllowed("revoke")) columnKeys.push({ key: "revoke", label: $localize`Revoke` });
-    if (this.authService.actionAllowed("delete")) columnKeys.push({ key: "delete", label: $localize`Delete` });
+    if (this.authService.actionAllowed("revoke"))
+      columnKeys.push({ key: "revoke", label: $localize`:@@token.revoke:Revoke` });
+    if (this.authService.actionAllowed("delete"))
+      columnKeys.push({ key: "delete", label: $localize`:@@common.delete:Delete` });
 
     return columnKeys;
   });
@@ -94,10 +96,10 @@ export class TokenTableSelfServiceComponent extends TokenTableComponent {
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: $localize`Revoke Token`,
+          title: $localize`:@@token.revokeToken:Revoke Token`,
           items: [serial],
-          itemType: $localize`token`,
-          confirmAction: { label: $localize`Revoke`, value: true, type: "destruct" }
+          itemType: $localize`:@@common.itemTypeToken:token`,
+          confirmAction: { label: $localize`:@@token.revoke:Revoke`, value: true, type: "destruct" }
         }
       })
       .afterClosed()
@@ -117,10 +119,10 @@ export class TokenTableSelfServiceComponent extends TokenTableComponent {
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: $localize`Delete Token`,
+          title: $localize`:@@common.deleteToken:Delete Token`,
           items: [serial],
-          itemType: $localize`token`,
-          confirmAction: { label: $localize`Delete`, value: true, type: "destruct" }
+          itemType: $localize`:@@common.itemTypeToken:token`,
+          confirmAction: { label: $localize`:@@common.delete:Delete`, value: true, type: "destruct" }
         }
       })
       .afterClosed()

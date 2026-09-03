@@ -32,7 +32,7 @@ from sqlalchemy import (
 from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from privacyidea.lib.conditional_access.authentication_event_types import CountMode
+from privacyidea.lib.conditional_access.authentication_event_types import CountMode, RestrictionCause
 from privacyidea.models import db
 from privacyidea.models.utils import MethodsMixin, utc_now, case_sensitive_unicode
 
@@ -48,7 +48,9 @@ class ConditionalAccessPolicy(MethodsMixin, db.Model):
     the related :class:`ConditionalAccessPolicyCounterType` rows; ``counter_types_to_track``
     is the list-of-strings view over them used throughout the code and tests
     (assignable as a plain list). Their events are counted **together** (a single
-    combined count over all listed types) against the stage thresholds. Admins
+    combined count over all listed types) against the stage thresholds, and
+    ``reset_on_success`` decides whether a completed login clears what has been
+    counted so far. Admins
     can define multiple policies (e.g. "Admin Policy" vs "Default User Policy");
     policies are evaluated by ascending ``priority`` (a lower number means higher
     precedence, matching privacyIDEA's policy engine). The ``priority`` is unique
@@ -74,6 +76,14 @@ class ConditionalAccessPolicy(MethodsMixin, db.Model):
     # Counting mode against the stage thresholds: per authentication_log row
     # (PER_REQUEST) or per whole authentication attempt (PER_ATTEMPT).
     count_mode: Mapped[str] = mapped_column(Unicode(20), default=CountMode.PER_REQUEST, nullable=False)
+    # Whether a completed login clears the events counted so far: with it set (the default) the count is
+    # floored at the user's most recent LOGIN_SUCCESS inside the window, so the stage thresholds apply to
+    # consecutive failures since that login rather than to every failure that happens to fall in the raw
+    # window. It governs every count the policy makes, the pre-auth DENY decision included (see
+    # engine._policy_access_decision). Only a "user" target resets - a source-IP policy aggregates a signal across
+    # accounts, where one account's legitimate login must not clear it (see engine._policy_count_ip), so it is always
+    # False there and setting it is rejected (see policy._validate_reset_on_success).
+    reset_on_success: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
     stages: Mapped[list["ConditionalAccessPolicyStage"]] = relationship(
         "ConditionalAccessPolicyStage",
@@ -228,9 +238,13 @@ class ConditionalAccessStageAction(MethodsMixin, db.Model):
     What to do when a :class:`ConditionalAccessPolicyStage` is triggered. One stage
     can have multiple actions (e.g. lock the user *and* email the admin).
 
-    ``action_value`` is the action-specific payload, stored as JSON:
-    e.g. the lock duration in seconds for ``LOCK_USER``/``BLOCK_IP`` or
-    an email template ID for ``EMAIL_ADMIN``/``EMAIL_USER``.
+    ``action_value`` is the action-specific payload, stored as JSON: the restriction
+    duration in seconds for ``LOCK_USER``/``BLOCK_IP``, the SMTP settings object
+    (``smtp_identifier``, ``subject``, ``body``, ...) for ``EMAIL_ADMIN``/``EMAIL_USER``,
+    and nothing at all for the ``PERMANENT_*`` restrictions and the ``DENY``
+    decision. The authoritative per-action contract - what the engine reads, and what
+    the write path therefore rejects - is
+    :data:`~privacyidea.lib.conditional_access.policy._ACTION_VALUE_VALIDATORS`.
 
     ``retrigger_above_threshold`` controls how this action fires as the failure
     count crosses its stage's threshold. False: fire once, when the count equals
@@ -275,6 +289,9 @@ class UserLockState(MethodsMixin, db.Model):
     The row records the lock itself, not which policy produced it: what a stage
     did, and to whom, is the conditional-access history
     (:class:`~privacyidea.models.conditional_access_outcome.ConditionalAccessOutcome`).
+    It does record ``lock_cause``, i.e. *whether* a policy or an administrator
+    imposed the lock now in force - a manual lock has no authentication request,
+    so it can have no history row of its own.
     """
     __tablename__ = 'user_lock_state'
     resolver: Mapped[str] = mapped_column(case_sensitive_unicode(120), primary_key=True)
@@ -284,14 +301,19 @@ class UserLockState(MethodsMixin, db.Model):
     # a user-scoped read policy be enforced in SQL without a live resolver lookup, which fails for a deleted user.
     username: Mapped[str | None] = mapped_column(case_sensitive_unicode(255), nullable=True)
     lock_expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    # Who imposed this lock: the engine acting on a policy, or an administrator by hand. Written together with
+    # ``lock_expires_at``, so it always describes the lock now in force; see
+    # :class:`~privacyidea.lib.conditional_access.authentication_event_types.RestrictionCause` for why the state
+    # row is the only place a manual lock's provenance can live.
+    lock_cause: Mapped[str] = mapped_column(Unicode(20), default=RestrictionCause.POLICY, nullable=False)
     # The message template to show the user while this lock is in force, copied from the stage that
     # applied it. Stored rather than looked up: the row is the whole truth about the lock, so the text
     # survives the policy being edited or deleted, costs no join on the authentication path, and works
     # for a lock no policy wrote. NULL means say nothing. {duration} is left as written on a permanent
     # lock, which has no remaining time to substitute.
     error_message: Mapped[str | None] = mapped_column(Unicode(500), nullable=True)
-    # When the lock was applied; refreshed on each (re)lock, so it marks the start of the current
-    # active lock, not a generic audit timestamp.
+    # When the lock was applied; refreshed on each (re)lock, so it reflects the start of the
+    # current active lock rather than a generic audit timestamp.
     locked_at: Mapped[datetime] = mapped_column(
         DateTime, default=utc_now, onupdate=utc_now, nullable=False)
 
@@ -314,6 +336,8 @@ class BlockList(MethodsMixin, db.Model):
     Like :class:`UserLockState` the row records the block itself, not which
     policy produced it; that is the conditional-access history
     (:class:`~privacyidea.models.conditional_access_outcome.ConditionalAccessOutcome`).
+    It does record ``block_cause``, i.e. whether a policy or an administrator
+    imposed the block now in force.
     """
     __tablename__ = 'block_list'
     # TODO: the blocked identity is a source IP for now; a future revision may generalize to other
@@ -321,9 +345,11 @@ class BlockList(MethodsMixin, db.Model):
     # 50 matches authentication_log.source_ip, wide enough for an IPv4-mapped IPv6 address.
     ip: Mapped[str] = mapped_column(Unicode(50), primary_key=True)
     block_expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    # Who imposed this block, the IP counterpart of :attr:`UserLockState.lock_cause`.
+    block_cause: Mapped[str] = mapped_column(Unicode(20), default=RestrictionCause.POLICY, nullable=False)
     # The message template to show while this block is in force; see UserLockState.error_message.
     error_message: Mapped[str | None] = mapped_column(Unicode(500), nullable=True)
-    # When the block was applied; refreshed on each (re)block, so it marks the start of the current
-    # active block, not a generic audit timestamp.
+    # When the block was applied; refreshed on each (re)block, so it reflects the start of the
+    # current active block rather than a generic audit timestamp.
     blocked_at: Mapped[datetime] = mapped_column(
         DateTime, default=utc_now, onupdate=utc_now, nullable=False)

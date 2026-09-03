@@ -23,16 +23,32 @@
       <thead>
         <tr>
           <th>
-            <app-table-sort-header key="date" [sortState]="sort" label="Date" i18n-label />
+            <app-table-sort-header
+              key="date"
+              [sortState]="sort"
+              label="Date"
+              i18n-label="@@dashboard.date" />
           </th>
           <th>
-            <app-table-sort-header key="administrator" [sortState]="sort" label="Administrator" i18n-label />
+            <app-table-sort-header
+              key="administrator"
+              [sortState]="sort"
+              label="Administrator"
+              i18n-label="@@common.administrator" />
           </th>
           <th>
-            <app-table-sort-header key="action" [sortState]="sort" label="Action" i18n-label />
+            <app-table-sort-header
+              key="action"
+              [sortState]="sort"
+              label="Action"
+              i18n-label="@@common.action" />
           </th>
           <th>
-            <app-table-sort-header key="action_detail" [sortState]="sort" label="Detail" i18n-label />
+            <app-table-sort-header
+              key="action_detail"
+              [sortState]="sort"
+              label="Detail"
+              i18n-label="@@dashboard.detail" />
           </th>
         </tr>
       </thead>

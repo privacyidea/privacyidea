@@ -56,7 +56,7 @@ interface AuthenticationResponses {
 export class AuthenticationsWidgetComponent extends DashboardWidget implements OnInit {
   static override readonly type = "authentications";
   static override readonly requiredAction = "auditlog";
-  static override readonly title = $localize`Authentications`;
+  static override readonly title = $localize`:@@dashboard.authentications:Authentications`;
   static override readonly icon = "receipt_long";
   static override readonly titleLink = ROUTE_PATHS.AUDIT;
   static override readonly titleLinkAction = "auditlog";

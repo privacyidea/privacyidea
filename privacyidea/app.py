@@ -378,7 +378,7 @@ def create_app(config_name="development",
             new_ui = _serve_locale(locale) or _serve_locale("en")
             if new_ui:
                 return new_ui
-            return redirect("/")
+            return redirect(f"{request.script_root}/")
         if (request.method == "GET"
                 and not request.path.startswith("/static/")
                 and request.accept_mimetypes.best_match(["text/html", "application/json"]) == "text/html"):
@@ -388,7 +388,7 @@ def create_app(config_name="development",
             new_ui = _serve_locale(locale) or _serve_locale("en")
             if new_ui:
                 return new_ui
-            return redirect("/")
+            return redirect(f"{request.script_root}/")
         return jsonify(error="Not found"), 404
 
 

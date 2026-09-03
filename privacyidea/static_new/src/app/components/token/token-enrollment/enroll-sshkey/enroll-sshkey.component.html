@@ -18,13 +18,13 @@
 -->
 <div class="flex-column">
   <mat-form-field class="input-width-xl">
-    <mat-label i18n>SSH public key</mat-label>
+    <mat-label i18n="@@token.sshPublicKey">SSH public key</mat-label>
     <textarea
       [formField]="sshPublicKeyForm"
-      i18n-placeholder
+      i18n-placeholder="@@token.pastePublicSsh"
       matInput
       placeholder="Paste the PUBLIC ssh key here"
       rows="5"></textarea>
-    <mat-error i18n>SSH public key is <strong>required</strong></mat-error>
+    <mat-error i18n="@@token.sshPublicKeyRequired">SSH public key is <strong>required</strong></mat-error>
   </mat-form-field>
 </div>

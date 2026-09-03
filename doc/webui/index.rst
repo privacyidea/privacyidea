@@ -225,6 +225,38 @@ the regular endpoints
 (once per lock state, for the counts only) and
 ``GET /conditionalaccess/blocklist``.
 
+Locking a user or an IP by hand
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. index:: manual lock, manual block
+
+A restriction does not have to come from a Conditional Access policy. The
+*User Lock State* card on a user's details page offers a **Lock** action, and
+the *Blocklist* page a **Block IP** action; both ask whether the restriction
+lasts until an administrator lifts it (the default) or for a chosen duration.
+
+A manual restriction is stored in the same place a Conditional Access policy
+writes to and is enforced by the same pre-check, so it behaves exactly like a
+Conditional Access policy lock at authentication time and is cleared by the
+same *Unlock* / *Unblock* action. What is recorded alongside it is its
+**cause**: the *Locked Users* and *Blocklist* pages show a *Cause* column
+reading *Manual* or *Policy*, and the locked-users list can be filtered on it.
+The cause always describes the restriction currently in force - if a
+Conditional Access policy later strengthens a manual lock, the row becomes a
+policy lock.
+
+Unlike a Conditional Access policy action, a manual write is authoritative:
+an administrator may replace a permanent lock with a timed one, which the
+engine refuses to do to itself. A never-block IP address (loopback, or one
+covered by ``CONDITIONAL_ACCESS_NEVER_BLOCK``) is refused with an
+explanation rather than silently skipped.
+
+The two actions are governed by their own rights, ``user_lock_set`` and
+``blocklist_set``, kept separate from the ``*_reset`` rights because clearing
+a restriction is recoverable and imposing one is not. ``pi-manage
+conditionalaccess lock-user`` and ``pi-manage conditionalaccess block-ip`` do
+the same from the command line.
+
 Storage and cleanup
 ~~~~~~~~~~~~~~~~~~~
 

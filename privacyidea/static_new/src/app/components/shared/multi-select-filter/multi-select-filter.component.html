@@ -21,8 +21,10 @@
   [matMenuTriggerFor]="inner.matMenu"
   aria-label="Filter by {{ label() }}"
   class="filter-button"
-  i18n-aria-label
-  mat-icon-button>
+  i18n-aria-label="@@common.filterBy"
+  i18n-matTooltip="@@common.filterBy"
+  mat-icon-button
+  matTooltip="Filter by {{ label() }}">
   <mat-icon class="keyword-button-icon margin-left-0"> filter_list </mat-icon>
 </button>
 <app-multi-select-menu

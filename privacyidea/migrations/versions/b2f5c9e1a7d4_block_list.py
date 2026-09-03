@@ -5,7 +5,8 @@ BLOCK_IP_TEMPORARY conditional-access action and consulted by the authentication
 pre-check on the next inbound request - the same live-state pattern as
 user_lock_state, but keyed by source IP. The load-bearing field is
 block_expires_at: a row whose block_expires_at lies in the future means the IP
-is currently blocked; a NULL value means a permanent block.
+is currently blocked; a NULL value means a permanent block. block_cause records
+whether the engine or an administrator imposed the block.
 
 Revision ID: b2f5c9e1a7d4
 Revises: c1a9f7e2b840
@@ -41,6 +42,7 @@ def upgrade():
         'block_list',
         sa.Column('ip', sa.Unicode(length=50), nullable=False),
         sa.Column('block_expires_at', sa.DateTime(), nullable=True),
+        sa.Column('block_cause', sa.Unicode(length=20), nullable=False, server_default='POLICY'),
         sa.Column('error_message', sa.Unicode(length=500), nullable=True),
         sa.Column('blocked_at', sa.DateTime(), nullable=False),
         sa.PrimaryKeyConstraint('ip'),

@@ -2007,13 +2007,20 @@ def get_static_policy_definitions(scope=None):
                 'type': 'bool',
                 "desc": _("Admin is allowed to reset (unlock) a conditional-access user lock."),
                 "group": GROUP.SYSTEM},
+            PolicyAction.USER_LOCK_SET: {
+                'type': 'bool',
+                "desc": _("Admin is allowed to lock a user manually, independently of the conditional-access "
+                          "policies."),
+                "group": GROUP.SYSTEM},
             PolicyAction.BLOCKLIST_READ: {'type': 'bool',
-                                          "desc": _("Admin is allowed to read the conditional-access blocklist."),
+                                          "desc": _("Admin is allowed to read the blocklist."),
                                           "group": GROUP.SYSTEM},
             PolicyAction.BLOCKLIST_RESET: {'type': 'bool',
-                                           "desc": _("Admin is allowed to remove entries from the "
-                                                     "conditional-access blocklist."),
+                                           "desc": _("Admin is allowed to remove entries from the blocklist."),
                                            "group": GROUP.SYSTEM},
+            PolicyAction.BLOCKLIST_SET: {'type': 'bool',
+                                         "desc": _("Admin is allowed to add an IP address to the blocklist manually."),
+                                         "group": GROUP.SYSTEM},
             PolicyAction.AUDIT_AGE: {'type': 'str',
                                      "desc": _("The admin will only see audit "
                                                "entries of the last 10d, 3m or 2y."),

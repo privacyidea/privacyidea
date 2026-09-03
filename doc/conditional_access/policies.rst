@@ -76,6 +76,12 @@ Policy settings
   For a ``source_ip`` target the two volume modes amount to plain rate limiting
   per address.
 
+**reset the count on a successful login**
+
+  Whether a completed login clears what has been counted so far, see
+  :ref:`conditional_access_policies_counting`. On by default, and available for a
+  ``user`` target only.
+
 **conditions**
 
   Restrict which requests the policy applies to at all. Without conditions it
@@ -94,15 +100,26 @@ Policy settings
      realm at all. However, this only happens if the client does not send
      a realm at all and no default realm is defined.
 
+.. _conditional_access_policies_counting:
+
 Counting and resetting
 ----------------------
 
-A ``user`` policy counts the failures **since the user's last successful
-login**, so a legitimate user is not locked by failures from days ago.
+With **reset the count on a successful login** - the default for a ``user``
+policy - the policy counts the failures **since the user's last successful
+login**, so a legitimate user is not locked by failures from days ago. Every
+threshold of the policy counts that way, the ``DENY`` decision included, so a
+denial also lifts on a successful login and not only as the window drains.
+
+Turn it off to make a threshold mean *this many entries in the window* outright,
+whatever happened in between. That is what a rate limit wants: the shipped rate
+limit templates cap how many attempts an account may make per window, and one of
+those attempts succeeding must not hand the next burst a fresh budget.
 
 A ``source_ip`` policy never resets on a success. One user authenticating
 successfully must not clear a signal that is aggregated over everybody sharing
-that address.
+that address. The setting is therefore unavailable for that target, and a policy
+that asks for it is rejected rather than quietly ignored.
 
 .. _conditional_access_policies_stages:
 
@@ -153,7 +170,8 @@ Actions
 
 **DENY**
     Refuse this single request pre-authentication, without storing anything.
-    The rejection lifts by itself as the counted entries age out of the window.
+    The rejection lifts by itself as the counted entries age out of the window -
+    and, on a policy that resets on success, on the next successful login.
     Use it for a rate limit that must not leave a lock behind.
 
 **EMAIL_USER**, **EMAIL_ADMIN**
@@ -212,8 +230,8 @@ Templates
 The *New Conditional Access* page offers templates for the common cases - password
 brute force, MFA brute force, per-user and per-IP rate limits, password
 spraying and user enumeration. A template fills in tracked events, window,
-count mode, stages and actions; you pick the priority and review the
-thresholds. The two per-IP rate limit templates are pre-set to dry run, because
+count mode, stages, actions and whether the count resets on a successful
+login; you pick the priority and review the thresholds. The two per-IP rate limit templates are pre-set to dry run, because
 their threshold depends on how many users share an address, see
 :ref:`conditional_access_policies_dry_run`.
 

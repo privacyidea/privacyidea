@@ -325,6 +325,16 @@ describe("ContainerTemplateService", () => {
   });
 
   describe("deleteTemplates", () => {
+    it("should show error notification and throw if action is not allowed", async () => {
+      authServiceMock.actionAllowed.mockReturnValue(false);
+
+      await expect(service.deleteTemplates(["template-1"])).rejects.toThrow("Permission denied");
+
+      httpMock.expectNone((req) => req.url.includes("/container/template/template-1"));
+      expect(authServiceMock.actionAllowed).toHaveBeenCalledWith("container_template_delete");
+      expect(notificationServiceMock.error).toHaveBeenCalledWith("You are not allowed to delete container templates.");
+    });
+
     it("should delete multiple templates sequentially, reload once and show success notification", async () => {
       const spy = jest.spyOn(service.templatesResource, "reload");
       const templateNames = ["template-1", "template-2"];

@@ -60,8 +60,9 @@ const mockPolicy: ConditionalAccessPolicy = {
   priority: 1,
   target: "user",
   count_mode: "PER_REQUEST",
+  reset_on_success: true,
   counter_types_to_track: ["PIN_FAIL"],
-  stages: [{ failure_threshold: 5, actions: [{ action_type: "LOCK_USER", action_value: null }] }],
+  stages: [{ failure_threshold: 5, actions: [{ action_type: "LOCK_USER", action_value: 600 }] }],
   conditions: []
 };
 
@@ -74,8 +75,9 @@ const EMPTY_TEMPLATE_POLICY: ConditionalAccessPolicySaveParams = {
   priority: null,
   target: "user",
   count_mode: "PER_REQUEST",
+  reset_on_success: true,
   counter_types_to_track: ["PASSWORD_FAIL"],
-  stages: [{ failure_threshold: 10, actions: [{ action_type: "LOCK_USER", action_value: null }] }]
+  stages: [{ failure_threshold: 10, actions: [{ action_type: "LOCK_USER", action_value: 600 }] }]
 };
 
 describe("ConditionalAccessEditPageComponent — edit mode", () => {
@@ -254,10 +256,16 @@ describe("ConditionalAccessEditPageComponent — edit mode", () => {
 
   it("should name duplicate stage thresholds", () => {
     component.onStagesChange([
-      { failure_threshold: 5, actions: [{ action_type: "LOCK_USER", action_value: null }] },
-      { failure_threshold: 5, actions: [{ action_type: "LOCK_USER", action_value: null }] }
+      { failure_threshold: 5, actions: [{ action_type: "LOCK_USER", action_value: 60 }] },
+      { failure_threshold: 5, actions: [{ action_type: "LOCK_USER", action_value: 60 }] }
     ]);
     expect(component.saveBlockers()).toEqual(["Each stage must have a different failure threshold."]);
+  });
+
+  it("should name a stage action with an invalid value", () => {
+    component.onStagesChange([{ failure_threshold: 5, actions: [{ action_type: "LOCK_USER", action_value: -1 }] }]);
+    expect(component.saveBlockers()).toContain("Fix the highlighted action value before saving.");
+    expect(component.canSave()).toBe(false);
   });
 
   it("should name an action that the target does not allow", () => {
@@ -629,6 +637,19 @@ describe("ConditionalAccessEditPageComponent — new mode", () => {
     expect(component.canSave()).toBe(false);
   });
 
+  it("should show the missing-name hint immediately, without the field being touched first", () => {
+    expect(component.nameTouched()).toBe(true);
+    expect(component.showNameError()).toBe(true);
+    // mat-error only renders once the underlying signal-forms field itself is marked touched -
+    // component.nameTouched() alone passing would not catch a missing markAsTouched() call.
+    fixture.detectChanges();
+    expect(
+      Array.from(fixture.nativeElement.querySelectorAll("mat-error")).map((el) =>
+        (el as HTMLElement).textContent!.trim()
+      )
+    ).toContain("Name is required.");
+  });
+
   it("should show the create title", () => {
     expect(component.title()).toEqual("Create Conditional-Access Policy");
   });
@@ -694,8 +715,9 @@ describe("ConditionalAccessEditPageComponent — new mode", () => {
           priority: null,
           target: "user",
           count_mode: "PER_REQUEST",
+          reset_on_success: true,
           counter_types_to_track: ["PASSWORD_FAIL"],
-          stages: [{ failure_threshold: 10, actions: [{ action_type: "LOCK_USER", action_value: null }] }]
+          stages: [{ failure_threshold: 10, actions: [{ action_type: "LOCK_USER", action_value: 600 }] }]
         }
       }
     ]);
@@ -796,6 +818,28 @@ describe("ConditionalAccessEditPageComponent — new mode", () => {
     });
   });
 
+  describe("actionValuesValid", () => {
+    // Mirrors the backend's _ACTION_VALUE_VALIDATORS: an action whose value the engine could not act on is a
+    // 400 on save, so the editor blocks it and says why instead of letting the round-trip fail.
+    const stageWithValue = (actionValue: unknown) => [
+      {
+        failure_threshold: 5,
+        actions: [{ action_type: "LOCK_USER" as ConditionalAccessActionType, action_value: actionValue }]
+      }
+    ];
+
+    it("should block saving while a restricting action has no duration", () => {
+      component.onStagesChange(stageWithValue(null));
+      expect(component.actionValuesValid()).toBe(false);
+      expect(component.canSave()).toBe(false);
+    });
+
+    it("should allow saving once the duration is set", () => {
+      component.onStagesChange(stageWithValue(600));
+      expect(component.actionValuesValid()).toBe(true);
+    });
+  });
+
   describe("targetActionsValid", () => {
     const stageWith = (actionType: ConditionalAccessActionType) => [
       { failure_threshold: 5, actions: [{ action_type: actionType, action_value: null }] }
@@ -827,6 +871,82 @@ describe("ConditionalAccessEditPageComponent — new mode", () => {
       component.onTargetChange("source_ip");
       component.onStagesChange(stageWith("LOCK_USER"));
       expect(component.targetActionsValid()).toBe(true);
+    });
+  });
+
+  describe("reset on success", () => {
+    it("should update reset_on_success on change", () => {
+      component.onResetOnSuccessChange(false);
+      expect(component.editPolicy().reset_on_success).toBe(false);
+      component.onResetOnSuccessChange(true);
+      expect(component.editPolicy().reset_on_success).toBe(true);
+    });
+
+    // A source-IP policy aggregates across accounts, so the setting is inert there: the control stays
+    // visible - so the target change explains itself - but cannot be operated.
+    it("should not apply to a source-IP policy", () => {
+      component.onTargetChange("source_ip");
+      expect(component.resetOnSuccessApplies()).toBe(false);
+      component.onTargetChange("user");
+      expect(component.resetOnSuccessApplies()).toBe(true);
+    });
+
+    // The setting is inert for a source-IP policy, so it is cleared rather than left describing a reset that
+    // never happens. It stays cleared on the way back, where the control is enabled again.
+    it("should clear the checkbox when the target changes", () => {
+      expect(component.editPolicy().reset_on_success).toBe(true);
+      component.onTargetChange("source_ip");
+      expect(component.editPolicy().reset_on_success).toBe(false);
+      component.onTargetChange("user");
+      expect(component.editPolicy().reset_on_success).toBe(false);
+    });
+
+    // A source-IP template must not prefill a ticked box the admin then cannot untick, which is what the
+    // backend default would produce if it were applied regardless of target.
+    it("should clear the checkbox when a source-IP template is applied", () => {
+      policyServiceMock.templates.set([
+        {
+          key: "spray_key",
+          description: "d",
+          policy: { ...EMPTY_TEMPLATE_POLICY, target: "source_ip", count_mode: "DISTINCT_USERS" }
+        }
+      ]);
+      component.applyTemplate("spray_key");
+      expect(component.editPolicy().reset_on_success).toBe(false);
+      expect(component.resetOnSuccessApplies()).toBe(false);
+    });
+
+    it("should render the checkbox disabled for a source-IP policy", () => {
+      component.onTargetChange("source_ip");
+      fixture.detectChanges();
+      const checkbox: HTMLInputElement = fixture.nativeElement.querySelector(".ca-reset-on-success input");
+      expect(checkbox.disabled).toBe(true);
+    });
+
+    // A template that carries no choice here falls back to the backend's default.
+    it("should default a template prefill to resetting", () => {
+      policyServiceMock.templates.set([
+        {
+          key: "no_reset_key",
+          description: "d",
+          policy: { ...EMPTY_TEMPLATE_POLICY, reset_on_success: undefined }
+        }
+      ]);
+      component.applyTemplate("no_reset_key");
+      expect(component.editPolicy().reset_on_success).toBe(true);
+    });
+
+    // A template that does carry one (the rate limits, which must not have their count cleared by a success) keeps it.
+    it("should keep a template's explicit reset-on-success choice", () => {
+      policyServiceMock.templates.set([
+        {
+          key: "rate_limit_key",
+          description: "d",
+          policy: { ...EMPTY_TEMPLATE_POLICY, reset_on_success: false }
+        }
+      ]);
+      component.applyTemplate("rate_limit_key");
+      expect(component.editPolicy().reset_on_success).toBe(false);
     });
   });
 

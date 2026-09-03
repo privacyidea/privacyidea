@@ -403,6 +403,27 @@ class CountMode(str, Enum):
         return self.value
 
 
+class RestrictionCause(str, Enum):
+    """
+    Who imposed a live conditional-access restriction: the engine acting on a policy (:attr:`POLICY`) or an
+    administrator by hand (:attr:`MANUAL`).
+
+    It is stored on the state row itself because a manual restriction has nowhere else to live. What a policy
+    did is recorded as a
+    :class:`~privacyidea.models.conditional_access_outcome.ConditionalAccessOutcome` hanging off the
+    ``authentication_log`` row of the request that triggered it - and a manual lock has no such request. The
+    cause is written together with the expiry, so it always describes the restriction now in force rather than
+    the first one ever written.
+
+    ``str``/``Enum`` (not ``StrEnum``) for Python 3.10, like :class:`AuthEventType`.
+    """
+    POLICY = "POLICY"
+    MANUAL = "MANUAL"
+
+    def __str__(self) -> str:
+        return self.value
+
+
 # Request-level precedence, highest signal first. Only the event types a token flow can produce appear here: the
 # CA_ENFORCEMENT_EVENT_TYPES classify a request the pre-check rejected before any token logic ran, so they never reach
 # reduce_request_events.

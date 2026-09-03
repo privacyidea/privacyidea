@@ -17,8 +17,6 @@
     "delete": true,
     "userlist": true,
     "machinelist": true,
-    "machinetokens": true,
-    "authitems": true,
     "tokenrealms": true,
     "getserial": true,
     "getrandom": true,
@@ -49,8 +47,6 @@
     "enrollYUBICO": true,
     "resolverwrite": true,
     "updateuser": true,
-    "enrollU2F": true,
-    "mangle_machine_tokens": true,
     "system_documentation": true,
     "caconnectordelete": true,
     "caconnectorwrite": true,
@@ -137,7 +133,9 @@
     "conditional_access_policy_write": true,
     "user_lock_read": true,
     "user_lock_reset": true,
+    "user_lock_set": true,
     "blocklist_read": true,
-    "blocklist_reset": true
+    "blocklist_reset": true,
+    "blocklist_set": true
   }
 }

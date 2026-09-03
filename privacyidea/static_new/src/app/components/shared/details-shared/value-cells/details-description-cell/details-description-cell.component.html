@@ -24,7 +24,7 @@
       [value]="value()"
       (input)="value.set($any($event.target).value)"
       [attr.maxlength]="maxLength()"
-      i18n-placeholder
+      i18n-placeholder="@@common.enterDescription"
       matInput
       placeholder="Enter description"
       [rows]="rows()"></textarea>

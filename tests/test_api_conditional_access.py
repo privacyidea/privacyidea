@@ -804,16 +804,22 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
     def test_a_lock_that_was_never_written_does_not_refuse_its_own_request(self):
         # A restricting action that did not restrict anything must not turn its own request into a rejection: the
         # response would say what a lock says while no lock exists, and the very next request would authenticate.
-        # Here the duration cannot be read (action_value uses a key _lock_duration_seconds does not look at), so
-        # the write is skipped - the same shape as a BLOCK_IP on a request with no source IP, or a write that
+        # Here the duration cannot be read (action_value uses a key parse_lock_duration_seconds does not look at),
+        # so the write is skipped - the same shape as a BLOCK_IP on a request with no source IP, or a write that
         # fails outright.
-        create_conditional_access_policy(
-            name="ca_lock_unusable", time_window_seconds=3600,
-            counter_types_to_track=_counter_types(AuthEventType.PIN_FAIL),
-            stages=[{"failure_threshold": 1, "error_message": None,
-                     "actions": [{"action_type": str(ConditionalAccessAction.LOCK_USER),
-                                  "action_value": {"lock_duration_seconds": 600}}]}],
-            target=ConditionalAccessTarget.USER, priority=1)
+        #
+        # Written straight through the ORM rather than create_conditional_access_policy: the CRUD layer now
+        # validates action_value at write time and would reject this shape outright, so this simulates a row
+        # written before that rule existed (or straight to the database) to exercise the engine's own defense.
+        policy = ConditionalAccessPolicy(
+            name="ca_lock_unusable", time_window_seconds=3600, priority=1,
+            target=str(ConditionalAccessTarget.USER), counter_types_to_track=_counter_types(AuthEventType.PIN_FAIL))
+        policy.stages = [ConditionalAccessPolicyStage(
+            failure_threshold=1,
+            actions=[ConditionalAccessStageAction(action_type=str(ConditionalAccessAction.LOCK_USER),
+                                                  action_value={"lock_duration_seconds": 600})])]
+        db.session.add(policy)
+        db.session.commit()
 
         body = self._check({"user": "cornelius", "pass": "wrongpin"})
         # The token failure is still the reason the request failed, and still says so.
@@ -832,15 +838,21 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         # questions: the stage's one error message describes the lock it aimed at, so a stage that only managed to
         # send its mail must not append that sentence - a lock that is not in force, carrying a {duration} there is
         # nothing to substitute against - to a failure it did not cause.
-        create_conditional_access_policy(
-            name="ca_lock_unusable", time_window_seconds=3600,
-            counter_types_to_track=_counter_types(AuthEventType.PIN_FAIL),
-            stages=[{"failure_threshold": 1, "error_message": "Your account is locked. Try again in about {duration}.",
-                     "actions": [{"action_type": str(ConditionalAccessAction.LOCK_USER),
-                                  "action_value": {"lock_duration_seconds": 600}},
-                                 {"action_type": str(ConditionalAccessAction.EMAIL_ADMIN),
-                                  "action_value": {"recipient": "admin@example.com"}}]}],
-            target=ConditionalAccessTarget.USER, priority=1)
+        #
+        # Written straight through the ORM: the CRUD layer now validates action_value at write time and would
+        # reject the unusable LOCK_USER duration and the incomplete EMAIL_ADMIN value outright, so this simulates
+        # rows written before that rule existed.
+        policy = ConditionalAccessPolicy(
+            name="ca_lock_unusable", time_window_seconds=3600, priority=1,
+            target=str(ConditionalAccessTarget.USER), counter_types_to_track=_counter_types(AuthEventType.PIN_FAIL))
+        policy.stages = [ConditionalAccessPolicyStage(
+            failure_threshold=1, error_message="Your account is locked. Try again in about {duration}.",
+            actions=[ConditionalAccessStageAction(action_type=str(ConditionalAccessAction.LOCK_USER),
+                                                  action_value={"lock_duration_seconds": 600}),
+                    ConditionalAccessStageAction(action_type=str(ConditionalAccessAction.EMAIL_ADMIN),
+                                                  action_value={"recipient": "admin@example.com"})])]
+        db.session.add(policy)
+        db.session.commit()
 
         with mock.patch("privacyidea.lib.conditional_access.engine._send_action_email", return_value=True):
             body = self._check({"user": "cornelius", "pass": "wrongpin"})

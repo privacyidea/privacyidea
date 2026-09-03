@@ -41,6 +41,19 @@
   margin: 16px 0;
 }
 
+// The checkbox and its info hint sit together as one field in the wrapping field row. Centring is against
+// the neighbouring *inputs*, not the whole form fields: each of those carries a hint below its input, and at
+// these field widths those hints run to two lines. Padding the checkbox box by the height of that subscript
+// area and centring the result lifts the checkbox onto the inputs' centre line. (.ca-condition-subject does
+// the same for the conditions row, where the single-line hint there needs a smaller offset.)
+.ca-reset-on-success {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  align-self: center;
+  padding-bottom: 48px;
+}
+
 .ca-stages-error {
   color: var(--mat-sys-error, #b3261e);
 }

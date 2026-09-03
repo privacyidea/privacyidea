@@ -20,7 +20,7 @@
   class="details-card--description"
   [class.is-editing]="element().isEditing()"
   title="Description"
-  i18n-title>
+  i18n-title="@@common.description">
   <div class="value-row">
     <div class="value-content">
       @if (element().isEditing()) {
@@ -32,7 +32,7 @@
               [value]="element().value"
               (input)="element().value = $any($event.target).value"
               maxlength="80"
-              i18n-placeholder
+              i18n-placeholder="@@common.enterDescription"
               matInput
               placeholder="Enter description"
               rows="3"></textarea>

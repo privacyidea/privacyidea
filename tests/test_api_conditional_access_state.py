@@ -30,8 +30,10 @@ from werkzeug.test import TestResponse
 
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import SCOPE, set_policy, delete_policy
+from privacyidea.lib.conditional_access.authentication_event_types import RestrictionCause
 from privacyidea.lib.user import User
 from privacyidea.models import db
+from privacyidea.models.audit import Audit
 from privacyidea.models.authentication_log import AuthenticationLog
 from privacyidea.models.conditional_access_policy import (
     BlockList,
@@ -122,6 +124,16 @@ class ConditionalAccessStateApiTestCase(MyApiTestCase):
         self._lock_user(utc_now() + timedelta(seconds=600))
         res = self._request("lock/user",
                             query_string={"user_id": self.user.uid, "realm": self.realm1})
+        self.assertEqual(400, res.status_code, res.json)
+        self.assertIn("resolver", res.json["result"]["error"]["message"])
+
+    def test_single_user_lookup_by_uid_needs_a_resolver_even_with_user(self):
+        # A login alongside the uid does not relax the requirement: the two are not cross-checked
+        # against each other, so the uid alone still needs its resolver to be unambiguous.
+        self._lock_user(utc_now() + timedelta(seconds=600))
+        res = self._request("lock/user",
+                            query_string={"user_id": self.user.uid, "user": "cornelius",
+                                          "realm": self.realm1})
         self.assertEqual(400, res.status_code, res.json)
         self.assertIn("resolver", res.json["result"]["error"]["message"])
 
@@ -235,6 +247,18 @@ class ConditionalAccessStateApiTestCase(MyApiTestCase):
         self.assertTrue(res.json["result"]["value"])
         self.assertEqual(0, UserLockState.query.count())
 
+    def test_reset_user_by_raw_id_zero(self):
+        # user_id is checked with `is not None`, not truthiness: a resolver-local uid of 0 is a valid
+        # identifier and must take the id lookup, not fall through to a username of None.
+        db.session.add(UserLockState(resolver=self.resolvername1, uid="0", realm=self.realm1,
+                                     username="zerouser", lock_expires_at=utc_now() + timedelta(seconds=600)))
+        db.session.commit()
+        res = self._request("lock/user", method="DELETE",
+                            json_data={"resolver": self.resolvername1, "user_id": 0, "realm": self.realm1})
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertTrue(res.json["result"]["value"])
+        self.assertEqual(0, UserLockState.query.count())
+
     def test_reset_user_not_locked_returns_false(self):
         res = self._request("lock/user", method="DELETE",
                             json_data={"user": "cornelius", "realm": self.realm1, "resolver": self.resolvername1})
@@ -286,6 +310,220 @@ class ConditionalAccessStateApiTestCase(MyApiTestCase):
         self.authenticate_selfservice_user()
         res = self._request("lock/users", auth_token=self.at_user)
         self.assertEqual(401, res.status_code, res.json)
+
+    # --- POST lock/user (the manual lock) ----------------------------------
+
+    def test_set_user_lock_locks_permanently_by_default(self):
+        res = self._request("lock/user", method="POST",
+                            json_data={"user": "cornelius", "realm": self.realm1})
+        self.assertEqual(200, res.status_code, res.json)
+        value = res.json["result"]["value"]
+        self.assertTrue(value["permanent"])
+        self.assertEqual(RestrictionCause.MANUAL, value["lock_cause"])
+        self.assertEqual(RestrictionCause.MANUAL, UserLockState.query.one().lock_cause)
+
+    def test_set_user_lock_records_the_username_in_the_audit_log(self):
+        # A request identifying its target by 'user' must not leave the audit log's structured
+        # 'user' column blank - the free-text 'info' naming the user is not a substitute for it.
+        res = self._request("lock/user", method="POST",
+                            json_data={"user": "cornelius", "realm": self.realm1})
+        self.assertEqual(200, res.status_code, res.json)
+        entry = Audit.query.order_by(Audit.id.desc()).first()
+        self.assertEqual("cornelius", entry.user)
+        self.assertEqual(self.realm1, entry.realm)
+
+    def test_set_user_lock_with_a_duration(self):
+        res = self._request("lock/user", method="POST",
+                            json_data={"user": "cornelius", "realm": self.realm1, "duration_seconds": 600})
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertFalse(res.json["result"]["value"]["permanent"])
+
+    def test_set_user_lock_rejects_a_bad_duration(self):
+        for duration in ("soon", 0, -5):
+            res = self._request("lock/user", method="POST",
+                                json_data={"user": "cornelius", "realm": self.realm1,
+                                           "duration_seconds": duration})
+            self.assertEqual(400, res.status_code, res.json)
+        self.assertEqual(0, UserLockState.query.count())
+
+    def test_set_user_lock_by_uid_needs_a_resolver(self):
+        res = self._request("lock/user", method="POST",
+                            json_data={"user_id": self.user.uid, "realm": self.realm1})
+        self.assertEqual(400, res.status_code, res.json)
+
+    def test_set_user_lock_by_uid_needs_a_resolver_even_with_user(self):
+        # A uid is only unique within its resolver, so it still needs one even when a login is also given -
+        # the two are not cross-checked against each other.
+        res = self._request("lock/user", method="POST",
+                            json_data={"user_id": self.user.uid, "user": "cornelius", "realm": self.realm1})
+        self.assertEqual(400, res.status_code, res.json)
+
+    def test_set_user_lock_for_an_unknown_user_is_400(self):
+        res = self._request("lock/user", method="POST",
+                            json_data={"user": "nosuchuser", "realm": self.realm1})
+        self.assertEqual(400, res.status_code, res.json)
+        self.assertEqual(0, UserLockState.query.count())
+
+    def test_set_user_lock_is_visible_on_the_list(self):
+        self._request("lock/user", method="POST", json_data={"user": "cornelius", "realm": self.realm1})
+        page = self._request("lock/users", query_string={"causes": "MANUAL"}).json["result"]["value"]
+        self.assertEqual(1, page["count"])
+        self.assertEqual(RestrictionCause.MANUAL, page["locked_users"][0]["lock_cause"])
+        page = self._request("lock/users", query_string={"causes": "POLICY"}).json["result"]["value"]
+        self.assertEqual(0, page["count"])
+
+    def test_list_locked_users_rejects_an_unknown_cause(self):
+        res = self._request("lock/users", query_string={"causes": "ADMIN"})
+        self.assertEqual(400, res.status_code, res.json)
+
+    # --- POST blocklist (the manual block) -------------------------------------
+
+    def test_add_blocklist_entry(self):
+        res = self._request("blocklist", method="POST",
+                            json_data={"ip": "203.0.113.9", "duration_seconds": 300})
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertEqual(RestrictionCause.MANUAL, res.json["result"]["value"]["block_cause"])
+        self.assertEqual("203.0.113.9", BlockList.query.one().ip)
+
+    def test_add_blocklist_entry_refuses_a_never_block_ip(self):
+        res = self._request("blocklist", method="POST", json_data={"ip": "127.0.0.1"})
+        self.assertEqual(400, res.status_code, res.json)
+        self.assertEqual(0, BlockList.query.count())
+
+    def test_add_blocklist_entry_rejects_an_invalid_ip(self):
+        res = self._request("blocklist", method="POST", json_data={"ip": "not-an-ip"})
+        self.assertEqual(400, res.status_code, res.json)
+
+    def test_read_and_reset_do_not_grant_set(self):
+        # Clearing a restriction is recoverable, imposing one is not, so the rights are separate.
+        set_policy("ca_state_no_set", scope=SCOPE.ADMIN,
+                   action=f"{PolicyAction.USER_LOCK_READ},{PolicyAction.USER_LOCK_RESET},"
+                          f"{PolicyAction.BLOCKLIST_READ},{PolicyAction.BLOCKLIST_RESET}")
+        try:
+            lock = self._request("lock/user", method="POST",
+                                 json_data={"user": "cornelius", "realm": self.realm1})
+            self.assertEqual(403, lock.status_code, lock.json)
+            block = self._request("blocklist", method="POST", json_data={"ip": "203.0.113.9"})
+            self.assertEqual(403, block.status_code, block.json)
+        finally:
+            delete_policy("ca_state_no_set")
+        self.assertEqual(0, UserLockState.query.count())
+        self.assertEqual(0, BlockList.query.count())
+
+    def test_user_lock_set_does_not_grant_blocklist_set(self):
+        set_policy("ca_state_lock_only", scope=SCOPE.ADMIN, action=str(PolicyAction.USER_LOCK_SET))
+        try:
+            lock = self._request("lock/user", method="POST",
+                                 json_data={"user": "cornelius", "realm": self.realm1})
+            self.assertEqual(200, lock.status_code, lock.json)
+            block = self._request("blocklist", method="POST", json_data={"ip": "203.0.113.9"})
+            self.assertEqual(403, block.status_code, block.json)
+        finally:
+            delete_policy("ca_state_lock_only")
+
+    def test_set_user_lock_by_uid_zero_still_needs_a_resolver(self):
+        # user_id is checked with `is not None`, not truthiness, so a JSON 0 must not be mistaken for
+        # "no user_id was given" and skip the resolver requirement - not even when a login is also
+        # given, which would otherwise let User() silently re-resolve by login and ignore the uid.
+        res = self._request("lock/user", method="POST",
+                            json_data={"user_id": 0, "user": "cornelius", "realm": self.realm1})
+        self.assertEqual(400, res.status_code, res.json)
+        self.assertIn("resolver", res.json["result"]["error"]["message"])
+        self.assertEqual(0, UserLockState.query.count())
+
+    def test_set_user_lock_outside_the_visibility_scope_is_refused(self):
+        # A write has exactly one target, so an out-of-scope one is refused loudly rather than silently
+        # doing nothing - a lock that did not happen must not look like one that did.
+        set_policy("ca_state_scoped_set", scope=SCOPE.ADMIN, action=str(PolicyAction.USER_LOCK_SET),
+                   user="someoneelse")
+        try:
+            res = self._request("lock/user", method="POST",
+                                json_data={"user": "cornelius", "realm": self.realm1})
+            self.assertEqual(403, res.status_code, res.json)
+        finally:
+            delete_policy("ca_state_scoped_set")
+        self.assertEqual(0, UserLockState.query.count())
+
+    def test_set_user_lock_by_uid_locks_the_resolved_user(self):
+        # The uid path resolves to the same user as the login path (username vs uid input).
+        res = self._request("lock/user", method="POST",
+                            json_data={"user_id": self.user.uid, "realm": self.realm1,
+                                       "resolver": self.user.resolver})
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertEqual("cornelius", UserLockState.query.one().username)
+
+    # --- the scope check precedes (and shields) the existence check --------------
+
+    def test_set_user_lock_out_of_scope_error_does_not_disclose_the_user(self):
+        # The refusal echoes only what the caller sent (username, realm), never a resolved identifier
+        # (resolver/uid) nor whether the user exists - an out-of-scope admin must learn neither.
+        set_policy("ca_state_scoped_set", scope=SCOPE.ADMIN, action=str(PolicyAction.USER_LOCK_SET),
+                   user="someoneelse")
+        try:
+            res = self._request("lock/user", method="POST",
+                                json_data={"user": "cornelius", "realm": self.realm1})
+            self.assertEqual(403, res.status_code, res.json)
+            message = res.json["result"]["error"]["message"]
+            self.assertNotIn(self.resolvername1, message)
+            self.assertNotIn("does not exist", message)
+        finally:
+            delete_policy("ca_state_scoped_set")
+        self.assertEqual(0, UserLockState.query.count())
+
+    def test_set_user_lock_out_of_scope_hides_a_nonexistent_user(self):
+        # An out-of-scope user and a user that does not exist must be indistinguishable: both 403, so the
+        # scope check runs before the existence check rather than leaking existence through a 400/403 split.
+        set_policy("ca_state_scoped_set", scope=SCOPE.ADMIN, action=str(PolicyAction.USER_LOCK_SET),
+                   user="someoneelse")
+        try:
+            existing = self._request("lock/user", method="POST",
+                                     json_data={"user": "cornelius", "realm": self.realm1})
+            missing = self._request("lock/user", method="POST",
+                                    json_data={"user": "nosuchuser", "realm": self.realm1})
+            self.assertEqual(403, existing.status_code, existing.json)
+            self.assertEqual(403, missing.status_code, missing.json)
+        finally:
+            delete_policy("ca_state_scoped_set")
+        self.assertEqual(0, UserLockState.query.count())
+
+    def test_set_user_lock_allowed_within_the_resolver_scope(self):
+        # Locking by login+realm without a resolver still passes a resolver-scoped check: the user is
+        # resolved (which fills in the resolver) before the scope is evaluated.
+        set_policy("ca_state_resolver_ok", scope=SCOPE.ADMIN, action=str(PolicyAction.USER_LOCK_SET),
+                   resolver=self.resolvername1)
+        try:
+            res = self._request("lock/user", method="POST",
+                                json_data={"user": "cornelius", "realm": self.realm1})
+            self.assertEqual(200, res.status_code, res.json)
+        finally:
+            delete_policy("ca_state_resolver_ok")
+        self.assertEqual(1, UserLockState.query.count())
+
+    def test_set_user_lock_refused_outside_the_resolver_scope(self):
+        # An admin scoped to another resolver cannot lock a user resolved from resolvername1.
+        self.setUp_user_realm3()
+        set_policy("ca_state_resolver_no", scope=SCOPE.ADMIN, action=str(PolicyAction.USER_LOCK_SET),
+                   resolver=self.resolvername3)
+        try:
+            res = self._request("lock/user", method="POST",
+                                json_data={"user": "cornelius", "realm": self.realm1})
+            self.assertEqual(403, res.status_code, res.json)
+        finally:
+            delete_policy("ca_state_resolver_no")
+        self.assertEqual(0, UserLockState.query.count())
+
+    def test_set_user_lock_refused_outside_the_realm_scope(self):
+        # An admin scoped to another realm cannot lock a user in realm1, and the attempt writes nothing.
+        self.setUp_user_realm2()
+        set_policy("ca_state_realm_no", scope=SCOPE.ADMIN, action=str(PolicyAction.USER_LOCK_SET),
+                   realm=self.realm2)
+        try:
+            res = self._request("lock/user", method="POST",
+                                json_data={"user": "cornelius", "realm": self.realm1})
+            self.assertEqual(403, res.status_code, res.json)
+        finally:
+            delete_policy("ca_state_realm_no")
+        self.assertEqual(0, UserLockState.query.count())
 
     def test_read_action_does_not_grant_reset(self):
         # An admin policy that grants only the read actions must block the resets.

@@ -33,6 +33,7 @@ A policy is passed around as a plain dict::
         "priority": 1,
         "target": "user",
         "count_mode": "PER_REQUEST",
+        "reset_on_success": True,
         "counter_types_to_track": ["PIN_FAIL", "MFA_FAIL"],
         "conditions": [
             {"condition_type": "USER_REALM", "operator": "IN", "value": ["sales", "support"]},
@@ -44,7 +45,8 @@ A policy is passed around as a plain dict::
                 "actions": [
                     {"action_type": "LOCK_USER", "action_value": {"duration_seconds": 600},
                      "retrigger_above_threshold": True},
-                    {"action_type": "EMAIL_ADMIN", "action_value": {"smtp_identifier": "..."},
+                    {"action_type": "EMAIL_ADMIN",
+                     "action_value": {"smtp_identifier": "mailserver", "subject": "...", "body": "..."},
                      "retrigger_above_threshold": False},
                 ],
             },
@@ -55,12 +57,35 @@ A policy is passed around as a plain dict::
 values depend on the target (see ``_COUNT_MODES_BY_TARGET``): both targets count event volume per ``authentication_log``
 row (``PER_REQUEST``) or per whole authentication attempt (``PER_ATTEMPT``); a ``source_ip`` policy may additionally
 count distinct targeted accounts (``DISTINCT_USERS``, the spraying / enumeration signal). When omitted it defaults to
-the target's default (``PER_REQUEST`` for ``user``, ``DISTINCT_USERS`` for ``source_ip``). ``counter_types_to_track``
+the target's default (``PER_REQUEST`` for ``user``, ``DISTINCT_USERS`` for ``source_ip``).
+
+``reset_on_success`` (default ``True``) decides whether a completed login clears the events counted so far, so the
+stage thresholds apply to consecutive failures since that login rather than to every failure in the raw window.
+Turning it off is how a threshold comes to mean "this many failures in the window" outright. It governs every count
+the policy makes, the pre-auth ``DENY`` decision included. It applies to a ``user`` policy only: a
+``source_ip`` policy aggregates a signal across accounts, where one account's legitimate login must not clear it, so
+setting it on a ``source_ip`` policy is a :class:`~privacyidea.lib.error.ParameterError` rather than an ignored
+setting (the default there is ``False``).
+
+``counter_types_to_track``
 values must be
 :class:`~privacyidea.lib.conditional_access.authentication_event_types.AuthEventType` names and ``action_type`` values
 must be :class:`~privacyidea.lib.conditional_access.engine.ConditionalAccessAction` names; anything else is a
 :class:`~privacyidea.lib.error.ParameterError` (fail-closed - a typo must not silently create a policy that never
 matches or an action that never fires).
+
+``action_value`` is validated under that same rule, against what the engine actually reads (see
+:data:`_ACTION_VALUE_VALIDATORS`):
+
+* ``LOCK_USER`` / ``BLOCK_IP`` - a positive number of seconds: an integer, a numeric string, or an object with
+  ``duration_seconds`` (``duration`` is an accepted alias). There is no default; without a duration the engine
+  skips the action rather than locking permanently.
+* ``EMAIL_ADMIN`` / ``EMAIL_USER`` - an object with a non-empty ``subject`` and ``body``, optionally
+  ``mimetype`` (``plain``/``html``) and - for ``EMAIL_ADMIN`` - ``recipient_group``.
+  ``smtp_identifier`` names the SMTP server that sends it and may be left blank until one is configured, which
+  is the one thing the engine needs that the write path does not insist on.
+* ``PERMANENT_LOCK_USER`` / ``PERMANENT_BLOCK_IP`` / ``DENY`` - no value. These never expire and never read
+  one, so a duration on them would only describe an expiry that does not happen.
 
 A stage's optional ``error_message`` is the text an end user sees when a request is turned away by that stage. It is
 opt-in: without one the rejection carries only the generic "Authentication failed.", so privacyIDEA never volunteers
@@ -92,8 +117,9 @@ from privacyidea.lib.conditional_access.authentication_event_types import (
     CountMode,
 )
 from privacyidea.lib.conditional_access.conditions import CONDITION_TYPES
-from privacyidea.lib.conditional_access.engine import (ACTION_SEVERITY, ConditionalAccessAction,
-                                                       ConditionalAccessTarget, NOTIFYING_ACTIONS)
+from privacyidea.lib.conditional_access.engine import (ACTION_SEVERITY, ADMIN_RECIPIENT_GROUPS,
+                                                       ConditionalAccessAction, ConditionalAccessTarget,
+                                                       NOTIFYING_ACTIONS, parse_lock_duration_seconds)
 from privacyidea.lib.error import ConflictError, ParameterError, ResourceNotFoundError
 from privacyidea.lib.log import log_with
 from privacyidea.models import db
@@ -483,6 +509,26 @@ def _validate_count_mode(count_mode, target: "ConditionalAccessTarget") -> str:
     return mode.value
 
 
+def _validate_reset_on_success(reset_on_success, target: "ConditionalAccessTarget") -> bool:
+    """
+    Validate the policy's ``reset_on_success`` for *target* and return it as a plain bool.
+
+    A ``None`` *reset_on_success* yields the target's default: ``True`` for a ``user`` policy, ``False`` for a
+    ``source_ip`` one, which never resets - it aggregates a signal across accounts, where one account's legitimate
+    login must not clear it (see :func:`~privacyidea.lib.conditional_access.engine._policy_count_ip`). Asking a
+    ``source_ip`` policy for it anyway is a :class:`ParameterError` rather than a silently ignored setting, so a
+    stored policy never claims a behaviour it does not have.
+    """
+    if target == ConditionalAccessTarget.SOURCE_IP:
+        if reset_on_success is not None and bool(reset_on_success):
+            raise ParameterError(
+                "reset_on_success is not available for target 'source_ip': a source-IP policy counts across "
+                "accounts and never resets on a successful login."
+            )
+        return False
+    return True if reset_on_success is None else bool(reset_on_success)
+
+
 def _validate_counter_types(counter_types) -> list[str]:
     """
     Validate the tracked counter types: a non-empty list of :class:`AuthEventType` values. The same vocabulary
@@ -504,6 +550,112 @@ def _validate_counter_types(counter_types) -> list[str]:
         if counter_type not in seen:
             seen.append(counter_type)
     return seen
+
+
+# The ``action_value`` keys each action type accepts, as the engine reads them.
+#
+# The timed restrictions take a duration; the email actions take the SMTP settings
+# :func:`~privacyidea.lib.conditional_access.engine._send_lockout_email` reads. ``identifier`` is the
+# accepted alias for ``smtp_identifier``.
+_DURATION_KEYS = ("duration_seconds", "duration")
+_EMAIL_KEYS = frozenset({"smtp_identifier", "identifier", "recipient_group", "subject", "body",
+                         "mimetype"})
+# The email fields with no sensible default: without them the engine has nothing to send and skips.
+_EMAIL_REQUIRED_TEXT = ("subject", "body")
+_EMAIL_MIMETYPES = frozenset({"plain", "html"})
+
+
+def _validate_duration_action_value(action_type: str, action_value) -> None:
+    """
+    Validate the ``action_value`` of a timed restriction (``LOCK_USER``, ``BLOCK_IP``): a positive number of
+    seconds, given as an integer, a numeric string, or an object carrying ``duration_seconds`` (or ``duration``).
+
+    The check *is* the engine's own parser
+    (:func:`~privacyidea.lib.conditional_access.engine.parse_lock_duration_seconds`), so anything storable is
+    something the engine can act on. That matters more than the exact shapes accepted: a duration the engine
+    cannot parse is not a lock that fires late, it is a lock that never fires at all - the action is skipped
+    with a log line and the admin sees a saved policy doing nothing.
+
+    An unknown key inside the object is rejected before the parse, so the near-miss that motivates all of this
+    (``lock_duration_seconds``, which nothing reads) is reported by name instead of as a generic "no duration".
+    """
+    if isinstance(action_value, dict):
+        unknown = set(action_value) - set(_DURATION_KEYS)
+        if unknown:
+            raise ParameterError(f"Unknown key(s) in the action_value of '{action_type}': "
+                                 f"{', '.join(sorted(unknown))}. Valid keys: {', '.join(sorted(_DURATION_KEYS))}.")
+    if parse_lock_duration_seconds(action_value) is None:
+        raise ParameterError(f"Action '{action_type}' needs a positive duration in seconds: give 'action_value' "
+                             f"a positive integer, or an object with 'duration_seconds'. Got {action_value!r}.")
+
+
+def _validate_email_action_value(action_type: str, action_value) -> None:
+    """
+    Validate the ``action_value`` of an ``EMAIL_ADMIN`` / ``EMAIL_USER`` action: the object of SMTP settings
+    :func:`~privacyidea.lib.conditional_access.engine._send_lockout_email` reads, with a non-empty ``subject``
+    and ``body``.
+
+    ``smtp_identifier`` is deliberately **not** required, even though the engine needs it to send: the SMTP
+    server is a separate configuration object that may legitimately not exist yet, which is why the shipped
+    ``MFA_BRUTEFORCE`` template ships it blank for the admin to fill in
+    (:mod:`~privacyidea.lib.conditional_access.policy_template`) and why the editor flags a blank or
+    stale identifier inline rather than refusing to save. ``subject`` and ``body`` have no such excuse - nothing
+    else can supply them.
+
+    ``recipient_group`` is validated for ``EMAIL_USER`` too rather than rejected as a stray key: switching an
+    action from ``EMAIL_ADMIN`` carries the whole object over, and dropping a key on a type switch would be a
+    silent edit of what the admin wrote.
+    """
+    if not isinstance(action_value, dict):
+        raise ParameterError(f"The action_value of '{action_type}' must be an object with the email settings "
+                             f"(smtp_identifier, subject, body).")
+    unknown = set(action_value) - _EMAIL_KEYS
+    if unknown:
+        raise ParameterError(f"Unknown key(s) in the action_value of '{action_type}': "
+                             f"{', '.join(sorted(unknown))}. Valid keys: {', '.join(sorted(_EMAIL_KEYS))}.")
+    for key, value in action_value.items():
+        if value is not None and not isinstance(value, str):
+            raise ParameterError(f"'{key}' in the action_value of '{action_type}' must be a string.")
+    for key in _EMAIL_REQUIRED_TEXT:
+        if not (action_value.get(key) or "").strip():
+            raise ParameterError(f"Action '{action_type}' needs a non-empty '{key}' in its action_value.")
+    mimetype = (action_value.get("mimetype") or "").strip()
+    if mimetype and mimetype not in _EMAIL_MIMETYPES:
+        raise ParameterError(f"Unknown mimetype '{mimetype}' for action '{action_type}'. "
+                             f"Valid values: {', '.join(sorted(_EMAIL_MIMETYPES))}.")
+    recipient_group = (action_value.get("recipient_group") or "").strip()
+    if recipient_group and "@" not in recipient_group and recipient_group.lower() not in ADMIN_RECIPIENT_GROUPS:
+        raise ParameterError(f"Unknown recipient_group '{recipient_group}' for action '{action_type}'. Use one of "
+                             f"{', '.join(sorted(ADMIN_RECIPIENT_GROUPS))}, or a comma-separated list of email "
+                             f"addresses.")
+
+
+def _validate_no_action_value(action_type: str, action_value) -> None:
+    """
+    Validate the ``action_value`` of an action that takes none: the ``PERMANENT_*`` restrictions and the
+    ``DENY`` decision, all of which the engine executes without ever reading it.
+
+    A value is rejected rather than ignored because the one an admin would plausibly write is a duration, and a
+    duration on ``PERMANENT_LOCK_USER`` reads as an expiry that never comes: the lock the admin thinks lifts in
+    ten minutes holds until someone unlocks it by hand.
+    """
+    if action_value is not None:
+        raise ParameterError(f"Action '{action_type}' takes no action_value; got {action_value!r}.")
+
+
+# What each action type's ``action_value`` must look like, keyed by action type. Kept **total** over
+# :class:`~privacyidea.lib.conditional_access.engine.ConditionalAccessAction` (asserted in the tests, like
+# :data:`_ACTIONS_BY_TARGET`): a new action type has to declare what it accepts rather than inheriting
+# "anything goes" from a missing entry, which is the very state this table exists to end.
+_ACTION_VALUE_VALIDATORS = {
+    str(ConditionalAccessAction.LOCK_USER): _validate_duration_action_value,
+    str(ConditionalAccessAction.BLOCK_IP): _validate_duration_action_value,
+    str(ConditionalAccessAction.EMAIL_ADMIN): _validate_email_action_value,
+    str(ConditionalAccessAction.EMAIL_USER): _validate_email_action_value,
+    str(ConditionalAccessAction.PERMANENT_LOCK_USER): _validate_no_action_value,
+    str(ConditionalAccessAction.PERMANENT_BLOCK_IP): _validate_no_action_value,
+    str(ConditionalAccessAction.DENY): _validate_no_action_value,
+}
 
 
 def _validate_threshold_for_actions(threshold: int, actions: list[StageActionDefinition]) -> None:
@@ -548,9 +700,19 @@ def _validate_stages(stages) -> list[StageDefinition]:
     """
     Validate the stage definitions: a non-empty list of dicts, each with a unique
     ``failure_threshold``, an optional user-facing ``error_message`` and a list of actions whose ``action_type`` is a
-    valid :class:`ConditionalAccessAction`. ``action_value`` may be any JSON-serializable value
-    (its action-specific interpretation happens in the engine); unknown keys in
-    a stage or action dict are rejected so typos fail loudly.
+    valid :class:`~privacyidea.lib.conditional_access.engine.ConditionalAccessAction`; unknown keys in a stage or
+    action dict are rejected so typos fail loudly.
+
+    ``action_value`` is validated per action type against what the engine reads
+    (:data:`_ACTION_VALUE_VALIDATORS`): a positive duration for the timed
+    ``LOCK_USER``/``BLOCK_IP``, the SMTP settings object for the ``EMAIL_*``
+    actions, and no value at all for the ``PERMANENT_*`` restrictions and the
+    ``DENY`` decision. This is fail-closed for the same reason the
+    counter types and conditions are: an action the engine cannot act on is
+    skipped at runtime with nothing but a log line, so a policy that cannot do
+    what it says must not be storable. The value itself is stored **unchanged** -
+    a duration written as ``"600"`` reads back as ``"600"`` - so the round-trip
+    stays an honest record of what the admin sent.
 
     A threshold counts failures, so it starts at 1. The exception is a stage whose
     every action is a standing ``DENY``: threshold 0 then means "always", the
@@ -597,6 +759,7 @@ def _validate_stages(stages) -> list[StageDefinition]:
                 raise ParameterError(
                     f"Unknown action type '{action_type}'. Valid types: {', '.join(sorted(valid_actions))}."
                 )
+            _ACTION_VALUE_VALIDATORS[action_type](action_type, action.get("action_value"))
             # retrigger_above_threshold is a per-action flag, coerced like the policy-level enabled/dry_run booleans;
             # left unset it stays None, and _build_stages resolves it to the action-aware default.
             retrigger_raw = action.get("retrigger_above_threshold")
@@ -810,6 +973,7 @@ def create_conditional_access_policy(
     priority: int,
     enabled: bool = True,
     dry_run: bool = False,
+    reset_on_success: bool | None = None,
     count_mode: str | None = None,
     conditions: list[dict] | None = None,
 ) -> int:
@@ -822,7 +986,8 @@ def create_conditional_access_policy(
     target/action compatibility is always a deliberate choice. ``priority`` is
     likewise required (no default) and must be unique across policies, so the
     caller always picks a deliberate, unambiguous precedence.
-    ``count_mode`` defaults to the target's default when not given (see :func:`_validate_count_mode`).
+    ``count_mode`` and ``reset_on_success`` default to the target's default when not given (see
+    :func:`_validate_count_mode` and :func:`_validate_reset_on_success`).
     ``conditions`` restricts which requests the policy applies to; omitted (or
     empty) it applies to every request.
 
@@ -833,6 +998,7 @@ def create_conditional_access_policy(
     priority = _validate_priority(priority)
     conditional_access_target = _validate_target(target)
     count_mode = _validate_count_mode(count_mode, conditional_access_target)
+    reset_on_success = _validate_reset_on_success(reset_on_success, conditional_access_target)
     counter_types = _validate_counter_types(counter_types_to_track)
     stage_defs = _validate_stages(stages)
     _validate_target_actions(stage_defs, conditional_access_target)
@@ -845,6 +1011,7 @@ def create_conditional_access_policy(
         time_window_seconds=time_window_seconds,
         enabled=bool(enabled),
         dry_run=bool(dry_run),
+        reset_on_success=reset_on_success,
         priority=priority,
         target=conditional_access_target,
         counter_types_to_track=counter_types,
@@ -868,6 +1035,7 @@ def update_conditional_access_policy(
     stages: list[dict] | None = None,
     enabled: bool | None = None,
     dry_run: bool | None = None,
+    reset_on_success: bool | None = None,
     priority: int | None = None,
     target: str | None = None,
     count_mode: str | None = None,
@@ -884,11 +1052,18 @@ def update_conditional_access_policy(
 
     ``target`` may be changed, but the resulting ``(target, stages)`` combination
     must stay action-compatible (e.g. a ``source_ip`` policy cannot carry
-    ``LOCK_USER``); an incompatible change raises :class:`ParameterError`.
+    ``LOCK_USER``); an incompatible change raises :class:`ParameterError`. The same
+    holds for ``(target, count_mode)``. ``reset_on_success`` is likewise target-bound: asking for it on a
+    ``source_ip`` policy is a :class:`ParameterError`, while switching an existing resetting policy to that target
+    clears the flag (and reports it as changed), since the policy no longer resets.
     Existing locks/blocks written before the change are timed and expire on their
     own, so no stale state is left enforced.
 
-    All fields are validated before anything is written.
+    All fields are validated before anything is written. Only the fields the caller
+    *sends* are validated, which is what keeps a policy stored before a validation
+    rule existed - or written straight through the ORM - from being frozen: its
+    ``enabled``/``dry_run`` flags and its name stay changeable, and re-sending
+    ``stages`` is the repair path that re-checks them.
 
     :return: a ``(policy_id, changed_fields)`` tuple, where ``changed_fields`` is
         the list of field names that were provided (and thus written), so the
@@ -925,6 +1100,17 @@ def update_conditional_access_policy(
         validated_mode = _validate_count_mode(effective_mode, effective_target)
         if count_mode is not None:
             count_mode = validated_mode
+    # target and reset_on_success likewise. Asking for the reset on a source_ip target is rejected, so a policy never
+    # stores a setting it does not honour. A target switch that only *inherits* a stored reset is not such a request:
+    # the flag is cleared along with the switch (and reported as changed, so the audit shows it), because a policy
+    # that no longer resets must not keep saying it does.
+    if conditional_access_target is not None or reset_on_success is not None:
+        effective_target = (conditional_access_target if conditional_access_target is not None
+                            else ConditionalAccessTarget(policy.target))
+        if reset_on_success is not None:
+            reset_on_success = _validate_reset_on_success(reset_on_success, effective_target)
+        elif effective_target == ConditionalAccessTarget.SOURCE_IP and policy.reset_on_success:
+            reset_on_success = False
 
     changed_fields = []
     # A name/priority collision can race past the app-level checks and surface at
@@ -948,6 +1134,9 @@ def update_conditional_access_policy(
         if dry_run is not None:
             policy.dry_run = bool(dry_run)
             changed_fields.append("dry_run")
+        if reset_on_success is not None:
+            policy.reset_on_success = reset_on_success
+            changed_fields.append("reset_on_success")
         if count_mode is not None:
             policy.count_mode = count_mode
             changed_fields.append("count_mode")

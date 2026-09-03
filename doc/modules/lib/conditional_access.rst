@@ -44,6 +44,13 @@ Conditional access policies
    :members:
    :undoc-members:
 
+Policy conditions
+~~~~~~~~~~~~~~~~~~
+
+.. automodule:: privacyidea.lib.conditional_access.conditions
+   :members:
+   :undoc-members:
+
 Shipped policy templates
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 

@@ -108,7 +108,6 @@ export class ContainerDetailsActionsComponent implements OnDestroy {
     this.containerService.stopPolling();
   }
 
-
   enrollTokenInContainer() {
     this.containerService.selectedContainerSerial.set(this.containerSerial());
     this.router.navigateByUrl(ROUTE_PATHS.TOKENS_ENROLLMENT);
@@ -119,9 +118,9 @@ export class ContainerDetailsActionsComponent implements OnDestroy {
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: $localize`Delete Container`,
+          title: $localize`:@@container.deleteContainer:Delete Container`,
           confirmAction: {
-            label: $localize`Delete`,
+            label: $localize`:@@common.delete:Delete`,
             value: true,
             type: "destruct"
           },
@@ -134,7 +133,7 @@ export class ContainerDetailsActionsComponent implements OnDestroy {
         if (result) {
           this.containerService.deleteContainer(this.containerSerial()).subscribe(() => {
             const prev = this.contentService.previousUrl();
-            this.notificationService.success($localize`Container deleted successfully.`);
+            this.notificationService.success($localize`:@@container.containerDeleted:Container deleted successfully.`);
             if (prev.startsWith(ROUTE_PATHS.TOKENS_DETAILS)) {
               this.router.navigateByUrl(prev);
             } else {
@@ -195,9 +194,11 @@ export class ContainerDetailsActionsComponent implements OnDestroy {
       .unregister(this.containerSerial())
       .subscribe((unregisterResponse: PiResponse<ContainerUnregisterData>) => {
         if (unregisterResponse?.result?.value?.success) {
-          this.notificationService.success($localize`Container unregistered successfully.`);
+          this.notificationService.success(
+            $localize`:@@container.containerUnregistered:Container unregistered successfully.`
+          );
         } else {
-          this.notificationService.error($localize`Failed to unregister container.`);
+          this.notificationService.error($localize`:@@container.failedUnregister:Failed to unregister container.`);
         }
         this.containerService.containerDetailsResource.reload();
       });

@@ -36,7 +36,9 @@ export class ContainerRegistrationFinalizeDialogComponent extends AbstractDialog
   void
 > {
   get dialogTitle(): string {
-    return this.data()?.rollover ? $localize`Container Rollover` : $localize`Register Container`;
+    return this.data()?.rollover
+      ? $localize`:@@container.containerRollover:Container Rollover`
+      : $localize`:@@container.registerContainer:Register Container`;
   }
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
 
