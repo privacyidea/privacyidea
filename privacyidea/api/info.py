@@ -17,8 +17,12 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 #
 
+import dataclasses
+
 from flask import (Blueprint, request, g)
+from privacyidea.api.auth import admin_required
 from privacyidea.lib.info.rss import get_news, FETCH_DAYS
+from privacyidea.lib.integrations import CATALOG
 import logging
 from .lib.utils import send_result
 from ..lib.params import get_optional
@@ -73,3 +77,25 @@ def rss():
         feeds: dict = convert_action_dict_to_python_dict(feeds_list[0])
     r = get_news(channel=channel, days=age, rss_feeds=feeds)
     return send_result(r)
+
+
+@info_blueprint.route('/integrations', methods=['GET'])
+@admin_required
+@log_with(log, log_entry=False)
+def integrations():
+    """
+    Return the catalog of known ecosystem integrations (client types, policy
+    ``user_agents`` picker entries, dashboard subscription rows) — see
+    :mod:`privacyidea.lib.integrations`.
+
+    This is administrative reference data: an integration's ``policy_value`` is what a
+    policy's ``user_agents`` condition stores, its ``id`` is what an API client's
+    ``client_type`` stores, and ``dashboard``/``section``/``ptl_slug``/``github_repo``
+    describe its row on the dashboard subscription overview. None of those features are
+    available to self-service users, so unlike the rest of this blueprint the endpoint
+    requires the admin role.
+
+    :status 200: JSON response; the integration list is in ``result.value``.
+    :status 401: The requesting user does not have the admin role.
+    """
+    return send_result([dataclasses.asdict(integration) for integration in CATALOG])
