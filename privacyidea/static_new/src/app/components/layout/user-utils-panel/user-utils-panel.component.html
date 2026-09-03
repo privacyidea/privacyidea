@@ -43,16 +43,16 @@
   <button
     [routerLink]="ROUTE_PATHS.SETTINGS"
     aria-label="UI Settings"
-    i18n-aria-label
+    i18n-aria-label="@@common.uiSettings"
     mat-icon-button
-    i18n-matTooltip
+    i18n-matTooltip="@@common.uiSettings"
     matTooltip="UI Settings">
     <mat-icon>settings</mat-icon>
   </button>
   <button
     (click)="refreshPage()"
     mat-icon-button
-    i18n-matTooltip
+    i18n-matTooltip="@@nav.refreshResources"
     matTooltip="Refresh Resources">
     <mat-icon>refresh</mat-icon>
   </button>
@@ -65,7 +65,7 @@
           : 'on-surface-variant'
     ]"
     class="session-timer"
-    i18n-matTooltip
+    i18n-matTooltip="@@nav.timeUntilSession"
     matTooltip="Time until session expires">
     @if (sessionOverOneDay()) {
       {{ sessionDaysText() }}
@@ -76,9 +76,9 @@
   <button
     (click)="logout()"
     aria-label="Logout"
-    i18n-aria-label
+    i18n-aria-label="@@common.logout"
     mat-icon-button
-    i18n-matTooltip
+    i18n-matTooltip="@@common.logout"
     matTooltip="Logout">
     <mat-icon>logout</mat-icon>
   </button>

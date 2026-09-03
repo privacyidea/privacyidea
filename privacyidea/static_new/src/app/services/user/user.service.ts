@@ -567,7 +567,9 @@ export class UserService extends FilterableTableService implements UserServiceIn
         catchError((error) => {
           console.error("Failed to set user attribute.", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.error($localize`Failed to set user attribute. ` + message);
+          this.notificationService.error(
+            $localize`:@@user.failedSetUser:Failed to set user attribute. ${message}:MESSAGE:`
+          );
           return of(undefined);
         })
       );
@@ -583,7 +585,9 @@ export class UserService extends FilterableTableService implements UserServiceIn
       catchError((error) => {
         console.error("Failed to delete user attribute.", error);
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.error($localize`Failed to delete user attribute. ` + message);
+        this.notificationService.error(
+          $localize`:@@user.failedDeleteUserAttribute:Failed to delete user attribute. ${message}:MESSAGE:`
+        );
         return of(undefined);
       })
     );
@@ -601,7 +605,9 @@ export class UserService extends FilterableTableService implements UserServiceIn
         catchError((error) => {
           console.warn("Failed to create user", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.error($localize`Failed to create user ${userData.username}. ` + message);
+          this.notificationService.error(
+            $localize`:@@user.failedCreateUser:Failed to create user ${userData.username}:USERNAME:. ${message}:MESSAGE:`
+          );
           return of(false);
         })
       );
@@ -615,7 +621,9 @@ export class UserService extends FilterableTableService implements UserServiceIn
       catchError((error) => {
         console.warn("Failed to update user", error);
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.error($localize`Failed to update user ${userData.username}. ` + message);
+        this.notificationService.error(
+          $localize`:@@user.failedUpdateUser:Failed to update user ${userData.username}:USERNAME:. ${message}:MESSAGE:`
+        );
         return of(false);
       })
     );
@@ -628,7 +636,9 @@ export class UserService extends FilterableTableService implements UserServiceIn
       catchError((error) => {
         console.warn("Failed to delete user", error);
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.error($localize`Failed to delete user ${username}. ` + message);
+        this.notificationService.error(
+          $localize`:@@user.failedDeleteUser:Failed to delete user ${username}:USERNAME:. ${message}:MESSAGE:`
+        );
         return of(false);
       })
     );

@@ -67,15 +67,15 @@ export class UserDetailsSelfServiceComponent {
   }
 
   readonly labels: Record<string, string> = {
-    username: $localize`Username`,
-    givenname: $localize`Given name`,
-    surname: $localize`Surname`,
-    email: $localize`Email`,
-    phone: $localize`Phone`,
-    mobile: $localize`Mobile`,
-    description: $localize`Description`,
-    userid: $localize`User ID`,
-    resolver: $localize`Resolver`
+    username: $localize`:@@common.username:Username`,
+    givenname: $localize`:@@user.givenNameLabel:Given name`,
+    surname: $localize`:@@user.surname:Surname`,
+    email: $localize`:@@common.email:Email`,
+    phone: $localize`:@@user.phone:Phone`,
+    mobile: $localize`:@@user.mobile:Mobile`,
+    description: $localize`:@@common.description:Description`,
+    userid: $localize`:@@common.userId:User ID`,
+    resolver: $localize`:@@common.resolver:Resolver`
   };
 
   readonly excludedKeys = new Set<string>(["editable"]);

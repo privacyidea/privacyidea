@@ -64,16 +64,16 @@ import { TokenTableActionsComponent } from "./token-table-actions/token-table-ac
 
 const columnKeysMap = [
   { key: "select", label: "" },
-  { key: "serial", label: $localize`Serial` },
-  { key: "tokentype", label: $localize`Type` },
-  { key: "active", label: $localize`Active` },
-  { key: "description", label: $localize`Description` },
-  { key: "failcount", label: $localize`Fail Counter` },
-  { key: "rollout_state", label: $localize`Rollout State` },
-  { key: "username", label: $localize`User` },
-  { key: "user_realm", label: $localize`User Realm` },
-  { key: "realms", label: $localize`Token Realm` },
-  { key: "container_serial", label: $localize`Container` }
+  { key: "serial", label: $localize`:@@common.serial:Serial` },
+  { key: "tokentype", label: $localize`:@@common.type:Type` },
+  { key: "active", label: $localize`:@@common.active:Active` },
+  { key: "description", label: $localize`:@@common.description:Description` },
+  { key: "failcount", label: $localize`:@@token.failCounter:Fail Counter` },
+  { key: "rollout_state", label: $localize`:@@token.rolloutState:Rollout State` },
+  { key: "username", label: $localize`:@@common.user:User` },
+  { key: "user_realm", label: $localize`:@@common.userRealm:User Realm` },
+  { key: "realms", label: $localize`:@@token.tokenRealm:Token Realm` },
+  { key: "container_serial", label: $localize`:@@common.container:Container` }
 ];
 
 @Component({
@@ -107,6 +107,14 @@ const columnKeysMap = [
   styleUrl: "./token-table.component.scss"
 })
 export class TokenTableComponent implements OnDestroy {
+  protected selectRowLabel(serial: string): string {
+    return $localize`:@@token.selectTokenNamed:Select token ${serial}:SERIAL:`;
+  }
+
+  protected linkLabel(label: string): string {
+    return $localize`:@@common.linkLabel:${label}:LABEL: link`;
+  }
+
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
@@ -131,7 +139,9 @@ export class TokenTableComponent implements OnDestroy {
   activeFilter = this.tokenService.activeFilter;
   readonly ROUTE_PATHS = ROUTE_PATHS;
   readonly emptyHint = computed(() =>
-    this.authService.tokenEnrollmentAllowed() ? $localize`Enroll your first token to get started.` : ""
+    this.authService.tokenEnrollmentAllowed()
+      ? $localize`:@@token.enrollYourFirstTokenTo:Enroll your first token to get started.`
+      : ""
   );
   pageSize = this.tokenService.pageSize;
   pageIndex = this.tokenService.pageIndex;

@@ -131,7 +131,9 @@ export class ValidateService implements ValidateServiceInterface {
         catchError((error: HttpErrorResponse) => {
           console.error("Failed to test token.", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.error("Failed to test token. " + message);
+          this.notificationService.error(
+            $localize`:@@validate.failedToTestToken:Failed to test token. ${message}:MESSAGE:`
+          );
           return throwError(() => error);
         })
       );
@@ -139,7 +141,9 @@ export class ValidateService implements ValidateServiceInterface {
 
   authenticatePasskey(args?: { isTest?: boolean; onCredentialId?: (id: string) => void }): Observable<AuthResponse> {
     if (!window.PublicKeyCredential) {
-      this.notificationService.error("WebAuthn is not supported by this browser.");
+      this.notificationService.error(
+        $localize`:@@token.webauthnNotSupported:WebAuthn is not supported by this browser.`
+      );
       return throwError(() => new Error("WebAuthn is not supported by this browser."));
     }
     return from(PublicKeyCredential.isConditionalMediationAvailable()).pipe(
@@ -195,7 +199,9 @@ export class ValidateService implements ValidateServiceInterface {
     isTest?: boolean;
   }): Observable<AuthResponse> {
     if (!window.PublicKeyCredential) {
-      this.notificationService.error("WebAuthn is not supported by this browser.");
+      this.notificationService.error(
+        $localize`:@@token.webauthnNotSupported:WebAuthn is not supported by this browser.`
+      );
       return throwError(() => new Error("WebAuthn is not supported by this browser."));
     }
 

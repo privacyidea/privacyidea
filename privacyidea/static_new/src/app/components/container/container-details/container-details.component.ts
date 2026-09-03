@@ -72,14 +72,18 @@ import { formatLocalDateTime } from "@utils/date-format.utils";
 type ContainerDetailGroup = "status" | "container";
 
 export const containerDetailsKeyMap: { key: string; label: string; group: ContainerDetailGroup }[] = [
-  { key: "states", label: $localize`Status`, group: "status" },
-  { key: "last_authentication", label: $localize`Last Authentication`, group: "status" },
-  { key: "last_synchronization", label: $localize`Last Synchronization`, group: "status" },
-  { key: "registration_state", label: $localize`Registration State`, group: "status" },
-  { key: "type", label: $localize`Type`, group: "container" },
-  { key: "template", label: $localize`Template`, group: "container" },
-  { key: "realms", label: $localize`Realms`, group: "container" },
-  { key: "description", label: $localize`Description`, group: "container" }
+  { key: "states", label: $localize`:@@common.status:Status`, group: "status" },
+  { key: "last_authentication", label: $localize`:@@common.lastAuthentication:Last Authentication`, group: "status" },
+  {
+    key: "last_synchronization",
+    label: $localize`:@@container.lastSynchronization:Last Synchronization`,
+    group: "status"
+  },
+  { key: "registration_state", label: $localize`:@@container.registrationState:Registration State`, group: "status" },
+  { key: "type", label: $localize`:@@common.type:Type`, group: "container" },
+  { key: "template", label: $localize`:@@container.template:Template`, group: "container" },
+  { key: "realms", label: $localize`:@@common.realms:Realms`, group: "container" },
+  { key: "description", label: $localize`:@@common.description:Description`, group: "container" }
 ];
 
 const CONTAINER_TIMESTAMP_KEYS = ["last_authentication", "last_synchronization"];
@@ -90,10 +94,10 @@ export function formatContainerTimestamp(value: string | undefined): string | un
 }
 
 const containerUserDetailsKeyMap = [
-  { key: "user_realm", label: $localize`User Realm` },
-  { key: "user_name", label: $localize`User` },
-  { key: "user_resolver", label: $localize`Resolver` },
-  { key: "user_id", label: $localize`User ID` }
+  { key: "user_realm", label: $localize`:@@common.userRealm:User Realm` },
+  { key: "user_name", label: $localize`:@@common.user:User` },
+  { key: "user_resolver", label: $localize`:@@common.resolver:Resolver` },
+  { key: "user_id", label: $localize`:@@common.userId:User ID` }
 ];
 
 interface TokenOption {

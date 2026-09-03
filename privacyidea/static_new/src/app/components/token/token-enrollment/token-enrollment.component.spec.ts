@@ -168,6 +168,13 @@ describe("TokenEnrollmentComponent", () => {
     expect(selfFixture.componentInstance).toBeTruthy();
   });
 
+  it("self service warns when opening the last step dialog without a response", () => {
+    const selfFixture = TestBed.createComponent(TokenEnrollmentSelfServiceComponent);
+    const selfComponent = selfFixture.componentInstance;
+    (selfComponent as unknown as { openLastStepDialog: (response: null) => void }).openLastStepDialog(null);
+    expect(notificationServiceMock.warning).toHaveBeenCalledWith("No enrollment response available.");
+  });
+
   it("formatDateTimeOffset builds the expected ISO-ish string", () => {
     const d = new Date("2025-09-10T00:00:00Z");
     const result = component.formatDateTimeOffset(d, "08:05", "+02:00");
@@ -850,6 +857,11 @@ describe("TokenEnrollmentComponent", () => {
     beforeEach(() => {
       wizardFixture = TestBed.createComponent(TokenEnrollmentWizardComponent);
       wizardComponent = wizardFixture.componentInstance;
+    });
+
+    it("warns when opening the last step dialog without a response", () => {
+      wizardComponent.openLastStepDialog(null);
+      expect(notificationServiceMock.warning).toHaveBeenCalledWith("No enrollment response available.");
     });
 
     it("creates", () => {

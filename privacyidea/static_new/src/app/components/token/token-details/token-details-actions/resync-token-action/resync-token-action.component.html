@@ -21,7 +21,7 @@
   <mat-form-field
     class="input-width-m"
     subscriptSizing="dynamic">
-    <mat-label i18n>Current OTP</mat-label>
+    <mat-label i18n="@@token.currentOtp">Current OTP</mat-label>
     <input
       [value]="firstOTPValue()"
       (input)="firstOTPValue.set($any($event.target).value)"
@@ -30,7 +30,7 @@
   <mat-form-field
     class="input-width-m"
     subscriptSizing="dynamic">
-    <mat-label i18n>Next OTP</mat-label>
+    <mat-label i18n="@@token.nextOtp">Next OTP</mat-label>
     <input
       [value]="secondOTPValue()"
       (input)="secondOTPValue.set($any($event.target).value)"
@@ -43,6 +43,6 @@
     class="action-button-secondary button-width-l"
     mat-stroked-button>
     <mat-icon>sync</mat-icon>
-    <span i18n>Resync Token</span>
+    <span i18n="@@token.resyncToken">Resync Token</span>
   </button>
 </div>

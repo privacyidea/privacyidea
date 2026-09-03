@@ -35,7 +35,7 @@ export class FilterValueButtonComponent {
   readonly value = input.required<string>();
   // Full tooltip text. Kept as a complete sentence (not noun-interpolated) so per-column variants can later be
   // supplied as independently-translatable $localize messages without breaking grammar in other languages.
-  readonly label = input<string>($localize`Filter by this value`);
+  readonly label = input<string>($localize`:@@common.filterByValue:Filter by this value`);
   readonly filterValue = output<string>();
 
   emit(event: Event): void {

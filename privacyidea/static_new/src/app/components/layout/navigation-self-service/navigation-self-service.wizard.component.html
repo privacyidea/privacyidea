@@ -21,14 +21,14 @@
 
   @if (authService.tokenWizard()) {
     <app-navigation-self-service-button
-      i18n-title
+      i18n-title="@@nav.tokenEnrollment"
       key="{{ this.ROUTE_PATHS.TOKENS_WIZARD }}"
       matIconName="auto_awesome"
       title="Token Enrollment Wizard" />
   }
   @if (authService.containerWizard().enabled) {
     <app-navigation-self-service-button
-      i18n-title
+      i18n-title="@@nav.containerWizard"
       key="{{ this.ROUTE_PATHS.CONTAINERS_WIZARD }}"
       matIconName="folder_special"
       title="Container Wizard" />

@@ -33,9 +33,9 @@
           <h4
             panelTitle
             class="details-card-title"
-            i18n>
-            PIN Setup
-          </h4>
+            i18n="@@token.pinSetup"
+            >PIN Setup</h4
+          >
         </app-set-pin-action>
       </section>
     }
@@ -46,9 +46,9 @@
           <h4
             panelTitle
             class="details-card-title"
-            i18n>
-            Sync
-          </h4>
+            i18n="@@token.sync"
+            >Sync</h4
+          >
         </app-resync-token-action>
       </section>
     }
@@ -58,15 +58,15 @@
         <div class="passkey-test-panel">
           <h4
             class="details-card-title"
-            i18n>
-            Test
-          </h4>
+            i18n="@@token.test"
+            >Test</h4
+          >
           <button
             (click)="testPasskey.emit()"
             class="action-button-secondary button-width-l"
             mat-stroked-button>
             <mat-icon>key</mat-icon>
-            <span i18n>Test Passkey</span>
+            <span i18n="@@token.testPasskey">Test Passkey</span>
           </button>
           @if (passkeyTestResult(); as result) {
             <p
@@ -76,10 +76,10 @@
               {{ result.message }}
               @if (result.mismatch; as mismatch) {
                 <br />
-                <span i18n>Matched token: </span>
+                <span i18n="@@token.matchedToken">Matched token:</span>
                 <a [routerLink]="[ROUTE_PATHS.TOKENS_DETAILS, mismatch.serial]">{{ mismatch.serial }}</a>
                 @if (mismatch.username) {
-                  <span i18n>, user: </span>
+                  <span i18n="@@token.user">, user:</span>
                   @if (mismatch.realm) {
                     <a
                       [routerLink]="[ROUTE_PATHS.USERS_DETAILS, mismatch.username]"
@@ -103,9 +103,9 @@
           <h4
             panelTitle
             class="details-card-title"
-            i18n>
-            Test
-          </h4>
+            i18n="@@token.test"
+            >Test</h4
+          >
         </app-test-otp-pin-action>
       </section>
     }
