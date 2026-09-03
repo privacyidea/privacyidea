@@ -116,7 +116,7 @@ MAX_ERROR_MESSAGE_LENGTH = 500
 # DENY is a standing pre-auth decision, so it defaults to re-triggering while the count stays at or above the
 # threshold; the post-response lock/email/block actions default to firing once. A set because both the threshold-0 rule
 # and the retrigger default ask "is this a standing verdict?".
-DECISION_ACTIONS = frozenset({str(ConditionalAccessAction.DENY)})
+DECISION_ACTIONS = frozenset({ConditionalAccessAction.DENY})
 
 # The actions a stage may carry more than once. Only the notifications: repeating EMAIL_ADMIN with a
 # different recipient_group (or a different subject and body) is the one case where a second copy of an
@@ -124,15 +124,15 @@ DECISION_ACTIONS = frozenset({str(ConditionalAccessAction.DENY)})
 # :func:`~privacyidea.lib.conditional_access.engine._send_lockout_email`, which resolves its recipients per
 # action. Every other action writes one piece of state or one verdict, so a second copy either does nothing
 # or silently overwrites the first.
-REPEATABLE_ACTIONS = frozenset({str(ConditionalAccessAction.EMAIL_ADMIN), str(ConditionalAccessAction.EMAIL_USER)})
+REPEATABLE_ACTIONS = frozenset({ConditionalAccessAction.EMAIL_ADMIN, ConditionalAccessAction.EMAIL_USER})
 
 # Actions that contradict each other within one stage: the timed and permanent variants write the same
 # lock resp. block row, and the upsert refuses to downgrade a permanent restriction to a timed one, so
 # which of the two wins depends on the order the rows happen to come back in - ConditionalAccessPolicyStage.actions
 # carries no order_by.
 _EXCLUSIVE_ACTION_GROUPS = (
-    frozenset({str(ConditionalAccessAction.LOCK_USER), str(ConditionalAccessAction.PERMANENT_LOCK_USER)}),
-    frozenset({str(ConditionalAccessAction.BLOCK_IP), str(ConditionalAccessAction.PERMANENT_BLOCK_IP)}),
+    frozenset({ConditionalAccessAction.LOCK_USER, ConditionalAccessAction.PERMANENT_LOCK_USER}),
+    frozenset({ConditionalAccessAction.BLOCK_IP, ConditionalAccessAction.PERMANENT_BLOCK_IP}),
 )
 
 
@@ -434,13 +434,13 @@ def get_target_constraints() -> dict[str, dict[str, list]]:
     """
     constraints = {}
     for target in ConditionalAccessTarget:
-        actions = {action.value for action in _ACTIONS_BY_TARGET[target]}
+        actions = _ACTIONS_BY_TARGET[target]
         constraints[target.value] = {
-            "actions": sorted(actions),
+            "actions": sorted(action.value for action in actions),
             "count_modes": sorted(mode.value for mode in _COUNT_MODES_BY_TARGET[target]),
-            "repeatable_actions": sorted(REPEATABLE_ACTIONS & actions),
-            "exclusive_action_groups": [sorted(group) for group in _EXCLUSIVE_ACTION_GROUPS
-                                        if len(group & actions) > 1],
+            "repeatable_actions": sorted(action.value for action in REPEATABLE_ACTIONS & actions),
+            "exclusive_action_groups": [sorted(action.value for action in group)
+                                        for group in _EXCLUSIVE_ACTION_GROUPS if len(group & actions) > 1],
         }
     return constraints
 
@@ -563,8 +563,7 @@ def _validate_threshold_for_actions(threshold: int, actions: list[StageActionDef
     """
     if threshold > 0:
         return
-    offenders = sorted({str(action.action_type) for action in actions
-                        if str(action.action_type) not in DECISION_ACTIONS})
+    offenders = sorted({action.action_type for action in actions if action.action_type not in DECISION_ACTIONS})
     if not actions or offenders:
         listed = ", ".join(offenders) if offenders else "no action"
         raise ParameterError(
@@ -674,7 +673,7 @@ def _validate_stage_action_combination(actions: list[StageActionDefinition], thr
     """
     seen = []
     for action in actions:
-        action_type = str(action.action_type)
+        action_type = action.action_type
         if action_type in seen and action_type not in REPEATABLE_ACTIONS:
             raise ParameterError(
                 f"Duplicate action '{action_type}' in the stage with failure_threshold {threshold}: a stage can "
@@ -790,7 +789,7 @@ def _build_conditions(condition_defs: list[ConditionDefinition]) -> list[Conditi
 def _default_retrigger(action: StageActionDefinition) -> bool:
     """The action's ``retrigger_above_threshold``, defaulted by action type when unset."""
     if action.retrigger_above_threshold is None:
-        return str(action.action_type) in DECISION_ACTIONS
+        return action.action_type in DECISION_ACTIONS
     return action.retrigger_above_threshold
 
 
