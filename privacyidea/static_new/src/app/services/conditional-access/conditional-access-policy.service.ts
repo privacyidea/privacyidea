@@ -216,7 +216,16 @@ export function parseActionDurationSeconds(actionValue: unknown): number | null 
   if (typeof raw === "boolean") {
     return null;
   }
-  const seconds = typeof raw === "string" ? Number.parseInt(raw.trim(), 10) : raw;
+  let seconds: unknown = raw;
+  if (typeof seconds === "string") {
+    const trimmed = seconds.trim();
+    // Matches int(...): only a plain integer literal, not "600.5" or "600abc" - the backend rejects
+    // both, so accepting them here would let Save look valid and then 400.
+    if (!/^-?[0-9]+$/.test(trimmed)) {
+      return null;
+    }
+    seconds = Number.parseInt(trimmed, 10);
+  }
   return typeof seconds === "number" && Number.isFinite(seconds) && seconds > 0 ? Math.trunc(seconds) : null;
 }
 

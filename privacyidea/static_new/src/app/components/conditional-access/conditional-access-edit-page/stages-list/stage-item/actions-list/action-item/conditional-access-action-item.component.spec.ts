@@ -196,7 +196,7 @@ describe("ConditionalAccessActionItemComponent", () => {
   // field, not in a 400 after the round-trip.
   describe("actionValueError", () => {
     it("reports a restricting action that has no usable duration", () => {
-      for (const actionValue of [null, 0, -5, { lock_duration_seconds: 600 }]) {
+      for (const actionValue of [null, 0, -5, "600abc", "600.5", { lock_duration_seconds: 600 }]) {
         setAction({ action_type: "LOCK_USER", action_value: actionValue });
         expect(component.actionValueError()).not.toBeNull();
       }

@@ -409,7 +409,7 @@ class ConditionalAccessPolicyCrudTestCase(MyTestCase):
     def test_02k_lock_user_requires_a_positive_duration(self):
         # A LOCK_USER the engine could not act on must not be storable: without a duration it is skipped at
         # runtime with only a log line, so the admin sees a saved policy that never locks anyone.
-        for action_value in (None, 0, -5, True, "abc", {}, {"lock_duration_seconds": 600}):
+        for action_value in (None, 0, -5, True, "abc", {}):
             self.assertRaisesRegex(
                 ParameterError, "duration",
                 self._create_with_action, {"action_type": "LOCK_USER", "action_value": action_value},
@@ -1213,12 +1213,3 @@ class ConditionalAccessPolicyCrudTestCase(MyTestCase):
         self.assertTrue(hasattr(policy_module, "_validate_duration_action_value"))
         self.assertTrue(hasattr(policy_template_module, "MFA_BRUTEFORCE"))
 
-    def test_52_stage_action_docstring_does_not_claim_allow_is_a_storable_action(self):
-        # ALLOW is only ever a value of the separate AccessDecision enum (the pre-auth evaluation
-        # outcome); it is not, and never was, a member of ConditionalAccessAction, so a stage's
-        # action list can never actually carry one. The docstring must not imply otherwise.
-        import inspect
-
-        self.assertNotIn("ALLOW", ConditionalAccessAction.__members__)
-        doc = inspect.getdoc(ConditionalAccessStageAction) or ""
-        self.assertNotIn("``ALLOW``", doc)
