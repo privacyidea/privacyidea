@@ -41,9 +41,9 @@
         {{ regenerateButtonText() }}
       </button>
     }
-    @if (enrolledData()?.["password"]) {
+    @if (enrolledData()["password"]) {
       <p i18n="@@token.yourPassword"
-        >Your Password: <strong>{{ enrolledData()?.["password"] }}</strong
+        >Your Password: <strong>{{ enrolledData()["password"] }}</strong
         >.</p
       >
     }
