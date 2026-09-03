@@ -230,7 +230,6 @@ class PushTokenTestCase(MyTestCase):
     def test_01a_list_push_capable_gateways(self):
         http_gateway = "push-http"
         smtp_gateway = "sms-smtp"
-        invalid_gateway = "push-invalid"
         set_smsgateway(http_gateway,
                        "privacyidea.lib.smsprovider.HttpSMSProvider.HttpSMSProvider",
                        options={"URL": "https://push.example.com", "HTTP_METHOD": "POST",
@@ -238,13 +237,13 @@ class PushTokenTestCase(MyTestCase):
         set_smsgateway(smtp_gateway,
                        "privacyidea.lib.smsprovider.SmtpSMSProvider.SmtpSMSProvider",
                        options={"SMTPIDENTIFIER": "mail", "MAILTO": "user@example.com"})
-        set_smsgateway(invalid_gateway, "invalid.Provider")
-        self.addCleanup(delete_smsgateway, invalid_gateway)
 
         self.assertEqual([], _get_push_gateways(http_gateway))
         self.assertEqual([], _get_push_gateways(smtp_gateway))
-        with self.assertLogs("privacyidea.lib.tokens.pushtoken", logging.WARNING) as logs:
-            self.assertEqual([], _get_push_gateways(invalid_gateway))
+        invalid_gateway = mock.MagicMock(providermodule="invalid.Provider")
+        with mock.patch("privacyidea.lib.tokens.pushtoken.get_smsgateway", return_value=[invalid_gateway]), \
+                self.assertLogs("privacyidea.lib.tokens.pushtoken", logging.WARNING) as logs:
+            self.assertEqual([], _get_push_gateways())
         self.assertIn("Failed to load SMS provider", logs.output[0])
 
         set_smsgateway(http_gateway,
@@ -323,6 +322,7 @@ class PushTokenTestCase(MyTestCase):
         token.add_tokeninfo(PushAction.FIREBASE_CONFIG, gateway_identifier)
         g = FakeFlaskG()
         g.policy_object = PolicyClass()
+        g.audit_object = mock.MagicMock(audit_data={})
 
         with self.assertRaisesRegex(ConfigAdminError, "does not support push messages"):
             token.create_challenge(options={"g": g})
@@ -333,6 +333,7 @@ class PushTokenTestCase(MyTestCase):
         token.delete_tokeninfo(PushAction.FIREBASE_CONFIG)
         g = FakeFlaskG()
         g.policy_object = PolicyClass()
+        g.audit_object = mock.MagicMock(audit_data={})
 
         with self.assertRaisesRegex(ValidateError, "Can not send via push gateway"):
             token.create_challenge(options={"g": g, "exception": True})
