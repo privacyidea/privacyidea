@@ -552,9 +552,9 @@ def cancel_challenge_api(transaction_id):
                                             "cancel challenges for")
     result = cancel_challenge(transaction_id)
     # Build a single audit entry now that the realm check passed and the
-    # cancel result is known. The `serial` column is 40 chars by default -
+    # cancel result is known. The `serial` column is 200 chars by default -
     # plenty for the common case (one transaction -> one token, with
-    # default 8-char serials, 4-5 still fit comma-joined). Pack whole
+    # default 8-char serials, over 20 still fit comma-joined). Pack whole
     # serials in arrival order up to the column budget; if some had to be
     # dropped, also record the list in `info` (500 chars) so the forensic
     # detail isn't lost. `info` is hard-cut by the audit module, so pack it
