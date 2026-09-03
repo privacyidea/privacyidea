@@ -212,8 +212,16 @@ def sign_response(request, response):
         log.debug(traceback.format_exc())
         return response
 
-    # Save the request data
-    g.request_data = get_all_params(request)
+    # Save the request data. This runs in the after-request path, so it must
+    # never raise: a malformed request body (e.g. invalid JSON) makes
+    # get_all_params() raise a BadRequest, which would otherwise abort response
+    # finalization. We only need the request data to echo back the nonce, so
+    # fall back to no params (and thus no nonce) instead.
+    try:
+        g.request_data = get_all_params(request)
+    except Exception as exx:
+        log.debug(f"Could not read request params while signing the response: {exx!s}")
+        g.request_data = {}
     request.all_data = copy.deepcopy(g.request_data)
     # response can be either a Response object or a Tuple (Response, ErrorID)
     response_value = 200

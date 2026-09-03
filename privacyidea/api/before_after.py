@@ -566,13 +566,22 @@ def shape_validate_error_response(request, response):
       an empty body; on an error path this is always the failure case, so an
       empty ``400``.
 
-    Only *error* responses are touched. A normal response already went through
-    the real ``@postpolicy`` chain: a ``/validate/check`` response carries
-    ``result.status`` ``True`` (set by ``send_result``) while an error carries
-    ``False`` (set by ``send_error``), and a normal ``/validate/radiuscheck``
-    response has already been shaped into a non-JSON empty body. The original,
-    specific message stays in the audit log because the error handlers log it
-    before this runs, so the administrator still sees the real reason.
+    Only *error* responses are touched, but the two routes are told apart
+    differently:
+
+    * ``/validate/radiuscheck`` answers with an empty body by contract, so any
+      response reaching here *with* a body bypassed the ``@postpolicy`` chain
+      (a raised view producing a JSON error body, or a failure before the view
+      such as malformed JSON producing Flask's HTML 400) and is collapsed to an
+      empty ``400``. An already-empty ``204``/``400`` from the real chain is
+      left untouched.
+    * ``/validate/check`` masking only applies to a JSON error body, identified
+      by ``result.status`` being ``False`` (``send_error``) rather than ``True``
+      (``send_result``).
+
+    The original, specific message stays in the audit log because the error
+    handlers log it before this runs, so the administrator still sees the real
+    reason.
 
     :param request: the request object
     :param response: the response object
@@ -582,9 +591,27 @@ def shape_validate_error_response(request, response):
     rule = url_rule.rule if url_rule is not None else None
     if rule not in ("/validate/check", "/validate/radiuscheck"):
         return response
+
+    # construct_radius_response: /validate/radiuscheck always answers with an
+    # empty body. A normal response already went through the real @postpolicy
+    # chain and is an empty 204/400 - preserve it. Anything else reaching here
+    # carries a body the chain never shaped: a raised view (JSON error body) or
+    # a failure before the view (e.g. malformed JSON, which makes Flask produce
+    # an HTML 400). An error is always the failure case, so collapse any such
+    # body to the documented empty 400. This runs before the (pointless here)
+    # message masking, since the RADIUS shape never leaks a specific message.
+    if rule == "/validate/radiuscheck":
+        if response.get_data():
+            resp = make_response("", 400)
+            # tell other handlers (e.g. sign_response) there is no JSON content
+            resp.mimetype = "text/plain"
+            return resp
+        return response
+
+    # rule == "/validate/check": mask the specific failure reason on JSON error
+    # bodies (hide_specific_error_message). A non-JSON or non-error response has
+    # nothing to mask.
     if not response.is_json:
-        # A normal /validate/radiuscheck response was already shaped into an
-        # empty body by the construct_radius_response post-policy - leave it.
         return response
     content = response.json
     if not isinstance(content, dict):
@@ -595,17 +622,7 @@ def shape_validate_error_response(request, response):
     if result.get("status") is not False:
         return response
 
-    # construct_radius_response: /validate/radiuscheck always answers with an
-    # empty body and an error is always the failure case, so an empty 400. The
-    # body is discarded, so it is shaped before the (pointless here) message
-    # masking - the RADIUS shape never leaks a specific message anyway.
-    if rule == "/validate/radiuscheck":
-        resp = make_response("", 400)
-        # tell other handlers (e.g. sign_response) there is no JSON content
-        resp.mimetype = "text/plain"
-        return resp
-
-    # hide_specific_error_message (only /validate/check reaches this point)
+    # hide_specific_error_message
     user_object = request.User if hasattr(request, "User") else None
     hide_message = Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE,
                               user_object=user_object).any()

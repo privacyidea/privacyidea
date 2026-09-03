@@ -3349,6 +3349,16 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertEqual(b'', res.data)
             self.assertEqual("no-cache", res.headers.get("Cache-Control"), res.headers)
 
+        # Malformed application/json makes get_all_params() raise before the
+        # view and Flask produces a non-JSON (HTML) 400. /validate/radiuscheck
+        # must still collapse it to the documented empty 400, not leak the body.
+        with self.app.test_request_context('/validate/radiuscheck', method="POST",
+                                           data='{"serial": "spass_radius_err", ',
+                                           content_type="application/json"):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(400, res.status_code, res.data)
+            self.assertEqual(b'', res.data)
+
         remove_token("spass_radius_err")
 
     def test_49_shape_error_response_only_affects_check_and_radiuscheck(self):
