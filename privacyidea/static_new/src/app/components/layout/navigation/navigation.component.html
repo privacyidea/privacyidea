@@ -510,6 +510,32 @@
           <span i18n>New Conditional Access</span>
         </a>
       }
+    @if (authService.actionAllowed("api_client_list")) {
+      <a
+        [ngClass]="contentService.routePath() === ROUTE_PATHS.POLICIES_API_CLIENTS ? 'sub-nav-active' : ''"
+        [routerLink]="[ROUTE_PATHS.POLICIES_API_CLIENTS]">
+        <mat-icon>vpn_key</mat-icon>
+        <span i18n="@@nav.apiClients">API Clients</span>
+      </a>
+    }
+    @if (contentService.routeUrl().startsWith(ROUTE_PATHS.POLICIES_API_CLIENTS_DETAILS)) {
+      <a class="sub-nav-active">
+        <span class="icon-badge">
+          <mat-icon class="padding-right-4">vpn_key</mat-icon>
+          <mat-icon class="icon-badge-overlay">settings</mat-icon>
+        </span>
+        <span i18n="@@nav.apiClientDetails">API Client Details</span>
+      </a>
+    }
+    @if (contentService.routePath() === ROUTE_PATHS.POLICIES_API_CLIENTS_NEW) {
+      <a class="sub-nav-active">
+        <span class="icon-badge">
+          <mat-icon class="padding-right-6">vpn_key</mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+        </span>
+        <span i18n="@@apiClient.createApiClient">Create API Client</span>
+      </a>
+    }
     <ng-container *ngTemplateOutlet="supportDocs"></ng-container>
   </mat-toolbar>
 }

@@ -39,6 +39,8 @@ import { TokenTypeConfigComponent } from "@components/configuration/token-type-c
 import { EventEditPageComponent } from "@components/event/event-edit-page/event-edit-page.component";
 import { EventComponent } from "@components/event/event.component";
 import { CaConnectorsComponent } from "@components/external-services/ca-connectors/ca-connectors.component";
+import { ApiClientEditComponent } from "@components/policies/api-clients/api-client-edit/api-client-edit.component";
+import { ApiClientsComponent } from "@components/policies/api-clients/api-clients.component";
 import { NewCaConnectorComponent } from "@components/external-services/ca-connectors/new-ca-connector/new-ca-connector.component";
 import { NewPrivacyideaServerComponent } from "@components/external-services/privacyidea-servers/new-privacyidea-server/new-privacyidea-server.component";
 import { PrivacyideaServersComponent } from "@components/external-services/privacyidea-servers/privacyidea-servers.component";
@@ -155,6 +157,14 @@ export const routes: Routes = [
         path: "conditional-access/details/:id",
         component: ConditionalAccessEditPageComponent,
         canDeactivate: [pendingChangesGuard]
+      },
+      {
+        path: "api-clients",
+        children: [
+          { path: "", component: ApiClientsComponent },
+          { path: "new", component: ApiClientEditComponent, canDeactivate: [pendingChangesGuard] },
+          { path: "details/:id", component: ApiClientEditComponent, canDeactivate: [pendingChangesGuard] }
+        ]
       }
     ]
   },

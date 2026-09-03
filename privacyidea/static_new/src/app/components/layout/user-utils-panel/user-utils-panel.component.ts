@@ -25,6 +25,7 @@ import { MatTooltip } from "@angular/material/tooltip";
 import { Router, RouterLink } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
+import { ApiClientService, ApiClientServiceInterface } from "@services/api-client/api-client.service";
 import { AuditService, AuditServiceInterface } from "@services/audit/audit.service";
 import {
   AuthenticationLogService,
@@ -127,6 +128,7 @@ export class UserUtilsPanelComponent {
   private readonly tokengroupService: TokengroupServiceInterface = inject(TokengroupService);
   private readonly caConnectorService: CaConnectorServiceInterface = inject(CaConnectorService);
   private readonly serviceIdService: ServiceIdServiceInterface = inject(ServiceIdService);
+  private readonly apiClientService: ApiClientServiceInterface = inject(ApiClientService);
   protected readonly periodicTaskService = inject(PeriodicTaskService);
   protected readonly eventService: EventServiceInterface = inject(EventService);
   protected readonly systemService: SystemServiceInterface = inject(SystemService);
@@ -256,6 +258,10 @@ export class UserUtilsPanelComponent {
       // Covers the conditional-access list, edit and new pages, which all share one policies resource; its dynamic
       // details URL is not an exact route match, so it is handled here rather than in the switch below.
       this.conditionalAccessPolicyService.policiesResource.reload();
+      return;
+    } else if (this.contentService.onApiClients()) {
+      this.apiClientService.apiClientResource.reload();
+      this.apiClientService.reloadRememberedDevices();
       return;
     }
 

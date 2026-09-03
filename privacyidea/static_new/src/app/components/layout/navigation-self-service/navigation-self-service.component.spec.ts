@@ -48,6 +48,7 @@ import { PrivacyideaServerService } from "@services/privacyidea-server/privacyid
 import { RadiusServerService } from "@services/radius-server/radius-server.service";
 import { RealmService } from "@services/realm/realm.service";
 import { ResolverService } from "@services/resolver/resolver.service";
+import { ApiClientService } from "@services/api-client/api-client.service";
 import { ServiceIdService } from "@services/service-id/service-id.service";
 import { SessionTimerService } from "@services/session-timer/session-timer.service";
 import { SmsGatewayService } from "@services/sms-gateway/sms-gateway.service";
@@ -60,6 +61,7 @@ import { TokengroupService } from "@services/tokengroup/tokengroup.service";
 import { UserService } from "@services/user/user.service";
 import { VersioningService } from "@services/version/version.service";
 import {
+  MockApiClientService,
   MockAuditService,
   MockAuthenticationLogService,
   MockCaConnectorService,
@@ -158,6 +160,7 @@ describe("NavigationSelfServiceComponent", () => {
         { provide: TokengroupService, useClass: MockTokengroupService },
         { provide: CaConnectorService, useClass: MockCaConnectorService },
         { provide: ServiceIdService, useClass: MockServiceIdService },
+        { provide: ApiClientService, useClass: MockApiClientService },
         { provide: PeriodicTaskService, useClass: MockPeriodicTaskService },
         { provide: EventService, useClass: MockEventService },
         { provide: SystemService, useClass: MockSystemService }

@@ -1,3 +1,4 @@
+export * from "./mock-api-client-service";
 export * from "./mock-application-service";
 export * from "./mock-audit-service";
 export * from "./mock-auth-service";
@@ -13,6 +14,7 @@ export * from "./mock-conditional-access-state-service";
 export * from "./mock-dialog-service";
 export * from "./mock-documentation-service";
 export * from "./mock-info-service";
+export * from "./mock-integrations-service";
 export * from "./mock-loading-service";
 export * from "./mock-local-service";
 export * from "./mock-machine-resolver-service";
