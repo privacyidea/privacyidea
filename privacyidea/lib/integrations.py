@@ -1,50 +1,40 @@
-#  2026-08-27 Nils Behlen <nils.behlen@netknights.it>
-#             Unify the client/integration vocabulary
+# SPDX-FileCopyrightText: (C) 2026 NetKnights GmbH <https://netknights.it>
 #
-# License:  AGPLv3
+# SPDX-License-Identifier: AGPL-3.0-or-later
 #
 # This code is free software; you can redistribute it and/or
 # modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
-# License as published by the Free Software Foundation; either
+# as published by the Free Software Foundation; either
 # version 3 of the License, or any later version.
 #
 # This code is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU AFFERO GENERAL PUBLIC LICENSE for more details.
 #
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
 __doc__ = """Single source of truth for the privacyIDEA ecosystem's integration vocabulary.
 
-Before this module existed, the same "ecosystem integration" concept was expressed in at
-least three independent, hardcoded lists that had already drifted out of sync: the
-API-client type dropdown, the policy ``user_agents`` condition picker, and the
-subscription-metering table. All three key off the same underlying wire-format agent
-string, so unifying them requires three levels:
+The API-client type dropdown, the policy ``user_agents`` condition picker and the
+subscription-metering table all key off the same wire-format agent string, and are all
+served from here. Describing them together takes three levels:
 
 * :class:`Product` — what is licensed. Its ``id`` is the ``Subscription.application``
   value on a real, cryptographically signed subscription file, so it is NOT free to
-  rename: every existing key here must stay byte-for-byte identical to what shipped in
-  ``privacyidea.lib.subscriptions.SUBSCRIPTIONS`` before this module existed.
+  rename: an id that has ever been released must stay byte-for-byte identical, or
+  subscription files carrying it stop validating.
 * :class:`Integration` — what an admin targets in a policy ``user_agents`` condition, or
   picks as an API client's ``client_type``. Owns 1..n wire-format agent names and belongs
   to exactly one product (or none, for an integration that is never licensed at all, e.g.
-  the WebUI). ``Integration.id`` is a new concept with no released consumer yet, so it is
-  free to be a clean internal key.
+  the WebUI). ``Integration.id`` is an internal key with no released consumer, so unlike a
+  product id it is free to change.
 * agent name — the literal ``User-Agent`` string a client sends. Never shown in a UI,
   never stored as policy data; only used to resolve a live request to an integration.
 
-One thing this module intentionally does not do, deliberate and explained on the product
-it touches:
-
-* It does not enforce a free-tier limit for the Authenticator App (``free_users=None`` on
-  its product): the app's own requests were already excluded from request-based metering,
-  and the one remaining enforcement path (a login-time push-token count nag) is being
-  removed as part of the same change that introduced this module. The app keeps a real,
-  subscribable product so the dashboard still reports its subscription state — it is just
-  never counted or blocked.
+The Authenticator App is deliberately never counted or blocked (``free_users=None`` on its
+product): its own requests are excluded from request-based metering. It keeps a real,
+subscribable product so the dashboard still reports its subscription state.
 """
 
 import dataclasses
@@ -139,15 +129,11 @@ PRODUCTS: dict[str, Product] = {
         Product(id="privacyidea-shibboleth", label="Shibboleth", free_users=10000),
         Product(id="privacyidea-adfs", label="AD FS", free_users=50),
         Product(id="privacyidea-keycloak", label="Keycloak", free_users=10000),
-        # `simplesamlphp` and `privacyidea-simplesamlphp` were added as two separate,
-        # identically-configured products in the same 2021 commit (8bca25e0), with no
-        # explanation distinguishing them — unlike PAM's user_agents/pam-privacyidea
-        # rename, there is no evidence they were ever meant to be different products. One
-        # product now, named like every other real plugin (`privacyidea-*`); both wire
-        # names alias into it, see the "simplesamlphp" integration below.
-        # A real, already-signed subscription file for either product may still
-        # carry the pre-merge id ("simplesamlphp") in its application field; that
-        # id is not renamed here, only merged for the UI. See PRODUCT_ALIASES.
+        # One SimpleSAMLphp product, named like every other real plugin; the bare
+        # `simplesamlphp` wire name aliases into it, see the "simplesamlphp" integration
+        # below. An already-signed subscription file may still carry `simplesamlphp` in
+        # its application field, so that id is aliased rather than renamed away, and a
+        # lookup has to check both names. See PRODUCT_ALIASES.
         Product(id="privacyidea-simplesamlphp", label="SimpleSAMLphp", free_users=10000),
         # Never counted or enforced, see the module docstring. Still a real, subscribable
         # product: the dashboard keeps reporting its subscription state.
