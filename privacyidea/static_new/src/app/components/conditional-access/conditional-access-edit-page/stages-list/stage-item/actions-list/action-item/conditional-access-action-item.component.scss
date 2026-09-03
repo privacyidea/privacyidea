@@ -49,6 +49,14 @@
   min-width: 0;
 }
 
+// A problem with the action's value, on its own row inside the wrapping value container.
+.ca-action-value-error {
+  flex-basis: 100%;
+  color: var(--mat-sys-error);
+  margin: 0;
+  font-size: var(--mat-sys-body-small-size, 0.75rem);
+}
+
 // Collapsible reference of the {tag} placeholders usable in subject/body.
 .ca-placeholder-help {
   flex-basis: 100%;

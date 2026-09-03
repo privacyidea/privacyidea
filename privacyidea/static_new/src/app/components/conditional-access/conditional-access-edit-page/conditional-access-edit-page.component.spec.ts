@@ -62,7 +62,7 @@ const mockPolicy: ConditionalAccessPolicy = {
   count_mode: "PER_REQUEST",
   reset_on_success: true,
   counter_types_to_track: ["PIN_FAIL"],
-  stages: [{ failure_threshold: 5, actions: [{ action_type: "LOCK_USER", action_value: null }] }],
+  stages: [{ failure_threshold: 5, actions: [{ action_type: "LOCK_USER", action_value: 600 }] }],
   conditions: []
 };
 
@@ -77,7 +77,7 @@ const EMPTY_TEMPLATE_POLICY: ConditionalAccessPolicySaveParams = {
   count_mode: "PER_REQUEST",
   reset_on_success: true,
   counter_types_to_track: ["PASSWORD_FAIL"],
-  stages: [{ failure_threshold: 10, actions: [{ action_type: "LOCK_USER", action_value: null }] }]
+  stages: [{ failure_threshold: 10, actions: [{ action_type: "LOCK_USER", action_value: 600 }] }]
 };
 
 describe("ConditionalAccessEditPageComponent — edit mode", () => {
@@ -256,10 +256,16 @@ describe("ConditionalAccessEditPageComponent — edit mode", () => {
 
   it("should name duplicate stage thresholds", () => {
     component.onStagesChange([
-      { failure_threshold: 5, actions: [{ action_type: "LOCK_USER", action_value: null }] },
-      { failure_threshold: 5, actions: [{ action_type: "LOCK_USER", action_value: null }] }
+      { failure_threshold: 5, actions: [{ action_type: "LOCK_USER", action_value: 60 }] },
+      { failure_threshold: 5, actions: [{ action_type: "LOCK_USER", action_value: 60 }] }
     ]);
     expect(component.saveBlockers()).toEqual(["Each stage must have a different failure threshold."]);
+  });
+
+  it("should name a stage action with an invalid value", () => {
+    component.onStagesChange([{ failure_threshold: 5, actions: [{ action_type: "LOCK_USER", action_value: -1 }] }]);
+    expect(component.saveBlockers()).toContain("Fix the highlighted action value before saving.");
+    expect(component.canSave()).toBe(false);
   });
 
   it("should name an action that the target does not allow", () => {
@@ -631,6 +637,19 @@ describe("ConditionalAccessEditPageComponent — new mode", () => {
     expect(component.canSave()).toBe(false);
   });
 
+  it("should show the missing-name hint immediately, without the field being touched first", () => {
+    expect(component.nameTouched()).toBe(true);
+    expect(component.showNameError()).toBe(true);
+    // mat-error only renders once the underlying signal-forms field itself is marked touched -
+    // component.nameTouched() alone passing would not catch a missing markAsTouched() call.
+    fixture.detectChanges();
+    expect(
+      Array.from(fixture.nativeElement.querySelectorAll("mat-error")).map((el) =>
+        (el as HTMLElement).textContent!.trim()
+      )
+    ).toContain("Name is required.");
+  });
+
   it("should show the create title", () => {
     expect(component.title()).toEqual("Create Conditional-Access Policy");
   });
@@ -698,7 +717,7 @@ describe("ConditionalAccessEditPageComponent — new mode", () => {
           count_mode: "PER_REQUEST",
           reset_on_success: true,
           counter_types_to_track: ["PASSWORD_FAIL"],
-          stages: [{ failure_threshold: 10, actions: [{ action_type: "LOCK_USER", action_value: null }] }]
+          stages: [{ failure_threshold: 10, actions: [{ action_type: "LOCK_USER", action_value: 600 }] }]
         }
       }
     ]);
@@ -796,6 +815,28 @@ describe("ConditionalAccessEditPageComponent — new mode", () => {
 
     it("should fall back to the raw value for an unknown target", () => {
       expect(component.targetLabel("realm")).toBe("realm");
+    });
+  });
+
+  describe("actionValuesValid", () => {
+    // Mirrors the backend's _ACTION_VALUE_VALIDATORS: an action whose value the engine could not act on is a
+    // 400 on save, so the editor blocks it and says why instead of letting the round-trip fail.
+    const stageWithValue = (actionValue: unknown) => [
+      {
+        failure_threshold: 5,
+        actions: [{ action_type: "LOCK_USER" as ConditionalAccessActionType, action_value: actionValue }]
+      }
+    ];
+
+    it("should block saving while a restricting action has no duration", () => {
+      component.onStagesChange(stageWithValue(null));
+      expect(component.actionValuesValid()).toBe(false);
+      expect(component.canSave()).toBe(false);
+    });
+
+    it("should allow saving once the duration is set", () => {
+      component.onStagesChange(stageWithValue(600));
+      expect(component.actionValuesValid()).toBe(true);
     });
   });
 

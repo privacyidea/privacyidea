@@ -210,6 +210,58 @@ export interface ConditionalAccessPolicyTemplate {
   policy: ConditionalAccessPolicyTemplateParams;
 }
 
+// The duration an action_value carries, in seconds, or null when it carries none the backend would accept.
+// Mirrors privacyidea.lib.conditional_access.engine.parse_lock_duration_seconds: a bare number, a numeric
+// string, or an object with duration_seconds (duration is the alias). The editor itself writes a bare number;
+// the other shapes reach the WebUI from policies written through the API.
+export function parseActionDurationSeconds(actionValue: unknown): number | null {
+  let raw = actionValue;
+  if (raw && typeof raw === "object" && !Array.isArray(raw)) {
+    const record = raw as Record<string, unknown>;
+    raw = "duration_seconds" in record ? record["duration_seconds"] : record["duration"];
+  }
+  if (typeof raw === "boolean") {
+    return null;
+  }
+  let seconds: unknown = raw;
+  if (typeof seconds === "string") {
+    const trimmed = seconds.trim();
+    // Matches int(...): only a plain integer literal, not "600.5" or "600abc" - the backend rejects
+    // both, so accepting them here would let Save look valid and then 400.
+    if (!/^-?[0-9]+$/.test(trimmed)) {
+      return null;
+    }
+    seconds = Number.parseInt(trimmed, 10);
+  }
+  return typeof seconds === "number" && Number.isFinite(seconds) && seconds > 0 ? Math.trunc(seconds) : null;
+}
+
+// What is wrong with this action's action_value, or null when the backend would accept it. It is the
+// client-side half of the per-action contract validated in
+// privacyidea.lib.conditional_access.policy._ACTION_VALUE_VALIDATORS, so the editor can say what is
+// missing next to the field instead of surfacing a 400 after the round-trip.
+export function actionValueError(action: ConditionalAccessStageAction): string | null {
+  const value = action.action_value;
+  switch (action.action_type) {
+    case "LOCK_USER":
+    case "BLOCK_IP":
+      return parseActionDurationSeconds(value) === null
+        ? $localize`Enter how long the restriction lasts; without a duration this action never runs.`
+        : null;
+    case "EMAIL_ADMIN":
+    case "EMAIL_USER": {
+      const email =
+        value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
+      const missing = ["subject", "body"].filter((key) => !String(email[key] ?? "").trim());
+      return missing.length > 0 ? $localize`Fill in the subject and body; without them no email is sent.` : null;
+    }
+    default:
+      // The PERMANENT_* restrictions and the DENY decision never read a value, and the backend rejects
+      // one rather than ignoring it: a duration on a permanent lock reads as an expiry that never comes.
+      return value == null ? null : $localize`This action takes no value. Clear it before saving.`;
+  }
+}
+
 export const EMPTY_CONDITIONAL_ACCESS_POLICY: ConditionalAccessPolicySaveParams = {
   name: "",
   time_window_seconds: 600,

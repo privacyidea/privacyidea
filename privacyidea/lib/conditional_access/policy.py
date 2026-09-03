@@ -45,7 +45,8 @@ A policy is passed around as a plain dict::
                 "actions": [
                     {"action_type": "LOCK_USER", "action_value": {"duration_seconds": 600},
                      "retrigger_above_threshold": True},
-                    {"action_type": "EMAIL_ADMIN", "action_value": {"smtp_identifier": "..."},
+                    {"action_type": "EMAIL_ADMIN",
+                     "action_value": {"smtp_identifier": "mailserver", "subject": "...", "body": "..."},
                      "retrigger_above_threshold": False},
                 ],
             },
@@ -72,6 +73,19 @@ values must be
 must be :class:`~privacyidea.lib.conditional_access.engine.ConditionalAccessAction` names; anything else is a
 :class:`~privacyidea.lib.error.ParameterError` (fail-closed - a typo must not silently create a policy that never
 matches or an action that never fires).
+
+``action_value`` is validated under that same rule, against what the engine actually reads (see
+:data:`_ACTION_VALUE_VALIDATORS`):
+
+* ``LOCK_USER`` / ``BLOCK_IP`` - a positive number of seconds: an integer, a numeric string, or an object with
+  ``duration_seconds`` (``duration`` is an accepted alias). There is no default; without a duration the engine
+  skips the action rather than locking permanently.
+* ``EMAIL_ADMIN`` / ``EMAIL_USER`` - an object with a non-empty ``subject`` and ``body``, optionally
+  ``mimetype`` (``plain``/``html``) and - for ``EMAIL_ADMIN`` - ``recipient_group``.
+  ``smtp_identifier`` names the SMTP server that sends it and may be left blank until one is configured, which
+  is the one thing the engine needs that the write path does not insist on.
+* ``PERMANENT_LOCK_USER`` / ``PERMANENT_BLOCK_IP`` / ``DENY`` - no value. These never expire and never read
+  one, so a duration on them would only describe an expiry that does not happen.
 
 A stage's optional ``error_message`` is the text an end user sees when a request is turned away by that stage. It is
 opt-in: without one the rejection carries only the generic "Authentication failed.", so privacyIDEA never volunteers
@@ -103,8 +117,9 @@ from privacyidea.lib.conditional_access.authentication_event_types import (
     CountMode,
 )
 from privacyidea.lib.conditional_access.conditions import CONDITION_TYPES
-from privacyidea.lib.conditional_access.engine import (ACTION_SEVERITY, ConditionalAccessAction,
-                                                       ConditionalAccessTarget, NOTIFYING_ACTIONS)
+from privacyidea.lib.conditional_access.engine import (ACTION_SEVERITY, ADMIN_RECIPIENT_GROUPS,
+                                                       ConditionalAccessAction, ConditionalAccessTarget,
+                                                       NOTIFYING_ACTIONS, parse_lock_duration_seconds)
 from privacyidea.lib.error import ConflictError, ParameterError, ResourceNotFoundError
 from privacyidea.lib.log import log_with
 from privacyidea.models import db
@@ -537,6 +552,112 @@ def _validate_counter_types(counter_types) -> list[str]:
     return seen
 
 
+# The ``action_value`` keys each action type accepts, as the engine reads them.
+#
+# The timed restrictions take a duration; the email actions take the SMTP settings
+# :func:`~privacyidea.lib.conditional_access.engine._send_lockout_email` reads. ``identifier`` is the
+# accepted alias for ``smtp_identifier``.
+_DURATION_KEYS = ("duration_seconds", "duration")
+_EMAIL_KEYS = frozenset({"smtp_identifier", "identifier", "recipient_group", "subject", "body",
+                         "mimetype"})
+# The email fields with no sensible default: without them the engine has nothing to send and skips.
+_EMAIL_REQUIRED_TEXT = ("subject", "body")
+_EMAIL_MIMETYPES = frozenset({"plain", "html"})
+
+
+def _validate_duration_action_value(action_type: str, action_value) -> None:
+    """
+    Validate the ``action_value`` of a timed restriction (``LOCK_USER``, ``BLOCK_IP``): a positive number of
+    seconds, given as an integer, a numeric string, or an object carrying ``duration_seconds`` (or ``duration``).
+
+    The check *is* the engine's own parser
+    (:func:`~privacyidea.lib.conditional_access.engine.parse_lock_duration_seconds`), so anything storable is
+    something the engine can act on. That matters more than the exact shapes accepted: a duration the engine
+    cannot parse is not a lock that fires late, it is a lock that never fires at all - the action is skipped
+    with a log line and the admin sees a saved policy doing nothing.
+
+    An unknown key inside the object is rejected before the parse, so the near-miss that motivates all of this
+    (``lock_duration_seconds``, which nothing reads) is reported by name instead of as a generic "no duration".
+    """
+    if isinstance(action_value, dict):
+        unknown = set(action_value) - set(_DURATION_KEYS)
+        if unknown:
+            raise ParameterError(f"Unknown key(s) in the action_value of '{action_type}': "
+                                 f"{', '.join(sorted(unknown))}. Valid keys: {', '.join(sorted(_DURATION_KEYS))}.")
+    if parse_lock_duration_seconds(action_value) is None:
+        raise ParameterError(f"Action '{action_type}' needs a positive duration in seconds: give 'action_value' "
+                             f"a positive integer, or an object with 'duration_seconds'. Got {action_value!r}.")
+
+
+def _validate_email_action_value(action_type: str, action_value) -> None:
+    """
+    Validate the ``action_value`` of an ``EMAIL_ADMIN`` / ``EMAIL_USER`` action: the object of SMTP settings
+    :func:`~privacyidea.lib.conditional_access.engine._send_lockout_email` reads, with a non-empty ``subject``
+    and ``body``.
+
+    ``smtp_identifier`` is deliberately **not** required, even though the engine needs it to send: the SMTP
+    server is a separate configuration object that may legitimately not exist yet, which is why the shipped
+    ``MFA_BRUTEFORCE`` template ships it blank for the admin to fill in
+    (:mod:`~privacyidea.lib.conditional_access.policy_template`) and why the editor flags a blank or
+    stale identifier inline rather than refusing to save. ``subject`` and ``body`` have no such excuse - nothing
+    else can supply them.
+
+    ``recipient_group`` is validated for ``EMAIL_USER`` too rather than rejected as a stray key: switching an
+    action from ``EMAIL_ADMIN`` carries the whole object over, and dropping a key on a type switch would be a
+    silent edit of what the admin wrote.
+    """
+    if not isinstance(action_value, dict):
+        raise ParameterError(f"The action_value of '{action_type}' must be an object with the email settings "
+                             f"(smtp_identifier, subject, body).")
+    unknown = set(action_value) - _EMAIL_KEYS
+    if unknown:
+        raise ParameterError(f"Unknown key(s) in the action_value of '{action_type}': "
+                             f"{', '.join(sorted(unknown))}. Valid keys: {', '.join(sorted(_EMAIL_KEYS))}.")
+    for key, value in action_value.items():
+        if value is not None and not isinstance(value, str):
+            raise ParameterError(f"'{key}' in the action_value of '{action_type}' must be a string.")
+    for key in _EMAIL_REQUIRED_TEXT:
+        if not (action_value.get(key) or "").strip():
+            raise ParameterError(f"Action '{action_type}' needs a non-empty '{key}' in its action_value.")
+    mimetype = (action_value.get("mimetype") or "").strip()
+    if mimetype and mimetype not in _EMAIL_MIMETYPES:
+        raise ParameterError(f"Unknown mimetype '{mimetype}' for action '{action_type}'. "
+                             f"Valid values: {', '.join(sorted(_EMAIL_MIMETYPES))}.")
+    recipient_group = (action_value.get("recipient_group") or "").strip()
+    if recipient_group and "@" not in recipient_group and recipient_group.lower() not in ADMIN_RECIPIENT_GROUPS:
+        raise ParameterError(f"Unknown recipient_group '{recipient_group}' for action '{action_type}'. Use one of "
+                             f"{', '.join(sorted(ADMIN_RECIPIENT_GROUPS))}, or a comma-separated list of email "
+                             f"addresses.")
+
+
+def _validate_no_action_value(action_type: str, action_value) -> None:
+    """
+    Validate the ``action_value`` of an action that takes none: the ``PERMANENT_*`` restrictions and the
+    ``DENY`` decision, all of which the engine executes without ever reading it.
+
+    A value is rejected rather than ignored because the one an admin would plausibly write is a duration, and a
+    duration on ``PERMANENT_LOCK_USER`` reads as an expiry that never comes: the lock the admin thinks lifts in
+    ten minutes holds until someone unlocks it by hand.
+    """
+    if action_value is not None:
+        raise ParameterError(f"Action '{action_type}' takes no action_value; got {action_value!r}.")
+
+
+# What each action type's ``action_value`` must look like, keyed by action type. Kept **total** over
+# :class:`~privacyidea.lib.conditional_access.engine.ConditionalAccessAction` (asserted in the tests, like
+# :data:`_ACTIONS_BY_TARGET`): a new action type has to declare what it accepts rather than inheriting
+# "anything goes" from a missing entry, which is the very state this table exists to end.
+_ACTION_VALUE_VALIDATORS = {
+    str(ConditionalAccessAction.LOCK_USER): _validate_duration_action_value,
+    str(ConditionalAccessAction.BLOCK_IP): _validate_duration_action_value,
+    str(ConditionalAccessAction.EMAIL_ADMIN): _validate_email_action_value,
+    str(ConditionalAccessAction.EMAIL_USER): _validate_email_action_value,
+    str(ConditionalAccessAction.PERMANENT_LOCK_USER): _validate_no_action_value,
+    str(ConditionalAccessAction.PERMANENT_BLOCK_IP): _validate_no_action_value,
+    str(ConditionalAccessAction.DENY): _validate_no_action_value,
+}
+
+
 def _validate_threshold_for_actions(threshold: int, actions: list[StageActionDefinition]) -> None:
     """
     Check a stage's ``failure_threshold`` against what its actions do.
@@ -579,9 +700,19 @@ def _validate_stages(stages) -> list[StageDefinition]:
     """
     Validate the stage definitions: a non-empty list of dicts, each with a unique
     ``failure_threshold``, an optional user-facing ``error_message`` and a list of actions whose ``action_type`` is a
-    valid :class:`ConditionalAccessAction`. ``action_value`` may be any JSON-serializable value
-    (its action-specific interpretation happens in the engine); unknown keys in
-    a stage or action dict are rejected so typos fail loudly.
+    valid :class:`~privacyidea.lib.conditional_access.engine.ConditionalAccessAction`; unknown keys in a stage or
+    action dict are rejected so typos fail loudly.
+
+    ``action_value`` is validated per action type against what the engine reads
+    (:data:`_ACTION_VALUE_VALIDATORS`): a positive duration for the timed
+    ``LOCK_USER``/``BLOCK_IP``, the SMTP settings object for the ``EMAIL_*``
+    actions, and no value at all for the ``PERMANENT_*`` restrictions and the
+    ``DENY`` decision. This is fail-closed for the same reason the
+    counter types and conditions are: an action the engine cannot act on is
+    skipped at runtime with nothing but a log line, so a policy that cannot do
+    what it says must not be storable. The value itself is stored **unchanged** -
+    a duration written as ``"600"`` reads back as ``"600"`` - so the round-trip
+    stays an honest record of what the admin sent.
 
     A threshold counts failures, so it starts at 1. The exception is a stage whose
     every action is a standing ``DENY``: threshold 0 then means "always", the
@@ -628,6 +759,7 @@ def _validate_stages(stages) -> list[StageDefinition]:
                 raise ParameterError(
                     f"Unknown action type '{action_type}'. Valid types: {', '.join(sorted(valid_actions))}."
                 )
+            _ACTION_VALUE_VALIDATORS[action_type](action_type, action.get("action_value"))
             # retrigger_above_threshold is a per-action flag, coerced like the policy-level enabled/dry_run booleans;
             # left unset it stays None, and _build_stages resolves it to the action-aware default.
             retrigger_raw = action.get("retrigger_above_threshold")
@@ -927,7 +1059,11 @@ def update_conditional_access_policy(
     Existing locks/blocks written before the change are timed and expire on their
     own, so no stale state is left enforced.
 
-    All fields are validated before anything is written.
+    All fields are validated before anything is written. Only the fields the caller
+    *sends* are validated, which is what keeps a policy stored before a validation
+    rule existed - or written straight through the ORM - from being frozen: its
+    ``enabled``/``dry_run`` flags and its name stay changeable, and re-sending
+    ``stages`` is the repair path that re-checks them.
 
     :return: a ``(policy_id, changed_fields)`` tuple, where ``changed_fields`` is
         the list of field names that were provided (and thus written), so the

@@ -201,6 +201,12 @@ class ConditionalAccessTarget(str, Enum):
         return self.value
 
 
+# The ``recipient_group`` values of an EMAIL_ADMIN action that mean "every internal DB admin with an email
+# address" (see :func:`_resolve_admin_recipients`). Any other value is read as a comma-separated address list
+# when it contains an ``@``, and is otherwise an unknown group the action is skipped for - which is why the
+# CRUD layer validates against this same set at write time.
+ADMIN_RECIPIENT_GROUPS = frozenset({"internal_admins", "admins", "all"})
+
 #: The action that restricts a given target for a given duration - and so the action a stored restriction is
 #: described by. A row remembers its subject and its expiry but not which action wrote it; it does not need to,
 #: because those two facts name the action exactly.
@@ -1456,16 +1462,21 @@ def _action_expiry(stage_action: ConditionalAccessStageAction, now: datetime) ->
     """
     if stage_action.action_type not in (ConditionalAccessAction.LOCK_USER, ConditionalAccessAction.BLOCK_IP):
         return None
-    duration = _lock_duration_seconds(stage_action.action_value)
+    duration = parse_lock_duration_seconds(stage_action.action_value)
     return now + timedelta(seconds=duration) if duration is not None else None
 
 
-def _lock_duration_seconds(action_value: Any) -> int | None:
+def parse_lock_duration_seconds(action_value: Any) -> int | None:
     """
-    Parse the ``LOCK_USER`` lock duration (in seconds) from a stage action's
-    JSON ``action_value``. Accepts a plain integer, a numeric string, or a dict
-    carrying ``duration_seconds`` / ``duration``. Returns ``None`` for anything
-    that is not a positive integer number of seconds.
+    Parse the ``LOCK_USER`` / ``BLOCK_IP`` restriction duration (in seconds) from
+    a stage action's JSON ``action_value``. Accepts a plain integer, a numeric
+    string, or a dict carrying ``duration_seconds`` / ``duration``. Returns
+    ``None`` for anything that is not a positive integer number of seconds.
+
+    This is also the write path's validator
+    (:func:`~privacyidea.lib.conditional_access.policy._validate_duration_action_value`),
+    so what can be stored and what the engine can act on are the same set by
+    construction rather than by two descriptions agreeing.
     """
     if isinstance(action_value, bool):
         # bool is an int subclass; a boolean is never a valid duration.
@@ -1547,9 +1558,9 @@ def _resolve_admin_recipients(recipient_group: str | None) -> list[str]:
     group = (str(recipient_group).strip() if recipient_group else "internal_admins")
     if "@" in group:
         return [addr.strip() for addr in group.split(",") if addr.strip()]
-    if group.lower() in ("internal_admins", "admins", "all"):
-        # Imported lazily to keep the engine's hot path free of lib.auth's heavy token/container imports and avoid
-        # import-time coupling.
+    if group.lower() in ADMIN_RECIPIENT_GROUPS:
+        # Imported lazily: keeps the engine's hot path free of lib.auth's heavy
+        # token/container imports and avoids any import-time coupling.
         from privacyidea.lib.auth import get_all_db_admins
         return [admin.email for admin in get_all_db_admins() if admin.email]
     log.warning(f"Unknown EMAIL_ADMIN recipient_group {recipient_group!r}; "
@@ -1686,7 +1697,7 @@ def _execute_stage_actions(policy: ConditionalAccessPolicy, stage: ConditionalAc
 
         try:
             if action_type == ConditionalAccessAction.LOCK_USER:
-                duration = _lock_duration_seconds(action.action_value)
+                duration = parse_lock_duration_seconds(action.action_value)
                 if duration is None:
                     log.warning(f"LOCK_USER action {action.id} on stage {stage.id} has no valid duration "
                                 f"({action.action_value!r}); skipping.")
@@ -1713,7 +1724,7 @@ def _execute_stage_actions(policy: ConditionalAccessPolicy, stage: ConditionalAc
                     # Permanent block; action_value is ignored (mirrors PERMANENT_LOCK_USER).
                     block_expires_at = None
                 else:
-                    duration = _lock_duration_seconds(action.action_value)
+                    duration = parse_lock_duration_seconds(action.action_value)
                     if duration is None:
                         log.warning(f"BLOCK_IP action {action.id} on stage {stage.id} has no valid duration "
                                     f"({action.action_value!r}); skipping.")

@@ -37,6 +37,7 @@ import { InfoHintComponent } from "@components/shared/info-hint/info-hint.compon
 import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import {
+  actionValueError,
   ConditionalAccessPolicyService,
   ConditionalAccessPolicyServiceInterface,
   CountMode,
@@ -157,7 +158,7 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
 
   // Info-hint help text as a $localize string, keeping all of this component's user-facing text in
   // one place and extractable for translation.
-  protected readonly priorityHelp = $localize`Priority decides how this policy ranks against the others: a lower number means higher precedence, so when several policies would deny a request, the one with the lowest priority number is the one named as having refused it. Lock, block and email policies all run regardless of priority. It is required and must be unique across policies so the order is unambiguous.`;
+  protected readonly priorityHelp = $localize`Unique order across policies, lowest first.`;
   protected readonly priorityHelpAriaLabel = $localize`About priority`;
 
   // Templates offered on the create page and the one currently picked, whose description shows as
@@ -261,6 +262,12 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
   // and targetActionsValid.
   readonly staleConditionValues = computed(() => this.policyService.staleConditionValues(this.editPolicy().conditions));
   conditionValuesValid = computed(() => this.staleConditionValues().length === 0);
+  // Every stage action must carry an action_value its type can act on (the backend enforces the same via
+  // _ACTION_VALUE_VALIDATORS and 400s otherwise). Checked here so the missing duration or subject is reported
+  // next to the field instead of as a failed save; the action item shows the per-action message.
+  actionValuesValid = computed(() =>
+    this.editPolicy().stages.every((stage) => stage.actions.every((action) => actionValueError(action) === null))
+  );
   // Only the highest matching threshold ever fires, so two stages sharing a threshold would leave
   // one permanently dead; the backend also rejects this (uq_ca_stage_policy_threshold), so it
   // is blocked here too.
@@ -285,6 +292,7 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
       this.stagesValid() &&
       this.stageThresholdsUnique() &&
       this.targetActionsValid() &&
+      this.actionValuesValid() &&
       this.countModeValid() &&
       this.conditionValuesValid()
   );
@@ -321,6 +329,9 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
     }
     if (!this.targetActionsValid()) {
       blockers.push($localize`Some actions are not allowed for the selected target.`);
+    }
+    if (!this.actionValuesValid()) {
+      blockers.push($localize`Fix the highlighted action value before saving.`);
     }
     if (!this.countModeValid()) {
       blockers.push($localize`The selected count mode is not allowed for the selected target.`);
@@ -361,6 +372,12 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
         this.isNewPolicy.set(true);
         this.editPolicyId = null;
         this.loadPolicy(EMPTY_CONDITIONAL_ACCESS_POLICY);
+        // A brand-new policy starts with an empty (invalid) name; mark it touched immediately - both the
+        // signal-forms field itself (mat-error only renders once Material's own errorState sees it
+        // touched) and the local flag mirroring it - so the "Name is required" hint is visible from the
+        // start instead of only after the field is blurred.
+        this.policyForm.name().markAsTouched();
+        this.nameTouched.set(true);
       }
     });
 

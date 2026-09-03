@@ -51,7 +51,7 @@ describe("ConditionalAccessPolicyService", () => {
       {
         id: 1,
         failure_threshold: 5,
-        actions: [{ id: 1, action_type: "LOCK_USER", action_value: { lock_duration_seconds: 600 } }]
+        actions: [{ id: 1, action_type: "LOCK_USER", action_value: { duration_seconds: 600 } }]
       }
     ],
     conditions: [{ condition_type: "USER_REALM", operator: "IN", value: ["sales"] }]

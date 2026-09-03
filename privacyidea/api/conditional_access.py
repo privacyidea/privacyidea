@@ -318,10 +318,13 @@ def create_policy():
         stage thresholds. Required.
     :jsonparam stages: non-empty list of stage definitions, each
         ``{"failure_threshold": <int>, "name": <str, optional>,
-        "actions": [{"action_type": <ConditionalAccessAction>, "action_value": <any>}]}``.
+        "actions": [{"action_type": <ConditionalAccessAction>, "action_value": <per action type>}]}``.
         Thresholds must be unique within the policy and are the evaluation order
         (highest first). A threshold starts at 1, except on a stage whose every
-        action is ``DENY``, where 0 means "always". Required.
+        action is ``DENY``, where 0 means "always". Required. ``action_value`` is checked against what the
+        action can actually do: ``LOCK_USER``/``BLOCK_IP`` need a positive number of seconds (an integer, a
+        numeric string, or an object with ``duration_seconds``), ``EMAIL_ADMIN``/``EMAIL_USER`` an object with
+        a non-empty ``subject`` and ``body``, and the ``PERMANENT_*``/``DENY`` actions no value at all.
     :jsonparam enabled: whether the policy is evaluated (default true).
     :jsonparam dry_run: log-only mode, nothing is enforced (default false).
     :jsonparam reset_on_success: whether a completed login clears the events
@@ -341,7 +344,8 @@ def create_policy():
         See :http:get:`/conditionalaccess/conditiontypes` for the available types
         and their valid values.
     :status 200: the id of the new policy in ``result.value``
-    :status 400: invalid or missing parameter
+    :status 400: invalid or missing parameter, including an ``action_value`` the named action
+        could not act on
     """
     params = request.all_data
     name = get_required(params, "name")

@@ -183,6 +183,52 @@ describe("ConditionalAccessActionItemComponent", () => {
       component.onDurationUnitChange("hours");
       expect(spy).not.toHaveBeenCalled();
     });
+
+    // A policy written through the API may store the duration as a string; the field must show it rather
+    // than looking empty and inviting the admin to overwrite a value that is already there.
+    it("should read a numeric-string duration", () => {
+      setAction({ action_type: "LOCK_USER", action_value: "600" });
+      expect(component.durationValue()).toBe("600");
+    });
+  });
+
+  // The client-side half of the backend's per-action action_value contract: the message belongs next to the
+  // field, not in a 400 after the round-trip.
+  describe("actionValueError", () => {
+    it("reports a restricting action that has no usable duration", () => {
+      for (const actionValue of [null, 0, -5, "600abc", "600.5", { lock_duration_seconds: 600 }]) {
+        setAction({ action_type: "LOCK_USER", action_value: actionValue });
+        expect(component.actionValueError()).not.toBeNull();
+      }
+    });
+
+    it("accepts every duration shape the backend stores", () => {
+      for (const actionValue of [600, "600", { duration_seconds: 600 }, { duration: 600 }]) {
+        setAction({ action_type: "LOCK_USER", action_value: actionValue });
+        expect(component.actionValueError()).toBeNull();
+      }
+    });
+
+    it("reports an email action without a subject and body", () => {
+      setAction({ action_type: "EMAIL_ADMIN", action_value: {} });
+      expect(component.actionValueError()).not.toBeNull();
+      setAction({ action_type: "EMAIL_ADMIN", action_value: { subject: "Hi" } });
+      expect(component.actionValueError()).not.toBeNull();
+    });
+
+    it("accepts an email action with a subject and body but no SMTP server yet", () => {
+      setAction({ action_type: "EMAIL_ADMIN", action_value: { smtp_identifier: "", subject: "s", body: "b" } });
+      expect(component.actionValueError()).toBeNull();
+    });
+
+    it("accepts the actions that take no value, and reports one carrying a value", () => {
+      setAction({ action_type: "PERMANENT_LOCK_USER", action_value: null });
+      expect(component.actionValueError()).toBeNull();
+      setAction({ action_type: "DENY", action_value: null });
+      expect(component.actionValueError()).toBeNull();
+      setAction({ action_type: "PERMANENT_LOCK_USER", action_value: 600 });
+      expect(component.actionValueError()).not.toBeNull();
+    });
   });
 
   describe("email", () => {
