@@ -32,7 +32,7 @@ from datetime import datetime
 
 from netaddr import IPAddress
 from sqlalchemy import func, select
-from sqlalchemy.exc import IntegrityError, OperationalError
+from sqlalchemy.exc import SQLAlchemyError
 
 from privacyidea.lib.config import get_privacyidea_node
 from privacyidea.lib.framework import get_app_config_value, get_app_local_store
@@ -144,6 +144,9 @@ def save_clientapplication(ip: IPAddress | str, clienttype: str):
     node = get_privacyidea_node()
     # Check for a valid IP address
     ip = IPAddress(ip)
+    # The client type is the user agent, i.e. a request header of arbitrary length. Cut it
+    # to the column, so that a long header can not fail the request it was sent with.
+    clienttype = clienttype[:ClientApplication.__table__.c.clienttype.type.length]
     client_key = (node, f"{ip}", clienttype)
     write_interval = _write_interval_seconds()
     if write_interval and _written_within(client_key, write_interval):
@@ -151,22 +154,25 @@ def save_clientapplication(ip: IPAddress | str, clienttype: str):
     last_seen = datetime.now()
     # TODO: resolve hostname
 
-    stmt = select(ClientApplication).where(
-        ClientApplication.ip == f"{ip}",
-        ClientApplication.clienttype == clienttype,
-        ClientApplication.node == node
-    )
-    client_app = db.session.execute(stmt).scalar_one_or_none()
-
-    if client_app:
-        client_app.lastseen = last_seen
-    else:
-        client_app = ClientApplication(ip=f"{ip}", clienttype=clienttype, node=node, lastseen=last_seen)
-        db.session.add(client_app)
     try:
+        stmt = select(ClientApplication).where(
+            ClientApplication.ip == f"{ip}",
+            ClientApplication.clienttype == clienttype,
+            ClientApplication.node == node
+        )
+        client_app = db.session.execute(stmt).scalar_one_or_none()
+
+        if client_app:
+            client_app.lastseen = last_seen
+        else:
+            client_app = ClientApplication(ip=f"{ip}", clienttype=clienttype, node=node, lastseen=last_seen)
+            db.session.add(client_app)
         db.session.commit()
         _note_write(client_key, write_interval)
-    except (IntegrityError, OperationalError) as e:  # pragma: no cover
+    except SQLAlchemyError as e:
+        # Saving the client application is telemetry for the client list. It must never
+        # turn the request it was collected from into an error, so any database problem
+        # ends here.
         db.session.rollback()
         log.info(f'Unable to write ClientApplication entry to db: {e}')
         log.debug(traceback.format_exc())

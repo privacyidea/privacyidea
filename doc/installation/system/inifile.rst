@@ -40,8 +40,6 @@ The file should contain the following contents::
    # PI_AUDIT_SQL_URI = <special audit log DB uri>
    # Options passed to the Audit DB engine (supersedes SQLALCHEMY_ENGINE_OPTIONS)
    # PI_AUDIT_SQL_OPTIONS = {}
-   # Truncate Audit entries to fit into DB columns
-   PI_AUDIT_SQL_TRUNCATE = True
    # PI_LOGFILE = '....'
    # PI_LOGLEVEL = 20
    # PI_INIT_CHECK_HOOK = 'your.module.function'
@@ -239,8 +237,10 @@ With ``PI_AUDIT_SQL_OPTIONS`` You can pass a dictionary of options to the
 database engine. If ``PI_AUDIT_SQL_OPTIONS`` is not set,
 ``SQLALCHEMY_ENGINE_OPTIONS`` will be used.
 
-``PI_AUDIT_SQL_TRUNCATE = True`` lets you truncate audit entries to the length
-of the database fields (See :ref:`Audit table size <audit_table_size>`).
+Audit entries are always shortened to the length of the database fields, so that
+an entry with long request data is written instead of being rejected. The former
+setting ``PI_AUDIT_SQL_TRUNCATE`` is ignored (See
+:ref:`Audit table size <audit_table_size>`).
 
 In certain cases when you experiencing problems you may use the parameters
 ``PI_AUDIT_POOL_SIZE`` and ``PI_AUDIT_POOL_RECYCLE``. However, they are only

@@ -32,7 +32,9 @@ from privacyidea.models.utils import MethodsMixin, BigIntegerType
 
 audit_column_length = {"signature": 1100,
                        "action": 200,
-                       "serial": 40,
+                       # A single entry can name every token that was involved in a request,
+                       # e.g. all tokens that were challenged, so this holds a list of serials
+                       "serial": 200,
                        "token_type": 12,
                        "user": 100,
                        "realm": 255,

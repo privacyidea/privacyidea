@@ -184,6 +184,23 @@ def before_request():
     ua_name, ua_version, _ua_comment = get_plugin_info_from_useragent(request.user_agent.string)
     g.user_agent = ua_name
 
+    # Log the request before the user is resolved. Resolving raises if the requested realm
+    # or resolver does not exist, and such a request has to appear in the audit log as
+    # well. The user is logged the way it was requested and is replaced by the resolved
+    # user further down.
+    g.audit_object.log({"success": False,
+                        "action_detail": "",
+                        "client": g.client_ip,
+                        "user_agent": ua_name,
+                        "user_agent_version": ua_version,
+                        "privacyidea_server": privacyidea_server,
+                        "action": f"{request.method!s} {request.url_rule!s}",
+                        "thread_id": f"{threading.current_thread().ident!s}",
+                        "info": "",
+                        "user": request.all_data.get("user") or "",
+                        "realm": request.all_data.get("realm") or "",
+                        "resolver": request.all_data.get("resolver") or ""})
+
     # Get user
     username = request.all_data.get("user", "")
     username, realm = split_user(username)
@@ -196,16 +213,7 @@ def before_request():
     request.User = User(username, realm, resolver)
     request.all_data["realm"] = realm
 
-    g.audit_object.log({"success": False,
-                        "action_detail": "",
-                        "client": g.client_ip,
-                        "user_agent": ua_name,
-                        "user_agent_version": ua_version,
-                        "privacyidea_server": privacyidea_server,
-                        "action": f"{request.method!s} {request.url_rule!s}",
-                        "thread_id": f"{threading.current_thread().ident!s}",
-                        "info": ""})
-    # Add preliminary user to audit in case we fail with an error
+    # Replace the requested user with the user it was resolved to
     g.audit_object.log({
         "user": request.User.login,
         "resolver": request.User.resolver,
@@ -884,6 +892,43 @@ def _handle_standard_auth(context: dict):
         context["serial_list"].extend([c["serial"] for c in details["multi_challenge"]])
     elif "serial" in details:
         context["serial_list"].append(details["serial"])
+    elif transaction_id:
+        # A response that does not match the challenges of more than one token names no
+        # token at all, since there is no single token the response could be attributed
+        # to. Take the tokens that were challenged from the transaction instead, so that
+        # the failed attempt is logged against the tokens it was made against.
+        context["serial_list"].extend(_challenged_token_serials(transaction_id, context["user"]))
+
+
+def _challenged_token_serials(transaction_id: str, user: User) -> list[str]:
+    """
+    Return the serials of the tokens of the given user that were challenged in the given
+    transaction.
+
+    Only tokens of that user are returned: a request can name the transaction id of
+    somebody else, and the audit entry of this request must not name their tokens.
+    Challenges of a container carry the container serial instead of a token serial and are
+    left out, because the audit log keeps the two in separate columns.
+
+    :param transaction_id: the transaction id of the challenges
+    :param user: the user the request authenticates
+    :return: a sorted list of unique token serials
+    """
+    if not user or not user.login:
+        return []
+    try:
+        challenged = {challenge.serial for challenge in get_challenges(transaction_id=transaction_id)
+                      if challenge.get_data().get("type", "token") != "container"}
+        if not challenged:
+            return []
+        owned = {token.get_serial() for token in get_tokens(user=user)}
+    except Exception as exx:  # noqa: BLE001 - naming the tokens must not fail the request
+        # The authentication result is already decided at this point, only the audit entry
+        # is still being filled in. A challenge or token store that can not be read must
+        # therefore cost the entry its serials, never turn the response into an error.
+        log.debug(f"Could not read the challenged tokens of {user!r} for the audit log: {exx!r}")
+        return []
+    return sorted(challenged & owned)
 
 
 def _finalize_auth_response(context):
@@ -942,13 +987,19 @@ def _finalize_auth_response(context):
     ret = send_result(context["result"], rid=2, details=details, **context["response_params"])
     apply_cookie_action(ret, cookie_action)
 
-    g.audit_object.log({
+    audit_entry = {
         "info": log_used_user(user, details.get("message")),
         "success": success,
-        "authentication": ret.json.get("result", {}).get("authentication", ""),
-        "serial": serials_str,
-        "token_type": details.get("type")
-    })
+        "authentication": ret.json.get("result", {}).get("authentication", "")
+    }
+    # Keep the token a handler logged on its own. A request that is rejected before any
+    # token is used (e.g. a disabled token, which is not part of the serial list) names
+    # its token there, and the empty serial list must not overwrite it.
+    if serials_str:
+        audit_entry["serial"] = serials_str
+    if details.get("type"):
+        audit_entry["token_type"] = details.get("type")
+    g.audit_object.log(audit_entry)
 
     return ret
 

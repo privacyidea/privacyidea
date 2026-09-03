@@ -1360,6 +1360,10 @@ class PasskeyAPITest(PasskeyAPITestBase):
                                         reason=AuthEventReason.TOKEN_DISABLED,
                                         reasons={serial: AuthEventReason.TOKEN_DISABLED})
 
+        # The response does not name the token, but the audit log does
+        audit_entry = self.find_most_recent_audit_entry(action='POST /validate/check')
+        self.assertEqual(serial, audit_entry.get("serial"), audit_entry)
+
         remove_token(serial)
 
     def test_20_disabled_passkey_auth(self):

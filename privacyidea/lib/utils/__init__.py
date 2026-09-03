@@ -695,7 +695,22 @@ def get_client_ip(request, proxy_settings):
                 and "client" in request.all_data:
             path_to_client.append(request.all_data["client"])
         # We now refer to ``check_proxy`` to extract the mapped IP from ``path_to_client``.
-        return str(check_proxy([IPAddress(ip) for ip in path_to_client], proxy_settings))
+        # The X-Forwarded-For header and the client parameter are request data and can
+        # contain anything, so the path is only followed as far as it consists of IP
+        # addresses. Everything behind an entry that is no address is unusable: it must not
+        # turn the request into an error, and it can not be trusted either, because the hop
+        # it names is unknown. The verified beginning of the path is mapped instead, which
+        # is at most the peer the request really came from.
+        client_path = []
+        for hop in path_to_client:
+            try:
+                client_path.append(IPAddress(hop))
+            except Exception as e:  # noqa: BLE001 - netaddr raises several types here
+                log.warning(f"Ignoring the client path behind an entry that is no IP address: {e}")
+                break
+        if not client_path:
+            return request.remote_addr
+        return str(check_proxy(client_path, proxy_settings))
     else:
         # If no proxy settings are defined, we do not map any IPs anyway.
         return request.remote_addr
@@ -1054,16 +1069,25 @@ def truncate_comma_list(data, max_len):
     :return: shortened string
     """
     data = data.split(",")
+    original = ",".join(data)
+
+    def cut_the_list():
+        """Keep the beginning of the list and mark it as shortened."""
+        return f"{original[:max_len][:-1]!s}+"
+
     # if there are more entries than the maximum length, we do an early exit
     if len(data) >= max_len:
-        r = ",".join(data)[:max_len]
-        # Also mark this string
-        r = f"{r[:-1]!s}+"
-        return r
+        return cut_the_list()
 
     while len(",".join(data)) > max_len:
-        new_data = []
         longest = max(data, key=len)
+        if len(longest) <= 1:
+            # Every entry is shortened to its marker already, so the list has more entries
+            # than the maximum length can hold. Shortening them further is not possible, so
+            # the list is cut instead: whole entries at the beginning say more than a row of
+            # markers, and without this the loop would not terminate.
+            return cut_the_list()
+        new_data = []
         for d in data:
             if d == longest:
                 # Shorten the longest and mark with "+"
