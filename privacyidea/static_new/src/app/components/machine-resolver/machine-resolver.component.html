@@ -19,7 +19,7 @@
 <div
   aria-label="Machine Resolvers Layout"
   class="machine-resolver-layout"
-  i18n-aria-label>
+  i18n-aria-label="@@machine.machineResolvers">
   <div
     appScrollToTop
     class="machine-resolver-table-container">
@@ -28,7 +28,7 @@
         <mat-form-field
           subscriptSizing="dynamic"
           class="table-filter">
-          <mat-label i18n>Filter Machine Resolvers...</mat-label>
+          <mat-label i18n="@@machine.filterMachine">Filter Machine Resolvers...</mat-label>
           <app-clearable-input
             (clearButtonClick)="resetFilter()"
             [showClearButton]="filterString().length > 0">
@@ -37,8 +37,8 @@
               (input)="onFilterInput(filterHTMLInputElement.value)"
               [value]="filterString()"
               aria-label="Filter Input"
-              i18n-aria-label
-              i18n-placeholder
+              i18n-aria-label="@@common.filterInput"
+              i18n-placeholder="@@common.filterByNameType"
               matInput
               placeholder="Filter by name or type" />
           </app-clearable-input>
@@ -55,13 +55,14 @@
               <mat-icon class="padding-right-3">lan</mat-icon>
               <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
             </span>
-            <span i18n>New Machine Resolver</span>
+            <span i18n="@@machine.newMachineResolver">New Machine Resolver</span>
           </button>
         }
       </div>
 
       <table
         [dataSource]="machineResolversDataSource()"
+        i18n-aria-label="@@machineResolver.tableLabel"
         aria-label="Machine Resolvers Table"
         class="machine-resolver-table"
         mat-table
@@ -71,7 +72,7 @@
             *matHeaderCellDef
             mat-header-cell
             mat-sort-header>
-            <span i18n>Name</span>
+            <span i18n="@@common.name">Name</span>
           </th>
           <td
             *matCellDef="let element"
@@ -85,11 +86,11 @@
                   <button
                     (click)="onDeleteMachineResolver(element)"
                     aria-label="Delete machine resolver"
-                    i18n-aria-label
+                    i18n-aria-label="@@machine.deleteMachineResolver"
                     color="warn"
                     mat-icon-button
                     matTooltip="Delete machine resolver"
-                    i18n-matTooltip
+                    i18n-matTooltip="@@machine.deleteMachineResolver"
                     type="button">
                     <mat-icon>delete</mat-icon>
                   </button>
@@ -104,7 +105,7 @@
             *matHeaderCellDef
             mat-header-cell
             mat-sort-header>
-            <span i18n>Type</span>
+            <span i18n="@@common.type">Type</span>
           </th>
           <td
             *matCellDef="let element"
@@ -128,7 +129,7 @@
               [status]="tableState.rowStatus()"
               [table]="tableState"
               heading="No machine resolvers yet"
-              i18n-heading
+              i18n-heading="@@machine.noMachineResolvers"
               icon="lan">
               @if (authService.actionAllowed("mresolverwrite")) {
                 <button
@@ -139,7 +140,7 @@
                     <mat-icon class="padding-right-3">lan</mat-icon>
                     <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
                   </span>
-                  <span i18n>New Machine Resolver</span>
+                  <span i18n="@@machine.newMachineResolver">New Machine Resolver</span>
                 </button>
               }
             </app-table-state>
@@ -151,7 +152,7 @@
         [hint]="emptyHint()"
         [table]="tableState"
         heading="No machine resolvers yet"
-        i18n-heading
+        i18n-heading="@@machine.noMachineResolvers"
         icon="lan">
         @if (authService.actionAllowed("mresolverwrite")) {
           <button
@@ -162,7 +163,7 @@
               <mat-icon class="padding-right-3">lan</mat-icon>
               <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
             </span>
-            <span i18n>New Machine Resolver</span>
+            <span i18n="@@machine.newMachineResolver">New Machine Resolver</span>
           </button>
         }
       </app-table-state>

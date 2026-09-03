@@ -256,9 +256,9 @@ export class ResolverService implements ResolverServiceInterface {
     const resolvers = this.resolverResourceValue();
     return resolvers
       ? Object.entries(resolvers).map(([name, data]) => ({
-        ...data,
-        resolvername: data.resolvername || name
-      }))
+          ...data,
+          resolvername: data.resolvername || name
+        }))
       : [];
   });
   resolverOptions = computed(() => {
@@ -304,7 +304,7 @@ export class ResolverService implements ResolverServiceInterface {
       try {
         userInfo = JSON.parse(userInfo);
       } catch (error) {
-        console.warn($localize`Failed to parse user info for resolver ${this.selectedResolverName()}` + ": ", error);
+        console.warn(`Failed to parse user info for resolver ${this.selectedResolverName()}: `, error);
         userInfo = {};
       }
     }
@@ -329,7 +329,9 @@ export class ResolverService implements ResolverServiceInterface {
         catchError((error) => {
           console.error("Error during resolver test:", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.error("Failed to test resolver. " + message);
+          this.notificationService.error(
+            $localize`:@@resolver.failedToTestResolver:Failed to test resolver. ${message}:MESSAGE:`
+          );
           return throwError(() => error);
         })
       );
@@ -348,7 +350,9 @@ export class ResolverService implements ResolverServiceInterface {
         catchError((error) => {
           console.error(`Error during posting resolver ${resolverName}:`, error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.error("Failed to save resolver. " + message);
+          this.notificationService.error(
+            $localize`:@@resolver.failedToSaveResolver:Failed to save resolver. ${message}:MESSAGE:`
+          );
           return throwError(() => error);
         })
       );
@@ -363,7 +367,9 @@ export class ResolverService implements ResolverServiceInterface {
         catchError((error) => {
           console.error(`Error during deleting resolver ${resolverName}:`, error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.error("Failed to delete resolver. " + message);
+          this.notificationService.error(
+            $localize`:@@resolver.failedDeleteResolver:Failed to delete resolver. ${message}:MESSAGE:`
+          );
           return throwError(() => error);
         })
       );
@@ -378,7 +384,9 @@ export class ResolverService implements ResolverServiceInterface {
         catchError((error) => {
           console.error(`Error during getting default resolver config for ${resolverType}:`, error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.error("Failed to get default resolver config. " + message);
+          this.notificationService.error(
+            $localize`:@@resolver.failedToGetDefaultResolver:Failed to get default resolver config. ${message}:MESSAGE:`
+          );
           return throwError(() => error);
         })
       );

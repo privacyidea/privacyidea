@@ -26,7 +26,7 @@ import { NotificationService } from "@services/notification/notification.service
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { MockNotificationService, MockPendingChangesService, MockRouter } from "@testing/mock-services";
 import { MockEventService } from "@testing/mock-services/mock-event-service";
-import { BehaviorSubject } from "rxjs";
+import { BehaviorSubject, of, throwError } from "rxjs";
 import { EventEditPageComponent } from "./event-edit-page.component";
 
 globalThis.IntersectionObserver = class IntersectionObserver {
@@ -323,6 +323,26 @@ describe("EventEditPageComponent — edit mode", () => {
     component.toggleActive(false);
     expect(mockEventService.disableEvent).toHaveBeenCalledWith(mockEventHandler.id);
   });
+
+  it("should update the selected handler module and mark the form as changed", () => {
+    component.setNewHandlerModule("otherModule");
+    expect(mockEventService.selectedHandlerModule()).toBe("otherModule");
+    expect(component.hasChanges()).toBe(true);
+  });
+
+  it("should resolve to false without navigating when the save response carries no value", async () => {
+    mockEventService.saveEventHandler.mockReturnValue(of({ result: {} }));
+    const resolved = await component.saveEvent();
+    expect(resolved).toBe(false);
+    expect(mockRouter.navigateByUrl).not.toHaveBeenCalled();
+  });
+
+  it("should resolve to false when saving the event fails", async () => {
+    mockEventService.saveEventHandler.mockReturnValue(throwError(() => new Error("boom")));
+    const resolved = await component.saveEvent();
+    expect(resolved).toBe(false);
+    expect(mockRouter.navigateByUrl).not.toHaveBeenCalled();
+  });
 });
 
 describe("EventEditPageComponent — create new mode", () => {
@@ -427,5 +447,11 @@ describe("EventEditPageComponent — create new mode", () => {
     expect(reloadSpy).toHaveBeenCalled();
     expect(snackBarSpy).toHaveBeenCalledWith("Event handler created successfully.");
     expect(mockRouter.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.EVENTS);
+  });
+
+  it("should not call enable/disable while the event has not been saved yet", () => {
+    component.toggleActive(true);
+    expect(mockEventService.enableEvent).not.toHaveBeenCalled();
+    expect(mockEventService.disableEvent).not.toHaveBeenCalled();
   });
 });

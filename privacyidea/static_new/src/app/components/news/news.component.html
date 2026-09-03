@@ -21,22 +21,20 @@
   appScrollToTop
   aria-label="News"
   class="news-page"
-  i18n-aria-label>
+  i18n-aria-label="@@nav.news">
   @if (newsDisabled()) {
     @if (canReadPolicies()) {
       <p
         class="news-hint margin-8"
-        i18n>
-        The news feed is disabled by the
-        <a [routerLink]="rssAgePolicyLink">rss_age</a>
-        policy.
-      </p>
+        i18n="@@news.theNewsFeedIsDisabled"
+        >The news feed is disabled by the <a [routerLink]="rssAgePolicyLink">rss_age</a> policy.</p
+      >
     } @else {
       <p
         class="news-hint margin-8"
-        i18n>
-        The news feed is disabled.
-      </p>
+        i18n="@@news.theNewsFeedIsDisabled2"
+        >The news feed is disabled.</p
+      >
     }
   } @else {
     <app-widget-state

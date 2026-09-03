@@ -46,6 +46,18 @@ export class ViewConditionsColumnComponent {
   policy = input.required<PolicyDetail>();
   readonly highlightTerms = input<string[]>([]);
 
+  readonly conditionLabels = {
+    adminRealms: $localize`:@@policy.condition.adminRealms:Admin Realms`,
+    admins: $localize`:@@policy.condition.admins:Admins`,
+    realms: $localize`:@@common.realms:Realms`,
+    resolvers: $localize`:@@common.resolvers:Resolvers`,
+    users: $localize`:@@nav.users:Users`,
+    piNodes: $localize`:@@policy.condition.piNodes:privacyIDEA Nodes`,
+    validTime: $localize`:@@policy.validTime:Valid time`,
+    client: $localize`:@@common.client:Client`,
+    userAgents: $localize`:@@policy.condition.userAgents:User Agents`
+  };
+
   // Admin Conditions
   selectedAdmins = computed(() => this.policy().adminuser || []);
   selectedAdminrealm = computed(() => this.policy().adminrealm || []);

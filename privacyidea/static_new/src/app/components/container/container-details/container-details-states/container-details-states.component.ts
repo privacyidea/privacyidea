@@ -57,7 +57,9 @@ export class ContainerDetailsStatesComponent {
     onCancel: () => this.selectedStates.set([...this.states()]),
     onCommit: async () => {
       if (this.selectedStates().length === 0) {
-        this.notificationService.error("At least one state must be selected.");
+        this.notificationService.error(
+          $localize`:@@container.atLeastOneStateMust:At least one state must be selected.`
+        );
         return false;
       }
       this.containerService

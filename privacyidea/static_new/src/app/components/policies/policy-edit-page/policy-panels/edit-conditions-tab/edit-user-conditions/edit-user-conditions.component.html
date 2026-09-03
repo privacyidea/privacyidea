@@ -19,9 +19,9 @@
 <div class="conditions-container">
   <h2
     class="conditions-title"
-    i18n>
-    Users Conditions
-  </h2>
+    i18n="@@policy.usersConditions"
+    >Users Conditions</h2
+  >
 
   <app-multi-select-only
     class="margin-bottom-16"
@@ -64,7 +64,7 @@
           [checked]="userCaseInsensitive()"
           (change)="toggleUserCaseInsensitive()"
           color="primary">
-          <span i18n>Case insensitive</span>
+          <span i18n="@@policy.caseInsensitive">Case insensitive</span>
         </mat-checkbox>
 
         <button
@@ -72,7 +72,7 @@
           class="action-button-secondary button-width-m"
           (click)="clearUsers()">
           <mat-icon>clear_all</mat-icon>
-          <span i18n>Clear users</span>
+          <span i18n="@@policy.clearUsers">Clear users</span>
         </button>
       </div>
     }
@@ -83,13 +83,13 @@
       subscriptSizing="dynamic"
       class="input-width-l"
       appearance="outline">
-      <mat-label i18n>Add User</mat-label>
+      <mat-label i18n="@@policy.addUser">Add User</mat-label>
       <input
         matInput
         [formField]="userField"
         (keyup.enter)="addUser(userSignal())" />
       @if (userField().errors().some(e => e.kind === 'includesComma')) {
-        <mat-error i18n>User must not contain commas.</mat-error>
+        <mat-error i18n="@@policy.userMustNotContain">User must not contain commas.</mat-error>
       }
     </mat-form-field>
     <button

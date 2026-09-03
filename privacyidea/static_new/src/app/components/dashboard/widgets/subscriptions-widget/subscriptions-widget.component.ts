@@ -30,6 +30,7 @@ import { DashboardWidget, WidgetSize } from "@models/dashboard";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { DashboardDataRef, DashboardDataStore } from "@services/dashboard/dashboard-data-store.service";
 import { IntegrationsService, IntegrationsServiceInterface } from "@services/integrations/integrations.service";
+import { pluralize } from "@utils/i18n.utils";
 import {
   SubscriptionService,
   SubscriptionState,
@@ -73,11 +74,11 @@ const SERVER_PTL_SLUG = "privacyidea-server";
 function sectionLabel(section: string): string {
   switch (section) {
     case "use_cases":
-      return $localize`Use Cases`;
+      return $localize`:@@dashboard.useCases:Use Cases`;
     case "system_login":
-      return $localize`System Login`;
+      return $localize`:@@dashboard.systemLogin:System Login`;
     case "single_sign_on":
-      return $localize`Single Sign On`;
+      return $localize`:@@dashboard.singleSignOn:Single Sign On`;
     default:
       return section;
   }
@@ -101,7 +102,7 @@ function sectionLabel(section: string): string {
 export class SubscriptionsWidgetComponent extends DashboardWidget implements OnInit {
   static override readonly type = "subscriptions";
   static override readonly requiredAction = "managesubscription";
-  static override readonly title = $localize`Subscriptions`;
+  static override readonly title = $localize`:@@common.subscriptions:Subscriptions`;
   static override readonly icon = "event_repeat";
   static override readonly titleLink = ROUTE_PATHS.SUBSCRIPTION;
   static override readonly titleLinkAction = "managesubscription";
@@ -149,7 +150,11 @@ export class SubscriptionsWidgetComponent extends DashboardWidget implements OnI
 
   // Localized in the component: a tooltip bound to an expression is not extractable in
   // the template.
-  readonly detailToggleTooltip = computed(() => (this.detailed() ? $localize`Compact view` : $localize`Detailed view`));
+  readonly detailToggleTooltip = computed(() =>
+    this.detailed()
+      ? $localize`:@@dashboard.compactView:Compact view`
+      : $localize`:@@dashboard.detailedView:Detailed view`
+  );
 
   readonly rows = computed<SubscriptionRow[]>(() => this.buildRows(this.dataRef()?.value()?.result?.value ?? []));
 
@@ -267,14 +272,14 @@ export class SubscriptionsWidgetComponent extends DashboardWidget implements OnI
    */
   protected usageReason(status: SubscriptionStatus): string {
     if (status.is_server) {
-      return $localize`In use: this is the privacyIDEA server itself.`;
+      return $localize`:@@dashboard.inUseThisIsThe:In use: this is the privacyIDEA server itself.`;
     }
     if (!status.in_use) {
-      return $localize`Not in use: no subscription, and not seen in the last 7 days.`;
+      return $localize`:@@dashboard.notInUseNoSubscription:Not in use: no subscription, and not seen in the last 7 days.`;
     }
     return status.subscription === "none"
-      ? $localize`In use: seen within the last 7 days.`
-      : $localize`In use: covered by a subscription.`;
+      ? $localize`:@@dashboard.inUseSeenWithinThe:In use: seen within the last 7 days.`
+      : $localize`:@@dashboard.inUseCoveredByA:In use: covered by a subscription.`;
   }
 
   protected subscriptionDotClass(state: SubscriptionState): string {
@@ -306,41 +311,52 @@ export class SubscriptionsWidgetComponent extends DashboardWidget implements OnI
     if (daysLeft === 0) {
       // The count is between calendar dates, so zero means the date is today: neither
       // "0 days left" nor "0 days ago" says that.
-      return $localize`${state}:state:, today`;
+      return $localize`:@@dashboard.stateToday:${state}:STATE:, today`;
     }
-    return daysLeft < 0
-      ? $localize`${state}:state:, ${-daysLeft}:days: days ago`
-      : $localize`${state}:state:, ${daysLeft}:days: days left`;
+    if (daysLeft < 0) {
+      return pluralize(this.locale, -daysLeft, {
+        one: $localize`:@@dashboard.stateOneDayAgo:${state}:STATE:, 1 day ago`,
+        few: $localize`:@@dashboard.stateDaysAgoFew:${state}:STATE:, ${-daysLeft}:DAYS: days ago`,
+        many: $localize`:@@dashboard.stateDaysAgoMany:${state}:STATE:, ${-daysLeft}:DAYS: days ago`,
+        other: $localize`:@@dashboard.stateDaysAgo:${state}:STATE:, ${-daysLeft}:DAYS: days ago`
+      });
+    }
+    return pluralize(this.locale, daysLeft, {
+      one: $localize`:@@dashboard.stateOneDayLeft:${state}:STATE:, 1 day left`,
+      few: $localize`:@@dashboard.stateDaysLeftFew:${state}:STATE:, ${daysLeft}:DAYS: days left`,
+      many: $localize`:@@dashboard.stateDaysLeftMany:${state}:STATE:, ${daysLeft}:DAYS: days left`,
+      other: $localize`:@@dashboard.stateDaysLeft:${state}:STATE:, ${daysLeft}:DAYS: days left`
+    });
   }
 
   /** Lower case: the label is read inside the expiry column's note, not on its own. */
   private subscriptionStateLabel(state: SubscriptionState): string {
     switch (state) {
       case "valid":
-        return $localize`valid`;
+        return $localize`:@@dashboard.valid:valid`;
       case "expiring":
-        return $localize`expiring`;
+        return $localize`:@@dashboard.expiring:expiring`;
       case "exceeded":
-        return $localize`exceeded`;
+        return $localize`:@@dashboard.exceeded:exceeded`;
       case "expired":
-        return $localize`expired`;
+        return $localize`:@@dashboard.expired:expired`;
       default:
-        return $localize`no subscription`;
+        return $localize`:@@dashboard.noSubscription:no subscription`;
     }
   }
 
   protected subscriptionReason(state: SubscriptionState): string {
     switch (state) {
       case "valid":
-        return $localize`Valid: subscription in place and no other condition applies.`;
+        return $localize`:@@dashboard.validSubscriptionInPlaceAnd:Valid: subscription in place and no other condition applies.`;
       case "expiring":
-        return $localize`Expiring: the subscription ends in less than 60 days.`;
+        return $localize`:@@dashboard.expiringTheSubscriptionEndsIn:Expiring: the subscription ends in less than 60 days.`;
       case "exceeded":
-        return $localize`Exceeded: subscription is valid, but more tokens are in use than it allows.`;
+        return $localize`:@@dashboard.exceededSubscriptionIsValidBut:Exceeded: subscription is valid, but more tokens are in use than it allows.`;
       case "expired":
-        return $localize`Expired: the subscription's end date has passed.`;
+        return $localize`:@@dashboard.expiredTheSubscriptionSEnd:Expired: the subscription's end date has passed.`;
       default:
-        return $localize`No subscription. Get a subscription for enterprise support.`;
+        return $localize`:@@dashboard.noSubscriptionGetASubscription:No subscription. Get a subscription for enterprise support.`;
     }
   }
 

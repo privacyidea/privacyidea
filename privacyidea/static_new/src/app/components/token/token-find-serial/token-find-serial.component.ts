@@ -63,11 +63,11 @@ export class TokenFindSerialComponent {
   tokenCount = signal<string>("");
   serialSubscription: Subscription | null = null;
   assignmentStates = [
-    { key: "assigned", info: $localize`The token is assigned to a user` },
-    { key: "unassigned", info: $localize`The token is not assigned to a user` },
+    { key: "assigned", info: $localize`:@@token.tokenAssigned:The token is assigned to a user` },
+    { key: "unassigned", info: $localize`:@@token.tokenNotAssigned:The token is not assigned to a user` },
     {
       key: "don't care",
-      info: $localize`It does not matter, if the token is assigned or not`
+      info: $localize`:@@token.doesNotMatter:It does not matter, if the token is assigned or not`
     }
   ];
   tokenWithOTP = ["hotp", "totp", "spass", "motp", "sshkey", "yubikey", "remote", "yubico", "radius", "sms"];
@@ -130,7 +130,7 @@ export class TokenFindSerialComponent {
 
   countTokens(): void {
     if (this.currentStep() !== "init" && this.currentStep() !== "found") {
-      this.notificationService.warning("Invalid action.");
+      this.notificationService.warning($localize`:@@token.invalidAction:Invalid action.`);
       return;
     }
     let params = this.getParams();
@@ -168,7 +168,7 @@ export class TokenFindSerialComponent {
 
   findSerial(): void {
     if (this.currentStep() !== "countDone") {
-      this.notificationService.warning("Invalid action.");
+      this.notificationService.warning($localize`:@@token.invalidAction:Invalid action.`);
       return;
     }
     let params = this.getParams();

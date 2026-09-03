@@ -26,9 +26,9 @@
       class="widget-header-action"
       [copyText]="statusJson()"
       matTooltip="Copy subscription info as JSON"
-      i18n-matTooltip
+      i18n-matTooltip="@@dashboard.copySubscriptionInfoAsJson"
       aria-label="Copy subscription info as JSON"
-      i18n-aria-label />
+      i18n-aria-label="@@dashboard.copySubscriptionInfoAsJson" />
     <button
       mat-icon-button
       class="widget-header-action subscription-detail-toggle"
@@ -36,7 +36,7 @@
       [matTooltip]="detailToggleTooltip()"
       [attr.aria-pressed]="detailed()"
       aria-label="Toggle detailed view"
-      i18n-aria-label>
+      i18n-aria-label="@@dashboard.toggleDetailedView">
       <mat-icon>{{ detailed() ? "close_fullscreen" : "open_in_full" }}</mat-icon>
     </button>
   }
@@ -51,36 +51,36 @@
         <tr>
           <th
             class="application-cell"
-            i18n>
-            Application
-          </th>
+            i18n="@@common.application"
+            >Application</th
+          >
           @if (!detailed()) {
             <th
               class="dot-column"
-              i18n>
-              Usage
-            </th>
+              i18n="@@dashboard.usage"
+              >Usage</th
+            >
             <th
               class="dot-column"
-              i18n>
-              Subscription
-            </th>
+              i18n="@@nav.subscription"
+              >Subscription</th
+            >
           } @else {
             <th
               class="expires-cell"
-              i18n>
-              Expires
-            </th>
+              i18n="@@dashboard.expires"
+              >Expires</th
+            >
             <th
               class="versions-cell"
-              i18n>
-              Versions
-            </th>
+              i18n="@@dashboard.versions"
+              >Versions</th
+            >
             <th
               class="current-version-cell"
-              i18n>
-              Current version
-            </th>
+              i18n="@@dashboard.currentVersion"
+              >Current version</th
+            >
           }
         </tr>
       </thead>

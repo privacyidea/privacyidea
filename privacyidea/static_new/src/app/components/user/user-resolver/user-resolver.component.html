@@ -19,7 +19,7 @@
 <div
   aria-label="User Resolvers Layout"
   class="user-resolver-layout"
-  i18n-aria-label>
+  i18n-aria-label="@@resolver.userResolvers">
   <div
     appScrollToTop
     class="user-sources-table-container">
@@ -28,7 +28,7 @@
         <mat-form-field
           class="table-filter"
           subscriptSizing="dynamic">
-          <mat-label i18n>Filter Resolvers...</mat-label>
+          <mat-label i18n="@@resolver.filterResolvers">Filter Resolvers...</mat-label>
           <app-clearable-input
             (clearButtonClick)="resetFilter()"
             [showClearButton]="filterString().length > 0">
@@ -37,8 +37,8 @@
               (input)="onFilterInput(filterHTMLInputElement.value)"
               [value]="filterString()"
               aria-label="Filter Input"
-              i18n-aria-label
-              i18n-placeholder
+              i18n-aria-label="@@common.filterInput"
+              i18n-placeholder="@@common.filterByNameType"
               matInput
               placeholder="Filter by name or type" />
           </app-clearable-input>
@@ -47,6 +47,7 @@
       <app-resolver-table-actions />
       <table
         [dataSource]="resolversDataSource()"
+        i18n-aria-label="@@resolver.tableLabel"
         aria-label="Resolvers Table"
         class="user-sources-table"
         mat-table
@@ -56,7 +57,7 @@
             *matHeaderCellDef
             mat-header-cell
             mat-sort-header>
-            <span i18n>Name</span>
+            <span i18n="@@common.name">Name</span>
           </th>
           <td
             *matCellDef="let element"
@@ -74,8 +75,8 @@
                   <button
                     (click)="onEditResolver(element)"
                     aria-label="Edit resolver"
-                    i18n-aria-label
-                    i18n-matTooltip
+                    i18n-aria-label="@@resolver.editResolver"
+                    i18n-matTooltip="@@resolver.editResolver"
                     mat-icon-button
                     matTooltip="Edit resolver"
                     type="button">
@@ -87,8 +88,8 @@
                     (click)="onDeleteResolver(element)"
                     aria-label="Delete resolver"
                     color="warn"
-                    i18n-aria-label
-                    i18n-matTooltip
+                    i18n-aria-label="@@resolver.deleteResolverAction"
+                    i18n-matTooltip="@@resolver.deleteResolverAction"
                     mat-icon-button
                     matTooltip="Delete resolver"
                     type="button">
@@ -105,7 +106,7 @@
             *matHeaderCellDef
             mat-header-cell
             mat-sort-header>
-            <span i18n>Type</span>
+            <span i18n="@@common.type">Type</span>
           </th>
           <td
             *matCellDef="let element"
@@ -129,7 +130,7 @@
               [status]="tableState.rowStatus()"
               [table]="tableState"
               heading="No resolvers yet"
-              i18n-heading
+              i18n-heading="@@resolver.noResolversYet"
               icon="storage">
               @if (authService.actionAllowed("resolverwrite")) {
                 <button
@@ -140,7 +141,7 @@
                     <mat-icon class="ms--database padding-right-3"></mat-icon>
                     <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
                   </span>
-                  <span i18n>New Resolver</span>
+                  <span i18n="@@resolver.newResolver">New Resolver</span>
                 </button>
               }
             </app-table-state>
@@ -152,7 +153,7 @@
         [hint]="emptyHint()"
         [table]="tableState"
         heading="No resolvers yet"
-        i18n-heading
+        i18n-heading="@@resolver.noResolversYet"
         icon="storage">
         @if (authService.actionAllowed("resolverwrite")) {
           <button
@@ -163,7 +164,7 @@
               <mat-icon class="ms--database padding-right-3"></mat-icon>
               <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
             </span>
-            <span i18n>New Resolver</span>
+            <span i18n="@@resolver.newResolver">New Resolver</span>
           </button>
         }
       </app-table-state>

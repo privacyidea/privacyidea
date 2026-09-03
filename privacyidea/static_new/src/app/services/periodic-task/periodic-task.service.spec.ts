@@ -22,13 +22,17 @@ import { HttpTestingController, provideHttpClientTesting } from "@angular/common
 import { TestBed } from "@angular/core/testing";
 import { AuthService } from "@services/auth/auth.service";
 import { ContentService } from "@services/content/content.service";
+import { DialogService } from "@services/dialog/dialog.service";
 import { NotificationService } from "@services/notification/notification.service";
-import { MockContentService, MockNotificationService } from "@testing/mock-services";
+import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
+import { MockContentService, MockDialogService, MockNotificationService } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockPiResponse } from "@testing/mock-services/mock-utils";
+import { Subject } from "rxjs";
 import {
   EMPTY_PERIODIC_TASK,
   PERIODIC_TASK_MODULES,
+  PeriodicTask,
   PeriodicTaskModule,
   PeriodicTaskService
 } from "./periodic-task.service";
@@ -38,6 +42,8 @@ describe("PeriodicTaskService", () => {
   let httpTestingController: HttpTestingController;
   let contentMock: MockContentService;
   let notifyMock: MockNotificationService;
+  let dialogServiceMock: MockDialogService;
+  let confirmClosed: Subject<boolean>;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
@@ -47,7 +53,8 @@ describe("PeriodicTaskService", () => {
         PeriodicTaskService,
         { provide: AuthService, useClass: MockAuthService },
         { provide: ContentService, useClass: MockContentService },
-        { provide: NotificationService, useClass: MockNotificationService }
+        { provide: NotificationService, useClass: MockNotificationService },
+        { provide: DialogService, useClass: MockDialogService }
       ]
     });
 
@@ -56,6 +63,11 @@ describe("PeriodicTaskService", () => {
     contentMock = TestBed.inject(ContentService) as unknown as MockContentService;
     notifyMock = TestBed.inject(NotificationService) as unknown as MockNotificationService;
     contentMock.routeUrl.set("/configuration/periodictasks");
+    dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
+    confirmClosed = new Subject();
+    const dialogRefMock = new MockMatDialogRef();
+    dialogRefMock.afterClosed.mockReturnValue(confirmClosed);
+    dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
   });
 
   afterEach(() => {
@@ -65,6 +77,37 @@ describe("PeriodicTaskService", () => {
 
   it("should be created", () => {
     expect(service).toBeTruthy();
+  });
+
+  it("should delete a periodic task on confirmation and show success notification", async () => {
+    const task = { ...EMPTY_PERIODIC_TASK, id: 7 } as unknown as PeriodicTask;
+    const mockResponse = MockPiResponse.fromValue(7);
+    const deletePromise = service.deleteWithConfirmDialog(task);
+
+    confirmClosed.next(true);
+    confirmClosed.complete();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    const req = httpTestingController.expectOne((r) => r.url.includes("periodictask/7") && r.method === "DELETE");
+    req.flush(mockResponse);
+
+    const result = await deletePromise;
+    expect(result).toEqual(mockResponse);
+    expect(notifyMock.success).toHaveBeenCalledWith("Successfully deleted periodic task.");
+  });
+
+  it("should do nothing when deletion is cancelled", async () => {
+    const task = { ...EMPTY_PERIODIC_TASK, id: 8 } as unknown as PeriodicTask;
+    const deletePromise = service.deleteWithConfirmDialog(task);
+
+    confirmClosed.next(false);
+    confirmClosed.complete();
+
+    const result = await deletePromise;
+    expect(result).toBeUndefined();
+    httpTestingController.expectNone((r) => r.url.includes("periodictask/8"));
+    expect(notifyMock.success).not.toHaveBeenCalled();
   });
 
   it("should enable a periodic task", async () => {

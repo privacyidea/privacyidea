@@ -18,13 +18,13 @@
 -->
 <app-detail-field-row
   label="States"
-  i18n-label
+  i18n-label="@@container.states"
   [isEditing]="field.isEditing()">
   <ng-container fieldValue>
     @if (field.isEditing()) {
       <app-details-multi-select-cell
         selectLabel="Select States"
-        i18n-selectLabel
+        i18n-selectLabel="@@container.selectStates"
         [options]="containerStateOptions"
         [selected]="selectedStates()"
         (selectionChange)="onStatesChange($event)" />

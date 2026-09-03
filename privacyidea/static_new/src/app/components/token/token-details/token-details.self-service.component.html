@@ -20,7 +20,7 @@
   appScrollToTop
   aria-label="Details"
   class="details-container"
-  i18n-aria-label>
+  i18n-aria-label="@@common.details">
   <div class="details-flex-layout flex-column">
     <app-details-header
       [serial]="tokenSerial()"
@@ -31,7 +31,7 @@
       (auditClick)="showTokenAuditLog()">
       <ng-container headerExtra>
         @if ((tokenType() === "passkey" || tokenType() === "hotp") && isAttachedToMachine()) {
-          <h3 i18n>{{ " (Offline)" }}</h3>
+          <h3 i18n="@@token.offline">(Offline)</h3>
         }
       </ng-container>
     </app-details-header>

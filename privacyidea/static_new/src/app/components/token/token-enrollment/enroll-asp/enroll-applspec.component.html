@@ -23,25 +23,25 @@
       [disabled]="authService.checkForceServerGenerateOTPKey('applspec') || disabled()"
       (change)="generateOnServer.set($event.checked)"
       class="server-checkbox"
-      i18n>
-      Generate the static password on the Server
-    </mat-checkbox>
+      i18n="@@token.generateStatic"
+      >Generate the static password on the Server</mat-checkbox
+    >
   }
 
   <div class="flex-row gap-16">
     @if (!authService.checkForceServerGenerateOTPKey("applspec")) {
       <mat-form-field class="input-width-l">
-        <mat-label i18n>Application Specific Password</mat-label>
+        <mat-label i18n="@@token.applicationSpecific">Application Specific Password</mat-label>
         <input
           [formField]="otpKeyForm"
-          i18n-placeholder
+          i18n-placeholder="@@token.enterStaticPassword"
           matInput
           placeholder="Enter static password" />
       </mat-form-field>
     }
 
     <mat-form-field class="input-width-l">
-      <mat-label i18n>Service ID</mat-label>
+      <mat-label i18n="@@common.serviceId">Service ID</mat-label>
       <mat-select
         [value]="serviceId()"
         (selectionChange)="serviceId.set($event.value)"
@@ -51,7 +51,7 @@
           <mat-option [value]="option">{{ option }}</mat-option>
         }
       </mat-select>
-      <mat-error i18n>Service ID is <strong>required</strong></mat-error>
+      <mat-error i18n="@@token.serviceIdRequired">Service ID is <strong>required</strong></mat-error>
     </mat-form-field>
   </div>
 </div>

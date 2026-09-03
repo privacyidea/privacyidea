@@ -517,4 +517,34 @@ describe("SubscriptionsWidgetComponent", () => {
 
     expect(subscriptionMock.getSubscriptionStatus).toHaveBeenCalledTimes(1);
   });
+
+  it("should only report a refresh failure once a value was previously loaded", () => {
+    expect(component.refreshFailed()).toBe(false);
+
+    const subject = new Subject<MockPiResponse<SubscriptionStatus[]>>();
+    subscriptionMock.getSubscriptionStatus.mockReturnValue(subject);
+    component.reload();
+    subject.error(new Error("boom"));
+    fixture.detectChanges();
+
+    expect(component.refreshFailed()).toBe(true);
+  });
+
+  it("should toggle the detail-toggle tooltip with the current view", () => {
+    expect(component.detailToggleTooltip()).toBe("Detailed view");
+
+    component.toggleDetailed();
+
+    expect(component.detailToggleTooltip()).toBe("Compact view");
+  });
+
+  it("should return null for components without a landing-page slug", () => {
+    expect(component.componentLink(status({ application: "unknown-app" }))).toBeNull();
+  });
+
+  it("should report no note for a component without an expiry date", () => {
+    expect(component.expiryNote(status({ application: "freeradius", subscription: "none" }))).toBe(
+      "no subscription"
+    );
+  });
 });

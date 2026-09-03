@@ -17,14 +17,17 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 
-<span class="sort-header-label" [appTruncationTooltip]="hasHintTooltip() ? '' : label()">{{ label() }}</span>
+<span
+  class="sort-header-label"
+  [appTruncationTooltip]="hasHintTooltip() ? '' : label()"
+  >{{ label() }}</span
+>
 <button
   (click)="toggle()"
   aria-label="Sort by {{ label() }}"
   class="sort-button"
-  i18n-aria-label
+  i18n-aria-label="@@common.sortBy"
   mat-icon-button
-  type="button"
->
+  type="button">
   <mat-icon>{{ icon() }}</mat-icon>
 </button>

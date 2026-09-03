@@ -19,7 +19,7 @@
 <div class="filter-keyword-container">
   <div class="filter-keyword-title">
     <mat-icon [ngClass]="{ 'filter-icon': true, 'active-filter': !filterIsEmpty() }"> filter_alt </mat-icon>
-    <span i18n>Filter by:&nbsp;</span>
+    <span i18n="@@common.filterBy2">Filter by:&nbsp;</span>
   </div>
 
   @for (option of filterOptions(); track option.key) {
