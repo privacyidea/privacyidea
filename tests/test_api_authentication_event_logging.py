@@ -430,6 +430,7 @@ class _AuthLogContractTests(_ContractHost):
         entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.NO_USABLE_TOKEN],
                                             transaction_id=transaction_id)
         assert_authentication_log_entry(entries[AuthEventType.NO_USABLE_TOKEN], user=self.user,
+                                        serials={self.serial},
                                         transaction_id=transaction_id, reason=AuthEventReason.TOKEN_DISABLED,
                                         reasons={self.serial: AuthEventReason.TOKEN_DISABLED},
                                         endpoint=self.endpoint_path)
@@ -627,6 +628,7 @@ class _AuthLogContractTests(_ContractHost):
         entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.NO_USABLE_TOKEN],
                                             transaction_id=transaction_id)
         assert_authentication_log_entry(entries[AuthEventType.NO_USABLE_TOKEN], user=self.user,
+                                        serials={self.serial, self.second_serial},
                                         transaction_id=transaction_id,
                                         reason=[AuthEventReason.TOKEN_DISABLED,
                                                 AuthEventReason.TOKEN_FAILCOUNT_EXCEEDED],
