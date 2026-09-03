@@ -263,13 +263,14 @@ def set_eventhandling():
     # empty dict, all stored conditions are cleared.
     if "conditions" in param:
         conditions = param.get("conditions")
-        if not isinstance(conditions, dict):
+        # Form data delivers the dict as a JSON-encoded string, so parse it.
+        if isinstance(conditions, str):
             try:
                 conditions = json.loads(conditions)
             except (ValueError, TypeError):
                 raise ParameterError(_("The 'conditions' parameter must be a dictionary."))
-            if not isinstance(conditions, dict):
-                raise ParameterError(_("The 'conditions' parameter must be a dictionary."))
+        if not isinstance(conditions, dict):
+            raise ParameterError(_("The 'conditions' parameter must be a dictionary."))
     else:
         conditions = None
 

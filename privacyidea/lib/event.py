@@ -287,8 +287,8 @@ def enable_event(event_id, enable=True):
     return r
 
 
-def set_event(name=None, event=None, handlermodule=None, action=None, conditions=None,
-              ordering=0, options=None, id=None, active=True, position="post", abort_on_error=None):
+def set_event(name=None, event=None, handlermodule=None, action=None, conditions: dict = None,
+              ordering=0, options: dict = None, id=None, active=True, position="post", abort_on_error=None):
     """
     Set an event handling configuration. This writes an entry to the
     database eventhandler.
