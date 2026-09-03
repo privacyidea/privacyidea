@@ -17,10 +17,10 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, input } from "@angular/core";
+import { Component, computed, inject, input } from "@angular/core";
 import { MatIconModule } from "@angular/material/icon";
-import { getUserAgentLabel } from "@constants/user-agent.constants";
 import { HighlightPipe } from "@components/shared/pipes/highlight.pipe";
+import { IntegrationsService, IntegrationsServiceInterface } from "@services/integrations/integrations.service";
 import {
   AdditionalCondition,
   COMPARATOR_OPTIONS,
@@ -41,6 +41,8 @@ import { ViewConditionSectionComponent } from "./view-condition-section/view-con
   styleUrl: "./view-conditions-column.component.scss"
 })
 export class ViewConditionsColumnComponent {
+  private readonly integrationsService: IntegrationsServiceInterface = inject(IntegrationsService);
+
   policy = input.required<PolicyDetail>();
   readonly highlightTerms = input<string[]>([]);
 
@@ -70,7 +72,9 @@ export class ViewConditionsColumnComponent {
   selectedPinodes = computed<string[]>(() => this.policy().pinode || []);
   selectedValidTime = computed(() => this.policy().time || "");
   selectedClient = computed(() => this.policy().client || []);
-  selectedUserAgents = computed(() => (this.policy().user_agents || []).map(getUserAgentLabel));
+  selectedUserAgents = computed(() =>
+    (this.policy().user_agents || []).map((agent) => this.integrationsService.labelForPolicyValue(agent))
+  );
 
   // Additional Conditions
   additionalConditions = computed<AdditionalCondition[]>(() => this.policy().conditions || []);

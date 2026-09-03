@@ -20,6 +20,7 @@ from privacyidea.lib.policy import SCOPE, set_policy, delete_policy
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.user import User
 from privacyidea.lib.error import ParameterError
+from privacyidea.lib.params import MAX_PAGE_SIZE, get_optional_int, get_pagination_params
 import jwt
 import mock
 import datetime
@@ -543,3 +544,36 @@ class UtilsTestCase(MyApiTestCase):
         # different question than the caller asked.
         for value in ("not-a-time", "31-12-2026", "2026-13-01"):
             self.assertRaises(ParameterError, get_optional_timestamp, {"start": value}, "start")
+
+    def test_16_get_optional_int(self):
+        params = {"a": "1", "b": "", "c": "abc", "d": "1.5", "e": -3, "f": "-3"}
+        self.assertEqual(get_optional_int(params, "a"), 1)
+        self.assertEqual(get_optional_int(params, "e"), -3)
+        self.assertEqual(get_optional_int(params, "f"), -3)
+        # A missing key yields the default
+        self.assertIsNone(get_optional_int(params, "missing"))
+        self.assertEqual(get_optional_int(params, "missing", default=7), 7)
+        # An empty value counts as absent, so a caller that always appends the
+        # parameter gets the default rather than an error
+        self.assertIsNone(get_optional_int(params, "b"))
+        self.assertEqual(get_optional_int(params, "b", default=7), 7)
+        # A non-integer value is a parameter error, not an unhandled ValueError
+        self.assertRaises(ParameterError, get_optional_int, params, "c")
+        self.assertRaises(ParameterError, get_optional_int, params, "d")
+
+    def test_17_get_pagination_params(self):
+        self.assertEqual(get_pagination_params({"page": "3", "pagesize": "20"}), (3, 20))
+        # Defaults apply when the parameters are absent
+        self.assertEqual(get_pagination_params({}), (1, 15))
+        self.assertEqual(get_pagination_params({}, default_page_size=50), (1, 50))
+        # Values below 1 are floored: the paginating queries derive their offset
+        # from (page - 1) * pagesize, and PostgreSQL rejects a negative OFFSET
+        self.assertEqual(get_pagination_params({"page": "0"}), (1, 15))
+        self.assertEqual(get_pagination_params({"page": "-7"}), (1, 15))
+        self.assertEqual(get_pagination_params({"pagesize": "0"}), (1, 1))
+        self.assertEqual(get_pagination_params({"pagesize": "-7"}), (1, 1))
+        # The page size is capped so one request cannot ask for unbounded rows
+        self.assertEqual(get_pagination_params({"pagesize": str(MAX_PAGE_SIZE + 1)}), (1, MAX_PAGE_SIZE))
+        # A non-integer value is a parameter error
+        self.assertRaises(ParameterError, get_pagination_params, {"page": "abc"})
+        self.assertRaises(ParameterError, get_pagination_params, {"pagesize": "abc"})

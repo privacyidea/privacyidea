@@ -26,6 +26,7 @@ import { provideLocationMocks } from "@angular/common/testing";
 import { MatSnackBar } from "@angular/material/snack-bar";
 import { ActivatedRoute, provideRouter } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
+import { ApiClientService } from "@services/api-client/api-client.service";
 import { AuditService } from "@services/audit/audit.service";
 import { AuthenticationLogService } from "@services/authentication-log/authentication-log.service";
 import { AuthService } from "@services/auth/auth.service";
@@ -62,6 +63,7 @@ import { TokengroupService } from "@services/tokengroup/tokengroup.service";
 import { UserService } from "@services/user/user.service";
 import { VersioningService } from "@services/version/version.service";
 import {
+  MockApiClientService,
   MockAuditService,
   MockAuthenticationLogService,
   MockCaConnectorService,
@@ -173,6 +175,7 @@ describe("UserUtilsPanelComponent", () => {
         { provide: TokengroupService, useClass: MockTokengroupService },
         { provide: CaConnectorService, useClass: MockCaConnectorService },
         { provide: ServiceIdService, useClass: MockServiceIdService },
+        { provide: ApiClientService, useClass: MockApiClientService },
         { provide: PeriodicTaskService, useClass: MockPeriodicTaskService },
         { provide: EventService, useClass: MockEventService },
         { provide: SystemService, useClass: MockSystemService },
@@ -326,6 +329,14 @@ describe("UserUtilsPanelComponent", () => {
       component.refreshPage();
       expect(casService.blocklistResource.reload).toHaveBeenCalled();
     });
+
+    it("refreshes api clients details route, including the remembered devices table", () => {
+      const apiClientService = TestBed.inject(ApiClientService) as unknown as MockApiClientService;
+      content.routeUrl.set(`${ROUTE_PATHS.POLICIES_API_CLIENTS_DETAILS}abc`);
+      component.refreshPage();
+      expect(apiClientService.apiClientResource.reload).toHaveBeenCalled();
+      expect(apiClientService.reloadRememberedDevices).toHaveBeenCalled();
+    });
   });
 
   describe("profileText", () => {
@@ -385,7 +396,7 @@ describe("UserUtilsPanelComponent", () => {
     });
 
     it("sessionOverOneDay defaults to false when remainingTime is undefined", () => {
-      sessionTimerService.remainingTime.set(undefined);
+      sessionTimerService.remainingTime.set(undefined as unknown as number);
       expect(component.sessionOverOneDay()).toBe(false);
     });
 

@@ -21,6 +21,7 @@ import { RouterModule, Routes } from "@angular/router";
 import { LayoutComponent } from "./components/layout/layout.component";
 import { LoginComponent } from "./components/login/login.component";
 import { adminMatch, AuthGuard, loginGuard, selfServiceMatch } from "./guards/auth.guard";
+import { ApiClientService } from "@services/api-client/api-client.service";
 import { ApplicationService } from "@services/application/application.service";
 import { AuditService } from "@services/audit/audit.service";
 import { AuthenticationLogService } from "@services/authentication-log/authentication-log.service";
@@ -35,6 +36,7 @@ import { ContentService } from "@services/content/content.service";
 import { DialogService } from "@services/dialog/dialog.service";
 import { DocumentationService } from "@services/documentation/documentation.service";
 import { EventService } from "@services/event/event.service";
+import { IntegrationsService } from "@services/integrations/integrations.service";
 import { MachineResolverService } from "@services/machine-resolver/machine-resolver.service";
 import { MachineService } from "@services/machine/machine.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
@@ -64,6 +66,7 @@ export const routes: Routes = [
     component: LayoutComponent,
     canActivateChild: [AuthGuard],
     providers: [
+      ApiClientService,
       ApplicationService,
       AuditService,
       AuthenticationLogService,
@@ -78,6 +81,7 @@ export const routes: Routes = [
       DialogService,
       DocumentationService,
       EventService,
+      IntegrationsService,
       MachineResolverService,
       MachineService,
       PendingChangesService,

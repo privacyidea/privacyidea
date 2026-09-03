@@ -155,6 +155,15 @@ export const HANDLE_MISSING_DATA_OPTIONS: HandleMissingDataOption[] = [
   { key: "condition_is_true", label: $localize`:@@policy.conditionTrue:Condition is true` }
 ];
 
+// 3. User Agent Options - the picker entries now come from the shared integration
+// catalog (see services/integrations/integrations.service.ts): Integration.policy_value
+// is the key, Integration.label is the label.
+export interface UserAgentOption {
+  key: string;
+  label: string;
+}
+
+
 export interface PolicyServiceInterface {
   readonly isEditMode: Signal<boolean>;
   readonly policyActions: Signal<ScopedPolicyActions>;

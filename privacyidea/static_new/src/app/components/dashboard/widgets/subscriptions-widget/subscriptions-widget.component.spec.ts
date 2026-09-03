@@ -22,8 +22,10 @@ import { provideRouter } from "@angular/router";
 import { DashboardWidget, WidgetInstance } from "@models/dashboard";
 import { AuthService } from "@services/auth/auth.service";
 import { DashboardDataStore } from "@services/dashboard/dashboard-data-store.service";
+import { IntegrationsService } from "@services/integrations/integrations.service";
 import { SubscriptionService, SubscriptionStatus } from "@services/subscription/subscription.service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { MockIntegrationsService } from "@testing/mock-services/mock-integrations-service";
 import { MockSubscriptionService } from "@testing/mock-services/mock-subscription-service";
 import { MockPiResponse } from "@testing/mock-services/mock-utils";
 import { of, Subject } from "rxjs";
@@ -105,6 +107,7 @@ describe("SubscriptionsWidgetComponent", () => {
         provideRouter([]),
         { provide: AuthService, useClass: MockAuthService },
         { provide: SubscriptionService, useClass: MockSubscriptionService },
+        { provide: IntegrationsService, useClass: MockIntegrationsService },
         { provide: LOCALE_ID, useValue: "en" }
       ]
     }).compileComponents();
@@ -168,13 +171,26 @@ describe("SubscriptionsWidgetComponent", () => {
     ]);
   });
 
-  it("should indent components nested in a sub-section deeper than top level ones", () => {
+  it("should indent every section label at the top level and every component one level in", () => {
     const rows = component.rows();
-    const app = rows.find((row) => row.application === "privacyidea-app");
-    const credentialProvider = rows.find((row) => row.application === "privacyidea-cp");
 
-    expect(app?.indent).toBe(1);
-    expect(credentialProvider?.indent).toBe(2);
+    expect(rows.filter((row) => row.kind === "label").every((row) => row.indent === 0)).toBe(true);
+    expect(rows.filter((row) => row.kind === "component").every((row) => row.indent === 1)).toBe(true);
+  });
+
+  it("should fall back to the raw section key when the catalog reports an unrecognized section", () => {
+    const integrationsMock = TestBed.inject(IntegrationsService) as unknown as MockIntegrationsService;
+    integrationsMock.integrations.update((integrations) =>
+      integrations.map((integration) =>
+        integration.id === "freeradius" ? { ...integration, section: "some_future_section" } : integration
+      )
+    );
+    fixture = createWidget();
+    component = fixture.componentInstance;
+
+    const rows = component.rows();
+
+    expect(rows.filter((row) => row.kind === "label").map((row) => row.label)).toContain("some_future_section");
   });
 
   it("should fall back to an unused status for components the backend did not report", () => {
@@ -389,6 +405,7 @@ describe("SubscriptionsWidgetComponent", () => {
         provideRouter([]),
         { provide: AuthService, useClass: MockAuthService },
         { provide: SubscriptionService, useClass: MockSubscriptionService },
+        { provide: IntegrationsService, useClass: MockIntegrationsService },
         { provide: LOCALE_ID, useValue: "de" }
       ]
     });

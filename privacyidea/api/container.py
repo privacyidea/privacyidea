@@ -30,7 +30,7 @@ from privacyidea.api.lib.prepolicy import (check_base_action, prepolicy, check_u
                                            smartphone_config, check_client_container_action, hide_tokeninfo,
                                            check_client_container_disabled_action, hide_container_info)
 from privacyidea.api.lib.utils import map_error_to_code, send_error, send_result, to_list_param
-from privacyidea.lib.params import get_optional, get_required, get_required_one_of
+from privacyidea.lib.params import get_optional, get_optional_int, get_required, get_required_one_of
 from privacyidea.lib.container import (find_container_by_serial, init_container, get_container_classes_descriptions,
                                        get_container_token_types, get_all_containers, add_container_info,
                                        set_container_description, set_container_states, set_container_realms,
@@ -192,8 +192,8 @@ def list_containers():
     state = get_optional(param, "state")
     sortby = get_optional(param, "sortby", default="serial")
     sortdir = get_optional(param, "sortdir", default="asc")
-    psize = int(get_optional(param, "pagesize") or 0)
-    page = int(get_optional(param, "page") or 0)
+    psize = get_optional_int(param, "pagesize", default=0) or 0
+    page = get_optional_int(param, "page", default=0) or 0
     no_token = get_optional(param, "no_token", default=False)
     logged_in_user_role = g.logged_in_user.get("role")
     allowed_container_realms = getattr(request, "pi_allowed_container_realms", None)
@@ -1388,8 +1388,8 @@ def get_template():
     params = request.all_data
     name = get_optional(params, "name")
     container_type = get_optional(params, "container_type")
-    page = int(get_optional(params, "page", default=0) or 0)
-    pagesize = int(get_optional(params, "pagesize", default=0) or 0)
+    page = get_optional_int(params, "page", default=0) or 0
+    pagesize = get_optional_int(params, "pagesize", default=0) or 0
     sortdir = get_optional(params, "sortdir", default="asc")
     sortby = get_optional(params, "sortby", default="name")
 
