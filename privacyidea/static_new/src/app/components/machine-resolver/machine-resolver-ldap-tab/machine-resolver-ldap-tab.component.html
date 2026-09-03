@@ -20,7 +20,7 @@
   <mat-form-field
     class="span-2"
     subscriptSizing="dynamic">
-    <mat-label i18n="@@ldapUri">Server URI</mat-label>
+    <mat-label i18n="@@common.serverUri">Server URI</mat-label>
     <input
       matInput
       placeholder="ldap://privacyidea.server1, ldap://privacyidea.server2"
@@ -34,25 +34,25 @@
       [disabled]="!fieldsEnabled()"
       [checked]="hostsData().TLS_VERIFY"
       (change)="updateTlsVerify($event.checked)"
-      i18n="@@tlsVerify">
-      TLS Verify
-    </mat-checkbox>
+      i18n="@@machine.tlsVerify"
+      >TLS Verify</mat-checkbox
+    >
   </div>
   <mat-form-field>
-    <mat-label i18n="@@tlsCaFile">TLS CA File</mat-label>
+    <mat-label i18n="@@machine.tlsCaFile">TLS CA File</mat-label>
     <input
       matInput
       placeholder="/etc/privacyidea/ldap-ca.crt"
       [disabled]="!fieldsEnabled() || !hostsData().TLS_VERIFY"
       [value]="hostsData().TLS_CA_FILE ?? ''"
       (input)="updateData({ TLS_CA_FILE: $event.target['value'] })" />
-    <mat-hint i18n="@@tlsCaFileHint">
-      Path to a CA certificate file to verify the LDAP server's TLS certificate.
-    </mat-hint>
+    <mat-hint i18n="@@machine.pathCaCertificate"
+      >Path to a CA certificate file to verify the LDAP server's TLS certificate.</mat-hint
+    >
   </mat-form-field>
 
   <mat-form-field subscriptSizing="dynamic">
-    <mat-label i18n="@@ldapBase">Base DN</mat-label>
+    <mat-label i18n="@@common.baseDn">Base DN</mat-label>
     <input
       matInput
       placeholder="ou=users,dc=domain,dc=tld"
@@ -61,7 +61,7 @@
       (input)="updateData({ LDAPBASE: $event.target['value'] })" />
   </mat-form-field>
   <mat-form-field subscriptSizing="dynamic">
-    <mat-label i18n="@@bindDn">Bind DN</mat-label>
+    <mat-label i18n="@@common.bindDn">Bind DN</mat-label>
     <input
       matInput
       placeholder="cn=admin,ou=users,dc=domain,dc=tld"
@@ -71,7 +71,7 @@
   </mat-form-field>
 
   <mat-form-field subscriptSizing="dynamic">
-    <mat-label i18n="@@bindPw">Bind Password</mat-label>
+    <mat-label i18n="@@machine.bindPassword">Bind Password</mat-label>
     <input
       type="password"
       matInput
@@ -81,7 +81,7 @@
       (input)="updateData({ BINDPW: $event.target['value'] })" />
   </mat-form-field>
   <mat-form-field subscriptSizing="dynamic">
-    <mat-label i18n="@@authType">Bind Type</mat-label>
+    <mat-label i18n="@@common.bindType">Bind Type</mat-label>
     <mat-select
       [disabled]="!fieldsEnabled()"
       [value]="hostsData().AUTHTYPE"
@@ -92,7 +92,7 @@
   </mat-form-field>
 
   <mat-form-field subscriptSizing="dynamic">
-    <mat-label i18n="@@timeout">Timeout</mat-label>
+    <mat-label i18n="@@common.timeout">Timeout</mat-label>
     <input
       type="number"
       matInput
@@ -102,7 +102,7 @@
       (input)="updateData({ TIMEOUT: $event.target['value'] })" />
   </mat-form-field>
   <mat-form-field subscriptSizing="dynamic">
-    <mat-label i18n="@@sizeLimit">Size Limit</mat-label>
+    <mat-label i18n="@@common.sizeLimit">Size Limit</mat-label>
     <input
       type="number"
       matInput
@@ -117,9 +117,9 @@
       [disabled]="!fieldsEnabled()"
       [checked]="hostsData().NOREFERRALS === 'True'"
       (change)="onClickNoReferrals($event.checked)"
-      i18n="@@noReferrals">
-      <p>Referrals are not tracked (anonymously)</p>
-    </mat-checkbox>
+      i18n="@@machine.referralsNotTracked"
+      ><p>Referrals are not tracked (anonymously)</p></mat-checkbox
+    >
   </div>
   @if (fieldsEnabled()) {
     <button
@@ -128,22 +128,22 @@
       mat-stroked-button
       type="button">
       <mat-icon>auto_fix_high</mat-icon>
-      <span i18n="@@preassignADAttributesButton">Pre-assign Active Directory Attributes</span>
+      <span i18n="@@machine.preAssignActive">Pre-assign Active Directory Attributes</span>
     </button>
   }
 
   <mat-form-field>
-    <mat-label i18n="@@idAttribute">ID Attribute</mat-label>
+    <mat-label i18n="@@machine.idAttribute">ID Attribute</mat-label>
     <input
       matInput
       placeholder="DN"
       [disabled]="!fieldsEnabled()"
       [value]="hostsData().IDATTRIBUTE ?? ''"
       (input)="updateData({ IDATTRIBUTE: $event.target['value'] })" />
-    <mat-hint i18n="@@idAttributeHint">An attribute or DN to identify the machine</mat-hint>
+    <mat-hint i18n="@@machine.attributeDnIdentify">An attribute or DN to identify the machine</mat-hint>
   </mat-form-field>
   <mat-form-field>
-    <mat-label i18n="@@searchFilter">Search Filter</mat-label>
+    <mat-label i18n="@@common.searchFilter">Search Filter</mat-label>
     <input
       matInput
       placeholder="(objectClass=computer)"
@@ -153,7 +153,7 @@
   </mat-form-field>
 
   <mat-form-field>
-    <mat-label i18n="@@hostnameAttribute">Hostname Attribute</mat-label>
+    <mat-label i18n="@@machine.hostnameAttribute">Hostname Attribute</mat-label>
     <input
       matInput
       placeholder="dNSHostName"
@@ -162,12 +162,12 @@
       (input)="updateData({ HOSTNAMEATTRIBUTE: $event.target['value'] })" />
   </mat-form-field>
   <mat-form-field>
-    <mat-label i18n="@@ipAttribute">IP Attribute</mat-label>
+    <mat-label i18n="@@machine.ipAttribute">IP Attribute</mat-label>
     <input
       matInput
       [disabled]="!fieldsEnabled()"
       [value]="hostsData().IPATTRIBUTE ?? ''"
       (input)="updateData({ IPATTRIBUTE: $event.target['value'] })" />
-    <mat-hint i18n="@@ipAttributeHint">An attribute that contains the IP address of the machine.</mat-hint>
+    <mat-hint i18n="@@machine.attributeContains">An attribute that contains the IP address of the machine.</mat-hint>
   </mat-form-field>
 </div>

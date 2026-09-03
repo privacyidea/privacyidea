@@ -25,7 +25,7 @@
         subscriptSizing="dynamic"
         appearance="fill"
         class="challenges-table-filter">
-        <mat-label i18n>Filter Challenges...</mat-label>
+        <mat-label i18n="@@token.filterChallenges">Filter Challenges...</mat-label>
         <app-clearable-input
           (clearButtonClick)="challengesService.clearFilter()"
           [showClearButton]="challengesService.filterDraft().isNotEmpty">
@@ -33,7 +33,7 @@
             #filterHTMLInputElement
             (input)="challengesService.handleFilterInput($event)"
             [value]="challengesService.filterDraft().filterString"
-            i18n-placeholder
+            i18n-placeholder="@@token.exampleQueryTransaction"
             matInput
             placeholder="Example query: 'transaction_id: 00000000000000000001'" />
         </app-clearable-input>
@@ -57,7 +57,7 @@
         [dataSource]="challengesDataSource()"
         aria-label="Token Challenges Table"
         class="challenges-table"
-        i18n-aria-label
+        i18n-aria-label="@@token.tokenChallenges"
         mat-table>
         @for (column of columnsKeyMap; track column) {
           <ng-container [matColumnDef]="column.key">
@@ -71,7 +71,7 @@
                     <button
                       (click)="onKeywordClick(column.key)"
                       aria-label="Filter by {{ column.label }}"
-                      i18n-aria-label
+                      i18n-aria-label="@@common.filterBy"
                       class="filter-button"
                       mat-icon-button
                       type="button">
@@ -83,7 +83,7 @@
                   <button
                     (click)="tableUtilsService.onSortButtonClick(column.key, sort)"
                     aria-label="Sort by {{ column.label }}"
-                    i18n-aria-label
+                    i18n-aria-label="@@common.sortBy"
                     class="sort-button"
                     mat-icon-button
                     type="button">
@@ -145,8 +145,8 @@
       [table]="tableState"
       heading="No challenges yet"
       hint="Challenges appear here while a user is answering a challenge-response request."
-      i18n-heading
-      i18n-hint
+      i18n-heading="@@token.noChallengesYet"
+      i18n-hint="@@token.challengesAppearHere"
       icon="pending_actions" />
   }
 </div>

@@ -139,6 +139,64 @@ action type, the name of the policy that acted, and whether the outcome was a
 dry run or enforced. Filtering on the action type with ``*`` shows every entry
 conditional access acted on at all.
 
+.. _authentication_log_statistics:
+
+Summarising the log
+-------------------
+
+:http:get:`/authenticationlog/statistics` answers "how did authentication go
+lately" in one request, instead of paging through entries. It returns the
+number of authentication **attempts** in a time window, grouped by the event
+type that classifies each of them and bucketed over the window, which is what
+the *Authentication activity* widget on the :ref:`dashboard` draws.
+
+It counts attempts, not entries, and the difference is not cosmetic: a
+challenge-response login writes both a ``CHALLENGE_TRIGGERED`` and a
+``LOGIN_SUCCESS`` entry, so counting entries would report one successful login
+as both a pending and a successful event. The entries sharing an attempt ID
+(see :ref:`authentication_log_attempts`) are therefore reduced to the one that
+classifies the whole attempt, by the same rule a ``PER_ATTEMPT`` policy uses:
+
+* the ``LOGIN_SUCCESS`` entry if the attempt ever logged in, because a
+  completed success is terminal;
+* otherwise the **latest** entry of the attempt.
+
+Which entry is latest is decided by insertion order, not by ranking the event
+types. That is what tells a wrong answer *followed by* a new challenge (still
+in progress) from a new challenge *followed by* a wrong answer (failed) - the
+two contain the same event types in the same attempt.
+
+Two consequences are worth knowing before reading the numbers:
+
+* ``event_type`` selects attempts that **ended** that way, rather than every
+  attempt that passed through such an event. It is the only meaning the filter
+  can have once the entries of an attempt are collapsed into one.
+* The three types conditional access writes for its own refusals -
+  ``USER_LOCKED``, ``IP_BLOCKED`` and ``ACCESS_DENIED`` - classify attempts
+  here like any other failure, because an attempt that was turned away did
+  fail. Note that one lock can refuse many retries, so such a count follows
+  retry volume rather than the number of locks; the locks themselves are
+  counted on the conditional-access side.
+
+An entry without an attempt ID counts as an attempt of its own, and an attempt
+that began before the window is classified from the entries inside it alone -
+the same edge a policy's sliding window has.
+
+The window is given by ``start_time`` and ``end_time``, both required ISO 8601
+timestamps and both inclusive, and ``bins`` sets how many equal-width buckets
+the window is split into - between 1 and 100, 48 by default. Asking for more
+than 100 is refused rather than quietly reduced, so a caller is never handed a
+coarser resolution than it asked for without being told; a value that is not a
+positive number at all falls back to the default. Every filter the log listing
+accepts on a column of its own row can be given as well, under its plural name
+and with the same comma-separated lists and ``*`` wildcards, for example
+``event_types=MFA_FAIL,PIN_FAIL`` or ``realms=realm1``. The plural is the only
+name recognised, so a listing query reused here - ``realm=realm1`` rather than
+``realms=`` - is no filter at all and the summary then covers every attempt in
+the window. The filters apply to the entry that classifies each attempt. The
+``ca_*`` filters are not offered: they match what conditional access did to a
+single request, which an attempt-level summary has no notion of.
+
 Who sees what
 -------------
 
@@ -147,8 +205,10 @@ Reading the log requires the ``authentication_log_read`` right, see
 
 If the administrator's policy is scoped to realms, resolvers or users, only
 matching entries are returned; an administrator always also sees their own
-entries. Users granted the right in the user scope see only their own entries,
-and the columns identifying the user are hidden for them.
+entries. The same restriction applies to the summary described above, so a
+scoped administrator's counts only cover the attempts they may read. Users
+granted the right in the user scope see only their own entries, and the columns
+identifying the user are hidden for them.
 
 .. _authentication_log_cleanup:
 

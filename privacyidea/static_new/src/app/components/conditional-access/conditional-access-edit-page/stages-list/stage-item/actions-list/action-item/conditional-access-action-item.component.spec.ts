@@ -135,6 +135,69 @@ describe("ConditionalAccessActionItemComponent", () => {
     });
   });
 
+  // The component's own job here is forwarding siblingActions/actionIndex/target to the policy service and
+  // mapping its verdict to the disabled-types set / conflict message. The rules themselves (which actions are
+  // repeatable, which pairs are exclusive) are the policy service's, and are covered once, against the real
+  // implementation, in conditional-access-policy.service.spec.ts.
+  describe("stage action combinations", () => {
+    let policyServiceMock: MockConditionalAccessPolicyService;
+    const action = (actionType: ConditionalAccessActionType) => ({ action_type: actionType, action_value: null });
+
+    beforeEach(() => {
+      policyServiceMock = TestBed.inject(
+        ConditionalAccessPolicyService
+      ) as unknown as MockConditionalAccessPolicyService;
+    });
+
+    const withSiblings = (siblings: ConditionalAccessStageAction[], index: number) => {
+      fixture.componentRef.setInput("siblingActions", siblings);
+      fixture.componentRef.setInput("actionIndex", index);
+      setAction(siblings[index]);
+    };
+
+    it("forwards siblingActions/actionIndex/target and surfaces a duplicate verdict", () => {
+      const siblings = [action("LOCK_USER"), action("LOCK_USER")];
+      policyServiceMock.actionConflict.mockReturnValue("duplicate");
+      withSiblings(siblings, 1);
+      expect(component.actionConflict()).toBe("duplicate");
+      expect(component.conflictMessage()).not.toBe("");
+      expect(policyServiceMock.actionConflict).toHaveBeenCalledWith(siblings, 1, component.target());
+    });
+
+    it("surfaces a null verdict as no message", () => {
+      policyServiceMock.actionConflict.mockReturnValue(null);
+      withSiblings([action("EMAIL_ADMIN"), action("EMAIL_ADMIN")], 1);
+      expect(component.actionConflict()).toBeNull();
+      expect(component.conflictMessage()).toBe("");
+    });
+
+    it("surfaces an exclusive verdict", () => {
+      policyServiceMock.actionConflict.mockReturnValue("exclusive");
+      withSiblings([action("LOCK_USER"), action("PERMANENT_LOCK_USER")], 1);
+      expect(component.actionConflict()).toBe("exclusive");
+      expect(component.conflictMessage()).not.toBe("");
+    });
+
+    it("forwards the unavailable-types set from the policy service as disabledActionTypes", () => {
+      const siblings = [action("LOCK_USER"), action("EMAIL_ADMIN")];
+      policyServiceMock.unavailableActionTypes.mockReturnValue(new Set(["LOCK_USER", "PERMANENT_LOCK_USER"]));
+      withSiblings(siblings, 1);
+      const disabled = component.disabledActionTypes();
+      expect(disabled.has("LOCK_USER")).toBe(true);
+      expect(disabled.has("PERMANENT_LOCK_USER")).toBe(true);
+      expect(disabled.has("EMAIL_ADMIN")).toBe(false);
+      expect(policyServiceMock.unavailableActionTypes).toHaveBeenCalledWith(siblings, component.target(), 1);
+    });
+
+    it("does not judge while no rules have been served", () => {
+      policyServiceMock.actionConflict.mockReturnValue(null);
+      policyServiceMock.unavailableActionTypes.mockReturnValue(new Set());
+      withSiblings([action("LOCK_USER"), action("LOCK_USER")], 1);
+      expect(component.actionConflict()).toBeNull();
+      expect(component.disabledActionTypes().size).toBe(0);
+    });
+  });
+
   describe("duration", () => {
     it("should read a plain-number duration", () => {
       setAction({ action_type: "LOCK_USER", action_value: 600 });
@@ -182,6 +245,52 @@ describe("ConditionalAccessActionItemComponent", () => {
       const spy = jest.spyOn(component.updateAction, "emit");
       component.onDurationUnitChange("hours");
       expect(spy).not.toHaveBeenCalled();
+    });
+
+    // A policy written through the API may store the duration as a string; the field must show it rather
+    // than looking empty and inviting the admin to overwrite a value that is already there.
+    it("should read a numeric-string duration", () => {
+      setAction({ action_type: "LOCK_USER", action_value: "600" });
+      expect(component.durationValue()).toBe("600");
+    });
+  });
+
+  // The client-side half of the backend's per-action action_value contract: the message belongs next to the
+  // field, not in a 400 after the round-trip.
+  describe("actionValueError", () => {
+    it("reports a restricting action that has no usable duration", () => {
+      for (const actionValue of [null, 0, -5, "600abc", "600.5", { lock_duration_seconds: 600 }]) {
+        setAction({ action_type: "LOCK_USER", action_value: actionValue });
+        expect(component.actionValueError()).not.toBeNull();
+      }
+    });
+
+    it("accepts every duration shape the backend stores", () => {
+      for (const actionValue of [600, "600", { duration_seconds: 600 }, { duration: 600 }]) {
+        setAction({ action_type: "LOCK_USER", action_value: actionValue });
+        expect(component.actionValueError()).toBeNull();
+      }
+    });
+
+    it("reports an email action without a subject and body", () => {
+      setAction({ action_type: "EMAIL_ADMIN", action_value: {} });
+      expect(component.actionValueError()).not.toBeNull();
+      setAction({ action_type: "EMAIL_ADMIN", action_value: { subject: "Hi" } });
+      expect(component.actionValueError()).not.toBeNull();
+    });
+
+    it("accepts an email action with a subject and body but no SMTP server yet", () => {
+      setAction({ action_type: "EMAIL_ADMIN", action_value: { smtp_identifier: "", subject: "s", body: "b" } });
+      expect(component.actionValueError()).toBeNull();
+    });
+
+    it("accepts the actions that take no value, and reports one carrying a value", () => {
+      setAction({ action_type: "PERMANENT_LOCK_USER", action_value: null });
+      expect(component.actionValueError()).toBeNull();
+      setAction({ action_type: "DENY", action_value: null });
+      expect(component.actionValueError()).toBeNull();
+      setAction({ action_type: "PERMANENT_LOCK_USER", action_value: 600 });
+      expect(component.actionValueError()).not.toBeNull();
     });
   });
 

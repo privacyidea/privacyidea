@@ -46,12 +46,12 @@ export class SetPinActionComponent {
   setPin() {
     if (this.setPinValue() !== this.repeatPinValue()) {
       console.error("PINs do not match.");
-      this.notificationService.warning($localize`PINs do not match.`);
+      this.notificationService.warning($localize`:@@common.pinsDoNotMatchError:PINs do not match.`);
       return;
     }
     this.tokenService.setPin(this.tokenService.tokenSerial(), this.setPinValue()).subscribe({
       next: () => {
-        this.notificationService.success($localize`PIN set successfully.`);
+        this.notificationService.success($localize`:@@token.pinSetSuccess:PIN set successfully.`);
         this.setPinValue.set("");
         this.repeatPinValue.set("");
       }
@@ -62,8 +62,8 @@ export class SetPinActionComponent {
     this.tokenService.setRandomPin(this.tokenService.tokenSerial()).subscribe({
       next: (result) => {
         const dialogData: MessageDialogData = {
-          title: $localize`PIN Set Successfully`,
-          texts: [$localize`Randomly generated PIN:`, result.detail.pin]
+          title: $localize`:@@token.pinSetSuccessfully:PIN Set Successfully`,
+          texts: [$localize`:@@token.randomlyGenerated:Randomly generated PIN:`, result.detail.pin]
         };
         this.dialogService.openDialog({ component: MessageDialogComponent, data: dialogData });
       }

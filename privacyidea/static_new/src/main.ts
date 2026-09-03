@@ -21,5 +21,12 @@
 import { bootstrapApplication } from "@angular/platform-browser";
 import { AppComponent } from "./app/app.component";
 import { appConfig } from "./app/app.config";
+import { scriptRoot } from "./app/core/locale";
+import { environment } from "./environments/environment";
+
+// Every REST call is built from environment.proxyUrl; behind a reverse-proxy
+// sub-path mount (Apache WSGIScriptAlias, uwsgi mount-point, ...) it must carry
+// that prefix too, so patch it in before any service reads it.
+environment.proxyUrl = scriptRoot() + environment.proxyUrl;
 
 bootstrapApplication(AppComponent, appConfig).catch((err) => console.error(err));

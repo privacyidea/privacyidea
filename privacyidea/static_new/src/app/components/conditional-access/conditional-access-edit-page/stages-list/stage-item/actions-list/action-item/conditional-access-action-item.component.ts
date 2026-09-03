@@ -27,11 +27,13 @@ import { MatInputModule } from "@angular/material/input";
 import { MatSelectModule } from "@angular/material/select";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import {
+  actionValueError,
   ConditionalAccessPolicyService,
   ConditionalAccessPolicyServiceInterface,
   ConditionalAccessActionType,
   ConditionalAccessStageAction,
-  ConditionalAccessTarget
+  ConditionalAccessTarget,
+  parseActionDurationSeconds
 } from "@services/conditional-access/conditional-access-policy.service";
 import { SmtpService, SmtpServiceInterface } from "@services/smtp/smtp.service";
 import { InfoHintComponent } from "@components/shared/info-hint/info-hint.component";
@@ -48,7 +50,8 @@ const ACTION_DESCRIPTIONS: Record<ConditionalAccessActionType, string> = {
 };
 
 // How a given action type's action_value is edited:
-// - "duration": a single integer (seconds), stored as a plain number.
+// - "duration": a single integer (seconds), written as a plain number. The object form carrying
+//   duration_seconds is also accepted on read, because a policy written through the API may use it.
 // - "email": a JSON object with the fields listed in EMAIL_FIELDS.
 // - "none": the action takes no value (stored as null).
 type ActionValueMode = "duration" | "email" | "none";
@@ -159,6 +162,10 @@ export class ConditionalAccessActionItemComponent {
   private readonly smtpService: SmtpServiceInterface = inject(SmtpService);
 
   readonly action = input.required<ConditionalAccessStageAction>();
+  // The whole stage's action list plus this action's place in it, so the picker can grey out the types
+  // another action already occupies and this action can say why it collides with one of them.
+  readonly siblingActions = input<ConditionalAccessStageAction[]>([]);
+  readonly actionIndex = input<number>(0);
   readonly target = input<ConditionalAccessTarget>("user");
   readonly updateAction = output<Partial<ConditionalAccessStageAction>>();
   readonly removeAction = output<void>();
@@ -191,6 +198,30 @@ export class ConditionalAccessActionItemComponent {
     return allowed.length === 0 || allowed.includes(this.action().action_type);
   });
 
+  // The types this action may not switch to: taken by another action on the same stage, or mutually
+  // exclusive with one. This action's own index is excluded, so its current type is never disabled.
+  readonly disabledActionTypes = computed<Set<ConditionalAccessActionType>>(() =>
+    this.policyService.unavailableActionTypes(this.siblingActions(), this.target(), this.actionIndex())
+  );
+
+  // Why this action collides with an earlier one on the same stage, or null when it does not. The backend
+  // rejects both shapes (_validate_stage_action_combination), so it is flagged here rather than left to the
+  // save - mirroring isActionAllowedForTarget.
+  readonly actionConflict = computed<"duplicate" | "exclusive" | null>(() =>
+    this.policyService.actionConflict(this.siblingActions(), this.actionIndex(), this.target())
+  );
+
+  readonly conflictMessage = computed<string>(() => {
+    switch (this.actionConflict()) {
+      case "duplicate":
+        return $localize`This action is already on this stage. Only the email actions may be added more than once.`;
+      case "exclusive":
+        return $localize`This action contradicts another action on this stage. Remove one of them.`;
+      default:
+        return "";
+    }
+  });
+
   // Effective checkbox state; when the action carries no explicit value, the display mirrors the
   // server's action-aware default, where the standing DENY verdict re-triggers and the
   // lock/email/block effects fire once at the threshold.
@@ -205,6 +236,11 @@ export class ConditionalAccessActionItemComponent {
   readonly valueMode = computed<ActionValueMode>(() =>
     ConditionalAccessActionItemComponent.modeFor(this.action().action_type)
   );
+
+  // What is missing from this action's value, or null when the backend would accept it. Shown next to the
+  // field so the admin fixes it here rather than reading a 400 after saving; the edit page gates Save on the
+  // same rule (see actionValuesValid).
+  readonly actionValueError = computed<string | null>(() => actionValueError(this.action()));
 
   readonly emailFields = computed<EmailField[]>(() => {
     const isAdmin = this.action().action_type === "EMAIL_ADMIN";
@@ -266,18 +302,11 @@ export class ConditionalAccessActionItemComponent {
 
   readonly durationUnits: readonly DurationUnit[] = ["seconds", "minutes", "hours"];
 
-  // The raw stored duration in seconds, or null if unset/invalid.
+  // The raw stored duration in seconds, or null if unset/invalid. Every shape the backend accepts is read,
+  // not just the bare number this editor writes, so a duration set through the API renders in the field
+  // instead of looking empty.
   private durationSeconds(): number | null {
-    const value = this.action().action_value;
-    if (typeof value === "number") {
-      return value;
-    }
-    if (value && typeof value === "object" && !Array.isArray(value)) {
-      const record = value as Record<string, unknown>;
-      const nested = record["duration_seconds"] ?? record["duration"];
-      return typeof nested === "number" ? nested : null;
-    }
-    return null;
+    return parseActionDurationSeconds(this.action().action_value);
   }
 
   // Display value in the currently selected unit.

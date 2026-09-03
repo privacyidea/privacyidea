@@ -20,7 +20,7 @@
   @if (showQRCode() && qrCode()) {
     <img
       alt="QR Code"
-      i18n-alt="@@qrCodeAltText"
+      i18n-alt="@@common.qrCode"
       height="300px"
       src="{{ qrCode() }}"
       width="300px" />
@@ -42,10 +42,10 @@
       </button>
     }
     @if (enrolledData()["password"]) {
-      <p i18n>
-        Your Password: <strong>{{ enrolledData()["password"] }}</strong
-        >.
-      </p>
+      <p i18n="@@token.yourPassword"
+        >Your Password: <strong>{{ enrolledData()["password"] }}</strong
+        >.</p
+      >
     }
     @if (enrolledData().otpkey?.value && !enrolledData()["otps"] && showQRCode()) {
       <app-otp-key

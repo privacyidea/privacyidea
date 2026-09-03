@@ -117,10 +117,10 @@ export class SmtpServersComponent {
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: $localize`Delete SMTP Servers`,
+          title: $localize`:@@smtpServer.deleteSmtpServers:Delete SMTP Servers`,
           items: selected.map((row) => row.identifier),
           itemType: "smtp-server",
-          confirmAction: { label: $localize`Delete`, value: true, type: "destruct" }
+          confirmAction: { label: $localize`:@@common.delete:Delete`, value: true, type: "destruct" }
         }
       })
       .afterClosed()

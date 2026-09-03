@@ -99,6 +99,10 @@ describe("TokenApplicationsSshComponent (Jest)", () => {
     expect(component.getObjectStrings(options)).toEqual(["key1: value1", "key2: value2"]);
   });
 
+  it("should label a link with the given label", () => {
+    expect(component.linkLabel("Serial")).toBe("Serial link");
+  });
+
   describe("dataSource computed", () => {
     it("returns a MatTableDataSource when tokenApplications() yields data", () => {
       const fakeApps: TokenApplication[] = [

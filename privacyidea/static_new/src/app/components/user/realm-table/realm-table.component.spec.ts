@@ -388,6 +388,23 @@ describe("RealmTableComponent", () => {
     expect(call[2]).toEqual([]);
   });
 
+  it("onCreateRealm should show an error when realm creation fails", async () => {
+    component.newRealmName.set("realmA");
+    component.newRealmNodeResolvers.set({});
+    const createError = new HttpErrorResponse({
+      status: 400,
+      statusText: "Bad Request",
+      error: { result: { error: { message: "Realm already exists." } } }
+    });
+    (realmService.createRealm as jest.Mock).mockImplementationOnce(() => throwError(() => createError));
+
+    const result = await component.onCreateRealm();
+
+    expect(result).toBe(false);
+    expect(notificationService.error).toHaveBeenCalledWith("Failed to create realm. Realm already exists.");
+    expect(component.isCreatingRealm()).toBe(false);
+  });
+
   it("startEditRealm should initialize editing state and maps", () => {
     const row: RealmRow = {
       name: "realmA",
@@ -492,6 +509,24 @@ describe("RealmTableComponent", () => {
     expect(component.editingRealmName()).toBeNull();
     expect(component.isSavingEditedRealm()).toBe(false);
     expect(realmService.realmResource.reload).toHaveBeenCalled();
+  });
+
+  it("saveEditedRealm should show an error when saving fails", () => {
+    const row = { name: "realmA" } as unknown as RealmRow;
+    const saveError = new HttpErrorResponse({
+      status: 400,
+      statusText: "Bad Request",
+      error: { result: { error: { message: "Resolver not found." } } }
+    });
+
+    component.editingRealmName.set("realmA");
+    component.editNodeResolvers.set({ "": [{ name: "res1", priority: null }] });
+    (realmService.createRealm as jest.Mock).mockImplementationOnce(() => throwError(() => saveError));
+
+    component.saveEditedRealm(row);
+
+    expect(notificationService.error).toHaveBeenCalledWith("Failed to update realm. Resolver not found.");
+    expect(component.isSavingEditedRealm()).toBe(false);
   });
 
   it("onDeleteRealm should do nothing when row has no name", () => {
@@ -626,6 +661,26 @@ describe("RealmTableComponent", () => {
     expect(notificationService.success).toHaveBeenCalledWith('Realm "realmA" set as default.');
     expect(realmService.realmResource.reload).toHaveBeenCalled();
     expect(realmService.defaultRealmResource.reload).toHaveBeenCalled();
+  });
+
+  it("onSetDefaultRealm should show an error when the service call fails", () => {
+    const row = { name: "realmA" } as unknown as RealmRow;
+    const setDefaultError = new HttpErrorResponse({
+      status: 400,
+      statusText: "Bad Request",
+      error: { result: { error: { message: "Realm not found." } } }
+    });
+    (realmService.setDefaultRealm as jest.Mock).mockImplementationOnce(() => throwError(() => setDefaultError));
+
+    component.onSetDefaultRealm(row);
+
+    expect(notificationService.error).toHaveBeenCalledWith("Failed to set default realm. Realm not found.");
+  });
+
+  it("linkLabel should build a link label from the given label", () => {
+    expect((component as unknown as { linkLabel: (label: string) => string }).linkLabel("realmA")).toContain(
+      "realmA"
+    );
   });
 
   it("onClickResolver should redirect to resolver details page", () => {

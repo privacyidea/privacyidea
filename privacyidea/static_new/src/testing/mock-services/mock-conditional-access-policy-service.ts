@@ -29,6 +29,7 @@ import {
   ConditionalAccessPolicyCondition,
   ConditionalAccessPolicySaveParams,
   ConditionalAccessPolicyTemplate,
+  ConditionalAccessStageAction,
   ConditionalAccessTarget,
   DefaultErrorMessage,
   StaleConditionValues,
@@ -58,6 +59,13 @@ export class MockConditionalAccessPolicyService implements ConditionalAccessPoli
 
   countModesByTarget = signal<Record<ConditionalAccessTarget, CountMode[]>>(
     {} as Record<ConditionalAccessTarget, CountMode[]>
+  );
+  // Empty by default, so a spec that does not opt in sees no per-stage action rules and is not gated by them.
+  repeatableActionsByTarget = signal<Record<ConditionalAccessTarget, ConditionalAccessActionType[]>>(
+    {} as Record<ConditionalAccessTarget, ConditionalAccessActionType[]>
+  );
+  exclusiveGroupsByTarget = signal<Record<ConditionalAccessTarget, ConditionalAccessActionType[][]>>(
+    {} as Record<ConditionalAccessTarget, ConditionalAccessActionType[][]>
   );
 
   targets = signal<ConditionalAccessTarget[]>([]);
@@ -101,6 +109,24 @@ export class MockConditionalAccessPolicyService implements ConditionalAccessPoli
 
   countModesForTarget = jest.fn(
     (target: ConditionalAccessTarget): CountMode[] => this.countModesByTarget()[target] ?? []
+  );
+
+  // Canned - not a reimplementation of the real service's rules (see conditional-access-policy.service.spec.ts
+  // for those). A spec drives its case with mockReturnValue/mockImplementation.
+  unavailableActionTypes = jest.fn(
+    (
+      _: ConditionalAccessStageAction[],
+      __: ConditionalAccessTarget,
+      ___?: number
+    ): Set<ConditionalAccessActionType> => new Set()
+  );
+
+  actionConflict = jest.fn(
+    (
+      _: ConditionalAccessStageAction[],
+      __: number,
+      ___: ConditionalAccessTarget
+    ): "duplicate" | "exclusive" | null => null
   );
 
   getPolicies = jest.fn(

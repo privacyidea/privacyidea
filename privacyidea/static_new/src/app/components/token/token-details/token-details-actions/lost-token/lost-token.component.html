@@ -22,12 +22,16 @@
   [actions]="[closeAction]"
   [title]="dialogTitle()">
   <div class="lost-content">
-    <p i18n>
-      If the token is lost, you can enroll a temporary password based token and give the password to the user. The OTP
-      PIN of the old token is still the same.
-    </p>
-    <p i18n>The user will have to authenticate with the old OTP PIN he knows and this newly generated password.</p>
-    <p i18n>The old token {{ data.tokenSerial() }} will be disabled and can be deleted or enabled later.</p>
+    <p i18n="@@token.ifTokenLostYou"
+      >If the token is lost, you can enroll a temporary password based token and give the password to the user. The OTP
+      PIN of the old token is still the same.</p
+    >
+    <p i18n="@@token.userHaveAuthenticate"
+      >The user will have to authenticate with the old OTP PIN he knows and this newly generated password.</p
+    >
+    <p i18n="@@token.oldTokenDisabled"
+      >The old token {{ data.tokenSerial() }} will be disabled and can be deleted or enabled later.</p
+    >
     @if (!data.isLost()) {
       <div class="dialog-div">
         <button
@@ -35,7 +39,7 @@
           class="action-button-primary button-width-l"
           (click)="lostToken()">
           <mat-icon class="question-icon">question_mark</mat-icon>
-          <span i18n>Mark Token as Lost</span>
+          <span i18n="@@token.markTokenAsLost">Mark Token as Lost</span>
         </button>
       </div>
     } @else {
@@ -43,13 +47,13 @@
         appearance="outlined"
         class="lost-card">
         <mat-card-content
-          i18n
-          class="lost-card-content">
-          Token was marked as lost successfully.
-        </mat-card-content>
+          i18n="@@token.tokenWasMarked"
+          class="lost-card-content"
+          >Token was marked as lost successfully.</mat-card-content
+        >
       </mat-card>
-      <p i18n>
-        The serial of the new token is
+      <p i18n="@@token.serialNewToken"
+        >The serial of the new token is
         <a
           (click)="tokenSelected(lostTokenData?.serial)"
           (keydown.enter)="tokenSelected(lostTokenData?.serial)"
@@ -59,17 +63,17 @@
           {{ lostTokenData?.serial ?? "" }}</a
         >
         <br />
-        The password that needs to be combined with the OTP PIN:
-      </p>
+        The password that needs to be combined with the OTP PIN:</p
+      >
       <p class="lost-password">
         {{ lostTokenData?.password }}
       </p>
       <p
-        i18n
-        class="bold-warning">
-        The password can not be shown again later!
-      </p>
-      <p i18n>The token is valid until {{ lostTokenData?.end_date | localDateTime }}.</p>
+        i18n="@@token.passwordNotShown"
+        class="bold-warning"
+        >The password can not be shown again later!</p
+      >
+      <p i18n="@@token.tokenValidUntil">The token is valid until {{ lostTokenData?.end_date | localDateTime }}.</p>
     }
   </div>
 </app-dialog-wrapper>

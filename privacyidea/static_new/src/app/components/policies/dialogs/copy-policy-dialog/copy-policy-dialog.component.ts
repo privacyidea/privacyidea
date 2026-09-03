@@ -44,7 +44,7 @@ export class CopyPolicyDialogComponent extends AbstractDialogComponent<string, s
 
   readonly actions = computed<DialogAction<"submit" | null>[]>(() => [
     {
-      label: $localize`Copy Policy`,
+      label: $localize`:@@policy.copyPolicy:Copy Policy`,
       value: "submit",
       type: "confirm",
       disabled: this.isInvalid()

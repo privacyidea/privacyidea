@@ -105,6 +105,7 @@ export class LockedUsersComponent {
     "realm",
     "resolver",
     "state",
+    "cause",
     "lock_expires_at",
     "locked_at",
     "error_message"
@@ -131,6 +132,12 @@ export class LockedUsersComponent {
     { label: $localize`Permanent`, value: "permanent" },
     { label: $localize`Temporary`, value: "temporary" },
     { label: $localize`Expired`, value: "expired" }
+  ];
+
+  // Lock cause filter options: who imposed the lock now in force.
+  readonly causeOptions: MultiSelectFilterOption[] = [
+    { label: $localize`Policy`, value: "POLICY" },
+    { label: $localize`Manual`, value: "MANUAL" }
   ];
 
   // Keep the previously loaded rows visible while a reload is in flight
@@ -188,6 +195,10 @@ export class LockedUsersComponent {
       return $localize`Permanent`;
     }
     return this.isExpired(row) ? $localize`Expired` : $localize`Temporary`;
+  }
+
+  lockCauseLabel(row: LockedUserEntry): string {
+    return row.lock_cause === "MANUAL" ? $localize`Manual` : $localize`Policy`;
   }
 
   isAllSelected(): boolean {

@@ -243,6 +243,37 @@ describe("AuthenticationLogService", () => {
     expect(service.oldestTimestamp()).toBe("2020-01-01T00:00:00Z");
   });
 
+  it("fetchStatistics requests the window and omits bins when not given", () => {
+    const seen: unknown[] = [];
+    service.fetchStatistics("2026-03-01T00:00:00Z", "2026-03-02T00:00:00Z").subscribe((r) => seen.push(r));
+
+    const req = httpMock.expectOne((r) => r.url.endsWith("/authenticationlog/statistics"));
+    expect(req.request.method).toBe("GET");
+    expect(req.request.params.get("start_time")).toBe("2026-03-01T00:00:00Z");
+    expect(req.request.params.get("end_time")).toBe("2026-03-02T00:00:00Z");
+    // Left off entirely rather than sent empty, so the backend applies its own default.
+    expect(req.request.params.has("bins")).toBe(false);
+
+    req.flush(MockPiResponse.fromValue({ window: {}, bins: { count: 48, starts: [] }, events: [] }));
+    expect(seen).toHaveLength(1);
+  });
+
+  it("fetchStatistics sends an explicit bin count", () => {
+    service.fetchStatistics("2026-03-01T00:00:00Z", "2026-03-02T00:00:00Z", 24).subscribe();
+
+    const req = httpMock.expectOne((r) => r.url.endsWith("/authenticationlog/statistics"));
+    expect(req.request.params.get("bins")).toBe("24");
+    req.flush(MockPiResponse.fromValue({ window: {}, bins: { count: 24, starts: [] }, events: [] }));
+  });
+
+  it("fetchStatistics is not gated on the authentication-log route", () => {
+    // The dashboard widget calls it from the dashboard, where the route-gated resources deliberately do not fetch.
+    content.routeUrl.set(ROUTE_PATHS.DASHBOARD);
+    service.fetchStatistics("2026-03-01T00:00:00Z", "2026-03-02T00:00:00Z").subscribe();
+
+    httpMock.expectOne((r) => r.url.endsWith("/authenticationlog/statistics"));
+  });
+
   it("handleFilterInput sets, and clearFilter empties, the shared filter", () => {
     service.handleFilterInput({ target: { value: "serial: PISP0001" } } as unknown as Event);
     expect(service.filterParams()).toEqual({ serial: "PISP0001" });

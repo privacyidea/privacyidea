@@ -32,7 +32,8 @@ from sqlalchemy.sql import ColumnElement
 from privacyidea.lib import _
 from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType,
                                                                            CA_ENFORCEMENT_EVENT_TYPES,
-                                                                           CountMode)
+                                                                           CountMode,
+                                                                           RestrictionCause)
 from privacyidea.lib.conditional_access.authentication_log import _naive_utc
 from privacyidea.lib.conditional_access.conditions import (condition_sql_filters,
                                                            conditions_match_row,
@@ -199,6 +200,12 @@ class ConditionalAccessTarget(str, Enum):
     def __str__(self) -> str:
         return self.value
 
+
+# The ``recipient_group`` values of an EMAIL_ADMIN action that mean "every internal DB admin with an email
+# address" (see :func:`_resolve_admin_recipients`). Any other value is read as a comma-separated address list
+# when it contains an ``@``, and is otherwise an unknown group the action is skipped for - which is why the
+# CRUD layer validates against this same set at write time.
+ADMIN_RECIPIENT_GROUPS = frozenset({"internal_admins", "admins", "all"})
 
 #: The action that restricts a given target for a given duration - and so the action a stored restriction is
 #: described by. A row remembers its subject and its expiry but not which action wrote it; it does not need to,
@@ -823,9 +830,12 @@ def _policy_count(policy: ConditionalAccessPolicy, user: "User", window_end: dat
     :param user: the resolved user to count for
     :param window_end: the instant the window ends (reference time)
     :param since_last_success: True to floor the count at the user's last completed login in the window (a successful
-        login resets the counter). Applies to both user modes — ``PER_REQUEST`` floors at the last ``LOGIN_SUCCESS``
-        row, ``PER_ATTEMPT`` at the last successful attempt. (Source-IP ``DISTINCT_USERS`` deliberately never resets,
-        which is why it is a separate mode and does not go through here.)
+        login resets the counter); both callers - the pre-auth decision and the post-response evaluation - pass the
+        policy's :attr:`~privacyidea.models.conditional_access_policy.ConditionalAccessPolicy.reset_on_success`.
+        Applies to both user modes —
+        ``PER_REQUEST`` floors at the last ``LOGIN_SUCCESS`` row, ``PER_ATTEMPT`` at the last successful attempt.
+        (Source-IP ``DISTINCT_USERS`` deliberately never resets, which is why it is a separate mode and does not go
+        through here.)
     :return: the event count (``PER_REQUEST``) or the attempt count (``PER_ATTEMPT``)
     """
     sql_filters, row_filter = _count_scoping(policy)
@@ -1087,7 +1097,10 @@ def evaluate_access_decision(context: CAContext, now: datetime | None = None) ->
     supplies the decision. A ``DENY`` action therefore rejects this single request
     without persisting any state — a stateless, self-healing reject that lifts on
     its own as the failures age out of the window (contrast the durable
-    :attr:`ConditionalAccessAction.LOCK_USER`). Because ``DENY`` defaults to re-triggering
+    :attr:`ConditionalAccessAction.LOCK_USER`). With the policy's
+    ``reset_on_success`` the count is floored at the user's last completed
+    login, so a ``DENY`` also lifts on a successful authentication and not only
+    with the passage of time. Because ``DENY`` defaults to re-triggering
     (``count >= threshold``), a stage with ``failure_threshold`` 0 always matches,
     which is the lockdown idiom - scope it with conditions.
 
@@ -1165,10 +1178,11 @@ def _policy_access_decision(policy: ConditionalAccessPolicy, context: CAContext,
         count = _policy_count_ip(policy, context.source_ip, now)
         subject_label = f"source IP {context.source_ip}"
     else:
-        # User-scoped: keyed on the resolved user, so an unresolved user is never decided by a user policy.
+        # User-scoped: keyed on the resolved user, so an unresolved user is never decided by a user policy. The
+        # count honours the policy's reset_on_success, exactly as the post-response path does.
         if not _resolved(context.user):
             return AccessDecisionResult()
-        count = _policy_count(policy, context.user, now)
+        count = _policy_count(policy, context.user, now, since_last_success=policy.reset_on_success)
         subject_label = repr(context.user)
     deciding_stage = next((stage for stage in policy.stages if _stage_denies(stage, count)), None)
     if deciding_stage is None:
@@ -1247,8 +1261,9 @@ def evaluate_conditional_access_policies(context: CAContext, event_type: AuthEve
     ``retrigger_above_threshold`` fires whenever the count is at or above the
     threshold, so a single stage can email once at threshold 8 while keeping the
     user locked for every further failure (see :func:`_action_threshold_met`). The
-    count climbs by one per tracked failure and resets after a successful login
-    (see :func:`count_user_events`), so a fresh burst re-triggers the fire-once
+    count climbs by one per tracked failure and, for a policy with
+    ``reset_on_success``, resets after a successful login (see
+    :func:`count_user_events`), so a fresh burst re-triggers the fire-once
     actions too.
 
     The persistent side effects (lock state) are consulted by the *next* inbound
@@ -1384,15 +1399,21 @@ def _evaluate_policy(policy: ConditionalAccessPolicy, context: CAContext, event_
         subject_label = f"source IP {source_ip}"
     else:
         if not _resolved(user):
-            # A user-target policy is keyed on the resolved (resolver, uid, realm) user, so an unresolved user
-            # (unknown login, local admin) is never locked; source-IP policies above still run for such requests.
+            # A user-target policy is keyed on the resolved (resolver, uid, realm)
+            # user, so an unresolved user (unknown login, local admin) is never
+            # locked. Source-IP policies above still run for such requests.
             return ConditionalAccessEvaluation()
-        # The lock counts consecutive failures since the user's last completed login, so a legitimate user is not
-        # re-locked by stale pre-login failures (the pre-auth DENY decision deliberately does not reset on success —
-        # see _policy_access_decision).
-        # The count is the combined total across all of the policy's tracked types, not just the current
-        # event_type, so a policy tracking several failure types trips on their sum.
-        count = _policy_count(policy, user, now, since_last_success=True)
+        # With the policy's reset_on_success (the default) the lock counts consecutive
+        # failures since the user's last completed login: a successful authentication
+        # clears the slate, so a legitimate user is not re-locked by stale pre-login
+        # failures on their next single typo. Without it every tracked event in the raw
+        # window counts, which is what an admin wants when the threshold is meant to
+        # measure total failures rather than a run of them. The pre-auth DENY decision
+        # counts the same way (see _policy_access_decision).
+        # The count is the *combined* total over all of the policy's tracked types,
+        # not just the current request's event_type, so a policy tracking several
+        # failure types trips on their sum.
+        count = _policy_count(policy, user, now, since_last_success=policy.reset_on_success)
         subject_label = repr(user)
 
     # Picks the triggered stage: the highest-threshold stage with at least one action whose per-action condition is
@@ -1441,16 +1462,21 @@ def _action_expiry(stage_action: ConditionalAccessStageAction, now: datetime) ->
     """
     if stage_action.action_type not in (ConditionalAccessAction.LOCK_USER, ConditionalAccessAction.BLOCK_IP):
         return None
-    duration = _lock_duration_seconds(stage_action.action_value)
+    duration = parse_lock_duration_seconds(stage_action.action_value)
     return now + timedelta(seconds=duration) if duration is not None else None
 
 
-def _lock_duration_seconds(action_value: Any) -> int | None:
+def parse_lock_duration_seconds(action_value: Any) -> int | None:
     """
-    Parse the ``LOCK_USER`` lock duration (in seconds) from a stage action's
-    JSON ``action_value``. Accepts a plain integer, a numeric string, or a dict
-    carrying ``duration_seconds`` / ``duration``. Returns ``None`` for anything
-    that is not a positive integer number of seconds.
+    Parse the ``LOCK_USER`` / ``BLOCK_IP`` restriction duration (in seconds) from
+    a stage action's JSON ``action_value``. Accepts a plain integer, a numeric
+    string, or a dict carrying ``duration_seconds`` / ``duration``. Returns
+    ``None`` for anything that is not a positive integer number of seconds.
+
+    This is also the write path's validator
+    (:func:`~privacyidea.lib.conditional_access.policy._validate_duration_action_value`),
+    so what can be stored and what the engine can act on are the same set by
+    construction rather than by two descriptions agreeing.
     """
     if isinstance(action_value, bool):
         # bool is an int subclass; a boolean is never a valid duration.
@@ -1532,9 +1558,9 @@ def _resolve_admin_recipients(recipient_group: str | None) -> list[str]:
     group = (str(recipient_group).strip() if recipient_group else "internal_admins")
     if "@" in group:
         return [addr.strip() for addr in group.split(",") if addr.strip()]
-    if group.lower() in ("internal_admins", "admins", "all"):
-        # Imported lazily to keep the engine's hot path free of lib.auth's heavy token/container imports and avoid
-        # import-time coupling.
+    if group.lower() in ADMIN_RECIPIENT_GROUPS:
+        # Imported lazily: keeps the engine's hot path free of lib.auth's heavy
+        # token/container imports and avoids any import-time coupling.
         from privacyidea.lib.auth import get_all_db_admins
         return [admin.email for admin in get_all_db_admins() if admin.email]
     log.warning(f"Unknown EMAIL_ADMIN recipient_group {recipient_group!r}; "
@@ -1671,7 +1697,7 @@ def _execute_stage_actions(policy: ConditionalAccessPolicy, stage: ConditionalAc
 
         try:
             if action_type == ConditionalAccessAction.LOCK_USER:
-                duration = _lock_duration_seconds(action.action_value)
+                duration = parse_lock_duration_seconds(action.action_value)
                 if duration is None:
                     log.warning(f"LOCK_USER action {action.id} on stage {stage.id} has no valid duration "
                                 f"({action.action_value!r}); skipping.")
@@ -1698,7 +1724,7 @@ def _execute_stage_actions(policy: ConditionalAccessPolicy, stage: ConditionalAc
                     # Permanent block; action_value is ignored (mirrors PERMANENT_LOCK_USER).
                     block_expires_at = None
                 else:
-                    duration = _lock_duration_seconds(action.action_value)
+                    duration = parse_lock_duration_seconds(action.action_value)
                     if duration is None:
                         log.warning(f"BLOCK_IP action {action.id} on stage {stage.id} has no valid duration "
                                     f"({action.action_value!r}); skipping.")
@@ -1778,7 +1804,10 @@ def _upsert_user_lock_state(user: "User", *, lock_expires_at: datetime | None, e
 
     The write is defensive: a failure is logged and rolled back so that writing
     the lock state can never break the authentication response that already
-    completed.
+    completed. An existing **permanent** lock is never downgraded to a timed
+    lock - which guards against a *second policy* (or a stage written before
+    the CRUD rejected the combination), since one stage can never carry both
+    the timed and the permanent variant.
 
     Only a **strictly stronger** lock is written. A permanent lock is not downgraded to a timed one, a timed lock
     is not shortened, and a write that merely restates the lock in force changes nothing. Several policies can lock
@@ -1817,6 +1846,10 @@ def _upsert_user_lock_state(user: "User", *, lock_expires_at: datetime | None, e
         if not declined:
             state.username = user.login
             state.lock_expires_at = lock_expires_at
+            # The cause travels with the expiry, so the row always names whoever imposed the lock now in
+            # force: a policy lock that strengthens an administrator's timed one becomes a policy lock, while
+            # a manual permanent lock is never downgraded and keeps its cause.
+            state.lock_cause = RestrictionCause.POLICY
             # Written together with the expiry, so the error message always describes the lock now in force. Only a
             # write that strengthens the lock gets here, and its error message comes with it.
             state.error_message = error_message
@@ -1832,7 +1865,8 @@ def _upsert_ip_block(source_ip: str, *, block_expires_at: datetime | None, error
     defensive (a failure is logged and rolled back so that blocking an IP can
     never break the authentication response that already completed) and a block
     is never weakened - neither downgraded from permanent to timed, nor
-    shortened.
+    shortened, which guards against a second policy rather than a sibling
+    action, since one stage may never carry both variants.
 
     Never-block IPs (loopback and the ``PI_CONDITIONAL_ACCESS_NEVER_BLOCK``
     allowlist) are skipped: blocking shared infrastructure (a reverse proxy, NAT egress, or
@@ -1865,6 +1899,8 @@ def _upsert_ip_block(source_ip: str, *, block_expires_at: datetime | None, error
             declined = True
         if not declined:
             state.block_expires_at = block_expires_at
+            # The cause travels with the expiry, exactly as for a user lock.
+            state.block_cause = RestrictionCause.POLICY
             # See _upsert_user_lock_state: written together with the expiry.
             state.error_message = error_message
     return write.succeeded and not declined

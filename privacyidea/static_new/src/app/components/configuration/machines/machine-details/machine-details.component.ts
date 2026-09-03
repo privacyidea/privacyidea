@@ -178,10 +178,10 @@ export class MachineDetailsComponent implements OnInit, OnDestroy {
         .openDialog({
           component: SimpleConfirmationDialogComponent,
           data: {
-            title: $localize`Detach Token`,
+            title: $localize`:@@machine.detachToken:Detach Token`,
             items: [token.serial],
-            itemType: $localize`token`,
-            confirmAction: { label: $localize`Detach`, value: true, type: "destruct" }
+            itemType: $localize`:@@common.itemTypeToken:token`,
+            confirmAction: { label: $localize`:@@machine.detach:Detach`, value: true, type: "destruct" }
           }
         })
         .afterClosed()

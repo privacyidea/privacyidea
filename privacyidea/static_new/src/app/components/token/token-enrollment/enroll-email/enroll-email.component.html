@@ -20,41 +20,41 @@
   @if (!defaultSmtpIsSet()) {
     @if (authService.role() === "admin") {
       <span
-        i18n
-        class="inline-warning">
-        For E-Mail tokens to work properly you need to set the
+        i18n="@@token.eMailTokensWork"
+        class="inline-warning"
+        >For E-Mail tokens to work properly you need to set the
         <a
           role="button"
           tabindex="0"
           aria-label="Go to Email token configuration"
-          i18n-aria-label
+          i18n-aria-label="@@token.goEmailTokenConfiguration"
           (click)="goToEmailConfig()"
           (keydown)="onEmailConfigKeydown($event)">
           Email Token Configuration </a
-        >!
-      </span>
+        >!</span
+      >
     } @else {
       <span
-        i18n
-        class="inline-warning">
-        The E-Mail token enrollment is not completely configured. Please contact your administrator.
-      </span>
+        i18n="@@token.eMailTokenEnrollment"
+        class="inline-warning"
+        >The E-Mail token enrollment is not completely configured. Please contact your administrator.</span
+      >
     }
   }
   <mat-checkbox
     [checked]="readEmailDynamically()"
     (change)="readEmailDynamically.set($event.checked)"
-    i18n>
-    Read email dynamically from user source on each request
-  </mat-checkbox>
+    i18n="@@token.readEmailDynamically"
+    >Read email dynamically from user source on each request</mat-checkbox
+  >
   <div class="flex-row gap-16">
     @if (!readEmailDynamically()) {
       <mat-form-field class="input-width-l">
-        <mat-label i18n>Email Address</mat-label>
+        <mat-label i18n="@@token.emailAddress">Email Address</mat-label>
         <input
           [formField]="emailAddressForm"
           matInput />
-        <mat-error i18n>Email Address is <strong>required</strong></mat-error>
+        <mat-error i18n="@@token.emailAddressRequired">Email Address is <strong>required</strong></mat-error>
       </mat-form-field>
     } @else {
       <span class="input-width-l"></span>

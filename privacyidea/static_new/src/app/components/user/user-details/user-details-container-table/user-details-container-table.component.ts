@@ -92,6 +92,10 @@ import { forkJoin } from "rxjs";
   styleUrl: "./user-details-container-table.component.scss"
 })
 export class UserDetailsContainerTableComponent {
+  protected linkLabel(label: string): string {
+    return $localize`:@@common.linkLabel:${label}:LABEL: link`;
+  }
+
   /**
    * The way out of the empty state. Passed as a template rather than projected content because this
    * component renders it in a different place depending on the table's state, and a single
@@ -146,7 +150,7 @@ export class UserDetailsContainerTableComponent {
   /** Creating one is the only route out of the empty state here, so the hint is dropped without that right. */
   readonly emptyHint = computed(() =>
     this.authService.actionAllowed("container_create")
-      ? $localize`Create a container for this user to see it here.`
+      ? $localize`:@@user.createContainerUser:Create a container for this user to see it here.`
       : ""
   );
 
@@ -173,10 +177,10 @@ export class UserDetailsContainerTableComponent {
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: $localize`Delete Containers`,
+          title: $localize`:@@user.deleteContainers:Delete Containers`,
           items: selected.map((container) => container.serial),
           itemType: "container",
-          confirmAction: { label: $localize`Delete`, value: true, type: "destruct" }
+          confirmAction: { label: $localize`:@@common.delete:Delete`, value: true, type: "destruct" }
         }
       })
       .afterClosed()

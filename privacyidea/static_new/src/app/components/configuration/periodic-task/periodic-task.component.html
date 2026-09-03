@@ -20,8 +20,8 @@
   appScrollToTop
   class="periodic-task-layout"
   aria-label="Periodic Tasks"
-  i18n-aria-label>
-  <h3 i18n>Periodic Tasks</h3>
+  i18n-aria-label="@@common.periodicTasks">
+  <h3 i18n="@@common.periodicTasks">Periodic Tasks</h3>
 
   @if (tableState.showTable()) {
     <div class="filter-paginator-container">
@@ -29,7 +29,7 @@
         appearance="fill"
         class="periodic-task-table-filter"
         subscriptSizing="dynamic">
-        <mat-label i18n>Filter Periodic Tasks ...</mat-label>
+        <mat-label i18n="@@periodicTask.filterPeriodic">Filter Periodic Tasks ...</mat-label>
         <app-clearable-input
           (clearButtonClick)="resetFilter()"
           [showClearButton]="filterString().length > 0">
@@ -38,7 +38,7 @@
             (input)="onFilterInput(filterHTMLInputElement.value)"
             [value]="filterString()"
             aria-label="Filter Input"
-            i18n-aria-label
+            i18n-aria-label="@@common.filterInput"
             matInput />
         </app-clearable-input>
       </mat-form-field>
@@ -53,7 +53,7 @@
             <mat-icon>event_repeat</mat-icon>
             <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
           </span>
-          <span i18n>Create Periodic Task</span>
+          <span i18n="@@common.createPeriodic">Create Periodic Task</span>
         </button>
         <button
           (click)="deleteSelected()"
@@ -62,15 +62,15 @@
           color="warn"
           mat-stroked-button>
           <mat-icon>delete</mat-icon>
-          <span i18n>Delete Selected</span>
+          <span i18n="@@periodicTask.deleteSelected">Delete Selected</span>
         </button>
       }
       <mat-slide-toggle
         (change)="toggleDetailedView()"
         [checked]="detailedView()"
-        i18n>
-        Detailed View
-      </mat-slide-toggle>
+        i18n="@@common.detailedView"
+        >Detailed View</mat-slide-toggle
+      >
     </div>
 
     <table
@@ -88,7 +88,7 @@
             [disabled]="!authService.actionAllowed('periodictask_write') || !selector.hasVisibleRows()"
             [indeterminate]="selector.someRowsSelected()"
             aria-label="Select all periodic tasks"
-            i18n-aria-label></mat-checkbox>
+            i18n-aria-label="@@periodicTask.selectAllPeriodic"></mat-checkbox>
         </th>
         <td
           *matCellDef="let task"
@@ -99,18 +99,18 @@
             [checked]="selector.isRowSelected(task)"
             [disabled]="!authService.actionAllowed('periodictask_write') || task.id === null || task.id === undefined"
             aria-label="Select periodic task"
-            i18n-aria-label></mat-checkbox>
+            i18n-aria-label="@@periodicTask.selectPeriodic"></mat-checkbox>
         </td>
       </ng-container>
 
       <ng-container matColumnDef="name">
         <th
           *matHeaderCellDef
-          i18n
+          i18n="@@common.name"
           mat-header-cell
-          mat-sort-header>
-          Name
-        </th>
+          mat-sort-header
+          >Name</th
+        >
         <td
           *matCellDef="let task"
           mat-cell>
@@ -131,11 +131,11 @@
       <ng-container matColumnDef="taskmodule">
         <th
           *matHeaderCellDef
-          i18n
+          i18n="@@periodicTask.taskModule"
           mat-header-cell
-          mat-sort-header>
-          Task Module
-        </th>
+          mat-sort-header
+          >Task Module</th
+        >
         <td
           *matCellDef="let task"
           mat-cell>
@@ -146,11 +146,11 @@
       <ng-container matColumnDef="interval">
         <th
           *matHeaderCellDef
-          i18n
+          i18n="@@periodicTask.interval"
           mat-header-cell
-          mat-sort-header>
-          Interval
-        </th>
+          mat-sort-header
+          >Interval</th
+        >
         <td
           *matCellDef="let task"
           mat-cell>
@@ -161,11 +161,11 @@
       <ng-container matColumnDef="nodes">
         <th
           *matHeaderCellDef
-          i18n
+          i18n="@@periodicTask.nodes"
           mat-header-cell
-          mat-sort-header>
-          Nodes
-        </th>
+          mat-sort-header
+          >Nodes</th
+        >
         <td
           *matCellDef="let task"
           mat-cell>
@@ -176,10 +176,10 @@
       <ng-container matColumnDef="options">
         <th
           *matHeaderCellDef
-          i18n
-          mat-header-cell>
-          Options
-        </th>
+          i18n="@@common.options"
+          mat-header-cell
+          >Options</th
+        >
         <td
           *matCellDef="let task"
           class="column-max-width"
@@ -203,16 +203,16 @@
       <ng-container matColumnDef="active">
         <th
           *matHeaderCellDef
-          i18n
+          i18n="@@common.active"
           mat-header-cell
-          mat-sort-header>
-          Active
-        </th>
+          mat-sort-header
+          >Active</th
+        >
         <td
           *matCellDef="let task"
           mat-cell>
           <mat-slide-toggle
-            i18n-matTooltip
+            i18n-matTooltip="@@common.toggleActiveStatus"
             matTooltip="Toggle Active Status"
             [checked]="task.active"
             (change)="toggleActive(task, $event.checked)"
@@ -242,8 +242,8 @@
       [table]="tableState"
       heading="No periodic tasks yet"
       hint="Create a periodic task to run recurring jobs on your privacyIDEA nodes."
-      i18n-heading
-      i18n-hint
+      i18n-heading="@@periodicTask.noPeriodicTasks"
+      i18n-hint="@@periodicTask.createPeriodicTask"
       icon="event_repeat">
       @if (authService.actionAllowed("periodictask_write")) {
         <button
@@ -254,7 +254,7 @@
             <mat-icon>event_repeat</mat-icon>
             <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
           </span>
-          <span i18n>Create Periodic Task</span>
+          <span i18n="@@common.createPeriodic">Create Periodic Task</span>
         </button>
       }
     </app-table-state>

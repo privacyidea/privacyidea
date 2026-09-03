@@ -72,9 +72,13 @@ def upgrade():
                         ['resolver', 'uid', 'realm', 'timestamp'])
         op.create_index('ix_authlog_ip_time', 'authentication_log',
                         ['source_ip', 'timestamp'])
-        # The TCP peer the request arrived from, the second pivot of a forensic query.
+        # The TCP peer is the second pivot a forensic query starts from - "what came from this machine",
+        # whatever it claimed to be forwarding for.
         op.create_index('ix_authlog_peer_ip_time', 'authentication_log',
                         ['peer_ip', 'timestamp'])
+        # The one index not scoped to a subject: the statistics query and the retention delete both range over
+        # timestamp alone, and the indexes above cannot serve that.
+        op.create_index('ix_authlog_time', 'authentication_log', ['timestamp'])
 
     except (OperationalError, ProgrammingError) as ex:
         if "already exists" in str(ex.orig).lower():
@@ -92,6 +96,7 @@ def downgrade():
             batch_op.drop_index('ix_authlog_user_time')
             batch_op.drop_index('ix_authlog_ip_time')
             batch_op.drop_index('ix_authlog_peer_ip_time')
+            batch_op.drop_index('ix_authlog_time')
 
         op.drop_table('authentication_log')
 

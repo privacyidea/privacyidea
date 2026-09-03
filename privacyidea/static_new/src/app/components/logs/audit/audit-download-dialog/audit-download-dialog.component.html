@@ -1,9 +1,11 @@
 <app-dialog-wrapper
   (actionTriggered)="onAction($event)"
   [actions]="[action]"
-  i18n-title="@@DialogTitleDownloadAuditLog"
+  i18n-title="@@audit.downloadAudit"
   title="Download Audit Log">
   <div>
-    <p i18n>The download can take a long time but it will continue in the background if the page is changed.</p>
+    <p i18n="@@audit.downloadTakeLong"
+      >The download can take a long time but it will continue in the background if the page is changed.</p
+    >
   </div>
 </app-dialog-wrapper>

@@ -21,10 +21,17 @@
   [expanded]="!action().id">
   <mat-expansion-panel-header>
     <mat-panel-title>
-      @if (!isActionAllowedForTarget()) {
+      @if (!isActionAllowedForTarget() || actionValueError()) {
         <mat-icon
           class="ca-action-warn-icon"
-          aria-label="Action not allowed for the target"
+          aria-label="This action needs attention"
+          i18n-aria-label>
+          warning
+        </mat-icon>
+      } @else if (actionConflict()) {
+        <mat-icon
+          class="ca-action-warn-icon"
+          aria-label="Action conflicts with another action on this stage"
           i18n-aria-label>
           warning
         </mat-icon>
@@ -53,7 +60,11 @@
         [value]="action().action_type"
         (selectionChange)="onActionTypeChange($event.value)">
         @for (actionType of allowedActionTypes(); track actionType) {
-          <mat-option [value]="actionType">{{ actionType }}</mat-option>
+          <mat-option
+            [value]="actionType"
+            [disabled]="disabledActionTypes().has(actionType)">
+            {{ actionType }}
+          </mat-option>
         }
       </mat-select>
       <mat-hint>{{ actionDescription() }}</mat-hint>
@@ -64,6 +75,9 @@
         i18n>
         This action is not allowed for the policy's target. Choose a different action, or change the target.
       </p>
+    }
+    @if (actionConflict()) {
+      <p class="ca-action-target-error">{{ conflictMessage() }}</p>
     }
 
     <mat-checkbox
@@ -95,7 +109,15 @@
             min="1"
             [value]="durationValue()"
             (input)="onDurationInput($any($event.target).value)" />
-          <mat-hint i18n>How long the lock or block lasts.</mat-hint>
+          <!--
+            A hint rather than a mat-error, for the same reason as the SMTP one below: the input carries no
+            form control, so it never enters errorState and a mat-error would be dropped.
+          -->
+          @if (actionValueError()) {
+            <mat-hint class="ca-action-stale">{{ actionValueError() }}</mat-hint>
+          } @else {
+            <mat-hint i18n>How long the lock or block lasts.</mat-hint>
+          }
         </mat-form-field>
 
         <mat-form-field
@@ -125,6 +147,9 @@
         </mat-form-field>
       }
       @case ("email") {
+        @if (actionValueError()) {
+          <p class="ca-action-value-error">{{ actionValueError() }}</p>
+        }
         @for (field of emailFields(); track field.key) {
           @switch (field.kind) {
             @case ("textarea") {
@@ -246,6 +271,11 @@
             </p>
           </div>
         </details>
+      }
+      @default {
+        @if (actionValueError()) {
+          <p class="ca-action-value-error">{{ actionValueError() }}</p>
+        }
       }
     }
   </div>

@@ -70,6 +70,7 @@ import { TokenDetails, TokenService, TokenServiceInterface } from "@services/tok
 import { EditUserData, UserService, UserServiceInterface } from "@services/user/user.service";
 import { filter, firstValueFrom } from "rxjs";
 import { UserDetailsContainerTableComponent } from "./user-details-container-table/user-details-container-table.component";
+import { UserDetailsLockDialogComponent } from "./user-details-lock-dialog/user-details-lock-dialog.component";
 import { UserDetailsPinDialogComponent } from "./user-details-pin-dialog/user-details-pin-dialog.component";
 import { UserDetailsTokenTableComponent } from "./user-details-token-table/user-details-token-table.component";
 import { formatLocalDateTime } from "@utils/date-format.utils";
@@ -122,15 +123,15 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
   private readonly renderer = inject(Renderer2);
 
   readonly labels: Record<string, string> = {
-    username: $localize`Username`,
-    givenname: $localize`Given name`,
-    surname: $localize`Surname`,
-    email: $localize`Email`,
-    phone: $localize`Phone`,
-    mobile: $localize`Mobile`,
-    description: $localize`Description`,
-    userid: $localize`User ID`,
-    resolver: $localize`Resolver`
+    username: $localize`:@@common.username:Username`,
+    givenname: $localize`:@@user.givenNameLabel:Given name`,
+    surname: $localize`:@@user.surname:Surname`,
+    email: $localize`:@@common.email:Email`,
+    phone: $localize`:@@user.phone:Phone`,
+    mobile: $localize`:@@user.mobile:Mobile`,
+    description: $localize`:@@common.description:Description`,
+    userid: $localize`:@@common.userId:User ID`,
+    resolver: $localize`:@@common.resolver:Resolver`
   };
   readonly excludedKeys = new Set(["editable"]);
 
@@ -216,6 +217,17 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
   lockStateClass = computed(() =>
     this.isPermanentLocked() ? "highlight-false" : this.isUserLocked() ? "highlight-warning" : "highlight-true"
   );
+  // Whether an administrator imposed the lock now in force rather than a conditional-access policy. Shown as
+  // a second line in the card so the four lockStatusText wordings stay about the lock itself.
+  lockCauseLabel = computed(() => {
+    const status = this.lockStatus();
+    if (!status) {
+      return "";
+    }
+    return status.lock_cause === "MANUAL"
+      ? $localize`Locked by an administrator`
+      : $localize`Locked by a conditional-access policy`;
+  });
   lockStatusText = computed(() => {
     const status = this.lockStatus();
     if (!status) {
@@ -263,7 +275,9 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
     } catch (error) {
       console.error("Failed to save user edits", error);
       const message = error instanceof Error ? error.message : String(error);
-      this.notificationService.error("Failed to save user edits. " + message);
+      this.notificationService.error(
+        $localize`:@@user.failedToSaveUserEdits:Failed to save user edits. ${message}:MESSAGE:`
+      );
       return false;
     }
   }
@@ -375,6 +389,37 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
     this.authenticationLogService.authenticationLogFilter.set(authLogFilter);
   }
 
+  lockUser() {
+    const detailsUser = this.userService.detailsUser();
+    this.dialogService
+      .openDialog({
+        component: UserDetailsLockDialogComponent,
+        data: { username: detailsUser.username, realm: detailsUser.realm }
+      })
+      .afterClosed()
+      .subscribe({
+        next: (result) => {
+          if (!result) {
+            return;
+          }
+          this.conditionalAccessStateService
+            .setUserLock({
+              login: detailsUser.username,
+              realm: detailsUser.realm,
+              resolver: this.userData().resolver,
+              duration_seconds: result.durationSeconds ?? undefined
+            })
+            .subscribe({
+              next: (lock) => {
+                if (lock) {
+                  this.conditionalAccessStateService.userLockResource.reload();
+                }
+              }
+            });
+        }
+      });
+  }
+
   resetUserLock() {
     const lockStatus = this.lockStatus();
     if (!lockStatus) {
@@ -469,10 +514,10 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: $localize`Delete User`,
+          title: $localize`:@@common.deleteUser:Delete User`,
           items: [this.userData().username],
           itemType: "user",
-          confirmAction: { label: $localize`Delete`, value: true, type: "destruct" }
+          confirmAction: { label: $localize`:@@common.delete:Delete`, value: true, type: "destruct" }
         }
       })
       .afterClosed()

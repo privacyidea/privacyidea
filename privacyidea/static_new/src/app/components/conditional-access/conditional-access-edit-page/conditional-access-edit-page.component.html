@@ -168,6 +168,21 @@
         }
       </mat-form-field>
 
+      <div class="ca-reset-on-success">
+        <mat-checkbox
+          [checked]="editPolicy().reset_on_success"
+          [disabled]="!resetOnSuccessApplies()"
+          (change)="onResetOnSuccessChange($event.checked)"
+          i18n>
+          Reset the count on a successful login
+        </mat-checkbox>
+        <app-info-hint
+          text="When on, a successful login clears the count, so every threshold of this policy - a deny decision included - measures consecutive failures since that login. When off, every tracked event in the window counts. Source-IP policies never reset."
+          i18n-text
+          ariaLabel="About resetting on success"
+          i18n-ariaLabel />
+      </div>
+
       <mat-form-field
         appearance="fill"
         class="input-width-s">
@@ -315,6 +330,23 @@
         class="ca-stages-error"
         i18n>
         Some actions are not allowed for the selected target. Change the target or remove those actions.
+      </p>
+    }
+    @if (!stageActionsValid()) {
+      <p
+        class="ca-stages-error"
+        i18n>
+        A stage carries the same action twice, or two actions that contradict each other. Only the email actions
+        may be repeated, and a stage cannot both lock temporarily and permanently, or both block temporarily and
+        permanently.
+      </p>
+    }
+    @if (!actionValuesValid()) {
+      <p
+        class="ca-stages-error"
+        i18n>
+        Some actions are missing a value they need to run: a lock or block needs a duration, an email needs a
+        subject and body. Open the action to fix it.
       </p>
     }
     <app-conditional-access-stages-list

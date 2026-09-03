@@ -181,24 +181,32 @@ export class ContainerTemplateService implements ContainerTemplateServiceInterfa
 
   async deleteTemplate(name: string) {
     if (!this.authService.actionAllowed("container_template_delete")) {
-      this.notificationService.error("You are not allowed to delete container templates.");
+      this.notificationService.error(
+        $localize`:@@containerTemplate.youAreNotAllowedTo:You are not allowed to delete container templates.`
+      );
       throw new Error("Permission denied");
     }
 
     try {
       await lastValueFrom(this._performDeleteRequest(name));
       this.templatesResource.reload();
-      this.notificationService.success("Successfully deleted template.");
+      this.notificationService.success(
+        $localize`:@@containerTemplate.successfullyDeletedTemplate:Successfully deleted template.`
+      );
     } catch (error: unknown) {
       const message = error instanceof HttpErrorResponse ? error.error?.result?.error?.message || "" : "";
-      this.notificationService.error("Failed to delete template. " + message);
+      this.notificationService.error(
+        $localize`:@@containerTemplate.failedToDeleteTemplate:Failed to delete template. ${message}:MESSAGE:`
+      );
       throw error;
     }
   }
 
   async deleteTemplates(names: string[]) {
     if (!this.authService.actionAllowed("container_template_delete")) {
-      this.notificationService.error("You are not allowed to delete container templates.");
+      this.notificationService.error(
+        $localize`:@@containerTemplate.youAreNotAllowedTo:You are not allowed to delete container templates.`
+      );
       throw new Error("Permission denied");
     }
 
@@ -207,10 +215,14 @@ export class ContainerTemplateService implements ContainerTemplateServiceInterfa
         await lastValueFrom(this._performDeleteRequest(n));
       }
       this.templatesResource.reload();
-      this.notificationService.success("Successfully deleted templates.");
+      this.notificationService.success(
+        $localize`:@@containerTemplate.successfullyDeletedTemplates:Successfully deleted templates.`
+      );
     } catch (error: unknown) {
       const message = error instanceof HttpErrorResponse ? error.error?.result?.error?.message || "" : "";
-      this.notificationService.error("Failed to delete templates. " + message);
+      this.notificationService.error(
+        $localize`:@@containerTemplate.failedToDeleteTemplates:Failed to delete templates. ${message}:MESSAGE:`
+      );
       throw error;
     }
   }
@@ -229,15 +241,17 @@ export class ContainerTemplateService implements ContainerTemplateServiceInterfa
         this.http.post<PiResponse<{ template_id: number }>>(url, template, { headers: this.authService.getHeaders() })
       );
       this.templatesResource.reload();
-      this.notificationService.success(`Successfully saved template edits.`);
+      this.notificationService.success(
+        $localize`:@@containerTemplate.successfullySavedTemplateEdits:Successfully saved template edits.`
+      );
       return true;
     } catch (error: unknown) {
       console.warn("Failed to save template edits:", error);
       const message = error instanceof HttpErrorResponse ? error.error?.result?.error?.message || "" : "";
-      this.notificationService.error("Failed to save template edits. " + message);
+      this.notificationService.error(
+        $localize`:@@containerTemplate.failedToSaveTemplateEdits:Failed to save template edits. ${message}:MESSAGE:`
+      );
       return false;
     }
   }
-
-
 }

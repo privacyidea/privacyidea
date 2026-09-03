@@ -86,6 +86,28 @@ describe("TokenRolloverComponent", () => {
     expect(component).toBeDefined();
   });
 
+  it("should include the token serial in the dialog title", () => {
+    component.token.set({ type: "hotp", serial: "ABC123" });
+    expect(component.title()).toBe("Rollover Token ABC123");
+  });
+
+  it("should show an error notification when enrollment fails", async () => {
+    component.token.set({ type: "hotp", serial: "ABC123" });
+    installStrategy(component, {
+      buildEnrollmentArgs: jest.fn().mockReturnValue({
+        data: {},
+        mapper: { map: (x: unknown) => x }
+      })
+    });
+    tokenService.enrollToken.mockReturnValue(
+      new Promise((_resolve, reject) => reject({ error: { result: { error: { message: "boom" } } } }))
+    );
+
+    await expect(component.rolloverToken()).rejects.toBeDefined();
+
+    expect(notificationService.error).toHaveBeenCalledWith("Failed to enroll token: boom");
+  });
+
   it("should call enrollToken and close dialog on successful rollover", async () => {
     const mockEnrollResp = {
       result: { status: true },
@@ -149,6 +171,15 @@ describe("TokenRolloverComponent", () => {
     expect(dialogService.openDialog).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ response: regenerated }) })
     );
+  });
+
+  it("should show a warning when opening the last step dialog without a response", () => {
+    (component as unknown as { openLastStepDialog: (response: EnrollmentResponse | null) => void }).openLastStepDialog(
+      null
+    );
+
+    expect(notificationService.warning).toHaveBeenCalledWith("No rollover response available.");
+    expect(dialogService.openDialog).not.toHaveBeenCalled();
   });
 
   it("should show snackbar if no token is set", async () => {

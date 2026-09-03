@@ -23,9 +23,12 @@ the live user-lock state and blocklist entries.
 from datetime import timedelta
 
 from privacyidea.lib.conditional_access.authentication_log import AuthenticationLogVisibilityScope
+from privacyidea.lib.conditional_access.authentication_event_types import RestrictionCause
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.conditional_access.state import (
+    block_ip,
     get_user_lock_dict,
+    lock_user,
     list_blocklist,
     list_locked_users,
     list_locked_users_paginate,
@@ -84,6 +87,97 @@ class UserLockStateTestCase(MyTestCase):
     def _block(self, ip, block_expires_at, error_message=None):
         db.session.add(BlockList(ip=ip, block_expires_at=block_expires_at, error_message=error_message))
         db.session.commit()
+
+    # --- lock_user / block_ip (the manual write path) -------------------------
+
+    def test_lock_user_writes_a_permanent_manual_lock(self):
+        # Permanent is the default: an admin locking by hand is reacting to an incident, and a lock that
+        # quietly expires on its own would be the surprising outcome.
+        lock = lock_user(self.user)
+        self.assertTrue(lock["permanent"])
+        self.assertEqual(RestrictionCause.MANUAL, lock["lock_cause"])
+        row = db.session.query(UserLockState).one()
+        self.assertIsNone(row.lock_expires_at)
+        self.assertEqual(RestrictionCause.MANUAL, row.lock_cause)
+        self.assertEqual(self.user.login, row.username)
+
+    def test_lock_user_with_a_duration_sets_the_expiry(self):
+        lock = lock_user(self.user, duration_seconds=600)
+        self.assertFalse(lock["permanent"])
+        self.assertAlmostEqual(600, lock["seconds_remaining"], delta=5)
+
+    def test_lock_user_rejects_a_non_positive_duration(self):
+        for duration in (0, -1, True, "600"):
+            self.assertRaises(ParameterError, lock_user, self.user, duration)
+        self.assertEqual(0, db.session.query(UserLockState).count())
+
+    def test_lock_user_rejects_an_unresolved_user(self):
+        # The row is keyed on (resolver, uid, realm), so a user that does not resolve has no key.
+        self.assertRaises(ParameterError, lock_user, User())
+
+    def test_manual_lock_is_authoritative_in_both_directions(self):
+        # The engine refuses to downgrade a permanent lock so that the order two policies happen to fire in
+        # cannot decide the outcome. An admin stating the outcome is not a race, so the write stands.
+        lock_user(self.user)
+        self.assertTrue(get_user_lock_dict(self.user)["permanent"])
+        # A permanent lock is replaced by a timed one, which the engine's upsert would decline as a weakening.
+        lock_user(self.user, duration_seconds=60)
+        self.assertFalse(get_user_lock_dict(self.user)["permanent"])
+        lock_user(self.user)
+        self.assertTrue(get_user_lock_dict(self.user)["permanent"])
+
+    def test_lock_user_replaces_a_policy_lock_and_its_cause(self):
+        self._lock(utc_now() + timedelta(seconds=3600))
+        self.assertEqual(RestrictionCause.POLICY, db.session.query(UserLockState).one().lock_cause)
+        lock_user(self.user, duration_seconds=60)
+        self.assertEqual(RestrictionCause.MANUAL, db.session.query(UserLockState).one().lock_cause)
+
+    def test_block_ip_writes_a_manual_block(self):
+        entry = block_ip("203.0.113.9", duration_seconds=300)
+        self.assertEqual("203.0.113.9", entry["identifier"])
+        self.assertEqual(RestrictionCause.MANUAL, entry["block_cause"])
+        self.assertFalse(entry["permanent"])
+        self.assertEqual(RestrictionCause.MANUAL, db.session.query(BlockList).one().block_cause)
+
+    def test_block_ip_refuses_a_never_block_address_loudly(self):
+        # The engine skips one silently so an automatic action cannot lock out everyone behind a shared
+        # proxy; an admin asking for a block has to be told it did not happen.
+        self.assertRaisesRegex(ParameterError, "never-block", block_ip, "127.0.0.1")
+        self.assertEqual(0, db.session.query(BlockList).count())
+
+    def test_block_ip_rejects_an_invalid_address(self):
+        self.assertRaisesRegex(ParameterError, "not a valid IP address", block_ip, "not-an-ip")
+
+    def test_block_ip_stores_an_ipv6_address_canonically(self):
+        # The pre-check looks a block up by exact string against the request's client IP, which is
+        # canonical, so a block filed under one of IPv6's other spellings would never match.
+        entry = block_ip("2001:0DB8::0:1", duration_seconds=300)
+        self.assertEqual("2001:db8::1", entry["identifier"])
+        self.assertEqual("2001:db8::1", db.session.query(BlockList).one().ip)
+
+    def test_block_ip_does_not_duplicate_a_differently_spelled_ipv6_address(self):
+        # Two spellings of one address are one block, not two rows racing each other.
+        block_ip("2001:0DB8::0:1", duration_seconds=300)
+        block_ip("2001:db8::1", duration_seconds=600)
+        self.assertEqual(1, db.session.query(BlockList).count())
+
+    # --- the lock cause --------------------------------------------------------
+
+    def test_locked_user_dict_reports_the_cause(self):
+        self._lock(None)
+        self.assertEqual(RestrictionCause.POLICY, list_locked_users()[0]["lock_cause"])
+
+    def test_list_locked_users_filters_by_cause(self):
+        self._lock(None)
+        lock_user(User("selfservice", self.realm1, self.resolvername1))
+        self.assertEqual(2, len(list_locked_users()))
+        self.assertEqual([RestrictionCause.MANUAL], [row["lock_cause"] for row in list_locked_users(causes=["MANUAL"])])
+        self.assertEqual([RestrictionCause.POLICY], [row["lock_cause"] for row in list_locked_users(causes=["POLICY"])])
+
+    def test_list_locked_users_rejects_an_unknown_cause(self):
+        # Ignoring it would widen the result to every cause, so a typo would return more than was asked for.
+        self._lock(None)
+        self.assertRaisesRegex(ParameterError, "Unknown lock cause", list_locked_users, causes=["ADMIN"])
 
     # --- list_locked_users ----------------------------------------------------
 

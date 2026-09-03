@@ -90,6 +90,12 @@ class AuthenticationLog(MethodsMixin, db.Model):
         # The TCP peer is the second pivot a forensic query starts from - "what came from this machine",
         # whatever it claimed to be forwarding for. 50*4 + 8 = 208 bytes, well under the same key limit.
         Index("ix_authlog_peer_ip_time", "peer_ip", "timestamp"),
+        # The one index not scoped to a subject: the statistics query
+        # (:func:`~privacyidea.lib.conditional_access.authentication_log.get_authentication_log_statistics`) and the
+        # retention delete (``cleanup_authentication_log``) both range over ``timestamp`` alone, and the indexes
+        # above cannot serve that - their leading columns are unconstrained, so the rows of a window are scattered
+        # across each of them in subject order rather than lying contiguous.
+        Index("ix_authlog_time", "timestamp"),
     )
     id: Mapped[int] = mapped_column(BigIntegerType, Identity(always=False), primary_key=True)
     resolver: Mapped[str | None] = mapped_column(case_sensitive_unicode(authentication_log_column_length["resolver"]))
