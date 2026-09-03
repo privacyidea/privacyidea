@@ -26,6 +26,8 @@ existing API-layer call sites continue to work without changes.
 """
 
 import re
+from collections.abc import Iterable
+from typing import Any
 
 from privacyidea.lib.error import ParameterError
 
@@ -35,7 +37,7 @@ from privacyidea.lib.error import ParameterError
 MAX_PAGE_SIZE = 1000
 
 
-def _get_param(dictionary, key, default=None):
+def _get_param(dictionary: dict, key: str, default: Any = None) -> Any:
     """
     Get the parameter from the dictionary.
     If the parameter is not present, return the default value or None.
@@ -47,7 +49,7 @@ def _get_param(dictionary, key, default=None):
     return None
 
 
-def get_required(dictionary, key, allow_empty=False):
+def get_required(dictionary: dict, key: str, allow_empty: bool = False) -> Any:
     """
     Get the required parameter from the dictionary.
 
@@ -65,7 +67,7 @@ def get_required(dictionary, key, allow_empty=False):
     return ret
 
 
-def get_required_one_of(param, keys, allow_empty=False):
+def get_required_one_of(param: dict, keys: Iterable[str], allow_empty: bool = False) -> Any:
     """
     Return the first value from *param* whose key is in *keys* and is
     non-empty.
@@ -86,7 +88,8 @@ def get_required_one_of(param, keys, allow_empty=False):
     raise ParameterError(f"Missing one of the following parameters: {keys}", id=905)
 
 
-def get_optional(param, key, default=None, allowed_values=None):
+def get_optional(param: dict, key: str, default: Any = None,
+                 allowed_values: Iterable[Any] | None = None) -> Any:
     """
     Get the optional parameter from the dictionary.
 
@@ -104,7 +107,7 @@ def get_optional(param, key, default=None, allowed_values=None):
     return value
 
 
-def get_optional_one_of(param, keys, default=None):
+def get_optional_one_of(param: dict, keys: Iterable[str], default: Any = None) -> Any:
     """
     Return the first value from *param* whose key is in *keys*.
 
@@ -121,7 +124,7 @@ def get_optional_one_of(param, keys, default=None):
     return default
 
 
-def get_optional_int(param, key, default=None):
+def get_optional_int(param: dict, key: str, default: int | None = None) -> int | None:
     """
     Get an optional integer parameter from the dictionary.
 
@@ -148,7 +151,7 @@ def get_optional_int(param, key, default=None):
         raise ParameterError(f"Invalid value for parameter {key}: expected an integer.", id=905)
 
 
-def get_pagination_params(param, default_page_size=15):
+def get_pagination_params(param: dict, default_page_size: int = 15) -> tuple[int, int]:
     """
     Get the ``page`` and ``pagesize`` parameters of a paginated listing.
 
@@ -172,7 +175,8 @@ def get_pagination_params(param, default_page_size=15):
     return page, page_size
 
 
-def attestation_certificate_allowed(cert_info, allowed_certs_pols):
+def attestation_certificate_allowed(cert_info: dict | None,
+                                    allowed_certs_pols: Iterable[str] | None) -> bool:
     """
     Check a certificate against a set of policies.
 
@@ -185,13 +189,10 @@ def attestation_certificate_allowed(cert_info, allowed_certs_pols):
 
     :param cert_info: The ``attestation_issuer``, ``attestation_serial``, and
         ``attestation_subject`` of the cert.
-    :type cert_info: dict or None
     :param allowed_certs_pols: The policies restricting enrollment or
         authorization.
-    :type allowed_certs_pols: dict or None
     :return: Whether the token should be allowed to complete enrollment or
         authorization based on its attestation.
-    :rtype: bool
     """
     if not cert_info:
         return not allowed_certs_pols
