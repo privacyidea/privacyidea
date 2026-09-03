@@ -196,11 +196,15 @@ def set_eventhandling():
     update; omit it to create a new binding.
 
     .. warning::
-       Updates are not fully partial. ``action`` and ``position`` are silently
-       set to empty strings if omitted. ``conditions`` and ``options`` are only
-       replaced when supplied: omitting the ``conditions`` parameter and all
-       ``option.*`` parameters keeps the stored values untouched, while sending
-       an empty ``conditions`` dict or the ``clear_options`` flag clears them.
+       Updates are only partially incremental:
+
+       * ``action`` and ``position`` are silently reset to empty strings if
+         omitted, so always send them.
+       * ``conditions`` and ``options`` are only replaced when supplied.
+         Omitting the ``conditions`` parameter and all ``option.*`` parameters
+         keeps the stored values untouched.
+       * To clear all conditions, send an empty ``conditions`` dict; to clear
+         all options, send the ``clear_options`` flag.
 
     Requires admin authentication and the policy action
     :ref:`policy_eventhandling_write`.
