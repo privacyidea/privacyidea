@@ -543,6 +543,17 @@ def get_auth_token():
             else:
                 serials = details.get('serial')
                 token_types = details.get('type')
+                if not serials:
+                    # A response that does not match the challenges of more than one token names no token at
+                    # all. Take the tokens that were challenged in the transaction instead, so a failed attempt
+                    # is still logged against the tokens it was made against, mirroring /validate/check.
+                    answered_transaction_id = get_optional(request.all_data, "transaction_id")
+                    if answered_transaction_id:
+                        # Deferred import: validate.py imports from this module, so a module-level import here
+                        # would be circular.
+                        from privacyidea.api.validate import _challenged_token_serials
+                        challenged_serials = _challenged_token_serials(answered_transaction_id, user)
+                        serials = ",".join(challenged_serials) or None
             if local_admin_exist and user_auth and realm == get_default_realm():
                 # If there is a local admin with the same login name as the user
                 # in the default realm, we inform about this in the log file.
