@@ -603,6 +603,37 @@ class _AuthLogContractTests(_ContractHost):
                                                  self.second_serial: AuthEventReason.TOKEN_FAILCOUNT_EXCEEDED},
                                         endpoint=self.endpoint_path)
 
+    def test_the_row_lists_every_reason_when_a_challenge_answer_finds_no_usable_token(self):
+        # The same contract on the challenge-response path: both tokens issued a challenge, then became unusable for
+        # two different reasons before the answer arrived. check_all drops each of them before the answer is looked
+        # at, so the row is NO_USABLE_TOKEN and carries both findings - answering a transaction does not collapse
+        # them into whichever token was dropped first.
+        self._add_second_token(pin=self.pin)
+        self._enable_challenge_response()
+        try:
+            transaction_id = self._trigger_challenge()
+            first = get_one_token(serial=self.serial)
+            first.enable(False)
+            # enable() only assigns; the second token's failcount writes below would otherwise be the only thing saved.
+            first.save()
+            second = get_one_token(serial=self.second_serial)
+            for _ in range(second.get_max_failcount() + 1):
+                second.inc_failcount()
+
+            self._assert_failed(self._authenticate("755224", transaction_id=transaction_id))
+        finally:
+            delete_policy("authlog_cr")
+
+        entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.NO_USABLE_TOKEN],
+                                            transaction_id=transaction_id)
+        assert_authentication_log_entry(entries[AuthEventType.NO_USABLE_TOKEN], user=self.user,
+                                        transaction_id=transaction_id,
+                                        reason=[AuthEventReason.TOKEN_DISABLED,
+                                                AuthEventReason.TOKEN_FAILCOUNT_EXCEEDED],
+                                        reasons={self.serial: AuthEventReason.TOKEN_DISABLED,
+                                                 self.second_serial: AuthEventReason.TOKEN_FAILCOUNT_EXCEEDED},
+                                        endpoint=self.endpoint_path)
+
     def test_reason_explains_the_event_the_row_carries(self):
         # An unrelated token past its failcounter must not become the reason of a request that failed on a wrong PIN:
         # the row is classified PIN_FAIL, which the token that produced it recorded no reason for (the event already
