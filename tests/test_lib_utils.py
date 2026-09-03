@@ -498,6 +498,19 @@ class UtilsTestCase(MyTestCase):
         self.assertEqual(len(r), 4)
         self.assertEqual(r, "12,+")
 
+        # More entries than fit even when every entry is shortened to its marker. The
+        # entries can not get any shorter, so the list is cut and the beginning of it is
+        # kept, which says more than a row of markers.
+        for count in [22, 30, 101, 150, 199]:
+            for max_length in [40, 200]:
+                serials = ",".join(f"OATH{index:04d}" for index in range(count))
+                r = truncate_comma_list(serials, max_length)
+                self.assertLessEqual(len(r), max_length, (count, max_length))
+                if len(serials) > max_length:
+                    self.assertTrue(r.endswith("+"), r)
+                else:
+                    self.assertEqual(serials, r)
+
     def test_20_pin_policy(self):
         # Unspecified character specifier
         self.assertRaises(PolicyError, check_pin_contents, "1234", "+o")
@@ -819,6 +832,28 @@ class UtilsTestCase(MyTestCase):
         self.assertEqual(len(path_to_client) - 1, info.effective_index)
         self.assertLessEqual(len(info.chain), MAX_IP_CHAIN_HOPS)
         self.assertEqual(len(path_to_client) - MAX_IP_CHAIN_HOPS, info.dropped_hops)
+
+    def test_23i_get_client_ip_ignores_a_malformed_hop_like_get_client_ip_info(self):
+        # get_client_ip is get_client_ip_info reduced to .ip, so a malformed client parameter or
+        # X-Forwarded-For hop is dropped the same way rather than raising or being trusted.
+        class RequestMock:
+            blueprint = "validate_blueprint"
+            remote_addr = "10.0.0.1"
+            all_data = {}
+            access_route = ["172.16.1.2"]
+
+        r = RequestMock()
+        r.all_data = {"client": "not-an-ip-address"}
+        self.assertEqual("172.16.1.2", get_client_ip(r, "10.0.0.1"))
+
+        r.access_route = ["not-an-ip-address"]
+        r.all_data = {}
+        self.assertEqual("10.0.0.1", get_client_ip(r, "10.0.0.1"))
+
+        # If not a single hop is an address, there is nothing to map: same as no route at all.
+        r.remote_addr = "not-an-ip-address"
+        r.access_route = ["not-an-ip-address"]
+        self.assertIsNone(get_client_ip(r, "10.0.0.1"))
 
     def test_24_sanity_name_check(self):
         self.assertTrue(sanity_name_check('Hello_World'))

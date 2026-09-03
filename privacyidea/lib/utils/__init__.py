@@ -1182,16 +1182,25 @@ def truncate_comma_list(data, max_len):
     :return: shortened string
     """
     data = data.split(",")
+    original = ",".join(data)
+
+    def cut_the_list():
+        """Keep the beginning of the list and mark it as shortened."""
+        return f"{original[:max_len][:-1]!s}+"
+
     # if there are more entries than the maximum length, we do an early exit
     if len(data) >= max_len:
-        r = ",".join(data)[:max_len]
-        # Also mark this string
-        r = f"{r[:-1]!s}+"
-        return r
+        return cut_the_list()
 
     while len(",".join(data)) > max_len:
-        new_data = []
         longest = max(data, key=len)
+        if len(longest) <= 1:
+            # Every entry is shortened to its marker already, so the list has more entries
+            # than the maximum length can hold. Shortening them further is not possible, so
+            # the list is cut instead: whole entries at the beginning say more than a row of
+            # markers, and without this the loop would not terminate.
+            return cut_the_list()
+        new_data = []
         for d in data:
             if d == longest:
                 # Shorten the longest and mark with "+"
