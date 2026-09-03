@@ -19,7 +19,7 @@
 
 <div class="action-name-container">
   <mat-form-field class="input-width-xxl">
-    <mat-label i18n>Policy Name</mat-label>
+    <mat-label i18n="@@policy.policyName">Policy Name</mat-label>
     <app-clearable-input
       (clearButtonClick)="policyName.set('')"
       [showClearButton]="!!policyName()">
@@ -27,14 +27,14 @@
         matInput
         type="text"
         [formField]="nameField"
-        i18n-placeholder
+        i18n-placeholder="@@policy.enterPolicyName"
         placeholder="Enter policy name..." />
     </app-clearable-input>
     @if (nameField().errors().some(e => e.kind === 'required')) {
-      <mat-error i18n>Policy name is <strong>required</strong>.</mat-error>
+      <mat-error i18n="@@policy.nameRequiredError">Policy name is <strong>required</strong>.</mat-error>
     }
     @if (nameField().errors().some(e => e.kind === 'pattern')) {
-      <mat-error i18n
+      <mat-error i18n="@@policy.policyNameContains"
         >Policy name contains <strong>invalid characters</strong>. Only alphanumeric characters, dots, underscores and
         hyphens are allowed.</mat-error
       >

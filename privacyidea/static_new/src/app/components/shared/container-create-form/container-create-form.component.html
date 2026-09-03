@@ -18,8 +18,8 @@
 -->
 <div
   class="container-type-hint"
-  i18n>
-  Supported Token Types:
+  i18n="@@container.supportedToken"
+  >Supported Token Types:
   @if (
     (containerService().selectedContainerType()?.token_types?.length ?? 0) >= tokenService().tokenTypeOptions().length
   ) {
@@ -32,13 +32,12 @@
 </div>
 
 <mat-form-field class="input-width-xl margin-top-16">
-  <mat-label i18n>Description</mat-label>
+  <mat-label i18n="@@common.description">Description</mat-label>
   <textarea
     [value]="description()"
     (input)="description.set($any($event.target).value)"
     maxlength="80"
-    i18n
-    i18n-placeholder
+    i18n-placeholder="@@common.enterDescription"
     matInput
     placeholder="Enter description"
     rows="3"></textarea>
@@ -46,9 +45,9 @@
 
 @if (authService().actionAllowed("container_template_list")) {
   <div class="flex-column">
-    <h4 i18n>Use a Template</h4>
+    <h4 i18n="@@container.useTemplate">Use a Template</h4>
     <mat-form-field [class]="templateFieldClass()">
-      <mat-label i18n>Template</mat-label>
+      <mat-label i18n="@@container.template">Template</mat-label>
       <mat-select
         [value]="selectedTemplate()"
         (selectionChange)="selectedTemplate.set($event.value)"
@@ -66,7 +65,7 @@
 
     <mat-expansion-panel class="expansion-panel input-width-xxl margin-top-8">
       <mat-expansion-panel-header>
-        <mat-panel-title i18n>Added Tokens</mat-panel-title>
+        <mat-panel-title i18n="@@container.addedTokens">Added Tokens</mat-panel-title>
       </mat-expansion-panel-header>
       <app-container-template-edit-body
         [template]="selectedTemplate()"
@@ -79,11 +78,11 @@
 <ng-content select="[userAssignment]"></ng-content>
 
 @if (showRegistration()) {
-  <h4 i18n>Registration</h4>
+  <h4 i18n="@@container.registration">Registration</h4>
   <mat-checkbox
     [checked]="generateQRCode()"
     (change)="generateQRCode.set($event.checked); registrationSettings.expanded = false">
-    <span i18n>Generate a QR code to register the container on a smartphone.</span>
+    <span i18n="@@container.generateQrCode">Generate a QR code to register the container on a smartphone.</span>
   </mat-checkbox>
   <mat-accordion>
     <mat-expansion-panel
@@ -91,7 +90,7 @@
       [disabled]="!generateQRCode()"
       class="expansion-panel margin-bottom-16">
       <mat-expansion-panel-header>
-        <mat-panel-title i18n> Optional Settings</mat-panel-title>
+        <mat-panel-title i18n="@@container.optionalSettings">Optional Settings</mat-panel-title>
       </mat-expansion-panel-header>
       <app-container-registration-config
         (validInputChange)="validInputChange.emit($event)"

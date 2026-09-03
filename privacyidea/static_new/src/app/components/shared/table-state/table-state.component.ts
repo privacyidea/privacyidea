@@ -40,6 +40,7 @@ export class TableStateComponent {
   private static readonly STATUS_ICONS: Partial<Record<TableStatus, string>> = {
     filtered: "search_off",
     error: "error_outline",
+    cancelled: "update_disabled",
     denied: "lock"
   };
 
@@ -48,5 +49,7 @@ export class TableStateComponent {
   readonly isLoading = computed(() => this.currentStatus() === "loading");
   readonly resolvedIcon = computed(() => TableStateComponent.STATUS_ICONS[this.currentStatus()] ?? this.icon());
   /** The projected call to action stays available where the list is empty for good, not where it failed or was filtered away. */
-  readonly showsProjectedAction = computed(() => this.currentStatus() === "empty" || this.currentStatus() === "denied");
+  readonly showsProjectedAction = computed(
+    () => this.currentStatus() === "empty" || this.currentStatus() === "denied" || this.currentStatus() === "cancelled"
+  );
 }

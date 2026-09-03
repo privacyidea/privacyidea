@@ -219,6 +219,42 @@ describe("EnrollWebauthnComponent", () => {
     );
   });
 
+  it("readPublicKeyCred warns when the response has no webAuthnRegisterRequest", async () => {
+    const readPublicKeyCred = (
+      component as unknown as {
+        readPublicKeyCred: (r: WebauthnEnrollmentResponse) => Promise<PublicKeyCredential | null>;
+      }
+    ).readPublicKeyCred;
+
+    const result = await readPublicKeyCred({ detail: {} } as unknown as WebauthnEnrollmentResponse);
+
+    expect(result).toBeNull();
+    expect(notification.warning).toHaveBeenCalledWith("Invalid WebAuthn registration request data.");
+  });
+
+  it("finalizeEnrollment warns when the response or its detail is missing", async () => {
+    const finalizeEnrollment = (
+      component as unknown as {
+        finalizeEnrollment: (args: {
+          webauthnEnrollmentData: unknown;
+          webauthnEnrollmentResponse: WebauthnEnrollmentResponse | null;
+          publicKeyCred: PublicKeyCredential;
+        }) => Promise<EnrollmentResponse | null>;
+      }
+    ).finalizeEnrollment.bind(component);
+
+    const result = await finalizeEnrollment({
+      webauthnEnrollmentData: {},
+      webauthnEnrollmentResponse: null,
+      publicKeyCred: {} as PublicKeyCredential
+    });
+
+    expect(result).toBeNull();
+    expect(notification.warning).toHaveBeenCalledWith(
+      "Enrollment response or its detail is missing for finalization."
+    );
+  });
+
   it("should return null when credential creation throws and close dialog", async () => {
     setNavigatorCreate(async () => {
       throw new Error("blocked");

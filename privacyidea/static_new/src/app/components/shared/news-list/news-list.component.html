@@ -48,11 +48,11 @@
   <div class="news-empty">
     <mat-icon class="news-empty-icon">newspaper</mat-icon>
     @if (maxAgeDays() === 1) {
-      <span i18n>No news within the last day.</span>
+      <span i18n="@@news.noNewsWithinTheLast">No news within the last day.</span>
     } @else if (maxAgeDays() > 1) {
-      <span i18n>No news within the last {{ maxAgeDays() }} days.</span>
+      <span i18n="@@news.noNewsWithinTheLast2">No news within the last {{ maxAgeDays() }} days.</span>
     } @else {
-      <span i18n>No news available.</span>
+      <span i18n="@@news.noNewsAvailable">No news available.</span>
     }
   </div>
 }

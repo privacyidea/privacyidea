@@ -41,7 +41,7 @@ export interface EventPartition {
 export class EventsWidgetComponent extends DashboardWidget implements OnInit {
   static override readonly type = "events";
   static override readonly requiredAction = "eventhandling_read";
-  static override readonly title = $localize`Events`;
+  static override readonly title = $localize`:@@common.events:Events`;
   static override readonly icon = "flag";
   static override readonly titleLink = ROUTE_PATHS.EVENTS;
   static override readonly titleLinkAction = "eventhandling_read";

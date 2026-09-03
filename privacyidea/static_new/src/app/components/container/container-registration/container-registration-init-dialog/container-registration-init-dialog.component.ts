@@ -47,7 +47,7 @@ export class ContainerRegistrationInitDialogComponent extends AbstractDialogComp
   getAction(): DialogAction<"register" | "rollover"> {
     if (this.data.rollover) {
       return {
-        label: $localize`Rollover`,
+        label: $localize`:@@common.rollover:Rollover`,
         value: "rollover",
         type: "confirm",
         disabled: !this.validInput,
@@ -55,7 +55,7 @@ export class ContainerRegistrationInitDialogComponent extends AbstractDialogComp
       };
     } else {
       return {
-        label: $localize`Register`,
+        label: $localize`:@@container.register:Register`,
         value: "register",
         type: "confirm",
         disabled: !this.validInput,

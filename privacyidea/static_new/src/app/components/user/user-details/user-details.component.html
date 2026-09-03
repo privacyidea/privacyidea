@@ -21,14 +21,14 @@
   appScrollToTop
   aria-label="Details"
   class="details-container"
-  i18n-aria-label>
+  i18n-aria-label="@@common.details">
   <div class="details-header">
     <ng-container>
-      <h3 i18n>Details for User:</h3>
+      <h3 i18n="@@user.detailsUser">Details for User:</h3>
       <app-copyable [copyText]="userService.detailsUser().username">
         <h3 class="h3-color">&nbsp;{{ userService.detailsUser().username }}</h3>
       </app-copyable>
-      <h3 i18n>&nbsp;in Realm</h3>
+      <h3 i18n="@@user.inRealm">&nbsp;in Realm</h3>
       <app-copyable [copyText]="userService.selectedUserRealm()">
         <h3 class="margin-0">&nbsp;{{ userService.selectedUserRealm() }}</h3>
       </app-copyable>
@@ -38,7 +38,7 @@
       [routerLink]="[ROUTE_PATHS.AUDIT]"
       mat-icon-button
       matTooltip="Show audit log of user"
-      i18n-matTooltip>
+      i18n-matTooltip="@@user.showAuditLogUser">
       <mat-icon>receipt_long</mat-icon>
     </button>
   </div>
@@ -55,21 +55,21 @@
               class="action-button-primary button-width-s"
               mat-stroked-button>
               <mat-icon>edit</mat-icon>
-              <span i18n>Edit</span>
+              <span i18n="@@user.edit">Edit</span>
             </button>
           } @else {
             <button
               (click)="cancelEdit()"
               class="action-button-secondary button-width-s"
               mat-stroked-button>
-              <span i18n>Cancel</span>
+              <span i18n="@@common.cancel">Cancel</span>
             </button>
             <button
               (click)="saveEdit()"
               class="action-button-primary button-width-s"
               mat-stroked-button>
               <mat-icon>save</mat-icon>
-              <span i18n>Save</span>
+              <span i18n="@@common.save">Save</span>
             </button>
           }
         }
@@ -79,7 +79,7 @@
             class="action-button-delete-secondary button-width-s"
             mat-stroked-button>
             <mat-icon>delete</mat-icon>
-            <span i18n>Delete</span>
+            <span i18n="@@common.delete">Delete</span>
           </button>
         }
       </div>
@@ -90,7 +90,7 @@
         <app-details-card
           class="details-card--user-info"
           title="Attributes"
-          i18n-title>
+          i18n-title="@@user.attributes">
           <app-user-details-edit
             [resolver]="userData().resolver"
             [initialUserData]="userData()"
@@ -101,7 +101,7 @@
           class="details-card--user-info"
           [class.details-card--wide]="!showsAttributeExtrasColumn()"
           title="Attributes"
-          i18n-title>
+          i18n-title="@@user.attributes">
           @if (showsAttributeExtrasColumn()) {
             <div class="details-field-list">
               @for (item of detailsEntries(); track item.key) {
@@ -144,10 +144,10 @@
                 type="button">
                 @if (isExpanded(item.key)) {
                   <mat-icon>expand_less</mat-icon>
-                  <span i18n>Show less</span>
+                  <span i18n="@@user.showLess">Show less</span>
                 } @else {
                   <mat-icon>expand_more</mat-icon>
-                  <span i18n>Show {{ item.value.length - 1 }} more</span>
+                  <span i18n="@@user.showMore">Show {{ item.value.length - 1 }} more</span>
                 }
               </button>
             </ng-container>
@@ -165,11 +165,11 @@
             <app-details-card
               class="details-card--user-info"
               title="Custom Attributes"
-              i18n-title>
+              i18n-title="@@user.customAttributes">
               @if (canSetCustomAttribute()) {
                 <div class="add-attr-row">
                   <mat-form-field class="input-width-l">
-                    <mat-label i18n>Attribute Key</mat-label>
+                    <mat-label i18n="@@user.attributeKey">Attribute Key</mat-label>
                     @if (keyMode() === "select") {
                       <mat-select
                         [value]="selectedKey()"
@@ -181,7 +181,7 @@
                           <mat-option
                             (onSelectionChange)="switchToCustomKey()"
                             [value]="'__CUSTOM__'">
-                            <i i18n>Custom…</i>
+                            <i i18n="@@common.custom">Custom…</i>
                           </mat-option>
                         }
                       </mat-select>
@@ -189,7 +189,7 @@
                       <input
                         [value]="addKeyInput()"
                         (input)="addKeyInput.set($event.target['value'])"
-                        i18n-placeholder
+                        i18n-placeholder="@@user.enterKey"
                         matInput
                         placeholder="Enter key" />
                     }
@@ -199,7 +199,7 @@
                       (click)="switchToSelectKey()"
                       aria-label="Back to key select"
                       class="margin-bottom-16 return-button"
-                      i18n-aria-label="Back to key select"
+                      i18n-aria-label="Back to key select@@user.backKeySelect"
                       mat-icon-button
                       type="button">
                       <mat-icon>arrow_left</mat-icon>
@@ -207,13 +207,13 @@
                   }
 
                   <mat-form-field class="input-width-l">
-                    <mat-label i18n>Attribute Value</mat-label>
+                    <mat-label i18n="@@user.attributeValue">Attribute Value</mat-label>
 
                     @if (isValueInput()) {
                       <input
                         [value]="addValueInput()"
                         (input)="addValueInput.set($event.target['value'])"
-                        i18n-placeholder
+                        i18n-placeholder="@@user.enterValue"
                         matInput
                         placeholder="Enter value" />
                     } @else {
@@ -248,7 +248,7 @@
                           <button
                             (click)="deleteCustomAttribute(attr.key)"
                             aria-label="Delete custom attribute"
-                            i18n-aria-label="Delete custom attribute"
+                            i18n-aria-label="Delete custom attribute@@user.deleteCustomAttribute"
                             mat-icon-button>
                             <mat-icon>delete</mat-icon>
                           </button>
@@ -265,7 +265,7 @@
             <app-details-card
               class="details-card--user-info"
               title="Internal Attributes"
-              i18n-title>
+              i18n-title="@@user.internalAttributes">
               @if (userService.internalAttributesList().length > 0) {
                 <div class="details-field-list">
                   @for (attr of userService.internalAttributesList(); track attr.key) {
@@ -275,7 +275,7 @@
                   }
                 </div>
               } @else {
-                <p i18n>No internal attributes found.</p>
+                <p i18n="@@user.noInternalAttributes">No internal attributes found.</p>
               }
             </app-details-card>
           }
@@ -297,7 +297,7 @@
             class="action-button-primary button-width-l"
             mat-stroked-button>
             <mat-icon>add_moderator</mat-icon>
-            <span i18n>Enroll New Token</span>
+            <span i18n="@@user.enrollNewToken">Enroll New Token</span>
           </button>
         }
       </ng-template>
@@ -308,7 +308,7 @@
             <mat-form-field
               class="input-width-xl"
               subscriptSizing="dynamic">
-              <mat-label i18n>Assign Token to User</mat-label>
+              <mat-label i18n="@@user.assignTokenUser">Assign Token to User</mat-label>
               <app-clearable-input
                 (clearButtonClick)="tokenService.clearFilter()"
                 [showClearButton]="tokenService.filterDraft().isNotEmpty">
@@ -318,7 +318,7 @@
                   (input)="tokenService.handleFilterInput($event)"
                   [matAutocomplete]="tokenAuto"
                   [value]="tokenService.filterDraft().filterString"
-                  i18n-placeholder
+                  i18n-placeholder="@@common.exampleQueryType"
                   matInput
                   placeholder="Example query: 'type: hotp serial: 123'" />
               </app-clearable-input>
@@ -333,9 +333,12 @@
                     </span>
                     <span
                       [ngClass]="option['active'] ? 'highlight-true' : 'highlight-false'"
-                      class="token-option-span"
-                      i18n>
-                      {{ option["active"] ? "active" : "deactivated" }}
+                      class="token-option-span">
+                      @if (option["active"]) {
+                        <ng-container i18n="@@common.activeState">active</ng-container>
+                      } @else {
+                        <ng-container i18n="@@common.deactivated">deactivated</ng-container>
+                      }
                     </span>
                     <span class="token-option-span">
                       {{ option["username"] }}
@@ -363,7 +366,7 @@
               <mat-icon class="padding-right-3">folder</mat-icon>
               <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
             </span>
-            <span i18n>Create New Container</span>
+            <span i18n="@@user.createNewContainer">Create New Container</span>
           </button>
         }
       </ng-template>

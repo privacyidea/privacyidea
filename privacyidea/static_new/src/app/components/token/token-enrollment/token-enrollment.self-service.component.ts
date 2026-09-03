@@ -92,7 +92,7 @@ export class TokenEnrollmentSelfServiceComponent extends TokenEnrollmentComponen
 
   protected override openLastStepDialog(response: EnrollmentResponse | null): void {
     if (!response) {
-      this.notificationService.warning($localize`No enrollment response available.`);
+      this.notificationService.warning($localize`:@@token.noEnrollmentResponse:No enrollment response available.`);
       return;
     }
 

@@ -66,7 +66,11 @@ export class PolicyEditPageComponent implements OnDestroy {
     () =>
       this.isPolicyEdited() && !!this.editedPolicy().name?.trim() && /^[a-zA-Z0-9._-]*$/.test(this.editedPolicy().name)
   );
-  readonly title = computed(() => (this.mode() === "edit" ? $localize`Edit Policy` : $localize`Create Policy`));
+  readonly title = computed(() =>
+    this.mode() === "edit"
+      ? $localize`:@@policy.editPolicy:Edit Policy`
+      : $localize`:@@policy.createPolicy:Create Policy`
+  );
 
   constructor() {
     this.route.paramMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
@@ -133,7 +137,7 @@ export class PolicyEditPageComponent implements OnDestroy {
       .openDialog({
         component: SaveAndExitDialogComponent,
         data: {
-          title: $localize`Discard changes`,
+          title: $localize`:@@common.discardChanges:Discard changes`,
           allowSaveExit: this.canSave(),
           saveExitDisabled: !this.canSave()
         }
