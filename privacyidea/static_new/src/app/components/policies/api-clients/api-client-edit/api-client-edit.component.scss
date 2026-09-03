@@ -1,0 +1,26 @@
+@use "styles";
+
+.api-client-page-layout {
+  display: flex;
+  justify-content: center;
+}
+
+.api-client-page-container {
+  @include styles.main-component-style;
+  display: flex;
+  flex-direction: column;
+}
+
+.header-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 8px 16px;
+}
+
+.api-client-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}

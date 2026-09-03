@@ -26,16 +26,10 @@ import { AUTH_DATA_STORAGE_KEY, BEARER_TOKEN_STORAGE_KEY } from "@core/constants
 import { LocalService } from "@services/local/local.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { VersioningService } from "@services/version/version.service";
-import {
-  MockLocalService,
-  MockNotificationService,
-  MockRouter,
-  MockVersioningService
-} from "@testing/mock-services";
+import { MockLocalService, MockNotificationService, MockRouter, MockVersioningService } from "@testing/mock-services";
 import { AuthData, AuthResponse, AuthService, JwtData } from "./auth.service";
 
-const b64url = (obj: object) =>
-  btoa(JSON.stringify(obj)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+const b64url = (obj: object) => btoa(JSON.stringify(obj)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 
 const ensureAtob = () => {
   const g = globalThis as { atob?: (s: string) => string };
@@ -251,7 +245,6 @@ describe("AuthService", () => {
       show_seed: false,
       show_node: "",
       subscription_status: 0,
-      subscription_status_push: 0,
       qr_image_android: null,
       qr_image_ios: null,
       qr_image_custom: null,
@@ -382,7 +375,6 @@ describe("AuthService", () => {
           show_seed: false,
           show_node: "",
           subscription_status: 0,
-          subscription_status_push: 0,
           qr_image_android: null,
           qr_image_ios: null,
           qr_image_custom: null,
