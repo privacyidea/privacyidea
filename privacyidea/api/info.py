@@ -20,6 +20,7 @@
 import dataclasses
 
 from flask import (Blueprint, request, g)
+from privacyidea.api.auth import admin_required
 from privacyidea.lib.info.rss import get_news, FETCH_DAYS
 from privacyidea.lib.integrations import CATALOG
 import logging
@@ -79,6 +80,7 @@ def rss():
 
 
 @info_blueprint.route('/integrations', methods=['GET'])
+@admin_required
 @log_with(log, log_entry=False)
 def integrations():
     """
@@ -89,11 +91,11 @@ def integrations():
     This is administrative reference data: an integration's ``policy_value`` is what a
     policy's ``user_agents`` condition stores, its ``id`` is what an API client's
     ``client_type`` stores, and ``dashboard``/``section``/``ptl_slug``/``github_repo``
-    describe its row on the dashboard subscription overview. Self-service users get an
-    empty list, since none of those features are available to them.
+    describe its row on the dashboard subscription overview. None of those features are
+    available to self-service users, so unlike the rest of this blueprint the endpoint
+    requires the admin role.
 
     :status 200: JSON response; the integration list is in ``result.value``.
+    :status 401: The requesting user does not have the admin role.
     """
-    if g.logged_in_user.get("role") != "admin":
-        return send_result([])
     return send_result([dataclasses.asdict(integration) for integration in CATALOG])

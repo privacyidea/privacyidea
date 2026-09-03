@@ -100,12 +100,13 @@ class IntegrationsTest(MyApiTestCase):
             # Policy-condition-only integrations have no dashboard row.
             self.assertFalse(by_id["privacyidea-webui"]["dashboard"])
 
-    def test_02_self_service_user_gets_an_empty_list(self):
+    def test_02_self_service_user_is_rejected(self):
         self.setUp_user_realms()
         self.authenticate_selfservice_user()
         with self.app.test_request_context('/info/integrations',
                                            method='GET',
                                            headers={'Authorization': self.at_user}):
             res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 200, res)
-            self.assertEqual([], res.json.get("result").get("value"))
+            self.assertEqual(401, res.status_code, res)
+            # AUTHENTICATE_MISSING_RIGHT
+            self.assertEqual(4306, res.json.get("result").get("error").get("code"))
