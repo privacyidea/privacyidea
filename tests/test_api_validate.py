@@ -3336,6 +3336,9 @@ class ValidateAPITestCase(MyApiTestCase):
                 res = self.app.full_dispatch_request()
                 self.assertEqual(400, res.status_code, res.data)
                 self.assertEqual(b'', res.data)
+                # The shaped replacement response must still carry the shared
+                # after_request no-cache guarantee.
+                self.assertEqual("no-cache", res.headers.get("Cache-Control"), res.headers)
 
         # A revoked token raises TokenAdminError -> still an empty 400
         revoke_token("spass_radius_err")
@@ -3344,8 +3347,39 @@ class ValidateAPITestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertEqual(400, res.status_code, res.data)
             self.assertEqual(b'', res.data)
+            self.assertEqual("no-cache", res.headers.get("Cache-Control"), res.headers)
 
         remove_token("spass_radius_err")
+
+    def test_49_shape_error_response_only_affects_check_and_radiuscheck(self):
+        """
+        The shared after_request error shaping must be restricted to the two
+        routes served by the check() view (/validate/check and
+        /validate/radiuscheck). Other validate endpoints such as
+        /validate/offlinerefill deliberately do their own token-scope masking
+        with their own error code and must not be rewritten to the generic
+        "Authentication failed."/AUTHENTICATE just because an AUTH-scope
+        hide_specific_error_message policy is active.
+        """
+        self.setUp_user_realms()
+        set_default_realm(self.realm1)
+        # An AUTH-scope hide policy that would mask /validate/check errors
+        set_policy(name="hide_error_message", scope=SCOPE.AUTH,
+                   action=f"{PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE}=true")
+
+        # /validate/offlinerefill raises for an unknown token (ParameterError).
+        # No offline-refill token-scope policy is set, so it keeps its specific
+        # message and its own PARAMETER error code - it must not be rewritten.
+        with self.app.test_request_context('/validate/offlinerefill', method="POST",
+                                           data={"serial": "unknown_offline_49",
+                                                 "refilltoken": "x", "pass": ""}):
+            res = self.app.full_dispatch_request()
+            error = res.json.get("result").get("error")
+            self.assertNotEqual(Error.AUTHENTICATE, error.get("code"), res.json)
+            self.assertEqual(Error.PARAMETER, error.get("code"), res.json)
+            self.assertNotIn("Authentication failed.", error.get("message"), res.json)
+
+        delete_policy("hide_error_message")
 
     def _assert_unspecific_message_with_401(self, response):
         self.assertEqual(401, response.status_code, response.json)

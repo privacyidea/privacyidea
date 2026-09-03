@@ -528,17 +528,20 @@ def after_request(response):
     This function is called after a request
     :return: The response
     """
-    # No caching!
-    response.headers['Cache-Control'] = 'no-cache'
+    # Re-apply the two /validate post-policies that the error path bypasses
+    # (see shape_validate_error_response). after_request is the single point
+    # every response - including error-handler responses - flows through.
+    # This may replace the response object (e.g. the RADIUS empty-body shape),
+    # so it must run before the common response headers are applied below.
+    response = shape_validate_error_response(request, response)
 
     # Strip version information before signing if the hide_version policy
     # is active and no user is logged in.
     response = hide_version(request, response)
 
-    # Re-apply the two /validate post-policies that the error path bypasses
-    # (see shape_validate_error_response). after_request is the single point
-    # every response - including error-handler responses - flows through.
-    response = shape_validate_error_response(request, response)
+    # No caching! Applied last, to the final response object, so a shaped
+    # replacement response still carries the no-cache guarantee.
+    response.headers['Cache-Control'] = 'no-cache'
 
     return response
 
@@ -575,7 +578,9 @@ def shape_validate_error_response(request, response):
     :param response: the response object
     :return: the (possibly replaced) response
     """
-    if getattr(request, "blueprint", None) != "validate_blueprint":
+    url_rule = getattr(request, "url_rule", None)
+    rule = url_rule.rule if url_rule is not None else None
+    if rule not in ("/validate/check", "/validate/radiuscheck"):
         return response
     if not response.is_json:
         # A normal /validate/radiuscheck response was already shaped into an
@@ -590,7 +595,17 @@ def shape_validate_error_response(request, response):
     if result.get("status") is not False:
         return response
 
-    # hide_specific_error_message
+    # construct_radius_response: /validate/radiuscheck always answers with an
+    # empty body and an error is always the failure case, so an empty 400. The
+    # body is discarded, so it is shaped before the (pointless here) message
+    # masking - the RADIUS shape never leaks a specific message anyway.
+    if rule == "/validate/radiuscheck":
+        resp = make_response("", 400)
+        # tell other handlers (e.g. sign_response) there is no JSON content
+        resp.mimetype = "text/plain"
+        return resp
+
+    # hide_specific_error_message (only /validate/check reaches this point)
     user_object = request.User if hasattr(request, "User") else None
     hide_message = Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE,
                               user_object=user_object).any()
@@ -610,14 +625,6 @@ def shape_validate_error_response(request, response):
             detail["threadid"] = threadid
         content["detail"] = detail
         response.set_data(json.dumps(content))
-
-    # construct_radius_response: on the error path the authentication never
-    # succeeded, so the RADIUS shape is always the failure case (empty 400).
-    url_rule = getattr(request, "url_rule", None)
-    if url_rule is not None and url_rule.rule == "/validate/radiuscheck":
-        response = make_response("", 400)
-        # tell other handlers (e.g. sign_response) there is no JSON content
-        response.mimetype = "text/plain"
 
     return response
 

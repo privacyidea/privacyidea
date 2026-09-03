@@ -344,10 +344,14 @@ def check():
 
     * ``/validate/check`` — standard JSON response, ``result.value``
       is ``true`` / ``false``.
-    * ``/validate/radiuscheck`` — RADIUS adapter shape: a successful
-      authentication returns an empty ``204``, a failed
-      authentication an empty ``400``. Error responses (server-side
-      faults) are the same as for ``/validate/check``.
+    * ``/validate/radiuscheck`` — RADIUS adapter shape: the body is
+      always empty. A successful authentication returns ``204``; any
+      other outcome returns ``400``. Unlike ``/validate/check``, this
+      includes server-side faults (e.g. an unknown serial or an
+      internal error): they are collapsed into the same empty ``400``
+      rather than surfacing the JSON error body and its status code,
+      because a RADIUS adapter only consumes the status code. Inspect
+      the audit log or use ``/validate/check`` to diagnose failures.
 
     To return user attributes alongside the authentication result
     (the former ``/validate/samlcheck`` use case), enable the AUTHZ
