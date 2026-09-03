@@ -60,7 +60,8 @@ describe("ConditionalAccessActionsListComponent", () => {
   it("should emit a new array with an appended action on add", () => {
     const spy = jest.spyOn(component.actionsChange, "emit");
     component.onAddAction();
-    expect(spy).toHaveBeenCalledWith([...actions, { action_type: "LOCK_USER", action_value: null }]);
+    // EMAIL_ADMIN is the fallback once the target's allowed/unavailable types are both still unknown.
+    expect(spy).toHaveBeenCalledWith([...actions, { action_type: "EMAIL_ADMIN", action_value: null }]);
   });
 
   it("should default the new action to the first action allowed for the target", () => {
@@ -88,8 +89,7 @@ describe("ConditionalAccessActionsListComponent", () => {
       user: ["LOCK_USER", "PERMANENT_LOCK_USER", "EMAIL_ADMIN", "DENY"],
       source_ip: ["BLOCK_IP", "DENY"]
     });
-    policyServiceMock.repeatableActionsByTarget.set({ user: ["EMAIL_ADMIN"], source_ip: ["EMAIL_ADMIN"] });
-    policyServiceMock.exclusiveGroupsByTarget.set({ user: [["LOCK_USER", "PERMANENT_LOCK_USER"]], source_ip: [] });
+    policyServiceMock.unavailableActionTypes.mockReturnValue(new Set(["LOCK_USER", "PERMANENT_LOCK_USER"]));
     fixture.componentRef.setInput("actions", [{ action_type: "LOCK_USER", action_value: null }]);
 
     const spy = jest.spyOn(component.actionsChange, "emit");

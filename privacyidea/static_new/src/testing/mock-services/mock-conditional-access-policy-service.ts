@@ -29,7 +29,6 @@ import {
   ConditionalAccessPolicyCondition,
   ConditionalAccessPolicySaveParams,
   ConditionalAccessPolicyTemplate,
-  ConditionalAccessStageAction,
   ConditionalAccessTarget,
   DefaultErrorMessage,
   StaleConditionValues,
@@ -111,52 +110,11 @@ export class MockConditionalAccessPolicyService implements ConditionalAccessPoli
     (target: ConditionalAccessTarget): CountMode[] => this.countModesByTarget()[target] ?? []
   );
 
-  unavailableActionTypes = jest.fn(
-    (actions: ConditionalAccessStageAction[], target: ConditionalAccessTarget, exceptIndex?: number): Set<ConditionalAccessActionType> => {
-      const repeatable = new Set(this.repeatableActionsByTarget()[target] ?? []);
-      const groups = this.exclusiveGroupsByTarget()[target] ?? [];
-      const unavailable = new Set<ConditionalAccessActionType>();
-      if (repeatable.size === 0 && groups.length === 0) {
-        return unavailable;
-      }
-      const present = actions.filter((_, index) => index !== exceptIndex).map((action) => action.action_type);
-      for (const actionType of present) {
-        if (!repeatable.has(actionType)) {
-          unavailable.add(actionType);
-        }
-        for (const group of groups) {
-          if (group.includes(actionType)) {
-            group.forEach((member) => unavailable.add(member));
-          }
-        }
-      }
-      return unavailable;
-    }
-  );
+  // Canned - not a reimplementation of the real service's rules (see conditional-access-policy.service.spec.ts
+  // for those). A spec drives its case with mockReturnValue.
+  unavailableActionTypes = jest.fn((): Set<ConditionalAccessActionType> => new Set());
 
-  actionConflict = jest.fn(
-    (actions: ConditionalAccessStageAction[], index: number, target: ConditionalAccessTarget): "duplicate" | "exclusive" | null => {
-      const action = actions[index];
-      if (!action) {
-        return null;
-      }
-      const repeatable = new Set(this.repeatableActionsByTarget()[target] ?? []);
-      const groups = this.exclusiveGroupsByTarget()[target] ?? [];
-      if (repeatable.size === 0 && groups.length === 0) {
-        return null;
-      }
-      const earlier = actions.slice(0, index).map((other) => other.action_type);
-      if (!repeatable.has(action.action_type) && earlier.includes(action.action_type)) {
-        return "duplicate";
-      }
-      const conflicting = groups.some(
-        (group) =>
-          group.includes(action.action_type) &&
-          earlier.some((type) => type !== action.action_type && group.includes(type))
-      );
-      return conflicting ? "exclusive" : null;
-    }
-  );
+  actionConflict = jest.fn((): "duplicate" | "exclusive" | null => null);
 
   getPolicies = jest.fn(
     (): Observable<PiResponse<ConditionalAccessPolicy[]>> =>

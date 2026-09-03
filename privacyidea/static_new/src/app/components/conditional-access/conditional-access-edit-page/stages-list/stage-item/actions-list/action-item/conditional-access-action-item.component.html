@@ -21,10 +21,17 @@
   [expanded]="!action().id">
   <mat-expansion-panel-header>
     <mat-panel-title>
-      @if (!isActionAllowedForTarget() || actionConflict()) {
+      @if (!isActionAllowedForTarget()) {
         <mat-icon
           class="ca-action-warn-icon"
-          aria-label="This action needs attention"
+          aria-label="Action not allowed for the target"
+          i18n-aria-label>
+          warning
+        </mat-icon>
+      } @else if (actionConflict()) {
+        <mat-icon
+          class="ca-action-warn-icon"
+          aria-label="Action conflicts with another action on this stage"
           i18n-aria-label>
           warning
         </mat-icon>

@@ -805,29 +805,25 @@ describe("ConditionalAccessEditPageComponent — new mode", () => {
       }
     ];
 
-    beforeEach(() => {
-      policyServiceMock.repeatableActionsByTarget.set({
-        user: ["EMAIL_ADMIN", "EMAIL_USER"],
-        source_ip: ["EMAIL_ADMIN"]
-      });
-      policyServiceMock.exclusiveGroupsByTarget.set({
-        user: [["LOCK_USER", "PERMANENT_LOCK_USER"]],
-        source_ip: [["BLOCK_IP", "PERMANENT_BLOCK_IP"]]
-      });
-    });
+    // stageActionsValid() ANDs policyService.actionConflict(...) === null across every action of every stage;
+    // which pairs actually conflict is the policy service's own rule, covered against the real implementation
+    // in conditional-access-policy.service.spec.ts, so here the mock is just told what to answer.
 
     it("should accept distinct actions on one stage", () => {
+      policyServiceMock.actionConflict.mockReturnValue(null);
       component.onStagesChange(stageWith("LOCK_USER", "EMAIL_ADMIN"));
       expect(component.stageActionsValid()).toBe(true);
     });
 
     it("should block saving a stage carrying the same action twice", () => {
+      policyServiceMock.actionConflict.mockImplementation((_actions: unknown[], index: number) => (index === 1 ? "duplicate" : null));
       component.onStagesChange(stageWith("LOCK_USER", "LOCK_USER"));
       expect(component.stageActionsValid()).toBe(false);
       expect(component.canSave()).toBe(false);
     });
 
     it("should block saving a stage carrying two contradicting actions", () => {
+      policyServiceMock.actionConflict.mockImplementation((_actions: unknown[], index: number) => (index === 1 ? "exclusive" : null));
       component.onStagesChange(stageWith("LOCK_USER", "PERMANENT_LOCK_USER"));
       expect(component.stageActionsValid()).toBe(false);
     });
@@ -835,6 +831,7 @@ describe("ConditionalAccessEditPageComponent — new mode", () => {
     it("should render the stage-conflict error naming only the real exclusive pairs", () => {
       // There is no ALLOW action type (the pre-auth verdict is DENY/CONTINUE, not a stage action), so the
       // rendered hint must not claim a stage can be invalid for "both allow and deny".
+      policyServiceMock.actionConflict.mockImplementation((_actions: unknown[], index: number) => (index === 1 ? "exclusive" : null));
       component.onStagesChange(stageWith("LOCK_USER", "PERMANENT_LOCK_USER"));
       fixture.detectChanges();
       const errorText = fixture.nativeElement.querySelector(".ca-stages-error")?.textContent ?? "";
@@ -844,8 +841,7 @@ describe("ConditionalAccessEditPageComponent — new mode", () => {
     });
 
     it("should not block while no rules have been served", () => {
-      policyServiceMock.repeatableActionsByTarget.set({} as Record<ConditionalAccessTarget, ConditionalAccessActionType[]>);
-      policyServiceMock.exclusiveGroupsByTarget.set({} as Record<ConditionalAccessTarget, ConditionalAccessActionType[][]>);
+      policyServiceMock.actionConflict.mockReturnValue(null);
       component.onStagesChange(stageWith("LOCK_USER", "LOCK_USER"));
       expect(component.stageActionsValid()).toBe(true);
     });

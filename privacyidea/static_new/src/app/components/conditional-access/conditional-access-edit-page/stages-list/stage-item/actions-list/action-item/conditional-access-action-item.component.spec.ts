@@ -135,8 +135,10 @@ describe("ConditionalAccessActionItemComponent", () => {
     });
   });
 
-  // The client-side half of _validate_stage_action_combination: a stage may not carry the same action twice
-  // (except the emails) nor two actions that contradict each other.
+  // The component's own job here is forwarding siblingActions/actionIndex/target to the policy service and
+  // mapping its verdict to the disabled-types set / conflict message. The rules themselves (which actions are
+  // repeatable, which pairs are exclusive) are the policy service's, and are covered once, against the real
+  // implementation, in conditional-access-policy.service.spec.ts.
   describe("stage action combinations", () => {
     let policyServiceMock: MockConditionalAccessPolicyService;
     const action = (actionType: ConditionalAccessActionType) => ({ action_type: actionType, action_value: null });
@@ -145,14 +147,6 @@ describe("ConditionalAccessActionItemComponent", () => {
       policyServiceMock = TestBed.inject(
         ConditionalAccessPolicyService
       ) as unknown as MockConditionalAccessPolicyService;
-      policyServiceMock.repeatableActionsByTarget.set({
-        user: ["EMAIL_ADMIN", "EMAIL_USER"],
-        source_ip: ["EMAIL_ADMIN"]
-      });
-      policyServiceMock.exclusiveGroupsByTarget.set({
-        user: [["LOCK_USER", "PERMANENT_LOCK_USER"]],
-        source_ip: [["BLOCK_IP", "PERMANENT_BLOCK_IP"]]
-      });
     });
 
     const withSiblings = (siblings: ConditionalAccessStageAction[], index: number) => {
@@ -161,38 +155,43 @@ describe("ConditionalAccessActionItemComponent", () => {
       setAction(siblings[index]);
     };
 
-    it("flags the second copy of a non-repeatable action, not the first", () => {
+    it("forwards siblingActions/actionIndex/target and surfaces a duplicate verdict", () => {
       const siblings = [action("LOCK_USER"), action("LOCK_USER")];
+      policyServiceMock.actionConflict.mockReturnValue("duplicate");
       withSiblings(siblings, 1);
       expect(component.actionConflict()).toBe("duplicate");
       expect(component.conflictMessage()).not.toBe("");
-      withSiblings(siblings, 0);
-      expect(component.actionConflict()).toBeNull();
+      expect(policyServiceMock.actionConflict).toHaveBeenCalledWith(siblings, 1, component.target());
     });
 
-    it("does not flag a repeated email action", () => {
-      const siblings = [action("EMAIL_ADMIN"), action("EMAIL_ADMIN")];
-      withSiblings(siblings, 1);
+    it("surfaces a null verdict as no message", () => {
+      policyServiceMock.actionConflict.mockReturnValue(null);
+      withSiblings([action("EMAIL_ADMIN"), action("EMAIL_ADMIN")], 1);
       expect(component.actionConflict()).toBeNull();
       expect(component.conflictMessage()).toBe("");
     });
 
-    it("flags an action that contradicts another on the stage", () => {
+    it("surfaces an exclusive verdict", () => {
+      policyServiceMock.actionConflict.mockReturnValue("exclusive");
       withSiblings([action("LOCK_USER"), action("PERMANENT_LOCK_USER")], 1);
       expect(component.actionConflict()).toBe("exclusive");
+      expect(component.conflictMessage()).not.toBe("");
     });
 
-    it("disables the types another action already occupies, but never its own", () => {
-      withSiblings([action("LOCK_USER"), action("EMAIL_ADMIN")], 1);
+    it("forwards the unavailable-types set from the policy service as disabledActionTypes", () => {
+      const siblings = [action("LOCK_USER"), action("EMAIL_ADMIN")];
+      policyServiceMock.unavailableActionTypes.mockReturnValue(new Set(["LOCK_USER", "PERMANENT_LOCK_USER"]));
+      withSiblings(siblings, 1);
       const disabled = component.disabledActionTypes();
       expect(disabled.has("LOCK_USER")).toBe(true);
       expect(disabled.has("PERMANENT_LOCK_USER")).toBe(true);
       expect(disabled.has("EMAIL_ADMIN")).toBe(false);
+      expect(policyServiceMock.unavailableActionTypes).toHaveBeenCalledWith(siblings, component.target(), 1);
     });
 
     it("does not judge while no rules have been served", () => {
-      policyServiceMock.repeatableActionsByTarget.set({} as Record<ConditionalAccessTarget, ConditionalAccessActionType[]>);
-      policyServiceMock.exclusiveGroupsByTarget.set({} as Record<ConditionalAccessTarget, ConditionalAccessActionType[][]>);
+      policyServiceMock.actionConflict.mockReturnValue(null);
+      policyServiceMock.unavailableActionTypes.mockReturnValue(new Set());
       withSiblings([action("LOCK_USER"), action("LOCK_USER")], 1);
       expect(component.actionConflict()).toBeNull();
       expect(component.disabledActionTypes().size).toBe(0);

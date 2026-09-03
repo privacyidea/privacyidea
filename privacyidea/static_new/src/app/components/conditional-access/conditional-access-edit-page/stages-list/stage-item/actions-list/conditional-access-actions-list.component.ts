@@ -61,7 +61,9 @@ export class ConditionalAccessActionsListComponent {
     // something left to offer once /targets has answered.
     const unavailable = this.policyService.unavailableActionTypes(this.actions(), this.target());
     const allowed = this.policyService.actionsForTarget(this.target()).filter((type) => !unavailable.has(type));
-    const actionType = allowed[0] ?? "LOCK_USER";
+    // EMAIL_ADMIN is valid for every target and always repeatable, so it is the one type that is never
+    // incompatible even before /targets has answered (when allowed and unavailable are both still empty).
+    const actionType = allowed[0] ?? "EMAIL_ADMIN";
     this.actionsChange.emit([...this.actions(), { action_type: actionType, action_value: null }]);
   }
 
