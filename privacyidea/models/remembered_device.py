@@ -79,7 +79,7 @@ class RememberedDevice(MethodsMixin, db.Model):
     # handle used to list and revoke a device, so managing a device never leaks
     # reusable credential material.
     series_id: Mapped[str] = mapped_column(Unicode(64), primary_key=True)
-    device_id: Mapped[str] = mapped_column(Unicode(64), unique=True, index=True, nullable=False)
+    device_id: Mapped[str] = mapped_column(Unicode(64), unique=True, nullable=False)
     counter: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
     client_id: Mapped[str] = mapped_column(Unicode(36), ForeignKey("clients.id", ondelete="CASCADE"),
                                            index=True, nullable=False)
