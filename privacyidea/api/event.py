@@ -196,10 +196,11 @@ def set_eventhandling():
     update; omit it to create a new binding.
 
     .. warning::
-       Updates are not partial. The full set of fields must be supplied on
-       every update — ``action`` and ``position`` are silently set to empty
-       strings if omitted, and ``options`` / ``conditions`` are deleted and
-       replaced with whatever you send (so omitting them wipes them).
+       Updates are not fully partial. ``action`` and ``position`` are silently
+       set to empty strings if omitted. ``conditions`` and ``options`` are only
+       replaced when supplied: omitting the ``conditions`` parameter and all
+       ``option.*`` parameters keeps the stored values untouched, while sending
+       an empty ``conditions`` dict or the ``clear_options`` flag clears them.
 
     Requires admin authentication and the policy action
     :ref:`policy_eventhandling_write`.
@@ -229,10 +230,16 @@ def set_eventhandling():
         module, see :http:get:`/event/defaults/(handlermodule)`.
     :jsonparam conditions: dict (or JSON-encoded dict) of per-binding
         conditions; see :http:get:`/event/conditions/(handlermodule)`.
-        On update, replaces all conditions.
+        On update, replaces all conditions. Omit the parameter to keep the
+        stored conditions untouched; send an empty dict to clear them.
+    :jsonparam clear_options: send ``True`` to clear all stored options when no
+        ``option.*`` parameters are supplied (used to explicitly remove all
+        options on update).
     :jsonparam option.*: per-action options. Field names are taken after
         the ``option.`` prefix (e.g. ``option.subject`` becomes the
-        ``subject`` option). On update, replaces all options.
+        ``subject`` option). On update, replaces all options. If no
+        ``option.*`` parameter and no ``clear_options`` flag is supplied, the
+        stored options are kept untouched.
     :status 200: id of the binding in ``result.value``.
     """
     param = request.all_data
@@ -251,18 +258,30 @@ def set_eventhandling():
     # If it is not given, an existing binding keeps its value and a new one gets the default of its handler
     # module, see :http:get:`/event/defaults/(handlermodule)`.
     abort_on_error = is_true(param.get("abort_on_error")) if "abort_on_error" in param else None
-    conditions = param.get("conditions", {})
-    if not isinstance(conditions, dict):
-        try:
-            conditions = json.loads(conditions)
-        except (ValueError, TypeError):
-            raise ParameterError(_("The 'conditions' parameter must be a dictionary."))
+    # Conditions are only replaced if the "conditions" parameter is supplied.
+    # If it is omitted, the stored conditions are kept untouched; if it is an
+    # empty dict, all stored conditions are cleared.
+    if "conditions" in param:
+        conditions = param.get("conditions")
         if not isinstance(conditions, dict):
-            raise ParameterError(_("The 'conditions' parameter must be a dictionary."))
-    options = {}
-    for k, v in param.items():
-        if k.startswith("option."):
-            options[k[7:]] = v
+            try:
+                conditions = json.loads(conditions)
+            except (ValueError, TypeError):
+                raise ParameterError(_("The 'conditions' parameter must be a dictionary."))
+            if not isinstance(conditions, dict):
+                raise ParameterError(_("The 'conditions' parameter must be a dictionary."))
+    else:
+        conditions = None
+
+    # Options are only replaced if at least one "option.*" parameter is supplied
+    # or the "clear_options" flag is set. Otherwise the stored options are kept
+    # untouched. This prevents e.g. a reorder (which does not send any option.*
+    # parameters) from silently wiping the configured options.
+    option_params = {k[7:]: v for k, v in param.items() if k.startswith("option.")}
+    if option_params or is_true(param.get("clear_options")):
+        options = option_params
+    else:
+        options = None
 
     res = set_event(name, event, handlermodule=handlermodule,
                     action=action, conditions=conditions,

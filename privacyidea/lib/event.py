@@ -304,12 +304,15 @@ def set_event(name=None, event=None, handlermodule=None, action=None, conditions
         handler module
     :type action: basestring
     :param conditions: A condition. Only if this condition is met, the action is
-        performed.
+        performed. If ``None`` (the default) the stored conditions are kept
+        untouched. A dict replaces all stored conditions; an empty dict clears
+        them.
     :type conditions: dict
     :param ordering: An optional ordering of the event definitions.
     :type ordering: integer
     :param options: Additional options, that are needed as parameters for the
-        action
+        action. If ``None`` (the default) the stored options are kept untouched.
+        A dict replaces all stored options; an empty dict clears them.
     :type options: dict
     :param id: The DB id of the event. If the id is given, the event is
         updated. Otherwise, a new entry is generated.
@@ -324,7 +327,6 @@ def set_event(name=None, event=None, handlermodule=None, action=None, conditions
     """
     if isinstance(event, list):
         event = ",".join(event)
-    conditions = conditions or {}
 
     # --- Event Handler ---
     stmt_exists = select(EventHandler).where(EventHandler.id == id)
@@ -356,23 +358,26 @@ def set_event(name=None, event=None, handlermodule=None, action=None, conditions
     save_config_timestamp()
 
     # --- Event Handler Options ---
-    # Delete existing options
-    options = options or {}
-    delete_stmt = delete(EventHandlerOption).where(EventHandlerOption.eventhandler_id == id)
-    db.session.execute(delete_stmt)
+    # Only touch the options if a value was supplied. ``None`` means "keep the
+    # existing options untouched", while a dict (even an empty one) means
+    # "replace all options with this set" (an empty dict clears them).
+    if options is not None:
+        delete_stmt = delete(EventHandlerOption).where(EventHandlerOption.eventhandler_id == id)
+        db.session.execute(delete_stmt)
 
-    # Add the options to the event handler
-    for k, v in options.items():
-        db.session.add(EventHandlerOption(eventhandler_id=id, Key=k, Value=v))
+        # Add the options to the event handler
+        for k, v in options.items():
+            db.session.add(EventHandlerOption(eventhandler_id=id, Key=k, Value=v))
 
     # --- Event Handler Conditions ---
-    # Delete existing conditions
-    delete_stmt = delete(EventHandlerCondition).where(EventHandlerCondition.eventhandler_id == id)
-    db.session.execute(delete_stmt)
+    # Same semantics as the options: ``None`` keeps the stored conditions, a
+    # dict replaces them and an empty dict clears them.
+    if conditions is not None:
+        delete_stmt = delete(EventHandlerCondition).where(EventHandlerCondition.eventhandler_id == id)
+        db.session.execute(delete_stmt)
 
-    conditions = conditions or {}
-    for k, v in conditions.items():
-        db.session.add(EventHandlerCondition(eventhandler_id=id, Key=k, Value=v))
+        for k, v in conditions.items():
+            db.session.add(EventHandlerCondition(eventhandler_id=id, Key=k, Value=v))
 
     db.session.commit()
     return id
