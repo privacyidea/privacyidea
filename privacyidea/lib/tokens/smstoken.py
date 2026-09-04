@@ -162,7 +162,13 @@ class SmsTokenClass(HotpTokenClass):
     mode = [AuthenticationMode.CHALLENGE]
     DYNAMIC_PHONE_KEY = "dynamic_phone"
 
-    owned_tokeninfo_keys = frozenset({"phone", DYNAMIC_PHONE_KEY, "sms.identifier"})
+    owned_tokeninfo_keys = frozenset({"phone", DYNAMIC_PHONE_KEY})
+    # update() takes every "sms." parameter of the enrollment into the token info, so the whole namespace
+    # belongs to the token class
+    owned_tokeninfo_prefixes = frozenset({"sms."})
+    # Where the OTP is sent and which gateway sends it are set at enrollment and change afterwards, e.g. when
+    # the user gets a new phone number
+    settable_tokeninfo_keys = frozenset({"phone", DYNAMIC_PHONE_KEY, "sms.identifier"})
 
     def __init__(self, db_token):
         HotpTokenClass.__init__(self, db_token)

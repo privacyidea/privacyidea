@@ -261,6 +261,8 @@ export interface TokenDetails {
   sync_window: number;
   tokengroup: TokenGroup[];
   tokentype: TokenTypeKey;
+  /** Info entries that POST /token/set accepts, a subset of readonly_info_keys. */
+  settable_info_keys?: string[];
   /** Info entries the token info endpoint refuses to remove, a subset of readonly_info_keys. */
   undeletable_info_keys?: string[];
   user_id: string;
@@ -269,28 +271,21 @@ export interface TokenDetails {
 }
 
 /**
- * Token info entries that are maintained by the token but have their own endpoint, POST /token/set. The token
- * info endpoint refuses them, so they appear in readonly_info_keys, yet they stay editable through /token/set.
- */
-export const TOKEN_SET_INFO_KEYS = [
-  "count_auth_max",
-  "count_auth_success_max",
-  "hashlib",
-  "validity_period_start",
-  "validity_period_end"
-] as const;
-
-/**
  * Whether a token info entry can be changed at all, through either the token info endpoint or /token/set.
+ *
+ * Which entries a token maintains, and which of those have their own endpoint, is decided per token type on
+ * the server and reported with the token, so that this never has to be repeated here.
  *
  * @param infoKey The token info key
  * @param readonlyInfoKeys The readonly_info_keys of the token
+ * @param settableInfoKeys The settable_info_keys of the token
  */
-export function isTokenInfoKeyWritable(infoKey: string, readonlyInfoKeys: string[] = []): boolean {
-  if ((TOKEN_SET_INFO_KEYS as readonly string[]).includes(infoKey)) {
-    return true;
-  }
-  return !readonlyInfoKeys.includes(infoKey);
+export function isTokenInfoKeyWritable(
+  infoKey: string,
+  readonlyInfoKeys: string[] = [],
+  settableInfoKeys: string[] = []
+): boolean {
+  return !readonlyInfoKeys.includes(infoKey) || settableInfoKeys.includes(infoKey);
 }
 
 export type TokenGroups = Map<string, TokenGroup[]>;
@@ -407,7 +402,8 @@ export interface TokenServiceInterface extends FilterableTableServiceInterface {
   setTokenInfos(
     tokenSerial: string,
     infos: Record<string, string>,
-    readonlyInfoKeys?: string[]
+    readonlyInfoKeys?: string[],
+    settableInfoKeys?: string[]
   ): Observable<PiResponse<boolean>[]>;
 
   deleteToken(tokenSerial: string): Observable<PiResponse<number>>;
@@ -989,7 +985,8 @@ export class TokenService extends FilterableTableService implements TokenService
   setTokenInfos(
     tokenSerial: string,
     infos: Record<string, string>,
-    readonlyInfoKeys: string[] = []
+    readonlyInfoKeys: string[] = [],
+    settableInfoKeys: string[] = []
   ): Observable<PiResponse<boolean>[]> {
     const headers = this.authService.getHeaders();
     const set_url = `${this.tokenBaseUrl}set`;
@@ -1011,10 +1008,10 @@ export class TokenService extends FilterableTableService implements TokenService
     // The whole info map is passed in, so skip the entries the server would refuse. An entry with its own
     // endpoint stays writable through that endpoint even though the token info endpoint refuses it.
     const requests = Object.keys(infos)
-      .filter((infoKey) => isTokenInfoKeyWritable(infoKey, readonlyInfoKeys))
+      .filter((infoKey) => isTokenInfoKeyWritable(infoKey, readonlyInfoKeys, settableInfoKeys))
       .map((infoKey) => {
         const infoValue = infos[infoKey];
-        if ((TOKEN_SET_INFO_KEYS as readonly string[]).includes(infoKey)) {
+        if (settableInfoKeys.includes(infoKey)) {
           return postRequest(set_url, {
             serial: tokenSerial,
             [infoKey]: infoValue

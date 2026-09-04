@@ -290,7 +290,7 @@ describe("TokenService", () => {
       const infos = { hashlib: "sha1", "custom/1": "foo" };
       postSpy.mockReturnValue(of(MockPiResponse.fromValue(true)));
 
-      tokenService.setTokenInfos("serial/1", infos).subscribe();
+      tokenService.setTokenInfos("serial/1", infos, [], ["hashlib"]).subscribe();
 
       expect(postSpy).toHaveBeenNthCalledWith(
         1,
@@ -1206,7 +1206,7 @@ describe("TokenService", () => {
           throwError(() => new HttpErrorResponse({ error: { result: { error: { message: "oops" } } }, status: 500 }))
         );
 
-      tokenService.setTokenInfos("SER", { hashlib: "sha1", custom: "x" }).subscribe({
+      tokenService.setTokenInfos("SER", { hashlib: "sha1", custom: "x" }, [], ["hashlib"]).subscribe({
         next: () => fail("expected error"),
         error: () => {
           expect(notificationService.error).toHaveBeenCalledWith("Failed to set token info. oops");

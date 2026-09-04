@@ -64,12 +64,22 @@ export class TokenDetailsInfoComponent {
   @Input() readonlyInfoKeys: Signal<string[]> = signal<string[]>([]);
   /** Info entries that may not be removed, see TokenDetails.undeletable_info_keys */
   @Input() undeletableInfoKeys: Signal<string[]> = signal<string[]>([]);
+  /** Info entries that have their own endpoint, see TokenDetails.settable_info_keys */
+  @Input() settableInfoKeys: Signal<string[]> = signal<string[]>([]);
   newInfo: WritableSignal<{ key: string; value: string }> = linkedSignal({
     source: () => this.isEditingInfo(),
     computation: () => {
       return { key: "", value: "" };
     }
   });
+  /**
+   * The values as they were when the editing started, so that saving only sends the entries that were really
+   * changed. Sending all of them would overwrite what somebody else changed in the meantime.
+   *
+   * This is filled when the editing starts, not when it is read: the inputs are bound to the value map of the
+   * element itself, so by the time it is saved that map already holds the edited values.
+   */
+  editedInfoBefore: WritableSignal<Record<string, string>> = signal<Record<string, string>>({});
   protected authService: AuthServiceInterface = inject(AuthService);
 
   visibleInfoKeys(value: Record<string, string>): string[] {
@@ -89,7 +99,7 @@ export class TokenDetailsInfoComponent {
    * only, unless they have their own endpoint the value can be written through.
    */
   isInfoKeyEditable(key: string): boolean {
-    return isTokenInfoKeyWritable(key, this.readonlyInfoKeys());
+    return isTokenInfoKeyWritable(key, this.readonlyInfoKeys(), this.settableInfoKeys());
   }
 
   /**
@@ -103,6 +113,8 @@ export class TokenDetailsInfoComponent {
   toggleInfoEdit(): void {
     if (this.isEditingInfo()) {
       this.tokenService.tokenDetailResource.reload();
+    } else {
+      this.editedInfoBefore.set({ ...this.asInfoMap(this.infoData()[0]?.value) });
     }
     this.isEditingInfo.update((b) => !b);
   }
@@ -111,12 +123,26 @@ export class TokenDetailsInfoComponent {
     if (this.newInfo().key.trim() !== "" && this.newInfo().value.trim() !== "") {
       element.value[this.newInfo().key] = this.newInfo().value;
     }
-    this.tokenService.setTokenInfos(this.tokenSerial(), element.value, this.readonlyInfoKeys()).subscribe({
-      next: () => {
-        this.newInfo.set({ key: "", value: "" });
-        this.tokenService.tokenDetailResource.reload();
-      }
-    });
+    // Only the entries that were really changed are sent, so that a concurrent change to another entry of the
+    // same token is not overwritten with the value this view happened to start with. Without a record of what
+    // the editing started from, everything is sent, which is what happened before it was recorded.
+    const before = this.editedInfoBefore();
+    let changed = element.value;
+    if (Object.keys(before).length) {
+      changed = Object.fromEntries(
+        Object.keys(element.value)
+          .filter((key) => element.value[key] !== before[key])
+          .map((key) => [key, element.value[key]])
+      );
+    }
+    this.tokenService
+      .setTokenInfos(this.tokenSerial(), changed, this.readonlyInfoKeys(), this.settableInfoKeys())
+      .subscribe({
+        next: () => {
+          this.newInfo.set({ key: "", value: "" });
+          this.tokenService.tokenDetailResource.reload();
+        }
+      });
     this.isEditingInfo.set(false);
   }
 

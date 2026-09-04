@@ -56,6 +56,9 @@ class TotpTokenClass(HotpTokenClass):
     previous_otp_offset = 0
 
     owned_tokeninfo_keys = frozenset({"timeShift", "timeStep", "timeWindow"})
+    # The time step and the window are set at enrollment and are tuned afterwards, e.g. to widen the window
+    # while a token is being synchronized for the first time and to narrow it again after that
+    settable_tokeninfo_keys = frozenset({"timeShift", "timeStep", "timeWindow"})
 
     desc_timestep = lazy_gettext('Specify the time step of the time-based OTP token.')
 

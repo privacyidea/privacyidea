@@ -87,7 +87,6 @@ from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action, check_t
                                            force_server_generate_key)
 from privacyidea.lib.challenge import (cancel_challenge, get_challenges, get_challenges_for_user,
                                        get_challenges_paginate, cleanup_expired_challenges)
-from privacyidea.lib.config import get_token_types
 from privacyidea.lib.error import (ParameterError, TokenAdminError,
                                    ResourceNotFoundError, PolicyError, Error)
 from privacyidea.lib.event import event
@@ -113,7 +112,7 @@ from ..lib.token import (init_token, get_tokens_paginate, assign_token,
                          copy_token_user, copy_token_pin, lost_token,
                          get_serial_by_otp, get_tokens,
                          set_validity_period_end, set_validity_period_start, add_tokeninfo,
-                         delete_tokeninfo, import_token, set_token_type_info,
+                         delete_tokeninfo, import_token, set_token_type_info, is_settable_tokeninfo_key,
                          assign_tokengroup, unassign_tokengroup, set_tokengroups, get_one_token)
 from ..lib.tokens.passkeytoken import PasskeyTokenClass
 from ..lib.tokens.webauthntoken import WebAuthnTokenClass
@@ -122,6 +121,12 @@ from ..lib.user import get_user_from_param, User
 
 token_blueprint = Blueprint('token_blueprint', __name__)
 log = logging.getLogger(__name__)
+
+# The fields POST /token/set writes through their own setter. Some of them are token info entries a token class
+# maintains, so they would otherwise be written a second time as a settable token info entry.
+HANDLED_SET_FIELDS = frozenset({"serial", "user", "realm", "resolver", "description", "count_window",
+                                "sync_window", "hashlib", "max_failcount", "count_auth_max",
+                                "count_auth_success_max", "validity_period_start", "validity_period_end"})
 
 __doc__ = """
 The token REST API manages the lifecycle of authentication tokens -
@@ -699,7 +704,8 @@ def list_api():
         ``readonly_info_keys`` and ``undeletable_info_keys``, the
         subsets of its ``info`` entries that the token info
         endpoints refuse to change respectively to remove because
-        the token itself maintains them.
+        the token itself maintains them, and ``settable_info_keys``,
+        the subset of those that :http:post:`/token/set` accepts.
     """
     param = request.all_data
     serial = get_optional(param, "serial")
@@ -1336,15 +1342,16 @@ def set_api(serial=None):
                                        f"validity_period_start={validity_period_start!r}, "})
         res += set_validity_period_start(serial, user, validity_period_start)
 
-    # Token type specific entries, e.g. "remote.user" on a remote token. A parameter counts as one when it is
-    # prefixed with a known token type, so the fixed fields above and any framework parameter are unaffected.
-    token_types = get_token_types()
-    type_info = {key: value for key, value in request.all_data.items()
-                 if "." in key and key.split(".", 1)[0] in token_types}
-    if type_info:
-        for key, value in sorted(type_info.items()):
-            g.audit_object.add_to_log({'action_detail': f"{key!s}={value!r}, "})
-        res += set_token_type_info(serial, type_info, user=user)
+    # Token info entries a token class maintains but that change over the lifetime of a token, e.g.
+    # "remote.user" or "phone". A parameter counts as one when some token class declares it settable, so the
+    # fixed fields above and any framework parameter are unaffected.
+    settable_info = {key: value for key, value in request.all_data.items()
+                     if key not in HANDLED_SET_FIELDS and is_settable_tokeninfo_key(key)}
+    if settable_info:
+        for key, value in sorted(settable_info.items()):
+            # The value can be a secret, e.g. the shared secret of a RADIUS server, so only the key is audited
+            g.audit_object.add_to_log({'action_detail': f"{key!s} set, "})
+        res += set_token_type_info(serial, settable_info, user=user)
 
     g.audit_object.log({"success": True})
     return send_result(res)

@@ -5091,6 +5091,111 @@ class APISSHKeyReadTestCase(MyApiTestCase):
         remove_token(serial)
 
 
+class APITokenRolloverRightTestCase(MyApiTestCase):
+    """
+    POST /token/init updates a token when it is called with a serial that already exists. While the enrollment
+    of that token is under way that is part of the enrollment, but once the token is in use the same request
+    gives it a new secret, which needs the token_rollover action on top of the enrollment action.
+    """
+    serial = "ROLLOVER001"
+    original_key = "31323334353637383930313233343536373839dd"
+    chosen_key = "dddddddddddddddddddddddddddddddddddddddd"
+
+    def _init_owned_token(self, serial: str = None) -> "TokenClass":
+        return init_token({"serial": serial or self.serial, "type": "hotp", "otpkey": self.original_key,
+                           "pin": "ownerpin"}, user=User("cornelius", self.realm1))
+
+    def _init_request(self, data: dict) -> "Response":
+        with self.app.test_request_context('/token/init',
+                                           method="POST",
+                                           data=data,
+                                           headers={'Authorization': self.at}):
+            return self.app.full_dispatch_request()
+
+    def test_01_the_enrollment_action_alone_cannot_rekey_a_token(self):
+        self.setUp_user_realms()
+        self._init_owned_token()
+        set_policy("rollover_enroll_only", scope=SCOPE.ADMIN, action="enrollHOTP")
+
+        # Neither with a chosen key, nor by asking for a new one, nor by naming it a rollover
+        for data in [{"serial": self.serial, "type": "hotp", "otpkey": self.chosen_key},
+                     {"serial": self.serial, "type": "hotp", "genkey": 1},
+                     {"serial": self.serial, "type": "hotp", "rollover": 1, "otpkey": self.chosen_key},
+                     {"serial": self.serial, "type": "hotp", "pin": "adminpin"}]:
+            res = self._init_request(data)
+            self.assertEqual(403, res.status_code, f"{data} -> {res.json}")
+
+        # The secret and the PIN of the owner are untouched
+        token = get_one_token(serial=self.serial)
+        self.assertEqual(self.original_key, token.token.get_otpkey().getKey().decode("utf-8"))
+        self.assertTrue(token.check_pin("ownerpin"))
+
+        delete_policy("rollover_enroll_only")
+        remove_token(self.serial)
+
+    def test_02_enrolling_a_new_token_only_needs_the_enrollment_action(self):
+        self.setUp_user_realms()
+        set_policy("rollover_enroll_only", scope=SCOPE.ADMIN, action="enrollHOTP")
+
+        res = self._init_request({"serial": "ROLLOVER002", "type": "hotp", "genkey": 1})
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertTrue(token_exist("ROLLOVER002"))
+
+        delete_policy("rollover_enroll_only")
+        remove_token("ROLLOVER002")
+
+    def test_03_the_rollover_action_allows_the_rekey(self):
+        self.setUp_user_realms()
+        self._init_owned_token()
+        set_policy("rollover_allowed", scope=SCOPE.ADMIN, action="enrollHOTP, token_rollover")
+
+        res = self._init_request({"serial": self.serial, "type": "hotp", "otpkey": self.chosen_key})
+        self.assertEqual(200, res.status_code, res.json)
+        token = get_one_token(serial=self.serial)
+        self.assertEqual(self.chosen_key, token.token.get_otpkey().getKey().decode("utf-8"))
+
+        delete_policy("rollover_allowed")
+        remove_token(self.serial)
+
+    def test_04_an_enrollment_still_being_finished_is_not_a_rollover(self):
+        self.setUp_user_realms()
+        set_policy("rollover_two_step", scope=SCOPE.ADMIN, action="enrollHOTP, hotp_2step=allow")
+        serial = "ROLLOVER004"
+
+        # The first request leaves the token waiting for the client
+        res = self._init_request({"serial": serial, "type": "hotp", "2stepinit": 1, "genkey": 1})
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertEqual(RolloutState.CLIENTWAIT, get_one_token(serial=serial).token.rollout_state)
+
+        # The second request comes back to the same serial and completes the enrollment, with no rollover action
+        res = self._init_request({"serial": serial, "type": "hotp", "otpkey": "aaaaaaaaaaaaaaaa"})
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertEqual(RolloutState.ENROLLED, get_one_token(serial=serial).token.rollout_state)
+
+        delete_policy("rollover_two_step")
+        remove_token(serial)
+
+    def test_05_the_rollover_is_matched_against_the_realm_of_the_token(self):
+        self.setUp_user_realms()
+        self.setUp_user_realm2()
+        self._init_owned_token()
+
+        # The admin may roll over tokens of realm2, the token belongs to realm1
+        set_policy("rollover_realm2", scope=SCOPE.ADMIN, action="enrollHOTP, token_rollover", realm=self.realm2)
+        res = self._init_request({"serial": self.serial, "type": "hotp", "otpkey": self.chosen_key})
+        self.assertEqual(403, res.status_code, res.json)
+        self.assertEqual(self.original_key,
+                         get_one_token(serial=self.serial).token.get_otpkey().getKey().decode("utf-8"))
+
+        # The realm of the token is what counts, not a realm passed in the request
+        res = self._init_request({"serial": self.serial, "type": "hotp", "otpkey": self.chosen_key,
+                                  "realm": self.realm2})
+        self.assertEqual(403, res.status_code, res.json)
+
+        delete_policy("rollover_realm2")
+        remove_token(self.serial)
+
+
 class APITokenInfoWriteTestCase(MyApiTestCase):
     """
     The generic token info endpoints let an administrator write and delete arbitrary token info keys. Callers of
@@ -5206,6 +5311,7 @@ class APITokenInfoWriteTestCase(MyApiTestCase):
 
         readonly = token_data["readonly_info_keys"]
         undeletable = token_data["undeletable_info_keys"]
+        settable = token_data["settable_info_keys"]
 
         # A key the token class maintains cannot be changed
         self.assertIn("hashlib", readonly, readonly)
@@ -5223,9 +5329,17 @@ class APITokenInfoWriteTestCase(MyApiTestCase):
         self.assertNotIn("a note", undeletable, undeletable)
         self.assertNotIn("radius.secret", readonly, readonly)
 
+        # An entry with its own endpoint is read-only for the token info endpoint but still settable
+        self.assertIn("hashlib", settable, settable)
+        self.assertNotIn("refilltoken", settable, settable)
+        self.assertNotIn("tokenkind", settable, settable)
+
         # Every listed key is really part of the returned token info
-        for key in readonly + undeletable:
+        for key in readonly + undeletable + settable:
             self.assertIn(key, token_data["info"], key)
+        # The two subsets are subsets of the read-only entries
+        for key in undeletable + settable:
+            self.assertIn(key, readonly, key)
         remove_token(serial)
 
     def test_02e_token_type_entries_are_written_through_token_set(self):
@@ -5242,20 +5356,23 @@ class APITokenInfoWriteTestCase(MyApiTestCase):
             self.assertEqual(403, res.status_code, res)
         self.assertEqual("firstuser", get_one_token(serial=serial).get_tokeninfo("remote.user"))
 
-        # /token/set writes it, gated by its own action and audited per field
+        # /token/set writes it, gated by its own action and audited per field. The response counts one per
+        # entry written, the way the other fields of the endpoint count.
         with self.app.test_request_context('/token/set',
                                            method="POST",
-                                           data={"serial": serial, "remote.user": "seconduser"},
+                                           data={"serial": serial, "remote.user": "seconduser",
+                                                 "remote.path": "/path"},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertEqual(200, res.status_code, res)
-            self.assertEqual(1, res.json["result"]["value"])
+            self.assertEqual(2, res.json["result"]["value"])
         token = get_one_token(serial=serial)
         self.assertEqual("seconduser", token.get_tokeninfo("remote.user"))
+        self.assertEqual("/path", token.get_tokeninfo("remote.path"))
         # The other entries of the namespace are untouched
         self.assertEqual("https://first", token.get_tokeninfo("remote.server"))
 
-        # The namespace of a different token type is not written to this token
+        # A key another token type declares settable is not written to this token
         with self.app.test_request_context('/token/set',
                                            method="POST",
                                            data={"serial": serial, "radius.user": "someuser"},
@@ -5265,7 +5382,7 @@ class APITokenInfoWriteTestCase(MyApiTestCase):
             self.assertEqual(0, res.json["result"]["value"])
         self.assertIsNone(get_one_token(serial=serial).get_tokeninfo("radius.user"))
 
-        # A prefix that is not a token type is a typo, not a namespace
+        # A key no token type declares settable is refused
         with self.app.test_request_context('/token/set',
                                            method="POST",
                                            data={"serial": serial, "remotee.user": "someuser"},
@@ -5274,6 +5391,57 @@ class APITokenInfoWriteTestCase(MyApiTestCase):
             self.assertEqual(200, res.status_code, res)
         self.assertIsNone(get_one_token(serial=serial).get_tokeninfo("remotee.user"))
         remove_token(serial)
+
+    def test_02e2_the_secret_of_a_token_is_not_settable(self):
+        # A TAN is stored in the "tan." namespace of a TAN token and is what the token authenticates with, so
+        # it is not among the entries POST /token/set may write
+        tan_serial = "TINFO002E2"
+        init_token({"serial": tan_serial, "type": "tan", "genkey": 1})
+        tan_token = get_one_token(serial=tan_serial)
+        stored_tan = [key for key in tan_token.get_tokeninfo() if key.startswith("tan.tan")][0]
+
+        with self.app.test_request_context('/token/set',
+                                           method="POST",
+                                           data={"serial": tan_serial, stored_tan: "somesalt:somehash"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            self.assertEqual(0, res.json["result"]["value"])
+        self.assertNotEqual("somesalt:somehash", get_one_token(serial=tan_serial).get_tokeninfo(stored_tan))
+        remove_token(tan_serial)
+
+        # The same for the public id a yubikey is recognized by
+        yubi_serial = "TINFO002E3"
+        init_token({"serial": yubi_serial, "type": "yubikey", "otpkey": "31323334353637383930313233343536",
+                    "otplen": 44})
+        yubi_token = get_one_token(serial=yubi_serial)
+        yubi_token.write_tokeninfo("yubikey.prefix", "ccccccorigin")
+
+        with self.app.test_request_context('/token/set',
+                                           method="POST",
+                                           data={"serial": yubi_serial, "yubikey.prefix": "ccccccattacker"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            self.assertEqual(0, res.json["result"]["value"])
+        self.assertEqual("ccccccorigin", get_one_token(serial=yubi_serial).get_tokeninfo("yubikey.prefix"))
+        remove_token(yubi_serial)
+
+    def test_02e3_an_operator_switch_stays_free_form(self):
+        # Nothing in the server writes these, they are switches an administrator sets on a single token, so
+        # they stay writable through the token info endpoint
+        for token_type, key, value in [("indexedsecret", "multichallenge", "1"),
+                                       ("push", "polling_allowed", "False")]:
+            serial = f"TINFO_FREE_{token_type}"
+            init_token({"serial": serial, "type": token_type, "genkey": 1})
+            with self.app.test_request_context(f'/token/info/{serial}/{key}',
+                                               method="POST",
+                                               data={"value": value},
+                                               headers={'Authorization': self.at}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, f"{token_type}/{key}: {res.json}")
+            self.assertEqual(value, get_one_token(serial=serial).get_tokeninfo(key))
+            remove_token(serial)
 
     def test_02f_a_type_entry_is_only_set_while_the_token_is_enrolled(self):
         serial = "TINFO002F"
@@ -5289,7 +5457,10 @@ class APITokenInfoWriteTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertEqual(200, res.status_code, res)
-        self.assertEqual("https://first", get_one_token(serial=serial).get_tokeninfo("remote.server"))
+        token = get_one_token(serial=serial)
+        self.assertEqual("https://first", token.get_tokeninfo("remote.server"))
+        # The kind of the token is not changed to the default of the parent class either
+        self.assertEqual("virtual", token.get_tokeninfo("tokenkind"))
         remove_token(serial)
 
     def test_03_a_free_form_key_can_still_be_written_and_deleted(self):

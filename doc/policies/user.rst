@@ -76,6 +76,20 @@ The user is allowed to delete their own tokens from the database.
 Those tokens can not be recovered. The audit log concerning
 these tokens remains.
 
+token_rollover
+~~~~~~~~~~~~~~
+
+type: ``bool``
+
+The user is allowed to roll over one of their own tokens that is already
+enrolled, which gives it a new secret.
+
+``POST /token/init`` updates a token when it is called with the serial of a
+token that already exists. While the enrollment of that token is still under
+way, that is part of the enrollment and only needs the ``enroll<TOKENTYPE>``
+action. Once the token is in use, the same request gives it a new secret and
+additionally requires this action. Enrolling a new token is unaffected.
+
 unassign
 ~~~~~~~~
 

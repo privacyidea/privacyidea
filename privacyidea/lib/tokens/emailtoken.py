@@ -104,7 +104,12 @@ class EmailTokenClass(HotpTokenClass):
     EMAIL_ADDRESS_KEY = "email"
     DYNAMIC_EMAIL_KEY = "dynamic_email"
 
-    owned_tokeninfo_keys = frozenset({EMAIL_ADDRESS_KEY, DYNAMIC_EMAIL_KEY, "email.identifier"})
+    owned_tokeninfo_keys = frozenset({EMAIL_ADDRESS_KEY, DYNAMIC_EMAIL_KEY})
+    # update() takes every "email." parameter of the enrollment into the token info, so the whole namespace
+    # belongs to the token class
+    owned_tokeninfo_prefixes = frozenset({"email."})
+    # Where the OTP is sent and which server sends it are set at enrollment and change afterwards
+    settable_tokeninfo_keys = frozenset({EMAIL_ADDRESS_KEY, DYNAMIC_EMAIL_KEY, "email.identifier"})
 
     # The HOTP token provides means to verify the enrollment
     can_verify_enrollment = True

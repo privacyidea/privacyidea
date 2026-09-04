@@ -181,22 +181,32 @@ class TokenClass:
         PolicyAction.LASTAUTH,
         "next_password_change",
         "next_pin_change",
-        # The offline machine application attaches these to any offline capable token, so they are declared here
-        # rather than on a single token class. The refill token authorizes fetching further offline OTP material.
-        "offline_counter",
-        "refilltoken",
         "tokenkind",
         "validity_period_end",
         "validity_period_start",
     })
-    # A FIDO2 token can be offline on several machines, so its refill token is stored per machine name
-    owned_tokeninfo_prefixes = frozenset({"refilltoken_"})
+    owned_tokeninfo_prefixes = frozenset()
 
     # Owned keys that may still be removed through a generic token info write, declared the same way. The value
     # of an owned key is issued by the server and is not written from a request, but removing the entry only
     # drops the capability it carries, which is a legitimate administrative action.
-    deletable_tokeninfo_keys = frozenset({"refilltoken"})
-    deletable_tokeninfo_prefixes = frozenset({"refilltoken_"})
+    deletable_tokeninfo_keys = frozenset()
+    deletable_tokeninfo_prefixes = frozenset()
+
+    # Owned keys that POST /token/set may write, declared the same way. An owned key is either issued by the
+    # server, e.g. the sign count of a passkey, or supplied at enrollment, e.g. the server a radius token
+    # forwards to. The second kind does change over the lifetime of a token, so it is listed here and can be
+    # written through that endpoint, which has its own action and audits every field it writes. The keys that
+    # carry the secret of a token, e.g. the TANs of a TAN token or the public id a yubikey is recognized by,
+    # are deliberately not listed: those only change by enrolling or rolling over the token.
+    settable_tokeninfo_keys = frozenset({
+        "count_auth_max",
+        "count_auth_success_max",
+        "hashlib",
+        "validity_period_end",
+        "validity_period_start",
+    })
+    settable_tokeninfo_prefixes = frozenset()
 
     @classmethod
     def _collect_tokeninfo_declaration(cls, keys_attribute: str, prefixes_attribute: str) -> tuple:
@@ -259,6 +269,21 @@ class TokenClass:
             return True
         keys, prefixes = cls._collect_tokeninfo_declaration("deletable_tokeninfo_keys",
                                                             "deletable_tokeninfo_prefixes")
+        return key in keys or any(key.startswith(prefix) for prefix in prefixes)
+
+    @classmethod
+    def is_settable_tokeninfo_key(cls, key: str) -> bool:
+        """
+        Whether POST /token/set may write the given token info key, see settable_tokeninfo_keys. A key the token
+        class does not own is free-form and is written through the token info endpoints instead.
+
+        :param key: The token info key to check
+        :return: True if the key may be written through POST /token/set
+        """
+        if not cls.is_owned_tokeninfo_key(key):
+            return False
+        keys, prefixes = cls._collect_tokeninfo_declaration("settable_tokeninfo_keys",
+                                                            "settable_tokeninfo_prefixes")
         return key in keys or any(key.startswith(prefix) for prefix in prefixes)
 
     @log_with(log)

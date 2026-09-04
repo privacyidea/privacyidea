@@ -74,6 +74,10 @@ class RadiusTokenClass(RemoteTokenClass):
     mode = [AuthenticationMode.AUTHENTICATE, AuthenticationMode.CHALLENGE]
 
     owned_tokeninfo_prefixes = frozenset({"radius."})
+    # Which RADIUS server the request is forwarded to, and as whom, is set at enrollment and changes afterwards.
+    # "radius.secret" is not listed, it is the shared secret and is stored as the secret of the token.
+    settable_tokeninfo_keys = frozenset({"radius.identifier", "radius.server", "radius.user",
+                                         "radius.local_checkpin", "radius.system_settings"})
 
     def __init__(self, db_token):
         RemoteTokenClass.__init__(self, db_token)
@@ -139,6 +143,8 @@ class RadiusTokenClass(RemoteTokenClass):
         if not self.is_being_enrolled():
             self.set_otplen(6)
             TokenClass.update(self, param)
+            # The parent class writes the software kind, this token forwards to a RADIUS server
+            self.write_tokeninfo("tokenkind", Tokenkind.VIRTUAL)
             return
 
         # New value

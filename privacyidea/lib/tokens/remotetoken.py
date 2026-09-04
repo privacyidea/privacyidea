@@ -74,6 +74,11 @@ class RemoteTokenClass(TokenClass):
 
     owned_tokeninfo_keys = frozenset({"last_matching_remote_serial"})
     owned_tokeninfo_prefixes = frozenset({"remote."})
+    # Which server the request is forwarded to, and as whom, is set at enrollment and changes afterwards, e.g.
+    # when the remote privacyIDEA moves. "last_matching_remote_serial" is not listed, the server records it.
+    settable_tokeninfo_keys = frozenset({"remote.server", "remote.server_id", "remote.serial", "remote.user",
+                                         "remote.realm", "remote.resolver", "remote.path",
+                                         "remote.local_checkpin"})
 
     def __init__(self, db_token):
         """
@@ -152,6 +157,9 @@ class RemoteTokenClass(TokenClass):
         self.set_otplen(6)
         TokenClass.update(self, param)
 
+        # The parent class writes the software kind, this token forwards to another privacyIDEA
+        self.write_tokeninfo("tokenkind", Tokenkind.VIRTUAL)
+
         # What this token forwards to is written from the enrollment parameters, so it is only taken while the
         # token is being enrolled. Changing it later goes through POST /token/set.
         if not self.is_being_enrolled():
@@ -175,8 +183,6 @@ class RemoteTokenClass(TokenClass):
             val = get_optional(param, key)
             if val is not None:
                 self.write_tokeninfo(key, val)
-
-        self.write_tokeninfo("tokenkind", Tokenkind.VIRTUAL)
 
     @property
     def check_pin_local(self):

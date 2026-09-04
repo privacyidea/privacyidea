@@ -619,6 +619,11 @@ class WebAuthnTokenClass(TokenClass):
                                       FIDO2TokenInfo.ATTESTATION_SUBJECT, FIDO2TokenInfo.CREDENTIAL_ID_HASH,
                                       FIDO2TokenInfo.ORIGIN, FIDO2TokenInfo.PUB_KEY,
                                       FIDO2TokenInfo.RELYING_PARTY_ID, FIDO2TokenInfo.RELYING_PARTY_NAME})
+    # A WebAuthn token is one of the token types the offline machine application supports. It can be offline on
+    # several machines, so the token that authorizes a refill is stored per machine name. Removing one only
+    # revokes the refill for that machine, so an administrator may do it.
+    owned_tokeninfo_prefixes = frozenset({"refilltoken_"})
+    deletable_tokeninfo_prefixes = frozenset({"refilltoken_"})
 
     @staticmethod
     def _get_challenge_validity_time():

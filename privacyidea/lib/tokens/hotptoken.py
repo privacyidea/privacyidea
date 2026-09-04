@@ -92,7 +92,15 @@ class HotpTokenClass(TokenClass):
     # The HOTP token provides means to verify the enrollment
     can_verify_enrollment = True
 
-    owned_tokeninfo_keys = frozenset({"2step_clientsize", "2step_difficulty", "dueDate", "otp1c"})
+    # An HOTP token is one of the token types the offline machine application supports, so it carries the
+    # counter of the OTP values handed out for offline use and the token that authorizes fetching more. The
+    # token types that derive from this one inherit both, although only an HOTP token is offline capable. That
+    # only means the two keys are not free-form on those types either, where they are never written anyway.
+    owned_tokeninfo_keys = frozenset({"2step_clientsize", "2step_difficulty", "dueDate", "otp1c",
+                                      "offline_counter", "refilltoken"})
+    # Removing the refill token only revokes the ability to refill, it does not change how the token
+    # authenticates, so an administrator may do it
+    deletable_tokeninfo_keys = frozenset({"refilltoken"})
 
     desc_hash_func = lazy_gettext('Specify the hashing function to be used. '
                                   'Can be SHA1, SHA256 or SHA512.')

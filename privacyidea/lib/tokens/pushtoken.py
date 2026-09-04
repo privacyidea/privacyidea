@@ -415,7 +415,9 @@ class PushTokenClass(TokenClass):
     mode = [AuthenticationMode.AUTHENTICATE, AuthenticationMode.CHALLENGE, AuthenticationMode.OUTOFBAND]
     client_mode = ClientMode.POLL
 
-    owned_tokeninfo_keys = frozenset({"enrollment_credential", "firebase_token", POLLING_ALLOWED,
+    # POLLING_ALLOWED is not declared: nothing in the server ever writes it, it is a switch an administrator
+    # sets on a single token to deny it polling, so it stays free-form token info.
+    owned_tokeninfo_keys = frozenset({"enrollment_credential", "firebase_token",
                                       PRIVATE_KEY_SERVER, PUBLIC_KEY_SERVER, PUBLIC_KEY_SMARTPHONE,
                                       PushAction.FIREBASE_CONFIG})
 

@@ -210,6 +210,8 @@ export class TokenDetailsComponent implements OnInit, AfterViewInit, OnDestroy {
   readonlyInfoKeys = computed(() => this.tokenDetails()?.readonly_info_keys ?? []);
   /** Info entries the token info endpoint refuses to remove, a subset of readonlyInfoKeys */
   undeletableInfoKeys = computed(() => this.tokenDetails()?.undeletable_info_keys ?? []);
+  /** Info entries that POST /token/set accepts, a subset of readonlyInfoKeys */
+  settableInfoKeys = computed(() => this.tokenDetails()?.settable_info_keys ?? []);
   infoData = linkedSignal({
     source: this.tokenDetails,
     computation: (details) => {

@@ -573,8 +573,11 @@ def _build_token_dicts(tokens: list[TokenClass], hidden_token_info: list[str] | 
         # not offer an edit or a delete that the token info endpoints would refuse. The value of an entry is
         # readable either way, only writing it is restricted. A "<key>.type" entry is synthesized from the value
         # type of "<key>" and is not a stored entry of its own, so it can be neither changed nor removed.
+        # An entry the token maintains can still have its own endpoint, POST /token/set, which is what
+        # settable_info_keys names, so a client can offer an edit for those after all.
         readonly_info_keys = []
         undeletable_info_keys = []
+        settable_info_keys = []
         for key in token_dict["info"]:
             if key.endswith(TOKENINFO_TYPE_SUFFIX):
                 readonly_info_keys.append(key)
@@ -584,8 +587,11 @@ def _build_token_dicts(tokens: list[TokenClass], hidden_token_info: list[str] | 
                 readonly_info_keys.append(key)
                 if not token.is_deletable_tokeninfo_key(key):
                     undeletable_info_keys.append(key)
+                if token.is_settable_tokeninfo_key(key):
+                    settable_info_keys.append(key)
         token_dict["readonly_info_keys"] = readonly_info_keys
         token_dict["undeletable_info_keys"] = undeletable_info_keys
+        token_dict["settable_info_keys"] = settable_info_keys
 
         token_dict["container_serial"] = container_serial_by_token_id.get(token.token.id, "")
 

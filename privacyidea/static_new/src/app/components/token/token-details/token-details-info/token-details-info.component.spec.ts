@@ -107,7 +107,7 @@ describe("TokenDetailsInfoComponent", () => {
     component.saveInfo(el);
 
     expect(el.value).toEqual({ a: "1", b: "2" });
-    expect(tokenService.setTokenInfos).toHaveBeenCalledWith("SER", { a: "1", b: "2" }, []);
+    expect(tokenService.setTokenInfos).toHaveBeenCalledWith("SER", { a: "1", b: "2" }, [], []);
     expect(component.newInfo()).toEqual({ key: "", value: "" });
     expect(component.isEditingInfo()).toBe(false);
     expect(tokenService.tokenDetailResource.reload).toHaveBeenCalledTimes(1);
@@ -122,7 +122,7 @@ describe("TokenDetailsInfoComponent", () => {
     component.saveInfo(el);
 
     expect(el.value).toEqual({ a: "1" });
-    expect(tokenService.setTokenInfos).toHaveBeenCalledWith("SER", { a: "1" }, []);
+    expect(tokenService.setTokenInfos).toHaveBeenCalledWith("SER", { a: "1" }, [], []);
     expect(tokenService.tokenDetailResource.reload).toHaveBeenCalledTimes(1);
     expect(component.isEditingInfo()).toBe(false);
   });
@@ -130,6 +130,7 @@ describe("TokenDetailsInfoComponent", () => {
   it("marks the entries the token maintains as not editable and not deletable", () => {
     component.readonlyInfoKeys = signal(["tokenkind", "refilltoken", "hashlib"]);
     component.undeletableInfoKeys = signal(["tokenkind", "hashlib"]);
+    component.settableInfoKeys = signal(["hashlib"]);
 
     // An entry the token maintains is shown, but neither editable nor deletable
     expect(component.isInfoKeyEditable("tokenkind")).toBe(false);
@@ -153,7 +154,23 @@ describe("TokenDetailsInfoComponent", () => {
 
     component.saveInfo(el);
 
-    expect(tokenService.setTokenInfos).toHaveBeenCalledWith("SER", { a: "1" }, ["tokenkind"]);
+    expect(tokenService.setTokenInfos).toHaveBeenCalledWith("SER", { a: "1" }, ["tokenkind"], []);
+  });
+
+  it("saveInfo only sends the entries that were changed while editing", () => {
+    const el = component.infoData()[0] as EditableElement<Record<string, string>>;
+    el.value["b"] = "2";
+    tokenService.tokenSerial.set("SER");
+
+    // Entering the editing records the values it starts from
+    component.toggleInfoEdit();
+    expect(component.isEditingInfo()).toBe(true);
+
+    // Only one of them is edited, the way the input bound to the value map does it
+    el.value["a"] = "changed";
+    component.saveInfo(el);
+
+    expect(tokenService.setTokenInfos).toHaveBeenCalledWith("SER", { a: "changed" }, [], []);
   });
 
   it("template cast helpers pass values through and hide timestamp keys", () => {

@@ -89,6 +89,11 @@ class PasskeyTokenClass(TokenClass):
                                       FIDO2TokenInfo.DEVICE_TYPE, FIDO2TokenInfo.PUBLIC_KEY,
                                       FIDO2TokenInfo.RELYING_PARTY_ID, FIDO2TokenInfo.RELYING_PARTY_NAME,
                                       FIDO2TokenInfo.SIGN_COUNT, FIDO2TokenInfo.USER_ID})
+    # A passkey is one of the token types the offline machine application supports. It can be offline on
+    # several machines, so the token that authorizes a refill is stored per machine name. Removing one only
+    # revokes the refill for that machine, so an administrator may do it.
+    owned_tokeninfo_prefixes = frozenset({"refilltoken_"})
+    deletable_tokeninfo_prefixes = frozenset({"refilltoken_"})
 
     def __init__(self, db_token):
         super().__init__(db_token)
