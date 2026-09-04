@@ -83,12 +83,14 @@ class AuthCacheCredentialTestCase(MyApiTestCase):
             format=serialization.PublicFormat.SubjectPublicKeyInfo))
 
         token = init_token({"type": "push", "genkey": 1})
-        token.add_tokeninfo(PushAction.FIREBASE_CONFIG, POLL_ONLY)
-        token.add_tokeninfo(PUBLIC_KEY_SMARTPHONE,
-                            strip_pem_headers(smartphone_public_pem).replace("+", "-").replace("/", "_"))
-        token.add_tokeninfo(PUBLIC_KEY_SERVER, server_public_pem)
-        token.add_tokeninfo(PRIVATE_KEY_SERVER, server_key_pem, "password")
-        token.delete_tokeninfo("enrollment_credential")
+        # The push token maintains these itself, so the enrollment they stand for is simulated with the writer
+        # the server uses and not through the path a request takes, which refuses them
+        token.write_tokeninfo(PushAction.FIREBASE_CONFIG, POLL_ONLY)
+        token.write_tokeninfo(PUBLIC_KEY_SMARTPHONE,
+                              strip_pem_headers(smartphone_public_pem).replace("+", "-").replace("/", "_"))
+        token.write_tokeninfo(PUBLIC_KEY_SERVER, server_public_pem)
+        token.write_tokeninfo(PRIVATE_KEY_SERVER, server_key_pem, "password")
+        token.remove_tokeninfo("enrollment_credential")
         token.token.rollout_state = "enrolled"
         token.token.active = True
         token.set_pin(pin)

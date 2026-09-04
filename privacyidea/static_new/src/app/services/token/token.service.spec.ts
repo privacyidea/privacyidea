@@ -35,7 +35,14 @@ import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
 import { MockContentService, MockPiResponse, MockRealmService } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
-import { BulkResult, TokenCountParams, TokenGroups, Tokens, TokenService } from "./token.service";
+import {
+  BulkResult,
+  isTokenInfoKeyWritable,
+  TokenCountParams,
+  TokenGroups,
+  Tokens,
+  TokenService
+} from "./token.service";
 
 class MockNotificationService {
   success = jest.fn();
@@ -304,6 +311,43 @@ describe("TokenService", () => {
         { value: "foo" },
         { headers: authService.getHeaders() }
       );
+    });
+
+    it("treats every entry as writable when the token restricts none", () => {
+      postSpy.mockReturnValue(of(MockPiResponse.fromValue(true)));
+
+      tokenService.setTokenInfos("serial/1", { custom: "foo" }).subscribe();
+
+      expect(postSpy).toHaveBeenCalledTimes(1);
+      expect(postSpy).toHaveBeenCalledWith(
+        `${tokenService.tokenBaseUrl}info/${encodeURIComponent("serial/1")}/custom`,
+        { value: "foo" },
+        { headers: authService.getHeaders() }
+      );
+    });
+
+    it("completes with an empty result when every entry is one the token maintains", (done) => {
+      // The caller reloads the token in its next handler, so an empty request list still has to emit
+      tokenService.setTokenInfos("SER", { tokenkind: "hardware" }, ["tokenkind"], []).subscribe({
+        next: (responses) => {
+          expect(responses).toEqual([]);
+          expect(postSpy).not.toHaveBeenCalled();
+          done();
+        },
+        error: () => fail("expected the observable to emit")
+      });
+    });
+  });
+
+  describe("isTokenInfoKeyWritable()", () => {
+    it("restricts nothing when no keys are passed", () => {
+      expect(isTokenInfoKeyWritable("anything")).toBe(true);
+    });
+
+    it("allows an entry the token maintains only if it has its own endpoint", () => {
+      expect(isTokenInfoKeyWritable("tokenkind", ["tokenkind"], [])).toBe(false);
+      expect(isTokenInfoKeyWritable("hashlib", ["hashlib"], ["hashlib"])).toBe(true);
+      expect(isTokenInfoKeyWritable("a note", ["tokenkind"], [])).toBe(true);
     });
   });
 
