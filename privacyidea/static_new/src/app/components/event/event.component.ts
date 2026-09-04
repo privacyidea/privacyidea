@@ -41,12 +41,22 @@ import { MatTooltip } from "@angular/material/tooltip";
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { MessageConfirmationDialogComponent } from "@components/shared/dialog/message-confirmation-dialog/message-confirmation-dialog.component";
+import { AutofocusDirective } from "@components/shared/directives/app-autofocus.directive";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { HighlightPipe } from "@components/shared/pipes/highlight.pipe";
 import { TableStateComponent } from "@components/shared/table-state/table-state.component";
 import { TableState } from "@core/models/table_state/table-state";
 import { AuthService } from "@services/auth/auth.service";
-import { EMPTY_EVENT, EventHandler, EventService } from "@services/event/event.service";
+import { DialogService } from "@services/dialog/dialog.service";
+import {
+  EMPTY_EVENT,
+  EventHandler,
+  EventHandlerOrderingUpdate,
+  EventService,
+  planOrderingInsert
+} from "@services/event/event.service";
+import { NotificationService } from "@services/notification/notification.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { of } from "rxjs";
 
@@ -57,6 +67,7 @@ import { of } from "rxjs";
     MatTableModule,
     MatButtonModule,
     ScrollToTopDirective,
+    AutofocusDirective,
     MatIcon,
     MatSlideToggle,
     ClearableInputComponent,
@@ -75,6 +86,8 @@ import { of } from "rxjs";
 export class EventComponent {
   protected readonly authService = inject(AuthService);
   protected readonly eventService = inject(EventService);
+  protected readonly notificationService = inject(NotificationService);
+  private readonly dialogService = inject(DialogService);
   protected readonly EMPTY_EVENT = EMPTY_EVENT;
   private readonly router = inject(Router);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
@@ -99,6 +112,8 @@ export class EventComponent {
     }
     return keys;
   });
+
+  editedOrderingId = signal<number | null>(null);
   detailedView = signal(false);
   @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: ElementRef<HTMLInputElement>;
   pageSizeOptions = this.tableUtilsService.pageSizeOptions;
@@ -198,6 +213,71 @@ export class EventComponent {
     }
   }
 
+  startOrderingEdit(eventHandler: EventHandler): void {
+    this.editedOrderingId.set(eventHandler.id);
+  }
+
+  cancelOrderingEdit(): void {
+    this.editedOrderingId.set(null);
+  }
+
+  commitOrdering(eventHandler: EventHandler, input: HTMLInputElement): void {
+    const ordering = Number(input.value);
+    if (!Number.isInteger(ordering) || ordering < 0 || input.value.trim() === "") {
+      input.value = String(eventHandler.ordering);
+      this.notificationService.warning($localize`The ordering has to be a whole number, 0 or higher.`);
+      return;
+    }
+    if (ordering === eventHandler.ordering) {
+      this.cancelOrderingEdit();
+      return;
+    }
+
+    const updates = planOrderingInsert(this.eventService.eventHandlers() ?? [], eventHandler, ordering);
+    const displaced = updates.slice(1);
+    if (displaced.length === 0) {
+      this.saveOrderings(eventHandler, updates);
+      return;
+    }
+
+    const displacedNames = displaced.map((update) => update.handler.name).join(", ");
+    this.dialogService
+      .openDialog({
+        component: MessageConfirmationDialogComponent,
+        data: {
+          title: $localize`Ordering Already Used`,
+          message: $localize`The ordering ${ordering} is already used. These event handlers move up by one to make room: ${displacedNames}.`,
+          confirmAction: { type: "confirm", label: $localize`Save`, value: true, primary: true }
+        }
+      })
+      .afterClosed()
+      .subscribe((confirmed) => {
+        if (!confirmed) {
+          input.value = String(eventHandler.ordering);
+          this.notificationService.info($localize`The ordering of ${eventHandler.name} was left unchanged.`);
+          return;
+        }
+        this.saveOrderings(eventHandler, updates);
+      });
+  }
+
+  private saveOrderings(eventHandler: EventHandler, updates: EventHandlerOrderingUpdate[]): void {
+    this.cancelOrderingEdit();
+    this.eventService.updateOrderings(updates).subscribe((responses) => {
+      this.eventService.allEventsResource.reload();
+      const failed = responses.filter((response) => response?.result?.value === undefined).length;
+      if (failed === 0) {
+        this.notificationService.success($localize`Updated the ordering of ${eventHandler.name}.`);
+        return;
+      }
+      if (failed < responses.length) {
+        this.notificationService.warning(
+          $localize`Only part of the new ordering was saved. Please check the orderings of the event handlers.`
+        );
+      }
+    });
+  }
+
   private filterMatchesEvents(data: EventHandler, filter: string): boolean {
     // checks if the filter string matches any of the events in the event handler
     for (const event of data.event) {
@@ -233,8 +313,13 @@ export class EventComponent {
     const dir = s.direction === "asc" ? 1 : -1;
     const key = s.active as keyof EventHandler;
     return data.sort((a: EventHandler, b: EventHandler) => {
-      const va = (a?.[key] ?? "").toString().toLowerCase();
-      const vb = (b?.[key] ?? "").toString().toLowerCase();
+      const rawA = a?.[key];
+      const rawB = b?.[key];
+      if (typeof rawA === "number" && typeof rawB === "number") {
+        return (rawA - rawB) * dir;
+      }
+      const va = (rawA ?? "").toString().toLowerCase();
+      const vb = (rawB ?? "").toString().toLowerCase();
       if (va < vb) return -1 * dir;
       if (va > vb) return 1 * dir;
       return 0;

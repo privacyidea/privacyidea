@@ -185,7 +185,54 @@
                   </button>
                 }
                 @case ("ordering") {
-                  {{ element.ordering }}
+                  @if (!authService.actionAllowed("eventhandling_write")) {
+                    <span>{{ element.ordering }}</span>
+                  } @else if (editedOrderingId() === element.id) {
+                    <div class="ordering-edit">
+                      <mat-form-field
+                        class="input-width-xs"
+                        subscriptSizing="dynamic">
+                        <input
+                          #orderingInput
+                          (keydown.enter)="commitOrdering(element, orderingInput)"
+                          (keydown.escape)="cancelOrderingEdit()"
+                          [value]="element.ordering"
+                          appAutofocus
+                          aria-label="Ordering"
+                          i18n-aria-label
+                          matInput
+                          min="0"
+                          step="1"
+                          type="number" />
+                      </mat-form-field>
+                      <button
+                        (click)="commitOrdering(element, orderingInput)"
+                        aria-label="Save Ordering"
+                        i18n-aria-label
+                        mat-icon-button>
+                        <mat-icon>save</mat-icon>
+                      </button>
+                      <button
+                        (click)="cancelOrderingEdit()"
+                        aria-label="Discard"
+                        i18n-aria-label
+                        mat-icon-button>
+                        <mat-icon>cancel</mat-icon>
+                      </button>
+                    </div>
+                  } @else {
+                    <div class="ordering-cell">
+                      <span>{{ element.ordering }}</span>
+                      <button
+                        (click)="startOrderingEdit(element)"
+                        aria-label="Edit Ordering"
+                        class="ordering-edit-button"
+                        i18n-aria-label
+                        mat-icon-button>
+                        <mat-icon>edit</mat-icon>
+                      </button>
+                    </div>
+                  }
                 }
                 @default {
                   <span
