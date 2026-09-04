@@ -17,9 +17,10 @@
 __doc__ = """This is the SMSClass to send SMS via a script.
 """
 
-from privacyidea.lib.smsprovider.SMSProvider import (ISMSProvider, SMSError)
+from privacyidea.lib.smsprovider.SMSProvider import ALLOW_PUSH, ISMSProvider, SMSError
 from privacyidea.lib import _
 from privacyidea.lib.framework import get_app_config_value
+import json
 import subprocess  # nosec B404 # We know what we are doing and only allow trusted scripts
 import logging
 import traceback
@@ -31,6 +32,8 @@ SCRIPT_WAIT = "wait"
 
 
 class ScriptSMSProvider(ISMSProvider):
+
+    supports_push_messages = True
 
     def __init__(self, db_smsprovider_object=None, smsgateway=None, directory=None):
         """
@@ -70,6 +73,7 @@ class ScriptSMSProvider(ISMSProvider):
 
         script_name = self.script_directory + "/" + script
         proc_args = [script_name, phone]
+        serialized_message = json.dumps(message) if isinstance(message, dict) else message
 
         # As the message can contain blanks... it is passed via stdin
         rcode = 0
@@ -78,7 +82,7 @@ class ScriptSMSProvider(ISMSProvider):
             # Trusted input/no user input: The scripts are created by user root and read from hard disk
             p = subprocess.Popen(proc_args, cwd=self.script_directory,   # nosec B603
                                  universal_newlines=True, stdin=subprocess.PIPE)
-            p.communicate(message)
+            p.communicate(serialized_message)
             if background == SCRIPT_WAIT:
                 rcode = p.wait()
         except Exception as e:
@@ -109,11 +113,13 @@ class ScriptSMSProvider(ISMSProvider):
                       "script": {
                           "required": True,
                           "description": _("The script in script directory PI_SCRIPT_SMSPROVIDER_DIRECTORY to call. "
-                                           "Expects phone as the parameter and the message from stdin.")
+                                           "Expects phone as the parameter and the message from stdin. Structured "
+                                           "push messages are passed as JSON.")
                       },
                       "REGEXP": {
                           "description": cls.regexp_description
                       },
+                      ALLOW_PUSH: cls.allow_push_parameter(),
                       "background": {
                           "required": True,
                           "description": _("Wait for script to complete or run script in background. This will "

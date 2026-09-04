@@ -20,7 +20,7 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 """
-The pushtoken sends a push notification via Firebase service to the registered smartphone.
+The pushtoken sends a notification through a push-capable gateway to the registered smartphone.
 The token is a challenge response token. The smartphone will sign the challenge
 and send it back to the authentication endpoint.
 
@@ -66,7 +66,8 @@ from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import (SCOPE, GROUP, Match,
                                     get_action_values_from_options,
                                     comma_escape_text)
-from privacyidea.lib.smsprovider.SMSProvider import get_smsgateway, create_sms_instance
+from privacyidea.lib.smsprovider.SMSProvider import (get_smsgateway, create_sms_instance,
+                                                     get_sms_provider_class)
 from privacyidea.lib.token import get_one_token, init_token, create_challenge
 from privacyidea.lib.tokenclass import (TokenClass, AuthenticationMode, ClientMode,
                                         ChallengeSession, CHALLENGE_REFUSAL_STATUS)
@@ -96,7 +97,6 @@ PRIVATE_KEY_SERVER = "private_key_server"
 PUBLIC_KEY_SERVER = "public_key_server"
 PUBLIC_KEY_SMARTPHONE = "public_key_smartphone"
 POLLING_ALLOWED = "polling_allowed"
-GWTYPE = 'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider'
 POLL_INTERVAL = 1.0
 
 # Timedelta in minutes
@@ -110,6 +110,20 @@ DEFAULT_NUMBER_OF_PRESENCE_OPTIONS = 3
 # The decline reasons this server version understands. A signed but unrecognized
 # reason still declines, but is logged as app/server vocabulary drift.
 KNOWN_DECLINE_REASONS = frozenset(r.value for r in PushDeclineReason)
+
+
+def _get_push_gateways(identifier=None):
+    push_gateways = []
+    for gateway in get_smsgateway(identifier=identifier):
+        try:
+            package_name, class_name = gateway.providermodule.rsplit(".", 1)
+            provider_class = get_sms_provider_class(package_name, class_name)
+        except Exception as ex:
+            log.warning(f"Failed to load SMS provider {gateway.providermodule!r}: {ex!r}")
+            continue
+        if provider_class.allows_push_messages(gateway):
+            push_gateways.append(gateway)
+    return push_gateways
 
 # The optional push features this server advertises to the smartphone in every
 # challenge (see _build_smartphone_data). A newer app intersects these with its
@@ -383,7 +397,7 @@ class _PushChallengeState:
 
 class PushTokenClass(TokenClass):
     """
-    The :ref:`push_token` uses the Firebase service to send challenges to the
+    The :ref:`push_token` uses a push-capable gateway to send challenges to the
     user's smartphone. The user confirms on the smartphone, signs the
     challenge and sends it back to privacyIDEA.
 
@@ -443,7 +457,7 @@ class PushTokenClass(TokenClass):
         :return: subsection if key exists or user defined
         :rtype: dict
         """
-        gws = get_smsgateway(gwtype=GWTYPE)
+        push_gateways = _get_push_gateways()
         res = {'type': 'push',
                'title': _('PUSH Token'),
                'description':
@@ -456,9 +470,9 @@ class PushTokenClass(TokenClass):
                        SCOPE.ENROLL: {
                            PushAction.FIREBASE_CONFIG: {
                                'type': 'str',
-                               'desc': _('The configuration of your Firebase application.'),
+                               'desc': _('The push gateway configuration.'),
                                'group': "PUSH",
-                               'value': [POLL_ONLY] + [gw.identifier for gw in gws]
+                               'value': [POLL_ONLY] + [gateway.identifier for gateway in push_gateways]
                            },
                            PushAction.REGISTRATION_URL: {
                                "required": True,
@@ -663,7 +677,7 @@ class PushTokenClass(TokenClass):
             # We are in step 1:
             upd_param["2stepinit"] = 1
             self.add_tokeninfo("enrollment_credential", geturandom(20, hex=True))
-            # We also store the Firebase config, that was used during the enrollment.
+            # Store the push gateway used during enrollment.
             self.add_tokeninfo(PushAction.FIREBASE_CONFIG, param.get(PushAction.FIREBASE_CONFIG))
         else:
             raise ParameterError("Invalid Parameters. Either provide (genkey) or (serial, fbtoken, pubkey).")
@@ -700,17 +714,16 @@ class PushTokenClass(TokenClass):
             registration_url = get_required(policy_params, PushAction.REGISTRATION_URL)
             ttl = policy_params.get(PushAction.TTL, "10")
             # Get the values from the configured PUSH config
-            fb_identifier = policy_params.get(PushAction.FIREBASE_CONFIG)
-            if fb_identifier != POLL_ONLY:
-                # If do not do poll_only, then we load all the Firebase configuration
-                firebase_configs = get_smsgateway(identifier=fb_identifier, gwtype=GWTYPE)
-                if len(firebase_configs) != 1:
-                    raise ParameterError("Unknown Firebase configuration!")
+            push_gateway_identifier = policy_params.get(PushAction.FIREBASE_CONFIG)
+            if push_gateway_identifier != POLL_ONLY:
+                push_gateways = _get_push_gateways(identifier=push_gateway_identifier)
+                if len(push_gateways) != 1:
+                    raise ParameterError("Unknown or incompatible push gateway configuration!")
             # this allows to upgrade our crypto
             extra_data["v"] = 1
             extra_data["serial"] = self.get_serial()
             extra_data["sslverify"] = sslverify
-            extra_data["poll_only"] = fb_identifier == POLL_ONLY
+            extra_data["poll_only"] = push_gateway_identifier == POLL_ONLY
 
             # enforce App pin
             if params.get(PolicyAction.FORCE_APP_PIN):
@@ -1292,26 +1305,29 @@ class PushTokenClass(TokenClass):
                    or default_message)
         message = message.replace(r'\,', ',')
 
-        # Initially we assume there is no error from Firebase
+        # Initially we assume there is no error from the push gateway
         res = True
-        fb_identifier = self.get_tokeninfo(PushAction.FIREBASE_CONFIG)
-        if fb_identifier:
+        push_gateway_identifier = self.get_tokeninfo(PushAction.FIREBASE_CONFIG)
+        if push_gateway_identifier:
             challenge = b32encode_and_unicode(geturandom())
             if options.get("session") != ChallengeSession.ENROLLMENT:
-                if fb_identifier != POLL_ONLY:
-                    # We only push to Firebase if this token is NOT POLL_ONLY.
-                    fb_gateway = create_sms_instance(fb_identifier)
+                if push_gateway_identifier != POLL_ONLY:
+                    push_gateway = create_sms_instance(push_gateway_identifier)
+                    if not push_gateway.allows_push_messages(push_gateway.smsgateway):
+                        raise ConfigAdminError(
+                            f'SMS gateway "{push_gateway_identifier}" does not support push messages.')
                     registration_url = get_action_values_from_options(
                         SCOPE.ENROLL, PushAction.REGISTRATION_URL, options=options)
                     private_key_pem = self.get_tokeninfo(PRIVATE_KEY_SERVER)
-                    smartphone_data = _build_smartphone_data(self,
-                                                             challenge, registration_url,
-                                                             private_key_pem, options, current_presence_options)
-                    log.debug(f"Sending to firebase the smartphone_data: {smartphone_data}")
-                    res = fb_gateway.submit_message(self.get_tokeninfo("firebase_token"), smartphone_data)
+                    push_payload = _build_smartphone_data(self,
+                                                          challenge, registration_url,
+                                                          private_key_pem, options, current_presence_options)
+                    log.debug(f"Sending push payload: {push_payload}")
+                    device_token = self.get_tokeninfo("firebase_token")
+                    res = push_gateway.submit_message(device_token, push_payload)
 
             # Create the challenge in the challenge table if either the message
-            # was successfully submitted to the Firebase API or if polling is
+            # was successfully submitted to the push gateway or if polling is
             # allowed in general or for this specific token.
             allow_polling = get_action_values_from_options(
                 SCOPE.AUTH, PushAction.ALLOW_POLLING, options=options) or PushAllowPolling.ALLOW
@@ -1336,16 +1352,16 @@ class PushTokenClass(TokenClass):
 
             # If sending the Push message failed, we log a warning
             if not res:
-                log.warning(f"Failed to submit message to Firebase service for token {self.token.serial}.")
+                log.warning(f"Failed to submit message to push gateway for token {self.token.serial}.")
                 message += " " + ERROR_CHALLENGE_TEXT
                 if is_true(options.get("exception")):
-                    raise ValidateError("Failed to submit message to Firebase service.")
+                    raise ValidateError("Failed to submit message to push gateway.")
         else:
             log.warning(f"The token {self.token.serial} has no tokeninfo {PushAction.FIREBASE_CONFIG}. "
                         f"The message could not be sent.")
             message += " " + ERROR_CHALLENGE_TEXT
             if is_true(options.get("exception")):
-                raise ValidateError("The token has no tokeninfo. Can not send via Firebase service.")
+                raise ValidateError("The token has no tokeninfo. Can not send via push gateway.")
 
         reply_dict.update({"attributes": {"hideResponseInput": client_mode != ClientMode.INTERACTIVE},
                            "client_mode": client_mode})
@@ -1546,12 +1562,12 @@ class PushTokenClass(TokenClass):
         :param message: An alternative message displayed to the user during enrollment
         :return: None, the content is modified
         """
-        # Get the firebase configuration from the policies
+        # Get the push gateway configuration from the policies.
         push_params = get_pushtoken_add_config(g, user_obj=user_obj)
         token = init_token({"type": cls.get_class_type(), "genkey": 1, "2stepinit": 1}, user=user_obj)
         # We are in step 1:
         token.add_tokeninfo("enrollment_credential", geturandom(20, hex=True))
-        # We also store the Firebase config, that was used during the enrollment.
+        # Store the push gateway used during enrollment.
         token.add_tokeninfo(PushAction.FIREBASE_CONFIG, push_params.get(PushAction.FIREBASE_CONFIG))
         content.get("result")["value"] = False
         content.get("result")["authentication"] = "CHALLENGE"

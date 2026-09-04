@@ -42,7 +42,7 @@ It can handle HTTP/HTTPS POST and GET requests also with Proxy support
 The code is tested in tests/test_lib_smsprovider
 """
 
-from privacyidea.lib.smsprovider.SMSProvider import (ISMSProvider, SMSError)
+from privacyidea.lib.smsprovider.SMSProvider import ALLOW_PUSH, ISMSProvider, SMSError
 from privacyidea.lib import _
 import requests
 import json
@@ -54,9 +54,30 @@ log = logging.getLogger(__name__)
 
 class HttpSMSProvider(ISMSProvider):
 
+    supports_push_messages = True
+
+    @staticmethod
+    def _render_option_value(value, phone, message):
+        if value == "{phone}":
+            return phone
+        if value in ["{message}", "{otp}"]:
+            return message
+
+        serialized_message = message if isinstance(message, str) else json.dumps(message)
+        value = value.replace("{message}", serialized_message)
+        value = value.replace("{otp}", serialized_message)
+        value = value.replace("{phone}", phone)
+        try:
+            return json.loads(value)
+        except json.decoder.JSONDecodeError:
+            return value
+
     def submit_message(self, phone, message):
         """
         send a message to a phone via an http sms gateway
+
+        Additional options may use ``{phone}``, ``{otp}``, or ``{message}``.
+        An option consisting only of ``{message}`` preserves structured payloads.
 
         :param phone: the phone number
         :param message: the message to submit to the phone
@@ -82,13 +103,7 @@ class HttpSMSProvider(ISMSProvider):
             for k, v in self.smsgateway.option_dict.items():
                 if k not in self.parameters().get("parameters"):
                     # This is an additional option
-                    # We can not do .format() due to curly brackets in JSON
-                    v = v.replace("{otp}", message)
-                    v = v.replace("{phone}", phone)
-                    try:
-                        parameter[k] = json.loads(v)
-                    except json.decoder.JSONDecodeError:
-                        parameter[k] = v
+                    parameter[k] = self._render_option_value(v, phone, message)
             headers = self.smsgateway.header_dict
         else:
             phone = self._mangle_phone(phone, self.config)
@@ -280,6 +295,7 @@ class HttpSMSProvider(ISMSProvider):
                                            "as JSON."),
                           "values": ["yes", "no"]
                       },
+                      ALLOW_PUSH: cls.allow_push_parameter(),
                       "REGEXP": {
                           "description": cls.regexp_description
                       },

@@ -27,13 +27,13 @@ from werkzeug.test import EnvironBuilder
 
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.crypto import geturandom
-from privacyidea.lib.error import ConfigAdminError
+from privacyidea.lib.error import ConfigAdminError, ValidateError
 from privacyidea.lib.error import ParameterError, PrivacyIDEAError, PolicyError
 from privacyidea.lib.framework import get_app_local_store
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import (SCOPE, set_policy, delete_policy, LOGINMODE, PolicyClass)
 from privacyidea.lib.smsprovider.FirebaseProvider import FirebaseConfig
-from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway, delete_smsgateway
+from privacyidea.lib.smsprovider.SMSProvider import ALLOW_PUSH, set_smsgateway, delete_smsgateway
 from privacyidea.lib.token import get_tokens, remove_token, init_token, import_tokens
 from privacyidea.lib.tokenclass import ChallengeSession
 from privacyidea.lib.tokens.push_types import PushMode, PushCapability
@@ -43,7 +43,8 @@ from privacyidea.lib.tokens.pushtoken import (PushTokenClass, PushAction,
                                               AVAILABLE_PRESENCE_OPTIONS_NUMERIC,
                                               PushAllowPolling, POLLING_ALLOWED, POLL_ONLY,
                                               PushPresenceOptions, strip_pem_headers,
-                                              SERVER_PUSH_CAPABILITIES, _build_smartphone_data)
+                                              SERVER_PUSH_CAPABILITIES, _build_smartphone_data,
+                                              _get_push_gateways)
 from privacyidea.lib.user import (User)
 from privacyidea.lib.utils import to_bytes, b32encode_and_unicode, to_unicode, AUTH_RESPONSE
 from privacyidea.models import Token, Challenge, db
@@ -64,25 +65,32 @@ def _create_credential_mock():
     return mock.MagicMock(spec=c, expired=False, expiry=None, access_token='my_new_bearer_token')
 
 
-def _check_firebase_params(request):
-    payload = json.loads(request.body)
-    # check the signature in the payload!
-    data = payload.get("message").get("data")
+def _verify_push_payload_signatures(push_payload):
+    # Check the signature in the payload!
+    sign_string = "{nonce}|{url}|{serial}|{question}|{title}|{sslverify}".format(**push_payload)
+    if push_payload.get("require_presence") is not None:
+        sign_string += f"|{push_payload['require_presence']}"
 
-    sign_string = "{nonce}|{url}|{serial}|{question}|{title}|{sslverify}".format(**data)
-    token = get_tokens(serial=data.get("serial"))[0]
+    token = get_tokens(serial=push_payload["serial"])[0]
     pem_public_key = token.get_tokeninfo(PUBLIC_KEY_SERVER)
     public_key = load_pem_public_key(to_bytes(pem_public_key), backend=default_backend())
-    signature = b32decode(data.get("signature"))
     # If signature does not match it will raise InvalidSignature exception
-    public_key.verify(signature, sign_string.encode("utf8"), padding.PKCS1v15(), hashes.SHA256())
+    public_key.verify(b32decode(push_payload["signature"]), sign_string.encode("utf8"),
+                      padding.PKCS1v15(), hashes.SHA256())
+
     # The capabilities advertisement travels as a JSON string and carries its own
     # detached signature over the canonical form of {capabilities, nonce}, built
     # from the parsed structure. The main signature above is unaffected by it.
-    capabilities = json.loads(data.get("capabilities"))
-    capabilities_sign_input = rfc8785.dumps({"capabilities": capabilities, "nonce": data.get("nonce")})
-    public_key.verify(b32decode(data.get("capabilities_signature")),
+    capabilities = json.loads(push_payload["capabilities"])
+    capabilities_sign_input = rfc8785.dumps({"capabilities": capabilities,
+                                             "nonce": push_payload["nonce"]})
+    public_key.verify(b32decode(push_payload["capabilities_signature"]),
                       capabilities_sign_input, padding.PKCS1v15(), hashes.SHA256())
+
+
+def _check_firebase_params(request):
+    payload = json.loads(request.body)
+    _verify_push_payload_signatures(payload["message"]["data"])
     headers = {"request-id": "728d329e-0e86-11e4-a748-0c84dc037c13"}
     return 200, headers, json.dumps({})
 
@@ -152,7 +160,11 @@ class PushTokenTestCase(MyTestCase):
         self.assertRaises(ParameterError, token.update, {"otpkey": "1234", "pubkey": "1234"})
 
         # Unknown config
-        self.assertRaises(ParameterError, token.get_init_detail, params={"firebase_config": "bla"})
+        self.assertRaisesRegex(
+            ParameterError, "Unknown or incompatible push gateway configuration!",
+            token.get_init_detail,
+            params={"policies": {PushAction.FIREBASE_CONFIG: "bla",
+                                 PushAction.REGISTRATION_URL: REGISTRATION_URL}})
 
         fb_config = {FirebaseConfig.REGISTRATION_URL: "http://test/ttype/push",
                      FirebaseConfig.JSON_CONFIG: CLIENT_FILE,
@@ -215,6 +227,35 @@ class PushTokenTestCase(MyTestCase):
         self.assertEqual(parsed_server_pubkey.public_numbers(), parsed_stripped_server_pubkey.public_numbers())
         remove_token(self.serial1)
 
+    def test_01a_list_push_capable_gateways(self):
+        http_gateway = "push-http"
+        smtp_gateway = "sms-smtp"
+        set_smsgateway(http_gateway,
+                       "privacyidea.lib.smsprovider.HttpSMSProvider.HttpSMSProvider",
+                       options={"URL": "https://push.example.com", "HTTP_METHOD": "POST",
+                                "SEND_DATA_AS_JSON": "yes"})
+        set_smsgateway(smtp_gateway,
+                       "privacyidea.lib.smsprovider.SmtpSMSProvider.SmtpSMSProvider",
+                       options={"SMTPIDENTIFIER": "mail", "MAILTO": "user@example.com"})
+
+        self.assertEqual([], _get_push_gateways(http_gateway))
+        self.assertEqual([], _get_push_gateways(smtp_gateway))
+        invalid_gateway = mock.MagicMock(providermodule="invalid.Provider")
+        with mock.patch("privacyidea.lib.tokens.pushtoken.get_smsgateway", return_value=[invalid_gateway]), \
+                self.assertLogs("privacyidea.lib.tokens.pushtoken", logging.WARNING) as logs:
+            self.assertEqual([], _get_push_gateways())
+        self.assertIn("Failed to load SMS provider", logs.output[0])
+
+        set_smsgateway(http_gateway,
+                       "privacyidea.lib.smsprovider.HttpSMSProvider.HttpSMSProvider",
+                       options={"URL": "https://push.example.com", "HTTP_METHOD": "POST",
+                                "SEND_DATA_AS_JSON": "yes", ALLOW_PUSH: "yes"})
+        self.assertEqual([http_gateway],
+                         [gateway.identifier for gateway in _get_push_gateways(http_gateway)])
+
+        delete_smsgateway(http_gateway)
+        delete_smsgateway(smtp_gateway)
+
     def test_01a_enroll_with_app_pin(self):
         token_param = {"type": "push", "genkey": 1}
         token_param.update(FB_CONFIG_VALS)
@@ -234,6 +275,68 @@ class PushTokenTestCase(MyTestCase):
                    action=f"{PushAction.FIREBASE_CONFIG}={self.firebase_config_name}")
         token = self._create_push_token()
         remove_token(token.get_serial())
+
+    @responses.activate
+    def test_02b_send_push_via_http_gateway(self):
+        gateway_identifier = "push-http"
+        set_smsgateway(gateway_identifier,
+                       "privacyidea.lib.smsprovider.HttpSMSProvider.HttpSMSProvider",
+                       options={"URL": "https://push.example.com/send",
+                                "HTTP_METHOD": "POST",
+                                "SEND_DATA_AS_JSON": "yes",
+                                ALLOW_PUSH: "yes",
+                                "device_token": "{phone}",
+                                "push_payload": "{message}"})
+        set_policy("push-http", scope=SCOPE.ENROLL,
+                   action=f"{PushAction.FIREBASE_CONFIG}={gateway_identifier},"
+                          f"{PushAction.REGISTRATION_URL}={REGISTRATION_URL}")
+        token = self._create_push_token()
+        token.add_tokeninfo(PushAction.FIREBASE_CONFIG, gateway_identifier)
+        responses.add(responses.POST, "https://push.example.com/send", status=200)
+        g = FakeFlaskG()
+        g.policy_object = PolicyClass()
+        g.audit_object = mock.MagicMock(audit_data={})
+        g.serial = token.get_serial()
+
+        success, _, transaction_id, _ = token.create_challenge(options={"g": g})
+
+        self.assertTrue(success)
+        self.assertTrue(transaction_id)
+        request_body = json.loads(responses.calls[0].request.body)
+        self.assertEqual("firebaseT", request_body["device_token"])
+        push_payload = request_body["push_payload"]
+        self.assertEqual(token.get_serial(), push_payload["serial"])
+        _verify_push_payload_signatures(push_payload)
+        remove_token(token.get_serial())
+        delete_policy("push-http")
+        delete_smsgateway(gateway_identifier)
+
+    def test_02c_reject_push_gateway_without_permission(self):
+        gateway_identifier = "push-disabled"
+        set_smsgateway(gateway_identifier,
+                       "privacyidea.lib.smsprovider.HttpSMSProvider.HttpSMSProvider",
+                       options={"URL": "https://push.example.com/send", "HTTP_METHOD": "POST"})
+        self.addCleanup(delete_smsgateway, gateway_identifier)
+        token = self._create_push_token()
+        self.addCleanup(remove_token, token.get_serial())
+        token.add_tokeninfo(PushAction.FIREBASE_CONFIG, gateway_identifier)
+        g = FakeFlaskG()
+        g.policy_object = PolicyClass()
+        g.audit_object = mock.MagicMock(audit_data={})
+
+        with self.assertRaisesRegex(ConfigAdminError, "does not support push messages"):
+            token.create_challenge(options={"g": g})
+
+    def test_02d_challenge_without_gateway_raises_on_exception(self):
+        token = self._create_push_token()
+        self.addCleanup(remove_token, token.get_serial())
+        token.delete_tokeninfo(PushAction.FIREBASE_CONFIG)
+        g = FakeFlaskG()
+        g.policy_object = PolicyClass()
+        g.audit_object = mock.MagicMock(audit_data={})
+
+        with self.assertRaisesRegex(ValidateError, "Can not send via push gateway"):
+            token.create_challenge(options={"g": g, "exception": True})
 
     @responses.activate
     def test_03a_api_authenticate_fail(self):
@@ -280,7 +383,7 @@ class PushTokenTestCase(MyTestCase):
                     self.assertFalse(result.get("value"))
                     self.assertEqual("CHALLENGE", result.get("authentication"))
                     # Check that the warning was written to the log file.
-                    mock_log.assert_called_with(f"Failed to submit message to Firebase service for token {serial}.")
+                    mock_log.assert_called_with(f"Failed to submit message to push gateway for token {serial}.")
                     # Check that the user was informed about the need to poll
                     detail = res.json.get("detail")
                     self.assertEqual("Please confirm the authentication on your mobile device! "
@@ -312,7 +415,7 @@ class PushTokenTestCase(MyTestCase):
                 self.assertFalse(result.get("status"))
                 error = result.get("error")
                 self.assertEqual(401, error.get("code"))
-                self.assertEqual("ERR401: Failed to submit message to Firebase service.", error.get("message"))
+                self.assertEqual("ERR401: Failed to submit message to push gateway.", error.get("message"))
 
             # Remove the created challenge
             challenge = get_challenges(serial=token.token.serial)
@@ -337,7 +440,7 @@ class PushTokenTestCase(MyTestCase):
                     self.assertFalse(result.get("value"))
                     self.assertEqual("CHALLENGE", result.get("authentication"))
                     # Check that the warning was written to the log file.
-                    mock_log.assert_called_with(f"Failed to submit message to Firebase service for token {serial}.")
+                    mock_log.assert_called_with(f"Failed to submit message to push gateway for token {serial}.")
             self.assertEqual(len(get_challenges(serial=token.token.serial)), 0)
             # disallow polling the specific token through a policy
             set_policy("push_poll", SCOPE.AUTH,
@@ -356,7 +459,7 @@ class PushTokenTestCase(MyTestCase):
                     self.assertFalse(result.get("value"))
                     self.assertEqual("CHALLENGE", result.get("authentication"))
                     # Check that the warning was written to the log file.
-                    mock_log.assert_called_with(f"Failed to submit message to Firebase service for token {serial}.")
+                    mock_log.assert_called_with(f"Failed to submit message to push gateway for token {serial}.")
             self.assertEqual(len(get_challenges(serial=token.token.serial)), 0)
 
             # Do the same with the parameter "exception", so that we receive an Error on HTTP
@@ -372,7 +475,7 @@ class PushTokenTestCase(MyTestCase):
                 self.assertFalse(result.get("status"))
                 error = result.get("error")
                 self.assertEqual(401, error.get("code"))
-                self.assertEqual("ERR401: Failed to submit message to Firebase service.", error.get("message"))
+                self.assertEqual("ERR401: Failed to submit message to push gateway.", error.get("message"))
 
             # Check that the challenge is created if the request to firebase
             # succeeded even though polling is disabled
