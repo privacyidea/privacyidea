@@ -23,10 +23,25 @@ import { HttpTestingController, provideHttpClientTesting } from "@angular/common
 import { Router } from "@angular/router";
 import { AppComponent } from "@app/app.component";
 import { AUTH_DATA_STORAGE_KEY, BEARER_TOKEN_STORAGE_KEY } from "@core/constants";
+import { AuthSessionSyncService } from "@services/auth-session-sync/auth-session-sync.service";
+import { DashboardDataStore } from "@services/dashboard/dashboard-data-store.service";
 import { LocalService } from "@services/local/local.service";
 import { NotificationService } from "@services/notification/notification.service";
+import { SessionTimerService } from "@services/session-timer/session-timer.service";
+import { UiPreferencesService } from "@services/user-settings/ui-preferences.service";
+import { UserSettingsService } from "@services/user-settings/user-settings.service";
 import { VersioningService } from "@services/version/version.service";
-import { MockLocalService, MockNotificationService, MockRouter, MockVersioningService } from "@testing/mock-services";
+import {
+  MockAuthSessionSyncService,
+  MockLocalService,
+  MockNotificationService,
+  MockRouter,
+  MockSessionTimerService,
+  MockUiPreferencesService,
+  MockUserSettingsService,
+  MockVersioningService
+} from "@testing/mock-services";
+import { of } from "rxjs";
 import { AuthData, AuthResponse, AuthService, JwtData } from "./auth.service";
 
 const b64url = (obj: object) => btoa(JSON.stringify(obj)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
@@ -59,7 +74,11 @@ describe("AuthService", () => {
         { provide: LocalService, useClass: MockLocalService },
         { provide: VersioningService, useClass: MockVersioningService },
         { provide: Router, useValue: routerMock },
-        { provide: NotificationService, useClass: MockNotificationService }
+        { provide: NotificationService, useClass: MockNotificationService },
+        { provide: UserSettingsService, useClass: MockUserSettingsService },
+        { provide: AuthSessionSyncService, useClass: MockAuthSessionSyncService },
+        { provide: SessionTimerService, useClass: MockSessionTimerService },
+        { provide: UiPreferencesService, useClass: MockUiPreferencesService }
       ]
     }).compileComponents();
 
@@ -545,6 +564,144 @@ describe("AuthService", () => {
     it("stays unauthenticated when the token is valid but auth data is missing", () => {
       mockLocal.saveData(BEARER_TOKEN_STORAGE_KEY, makeJwt(3600));
       restore();
+      expect(authService.isAuthenticated()).toBe(false);
+    });
+  });
+
+  describe("bootstrapSession", () => {
+    const makeJwt = (): string => {
+      const payload = {
+        username: "admin",
+        realm: "",
+        nonce: "",
+        role: "admin",
+        authtype: "",
+        exp: Math.floor(Date.now() / 1000) + 3600,
+        rights: []
+      };
+      return `h.${btoa(JSON.stringify(payload))}.s`;
+    };
+
+    it("restores only after the handover from the other tabs finished", async () => {
+      const sync = TestBed.inject(AuthSessionSyncService) as unknown as MockAuthSessionSyncService;
+      sync.adoptSessionFromOpenTabs.mockImplementation(() => {
+        mockLocal.saveData(BEARER_TOKEN_STORAGE_KEY, makeJwt());
+        mockLocal.saveData(AUTH_DATA_STORAGE_KEY, JSON.stringify({ menus: [] }));
+        return Promise.resolve();
+      });
+
+      expect(authService.isAuthenticated()).toBe(false);
+      await authService.bootstrapSession();
+
+      expect(authService.isAuthenticated()).toBe(true);
+      expect(authService.username()).toBe("admin");
+    });
+
+    it("leaves the session closed when no tab hands one over", async () => {
+      await authService.bootstrapSession();
+      expect(authService.isAuthenticated()).toBe(false);
+    });
+  });
+
+  describe("session adoption (adoptStoredSession)", () => {
+    const makeJwt = (username: string, nonce = ""): string => {
+      const payload = {
+        username,
+        realm: "",
+        nonce,
+        role: "admin",
+        authtype: "",
+        exp: Math.floor(Date.now() / 1000) + 3600,
+        rights: []
+      };
+      return `h.${btoa(JSON.stringify(payload))}.s`;
+    };
+
+    const storeSessionOf = (username: string, nonce = "") => {
+      mockLocal.saveData(BEARER_TOKEN_STORAGE_KEY, makeJwt(username, nonce));
+      mockLocal.saveData(AUTH_DATA_STORAGE_KEY, JSON.stringify({ menus: [] }));
+    };
+
+    const restore = () => (authService as unknown as { restoreSession: () => void }).restoreSession();
+    const adopt = () => (authService as unknown as { adoptStoredSession: () => void }).adoptStoredSession();
+
+    let sessionTimer: MockSessionTimerService;
+    let uiPreferences: MockUiPreferencesService;
+    let reload: jest.SpyInstance;
+
+    beforeEach(() => {
+      sessionTimer = TestBed.inject(SessionTimerService) as unknown as MockSessionTimerService;
+      uiPreferences = TestBed.inject(UiPreferencesService) as unknown as MockUiPreferencesService;
+      reload = jest
+        .spyOn(authService as unknown as { reload: () => void }, "reload")
+        .mockImplementation(() => undefined);
+    });
+
+    it("drops the previous user's cached data when another tab's session is adopted", () => {
+      const dashboardStore = TestBed.inject(DashboardDataStore);
+      const userSettings = TestBed.inject(UserSettingsService) as unknown as MockUserSettingsService;
+
+      storeSessionOf("alice");
+      restore();
+      dashboardStore.load("token_count", () => of(42));
+      userSettings.settings.set({ theme: "alice-theme" });
+      expect(authService.username()).toBe("alice");
+
+      storeSessionOf("bob");
+      adopt();
+
+      expect(authService.username()).toBe("bob");
+      expect(dashboardStore.peek("token_count")).toBeNull();
+      expect(userSettings.settings()).toEqual({});
+    });
+
+    it("arms the session timer and loads the ui preferences", () => {
+      storeSessionOf("alice");
+      adopt();
+      expect(sessionTimer.initialTimerStart).toHaveBeenCalled();
+      expect(uiPreferences.sync).toHaveBeenCalled();
+    });
+
+    it("closes the session when the adopted payload does not restore", () => {
+      storeSessionOf("alice");
+      restore();
+      expect(authService.isAuthenticated()).toBe(true);
+
+      mockLocal.removeData(BEARER_TOKEN_STORAGE_KEY);
+      adopt();
+
+      expect(authService.isAuthenticated()).toBe(false);
+      expect(routerMock.navigate).toHaveBeenCalledWith(["login"]);
+      expect(sessionTimer.initialTimerStart).not.toHaveBeenCalled();
+    });
+
+    it("reloads the page when the adopted session belongs to another principal", () => {
+      storeSessionOf("alice", "nonce-a");
+      restore();
+
+      storeSessionOf("bob", "nonce-b");
+      adopt();
+
+      expect(reload).toHaveBeenCalled();
+      expect(sessionTimer.initialTimerStart).not.toHaveBeenCalled();
+    });
+
+    it("keeps the page when the adopted session is the one it already had", () => {
+      storeSessionOf("alice", "nonce-a");
+      restore();
+
+      storeSessionOf("alice", "nonce-a");
+      adopt();
+
+      expect(reload).not.toHaveBeenCalled();
+      expect(sessionTimer.initialTimerStart).toHaveBeenCalled();
+    });
+
+    it("survives a stored value it cannot decrypt", () => {
+      mockLocal.getData.mockImplementationOnce(() => {
+        throw new Error("Malformed UTF-8 data");
+      });
+      expect(() => restore()).not.toThrow();
       expect(authService.isAuthenticated()).toBe(false);
     });
   });

@@ -16,9 +16,26 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<app-dialog-wrapper
-  (actionTriggered)="onAction($event)"
-  [actions]="actions"
-  [title]="data.title">
-  <p>{{ data.message }}</p>
-</app-dialog-wrapper>
+
+<app-details-card
+  i18n-title="@@uiSettings.sessionMode"
+  title="Session Mode">
+  <div class="settings-row">
+    <mat-form-field
+      class="input-width-l"
+      subscriptSizing="dynamic">
+      <mat-select
+        (selectionChange)="selectAuthSessionMode($event)"
+        [value]="selectedMode()"
+        aria-label="Session Mode"
+        i18n-aria-label="@@uiSettings.sessionMode">
+        @for (option of modeOptions(); track option.value) {
+          <mat-option [value]="option.value">
+            {{ option.label }}
+          </mat-option>
+        }
+      </mat-select>
+      <mat-hint>{{ modeHint() }}</mat-hint>
+    </mat-form-field>
+  </div>
+</app-details-card>

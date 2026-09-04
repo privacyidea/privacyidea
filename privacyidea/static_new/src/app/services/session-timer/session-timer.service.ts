@@ -115,6 +115,7 @@ export class SessionTimerService implements SessionTimerServiceInterface {
   }
 
   startRefreshingRemainingTime(): void {
+    this.clearRefreshInterval();
     this.intervalId = setInterval(() => {
       this.currentTime.set(Date.now());
     }, 1000);

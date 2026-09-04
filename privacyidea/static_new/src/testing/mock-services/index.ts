@@ -2,6 +2,8 @@ export * from "./mock-api-client-service";
 export * from "./mock-application-service";
 export * from "./mock-audit-service";
 export * from "./mock-auth-service";
+export * from "./mock-auth-session-mode-service";
+export * from "./mock-auth-session-sync-service";
 export * from "./mock-ca-connector-service";
 export * from "./mock-challenges-service";
 export * from "./mock-clients-service";

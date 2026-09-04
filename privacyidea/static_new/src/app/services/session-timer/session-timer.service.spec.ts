@@ -176,6 +176,13 @@ describe("SessionTimerService", () => {
     expect(after3s).toBeGreaterThanOrEqual(6500);
   });
 
+  it("startRefreshingRemainingTime keeps a single interval running", () => {
+    service.startRefreshingRemainingTime();
+    const afterFirst = jest.getTimerCount();
+    service.startRefreshingRemainingTime();
+    expect(jest.getTimerCount()).toBe(afterFirst);
+  });
+
   it("shows a 30s warning when remainingTime enters the 30–31s window", async () => {
     authService.logoutTimeS.set(31);
     service.startTimer();
