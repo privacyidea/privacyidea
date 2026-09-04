@@ -27,6 +27,8 @@ import { AuthSessionSyncService } from "@services/auth-session-sync/auth-session
 import { DashboardDataStore } from "@services/dashboard/dashboard-data-store.service";
 import { LocalService } from "@services/local/local.service";
 import { NotificationService } from "@services/notification/notification.service";
+import { SessionTimerService } from "@services/session-timer/session-timer.service";
+import { UiPreferencesService } from "@services/user-settings/ui-preferences.service";
 import { UserSettingsService } from "@services/user-settings/user-settings.service";
 import { VersioningService } from "@services/version/version.service";
 import {
@@ -34,6 +36,8 @@ import {
   MockLocalService,
   MockNotificationService,
   MockRouter,
+  MockSessionTimerService,
+  MockUiPreferencesService,
   MockUserSettingsService,
   MockVersioningService
 } from "@testing/mock-services";
@@ -72,7 +76,9 @@ describe("AuthService", () => {
         { provide: Router, useValue: routerMock },
         { provide: NotificationService, useClass: MockNotificationService },
         { provide: UserSettingsService, useClass: MockUserSettingsService },
-        { provide: AuthSessionSyncService, useClass: MockAuthSessionSyncService }
+        { provide: AuthSessionSyncService, useClass: MockAuthSessionSyncService },
+        { provide: SessionTimerService, useClass: MockSessionTimerService },
+        { provide: UiPreferencesService, useClass: MockUiPreferencesService }
       ]
     }).compileComponents();
 
@@ -598,11 +604,11 @@ describe("AuthService", () => {
   });
 
   describe("session adoption (adoptStoredSession)", () => {
-    const makeJwt = (username: string): string => {
+    const makeJwt = (username: string, nonce = ""): string => {
       const payload = {
         username,
         realm: "",
-        nonce: "",
+        nonce,
         role: "admin",
         authtype: "",
         exp: Math.floor(Date.now() / 1000) + 3600,
@@ -611,13 +617,25 @@ describe("AuthService", () => {
       return `h.${btoa(JSON.stringify(payload))}.s`;
     };
 
-    const storeSessionOf = (username: string) => {
-      mockLocal.saveData(BEARER_TOKEN_STORAGE_KEY, makeJwt(username));
+    const storeSessionOf = (username: string, nonce = "") => {
+      mockLocal.saveData(BEARER_TOKEN_STORAGE_KEY, makeJwt(username, nonce));
       mockLocal.saveData(AUTH_DATA_STORAGE_KEY, JSON.stringify({ menus: [] }));
     };
 
     const restore = () => (authService as unknown as { restoreSession: () => void }).restoreSession();
     const adopt = () => (authService as unknown as { adoptStoredSession: () => void }).adoptStoredSession();
+
+    let sessionTimer: MockSessionTimerService;
+    let uiPreferences: MockUiPreferencesService;
+    let reload: jest.SpyInstance;
+
+    beforeEach(() => {
+      sessionTimer = TestBed.inject(SessionTimerService) as unknown as MockSessionTimerService;
+      uiPreferences = TestBed.inject(UiPreferencesService) as unknown as MockUiPreferencesService;
+      reload = jest
+        .spyOn(authService as unknown as { reload: () => void }, "reload")
+        .mockImplementation(() => undefined);
+    });
 
     it("drops the previous user's cached data when another tab's session is adopted", () => {
       const dashboardStore = TestBed.inject(DashboardDataStore);
@@ -635,6 +653,56 @@ describe("AuthService", () => {
       expect(authService.username()).toBe("bob");
       expect(dashboardStore.peek("token_count")).toBeNull();
       expect(userSettings.settings()).toEqual({});
+    });
+
+    it("arms the session timer and loads the ui preferences", () => {
+      storeSessionOf("alice");
+      adopt();
+      expect(sessionTimer.initialTimerStart).toHaveBeenCalled();
+      expect(uiPreferences.sync).toHaveBeenCalled();
+    });
+
+    it("closes the session when the adopted payload does not restore", () => {
+      storeSessionOf("alice");
+      restore();
+      expect(authService.isAuthenticated()).toBe(true);
+
+      mockLocal.removeData(BEARER_TOKEN_STORAGE_KEY);
+      adopt();
+
+      expect(authService.isAuthenticated()).toBe(false);
+      expect(routerMock.navigate).toHaveBeenCalledWith(["login"]);
+      expect(sessionTimer.initialTimerStart).not.toHaveBeenCalled();
+    });
+
+    it("reloads the page when the adopted session belongs to another principal", () => {
+      storeSessionOf("alice", "nonce-a");
+      restore();
+
+      storeSessionOf("bob", "nonce-b");
+      adopt();
+
+      expect(reload).toHaveBeenCalled();
+      expect(sessionTimer.initialTimerStart).not.toHaveBeenCalled();
+    });
+
+    it("keeps the page when the adopted session is the one it already had", () => {
+      storeSessionOf("alice", "nonce-a");
+      restore();
+
+      storeSessionOf("alice", "nonce-a");
+      adopt();
+
+      expect(reload).not.toHaveBeenCalled();
+      expect(sessionTimer.initialTimerStart).toHaveBeenCalled();
+    });
+
+    it("survives a stored value it cannot decrypt", () => {
+      mockLocal.getData.mockImplementationOnce(() => {
+        throw new Error("Malformed UTF-8 data");
+      });
+      expect(() => restore()).not.toThrow();
+      expect(authService.isAuthenticated()).toBe(false);
     });
   });
 });

@@ -69,6 +69,8 @@ class FakeBroadcastChannel {
   }
 }
 
+const TAB_PRESENCE_LOCK = "privacyidea_session_tab";
+
 describe("AuthSessionSyncService", () => {
   let modeService: MockAuthSessionModeService;
   let handler: AuthSessionSyncHandler;
@@ -83,6 +85,24 @@ describe("AuthSessionSyncService", () => {
     handler = { endSession: jest.fn(), adoptStoredSession: jest.fn(), hasSession: jest.fn().mockReturnValue(false) };
     service.addHandler(handler);
     return service;
+  }
+
+  function stubTabPresence(peers: number): void {
+    const held: { name: string }[] = [];
+    Object.defineProperty(globalThis.navigator, "locks", {
+      configurable: true,
+      value: {
+        request: (name: string, _options: unknown, callback: () => Promise<never>) => {
+          held.push({ name });
+          callback();
+          return new Promise<never>(() => undefined);
+        },
+        query: () =>
+          Promise.resolve({
+            held: [...held, ...Array.from({ length: peers }, () => ({ name: TAB_PRESENCE_LOCK }))]
+          })
+      }
+    });
   }
 
   function answerRequestsWith(token: string, authData: string): void {
@@ -104,6 +124,7 @@ describe("AuthSessionSyncService", () => {
 
   afterEach(() => {
     delete (globalThis as { BroadcastChannel?: unknown }).BroadcastChannel;
+    Reflect.deleteProperty(globalThis.navigator, "locks");
   });
 
   describe("availability", () => {
@@ -139,6 +160,36 @@ describe("AuthSessionSyncService", () => {
       expect(sessionStorage.getItem(AUTH_DATA_STORAGE_KEY)).toBe("auth-data");
     });
 
+    it("asks nothing while no other tab is open", async () => {
+      stubTabPresence(0);
+      modeService.mode.set("multi-tab-ephemeral");
+      const service = createService();
+      await service.adoptSessionFromOpenTabs();
+      expect(otherTab.received).toHaveLength(0);
+    });
+
+    it("asks the open tabs while one of them holds the presence lock", async () => {
+      stubTabPresence(1);
+      modeService.mode.set("multi-tab-ephemeral");
+      const service = createService();
+      answerRequestsWith("handed-over", "auth-data");
+      await service.adoptSessionFromOpenTabs();
+      expect(sessionStorage.getItem(BEARER_TOKEN_STORAGE_KEY)).toBe("handed-over");
+    });
+
+    it("ignores an offer that is missing half of the session", async () => {
+      stubTabPresence(1);
+      modeService.mode.set("multi-tab-ephemeral");
+      const service = createService();
+      otherTab.addEventListener("message", (event) => {
+        if (event.data.type === "request") {
+          otherTab.postMessage({ type: "offer", token: "only-a-token" });
+        }
+      });
+      await service.adoptSessionFromOpenTabs();
+      expect(sessionStorage.getItem(BEARER_TOKEN_STORAGE_KEY)).toBeNull();
+    });
+
     it("asks nothing outside multi-tab-ephemeral", async () => {
       modeService.mode.set("single-tab");
       const service = createService();
@@ -161,7 +212,8 @@ describe("AuthSessionSyncService", () => {
       modeService.mode.set("multi-tab-ephemeral");
       const service = createService();
       const pending = service.adoptSessionFromOpenTabs();
-      jest.advanceTimersByTime(250);
+      // The peer check runs before the timer is armed, so the microtasks have to drain first.
+      await jest.advanceTimersByTimeAsync(250);
       await pending;
       expect(sessionStorage.getItem(BEARER_TOKEN_STORAGE_KEY)).toBeNull();
       jest.useRealTimers();
@@ -258,6 +310,14 @@ describe("AuthSessionSyncService", () => {
       expect(handler.adoptStoredSession).not.toHaveBeenCalled();
     });
 
+    it("ignores a login message that carries no session", () => {
+      modeService.mode.set("multi-tab-ephemeral");
+      createService();
+      otherTab.postMessage({ type: "login" });
+      expect(sessionStorage.getItem(BEARER_TOKEN_STORAGE_KEY)).toBeNull();
+      expect(handler.adoptStoredSession).not.toHaveBeenCalled();
+    });
+
     it("signs in a waiting tab although the shared storage already holds the token", () => {
       modeService.mode.set("multi-tab-persistent");
       modeService.storage.set(localStorage);
@@ -344,6 +404,21 @@ describe("AuthSessionSyncService", () => {
       expect(modeService.adoptMode).not.toHaveBeenCalled();
       expect(sessionStorage.getItem(BEARER_TOKEN_STORAGE_KEY)).toBe("mine");
       expect(handler.adoptStoredSession).not.toHaveBeenCalled();
+    });
+
+    it("applies a mode change that carries no session", () => {
+      modeService.mode.set("multi-tab-ephemeral");
+      createService();
+      otherTab.postMessage({ type: "mode-changed", mode: "multi-tab-persistent" });
+      expect(modeService.adoptMode).toHaveBeenCalledWith("multi-tab-persistent");
+    });
+
+    it("broadcasts its own change even with no session to hand over", () => {
+      modeService.mode.set("multi-tab-ephemeral");
+      createService();
+      const listener = modeService.addModeChangeListener.mock.calls[0][0] as (mode: string) => void;
+      listener("multi-tab-persistent");
+      expect(otherTab.received).toContainEqual({ type: "mode-changed", mode: "multi-tab-persistent" });
     });
 
     it("broadcasts its own change through the registered listener", () => {

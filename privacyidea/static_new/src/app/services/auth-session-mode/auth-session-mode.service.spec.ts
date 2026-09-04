@@ -170,6 +170,22 @@ describe("AuthSessionModeService", () => {
       expect(localStorage.getItem(AUTH_SESSION_MODE_STORAGE_KEY)).toBe("single-tab");
     });
 
+    it("replaces a stored mode this browser cannot provide", () => {
+      delete (globalThis as { BroadcastChannel?: unknown }).BroadcastChannel;
+      const service = createService("multi-tab-ephemeral");
+      expect(service.mode()).toBe("single-tab");
+      expect(service.setMode("single-tab")).toBe(true);
+      expect(localStorage.getItem(AUTH_SESSION_MODE_STORAGE_KEY)).toBe("single-tab");
+    });
+
+    it("reports whether the mode is the one now in effect", () => {
+      const service = createService("single-tab");
+      expect(service.setMode("multi-tab-persistent")).toBe(true);
+      expect(service.setMode("multi-tab-persistent")).toBe(true);
+      authService.role.set("user");
+      expect(service.setMode("single-tab")).toBe(false);
+    });
+
     it("stores the new mode for a signed-in admin", () => {
       const service = createService("single-tab");
       service.setMode("multi-tab-ephemeral");

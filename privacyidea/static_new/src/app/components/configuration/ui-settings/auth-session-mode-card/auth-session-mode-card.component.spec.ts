@@ -21,8 +21,10 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MatSelect, MatSelectChange } from "@angular/material/select";
 import { AuthSessionMode, AuthSessionModeService } from "@services/auth-session-mode/auth-session-mode.service";
 import { DialogService } from "@services/dialog/dialog.service";
+import { NotificationService } from "@services/notification/notification.service";
 import { MockAuthSessionModeService } from "@testing/mock-services/mock-auth-session-mode-service";
 import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
+import { MockNotificationService } from "@testing/mock-services/mock-notification-service";
 import { AuthSessionModeCardComponent } from "./auth-session-mode-card.component";
 
 interface CardInternals {
@@ -37,6 +39,7 @@ describe("AuthSessionModeCardComponent", () => {
   let card: CardInternals;
   let modeService: MockAuthSessionModeService;
   let dialogService: MockDialogService;
+  let notificationService: MockNotificationService;
 
   function selectionOf(value: AuthSessionMode): { event: MatSelectChange; source: { value: unknown } } {
     const source = { value } as unknown as MatSelect;
@@ -47,11 +50,13 @@ describe("AuthSessionModeCardComponent", () => {
     TestBed.resetTestingModule();
     modeService = new MockAuthSessionModeService();
     dialogService = new MockDialogService();
+    notificationService = new MockNotificationService();
     TestBed.configureTestingModule({
       imports: [AuthSessionModeCardComponent],
       providers: [
         { provide: AuthSessionModeService as Type<unknown>, useValue: modeService },
-        { provide: DialogService as Type<unknown>, useValue: dialogService }
+        { provide: DialogService as Type<unknown>, useValue: dialogService },
+        { provide: NotificationService as Type<unknown>, useValue: notificationService }
       ]
     });
     fixture = TestBed.createComponent(AuthSessionModeCardComponent);
@@ -144,6 +149,19 @@ describe("AuthSessionModeCardComponent", () => {
       modeService.setMode.mockImplementation(() => undefined);
       await card.selectAuthSessionMode(selectionOf("multi-tab-persistent").event);
       expect(card.selectedMode()).toBe("single-tab");
+    });
+
+    it("reports a refused change instead of only snapping the select back", async () => {
+      modeService.mode.set("single-tab");
+      modeService.setMode.mockReturnValue(false);
+      await card.selectAuthSessionMode(selectionOf("multi-tab-persistent").event);
+      expect(notificationService.error).toHaveBeenCalled();
+    });
+
+    it("stays quiet when the change went through", async () => {
+      modeService.mode.set("multi-tab-persistent");
+      await card.selectAuthSessionMode(selectionOf("single-tab").event);
+      expect(notificationService.error).not.toHaveBeenCalled();
     });
 
     it("asks again when stepping from ephemeral up to persistent", async () => {
