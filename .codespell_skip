@@ -1,3 +1,4 @@
 ./privacyidea/static/contrib/*
 ./privacyidea/static/components/translation/translations.js
 *.po
+./privacyidea/static_new/src/locale/messages.*.xlf

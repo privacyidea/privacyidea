@@ -103,12 +103,14 @@ export class CaConnectorService implements CaConnectorServiceInterface {
 
     return lastValueFrom(request)
       .then(() => {
-        this.notificationService.success($localize`Successfully saved CA connector.`);
+        this.notificationService.success($localize`:@@caConnector.successfullySaved:Successfully saved CA connector.`);
         this.caConnectorResource.reload();
       })
       .catch((error) => {
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.error($localize`Failed to save CA connector. ` + message);
+        this.notificationService.error(
+          $localize`:@@caConnector.failedSaveCaConnector:Failed to save CA connector. ${message}:MESSAGE:`
+        );
         throw new Error("post-failed");
       });
   }
@@ -122,12 +124,16 @@ export class CaConnectorService implements CaConnectorServiceInterface {
     );
     return lastValueFrom(request)
       .then(() => {
-        this.notificationService.success($localize`Successfully deleted CA connector: ${connectorname}.`);
+        this.notificationService.success(
+          $localize`:@@caConnector.successfullyDeleted:Successfully deleted CA connector: ${connectorname}:CONNECTOR:.`
+        );
         this.caConnectorResource.reload();
       })
       .catch((error) => {
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.error($localize`Failed to delete CA connector. ` + message);
+        this.notificationService.error(
+          $localize`:@@caConnector.failedDeleteCa:Failed to delete CA connector. ${message}:MESSAGE:`
+        );
         throw new Error("delete-failed");
       });
   }
@@ -143,7 +149,9 @@ export class CaConnectorService implements CaConnectorServiceInterface {
       })
       .catch((error) => {
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.error($localize`Failed to fetch CA specific options. ` + message);
+        this.notificationService.error(
+          $localize`:@@caConnector.failedFetchCa:Failed to fetch CA specific options. ${message}:MESSAGE:`
+        );
         throw new Error("fetch-failed");
       });
   }

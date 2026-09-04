@@ -32,14 +32,14 @@
             <app-multi-select-only
               class="flex-2"
               subscriptSizing="dynamic"
-              i18n-placeholder
+              i18n-placeholder="@@policy.selectOptions"
               placeholder="Select options..."
               [items]="actionValues"
               [selectedItems]="selectedItems()"
               (selectionChange)="handleUpdateAction($event)">
             </app-multi-select-only>
           } @else if (actionValues.length === 0) {
-            <p i18n>No values available.</p>
+            <p i18n="@@policy.noValuesAvailable">No values available.</p>
           } @else if (actionValues.length <= 3) {
             <app-selector-buttons
               class="flex-1"
@@ -91,7 +91,7 @@
       mat-icon-button
       class="delete-icon-button"
       aria-label="Remove action"
-      i18n-aria-label
+      i18n-aria-label="@@policy.removeAction"
       (click)="handleRemoveAction(); $event.stopPropagation()">
       <mat-icon>delete</mat-icon>
     </button>

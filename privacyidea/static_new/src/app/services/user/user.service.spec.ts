@@ -17,6 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { provideHttpClient } from "@angular/common/http";
+import { lastValueFrom } from "rxjs";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
 import { provideLocationMocks } from "@angular/common/testing";
 import { TestBed } from "@angular/core/testing";
@@ -146,15 +147,16 @@ describe("UserService", () => {
 
   it("selectedUserRealm switches to the default realm when it resolves after the realm options", () => {
     contentServiceMock.routeUrl.set(ROUTE_PATHS.USERS);
-    realmService.defaultRealmResource.isLoading.set(true);
     realmService.defaultRealmResource.set(MockPiResponse.fromValue<Realms>({}));
+    realmService.defaultRealmResource.isLoading.set(true);
     realmService.realmOptions.set(["aRealm", "zRealm"]);
     expect(userService.selectedUserRealm()).toBe("aRealm");
 
+    // The answer settles the resource, so the load ends with the value rather than after it.
     realmService.defaultRealmResource.set(
       MockPiResponse.fromValue<Realms>({ zRealm: { default: true, id: 1, option: "", resolver: [] } })
     );
-    realmService.defaultRealmResource.isLoading.set(false);
+    expect(realmService.defaultRealmResource.isLoading()).toBe(false);
     expect(userService.selectedUserRealm()).toBe("zRealm");
   });
 
@@ -317,6 +319,34 @@ describe("UserService", () => {
       expect(req.request.headers).toBeTruthy();
 
       req.flush({ result: { status: true, value: true } });
+    });
+
+    it("setUserAttribute notifies on error", async () => {
+      realmService.realmOptions.set(["realm1"]);
+      const result = lastValueFrom(userService.setUserAttribute("department", "finance"));
+
+      const req = httpMock.expectOne((r) => r.method === "POST" && r.url.endsWith("/user/attribute"));
+      req.flush(
+        { result: { error: { message: "denied" } } },
+        { status: 500, statusText: "Server Error" }
+      );
+
+      await expect(result).resolves.toBeUndefined();
+      expect(notificationServiceMock.error).toHaveBeenCalledWith("Failed to set user attribute. denied");
+    });
+
+    it("deleteUserAttribute notifies on error", async () => {
+      realmService.realmOptions.set(["realm1"]);
+      const result = lastValueFrom(userService.deleteUserAttribute("department"));
+
+      const req = httpMock.expectOne((r) => r.method === "DELETE");
+      req.flush(
+        { result: { error: { message: "denied" } } },
+        { status: 500, statusText: "Server Error" }
+      );
+
+      await expect(result).resolves.toBeUndefined();
+      expect(notificationServiceMock.error).toHaveBeenCalledWith("Failed to delete user attribute. denied");
     });
   });
 

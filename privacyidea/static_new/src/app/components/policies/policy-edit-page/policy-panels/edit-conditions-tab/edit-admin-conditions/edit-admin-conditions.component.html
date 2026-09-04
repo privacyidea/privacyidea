@@ -20,9 +20,9 @@
 <div class="conditions-container">
   <h2
     class="conditions-title"
-    i18n>
-    Admin Conditions
-  </h2>
+    i18n="@@policy.adminConditions"
+    >Admin Conditions</h2
+  >
 
   <app-multi-select-only
     class="margin-bottom-16"
@@ -54,14 +54,14 @@
       subscriptSizing="dynamic"
       class="input-width-l"
       appearance="outline">
-      <mat-label i18n>Admin Name</mat-label>
+      <mat-label i18n="@@policy.adminName">Admin Name</mat-label>
       <input
         matInput
         [formField]="adminField"
         #adminInput
         (keyup.enter)="addAdmin(adminSignal())" />
       @if (adminField().errors().some(e => e.kind === 'includesComma')) {
-        <mat-error i18n>Admin must not contain commas.</mat-error>
+        <mat-error i18n="@@policy.adminMustNotContain">Admin must not contain commas.</mat-error>
       }
     </mat-form-field>
 

@@ -119,10 +119,10 @@ export class SmsGatewaysComponent {
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: $localize`Delete SMS Gateways`,
+          title: $localize`:@@smsGateway.deleteSmsGateways:Delete SMS Gateways`,
           items: selected.map((gateway) => gateway.name),
           itemType: "sms-gateway",
-          confirmAction: { label: $localize`Delete`, value: true, type: "destruct" }
+          confirmAction: { label: $localize`:@@common.delete:Delete`, value: true, type: "destruct" }
         }
       })
       .afterClosed()

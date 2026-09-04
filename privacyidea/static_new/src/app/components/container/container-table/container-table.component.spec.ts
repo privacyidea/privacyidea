@@ -222,4 +222,18 @@ describe("ContainerTableComponent (Jest)", () => {
       expect(component.containerSelection.allRowsSelected()).toBe(true);
     });
   });
+
+  describe("Accessibility labels", () => {
+    it("selectRowLabel names the container serial", () => {
+      expect((component as unknown as { selectRowLabel: (serial: string) => string }).selectRowLabel("CONT-1")).toBe(
+        "Select container CONT-1"
+      );
+    });
+
+    it("linkLabel appends 'link' to the given label", () => {
+      expect((component as unknown as { linkLabel: (label: string) => string }).linkLabel("CONT-1")).toBe(
+        "CONT-1 link"
+      );
+    });
+  });
 });

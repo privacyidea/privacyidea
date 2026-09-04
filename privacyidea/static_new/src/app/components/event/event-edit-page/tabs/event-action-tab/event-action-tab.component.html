@@ -17,7 +17,7 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <mat-form-field class="input-width-l margin-bottom-32">
-  <mat-label i18n>Action</mat-label>
+  <mat-label i18n="@@common.action">Action</mat-label>
   <mat-select
     (openedChange)="$event === false && selectedActionForm().markAsTouched()"
     (selectionChange)="onActionSelectionChange($event.value)"
@@ -30,9 +30,9 @@
       </mat-option>
     }
   </mat-select>
-  <mat-hint i18n>Select an action to be executed on the specified events.</mat-hint>
+  <mat-hint i18n="@@event.selectActionExecuted">Select an action to be executed on the specified events.</mat-hint>
   @if (selectedActionForm().errors().some(e => e.kind === "required") && selectedActionForm().touched()) {
-    <mat-error i18n> Selecting an action is <strong>required</strong>.</mat-error>
+    <mat-error i18n="@@event.selectingAction">Selecting an action is <strong>required</strong>.</mat-error>
   }
 </mat-form-field>
 
@@ -104,7 +104,7 @@
               }
             }
             @if (showOptionError(optionName)) {
-              <mat-error i18n> {{ optionName }} is <strong>required</strong>.</mat-error>
+              <mat-error i18n="@@event.isRequired">{{ optionName }} is <strong>required</strong>.</mat-error>
             }
           </mat-form-field>
         }

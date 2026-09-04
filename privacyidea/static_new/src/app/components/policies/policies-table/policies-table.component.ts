@@ -85,13 +85,13 @@ export class PoliciesTableComponent {
   readonly filterComponent = viewChild<PolicyFilterComponent>("filterComponent");
 
   readonly columns = {
-    priority: { label: $localize`Priority`, filterable: true, sortable: true },
-    name: { label: $localize`Name`, filterable: true, sortable: true },
-    scope: { label: $localize`Scope`, filterable: true, sortable: true },
-    description: { label: $localize`Description`, filterable: true, sortable: true },
-    actions: { label: $localize`Actions`, filterable: true, sortable: false },
-    conditions: { label: $localize`Conditions`, filterable: true, sortable: false },
-    active: { label: $localize`Active`, filterable: true, sortable: true }
+    priority: { label: $localize`:@@policy.priority:Priority`, filterable: true, sortable: true },
+    name: { label: $localize`:@@common.name:Name`, filterable: true, sortable: true },
+    scope: { label: $localize`:@@common.scope:Scope`, filterable: true, sortable: true },
+    description: { label: $localize`:@@common.description:Description`, filterable: true, sortable: true },
+    actions: { label: $localize`:@@common.actions:Actions`, filterable: true, sortable: false },
+    conditions: { label: $localize`:@@common.conditions:Conditions`, filterable: true, sortable: false },
+    active: { label: $localize`:@@common.active:Active`, filterable: true, sortable: true }
   } as const;
 
   readonly columnKeys = computed(() => ["select", ...Object.keys(this.columns)]);
@@ -117,7 +117,7 @@ export class PoliciesTableComponent {
   });
   readonly emptyHint = computed(() =>
     this.authService.actionAllowed("policywrite")
-      ? $localize`Create a policy to control what users and administrators are allowed to do and how the system behaves.`
+      ? $localize`:@@common.createAPolicyToControl:Create a policy to control what users and administrators are allowed to do and how the system behaves.`
       : ""
   );
 
@@ -270,7 +270,7 @@ function createPolicyFilterOptions(labelOf: PolicyActionLabelResolver): FilterOp
   return [
     new FilterOption<PolicyDetail>({
       key: "priority",
-      label: $localize`Priority`,
+      label: $localize`:@@policy.priority:Priority`,
       matches: (item, filter) => {
         const val = filter.getFilterOfKey("priority");
         return !val || matchesPriority(item.priority, val);
@@ -279,7 +279,7 @@ function createPolicyFilterOptions(labelOf: PolicyActionLabelResolver): FilterOp
     }),
     new FilterOption<PolicyDetail>({
       key: "active",
-      label: $localize`Active`,
+      label: $localize`:@@common.active:Active`,
       toggle: (filter) => {
         const v = filter.getFilterOfKey("active")?.toLowerCase();
         if (v === "true") return filter.setValueOfKey("active", "false");
@@ -298,7 +298,7 @@ function createPolicyFilterOptions(labelOf: PolicyActionLabelResolver): FilterOp
     }),
     new FilterOption<PolicyDetail>({
       key: "name",
-      label: $localize`Policy Name`,
+      label: $localize`:@@policy.policyName:Policy Name`,
       matches: (item, filter) => {
         const val = filter.getFilterOfKey("name");
         return !val || item.name.toLowerCase().includes(val.toLowerCase());
@@ -307,7 +307,7 @@ function createPolicyFilterOptions(labelOf: PolicyActionLabelResolver): FilterOp
     }),
     new FilterOption<PolicyDetail>({
       key: "scope",
-      label: $localize`Scope`,
+      label: $localize`:@@common.scope:Scope`,
       matches: (item, filter) => {
         const val = filter.getFilterOfKey("scope");
         return !val || item.scope.toLowerCase().includes(val.toLowerCase());
@@ -316,7 +316,7 @@ function createPolicyFilterOptions(labelOf: PolicyActionLabelResolver): FilterOp
     }),
     new FilterOption<PolicyDetail>({
       key: "description",
-      label: $localize`Description`,
+      label: $localize`:@@common.description:Description`,
       matches: (item, filter) => {
         const val = filter.getFilterOfKey("description");
         return !val || (item.description?.toLowerCase().includes(val.toLowerCase()) ?? false);
@@ -325,7 +325,7 @@ function createPolicyFilterOptions(labelOf: PolicyActionLabelResolver): FilterOp
     }),
     new FilterOption<PolicyDetail>({
       key: "actions",
-      label: $localize`Actions`,
+      label: $localize`:@@common.actions:Actions`,
       matches: (item, filter) => {
         const val = filter.getFilterOfKey("actions")?.toLowerCase();
         return !val || matchesActions(item, val, labelOf);
@@ -334,7 +334,7 @@ function createPolicyFilterOptions(labelOf: PolicyActionLabelResolver): FilterOp
     }),
     new FilterOption<PolicyDetail>({
       key: "conditions",
-      label: $localize`Conditions`,
+      label: $localize`:@@common.conditions:Conditions`,
       matches: (item, filter) => {
         const val = filter.getFilterOfKey("conditions")?.toLowerCase();
         return !val || matchesConditions(item, val);

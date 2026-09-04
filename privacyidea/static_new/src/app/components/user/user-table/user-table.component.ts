@@ -56,29 +56,30 @@ import { MatFormField, MatHint, MatInput, MatLabel } from "@angular/material/inp
 import { MatPaginator } from "@angular/material/paginator";
 import { Sort } from "@angular/material/sort";
 import { RouterLink } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { FilterAutocompleteDirective } from "@components/shared/directives/filter-autocomplete.directive";
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { TableStateComponent } from "@components/shared/table-state/table-state.component";
-import { TableState } from "@core/models/table_state/table-state";
 import { UserNewResolverComponent } from "@components/user/user-new-resolver/user-new-resolver.component";
 import { FilterOption } from "@core/models/filter_value_generic/filter-option";
 import { FilterValueGeneric, keywordlessTerms } from "@core/models/filter_value_generic/filter-value-generic";
+import { TableState } from "@core/models/table_state/table-state";
 import { ResolverService } from "@services/resolver/resolver.service";
 import { UserTableActionsComponent } from "./user-table-actions/user-table-actions.component";
 
 const columnKeysMap = [
-  { key: "username", label: $localize`Username` },
-  { key: "userid", label: $localize`User ID` },
-  { key: "givenname", label: $localize`Given Name` },
-  { key: "surname", label: $localize`Surname` },
-  { key: "email", label: $localize`Email` },
-  { key: "phone", label: $localize`Phone` },
-  { key: "mobile", label: $localize`Mobile` },
-  { key: "description", label: $localize`Description` },
-  { key: "resolver", label: $localize`Resolver` }
+  { key: "username", label: $localize`:@@common.username:Username` },
+  { key: "userid", label: $localize`:@@common.userId:User ID` },
+  { key: "givenname", label: $localize`:@@user.givenName:Given Name` },
+  { key: "surname", label: $localize`:@@user.surname:Surname` },
+  { key: "email", label: $localize`:@@common.email:Email` },
+  { key: "phone", label: $localize`:@@user.phone:Phone` },
+  { key: "mobile", label: $localize`:@@user.mobile:Mobile` },
+  { key: "description", label: $localize`:@@common.description:Description` },
+  { key: "resolver", label: $localize`:@@common.resolver:Resolver` }
 ];
 
 // Per-column predicates for the free-text search: a term matches if it is a substring of any column.
@@ -130,6 +131,10 @@ const userFilterOptions: FilterOption<UserData>[] = columnKeysMap.map(
   styleUrl: "./user-table.component.scss"
 })
 export class UserTableComponent implements OnDestroy {
+  protected linkLabel(label: string): string {
+    return $localize`:@@common.linkLabel:${label}:LABEL: link`;
+  }
+
   protected readonly columnKeysMap = columnKeysMap;
   readonly columnKeys: string[] = this.columnKeysMap.map((column) => column.key);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
@@ -172,12 +177,18 @@ export class UserTableComponent implements OnDestroy {
     source: () => this.filteredUsers(),
     computation: (filtered, previous) => (filtered ? filtered.length : (previous?.value ?? 0))
   });
+  /** A skipped resolver is named so it can be fixed, which is only worth linking where its config may be read. */
+  readonly resolverLinkAllowed = computed(() => this.authService.actionAllowed("resolverread"));
+
   readonly tableState = new TableState({
     resource: this.userService.usersResource,
     count: () => this.totalLength(),
     filterActive: () => !this.userService.activeFilter().isEmpty,
     allowed: () => this.authService.actionAllowed("userlist"),
-    resetFilter: () => this.userService.clearFilter()
+    resetFilter: () => this.userService.clearFilter(),
+    // Aborts the request in flight. The resource is shared, so this empties the user list app-wide
+    // until a request parameter changes or something reloads it.
+    cancel: () => this.userService.usersResource.set(undefined)
   });
   usersDataSource: WritableSignal<MatTableDataSource<UserData>> = linkedSignal({
     source: () => ({
@@ -203,6 +214,10 @@ export class UserTableComponent implements OnDestroy {
   ngOnDestroy(): void {
     // Do not carry a stale (and invisible) filter over to the next visit of the page.
     this.userService.clearFilter();
+  }
+
+  protected resolverLink(resolverName: string): string {
+    return ROUTE_PATHS.USERS_RESOLVERS_DETAILS + resolverName;
   }
 
   toggleFilter(filterKeyword: string): void {

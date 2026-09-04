@@ -1,7 +1,6 @@
 import { Component, computed } from "@angular/core";
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
 import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
-import { NAVIGATION_BLOCKING_DIALOG_CLASS } from "@constants/global.constants";
 import { DialogAction } from "@models/dialog";
 
 /**
@@ -35,7 +34,6 @@ export type SaveAndExitDialogResult = "discard" | "save-exit";
 
 @Component({
   selector: "app-save-and-exit-dialog",
-  host: { class: NAVIGATION_BLOCKING_DIALOG_CLASS },
   templateUrl: "./save-and-exit-dialog.component.html",
   styleUrls: ["./save-and-exit-dialog.component.scss"],
   standalone: true,
@@ -52,23 +50,25 @@ export class SaveAndExitDialogComponent extends AbstractDialogComponent<
 
   actions = computed<DialogAction<SaveAndExitDialogResult>[]>(() => [
     {
-      label: this.data.saveButtonText || $localize`Save`,
+      label: this.data.saveButtonText || $localize`:@@common.save:Save`,
       value: "save-exit",
       type: "confirm",
       disabled: this.data.saveExitDisabled,
       hidden: !this.data.allowSaveExit
     },
     {
-      label: this.data.discardButtonText || $localize`Discard`,
+      label: this.data.discardButtonText || $localize`:@@common.discard:Discard`,
       value: "discard",
       type: "destruct",
       primary: true
     }
   ]);
 
-  title = computed(() => this.data.title || $localize`Discard changes`);
+  title = computed(() => this.data.title || $localize`:@@common.discardChanges:Discard changes`);
   message = computed(
-    () => this.data.message || $localize`You have unsaved changes. Do you want to save them before exiting?`
+    () =>
+      this.data.message ||
+      $localize`:@@common.youHaveUnsaved:You have unsaved changes. Do you want to save them before exiting?`
   );
 
   onAction(result: SaveAndExitDialogResult): void {

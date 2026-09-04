@@ -25,7 +25,7 @@
         appearance="fill"
         class="tokengroups-table-filter"
         subscriptSizing="dynamic">
-        <mat-label i18n>Filter Tokengroups...</mat-label>
+        <mat-label i18n="@@tokenGroup.filterTokengroups">Filter Tokengroups...</mat-label>
         <app-clearable-input
           (clearButtonClick)="resetFilter()"
           [showClearButton]="filterString().length > 0">
@@ -34,8 +34,8 @@
             (input)="onFilterInput(filterHTMLInputElement.value)"
             [value]="filterString()"
             aria-label="Filter Input"
-            i18n-aria-label
-            i18n-placeholder
+            i18n-aria-label="@@common.filterInput"
+            i18n-placeholder="@@common.filterByNameDescription"
             matInput
             placeholder="Filter by name or description" />
         </app-clearable-input>
@@ -55,7 +55,7 @@
           <mat-icon class="padding-right-3">local_police</mat-icon>
           <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
         </span>
-        <span i18n>Create Token Group</span>
+        <span i18n="@@tokenGroup.createTokenGroup">Create Token Group</span>
       </button>
       <button
         (click)="deleteSelected()"
@@ -63,7 +63,7 @@
         class="action-button-delete-secondary button-width-l"
         mat-stroked-button>
         <mat-icon>delete_sweep</mat-icon>
-        <span i18n>Delete</span>
+        <span i18n="@@common.delete">Delete</span>
       </button>
     </div>
     <table
@@ -96,11 +96,11 @@
       <ng-container matColumnDef="id">
         <th
           *matHeaderCellDef
-          i18n
+          i18n="@@common.idColumn"
           mat-header-cell
-          mat-sort-header>
-          Id
-        </th>
+          mat-sort-header
+          >Id</th
+        >
         <td
           *matCellDef="let group"
           mat-cell>
@@ -111,11 +111,11 @@
       <ng-container matColumnDef="groupname">
         <th
           *matHeaderCellDef
-          i18n
+          i18n="@@common.name"
           mat-header-cell
-          mat-sort-header>
-          Name
-        </th>
+          mat-sort-header
+          >Name</th
+        >
         <td
           *matCellDef="let group"
           mat-cell>
@@ -135,11 +135,11 @@
       <ng-container matColumnDef="description">
         <th
           *matHeaderCellDef
-          i18n
+          i18n="@@common.description"
           mat-header-cell
-          mat-sort-header>
-          Description
-        </th>
+          mat-sort-header
+          >Description</th
+        >
         <td
           *matCellDef="let group"
           mat-cell>
@@ -167,8 +167,8 @@
       [table]="tableState"
       heading="No token groups yet"
       hint="Create a token group to group tokens for policies and machine assignments."
-      i18n-heading
-      i18n-hint
+      i18n-heading="@@tokenGroup.noTokenGroups"
+      i18n-hint="@@tokenGroup.createTokenGroupHint"
       icon="local_police">
       <button
         (click)="onCreateNewTokengroup()"
@@ -178,7 +178,7 @@
           <mat-icon class="padding-right-3">local_police</mat-icon>
           <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
         </span>
-        <span i18n>Create Token Group</span>
+        <span i18n="@@tokenGroup.createTokenGroup">Create Token Group</span>
       </button>
     </app-table-state>
   }

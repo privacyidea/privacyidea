@@ -356,6 +356,21 @@ describe("UserDetailsTokenTableComponent", () => {
     expect(notificationServiceMock.error).not.toHaveBeenCalled();
   });
 
+  it("toggleActiveSelected still reloads when one of the requests fails and shows a summary", () => {
+    const rowA = { serial: "A", active: true } as unknown as ContainerDetailToken;
+    const rowB = { serial: "B", active: false } as unknown as ContainerDetailToken;
+    showTokens(rowA, rowB);
+    component.selector.selectAllRows();
+    tokenServiceMock.toggleActive.mockImplementation((serial: string) =>
+      serial === "A" ? throwError(() => new Error("failed")) : of(null)
+    );
+
+    component.toggleActiveSelected();
+
+    expect(tokenServiceMock.userTokenResource.reload).toHaveBeenCalledTimes(1);
+    expect(notificationServiceMock.error).toHaveBeenCalledWith("1/2 toggle active failed: A");
+  });
+
   it("resetFailcountSelected resets each selected token and reloads", () => {
     const rowA = { serial: "A" } as unknown as ContainerDetailToken;
     const rowB = { serial: "B" } as unknown as ContainerDetailToken;
@@ -368,5 +383,20 @@ describe("UserDetailsTokenTableComponent", () => {
     expect(tokenServiceMock.resetFailCount).toHaveBeenCalledWith("B", false);
     expect(tokenServiceMock.userTokenResource.reload).toHaveBeenCalledTimes(1);
     expect(notificationServiceMock.error).not.toHaveBeenCalled();
+  });
+
+  it("resetFailcountSelected still reloads when one of the requests fails and shows a summary", () => {
+    const rowA = { serial: "A" } as unknown as ContainerDetailToken;
+    const rowB = { serial: "B" } as unknown as ContainerDetailToken;
+    showTokens(rowA, rowB);
+    component.selector.selectAllRows();
+    tokenServiceMock.resetFailCount.mockImplementation((serial: string) =>
+      serial === "A" ? throwError(() => new Error("failed")) : of(null)
+    );
+
+    component.resetFailcountSelected();
+
+    expect(tokenServiceMock.userTokenResource.reload).toHaveBeenCalledTimes(1);
+    expect(notificationServiceMock.error).toHaveBeenCalledWith("1/2 reset fail count failed: A");
   });
 });

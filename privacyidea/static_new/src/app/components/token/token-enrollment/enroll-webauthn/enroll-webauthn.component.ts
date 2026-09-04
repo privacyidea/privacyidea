@@ -70,7 +70,7 @@ export class EnrollWebauthnComponent extends EnrollTokenBase<WebAuthnEnrollmentD
 
   buildEnrollmentArgs(basicEnrollmentData: TokenEnrollmentData): EnrollmentArgs<WebAuthnEnrollmentData> | null {
     if (!navigator.credentials?.create) {
-      const errorMsg = $localize`WebAuthn is not supported by this browser.`;
+      const errorMsg = $localize`:@@token.webauthnNotSupported:WebAuthn is not supported by this browser.`;
       this.notificationService.error(errorMsg);
       return null;
     }
@@ -92,12 +92,12 @@ export class EnrollWebauthnComponent extends EnrollTokenBase<WebAuthnEnrollmentD
   ): Promise<EnrollmentStepResult> {
     if (!enrollmentResponse?.detail) {
       this.notificationService.error(
-        $localize`Failed to initiate WebAuthn registration: Invalid server response or missing details.`
+        $localize`:@@token.failedInitiateWebauthn:Failed to initiate WebAuthn registration: Invalid server response or missing details.`
       );
       return null;
     } else if (!enrollmentResponse?.detail?.["webAuthnRegisterRequest"]) {
       this.notificationService.error(
-        $localize`Failed to initiate WebAuthn registration: Missing WebAuthn registration request data.`
+        $localize`:@@token.failedInitiateWebauthnRegistration:Failed to initiate WebAuthn registration: Missing WebAuthn registration request data.`
       );
       return null;
     } else if (enrollmentData.type !== "webauthn") {
@@ -161,7 +161,7 @@ export class EnrollWebauthnComponent extends EnrollTokenBase<WebAuthnEnrollmentD
     const request = enrollmentResponse.detail?.webAuthnRegisterRequest;
 
     if (!request) {
-      this.notificationService.warning($localize`Invalid WebAuthn registration request data.`);
+      this.notificationService.warning($localize`:@@token.invalidWebauthn:Invalid WebAuthn registration request data.`);
       return null;
     }
 
@@ -198,7 +198,9 @@ export class EnrollWebauthnComponent extends EnrollTokenBase<WebAuthnEnrollmentD
     } catch (browserOrCredentialError) {
       const message =
         browserOrCredentialError instanceof Error ? browserOrCredentialError.message : String(browserOrCredentialError);
-      this.notificationService.error($localize`WebAuthn credential creation failed: ${message || "Unknown error"}`);
+      this.notificationService.error(
+        $localize`:@@token.webauthnCredential:WebAuthn credential creation failed: ${message || "Unknown error"}:MESSAGE:`
+      );
       publicKeyCred = null;
     }
     return publicKeyCred;
@@ -242,7 +244,9 @@ export class EnrollWebauthnComponent extends EnrollTokenBase<WebAuthnEnrollmentD
     const { webauthnEnrollmentData, webauthnEnrollmentResponse, publicKeyCred } = args;
 
     if (!webauthnEnrollmentResponse || !webauthnEnrollmentResponse.detail) {
-      this.notificationService.warning($localize`Enrollment response or its detail is missing for finalization.`);
+      this.notificationService.warning(
+        $localize`:@@token.enrollmentResponse:Enrollment response or its detail is missing for finalization.`
+      );
       return null;
     }
 
@@ -251,7 +255,7 @@ export class EnrollWebauthnComponent extends EnrollTokenBase<WebAuthnEnrollmentD
 
     if (!webAuthnRegisterRequest || !webAuthnRegisterRequest.transaction_id || !detail.serial) {
       this.notificationService.warning(
-        $localize`Invalid transaction ID or serial number in enrollment detail for finalization.`
+        $localize`:@@token.invalidTransaction:Invalid transaction ID or serial number in enrollment detail for finalization.`
       );
       return null;
     }
@@ -284,7 +288,7 @@ export class EnrollWebauthnComponent extends EnrollTokenBase<WebAuthnEnrollmentD
       return { ...response };
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      const errMsg = $localize`WebAuthn finalization failed: ${message || error}`;
+      const errMsg = $localize`:@@token.webauthnFinalization:WebAuthn finalization failed: ${message || error}:MESSAGE:`;
       this.notificationService.error(errMsg);
       return null;
     }

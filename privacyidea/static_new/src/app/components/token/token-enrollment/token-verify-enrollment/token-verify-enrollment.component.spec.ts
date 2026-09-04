@@ -22,6 +22,8 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { provideHttpClient } from "@angular/common/http";
 import { NO_ERRORS_SCHEMA } from "@angular/core";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
+import { EnrollmentResponse } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { By } from "@angular/platform-browser";
 import { ENROLLMENT_CANCELLED } from "@components/token/token-enrollment/token-enrollment.constants";
 import { AuthService } from "@services/auth/auth.service";
 import { ContentService } from "@services/content/content.service";
@@ -40,7 +42,8 @@ describe("TokenVerifyEnrollmentComponent", () => {
 
   const dialogData = {
     response: { detail: { serial: "123", verify: { message: "Enter OTP" } }, type: "hotp" },
-    enrollParameters: { data: {} }
+    enrollParameters: { data: {} },
+    onEnrollmentResponseChange: jest.fn()
   };
 
   beforeEach(async () => {
@@ -64,6 +67,28 @@ describe("TokenVerifyEnrollmentComponent", () => {
 
   it("should create", () => {
     expect(component).toBeTruthy();
+  });
+
+  it("should report a regenerated QR code to the opener of the dialog", () => {
+    const regenerated = {
+      type: "hotp",
+      detail: { type: "hotp", serial: "123", googleurl: { img: "regenerated-img", value: "regenerated-url" } },
+      result: { status: true }
+    } as EnrollmentResponse;
+    const enrollmentData = fixture.debugElement.query(By.css("app-token-enrollment-data"));
+    enrollmentData.triggerEventHandler("enrollmentResponseChange", regenerated);
+
+    expect(dialogData.onEnrollmentResponseChange).toHaveBeenCalledWith(regenerated);
+  });
+
+  it("should render the verification message outside the input so it is not capped to its width", () => {
+    const message = fixture.debugElement
+      .queryAll(By.css("div"))
+      .find((element) => element.nativeElement.textContent.trim() === "Enter OTP");
+
+    expect(message).toBeTruthy();
+    expect(fixture.debugElement.query(By.css("mat-hint"))).toBeNull();
+    expect(message!.nativeElement.closest("mat-form-field")).toBeNull();
   });
 
   it("should disable verify action if input is invalid", () => {

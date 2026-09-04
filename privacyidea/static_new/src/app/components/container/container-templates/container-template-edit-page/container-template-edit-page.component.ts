@@ -33,7 +33,6 @@ import { ROUTE_PATHS } from "@app/route_paths";
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { ContainerTemplateEditComponent } from "@components/container/container-templates/container-template-edit/container-template-edit.component";
 import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
-import { NAVIGATION_ACCESSIBLE_DIALOG_CLASS } from "@constants/global.constants";
 import { DialogAction } from "@models/dialog";
 import {
   ContainerTemplateService,
@@ -52,9 +51,6 @@ import { deepCopy } from "@utils/deep-copy.utils";
 @Component({
   selector: "app-container-template-edit-page",
   standalone: true,
-  host: {
-    class: NAVIGATION_ACCESSIBLE_DIALOG_CLASS
-  },
   imports: [
     MatInputModule,
     MatCardModule,
@@ -151,7 +147,7 @@ export class ContainerTemplateEditPageComponent {
   // --- Computed - Dialog Actions ---
   readonly actions = computed<DialogAction<string>[]>(() => [
     {
-      label: $localize`Save`,
+      label: $localize`:@@common.save:Save`,
       value: "save",
       icon: "save",
       type: "confirm",
@@ -178,7 +174,9 @@ export class ContainerTemplateEditPageComponent {
     const editComponent = this.editComponent();
     const tokens = editComponent?.collectTokens();
     if (tokens === null || tokens === undefined) {
-      this.notificationService.warning($localize`There are invalid token configurations.`);
+      this.notificationService.warning(
+        $localize`:@@container.thereInvalidToken:There are invalid token configurations.`
+      );
       editComponent?.scrollToFirstInvalid();
       return false;
     }
@@ -198,7 +196,7 @@ export class ContainerTemplateEditPageComponent {
       .openDialog({
         component: SaveAndExitDialogComponent,
         data: {
-          title: $localize`Discard changes`,
+          title: $localize`:@@common.discardChanges:Discard changes`,
           allowSaveExit: this.canSave(),
           saveExitDisabled: !this.canSave()
         }

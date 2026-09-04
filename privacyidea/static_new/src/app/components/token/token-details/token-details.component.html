@@ -21,7 +21,7 @@
   appScrollToTop
   aria-label="Details"
   class="details-container"
-  i18n-aria-label>
+  i18n-aria-label="@@common.details">
   <app-details-header
     [serial]="tokenSerial()"
     entityLabel="Token"
@@ -31,7 +31,7 @@
     (auditClick)="showTokenAuditLog()">
     <ng-container headerExtra>
       @if ((tokenType() === "passkey" || tokenType() === "hotp") && isAttachedToMachine()) {
-        <h3 i18n>{{ " (Offline)" }}</h3>
+        <h3 i18n="@@token.offline">(Offline)</h3>
       }
     </ng-container>
   </app-details-header>
@@ -68,7 +68,7 @@
           class="action-button-delete-secondary button-width-l"
           mat-stroked-button>
           <mat-icon>undo</mat-icon>
-          <span i18n>Revoke</span>
+          <span i18n="@@token.revoke">Revoke</span>
         </button>
       }
       @if (authService.actionAllowed("delete")) {
@@ -77,7 +77,7 @@
           class="action-button-delete-secondary button-width-l"
           mat-stroked-button>
           <mat-icon>delete</mat-icon>
-          <span i18n>Delete</span>
+          <span i18n="@@common.delete">Delete</span>
         </button>
       }
       @if (authService.actionAllowed("losttoken")) {
@@ -86,7 +86,7 @@
           class="action-button-secondary button-width-l"
           mat-stroked-button>
           <mat-icon>remove_red_eye</mat-icon>
-          <span i18n>Lost This Token?</span>
+          <span i18n="@@token.lostToken">Lost This Token?</span>
         </button>
       }
       @if (authService.tokenRollover().indexOf(tokenType()) >= 0 && rolloverTokenTypes().indexOf(tokenTypeKey()) >= 0) {
@@ -95,7 +95,7 @@
           class="action-button-secondary button-width-l"
           mat-stroked-button>
           <mat-icon>sync</mat-icon>
-          <span i18n>Rollover</span>
+          <span i18n="@@common.rollover">Rollover</span>
         </button>
       }
       @if (authService.actionAllowed("auditlog")) {
@@ -105,7 +105,7 @@
           class="action-button-secondary button-width-l"
           mat-stroked-button>
           <mat-icon>receipt_long</mat-icon>
-          <span i18n>Show in Audit</span>
+          <span i18n="@@token.showAudit">Show in Audit</span>
         </button>
       }
       @if (authService.actionsAllowed(["manage_machine_tokens", "machinelist"])) {
@@ -115,7 +115,7 @@
             class="action-button-secondary button-width-l"
             mat-stroked-button>
             <mat-icon>computer</mat-icon>
-            <span i18n>Attach to Machine</span>
+            <span i18n="@@token.attachMachine">Attach to Machine</span>
           </button>
         } @else if (tokenType() === "passkey") {
           @if (isAttachedToMachine()) {
@@ -124,7 +124,7 @@
               class="action-button-secondary button-width-l"
               mat-stroked-button>
               <mat-icon>computer</mat-icon>
-              <span i18n>Disable Offline</span>
+              <span i18n="@@token.disableOffline">Disable Offline</span>
             </button>
           } @else {
             <button
@@ -132,7 +132,7 @@
               class="action-button-secondary button-width-l"
               mat-stroked-button>
               <mat-icon>computer</mat-icon>
-              <span i18n>Use Offline</span>
+              <span i18n="@@token.useOffline">Use Offline</span>
             </button>
           }
         } @else if (tokenType() === "hotp" && !isAttachedToMachine()) {
@@ -141,7 +141,7 @@
             class="action-button-secondary button-width-l"
             mat-stroked-button>
             <mat-icon>computer</mat-icon>
-            <span i18n>Use Offline</span>
+            <span i18n="@@token.useOffline">Use Offline</span>
           </button>
         }
       }

@@ -311,7 +311,7 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
     const currentTokenType = this.tokenService.selectedTokenType();
     let everythingIsValid = true;
     if (!currentTokenType) {
-      this.notificationService.warning($localize`Please select a token type.`);
+      this.notificationService.warning($localize`:@@token.pleaseSelectToken:Please select a token type.`);
       return false;
     }
 
@@ -327,13 +327,17 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
     }
 
     if (!everythingIsValid) {
-      this.notificationService.warning($localize`Please fill in all required fields or correct invalid entries.`);
+      this.notificationService.warning(
+        $localize`:@@token.pleaseFillAll:Please fill in all required fields or correct invalid entries.`
+      );
       return false;
     }
 
     const strategy: EnrollTokenBase | undefined = this.enrollSwitch()?.currentStrategy();
     if (!strategy) {
-      this.notificationService.warning($localize`Enrollment action is not available for the selected token type.`);
+      this.notificationService.warning(
+        $localize`:@@token.enrollmentAction:Enrollment action is not available for the selected token type.`
+      );
       return false;
     }
 
@@ -375,7 +379,9 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
 
     enrollPromise.catch((error) => {
       const message = error.error?.result?.error?.message || "";
-      this.notificationService.error($localize`Failed to enroll token: ${message || error.message || error}`);
+      this.notificationService.error(
+        $localize`:@@token.failedEnrollToken:Failed to enroll token: ${message || error.message || error}:MESSAGE:`
+      );
     });
     let enrollmentResponse: EnrollmentResponse | null = await enrollPromise;
 
@@ -387,7 +393,8 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
       userRealm: enrollmentArgs.data.realm,
       onlyAddToRealm: enrollmentArgs.data.onlyAddToRealm ?? false,
       rollover: false,
-      showEnrollData: strategy.showEnrollDataInLastStep
+      showEnrollData: strategy.showEnrollDataInLastStep,
+      onEnrollmentResponseChange: (response) => this.updateEnrollmentResponse(response)
     });
 
     // Complete enrollment
@@ -405,6 +412,11 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
     this.handleCompleteEnrollment(enrollmentResponse);
     this.pendingChangesService.clearAllRegistrations();
     return true;
+  }
+
+  updateEnrollmentResponse(response: EnrollmentResponse): void {
+    this.enrollResponse.set(response);
+    this.enrolledDialogData.update((data) => (data ? { ...data, response: response } : data));
   }
 
   handleCompleteEnrollment(enrollmentResponse: EnrollmentResponse | null): void {
@@ -485,7 +497,7 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
 
   protected openLastStepDialog(response: EnrollmentResponse | null): void {
     if (!response) {
-      this.notificationService.warning($localize`No enrollment response available.`);
+      this.notificationService.warning($localize`:@@token.noEnrollmentResponse:No enrollment response available.`);
       return;
     }
 
@@ -509,7 +521,9 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
     }
 
     if (this.isUserRequired() && !this.userService.selectedUser() && !this.enrolledDialogData()?.rollover) {
-      this.notificationService.warning($localize`User is required for this token type, but no user was provided.`);
+      this.notificationService.warning(
+        $localize`:@@token.userRequiredToken:User is required for this token type, but no user was provided.`
+      );
       return;
     }
 

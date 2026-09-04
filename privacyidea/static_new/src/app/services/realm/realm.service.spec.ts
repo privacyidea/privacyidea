@@ -127,6 +127,20 @@ describe("RealmService", () => {
     req.flush({ result: "ok" });
   });
 
+  it("createRealm propagates errors and shows an error notification", () => {
+    const realmName = "failing realm";
+    const errors: unknown[] = [];
+    realmService.createRealm(realmName, "", [{ name: "res1" }]).subscribe({ error: (err) => errors.push(err) });
+
+    const req = httpMock.expectOne(`${environment.proxyUrl}/realm/${encodeURIComponent(realmName)}`);
+    req.flush(
+      { result: { error: { message: "Realm already exists." } } },
+      { status: 400, statusText: "Bad Request" }
+    );
+
+    expect(errors.length).toBe(1);
+  });
+
   it("deleteRealm sends DELETE to encoded realm URL", () => {
     const realmName = "realm with space/ä";
     realmService.deleteRealm(realmName).subscribe();
@@ -174,6 +188,20 @@ describe("RealmService", () => {
     expect(req.request.body).toEqual({});
 
     req.flush({ result: 1 });
+  });
+
+  it("setDefaultRealm propagates errors and shows an error notification", () => {
+    const realmName = "default realm";
+    const errors: unknown[] = [];
+    realmService.setDefaultRealm(realmName).subscribe({ error: (err) => errors.push(err) });
+
+    const req = httpMock.expectOne(`${environment.proxyUrl}/defaultrealm/${encodeURIComponent(realmName)}`);
+    req.flush(
+      { result: { error: { message: "Failed to set default realm." } } },
+      { status: 500, statusText: "Server Error" }
+    );
+
+    expect(errors.length).toBe(1);
   });
 
   describe("realms and realmOptions", () => {
