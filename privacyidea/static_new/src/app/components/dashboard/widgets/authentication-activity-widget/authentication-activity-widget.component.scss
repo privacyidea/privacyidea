@@ -26,6 +26,10 @@ $label-column: 60px;
 $value-column: 76px;
 $leading-columns: $label-column + $row-gap + $value-column;
 
+// The frame's own header buttons, which the ones this widget contributes have to match: see .widget-header-action.
+$header-action-size: 28px;
+$header-action-icon-size: 18px;
+
 // The presets' own height, and the height Material fixes a slider's box at, which together say how far down the
 // group has to sit to be level with the track.
 $toggle-height: 30px;
@@ -47,14 +51,27 @@ $slider-height: 48px;
   margin-top: ($slider-height - $toggle-height) * 0.5;
 }
 
-// The frame renders this in its header, but it is declared here, so view encapsulation keeps the frame's own
-// .widget-action sizing from reaching it. The hint's sizing hooks bring it to the same box as the reload button
-// beside it; they inherit into the component, which a rule for its button could not do.
+// The frame renders these in its header, but they are declared here, so view encapsulation keeps the frame's own
+// .widget-action sizing from reaching them - they would otherwise keep Material's 40px icon button and push the
+// header past its 38px. Both are brought to the same box as the reload button beside them: the info hint through its
+// own sizing hooks, which inherit into the component where a rule for its button could not reach, and the menu
+// button through Material's tokens, which is what its whole box is derived from.
 .widget-header-action {
   flex: none;
   display: flex;
-  --info-hint-size: 28px;
-  --info-hint-icon-size: 18px;
+  --info-hint-size: #{$header-action-size};
+  --info-hint-icon-size: #{$header-action-icon-size};
+  --mat-icon-button-state-layer-size: #{$header-action-size};
+  --mat-icon-button-icon-size: #{$header-action-icon-size};
+
+  // Material derives the button's box from the tokens above, but mat-icon's own box is a fixed 24px, so the glyph has
+  // to be told as well or it keeps spilling out of the smaller button.
+  mat-icon {
+    width: $header-action-icon-size;
+    height: $header-action-icon-size;
+    font-size: $header-action-icon-size;
+    line-height: $header-action-icon-size;
+  }
 }
 
 // Removed from the visual flow but left in the accessibility tree: the bars carry no text of their own, so the
