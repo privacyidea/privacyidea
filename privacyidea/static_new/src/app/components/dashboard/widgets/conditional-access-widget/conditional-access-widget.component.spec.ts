@@ -36,6 +36,7 @@ import {
 import { DashboardDataStore } from "@services/dashboard/dashboard-data-store.service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockAuthenticationLogService } from "@testing/mock-services/mock-authentication-log-service";
+import { toFilterDisplay } from "@utils/date-format.utils";
 import { MockConditionalAccessPolicyService } from "@testing/mock-services/mock-conditional-access-policy-service";
 import { MockConditionalAccessStateService } from "@testing/mock-services/mock-conditional-access-state-service";
 import { MockPiResponse } from "@testing/mock-services/mock-utils";
@@ -118,6 +119,10 @@ describe("ConditionalAccessWidgetComponent", () => {
   }
 
   // Create the widget after the mocks have been seeded: the data is fetched in ngOnInit.
+  function bars(): HTMLElement[] {
+    return Array.from<HTMLElement>(fixture.nativeElement.querySelectorAll(".ca-bar-slot"));
+  }
+
   function create(): void {
     fixture = TestBed.createComponent(ConditionalAccessWidgetComponent);
     component = fixture.componentInstance;
@@ -517,6 +522,49 @@ describe("ConditionalAccessWidgetComponent", () => {
       expect(stateMock.countLockedUsers).not.toHaveBeenCalled();
       expect(stateMock.fetchLockedUsers).not.toHaveBeenCalled();
       expect(stateMock.fetchBlocklist).not.toHaveBeenCalled();
+    });
+
+    it("should open the log on the bucket a bar stands over, on time alone", () => {
+      stateMock.setOutcomeStatistics(history({ action_type: "LOCK_USER", counts: [1, 2, 0, 4] }));
+      create();
+      const logService = TestBed.inject(AuthenticationLogService) as unknown as MockAuthenticationLogService;
+      const starts = stateMock.outcomeStatistics.bins.starts;
+
+      bars()[1].click();
+
+      expect(logService.timestampFrom()).toBe(starts[1]);
+      expect(logService.timestampTo()).toBe(starts[2]);
+      const chips = logService.authenticationLogFilter().filterMap;
+      expect(chips.get("start_time")).toBe(toFilterDisplay(starts[1]));
+      expect(chips.get("end_time")).toBe(toFilterDisplay(starts[2]));
+      // No outcome filter, though the bar's own counted set could be named exactly with one: it would hide the run of
+      // failures that explains the lock, which is what someone clicking a spike in this chart is after. The lock's
+      // entry is in the span either way, marked by the log's conditional-access column.
+      expect(chips.get("ca_action_type")).toBeUndefined();
+      expect(chips.get("ca_dry_run")).toBeUndefined();
+    });
+
+    it("should close the last bucket at the window's end, which is where its bar stops", () => {
+      stateMock.setOutcomeStatistics(history({ action_type: "LOCK_USER", counts: [0, 0, 0, 3] }));
+      create();
+      const logService = TestBed.inject(AuthenticationLogService) as unknown as MockAuthenticationLogService;
+
+      bars()[3].click();
+
+      // The last bucket has no successor to take an end from.
+      expect(logService.timestampTo()).toBe(stateMock.outcomeStatistics.window.end_time);
+    });
+
+    it("should make the whole column the target rather than the bar in it", () => {
+      stateMock.setOutcomeStatistics(history({ action_type: "LOCK_USER", counts: [1, 0, 0, 0] }));
+      create();
+
+      // A bucket holding one restriction against a busy one draws a bar a pixel or two tall; hover and click belong
+      // to the column, which is always the full height.
+      const slots = bars();
+      expect(slots).toHaveLength(4);
+      expect(slots[0].classList).toContain("mat-mdc-tooltip-trigger");
+      expect(slots[0].querySelector(".ca-activity-bar")!.classList).not.toContain("mat-mdc-tooltip-trigger");
     });
 
     it("should keep the whole section up while a preset's window is being fetched", () => {

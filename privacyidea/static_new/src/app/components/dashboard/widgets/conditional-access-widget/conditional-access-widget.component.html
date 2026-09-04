@@ -163,15 +163,27 @@
 
     <div class="ca-range">
       <div class="ca-slider-with-histogram">
-        <!-- Blocks per bucket behind the slider; decorative, hidden from assistive tech. -->
+        <!-- Blocks and locks per bucket, above the slider rather than behind it: a bar has to take a click, and the
+             slider's own input covers everything under it. Hidden from assistive tech - the bars carry no text, and
+             the count beside the section title is what says how many restrictions the selected span holds.
+
+             The whole column carries the hover and the click, not the bar standing in it: one restriction against a
+             busy bucket is a bar a pixel or two tall, which is no target for either. routerLink on a span rather than
+             an anchor: it navigates on click and adds nothing focusable to a subtree hidden from assistive tech. -->
         <div
           class="ca-activity-histogram"
           [attr.aria-hidden]="true">
           @for (bar of activityHistogram(); track $index) {
-            <div
-              class="ca-activity-bar"
-              [class.ca-activity-bar-muted]="!inSelection($index)"
-              [style.height.%]="bar * 100"></div>
+            <span
+              class="ca-bar-slot"
+              [routerLink]="routePaths.AUTHENTICATION_LOG"
+              (click)="showBucket($index)"
+              [matTooltip]="bucketTooltip($index)">
+              <span
+                class="ca-activity-bar"
+                [class.ca-activity-bar-muted]="!inSelection($index)"
+                [style.height.%]="bar * 100"></span>
+            </span>
           }
         </div>
         <!-- No `discrete`: the labels below name the two ends, as they do on the activity chart, and a floating bubble

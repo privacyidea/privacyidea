@@ -552,5 +552,5 @@ $button-low-contrast-variant: linear-gradient(
 // comes from, and Material hardcodes it (`padding: 0 12px`) with no token to set it by - so it is overridden here,
 // a widget's own stylesheet having no way through the component boundary.
 .chart-range-presets .mat-button-toggle-appearance-standard .mat-button-toggle-label-content {
-  padding: 0 6px;
+  padding: 0 4px;
 }

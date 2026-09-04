@@ -34,6 +34,7 @@ import {
   DEFAULT_ACTIVITY_RANGE
 } from "@components/dashboard/widgets/activity-range";
 import { FilterValue } from "@core/models/filter_value/filter_value";
+import { toFilterDisplay } from "@utils/date-format.utils";
 import { DashboardWidget, WidgetSize } from "@models/dashboard";
 import {
   AuthenticationLogService,
@@ -349,6 +350,47 @@ export class ConditionalAccessWidgetComponent extends DashboardWidget implements
   // the number beside it is counting.
   inSelection(bin: number): boolean {
     return bin >= this.rangeStart() && bin < this.rangeEnd();
+  }
+
+  // The span a bar covers, for its tooltip. A bucket that is a whole day is named by that day; otherwise both ends,
+  // since such a bucket runs from a time of day to a time of day.
+  bucketTooltip(bin: number): string {
+    const from = this.binStartsMs()[bin];
+    if (from === undefined) {
+      return "";
+    }
+    return this.selectedRange().wholeDayBuckets
+      ? this.summaryFormat(from)
+      : `${this.summaryFormat(from)} – ${this.summaryFormat(this.bucketEndMs(bin))}`;
+  }
+
+  // Opens the log on the bucket a bar stands over, on time alone.
+  //
+  // Deliberately not filtered to the outcomes the bar counted, though it could be: an outcome row belongs to exactly
+  // one entry, so `ca_action_types` would name precisely the requests that imposed those restrictions. It would also
+  // hide the only rows that explain them. A lock is imposed by the request that trips the threshold, whose own entry
+  // says little; what answers "why was this user locked" is the run of failures before it - which subject, from which
+  // IP, failing how - and those carry no outcome of their own. The lock's entry is still in the span, marked by the
+  // log's conditional-access column, so it can be found and read backwards from.
+  showBucket(bin: number): void {
+    const from = this.binStartsMs()[bin];
+    if (from === undefined) {
+      return;
+    }
+    const fromIso = new Date(from).toISOString();
+    const toIso = new Date(this.bucketEndMs(bin)).toISOString();
+    // The span goes into the filter *chips* as well as the signals: the log derives its time filter from the chip
+    // text and clears a bound whose chip is missing, so signals alone would be undone the moment the page loads.
+    this.authenticationLogService.authenticationLogFilter.set(
+      new FilterValue().addEntry("start_time", toFilterDisplay(fromIso)).addEntry("end_time", toFilterDisplay(toIso))
+    );
+    this.authenticationLogService.timestampFrom.set(fromIso);
+    this.authenticationLogService.timestampTo.set(toIso);
+  }
+
+  // Where a bucket closes: the next one's start, or the window's end for the last, which has no successor.
+  private bucketEndMs(bin: number): number {
+    return this.binStartsMs()[bin + 1] ?? this.windowEndMs();
   }
 
   // How many restrictions were imposed inside the selected range, so the histogram carries a number and not just a

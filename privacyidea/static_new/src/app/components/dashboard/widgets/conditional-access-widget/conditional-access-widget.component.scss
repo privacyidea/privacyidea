@@ -87,13 +87,16 @@ td.ca-highlight-cell {
   text-transform: none;
 }
 
-// The two toggle groups on one line: the window on the left, the restrictions charted on the right.
+// The two toggle groups on one line: the window on the left, the restrictions charted on the right. The wrap is what
+// keeps a narrow widget from scrolling sideways: measured, the pair overflows by 13px at 260px wide without it, and
+// takes a second line with it. One line from about 290px up, which is what six columns give this widget.
 .ca-range-controls {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  padding: 0 8px 4px;
+  gap: 4px 8px;
+  padding: 0 16px 4px;
 }
 
 .chart-range-presets {
@@ -102,29 +105,42 @@ td.ca-highlight-cell {
 
 // The brush and its histogram have the row to themselves now that the presets sit above them, so both span the
 // section: a plain block rather than a flex row, which would size its single child to the content.
+//
+// The 24px is load-bearing, and measured: Material lays the slider's own range input out wider than the track it
+// draws (calc(100% + 10px), offset -21px, so it reaches past both ends of it). This widget's :host is itself
+// `overflow: auto`, unlike the activity chart's, so it has no padding of its own to absorb that - it answers the
+// overhang with a horizontal scrollbar over a few pixels of nothing. At 24px the widest thing in the widget is the
+// widget; at 16px the input sticks out 5px.
 .ca-range {
-  padding-inline: 8px;
+  padding-inline: 24px;
 }
 
-.ca-slider-with-histogram {
-  position: relative;
-  // Room for a histogram with enough height to read a shape from, plus the slider and its date axis on top.
-  padding-top: 16px;
-}
-
-// Activity bars sit behind the slider track, inset horizontally to roughly align with its usable span.
+// The bars, the slider and the date axis, stacked. The bars used to sit behind the track, which cost nothing while
+// they were decorative; a bar that takes a click cannot, because the slider's own input covers the whole of its box.
 .ca-activity-histogram {
-  position: absolute;
-  inset: 4px 12px 36px;
   display: flex;
   align-items: flex-end;
   gap: 1px;
-  pointer-events: none;
-  z-index: 0;
+  height: 28px;
+}
+
+// One bucket's share of the width, the full height of it, so hovering or clicking anywhere in the column hits the
+// bucket - the bar itself can be a pixel tall.
+.ca-bar-slot {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  align-items: flex-end;
+  height: 100%;
+  cursor: pointer;
+
+  &:hover {
+    background-color: var(--mat-sys-surface-container-high);
+  }
 }
 
 .ca-activity-bar {
-  flex: 1 1 0;
+  width: 100%;
   min-height: 1px;
   background-color: var(--mat-sys-primary);
   opacity: 0.4;
@@ -138,30 +154,35 @@ td.ca-highlight-cell {
 }
 
 .ca-range-slider {
-  position: relative;
-  z-index: 1;
   width: 100%;
-  // No side margin, so the slider spans the full block width.
+  // No side margin, so the track spans the section exactly rather than Material's default inset - which is also what
+  // lines it up with the bars above it.
   margin: 0;
-  // Value hint as a horizontal rounded label sized to its content, so the date text fits. The tokens inherit into the
-  // slider's internal value indicator across the component boundary.
-  --mat-slider-value-indicator-width: auto;
-  --mat-slider-value-indicator-height: 32px;
-  --mat-slider-value-indicator-padding: 0 10px;
-  --mat-slider-value-indicator-border-radius: 6px;
-  --mat-slider-value-indicator-container-transform: translateX(-50%);
-  --mat-slider-value-indicator-text-transform: none;
+  // Material keeps a slider at least 112px wide, which a narrow widget is not: the track would then reach past the
+  // section instead of ending where the bars do.
+  min-width: 0;
 }
 
+// The two timestamps at the ends of the track. A narrow widget can be narrower than the pair of them, so they give
+// way rather than widening the row: whatever the section cannot hold is clipped here instead of reaching the widget
+// body, which would scroll sideways for it.
 .ca-range-summary {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
+  overflow: hidden;
   margin-top: -8px;
   font-size: 0.75rem;
   font-variant-numeric: tabular-nums;
   color: var(--mat-sys-on-surface-variant);
   white-space: nowrap;
+
+  span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 }
 
 .ca-more {
