@@ -17,12 +17,20 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <app-details-card
-  class="user-container" title="User" i18n-title>
+  class="user-container"
+  title="User"
+  i18n-title="@@common.user">
   <table
-    [dataSource]="userData()" aria-label="User Detail Data Table" class="user-details-table" i18n-aria-label mat-table>
+    [dataSource]="userData()"
+    aria-label="User Detail Data Table"
+    class="user-details-table"
+    i18n-aria-label="@@common.userDetailData"
+    mat-table>
     <ng-container matColumnDef="key">
       <td
-        *matCellDef="let element" class="details-key-row" mat-cell>
+        *matCellDef="let element"
+        class="details-key-row"
+        mat-cell>
         {{ element.keyMap.label }}
       </td>
     </ng-container>
@@ -38,8 +46,9 @@
               @case ("username") {
                 @if (isEditingUser()) {
                   <mat-form-field
-                    class="input-width-m height-52" subscriptSizing="dynamic">
-                    <mat-label i18n>Enter User</mat-label>
+                    class="input-width-m height-52"
+                    subscriptSizing="dynamic">
+                    <mat-label i18n="@@common.enterUser">Enter User</mat-label>
                     <app-clearable-input
                       (clearButtonClick)="userService.selectionFilter.set('')"
                       [showClearButton]="userService.selectionFilter() !== ''">
@@ -64,7 +73,7 @@
                       (click)="contentService.userSelected(element.value, userRealm())"
                       (keydown.enter)="contentService.userSelected(element.value, userRealm())"
                       (keydown.space)="$event.preventDefault(); contentService.userSelected(element.value, userRealm())"
-                      i18n-aria-label="{{ element.keyMap.label }} Link"
+                      [attr.aria-label]="linkLabel(element.keyMap.label)"
                       role="button"
                       tabindex="0">
                       {{ element.value }}
@@ -75,8 +84,9 @@
               @case ("user_realm") {
                 @if (isEditingUser()) {
                   <mat-form-field
-                    class="input-width-m height-52" subscriptSizing="dynamic">
-                    <mat-label i18n>Select Realm of User</mat-label>
+                    class="input-width-m height-52"
+                    subscriptSizing="dynamic">
+                    <mat-label i18n="@@common.selectRealmUser">Select Realm of User</mat-label>
                     <mat-select
                       [value]="userService.selectedUserRealm()"
                       (selectionChange)="userService.selectedUserRealm.set($event.value)">
@@ -87,7 +97,7 @@
                   </mat-form-field>
                 } @else {
                   <app-copyable [copyText]="element.value">
-                    <span i18n-aria-label="{{ element.keyMap.label }} Link">
+                    <span [attr.aria-label]="linkLabel(element.keyMap.label)">
                       {{ element.value }}
                     </span>
                   </app-copyable>
@@ -105,7 +115,11 @@
                   @if (element.value) {
                     @if (authService.actionAllowed("unassign")) {
                       <button
-                        (click)="unassignUser()" class="yellow" i18n-aria-label="Unassign User" mat-icon-button>
+                        (click)="unassignUser()"
+                        aria-label="Unassign User"
+                        class="yellow"
+                        i18n-aria-label="@@container.unassignUser"
+                        mat-icon-button>
                         <mat-icon>person_remove</mat-icon>
                       </button>
                     }
@@ -121,7 +135,10 @@
                         [toggleEdit]="toggleUserEdit.bind(this)"></app-edit-buttons>
                     } @else {
                       <button
-                        (click)="toggleUserEdit()" i18n-aria-label="Assign User" mat-icon-button>
+                        (click)="toggleUserEdit()"
+                        aria-label="Assign User"
+                        i18n-aria-label="@@container.assignUser"
+                        mat-icon-button>
                         <mat-icon>person_add</mat-icon>
                       </button>
                     }
@@ -134,6 +151,7 @@
       </td>
     </ng-container>
     <tr
-      *matRowDef="let row; columns: ['key', 'value']" mat-row></tr>
+      *matRowDef="let row; columns: ['key', 'value']"
+      mat-row></tr>
   </table>
 </app-details-card>

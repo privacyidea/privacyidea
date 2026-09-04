@@ -41,6 +41,7 @@ class MockNotificationService {
   success = jest.fn();
   error = jest.fn();
   warning = jest.fn();
+  info = jest.fn();
   handleResourceError = jest.fn();
 }
 
@@ -194,6 +195,53 @@ describe("TokenService", () => {
 
     expect(deleteSpy).toHaveBeenCalledWith(`${tokenService.tokenBaseUrl}${encodeURIComponent("DEL/1")}`, {
       headers: authService.getHeaders()
+    });
+  });
+
+  describe("cancelEnrollment()", () => {
+    it("deletes the incomplete token, stops the polling and reports the cancellation", (done) => {
+      const backend = MockPiResponse.fromValue(1);
+      deleteSpy.mockReturnValue(of(backend));
+      const stopPollingSpy = jest.spyOn(tokenService, "stopPolling");
+
+      tokenService.cancelEnrollment("PIPU0001").subscribe((response) => {
+        expect(deleteSpy).toHaveBeenCalledWith(`${tokenService.tokenBaseUrl}PIPU0001`, {
+          headers: authService.getHeaders()
+        });
+        expect(stopPollingSpy).toHaveBeenCalled();
+        expect(notificationService.info).toHaveBeenCalledWith("The enrollment of token PIPU0001 was cancelled.");
+        expect(response).toBe(backend);
+        done();
+      });
+    });
+
+    it("keeps the polling running and propagates the error when the deletion fails", (done) => {
+      const boom = new HttpErrorResponse({
+        error: { result: { error: { message: "denied" } } },
+        status: 403
+      });
+      deleteSpy.mockReturnValue(throwError(() => boom));
+      const stopPollingSpy = jest.spyOn(tokenService, "stopPolling");
+
+      tokenService.cancelEnrollment("PIPU0001").subscribe({
+        error: (error) => {
+          expect(error).toBe(boom);
+          expect(stopPollingSpy).not.toHaveBeenCalled();
+          expect(notificationService.error).toHaveBeenCalledWith("Failed to cancel the enrollment. denied");
+          expect(notificationService.info).not.toHaveBeenCalled();
+          done();
+        }
+      });
+    });
+
+    it("encodes the serial in the request url", () => {
+      deleteSpy.mockReturnValue(of(MockPiResponse.fromValue(1)));
+
+      tokenService.cancelEnrollment("PI/PU 1").subscribe();
+
+      expect(deleteSpy).toHaveBeenCalledWith(`${tokenService.tokenBaseUrl}${encodeURIComponent("PI/PU 1")}`, {
+        headers: authService.getHeaders()
+      });
     });
   });
 
@@ -1046,6 +1094,85 @@ describe("TokenService", () => {
         error: (e) => {
           expect(e).toBe(boom);
           expect(notificationService.error).toHaveBeenCalledWith("Failed to reset fail count. ");
+          done();
+        }
+      });
+    });
+  });
+
+  describe("bulkUnassignTokens()", () => {
+    it("notifies on error", (done) => {
+      const boom = new HttpErrorResponse({
+        error: { result: { error: { message: "bu" } } },
+        status: 500
+      });
+      postSpy.mockReturnValue(throwError(() => boom));
+
+      tokenService.bulkUnassignTokens([{ serial: "SER" } as unknown as import("./token.service").TokenDetails]).subscribe({
+        error: (e) => {
+          expect(e).toBe(boom);
+          expect(notificationService.error).toHaveBeenCalledWith("Failed to unassign tokens. bu");
+          done();
+        }
+      });
+    });
+  });
+
+  describe("enrollToken()", () => {
+    it("notifies on error", (done) => {
+      const boom = new HttpErrorResponse({
+        error: { result: { error: { message: "et" } } },
+        status: 500
+      });
+      postSpy.mockReturnValue(throwError(() => boom));
+
+      tokenService
+        .enrollToken({
+          data: {} as unknown as import("./token.service").TokenEnrollmentData,
+          mapper: { toApiPayload: () => ({}) } as unknown as import("./token.service").TokenApiPayloadMapper<
+            import("./token.service").TokenEnrollmentData
+          >
+        })
+        .subscribe({
+          error: (e) => {
+            expect(e).toBe(boom);
+            expect(notificationService.error).toHaveBeenCalledWith("Failed to enroll token. et");
+            done();
+          }
+        });
+    });
+  });
+
+  describe("verifyToken()", () => {
+    it("notifies on error", (done) => {
+      const boom = new HttpErrorResponse({
+        error: { result: { error: { message: "vt" } } },
+        status: 500
+      });
+      postSpy.mockReturnValue(throwError(() => boom));
+
+      tokenService.verifyToken({} as unknown as import("./token.service").TokenEnrollmentData).subscribe({
+        error: (e) => {
+          expect(e).toBe(boom);
+          expect(notificationService.error).toHaveBeenCalledWith("Failed to verify token. vt");
+          done();
+        }
+      });
+    });
+  });
+
+  describe("importTokens()", () => {
+    it("notifies on error", (done) => {
+      const boom = new HttpErrorResponse({
+        error: { result: { error: { message: "it" } } },
+        status: 500
+      });
+      postSpy.mockReturnValue(throwError(() => boom));
+
+      tokenService.importTokens("tokens.pskc", new FormData()).subscribe({
+        error: (e) => {
+          expect(e).toBe(boom);
+          expect(notificationService.error).toHaveBeenCalledWith("Failed to import tokens. it");
           done();
         }
       });

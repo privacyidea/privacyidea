@@ -19,20 +19,18 @@
 <div
   aria-label="Token Applications SSH"
   class="token-applications-ssh"
-  i18n-aria-label>
+  i18n-aria-label="@@token.tokenApplicationsSsh">
   <div class="margin-left-16 margin-bottom-16">
-    <p i18n>
-      SSH Tokens can be attached to a service ID with a user. The user is the user on the SSH server and may differ from
-      the token owner.
-      <br />
-      To attach the token to a service ID go to the token details.
-    </p>
+    <p i18n="@@token.sshTokensAttached"
+      >SSH Tokens can be attached to a service ID with a user. The user is the user on the SSH server and may differ
+      from the token owner. <br />
+      To attach the token to a service ID go to the token details.</p
+    >
     <p
       class="margin-bottom-32"
-      i18n>
-      To define service IDs go to
-      <a ui-sref="config.serviceid">Service ID config.</a>
-    </p>
+      i18n="@@token.defineService"
+      >To define service IDs go to <a ui-sref="config.serviceid">Service ID config.</a></p
+    >
   </div>
   <div
     appScrollToTop
@@ -42,7 +40,7 @@
         <mat-form-field
           subscriptSizing="dynamic"
           class="application-table-filter">
-          <mat-label i18n>Filter SSH Applications...</mat-label>
+          <mat-label i18n="@@token.filterSshApplications">Filter SSH Applications...</mat-label>
           <app-clearable-input
             (clearButtonClick)="machineService.clearFilter()"
             [showClearButton]="machineService.filterDraft().isNotEmpty">
@@ -51,8 +49,8 @@
               (input)="machineService.handleFilterInput($event)"
               [value]="machineService.filterDraft().filterString"
               aria-label="Filter Input"
-              i18n-aria-label
-              i18n-placeholder
+              i18n-aria-label="@@common.filterInput"
+              i18n-placeholder="@@token.exampleQueryService"
               id="ssh-filter-input"
               matInput
               placeholder="Example query: 'service_id: myService'" />
@@ -74,7 +72,7 @@
         [dataSource]="dataSource()"
         aria-label="Token Applications Table"
         class="token-table"
-        i18n-aria-label
+        i18n-aria-label="@@token.tokenApplicationsTable"
         mat-table>
         @for (column of columnsKeyMap; track column) {
           <ng-container [matColumnDef]="column.key">
@@ -88,7 +86,7 @@
                     <button
                       (click)="onKeywordClick(column.key)"
                       aria-label="Filter by {{ column.label }}"
-                      i18n-aria-label
+                      i18n-aria-label="@@common.filterBy"
                       class="filter-button"
                       mat-icon-button
                       type="button">
@@ -100,7 +98,7 @@
                   <button
                     (click)="tableUtilsService.onSortButtonClick(column.key, sort)"
                     aria-label="Sort by {{ column.label }}"
-                    i18n-aria-label
+                    i18n-aria-label="@@common.sortBy"
                     class="sort-button"
                     mat-icon-button
                     type="button">
@@ -120,7 +118,7 @@
                         (click)="contentService.tokenSelected(element.serial)"
                         (keydown.enter)="contentService.tokenSelected(element.serial)"
                         (keydown.space)="$event.preventDefault(); contentService.tokenSelected(element.serial)"
-                        attr.aria-label="{{ column.label }} Link"
+                        [attr.aria-label]="linkLabel(column.label)"
                         role="button"
                         tabindex="0">
                         {{ element[column.key] }}
@@ -134,7 +132,7 @@
                       (keydown.space)="
                         $event.preventDefault(); contentService.userSelected(element[column.key], element['user_realm'])
                       "
-                      attr.aria-label="{{ column.label }} Link"
+                      [attr.aria-label]="linkLabel(column.label)"
                       role="button"
                       tabindex="0">
                       {{ element[column.key] }}
@@ -143,7 +141,7 @@
                   @default {
                     @if (tableUtilsService.isLink(column.key)) {
                       <a
-                        attr.aria-label="{{ column.label }} Link"
+                        [attr.aria-label]="linkLabel(column.label)"
                         href="#">
                         {{ element[column.key] }}
                       </a>
@@ -177,8 +175,8 @@
         [table]="tableState"
         heading="No SSH applications yet"
         hint="Attach an SSH token to a service ID in the token details to see it here."
-        i18n-heading
-        i18n-hint
+        i18n-heading="@@token.noSSHApplications"
+        i18n-hint="@@token.attachSSHToken"
         icon="terminal" />
     }
   </div>

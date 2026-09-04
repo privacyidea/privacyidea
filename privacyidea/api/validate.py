@@ -172,6 +172,23 @@ def before_request():
     ua_name, ua_version, _ua_comment = get_plugin_info_from_useragent(request.user_agent.string)
     g.user_agent = ua_name
 
+    # Log the request before the user is resolved. Resolving raises if the requested realm
+    # or resolver does not exist, and such a request has to appear in the audit log as
+    # well. The user is logged the way it was requested and is replaced by the resolved
+    # user further down.
+    g.audit_object.log({"success": False,
+                        "action_detail": "",
+                        "client": g.client_ip,
+                        "user_agent": ua_name,
+                        "user_agent_version": ua_version,
+                        "privacyidea_server": privacyidea_server,
+                        "action": f"{request.method!s} {request.url_rule!s}",
+                        "thread_id": f"{threading.current_thread().ident!s}",
+                        "info": "",
+                        "user": request.all_data.get("user") or "",
+                        "realm": request.all_data.get("realm") or "",
+                        "resolver": request.all_data.get("resolver") or ""})
+
     # Get user
     username = request.all_data.get("user", "")
     username, realm = split_user(username)
@@ -184,16 +201,7 @@ def before_request():
     request.User = User(username, realm, resolver)
     request.all_data["realm"] = realm
 
-    g.audit_object.log({"success": False,
-                        "action_detail": "",
-                        "client": g.client_ip,
-                        "user_agent": ua_name,
-                        "user_agent_version": ua_version,
-                        "privacyidea_server": privacyidea_server,
-                        "action": f"{request.method!s} {request.url_rule!s}",
-                        "thread_id": f"{threading.current_thread().ident!s}",
-                        "info": ""})
-    # Add preliminary user to audit in case we fail with an error
+    # Replace the requested user with the user it was resolved to
     g.audit_object.log({
         "user": request.User.login,
         "resolver": request.User.resolver,
@@ -551,11 +559,6 @@ def _handle_fido2_auth(context: dict, credential_id: str):
             context["details"]["message"] = "No token found for the given credential ID or transaction ID!"
             return  # Result remains False
 
-    # Policy Checks
-    if (PolicyAction.DISABLED_TOKEN_TYPES in request.all_data and
-            token.get_type() in request.all_data[PolicyAction.DISABLED_TOKEN_TYPES]):
-        raise PolicyError(_("The authentication method is not available."))
-
     if not token.user:
         context["details"]["message"] = "No user found for the token with the given credential ID!"
         return  # Result remains False
@@ -565,6 +568,17 @@ def _handle_fido2_auth(context: dict, credential_id: str):
     request.User = user
     context["user"] = user
     context["options"]["user"] = user
+
+    # Policy Checks
+    # disabled_token_types already ran once before the token (and therefore the user) could be
+    # resolved from the credential_id, so a user/realm/resolver-scoped SCOPE.AUTH restriction was
+    # evaluated without a user and only matched unscoped policies. Re-run it now that request.User
+    # is set, same reasoning as fido2_auth/fido2_enroll below.
+    disabled_token_types(request, None)
+    if (PolicyAction.DISABLED_TOKEN_TYPES in request.all_data and
+            token.get_type() in request.all_data[PolicyAction.DISABLED_TOKEN_TYPES]):
+        raise PolicyError(_("The authentication method is not available."))
+
     # Handle Enrollment vs Authentication
     attestation_object = get_optional_one_of(request.all_data, ["attestationObject", "attestationobject"])
 
@@ -592,6 +606,13 @@ def _handle_fido2_auth(context: dict, credential_id: str):
             context["result"] = False
     else:
         # Actual Authentication
+        # The fido2_auth prepolicy already ran before the token (and therefore the user) could be
+        # resolved from the credential_id, so any user/realm/resolver-scoped SCOPE.AUTH policy for
+        # AllowedAuthenticatorDeviceTypes or EnforceUserHandle was evaluated without a user and only
+        # matched unscoped policies. Re-run it now that request.User is set, mirroring fido2_enroll
+        # above for the enrollment branch.
+        fido2_auth(request, None)
+
         if not check_last_auth_policy(g, token):
             log.debug(f"Last authentication policy check failed for token {token.get_serial()}.")
             context["details"]["message"] = _(
@@ -691,6 +712,43 @@ def _handle_standard_auth(context: dict):
         context["serial_list"].extend([c["serial"] for c in details["multi_challenge"]])
     elif "serial" in details:
         context["serial_list"].append(details["serial"])
+    elif transaction_id:
+        # A response that does not match the challenges of more than one token names no
+        # token at all, since there is no single token the response could be attributed
+        # to. Take the tokens that were challenged from the transaction instead, so that
+        # the failed attempt is logged against the tokens it was made against.
+        context["serial_list"].extend(_challenged_token_serials(transaction_id, context["user"]))
+
+
+def _challenged_token_serials(transaction_id: str, user: User) -> list[str]:
+    """
+    Return the serials of the tokens of the given user that were challenged in the given
+    transaction.
+
+    Only tokens of that user are returned: a request can name the transaction id of
+    somebody else, and the audit entry of this request must not name their tokens.
+    Challenges of a container carry the container serial instead of a token serial and are
+    left out, because the audit log keeps the two in separate columns.
+
+    :param transaction_id: the transaction id of the challenges
+    :param user: the user the request authenticates
+    :return: a sorted list of unique token serials
+    """
+    if not user or not user.login:
+        return []
+    try:
+        challenged = {challenge.serial for challenge in get_challenges(transaction_id=transaction_id)
+                      if challenge.get_data().get("type", "token") != "container"}
+        if not challenged:
+            return []
+        owned = {token.get_serial() for token in get_tokens(user=user)}
+    except Exception as exx:  # noqa: BLE001 - naming the tokens must not fail the request
+        # The authentication result is already decided at this point, only the audit entry
+        # is still being filled in. A challenge or token store that can not be read must
+        # therefore cost the entry its serials, never turn the response into an error.
+        log.debug(f"Could not read the challenged tokens of {user!r} for the audit log: {exx!r}")
+        return []
+    return sorted(challenged & owned)
 
 
 def _finalize_auth_response(context):
@@ -749,13 +807,19 @@ def _finalize_auth_response(context):
     ret = send_result(context["result"], rid=2, details=details, **context["response_params"])
     apply_cookie_action(ret, cookie_action)
 
-    g.audit_object.log({
+    audit_entry = {
         "info": log_used_user(user, details.get("message")),
         "success": success,
-        "authentication": ret.json.get("result", {}).get("authentication", ""),
-        "serial": serials_str,
-        "token_type": details.get("type")
-    })
+        "authentication": ret.json.get("result", {}).get("authentication", "")
+    }
+    # Keep the token a handler logged on its own. A request that is rejected before any
+    # token is used (e.g. a disabled token, which is not part of the serial list) names
+    # its token there, and the empty serial list must not overwrite it.
+    if serials_str:
+        audit_entry["serial"] = serials_str
+    if details.get("type"):
+        audit_entry["token_type"] = details.get("type")
+    g.audit_object.log(audit_entry)
 
     return ret
 

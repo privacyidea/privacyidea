@@ -88,7 +88,6 @@ class ConfigKey:
     AUDIT_KEY_PUBLIC = "PI_AUDIT_KEY_PUBLIC"
     AUDIT_MODULE = "PI_AUDIT_MODULE"
     AUDIT_SERVERNAME = "PI_AUDIT_SERVERNAME"
-    AUDIT_SQL_TRUNCATE = "PI_AUDIT_SQL_TRUNCATE"
     AUDIT_NO_SIGN = "PI_AUDIT_NO_SIGN"
     AUDIT_NO_PRIVATE_KEY_CHECK = "PI_AUDIT_NO_PRIVATE_KEY_CHECK"
     AUDIT_SQL_COLUMN_LENGTH = "PI_AUDIT_SQL_COLUMN_LENGTH"
@@ -111,6 +110,8 @@ class ConfigKey:
     TEMPLATE_FOLDER = "PI_TEMPLATE_FOLDER"
     NO_RESPONSE_SIGN = "PI_NO_RESPONSE_SIGN"
     RESPONSE_NO_PRIVATE_KEY_CHECK = "PI_RESPONSE_NO_PRIVATE_KEY_CHECK"
+
+    ALLOWED_SSH_KEY_TYPES = "PI_ALLOWED_SSH_KEY_TYPES"
 
 
 class DefaultConfigValues:
@@ -195,7 +196,6 @@ class TestingConfig(Config):
     PI_ENCFILE_ENC = "tests/testdata/enckey.enc"
     PI_LOGLEVEL = logging.INFO
     PI_GNUPG_HOME = "tests/testdata/gpg"
-    PI_AUDIT_SQL_TRUNCATE = True
     # Disable the /healthz/resolversz probe cache so tests see fresh results
     PI_HEALTHZ_RESOLVER_CACHE_SECONDS = 0
     CACHE_TYPE = "None"
@@ -327,7 +327,6 @@ class DockerConfig:
         PI_REDIS_URL = redis_url
 
     PI_AUDIT_MODULE = "privacyidea.lib.auditmodules.sqlaudit"
-    PI_AUDIT_SQL_TRUNCATE = True
 
 
 config = {

@@ -89,14 +89,14 @@ export interface SectionOption {
 }
 
 export const SECTION_OPTIONS: SectionOption[] = [
-  { key: "HTTP Environment", label: $localize`HTTP Environment` },
-  { key: "HTTP Request header", label: $localize`HTTP Request header` },
-  { key: "Request Data", label: $localize`Request Data` },
-  { key: "container", label: $localize`Container` },
-  { key: "container_info", label: $localize`Container Info` },
-  { key: "token", label: $localize`Token` },
-  { key: "tokeninfo", label: $localize`Token Info` },
-  { key: "userinfo", label: $localize`User Info` }
+  { key: "HTTP Environment", label: $localize`:@@policy.httpEnvironment:HTTP Environment` },
+  { key: "HTTP Request header", label: $localize`:@@policy.httpRequestHeader:HTTP Request header` },
+  { key: "Request Data", label: $localize`:@@policy.requestData:Request Data` },
+  { key: "container", label: $localize`:@@common.container:Container` },
+  { key: "container_info", label: $localize`:@@policy.containerInfo:Container Info` },
+  { key: "token", label: $localize`:@@common.token:Token` },
+  { key: "tokeninfo", label: $localize`:@@policy.tokenInfo:Token Info` },
+  { key: "userinfo", label: $localize`:@@policy.userInfo:User Info` }
 ];
 // 1. Comparator Options
 export type ComparatorOptionKey =
@@ -123,22 +123,22 @@ export interface ComparatorOption {
 }
 
 export const COMPARATOR_OPTIONS: ComparatorOption[] = [
-  { key: "contains", label: $localize`Contains` },
-  { key: "!contains", label: $localize`Does not contain` },
-  { key: "equals", label: $localize`Equals` },
-  { key: "!equals", label: $localize`Does not equal` },
-  { key: "matches", label: $localize`Matches (Regex)` },
-  { key: "!matches", label: $localize`Does not match (Regex)` },
-  { key: "in", label: $localize`In` },
-  { key: "!in", label: $localize`Not in` },
-  { key: "string_contains", label: $localize`String contains` },
-  { key: "!string_contains", label: $localize`String does not contain` },
-  { key: "date_within_last", label: $localize`Within last...` },
-  { key: "!date_within_last", label: $localize`Not within last...` },
-  { key: "date_after", label: $localize`Date after` },
-  { key: "date_before", label: $localize`Date before` },
-  { key: "<", label: $localize`Less than` },
-  { key: ">", label: $localize`Greater than` }
+  { key: "contains", label: $localize`:@@policy.contains:Contains` },
+  { key: "!contains", label: $localize`:@@policy.doesNotContain:Does not contain` },
+  { key: "equals", label: $localize`:@@policy.equals:Equals` },
+  { key: "!equals", label: $localize`:@@policy.doesNotEqual:Does not equal` },
+  { key: "matches", label: $localize`:@@policy.matchesRegex:Matches (Regex)` },
+  { key: "!matches", label: $localize`:@@policy.doesNotMatchRegex:Does not match (Regex)` },
+  { key: "in", label: $localize`:@@policy.in:In` },
+  { key: "!in", label: $localize`:@@policy.notIn:Not in` },
+  { key: "string_contains", label: $localize`:@@policy.stringContains:String contains` },
+  { key: "!string_contains", label: $localize`:@@policy.stringDoesNot:String does not contain` },
+  { key: "date_within_last", label: $localize`:@@policy.withinLast:Within last...` },
+  { key: "!date_within_last", label: $localize`:@@policy.notWithinLast:Not within last...` },
+  { key: "date_after", label: $localize`:@@policy.dateAfter:Date after` },
+  { key: "date_before", label: $localize`:@@policy.dateBefore:Date before` },
+  { key: "<", label: $localize`:@@policy.lessThan:Less than` },
+  { key: ">", label: $localize`:@@policy.greaterThan:Greater than` }
 ];
 
 // 2. Handle Missing Data Options
@@ -150,38 +150,17 @@ export interface HandleMissingDataOption {
 }
 
 export const HANDLE_MISSING_DATA_OPTIONS: HandleMissingDataOption[] = [
-  { key: "raise_error", label: $localize`Raise error` },
-  { key: "condition_is_false", label: $localize`Condition is false` },
-  { key: "condition_is_true", label: $localize`Condition is true` }
+  { key: "raise_error", label: $localize`:@@policy.raiseError:Raise error` },
+  { key: "condition_is_false", label: $localize`:@@policy.conditionFalse:Condition is false` },
+  { key: "condition_is_true", label: $localize`:@@policy.conditionTrue:Condition is true` }
 ];
 
-// 3. User Agent Options - key is the parsed application identifier (typically the prefix before "/") from the User-Agent header
+// 3. User Agent Options - the picker entries now come from the shared integration
+// catalog (see services/integrations/integrations.service.ts): Integration.policy_value
+// is the key, Integration.label is the label.
 export interface UserAgentOption {
   key: string;
   label: string;
-}
-
-export const USER_AGENT_OPTIONS: UserAgentOption[] = [
-  { key: "privacyidea-cp", label: "Credential Provider" },
-  { key: "privacyIDEA-Keycloak", label: "Keycloak" },
-  { key: "entraid-via-keycloak", label: "EntraID via Keycloak" },
-  { key: "PrivacyIDEA-ADFS", label: "AD FS" },
-  { key: "simpleSAMLphp", label: "SimpleSAMLphp" },
-  { key: "PAM", label: "PAM OTP & Push" },
-  { key: "pam-passkey", label: "PAM Passkey" },
-  { key: "privacyIDEA-Shibboleth", label: "Shibboleth" },
-  { key: "privacyidea-nextcloud", label: "Nextcloud" },
-  { key: "FreeRADIUS", label: "FreeRADIUS" },
-  { key: "privacyIDEA-LDAP-Proxy", label: "LDAP Proxy" },
-  { key: "privacyIDEA-App", label: "privacyIDEA Authenticator" },
-  { key: "privacyIDEA-WebUI", label: "privacyIDEA WebUI" }
-];
-
-export function getUserAgentLabel(identifier: string): string {
-  // The server matches user agents case-insensitively, so a hand-typed identifier
-  // still gets the label of the preset it means
-  const normalized = identifier.toLowerCase();
-  return USER_AGENT_OPTIONS.find((o) => o.key.toLowerCase() === normalized)?.label ?? identifier;
 }
 
 export interface PolicyServiceInterface {
@@ -589,18 +568,20 @@ export class PolicyService implements PolicyServiceInterface {
       .then((response) => {
         this.allPoliciesResource.reload();
         if (response && response.result?.status) {
-          this.notificationService.success($localize`Policy created successfully.`);
+          this.notificationService.success($localize`:@@policy.policyCreated:Policy created successfully.`);
           return true;
         } else {
           const error = response.result?.error?.message || "";
-          this.notificationService.error($localize`Creating policy failed: ${error}`);
+          this.notificationService.error($localize`:@@policy.creatingPolicy:Creating policy failed: ${error}:DETAIL:`);
           return false;
         }
       })
       .catch((error) => {
         console.error("Error creating policy: ", error);
         const errorMessage = error.error?.result?.error?.message || "";
-        this.notificationService.error($localize`Creating policy failed: ${errorMessage}`);
+        this.notificationService.error(
+          $localize`:@@policy.creatingPolicy:Creating policy failed: ${errorMessage}:DETAIL:`
+        );
         this.allPoliciesResource.reload();
         return false;
       });
@@ -702,14 +683,16 @@ export class PolicyService implements PolicyServiceInterface {
       }
 
       this.allPoliciesResource.reload();
-      this.notificationService.success($localize`Policy updated successfully`);
+      this.notificationService.success($localize`:@@policy.policyUpdated:Policy updated successfully`);
       return true;
     } catch (error) {
       this.allPolicies.set(lastStableState);
       const httpError = error as HttpErrorResponse;
       let errorMessage = httpError?.error?.result?.error?.message || "";
       errorMessage = errorMessage ? `: ${errorMessage}` : "";
-      this.notificationService.error($localize`Saving policy failed` + errorMessage);
+      this.notificationService.error(
+        $localize`:@@policy.savingPolicyFailed:Saving policy failed${errorMessage}:DETAIL:`
+      );
       return false;
     }
   }

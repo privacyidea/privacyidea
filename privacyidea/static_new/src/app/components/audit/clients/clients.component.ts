@@ -54,10 +54,10 @@ import { StringUtils } from "@utils/string.utils";
 import { filter } from "rxjs";
 
 const columnKeysMap: { key: keyof ClientData; label: string }[] = [
-  { key: "application", label: $localize`Application` },
-  { key: "hostname", label: $localize`Hostname` },
-  { key: "ip", label: $localize`IP Address` },
-  { key: "lastseen", label: $localize`Last Authentication Attempt` }
+  { key: "application", label: $localize`:@@common.application:Application` },
+  { key: "hostname", label: $localize`:@@common.hostname:Hostname` },
+  { key: "ip", label: $localize`:@@common.ipAddress:IP Address` },
+  { key: "lastseen", label: $localize`:@@audit.lastAuthentication:Last Authentication Attempt` }
 ];
 
 export interface ClientTableRow {

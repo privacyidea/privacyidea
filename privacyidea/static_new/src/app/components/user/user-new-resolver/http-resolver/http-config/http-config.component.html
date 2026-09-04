@@ -23,9 +23,10 @@
 <div class="flex-column">
   <div class="flex-row gap-16 margin-bottom-16">
     <mat-form-field class="input-width-xl">
-      <mat-label i18n>Endpoint</mat-label>
+      <mat-label i18n="@@resolver.endpoint">Endpoint</mat-label>
       <app-clearable-input
-        (clearButtonClick)="model.update(m => ({ ...m, endpoint: '' }))" [showClearButton]="!!model().endpoint">
+        (clearButtonClick)="model.update(m => ({ ...m, endpoint: '' }))"
+        [showClearButton]="!!model().endpoint">
         <input
           (input)="model.update(m => ({ ...m, endpoint: $any($event.target).value }))"
           [value]="model().endpoint"
@@ -38,9 +39,10 @@
     </mat-form-field>
 
     <mat-form-field class="input-width-s">
-      <mat-label i18n>Method</mat-label>
+      <mat-label i18n="@@resolver.method">Method</mat-label>
       <mat-select
-        (selectionChange)="model.update(m => ({ ...m, method: $event.value }))" [value]="model().method">
+        (selectionChange)="model.update(m => ({ ...m, method: $event.value }))"
+        [value]="model().method">
         <mat-option value="POST">POST</mat-option>
         <mat-option value="GET">GET</mat-option>
         <mat-option value="PUT">PUT</mat-option>
@@ -51,7 +53,7 @@
   </div>
 
   <mat-form-field class="input-width-xl margin-bottom-16">
-    <mat-label i18n>Headers (JSON format)</mat-label>
+    <mat-label i18n="@@resolver.headersJson">Headers (JSON format)</mat-label>
     <textarea
       (input)="model.update(m => ({ ...m, headers: $any($event.target).value }))"
       [value]="model().headers"
@@ -60,7 +62,7 @@
   </mat-form-field>
 
   <mat-form-field class="input-width-xl margin-bottom-16">
-    <mat-label i18n>Request Mapping (JSON format)</mat-label>
+    <mat-label i18n="@@resolver.requestMappingJsonFormat">Request Mapping (JSON format)</mat-label>
     <textarea
       (input)="model.update(m => ({ ...m, requestMapping: $any($event.target).value }))"
       [value]="model().requestMapping"
@@ -72,7 +74,7 @@
   </mat-form-field>
 
   <mat-form-field class="input-width-xl">
-    <mat-label i18n>Response Mapping (JSON format)</mat-label>
+    <mat-label i18n="@@resolver.responseMappingJsonFormat">Response Mapping (JSON format)</mat-label>
     <textarea
       (input)="model.update(m => ({ ...m, responseMapping: $any($event.target).value }))"
       [value]="model().responseMapping"
@@ -84,13 +86,13 @@
     (change)="model.update(m => ({ ...m, hasSpecialErrorHandler: $event.checked }))"
     [checked]="model().hasSpecialErrorHandler"
     class="checkbox-inline"
-    i18n>
-    Special Error Handling
-  </mat-checkbox>
+    i18n="@@resolver.specialErrorHandling"
+    >Special Error Handling</mat-checkbox
+  >
 
   @if (model().hasSpecialErrorHandler) {
     <mat-form-field class="input-width-xl">
-      <mat-label i18n>Response Contains (JSON format)</mat-label>
+      <mat-label i18n="@@resolver.responseContainsJson">Response Contains (JSON format)</mat-label>
       <textarea
         (input)="model.update(m => ({ ...m, errorResponse: $any($event.target).value }))"
         [value]="model().errorResponse"

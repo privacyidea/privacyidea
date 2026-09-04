@@ -86,7 +86,7 @@ from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action, check_t
                                            check_container_action, check_user_params,
                                            force_server_generate_key)
 from privacyidea.lib.challenge import (cancel_challenge, get_challenges, get_challenges_for_user,
-                                        get_challenges_paginate, cleanup_expired_challenges)
+                                       get_challenges_paginate, cleanup_expired_challenges)
 from privacyidea.lib.error import (ParameterError, TokenAdminError,
                                    ResourceNotFoundError, PolicyError, Error)
 from privacyidea.lib.event import event
@@ -95,6 +95,7 @@ from privacyidea.lib.importotp import (parseOATHcsv, parseSafeNetXML,
 from privacyidea.lib.subscriptions import CheckSubscription
 from privacyidea.lib.tokenrolloutstate import RolloutState
 from .lib.utils import send_result, send_csv_result, get_optional, get_required
+from privacyidea.lib.params import get_pagination_params
 from ..lib.container import find_container_by_serial, add_token_to_container
 from ..lib.fido2.util import get_credential_ids_for_user
 from ..lib.log import log_with
@@ -424,8 +425,8 @@ def get_challenges_api(serial=None):
     :query realm: optional realm for the user lookup.
     :query sortby: sort column, default ``timestamp`` (paginated mode only).
     :query sortdir: ``asc`` (default) or ``desc``.
-    :query page: 1-indexed page number.
-    :query pagesize: page size (default ``15``).
+    :query page: 1-indexed page number; values below 1 are treated as 1.
+    :query pagesize: page size (default ``15``), capped at ``1000``.
     :query transaction_id: restrict to challenges with this transaction id.
     :status 200: challenge list in ``result.value``.
     """
@@ -460,10 +461,9 @@ def get_challenges_api(serial=None):
         g.audit_object.log({"success": True})
         return send_result(payload)
 
-    page = int(get_optional(param, "page", default=1))
+    page, psize = get_pagination_params(param)
     sort = get_optional(param, "sortby", default="timestamp")
     sdir = get_optional(param, "sortdir", default="asc")
-    psize = int(get_optional(param, "pagesize", default=15))
     transaction_id = get_optional(param, "transaction_id")
     g.audit_object.log({"serial": serial})
     # Realm-scope check when a specific serial is targeted, so a realm-
@@ -552,9 +552,9 @@ def cancel_challenge_api(transaction_id):
                                             "cancel challenges for")
     result = cancel_challenge(transaction_id)
     # Build a single audit entry now that the realm check passed and the
-    # cancel result is known. The `serial` column is 40 chars by default -
+    # cancel result is known. The `serial` column is 200 chars by default -
     # plenty for the common case (one transaction -> one token, with
-    # default 8-char serials, 4-5 still fit comma-joined). Pack whole
+    # default 8-char serials, over 20 still fit comma-joined). Pack whole
     # serials in arrival order up to the column budget; if some had to be
     # dropped, also record the list in `info` (500 chars) so the forensic
     # detail isn't lost. `info` is hard-cut by the audit module, so pack it
@@ -689,8 +689,8 @@ def list_api():
         active.
     :query sortby: sort column, default ``serial``.
     :query sortdir: ``asc`` (default) or ``desc``.
-    :query page: 1-indexed page number, default ``1``.
-    :query pagesize: page size, default ``15``.
+    :query page: 1-indexed page number, default ``1``; values below 1 are treated as 1.
+    :query pagesize: page size, default ``15``, capped at ``1000``.
     :query outform: ``csv`` to return ``text/csv`` instead of JSON.
         Pagination still applies.
     :status 200: paginated token list in ``result.value`` (or as a
@@ -698,7 +698,7 @@ def list_api():
     """
     param = request.all_data
     serial = get_optional(param, "serial")
-    page = int(get_optional(param, "page", default=1))
+    page, psize = get_pagination_params(param)
     tokentype = get_optional(param, "type")
     token_type_list = get_optional(param, "type_list")
     if token_type_list:
@@ -706,7 +706,6 @@ def list_api():
     description = get_optional(param, "description")
     sort = get_optional(param, "sortby", default="serial")
     sdir = get_optional(param, "sortdir", default="asc")
-    psize = int(get_optional(param, "pagesize", default=15))
     realm = get_optional(param, "tokenrealm")
     userid = get_optional(param, "userid")
     resolver = get_optional(param, "resolver")
@@ -1645,6 +1644,48 @@ def get_serial_by_otp_api(otp=None):
 
     return send_result({"serial": serial,
                         "count": count})
+
+
+@token_blueprint.route('/sshkey/<serial>', methods=['GET'])
+@prepolicy(check_token_action, request, action=PolicyAction.SSHKEY_READ)
+@event("token_sshkey", request, g)
+@log_with(log)
+def get_sshkey_api(serial=None):
+    """
+    Return the decrypted public SSH key of an SSH key token.
+
+    The public key of an SSH key token is stored encrypted in the database
+    and is therefore not returned in the token list. This endpoint returns
+    the assembled public key (``<type> <key> [<comment>]``) so that it can
+    be imported into an ``authorized_keys`` file.
+
+    Before returning, the integrity checksum of the token is verified, so a
+    manipulation of the SSH key data in the database is detected.
+
+    Only active tokens are returned. Disabling or revoking an SSH key token
+    stops its key from being handed out here, just like it stops the key from
+    appearing in the authorized keys of a machine.
+
+    Requires authentication and the policy action ``sshkey_read``. Admins
+    are restricted by the realms of their policies, users can only read the
+    SSH key of their own tokens.
+
+    :param serial: path component, the serial of the SSH key token.
+    :status 200: ``{"sshkey": "<type> <key> <comment>"}`` in
+        ``result.value``.
+    """
+    user = request.User
+    toks = get_tokens(serial=serial, user=user if user and not user.is_empty() else None,
+                      tokentype="sshkey", active=True)
+    if not toks:
+        raise ResourceNotFoundError(f"No active SSH key token with serial {serial!s} found.")
+    token = toks[0]
+
+    sshkey = token.get_sshkey()
+    g.audit_object.log({"serial": serial,
+                        "token_type": "sshkey",
+                        "success": True})
+    return send_result({"sshkey": sshkey})
 
 
 @token_blueprint.route('/info/<serial>/<key>', methods=['POST'])

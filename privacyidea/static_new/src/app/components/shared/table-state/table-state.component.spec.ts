@@ -16,10 +16,26 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { signal, WritableSignal } from "@angular/core";
+import { Component, signal, WritableSignal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { TableState } from "@core/models/table_state/table-state";
 import { TableStateComponent } from "./table-state.component";
+
+// The pages that own a table project their way out of an empty list into the panel - the realm
+// selector above all, which the panel replaces while it is on screen.
+@Component({
+  imports: [TableStateComponent],
+  template: `
+    <app-table-state
+      [table]="table"
+      heading="No entries yet">
+      <button>Select Realm</button>
+    </app-table-state>
+  `
+})
+class ProjectedActionHostComponent {
+  table!: TableState;
+}
 
 describe("TableStateComponent", () => {
   let fixture: ComponentFixture<TableStateComponent>;
@@ -28,22 +44,32 @@ describe("TableStateComponent", () => {
   let error: WritableSignal<unknown>;
   let count: WritableSignal<number>;
   let filterActive: WritableSignal<boolean>;
+  let isLoading: WritableSignal<boolean>;
   let reload: jest.Mock;
   let resetFilter: jest.Mock | undefined;
+  let cancel: jest.Mock | undefined;
 
-  const buildState = (options: { withResetFilter?: boolean } = {}): TableState => {
-    const { withResetFilter = true } = options;
+  const buildState = (options: { withResetFilter?: boolean; withCancel?: boolean } = {}): TableState => {
+    const { withResetFilter = true, withCancel = false } = options;
     reload = jest.fn();
     resetFilter = withResetFilter ? jest.fn() : undefined;
+    cancel = withCancel
+      ? jest.fn(() => {
+          value.set(undefined);
+          isLoading.set(false);
+        })
+      : undefined;
     return new TableState({
       resource: {
         hasValue: () => value() !== undefined,
         error: () => error(),
+        isLoading: () => isLoading(),
         reload
       },
       count: () => count(),
       filterActive: () => filterActive(),
-      resetFilter
+      resetFilter,
+      cancel
     });
   };
 
@@ -69,6 +95,7 @@ describe("TableStateComponent", () => {
     error = signal<unknown>(null);
     count = signal(0);
     filterActive = signal(false);
+    isLoading = signal(false);
   });
 
   it("shows the caller's wording when the list is simply empty", () => {
@@ -92,7 +119,7 @@ describe("TableStateComponent", () => {
 
   it("says so without offering an action when the list may not be read", () => {
     const state = new TableState({
-      resource: { hasValue: () => true, error: () => null, reload: jest.fn() },
+      resource: { hasValue: () => true, error: () => null, isLoading: () => false, reload: jest.fn() },
       count: () => 0,
       allowed: () => false
     });
@@ -190,6 +217,95 @@ describe("TableStateComponent", () => {
 
       expect(state.status()).toBe("ready");
       expect(state.showTable()).toBe(true);
+    });
+  });
+
+  describe("when a load hangs and the user stops waiting", () => {
+    const startHangingLoad = (options: { withCancel?: boolean } = {}): TableState => {
+      value.set(undefined);
+      isLoading.set(true);
+      const state = buildState({ withCancel: options.withCancel ?? true });
+      render(state);
+      return state;
+    };
+
+    it("leaves the panel as it was where the table cannot stop its load", () => {
+      const state = startHangingLoad({ withCancel: false });
+
+      expect(state.status()).toBe("loading");
+      expect(state.canCancel).toBe(false);
+      expect(buttonLabelled("Cancel")).toBeUndefined();
+    });
+
+    it("offers to stop the load, held back until the load has run a moment", () => {
+      const state = startHangingLoad();
+      const button = buttonLabelled("Cancel")!;
+
+      expect(state.canCancel).toBe(true);
+      expect(button).toBeDefined();
+      // The wait before the offer appears is the animation's delay, which nothing here can measure.
+      // The class is what carries it, and losing it would put the button on screen right away.
+      expect(button.classList).toContain("delayed-reveal");
+
+      button.click();
+      expect(cancel).toHaveBeenCalled();
+    });
+
+    it("reports the stopped load rather than a spinner no request stands behind", () => {
+      const state = startHangingLoad();
+      expect(fixture.nativeElement.querySelector("mat-progress-spinner")).not.toBeNull();
+
+      buttonLabelled("Cancel")!.click();
+      fixture.detectChanges();
+
+      expect(state.status()).toBe("cancelled");
+      // The page keeps drawing the panel instead of the table, as it did while the load was out.
+      expect(state.showTable()).toBe(false);
+      expect(fixture.nativeElement.querySelector("mat-progress-spinner")).toBeNull();
+      expect(text()).toContain("Loading cancelled");
+    });
+
+    it("takes the load up again when it is retried", () => {
+      const state = startHangingLoad();
+      buttonLabelled("Cancel")!.click();
+      fixture.detectChanges();
+
+      buttonLabelled("Try Again")!.click();
+      fixture.detectChanges();
+
+      expect(reload).toHaveBeenCalled();
+      expect(state.status()).toBe("loading");
+    });
+
+    it("clears the stopped state as soon as a request is in flight again", () => {
+      // A realm picked after the cancel starts a new request without going through the retry button,
+      // so the panel has to follow the resource rather than stay on the outcome of the load before.
+      const state = startHangingLoad();
+      buttonLabelled("Cancel")!.click();
+      expect(state.status()).toBe("cancelled");
+
+      isLoading.set(true);
+
+      expect(state.status()).toBe("loading");
+    });
+
+    it("keeps the page's own way out reachable once the load was stopped", () => {
+      // The panel replaces the realm selector while it is on screen. Without it a stopped load is a
+      // dead end, because the realm is what the user has to change to get a list at all.
+      value.set(undefined);
+      isLoading.set(true);
+      const state = buildState({ withCancel: true });
+      const hostFixture = TestBed.createComponent(ProjectedActionHostComponent);
+      hostFixture.componentInstance.table = state;
+      hostFixture.detectChanges();
+
+      expect(hostFixture.nativeElement.textContent).not.toContain("Select Realm");
+
+      state.cancel();
+      hostFixture.detectChanges();
+
+      expect(state.status()).toBe("cancelled");
+      expect(hostFixture.nativeElement.textContent).toContain("Select Realm");
     });
   });
 });

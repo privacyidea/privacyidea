@@ -47,7 +47,7 @@ export class TokenHotpMachineAssignDialogComponent extends AbstractDialogCompone
   public tokenSerial = this.data.tokenSerial;
 
   assignAction: DialogAction<string> = {
-    label: $localize`Assign`,
+    label: $localize`:@@token.assign:Assign`,
     value: "assign",
     type: "confirm",
     primary: true

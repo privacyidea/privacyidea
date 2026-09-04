@@ -39,7 +39,9 @@ export class ThemeToggleComponent {
   protected readonly theme = this.themeService.visualTheme;
   // Names the mode a click switches to, not the current one; serves as both tooltip and aria-label.
   protected readonly label = computed(() =>
-    this.theme() === "dark" ? $localize`Switch to light mode` : $localize`Switch to dark mode`
+    this.theme() === "dark"
+      ? $localize`:@@common.switchToLightMode:Switch to light mode`
+      : $localize`:@@common.switchToDarkMode:Switch to dark mode`
   );
 
   protected toggle(): void {

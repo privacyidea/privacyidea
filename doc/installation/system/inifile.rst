@@ -40,8 +40,6 @@ The file should contain the following contents::
    # PI_AUDIT_SQL_URI = <special audit log DB uri>
    # Options passed to the Audit DB engine (supersedes SQLALCHEMY_ENGINE_OPTIONS)
    # PI_AUDIT_SQL_OPTIONS = {}
-   # Truncate Audit entries to fit into DB columns
-   PI_AUDIT_SQL_TRUNCATE = True
    # PI_LOGFILE = '....'
    # PI_LOGLEVEL = 20
    # PI_INIT_CHECK_HOOK = 'your.module.function'
@@ -239,8 +237,10 @@ With ``PI_AUDIT_SQL_OPTIONS`` You can pass a dictionary of options to the
 database engine. If ``PI_AUDIT_SQL_OPTIONS`` is not set,
 ``SQLALCHEMY_ENGINE_OPTIONS`` will be used.
 
-``PI_AUDIT_SQL_TRUNCATE = True`` lets you truncate audit entries to the length
-of the database fields (See :ref:`Audit table size <audit_table_size>`).
+Audit entries are always shortened to the length of the database fields, so that
+an entry with long request data is written instead of being rejected. The former
+setting ``PI_AUDIT_SQL_TRUNCATE`` is ignored (See
+:ref:`Audit table size <audit_table_size>`).
 
 In certain cases when you experiencing problems you may use the parameters
 ``PI_AUDIT_POOL_SIZE`` and ``PI_AUDIT_POOL_RECYCLE``. However, they are only
@@ -476,6 +476,26 @@ added to the ``PI_ENABLE_TOKEN_TYPE_ENROLLMENT`` list in ``pi.cfg``::
    removed (e.g. ``u2f`` in v3.14) are migrated by the schema update to
    ``tokentype='deprecated'`` and handled via ``pi-tokenjanitor deprecated``
    - see the developer note ``dev/token-deprecation-strategy.md``.
+
+.. _picfg_allowed_ssh_key_types:
+
+Allowed SSH key types
+.....................
+
+.. versionadded:: 3.14
+
+The SSH key token only accepts a set of well known SSH key types (``ssh-rsa``,
+``ssh-ed25519``, ``ecdsa-sha2-nistp256``,
+``sk-ecdsa-sha2-nistp256@openssh.com`` and
+``sk-ssh-ed25519@openssh.com``). If you need to enroll SSH keys of other
+types, you can add them as a list in ``pi.cfg``::
+
+    PI_ALLOWED_SSH_KEY_TYPES = ['ssh-dss', 'ecdsa-sha2-nistp521']
+
+
+The configured key types are added to the default key types. privacyIDEA does
+not evaluate the key type itself, the SSH server decides which key types it
+accepts (see ``PubkeyAcceptedAlgorithms``).
 
 .. _picfg_email_validators:
 

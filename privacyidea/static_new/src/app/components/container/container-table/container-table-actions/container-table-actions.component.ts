@@ -64,10 +64,10 @@ export class ContainerTableActionsComponent {
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: $localize`Delete All Containers`,
+          title: $localize`:@@container.deleteAllContainers:Delete All Containers`,
           items: selectedContainers.map((container) => container.serial),
           itemType: "container",
-          confirmAction: { label: $localize`Delete`, value: true, type: "destruct" }
+          confirmAction: { label: $localize`:@@common.delete:Delete`, value: true, type: "destruct" }
         }
       })
       .afterClosed()
@@ -79,7 +79,7 @@ export class ContainerTableActionsComponent {
             ).subscribe({
               next: () => {
                 this.notificationService.success(
-                  $localize`Successfully deleted ${selectedContainers.length} containers.`
+                  $localize`:@@container.successfullyDeleted:Successfully deleted ${selectedContainers.length}:COUNT: containers.`
                 );
                 this.containerSelection.deselectAllRows();
                 this.containerService.containerResource.reload();

@@ -18,15 +18,16 @@
 -->
 <app-dialog-wrapper
   title="Container Successfully Created"
-  i18n-title
+  i18n-title="@@container.containerSuccessfully"
   [actions]="dialogActions()"
+  [showCloseButton]="false"
   (actionTriggered)="onDialogAction($event)">
   <div class="progress-header">
     <span
       class="progress-label"
-      i18n>
-      Token {{ currentIndex() + 1 }} / {{ total() }}
-    </span>
+      i18n="@@container.token"
+      >Token {{ currentIndex() + 1 }} / {{ total() }}</span
+    >
     <span class="token-type">{{ currentToken().type | titlecase }}</span>
   </div>
   <mat-progress-bar
@@ -34,11 +35,13 @@
     mode="determinate"
     class="progress-bar" />
   <div class="enrollment-data">
-    <p i18n>
-      Token <strong>{{ currentToken().serial }}</strong> successfully enrolled.
-    </p>
+    <p i18n="@@container.tokenSuccessfully"
+      >Token <strong>{{ currentToken().serial }}</strong> successfully enrolled.</p
+    >
     <app-token-enrollment-data
+      (enrollmentResponseChange)="onEnrollmentResponseChange($event)"
       [enrolledInputData]="currentToken()"
+      [enrollmentParameters]="currentToken().enrollmentParameters"
       [tokenType]="currentToken().type" />
   </div>
 </app-dialog-wrapper>

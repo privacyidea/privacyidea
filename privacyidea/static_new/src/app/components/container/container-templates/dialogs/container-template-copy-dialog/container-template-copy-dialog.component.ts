@@ -63,7 +63,7 @@ export class ContainerTemplateCopyDialogComponent extends PendingChangesDialogCo
 
   readonly actions = computed<DialogAction<string>[]>(() => [
     {
-      label: $localize`Copy Template`,
+      label: $localize`:@@container.copyTemplate:Copy Template`,
       value: "copy",
       type: "confirm",
       disabled: !this.canSave()

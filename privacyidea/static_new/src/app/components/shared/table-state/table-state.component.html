@@ -25,9 +25,19 @@
       <mat-progress-spinner
         [diameter]="40"
         aria-label="Loading"
-        i18n-aria-label
+        i18n-aria-label="@@common.loading"
         mode="indeterminate" />
     </div>
+    <!-- Held back by the animation's delay, so a load that answers right away never flashes a button. -->
+    @if (table().canCancel) {
+      <button
+        (click)="table().cancel()"
+        class="action-button-secondary button-width-m delayed-reveal"
+        mat-stroked-button>
+        <mat-icon>close</mat-icon>
+        <span i18n>Cancel</span>
+      </button>
+    }
   } @else {
     @if (resolvedIcon()) {
       <span
@@ -54,42 +64,42 @@
       @case ("filtered") {
         <h2
           class="table-state-heading"
-          i18n>
-          No entries match the filter
-        </h2>
+          i18n="@@common.noEntriesMatchTheFilter"
+          >No entries match the filter</h2
+        >
         <p
           class="table-state-hint"
-          i18n>
-          Adjust the filter or reset it to see all entries again.
-        </p>
+          i18n="@@common.adjustTheFilterOrReset"
+          >Adjust the filter or reset it to see all entries again.</p
+        >
         @if (table().canResetFilter) {
           <button
             (click)="table().resetFilter()"
             class="action-button-secondary button-width-m"
             mat-stroked-button>
             <mat-icon>filter_alt_off</mat-icon>
-            <span i18n>Reset Filter</span>
+            <span i18n="@@common.resetFilter">Reset Filter</span>
           </button>
         }
       }
       @case ("error") {
         <h2
           class="table-state-heading"
-          i18n>
-          The data could not be loaded
-        </h2>
+          i18n="@@common.theDataCouldNotBe"
+          >The data could not be loaded</h2
+        >
         <p
           class="table-state-hint"
-          i18n>
-          The request failed. Check the connection to the privacyIDEA server and try again.
-        </p>
+          i18n="@@common.theRequestFailedCheckThe"
+          >The request failed. Check the connection to the privacyIDEA server and try again.</p
+        >
         <div class="table-state-actions">
           <button
             (click)="table().retry()"
             class="action-button-secondary button-width-m"
             mat-stroked-button>
             <mat-icon>refresh</mat-icon>
-            <span i18n>Try Again</span>
+            <span i18n="@@common.tryAgain">Try Again</span>
           </button>
           <!-- Where the request carries the filter, retrying alone repeats whatever failed and the
              filter itself is unreachable, since the state panel replaces the filter row. -->
@@ -99,22 +109,43 @@
               class="action-button-secondary button-width-m"
               mat-stroked-button>
               <mat-icon>filter_alt_off</mat-icon>
-              <span i18n>Reset Filter</span>
+              <span i18n="@@common.resetFilter">Reset Filter</span>
             </button>
           }
+        </div>
+      }
+      @case ("cancelled") {
+        <h2
+          class="table-state-heading"
+          i18n>
+          Loading cancelled
+        </h2>
+        <p
+          class="table-state-hint"
+          i18n>
+          The request was stopped before the server answered. Nothing was loaded.
+        </p>
+        <div class="table-state-actions">
+          <button
+            (click)="table().retry()"
+            class="action-button-secondary button-width-m"
+            mat-stroked-button>
+            <mat-icon>refresh</mat-icon>
+            <span i18n>Try Again</span>
+          </button>
         </div>
       }
       @case ("denied") {
         <h2
           class="table-state-heading"
-          i18n>
-          Not allowed
-        </h2>
+          i18n="@@common.notAllowed"
+          >Not allowed</h2
+        >
         <p
           class="table-state-hint"
-          i18n>
-          You do not have the permission to view this list.
-        </p>
+          i18n="@@common.youDoNotHaveThe"
+          >You do not have the permission to view this list.</p
+        >
       }
     }
     @if (showsProjectedAction()) {

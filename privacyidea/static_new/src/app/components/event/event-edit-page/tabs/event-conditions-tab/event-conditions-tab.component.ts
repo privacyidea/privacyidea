@@ -57,8 +57,8 @@ export class EventConditionsTabComponent {
   newConditions = output<Record<string, string>>();
   selectedConditions = linkedSignal(() => this.conditions());
   conditionsToBeAdded = signal<Record<string, string>>({});
-  addToolTip = $localize`Add Condition`;
-  removeToolTip = $localize`Remove Condition`;
+  addToolTip = $localize`:@@common.addCondition:Add Condition`;
+  removeToolTip = $localize`:@@event.removeCondition:Remove Condition`;
 
   addedCondition = signal("");
   searchTerm = signal("");

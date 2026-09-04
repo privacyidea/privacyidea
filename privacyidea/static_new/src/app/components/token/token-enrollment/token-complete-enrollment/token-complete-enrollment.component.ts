@@ -24,9 +24,14 @@ import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
 import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
 import { TokenEnrollmentDataComponent } from "@components/token/token-enrollment/token-enrollment-data/token-enrollment-data.component";
-import { DialogAction } from "@models/dialog";
-import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import {
+  ENROLLMENT_CANCELLED,
+  EnrollmentStepResult
+} from "@components/token/token-enrollment/token-enrollment.constants";
 import { EnrollmentResponse } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { DialogAction } from "@models/dialog";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { TokenEnrollmentDialogData, TokenService, TokenServiceInterface } from "@services/token/token.service";
 
 @Component({
@@ -35,9 +40,13 @@ import { TokenEnrollmentDialogData, TokenService, TokenServiceInterface } from "
   templateUrl: "./token-complete-enrollment.component.html",
   styleUrl: "./token-complete-enrollment.component.scss"
 })
-export class TokenCompleteEnrollmentComponent extends AbstractDialogComponent<TokenEnrollmentDialogData, EnrollmentResponse> {
+export class TokenCompleteEnrollmentComponent extends AbstractDialogComponent<
+  TokenEnrollmentDialogData,
+  EnrollmentStepResult
+> {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
 
   protected readonly enrollDetails = this.data.response?.detail;
   protected readonly tokenType = this.data.response?.type ?? "hotp";
@@ -56,19 +65,52 @@ export class TokenCompleteEnrollmentComponent extends AbstractDialogComponent<To
   });
   invalidInputSignal = computed(() => !this.clientPartForm().valid());
 
-  readonly dialogActions = computed<DialogAction<string>[]>(() => [
-    {
-      label: $localize`Enroll`,
+  readonly dialogActions = computed<DialogAction<string>[]>(() => {
+    const actions: DialogAction<string>[] = [];
+    if (this.canCancelEnrollment()) {
+      actions.push({
+        label: $localize`:@@common.cancel:Cancel`,
+        type: "destruct",
+        value: "cancelEnrollment"
+      });
+    }
+    actions.push({
+      label: $localize`:@@token.enroll:Enroll`,
       type: "confirm",
       value: "enroll",
       disabled: this.invalidInputSignal()
-    }
-  ]);
+    });
+    return actions;
+  });
+
+  protected readonly showCloseButton = computed(() => !this.twoStepEnrollment() || !this.canCancelEnrollment());
 
   onDialogAction(value: string) {
     if (value === "enroll") {
       this.enrollToken();
     }
+    if (value === "cancelEnrollment") {
+      this.cancelEnrollment();
+    }
+  }
+
+  cancelEnrollment() {
+    const tokenSerial = this.enrollDetails?.serial;
+    if (!tokenSerial) {
+      return;
+    }
+    this.tokenService.cancelEnrollment(tokenSerial).subscribe({
+      next: () => this.close(ENROLLMENT_CANCELLED),
+      error: () => undefined
+    });
+  }
+
+  private canCancelEnrollment(): boolean {
+    return !this.data.rollover && this.authService.actionAllowed("delete");
+  }
+
+  onEnrollmentResponseChange(response: EnrollmentResponse): void {
+    this.data.onEnrollmentResponseChange?.(response);
   }
 
   enrollToken() {

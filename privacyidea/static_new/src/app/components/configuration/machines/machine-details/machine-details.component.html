@@ -22,9 +22,9 @@
     <div class="flex ali-center gap-8 machine-title">
       <h3
         class="margin-0"
-        i18n>
-        Details for Machine:
-      </h3>
+        i18n="@@machine.detailsMachine"
+        >Details for Machine:</h3
+      >
       <app-copyable [copyText]="machine.hostname.join(', ')">
         <h3 class="h3-color margin-0">{{ machine.hostname.join(", ") }}</h3>
       </app-copyable>
@@ -34,7 +34,7 @@
       <div class="detail-row">
         <span
           class="label"
-          i18n
+          i18n="@@machine.hostname"
           >Hostname:</span
         >
         <app-copyable [copyText]="machine.hostname.join(', ')">
@@ -44,7 +44,7 @@
       <div class="detail-row">
         <span
           class="label"
-          i18n
+          i18n="@@machine.ipAddress"
           >IP Address:</span
         >
         <app-copyable [copyText]="machine.ip">
@@ -54,7 +54,7 @@
       <div class="detail-row">
         <span
           class="label"
-          i18n
+          i18n="@@machine.machineId"
           >Machine ID:</span
         >
         <span class="value">{{ machine.id }}</span>
@@ -62,7 +62,7 @@
       <div class="detail-row">
         <span
           class="label"
-          i18n
+          i18n="@@machine.machineResolver"
           >Machine Resolver:</span
         >
         <app-copyable [copyText]="machine.resolver_name">
@@ -81,9 +81,9 @@
     <div class="filter-paginator-container">
       <h3
         class="margin-0"
-        i18n>
-        Tokens and Applications
-      </h3>
+        i18n="@@machine.tokensApplications"
+        >Tokens and Applications</h3
+      >
       <mat-paginator
         [pageSizeOptions]="[5, 10, 20]"
         [pageSize]="5"
@@ -98,10 +98,10 @@
         <ng-container matColumnDef="serial">
           <th
             *matHeaderCellDef
-            i18n
-            mat-header-cell>
-            Serial
-          </th>
+            i18n="@@common.serial"
+            mat-header-cell
+            >Serial</th
+          >
           <td
             *matCellDef="let token"
             mat-cell>
@@ -123,10 +123,10 @@
         <ng-container matColumnDef="application">
           <th
             *matHeaderCellDef
-            i18n
-            mat-header-cell>
-            Application
-          </th>
+            i18n="@@common.application"
+            mat-header-cell
+            >Application</th
+          >
           <td
             *matCellDef="let token"
             mat-cell>
@@ -137,10 +137,10 @@
         <ng-container matColumnDef="options">
           <th
             *matHeaderCellDef
-            i18n
-            mat-header-cell>
-            Options
-          </th>
+            i18n="@@common.options"
+            mat-header-cell
+            >Options</th
+          >
           <td
             *matCellDef="let token"
             mat-cell>
@@ -154,7 +154,7 @@
               @if (token.application === "ssh") {
                 <div class="flex-column margin-top-16 gap-8">
                   <mat-form-field appearance="fill">
-                    <mat-label i18n>Service ID</mat-label>
+                    <mat-label i18n="@@common.serviceId">Service ID</mat-label>
                     <mat-select
                       [value]="editedOptions[token.id]['service_id']"
                       (selectionChange)="editedOptions[token.id]['service_id'] = $event.value">
@@ -166,7 +166,7 @@
                     </mat-select>
                   </mat-form-field>
                   <mat-form-field appearance="fill">
-                    <mat-label i18n>User</mat-label>
+                    <mat-label i18n="@@common.user">User</mat-label>
                     <input
                       [value]="editedOptions[token.id]['user']"
                       (input)="editedOptions[token.id]['user'] = $any($event.target).value"
@@ -174,7 +174,7 @@
                   </mat-form-field>
                 </div>
               } @else {
-                <div i18n>No editable options for this application.</div>
+                <div i18n="@@machine.noEditableOptions">No editable options for this application.</div>
               }
             }
           </td>
@@ -183,10 +183,10 @@
         <ng-container matColumnDef="actions">
           <th
             *matHeaderCellDef
-            i18n
-            mat-header-cell>
-            Actions
-          </th>
+            i18n="@@common.actions"
+            mat-header-cell
+            >Actions</th
+          >
           <td
             *matCellDef="let token"
             mat-cell>
@@ -194,7 +194,7 @@
               @if (!isEditing(token.id)) {
                 <button
                   (click)="startEdit(token)"
-                  i18n-matTooltip
+                  i18n-matTooltip="@@machine.editOptions"
                   mat-icon-button
                   matTooltip="Edit Options">
                   <mat-icon>edit</mat-icon>
@@ -202,7 +202,7 @@
                 <button
                   (click)="detachToken(token)"
                   color="warn"
-                  i18n-matTooltip
+                  i18n-matTooltip="@@machine.detach"
                   mat-icon-button
                   matTooltip="Detach">
                   <mat-icon>delete</mat-icon>
@@ -211,7 +211,7 @@
                 <button
                   (click)="saveOptions(token)"
                   color="primary"
-                  i18n-matTooltip
+                  i18n-matTooltip="@@machine.saveOptions"
                   mat-icon-button
                   matTooltip="Save Options">
                   <mat-icon>save</mat-icon>
@@ -219,7 +219,7 @@
                 <button
                   (click)="cancelEdit(token)"
                   class="red"
-                  i18n-matTooltip
+                  i18n-matTooltip="@@common.cancel"
                   mat-icon-button
                   matTooltip="Cancel">
                   <mat-icon>cancel</mat-icon>
@@ -239,18 +239,18 @@
     </div>
 
     <div>
-      <h3 i18n>Attach a New Token</h3>
+      <h3 i18n="@@machine.attachNewToken">Attach a New Token</h3>
       <div class="flex-row ali-center gap-16">
         <mat-form-field
           appearance="fill"
           class="input-width-l">
-          <mat-label i18n>Token Serial</mat-label>
+          <mat-label i18n="@@machine.tokenSerial">Token Serial</mat-label>
           <input
             [value]="newTokenSerial()"
             (input)="onTokenSerialInput($any($event.target).value)"
             [matAutocomplete]="tokenSerialAuto"
             matInput
-            i18n-placeholder
+            i18n-placeholder="@@machine.serialExample"
             placeholder="e.g. PIHOTP000001" />
           <mat-autocomplete
             #tokenSerialAuto="matAutocomplete"
@@ -264,7 +264,7 @@
         <mat-form-field
           appearance="fill"
           class="input-width-s">
-          <mat-label i18n>Application</mat-label>
+          <mat-label i18n="@@common.application">Application</mat-label>
           <mat-select
             [value]="selectedApplication()"
             (selectionChange)="selectedApplication.set($event.value)">
@@ -282,7 +282,7 @@
           mat-stroked-button
           (click)="attachToken()">
           <mat-icon>add</mat-icon>
-          <span i18n>Attach</span>
+          <span i18n="@@machine.attach">Attach</span>
         </button>
       </div>
     </div>

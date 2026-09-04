@@ -17,11 +17,12 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { HttpErrorResponse } from "@angular/common/http";
-import { ElementRef, inject, Injectable } from "@angular/core";
+import { ElementRef, inject, Injectable, LOCALE_ID } from "@angular/core";
+import { pluralize } from "@utils/i18n.utils";
 import { MatSnackBar, MatSnackBarRef } from "@angular/material/snack-bar";
 import { Subscription, timer } from "rxjs";
 
-export type NotificationSeverity = "success" | "warning" | "error";
+export type NotificationSeverity = "success" | "warning" | "error" | "info";
 
 interface QueuedNotification {
   severity: NotificationSeverity;
@@ -40,6 +41,8 @@ export interface NotificationServiceInterface {
 
   warning(message: string, options?: { duration?: number }): void;
 
+  info(message: string, options?: { duration?: number }): void;
+
   handleResourceError(error: Error | undefined, subject: string): void;
 }
 
@@ -47,6 +50,7 @@ export interface NotificationServiceInterface {
   providedIn: "root"
 })
 export class NotificationService implements NotificationServiceInterface {
+  private readonly localeId: string = inject(LOCALE_ID);
   private readonly snackBar = inject(MatSnackBar);
   private readonly _debounceMs = 200;
   private readonly _maxBatchedDuration = 15000;
@@ -68,6 +72,10 @@ export class NotificationService implements NotificationServiceInterface {
 
   warning(message: string, options?: { duration?: number }): void {
     this._enqueue("warning", message, options?.duration);
+  }
+
+  info(message: string, options?: { duration?: number }): void {
+    this._enqueue("info", message, options?.duration);
   }
 
   handleResourceError(error: Error | undefined, subject: string): void {
@@ -99,7 +107,7 @@ export class NotificationService implements NotificationServiceInterface {
       return;
     }
 
-    const order: NotificationSeverity[] = ["error", "warning", "success"];
+    const order: NotificationSeverity[] = ["error", "warning", "success", "info"];
     const groups = new Map<NotificationSeverity, string[]>();
     for (const sev of order) groups.set(sev, []);
     for (const m of queue) groups.get(m.severity)!.push(m.message);
@@ -122,12 +130,35 @@ export class NotificationService implements NotificationServiceInterface {
 
   private _headerFor(severity: NotificationSeverity, count: number): string {
     if (severity === "error") {
-      return count === 1 ? $localize`1 error:` : $localize`${count} errors:`;
+      return pluralize(this.localeId, count, {
+        one: $localize`:@@common.error:1 error:`,
+        few: $localize`:@@common.errorsFew:${count}:COUNT: errors:`,
+        many: $localize`:@@common.errorsMany:${count}:COUNT: errors:`,
+        other: $localize`:@@common.errors:${count}:COUNT: errors:`
+      });
     }
     if (severity === "warning") {
-      return count === 1 ? $localize`1 warning:` : $localize`${count} warnings:`;
+      return pluralize(this.localeId, count, {
+        one: $localize`:@@common.warning:1 warning:`,
+        few: $localize`:@@common.warningsFew:${count}:COUNT: warnings:`,
+        many: $localize`:@@common.warningsMany:${count}:COUNT: warnings:`,
+        other: $localize`:@@common.warnings:${count}:COUNT: warnings:`
+      });
     }
-    return count === 1 ? $localize`1 success:` : $localize`${count} successes:`;
+    if (severity === "success") {
+      return pluralize(this.localeId, count, {
+        one: $localize`:@@common.success:1 success:`,
+        few: $localize`:@@common.successesFew:${count}:COUNT: successes:`,
+        many: $localize`:@@common.successesMany:${count}:COUNT: successes:`,
+        other: $localize`:@@common.successes:${count}:COUNT: successes:`
+      });
+    }
+    return pluralize(this.localeId, count, {
+      one: $localize`:@@common.info:1 info:`,
+      few: $localize`:@@common.infosFew:${count}:COUNT: info:`,
+      many: $localize`:@@common.infosMany:${count}:COUNT: info:`,
+      other: $localize`:@@common.infos:${count}:COUNT: info:`
+    });
   }
 
   private _open(message: string, panelClass: string, duration?: number): void {

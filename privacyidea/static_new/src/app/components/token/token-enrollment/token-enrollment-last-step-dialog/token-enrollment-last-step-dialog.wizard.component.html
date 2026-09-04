@@ -17,10 +17,10 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <app-dialog-wrapper
-  (wrapperClose)="close()"
   (actionTriggered)="onAction($event)"
   [actions]="actions()"
-  i18n-title="@@tokenEnrolledTitle"
+  [showCloseButton]="false"
+  i18n-title="@@token.tokenSuccessfully"
   title="Token Successfully Enrolled">
   <mat-dialog-content>
     @let postTopHtml = postTopHtml$ | async;
@@ -40,7 +40,7 @@
           alt="QR Code"
           class="qr-code"
           height="300px"
-          i18n-alt="@@qrCodeAlt"
+          i18n-alt="@@common.qrCode"
           src="{{ qrCode }}"
           width="300px" />
       }
@@ -48,10 +48,10 @@
       @if (data.showEnrollData !== false) {
         <div class="flex-column gap-16">
           @if (data.response?.detail?.["password"]) {
-            <p i18n>
-              Your Password: <strong>{{ data.response?.detail?.["password"] }}</strong
-              >.
-            </p>
+            <p i18n="@@token.yourPassword"
+              >Your Password: <strong>{{ data.response?.detail?.["password"] }}</strong
+              >.</p
+            >
           }
 
           @if (data.response?.detail?.otpkey?.value && !data.response?.detail?.["otps"] && showQRCode()) {

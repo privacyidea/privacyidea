@@ -112,13 +112,19 @@ class postpolicy:
     The postpolicy decorator is to be used in the API calls.
     """
 
-    def __init__(self, function, request=None):
+    def __init__(self, function: callable, request: Request):
         """
         :param function: This is the policy function the is to be called
         :type function: function
         :param request: The original request object, that needs to be passed
         :type request: Request Object
         """
+        if request is None:
+            # A missing request is not a usable default: policy functions
+            # match on request.User, so a silently-None request disables
+            # every user/realm-scoped condition of the wrapped policy
+            # function instead of raising.
+            raise ValueError(f"postpolicy({function.__name__}, ...) requires a request to be passed explicitly.")
         self.request = request
         self.function = function
 
@@ -146,13 +152,19 @@ class postrequest:
     Decorator that is supposed to be used with after_request.
     """
 
-    def __init__(self, function, request=None):
+    def __init__(self, function: callable, request: Request):
         """
         :param function: This is the policy function the is to be called
         :type function: function
         :param request: The original request object, that needs to be passed
         :type request: Request Object
         """
+        if request is None:
+            # A missing request is not a usable default: policy functions
+            # match on request.User, so a silently-None request disables
+            # every user/realm-scoped condition of the wrapped policy
+            # function instead of raising.
+            raise ValueError(f"postrequest({function.__name__}, ...) requires request= to be passed explicitly.")
         self.request = request
         self.function = function
 
@@ -808,8 +820,6 @@ def get_webui_settings(request, response):
         content["result"]["value"]["show_seed"] = show_seed
         content["result"]["value"]["show_node"] = get_privacyidea_node() if show_node else ""
         content["result"]["value"]["subscription_status"] = subscription_status()
-        content["result"]["value"]["subscription_status_push"] = subscription_status("privacyidea authenticator",
-                                                                                     tokentype="push")
         content["result"]["value"]["qr_image_android"] = qr_image_android
         content["result"]["value"]["qr_image_ios"] = qr_image_ios
         content["result"]["value"]["qr_image_custom"] = qr_image_custom

@@ -21,10 +21,10 @@
     [checked]="userStorePassphrase()"
     (change)="userStorePassphrase.set($event.checked); onUserStorePassphraseChange()"
     [disabled]="!containerHasOwner()">
-    <span i18n>Validate the passphrase against the user store.</span>
+    <span i18n="@@container.validatePassphrase">Validate the passphrase against the user store.</span>
   </mat-checkbox>
   <mat-form-field class="input-width-xl">
-    <mat-label i18n>Passphrase Prompt</mat-label>
+    <mat-label i18n="@@container.passphrasePrompt">Passphrase Prompt</mat-label>
     <textarea
       [value]="passphrasePrompt()"
       (input)="passphrasePrompt.set($any($event.target).value)"
@@ -33,13 +33,13 @@
     <mat-hint
       [class.red]="promptRequired() && !passphrasePrompt()"
       align="start"
-      i18n>
-      Enter a passphrase prompt that will be displayed to the user. This should indicate which passphrase the user
-      should enter.
-    </mat-hint>
+      i18n="@@container.enterPassphrase"
+      >Enter a passphrase prompt that will be displayed to the user. This should indicate which passphrase the user
+      should enter.</mat-hint
+    >
   </mat-form-field>
   <mat-form-field class="input-width-xl margin-top-32 margin-bottom-32">
-    <mat-label i18n> Passphrase Response</mat-label>
+    <mat-label i18n="@@container.passphraseResponse">Passphrase Response</mat-label>
     <input
       [value]="passphraseResponse()"
       (input)="passphraseResponse.set($any($event.target).value)"
@@ -48,19 +48,21 @@
       matInput />
     <button
       (click)="toggleShowPassphrase()"
-      aria-label="Toggle passphrase visibility" i18n-aria-label
+      aria-label="Toggle passphrase visibility"
+      i18n-aria-label="@@container.togglePassphrase"
       [disabled]="userStorePassphrase()"
       mat-icon-button
       matSuffix
       type="button">
       <mat-icon>{{ showPassphrase ? "visibility_off" : "visibility" }}</mat-icon>
     </button>
-    <mat-hint i18n>
-      This is the correct answer to the passphrase prompt the user has to enter to successfully register the container.
-    </mat-hint>
+    <mat-hint i18n="@@container.correctAnswer"
+      >This is the correct answer to the passphrase prompt the user has to enter to successfully register the
+      container.</mat-hint
+    >
   </mat-form-field>
   <mat-form-field class="input-width-xl">
-    <mat-label i18n> Repeat Passphrase Response</mat-label>
+    <mat-label i18n="@@container.repeatPassphrase">Repeat Passphrase Response</mat-label>
     <input
       [value]="repeatPassphraseResponse()"
       (input)="repeatPassphraseResponse.set($any($event.target).value)"
@@ -69,7 +71,8 @@
       matInput />
     <button
       (click)="showRepeatPassphrase = !showRepeatPassphrase"
-      aria-label="Toggle passphrase visibility" i18n-aria-label
+      aria-label="Toggle passphrase visibility"
+      i18n-aria-label="@@container.togglePassphrase"
       [disabled]="userStorePassphrase()"
       mat-icon-button
       matSuffix
@@ -79,9 +82,9 @@
     @if (passphraseMismatch) {
       <mat-hint
         class="red"
-        i18n>
-        Passphrases do not match.
-      </mat-hint>
+        i18n="@@container.passphrasesDo"
+        >Passphrases do not match.</mat-hint
+      >
     }
   </mat-form-field>
 </div>

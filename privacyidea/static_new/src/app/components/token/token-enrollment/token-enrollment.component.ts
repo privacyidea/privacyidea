@@ -51,10 +51,7 @@ import { MatError, MatFormField, MatHint, MatLabel, MatSuffix } from "@angular/m
 import { MatInput } from "@angular/material/input";
 import { MatOption, MatSelect } from "@angular/material/select";
 import { MAT_TOOLTIP_DEFAULT_OPTIONS, MatTooltipModule } from "@angular/material/tooltip";
-import {
-  EnrollmentResponse,
-  TokenEnrollmentData
-} from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { EnrollmentResponse, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { EnrollTokenTypeSwitchComponent } from "@components/shared/enroll-token-type-switch/enroll-token-type-switch.component";
@@ -83,7 +80,7 @@ import { UserService, UserServiceInterface } from "@services/user/user.service";
 import { VersioningService, VersioningServiceInterface } from "@services/version/version.service";
 import { lastValueFrom, Observable } from "rxjs";
 import { TokenEnrollmentTypeSelectorComponent } from "./token-enrollment-type-selector/token-enrollment-type-selector.component";
-import { CUSTOM_TOOLTIP_OPTIONS } from "./token-enrollment.constants";
+import { CUSTOM_TOOLTIP_OPTIONS, ENROLLMENT_CANCELLED } from "./token-enrollment.constants";
 
 export const CUSTOM_DATE_FORMATS = {
   parse: { dateInput: "YYYY-MM-DD" },
@@ -294,7 +291,11 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
     if (reopenFunction) {
       const enrollPromise = this._toPromise(reopenFunction());
       if (!enrollPromise) return;
-      const enrollmentResponse: EnrollmentResponse | null = await enrollPromise;
+      const enrollmentResponse = await enrollPromise;
+      if (enrollmentResponse === ENROLLMENT_CANCELLED) {
+        this.resetEnrollment();
+        return;
+      }
       this.enrollResponse.set(enrollmentResponse);
       if (enrollmentResponse) {
         this._handleEnrollmentResponse(enrollmentResponse);
@@ -310,7 +311,7 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
     const currentTokenType = this.tokenService.selectedTokenType();
     let everythingIsValid = true;
     if (!currentTokenType) {
-      this.notificationService.warning($localize`Please select a token type.`);
+      this.notificationService.warning($localize`:@@token.pleaseSelectToken:Please select a token type.`);
       return false;
     }
 
@@ -326,13 +327,17 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
     }
 
     if (!everythingIsValid) {
-      this.notificationService.warning($localize`Please fill in all required fields or correct invalid entries.`);
+      this.notificationService.warning(
+        $localize`:@@token.pleaseFillAll:Please fill in all required fields or correct invalid entries.`
+      );
       return false;
     }
 
     const strategy: EnrollTokenBase | undefined = this.enrollSwitch()?.currentStrategy();
     if (!strategy) {
-      this.notificationService.warning($localize`Enrollment action is not available for the selected token type.`);
+      this.notificationService.warning(
+        $localize`:@@token.enrollmentAction:Enrollment action is not available for the selected token type.`
+      );
       return false;
     }
 
@@ -374,7 +379,9 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
 
     enrollPromise.catch((error) => {
       const message = error.error?.result?.error?.message || "";
-      this.notificationService.error($localize`Failed to enroll token: ${message || error.message || error}`);
+      this.notificationService.error(
+        $localize`:@@token.failedEnrollToken:Failed to enroll token: ${message || error.message || error}:MESSAGE:`
+      );
     });
     let enrollmentResponse: EnrollmentResponse | null = await enrollPromise;
 
@@ -386,18 +393,30 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
       userRealm: enrollmentArgs.data.realm,
       onlyAddToRealm: enrollmentArgs.data.onlyAddToRealm ?? false,
       rollover: false,
-      showEnrollData: strategy.showEnrollDataInLastStep
+      showEnrollData: strategy.showEnrollDataInLastStep,
+      onEnrollmentResponseChange: (response) => this.updateEnrollmentResponse(response)
     });
 
     // Complete enrollment
     // Push, passkey, webauthn (TODO: maybe we can integrate this into the complete enrollment dialog component)
     if (strategy.onEnrollmentResponse && enrollmentResponse) {
-      enrollmentResponse = await strategy.onEnrollmentResponse(enrollmentResponse, enrollmentArgs.data);
+      const stepResult = await strategy.onEnrollmentResponse(enrollmentResponse, enrollmentArgs.data);
+      if (stepResult === ENROLLMENT_CANCELLED) {
+        this.resetEnrollment();
+        this.pendingChangesService.clearAllRegistrations();
+        return true;
+      }
+      enrollmentResponse = stepResult;
     }
     // two step enrollment + handles further enrollment steps (verify + success dialog)
     this.handleCompleteEnrollment(enrollmentResponse);
     this.pendingChangesService.clearAllRegistrations();
     return true;
+  }
+
+  updateEnrollmentResponse(response: EnrollmentResponse): void {
+    this.enrollResponse.set(response);
+    this.enrolledDialogData.update((data) => (data ? { ...data, response: response } : data));
   }
 
   handleCompleteEnrollment(enrollmentResponse: EnrollmentResponse | null): void {
@@ -415,9 +434,14 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
 
     const dialogRef = this.dialogService.openDialog({
       component: TokenCompleteEnrollmentComponent,
-      data: this.enrolledDialogData()
+      data: this.enrolledDialogData(),
+      configOverride: { autoFocus: "input", disableClose: true }
     });
     dialogRef.afterClosed().subscribe((result) => {
+      if (result === ENROLLMENT_CANCELLED) {
+        this.resetEnrollment();
+        return;
+      }
       if (result) {
         this.enrollResponse.set(result);
         this.enrolledDialogData.set({
@@ -446,14 +470,25 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
     // Open verify dialog
     const dialogRef = this.dialogService.openDialog({
       component: TokenVerifyEnrollmentComponent,
-      data: this.enrolledDialogData()
+      data: this.enrolledDialogData(),
+      configOverride: { autoFocus: "input", disableClose: true }
     });
     dialogRef.afterClosed().subscribe((result) => {
+      if (result === ENROLLMENT_CANCELLED) {
+        this.resetEnrollment();
+        return;
+      }
       if (result) {
         this.enrollResponse.set(result);
         this._handleEnrollmentResponse(result);
       }
     });
+  }
+
+  resetEnrollment(): void {
+    this.enrollResponse.set(null);
+    this.enrolledDialogData.set(null);
+    this.enrollSwitch()?.currentStrategy()?.reopenDialog.set(undefined);
   }
 
   protected trackChange(): void {
@@ -462,7 +497,7 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
 
   protected openLastStepDialog(response: EnrollmentResponse | null): void {
     if (!response) {
-      this.notificationService.warning($localize`No enrollment response available.`);
+      this.notificationService.warning($localize`:@@token.noEnrollmentResponse:No enrollment response available.`);
       return;
     }
 
@@ -486,7 +521,9 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
     }
 
     if (this.isUserRequired() && !this.userService.selectedUser() && !this.enrolledDialogData()?.rollover) {
-      this.notificationService.warning($localize`User is required for this token type, but no user was provided.`);
+      this.notificationService.warning(
+        $localize`:@@token.userRequiredToken:User is required for this token type, but no user was provided.`
+      );
       return;
     }
 

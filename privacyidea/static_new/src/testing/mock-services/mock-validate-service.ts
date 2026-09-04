@@ -49,7 +49,6 @@ export class MockAuthData implements AuthData {
   show_seed = false;
   show_node = "";
   subscription_status = 0;
-  subscription_status_push = 0;
   qr_image_android: string | null = null;
   qr_image_ios: string | null = null;
   qr_image_custom: string | null = null;

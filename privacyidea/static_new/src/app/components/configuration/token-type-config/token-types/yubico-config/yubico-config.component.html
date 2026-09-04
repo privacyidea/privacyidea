@@ -20,52 +20,58 @@
   id="yubico"
   [expanded]="expanded()">
   <mat-expansion-panel-header>
-    <mat-panel-title i18n>Yubico</mat-panel-title>
+    <mat-panel-title i18n="@@tokenTypeConfig.yubico">Yubico</mat-panel-title>
   </mat-expansion-panel-header>
   <div class="panel-content expansion-well">
-    <p i18n>The Yubico Token is a Yubikey that is registered with the YubiCloud service.</p>
-    <p i18n>The Yubikey emits a 44 character one time password.</p>
-    <p i18n>The first 12 characters are a unique ID which is used to bind the device to the user.</p>
-    <p i18n>The authentication request is forwarded to the YubiCloud.</p>
-    <p i18n>
-      For accessing the YubiCloud you need to enter an API Client ID and an API Key, which you can request
+    <p i18n="@@tokenTypeConfig.yubicoTokenYubikey"
+      >The Yubico Token is a Yubikey that is registered with the YubiCloud service.</p
+    >
+    <p i18n="@@tokenTypeConfig.yubikeyEmits44Character">The Yubikey emits a 44 character one time password.</p>
+    <p i18n="@@tokenTypeConfig.first12Characters"
+      >The first 12 characters are a unique ID which is used to bind the device to the user.</p
+    >
+    <p i18n="@@tokenTypeConfig.authenticationRequest">The authentication request is forwarded to the YubiCloud.</p>
+    <p i18n="@@tokenTypeConfig.accessingYubicloud"
+      >For accessing the YubiCloud you need to enter an API Client ID and an API Key, which you can request
       <a
         href="https://upgrade.yubico.com/getapikey/"
         target="_blank"
         >here
-      </a>
-    </p>
+      </a></p
+    >
 
     <div class="flex-row gap-16 ali-center margin-bottom-16">
       <mat-form-field
         appearance="fill"
         class="input-width-l">
-        <mat-label i18n>API Key</mat-label>
+        <mat-label i18n="@@tokenTypeConfig.apiKey">API Key</mat-label>
         <input
           #apiKeyInput
           [value]="formData()[YUBICO_SECRET]"
           (input)="updateFormData(YUBICO_SECRET, $any($event.target).value)"
           matInput
+          i18n-placeholder="@@tokenTypeConfig.apiKey"
           placeholder="API Key"
           required />
         @if (apiKeyInput.validity.valueMissing) {
-          <mat-error i18n>API Key is <strong>required</strong></mat-error>
+          <mat-error i18n="@@tokenTypeConfig.apiKeyRequired">API Key is <strong>required</strong></mat-error>
         }
       </mat-form-field>
 
       <mat-form-field
         appearance="fill"
         class="input-width-l">
-        <mat-label i18n>API Client ID</mat-label>
+        <mat-label i18n="@@tokenTypeConfig.apiClientId">API Client ID</mat-label>
         <input
           #clientIdInput
           [value]="formData()[YUBICO_ID]"
           (input)="updateFormData(YUBICO_ID, $any($event.target).value)"
           matInput
+          i18n-placeholder="@@tokenTypeConfig.clientIdPlaceholderLong"
           placeholder="The client ID"
           required />
         @if (clientIdInput.validity.valueMissing) {
-          <mat-error i18n>API Client ID is <strong>required</strong></mat-error>
+          <mat-error i18n="@@tokenTypeConfig.apiClientIdRequired">API Client ID is <strong>required</strong></mat-error>
         }
       </mat-form-field>
     </div>
@@ -74,7 +80,7 @@
       <mat-form-field
         appearance="fill"
         class="input-width-xl">
-        <mat-label i18n>Yubico URL</mat-label>
+        <mat-label i18n="@@tokenTypeConfig.yubicoUrl">Yubico URL</mat-label>
         <input
           #urlInput
           [value]="formData()[YUBICO_URL]"
@@ -84,7 +90,7 @@
           required
           type="url" />
         @if (urlInput.validity.valueMissing) {
-          <mat-error i18n>Yubico URL is <strong>required</strong></mat-error>
+          <mat-error i18n="@@tokenTypeConfig.yubicoUrlRequired">Yubico URL is <strong>required</strong></mat-error>
         }
       </mat-form-field>
     </div>

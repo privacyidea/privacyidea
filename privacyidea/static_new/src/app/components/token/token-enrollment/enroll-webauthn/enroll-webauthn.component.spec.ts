@@ -28,9 +28,12 @@ import {
 } from "@app/mappers/token-api-payload/webauthn-token-api-payload.mapper";
 import { EnrollWebauthnComponent } from "@components/token/token-enrollment/enroll-webauthn/enroll-webauthn.component";
 import { Base64Service } from "@services/base64/base64.service";
+import { ENROLLMENT_CANCELLED } from "@components/token/token-enrollment/token-enrollment.constants";
+import { AuthService } from "@services/auth/auth.service";
 import { DialogService } from "@services/dialog/dialog.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { TokenService } from "@services/token/token.service";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
 import { lastValueFrom, of, throwError } from "rxjs";
 
@@ -66,7 +69,8 @@ const makePublicKeyCredential = () => {
     type: "public-key",
     authenticatorAttachment: "platform",
     response: { attestationObject, clientDataJSON },
-    getClientExtensionResults: () => ({ credProps: { rk: true } })
+    getClientExtensionResults: () => ({ credProps: { rk: true } }),
+    toJSON: jest.fn()
   } as PublicKeyCredential;
 };
 
@@ -83,7 +87,10 @@ describe("EnrollWebauthnComponent", () => {
 
   const setNavigatorCreate = (impl: () => Promise<PublicKeyCredential>) => {
     (navigator as { credentials: CredentialsContainer }).credentials = {
-      create: jest.fn().mockImplementation(impl)
+      create: jest.fn().mockImplementation(impl),
+      get: jest.fn(),
+      preventSilentAccess: jest.fn(),
+      store: jest.fn()
     } as CredentialsContainer;
   };
 
@@ -109,7 +116,8 @@ describe("EnrollWebauthnComponent", () => {
         { provide: Base64Service, useValue: base64 },
         { provide: WebAuthnApiPayloadMapper, useValue: {} },
         { provide: WebAuthnFinalizeApiPayloadMapper, useValue: {} },
-        { provide: DialogService, useClass: MockDialogService }
+        { provide: DialogService, useClass: MockDialogService },
+        { provide: AuthService, useClass: MockAuthService }
       ]
     }).compileComponents();
 
@@ -122,6 +130,17 @@ describe("EnrollWebauthnComponent", () => {
     fixture.detectChanges();
     await Promise.resolve();
     fixture.detectChanges();
+  };
+
+  /**
+   * A failed attempt keeps the first step dialog open so the user can retry or cancel.
+   * The enrollment promise therefore only settles once the dialog is closed.
+   */
+  const closeDialogAfterFailedAttempt = async () => {
+    for (let i = 0; i < 20 && !component.registrationFailed(); i++) {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    }
+    component.stepOneDialogRef?.close();
   };
 
   it("should create", async () => {
@@ -144,7 +163,9 @@ describe("EnrollWebauthnComponent", () => {
 
   it("should notify when init response missing detail", async () => {
     setNavigatorCreate(async () => makePublicKeyCredential());
-    tokenService.enrollToken.mockReturnValue(of({ detail: undefined, type: "webauthn" } as unknown as EnrollmentResponse));
+    tokenService.enrollToken.mockReturnValue(
+      of({ detail: undefined, type: "webauthn" } as unknown as EnrollmentResponse)
+    );
     await detectChangesStable();
     const enrollmentArgs = component.buildEnrollmentArgs(BASIC);
     const initResponse = await lastValueFrom(tokenService.enrollToken(enrollmentArgs!));
@@ -192,8 +213,45 @@ describe("EnrollWebauthnComponent", () => {
       enrollmentArgs!.data
     );
     expect(finalResponse).toBeNull();
+    expect(dialogServiceMock.openDialog).not.toHaveBeenCalled();
     expect(notification.warning).toHaveBeenCalledWith(
       "Invalid transaction ID or serial number in enrollment detail for finalization."
+    );
+  });
+
+  it("readPublicKeyCred warns when the response has no webAuthnRegisterRequest", async () => {
+    const readPublicKeyCred = (
+      component as unknown as {
+        readPublicKeyCred: (r: WebauthnEnrollmentResponse) => Promise<PublicKeyCredential | null>;
+      }
+    ).readPublicKeyCred;
+
+    const result = await readPublicKeyCred({ detail: {} } as unknown as WebauthnEnrollmentResponse);
+
+    expect(result).toBeNull();
+    expect(notification.warning).toHaveBeenCalledWith("Invalid WebAuthn registration request data.");
+  });
+
+  it("finalizeEnrollment warns when the response or its detail is missing", async () => {
+    const finalizeEnrollment = (
+      component as unknown as {
+        finalizeEnrollment: (args: {
+          webauthnEnrollmentData: unknown;
+          webauthnEnrollmentResponse: WebauthnEnrollmentResponse | null;
+          publicKeyCred: PublicKeyCredential;
+        }) => Promise<EnrollmentResponse | null>;
+      }
+    ).finalizeEnrollment.bind(component);
+
+    const result = await finalizeEnrollment({
+      webauthnEnrollmentData: {},
+      webauthnEnrollmentResponse: null,
+      publicKeyCred: {} as PublicKeyCredential
+    });
+
+    expect(result).toBeNull();
+    expect(notification.warning).toHaveBeenCalledWith(
+      "Enrollment response or its detail is missing for finalization."
     );
   });
 
@@ -206,10 +264,12 @@ describe("EnrollWebauthnComponent", () => {
     await detectChangesStable();
     const enrollmentArgs = component.buildEnrollmentArgs(BASIC);
     const initResponse = await lastValueFrom(tokenService.enrollToken(enrollmentArgs!));
-    const finalResponse = await component.onEnrollmentResponse(
+    const finalResponsePromise = component.onEnrollmentResponse(
       initResponse as EnrollmentResponse,
       enrollmentArgs!.data
     );
+    await closeDialogAfterFailedAttempt();
+    const finalResponse = await finalResponsePromise;
     expect(dialogServiceMock.openDialog).toHaveBeenCalled();
     expect(finalResponse).toBeNull();
     expect(notification.error).toHaveBeenCalledWith("WebAuthn credential creation failed: blocked");
@@ -244,17 +304,22 @@ describe("EnrollWebauthnComponent", () => {
     await detectChangesStable();
     const enrollmentArgs = component.buildEnrollmentArgs(BASIC);
     const initResponse = await lastValueFrom(tokenService.enrollToken(enrollmentArgs!));
-    const finalResponse = await component.onEnrollmentResponse(
+    const finalResponsePromise = component.onEnrollmentResponse(
       initResponse as EnrollmentResponse,
       enrollmentArgs!.data
     );
+    await closeDialogAfterFailedAttempt();
+    const finalResponse = await finalResponsePromise;
     expect(finalResponse).toBeNull();
     expect(notification.error).toHaveBeenCalledWith("WebAuthn finalization failed: finalize-fail");
   });
 
   it("buildEnrollmentArgs returns the webauthn payload and mapper", async () => {
     (navigator as { credentials: CredentialsContainer }).credentials = {
-      create: jest.fn().mockResolvedValue(makePublicKeyCredential())
+      create: jest.fn().mockResolvedValue(makePublicKeyCredential()),
+      get: jest.fn(),
+      preventSilentAccess: jest.fn(),
+      store: jest.fn()
     } as CredentialsContainer;
     await detectChangesStable();
 
@@ -263,6 +328,62 @@ describe("EnrollWebauthnComponent", () => {
     expect(enrollmentArgs).toEqual({
       data: { realm: "default", type: "webauthn", user: "alice" },
       mapper: expect.any(Object)
+    });
+  });
+
+  describe("cancelling the enrollment", () => {
+    let authService: MockAuthService;
+
+    beforeEach(() => {
+      authService = TestBed.inject(AuthService) as unknown as MockAuthService;
+    });
+
+    const startPendingRegistration = async () => {
+      // The browser prompt never settles, so the dialog stays open until the user acts on it.
+      setNavigatorCreate(() => new Promise<PublicKeyCredential>(() => undefined));
+      tokenService.enrollToken.mockReturnValue(of(makeEnrollInitResponse()));
+      const enrollmentArgs = component.buildEnrollmentArgs(BASIC);
+      const initResponse = await lastValueFrom(tokenService.enrollToken(enrollmentArgs!));
+      const pending = component.onEnrollmentResponse(initResponse as EnrollmentResponse, enrollmentArgs!.data);
+      await Promise.resolve();
+      // Wrapped so that awaiting the helper does not await the enrollment itself.
+      return { pending };
+    };
+
+    const dialogData = () => dialogServiceMock.openDialog.mock.calls[0][0].data;
+
+    it("replaces the close button with cancel when deletion is allowed", async () => {
+      authService.actionAllowed.mockImplementation((action: string) => action === "delete");
+
+      const { pending } = await startPendingRegistration();
+
+      expect(dialogData()).toEqual(expect.objectContaining({ showCancelButton: true, showCloseButton: false }));
+
+      component.stepOneDialogRef?.close();
+      await pending;
+    });
+
+    it("keeps the close button without the delete right", async () => {
+      authService.actionAllowed.mockReturnValue(false);
+
+      const { pending } = await startPendingRegistration();
+
+      expect(dialogData()).toEqual(expect.objectContaining({ showCancelButton: false, showCloseButton: true }));
+
+      component.stepOneDialogRef?.close();
+      await pending;
+    });
+
+    it("reports the cancellation and drops the reopen action", async () => {
+      authService.actionAllowed.mockImplementation((action: string) => action === "delete");
+
+      const { pending } = await startPendingRegistration();
+      expect(component.reopenDialog()).toBeDefined();
+
+      component.stepOneDialogRef?.close(ENROLLMENT_CANCELLED);
+
+      expect(await pending).toBe(ENROLLMENT_CANCELLED);
+      expect(component.reopenDialog()).toBeUndefined();
     });
   });
 });

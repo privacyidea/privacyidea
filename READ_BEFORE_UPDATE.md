@@ -2,10 +2,48 @@
 
 ## Update from 3.13 to 3.14
 
+* **SSH key integrity checksum** — SSH key tokens now store an integrity checksum of the SSH key data (serial, key type,
+  public key and comment) in the encrypted OTP key field of the token. The checksum is verified whenever the public SSH
+  key is fetched (e.g. by `privacyidea-authorizedkeys`), so manipulations of the database entries are detected and the
+  key is refused. The database migration computes the checksum for all existing SSH key tokens — **run the schema
+  update** (`pi-manage setup update_db`), otherwise existing SSH key tokens will refuse to hand out their keys. Tokens
+  whose encrypted key cannot be decrypted are skipped by the migration and must be re-enrolled.
+
 * **Challenge table cleared** — The database migration deletes all rows from the `challenge` table. Challenge data is
   now stored in a new format (encrypted JSON dict) that is incompatible with previous versions. If you use long
   challenge validity times, make sure no important challenge-response authentications are still pending before starting
   the update.
+
+* **Audit `serial` column widened to 200 characters** — An audit entry names every token that was involved in a
+  request, for example all tokens that were challenged in a challenge-response authentication. Three tokens with
+  default serials already filled the previous 40 characters. Beyond that, the entry was either shortened per serial
+  (with `PI_AUDIT_SQL_TRUNCATE`) or rejected by the database, in which case the whole audit entry was rolled back and
+  lost with only an error in the log. The database migration widens the column, so a user's tokens fit.
+
+  **On MySQL and MariaDB this migration rebuilds the whole `pidea_audit` table**, because neither of them can extend
+  the column in place: they have to copy the table (`ALGORITHM=COPY`), and writes to it are blocked while the copy
+  runs. How long this takes grows with the size of the audit log: on local SSD storage, count roughly 20 seconds per
+  million entries that hold a signature, so ten million entries take about three minutes. Slow or network-attached
+  storage can be several times slower, so take the size of your audit log into account when you plan the update
+  window. Only the entries that are still there are copied, so trimming the log first shortens the migration, e.g.
+  with `pi-manage audit rotate --age 365` to delete everything older than a year (`--dryrun` shows what would go, and
+  `--chunksize` deletes in batches on a large log). PostgreSQL only changes the column definition and is done
+  immediately.
+
+  **If your audit log is written to a separate database** (`PI_AUDIT_SQL_URI`), the migration does **not** reach it: it
+  runs against the token database only. Apply the change to the audit database yourself, e.g.
+  `ALTER TABLE pidea_audit MODIFY serial VARCHAR(200);` (MySQL/MariaDB) or
+  `ALTER TABLE pidea_audit ALTER COLUMN serial TYPE VARCHAR(200);` (PostgreSQL). Do this **before** or together with the
+  upgrade, so that the audit log can hold the serials of all tokens of a user. It is not required for privacyIDEA to
+  work: entry values are shortened to the length the audit table really has, so a database that still has the
+  40-character column keeps logging shortened serial lists instead of losing entries.
+
+* **Audit entries are always shortened to fit their column** — Values that are longer than their audit column, e.g. a
+  long user name or user agent sent by a client, are shortened so that the entry is written. Previously this required
+  `PI_AUDIT_SQL_TRUNCATE = True`; without it, the database rejected the entry and it was lost. **The setting is now
+  ignored** and shortening is always applied, which also closes the possibility to suppress one's own audit entries by
+  sending over-long request data. `PI_AUDIT_SQL_COLUMN_LENGTH` still works and is only needed if you widened columns
+  beyond what privacyIDEA ships.
 
 * **Search wildcard change** — Audit-log, token, and user (SQL resolver) searches now treat `*` as the **only**
   wildcard. Literal `%` and `_` in a search value are now matched literally instead of acting as SQL `LIKE`/`ILIKE`
@@ -159,30 +197,29 @@
   If you rely on a specific resolver ordering within a realm, make sure each resolver has an explicit, distinct
   priority.
 
-* **A failing event handler no longer aborts the request.** Previously any exception raised by an event handler
-  ended the request with an error, so a single unreachable SMTP server or a broken script could make token
-  enrollment or authentication fail. A failing handler is now best-effort: the failure is written to the audit log
-  (`success=False`, with the exception class in the `info` column), the remaining handlers still run, and the
-  request continues. The exception text itself only goes to the privacyIDEA log, not into the audit database,
-  because it can contain the parameters of the forwarded request.
+* **A failing event handler no longer aborts the request.** Previously any exception raised by an event handler ended
+  the request with an error, so a single unreachable SMTP server or a broken script could make token enrollment or
+  authentication fail. A failing handler is now best-effort: the failure is written to the audit log (`success=False`,
+  with the exception class in the `info` column), the remaining handlers still run, and the request continues. The
+  exception text itself only goes to the privacyIDEA log, not into the audit database, because it can contain the
+  parameters of the forwarded request.
 
   This is configurable per event handler binding with the new **Abort on error** option (API parameter
-  `abort_on_error`, new column in the `eventhandler` table). Enable it for a binding whose result the request
-  itself consumes — otherwise the handler silently not running changes what the client receives. The clearest
-  cases are a **response mangler** that removes data from a response (if it does not run, the data is sent to the
-  client) and a **request mangler** that overwrites request parameters (if it does not run, the endpoint uses the
-  values the client sent). Review your handlers under *Config -> Events* and decide for each whether a failure
-  should fail the request.
+  `abort_on_error`, new column in the `eventhandler` table). Enable it for a binding whose result the request itself
+  consumes — otherwise the handler silently not running changes what the client receives. The clearest cases are a
+  **response mangler** that removes data from a response (if it does not run, the data is sent to the client) and a
+  **request mangler** that overwrites request parameters (if it does not run, the endpoint uses the values the client
+  sent). Review your handlers under *Config -> Events* and decide for each whether a failure should fail the request.
 
-  The schema update sets `abort_on_error` for existing **Federation** handlers, because a federation handler
-  replaces the response with the one of the remote privacyIDEA: continuing without it would answer the client
-  with the locally generated response as if the remote server had produced it. All other existing handlers keep
-  the new best-effort behaviour. If you would rather have a failed federation request answered locally, clear the
-  option for those handlers after the update.
+  The schema update sets `abort_on_error` for existing **Federation** handlers, because a federation handler replaces
+  the response with the one of the remote privacyIDEA: continuing without it would answer the client with the locally
+  generated response as if the remote server had produced it. All other existing handlers keep the new best-effort
+  behaviour. If you would rather have a failed federation request answered locally, clear the option for those handlers
+  after the update.
 
-  Note that a post-event handler runs after the API function has already done its work, so aborting the request
-  there reports an error for an operation that partly happened — the local token was created, only the forwarded
-  request failed.
+  Note that a post-event handler runs after the API function has already done its work, so aborting the request there
+  reports an error for an operation that partly happened — the local token was created, only the forwarded request
+  failed.
 
 * **Machine `hostname` in `GET /machine/` is always a list.** The LDAP machine resolver previously returned a single
   string (e.g. `"dc01.example.test"`); it now returns a list (e.g. `["dc01.example.test"]`), consistent with the hosts
@@ -199,8 +236,8 @@
   error.
 
 * **HTTP API change** - the `resolver` and `userid` filters of `GET /token/` are now applied. Both parameters have
-  always been accepted and documented, but they never became a condition of the query, so a request carrying one of
-  them returned *all* tokens instead of the tokens of that resolver or of that user id. `resolver` is matched
+  always been accepted and documented, but they never became a condition of the query, so a request carrying one of them
+  returned *all* tokens instead of the tokens of that resolver or of that user id. `resolver` is matched
   case-insensitively and `*` acts as a wildcard in both, consistent with `GET /container/`. Since only a token that is
   assigned to a user can match either filter, tokens without an owner are no longer part of such a result. Saved
   filters, scripts and integrations that pass `resolver` or `userid` will therefore receive fewer tokens than before -
@@ -216,8 +253,8 @@
   without a user agent - which is the case for `pi-manage config export`, for the configuration report of
   `GET /system/documentation`, and for the internal check whether a scope contains any policy at all - previously
   omitted every policy that carries a `User Agent` condition. Such a policy was therefore missing from a configuration
-  export (#5683), and a scope whose policies all carry a User Agent condition was treated as if it had no policies.
-  All of these now see the complete set of policies.
+  export (#5683), and a scope whose policies all carry a User Agent condition was treated as if it had no policies. All
+  of these now see the complete set of policies.
 
   **This changes who is allowed what** in the `admin` and `user` scopes. Those scopes allow everything as long as they
   contain no policy at all, and deny everything that is not explicitly granted as soon as they contain one. A scope
@@ -233,8 +270,8 @@
   unable to edit the very policy causing it.
 
   **Before updating**, check your `admin` scope policies under *Config -> Policies* for a User Agent condition. If any
-  are present, make sure that at least one **active** `admin` policy grants your administrators their rights either
-  with no User Agent condition at all or with a condition that includes the client they administrate with
+  are present, make sure that at least one **active** `admin` policy grants your administrators their rights either with
+  no User Agent condition at all or with a condition that includes the client they administrate with
   (`privacyIDEA-WebUI` for the WebUI). The same review applies to the `user` scope, where the consequence is users
   losing self-service rights rather than a lockout.
 

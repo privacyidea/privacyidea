@@ -61,7 +61,7 @@ function withDeliveries(entries: NotificationChannelEntry[] | undefined): Notifi
 })
 export class NotificationDeliveryWidgetComponent extends DashboardWidget implements OnInit {
   static override readonly type = "notification-delivery";
-  static override readonly title = $localize`Notification Delivery`;
+  static override readonly title = $localize`:@@dashboard.notificationDelivery:Notification Delivery`;
   static override readonly icon = "notifications_active";
   static override readonly defaultSize: WidgetSize = { cols: 8, rows: 6 };
   static override readonly minSize: WidgetSize = { cols: 6, rows: 5 };
