@@ -29,6 +29,7 @@ export class MockAuthSessionModeService implements AuthSessionModeServiceInterfa
   setMode = jest.fn().mockImplementation((mode: AuthSessionMode) => {
     this.mode.set(mode);
     this.storage.set(mode === "multi-tab-persistent" ? localStorage : sessionStorage);
+    return true;
   });
   setDefaultMode = jest.fn().mockImplementation(() => this.setMode(this.defaultMode));
   addModeChangeListener = jest.fn().mockReturnValue(jest.fn());

@@ -23,12 +23,14 @@ import { HttpTestingController, provideHttpClientTesting } from "@angular/common
 import { Router } from "@angular/router";
 import { AppComponent } from "@app/app.component";
 import { AUTH_DATA_STORAGE_KEY, BEARER_TOKEN_STORAGE_KEY } from "@core/constants";
+import { AuthSessionSyncService } from "@services/auth-session-sync/auth-session-sync.service";
 import { DashboardDataStore } from "@services/dashboard/dashboard-data-store.service";
 import { LocalService } from "@services/local/local.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { UserSettingsService } from "@services/user-settings/user-settings.service";
 import { VersioningService } from "@services/version/version.service";
 import {
+  MockAuthSessionSyncService,
   MockLocalService,
   MockNotificationService,
   MockRouter,
@@ -69,7 +71,8 @@ describe("AuthService", () => {
         { provide: VersioningService, useClass: MockVersioningService },
         { provide: Router, useValue: routerMock },
         { provide: NotificationService, useClass: MockNotificationService },
-        { provide: UserSettingsService, useClass: MockUserSettingsService }
+        { provide: UserSettingsService, useClass: MockUserSettingsService },
+        { provide: AuthSessionSyncService, useClass: MockAuthSessionSyncService }
       ]
     }).compileComponents();
 
@@ -555,6 +558,41 @@ describe("AuthService", () => {
     it("stays unauthenticated when the token is valid but auth data is missing", () => {
       mockLocal.saveData(BEARER_TOKEN_STORAGE_KEY, makeJwt(3600));
       restore();
+      expect(authService.isAuthenticated()).toBe(false);
+    });
+  });
+
+  describe("bootstrapSession", () => {
+    const makeJwt = (): string => {
+      const payload = {
+        username: "admin",
+        realm: "",
+        nonce: "",
+        role: "admin",
+        authtype: "",
+        exp: Math.floor(Date.now() / 1000) + 3600,
+        rights: []
+      };
+      return `h.${btoa(JSON.stringify(payload))}.s`;
+    };
+
+    it("restores only after the handover from the other tabs finished", async () => {
+      const sync = TestBed.inject(AuthSessionSyncService) as unknown as MockAuthSessionSyncService;
+      sync.adoptSessionFromOpenTabs.mockImplementation(() => {
+        mockLocal.saveData(BEARER_TOKEN_STORAGE_KEY, makeJwt());
+        mockLocal.saveData(AUTH_DATA_STORAGE_KEY, JSON.stringify({ menus: [] }));
+        return Promise.resolve();
+      });
+
+      expect(authService.isAuthenticated()).toBe(false);
+      await authService.bootstrapSession();
+
+      expect(authService.isAuthenticated()).toBe(true);
+      expect(authService.username()).toBe("admin");
+    });
+
+    it("leaves the session closed when no tab hands one over", async () => {
+      await authService.bootstrapSession();
       expect(authService.isAuthenticated()).toBe(false);
     });
   });

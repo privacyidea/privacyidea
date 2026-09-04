@@ -28,6 +28,7 @@ import { AuthSessionModeCardComponent } from "./auth-session-mode-card.component
 interface CardInternals {
   modeOptions: () => { value: AuthSessionMode; label: string }[];
   modeHint: () => string;
+  selectedMode: () => AuthSessionMode;
   selectAuthSessionMode: (event: MatSelectChange) => Promise<void>;
 }
 
@@ -122,10 +123,27 @@ describe("AuthSessionModeCardComponent", () => {
     it("keeps the current mode when the dialog is dismissed", async () => {
       modeService.mode.set("single-tab");
       dialogService.openDialogAsync.mockResolvedValue(undefined);
-      const { event, source } = selectionOf("multi-tab-persistent");
-      await card.selectAuthSessionMode(event);
+      await card.selectAuthSessionMode(selectionOf("multi-tab-persistent").event);
       expect(modeService.setMode).not.toHaveBeenCalled();
-      expect(source.value).toBe("single-tab");
+      expect(card.selectedMode()).toBe("single-tab");
+    });
+
+    it("shows the hint of the mode being confirmed while the dialog is open", async () => {
+      modeService.mode.set("single-tab");
+      const singleTabHint = card.modeHint();
+      dialogService.openDialogAsync.mockImplementation(() => {
+        expect(card.modeHint()).not.toBe(singleTabHint);
+        return Promise.resolve(true);
+      });
+      await card.selectAuthSessionMode(selectionOf("multi-tab-persistent").event);
+      expect(dialogService.openDialogAsync).toHaveBeenCalled();
+    });
+
+    it("falls back to the active mode when the service refuses the change", async () => {
+      modeService.mode.set("single-tab");
+      modeService.setMode.mockImplementation(() => undefined);
+      await card.selectAuthSessionMode(selectionOf("multi-tab-persistent").event);
+      expect(card.selectedMode()).toBe("single-tab");
     });
 
     it("asks again when stepping from ephemeral up to persistent", async () => {

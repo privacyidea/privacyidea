@@ -32,6 +32,7 @@ import {
   isModeAvailable
 } from "@services/auth-session-mode/auth-session-mode.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 
 const MODE_EXPOSURE: Record<AuthSessionMode, number> = {
   "single-tab": 0,
@@ -63,6 +64,7 @@ const MODE_HINTS: Record<AuthSessionMode, { title: string; message: string }> = 
 export class AuthSessionModeCardComponent {
   private readonly authSessionModeService: AuthSessionModeServiceInterface = inject(AuthSessionModeService);
   private readonly dialogService: DialogServiceInterface = inject(DialogService);
+  private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   protected readonly mode = this.authSessionModeService.mode;
   protected readonly modeOptions = computed(() => {
     const current = this.mode();
@@ -84,7 +86,11 @@ export class AuthSessionModeCardComponent {
         return;
       }
     }
-    this.authSessionModeService.setMode(target);
+    if (!this.authSessionModeService.setMode(target)) {
+      this.notificationService.error(
+        $localize`:@@uiSettings.sessionModeNotChanged:The session mode could not be changed.`
+      );
+    }
     this.selectedMode.set(this.mode());
   }
 

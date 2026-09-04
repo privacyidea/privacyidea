@@ -26,7 +26,10 @@ import {
   AuthSessionMode,
   AuthSessionModeService,
   isAuthSessionMode,
-  isMultiTabMode
+  isCrossTabSyncSupported,
+  isModeAvailable,
+  isMultiTabMode,
+  isSharedStorageMode
 } from "./auth-session-mode.service";
 
 describe("AuthSessionModeService", () => {
@@ -49,10 +52,12 @@ describe("AuthSessionModeService", () => {
     localStorage.clear();
     sessionStorage.clear();
     environment.defaultAuthSessionMode = originalDefault;
+    (globalThis as { BroadcastChannel?: unknown }).BroadcastChannel = class {};
   });
 
   afterEach(() => {
     environment.defaultAuthSessionMode = originalDefault;
+    delete (globalThis as { BroadcastChannel?: unknown }).BroadcastChannel;
   });
 
   describe("resolving the active mode", () => {
@@ -64,6 +69,17 @@ describe("AuthSessionModeService", () => {
     it("prefers a stored mode over the deployment default", () => {
       environment.defaultAuthSessionMode = "single-tab";
       expect(createService("multi-tab-persistent").mode()).toBe("multi-tab-persistent");
+    });
+
+    it("falls back to single-tab when the stored mode is not available", () => {
+      delete (globalThis as { BroadcastChannel?: unknown }).BroadcastChannel;
+      expect(createService("multi-tab-ephemeral").mode()).toBe("single-tab");
+    });
+
+    it("falls back to single-tab when the deployment default is not available", () => {
+      delete (globalThis as { BroadcastChannel?: unknown }).BroadcastChannel;
+      environment.defaultAuthSessionMode = "multi-tab-ephemeral";
+      expect(createService().mode()).toBe("single-tab");
     });
 
     it("ignores a stored value that is not a known mode", () => {
@@ -104,6 +120,22 @@ describe("AuthSessionModeService", () => {
       createService("single-tab");
       expect(sessionStorage.getItem(BEARER_TOKEN_STORAGE_KEY)).toBe("keep");
     });
+
+    it("moves a session from the unused storage into the active one", () => {
+      localStorage.setItem(BEARER_TOKEN_STORAGE_KEY, "carried-over");
+      localStorage.setItem(AUTH_DATA_STORAGE_KEY, "auth-data");
+      createService("single-tab");
+      expect(sessionStorage.getItem(BEARER_TOKEN_STORAGE_KEY)).toBe("carried-over");
+      expect(sessionStorage.getItem(AUTH_DATA_STORAGE_KEY)).toBe("auth-data");
+    });
+
+    it("does not overwrite a session the active storage already holds", () => {
+      sessionStorage.setItem(BEARER_TOKEN_STORAGE_KEY, "mine");
+      localStorage.setItem(BEARER_TOKEN_STORAGE_KEY, "theirs");
+      createService("single-tab");
+      expect(sessionStorage.getItem(BEARER_TOKEN_STORAGE_KEY)).toBe("mine");
+      expect(localStorage.getItem(BEARER_TOKEN_STORAGE_KEY)).toBeNull();
+    });
   });
 
   describe("setMode", () => {
@@ -120,6 +152,22 @@ describe("AuthSessionModeService", () => {
       authService.isAuthenticated.set(false);
       service.setMode("multi-tab-persistent");
       expect(service.mode()).toBe("single-tab");
+    });
+
+    it("does nothing when the mode is already the active one", () => {
+      const service = createService("single-tab");
+      const listener = jest.fn();
+      service.addModeChangeListener(listener);
+      service.setMode("single-tab");
+      expect(listener).not.toHaveBeenCalled();
+    });
+
+    it("does not store a mode the browser cannot provide", () => {
+      delete (globalThis as { BroadcastChannel?: unknown }).BroadcastChannel;
+      const service = createService("single-tab");
+      service.setMode("multi-tab-ephemeral");
+      expect(service.mode()).toBe("single-tab");
+      expect(localStorage.getItem(AUTH_SESSION_MODE_STORAGE_KEY)).toBe("single-tab");
     });
 
     it("stores the new mode for a signed-in admin", () => {
@@ -154,6 +202,25 @@ describe("AuthSessionModeService", () => {
       expect(listener).toHaveBeenCalledWith("multi-tab-ephemeral");
     });
 
+    it("notifies every registered listener", () => {
+      const service = createService("single-tab");
+      const first = jest.fn();
+      const second = jest.fn();
+      service.addModeChangeListener(first);
+      service.addModeChangeListener(second);
+      service.setMode("multi-tab-ephemeral");
+      expect(first).toHaveBeenCalledWith("multi-tab-ephemeral");
+      expect(second).toHaveBeenCalledWith("multi-tab-ephemeral");
+    });
+
+    it("stops notifying a listener that unsubscribed", () => {
+      const service = createService("single-tab");
+      const listener = jest.fn();
+      service.addModeChangeListener(listener)();
+      service.setMode("multi-tab-ephemeral");
+      expect(listener).not.toHaveBeenCalled();
+    });
+
     it("does not notify the listener when the change is rejected", () => {
       const service = createService("single-tab");
       const listener = jest.fn();
@@ -184,10 +251,19 @@ describe("AuthSessionModeService", () => {
       expect(listener).not.toHaveBeenCalled();
     });
 
-    it("discards the session held in the previous storage", () => {
+    it("moves a session out of the previous private storage", () => {
       const service = createService("single-tab");
       sessionStorage.setItem(BEARER_TOKEN_STORAGE_KEY, "own");
       service.adoptMode("multi-tab-persistent");
+      expect(sessionStorage.getItem(BEARER_TOKEN_STORAGE_KEY)).toBeNull();
+      expect(localStorage.getItem(BEARER_TOKEN_STORAGE_KEY)).toBe("own");
+    });
+
+    it("drops the session of a previously shared storage", () => {
+      const service = createService("multi-tab-persistent");
+      localStorage.setItem(BEARER_TOKEN_STORAGE_KEY, "shared");
+      service.adoptMode("single-tab");
+      expect(localStorage.getItem(BEARER_TOKEN_STORAGE_KEY)).toBeNull();
       expect(sessionStorage.getItem(BEARER_TOKEN_STORAGE_KEY)).toBeNull();
     });
 
@@ -217,6 +293,22 @@ describe("AuthSessionModeService", () => {
       expect(isMultiTabMode("single-tab")).toBe(false);
       expect(isMultiTabMode("multi-tab-ephemeral")).toBe(true);
       expect(isMultiTabMode("multi-tab-persistent")).toBe(true);
+    });
+
+    it("counts only multi-tab-persistent as shared storage", () => {
+      expect(isSharedStorageMode("single-tab")).toBe(false);
+      expect(isSharedStorageMode("multi-tab-ephemeral")).toBe(false);
+      expect(isSharedStorageMode("multi-tab-persistent")).toBe(true);
+    });
+
+    it("offers multi-tab-ephemeral only where the channel exists", () => {
+      expect(isCrossTabSyncSupported()).toBe(true);
+      expect(isModeAvailable("multi-tab-ephemeral")).toBe(true);
+      delete (globalThis as { BroadcastChannel?: unknown }).BroadcastChannel;
+      expect(isCrossTabSyncSupported()).toBe(false);
+      expect(isModeAvailable("multi-tab-ephemeral")).toBe(false);
+      expect(isModeAvailable("single-tab")).toBe(true);
+      expect(isModeAvailable("multi-tab-persistent")).toBe(true);
     });
   });
 });

@@ -55,7 +55,7 @@ export interface AuthSessionModeServiceInterface {
 
   readonly storage: Signal<Storage>;
 
-  setMode(mode: AuthSessionMode): void;
+  setMode(mode: AuthSessionMode): boolean;
 
   setDefaultMode(): void;
 
@@ -91,15 +91,19 @@ export class AuthSessionModeService implements AuthSessionModeServiceInterface {
     this.claimSessionFromInactiveStorage();
   }
 
-  setMode(mode: AuthSessionMode): void {
-    if (mode === this.mode() || !isModeAvailable(mode) || !this.changeAllowed()) {
-      return;
+  setMode(mode: AuthSessionMode): boolean {
+    if (!isModeAvailable(mode) || !this.changeAllowed()) {
+      return false;
+    }
+    if (mode === this.storedMode()) {
+      return true;
     }
     const previousStorage = this.storage();
     localStorage.setItem(AUTH_SESSION_MODE_STORAGE_KEY, mode);
     this.storedMode.set(mode);
     this.moveSession(previousStorage, this.storage());
     this.modeChangeListeners.forEach((listener) => listener(mode));
+    return true;
   }
 
   addModeChangeListener(listener: (mode: AuthSessionMode) => void): () => void {
@@ -145,7 +149,7 @@ export class AuthSessionModeService implements AuthSessionModeServiceInterface {
   private claimSessionFromInactiveStorage(): void {
     const active = this.storage();
     const inactive = active === localStorage ? sessionStorage : localStorage;
-    const claimable = active.getItem(BEARER_TOKEN_STORAGE_KEY) === null;
+    const claimable = active === sessionStorage && active.getItem(BEARER_TOKEN_STORAGE_KEY) === null;
     SESSION_KEYS.forEach((key) => {
       const value = inactive.getItem(key);
       if (claimable && value !== null) {

@@ -29,6 +29,7 @@ import {
 } from "@services/auth-session-mode/auth-session-mode.service";
 
 const AUTH_SESSION_CHANNEL_NAME = "privacyidea_session";
+const TAB_PRESENCE_LOCK_NAME = "privacyidea_session_tab";
 const HANDSHAKE_TIMEOUT_MS = 250;
 
 interface SessionPayload {
@@ -36,12 +37,19 @@ interface SessionPayload {
   authData: string;
 }
 
+// Messages arrive from any same-origin context, including another build of this app, so a
+// payload is only handed to the storage once both halves are actually strings.
+function isSessionPayload(value: unknown): value is SessionPayload {
+  const payload = value as Partial<SessionPayload> | null | undefined;
+  return typeof payload?.token === "string" && typeof payload?.authData === "string";
+}
+
 type AuthSessionSyncMessage =
   | { type: "request" }
   | ({ type: "offer" } & SessionPayload)
   | { type: "logout" }
   | ({ type: "login" } & SessionPayload)
-  | ({ type: "mode-changed"; mode: AuthSessionMode } & SessionPayload);
+  | ({ type: "mode-changed"; mode: AuthSessionMode } & Partial<SessionPayload>);
 
 export interface AuthSessionSyncHandler {
   endSession(): void;
@@ -68,6 +76,7 @@ export class AuthSessionSyncService implements AuthSessionSyncServiceInterface {
   private readonly authSessionModeService: AuthSessionModeServiceInterface = inject(AuthSessionModeService);
   private readonly channel = AuthSessionSyncService.openChannel();
   private readonly handlers = new Set<AuthSessionSyncHandler>();
+  private readonly tabPresence = AuthSessionSyncService.holdTabPresence();
   private pendingAdoption: ((message: AuthSessionSyncMessage) => void) | null = null;
 
   constructor() {
@@ -77,12 +86,17 @@ export class AuthSessionSyncService implements AuthSessionSyncServiceInterface {
     this.authSessionModeService.addModeChangeListener((mode) => this.broadcastModeChange(mode));
   }
 
-  adoptSessionFromOpenTabs(): Promise<void> {
+  async adoptSessionFromOpenTabs(): Promise<void> {
     if (!this.channel || this.authSessionModeService.mode() !== "multi-tab-ephemeral") {
-      return Promise.resolve();
+      return;
     }
     if (this.hasStoredSession()) {
-      return Promise.resolve();
+      return;
+    }
+    // The bootstrap waits on this handshake, so the timeout must not be paid by the first or
+    // only tab, where nobody is on the channel to answer it.
+    if (!(await this.hasOpenPeers())) {
+      return;
     }
     const storage = this.authSessionModeService.storage();
     return new Promise<void>((resolve) => {
@@ -91,13 +105,12 @@ export class AuthSessionSyncService implements AuthSessionSyncServiceInterface {
         resolve();
       }, HANDSHAKE_TIMEOUT_MS);
       this.pendingAdoption = (message) => {
-        if (message.type !== "offer") {
+        if (message.type !== "offer" || !isSessionPayload(message)) {
           return;
         }
         clearTimeout(timer);
         this.pendingAdoption = null;
-        storage.setItem(BEARER_TOKEN_STORAGE_KEY, message.token);
-        storage.setItem(AUTH_DATA_STORAGE_KEY, message.authData);
+        this.writeSession(storage, message);
         resolve();
       };
       this.post({ type: "request" });
@@ -127,10 +140,9 @@ export class AuthSessionSyncService implements AuthSessionSyncServiceInterface {
   }
 
   private broadcastModeChange(mode: AuthSessionMode): void {
-    const payload = this.readSession();
-    if (payload) {
-      this.post({ type: "mode-changed", mode, ...payload });
-    }
+    // Posted even without a payload: the mode is already persisted, so a tab that never hears
+    // about it keeps reading the other Storage than the one the stored mode names.
+    this.post({ type: "mode-changed", mode, ...(this.readSession() ?? {}) });
   }
 
   private handleMessage(message: AuthSessionSyncMessage): void {
@@ -153,15 +165,19 @@ export class AuthSessionSyncService implements AuthSessionSyncServiceInterface {
     }
   }
 
-  private acceptRemoteLogin(message: SessionPayload): void {
-    if (!isMultiTabMode(this.authSessionModeService.mode()) || this.handlers.size === 0 || this.hasAdoptedSession()) {
+  private acceptRemoteLogin(message: unknown): void {
+    const mode = this.authSessionModeService.mode();
+    if (!isMultiTabMode(mode) || this.handlers.size === 0 || !isSessionPayload(message)) {
+      return;
+    }
+    if (!isSharedStorageMode(mode) && this.hasAdoptedSession()) {
       return;
     }
     this.writeSession(this.authSessionModeService.storage(), message);
     this.adoptStoredSession();
   }
 
-  private acceptModeChange(message: { mode: AuthSessionMode } & SessionPayload): void {
+  private acceptModeChange(message: { mode: AuthSessionMode } & Partial<SessionPayload>): void {
     if (!isAuthSessionMode(message.mode)) {
       return;
     }
@@ -170,7 +186,9 @@ export class AuthSessionSyncService implements AuthSessionSyncServiceInterface {
     if (keepsOwnSession) {
       return;
     }
-    this.writeSession(this.authSessionModeService.storage(), message);
+    if (isSessionPayload(message)) {
+      this.writeSession(this.authSessionModeService.storage(), message);
+    }
     this.adoptStoredSession();
   }
 
@@ -221,5 +239,36 @@ export class AuthSessionSyncService implements AuthSessionSyncServiceInterface {
 
   private static openChannel(): BroadcastChannel | null {
     return isCrossTabSyncSupported() ? new BroadcastChannel(AUTH_SESSION_CHANNEL_NAME) : null;
+  }
+
+  // A shared lock the browser releases on its own when the tab goes away, which makes the
+  // number of its holders the number of open tabs.
+  private static holdTabPresence(): Promise<void> {
+    const locks = globalThis.navigator?.locks;
+    if (!locks?.request) {
+      return Promise.resolve();
+    }
+    return new Promise<void>((held) => {
+      locks
+        .request(TAB_PRESENCE_LOCK_NAME, { mode: "shared" }, () => {
+          held();
+          return new Promise<never>(() => undefined);
+        })
+        .catch(() => held());
+    });
+  }
+
+  private async hasOpenPeers(): Promise<boolean> {
+    const locks = globalThis.navigator?.locks;
+    if (!locks?.query) {
+      return true;
+    }
+    await this.tabPresence;
+    try {
+      const held = (await locks.query()).held ?? [];
+      return held.filter((lock) => lock.name === TAB_PRESENCE_LOCK_NAME).length > 1;
+    } catch {
+      return true;
+    }
   }
 }

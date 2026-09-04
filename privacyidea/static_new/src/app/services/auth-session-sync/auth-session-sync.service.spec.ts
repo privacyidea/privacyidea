@@ -149,6 +149,7 @@ describe("AuthSessionSyncService", () => {
     it("keeps its own session instead of asking", async () => {
       modeService.mode.set("multi-tab-ephemeral");
       sessionStorage.setItem(BEARER_TOKEN_STORAGE_KEY, "mine");
+      sessionStorage.setItem(AUTH_DATA_STORAGE_KEY, "auth-data");
       const service = createService();
       answerRequestsWith("theirs", "auth-data");
       await service.adoptSessionFromOpenTabs();
@@ -251,9 +252,50 @@ describe("AuthSessionSyncService", () => {
       modeService.mode.set("multi-tab-ephemeral");
       sessionStorage.setItem(BEARER_TOKEN_STORAGE_KEY, "mine");
       createService();
+      (handler.hasSession as jest.Mock).mockReturnValue(true);
       otherTab.postMessage({ type: "login", token: "theirs", authData: "data" });
       expect(sessionStorage.getItem(BEARER_TOKEN_STORAGE_KEY)).toBe("mine");
       expect(handler.adoptStoredSession).not.toHaveBeenCalled();
+    });
+
+    it("signs in a waiting tab although the shared storage already holds the token", () => {
+      modeService.mode.set("multi-tab-persistent");
+      modeService.storage.set(localStorage);
+      localStorage.setItem(BEARER_TOKEN_STORAGE_KEY, "theirs");
+      localStorage.setItem(AUTH_DATA_STORAGE_KEY, "data");
+      createService();
+      otherTab.postMessage({ type: "login", token: "theirs", authData: "data" });
+      expect(handler.adoptStoredSession).toHaveBeenCalled();
+    });
+  });
+
+  describe("handler registration", () => {
+    it("keeps a handler that registered first", () => {
+      modeService.mode.set("multi-tab-ephemeral");
+      const service = createService();
+      const second: AuthSessionSyncHandler = {
+        endSession: jest.fn(),
+        adoptStoredSession: jest.fn(),
+        hasSession: jest.fn().mockReturnValue(false)
+      };
+      service.addHandler(second);
+      otherTab.postMessage({ type: "logout" });
+      expect(handler.endSession).toHaveBeenCalled();
+      expect(second.endSession).toHaveBeenCalled();
+    });
+
+    it("stops calling a handler that unregistered", () => {
+      modeService.mode.set("multi-tab-ephemeral");
+      const service = createService();
+      const second: AuthSessionSyncHandler = {
+        endSession: jest.fn(),
+        adoptStoredSession: jest.fn(),
+        hasSession: jest.fn().mockReturnValue(false)
+      };
+      service.addHandler(second)();
+      otherTab.postMessage({ type: "logout" });
+      expect(handler.endSession).toHaveBeenCalled();
+      expect(second.endSession).not.toHaveBeenCalled();
     });
   });
 
@@ -267,12 +309,41 @@ describe("AuthSessionSyncService", () => {
       expect(handler.adoptStoredSession).toHaveBeenCalled();
     });
 
-    it("replaces a session the receiving tab already had", () => {
+    it("keeps its own session when both modes are private", () => {
       modeService.mode.set("multi-tab-ephemeral");
-      sessionStorage.setItem(BEARER_TOKEN_STORAGE_KEY, "old");
+      sessionStorage.setItem(BEARER_TOKEN_STORAGE_KEY, "mine");
       createService();
-      otherTab.postMessage({ type: "mode-changed", mode: "single-tab", token: "new", authData: "d" });
-      expect(sessionStorage.getItem(BEARER_TOKEN_STORAGE_KEY)).toBe("new");
+      otherTab.postMessage({ type: "mode-changed", mode: "single-tab", token: "theirs", authData: "d" });
+      expect(sessionStorage.getItem(BEARER_TOKEN_STORAGE_KEY)).toBe("mine");
+      expect(handler.adoptStoredSession).not.toHaveBeenCalled();
+    });
+
+    it("hands every tab the initiator's session when switching to multi-tab-ephemeral", () => {
+      modeService.mode.set("single-tab");
+      sessionStorage.setItem(BEARER_TOKEN_STORAGE_KEY, "mine");
+      createService();
+      otherTab.postMessage({ type: "mode-changed", mode: "multi-tab-ephemeral", token: "theirs", authData: "d" });
+      expect(sessionStorage.getItem(BEARER_TOKEN_STORAGE_KEY)).toBe("theirs");
+      expect(handler.adoptStoredSession).toHaveBeenCalled();
+    });
+
+    it("keeps a tab signed in when leaving the shared storage", () => {
+      modeService.mode.set("multi-tab-persistent");
+      modeService.storage.set(localStorage);
+      createService();
+      otherTab.postMessage({ type: "mode-changed", mode: "single-tab", token: "shared", authData: "d" });
+      expect(sessionStorage.getItem(BEARER_TOKEN_STORAGE_KEY)).toBe("shared");
+      expect(handler.adoptStoredSession).toHaveBeenCalled();
+    });
+
+    it("ignores a mode it does not know", () => {
+      modeService.mode.set("single-tab");
+      sessionStorage.setItem(BEARER_TOKEN_STORAGE_KEY, "mine");
+      createService();
+      otherTab.postMessage({ type: "mode-changed", mode: "per-tab", token: "theirs", authData: "d" });
+      expect(modeService.adoptMode).not.toHaveBeenCalled();
+      expect(sessionStorage.getItem(BEARER_TOKEN_STORAGE_KEY)).toBe("mine");
+      expect(handler.adoptStoredSession).not.toHaveBeenCalled();
     });
 
     it("broadcasts its own change through the registered listener", () => {

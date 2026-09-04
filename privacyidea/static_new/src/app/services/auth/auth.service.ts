@@ -22,8 +22,8 @@ import { computed, inject, Injectable, Injector, Signal, signal, WritableSignal 
 import { MatDialog } from "@angular/material/dialog";
 import { Router } from "@angular/router";
 import { PiResponse } from "@app/app.component";
-import { ROUTE_PATHS } from "@app/route_paths";
 import { resolveLandingPath } from "@app/guards/auth.guard";
+import { ROUTE_PATHS } from "@app/route_paths";
 import { AUTH_DATA_STORAGE_KEY, BEARER_TOKEN_STORAGE_KEY } from "@core/constants";
 import { environment } from "@env/environment";
 import {
@@ -33,6 +33,8 @@ import {
 import { PolicyAction } from "@services/auth/policy-actions";
 import { DashboardDataStore } from "@services/dashboard/dashboard-data-store.service";
 import { LocalService, LocalServiceInterface } from "@services/local/local.service";
+import { SessionTimerService } from "@services/session-timer/session-timer.service";
+import { UiPreferencesService } from "@services/user-settings/ui-preferences.service";
 import { UserSettingsService } from "@services/user-settings/user-settings.service";
 import { VersioningService, VersioningServiceInterface } from "@services/version/version.service";
 import { tokenTypes } from "@utils/token.utils";
@@ -249,6 +251,8 @@ export interface AuthServiceInterface {
   readonly isSelfServiceUser: Signal<boolean>;
 
   // Methods
+  bootstrapSession(): Promise<void>;
+
   getHeaders(): HttpHeaders;
 
   authenticate(params: AuthenticateParams): Observable<AuthResponse>;
@@ -368,7 +372,9 @@ export class AuthService implements AuthServiceInterface {
   }
 
   bootstrapSession(): Promise<void> {
-    return this.authSessionSyncService.adoptSessionFromOpenTabs().then(() => this.restoreSession());
+    return this.authSessionSyncService.adoptSessionFromOpenTabs().then(() => {
+      this.restoreSession();
+    });
   }
 
   getHeaders(): HttpHeaders {
@@ -420,11 +426,25 @@ export class AuthService implements AuthServiceInterface {
   }
 
   private adoptStoredSession(): void {
+    const previousSession = this.jwtNonce();
     this.clearUserScopedCaches();
-    this.restoreSession();
-    if (this.isAuthenticated() && this.router.url.startsWith(ROUTE_PATHS.LOGIN)) {
+    if (!this.restoreSession()) {
+      this.endSession();
+      return;
+    }
+    if (previousSession && previousSession !== this.jwtNonce()) {
+      this.reload();
+      return;
+    }
+    this.injector.get(SessionTimerService).initialTimerStart();
+    this.injector.get(UiPreferencesService).sync();
+    if (this.router.url.startsWith(ROUTE_PATHS.LOGIN)) {
       this.router.navigateByUrl(resolveLandingPath(this));
     }
+  }
+
+  protected reload(): void {
+    window.location.reload();
   }
 
   private endSession(): void {
@@ -496,8 +516,8 @@ export class AuthService implements AuthServiceInterface {
   private readonly http = inject(HttpClient);
   private readonly versioningService: VersioningServiceInterface = inject(VersioningService);
   private readonly dashboardDataStore = inject(DashboardDataStore);
-  // Resolved lazily: UserSettingsService injects the AuthService itself, so an
-  // eager inject() here would be a circular dependency.
+  // Resolved lazily: UserSettingsService, SessionTimerService and UiPreferencesService inject
+  // the AuthService themselves, so an eager inject() here would be a circular dependency.
   private readonly injector = inject(Injector);
 
   decodeJwtPayload(token: string): JwtData | null {
@@ -532,32 +552,34 @@ export class AuthService implements AuthServiceInterface {
    * Rehydrate the session from storage on bootstrap so a full page reload (e.g. switching
    * the UI language, which loads a different locale bundle) does not drop an active login.
    * The token and the auth data are restored only while the JWT is still valid; an
-   * expired or corrupt session is cleared instead.
+   * expired or corrupt session is cleared instead. Returns whether a session was established.
    */
-  private restoreSession(): void {
-    const token = this.localService.getData(BEARER_TOKEN_STORAGE_KEY);
-    if (!token) {
-      return;
-    }
-    const jwt = this.decodeJwtPayload(token);
-    // Treat a missing/zero exp as expired: such a token cannot establish a valid session.
-    if (!jwt || !jwt.exp || jwt.exp * 1000 <= Date.now()) {
-      this.clearStoredSession();
-      return;
-    }
-    const storedAuthData = this.localService.getData(AUTH_DATA_STORAGE_KEY);
-    if (!storedAuthData) {
-      // A token without its auth data cannot be restored; clear it so getHeaders() does not
-      // keep sending a bearer token for a session the UI considers logged out.
-      this.clearStoredSession();
-      return;
-    }
+  private restoreSession(): boolean {
     try {
+      const token = this.localService.getData(BEARER_TOKEN_STORAGE_KEY);
+      if (!token) {
+        return false;
+      }
+      const jwt = this.decodeJwtPayload(token);
+      // Treat a missing/zero exp as expired: such a token cannot establish a valid session.
+      if (!jwt || !jwt.exp || jwt.exp * 1000 <= Date.now()) {
+        this.clearStoredSession();
+        return false;
+      }
+      const storedAuthData = this.localService.getData(AUTH_DATA_STORAGE_KEY);
+      if (!storedAuthData) {
+        // A token without its auth data cannot be restored; clear it so getHeaders() does not
+        // keep sending a bearer token for a session the UI considers logged out.
+        this.clearStoredSession();
+        return false;
+      }
       this.authData.set(JSON.parse(storedAuthData) as AuthData);
       this.jwtData.set(jwt);
       this.authenticationAccepted.set(true);
+      return true;
     } catch {
       this.clearStoredSession();
+      return false;
     }
   }
 
