@@ -133,6 +133,42 @@
   noticed, because that per-process cache sits in front of the shared one. See the "Redis cache" section of the
   documentation.
 
+* **The `auth_cache` policy no longer covers challenge-response, push, `passOnNoToken` and `passOnNoUser`.** The cache
+  exists so that a client which authenticates again at short intervals — a VPN gateway reconnecting every hour, for
+  example — may present the same credential instead of obtaining a new OTP. It now only holds a complete credential that
+  was really verified, which means the credential of a single `/validate/check` request. Three kinds of successful
+  authentication are no longer stored in the cache, and no longer answered from it:
+
+    * **Requests carrying a `transaction_id`** (or its alias `state`), i.e. the response to a challenge. Such a request
+      contains only part of the credential — the PIN was sent in the request that triggered the challenge — and a push
+      token is confirmed on the phone and sends no credential at all, previously caching an *empty* credential that
+      then authenticated on its own. **If you use `auth_cache` together with a challenge-response token type (including
+      email, SMS and push, or HOTP/TOTP with the `challenge_response` policy), those users now authenticate against
+      their token on every login.** Expect the corresponding load — LDAP binds, SMS and email dispatch — to return to
+      one per authentication. The combination cannot be made to work: the PIN and the response arrive in two separate
+      requests, so a complete credential to cache never exists.
+    * **Requests with an empty or absent `pass`.** This also removes a `TypeError` (an HTTP 500 on an authentication
+      that had already succeeded) when a client confirmed a push token and then omitted the `pass` parameter instead of
+      sending an empty one.
+    * **Authentications decided by `passOnNoToken` or `passOnNoUser`.** These succeed because the user has no token or
+      does not exist, not because the credential was checked, so an entry kept authenticating after the policy was
+      withdrawn or the user was given a token.
+
+  **Clear the cache after the update if you used any of these combinations.** Entries written by the previous version
+  are not touched by the update, and an entry holding the response to a challenge keeps authenticating on its own until
+  it expires — the new rules decide what is written and what is looked up, they do not remove what is already there.
+  Empty credentials are refused outright, so the push case is closed either way, but the remaining entries are only
+  gone once you run:
+
+      pi-manage config authcache cleanup --minutes 0
+
+  With `PI_REDIS_CACHE_AUTH` the entries carry the policy's interval as their TTL and expire on their own, at the
+  latest after the first interval of the policy that wrote them.
+
+  `passthru` against a RADIUS server is unchanged and still caches what the remote server accepted, which means the
+  remote system's replay protection does not apply for the duration of the policy. Keep the interval short if you
+  combine the two.
+
 * **`clientapplication.lastseen` is written again.** Since 3.13 the column was only ever set when a client's row was
   first created: the update path assigned an attribute that is not the column, so the client list in the WebUI and the
   metering of plugin traffic showed when each client was *first* seen rather than last. This is fixed. Expect the

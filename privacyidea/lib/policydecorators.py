@@ -65,6 +65,11 @@ if TYPE_CHECKING:
 
 log = logging.getLogger(__name__)
 
+# Marks a successful authentication that did not verify the credential the client presented,
+# so that :func:`auth_cache` does not store that credential. Set in the reply dictionary of the
+# deciding decorator and removed again by :func:`auth_cache`, which is the outermost one.
+AUTH_CACHE_EXCLUDE = "auth_cache_exclude"
+
 
 class libpolicy:
     """
@@ -173,6 +178,24 @@ def auth_cache(wrapped_function, user_object, passw, options=None):
     Decorate lib.token:check_user_pass. Verify, if the authentication can
     be found in the auth_cache.
 
+    The cache lets a client present the same credential again for the duration of the
+    policy, so that a client which reconnects regularly - a VPN gateway, for example -
+    does not have to obtain a new OTP every time. It therefore only ever holds a complete
+    credential that was actually verified against a token or a user store. Three kinds of
+    successful authentication are excluded, because their credential is neither of those:
+
+    * A request that answers a challenge. Such a request carries only the response to the
+      challenge, not the whole credential - the PIN was sent in the preceding request and
+      a push token confirms out of band and sends nothing at all.
+    * A request without any credential, i.e. an empty or absent ``pass``.
+    * A success that did not verify the presented credential at all, which the deciding
+      decorator marks with ``AUTH_CACHE_EXCLUDE`` in its reply.
+
+    The first two are decided from the request alone, so such a request is neither served
+    from the cache nor stored in it. Answering one from the cache would accept an entry
+    written by an earlier version, and looking one up without a credential also reaches
+    ``argon2.verify`` with ``None``, which raises.
+
     :param wrapped_function: usually "check_user_pass"
     :param user_object: User who tries to authenticate
     :param passw: The PIN and OTP
@@ -182,8 +205,9 @@ def auth_cache(wrapped_function, user_object, passw, options=None):
     options = options or {}
     g = options.get("g")
     auth_cache_policy = None
+    answers_challenge = bool(options.get("transaction_id") or options.get("state"))
 
-    if g:
+    if g and passw and not answers_challenge:
         auth_cache_policy = (Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.AUTH_CACHE, user_object=user_object)
                              .action_values(unique=True, write_to_audit_log=False))
         if auth_cache_policy:
@@ -216,7 +240,11 @@ def auth_cache(wrapped_function, user_object, passw, options=None):
 
     # If nothing else returned, call the wrapped function
     res, reply_dict = wrapped_function(user_object, passw, options)
-    if auth_cache_policy and res:
+    # The marker is meant for this decorator only and the reply dictionary is handed to the
+    # client, so it is removed in any case, whether the policy applies or not.
+    credential_unverified = reply_dict.pop(AUTH_CACHE_EXCLUDE, False)
+    # A request excluded above never matched a policy, so it cannot reach this either.
+    if auth_cache_policy and res and not credential_unverified:
         # If authentication is successful, we store the password in auth_cache.
         # The first interval of the policy is how long the entry can be used at
         # the most, so a cache that can expire entries by itself is told to drop
@@ -257,7 +285,10 @@ def auth_user_has_no_token(wrapped_function, user_object, passw,
             token_count = _get_token_count_excluding_rollout_states(user_object, ignore_rollout_state)
             if token_count == 0:
                 g.audit_object.add_policy({p.get("name") for p in pass_no_token})
-                return True, {"message": f"user has no token, accepted due to '{pass_no_token[0].get('name')}'"}
+                # The credential was never verified: the success comes from the absence of a
+                # token and ends as soon as the user is given one or the policy is withdrawn.
+                return True, {"message": f"user has no token, accepted due to '{pass_no_token[0].get('name')}'",
+                              AUTH_CACHE_EXCLUDE: True}
 
     # If nothing else returned, we return the wrapped function
     return wrapped_function(user_object, passw, options)
@@ -285,7 +316,10 @@ def auth_user_does_not_exist(wrapped_function, user_object, passw, options=None)
         if not user_object.exist():
             if pass_no_user:
                 g.audit_object.add_policy({p.get("name") for p in pass_no_user})
-                return True, {"message": f"user does not exist, accepted due to '{pass_no_user[0].get('name')}'"}
+                # The credential was never verified: the success comes from the absence of the
+                # user and ends as soon as the policy is withdrawn.
+                return True, {"message": f"user does not exist, accepted due to '{pass_no_user[0].get('name')}'",
+                              AUTH_CACHE_EXCLUDE: True}
 
             hide_message = Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE,
                                       user_object=user_object).any()
