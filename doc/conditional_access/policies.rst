@@ -136,8 +136,21 @@ lock permanently at 20. Thresholds must be unique within a policy.
 By default an action fires **once**, exactly when the count reaches the
 threshold: an email configured at 8 is sent on the 8th failure and not again on
 the 9th. Enable **re-trigger above threshold** for an action that should fire on
-every further request as well. ``DENY`` defaults to re-trigger, as it is a one-time action denying only the current
-request.
+every further request instead, for as long as the count stays in the range its
+stage owns - at or above its own threshold, below the next stage's. Each stage
+therefore owns one range of counts, and only the stage owning the *current*
+count acts, so escalation is a hand-over rather than an overlay.
+
+This is a live read of the count, not a state the policy remembers: should the
+count later drop back into a milder stage's range - the time window ageing old
+failures out, or a successful login where ``reset_on_success`` applies - that
+stage's re-triggering action fires again. ``DENY`` defaults to re-trigger, as it
+is a one-time action denying only the current request, and follows the same
+rule. In practice, though, a re-triggering ``DENY`` rarely hands over to a
+higher stage on its own: once enforced, every further request is refused before
+any credentials are checked and logged as ``ACCESS_DENIED``, a type no policy
+can count, so the very count that would carry it past the next threshold stops
+climbing while the refusal holds.
 
 Stages are evaluated from the highest threshold down, so the order follows the
 thresholds themselves and there is nothing else to configure.
@@ -146,7 +159,8 @@ A threshold counts failures and therefore starts at 1. ``DENY`` is the exception
 it states a standing verdict instead of reacting to a count, so a stage carrying
 nothing but ``DENY`` may use threshold ``0``, which then means *always*. That is
 how a lockdown is written - refuse everything the policy covers, whatever the
-subject has done.
+subject has done. Where the policy has further stages, that ``0`` stage hands
+over like any other, so *always* reaches up to the next threshold.
 
 .. warning:: A ``DENY`` at threshold 0 refuses **every** request the policy
    covers, whatever the subject has done. Scope it with conditions, and leave

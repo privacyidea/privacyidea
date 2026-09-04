@@ -1224,6 +1224,60 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
 
         self.assertListEqual([mild_stage.failure_threshold], self._triggered_thresholds())
 
+    def test_retrigger_stops_once_a_more_severe_stage_owns_the_count(self):
+        # A re-triggering action owns the range up to the next stage's threshold, and stops once the count moves
+        # into a more severe stage's range - as long as the count keeps climbing. See
+        # test_retrigger_resumes_once_the_count_decays_back_into_its_range for what happens when it does not.
+        _, stages = self._make_policy(
+            name="tiers", counter_type=AuthEventType.MFA_FAIL,
+            stages=(StageDefinition(5, [StageActionDefinition(ConditionalAccessAction.LOCK_USER, 1800,
+                                                                 retrigger_above_threshold=False)]),
+                    StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.LOCK_USER, 600,
+                                                                 retrigger_above_threshold=True)])))
+        severe_stage = stages[0]
+        mild_stage = stages[1]
+
+        self._seed_events(AuthEventType.MFA_FAIL, 3)  # count 3 -> the mild stage's own threshold
+        self.assertListEqual([mild_stage.failure_threshold], self._triggered_thresholds())
+
+        self._seed_events(AuthEventType.MFA_FAIL, 1)  # count 4 -> still inside the mild stage's range
+        self.assertListEqual([mild_stage.failure_threshold], self._triggered_thresholds())
+
+        self._seed_events(AuthEventType.MFA_FAIL, 1)  # count 5 -> the severe (fire-once) stage's exact threshold
+        self.assertListEqual([severe_stage.failure_threshold], self._triggered_thresholds())
+
+        self._seed_events(AuthEventType.MFA_FAIL, 1)  # count 6 -> past both: the severe stage already fired once,
+        # and the count has moved out of the mild stage's range
+        self.assertListEqual([], self._triggered_thresholds())
+
+    def test_retrigger_resumes_once_the_count_decays_back_into_its_range(self):
+        # Stage ownership is a live read of the current count, not a state the policy remembers: once the events
+        # that pushed the count into a more severe stage's range age out of the time window, the count can drop
+        # back into a milder stage's range, and that stage's re-triggering action fires again - there is no
+        # permanent hand-over.
+        now = utc_now()
+        _, stages = self._make_policy(
+            name="tiers", counter_type=AuthEventType.MFA_FAIL, window=100,
+            stages=(StageDefinition(5, [StageActionDefinition(ConditionalAccessAction.LOCK_USER, 50,
+                                                                 retrigger_above_threshold=False)]),
+                    StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.LOCK_USER, 600,
+                                                                 retrigger_above_threshold=True)])))
+        severe_stage = stages[0]
+        mild_stage = stages[1]
+
+        # count 5 at 'now' -> the severe stage fires (fire-once, at its exact threshold).
+        self._seed_events(AuthEventType.MFA_FAIL, 5, timestamp=now)
+        evaluation = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL, now=now)
+        self.assertListEqual([severe_stage.failure_threshold], [o.threshold for o in evaluation.outcomes])
+
+        # 250s later: the five events are now outside the 100s window (count decays to 0), and the severe stage's
+        # 50s lock has long since expired. Three fresh failures bring the count back to 3 -> the mild stage's own
+        # (re-triggering) threshold, and it fires again even though the severe stage already fired once.
+        later = now + timedelta(seconds=250)
+        self._seed_events(AuthEventType.MFA_FAIL, 3, timestamp=later)
+        evaluation = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL, now=later)
+        self.assertListEqual([mild_stage.failure_threshold], [o.threshold for o in evaluation.outcomes])
+
     def test_permanent_lock_action(self):
         self._make_policy(name="perm", counter_type=AuthEventType.MFA_FAIL,
                           stages=(StageDefinition(
@@ -1631,6 +1685,21 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
         self._seed_events(AuthEventType.PASSWORD_FAIL, 3)
         self.assertEqual(AccessDecision.DENY, evaluate_access_decision(CAContext(self.user)).decision)
         self._seed_events(AuthEventType.PASSWORD_FAIL, 1)  # count 4 > 3
+        self.assertEqual(AccessDecision.CONTINUE, evaluate_access_decision(CAContext(self.user)).decision)
+
+    def test_access_decision_retriggering_deny_stops_at_the_next_threshold(self):
+        # The range rule applies to the standing DENY verdict too: it holds while the count stays below the next
+        # stage's threshold, and the more severe stage supplies the decision from there on. That stage only emails,
+        # so once the count reaches 10 nothing denies any more.
+        self._make_policy(
+            name="deny", counter_type=AuthEventType.PASSWORD_FAIL,
+            stages=(StageDefinition(10, [StageActionDefinition(ConditionalAccessAction.EMAIL_ADMIN,
+                                                                  {"smtp_identifier": "nosuch"})]),
+                    StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.DENY,
+                                                                 retrigger_above_threshold=True)])))
+        self._seed_events(AuthEventType.PASSWORD_FAIL, 9)
+        self.assertEqual(AccessDecision.DENY, evaluate_access_decision(CAContext(self.user)).decision)
+        self._seed_events(AuthEventType.PASSWORD_FAIL, 1)  # count 10 -> the milder stage no longer decides
         self.assertEqual(AccessDecision.CONTINUE, evaluate_access_decision(CAContext(self.user)).decision)
 
     def test_access_decision_denies_on_combined_count(self):

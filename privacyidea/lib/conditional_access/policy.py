@@ -139,8 +139,8 @@ MAX_NAME_LENGTH = 255
 # on the lock/block state rows that copy it. Shared, so any path taking one as input validates alike.
 MAX_ERROR_MESSAGE_LENGTH = 500
 
-# DENY is a standing pre-auth decision, so it defaults to re-triggering while the count stays at or above the
-# threshold; the post-response lock/email/block actions default to firing once. A set because both the threshold-0 rule
+# DENY is a standing pre-auth decision, so it defaults to re-triggering over the range its stage owns; the
+# post-response lock/email/block actions default to firing once. A set because both the threshold-0 rule
 # and the retrigger default ask "is this a standing verdict?".
 DECISION_ACTIONS = frozenset({ConditionalAccessAction.DENY})
 
@@ -962,9 +962,9 @@ def _build_stages(stage_defs: list[StageDefinition]) -> list[ConditionalAccessPo
 
     An action whose ``retrigger_above_threshold`` is ``None`` (not chosen by the
     admin) gets the action-aware default: the :data:`DECISION_ACTIONS` are
-    standing pre-auth decisions that apply while the count stays at or above the
-    threshold, so they re-trigger; the post-response effects (lock/email/block)
-    fire once, at the exact threshold.
+    standing pre-auth decisions that apply over the range their stage owns, so
+    they re-trigger; the post-response effects (lock/email/block) fire once, at
+    the exact threshold.
     """
     return [
         ConditionalAccessPolicyStage(
