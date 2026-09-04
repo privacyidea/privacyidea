@@ -73,12 +73,21 @@
             class="bars"
             [class]="'bars-' + row.key"
             aria-hidden="true">
+            <!-- The whole column carries the hover and the click, not the bar standing in it: one attempt against a
+                 busy peak is a bar a pixel or two tall, which is no target for either. routerLink on a span rather
+                 than an anchor, as the reasons table does with the anchor it has: it navigates on click and adds
+                 nothing focusable to a subtree that is hidden from assistive tech. -->
             @for (count of row.counts; track $index) {
               <span
-                class="bar"
-                [class.bar-muted]="!inSelection($index)"
-                [style.height.%]="barHeight(count)"
-                [matTooltip]="binTooltip($index)"></span>
+                class="bar-slot"
+                [routerLink]="routePaths.AUTHENTICATION_LOG"
+                (click)="showBucket($index)"
+                [matTooltip]="binTooltip($index)">
+                <span
+                  class="bar"
+                  [class.bar-muted]="!inSelection($index)"
+                  [style.height.%]="barHeight(count)"></span>
+              </span>
             }
           </div>
           <!-- One tick per bin, laid out exactly like the bars above it, so a tick begins and ends where its bin

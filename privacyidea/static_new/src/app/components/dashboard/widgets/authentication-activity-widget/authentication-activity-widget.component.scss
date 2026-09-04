@@ -192,9 +192,24 @@ mat-button-toggle-group {
   }
 }
 
-.bar {
+// One bucket's share of the row's width, the full height of it, so hovering or clicking anywhere in the column hits
+// the bucket - the bar itself can be a pixel tall. The pitch is the bar's former one, so the ticks below still line
+// up with the columns above them.
+.bar-slot {
   flex: 1 1 0;
   min-width: 0;
+  display: flex;
+  align-items: flex-end;
+  height: 100%;
+  cursor: pointer;
+
+  &:hover {
+    background-color: var(--mat-sys-surface-container-high);
+  }
+}
+
+.bar {
+  width: 100%;
   border-radius: 2px 2px 0 0;
 }
 

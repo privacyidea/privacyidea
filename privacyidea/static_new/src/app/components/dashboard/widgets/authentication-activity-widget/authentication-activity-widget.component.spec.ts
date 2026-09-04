@@ -83,6 +83,12 @@ describe("AuthenticationActivityWidgetComponent", () => {
     return (fixture.nativeElement.querySelector(selector)?.textContent ?? "").trim();
   }
 
+  // The bucket columns of one chart row, which are what carry the hover and the click.
+  function bars(row: number): HTMLElement[] {
+    const rows = fixture.nativeElement.querySelectorAll(".chart-row");
+    return Array.from<HTMLElement>(rows[row].querySelectorAll(".bar-slot"));
+  }
+
   // The window of the last request, as dates: the endpoint takes ISO strings.
   function requestedWindow(): [Date, Date, number] {
     const [start, end, bins] = logMock.fetchStatistics.mock.calls.at(-1) as [string, string, number];
@@ -856,6 +862,51 @@ describe("AuthenticationActivityWidgetComponent", () => {
     const chips = logMock.authenticationLogFilter().filterMap;
     expect(chips.get("start_time")).toBe(toFilterDisplay("2026-03-01T00:00:00+00:00"));
     expect(chips.get("end_time")).toBe(toFilterDisplay("2026-03-02T00:00:00+00:00"));
+  });
+
+  it("opens the log on the bucket a bar stands over, on time alone", () => {
+    seed([
+      series("LOGIN_SUCCESS", "success", [1, 0, 0, 0]),
+      series("PIN_FAIL", "failure", [0, 3, 0, 0]),
+      series("MFA_FAIL", "failure", [0, 1, 0, 0])
+    ]);
+    create();
+
+    bars(1)[1].click();
+
+    // The bucket's own span, not the brushed one: the bar answers for its column.
+    expect(logMock.timestampFrom()).toBe("2026-03-01T06:00:00+00:00");
+    expect(logMock.timestampTo()).toBe("2026-03-01T12:00:00+00:00");
+    const chips = logMock.authenticationLogFilter().filterMap;
+    expect(chips.get("start_time")).toBe(toFilterDisplay("2026-03-01T06:00:00+00:00"));
+    expect(chips.get("end_time")).toBe(toFilterDisplay("2026-03-01T12:00:00+00:00"));
+    // No event-type filter, though the row has event types to offer. This chart counts attempts, each reduced to the
+    // event that classified it, while the log lists the entries an attempt is made of: an attempt that ended in
+    // success can hold a PIN_FAIL entry on the way, so filtering the log to the failure event types would list
+    // entries of attempts this chart counts as successful.
+    expect(chips.get("event_type")).toBeUndefined();
+  });
+
+  it("closes the last bucket at the window's end, which is where its bar stops", () => {
+    seed([series("LOGIN_SUCCESS", "success", [0, 0, 0, 4])]);
+    create();
+
+    bars(0)[BINS - 1].click();
+
+    // The last bucket has no successor to take an end from.
+    expect(logMock.timestampTo()).toBe("2026-03-02T00:00:00+00:00");
+  });
+
+  it("makes the whole column the target rather than the bar in it", () => {
+    seed([series("LOGIN_SUCCESS", "success", [1, 0, 0, 0])]);
+    create();
+
+    // A bucket holding one attempt against a busy peak draws a bar a pixel or two tall; hover and click belong to the
+    // column, which is always the full height.
+    const slots = bars(0);
+    expect(slots).toHaveLength(BINS);
+    expect(slots[0].classList).toContain("mat-mdc-tooltip-trigger");
+    expect(slots[0].querySelector(".bar")!.classList).not.toContain("mat-mdc-tooltip-trigger");
   });
 
   it("pre-seeds the log filter when a failure reason is clicked", () => {

@@ -495,19 +495,40 @@ challenge-response login count once, classified by how the attempt ended.`;
     return row.share === null ? "" : `(${Math.round(row.share * 100)}%)`;
   }
 
-  // Opens the log on the attempts behind a row of the reasons table, carrying the selected span with the filter: the
-  // log keeps whatever timestamps it was last left with, so without this the count shown here and the rows listed
-  // there could describe different periods. The brushed span, not the window, because the count in the row is the
-  // brushed one.
+  // Opens the log on the attempts behind a row of the reasons table, over the brushed span - not the window, because
+  // the count in the row is the brushed one.
+  showEventType(eventType: string): void {
+    this.openLog(eventType, this.selectedFrom(), this.selectedTo());
+  }
+
+  // Opens the log on the bucket a bar stands over, on time alone - the row it was clicked in narrows nothing.
+  //
+  // Deliberately not filtered by the row's event types, tempting as that is. This chart counts *attempts*, each one
+  // reduced to the event that classified it; the log lists the entries those attempts are made of. An attempt that
+  // ended in success can hold a PIN_FAIL entry on the way there, so a list filtered to the failure event types would
+  // show entries belonging to attempts this chart counts as successful - a longer list than the bar, describing
+  // something else. Filtering on time keeps the two answering different questions about the same span rather than
+  // looking like they disagree.
+  showBucket(bin: number): void {
+    const from = this.binStarts()[bin];
+    if (!from) {
+      return;
+    }
+    this.openLog(null, from, this.binStarts()[bin + 1] ?? this.statistics()?.window?.end_time ?? null);
+  }
+
+  // Carries a span, and at most one event type, into the log, which keeps whatever filter it was last left with:
+  // without this the numbers shown here and the rows listed there could describe different periods.
   //
   // The span goes into the filter *chips* as well as the signals. The log derives its time filter from the chip text
   // and clears a bound whose chip is missing, so setting the signals alone would be undone the moment the page loads.
   // toFilterDisplay is the form the page itself writes, which is what keeps it from reading the chip as an edit and
   // reparsing it.
-  showEventType(eventType: string): void {
-    const from = this.selectedFrom();
-    const to = this.selectedTo();
-    let filter = new FilterValue().addEntry("event_type", eventType);
+  private openLog(eventType: string | null, from: string | null, to: string | null): void {
+    let filter = new FilterValue();
+    if (eventType) {
+      filter = filter.addEntry("event_type", eventType);
+    }
     if (from && to) {
       filter = filter.addEntry("start_time", toFilterDisplay(from)).addEntry("end_time", toFilterDisplay(to));
     }
