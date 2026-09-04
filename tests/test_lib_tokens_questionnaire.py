@@ -6,7 +6,7 @@ This depends on lib.tokenclass
 import json
 
 from privacyidea.lib.config import set_privacyidea_config
-from privacyidea.lib.token import init_token, import_tokens, get_tokens
+from privacyidea.lib.token import init_token, import_tokens, get_tokens, get_one_token
 from privacyidea.lib.tokens.questionnairetoken import QuestionnaireTokenClass
 from privacyidea.models import Token
 from .base import MyTestCase
@@ -217,4 +217,29 @@ class QuestionnaireTokenTestCase(MyTestCase):
         self.assertEqual(r, 1)
 
         # Clean up
+        token.delete_token()
+
+    def test_09_enrolling_again_replaces_the_questions(self):
+        set_privacyidea_config("question.num_answers", 3)
+        serial = "QUST_REPLACE"
+        init_token({"type": "question", "serial": serial, "pin": self.pin,
+                    "questions": self.j_questions})
+
+        # Enrolling the same token again with a different set of questions replaces them. A question of the
+        # previous set would otherwise still be asked and its answer would still authenticate.
+        other_questions = {"neu1": "antwort1", "neu2": "antwort2", "neu3": "antwort3"}
+        init_token({"type": "question", "serial": serial, "pin": self.pin,
+                    "questions": json.dumps(other_questions)})
+
+        token = get_one_token(serial=serial)
+        token_info = token.get_tokeninfo()
+        stored = [key for key in token_info if token_info.get(f"{key}.type") == "password"]
+        self.assertEqual(sorted(other_questions), sorted(stored), stored)
+        for question in self.questions:
+            self.assertNotIn(question, stored, stored)
+
+        # Only a question of the current set is asked
+        for _ in range(5):
+            r = token.create_challenge()
+            self.assertIn(r[1], other_questions, r[1])
         token.delete_token()

@@ -176,6 +176,13 @@ class QuestionnaireTokenClass(TokenClass):
         if len(questions) < int(num_answers):
             raise TokenAdminError(_("You need to provide at least %s "
                                     "answers.") % num_answers)
+        # Replace the questions of the token instead of adding to them. create_challenge() asks any question
+        # that is stored, so a question of a previous set would stay answerable and its answer would keep
+        # authenticating, even though it is not part of the questions the token was enrolled with.
+        previous_questions = [tokeninfo.Key for tokeninfo in self.token.info_list if tokeninfo.Type == "password"]
+        for question in previous_questions:
+            if question not in questions:
+                self.remove_tokeninfo(question)
         # Save all questions and answers and encrypt them
         for question, answer in questions.items():
             self.write_tokeninfo(question, answer, value_type="password")
