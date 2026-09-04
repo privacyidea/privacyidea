@@ -87,12 +87,18 @@ td.ca-highlight-cell {
   text-transform: none;
 }
 
-// The preset buttons sit at the two ends of the slider, each one moving the window end it points at.
+// The presets and the brush side by side: the presets choose the window, the brush narrows what is counted in it.
 .ca-range {
   display: flex;
-  align-items: center;
-  gap: 4px;
+  align-items: flex-start;
+  gap: 8px;
   padding-inline: 8px;
+}
+
+.chart-range-presets {
+  @include widget.range-presets;
+  flex: 0 0 auto;
+  align-self: center;
 }
 
 .ca-slider-with-histogram {
@@ -120,6 +126,12 @@ td.ca-highlight-cell {
   background-color: var(--mat-sys-primary);
   opacity: 0.4;
   border-radius: 1px 1px 0 0;
+}
+
+// A bucket the brush leaves out. It keeps its full height - the shape of the window is what the chart is for - but
+// fades back, so the part of it the count beside the title is counting is the part that reads as solid.
+.ca-activity-bar-muted {
+  opacity: 0.12;
 }
 
 .ca-range-slider {

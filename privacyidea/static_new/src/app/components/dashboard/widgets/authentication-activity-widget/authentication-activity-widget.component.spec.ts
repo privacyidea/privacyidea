@@ -34,7 +34,8 @@ import { MockAuthenticationLogService } from "@testing/mock-services/mock-authen
 import { MockPiResponse } from "@testing/mock-services/mock-utils";
 import { toFilterDisplay } from "@utils/date-format.utils";
 import { of, Subject, throwError } from "rxjs";
-import { ACTIVITY_RANGES, AuthenticationActivityWidgetComponent } from "./authentication-activity-widget.component";
+import { ACTIVITY_RANGES } from "@components/dashboard/widgets/activity-range";
+import { AuthenticationActivityWidgetComponent } from "./authentication-activity-widget.component";
 
 const instance: WidgetInstance = { id: "activity-1", type: "authentication-activity", x: 0, y: 0, cols: 8, rows: 9 };
 
@@ -644,7 +645,7 @@ describe("AuthenticationActivityWidgetComponent", () => {
     expect(toggles).toHaveLength(ACTIVITY_RANGES.length);
     // They set the window the brush spans, so they sit in the brush's own row, ahead of the track: the group and the
     // brush are one control between them, not a header and a chart.
-    const presets = fixture.nativeElement.querySelector(".range-row > .activity-range-presets");
+    const presets = fixture.nativeElement.querySelector(".range-row > .chart-range-presets");
     expect(presets.nextElementSibling).toBe(fixture.nativeElement.querySelector(".range"));
     toggles[2].click();
     fixture.detectChanges();

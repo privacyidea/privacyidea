@@ -125,7 +125,7 @@
     </tbody>
   </table>
 
-  @if (summary().blockedIps) {
+  @if (hasHistory()) {
     <p class="ca-section-title">
       <span i18n>Blocks and locks over time</span>
       <span
@@ -134,29 +134,23 @@
         >{{ restrictionsInRange() }} in range</span
       >
     </p>
+    <!-- The same pair the authentication-activity chart carries, and read the same way: the presets choose the window
+         the history is fetched over, and the brush narrows what is counted within it. No preset buttons at the ends of
+         the track any more - those moved the window client-side, which would leave the bars at the fetched resolution
+         while the axis claimed a narrower span. -->
     <div class="ca-range">
-      <button
-        mat-icon-button
-        class="ca-range-preset"
-        [matMenuTriggerFor]="startPresetMenu"
-        matTooltip="Start of the shown range"
-        i18n-matTooltip
-        aria-label="Start of the shown range"
-        i18n-aria-label
-        type="button">
-        <mat-icon>first_page</mat-icon>
-      </button>
-      <mat-menu #startPresetMenu>
-        @for (preset of startPresets; track preset.label) {
-          <button
-            mat-menu-item
-            (click)="applyStartPreset(preset)"
-            type="button">
-            {{ preset.label }}
-          </button>
-        }
-      </mat-menu>
-
+      <div class="chart-range-presets">
+        <mat-button-toggle-group
+          [hideSingleSelectionIndicator]="true"
+          [value]="selectedRange().id"
+          (change)="selectRange($event.value)"
+          aria-label="Time range"
+          i18n-aria-label>
+          @for (range of ranges; track range.id) {
+            <mat-button-toggle [value]="range.id">{{ range.label }}</mat-button-toggle>
+          }
+        </mat-button-toggle-group>
+      </div>
       <div class="ca-slider-with-histogram">
         <!-- Blocks per bucket behind the slider; decorative, hidden from assistive tech. -->
         <div
@@ -165,56 +159,46 @@
           @for (bar of activityHistogram(); track $index) {
             <div
               class="ca-activity-bar"
+              [class.ca-activity-bar-muted]="!inSelection($index)"
               [style.height.%]="bar * 100"></div>
           }
         </div>
+        <!-- No `discrete`: the labels below name the two ends, as they do on the activity chart, and a floating bubble
+             would sit half outside the widget at either end of the track.
+
+             The native input event, not Material's valueChange output: that one is emitted from the thumb's `change`
+             handler, which a range input only fires when the drag is let go, and the labels would sit a whole drag
+             behind the thumb. aria-valuetext is written by displayWith and by the binding below because neither covers
+             both thumbs on its own - Material fills a thumb's text from a signal only a value change ever sets, so the
+             thumb that keeps its starting value would announce a bare bucket number. -->
         <mat-slider
           class="ca-range-slider"
           [min]="0"
-          [max]="sliderSteps"
+          [max]="binCount()"
           step="1"
-          discrete
           [displayWith]="formatSliderThumb">
           <input
             matSliderStartThumb
-            aria-label="Range start"
+            #startThumb="matSliderRangeThumb"
+            aria-label="Start of the counted span"
             i18n-aria-label
+            [attr.aria-valuetext]="rangeSummaryFrom()"
             [value]="rangeStart()"
-            (valueChange)="onRangeStartInput($event)" />
+            (input)="onRangeStartInput(startThumb.value)" />
           <input
             matSliderEndThumb
-            aria-label="Range end"
+            #endThumb="matSliderRangeThumb"
+            aria-label="End of the counted span"
             i18n-aria-label
+            [attr.aria-valuetext]="rangeSummaryTo()"
             [value]="rangeEnd()"
-            (valueChange)="onRangeEndInput($event)" />
+            (input)="onRangeEndInput(endThumb.value)" />
         </mat-slider>
         <div class="ca-range-summary">
           <span>{{ rangeSummaryFrom() }}</span>
           <span>{{ rangeSummaryTo() }}</span>
         </div>
       </div>
-
-      <button
-        mat-icon-button
-        class="ca-range-preset"
-        [matMenuTriggerFor]="endPresetMenu"
-        matTooltip="End of the shown range"
-        i18n-matTooltip
-        aria-label="End of the shown range"
-        i18n-aria-label
-        type="button">
-        <mat-icon>last_page</mat-icon>
-      </button>
-      <mat-menu #endPresetMenu>
-        @for (preset of endPresets; track preset.label) {
-          <button
-            mat-menu-item
-            (click)="applyEndPreset(preset)"
-            type="button">
-            {{ preset.label }}
-          </button>
-        }
-      </mat-menu>
     </div>
 
     <p class="ca-section-title">

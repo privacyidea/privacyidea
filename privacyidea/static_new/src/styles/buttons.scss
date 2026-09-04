@@ -546,10 +546,11 @@ $button-low-contrast-variant: linear-gradient(
   min-width: var(--button-width-xl);
 }
 
-// The authentication-activity widget seats its time-range presets in the narrow column the chart keeps for its row
-// labels, where a form-sized toggle group does not fit: four buttons need about 180px and the column is 144px. The
-// label's own padding is where the difference comes from, and Material hardcodes it (`padding: 0 12px`) with no token
-// to set it by - so it is overridden here, the widget's own stylesheet having no way through the component boundary.
-.activity-range-presets .mat-button-toggle-appearance-standard .mat-button-toggle-label-content {
+// The dashboard's time-range presets sit beside a chart rather than in a form row - the authentication-activity
+// widget seats them in the narrow column it keeps for its row labels (144px, where four form-sized buttons would need
+// about 180px), and the conditional-access widget beside its slider. The label's own padding is where the difference
+// comes from, and Material hardcodes it (`padding: 0 12px`) with no token to set it by - so it is overridden here,
+// a widget's own stylesheet having no way through the component boundary.
+.chart-range-presets .mat-button-toggle-appearance-standard .mat-button-toggle-label-content {
   padding: 0 6px;
 }

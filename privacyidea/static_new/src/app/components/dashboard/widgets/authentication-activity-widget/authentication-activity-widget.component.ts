@@ -30,6 +30,7 @@ import { ROUTE_PATHS } from "@app/route_paths";
 import { WidgetStateComponent } from "@components/dashboard/widgets/widget-state/widget-state.component";
 import { InfoHintComponent } from "@components/shared/info-hint/info-hint.component";
 import { FilterValue } from "@core/models/filter_value/filter_value";
+import { ACTIVITY_RANGES, ActivityRange } from "@components/dashboard/widgets/activity-range";
 import { DashboardWidget, WidgetSize } from "@models/dashboard";
 import {
   AuthenticationEventSeries,
@@ -43,72 +44,6 @@ import { DashboardDataRef, DashboardDataStore } from "@services/dashboard/dashbo
 import { toFilterDisplay } from "@utils/date-format.utils";
 
 const LOG_READ: PolicyAction = "authentication_log_read";
-
-const MS_PER_MINUTE = 60_000;
-const MS_PER_HOUR = 60 * MS_PER_MINUTE;
-const MS_PER_DAY = 24 * MS_PER_HOUR;
-
-// The window one preset asks the endpoint for, and how many buckets it wants it cut into.
-export interface ActivityWindow {
-  start: Date;
-  end: Date;
-  bins: number;
-}
-
-export interface ActivityRange {
-  // Names the range in the toggle group and in the store key, so neither depends on the translated label.
-  id: string;
-  label: string;
-  // The window to ask for, given the present. Every range cuts it into buckets of a round unit of time - five
-  // minutes, an hour, six hours, a day - rather than into an arbitrary slice of itself.
-  window: (now: Date) => ActivityWindow;
-  // Whether a bucket is one whole calendar day, which is what lets a bar be named by its date rather than by the
-  // span it runs over.
-  wholeDayBuckets: boolean;
-}
-
-// Local midnight, `days` days back. Stepped by calendar date rather than by 24-hour blocks, so a daylight-saving
-// change in between does not leave the window opening at 23:00 or 01:00.
-function midnightDaysAgo(now: Date, days: number): Date {
-  const start = new Date(now);
-  start.setHours(0, 0, 0, 0);
-  start.setDate(start.getDate() - days);
-  return start;
-}
-
-// A window that simply runs back from now. This is how "the last hour" and "the last 24 hours" are read: the window's
-// own edges are the round thing about it, and every bucket in it is a bucket that has fully happened.
-function rollingWindow(spanMs: number, bucketMs: number): (now: Date) => ActivityWindow {
-  return (now) => ({
-    start: new Date(now.getTime() - spanMs),
-    end: now,
-    bins: spanMs / bucketMs
-  });
-}
-
-// A window over whole calendar days: it opens at midnight `days` days back and closes at the end of the bucket now
-// falls in, so a bucket never straddles two days and a day is always the same number of buckets - four for the week,
-// one for the month. Today is in the window as far as it has got, its last bucket still filling, which is what makes
-// the newest attempts show up without waiting for the day to end.
-//
-// The buckets are an even division of the window, which is all the endpoint offers, so a daylight-saving change
-// inside one shifts the buckets after it an hour off the midnights they started on.
-function dailyWindow(days: number, bucketMs: number): (now: Date) => ActivityWindow {
-  return (now) => {
-    const start = midnightDaysAgo(now, days);
-    // Rounded up rather than down: the bucket now falls in is the one holding the most recent attempts, and ending
-    // the window at the last closed bucket would leave them out until it closed.
-    const bins = Math.max(1, Math.ceil((now.getTime() - start.getTime()) / bucketMs));
-    return { start, end: new Date(start.getTime() + bins * bucketMs), bins };
-  };
-}
-
-export const ACTIVITY_RANGES: readonly ActivityRange[] = [
-  { id: "1h", label: $localize`1 h`, window: rollingWindow(MS_PER_HOUR, 5 * MS_PER_MINUTE), wholeDayBuckets: false },
-  { id: "24h", label: $localize`24 h`, window: rollingWindow(MS_PER_DAY, MS_PER_HOUR), wholeDayBuckets: false },
-  { id: "7d", label: $localize`7 d`, window: dailyWindow(7, 6 * MS_PER_HOUR), wholeDayBuckets: false },
-  { id: "30d", label: $localize`30 d`, window: dailyWindow(30, MS_PER_DAY), wholeDayBuckets: true }
-];
 
 // One row of the activity chart: the attempts per bin of a single outcome, or of all of them at once. Kept as
 // separate rows rather than one stacked bar because the theme's success and failure colours are indistinguishable

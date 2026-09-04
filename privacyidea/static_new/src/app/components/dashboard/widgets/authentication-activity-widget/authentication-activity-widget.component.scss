@@ -40,14 +40,11 @@ $slider-height: 48px;
 
 // The presets occupy the brush row's leading columns, so the track beside them still starts where the bars do.
 // Right-aligned within that, to sit against the slider, and level with its track.
-.activity-range-presets {
+.chart-range-presets {
+  @include widget.range-presets($toggle-height);
   flex: 0 0 $leading-columns;
   align-self: flex-start;
   margin-top: ($slider-height - $toggle-height) * 0.5;
-  // Denser than a form's toggle group, because those two columns are all there is. The label padding that the rest of
-  // the difference comes out of is Material's own, with no token to set it by, so styles/buttons.scss overrides it
-  // for this class - a component stylesheet cannot reach inside mat-button-toggle.
-  --mat-button-toggle-label-text-size: 0.75rem;
 }
 
 // The frame renders this in its header, but it is declared here, so view encapsulation keeps the frame's own
@@ -58,21 +55,6 @@ $slider-height: 48px;
   display: flex;
   --info-hint-size: 28px;
   --info-hint-icon-size: 18px;
-}
-
-mat-button-toggle-group {
-  --mat-button-toggle-shape: var(--border-radius);
-  // A widget is a denser surface than a form page, so the group is shorter than the default.
-  --mat-button-toggle-height: #{$toggle-height};
-}
-
-// Material's default checked tone is the M3 secondary container, which reads as a different accent from the rest of
-// the WebUI, so the selected range is brought onto the brand primary like the other toggle groups. Paired with
-// on-primary rather than a hardcoded white: in dark mode primary is a light blue where white text measures about
-// 2.8:1 and fails AA, while this token pair is the one the theme guarantees contrast for (~6:1 in both schemes).
-.mat-button-toggle-appearance-standard.mat-button-toggle-checked {
-  background-color: var(--mat-sys-primary);
-  color: var(--mat-sys-on-primary);
 }
 
 // Removed from the visual flow but left in the accessibility tree: the bars carry no text of their own, so the
