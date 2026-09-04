@@ -1862,7 +1862,7 @@ def api_key_required(request=None, action=None):
     If so, the validate request will only be performed, if a JWT token is passed
     with role=validate.
 
-    .. deprecated::
+    .. deprecated:: 3.14
         The ``api_key_required`` policy and its ``Authorization`` JWT (minted by
         ``pi-manage api createtoken``) are deprecated and will be removed in a
         future release. The X-API-Key API clients feature is intended to replace
