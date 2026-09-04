@@ -24,14 +24,18 @@ Lost token
 
 .. index:: Lost token
 
-When a user has lost a token, the administrator or the user can create a
-temporary password token for the user to login.
+When a user has lost a token, an administrator can create a temporary password
+token for the user to login.
 
 The administrator or a privileged helpdesk user with a :ref:`lost_token` policy
 has to select the token that was lost and click the button ``Lost token``.
 A new :ref:`pw_token` is generated.
 The OTP PIN of the old token is automatically copied to the new token.
 Thus the administrator does not know the OTP PIN, while the user can use his old PIN.
+
+.. note:: The lost token process is only available to administrators. The
+   ``losttoken`` policy action exists in the admin scope only, so a user can not
+   run it on their own token.
 
 .. figure:: images/lost_token_button.png
    :width: 500
@@ -41,6 +45,10 @@ can read this password to the user. The user now can authenticate
 with his old OTP PIN and the long password.
 
 The lost token is deactivated.
+
+Running the process again for the same token issues another replacement and
+deactivates the one issued before it, so a password that was handed out earlier
+can no longer be used.
 
 .. _get_serial:
 
