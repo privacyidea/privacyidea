@@ -179,6 +179,12 @@ myApp.controller("eventDetailController", ["$scope", "$stateParams",
             }
             // Remove the preset "options" object from the form
             delete $scope.form.options
+            // Always fully replace the options with the ones from the details
+            // form. This flag makes the backend clear all stored options even
+            // when no "option.*" parameter is sent (i.e. the user removed all
+            // options), while a reorder from the list view omits it and keeps
+            // the stored options.
+            $scope.form.clear_options = true;
             // push all ticked events
             angular.forEach($scope.selectedEvents, function (event) {
                 if (event.ticked === true) {
