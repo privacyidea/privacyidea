@@ -19,6 +19,7 @@
 import { provideZonelessChangeDetection } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { provideRouter } from "@angular/router";
+import { PiResponse } from "@app/app.component";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { DashboardWidget, WidgetInstance } from "@models/dashboard";
 import { AuthService } from "@services/auth/auth.service";
@@ -38,8 +39,9 @@ import { MockAuthenticationLogService } from "@testing/mock-services/mock-authen
 import { MockConditionalAccessPolicyService } from "@testing/mock-services/mock-conditional-access-policy-service";
 import { MockConditionalAccessStateService } from "@testing/mock-services/mock-conditional-access-state-service";
 import { MockPiResponse } from "@testing/mock-services/mock-utils";
-import { of, throwError } from "rxjs";
-import { ConditionalAccessWidgetComponent } from "./conditional-access-widget.component";
+import { of, Subject, throwError } from "rxjs";
+import { ACTIVITY_RANGES } from "@components/dashboard/widgets/activity-range";
+import { ConditionalAccessWidgetComponent, RESTRICTION_KINDS } from "./conditional-access-widget.component";
 
 const instance: WidgetInstance = {
   id: "conditional-access-1",
@@ -389,6 +391,67 @@ describe("ConditionalAccessWidgetComponent", () => {
       expect(component.restrictionsInRange()).toBe(4);
     });
 
+    it("should chart only the kinds of restriction selected, and count what it charts", () => {
+      stateMock.setOutcomeStatistics(
+        history(
+          { action_type: "LOCK_USER", counts: [2, 0, 0, 0] },
+          { action_type: "PERMANENT_BLOCK_IP", counts: [0, 0, 6, 0] }
+        )
+      );
+      create();
+      // Both to begin with, so the chart opens on every restriction the window holds.
+      expect(component.shownKinds()).toEqual(["users", "ips"]);
+      expect(component.restrictionsInRange()).toBe(8);
+
+      component.selectKinds(["users"]);
+      fixture.detectChanges();
+
+      // The number beside the title counts what the bars show, or it would contradict them.
+      expect(component.restrictionsInRange()).toBe(2);
+      expect(fixture.nativeElement.textContent).toContain("2 in range");
+      // And the bars rescale to what is left, the way taking a row off the activity chart does: two locks are the
+      // busiest bucket now that the six blocks are off.
+      expect(component.activityHistogram()).toEqual([1, 0, 0, 0]);
+    });
+
+    it("should keep asking for every kind, whichever are charted", () => {
+      create();
+      const actions = stateMock.fetchOutcomeStatistics.mock.calls.at(-1)![3];
+      stateMock.fetchOutcomeStatistics.mockClear();
+
+      component.selectKinds(["ips"]);
+      fixture.detectChanges();
+
+      // Hiding a kind leaves its series out of the sum; the response already carries both, so switching costs no
+      // request and switching back costs nothing either.
+      expect(stateMock.fetchOutcomeStatistics).not.toHaveBeenCalled();
+      expect(actions).toEqual(["LOCK_USER", "PERMANENT_LOCK_USER", "BLOCK_IP", "PERMANENT_BLOCK_IP"]);
+    });
+
+    it("should keep the last kind on the chart", () => {
+      create();
+
+      // An empty plot with a live brush under it is not a view of anything, and Material's multi-select group will
+      // happily deselect everything.
+      component.selectKinds([]);
+      fixture.detectChanges();
+
+      expect(component.shownKinds()).toEqual(["users", "ips"]);
+    });
+
+    it("should show both toggle groups above the histogram rather than in the widget header", () => {
+      create();
+
+      // The header governs the whole widget; these govern one of its sections, and both are readable without being
+      // opened.
+      const groups = fixture.nativeElement.querySelectorAll(".ca-range-controls mat-button-toggle-group");
+      expect(groups).toHaveLength(2);
+      expect(groups[1].getAttribute("aria-label")).toBe("Restrictions to chart");
+      expect(fixture.nativeElement.querySelectorAll(".ca-range-controls mat-button-toggle")).toHaveLength(
+        ACTIVITY_RANGES.length + RESTRICTION_KINDS.length
+      );
+    });
+
     it("should count a lock that the live state has long forgotten", () => {
       // The point of reading the outcome history: a lock that expired and was purged is gone from user_lock_state
       // and block_list, and still belongs in a chart of when restrictions were imposed.
@@ -406,27 +469,79 @@ describe("ConditionalAccessWidgetComponent", () => {
 
       const [start, end, bins, actions] = stateMock.fetchOutcomeStatistics.mock.calls.at(-1)!;
       expect(actions).toEqual(["LOCK_USER", "PERMANENT_LOCK_USER", "BLOCK_IP", "PERMANENT_BLOCK_IP"]);
-      // The preset owns the window and how finely it is cut, so the request is exactly what it describes.
+      // The preset owns the window and how finely it is cut, so the request is what it describes. Compared by span
+      // and by ending at about now, not by an exact instant: the default range is measured back from the present, so
+      // the assertion cannot name the same millisecond the request was built with.
       const expected = component.selectedRange().window(new Date());
       expect(bins).toBe(expected.bins);
-      expect(Date.parse(start as string)).toBe(expected.start.getTime());
-      expect(Date.parse(end as string)).toBe(expected.end.getTime());
+      expect(Date.parse(end as string) - Date.parse(start as string)).toBe(
+        expected.end.getTime() - expected.start.getTime()
+      );
+      expect(Date.now() - Date.parse(end as string)).toBeLessThan(2_000);
     });
 
     it("should refetch for the window a preset names and drop the one left behind", () => {
       create();
-      expect(component.selectedRange().id).toBe("30d");
+      expect(component.selectedRange().id).toBe("24h");
 
-      component.selectRange("24h");
+      // The hour, whose window is a rolling one and so an exact twelve five-minute buckets whenever it is asked for.
+      component.selectRange("1h");
       fixture.detectChanges();
 
       const [start, end, bins] = stateMock.fetchOutcomeStatistics.mock.calls.at(-1)!;
-      expect(bins).toBe(24);
-      expect(Date.parse(end as string) - Date.parse(start as string)).toBe(24 * MS_PER_HOUR);
-      // Each preset caches under its own key, and the one no longer shown is dropped: refreshAll() replays every
-      // entry the store holds, and a stale key would keep re-querying a window nobody is looking at.
-      expect(store.peek("dashboard:conditional-access:24h")).not.toBeNull();
-      expect(store.peek("dashboard:conditional-access:30d")).toBeNull();
+      expect(bins).toBe(12);
+      expect(Date.parse(end as string) - Date.parse(start as string)).toBe(MS_PER_HOUR);
+      // Each preset caches the history under its own key, and the one no longer shown is dropped: refreshAll()
+      // replays every entry the store holds, and a stale key would keep re-querying a window nobody is looking at.
+      expect(store.peek("dashboard:conditional-access:history:1h")).not.toBeNull();
+      expect(store.peek("dashboard:conditional-access:history:24h")).toBeNull();
+      // The rest of the widget does not depend on the window, so it keeps the entry it already had.
+      expect(store.peek("dashboard:conditional-access")).not.toBeNull();
+    });
+
+    it("should read only the history when a preset changes, not the whole widget", () => {
+      create();
+      policyMock.getPolicies.mockClear();
+      stateMock.countLockedUsers.mockClear();
+      stateMock.fetchLockedUsers.mockClear();
+      stateMock.fetchBlocklist.mockClear();
+      stateMock.fetchOutcomeStatistics.mockClear();
+
+      component.selectRange("7d");
+      fixture.detectChanges();
+
+      // The window belongs to the history request alone; the policies, the lock counts and the blocklist do not
+      // depend on it, so a preset click costs one request rather than six.
+      expect(stateMock.fetchOutcomeStatistics).toHaveBeenCalledTimes(1);
+      expect(policyMock.getPolicies).not.toHaveBeenCalled();
+      expect(stateMock.countLockedUsers).not.toHaveBeenCalled();
+      expect(stateMock.fetchLockedUsers).not.toHaveBeenCalled();
+      expect(stateMock.fetchBlocklist).not.toHaveBeenCalled();
+    });
+
+    it("should keep the whole section up while a preset's window is being fetched", () => {
+      stateMock.setOutcomeStatistics(history({ action_type: "LOCK_USER", counts: [1, 2, 3, 4] }));
+      create();
+      expect(component.restrictionsInRange()).toBe(10);
+
+      // The next window's response is held back, which is the moment a store entry for a fresh key has nothing in it.
+      const pending = new Subject<PiResponse<ConditionalAccessOutcomeStatistics>>();
+      stateMock.fetchOutcomeStatistics.mockReturnValue(pending.asObservable());
+      component.selectRange("7d");
+      fixture.detectChanges();
+
+      // Title, controls and chart all stay: taking them off the widget and putting them back is a worse answer to a
+      // request in flight than the frame's own spinner.
+      expect(component.hasHistory()).toBe(true);
+      expect(component.state()).toBe("ready");
+      expect(fixture.nativeElement.textContent).toContain("Blocks and locks over time");
+      expect(fixture.nativeElement.querySelectorAll(".ca-range-controls mat-button-toggle-group")).toHaveLength(2);
+      expect(fixture.nativeElement.querySelectorAll(".ca-activity-bar")).toHaveLength(4);
+
+      pending.next(MockPiResponse.fromValue(history({ action_type: "LOCK_USER", counts: [5, 0] })));
+      fixture.detectChanges();
+
+      expect(component.restrictionsInRange()).toBe(5);
     });
 
     it("should open the brush again when a preset changes the window", () => {

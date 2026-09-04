@@ -30,7 +30,12 @@ import { ROUTE_PATHS } from "@app/route_paths";
 import { WidgetStateComponent } from "@components/dashboard/widgets/widget-state/widget-state.component";
 import { InfoHintComponent } from "@components/shared/info-hint/info-hint.component";
 import { FilterValue } from "@core/models/filter_value/filter_value";
-import { ACTIVITY_RANGES, ActivityRange } from "@components/dashboard/widgets/activity-range";
+import {
+  ACTIVITY_RANGES,
+  ActivityRange,
+  activityRangeById,
+  DEFAULT_ACTIVITY_RANGE
+} from "@components/dashboard/widgets/activity-range";
 import { DashboardWidget, WidgetSize } from "@models/dashboard";
 import {
   AuthenticationEventSeries,
@@ -117,7 +122,7 @@ challenge-response login count once, classified by how the attempt ended.`;
   private readonly authenticationLogService: AuthenticationLogServiceInterface = inject(AuthenticationLogService);
   private readonly store = inject(DashboardDataStore);
 
-  readonly selectedRange = signal<ActivityRange>(ACTIVITY_RANGES[1]);
+  readonly selectedRange = signal<ActivityRange>(DEFAULT_ACTIVITY_RANGE);
 
   private readonly dataRef = signal<DashboardDataRef<PiResponse<AuthenticationLogStatistics>> | null>(null);
   // The store key currently in use, so the previous range's entry can be dropped when the range changes.
@@ -303,7 +308,7 @@ challenge-response login count once, classified by how the attempt ended.`;
   }
 
   selectRange(id: string): void {
-    const range = ACTIVITY_RANGES.find((candidate) => candidate.id === id);
+    const range = activityRangeById(id);
     if (range) {
       this.selectedRange.set(range);
     }

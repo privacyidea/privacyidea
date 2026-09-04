@@ -87,24 +87,27 @@ td.ca-highlight-cell {
   text-transform: none;
 }
 
-// The presets and the brush side by side: the presets choose the window, the brush narrows what is counted in it.
-.ca-range {
+// The two toggle groups on one line: the window on the left, the restrictions charted on the right.
+.ca-range-controls {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
+  justify-content: space-between;
   gap: 8px;
-  padding-inline: 8px;
+  padding: 0 8px 4px;
 }
 
 .chart-range-presets {
   @include widget.range-presets;
-  flex: 0 0 auto;
-  align-self: center;
+}
+
+// The brush and its histogram have the row to themselves now that the presets sit above them, so both span the
+// section: a plain block rather than a flex row, which would size its single child to the content.
+.ca-range {
+  padding-inline: 8px;
 }
 
 .ca-slider-with-histogram {
   position: relative;
-  flex: 1 1 auto;
-  min-width: 0;
   // Room for a histogram with enough height to read a shape from, plus the slider and its date axis on top.
   padding-top: 16px;
 }

@@ -27,7 +27,12 @@ import { PiResponse } from "@app/app.component";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { WidgetStateComponent } from "@components/dashboard/widgets/widget-state/widget-state.component";
 import { InfoHintComponent } from "@components/shared/info-hint/info-hint.component";
-import { ACTIVITY_RANGES, ActivityRange } from "@components/dashboard/widgets/activity-range";
+import {
+  ACTIVITY_RANGES,
+  ActivityRange,
+  activityRangeById,
+  DEFAULT_ACTIVITY_RANGE
+} from "@components/dashboard/widgets/activity-range";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { DashboardWidget, WidgetSize } from "@models/dashboard";
 import {
@@ -50,15 +55,34 @@ import {
 } from "@services/conditional-access/conditional-access-policy.service";
 import { DashboardDataRef, DashboardDataStore } from "@services/dashboard/dashboard-data-store.service";
 import { formatLocalDateTime } from "@utils/date-format.utils";
-import { forkJoin, Observable, of } from "rxjs";
+import { forkJoin, of } from "rxjs";
 
 // Cap on how many lock records the widget fetches for the list; beyond it the widget defers to the locked-users page,
 // as its footer states.
 const LOCK_RECORD_LIMIT = 100;
 
-// The actions that create a restriction, which is what the histogram charts. EMAIL_* and DENY are outcomes too, but
-// neither locks anyone: an email notifies, and DENY decides the one request it was evaluated for.
-const RESTRICTION_ACTIONS = ["LOCK_USER", "PERMANENT_LOCK_USER", "BLOCK_IP", "PERMANENT_BLOCK_IP"] as const;
+// What the histogram can chart, by the subject a restriction is imposed on. Only the actions that create one:
+// EMAIL_* and DENY are outcomes too, but neither restricts anyone - an email notifies, and DENY decides the single
+// request it was evaluated for.
+//
+// The timed and permanent action of a kind sit in the same entry, because permanence is a property of a restriction
+// rather than a different subject: nobody asks "when were users permanently locked" without also meaning the timed
+// ones. Splitting them would double the buttons for a distinction the count rows above already draw.
+export interface RestrictionKind {
+  // Names the kind in the toggle group; not the translated label, which must not decide what is charted.
+  id: string;
+  label: string;
+  actions: readonly string[];
+}
+
+export const RESTRICTION_KINDS: readonly RestrictionKind[] = [
+  { id: "users", label: $localize`Users`, actions: ["LOCK_USER", "PERMANENT_LOCK_USER"] },
+  { id: "ips", label: $localize`IPs`, actions: ["BLOCK_IP", "PERMANENT_BLOCK_IP"] }
+];
+
+// Every kind is asked for, whatever is on the chart: the response carries one series per action type, so hiding a
+// kind is a matter of leaving its series out of the sum - no second request, and switching back costs nothing.
+const RESTRICTION_ACTIONS = RESTRICTION_KINDS.flatMap((kind) => kind.actions);
 
 // Each of the three areas the widget summarizes has its own read right, so it is fetched only when granted and left out
 // of the summary otherwise (see ConditionalAccessSummary's nullable sections).
@@ -77,7 +101,6 @@ interface ConditionalAccessResponses {
   expiredLocks: PiResponse<LockedUsersPage> | null;
   recentLocks: PiResponse<LockedUsersPage> | null;
   blocklist: PiResponse<BlocklistEntry[]> | null;
-  outcomes: PiResponse<ConditionalAccessOutcomeStatistics> | null;
 }
 
 // One row of the highlights list: a blocked IP or a locked user, reduced to what the row shows. `at` is when the
@@ -152,9 +175,15 @@ export class ConditionalAccessWidgetComponent extends DashboardWidget implements
   protected readonly routePaths = ROUTE_PATHS;
 
   protected readonly ranges = ACTIVITY_RANGES;
+  protected readonly restrictionKinds = RESTRICTION_KINDS;
+
+  // Which kinds of restriction the histogram charts, all of them to begin with. View state, like the range and the
+  // brush: a way of looking at the history rather than anything about it, so it lives here and starts over with the
+  // page.
+  readonly shownKinds = signal<readonly string[]>(RESTRICTION_KINDS.map((kind) => kind.id));
   // Which window the history is read over. The same four presets the authentication-activity widget offers, from the
   // same table, so the two charts are read the same way and mean the same thing by "7 d".
-  readonly selectedRange = signal<ActivityRange>(ACTIVITY_RANGES[3]);
+  readonly selectedRange = signal<ActivityRange>(DEFAULT_ACTIVITY_RANGE);
 
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly policyService: ConditionalAccessPolicyServiceInterface = inject(ConditionalAccessPolicyService);
@@ -163,12 +192,37 @@ export class ConditionalAccessWidgetComponent extends DashboardWidget implements
   private readonly store = inject(DashboardDataStore);
 
   private readonly dataRef = signal<DashboardDataRef<ConditionalAccessResponses> | null>(null);
-  // The store key currently in use, so the previous range's entry can be dropped when the range changes.
-  private storeKey: string | null = null;
-  override readonly partialLoading = computed(() => this.dataRef()?.revalidating() ?? false);
+
+  // The history is loaded on its own, not with the rest: it is the only part a preset changes, and reloading the
+  // policy, lock and blocklist requests to redraw one chart would make a preset click cost six requests.
+  private readonly historyRef = signal<DashboardDataRef<PiResponse<ConditionalAccessOutcomeStatistics>> | null>(null);
+  // The history's store key currently in use, so the previous range's entry can be dropped when the range changes.
+  private historyKey: string | null = null;
+
+  // The history on screen, which is the newest one that arrived rather than the one being fetched. A preset change
+  // starts a fresh store entry with nothing in it, and dropping the history for the moment that takes would take the
+  // whole section - title, controls and chart - off the widget and put it back; keeping the last response leaves a
+  // chart whose bars and axis still belong to each other while the frame's own spinner says a request is in flight.
+  private readonly history = linkedSignal<
+    ConditionalAccessOutcomeStatistics | null,
+    ConditionalAccessOutcomeStatistics | null
+  >({
+    source: () => this.historyRef()?.value()?.result?.value ?? null,
+    computation: (incoming, previous) => incoming ?? previous?.value ?? null
+  });
+
+  override readonly partialLoading = computed(
+    () => (this.dataRef()?.revalidating() ?? false) || (this.historyRef()?.revalidating() ?? false)
+  );
+  // A failure that left something on screen is stale data for the frame to mark rather than blank: the entry kept
+  // its previous value, or - for the history - the chart is still showing the last window's response.
   override readonly refreshFailed = computed(() => {
-    const ref = this.dataRef();
-    return !!ref && ref.error() && ref.value() !== undefined;
+    const dataRef = this.dataRef();
+    const historyRef = this.historyRef();
+    return (
+      (!!dataRef && dataRef.error() && dataRef.value() !== undefined) ||
+      (!!historyRef && historyRef.error() && (historyRef.value() !== undefined || this.history() !== null))
+    );
   });
 
   readonly summary = computed<ConditionalAccessSummary>(() => {
@@ -230,16 +284,22 @@ export class ConditionalAccessWidgetComponent extends DashboardWidget implements
   // Not the log's own event types either: USER_LOCKED there is a request a lock already in force turned away, so
   // charting those would count the retries against one lock instead of the lock.
   private readonly restrictionCounts = computed<number[]>(() => {
-    const statistics = this.dataRef()?.value()?.outcomes?.result?.value;
+    const statistics = this.history();
     if (!statistics) {
       return [];
     }
+    const shown = this.shownActions();
     const bins = new Array<number>(statistics.bins.count).fill(0);
-    for (const series of statistics.outcomes) {
+    for (const series of statistics.outcomes.filter((entry) => shown.includes(entry.action_type))) {
       series.counts.forEach((count, index) => (bins[index] += count));
     }
     return bins;
   });
+
+  // The action types the selected kinds stand for, which is what the sum above keeps.
+  private readonly shownActions = computed<readonly string[]>(() =>
+    RESTRICTION_KINDS.filter((kind) => this.shownKinds().includes(kind.id)).flatMap((kind) => kind.actions)
+  );
 
   // How many buckets the response holds, which is also the brush's resolution: a thumb steps from one bucket edge to
   // the next, because whole buckets are the finest cut the fetched counts can answer for - the same brush the
@@ -248,10 +308,7 @@ export class ConditionalAccessWidgetComponent extends DashboardWidget implements
 
   // The bucket edges the counts are bucketed by, so a brushed span can be turned back into buckets.
   private readonly binStartsMs = computed<number[]>(
-    () =>
-      this.dataRef()
-        ?.value()
-        ?.outcomes?.result?.value?.bins?.starts?.map((start) => Date.parse(start)) ?? []
+    () => this.history()?.bins?.starts?.map((start) => Date.parse(start)) ?? []
   );
 
   // Where the fetched window closes, which is what the edge past the last bucket stands for. The window's *start*
@@ -259,7 +316,7 @@ export class ConditionalAccessWidgetComponent extends DashboardWidget implements
   // edges. Nothing re-zooms this window either - the preset chooses it and the request is cut over it, so a
   // client-side zoom would leave the bars at the fetched resolution while the axis claimed a narrower span.
   private readonly windowEndMs = computed(() => {
-    const window = this.dataRef()?.value()?.outcomes?.result?.value?.window;
+    const window = this.history()?.window;
     return window ? Date.parse(window.end_time) : Date.now();
   });
 
@@ -299,7 +356,7 @@ export class ConditionalAccessWidgetComponent extends DashboardWidget implements
   // finest the server-side bucketing can answer for.
   // Whether the widget has a history to chart at all: an admin without the log right gets the numbers and the
   // restrictions list, and no "over time" section.
-  readonly hasHistory = computed<boolean>(() => !!this.dataRef()?.value()?.outcomes?.result?.value);
+  readonly hasHistory = computed<boolean>(() => !!this.history());
 
   readonly restrictionsInRange = computed<number>(() =>
     this.restrictionCounts()
@@ -315,8 +372,17 @@ export class ConditionalAccessWidgetComponent extends DashboardWidget implements
     this.rangeEnd() >= this.binCount() ? $localize`now` : this.summaryFormat(this.selectedToMs())
   );
 
+  // The last kind stays on the chart: an empty plot with a live brush under it is not a view of anything. Material's
+  // multi-select group will happily deselect everything, so an empty selection is refused here and the button the
+  // reader unchecked snaps back, its state being bound to this signal.
+  selectKinds(ids: string[]): void {
+    if (ids.length) {
+      this.shownKinds.set(ids);
+    }
+  }
+
   selectRange(id: string): void {
-    const range = ACTIVITY_RANGES.find((candidate) => candidate.id === id);
+    const range = activityRangeById(id);
     if (range) {
       this.selectedRange.set(range);
     }
@@ -377,7 +443,9 @@ export class ConditionalAccessWidgetComponent extends DashboardWidget implements
         this.state.set(ref.error() ? "error" : "loading");
         return;
       }
-      // A skipped area contributes no response, so only the ones actually fetched decide the state.
+      // A skipped area contributes no response, so only the ones actually fetched decide the state. The history is
+      // not among them, deliberately: it loads separately and is one section of the widget, so its failure marks the
+      // data stale (see refreshFailed) rather than replacing everything with an error.
       const fetched = Object.values(value).filter((response) => response !== null);
       this.state.set(fetched.every((response) => response?.result?.status === true) ? "ready" : "error");
     });
@@ -387,31 +455,20 @@ export class ConditionalAccessWidgetComponent extends DashboardWidget implements
     this.ngOnInit();
   }
 
-  // Refetches whenever the preset changes: the window is the request's, so a new preset is a new request.
-  private readonly reloadOnRangeChange = effect(() => {
-    this.selectedRange();
-    this.ngOnInit();
-  });
+  // Reads the history whenever the preset changes, and only the history: the window belongs to that request alone,
+  // so a preset click costs one request rather than reloading everything the widget shows.
+  private readonly loadHistoryOnRangeChange = effect(() => this.loadHistory(this.selectedRange()));
 
   ngOnInit(): void {
     const canReadPolicies = this.authService.actionAllowed(POLICY_READ);
     const canReadUserLocks = this.authService.actionAllowed(USER_LOCK_READ);
     const canReadBlocklist = this.authService.actionAllowed(BLOCKLIST_READ);
-    const canReadLog = this.authService.actionAllowed(LOG_READ);
     if (!canReadPolicies && !canReadUserLocks && !canReadBlocklist) {
       this.state.set("denied");
       return;
     }
-    // Keyed by the selected range, so switching preset fetches that window rather than re-reading the last one; the
-    // entry left behind has to go, because DashboardDataStore.refreshAll() refetches every entry it holds and a stale
-    // key would keep re-querying a window nobody is looking at.
-    const key = `dashboard:conditional-access:${this.selectedRange().id}`;
-    if (this.storeKey && this.storeKey !== key) {
-      this.store.invalidate(this.storeKey);
-    }
-    this.storeKey = key;
     this.dataRef.set(
-      this.store.load<ConditionalAccessResponses>(key, () =>
+      this.store.load<ConditionalAccessResponses>("dashboard:conditional-access", () =>
         forkJoin({
           policies: canReadPolicies ? this.policyService.getPolicies() : of(null),
           // Lock counts come per state rather than from one page of records, so the totals cover every lock rather than
@@ -425,23 +482,40 @@ export class ConditionalAccessWidgetComponent extends DashboardWidget implements
           recentLocks: canReadUserLocks
             ? this.stateService.fetchLockedUsers(["permanent", "temporary"], LOCK_RECORD_LIMIT)
             : of(null),
-          blocklist: canReadBlocklist ? this.stateService.fetchBlocklist(true) : of(null),
-          // The window is computed per invocation, not once when the factory is registered:
-          // DashboardDataStore.refreshAll() replays the stored factory, and a captured window would make every later
-          // refresh ask for the same stale one.
-          outcomes: canReadLog ? this.fetchHistory() : of(null)
+          blocklist: canReadBlocklist ? this.stateService.fetchBlocklist(true) : of(null)
         })
       )
     );
+    this.loadHistory(this.selectedRange());
   }
 
-  private fetchHistory(): Observable<PiResponse<ConditionalAccessOutcomeStatistics>> {
-    const window = this.selectedRange().window(new Date());
-    return this.stateService.fetchOutcomeStatistics(
-      window.start.toISOString(),
-      window.end.toISOString(),
-      window.bins,
-      RESTRICTION_ACTIONS
+  // The history of what conditional access did, over the window the preset names.
+  //
+  // Its own store entry, keyed by the range: switching preset then reads that window rather than re-reading the last
+  // one, and the entry left behind is dropped because DashboardDataStore.refreshAll() refetches every entry it holds
+  // and a stale key would keep re-querying a window nobody is looking at.
+  private loadHistory(range: ActivityRange): void {
+    if (!this.authService.actionAllowed(LOG_READ)) {
+      return;
+    }
+    const key = `dashboard:conditional-access:history:${range.id}`;
+    if (this.historyKey && this.historyKey !== key) {
+      this.store.invalidate(this.historyKey);
+    }
+    this.historyKey = key;
+    this.historyRef.set(
+      this.store.load(key, () => {
+        // The window is computed per invocation, not once when the factory is registered:
+        // DashboardDataStore.refreshAll() replays the stored factory, and a captured window would make every later
+        // refresh ask for the same stale one.
+        const window = range.window(new Date());
+        return this.stateService.fetchOutcomeStatistics(
+          window.start.toISOString(),
+          window.end.toISOString(),
+          window.bins,
+          RESTRICTION_ACTIONS
+        );
+      })
     );
   }
 

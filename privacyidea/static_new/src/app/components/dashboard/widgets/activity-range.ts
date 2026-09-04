@@ -88,3 +88,13 @@ export const ACTIVITY_RANGES: readonly ActivityRange[] = [
   { id: "7d", label: $localize`7 d`, window: dailyWindow(7, 6 * MS_PER_HOUR), wholeDayBuckets: false },
   { id: "30d", label: $localize`30 d`, window: dailyWindow(30, MS_PER_DAY), wholeDayBuckets: true }
 ];
+
+// Looked up by id rather than by position, so reordering the table for the toggle group cannot silently change what a
+// widget opens on or what a stored id resolves to.
+export function activityRangeById(id: string): ActivityRange | undefined {
+  return ACTIVITY_RANGES.find((range) => range.id === id);
+}
+
+// What a chart opens on. A day is the span a dashboard reader wants first: long enough to cover a night's activity,
+// short enough that a bucket is an hour.
+export const DEFAULT_ACTIVITY_RANGE: ActivityRange = activityRangeById("24h") ?? ACTIVITY_RANGES[0];

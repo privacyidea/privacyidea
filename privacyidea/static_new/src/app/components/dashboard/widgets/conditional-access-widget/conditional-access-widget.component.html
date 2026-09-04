@@ -134,11 +134,7 @@
         >{{ restrictionsInRange() }} in range</span
       >
     </p>
-    <!-- The same pair the authentication-activity chart carries, and read the same way: the presets choose the window
-         the history is fetched over, and the brush narrows what is counted within it. No preset buttons at the ends of
-         the track any more - those moved the window client-side, which would leave the bars at the fetched resolution
-         while the axis claimed a narrower span. -->
-    <div class="ca-range">
+    <div class="ca-range-controls">
       <div class="chart-range-presets">
         <mat-button-toggle-group
           [hideSingleSelectionIndicator]="true"
@@ -151,6 +147,21 @@
           }
         </mat-button-toggle-group>
       </div>
+      <div class="chart-range-presets">
+        <mat-button-toggle-group
+          multiple
+          [value]="shownKinds()"
+          (change)="selectKinds($event.value)"
+          aria-label="Restrictions to chart"
+          i18n-aria-label>
+          @for (kind of restrictionKinds; track kind.id) {
+            <mat-button-toggle [value]="kind.id">{{ kind.label }}</mat-button-toggle>
+          }
+        </mat-button-toggle-group>
+      </div>
+    </div>
+
+    <div class="ca-range">
       <div class="ca-slider-with-histogram">
         <!-- Blocks per bucket behind the slider; decorative, hidden from assistive tech. -->
         <div
