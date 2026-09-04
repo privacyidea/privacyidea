@@ -706,7 +706,7 @@ Two consequences worth knowing:
 
 Like the other workloads it degrades safely: if Redis cannot be reached the
 database takes over, and a lost entry costs one real authentication against the
-user store, nothing else.
+token or the user store, nothing else.
 
 .. _redis_health_cache:
 
