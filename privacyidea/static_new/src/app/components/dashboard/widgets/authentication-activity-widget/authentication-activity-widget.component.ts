@@ -95,7 +95,7 @@ export class AuthenticationActivityWidgetComponent extends DashboardWidget {
   static override readonly icon = "lock";
   static override readonly titleLink = ROUTE_PATHS.AUTHENTICATION_LOG;
   static override readonly titleLinkAction = LOG_READ;
-  static override readonly defaultSize: WidgetSize = { cols: 6, rows: 9 };
+  static override readonly defaultSize: WidgetSize = { cols: 5, rows: 8 };
   static override readonly minSize: WidgetSize = { cols: 4, rows: 7 };
   static override readonly maxSize: WidgetSize = { cols: 12, rows: 12 };
 
