@@ -37,52 +37,75 @@
     </button>
   </div>
 
-  <div class="details-cards-grid">
-    <app-details-card
-      class="settings-card-xs"
-      i18n-title="@@uiSettings.theme"
-      title="Theme">
-      <div class="settings-row">
-        <app-theme-toggle />
-      </div>
-    </app-details-card>
+  <div class="settings-group">
+    <div class="settings-item settings-item-s">
+      <span
+        class="settings-item-label"
+        i18n="@@uiSettings.language"
+        >Language</span
+      >
+      <mat-form-field
+        class="input-width-m language-field"
+        subscriptSizing="dynamic">
+        <mat-select
+          (selectionChange)="selectLocale($event.value)"
+          [value]="preferredLocale()"
+          aria-label="Language"
+          i18n-aria-label="@@uiSettings.language">
+          @for (locale of locales; track locale.code) {
+            <mat-option [value]="locale.code">
+              {{ locale.label }}
+            </mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+    </div>
 
-    <app-details-card
-      class="settings-card-s"
-      i18n-title="@@uiSettings.language"
-      title="Language">
-      <div class="settings-row">
-        <mat-form-field
-          class="input-width-m language-field"
-          subscriptSizing="dynamic">
-          <mat-select
-            (selectionChange)="selectLocale($event.value)"
-            [value]="preferredLocale()"
-            aria-label="Language"
-            i18n-aria-label="@@uiSettings.language">
-            @for (locale of locales; track locale.code) {
-              <mat-option [value]="locale.code">
-                {{ locale.label }}
-              </mat-option>
-            }
-          </mat-select>
-        </mat-form-field>
-      </div>
-    </app-details-card>
+    <div class="settings-item settings-item-xs">
+      <span
+        class="settings-item-label"
+        i18n="@@uiSettings.theme"
+        >Theme</span
+      >
+      <app-theme-toggle />
+    </div>
 
-    <app-details-card
-      class="settings-card-m"
-      i18n-title="@@uiSettings.pendingRequests"
-      title="Pending Requests">
-      <div class="settings-row">
-        <mat-slide-toggle
-          (change)="setShowLoadingUrls($event.checked)"
-          [checked]="showLoadingUrls()"
-          i18n="@@uiSettings.showEndpointsBeingRequested"
-          >Show endpoints being requested</mat-slide-toggle
-        >
-      </div>
-    </app-details-card>
+    <div class="settings-item settings-item-s">
+      <span
+        class="settings-item-label"
+        i18n="@@uiSettings.landingPage"
+        >Landing Page</span
+      >
+      <mat-form-field
+        class="input-width-m"
+        subscriptSizing="dynamic">
+        <mat-select
+          (selectionChange)="selectLandingPage($event.value)"
+          [value]="landingPage()"
+          aria-label="Landing page"
+          i18n-aria-label="@@uiSettings.landingPage">
+          @for (page of availableLandingPages(); track page) {
+            <mat-option [value]="page">
+              {{ landingPageLabels[page] }}
+            </mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+    </div>
+
+    <div class="settings-item settings-item-s">
+      <span
+        class="settings-item-label"
+        i18n="@@uiSettings.pendingRequests"
+        >Pending Requests</span
+      >
+      <mat-slide-toggle
+        (change)="setShowLoadingUrls($event.checked)"
+        [checked]="showLoadingUrls()"
+        i18n="@@uiSettings.showEndpointsBeingRequested"
+        >Show endpoints being requested</mat-slide-toggle
+      >
+    </div>
   </div>
 
   <mat-expansion-panel class="settings-appearance-panel">
@@ -98,57 +121,57 @@
       </mat-panel-description>
     </mat-expansion-panel-header>
 
-    <div class="details-cards-grid">
-      <app-details-card
-        class="settings-card-m"
-        i18n-title="@@uiSettings.corners"
-        title="Corners">
-        <div class="settings-row">
-          <mat-button-toggle-group
-            (change)="selectCorners($event.value)"
-            [hideSingleSelectionIndicator]="true"
-            [value]="corners()"
-            aria-label="Corners"
-            i18n-aria-label="@@uiSettings.corners">
-            @for (level of cornerLevels; track level.value) {
-              <mat-button-toggle [value]="level.value">{{ level.label }}</mat-button-toggle>
-            }
-          </mat-button-toggle-group>
-        </div>
-      </app-details-card>
+    <div class="settings-group">
+      <div class="settings-item settings-item-m">
+        <span
+          class="settings-item-label"
+          i18n="@@uiSettings.corners"
+          >Corners</span
+        >
+        <mat-button-toggle-group
+          (change)="selectCorners($event.value)"
+          [hideSingleSelectionIndicator]="true"
+          [value]="corners()"
+          aria-label="Corners"
+          i18n-aria-label="@@uiSettings.corners">
+          @for (level of cornerLevels; track level.value) {
+            <mat-button-toggle [value]="level.value">{{ level.label }}</mat-button-toggle>
+          }
+        </mat-button-toggle-group>
+      </div>
 
-      <app-details-card
-        class="settings-card-m"
-        i18n-title="@@uiSettings.depth"
-        title="Depth">
-        <div class="settings-row">
-          <mat-button-toggle-group
-            (change)="selectDepth($event.value)"
-            [hideSingleSelectionIndicator]="true"
-            [value]="depth()"
-            aria-label="Depth"
-            i18n-aria-label="@@uiSettings.depth">
-            @for (level of depthLevels; track level.value) {
-              <mat-button-toggle [value]="level.value">{{ level.label }}</mat-button-toggle>
-            }
-          </mat-button-toggle-group>
-        </div>
-      </app-details-card>
+      <div class="settings-item settings-item-m">
+        <span
+          class="settings-item-label"
+          i18n="@@uiSettings.depth"
+          >Depth</span
+        >
+        <mat-button-toggle-group
+          (change)="selectDepth($event.value)"
+          [hideSingleSelectionIndicator]="true"
+          [value]="depth()"
+          aria-label="Depth"
+          i18n-aria-label="@@uiSettings.depth">
+          @for (level of depthLevels; track level.value) {
+            <mat-button-toggle [value]="level.value">{{ level.label }}</mat-button-toggle>
+          }
+        </mat-button-toggle-group>
+      </div>
 
-      <app-details-card
-        class="settings-card-m"
-        i18n-title="@@uiSettings.lightSource"
-        title="Light Source">
-        <div class="settings-row">
-          <app-light-source-dial
-            [items]="lightSourceDialItems"
-            [selected]="lightSource()"
-            groupName="light-source"
-            legend="Light source"
-            i18n-legend="@@uiSettings.lightSource2"
-            (pick)="selectLightSource($event)" />
-        </div>
-      </app-details-card>
+      <div class="settings-item settings-item-m">
+        <span
+          class="settings-item-label"
+          i18n="@@uiSettings.lightSource"
+          >Light Source</span
+        >
+        <app-light-source-dial
+          [items]="lightSourceDialItems"
+          [selected]="lightSource()"
+          groupName="light-source"
+          legend="Light source"
+          i18n-legend="@@uiSettings.lightSource2"
+          (pick)="selectLightSource($event)" />
+      </div>
     </div>
   </mat-expansion-panel>
 </div>

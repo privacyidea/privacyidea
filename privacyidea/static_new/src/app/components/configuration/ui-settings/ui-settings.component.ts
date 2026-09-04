@@ -27,7 +27,7 @@ import { MatSelectModule } from "@angular/material/select";
 import { MatSlideToggleModule } from "@angular/material/slide-toggle";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { UI_LOCALES } from "@core/locale";
-import { DetailsCardComponent } from "@components/shared/details-shared/details-card/details-card.component";
+import { LandingPage } from "@core/landing-page";
 import {
   LightSourceDialComponent,
   LightSourceDialItem
@@ -47,7 +47,6 @@ import { UiPreferencesService, UiPreferencesServiceInterface } from "@services/u
 @Component({
   selector: "app-ui-settings",
   imports: [
-    DetailsCardComponent,
     LightSourceDialComponent,
     MatButtonModule,
     MatButtonToggleModule,
@@ -69,6 +68,14 @@ export class UISettingsComponent {
   protected readonly locales = UI_LOCALES;
   protected readonly preferredLocale = this.uiPreferencesService.preferredLocale;
   protected readonly showLoadingUrls = this.uiPreferencesService.showLoadingUrls;
+  protected readonly landingPage = this.uiPreferencesService.landingPage;
+  protected readonly availableLandingPages = this.uiPreferencesService.availableLandingPages;
+  protected readonly landingPageLabels: Record<LandingPage, string> = {
+    dashboard: $localize`:@@nav.dashboard:Dashboard`,
+    tokens: $localize`:@@common.token:Token`,
+    users: $localize`:@@nav.users:Users`,
+    audit: $localize`:@@nav.audit:Audit`
+  };
   protected readonly depth = this.appearanceService.depth;
   protected readonly lightSource = this.appearanceService.lightSource;
   protected readonly corners = this.appearanceService.corners;
@@ -100,7 +107,8 @@ export class UISettingsComponent {
     forkJoin([
       this.appearanceService.resetToDefaults(),
       this.themeService.setTheme("system"),
-      this.uiPreferencesService.setShowLoadingUrls(false)
+      this.uiPreferencesService.setShowLoadingUrls(false),
+      this.uiPreferencesService.resetLandingPage()
     ]).subscribe(() => this.uiPreferencesService.switchLocale("en"));
   }
 
@@ -122,5 +130,9 @@ export class UISettingsComponent {
 
   protected selectLocale(code: string): void {
     this.uiPreferencesService.switchLocale(code);
+  }
+
+  protected selectLandingPage(page: LandingPage): void {
+    this.uiPreferencesService.setLandingPage(page);
   }
 }

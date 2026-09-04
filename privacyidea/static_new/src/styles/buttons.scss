@@ -547,3 +547,11 @@ $button-low-contrast-variant: linear-gradient(
   width: var(--button-width-xl);
   min-width: var(--button-width-xl);
 }
+
+// Unselected toggle buttons in UI Settings (corners/depth): the token's transparent default lets
+// the card background show through, which reads as unstyled. Excludes the checked button, which
+// keeps the primary highlight set in ui-settings.component.scss. Scoped to the container so it
+// does not change button-toggle groups used elsewhere.
+.settings-container .mat-button-toggle-appearance-standard:not(.mat-button-toggle-checked) {
+  background-color: var(--table-color);
+}

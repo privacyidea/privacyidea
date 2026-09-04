@@ -19,9 +19,12 @@
 
 import { inject } from "@angular/core";
 import { Routes } from "@angular/router";
+import { resolveLandingPath$ } from "@app/guards/auth.guard";
 import { dashboardGuard } from "@app/guards/dashboard.guard";
 import { pendingChangesGuard } from "@app/guards/pending-changes.guard";
 import { AuthService } from "@services/auth/auth.service";
+import { UiPreferencesService } from "@services/user-settings/ui-preferences.service";
+import { map } from "rxjs";
 import { AuditComponent } from "@components/audit/audit.component";
 import { DashboardComponent } from "@components/dashboard/dashboard.component";
 import { ClientsComponent } from "@components/audit/clients/clients.component";
@@ -79,7 +82,8 @@ export const routes: Routes = [
   {
     path: "",
     pathMatch: "full",
-    redirectTo: () => (inject(AuthService).adminDashboard() ? "dashboard" : "tokens")
+    redirectTo: () =>
+      resolveLandingPath$(inject(AuthService), inject(UiPreferencesService)).pipe(map((path) => path.slice(1)))
   },
   {
     path: "dashboard",

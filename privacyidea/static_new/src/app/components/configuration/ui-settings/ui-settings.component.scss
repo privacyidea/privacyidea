@@ -24,14 +24,12 @@
   @include styles.main-component-style;
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  // Fits the xs + s card pair (162 + 16 + 340 = the m step) plus the border-box padding the mixin sets.
-  max-width: calc(var(--card-width-m) + 2 * 16px);
+  gap: 20px;
+  // Widened from the old xs+s pair cap so General's four fields settle into a compact 2x2 instead
+  // of stacking one per line: Language+Theme fill row 1 (518px), Landing Page+Pending Requests
+  // fill row 2 (696px), both under this cap.
+  max-width: calc(var(--card-width-l) + 2 * 16px);
 
-  // The mixin caps the height and scrolls the overflow, but a flex child shrinks before the
-  // container ever overflows: the expanded panel would be squeezed and clip its own content
-  // (it is overflow: hidden) with nothing left to scroll. Each child keeps its natural height
-  // instead, so the overflow reaches the container and the scrollbar appears.
   > * {
     flex: none;
   }
@@ -44,48 +42,51 @@
   gap: 8px;
 }
 
-// The cards carry their own widths and wrap into rows; the global class is a grid with no columns.
-.details-cards-grid {
+// Groups related settings by proximity and wraps to use the available width, instead of one
+// divider-separated row per setting.
+.settings-group {
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
   align-items: flex-start;
-  gap: 16px;
+  gap: 20px 16px;
 }
 
-.settings-card-xs {
+.settings-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.settings-item-xs {
   @include table.card-width(xs);
 }
 
-.settings-card-s {
+.settings-item-s {
   @include table.card-width(s);
 }
 
-.settings-card-m {
+.settings-item-m {
   @include table.card-width(m);
 }
 
-// Sits in the panel header, so it keeps the header's description tone and stays smaller than the
-// title beside it.
+.settings-item-label {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 16px;
+  color: var(--mat-sys-on-surface-variant);
+}
+
 .settings-appearance-hint {
   font-size: 20px;
   width: 20px;
   height: 20px;
 }
 
-// Header and body share one inset, so the title lines up with the cards below it.
+// Header and body share one inset, so the title lines up with the items below it.
 .settings-appearance-panel {
   --expansion-panel-header-padding: 0 16px;
   --expansion-panel-body-padding: 0 16px 16px;
-
-  // The m width these cards carry outside the panel is the container's full content width, which
-  // no longer fits once the panel's inset comes off it, so inside they fill the body instead.
-  // These sit inside the panel rather than on the page container, so they recess into it.
-  .settings-card-m {
-    @include styles.card-recessed(3);
-    flex: 1 1 100%;
-    max-width: 100%;
-  }
 }
 
 // Set as Material tokens, not as border-radius/background: Material paints the toggles from these,
@@ -94,13 +95,4 @@ mat-button-toggle-group {
   --mat-button-toggle-shape: var(--border-radius);
   --mat-button-toggle-selected-state-background-color: var(--mat-sys-primary-light);
   --mat-button-toggle-selected-state-text-color: var(--mat-sys-on-primary);
-}
-
-.settings-row {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  margin: 8px;
 }

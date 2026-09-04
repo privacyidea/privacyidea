@@ -29,11 +29,14 @@ import {
   UrlSegment,
   UrlTree
 } from "@angular/router";
+import { Observable } from "rxjs";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { NotificationService } from "@services/notification/notification.service";
+import { UiPreferencesService } from "@services/user-settings/ui-preferences.service";
 import { MockAuthService, MockLocalService, MockNotificationService, MockRouter } from "@testing/mock-services";
-import { adminMatch, AuthGuard, loginGuard, resolveLandingPath, selfServiceMatch } from "./auth.guard";
+import { MockUiPreferencesService } from "@testing/mock-services/mock-ui-preferences-service";
+import { adminMatch, AuthGuard, loginGuard, resolveLandingPath$, selfServiceMatch } from "./auth.guard";
 
 const flushPromises = () => new Promise((r) => setTimeout(r, 0));
 
@@ -167,8 +170,9 @@ describe("AuthGuard class", () => {
   });
 });
 
-describe("resolveLandingPath", () => {
+describe("resolveLandingPath$", () => {
   let authMock: MockAuthService;
+  let uiPreferencesMock: MockUiPreferencesService;
 
   beforeEach(() => {
     TestBed.resetTestingModule();
@@ -176,9 +180,16 @@ describe("resolveLandingPath", () => {
       providers: [{ provide: AuthService, useClass: MockAuthService }]
     });
     authMock = TestBed.inject(AuthService) as unknown as MockAuthService;
+    uiPreferencesMock = new MockUiPreferencesService();
   });
 
-  const landingPath = () => resolveLandingPath(authMock as unknown as AuthServiceInterface);
+  const landingPath = (): string => {
+    let result = "";
+    resolveLandingPath$(authMock as unknown as AuthServiceInterface, uiPreferencesMock).subscribe((path) => {
+      result = path;
+    });
+    return result;
+  };
 
   it("sends a self-service user with the token wizard enabled to the token wizard", () => {
     authMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, role: "user", token_wizard: true });
@@ -187,13 +198,30 @@ describe("resolveLandingPath", () => {
 
   it("falls back to the tokens page for a regular admin", () => {
     authMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, role: "admin", token_wizard: false });
+    uiPreferencesMock.landingPage.set("tokens");
     expect(landingPath()).toBe(ROUTE_PATHS.TOKENS);
   });
 
   it("does NOT send a non-self-service user to a wizard route even when a wizard is enabled", () => {
     // Wizard routes exist only for self-service; routing an admin there would loop via '**'.
     authMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, role: "admin", token_wizard: true });
+    uiPreferencesMock.landingPage.set("tokens");
     expect(landingPath()).toBe(ROUTE_PATHS.TOKENS);
+  });
+
+  it("routes an admin to their stored landing page", () => {
+    authMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, role: "admin" });
+    uiPreferencesMock.landingPage.set("dashboard");
+    expect(landingPath()).toBe(ROUTE_PATHS.DASHBOARD);
+  });
+
+  it("sends an admin without token rights to containers instead of an unusable token list", () => {
+    authMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, role: "admin" });
+    uiPreferencesMock.landingPage.set("tokens");
+    authMock.anyTokenActionAllowed.mockReturnValue(false);
+    authMock.anyContainerActionAllowed.mockReturnValue(true);
+
+    expect(landingPath()).toBe(ROUTE_PATHS.CONTAINERS);
   });
 });
 
@@ -201,15 +229,18 @@ describe("loginGuard", () => {
   const runGuard = () =>
     TestBed.runInInjectionContext(() => loginGuard({} as ActivatedRouteSnapshot, {} as RouterStateSnapshot));
   let authMock: MockAuthService;
+  let uiPreferencesMock: MockUiPreferencesService;
 
   beforeEach(() => {
     TestBed.resetTestingModule();
+    uiPreferencesMock = new MockUiPreferencesService();
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
         provideRouter([]),
         { provide: AuthService, useClass: MockAuthService },
+        { provide: UiPreferencesService, useValue: uiPreferencesMock },
         MockLocalService,
         MockNotificationService
       ]
@@ -222,12 +253,17 @@ describe("loginGuard", () => {
     expect(runGuard()).toBe(true);
   });
 
-  it("redirects authenticated users to their landing page", () => {
+  it("redirects authenticated users to their landing page", (done) => {
     authMock.isAuthenticated.set(true);
     authMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, role: "admin" });
+    uiPreferencesMock.landingPage.set("tokens");
 
     const result = runGuard();
-    expect(result).toBeInstanceOf(UrlTree);
-    expect(TestBed.inject(Router).serializeUrl(result as UrlTree)).toBe(ROUTE_PATHS.TOKENS);
+    expect(result).not.toBe(true);
+    (result as Observable<UrlTree>).subscribe((urlTree) => {
+      expect(urlTree).toBeInstanceOf(UrlTree);
+      expect(TestBed.inject(Router).serializeUrl(urlTree)).toBe(ROUTE_PATHS.TOKENS);
+      done();
+    });
   });
 });

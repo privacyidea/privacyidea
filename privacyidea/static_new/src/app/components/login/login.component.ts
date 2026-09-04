@@ -38,7 +38,7 @@ import { MatFormField, MatInput, MatLabel, MatSuffix } from "@angular/material/i
 import { MatOption, MatSelect } from "@angular/material/select";
 import { Router } from "@angular/router";
 import { challengesTriggered, isAuthenticationSuccessful } from "@app/app.component";
-import { resolveLandingPath } from "@app/guards/auth.guard";
+import { resolveLandingPath$ } from "@app/guards/auth.guard";
 import { ClearButtonComponent } from "@components/shared/clear-button/clear-button.component";
 import { environment } from "@env/environment";
 import { AuthResponse, AuthService, AuthServiceInterface, PasswordLoginParams } from "@services/auth/auth.service";
@@ -318,7 +318,9 @@ export class LoginComponent implements OnDestroy, AfterViewInit {
       // Applies the stored theme and, if the user prefers another language, loads
       // that locale bundle instead of continuing into the app.
       this.uiPreferencesService.sync();
-      this.router.navigateByUrl(resolveLandingPath(this.authService)).then();
+      resolveLandingPath$(this.authService, this.uiPreferencesService).subscribe((path) => {
+        this.router.navigateByUrl(path).then();
+      });
     } else if (challengesTriggered(response)) {
       // Setup depending on what kind of challenges were triggered
       if (response.detail.multi_challenge?.length) {

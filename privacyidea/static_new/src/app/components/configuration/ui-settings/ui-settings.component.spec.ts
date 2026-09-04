@@ -107,6 +107,7 @@ describe("UISettingsComponent", () => {
     expect(appearanceService.resetToDefaults).toHaveBeenCalled();
     expect(themeService.setTheme).toHaveBeenCalledWith("system");
     expect(uiPreferencesService.setShowLoadingUrls).toHaveBeenCalledWith(false);
+    expect(uiPreferencesService.resetLandingPage).toHaveBeenCalled();
     expect(uiPreferencesService.switchLocale).toHaveBeenCalledWith("en");
   });
 
