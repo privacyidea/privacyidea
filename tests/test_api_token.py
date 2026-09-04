@@ -37,7 +37,7 @@ from privacyidea.lib.caconnectors.msca import MSCAConnector
 from privacyidea.lib.config import set_privacyidea_config, delete_privacyidea_config
 from privacyidea.lib.container import (init_container, add_token_to_container,
                                        find_container_by_serial, find_container_for_token)
-from privacyidea.lib.error import ResourceNotFoundError
+from privacyidea.lib.error import ResourceNotFoundError, TokenAdminError
 from privacyidea.lib.event import set_event, delete_event, EventConfiguration
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import (set_policy, delete_policy, SCOPE, enable_policy,
@@ -51,6 +51,7 @@ from privacyidea.lib.token import (get_tokens, remove_token, get_one_token,
                                    check_serial_pass, unassign_token, init_token,
                                    assign_token, token_exist, add_tokeninfo)
 from privacyidea.lib.token.const import LOST_TOKEN_FOR
+from privacyidea.lib.token.lifecycle import lost_token
 from privacyidea.lib.tokenclass import DATE_FORMAT
 from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.tokens.hotptoken import VERIFY_ENROLLMENT_MESSAGE
@@ -915,6 +916,30 @@ class API000TokenAdminRealmList(MyApiTestCase):
 
         remove_token(lost.get_serial())
         for serial in serials:
+            remove_token(serial)
+
+    def test_12d_lost_token_with_an_explicitly_requested_serial(self):
+        """
+        A serial that is passed to the lib function has to be free as well, because the
+        replacement is always a new token, and it is linked and activated like any other.
+        """
+        lost = init_token({"type": "hotp"}, user=User("cornelius", self.realm1))
+        occupied = init_token({"type": "pw", "otpkey": "occupied", "serial": "REPLACEMENT01"},
+                              user=User("hans", self.realm2))
+
+        # The occupied serial is rejected instead of being taken over
+        self.assertRaises(TokenAdminError, lost_token, lost.get_serial(),
+                          new_serial=occupied.get_serial())
+        occupied = get_one_token(serial=occupied.get_serial())
+        self.assertEqual("hans", occupied.user.login)
+
+        # A free serial is used and linked to the lost token
+        lost_token(lost.get_serial(), new_serial="REPLACEMENT02")
+        replacement = get_one_token(serial="REPLACEMENT02")
+        self.assertTrue(replacement.token.active)
+        self.assertEqual(lost.get_serial(), replacement.get_tokeninfo(LOST_TOKEN_FOR))
+
+        for serial in [lost.get_serial(), occupied.get_serial(), "REPLACEMENT02"]:
             remove_token(serial)
 
     def test_13_lost_token_with_occupied_serial_of_other_type(self):
