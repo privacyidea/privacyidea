@@ -22,13 +22,13 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Any
 
-from sqlalchemy import and_, case, false, func, or_, select
+from sqlalchemy import and_, false, func, or_, select
 from sqlalchemy.orm import InstrumentedAttribute, selectinload
 from sqlalchemy.sql import ColumnElement
 
 from privacyidea.models import (AuthenticationLog, AuthenticationLogReason, ConditionalAccessOutcome,
                                 authentication_log_column_length, authentication_log_reason_column_length)
-from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, outcome_of
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
 from privacyidea.lib.conditional_access.session import get_ca_session, guarded_write
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.sqlutils import delete_matching_rows
