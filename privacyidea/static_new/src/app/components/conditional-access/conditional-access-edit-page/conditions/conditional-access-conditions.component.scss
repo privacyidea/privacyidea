@@ -1,0 +1,59 @@
+@use "styles";
+
+.ca-conditions {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+// The three parts read as one sentence, so they stay on a line and wrap together
+// only when the viewport forces it.
+.ca-condition-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+}
+
+.ca-condition-subject {
+  align-items: center;
+  display: flex;
+  flex: 0 0 auto;
+  gap: 16px;
+  // add hint height as offset here, to center with the selection input only
+  padding-bottom: 19.5px;
+}
+
+// use same border radius for the operator toggle as for all buttons
+mat-button-toggle-group {
+  --mat-button-toggle-shape: var(--border-radius);
+}
+
+// Material's default checked tone is the M3 secondary container, which reads as a different accent
+// from the rest of the WebUI, so the selected operator is brought onto the brand primary like the
+// other toggle groups. Paired with on-primary rather than a hardcoded white: in dark mode primary is
+// a light blue where white text measures about 2.8:1 and fails AA, while this token pair is the one
+// the theme guarantees contrast for (~6:1 in both schemes).
+.mat-button-toggle-appearance-standard.mat-button-toggle-checked {
+  background-color: var(--mat-sys-primary);
+  color: var(--mat-sys-on-primary);
+}
+
+// A shared minimum width lines the operator controls of the rows up with each other.
+.ca-condition-label {
+  flex: 0 0 auto;
+  font-weight: 500;
+  min-width: 96px;
+  white-space: nowrap;
+}
+
+.ca-condition-stale {
+  color: var(--mat-sys-error);
+}
+
+// Marks a selected value that no longer exists, both in the option list and - via the
+// option's text content - in the closed select's trigger.
+.ca-condition-stale-tag {
+  color: var(--mat-sys-error);
+}

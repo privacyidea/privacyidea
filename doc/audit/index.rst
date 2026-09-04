@@ -14,6 +14,9 @@ WebUI.
 
 privacyIDEA comes with a default SQL audit module (see :ref:`code_audit`).
 
+Next to the audit log, privacyIDEA keeps an :ref:`authentication_log` which
+records the outcome of every authentication request.
+
 Starting with version 3.2 privacyIDEA also provides a :ref:`logger_audit` and
 a :ref:`container_audit` which can be used to send privacyIDEA audit log messages
 to services like splunk or logstash.

@@ -36,8 +36,10 @@ import string
 import threading
 import time
 import traceback
+from dataclasses import dataclass, field, replace
 from datetime import time as dt_time
 from datetime import timedelta, datetime
+from enum import Enum
 from importlib import import_module
 from importlib import metadata
 
@@ -48,6 +50,7 @@ from dateutil.tz import tzlocal, tzutc
 from netaddr import IPAddress, IPNetwork, AddrFormatError
 
 from privacyidea.lib.error import ParameterError, ResourceNotFoundError, PolicyError
+from privacyidea.lib.conditional_access.authentication_event_types import strip_internal_classification
 from privacyidea.lib.framework import get_app_config_value, get_base_url
 
 log = logging.getLogger(__name__)
@@ -583,7 +586,7 @@ def parse_proxy(proxy_settings):
     return proxy_set
 
 
-def check_proxy(path_to_client, proxy_settings):
+def check_proxy_index(path_to_client: "list[IPAddress]", proxy_settings: str) -> int:
     """
     This function takes a list of IPAddress objects, the so-called "path to client",
     along with the proxy settings from OverrideAuthorizationClient, and determines
@@ -599,7 +602,7 @@ def check_proxy(path_to_client, proxy_settings):
                            it originated at 10.0.0.1, then passed a proxy at 10.1.2.3, then passed a proxy at
                            192.168.1.3 before finally reaching privacyIDEA.
     :param proxy_settings: The proxy settings from OverrideAuthorizationClient
-    :return: an item from ``path_to_client``
+    :return: the index into ``path_to_client`` of the effective client IP
     """
     try:
         proxy_dict = parse_proxy(proxy_settings)
@@ -608,7 +611,7 @@ def check_proxy(path_to_client, proxy_settings):
                   f"{proxy_settings!s}! The IP addresses need to be comma separated. Fix "
                   "this. The client IP will not be mapped!")
         log.debug(f"{traceback.format_exc()!s}")
-        return path_to_client[0]
+        return 0
 
     # We extract the IP from ``path_to_client`` that should be considered the "real" client IP by privacyIDEA.
     # This client IP is an item of ``path_to_client``. The problem is that parts of ``path_to_client`` may
@@ -652,67 +655,178 @@ def check_proxy(path_to_client, proxy_settings):
             max_idx = max(max_idx, current_max_idx)
 
     log.debug(f"Determined mapped client IP: {path_to_client[max_idx]!r}")
-    return path_to_client[max_idx]
+    return max_idx
+
+
+def check_proxy(path_to_client: "list[IPAddress]", proxy_settings: str) -> "IPAddress":
+    """
+    The mapped client IP for *path_to_client*, i.e. the item :func:`check_proxy_index` selected. See there for
+    what is selected and why.
+
+    :param path_to_client: a list of :class:`IPAddress` objects, the peer first and the claimed origin last
+    :param proxy_settings: The proxy settings from OverrideAuthorizationClient
+    :return: an item from ``path_to_client``
+    """
+    return path_to_client[check_proxy_index(path_to_client, proxy_settings)]
+
+
+class ClientIpSource(str, Enum):
+    """
+    Where a request's effective client IP was taken from.
+
+    :attr:`REMOTE_ADDR` is the TCP peer, used because no ``OverrideAuthorizationClient`` is configured.
+    :attr:`REMOTE_ADDR_UNMAPPED` is the same address, but chosen *despite* an override being configured -
+    this peer is not permitted to map the client any further, which is what distinguishes "we do not map" from
+    "we tried and this peer may not". :attr:`X_FORWARDED_FOR` and :attr:`CLIENT_PARAM` are a hop the override
+    admitted, from the header resp. the ``client`` request parameter.
+
+    ``str``/``Enum`` (not ``StrEnum``) for Python 3.10, like the conditional-access enums.
+    """
+    REMOTE_ADDR = "REMOTE_ADDR"
+    REMOTE_ADDR_UNMAPPED = "REMOTE_ADDR_UNMAPPED"
+    X_FORWARDED_FOR = "X_FORWARDED_FOR"
+    CLIENT_PARAM = "CLIENT_PARAM"
+
+    def __str__(self) -> str:
+        return self.value
+
+
+# X-Forwarded-For is attacker-controlled and unbounded, so the recorded chain is capped rather than trusted to
+# be short. 50 matches authentication_log.source_ip, which is wide enough for an IPv4-mapped IPv6 address.
+MAX_IP_CHAIN_HOPS = 16
+MAX_IP_CHAIN_HOP_LENGTH = 50
+
+
+@dataclass(frozen=True)
+class ClientIpHop:
+    """One hop of the path to the client: the address, and where that address was claimed."""
+    ip: str
+    source: str
+
+
+@dataclass(frozen=True)
+class ClientIpInfo:
+    """
+    How a request's client IP was derived: the effective address, the TCP peer it arrived from, which of the
+    two (or which claimed hop) was chosen, and the whole path that was considered.
+
+    ``chain`` is recorded even when no override is configured and the header is therefore ignored: the point is
+    to keep the forensic record of what the request claimed, not to widen what is trusted. Everything past the
+    peer is client-supplied and must never gate a decision.
+    """
+    ip: str | None
+    peer_ip: str | None
+    source: str | None
+    chain: list["ClientIpHop"] = field(default_factory=list)
+    # Which hop of ``chain`` ``ip`` came from; None when there is no effective hop.
+    effective_index: int | None = None
+    # Hops cut by MAX_IP_CHAIN_HOPS.
+    dropped_hops: int = 0
+
+
+def _path_to_client(request) -> "list[ClientIpHop]":
+    """
+    The path from privacyIDEA to the claimed client, peer first: the TCP peer, then the X-Forwarded-For hops in
+    reverse (the header lists them origin-first), then the ``client`` request parameter where the endpoint
+    accepts one. Each hop is tagged with where it was claimed.
+
+    Built regardless of the override setting, so the chain is recorded even for a request whose header
+    privacyIDEA does not honour.
+    """
+    peer = request.remote_addr
+    hops = [ClientIpHop(peer, str(ClientIpSource.REMOTE_ADDR))] if peer else []
+    access_route = list(request.access_route or [])
+    if access_route and access_route != [peer]:
+        hops += [ClientIpHop(ip, str(ClientIpSource.X_FORWARDED_FOR)) for ip in reversed(access_route)]
+    if (not hasattr(request, "blueprint")
+            or request.blueprint in ["validate_blueprint", "ttype_blueprint", "jwtauth"]):
+        client_param = (request.all_data or {}).get("client")
+        if client_param:
+            hops.append(ClientIpHop(client_param, str(ClientIpSource.CLIENT_PARAM)))
+    return hops
+
+
+def get_client_ip_info(request, proxy_settings) -> "ClientIpInfo":
+    """
+    Determine the client IP of *request* **and how it was derived**.
+
+    The selection is exactly :func:`get_client_ip`'s - which is expressed in terms of this function, so the
+    address written to the authentication log and the address the engine counts and blocks on cannot drift
+    apart. What is added is the record: the TCP peer, which hop was chosen, and the full path that was
+    considered, including the hops an unconfigured or non-matching override caused to be ignored.
+
+    :param request: the Flask request
+    :param proxy_settings: the ``OverrideAuthorizationClient`` system setting
+    :return: a :class:`ClientIpInfo`
+    """
+    peer = request.remote_addr
+    hops = _path_to_client(request)
+    if not proxy_settings:
+        # No mapping is configured, so the peer is the client. The chain is still recorded.
+        info = ClientIpInfo(ip=peer, peer_ip=peer, source=str(ClientIpSource.REMOTE_ADDR) if peer else None,
+                            chain=hops, effective_index=0 if hops else None)
+        return _cap_chain(info)
+    if not request.access_route:
+        # No route at all: get_client_ip has always returned None here, and there is nothing to derive from.
+        return _cap_chain(ClientIpInfo(ip=None, peer_ip=peer, source=None, chain=hops))
+    # A falsy or unparseable hop is dropped rather than handed to check_proxy_index() - a malformed
+    # X-Forwarded-For entry or client parameter is attacker-controlled and must not turn the request into a
+    # 500. Kept as (hops-index, hop) pairs so the effective hop can be recovered by position: the same
+    # (ip, source) can legitimately appear more than once in the chain, and a value-based lookup back into
+    # ``hops`` would then return the first match rather than the hop actually chosen.
+    addressable = []
+    addresses = []
+    for i, hop in enumerate(hops):
+        if not hop.ip:
+            continue
+        try:
+            addresses.append(IPAddress(hop.ip))
+        except AddrFormatError:
+            continue
+        addressable.append((i, hop))
+    if not addressable:
+        # Every hop was empty or unparseable (e.g. a garbled X-Forwarded-For): there is nothing left to map,
+        # so this is the same as having no route at all. check_proxy_index() would itself raise on an empty
+        # list.
+        return _cap_chain(ClientIpInfo(ip=None, peer_ip=peer, source=None, chain=hops))
+    index = check_proxy_index(addresses, proxy_settings)
+    effective_index, chosen = addressable[index]
+    # Index 0 is the peer: an override is configured, but this peer may not map the client any further.
+    source = str(ClientIpSource.REMOTE_ADDR_UNMAPPED) if index == 0 else chosen.source
+    # str(IPAddress(...)) rather than the raw hop, so a non-canonical spelling normalizes exactly as before.
+    return _cap_chain(ClientIpInfo(ip=str(addresses[index]), peer_ip=peer, source=source, chain=hops,
+                                   effective_index=effective_index))
+
+
+def _cap_chain(info: "ClientIpInfo") -> "ClientIpInfo":
+    """
+    Cap the recorded chain at :data:`MAX_IP_CHAIN_HOPS` and each hop at :data:`MAX_IP_CHAIN_HOP_LENGTH`. The
+    cap is a hard bound - an attacker padding X-Forwarded-For to push the effective hop past it must not be
+    able to grow what gets stored, so this never keeps more than :data:`MAX_IP_CHAIN_HOPS` hops even where
+    that drops the effective one from the recorded chain (the effective address itself is still on the row
+    via ``ip``/``source``, only its highlighting in the chain is lost in that edge case). An over-long chain
+    is a client claiming one, so it is truncated rather than stored.
+    """
+    keep = min(MAX_IP_CHAIN_HOPS, len(info.chain))
+    if len(info.chain) <= keep and all(len(hop.ip) <= MAX_IP_CHAIN_HOP_LENGTH for hop in info.chain):
+        return info
+    chain = [ClientIpHop(hop.ip[:MAX_IP_CHAIN_HOP_LENGTH], hop.source) for hop in info.chain[:keep]]
+    return replace(info, chain=chain, dropped_hops=len(info.chain) - len(chain))
 
 
 def get_client_ip(request, proxy_settings):
     """
     Take the request and the proxy_settings and determine the new client IP.
 
+    This is :func:`get_client_ip_info` reduced to the address it selects. The two share one implementation on
+    purpose: the IP written to the authentication log and the IP the conditional-access engine counts and
+    blocks on must be the same address, and two implementations of "the client IP" would eventually disagree.
+
     :param request:
     :param proxy_settings: The proxy settings from OverrideAuthorizationClient
     :return: IP address as string
     """
-    # This is not so easy, because we want to support the X-Forwarded-For protocol header set by proxies,
-    # but also want to prevent rogue clients from spoofing their IP address, while also supporting the
-    # "client" request parameter.
-    # From the X-Forwarded-For header, we determine the path to the actual client, i.e. the list of proxy servers
-    # that the HTTP response will pass through, including the final client IP:
-    # If a client C talks to a proxy P1, which in turn talks to a proxy P2, which talks to privacyIDEA,
-    # X-Forwarded-For will be "C, P1", the HTTP client IP will be P2, and path_to_client
-    # consequently will be [P2, P1, C].
-    # However, if we get such a request, we cannot be sure if the X-Forwarded-For header is correct,
-    # or if it was sent by a rogue client in order to spoof its IP address.
-    # To prevent IP spoofing, privacyIDEA allows to configure a list of proxies that are allowed to override the
-    # authentication client. See ``check_proxy`` for more details.
-    # If we are handling a /validate/ or /auth/ endpoint and a "client" parameter is provided,
-    # it is appended to the path to the client.
-    if proxy_settings:
-        if not request.access_route:
-            # This is the case for tests
-            return None
-        elif request.access_route == [request.remote_addr]:
-            # This is the case if no X-Forwarded-For header is provided
-            path_to_client = [request.remote_addr]
-        else:
-            # This is the case if a X-Forwarded-For header is provided.
-            path_to_client = [request.remote_addr] + list(reversed(request.access_route))
-        # A possible ``client`` parameter is appended to the *end* of the path to client.
-        if (not hasattr(request, "blueprint") or
-            request.blueprint in ["validate_blueprint", "ttype_blueprint",
-                                  "jwtauth"]) \
-                and "client" in request.all_data:
-            path_to_client.append(request.all_data["client"])
-        # We now refer to ``check_proxy`` to extract the mapped IP from ``path_to_client``.
-        # The X-Forwarded-For header and the client parameter are request data and can
-        # contain anything, so the path is only followed as far as it consists of IP
-        # addresses. Everything behind an entry that is no address is unusable: it must not
-        # turn the request into an error, and it can not be trusted either, because the hop
-        # it names is unknown. The verified beginning of the path is mapped instead, which
-        # is at most the peer the request really came from.
-        client_path = []
-        for hop in path_to_client:
-            try:
-                client_path.append(IPAddress(hop))
-            except Exception as e:  # noqa: BLE001 - netaddr raises several types here
-                log.warning(f"Ignoring the client path behind an entry that is no IP address: {e}")
-                break
-        if not client_path:
-            return request.remote_addr
-        return str(check_proxy(client_path, proxy_settings))
-    else:
-        # If no proxy settings are defined, we do not map any IPs anyway.
-        return request.remote_addr
+    return get_client_ip_info(request, proxy_settings).ip
 
 
 def check_ip_in_policy(client_ip, policy):
@@ -1257,6 +1371,10 @@ def prepare_result(obj, rid=1, details=None, **kwargs):
            "time": time.time()}
     res.update(kwargs)
     if details is not None and len(details) > 0:
+        # The lib layer hands its classification to the api layer in this very dict (see
+        # INTERNAL_CLASSIFICATION_KEYS); a view reads it by popping, and whatever a view forgot is dropped here
+        # rather than answered with.
+        strip_internal_classification(details)
         details["threadid"] = threading.current_thread().ident
         res["detail"] = details
 

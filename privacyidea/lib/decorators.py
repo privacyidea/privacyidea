@@ -22,7 +22,7 @@ import logging
 from privacyidea.lib.params import get_optional_one_of, get_optional
 from privacyidea.lib import _
 from privacyidea.lib.error import ParameterError
-from privacyidea.lib.error import TokenAdminError
+from privacyidea.lib.error import TokenAdminError, Error
 from privacyidea.lib.utils import check_serial_valid
 
 log = logging.getLogger(__name__)
@@ -41,7 +41,8 @@ def check_token_locked(func):
         # The token object
         token = args[0]
         if token.is_locked():
-            raise TokenAdminError(_("This action is not possible, since the token is locked"), id=1007)
+            raise TokenAdminError(_("This action is not possible, since the token is locked"),
+                                  id=Error.TOKEN_LOCKED)
         f_result = func(*args, **kwds)
         return f_result
 

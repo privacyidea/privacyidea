@@ -41,7 +41,8 @@ from flask import (Blueprint,
                    request)
 from flask import g, jsonify, current_app
 
-from privacyidea.api.lib.utils import get_all_params, get_optional, map_error_to_code, send_error
+from privacyidea.api.lib.utils import (get_all_params, get_optional, map_error_to_code, send_error,
+                                       log_authentication)
 from privacyidea.lib.audit import getAudit
 from privacyidea.lib.clientapplication import save_clientapplication
 from privacyidea.lib.config import (get_token_class, get_from_config,
@@ -49,8 +50,10 @@ from privacyidea.lib.config import (get_token_class, get_from_config,
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.event import EventConfiguration, event
 from privacyidea.lib.policy import PolicyClass, PolicyAction, SCOPE, Match
-from privacyidea.lib.user import get_user_from_param
-from privacyidea.lib.utils import get_client_ip, get_plugin_info_from_useragent
+from privacyidea.lib.token import get_one_token
+from privacyidea.lib.tokens.pushtoken import PUSH_AUTH_EVENT, PUSH_AUTH_REASON, PUSH_AUTH_TRANSACTION_ID
+from privacyidea.lib.user import get_user_from_param, User
+from privacyidea.lib.utils import get_client_ip_info, get_plugin_info_from_useragent
 from ..lib.framework import get_app_config_value
 from ..lib.log import log_with
 from ..lib.tokens.push_types import PushAction
@@ -78,8 +81,9 @@ def before_request():
     g.audit_object = getAudit(current_app.config)
     g.event_config = EventConfiguration()
     # access_route contains the ip addresses of all clients, hops and proxies.
-    g.client_ip = get_client_ip(request,
-                                get_from_config(SYSCONF.OVERRIDECLIENT))
+    g.client_ip_info = get_client_ip_info(request,
+                                          get_from_config(SYSCONF.OVERRIDECLIENT))
+    g.client_ip = g.client_ip_info.ip
     g.serial = get_optional(request.all_data, "serial", default=None)
     ua_name, ua_version, _ua_comment = get_plugin_info_from_useragent(request.user_agent.string)
     g.user_agent = ua_name
@@ -99,6 +103,22 @@ def before_request():
     if request.method == "POST":
         # default IP if the request carries none, matching save_client_application_type
         save_clientapplication(g.client_ip or "0.0.0.0", f"{request.user_agent!s}" or "unknown")  # nosec B104
+
+
+def _push_token_owner(serial):
+    """
+    Resolve the owner of the push token addressed by *serial* for the
+    conditional-access checks. The smartphone sends only the token serial (no
+    user parameter), so the identity the engine reasons about — the token owner —
+    must be looked up from the serial. Returns an empty :class:`User` when the
+    serial is missing or the token has no resolvable owner.
+    """
+    if not serial:
+        return User()
+    try:
+        return get_one_token(serial=serial).user or User()
+    except Exception:
+        return User()
 
 
 @ttype_blueprint.route('/<ttype>', methods=['POST', 'GET'])
@@ -147,6 +167,8 @@ def token(ttype=None):
         request.all_data[PushAction.PUSH_CODE_TO_PHONE_MESSAGE] = code_to_phone_message
 
     try:
+        # This dispatcher carries no conditional-access gate: push checks itself inside _api_endpoint_post, and only on
+        # the signed challenge answer, so enrollment and firebase-token updates are never refused by a lock.
         res = token_class.api_endpoint(request, g)
     except Exception as e:
         if Match.action_only(
@@ -163,6 +185,17 @@ def token(ttype=None):
                         "realm": user.realm,
                         "serial": serial,
                         "token_type": ttype})
+
+    # Log push authentication
+    push_auth_event = getattr(g, PUSH_AUTH_EVENT, None)
+    if push_auth_event:
+        # The smartphone's request carries only the serial, so scope the auth-log row and the conditional-access engine
+        # to the resolved token owner (the param user is empty for a push answer) so per-user failure counts add up.
+        owner = _push_token_owner(serial)
+        log_authentication(push_auth_event, request, user=owner, serial=serial,
+                           transaction_id=getattr(g, PUSH_AUTH_TRANSACTION_ID, None),
+                           reasons=getattr(g, PUSH_AUTH_REASON, None) or [])
+
     if res[0] == "json":
         return jsonify(res[1])
     elif res[0] in ["html", "plain"]:

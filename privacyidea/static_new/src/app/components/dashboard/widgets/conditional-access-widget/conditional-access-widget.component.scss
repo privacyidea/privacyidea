@@ -1,0 +1,156 @@
+/**
+ * (c) NetKnights GmbH 2026,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ **/
+
+@use "../widget";
+
+:host {
+  @include widget.host;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  overflow: auto;
+}
+
+.ca-table {
+  @include widget.stat-table;
+}
+
+// A breakdown of the row above it (dry-run policies, permanent locks): muted and indented, so the numbers that
+// matter at a glance stay the top-level ones.
+.ca-sub-label {
+  color: var(--mat-sys-on-surface-variant);
+  padding-left: 24px !important;
+}
+
+.ca-section-title {
+  display: flex;
+  align-items: center;
+  // The title and its info hint stay side by side; anything else in the row (the in-range count) is pushed right.
+  gap: 4px;
+  margin: 8px 0;
+  padding-inline: 16px;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+// The cell itself stays a normal table cell, so the row keeps the same height as the state cell next to it. The
+// icon and the label form one inline-flex unit inside it, which is what keeps them together on one line.
+td.ca-highlight-cell {
+  white-space: nowrap;
+}
+
+.ca-highlight-subject {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+// The row's glyph is smaller than the navigation's, so the letters are scaled up to keep the same weight. The gap to
+// the label belongs to the stack: an inner margin would widen its box and push the centered text off the glyph.
+.icon-block-ip {
+  --icon-block-ip-text-size: 10px;
+  margin-right: 4px;
+
+  .ca-kind-icon {
+    margin-right: 0;
+  }
+}
+
+// Marks a highlight row as a blocked IP or a locked user, so the two kinds are told apart at a glance.
+.ca-kind-icon {
+  font-size: 1.125rem;
+  width: 1.125rem;
+  height: 1.125rem;
+  vertical-align: text-bottom;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.ca-range-count {
+  margin-left: auto;
+  text-transform: none;
+}
+
+// The preset buttons sit at the two ends of the slider, each one moving the window end it points at.
+.ca-range {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding-inline: 8px;
+}
+
+.ca-slider-with-histogram {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  // Room for a histogram with enough height to read a shape from, plus the slider and its date axis on top.
+  padding-top: 16px;
+}
+
+// Activity bars sit behind the slider track, inset horizontally to roughly align with its usable span.
+.ca-activity-histogram {
+  position: absolute;
+  inset: 4px 12px 36px;
+  display: flex;
+  align-items: flex-end;
+  gap: 1px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.ca-activity-bar {
+  flex: 1 1 0;
+  min-height: 1px;
+  background-color: var(--mat-sys-primary);
+  opacity: 0.4;
+  border-radius: 1px 1px 0 0;
+}
+
+.ca-range-slider {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  // No side margin, so the slider spans the full block width.
+  margin: 0;
+  // Value hint as a horizontal rounded label sized to its content, so the date text fits. The tokens inherit into the
+  // slider's internal value indicator across the component boundary.
+  --mat-slider-value-indicator-width: auto;
+  --mat-slider-value-indicator-height: 32px;
+  --mat-slider-value-indicator-padding: 0 10px;
+  --mat-slider-value-indicator-border-radius: 6px;
+  --mat-slider-value-indicator-container-transform: translateX(-50%);
+  --mat-slider-value-indicator-text-transform: none;
+}
+
+.ca-range-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: -8px;
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--mat-sys-on-surface-variant);
+  white-space: nowrap;
+}
+
+.ca-more {
+  margin: 0;
+  padding: 4px 16px;
+  text-align: right;
+}

@@ -18,6 +18,7 @@
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { of, throwError } from "rxjs";
+import { UserDetailsLockDialogComponent } from "./user-details-lock-dialog/user-details-lock-dialog.component";
 
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
@@ -29,6 +30,8 @@ import { ActivatedRoute } from "@angular/router";
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { AuditService } from "@services/audit/audit.service";
 import { AuthService } from "@services/auth/auth.service";
+import { AuthenticationLogService } from "@services/authentication-log/authentication-log.service";
+import { ConditionalAccessStateService } from "@services/conditional-access-state/conditional-access-state.service";
 import { ContainerService } from "@services/container/container.service";
 import { ContentService } from "@services/content/content.service";
 import { DialogService } from "@services/dialog/dialog.service";
@@ -39,6 +42,8 @@ import { TokenDetails, TokenService } from "@services/token/token.service";
 import { UserData, UserService } from "@services/user/user.service";
 import {
   MockAuditService,
+  MockAuthenticationLogService,
+  MockConditionalAccessStateService,
   MockContainerService,
   MockContentService,
   MockDialogService,
@@ -62,6 +67,9 @@ describe("UserDetailsComponent", () => {
   let pendingChangesService: MockPendingChangesService;
   let notificationServiceMock: MockNotificationService;
   let dialogMock: MockMatDialog;
+  let authenticationLogServiceMock: MockAuthenticationLogService;
+  let authServiceMock: MockAuthService;
+  let conditionalAccessStateServiceMock: MockConditionalAccessStateService;
 
   const mockUserData = {
     username: "alice",
@@ -95,6 +103,8 @@ describe("UserDetailsComponent", () => {
         { provide: UserService, useClass: MockUserService },
         { provide: TokenService, useClass: MockTokenService },
         { provide: AuditService, useClass: MockAuditService },
+        { provide: AuthenticationLogService, useClass: MockAuthenticationLogService },
+        { provide: ConditionalAccessStateService, useClass: MockConditionalAccessStateService },
         { provide: ContainerService, useClass: MockContainerService },
         { provide: AuthService, useClass: MockAuthService },
         { provide: ContentService, useClass: MockContentService },
@@ -114,6 +124,11 @@ describe("UserDetailsComponent", () => {
     dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
     pendingChangesService = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
     notificationServiceMock = TestBed.inject(NotificationService) as unknown as MockNotificationService;
+    authenticationLogServiceMock = TestBed.inject(AuthenticationLogService) as unknown as MockAuthenticationLogService;
+    authServiceMock = TestBed.inject(AuthService) as unknown as MockAuthService;
+    conditionalAccessStateServiceMock = TestBed.inject(
+      ConditionalAccessStateService
+    ) as unknown as MockConditionalAccessStateService;
 
     component = fixture.componentInstance;
     fixture.detectChanges();
@@ -226,6 +241,27 @@ describe("UserDetailsComponent", () => {
     component.showUserAuditLog();
 
     expect(auditServiceMock.activeFilter().value).toBe("user: Alice");
+  });
+
+  it("showUserAuthenticationLog sets username and realm filter for the current user", () => {
+    userServiceMock.detailsUser.set({ username: "Alice", realm: "realm1" });
+
+    component.showUserAuthenticationLog();
+
+    expect(authenticationLogServiceMock.authenticationLogFilter().getValueOfKey("username")).toBe("Alice");
+    expect(authenticationLogServiceMock.authenticationLogFilter().getValueOfKey("realm")).toBe("realm1");
+  });
+
+  it("shows the auth-log header link only when authentication_log_read is allowed", () => {
+    expect(fixture.nativeElement.querySelector(".details-header mat-icon.mdi--list-lock")).toBeNull();
+
+    authServiceMock.authData.set({
+      ...MockAuthService.MOCK_AUTH_DATA,
+      rights: ["authentication_log_read"]
+    });
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector(".details-header mat-icon.mdi--list-lock")).not.toBeNull();
   });
 
   it("assignUserToToken opens PIN dialog and assigns user to token, then reloads resources", () => {
@@ -625,5 +661,200 @@ describe("UserDetailsComponent", () => {
       component.ngOnDestroy();
       expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
     });
+  });
+
+  it("shows lock state card with 'Unlocked' status when user_lock_read is allowed", () => {
+    authServiceMock.authData.set({
+      ...MockAuthService.MOCK_AUTH_DATA,
+      rights: ["user_lock_read"]
+    });
+    conditionalAccessStateServiceMock.setUserLockStatus(null);
+
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain("User Lock");
+    expect(fixture.nativeElement.textContent).toContain("Unlocked");
+  });
+
+  it("shows reset lock action for locked users and triggers reset + reload after confirmation", () => {
+    authServiceMock.authData.set({
+      ...MockAuthService.MOCK_AUTH_DATA,
+      rights: ["user_lock_read", "user_lock_reset"]
+    });
+    conditionalAccessStateServiceMock.setUserLockStatus({
+      resolver: "resolver1",
+      uid: "uid-123",
+      realm: "realm1",
+      username: "Alice",
+      permanent: false,
+      lock_expires_at: "2030-01-01T10:00:00Z",
+      seconds_remaining: 120,
+      lock_cause: "POLICY",
+      locked_at: "2030-01-01T09:58:00Z",
+      error_message: null
+    });
+    dialogServiceMock.openDialog = jest.fn().mockReturnValue({
+      afterClosed: () => of(true)
+    });
+
+    const reloadSpy = jest.spyOn(conditionalAccessStateServiceMock.userLockResource, "reload");
+
+    fixture.detectChanges();
+    component.resetUserLock();
+
+    expect(conditionalAccessStateServiceMock.resetUserLock).toHaveBeenCalledWith({
+      resolver: "resolver1",
+      uid: "uid-123",
+      realm: "realm1"
+    });
+    expect(reloadSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("lockStatusText reports a permanent lock", () => {
+    conditionalAccessStateServiceMock.setUserLockStatus({
+      resolver: "resolver1",
+      uid: "uid-123",
+      realm: "realm1",
+      username: "Alice",
+      permanent: true,
+      lock_expires_at: null,
+      seconds_remaining: null,
+      lock_cause: "POLICY",
+      locked_at: "2030-01-01T09:58:00Z",
+      error_message: null
+    });
+    expect(component.lockStatusText()).toBe("Locked permanently");
+  });
+
+  it("lockStatusText falls back to 'Locked' when locked without an expiry", () => {
+    conditionalAccessStateServiceMock.setUserLockStatus({
+      resolver: "resolver1",
+      uid: "uid-123",
+      realm: "realm1",
+      username: "Alice",
+      permanent: false,
+      lock_expires_at: null,
+      seconds_remaining: null,
+      lock_cause: "POLICY",
+      locked_at: "2030-01-01T09:58:00Z",
+      error_message: null
+    });
+    expect(component.lockStatusText()).toBe("Locked");
+  });
+
+  it("resetUserLock does nothing when the user is not locked", () => {
+    conditionalAccessStateServiceMock.setUserLockStatus(null);
+    dialogServiceMock.openDialog = jest.fn();
+
+    component.resetUserLock();
+
+    expect(dialogServiceMock.openDialog).not.toHaveBeenCalled();
+    expect(conditionalAccessStateServiceMock.resetUserLock).not.toHaveBeenCalled();
+  });
+
+  it("resetUserLock reports when nothing was reset (already gone or out of scope)", () => {
+    conditionalAccessStateServiceMock.setUserLockStatus({
+      resolver: "resolver1",
+      uid: "uid-123",
+      realm: "realm1",
+      username: "Alice",
+      permanent: false,
+      lock_expires_at: "2030-01-01T10:00:00Z",
+      seconds_remaining: 120,
+      lock_cause: "POLICY",
+      locked_at: "2030-01-01T09:58:00Z",
+      error_message: null
+    });
+    dialogServiceMock.openDialog = jest.fn().mockReturnValue({ afterClosed: () => of(true) });
+    (conditionalAccessStateServiceMock.resetUserLock as jest.Mock).mockReturnValue(of(false));
+
+    component.resetUserLock();
+
+    expect(notificationServiceMock.error).toHaveBeenCalled();
+  });
+
+  it("lockUser opens the dialog and locks with the chosen duration", () => {
+    dialogServiceMock.openDialog = jest.fn().mockReturnValue({
+      afterClosed: () => of({ durationSeconds: 600 })
+    });
+    const reloadSpy = jest.spyOn(conditionalAccessStateServiceMock.userLockResource, "reload");
+
+    component.lockUser();
+
+    expect(dialogServiceMock.openDialog).toHaveBeenCalledWith(
+      expect.objectContaining({ component: UserDetailsLockDialogComponent })
+    );
+    expect(conditionalAccessStateServiceMock.setUserLock).toHaveBeenCalledWith(
+      expect.objectContaining({ duration_seconds: 600 })
+    );
+    expect(reloadSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("lockUser omits the duration for a permanent lock", () => {
+    dialogServiceMock.openDialog = jest.fn().mockReturnValue({
+      afterClosed: () => of({ durationSeconds: null })
+    });
+
+    component.lockUser();
+
+    expect(conditionalAccessStateServiceMock.setUserLock).toHaveBeenCalledWith(
+      expect.objectContaining({ duration_seconds: undefined })
+    );
+  });
+
+  it("lockUser does nothing when the dialog is cancelled", () => {
+    dialogServiceMock.openDialog = jest.fn().mockReturnValue({ afterClosed: () => of(null) });
+
+    component.lockUser();
+
+    expect(conditionalAccessStateServiceMock.setUserLock).not.toHaveBeenCalled();
+  });
+
+  it("hides the lock action without user_lock_set", () => {
+    authServiceMock.authData.set({
+      ...MockAuthService.MOCK_AUTH_DATA,
+      rights: ["user_lock_read"]
+    });
+    conditionalAccessStateServiceMock.setUserLockStatus(null);
+
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector(".user-lock-actions button")).toBeNull();
+  });
+
+  it("names who imposed the lock now in force", () => {
+    conditionalAccessStateServiceMock.setUserLockStatus({
+      resolver: "resolver1",
+      uid: "uid-123",
+      realm: "realm1",
+      username: "Alice",
+      permanent: true,
+      lock_expires_at: null,
+      seconds_remaining: null,
+      lock_cause: "MANUAL",
+      locked_at: "2030-01-01T09:58:00Z",
+      error_message: null
+    });
+    expect(component.lockCauseLabel()).toBe("Locked by an administrator");
+  });
+
+  it("resetUserLock does not reset when the confirmation is cancelled", () => {
+    conditionalAccessStateServiceMock.setUserLockStatus({
+      resolver: "resolver1",
+      uid: "uid-123",
+      realm: "realm1",
+      username: "Alice",
+      permanent: false,
+      lock_expires_at: "2030-01-01T10:00:00Z",
+      seconds_remaining: 120,
+      lock_cause: "POLICY",
+      locked_at: "2030-01-01T09:58:00Z",
+      error_message: null
+    });
+    dialogServiceMock.openDialog = jest.fn().mockReturnValue({ afterClosed: () => of(false) });
+
+    component.resetUserLock();
+
+    expect(conditionalAccessStateServiceMock.resetUserLock).not.toHaveBeenCalled();
   });
 });

@@ -22,7 +22,6 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-from flask_babel import _
 import json
 import logging
 import re
@@ -30,17 +29,28 @@ import string
 import threading
 import time
 from copy import copy
+from typing import TYPE_CHECKING
 from urllib.parse import unquote
 
 import jwt
-from flask import (jsonify,
-                   current_app, request, g, Response)
+from flask import jsonify, current_app, Response, Request, request, g, has_request_context
+from flask_babel import _
 
+from privacyidea.lib import lazy_gettext
+from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType,
+                                                                          AUTH_EVENT_REASON_KEY,
+                                                                          AUTH_EVENT_REASON_DETAIL_KEY,
+                                                                          REASON_DETAIL_INFO_KEY,
+                                                                          strip_internal_classification)
+from privacyidea.lib.conditional_access.authentication_log import (AuthLogUserRole, ClientLabelSource,
+                                                                    PendingAuthEvent)
+from privacyidea.lib.conditional_access.request_context import AuthPrincipal, get_ca_context
+from privacyidea.lib.user import User
 from privacyidea.lib.audit import getAudit
 from privacyidea.lib.config import get_from_config, SYSCONF
 from privacyidea.lib.event import EventConfiguration
 from privacyidea.lib.utils import (prepare_result, get_version, to_unicode,
-                                   get_client_ip, get_plugin_info_from_useragent)
+                                   get_client_ip_info, get_plugin_info_from_useragent)
 # Re-exported from privacyidea.lib.params for backwards-compatibility with
 # callers that import these names from privacyidea.api.lib.utils.
 from privacyidea.lib.params import (  # noqa: F401
@@ -56,11 +66,17 @@ from privacyidea.lib.policy import PolicyClass
 from privacyidea.lib.policy import check_policy_name  # noqa: F401
 from privacyidea.lib.policy import Match, SCOPE
 from privacyidea.lib.policies.actions import PolicyAction
-from ...lib.error import (PolicyError, ResourceNotFoundError,
+from ...lib.error import (ConflictError, PolicyError, ResourceNotFoundError,
                           PrivacyIDEAError, AuthError, Error)
 from ...lib.log import log_with
 
+if TYPE_CHECKING:
+    from privacyidea.lib.conditional_access.context import CAContext
+
 log = logging.getLogger(__name__)
+
+# The error message of an ordinary failed authentication
+GENERIC_AUTH_FAILURE = lazy_gettext("Authentication failed.")
 ENCODING = "utf-8"
 TRUSTED_JWT_ALGOS = ["ES256", "ES384", "ES512",
                      "RS256", "RS384", "RS512",
@@ -91,6 +107,27 @@ NO_UNQUOTE_USER_AGENTS = {
 SESSION_KEY_LENGTH = 32
 
 
+def to_list_param(value):
+    """
+    Normalize a request parameter that may arrive as a JSON list or a comma-separated
+    string into a list of stripped, non-empty string entries. Empty entries are
+    dropped, so ``"a,"`` yields ``["a"]`` and a blank value (``""`` / ``","``) yields
+    an empty list ``[]`` — never ``[""]``, which would otherwise filter on an empty
+    string. A not-supplied parameter (``None``) still yields ``None``.
+
+    An empty list is returned (rather than ``None``) for a supplied-but-blank value so
+    every caller gets an iterable: filter builders treat ``[]`` as "no filter" just like
+    ``None``, while callers that iterate the result (e.g. setting container realms) do
+    not choke on ``None``.
+
+    Unlike :func:`privacyidea.lib.utils.to_list`, this splits a comma-separated string
+    into its entries rather than wrapping the whole string as a single-element list.
+    """
+    if value is None:
+        return None
+    items = value if isinstance(value, (list, tuple)) else str(value).split(",")
+    return [entry for entry in (str(item).strip() for item in items) if entry]
+
 
 def send_result(obj, rid=1, details=None, **kwargs) -> Response:
     """
@@ -103,13 +140,12 @@ def send_result(obj, rid=1, details=None, **kwargs) -> Response:
     :param details: optional parameter, which allows to provide more detail
     :type  details: None or simple type like dict, list or string/unicode
 
-    :return: json rendered string result
-    :rtype: string
+    :return: the result response, a :class:`~flask.Response` with a status of ``200``
     """
     return jsonify(prepare_result(obj, rid, details, **kwargs))
 
 
-def send_error(errstring, rid=1, context=None, error_code=-311, details=None):
+def send_error(errstring, rid=1, context=None, error_code=-311, details=None) -> Response:
     """
     sendError - return a json error result document
 
@@ -132,11 +168,13 @@ def send_error(errstring, rid=1, context=None, error_code=-311, details=None):
         challenges)
     :type details: dict
 
-    :return: json rendered sting result
-    :rtype: string
-
+    :return: the error response. A :class:`~flask.Response`, not a string - it carries a status of its own, which
+        a caller building an error outside an error handler has to set (they default to ``200``).
     """
     if details:
+        # The same backstop prepare_result applies to a successful response: an error's details are built from the
+        # lib call's reply too (an AuthError carries it straight through), so a forgotten pop cannot leak here either.
+        strip_internal_classification(details)
         details["threadid"] = threading.current_thread().ident
     res = {"jsonrpc": "2.0",
            "detail": details,
@@ -238,6 +276,279 @@ def getLowerParams(param):
     return ret
 
 
+def _determine_user_role(user: User | None, internal_admin: bool) -> AuthLogUserRole:
+    """
+    Classify the authenticating principal for the authentication log. A local database admin is only knowable at the
+    caller (``/auth`` via ``verify_db_admin``/``db_admin_exists``) and is signalled by *internal_admin*. Otherwise a
+    user whose realm is a configured ``SUPERUSER_REALM`` is an external (admin-realm) admin; everyone else is a
+    regular user. The superuser realms are only readable inside an app context, so outside one the principal is
+    treated as a regular user - which no authentication reaches, since every authentication is a request.
+    """
+    if internal_admin:
+        return AuthLogUserRole.ADMIN_INTERNAL
+    if user and user.realm and has_request_context():
+        superuser_realms = [realm.lower() for realm in current_app.config.get("SUPERUSER_REALM", [])]
+        if user.realm.lower() in superuser_realms:
+            return AuthLogUserRole.ADMIN_EXTERNAL
+    return AuthLogUserRole.USER
+
+
+def request_endpoint() -> str | None:
+    """
+    The endpoint of the current request, as its path with a trailing slash removed (``/auth``,
+    ``/validate/check``, ``/ttype/push``) - or ``None`` outside a request context.
+
+    The path rather than the Flask endpoint or the matched URL rule: the rule would read ``/ttype/<ttype>`` where
+    the path names the token type that authenticated, and every route that authenticates has a static path anyway.
+    Normalizing the trailing slash keeps one endpoint one value however it was called - which matters twice over,
+    since this is both what the authentication log stores and what an ``ENDPOINT`` conditional-access condition
+    compares against.
+    """
+    if not has_request_context():
+        return None
+    return request.path.rstrip("/") or request.path
+
+
+def pop_auth_event_reason(details: dict | None) -> tuple[list[str], dict | None]:
+    """
+    Take the classified reasons and their detail dict off *details*, the way the event type itself is taken off it.
+
+    Both are internal keys the lib layer sets alongside the event type (see
+    :data:`~privacyidea.lib.conditional_access.authentication_event_types.AUTH_EVENT_REASON_KEY`) and neither may
+    reach the client, so they are popped rather than read.
+
+    A view calls this to *read* the classification off a lib call's reply, which is the same dict the response is
+    built from. Forgetting does not leak it - :func:`~privacyidea.lib.conditional_access.authentication_event_types.
+    strip_internal_classification` drops whatever is left when the body is built - it loses it: the row is then logged
+    without a reason. Calling this on a dict that carries none is free, so the habit is to pop unconditionally rather
+    than to reason about whether this particular path classifies anything.
+
+    The layer below records either a list of reasons (the request-level classification) or a single one (a layer that
+    only ever finds one), so both are accepted and a list always comes back.
+
+    :param details: the reply/details dict a lib call returned, or None
+    :return: ``(reasons, reason_detail)`` - an empty list and None when the layer below classified none
+    """
+    if not details:
+        return [], None
+    reason = details.pop(AUTH_EVENT_REASON_KEY, None)
+    detail = details.pop(AUTH_EVENT_REASON_DETAIL_KEY, None)
+    reasons = list(reason) if isinstance(reason, (list, tuple)) else ([reason] if reason else [])
+    return [str(item) for item in reasons if item], (detail or None)
+
+
+def log_authentication(event_type: AuthEventType | None, request: Request | None = None, user: User | None = None,
+                       serial: str | None = None, transaction_id: str | None = None,
+                       username: str | None = None,
+                       internal_admin: bool = False,
+                       immediate: bool = False,
+                       reasons: list[str] | None = None,
+                       reason_detail: dict | None = None,
+                       other_info: dict | None = None) -> "PendingAuthEvent | None":
+    """
+    Record one authentication_log entry for the current request.
+
+    This is the single API-layer persistence point: the lib layer classifies
+    the outcome and the views call this to record it. ``source_ip`` uses the
+    same client-IP resolution as the audit log; ``client_label`` is the
+    ``client_id`` parameter if supplied, otherwise the User-Agent header;
+    ``endpoint`` is the request path that authenticated (``/auth``,
+    ``/validate/check``, ``/ttype/push``, ...).
+
+    The entry is **staged**, not written: it goes into this request's conditional-access buffer and is written once,
+    with everything else the request staged, at request teardown. A later stage can therefore still amend it (a
+    post-policy correcting the classification just assigns to the returned event), and the request produces one row
+    per event rather than a row plus corrections. The returned :class:`PendingAuthEvent` is that handle; its
+    ``row_id`` is filled in when the row is written.
+
+    Pass *immediate* to flush the buffer on the spot. Needed only when this row has to be ordered ahead of a row that
+    **another request** writes while this one is still running - the ``push_wait`` trigger, whose answer arrives out of
+    band at ``/ttype/push`` during the wait, and whose row ``id`` must therefore stay below that answer's.
+
+    The ``(resolver, uid, realm)`` identity tuple is only written for a resolved
+    user; an unresolvable user (e.g. USER_UNKNOWN) is logged with resolver and uid
+    None while realm and username are still captured from the User object.
+
+    ``username`` overrides the login name derived from the User object. It is needed for
+    local administrators, who have no User object (the login name is not stored there) but
+    whose login name should still be recorded.
+
+    Some requests identify a token but not its user (e.g. the smartphone ``/ttype/push`` confirm carries only the
+    serial). In that case the token owner is resolved from the serial, so a row that names a single token always also
+    records that token's user, keeping the log symmetric.
+
+    ``source_ip`` (from ``g``) as well as ``client_label`` and ``endpoint`` (from ``request``) are only read inside a
+    request context, so that a caller outside a view (tests, lib code) records an event rather than raising: worst
+    case those columns are empty and the event itself is never lost. No authentication takes that path - every
+    authentication reaches the server as a request, ``push_wait`` included, which triggers and awaits its challenge
+    within the one request. ``endpoint`` comes from :func:`request_endpoint`, the same
+    reading an ``ENDPOINT`` conditional-access condition is evaluated against.
+
+    ``reasons`` says *why* the event came out this way: every
+    :class:`~privacyidea.lib.conditional_access.authentication_event_types.AuthEventReason` the request produced,
+    in the order that vocabulary declares them, each becoming a row of its own. ``reason_detail`` carries what is
+    specific to this request - the deciding policies, the per-serial reasons - into ``other_info`` under its own
+    :data:`REASON_DETAIL_INFO_KEY`
+    key. Both are optional: an event nobody found a reason for is logged without any. ``other_info`` is whatever the
+    caller has to say about the row itself (a conditional-access rejection records what it did), and shares
+    ``other_info`` with the reason detail without either overwriting the other.
+
+    Both are recorded together with their derivation, taken off the ``ClientIpInfo`` ``before_request`` published:
+    the TCP peer, which hop the effective address came from, the whole path that was considered, and whether the
+    label is a ``client_id`` the client chose or its User-Agent. The engine still evaluates ``source_ip`` alone -
+    the rest is the forensic record of how that address was arrived at.
+
+    ``user_role`` records whether the principal is a regular user or an admin (see :class:`AuthLogUserRole`). Pass
+    ``internal_admin=True`` for a local database admin (``/auth`` only); an admin-realm admin is detected from the
+    user's realm, so the caller need not flag it.
+
+    ``attempt_id`` groups all rows of one logical authentication attempt and is taken off this request's
+    conditional-access context, which resolved it once (see
+    :attr:`~privacyidea.lib.conditional_access.request_context.ConditionalAccessContext.attempt_id`) - there is
+    nothing for a caller to pass.
+    """
+    if not event_type:
+        log.debug("Not logging authentication event, because no event type is given.")
+        return
+    client_label = client_label_source = None
+    source_ip = peer_ip = source_ip_source = ip_chain = None
+    endpoint = None
+    if has_request_context():
+        client_ip_info = g.get("client_ip_info")
+        if client_ip_info is not None:
+            source_ip = client_ip_info.ip
+            peer_ip = client_ip_info.peer_ip
+            source_ip_source = str(client_ip_info.source) if client_ip_info.source else None
+            if len(client_ip_info.chain) > 1:
+                # Only a chain with something to say is stored: one hop is exactly peer_ip, which the row
+                # already carries. The effective hop is marked by index, not by address, because the same
+                # address can legitimately appear twice in a chain.
+                ip_chain = [{"ip": hop.ip, "source": str(hop.source),
+                             **({"effective": True} if index == client_ip_info.effective_index else {})}
+                            for index, hop in enumerate(client_ip_info.chain)]
+        else:
+            # before_request never got as far as publishing the derivation (an early AuthError, say). The
+            # address is still known; how it was reached is not, and is left NULL rather than guessed at.
+            source_ip = g.get("client_ip")
+        if request is not None:
+            client_id = get_optional(request.all_data, "client_id")
+            if client_id:
+                client_label, client_label_source = client_id, str(ClientLabelSource.CLIENT_ID)
+            elif request.user_agent.string:
+                client_label, client_label_source = request.user_agent.string, str(ClientLabelSource.USER_AGENT)
+            endpoint = request_endpoint()
+    # TODO: replace by user function (after related PR is merged)
+    resolved = bool(user and user.resolver)
+    if not resolved and serial and "," not in serial:
+        # The request has a serial but no resolved user, so resolve the token owner here to log the user alongside the
+        # serial; any failure here is swallowed so it can never break logging.
+        try:
+            from privacyidea.lib.token import get_one_token
+            token = get_one_token(serial=serial, silent_fail=True)
+            if token is not None and token.user and token.user.resolver:
+                user = token.user
+                resolved = True
+        except Exception as ex:
+            log.debug(f"Could not resolve the token owner for the authentication log: {ex!r}")
+    context = get_ca_context()
+    # Falls back to this row's own transaction id when before_request has not already resolved the attempt;
+    # before_request must resolve a challenge-answering request's attempt before the token logic deletes that challenge,
+    # so this only catches /ttype/push's out-of-band answer and a challenge triggered and resolved within one request
+    # (push_wait).
+    context.continue_attempt(transaction_id)
+    if not context.attempt_resolved:
+        answered = get_optional_one_of(getattr(request, "all_data", None) or {}, ["transaction_id", "state"])
+        if answered:
+            # A continued transaction with no challenge recording an attempt starts a new attempt of its own - expected
+            # for a stale or forged transaction_id, but otherwise the fingerprint of a broken invariant: an endpoint
+            # that answers a challenge before before_request resolves the attempt, or a set_data call that replaces a
+            # challenge's data instead of updating it.
+            log.debug(f"Transaction {answered} has no challenge recording an authentication attempt. The log row for "
+                      f"this request starts a new attempt rather than joining that transaction's.")
+    # Records the authenticating principal, including the token owner resolved just above that the caller doesn't know
+    # about, on the request context so policy evaluation and the logged row agree on the same subject; kept as an
+    # AuthPrincipal rather than a bare User because a local database admin has no user object.
+    context.principal = AuthPrincipal(user=user or User(), username=username, internal_admin=internal_admin)
+    context.source_ip = source_ip
+    # The caller's own info and the reason detail share the row's other_info, the detail under a key of its own
+    # (see REASON_DETAIL_INFO_KEY), so neither has to know about the other.
+    info = dict(other_info) if other_info else {}
+    if reason_detail:
+        info[REASON_DETAIL_INFO_KEY] = reason_detail
+    event = PendingAuthEvent(
+        event_type=event_type,
+        reasons=list(reasons or []),
+        transaction_id=transaction_id,
+        resolver=user.resolver if resolved else None,
+        uid=user.uid if resolved else None,
+        realm=(user.realm or None) if user else None,
+        username=username or ((user.login or None) if user else None),
+        user_role=_determine_user_role(user, internal_admin),
+        source_ip=source_ip,
+        peer_ip=peer_ip,
+        source_ip_source=source_ip_source,
+        client_label=client_label,
+        client_label_source=client_label_source,
+        ip_chain=ip_chain,
+        endpoint=endpoint,
+        serial=serial,
+        attempt_id=context.attempt_id,
+        immediate=immediate,
+        other_info=info or None,
+    )
+    context.stage(event)
+    if immediate:
+        context.flush()
+    return event
+
+
+def build_ca_context(user, internal_admin: bool | None = None) -> "CAContext":
+    """
+    Assemble the :class:`~privacyidea.lib.conditional_access.context.CAContext`
+    for the current request — the single parameter object the conditional-access
+    engine evaluates against.
+
+    This is the one place that reads Flask state (``g`` / ``request``) for the
+    engine, keeping the lib layer free of it. Outside a request context (a caller
+    that is not a view, such as a test) the request-scoped fields are simply
+    ``None``; nothing here raises.
+
+    ``internal_admin`` flags a local database admin, which
+    :func:`_determine_user_role` cannot infer from the user object alone (such an
+    admin has no realm to match against ``SUPERUSER_REALM``). Left at ``None`` it
+    is taken from ``g.resolved_user``, which ``/auth``'s ``before_request`` fills
+    in from its own ``db_admin_exists`` lookup — so the **pre-auth** check
+    classifies a local admin correctly without a second query, and endpoints that
+    never see one (``/validate/*``, where ``g.resolved_user`` is absent) fall back
+    to ``False``. Pass it explicitly to override, as ``/auth`` does after the
+    credential check, where the flag is *verified* rather than merely claimed.
+
+    Note the pre-auth value is a claimed identity: it says an admin of that name
+    exists and no realm was given, not that the password was right. That is the
+    same standing as the admin-realm classification, which likewise reads the
+    realm before any credential is checked, and it is what lets a break-glass
+    condition (``USER_ROLE NOT_IN [admin-internal]``) exempt the emergency account
+    from a pre-auth DENY.
+
+    :param user: the authenticating user
+    :param internal_admin: True for a local database admin; ``None`` to derive it
+        from the request
+    :return: the context describing this request
+    """
+    from privacyidea.lib.conditional_access.context import CAContext
+    source_ip = None
+    endpoint = request_endpoint()
+    if has_request_context():
+        # Uses g.get, not g.client_ip, because an AuthError raised early in before_request can leave client_ip unset -
+        # the same reason hardening_action_active re-derives it - and this must never turn an authentication into a 500;
+        # a missing source IP simply means source_ip-target policies do not apply.
+        source_ip = g.get("client_ip")
+        if internal_admin is None:
+            internal_admin = g.get("resolved_user", {}).get("is_local_admin", False)
+    return CAContext(user=user or None, source_ip=source_ip, endpoint=endpoint,
+                     user_role=str(_determine_user_role(user, bool(internal_admin))))
+
+
 def check_unquote(request, data):
     """
     Check if we need to unquote the given data.
@@ -311,8 +622,11 @@ def get_before_request_config():
     g.policy_object = PolicyClass()
     g.audit_object = getAudit(current_app.config, g.startdate)
     g.event_config = EventConfiguration()
-    # access_route contains the ip addresses of all clients, hops and proxies.
-    g.client_ip = get_client_ip(request, get_from_config(SYSCONF.OVERRIDECLIENT))
+    # access_route contains the ip addresses of all clients, hops and proxies. The derivation is published
+    # alongside the address so the authentication log can record how the client was determined, not only what
+    # it was determined to be.
+    g.client_ip_info = get_client_ip_info(request, get_from_config(SYSCONF.OVERRIDECLIENT))
+    g.client_ip = g.client_ip_info.ip
     # Save the HTTP header in the localproxy object
     g.request_headers = request.headers
     g.policies = {}
@@ -460,6 +774,7 @@ def map_error_to_code(error: Exception, default: int = 500) -> int:
         AuthError: 401,
         PolicyError: 403,
         ResourceNotFoundError: 404,
+        ConflictError: 409,
         NotImplementedError: 501,
     }
     # return the code for the closest ancestor that is in the map
@@ -496,12 +811,13 @@ def hardening_action_active(g, request, action) -> bool:
         # Match.action_only matches the client IP and user agent implicitly.
         if not hasattr(g, "client_ip") or not g.client_ip:
             from privacyidea.lib.config import get_from_config, SYSCONF
-            from privacyidea.lib.utils import get_client_ip
+            from privacyidea.lib.utils import get_client_ip_info
             try:
                 override_client = get_from_config(SYSCONF.OVERRIDECLIENT)
             except Exception:
                 override_client = None
-            g.client_ip = get_client_ip(request, override_client)
+            g.client_ip_info = get_client_ip_info(request, override_client)
+            g.client_ip = g.client_ip_info.ip
         if not g.get("user_agent"):
             ua_name, _ua_version, _ua_comment = get_plugin_info_from_useragent(request.user_agent.string)
             g.user_agent = ua_name

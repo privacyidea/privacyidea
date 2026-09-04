@@ -10,6 +10,7 @@
     "test:coverage": "jest --coverage",
     "start-hmr": "ng serve --hmr --port 4200",
     "lint": "ng lint",
+    "lint:css-vars": "node tools/check-css-vars.mjs",
     "i18n:extract": "ng extract-i18n",
     "format:check": "prettier --check \"src/**/*.{ts,html,scss,css,json}\"",
     "format:write": "prettier --write \"src/**/*.{ts,html,scss,css,json}\""

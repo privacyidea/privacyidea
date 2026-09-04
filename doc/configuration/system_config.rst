@@ -174,6 +174,18 @@ subnet may mask as any client in the subnet 192.168.x.x.
 With the same configuration, a proxy 10.0.0.18 may map to an application plugin in the subnet 10.1.2.x,
 which may in turn use a ``client`` parameter to mask as any client in the subnet 192.168.x.x.
 
+.. note:: Every authentication-log entry records not only which client IP was used but how it was arrived
+   at: the effective address (``source_ip``), the address the connection actually came from
+   (``peer_ip``), which of the two - or which forwarded hop - was chosen (``source_ip_source``), and the
+   whole path that was considered (``ip_chain``). The ``X-Forwarded-For`` chain and any ``client``
+   parameter are recorded **even when this setting is empty** and they are therefore not honoured, so the
+   log shows what a request claimed as well as what privacyIDEA believed. Only ``source_ip`` is ever used
+   for a decision; everything past ``peer_ip`` is client-supplied.
+
+   ``source_ip_source`` distinguishes ``REMOTE_ADDR`` (no mapping is configured) from
+   ``REMOTE_ADDR_UNMAPPED`` (a mapping is configured, but this peer may not map the client any further),
+   which is what makes a misconfigured proxy path visible in the log rather than silent.
+
 
 SMTP server for password recovery
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

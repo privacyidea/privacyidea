@@ -184,6 +184,79 @@ against the channel row's total. Reads ``GET
    final delivery: the synchronous return value is ``True`` once the
    job has been queued, regardless of what the worker eventually does.
 
+Conditional access
+~~~~~~~~~~~~~~~~~~
+
+.. index:: conditional access, dashboard metrics, user lock, blocklist
+
+The *Conditional Access* panel summarises what the conditional-access
+policies are configured to do and what they are currently enforcing:
+
+* **Enforcing policies** - enabled policies whose actions actually run.
+  Policies in dry-run mode are counted separately, since they only record
+  what they *would* have done, and disabled policies are counted on their
+  own as well.
+* **Users locked** and **IPs blocked** - the locks and IP blocks in force
+  right now, with the permanent ones broken out below the total. A
+  non-zero count is highlighted red, a zero count green.
+* **Expired records** - locks and blocks whose time has run out. They
+  restrict nobody, and are what the purge action on the *Locked Users*
+  and *Blocklist* pages removes.
+* **Blocks and locks over time** - a histogram of when restrictions were
+  imposed (blocked IPs and the recent locks), bucketed across the shown
+  window, with a range slider on top of it. The icon button at each end of
+  the slider opens presets for that end of the window (*Last 24 hours* ...
+  *Everything on record* on the left, *Up to now* / *Up to 24 hours ago* /
+  *Up to 7 days ago* on the right); the thumbs narrow the selection inside
+  the window. The header counts what falls in the selected range.
+* **Restrictions in force** - every restriction still in force that was
+  imposed inside the selected range, blocked IPs and locked users in one
+  list, most recent first. An IP links to the authentication log
+  pre-filtered on that source IP, a user to the *Locked Users* page; a
+  footer names how many further restrictions the list does not show
+  (those outside the range, and any beyond the 100 lock records read).
+
+Every row links to the page it summarises. The three areas are governed
+by separate rights (``conditional_access_policy_read``, ``user_lock_read``,
+``blocklist_read``); the panel shows only the areas an administrator may
+read and is offered as soon as any one of the three is granted. It reads
+the regular endpoints
+``GET /conditionalaccess/policy``, ``GET /conditionalaccess/lock/users``
+(once per lock state, for the counts only) and
+``GET /conditionalaccess/blocklist``.
+
+Locking a user or an IP by hand
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. index:: manual lock, manual block
+
+A restriction does not have to come from a Conditional Access policy. The
+*User Lock State* card on a user's details page offers a **Lock** action, and
+the *Blocklist* page a **Block IP** action; both ask whether the restriction
+lasts until an administrator lifts it (the default) or for a chosen duration.
+
+A manual restriction is stored in the same place a Conditional Access policy
+writes to and is enforced by the same pre-check, so it behaves exactly like a
+Conditional Access policy lock at authentication time and is cleared by the
+same *Unlock* / *Unblock* action. What is recorded alongside it is its
+**cause**: the *Locked Users* and *Blocklist* pages show a *Cause* column
+reading *Manual* or *Policy*, and the locked-users list can be filtered on it.
+The cause always describes the restriction currently in force - if a
+Conditional Access policy later strengthens a manual lock, the row becomes a
+policy lock.
+
+Unlike a Conditional Access policy action, a manual write is authoritative:
+an administrator may replace a permanent lock with a timed one, which the
+engine refuses to do to itself. A never-block IP address (loopback, or one
+covered by ``CONDITIONAL_ACCESS_NEVER_BLOCK``) is refused with an
+explanation rather than silently skipped.
+
+The two actions are governed by their own rights, ``user_lock_set`` and
+``blocklist_set``, kept separate from the ``*_reset`` rights because clearing
+a restriction is recoverable and imposing one is not. ``pi-manage
+conditionalaccess lock-user`` and ``pi-manage conditionalaccess block-ip`` do
+the same from the command line.
+
 Storage and cleanup
 ~~~~~~~~~~~~~~~~~~~
 
@@ -353,6 +426,15 @@ In this tab, the :ref:`audit` log is displayed which lists all events the server
 
    *Events can be displayed in the Audit log.*
 
+
+.. _webui_authentication_log:
+
+Authentication log
+------------------
+
+In this tab, the :ref:`authentication_log` is displayed which lists how every
+authentication request was decided: the event, the reason behind it, the
+endpoint that served the request and what conditional access did about it.
 
 .. _components:
 

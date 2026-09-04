@@ -28,6 +28,7 @@ export type WidgetTypeId =
   | "tokens"
   | "token-types"
   | "authentications"
+  | "authentication-activity"
   | "administration"
   | "policies"
   | "events"
@@ -35,7 +36,8 @@ export type WidgetTypeId =
   | "certificate-health"
   | "resolver-timing"
   | "notification-delivery"
-  | "appearance";
+  | "appearance"
+  | "conditional-access";
 
 export interface WidgetSize {
   cols: number;
@@ -75,7 +77,10 @@ export abstract class DashboardWidget {
   static readonly maxSize: WidgetSize = { cols: DASHBOARD_COLUMNS, rows: Number.POSITIVE_INFINITY };
   static readonly pinned: boolean = false;
   static readonly fixedPosition: { x: number; y: number } | null = null;
-  static readonly requiredAction: PolicyAction | null = null;
+  // The right(s) a widget needs to be offered at all; a list means any one is enough, for a widget summarizing several
+  // separately-governed areas that then shows only the parts the admin may read.
+  static readonly requiredAction: PolicyAction | PolicyAction[] | null = null;
+  // Where the widget's title links to, for a widget that summarizes one page. Null leaves the title as plain text.
   static readonly titleLink: string | null = null;
   static readonly titleLinkAction: PolicyAction | null = null;
 

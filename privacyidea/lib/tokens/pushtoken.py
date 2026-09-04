@@ -48,12 +48,17 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import padding
 from dateutil.parser import isoparse
+from flask import request as flask_request
 from sqlalchemy.orm.exc import StaleDataError
 
 from privacyidea.api.lib.policyhelper import get_pushtoken_add_config, get_init_tokenlabel_parameters
 from privacyidea.lib import _, lazy_gettext
 from privacyidea.lib.apps import _construct_extra_parameters
 from privacyidea.lib.challenge import get_challenges, delete_challenges
+from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType, AuthEventReason,
+                                                                           AUTH_EVENT_REASON_KEY,
+                                                                           SUPPRESS_TERMINAL_EVENT_KEY,
+                                                                           LOG_TRANSACTION_ID_KEY)
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.crypto import geturandom, generate_keypair
 from privacyidea.lib.decorators import check_token_locked
@@ -103,6 +108,12 @@ POLL_INTERVAL = 1.0
 POLL_TIME_WINDOW = 1
 UPDATE_FB_TOKEN_WINDOW = 5
 POLL_ONLY = "poll only"
+# Key carrying the classified push response from the token class to the api layer
+PUSH_AUTH_EVENT = "push_auth_event"
+# Why that event (an AuthEventReason value), carried to the api layer beside it.
+PUSH_AUTH_REASON = "push_auth_reason"
+# Key carrying the transaction_id of the answered challenge from the token class to the api layer
+PUSH_AUTH_TRANSACTION_ID = "push_auth_transaction_id"
 AVAILABLE_PRESENCE_OPTIONS_ALPHABETIC = list(string.ascii_uppercase)
 AVAILABLE_PRESENCE_OPTIONS_NUMERIC = [f'{x:02}' for x in range(100)]
 ALLOWED_NUMBER_OF_OPTIONS = list(range(2, 11))
@@ -837,6 +848,8 @@ class PushTokenClass(TokenClass):
         challenges = get_challenges(serial=serial)
         result = False
         details = {}
+        signature_verified = False
+        matched_transaction_id = None
 
         if challenges:
             # There are valid challenges, so we check this signature
@@ -863,6 +876,8 @@ class PushTokenClass(TokenClass):
                                       hashes.SHA256())
                     log.debug(f"Found matching challenge {challenge}.")
                     result = True
+                    signature_verified = True
+                    matched_transaction_id = challenge.transaction_id
                     if decline:
                         # A decline always takes effect. An absent reason (legacy apps) is a plain
                         # decline; a present-but-unrecognized reason is a signed value this
@@ -933,6 +948,24 @@ class PushTokenClass(TokenClass):
                     # uncaught ObjectDeletedError if that row was deleted concurrently too. A unique
                     # nonce matches at most one challenge, so break: there is nothing left to check.
                     break
+
+        # Classify the smartphone's response for the authentication log.
+        details[PUSH_AUTH_EVENT] = AuthEventType.CHALLENGE_ANSWERED_FAIL
+        if signature_verified:
+            if decline:
+                details[PUSH_AUTH_EVENT] = AuthEventType.CHALLENGE_DECLINED
+                details[AUTH_EVENT_REASON_KEY] = str(AuthEventReason.CHALLENGE_DECLINED_ON_DEVICE)
+            elif "display_code" in details:
+                details[PUSH_AUTH_EVENT] = AuthEventType.CHALLENGE_CONTINUED
+            elif result:
+                details[PUSH_AUTH_EVENT] = AuthEventType.CHALLENGE_ANSWERED_OUT_OF_BAND
+
+        # Carry the answered challenge's transaction_id up so the /ttype/push row correlates with the rest of the
+        # attempt.
+        if matched_transaction_id is None and len(challenges) == 1:
+            matched_transaction_id = challenges[0].transaction_id
+        details[PUSH_AUTH_TRANSACTION_ID] = matched_transaction_id
+
         return result, details
 
     @classmethod
@@ -976,11 +1009,38 @@ class PushTokenClass(TokenClass):
         if all(k in request_data for k in ("fbtoken", "pubkey")):
             return cls._handle_enrollment_step2(serial, request_data)
         elif "signature" in request_data and "new_fb_token" not in request_data:
+            # The conditional-access pre-check runs ONLY here, on the authentication path (the signed challenge
+            # answer) - never on enrollment or firebase token updates. The smartphone sends only the serial, so
+            # the owner is resolved from it, and the answer is refused before the signature is verified.
+            #
+            # A silent rejection carries no detail, because an ordinary failed answer here carries none either -
+            # the opposite of /validate/*, where every failure has one and a silent rejection needs the generic
+            # message to have one too. Configured wording is surfaced on both. PUSH_ANSWER_REJECTION states that
+            # shape once, so the response hook answers a restriction *this* answer wrote in the same shape.
+            from privacyidea.api.lib.conditional_access import (PUSH_ANSWER_REJECTION,
+                                                                conditional_access_rejection)
+            rejection = conditional_access_rejection(cls._resolve_token_owner(serial), PUSH_ANSWER_REJECTION)
+            if rejection is not None:
+                return False, ({"message": rejection.message} if rejection.message else {})
             return cls._handle_auth_response(serial, request_data)
         elif all(k in request_data for k in ('new_fb_token', 'timestamp', 'signature')):
             return cls._handle_firebase_update(serial, request_data)
         else:
             raise ParameterError("Missing parameters!")
+
+    @staticmethod
+    def _resolve_token_owner(serial: str) -> User:
+        """
+        Resolve the owner of the push token addressed by *serial* for the
+        conditional-access pre-check. Returns an empty :class:`User` when the
+        serial is missing or the token has no resolvable owner.
+        """
+        if not serial:
+            return User()
+        try:
+            return get_one_token(serial=serial).user or User()
+        except Exception:
+            return User()
 
     def _get_existing_challenge_data(self, transaction_id: str, push_mode: PushMode) -> dict | None:
         """
@@ -1207,6 +1267,12 @@ class PushTokenClass(TokenClass):
         else:
             raise PrivacyIDEAError(f'Method {request.method} not allowed in \'api_endpoint\' for push token.')
 
+        # Hand the classified auth response to the api layer for logging
+        setattr(g, PUSH_AUTH_EVENT, details.pop(PUSH_AUTH_EVENT, None))
+        push_reason = details.pop(AUTH_EVENT_REASON_KEY, None)
+        # Handed on as the list the log records: this path classifies at most one reason.
+        setattr(g, PUSH_AUTH_REASON, [str(push_reason)] if push_reason else [])
+        setattr(g, PUSH_AUTH_TRANSACTION_ID, details.pop(PUSH_AUTH_TRANSACTION_ID, None))
         return "json", prepare_result(result, details=details)
 
     @log_with(log, hide_args=[1])
@@ -1402,6 +1468,13 @@ class PushTokenClass(TokenClass):
                     # The user will enter the display_code after the smartphone confirms.
                     return True, -1, {"transaction_id": transaction_id, "message": message}
 
+                # push_wait writes the CHALLENGE_TRIGGERED row immediately, not at teardown, because the smartphone's
+                # answer can arrive mid-wait as a separate /ttype/push request; since attempt rows are read in id
+                # order, a later commit would otherwise make the answer appear to precede its own trigger.
+                from privacyidea.api.lib.utils import log_authentication
+                log_authentication(AuthEventType.CHALLENGE_TRIGGERED, flask_request, user=user or self.user,
+                                   serial=self.token.serial, transaction_id=transaction_id, immediate=True)
+
                 # Standard / require_presence: wait for the challenge to be answered
                 start_time = time.monotonic()
                 challenge_status = None
@@ -1420,6 +1493,15 @@ class PushTokenClass(TokenClass):
                     if otp_counter >= 0 or elapsed_time > waiting:
                         break
                     time.sleep(POLL_INTERVAL - (elapsed_time % POLL_INTERVAL))
+
+                if otp_counter < 0:
+                    # Timed out: suppress the default MFA_FAIL, since a non-response is not a wrong second factor
+                    # (CHALLENGE_TRIGGERED above stays the only row).
+                    self.auth_details[SUPPRESS_TERMINAL_EVENT_KEY] = True
+                else:
+                    # Success: the challenge's transaction_id correlates the terminal LOGIN_SUCCESS row with the
+                    # trigger and the out-of-band answer.
+                    reply = {LOG_TRANSACTION_ID_KEY: transaction_id}
 
                 # The push_wait transaction_id is never returned to the client, so nothing can
                 # poll or redeem this challenge after the loop. Delete it (whether answered,

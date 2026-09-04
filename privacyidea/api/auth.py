@@ -59,30 +59,20 @@ absent, malformed or expired.
 This API is distinct from :ref:`rest_validate`, which checks OTP
 values for end users.
 """
-from flask_babel import _
 import copy
-
-from flask import (Blueprint, request, current_app, g)
-import jwt
-from functools import wraps
+import logging
+import threading
+import traceback
 from datetime import (datetime, timezone)
+from functools import wraps
 
+import jwt
+from flask import (Blueprint, request, current_app, g)
+from flask_babel import _
+
+from privacyidea.api.lib.conditional_access import (compose_failure_message, conditional_access_login_gate,
+                                                    rejection_message)
 from privacyidea.api.lib.policyhelper import check_last_auth_policy, get_realm_for_authentication
-from privacyidea.lib.error import AuthError, Error
-from privacyidea.lib.crypto import geturandom, init_hsm
-from privacyidea.lib.audit import getAudit
-from privacyidea.lib.auth import (check_webui_user, ROLE, verify_db_admin,
-                                  db_admin_exists)
-from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction
-from privacyidea.lib.framework import get_app_config_value
-from privacyidea.lib.fido2.challenge import verify_fido2_challenge
-from privacyidea.lib.fido2.util import get_fido2_token_by_credential_id
-from privacyidea.lib.policies.helper import get_jwt_validity
-from privacyidea.lib.user import User, split_user, log_used_user
-from privacyidea.lib.policy import PolicyClass, REMOTE_USER
-from privacyidea.lib.policydecorators import reset_all_user_tokens_active, reset_token_failcounters
-from privacyidea.lib.token import get_tokens
-from privacyidea.lib.realm import get_default_realm, realm_is_defined
 from privacyidea.api.lib.postpolicy import (postpolicy, add_user_detail_to_response, check_tokentype,
                                             check_tokeninfo, check_serial, no_detail_on_success,
                                             get_webui_settings, hide_specific_error_message)
@@ -90,16 +80,33 @@ from privacyidea.api.lib.prepolicy import (is_remote_user_allowed, prepolicy,
                                            pushtoken_disable_wait, webauthntoken_authz, webauthntoken_request,
                                            fido2_auth, increase_failcounter_on_challenge,
                                            disabled_token_types, auth_timelimit, load_challenge_text)
-from privacyidea.api.lib.utils import (send_result, get_all_params, INTERNAL_OPTION_KEYS,
-                                       verify_auth_token, get_optional, get_required,
-                                       get_auth_token_from_request, logged_in_user_from_token)
-from privacyidea.lib.utils import (get_client_ip, hexlify_and_unicode, to_unicode, get_plugin_info_from_useragent,
-                                   AUTH_RESPONSE)
+from privacyidea.api.lib.utils import (GENERIC_AUTH_FAILURE, send_result, get_all_params, INTERNAL_OPTION_KEYS,
+                                       verify_auth_token, get_optional, get_required, log_authentication,
+                                       get_auth_token_from_request, logged_in_user_from_token,
+                                       pop_auth_event_reason)
+from privacyidea.lib.audit import getAudit
+from privacyidea.lib.auth import (check_webui_user, ROLE, verify_db_admin,
+                                  db_admin_exists)
+from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType, AuthEventReason,
+                                                                          AUTH_EVENT_TYPE_KEY, build_reason_detail,
+                                                                          LOG_TRANSACTION_ID_KEY)
+from privacyidea.lib.conditional_access.request_context import continue_attempt, get_ca_context
 from privacyidea.lib.config import get_from_config, SYSCONF, ensure_no_config_object, get_privacyidea_node
+from privacyidea.lib.crypto import geturandom, init_hsm
+from privacyidea.lib.error import AuthError, Error, ResourceNotFoundError
 from privacyidea.lib.event import event, EventConfiguration
-import logging
-import traceback
-import threading
+from privacyidea.lib.fido2.challenge import verify_fido2_challenge
+from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction
+from privacyidea.lib.fido2.util import get_fido2_token_by_credential_id
+from privacyidea.lib.framework import get_app_config_value
+from privacyidea.lib.policies.helper import get_jwt_validity
+from privacyidea.lib.policy import PolicyClass, REMOTE_USER
+from privacyidea.lib.policydecorators import reset_all_user_tokens_active, reset_token_failcounters
+from privacyidea.lib.realm import get_default_realm, realm_is_defined
+from privacyidea.lib.token import get_tokens
+from privacyidea.lib.user import User, split_user, log_used_user
+from privacyidea.lib.utils import (get_client_ip_info, hexlify_and_unicode, to_unicode, get_plugin_info_from_useragent,
+                                   AUTH_RESPONSE)
 
 log = logging.getLogger(__name__)
 
@@ -115,13 +122,19 @@ def before_request():
     # Save the request data
     g.request_data = get_all_params(request)
     request.all_data = copy.deepcopy(g.request_data)
+
+    # Join the attempt here because the attempt id lives in the challenge, which the token logic deletes once
+    # answered, leaving nothing to read it from later.
+    continue_attempt(get_optional(request.all_data, "transaction_id"))
+
     privacyidea_server = get_app_config_value("PI_AUDIT_SERVERNAME", get_privacyidea_node(request.host))
     g.policy_object = PolicyClass()
     g.audit_object = getAudit(current_app.config)
     g.event_config = EventConfiguration()
     # access_route contains the ip addresses of all clients, hops and proxies.
-    g.client_ip = get_client_ip(request,
-                                get_from_config(SYSCONF.OVERRIDECLIENT))
+    g.client_ip_info = get_client_ip_info(request,
+                                          get_from_config(SYSCONF.OVERRIDECLIENT))
+    g.client_ip = g.client_ip_info.ip
     # Save the HTTP header in the localproxy object
     g.request_headers = request.headers
     g.serial = get_optional(request.all_data, "serial")
@@ -171,6 +184,9 @@ def before_request():
 
 
 @jwtauth.route('', methods=['POST'])
+# The conditional-access gate sits above the pre-policies (decorators run top-down) so it can refuse a locked user
+# before auth_timelimit logs a trackable event for them; see conditional_access_login_gate.
+@conditional_access_login_gate()
 @prepolicy(auth_timelimit, request=request)
 @prepolicy(increase_failcounter_on_challenge, request=request)
 @prepolicy(pushtoken_disable_wait, request)
@@ -279,11 +295,21 @@ def get_auth_token():
     #  maybe a new user object that is not directly evaluated against the user store and where we can store some more
     #  information like the role (local / external admin) would be helpful
     user = request.User or User()
-    g.audit_object.log({"user": user.login, "realm": user.realm})
     username = get_optional(request.all_data, "username")
     password = get_optional(request.all_data, "password")
     realm_param = get_optional(request.all_data, "realm")
     details = {}
+    auth_event_type = None
+    # Why that event, classified by the layer below (see AuthEventReason): every reason the request produced, highest
+    # signal first. Only the user-login path can produce any; an admin login leaves them empty, so they are
+    # initialised here rather than in that branch.
+    auth_reasons: list[str] = []
+    auth_reason_detail = None
+    # A token can deliberately suppress its terminal event (push_wait timeout)
+    terminal_event_suppressed = False
+    serials = None
+    # Log-only transaction_id (push_wait success): correlates the terminal row without being exposed in the response.
+    log_transaction_id = None
     # Passkey login
     credential_id = get_optional(request.all_data, "credential_id")
     passkey_login_enabled = get_app_config_value("WEBUI_PASSKEY_LOGIN_ENABLED", True)
@@ -295,6 +321,7 @@ def get_auth_token():
         transaction_id: str = get_required(request.all_data, "transaction_id")
         token = get_fido2_token_by_credential_id(credential_id)
         if not token:
+            log_authentication(AuthEventType.NO_TOKEN, request, user=user, transaction_id=transaction_id)
             raise AuthError(_("Authentication failure. The passkey is not registered."),
                             id=Error.AUTHENTICATE_WRONG_CREDENTIALS)
         if not token.is_active():
@@ -304,45 +331,75 @@ def get_auth_token():
                                 "authentication": AUTH_RESPONSE.REJECT,
                                 "serial": token.get_serial(),
                                 "token_type": token.get_type()})
+            # The user owns this passkey but it is disabled -> NO_USABLE_TOKEN
+            log_authentication(AuthEventType.NO_USABLE_TOKEN, request, user=token.user,
+                               transaction_id=transaction_id,
+                               reasons=[AuthEventReason.TOKEN_DISABLED],
+                               reason_detail=build_reason_detail(
+                                   reasons={token.get_serial(): AuthEventReason.TOKEN_DISABLED}))
             return send_result(False, rid=2, details={"message": "Token is disabled"})
 
         if not token.user:
+            log_authentication(AuthEventType.USER_UNKNOWN, request, transaction_id=transaction_id)
             raise AuthError(_("Authentication failure. Token has no user."),
                             id=Error.AUTHENTICATE_MISSING_USERNAME)
         if token.get_type() in request.all_data.get("disabled_token_types", []):
+            log_authentication(AuthEventType.NO_TOKEN, request, user=token.user, transaction_id=transaction_id,
+                               reasons=[AuthEventReason.TOKEN_TYPE_DISABLED],
+                               reason_detail=build_reason_detail(
+                                   reasons={token.get_serial(): AuthEventReason.TOKEN_TYPE_DISABLED}))
             raise AuthError(
                 _("Authentication failure. The token type {token_type} is disabled.").format(
                     token_type=token.get_type()),
                 id=Error.AUTHENTICATE_WRONG_CREDENTIALS)
-        if not check_last_auth_policy(g, token):
+        last_auth_ok, last_auth_policies = check_last_auth_policy(g, token)
+        if not last_auth_ok:
             log.debug(f"Last authentication policy check failed for token {token.get_serial()}.")
+            log_authentication(AuthEventType.NOT_AUTHORIZED, request, user=token.user,
+                               transaction_id=transaction_id,
+                               reasons=[AuthEventReason.LAST_AUTH_TOO_OLD],
+                               reason_detail=build_reason_detail(policies=last_auth_policies))
             raise AuthError(
                 _("Authentication failure. Last authentication policy check failed for token {serial}").format(
                     serial=token.get_serial()), id=Error.AUTHENTICATE_MISSING_RIGHT)
 
         # TODO For the WebUI login, always require user_verification so that it is a 2FA
         request.all_data.update({FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT: "required"})
-        passkey_login_result = verify_fido2_challenge(transaction_id, token, request.all_data)
+        try:
+            passkey_login_result = verify_fido2_challenge(transaction_id, token, request.all_data)
+        except (ResourceNotFoundError, AuthError):
+            # A challenge that fails to verify (wrong serial, expired) propagates as a failure response, so log
+            # the failed attempt here.
+            log_authentication(AuthEventType.MFA_FAIL, request, user=token.user, transaction_id=transaction_id)
+            raise
         if passkey_login_result.success > 0:
             user = token.user
             login_name = user.login
             realm = user.realm
             username = user.login
             passkey_login_success = True
+            auth_event_type = AuthEventType.LOGIN_SUCCESS
+            # Record the passkey serial for the authentication log
+            serials = token.get_serial()
             # Passkey login bypasses check_token_list, so the reset_all_user_tokens
             # policy is applied explicitly here (mirrors the /validate FIDO2 path).
             if reset_all_user_tokens_active(g, user):
                 reset_token_failcounters(get_tokens(user=user))
         else:
+            log_authentication(AuthEventType.MFA_FAIL, request, user=token.user, transaction_id=transaction_id)
             raise AuthError(_("Authentication failure using passkey."), id=Error.AUTHENTICATE_WRONG_CREDENTIALS)
     # End passkey login
     else:
         # The realm parameter has precedence! Check if it exists
         if realm_param and not realm_is_defined(realm_param):
+            log_authentication(AuthEventType.USER_UNKNOWN, request, user=user, serial=details.get("serial"),
+                               transaction_id=details.get("transaction_id"))
             raise AuthError(_("Authentication failure. Unknown realm:") + f" {realm_param}.",
                             id=Error.AUTHENTICATE_WRONG_CREDENTIALS)
 
         if username is None:
+            log_authentication(AuthEventType.USER_UNKNOWN, request, user=user, serial=details.get("serial"),
+                               transaction_id=details.get("transaction_id"))
             raise AuthError(_("Authentication failure. Missing Username"), id=Error.AUTHENTICATE_MISSING_USERNAME)
 
         if not user or not user.realm:
@@ -371,6 +428,8 @@ def get_auth_token():
     # Verify the password
     admin_auth = False
     user_auth = False
+    # Records whether the authenticated admin is internal or external, for the auth log.
+    internal_admin = False
 
     if passkey_login_success:
         authtype = "pi"
@@ -400,6 +459,7 @@ def get_auth_token():
         if db_admin_exists(username):
             role = ROLE.ADMIN
             admin_auth = True
+            internal_admin = True
             g.audit_object.log({"success": True, "user": "", "administrator": username, "info": "internal admin"})
             user = User()
         else:
@@ -410,14 +470,17 @@ def get_auth_token():
                 if user.realm in superuser_realms:
                     role = ROLE.ADMIN
                     admin_auth = True
+        auth_event_type = AuthEventType.LOGIN_SUCCESS if admin_auth or user_auth else AuthEventType.USER_UNKNOWN
 
     elif verify_db_admin(username, password):
         role = ROLE.ADMIN
         admin_auth = True
+        internal_admin = True
         log.info(f"Local admin '{username}' successfully logged in.")
         # This admin is not in the default realm!
         realm = ""
         user = User()
+        auth_event_type = AuthEventType.LOGIN_SUCCESS
         g.audit_object.log({"success": True,
                             "user": "",
                             "realm": "",
@@ -427,6 +490,7 @@ def get_auth_token():
     else:
         # The user could not be identified against the admin database, so we do the rest of the check
         if password is None:
+            auth_event_type = AuthEventType.PASSWORD_FAIL
             g.audit_object.add_to_log({"info": 'Missing parameter "password"'}, add_with_comma=True)
         else:
             local_admin_exist = g.get("resolved_user", {}).get("is_local_admin", False)
@@ -457,13 +521,39 @@ def get_auth_token():
             user_auth, role, details = check_webui_user(user, password, options=options,
                                                         superuser_realms=superuser_realms)
             details = details or {}
+            # The lib layer stashes the classification in details; capture it for the authentication log, then
+            # pop it so it never reaches the client.
+            # A present-but-None value means a token suppressed its terminal event (push_wait timeout); an absent
+            # key means nothing classified the request.
+            terminal_event_suppressed = AUTH_EVENT_TYPE_KEY in details and details[AUTH_EVENT_TYPE_KEY] is None
+            auth_event_type = details.pop(AUTH_EVENT_TYPE_KEY, None)
+            # Why it came out that way, classified alongside the event (see AuthEventReason).
+            auth_reasons, auth_reason_detail = pop_auth_event_reason(details)
+            # Pop the log-only transaction_id (push_wait success) so it never reaches the client, mirroring
+            # /validate/check; it stands in for the challenge transaction_id the response doesn't carry.
+            log_transaction_id = details.pop(LOG_TRANSACTION_ID_KEY, None)
             if 'multi_challenge' in details:
                 serials = ",".join([challenge_info["serial"] for challenge_info in details["multi_challenge"]])
                 token_types = ",".join([challenge_info["type"] for challenge_info in details["multi_challenge"]
                                         if challenge_info.get("type")])
+                # The lib distinguishes an initial challenge (CHALLENGE_TRIGGERED) from one that answered a
+                # challenge and created the next (CHALLENGE_CONTINUED); keep the latter and only default to TRIGGERED.
+                if auth_event_type != AuthEventType.CHALLENGE_CONTINUED:
+                    auth_event_type = AuthEventType.CHALLENGE_TRIGGERED
             else:
                 serials = details.get('serial')
                 token_types = details.get('type')
+                if not serials:
+                    # A response that does not match the challenges of more than one token names no token at
+                    # all. Take the tokens that were challenged in the transaction instead, so a failed attempt
+                    # is still logged against the tokens it was made against, mirroring /validate/check.
+                    answered_transaction_id = get_optional(request.all_data, "transaction_id")
+                    if answered_transaction_id:
+                        # Deferred import: validate.py imports from this module, so a module-level import here
+                        # would be circular.
+                        from privacyidea.api.validate import _challenged_token_serials
+                        challenged_serials = _challenged_token_serials(answered_transaction_id, user)
+                        serials = ",".join(challenged_serials) or None
             if local_admin_exist and user_auth and realm == get_default_realm():
                 # If there is a local admin with the same login name as the user
                 # in the default realm, we inform about this in the log file.
@@ -481,17 +571,84 @@ def get_auth_token():
             else:
                 g.audit_object.log({"user": user.login})
 
+            # A username matching a local DB admin (verify_db_admin already rejected the password), with no same-named
+            # realm user, can only be that admin's wrong password, so classify it as an internal-admin password failure.
+            if local_admin_exist and not user_auth and not user.exist():
+                auth_event_type = AuthEventType.PASSWORD_FAIL
+                internal_admin = True
+                # The reasons classified above describe the *user* attempt this turned out not to be: they were
+                # found while checking a user's tokens, which a local admin has none of. The event alone says what
+                # happened here.
+                auth_reasons = []
+                auth_reason_detail = None
+                # A local admin has no user attributes; its login name is logged separately.
+                user = User()
+
             if not user_auth and "multi_challenge" in details and len(details["multi_challenge"]) > 0:
                 # Do not return user data in case of a challenge request.
                 # Mark the audit entry as CHALLENGE so check_max_auth_fail does
                 # not count it as a failure (mirrors _finalize_auth_response()
                 # in validate.py).
                 g.audit_object.log({"authentication": AUTH_RESPONSE.CHALLENGE})
+                log_authentication(auth_event_type, request, user=user, serial=serials,
+                                   transaction_id=details.get("transaction_id"),
+                                   reasons=auth_reasons, reason_detail=auth_reason_detail)
                 return send_result(False, rid=2, details=details)
 
+    # Authentication log
+    if auth_event_type is None and not terminal_event_suppressed:
+        # When nothing classified the request: a success defaults to LOGIN_SUCCESS, and an unclassified failure logs
+        # as UNKNOWN_FAIL_REASON rather than PASSWORD_FAIL, which would wrongly skew password-failure
+        # conditional-access counters.
+        # A push_wait-suppressed terminal event leaves auth_event_type None, so log_authentication below is a
+        # no-op and adds no row on top of the one the token already wrote.
+        auth_event_type = AuthEventType.LOGIN_SUCCESS if (
+                admin_auth or user_auth) else AuthEventType.UNKNOWN_FAIL_REASON
+    log_authentication(auth_event_type, request, user=user,
+                       serial=serials or details.get("serial"),
+                       transaction_id=(get_optional(request.all_data, "transaction_id")
+                                       or details.get("transaction_id") or log_transaction_id),
+                       username=login_name,
+                       internal_admin=internal_admin,
+                       reasons=auth_reasons, reason_detail=auth_reason_detail)
+
+    # Feed the classified outcome to the lockout engine here, in the view, because this endpoint *raises* its
+    # rejection: the error message, the error id and the details all go into the AuthError below, and the lock or block
+    # this login may have just written is read back for them. The staged row is flushed first, so the count includes
+    # this request's own event. Both halves are guarded and idempotent, so after_request and teardown find nothing
+    # left to do and this can never break the login response.
+    context = get_ca_context()
+    context.flush()
+    evaluation = context.run_post_eval()
+
     if not admin_auth and not user_auth:
-        raise AuthError(_("Authentication failure. Wrong credentials"), id=Error.AUTHENTICATE_WRONG_CREDENTIALS,
-                        details=details or {})
+        # If this very request tripped a stage, the evaluation above carries its wording: a restriction replaces
+        # the reason, a notification is appended to it (see compose_failure_message). Anything already in force
+        # was refused by the pre-check before the credentials were ever checked, so there is nothing to read back.
+        # With no wording at all the failure is the ordinary one, which is what keeps a locked account
+        # indistinguishable from a wrong password.
+        details = details or {}
+        message = str(GENERIC_AUTH_FAILURE)
+        error_id = Error.AUTHENTICATE_WRONG_CREDENTIALS
+        if evaluation.restricted:
+            # This login is refused by conditional access rather than by the credential it happened to carry, so it
+            # is answered exactly as the pre-check answers every login after it: the restriction's wording if there
+            # is any, the ordinary failure if not, and nothing else. The details describe the overtaken attempt -
+            # "wrong otp pin" and the token it was aimed at - and a rejection carries none of that. The id drops
+            # WRONG_CREDENTIALS for the same reason: nothing here is a statement about the credential.
+            message = rejection_message(context.rejection_shape, evaluation.messages)
+            details = {}
+            error_id = Error.AUTHENTICATE
+            if evaluation.messages:
+                # Only configured wording is claimed, so hide_specific_error_message shows it instead of its own; a
+                # silent rejection is the ordinary failure and is masked with every other one.
+                context.claim_message(message)
+        elif evaluation.messages:
+            # A stage that only notified refused nothing, so the credential failure is still the reason and keeps
+            # its id and its details; the notification is appended to it.
+            message = compose_failure_message(message, evaluation.messages)
+            context.claim_message(message)
+        raise AuthError(message, id=error_id, details=details)
     else:
         g.audit_object.log({"success": True, "authentication": AUTH_RESPONSE.ACCEPT})
         request.User = user

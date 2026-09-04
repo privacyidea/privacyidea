@@ -1,0 +1,282 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<mat-expansion-panel
+  class="ca-action-item"
+  [expanded]="!action().id">
+  <mat-expansion-panel-header>
+    <mat-panel-title>
+      @if (!isActionAllowedForTarget() || actionValueError()) {
+        <mat-icon
+          class="ca-action-warn-icon"
+          aria-label="This action needs attention"
+          i18n-aria-label>
+          warning
+        </mat-icon>
+      } @else if (actionConflict()) {
+        <mat-icon
+          class="ca-action-warn-icon"
+          aria-label="Action conflicts with another action on this stage"
+          i18n-aria-label>
+          warning
+        </mat-icon>
+      }
+      {{ action().action_type }}
+    </mat-panel-title>
+    <mat-panel-description class="ca-action-panel-description">
+      <span class="ca-action-desc-text">{{ actionDescription() }}</span>
+      <button
+        mat-icon-button
+        aria-label="Remove action"
+        i18n-aria-label
+        (click)="$event.stopPropagation(); onRemoveAction()">
+        <mat-icon>delete</mat-icon>
+      </button>
+    </mat-panel-description>
+  </mat-expansion-panel-header>
+
+  <div class="flex-row gap-16">
+    <mat-form-field
+      appearance="fill"
+      subscriptSizing="dynamic"
+      class="input-width-l margin-bottom-16">
+      <mat-label i18n>Action</mat-label>
+      <mat-select
+        [value]="action().action_type"
+        (selectionChange)="onActionTypeChange($event.value)">
+        @for (actionType of allowedActionTypes(); track actionType) {
+          <mat-option
+            [value]="actionType"
+            [disabled]="disabledActionTypes().has(actionType)">
+            {{ actionType }}
+          </mat-option>
+        }
+      </mat-select>
+      <mat-hint>{{ actionDescription() }}</mat-hint>
+    </mat-form-field>
+    @if (!isActionAllowedForTarget()) {
+      <p
+        class="ca-action-target-error"
+        i18n>
+        This action is not allowed for the policy's target. Choose a different action, or change the target.
+      </p>
+    }
+    @if (actionConflict()) {
+      <p class="ca-action-target-error">{{ conflictMessage() }}</p>
+    }
+
+    <mat-checkbox
+      class="margin-top-8"
+      [checked]="retriggerChecked()"
+      (change)="onRetriggerChange($event.checked)"
+      i18n>
+      Re-trigger while above the threshold (until escalation to the next stage)
+    </mat-checkbox>
+    <app-info-hint
+      class="margin-top-8"
+      text="When off, this action runs once, when the count reaches the stage's threshold exactly. When on, it runs again on every further tracked event while the count stays at or above the threshold, until the policy escalates to the next stage. Deny defaults to on; the lock, email and block actions default to off."
+      i18n-text
+      ariaLabel="About re-triggering"
+      i18n-ariaLabel />
+  </div>
+
+  <div class="ca-action-value">
+    @switch (valueMode()) {
+      @case ("duration") {
+        <mat-form-field
+          appearance="fill"
+          subscriptSizing="dynamic"
+          class="input-width-l">
+          <mat-label i18n>Duration</mat-label>
+          <input
+            matInput
+            type="number"
+            min="1"
+            [value]="durationValue()"
+            (input)="onDurationInput($any($event.target).value)" />
+          <!--
+            A hint rather than a mat-error, for the same reason as the SMTP one below: the input carries no
+            form control, so it never enters errorState and a mat-error would be dropped.
+          -->
+          @if (actionValueError()) {
+            <mat-hint class="ca-action-stale">{{ actionValueError() }}</mat-hint>
+          } @else {
+            <mat-hint i18n>How long the lock or block lasts.</mat-hint>
+          }
+        </mat-form-field>
+
+        <mat-form-field
+          appearance="fill"
+          subscriptSizing="dynamic"
+          class="input-width-s">
+          <mat-label i18n>Unit</mat-label>
+          <mat-select
+            [value]="durationUnit()"
+            (selectionChange)="onDurationUnitChange($event.value)">
+            <mat-option
+              value="seconds"
+              i18n
+              >Seconds
+            </mat-option>
+            <mat-option
+              value="minutes"
+              i18n
+              >Minutes
+            </mat-option>
+            <mat-option
+              value="hours"
+              i18n
+              >Hours
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+      }
+      @case ("email") {
+        @if (actionValueError()) {
+          <p class="ca-action-value-error">{{ actionValueError() }}</p>
+        }
+        @for (field of emailFields(); track field.key) {
+          @switch (field.kind) {
+            @case ("textarea") {
+              <mat-form-field
+                appearance="fill"
+                subscriptSizing="dynamic"
+                class="input-width-xxl">
+                <mat-label>{{ field.label }}</mat-label>
+                <textarea
+                  matInput
+                  [rows]="field.rows ?? 4"
+                  [value]="emailFieldValue(field.key)"
+                  (input)="onEmailFieldInput(field.key, $any($event.target).value)"></textarea>
+                @if (field.hint) {
+                  <mat-hint>{{ field.hint }}</mat-hint>
+                }
+              </mat-form-field>
+            }
+            @case ("smtp") {
+              <mat-form-field
+                appearance="fill"
+                subscriptSizing="dynamic"
+                class="input-width-l">
+                <mat-label>{{ field.label }}</mat-label>
+                <mat-select
+                  [value]="emailFieldValue(field.key)"
+                  (selectionChange)="onEmailFieldInput(field.key, $event.value)">
+                  @for (identifier of smtpOptions(); track identifier) {
+                    <mat-option [value]="identifier">
+                      {{ identifier }}
+                      @if (identifier === staleSmtpIdentifier()) {
+                        <span
+                          class="ca-action-stale-tag"
+                          i18n>
+                          (not configured)
+                        </span>
+                      }
+                    </mat-option>
+                  }
+                </mat-select>
+                <!-- Rendered as a hint, not a mat-error, since a mat-select without a form control never enters
+                  errorState (so a mat-error would be silently dropped), and a hint is shown and included in the
+                  field's aria-describedby, so it is announced together with the control. -->
+                @if (staleSmtpIdentifier()) {
+                  <mat-hint
+                    class="ca-action-stale"
+                    i18n>
+                    No SMTP server named "{{ staleSmtpIdentifier() }}" is configured, so no email would be sent.
+                  </mat-hint>
+                } @else if (smtpOptions().length === 0 && !smtpServersLoading()) {
+                  <mat-hint
+                    class="ca-action-stale"
+                    i18n>
+                    No SMTP server to choose from. Configure one under External Services.
+                  </mat-hint>
+                } @else {
+                  <mat-hint>{{ field.hint }}</mat-hint>
+                }
+              </mat-form-field>
+            }
+            @case ("select") {
+              <mat-form-field
+                appearance="fill"
+                subscriptSizing="dynamic"
+                class="input-width-l">
+                <mat-label>{{ field.label }}</mat-label>
+                <mat-select
+                  [value]="emailFieldValue(field.key)"
+                  (selectionChange)="onEmailFieldInput(field.key, $event.value)">
+                  @for (option of field.options; track option) {
+                    <mat-option [value]="option">{{ option }}</mat-option>
+                  }
+                </mat-select>
+                @if (field.hint) {
+                  <mat-hint>{{ field.hint }}</mat-hint>
+                }
+              </mat-form-field>
+            }
+            @default {
+              <mat-form-field
+                appearance="fill"
+                subscriptSizing="dynamic"
+                class="input-width-l">
+                <mat-label>{{ field.label }}</mat-label>
+                <input
+                  matInput
+                  [value]="emailFieldValue(field.key)"
+                  (input)="onEmailFieldInput(field.key, $any($event.target).value)" />
+                @if (field.hint) {
+                  <mat-hint [class.ca-action-stale]="field.hintWarn">{{ field.hint }}</mat-hint>
+                }
+              </mat-form-field>
+            }
+          }
+        }
+
+        <details class="ca-placeholder-help margin-top-16">
+          <summary i18n>Available placeholders for subject and body</summary>
+          <div class="margin-left-16">
+            <p
+              class="ca-placeholder-intro"
+              i18n>
+              Placeholders are replaced when the email is sent. Unknown placeholders are left as-is.
+            </p>
+            <ul class="ca-placeholder-list">
+              @for (placeholder of emailPlaceholders; track placeholder.tag) {
+                <li>
+                  <code>{{ placeholder.tag }}</code>
+                  <span>{{ placeholder.description }}</span>
+                </li>
+              }
+            </ul>
+            <p
+              class="ca-placeholder-intro"
+              i18n>
+              Add <code>!r</code> before the closing brace to insert the value's quoted form, e.g.
+              <code>{{ "{" }} policy!r{{ "}" }}</code> renders <code>'Brute Force PIN Lock'</code> instead of
+              <code>Brute Force PIN Lock</code>.
+            </p>
+          </div>
+        </details>
+      }
+      @default {
+        @if (actionValueError()) {
+          <p class="ca-action-value-error">{{ actionValueError() }}</p>
+        }
+      }
+    }
+  </div>
+</mat-expansion-panel>

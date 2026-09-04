@@ -1,0 +1,267 @@
+@use "styles";
+@use "table";
+
+.authentication-log-table-container {
+  @include styles.main-component-style;
+  @include table.base-table-structure(
+    ".authentication-log-table",
+    ".authentication-log-table-filter",
+    ".table-scroll-container"
+  );
+  // Flex column so the filter row + paginator stay pinned and only the
+  // .table-scroll-region (flex: 1 1 auto, overflow: auto) scrolls — both
+  // vertically (with a sticky header row) and horizontally, as one unit.
+  // overflow: hidden hands scrolling to that inner region.
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+
+  // Keep columns on a single line so the table grows past the region width
+  // (rather than wrapping to fit) and the region scrolls horizontally.
+  .authentication-log-table {
+    th,
+    td {
+      white-space: nowrap;
+    }
+  }
+}
+
+.cell-scroll {
+  max-height: 120px;
+  overflow-y: auto;
+  white-space: normal;
+}
+
+.cell-scroll-info {
+  overflow-wrap: break-word;
+}
+
+// Long values clipped so they cannot widen the table, paired with one of the width classes below (see
+// TRUNCATED_COLUMN_CLASSES). A flex item of the copyable row, hence the explicit min-width: 0 to let it shrink below
+// its content.
+.cell-truncate {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+// The opaque ids (32 hex chars for an attempt, 20 digits for a transaction): their leading characters already tell rows
+// apart, and the rest is read from the tooltip or the copy button.
+.cell-truncate-id {
+  max-width: 10ch;
+}
+
+// A client label reads as a name, so it keeps room for the product name ahead of the version.
+.cell-truncate-client {
+  max-width: 24ch;
+}
+
+// Applied to the Info column's header and data cells only while some entry on the page carries other_info, so the
+// column claims its 300px when there is something to show and collapses when there is not. Both cells need it: a table
+// column is only as wide as its widest constrained cell.
+th.cell-info-sized,
+td.cell-info-sized {
+  width: 300px;
+  min-width: 300px;
+  max-width: 300px;
+}
+
+// Reclaim the cell's default padding for content. Qualified with the element so it outweighs Material's own
+// single-class cell padding.
+td.cell-info {
+  padding: 0 8px;
+}
+
+// The rule that governs the Conditional access filter menu, shown as its first line. Not a mat-menu-item: it is text,
+// not an action, so it must not be offered as one to a keyboard or a screen reader.
+.filter-menu-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  max-width: 260px;
+  padding: 8px 16px;
+  color: var(--mat-sys-on-surface-variant);
+  font-size: 0.75rem;
+  line-height: 1.35;
+  white-space: normal;
+
+  .mat-icon {
+    flex: 0 0 auto;
+    width: 16px;
+    height: 16px;
+    font-size: 16px;
+  }
+}
+
+.header-label {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.header-hint {
+  font-size: 0.75rem;
+  color: var(--mat-sys-on-surface-variant);
+  white-space: nowrap;
+}
+
+.filter-with-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 7 1;
+  min-width: 300px;
+}
+
+// Action row under the filter/paginator: the date-range picker and user-role selection plus the inline custom-range
+// slider.
+.actions-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+  margin-bottom: 16px;
+}
+
+// The date-range button and its (hidden) connected range input share a box so the picker overlay anchors to the
+// button. The input carries the picker's model only; it is not shown or interacted with directly.
+.date-range-trigger {
+  position: relative;
+}
+
+.date-range-hidden-input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.role-badge {
+  display: inline-block;
+  padding: 0 6px;
+  border-radius: var(--border-radius);
+  font-size: 0.75rem;
+  line-height: 1.6;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.role-badge-admin-internal {
+  background-color: var(--mat-sys-primary-container);
+  color: var(--mat-sys-on-primary-container);
+}
+
+.role-badge-admin-external {
+  background-color: var(--mat-sys-surface-container-highest);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+// Reveal the inline cell actions (filter + copy) only while the row is hovered or holds focus, to keep dense rows
+// calm. Both buttons live in child components and expose a `--*-button-opacity` hook; custom properties inherit
+// across the encapsulation boundary, so we drive their visibility from the row without reaching into them.
+// :focus-within keeps the actions reachable for keyboard/AT users.
+.authentication-log-table tr.mat-mdc-row {
+  --copy-button-opacity: 0;
+  --filter-button-opacity: 0;
+
+  &:hover,
+  &:focus-within {
+    --copy-button-opacity: 1;
+    --filter-button-opacity: 1;
+  }
+}
+
+// Inline in the action row: grows to take the leftover width so the slider stays usable, within sensible bounds.
+.time-filter-custom-range {
+  box-sizing: border-box;
+  width: 100%;
+  height: 40px;
+  margin-top: -16px;
+  max-width: 300px;
+  display: flex;
+  flex-direction: column;
+
+  .slider-with-histogram {
+    position: relative;
+  }
+
+  .custom-range-label {
+    font-size: 12px;
+    text-transform: uppercase;
+    color: var(--mat-sys-on-surface-variant);
+  }
+
+  // Activity bars sit behind the slider track. Inset horizontally to roughly align with the track's usable span.
+  .activity-histogram {
+    position: absolute;
+    inset: 8px 12px;
+    display: flex;
+    align-items: flex-end;
+    gap: 1px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .activity-bar {
+    flex: 1 1 0;
+    min-height: 1px;
+    background-color: var(--mat-sys-primary);
+    opacity: 0.4;
+    border-radius: 1px 1px 0 0;
+  }
+
+  .time-range-slider {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    // No side margin, so the slider spans the full block width.
+    margin: 0;
+    // Value hint as a horizontal rounded label sized to its content, so the date/time text (e.g. "Jul 15", "13:45")
+    // fits. Tokens inherit into the slider's internal value indicator across the component boundary.
+    --mat-slider-value-indicator-width: auto;
+    --mat-slider-value-indicator-height: 40px;
+    --mat-slider-value-indicator-padding: 0 10px;
+    --mat-slider-value-indicator-border-radius: 6px;
+    --mat-slider-value-indicator-container-transform: translateX(-50%);
+    --mat-slider-value-indicator-text-transform: none;
+    --mat-slider-value-indicator-transform-origin: center bottom;
+  }
+
+  .range-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 12px;
+    height: 12px;
+    font-variant-numeric: tabular-nums;
+    color: var(--mat-sys-on-surface-variant);
+    white-space: nowrap;
+  }
+}
+
+// Names where a row's client label came from, next to the label itself. Rendered only when the row records it.
+.client-label-source-badge {
+  display: inline-block;
+  margin-left: 4px;
+  padding: 0 6px;
+  border-radius: var(--border-radius);
+  font-size: 0.75rem;
+  line-height: 1.6;
+  white-space: nowrap;
+  vertical-align: middle;
+  background: var(--mat-sys-surface-container-highest);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+// The reasons of one entry: stacked, since a request that failed for several reasons lists them all and they read as
+// separate findings rather than one wrapped value.
+.reason-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.reason-entry {
+  white-space: nowrap;
+}

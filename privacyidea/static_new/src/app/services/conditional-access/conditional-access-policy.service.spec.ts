@@ -1,0 +1,698 @@
+/**
+ * (c) NetKnights GmbH 2026,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ **/
+import { provideHttpClient } from "@angular/common/http";
+import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
+import { ApplicationRef, signal } from "@angular/core";
+import { TestBed } from "@angular/core/testing";
+import { AuthService } from "@services/auth/auth.service";
+import { ContentService } from "@services/content/content.service";
+import { DialogService } from "@services/dialog/dialog.service";
+import { NotificationService } from "@services/notification/notification.service";
+import { MockContentService, MockDialogService, MockNotificationService, MockPiResponse } from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import {
+  ConditionalAccessPolicyService,
+  ConditionalAccessPolicy,
+  ConditionalAccessStageAction
+} from "./conditional-access-policy.service";
+
+describe("ConditionalAccessPolicyService", () => {
+  let service: ConditionalAccessPolicyService;
+  let httpMock: HttpTestingController;
+  let notificationServiceMock: MockNotificationService;
+  let contentServiceMock: MockContentService;
+  let authServiceMock: MockAuthService;
+  let dialogServiceMock: MockDialogService;
+
+  const samplePolicy: ConditionalAccessPolicy = {
+    id: 1,
+    name: "Brute Force",
+    time_window_seconds: 600,
+    enabled: true,
+    dry_run: false,
+    priority: 1,
+    target: "user",
+    count_mode: "PER_REQUEST",
+    reset_on_success: true,
+    counter_types_to_track: ["PIN_FAIL"],
+    stages: [
+      {
+        id: 1,
+        failure_threshold: 5,
+        actions: [{ id: 1, action_type: "LOCK_USER", action_value: { duration_seconds: 600 } }]
+      }
+    ],
+    conditions: [{ condition_type: "USER_REALM", operator: "IN", value: ["sales"] }]
+  };
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        ConditionalAccessPolicyService,
+        { provide: AuthService, useClass: MockAuthService },
+        { provide: NotificationService, useClass: MockNotificationService },
+        { provide: ContentService, useClass: MockContentService },
+        { provide: DialogService, useClass: MockDialogService }
+      ]
+    });
+    service = TestBed.inject(ConditionalAccessPolicyService);
+    httpMock = TestBed.inject(HttpTestingController);
+    notificationServiceMock = TestBed.inject(NotificationService) as unknown as MockNotificationService;
+    contentServiceMock = TestBed.inject(ContentService) as unknown as MockContentService;
+    authServiceMock = TestBed.inject(AuthService) as unknown as MockAuthService;
+    dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
+    authServiceMock.actionAllowed.mockReturnValue(true);
+  });
+
+  afterEach(() => {
+    httpMock.verify();
+  });
+
+  it("should be created", () => {
+    expect(service).toBeTruthy();
+  });
+
+  describe("policies", () => {
+    it("should default to empty array when resource has not fired", () => {
+      expect(service.policies()).toEqual([]);
+    });
+
+    it("should not fetch when the read right is missing", () => {
+      authServiceMock.actionAllowed.mockReturnValue(false);
+      contentServiceMock.onConditionalAccess = signal(true);
+      TestBed.tick();
+      httpMock.expectNone(service.baseUrl);
+    });
+
+    it("should not fetch when not on the conditional-access route", () => {
+      contentServiceMock.onConditionalAccess = signal(false);
+      TestBed.tick();
+      httpMock.expectNone(service.baseUrl);
+    });
+
+    it("should also fetch on the authentication log, whose outcome filter offers the policy names", async () => {
+      contentServiceMock.onConditionalAccess = signal(false);
+      contentServiceMock.onAuthenticationLog = signal(true);
+      TestBed.tick();
+
+      httpMock.expectOne(service.baseUrl).flush(MockPiResponse.fromValue([samplePolicy]));
+      // The action types come along for the same filter; the editor-only vocabulary does not.
+      httpMock.expectOne(service.actionTypesUrl).flush(MockPiResponse.fromValue(["LOCK_USER"]));
+      httpMock.expectNone(service.eventTypesUrl);
+      httpMock.expectNone(service.targetsUrl);
+      httpMock.expectNone(service.defaultErrorMessagesUrl);
+      httpMock.expectNone(service.templatesUrl);
+      await TestBed.inject(ApplicationRef).whenStable();
+
+      expect(service.policies()).toEqual([samplePolicy]);
+      expect(service.actionTypes()).toEqual(["LOCK_USER"]);
+    });
+
+    it("should not fetch on a route that reads neither the policies nor the log", () => {
+      contentServiceMock.onConditionalAccess = signal(false);
+      contentServiceMock.onAuthenticationLog = signal(false);
+      TestBed.tick();
+      httpMock.expectNone(service.baseUrl);
+      httpMock.expectNone(service.actionTypesUrl);
+    });
+
+    it("should load policies from the resource", async () => {
+      contentServiceMock.onConditionalAccess = signal(true);
+      TestBed.tick();
+
+      const req = httpMock.expectOne(service.baseUrl);
+      expect(req.request.method).toBe("GET");
+      req.flush(MockPiResponse.fromValue([samplePolicy]));
+      httpMock.expectOne(service.eventTypesUrl).flush(MockPiResponse.fromValue([]));
+      httpMock.expectOne(service.actionTypesUrl).flush(MockPiResponse.fromValue([]));
+      httpMock.expectOne(service.targetsUrl).flush(MockPiResponse.fromValue({}));
+      httpMock.expectOne(service.templatesUrl).flush(MockPiResponse.fromValue([]));
+      httpMock.expectOne(service.conditionTypesUrl).flush(MockPiResponse.fromValue({}));
+      httpMock.expectOne(service.defaultErrorMessagesUrl).flush(MockPiResponse.fromValue([]));
+      await Promise.resolve();
+
+      expect(service.policies()).toEqual([samplePolicy]);
+    });
+
+    it("should fall back to an empty array on error", async () => {
+      contentServiceMock.onConditionalAccess = signal(true);
+      TestBed.tick();
+
+      const req = httpMock.expectOne(service.baseUrl);
+      req.flush(MockPiResponse.fromError({ message: "denied" }), { status: 403, statusText: "Forbidden" });
+      httpMock.expectOne(service.eventTypesUrl).flush(MockPiResponse.fromValue([]));
+      httpMock.expectOne(service.actionTypesUrl).flush(MockPiResponse.fromValue([]));
+      httpMock.expectOne(service.targetsUrl).flush(MockPiResponse.fromValue({}));
+      httpMock.expectOne(service.templatesUrl).flush(MockPiResponse.fromValue([]));
+      httpMock.expectOne(service.conditionTypesUrl).flush(MockPiResponse.fromValue({}));
+      httpMock.expectOne(service.defaultErrorMessagesUrl).flush(MockPiResponse.fromValue([]));
+      await Promise.resolve();
+
+      expect(service.policies()).toEqual([]);
+    });
+  });
+
+  describe("getPolicies", () => {
+    it("should read the policy list on demand, off the conditional-access route", () => {
+      contentServiceMock.onConditionalAccess = signal(false);
+      let policies: ConditionalAccessPolicy[] | undefined;
+      service.getPolicies().subscribe((response) => (policies = response.result?.value));
+
+      const req = httpMock.expectOne(service.baseUrl);
+      expect(req.request.method).toBe("GET");
+      req.flush(MockPiResponse.fromValue([samplePolicy]));
+
+      expect(policies).toEqual([samplePolicy]);
+    });
+  });
+
+  describe("constant lists", () => {
+    it("should load event types and action types from the backend", async () => {
+      contentServiceMock.onConditionalAccess = signal(true);
+      TestBed.tick();
+
+      httpMock.expectOne(service.baseUrl).flush(MockPiResponse.fromValue([]));
+      httpMock.expectOne(service.eventTypesUrl).flush(MockPiResponse.fromValue(["PIN_FAIL", "MFA_FAIL"]));
+      httpMock.expectOne(service.actionTypesUrl).flush(MockPiResponse.fromValue(["LOCK_USER", "DENY"]));
+      httpMock.expectOne(service.targetsUrl).flush(MockPiResponse.fromValue({}));
+      httpMock.expectOne(service.templatesUrl).flush(MockPiResponse.fromValue([]));
+      httpMock.expectOne(service.conditionTypesUrl).flush(MockPiResponse.fromValue({}));
+      httpMock.expectOne(service.defaultErrorMessagesUrl).flush(MockPiResponse.fromValue([]));
+      await Promise.resolve();
+
+      expect(service.eventTypes()).toEqual(["PIN_FAIL", "MFA_FAIL"]);
+      expect(service.actionTypes()).toEqual(["LOCK_USER", "DENY"]);
+    });
+
+    it("should not fetch the lists without the read right", () => {
+      authServiceMock.actionAllowed.mockReturnValue(false);
+      contentServiceMock.onConditionalAccess = signal(true);
+      TestBed.tick();
+      httpMock.expectNone(service.eventTypesUrl);
+      httpMock.expectNone(service.actionTypesUrl);
+    });
+  });
+
+  describe("targets and templates", () => {
+    const targetConstraints = {
+      user: {
+        actions: ["LOCK_USER", "PERMANENT_LOCK_USER", "EMAIL_ADMIN", "DENY"],
+        count_modes: ["PER_ATTEMPT", "PER_REQUEST"],
+        repeatable_actions: ["EMAIL_ADMIN"],
+        exclusive_action_groups: [["LOCK_USER", "PERMANENT_LOCK_USER"]]
+      },
+      source_ip: {
+        actions: ["BLOCK_IP", "DENY"],
+        count_modes: ["DISTINCT_USERS", "PER_ATTEMPT", "PER_REQUEST"]
+      }
+    };
+    const expectedActionsByTarget = {
+      user: ["LOCK_USER", "PERMANENT_LOCK_USER", "EMAIL_ADMIN", "DENY"],
+      source_ip: ["BLOCK_IP", "DENY"]
+    };
+    const expectedCountModesByTarget = {
+      user: ["PER_ATTEMPT", "PER_REQUEST"],
+      source_ip: ["DISTINCT_USERS", "PER_ATTEMPT", "PER_REQUEST"]
+    };
+    const conditionTypeMeta = {
+      USER_REALM: {
+        label: "User realm",
+        operators: [
+          { name: "IN", label: "is one of" },
+          { name: "NOT_IN", label: "is not one of" }
+        ],
+        choices: ["sales", "support"]
+      },
+      USER_ROLE: {
+        label: "User role",
+        operators: [{ name: "IN", label: "is one of" }],
+        choices: null
+      }
+    };
+    const sampleTemplate = {
+      key: "password_bruteforce",
+      description: "Lock a user after repeated wrong passwords.",
+      policy: {
+        name: "Password Brute-Force",
+        time_window_seconds: 900,
+        enabled: true,
+        dry_run: false,
+        priority: 1,
+        target: "user" as const,
+        count_mode: "PER_REQUEST" as const,
+        reset_on_success: true,
+        counter_types_to_track: ["PASSWORD_FAIL" as const],
+        stages: [
+          { failure_threshold: 10, actions: [{ action_type: "LOCK_USER" as const, action_value: null }] }
+        ]
+      }
+    };
+
+    async function load(): Promise<void> {
+      contentServiceMock.onConditionalAccess = signal(true);
+      TestBed.tick();
+      httpMock.expectOne(service.baseUrl).flush(MockPiResponse.fromValue([]));
+      httpMock.expectOne(service.eventTypesUrl).flush(MockPiResponse.fromValue([]));
+      httpMock.expectOne(service.actionTypesUrl).flush(MockPiResponse.fromValue(["LOCK_USER", "DENY"]));
+      httpMock.expectOne(service.targetsUrl).flush(MockPiResponse.fromValue(targetConstraints));
+      httpMock.expectOne(service.templatesUrl).flush(MockPiResponse.fromValue([sampleTemplate]));
+      httpMock.expectOne(service.conditionTypesUrl).flush(MockPiResponse.fromValue(conditionTypeMeta));
+      httpMock.expectOne(service.defaultErrorMessagesUrl).flush(MockPiResponse.fromValue([]));
+      await Promise.resolve();
+    }
+
+    it("should default to empty derived values before the resources fire", () => {
+      expect(service.actionsByTarget()).toEqual({});
+      expect(service.countModesByTarget()).toEqual({});
+      expect(service.targets()).toEqual([]);
+      expect(service.templates()).toEqual([]);
+    });
+
+    it("should derive actionsByTarget, countModesByTarget and targets from the /targets response", async () => {
+      await load();
+      expect(service.actionsByTarget()).toEqual(expectedActionsByTarget);
+      expect(service.countModesByTarget()).toEqual(expectedCountModesByTarget);
+      expect(service.targets()).toEqual(["user", "source_ip"]);
+    });
+
+    it("should load templates from the /template response", async () => {
+      await load();
+      expect(service.templates()).toEqual([sampleTemplate]);
+    });
+
+    it("should return the allowed actions for a known target", async () => {
+      await load();
+      expect(service.actionsForTarget("user")).toEqual(["LOCK_USER", "PERMANENT_LOCK_USER", "EMAIL_ADMIN", "DENY"]);
+      expect(service.actionsForTarget("source_ip")).toEqual(["BLOCK_IP", "DENY"]);
+    });
+
+    // The per-stage action rules come from /targets rather than a hand-kept client copy; a target the
+    // backend serves no rules for simply has none, which is what keeps an older backend usable.
+    it("should derive the per-stage action rules from the /targets response", async () => {
+      await load();
+      expect(service.repeatableActionsByTarget()).toEqual({ user: ["EMAIL_ADMIN"], source_ip: [] });
+      expect(service.exclusiveGroupsByTarget()).toEqual({
+        user: [["LOCK_USER", "PERMANENT_LOCK_USER"]],
+        source_ip: []
+      });
+    });
+
+    describe("unavailableActionTypes / actionConflict", () => {
+      const action = (actionType: string) => ({ action_type: actionType, action_value: null }) as ConditionalAccessStageAction;
+
+      it("should report nothing while no rules have been served", () => {
+        const actions = [action("LOCK_USER"), action("LOCK_USER")];
+        expect(service.unavailableActionTypes(actions, "user").size).toBe(0);
+        expect(service.actionConflict(actions, 1, "user")).toBeNull();
+      });
+
+      it("should mark a non-repeatable action already on the stage as unavailable", async () => {
+        await load();
+        expect([...service.unavailableActionTypes([action("LOCK_USER")], "user")]).toEqual(
+          expect.arrayContaining(["LOCK_USER", "PERMANENT_LOCK_USER"])
+        );
+      });
+
+      it("should leave a repeatable action available", async () => {
+        await load();
+        expect(service.unavailableActionTypes([action("EMAIL_ADMIN")], "user").has("EMAIL_ADMIN")).toBe(false);
+      });
+
+      it("should not report an action against itself", async () => {
+        await load();
+        expect(service.unavailableActionTypes([action("LOCK_USER")], "user", 0).size).toBe(0);
+      });
+
+      it("should flag only the later action of a colliding pair", async () => {
+        await load();
+        const duplicate = [action("LOCK_USER"), action("LOCK_USER")];
+        expect(service.actionConflict(duplicate, 0, "user")).toBeNull();
+        expect(service.actionConflict(duplicate, 1, "user")).toBe("duplicate");
+      });
+
+      it("should flag mutually exclusive actions as exclusive, and repeated emails not at all", async () => {
+        await load();
+        expect(service.actionConflict([action("LOCK_USER"), action("PERMANENT_LOCK_USER")], 1, "user")).toBe(
+          "exclusive"
+        );
+        expect(service.actionConflict([action("EMAIL_ADMIN"), action("EMAIL_ADMIN")], 1, "user")).toBeNull();
+      });
+    });
+
+    it("should return the supported count modes for a known target", async () => {
+      await load();
+      expect(service.countModesForTarget("user")).toEqual(["PER_ATTEMPT", "PER_REQUEST"]);
+      expect(service.countModesForTarget("source_ip")).toEqual(["DISTINCT_USERS", "PER_ATTEMPT", "PER_REQUEST"]);
+    });
+
+    it("should return no count modes for an unmapped target", async () => {
+      await load();
+      expect(service.countModesForTarget("unknown" as never)).toEqual([]);
+    });
+
+    it("should expose the condition operators and choices from /conditiontypes", async () => {
+      await load();
+      expect(service.operatorsForConditionType("USER_REALM")).toEqual([
+        { name: "IN", label: "is one of" },
+        { name: "NOT_IN", label: "is not one of" }
+      ]);
+      expect(service.choicesForConditionType("USER_REALM")).toEqual(["sales", "support"]);
+    });
+
+    it("should report a condition value that is no longer a valid choice", async () => {
+      await load();
+      expect(
+        service.staleConditionValues([
+          { condition_type: "USER_REALM", operator: "IN", value: ["sales", "deleted"] },
+          { condition_type: "USER_ROLE", operator: "IN", value: ["user"] }
+        ])
+      ).toEqual([{ condition_type: "USER_REALM", values: ["deleted"] }]);
+    });
+
+    // A condition type with no enumerable choices (null) has nothing to compare against, so USER_ROLE, which carries
+    // null in this fixture, can never be reported stale.
+    it("should treat a non-enumerable condition type as having no stale values", async () => {
+      await load();
+      expect(service.choicesForConditionType("USER_ROLE")).toBeNull();
+      expect(
+        service.staleConditionValues([{ condition_type: "USER_ROLE", operator: "IN", value: ["whatever"] }])
+      ).toEqual([]);
+    });
+
+    // A type the endpoint does not serve has no operators and no choices, so the editor shows its own hard-coded labels
+    // and never an empty toggle group.
+    it("should return no operators and no choices for an unserved condition type", async () => {
+      await load();
+      expect(service.operatorsForConditionType("NOT_SERVED")).toEqual([]);
+      expect(service.choicesForConditionType("NOT_SERVED")).toBeNull();
+    });
+
+    it("should treat absent conditions as nothing stale", () => {
+      expect(service.staleConditionValues(undefined)).toEqual([]);
+    });
+
+    it("should report nothing stale before /conditiontypes has answered", () => {
+      expect(
+        service.staleConditionValues([{ condition_type: "USER_REALM", operator: "IN", value: ["deleted"] }])
+      ).toEqual([]);
+    });
+
+    it("should fall back to the full action-type list for an unmapped target", async () => {
+      contentServiceMock.onConditionalAccess = signal(true);
+      TestBed.tick();
+      httpMock.expectOne(service.baseUrl).flush(MockPiResponse.fromValue([]));
+      httpMock.expectOne(service.eventTypesUrl).flush(MockPiResponse.fromValue([]));
+      httpMock.expectOne(service.actionTypesUrl).flush(MockPiResponse.fromValue(["LOCK_USER", "DENY"]));
+      httpMock.expectOne(service.targetsUrl).flush(MockPiResponse.fromValue({}));
+      httpMock.expectOne(service.templatesUrl).flush(MockPiResponse.fromValue([]));
+      httpMock.expectOne(service.conditionTypesUrl).flush(MockPiResponse.fromValue({}));
+      httpMock.expectOne(service.defaultErrorMessagesUrl).flush(MockPiResponse.fromValue([]));
+      await Promise.resolve();
+
+      expect(service.actionsForTarget("user")).toEqual(["LOCK_USER", "DENY"]);
+    });
+
+    it("should not fetch targets or templates without the read right", () => {
+      authServiceMock.actionAllowed.mockReturnValue(false);
+      contentServiceMock.onConditionalAccess = signal(true);
+      TestBed.tick();
+      httpMock.expectNone(service.targetsUrl);
+      httpMock.expectNone(service.defaultErrorMessagesUrl);
+      httpMock.expectNone(service.templatesUrl);
+    });
+
+    it("should not fetch targets or templates when not on the conditional-access route", () => {
+      contentServiceMock.onConditionalAccess = signal(false);
+      TestBed.tick();
+      httpMock.expectNone(service.targetsUrl);
+      httpMock.expectNone(service.defaultErrorMessagesUrl);
+      httpMock.expectNone(service.templatesUrl);
+    });
+  });
+
+  describe("savePolicy", () => {
+    it("should POST to the base URL when creating (no id)", async () => {
+      const promise = service.savePolicy({
+        name: "New",
+        time_window_seconds: 600,
+        enabled: true,
+        dry_run: false,
+        priority: 1,
+        target: "user",
+        count_mode: "PER_REQUEST",
+        reset_on_success: true,
+        counter_types_to_track: ["PIN_FAIL"],
+        stages: [],
+        conditions: []
+      });
+
+      const req = httpMock.expectOne(service.baseUrl);
+      expect(req.request.method).toBe("POST");
+      req.flush(MockPiResponse.fromValue(42));
+
+      const id = await promise;
+      expect(id).toBe(42);
+      expect(notificationServiceMock.success).toHaveBeenCalled();
+    });
+
+    it("should PATCH to the id URL when updating (id present)", async () => {
+      const promise = service.savePolicy({ ...samplePolicy });
+
+      const req = httpMock.expectOne(`${service.baseUrl}/1`);
+      expect(req.request.method).toBe("PATCH");
+      req.flush(MockPiResponse.fromValue(1));
+
+      await promise;
+      expect(notificationServiceMock.success).toHaveBeenCalled();
+    });
+
+    it("should return undefined and notify on error", async () => {
+      const promise = service.savePolicy({ ...samplePolicy });
+
+      const req = httpMock.expectOne(`${service.baseUrl}/1`);
+      req.flush(MockPiResponse.fromError({ message: "bad name" }), { status: 400, statusText: "Bad Request" });
+
+      const id = await promise;
+      expect(id).toBeUndefined();
+      expect(notificationServiceMock.error).toHaveBeenCalledWith("Failed to save conditional-access policy. bad name");
+    });
+  });
+
+  describe("deletePolicy", () => {
+    it("should DELETE by id", async () => {
+      const promise = service.deletePolicy(1);
+
+      const req = httpMock.expectOne(`${service.baseUrl}/1`);
+      expect(req.request.method).toBe("DELETE");
+      req.flush(MockPiResponse.fromValue(1));
+
+      await promise;
+      expect(notificationServiceMock.success).toHaveBeenCalled();
+    });
+
+    it("should notify on error", async () => {
+      const promise = service.deletePolicy(1);
+
+      const req = httpMock.expectOne(`${service.baseUrl}/1`);
+      req.flush(null, { status: 500, statusText: "Internal Server Error" });
+
+      await promise;
+      expect(notificationServiceMock.error).toHaveBeenCalled();
+    });
+  });
+
+  describe("deleteWithConfirmDialog", () => {
+    it("should delete when confirmed", async () => {
+      dialogServiceMock.confirm.mockResolvedValue(true);
+      const promise = service.deleteWithConfirmDialog({ id: 1, name: "Brute Force" });
+      await Promise.resolve(); // let confirm() resolve before the delete request is issued
+
+      const req = httpMock.expectOne(`${service.baseUrl}/1`);
+      req.flush(MockPiResponse.fromValue(1));
+
+      await promise;
+      expect(dialogServiceMock.confirm).toHaveBeenCalled();
+    });
+
+    it("should not delete when not confirmed", async () => {
+      dialogServiceMock.confirm.mockResolvedValue(false);
+      await service.deleteWithConfirmDialog({ id: 1, name: "Brute Force" });
+
+      httpMock.expectNone(`${service.baseUrl}/1`);
+    });
+  });
+
+  describe("deleteSelectedWithConfirmDialog", () => {
+    it("should return false without asking when the list is empty", async () => {
+      const result = await service.deleteSelectedWithConfirmDialog([]);
+      expect(result).toBe(false);
+      expect(dialogServiceMock.confirm).not.toHaveBeenCalled();
+    });
+
+    it("should delete every selected policy when confirmed", async () => {
+      dialogServiceMock.confirm.mockResolvedValue(true);
+      const promise = service.deleteSelectedWithConfirmDialog([
+        { id: 1, name: "Brute Force" },
+        { id: 2, name: "Second" }
+      ]);
+      await Promise.resolve(); // let confirm() resolve before the delete requests are issued
+
+      httpMock.expectOne(`${service.baseUrl}/1`).flush(MockPiResponse.fromValue(1));
+      httpMock.expectOne(`${service.baseUrl}/2`).flush(MockPiResponse.fromValue(2));
+
+      expect(await promise).toBe(true);
+    });
+
+    it("should not issue requests when not confirmed", async () => {
+      dialogServiceMock.confirm.mockResolvedValue(false);
+      const result = await service.deleteSelectedWithConfirmDialog([{ id: 1, name: "Brute Force" }]);
+
+      expect(result).toBe(false);
+      httpMock.expectNone(`${service.baseUrl}/1`);
+    });
+  });
+
+  describe("enablePolicy / disablePolicy", () => {
+    it("should PATCH to enable", async () => {
+      const promise = service.enablePolicy(1);
+      const req = httpMock.expectOne(`${service.baseUrl}/1`);
+      expect(req.request.method).toBe("PATCH");
+      expect(req.request.body).toEqual({ enabled: true });
+      req.flush({});
+      await promise;
+    });
+
+    it("should PATCH to disable", async () => {
+      const promise = service.disablePolicy(1);
+      const req = httpMock.expectOne(`${service.baseUrl}/1`);
+      expect(req.request.method).toBe("PATCH");
+      expect(req.request.body).toEqual({ enabled: false });
+      req.flush({});
+      await promise;
+    });
+
+    it("should notify on enable error", async () => {
+      const promise = service.enablePolicy(1);
+      const req = httpMock.expectOne(`${service.baseUrl}/1`);
+      req.flush(null, { status: 500, statusText: "Internal Server Error" });
+      await promise;
+      expect(notificationServiceMock.error).toHaveBeenCalled();
+    });
+
+    it("should notify on disable error", async () => {
+      const promise = service.disablePolicy(1);
+      const req = httpMock.expectOne(`${service.baseUrl}/1`);
+      req.flush(null, { status: 500, statusText: "Internal Server Error" });
+      await promise;
+      expect(notificationServiceMock.error).toHaveBeenCalled();
+    });
+  });
+
+  describe("setDryRun", () => {
+    it("should PATCH the dry-run flag alone, leaving the rest of the policy untouched", async () => {
+      const promise = service.setDryRun(1, true);
+      const req = httpMock.expectOne(`${service.baseUrl}/1`);
+      expect(req.request.method).toBe("PATCH");
+      expect(req.request.body).toEqual({ dry_run: true });
+      req.flush({});
+      await promise;
+    });
+
+    it("should PATCH dry-run off", async () => {
+      const promise = service.setDryRun(1, false);
+      const req = httpMock.expectOne(`${service.baseUrl}/1`);
+      expect(req.request.body).toEqual({ dry_run: false });
+      req.flush({});
+      await promise;
+    });
+
+    it("should notify on error", async () => {
+      const promise = service.setDryRun(1, true);
+      const req = httpMock.expectOne(`${service.baseUrl}/1`);
+      req.flush(null, { status: 500, statusText: "Internal Server Error" });
+      await promise;
+      expect(notificationServiceMock.error).toHaveBeenCalled();
+    });
+  });
+
+  describe("reorderPolicies", () => {
+    it("should PUT the id order to the order URL", async () => {
+      const reload = jest.spyOn(service.policiesResource, "reload").mockImplementation(() => true);
+      const promise = service.reorderPolicies([2, 1]);
+
+      const req = httpMock.expectOne(`${service.baseUrl}/order`);
+      expect(req.request.method).toBe("PUT");
+      // The client sends an order, never target priority numbers.
+      expect(req.request.body).toEqual({ policy_ids: [2, 1] });
+      req.flush(MockPiResponse.fromValue(true));
+
+      expect(await promise).toBe(true);
+      expect(notificationServiceMock.success).toHaveBeenCalled();
+      expect(reload).toHaveBeenCalled();
+    });
+
+    it("should send expected_priorities as a concurrency assertion when given", async () => {
+      const reload = jest.spyOn(service.policiesResource, "reload").mockImplementation(() => true);
+      const promise = service.reorderPolicies([2, 1], [20, 10]);
+
+      const req = httpMock.expectOne(`${service.baseUrl}/order`);
+      // The priorities are an assertion about current state, never values to write.
+      expect(req.request.body).toEqual({ policy_ids: [2, 1], expected_priorities: [20, 10] });
+      req.flush(MockPiResponse.fromValue(true));
+
+      expect(await promise).toBe(true);
+      expect(reload).toHaveBeenCalled();
+    });
+
+    it("should surface a 409 conflict as a failed reorder", async () => {
+      jest.spyOn(service.policiesResource, "reload").mockImplementation(() => true);
+      const promise = service.reorderPolicies([2, 1], [20, 10]);
+      const req = httpMock.expectOne(`${service.baseUrl}/order`);
+      req.flush(MockPiResponse.fromError({ message: "The evaluation order changed since it was loaded" }), {
+        status: 409,
+        statusText: "Conflict"
+      });
+
+      expect(await promise).toBe(false);
+      // The notification blends the client's own wording with the API's mismatch message, so the assertion only checks
+      // it isn't the generic failure text and mentions "refreshed", enough to confirm the 409 is handled distinctly
+      // without pinning the exact copy.
+      const shown = notificationServiceMock.error.mock.calls[0][0] as string;
+      expect(shown).not.toContain("Failed to reorder");
+      expect(shown).toContain("refreshed");
+    });
+
+    it("should notify and reload on error so the table cannot show a stale order", async () => {
+      const reload = jest.spyOn(service.policiesResource, "reload").mockImplementation(() => true);
+      const promise = service.reorderPolicies([2, 1]);
+      const req = httpMock.expectOne(`${service.baseUrl}/order`);
+      req.flush(MockPiResponse.fromError({ message: "unknown policy" }), {
+        status: 404,
+        statusText: "Not Found"
+      });
+
+      expect(await promise).toBe(false);
+      expect(notificationServiceMock.error).toHaveBeenCalled();
+      expect(notificationServiceMock.success).not.toHaveBeenCalled();
+      expect(reload).toHaveBeenCalled();
+    });
+  });
+});

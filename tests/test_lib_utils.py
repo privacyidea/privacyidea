@@ -14,7 +14,8 @@ from privacyidea.lib.crypto import generate_password
 from privacyidea.lib.error import PolicyError, ParameterError
 from privacyidea.lib.utils import (parse_timelimit,
                                    check_time_in_range, parse_proxy,
-                                   check_proxy, reduce_realms, is_true,
+                                   check_proxy, get_client_ip_info, MAX_IP_CHAIN_HOPS, MAX_IP_CHAIN_HOP_LENGTH,
+                                   reduce_realms, is_true,
                                    parse_date, get_data_from_params, parse_legacy_time,
                                    int_to_hex, parse_time_offset_from_now, censor_connect_string,
                                    parse_timedelta, to_unicode,
@@ -688,28 +689,171 @@ class UtilsTestCase(MyTestCase):
         ip = get_client_ip(r, "10.0.0.1")
         self.assertEqual(ip, direct_client)
 
-        # The forwarding path is request data, so it can contain anything. It is followed
-        # only as far as it consists of IP addresses: a client parameter that is no address
-        # is ignored, and the header is mapped as if it had not been sent at all.
-        r.blueprint = "validate_blueprint"
-        r.access_route = [client_proxy]
-        r.all_data = {"client": "not-an-ip-address"}
-        ip = get_client_ip(r, "10.0.0.1")
-        self.assertEqual(ip, client_proxy)
+    def test_23b_get_client_ip_info_records_the_derivation(self):
+        # Same selection as test_23, plus the record of how it was reached.
+        class RequestMock:
+            blueprint = None
+            remote_addr = None
+            all_data = {}
+            access_route = []
 
-        # The same for a X-Forwarded-For header that is no address: the path ends at the
-        # peer the request really came from
+        r = RequestMock()
+        r.blueprint = "validate_blueprint"
+        direct_client, client_proxy, client_parameter = "10.0.0.1", "172.16.1.2", "192.168.2.1"
+        r.remote_addr = direct_client
+        r.all_data = {"client": client_parameter}
+        r.access_route = [client_proxy]
+
+        # No override configured: the peer is the client, but the header and the client parameter it claimed
+        # are still recorded - recording is not honouring.
+        info = get_client_ip_info(r, "")
+        self.assertEqual(direct_client, info.ip)
+        self.assertEqual(direct_client, info.peer_ip)
+        self.assertEqual("REMOTE_ADDR", info.source)
+        self.assertEqual([direct_client, client_proxy, client_parameter], [hop.ip for hop in info.chain])
+        self.assertEqual(["REMOTE_ADDR", "X_FORWARDED_FOR", "CLIENT_PARAM"],
+                         [hop.source for hop in info.chain])
+        self.assertEqual(0, info.effective_index)
+
+        # The override admits the header hop.
+        info = get_client_ip_info(r, "10.0.0.1")
+        self.assertEqual(client_proxy, info.ip)
+        self.assertEqual("X_FORWARDED_FOR", info.source)
+        self.assertEqual(1, info.effective_index)
+
+        # ... and, with the proxy also allowed to map, the client parameter.
+        info = get_client_ip_info(r, "10.0.0.1>172.16.1.2>0.0.0.0/0")
+        self.assertEqual(client_parameter, info.ip)
+        self.assertEqual("CLIENT_PARAM", info.source)
+
+        # An override is configured but this peer may not map any further: that is a different fact from
+        # "no override configured", and must not read as a direct connection.
+        info = get_client_ip_info(r, "203.0.113.1")
+        self.assertEqual(direct_client, info.ip)
+        self.assertEqual("REMOTE_ADDR_UNMAPPED", info.source)
+
+        # No route at all with an override configured: get_client_ip has always returned None here.
+        r.access_route = []
+        info = get_client_ip_info(r, "10.0.0.1")
+        self.assertIsNone(info.ip)
+        self.assertIsNone(info.source)
+        self.assertEqual(direct_client, info.peer_ip)
+
+    def test_23c_get_client_ip_info_caps_a_long_claimed_chain(self):
+        # X-Forwarded-For is attacker-controlled, so the recorded chain is capped rather than stored whole.
+        class RequestMock:
+            blueprint = "token_blueprint"
+            remote_addr = "10.0.0.1"
+            all_data = {}
+            access_route = [f"172.16.0.{index}" for index in range(1, 40)]
+
+        info = get_client_ip_info(RequestMock(), "")
+        self.assertEqual(MAX_IP_CHAIN_HOPS, len(info.chain))
+        self.assertEqual(40 - MAX_IP_CHAIN_HOPS, info.dropped_hops)
+        # The effective hop survives the cap.
+        self.assertEqual("10.0.0.1", info.chain[info.effective_index].ip)
+
+    def test_23d_get_client_ip_info_marks_the_actual_hop_when_the_chain_repeats_an_address(self):
+        # The same address can legitimately appear twice in a chain (a client behind two proxies that both
+        # add the same X-Forwarded-For value, say). effective_index must still point at the hop that was
+        # actually walked to, not just the first hop whose (ip, source) happens to match it.
+        class RequestMock:
+            blueprint = "token_blueprint"
+            remote_addr = "9.9.9.9"
+            all_data = {}
+            access_route = ["1.2.3.4", "1.2.3.4", "1.2.3.4"]
+
+        # Trust the peer and all three (duplicated) X-Forwarded-For hops.
+        info = get_client_ip_info(RequestMock(), "9.9.9.9>1.2.3.4>1.2.3.4>0.0.0.0/0")
+        self.assertEqual("1.2.3.4", info.ip)
+        # hops: [peer 9.9.9.9, 1.2.3.4, 1.2.3.4, 1.2.3.4] - the deepest one was chosen, not the first duplicate.
+        self.assertEqual(3, info.effective_index)
+        self.assertEqual("1.2.3.4", info.chain[info.effective_index].ip)
+
+    def test_23e_get_client_ip_info_caps_the_chain_even_without_a_route(self):
+        # An override is configured but the request has no X-Forwarded-For route at all: the ``client``
+        # parameter is still attacker-controlled and must be capped like every other return path.
+        class RequestMock:
+            blueprint = "validate_blueprint"
+            remote_addr = "10.0.0.1"
+            all_data = {"client": "1" * 999}
+            access_route = []
+
+        info = get_client_ip_info(RequestMock(), "10.0.0.1>0.0.0.0/0")
+        self.assertIsNone(info.ip)
+        for hop in info.chain:
+            self.assertLessEqual(len(hop.ip), MAX_IP_CHAIN_HOP_LENGTH)
+
+    def test_23f_get_client_ip_info_ignores_a_malformed_hop_instead_of_raising(self):
+        # X-Forwarded-For is attacker-controlled; a garbled entry must not turn the request into a 500.
+        class RequestMock:
+            blueprint = "token_blueprint"
+            remote_addr = "10.0.0.1"
+            all_data = {}
+            access_route = ["not-an-ip", "172.16.0.5"]
+
+        info = get_client_ip_info(RequestMock(), "10.0.0.1>0.0.0.0/0")
+        self.assertEqual("172.16.0.5", info.ip)
+        # The malformed hop is still recorded for the forensic chain, just excluded from the mapping.
+        self.assertIn("not-an-ip", [hop.ip for hop in info.chain])
+
+    def test_23g_get_client_ip_info_returns_none_when_every_hop_is_unusable(self):
+        # No peer and every claimed hop unparseable: nothing is left to map, which must behave like having
+        # no route at all rather than raising out of check_proxy_index() on an empty list.
+        class RequestMock:
+            blueprint = "token_blueprint"
+            remote_addr = ""
+            all_data = {}
+            access_route = ["garbage", "also-garbage"]
+
+        info = get_client_ip_info(RequestMock(), "10.0.0.1>0.0.0.0/0")
+        self.assertIsNone(info.ip)
+        self.assertIsNone(info.effective_index)
+
+    def test_23h_get_client_ip_info_cap_is_never_exceeded_even_for_the_effective_hop(self):
+        # A permissive override can make the effective hop land deep in an attacker-padded chain; the stored
+        # chain must still never exceed MAX_IP_CHAIN_HOPS, even at the cost of the effective hop falling
+        # outside the recorded (truncated) chain.
+        depth = MAX_IP_CHAIN_HOPS + 5
+        peer = "172.16.0.1"
+        # peer first, then the claimed origin deepest last - matches _path_to_client's hop order.
+        claimed = [f"172.16.0.{i}" for i in range(2, depth + 2)]
+        path_to_client = [peer] + claimed
+
+        class RequestMock:
+            blueprint = "token_blueprint"
+            remote_addr = peer
+            all_data = {}
+            access_route = list(reversed(claimed))
+
+        # Trust the whole chain, so the deepest hop is the effective one.
+        info = get_client_ip_info(RequestMock(), ">".join(path_to_client))
+        self.assertEqual(claimed[-1], info.ip)
+        self.assertEqual(len(path_to_client) - 1, info.effective_index)
+        self.assertLessEqual(len(info.chain), MAX_IP_CHAIN_HOPS)
+        self.assertEqual(len(path_to_client) - MAX_IP_CHAIN_HOPS, info.dropped_hops)
+
+    def test_23i_get_client_ip_ignores_a_malformed_hop_like_get_client_ip_info(self):
+        # get_client_ip is get_client_ip_info reduced to .ip, so a malformed client parameter or
+        # X-Forwarded-For hop is dropped the same way rather than raising or being trusted.
+        class RequestMock:
+            blueprint = "validate_blueprint"
+            remote_addr = "10.0.0.1"
+            all_data = {}
+            access_route = ["172.16.1.2"]
+
+        r = RequestMock()
+        r.all_data = {"client": "not-an-ip-address"}
+        self.assertEqual("172.16.1.2", get_client_ip(r, "10.0.0.1"))
+
         r.access_route = ["not-an-ip-address"]
         r.all_data = {}
-        ip = get_client_ip(r, "10.0.0.1")
-        self.assertEqual(ip, direct_client)
+        self.assertEqual("10.0.0.1", get_client_ip(r, "10.0.0.1"))
 
-        # If not a single hop is an address, there is nothing to map and the address the
-        # request came from is used as it is
+        # If not a single hop is an address, there is nothing to map: same as no route at all.
         r.remote_addr = "not-an-ip-address"
         r.access_route = ["not-an-ip-address"]
-        ip = get_client_ip(r, "10.0.0.1")
-        self.assertEqual(ip, "not-an-ip-address")
+        self.assertIsNone(get_client_ip(r, "10.0.0.1"))
 
     def test_24_sanity_name_check(self):
         self.assertTrue(sanity_name_check('Hello_World'))

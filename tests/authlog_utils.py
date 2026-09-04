@@ -1,0 +1,274 @@
+# (c) NetKnights GmbH 2026,  https://netknights.it
+#
+# This code is free software; you can redistribute it and/or
+# modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+# as published by the Free Software Foundation; either
+# version 3 of the License, or any later version.
+#
+# This code is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+#
+# You should have received a copy of the GNU Affero General Public
+# License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# SPDX-FileCopyrightText: 2026 NetKnights GmbH <https://netknights.it>
+# SPDX-License-Identifier: AGPL-3.0-or-later
+"""
+Shared test support for the conditional-access authentication log: the :class:`AuthLogTestCase` base fixture and the
+``assert_authentication_log*`` helpers, used across the authentication-log test modules. Registered for pytest
+assert-rewriting in tests/conftest.py so the plain ``assert`` statements still produce rich failure diffs.
+"""
+import datetime
+import json
+from collections import Counter
+
+from flask import Response
+
+from privacyidea.lib.cache import redis_feature_enabled
+from privacyidea.lib.cache.redis import redis_client_for_feature, _TXN_KEY
+from privacyidea.lib.challenge import get_challenges
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventReason, REASON_DETAIL_INFO_KEY
+from privacyidea.lib.conditional_access.authentication_log import get_authentication_logs, AuthLogUserRole
+from privacyidea.lib.policy import set_policy, SCOPE, PolicyAction
+from privacyidea.lib.token import init_token, remove_token, get_tokens
+from privacyidea.lib.user import User
+from privacyidea.models import AuthenticationLog, AuthenticationLogReason, Audit, db
+from privacyidea.models.utils import utc_now
+from .base import MyApiTestCase
+
+
+class AuthLogTestCase(MyApiTestCase):
+    """
+    Shared fixture for the authentication-log tests: a resolvable user ``cornelius`` with one HOTP token, a clean
+    authentication log around each test, and thin request/challenge helpers. Subclassed by the recording-behaviour
+    tests (one subclass per authenticating endpoint) and by the /authenticationlog/ API tests.
+    """
+
+    serial = "AUTHLOG_HOTP"
+    second_serial = "AUTHLOG_HOTP2"
+    username = "cornelius"
+    pin = "pin"
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.setUp_user_realms()
+        self.user = User(self.username, self.realm1)
+        init_token({"serial": self.serial, "type": "hotp", "otpkey": self.otpkey, "pin": self.pin},
+                   user=self.user)
+        self._clear_log()
+        self._clear_audit_log()
+
+    def tearDown(self) -> None:
+        # Every token of the user, not just the two this fixture names: a test that enrolls one (enroll_via_
+        # multichallenge) or that fails before its own cleanup would otherwise leave it behind, and the next test
+        # would find the user owning a token it never created - which silently changes what is logged.
+        for token in get_tokens(user=self.user):
+            remove_token(token.get_serial())
+        self._clear_log()
+        self._clear_audit_log()
+        super().tearDown()
+
+    @staticmethod
+    def _clear_log() -> None:
+        # The reasons go first: a bulk delete runs no ORM cascade and SQLite does not enforce the foreign key, so
+        # orphaned reason rows would be picked up by the next entry that reuses the freed id (SQLite hands out
+        # max(rowid)+1).
+        db.session.query(AuthenticationLogReason).delete()
+        db.session.query(AuthenticationLog).delete()
+        db.session.commit()
+
+    @staticmethod
+    def _clear_audit_log() -> None:
+        # Cleared only at the test boundary (setUp/tearDown), never mid-test: AUTHMAXFAIL/AUTHMAXSUCCESS count from the
+        # audit log over a time window, so leftover entries from a preceding test (alphabetical, shared table) would
+        # make counts order-dependent; unlike _clear_log, mid-test entries are exactly what the policy counts.
+        db.session.query(Audit).delete()
+        db.session.commit()
+
+    @staticmethod
+    def _enable_challenge_response() -> None:
+        set_policy("authlog_cr", scope=SCOPE.AUTH, action=f"{PolicyAction.CHALLENGERESPONSE}=hotp")
+
+    @staticmethod
+    def _expire_challenges(transaction_id: str) -> None:
+        """Make every challenge of a transaction expired-but-present, so the next answer is rejected as an expired
+        challenge on both backends. A DB update is a no-op under Redis (and _update_challenge_in_cache refuses to
+        persist an already-expired challenge), so rewrite the cached payload directly, keeping the key alive."""
+        past = utc_now() - datetime.timedelta(minutes=10)
+        if redis_feature_enabled("challenges"):
+            client = redis_client_for_feature("challenges")
+            key = _TXN_KEY.format(transaction_id)
+            for serial, payload in client.hgetall(key).items():
+                data = json.loads(payload)
+                data["expiration"] = past.isoformat()
+                client.hset(key, serial, json.dumps(data))
+        else:
+            for challenge in get_challenges(transaction_id=transaction_id):
+                challenge.expiration = past
+                challenge.save()
+
+    def _add_second_token(self, pin: str) -> None:
+        # A second HOTP token for the same user, sharing the first token's OTP key.
+        init_token({"serial": self.second_serial, "type": "hotp", "otpkey": self.otpkey, "pin": pin},
+                   user=self.user)
+
+    def _post(self, path: str, data: dict, headers: dict | None = None) -> Response:
+        with self.app.test_request_context(path, method='POST', data=data, headers=headers or {}):
+            return self.app.full_dispatch_request()
+
+    def _check(self, data: dict, headers: dict | None = None) -> dict:
+        # /validate/check convenience for tests that inspect the body directly; always HTTP 200.
+        response = self._post('/validate/check', data, headers)
+        self.assertEqual(200, response.status_code, response.json)
+        return response.json
+
+
+class AuthLogEntries(dict):
+    """
+    The result of :func:`assert_authentication_log`.
+
+    Behaves as a ``{event_type: entry}`` mapping for the common case of looking up a uniquely occurring event by
+    name, e.g. ``entries[AuthEventType.LOGIN_SUCCESS]``. The full ordered list of entries is available as ``.all``
+    for flows where the same event type occurs more than once. Indexing a duplicated event type by name raises
+    (instead of silently returning one of the occurrences), so a specific occurrence must be asserted via
+    ``.all[i]``.
+    """
+
+    def __init__(self, entries):
+        self.all = list(entries)
+        self._counts = Counter(entry.event_type for entry in self.all)
+        super().__init__((entry.event_type, entry) for entry in self.all)
+
+    def __getitem__(self, event_type):
+        if self._counts[event_type] > 1:
+            raise AssertionError(
+                f"{event_type!s} occurs {self._counts[event_type]} times in the authentication log; assert a "
+                f"specific occurrence via .all[i] rather than indexing by event type")
+        return super().__getitem__(event_type)
+
+
+def assert_authentication_log(event_types, transaction_id=None, same_attempt=True):
+    """
+    Assert that the authentication log holds exactly the given ordered list of event types, and return the entries.
+
+    The returned :class:`AuthLogEntries` maps event type -> entry for looking up a uniquely occurring event by name
+    (``entries[AuthEventType.LOGIN_SUCCESS]``) and exposes the full ordered list as ``.all``. When the same event
+    type occurs more than once, assert a specific occurrence via ``.all[i]`` — indexing a duplicated type by name
+    raises rather than silently returning one of them.
+
+    ``attempt_id`` is validated here rather than per entry (:func:`assert_authentication_log_entry`), because its
+    value is a server-minted random id that a test cannot know up front. Every entry must carry one, and — since the
+    entries asserted together normally belong to one logical authentication attempt (one flow, which may span several
+    transaction_ids in multichallenge) — they must all share it. This is the end-to-end proof that attempt chaining
+    holds across requests. Tests that deliberately assert rows from *several* attempts pass ``same_attempt=False``.
+
+    :param event_types: the expected AuthEventType values, ordered by creation
+    :param transaction_id: if given, only entries of that transaction are checked
+        (correlates a triggered challenge with its answer); otherwise all entries are
+        checked (clear the log before the request for an exact match)
+    :param same_attempt: assert all entries share one non-null ``attempt_id`` (default). Set ``False`` when the
+        asserted entries span more than one attempt (only presence is checked then).
+    :return: an :class:`AuthLogEntries` (a dict of event type -> entry, plus the ordered ``.all`` list)
+    """
+    if transaction_id is not None:
+        entries = get_authentication_logs(transaction_ids=transaction_id)
+    else:
+        entries = get_authentication_logs()
+    assert [entry.event_type for entry in entries] == event_types
+    # Every row is auto-assigned an attempt_id (see ConditionalAccessContext.attempt_id).
+    assert all(entry.attempt_id is not None for entry in entries)
+    if same_attempt and entries:
+        assert len({entry.attempt_id for entry in entries}) == 1
+    return AuthLogEntries(entries)
+
+
+def assert_authentication_log_entry(entry: AuthenticationLog, user: User = None,
+                                    serials: set[str] = None,
+                                    client_label: str = None, client_label_source: str = None,
+                                    endpoint: str = None, other_info: dict = None,
+                                    transaction_id: str = None,
+                                    source_ip: str = None, peer_ip: str = None,
+                                    source_ip_source: str = None, ip_chain: list = None,
+                                    user_role: AuthLogUserRole = AuthLogUserRole.USER,
+                                    reason: AuthEventReason = None, reasons: dict = None,
+                                    policies: list = None):
+    """
+    Assert a single authentication-log entry carries the expected attributes.
+
+    The server-minted ``attempt_id`` is not checked here (its value is not knowable per entry); it is validated at the
+    flow level in :func:`assert_authentication_log` (presence on every row, and shared across one attempt).
+
+    Every other column of the authentication_log table is checked, **including the endpoint and the reasons**, and
+    every argument defaults to "the row carries nothing here": a value the caller does not pass is asserted to be
+    absent. Nothing about a row is therefore silently missed - what a request logs is spelled out at every call site,
+    under every condition and at every endpoint, which is the whole point of asserting an entry at all.
+
+    The auto-populated id and timestamp are checked for presence. The non-nullable event_type is covered by the
+    ordered list in :func:`assert_authentication_log`.
+
+    :param entry: an AuthenticationLog entry (e.g. one returned by :func:`assert_authentication_log`)
+    :param user: the expected identity. All four fields — resolver, uid, realm, and username (login) — are read from
+        this object, with empty strings normalised to None. Pass a fully resolved User for authenticated requests;
+        pass a partially resolved User (resolver and uid will be None, realm and login still set) for cases where the
+        user was not found in a resolver (e.g. USER_UNKNOWN or PASSONNOUSER). Pass None when no identity at all is
+        expected (e.g. userless challenges or local-admin logins).
+    :param serials: the entry must carry a comma separated list of these serials (default None: no serial)
+    :param client_label: the entry must carry this client_label (default None: no client_label)
+    :param client_label_source: where the label came from. Defaults to ``"user_agent"`` whenever a client_label is
+        expected, since the test client always sends a User-Agent; pass ``"client_id"`` for a request that named
+        itself.
+    :param endpoint: the entry must carry this endpoint (default None: no endpoint, i.e. a row staged outside a view)
+    :param reason: the entry's reasons must be exactly these, in this order (the order AuthEventReason declares
+        them): one AuthEventReason or a list of them (default None: no reason at all)
+    :param reasons: the ``{serial: reason}`` map in the entry's reason detail (default None: no such map)
+    :param policies: the policy names in the entry's reason detail (default None: no policy names)
+    :param other_info: the entry must carry this other_info (default None: no other_info)
+    :param transaction_id: the entry must carry this transaction_id (default None: no transaction_id)
+    :param source_ip: the entry must carry this source_ip (default None: no source_ip)
+    :param peer_ip: the TCP peer the request arrived from (default None, which is what the Flask test client
+        reports unless the call sets ``REMOTE_ADDR``)
+    :param source_ip_source: where source_ip was taken from (default None: the derivation was not recorded)
+    :param ip_chain: the recorded path to the client (default None: the path was exactly ``[peer_ip]``)
+    :param user_role: the entry must carry this user_role (default ``"user"``, the role of a regular user)
+    """
+    expected_resolver = (user.resolver or None) if user is not None else None
+    expected_uid = (user.uid or None) if user is not None else None
+    expected_realm = (user.realm or None) if user is not None else None
+    expected_username = (user.login or None) if user is not None else None
+    assert (entry.resolver, entry.uid, entry.realm) == (expected_resolver, expected_uid, expected_realm)
+    assert entry.username == expected_username
+    assert entry.user_role == user_role
+    assert entry.client_label == client_label
+    if client_label_source is None and client_label:
+        client_label_source = "user_agent"
+    assert entry.client_label_source == client_label_source
+    assert entry.endpoint == endpoint
+    expected_reasons = [] if reason is None else [str(value) for value in
+                                                 (reason if isinstance(reason, list) else [reason])]
+    assert [row.reason for row in entry.reasons] == expected_reasons
+    stored_info = dict(entry.other_info or {})
+    stored_detail = stored_info.pop(REASON_DETAIL_INFO_KEY, None) or {}
+    expected_detail = {}
+    if reasons is not None:
+        expected_detail["reasons"] = {serial: str(value) for serial, value in reasons.items()}
+    if policies is not None:
+        expected_detail["policies"] = policies
+    assert stored_detail == expected_detail
+    # An empty dict is not None: a row that carries {} in a JSON column is a different thing from one that carries
+    # nothing, and only the reason detail is allowed to be lifted out above.
+    assert stored_info == (other_info or {})
+    assert entry.transaction_id == transaction_id
+    assert entry.source_ip == source_ip
+    assert entry.peer_ip == peer_ip
+    assert entry.source_ip_source == source_ip_source
+    assert entry.ip_chain == ip_chain
+    entry_serials = entry.serial
+    if entry_serials is not None:
+        entry_serials = set(entry_serials.split(","))
+    assert entry_serials == serials
+
+    # The id (primary key) and timestamp are populated by the database / model on insert and must always be present.
+    assert entry.id is not None
+    assert entry.timestamp is not None

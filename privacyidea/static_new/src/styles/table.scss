@@ -315,7 +315,7 @@ th:nth-child(even) {
 
 .filter-paginator-container {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   margin-bottom: 16px;
   flex-wrap: wrap;

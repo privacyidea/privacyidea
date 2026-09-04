@@ -210,6 +210,17 @@ view older entries.
 
 Can be something like 10m (10 minutes), 10h (10 hours) or 10d (ten days).
 
+authentication_log_read
+~~~~~~~~~~~~~~~~~~~~~~~
+
+type: ``bool``
+
+The user is allowed to read their own entries from the
+:ref:`authentication_log`. The columns identifying the user are hidden, since
+every entry is the user's own.
+
+.. versionadded:: 3.14
+
 hide_audit_columns
 ~~~~~~~~~~~~~~~~~~
 

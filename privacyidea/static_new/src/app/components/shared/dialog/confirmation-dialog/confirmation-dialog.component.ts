@@ -48,4 +48,8 @@ export interface SimpleConfirmationDialogData {
   confirmAction: DialogAction<true>;
   items: string[];
   itemType: string;
+  // Optional explicit confirmation text; when set, it replaces the auto-generated "...all selected (N) <itemType>s?"
+  // sentence and item list, for bulk/condition-based actions where listing individual items would be misleading (e.g.
+  // purging all expired records).
+  message?: string;
 }

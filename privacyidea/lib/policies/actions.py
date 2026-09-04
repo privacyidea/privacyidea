@@ -232,12 +232,22 @@ class PolicyAction:
     FORCE_SERVER_GENERATE = "force_server_generate"
     SET_REALM = "set_realm"
     HIDE_SPECIFIC_ERROR_MESSAGE = "hide_specific_error_message"
+    SHOW_DEFAULT_CA_ERROR_MESSAGE = "show_default_ca_error_message"
     HIDE_SPECIFIC_ERROR_MESSAGE_FOR_OFFLINE_REFILL = "hide_specific_error_message_for_offline_refill"
     HIDE_SPECIFIC_ERROR_MESSAGE_FOR_TTYPE = "hide_specific_error_message_for_ttype"
     HIDE_AUTH_ERROR_STATUS = "hide_auth_error_status"
     REQUIRE_AUTH_FOR_RESOLVER_DETAILS = "require_auth_for_resolver_details"
     PASSKEY_LOGIN = "passkey_login"
     HIDE_VERSION = "hide_version"
+    AUTHENTICATION_LOG_READ = "authentication_log_read"
+    CONDITIONAL_ACCESS_POLICY_READ = "conditional_access_policy_read"
+    CONDITIONAL_ACCESS_POLICY_WRITE = "conditional_access_policy_write"
+    USER_LOCK_READ = "user_lock_read"
+    USER_LOCK_RESET = "user_lock_reset"
+    USER_LOCK_SET = "user_lock_set"
+    BLOCKLIST_READ = "blocklist_read"
+    BLOCKLIST_RESET = "blocklist_reset"
+    BLOCKLIST_SET = "blocklist_set"
 
 
 class PasskeyLoginButtonOptions:

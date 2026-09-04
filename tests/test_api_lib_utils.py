@@ -6,7 +6,16 @@ from .base import MyApiTestCase
 from privacyidea.api.lib.utils import (check_policy_name,
                                        verify_auth_token, is_fqdn,
                                        attestation_certificate_allowed, get_priority_from_param,
-                                       get_required_one_of, get_optional_one_of, get_required, get_optional)
+                                       get_required_one_of, get_optional_one_of, get_required, get_optional,
+                                       to_list_param, build_ca_context, send_error, request_endpoint)
+from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType, AuthEventReason,
+                                                                           AUTH_EVENT_TYPE_KEY,
+                                                                           AUTH_EVENT_REASON_KEY,
+                                                                           AUTH_EVENT_REASON_DETAIL_KEY,
+                                                                           INTERNAL_CLASSIFICATION_KEYS,
+                                                                           LOG_TRANSACTION_ID_KEY)
+from privacyidea.lib.params import get_optional_timestamp, get_required_timestamp
+from privacyidea.lib.utils import prepare_result
 from privacyidea.lib.policy import SCOPE, set_policy, delete_policy
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.user import User
@@ -22,6 +31,27 @@ from privacyidea.lib.token import init_token, remove_token
 
 
 class UtilsTestCase(MyApiTestCase):
+
+    def test_00_to_list_param(self):
+        # A not-supplied parameter stays None so callers can tell it apart from a supplied-but-blank one.
+        self.assertIsNone(to_list_param(None))
+        # Comma-separated string -> entries, stripped.
+        self.assertListEqual(["a", "b"], to_list_param("a,b"))
+        self.assertListEqual(["a", "b"], to_list_param(" a , b "))
+        # A single value is a one-element list, not a wrapped string.
+        self.assertListEqual(["a"], to_list_param("a"))
+        # Native JSON lists/tuples pass through, stringified and stripped.
+        self.assertListEqual(["a", "b"], to_list_param(["a", " b "]))
+        self.assertListEqual(["a", "b"], to_list_param(("a", "b")))
+        self.assertListEqual(["1", "2"], to_list_param([1, 2]))
+        # Empty entries are dropped, so a blank value yields [] rather than [""] — filtering on an
+        # empty string would otherwise match nothing (or everything, depending on the caller).
+        self.assertListEqual(["a"], to_list_param("a,"))
+        self.assertListEqual([], to_list_param(""))
+        self.assertListEqual([], to_list_param(","))
+        self.assertListEqual([], to_list_param("  "))
+        self.assertListEqual([], to_list_param([]))
+        self.assertListEqual(["a"], to_list_param(["a", "", "  "]))
 
     def test_01_getParam(self):
         # allow_empty=True: empty string is returned as-is for required params
@@ -263,6 +293,65 @@ class UtilsTestCase(MyApiTestCase):
             mock_log.assert_any_call("Update params in request POST http://localhost/token/init with values.")
         remove_token(serial)
 
+    def test_08b_build_ca_context_without_client_ip(self):
+        # g.client_ip is not guaranteed by a request context alone: an early error, or reaching the engine from
+        # post-response/error-handling paths, can leave it unset. Reading it must never crash the authentication -
+        # an absent client IP yields source_ip=None (source_ip-target policies then simply do not apply), not an
+        # AttributeError.
+        with self.app.test_request_context('/auth', method='POST'):
+            # The app context is pushed once per class, so without this an earlier test's /auth leaves
+            # resolved_user.is_local_admin set and the role below comes back as admin-internal.
+            self.reset_flask_g()
+            # A bare g.client_ip read would raise AttributeError here; build_ca_context must not.
+            context = build_ca_context(User())
+            self.assertIsNone(context.source_ip)
+            # An empty user object is collapsed to None, so a condition on the user reads "no value"
+            # rather than an empty string (see _resolve_user_realm).
+            self.assertIsNone(context.user)
+            # Nothing marks this principal as a local admin, so it classifies as a regular user.
+            self.assertEqual("user", context.user_role)
+
+    def test_08e_request_endpoint_outside_a_request_context(self):
+        # Read from the request, so lib code that records an event without one (tests, a CLI caller) gets None
+        # instead of an exception - the column is then simply empty, and the event is not lost over it.
+        self.assertIsNone(request_endpoint())
+        with self.app.test_request_context('/validate/check/', method='POST'):
+            # The trailing slash is normalized away, so one endpoint is one value however it was called.
+            self.assertEqual("/validate/check", request_endpoint())
+
+    def _classified_details(self) -> dict:
+        # What a lib call hands the api layer: the client-facing message plus the classification, which is only ever
+        # meant for the authentication log.
+        return {"message": "wrong otp pin",
+                AUTH_EVENT_TYPE_KEY: AuthEventType.PIN_FAIL,
+                AUTH_EVENT_REASON_KEY: [str(AuthEventReason.WRONG_OTP)],
+                AUTH_EVENT_REASON_DETAIL_KEY: {"reasons": {"TOK1": str(AuthEventReason.WRONG_OTP)}},
+                LOG_TRANSACTION_ID_KEY: "0123456789"}
+
+    def test_08c_a_forgotten_pop_cannot_leak_the_classification(self):
+        # The lib layer hands its classification to the api layer in the very dict the response body is built from,
+        # and a view reads it by popping. This asserts the backstop rather than the habit: a view that popped nothing
+        # still answers without the internal keys, so a new caller cannot leak them by forgetting.
+        details = self._classified_details()
+
+        result = prepare_result(False, rid=2, details=details)
+
+        self.assertEqual("wrong otp pin", result["detail"]["message"], result)
+        for key in INTERNAL_CLASSIFICATION_KEYS:
+            self.assertNotIn(key, result["detail"], result)
+
+    def test_08d_an_error_response_strips_the_classification_too(self):
+        # An error carries the same dict: AuthError hands a lib call's reply straight to the error handler, so the
+        # rejection path needs the same backstop as the successful one.
+        with self.app.test_request_context('/auth', method='POST'):
+            response = send_error("Authentication failure.", rid=2, error_code=403,
+                                  details=self._classified_details())
+
+        detail = response.json["detail"]
+        self.assertEqual("wrong otp pin", detail["message"], detail)
+        for key in INTERNAL_CLASSIFICATION_KEYS:
+            self.assertNotIn(key, detail, detail)
+
     def test_09_check_unquote(self):
         self.setUp_user_realms()
         with self.app.test_request_context('/auth',
@@ -421,7 +510,42 @@ class UtilsTestCase(MyApiTestCase):
         self.assertIsNone(get_optional(params, "c"))
         self.assertEqual(get_optional(params, "c", default="default_val"), "default_val")
 
-    def test_14_get_optional_int(self):
+    def test_14_get_required_timestamp(self):
+        self.assertEqual(datetime.datetime(2026, 3, 1, 12, 30, tzinfo=datetime.timezone.utc),
+                         get_required_timestamp({"start": "2026-03-01T12:30:00+00:00"}, "start"))
+        # Naive values parse too, and keep no timezone of their own.
+        self.assertEqual(datetime.datetime(2026, 3, 1, 12, 30),
+                         get_required_timestamp({"start": "2026-03-01T12:30:00"}, "start"))
+        self.assertEqual(datetime.datetime(2026, 3, 1), get_required_timestamp({"start": "2026-03-01"}, "start"))
+
+        # Missing and empty are the ParameterError get_required already raises.
+        self.assertRaises(ParameterError, get_required_timestamp, {}, "start")
+        self.assertRaises(ParameterError, get_required_timestamp, {"start": ""}, "start")
+        # A malformed value must not escape as the ValueError isoparse raises.
+        for value in ("not-a-time", "31-12-2026", "2026-13-01", "2026-03-01T25:00:00"):
+            self.assertRaises(ParameterError, get_required_timestamp, {"start": value}, "start")
+        # The message names the parameter, so several timestamps in one request stay distinguishable.
+        with self.assertRaises(ParameterError) as caught:
+            get_required_timestamp({"end_time": "nope"}, "end_time")
+        self.assertIn("end_time", str(caught.exception))
+
+    def test_15_get_optional_timestamp(self):
+        self.assertEqual(datetime.datetime(2026, 3, 1, 12, 30, tzinfo=datetime.timezone.utc),
+                         get_optional_timestamp({"start": "2026-03-01T12:30:00+00:00"}, "start"))
+
+        # Absent and empty both fall back, since neither expresses a filter.
+        self.assertIsNone(get_optional_timestamp({}, "start"))
+        self.assertIsNone(get_optional_timestamp({"start": ""}, "start"))
+        fallback = datetime.datetime(2020, 1, 1)
+        self.assertEqual(fallback, get_optional_timestamp({}, "start", default=fallback))
+        self.assertEqual(fallback, get_optional_timestamp({"start": ""}, "start", default=fallback))
+
+        # A present but malformed value is an error rather than a silent fallback: ignoring it would answer a
+        # different question than the caller asked.
+        for value in ("not-a-time", "31-12-2026", "2026-13-01"):
+            self.assertRaises(ParameterError, get_optional_timestamp, {"start": value}, "start")
+
+    def test_16_get_optional_int(self):
         params = {"a": "1", "b": "", "c": "abc", "d": "1.5", "e": -3, "f": "-3"}
         self.assertEqual(get_optional_int(params, "a"), 1)
         self.assertEqual(get_optional_int(params, "e"), -3)
@@ -437,7 +561,7 @@ class UtilsTestCase(MyApiTestCase):
         self.assertRaises(ParameterError, get_optional_int, params, "c")
         self.assertRaises(ParameterError, get_optional_int, params, "d")
 
-    def test_15_get_pagination_params(self):
+    def test_17_get_pagination_params(self):
         self.assertEqual(get_pagination_params({"page": "3", "pagesize": "20"}), (3, 20))
         # Defaults apply when the parameters are absent
         self.assertEqual(get_pagination_params({}), (1, 15))

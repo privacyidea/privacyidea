@@ -88,6 +88,8 @@ from flask_babel import lazy_gettext
 from sqlalchemy import select, delete
 
 from privacyidea.lib import _
+from privacyidea.lib.conditional_access.authentication_event_types import (AUTH_EVENT_REASON_KEY, AuthEventReason,
+                                                                          CHALLENGE_LAPSED_KEY)
 from privacyidea.lib.crypto import (decryptPassword,
                                     generate_otpkey, encryptPassword)
 from privacyidea.lib.params import get_optional, get_required
@@ -1457,27 +1459,33 @@ class TokenClass:
 
         This is used in the function token.check_token_list
 
+        The first failing check also records its machine-readable
+        :class:`~privacyidea.lib.conditional_access.authentication_event_types.AuthEventReason` on
+        ``self.auth_details``, so the authentication log can say *why* a token was unusable rather than only that it
+        was. Both come from one table below, so the message and the reason can never drift apart.
+
         :param message_list: A list of messages
         :return: False, if any of the checks fail
         """
-        r = False
-        # Check if the max auth is succeeded
-        if not self.check_auth_counter():
-            message_list.append("Authentication counter exceeded")
-        # Check if the token is disabled
-        elif not self.is_active():
-            message_list.append("Token is disabled")
-        elif not self.check_failcount():
-            message_list.append("Failcounter exceeded")
-        elif not self.check_validity_period():
-            message_list.append("Outside validity period")
-        elif self.rollout_state in [RolloutState.CLIENTWAIT, RolloutState.VERIFY_PENDING]:
-            message_list.append("Token is not yet enrolled")
-        else:
-            r = True
-        if not r:
-            log.info(f"{message_list} {self.get_serial()}")
-        return r
+        checks = (
+            # Check if the max auth is succeeded
+            (self.check_auth_counter, "Authentication counter exceeded",
+             AuthEventReason.TOKEN_AUTH_COUNTER_EXCEEDED),
+            # Check if the token is disabled
+            (self.is_active, "Token is disabled", AuthEventReason.TOKEN_DISABLED),
+            (self.check_failcount, "Failcounter exceeded", AuthEventReason.TOKEN_FAILCOUNT_EXCEEDED),
+            (self.check_validity_period, "Outside validity period",
+             AuthEventReason.TOKEN_OUTSIDE_VALIDITY_PERIOD),
+            (lambda: self.rollout_state not in [RolloutState.CLIENTWAIT, RolloutState.VERIFY_PENDING],
+             "Token is not yet enrolled", AuthEventReason.TOKEN_NOT_YET_ENROLLED),
+        )
+        for passes, message, reason in checks:
+            if not passes():
+                message_list.append(message)
+                self.auth_details[AUTH_EVENT_REASON_KEY] = reason
+                log.info(f"{message_list} {self.get_serial()}")
+                return False
+        return True
 
     @log_with(log)
     @check_token_locked
@@ -1729,6 +1737,13 @@ class TokenClass:
             # Now we also need to check, if there is a corresponding DB entry
             chals = get_challenges(serial=self.token.serial, transaction_id=transaction_id)
             challenge_response = bool(chals)
+            # Note whether they have all lapsed, for the authentication log: this is the last point at which they
+            # exist, since checking the answer ends in challenge_janitor(), which deletes the expired ones. Recorded
+            # here rather than asked again later, so the log costs no extra challenge query. Nothing to note when the
+            # transaction holds none at all - with the Redis backend a long-expired challenge is already evicted, and
+            # "no challenge here" is then what the log should say.
+            if chals and all(not chal.is_valid() for chal in chals):
+                self.auth_details[CHALLENGE_LAPSED_KEY] = True
 
         return challenge_response
 

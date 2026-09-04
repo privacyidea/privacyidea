@@ -135,7 +135,11 @@ export class NavigationComponent implements AfterViewInit, OnDestroy {
       route: ROUTE_PATHS.SUBSCRIPTION,
       section: "subscription"
     },
-    { icon: "receipt_long", label: $localize`:@@nav.audit:Audit`, route: ROUTE_PATHS.AUDIT, section: "audit" },
+    // The "logs" umbrella section still carries several sub-pages (see the "logs" secondary toolbar in the
+    // template: Log, Known Clients, Authentication Log, Locked Users, IP Blocklist) that master's own "audit"
+    // rename does not know about, so this keeps routing to ROUTE_PATHS.LOGS/section "logs" rather than master's
+    // flattened single-page ROUTE_PATHS.AUDIT/"audit".
+    { icon: "receipt_long", label: $localize`Logs`, route: ROUTE_PATHS.LOGS, section: "logs" },
     {
       icon: "hub",
       label: $localize`:@@nav.externalServices:External Services`,
@@ -170,7 +174,7 @@ export class NavigationComponent implements AfterViewInit, OnDestroy {
     if (url.startsWith(ROUTE_PATHS.USERS)) return "users";
     if (url.startsWith(ROUTE_PATHS.POLICIES)) return "policies";
     if (url.startsWith(ROUTE_PATHS.SUBSCRIPTION)) return "subscription";
-    if (url.startsWith(ROUTE_PATHS.AUDIT)) return "audit";
+    if (url.startsWith(ROUTE_PATHS.LOGS)) return "logs";
     if (url.startsWith(ROUTE_PATHS.EXTERNAL_SERVICES)) return "external_services";
     if (url.startsWith(ROUTE_PATHS.CONFIGURATION) || url.startsWith(ROUTE_PATHS.EVENTS)) return "config";
     if (url.startsWith(ROUTE_PATHS.TOKENS)) return "token";
@@ -267,8 +271,14 @@ export class NavigationComponent implements AfterViewInit, OnDestroy {
           return this.authService.actionAllowed("policyread");
         case "subscription":
           return this.authService.actionAllowed("managesubscription");
-        case "audit":
-          return this.authService.actionAllowed("auditlog");
+        case "logs":
+          return this.authService.oneActionAllowed([
+            "auditlog",
+            "authentication_log_read",
+            "clienttype",
+            "user_lock_read",
+            "blocklist_read"
+          ]);
         case "external_services":
           return this.authService.oneActionAllowed([
             "smtpserver_read",

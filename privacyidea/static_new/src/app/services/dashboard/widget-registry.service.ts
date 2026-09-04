@@ -19,8 +19,10 @@
 import { Injectable } from "@angular/core";
 import { AdministrationWidgetComponent } from "@components/dashboard/widgets/administration-widget/administration-widget.component";
 import { AppearanceWidgetComponent } from "@components/dashboard/widgets/appearance-widget/appearance-widget.component";
+import { AuthenticationActivityWidgetComponent } from "@components/dashboard/widgets/authentication-activity-widget/authentication-activity-widget.component";
 import { AuthenticationsWidgetComponent } from "@components/dashboard/widgets/authentications-widget/authentications-widget.component";
 import { CertificateHealthWidgetComponent } from "@components/dashboard/widgets/certificate-health-widget/certificate-health-widget.component";
+import { ConditionalAccessWidgetComponent } from "@components/dashboard/widgets/conditional-access-widget/conditional-access-widget.component";
 import { EventsWidgetComponent } from "@components/dashboard/widgets/events-widget/events-widget.component";
 import { NewsWidgetComponent } from "@components/dashboard/widgets/news-widget/news-widget.component";
 import { NotificationDeliveryWidgetComponent } from "@components/dashboard/widgets/notification-delivery-widget/notification-delivery-widget.component";
@@ -46,8 +48,10 @@ export class WidgetRegistryService implements WidgetRegistryServiceInterface {
     TokensWidgetComponent,
     TokenTypesWidgetComponent,
     AuthenticationsWidgetComponent,
+    AuthenticationActivityWidgetComponent,
     AdministrationWidgetComponent,
     PoliciesWidgetComponent,
+    ConditionalAccessWidgetComponent,
     EventsWidgetComponent,
     SubscriptionsWidgetComponent,
     CertificateHealthWidgetComponent,

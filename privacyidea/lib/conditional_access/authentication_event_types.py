@@ -1,0 +1,483 @@
+# (c) NetKnights GmbH 2026,  https://netknights.it
+#
+# This code is free software; you can redistribute it and/or
+# modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+# as published by the Free Software Foundation; either
+# version 3 of the License, or any later version.
+#
+# This code is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+#
+# You should have received a copy of the GNU Affero General Public
+# License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# SPDX-FileCopyrightText: 2026 NetKnights GmbH <https://netknights.it>
+# SPDX-License-Identifier: AGPL-3.0-or-later
+import logging
+from enum import Enum
+
+log = logging.getLogger(__name__)
+
+# Key under which the classified AuthEventType is carried from lib to api layer.
+#
+# **Every one of these keys travels in a dict the api layer also answers the client with.** A view reads them by
+# popping (this key directly, the reason via :func:`~privacyidea.api.lib.utils.pop_auth_event_reason`), and whatever a
+# view forgets is dropped where the response body is built - see INTERNAL_CLASSIFICATION_KEYS and
+# :func:`strip_internal_classification` below. Popping is therefore how a view *reads* the classification, not what
+# keeps it out of the response: that is the boundary's job, so a new caller cannot leak by forgetting.
+#
+# Carrying it in the reply is what stays, for now. The alternatives - handing it over on ``g``, or giving every policy
+# helper a return type that separates the two halves - are a refactor of the whole policy-helper layer rather than of
+# this feature, and both trade "the view must pop" for "the value must not go stale between two lib calls in one
+# request", which fails more quietly. The channel is the status quo made safe at its exit rather than made ideal.
+AUTH_EVENT_TYPE_KEY = "authentication_event_type"
+
+# Key set on token.auth_details when the token is verified without a first factor (knowledge factor), i.e. otppin=none.
+NO_FIRST_FACTOR_KEY = "no_first_factor"
+
+# Key set on token.auth_details when the answered transaction holds only expired challenges for this token. Recorded
+# where they are read (TokenClass.has_db_challenge_response) because that is the last moment they exist: checking the
+# answer ends in challenge_janitor(), which deletes exactly those rows.
+CHALLENGE_LAPSED_KEY = "challenge_lapsed"
+
+# Keys carrying the classified AuthEventReason (and its detail dict) from lib to api, alongside AUTH_EVENT_TYPE_KEY -
+# stripped at the same boundary. The detail dict is the one of the three that is specific to a request (which policy
+# decided, which serial failed for which reason), so it is the one a leak would actually tell the client something by.
+# The reason travels the same three routes the event type does: token.auth_details for a per-token finding, the
+# reply_dict for the request's classification, and the view's own context dict. A per-token finding is a single
+# reason, while the request-level classification is the list of them (see order_request_reasons); the api layer
+# accepts either and always records a list (see pop_auth_event_reason).
+AUTH_EVENT_REASON_KEY = "authentication_event_reason"
+AUTH_EVENT_REASON_DETAIL_KEY = "authentication_event_reason_detail"
+
+# The key the reason's detail dict is stored under inside the row's ``other_info``. One namespace of its own, so the
+# rest of other_info stays what a token reported about itself and neither has to know about the other.
+REASON_DETAIL_INFO_KEY = "reason_detail"
+
+
+# Key set on token.auth_details when the token logged its own outcome and no terminal event should be added on top.
+# A push_wait timeout sets this: the unanswered challenge is recorded only as CHALLENGE_TRIGGERED, not an MFA_FAIL.
+SUPPRESS_TERMINAL_EVENT_KEY = "suppress_terminal_authentication_event"
+
+# Key a token sets in its reply to carry the challenge transaction_id to the terminal authentication-log row without
+# exposing it in the response. push_wait uses it so its LOGIN_SUCCESS row correlates with the trigger and out-of-band
+# answer; the API layer pops it from the response details before sending.
+LOG_TRANSACTION_ID_KEY = "log_transaction_id"
+
+# Every key that travels from the lib layer to the api layer in a dict the response is then built from, and that must
+# never reach the client. The keys a token only ever sets on its own ``auth_details`` (NO_FIRST_FACTOR_KEY,
+# CHALLENGE_LAPSED_KEY, SUPPRESS_TERMINAL_EVENT_KEY) are deliberately not here: that dict is the token layer's own
+# state and is never handed to a client - a key that starts travelling in a reply belongs in this set.
+INTERNAL_CLASSIFICATION_KEYS = frozenset({AUTH_EVENT_TYPE_KEY, AUTH_EVENT_REASON_KEY, AUTH_EVENT_REASON_DETAIL_KEY,
+                                          LOG_TRANSACTION_ID_KEY})
+
+
+def strip_internal_classification(details):
+    """
+    Remove every :data:`INTERNAL_CLASSIFICATION_KEYS` entry from *details*, in place, and return it.
+
+    The last thing that happens to a response body before it is built (see
+    :func:`~privacyidea.lib.utils.prepare_result` and :func:`~privacyidea.api.lib.utils.send_error`), so that a view
+    that forgot to take the classification off a lib call's reply cannot leak it. Views still pop the keys where they
+    read them - this is the backstop, not the mechanism, and it is deliberately at the boundary rather than in each
+    view, because "every future caller remembers" is exactly what a boundary is for.
+
+    :param details: the reply/details dict about to be answered with, or anything that is not a dict (left alone)
+    :return: *details*
+    """
+    if isinstance(details, dict):
+        for key in INTERNAL_CLASSIFICATION_KEYS:
+            details.pop(key, None)
+    return details
+
+
+class AuthEventType(str, Enum):
+    """
+    Event types written to the authentication log.
+
+    ``str`` is used instead of ``StrEnum`` (3.11+) for compatibility with Python 3.10. The ``__str__`` override
+    normalizes ``str()``/f-string output to the value across all supported versions (3.10-3.14); without it the
+    output would differ between versions.
+    """
+    # An authorization policy blocked the authentication
+    NOT_AUTHORIZED = "NOT_AUTHORIZED"
+    # Wrong user store password
+    PASSWORD_FAIL = "PASSWORD_FAIL"
+    # Wrong token pin
+    PIN_FAIL = "PIN_FAIL"
+    # PIN skipped (otppin=none / otponly=1) but the OTP itself is wrong.
+    TOKEN_ONLY_FAIL = "TOKEN_ONLY_FAIL"
+    # Correct first factor (pin / password), but the second factor failed, e.g. wrong OTP.
+    # Also used for a failed passkey authentication, since the exact cause of failure cannot be determined there.
+    MFA_FAIL = "MFA_FAIL"
+    # Username not found in any resolver, or the resolved user is empty.
+    USER_UNKNOWN = "USER_UNKNOWN"
+    # User is known but has no tokens assigned, or the requested token does not exist.
+    NO_TOKEN = "NO_TOKEN"
+    # Tokens exist but every one is unusable (revoked, locked, disabled, expired, or over max-fail).
+    NO_USABLE_TOKEN = "NO_USABLE_TOKEN"
+    # The request named no token type the endpoint can start an authentication for: the type parameter is missing, or
+    # names a type this endpoint does not support. About the *request*, not about the tokens a user owns - which is what
+    # NO_TOKEN / NO_USABLE_TOKEN above are for.
+    INVALID_TOKEN_TYPE = "INVALID_TOKEN_TYPE"
+    # Authentication fully succeeded.
+    LOGIN_SUCCESS = "LOGIN_SUCCESS"
+    # Challenge answered correctly, but the token requires at least one further challenge.
+    CHALLENGE_CONTINUED = "CHALLENGE_CONTINUED"
+    # A challenge was created and sent to the client (push notification, trigger_challenge, passkey, …).
+    CHALLENGE_TRIGGERED = "CHALLENGE_TRIGGERED"
+    # A challenge was asked for but the server could not produce one - a required policy is missing, or creating it
+    # failed. The failure counterpart of CHALLENGE_TRIGGERED, as CHALLENGE_ANSWERED_FAIL is of the ANSWERED pair.
+    # E.g. used for /validate/initialize where a challenge is NOT triggered by a password / pin.
+    CHALLENGE_TRIGGER_FAIL = "CHALLENGE_TRIGGER_FAIL"
+    # Push challenge approved on the smartphone (out-of-band, signature verified).
+    CHALLENGE_ANSWERED_OUT_OF_BAND = "CHALLENGE_ANSWERED_OUT_OF_BAND"
+    # Challenge response is wrong, expired, or the transaction_id is unknown.
+    CHALLENGE_ANSWERED_FAIL = "CHALLENGE_ANSWERED_FAIL"
+    # Push challenge explicitly rejected on the smartphone.
+    CHALLENGE_DECLINED = "CHALLENGE_DECLINED"
+    # a successful authentication triggered the enrollment of a new token type to complete the authentication
+    ENROLLMENT_TRIGGERED = "ENROLLMENT_TRIGGERED"
+    # cancelling the enrollment failed (unknown or already-consumed transaction_id).
+    ENROLLMENT_CANCELED_FAIL = "ENROLLMENT_CANCELED_FAIL"
+    # Fallback used when authentication fails but no other event type was set, so the failure is still recorded.
+    UNKNOWN_FAIL_REASON = "UNKNOWN_FAIL_REASON"
+
+    # --- written by conditional access itself, before any credential check ---------------------------------------
+    # These three classify a request the conditional-access pre-check turned away, which is why they are the only
+    # members no token flow ever produces (see CA_ENFORCEMENT_EVENT_TYPES). Each names the condition that ended the
+    # request, like USER_UNKNOWN or NO_TOKEN above.
+    #
+    # A user lock in force turned the request away. Note the word order: USER_LOCKED is the rejection, while the
+    # LOCK_USER action (in conditional_access_outcome.action_type) is the lock being created.
+    USER_LOCKED = "USER_LOCKED"
+    # A source-IP block in force turned the request away.
+    IP_BLOCKED = "IP_BLOCKED"
+    # A conditional-access policy's DENY action decided this single request. Named after the effect rather than the
+    # action, because DENY is a ConditionalAccessAction value stored in the adjacent outcome table.
+    ACCESS_DENIED = "ACCESS_DENIED"
+
+    def __str__(self) -> str:
+        return self.value
+
+
+class AuthEventReason(str, Enum):
+    """
+    Why an :class:`AuthEventType` came out the way it did.
+
+    The event type answers *what* happened to a request; several distinct causes share one of them, and the cause is
+    what an admin has to act on. ``NO_USABLE_TOKEN`` is the clearest case: it is the same event whether every token is
+    disabled, past its failcount, outside its validity period or simply not yet enrolled, which are four different
+    pieces of advice for the person reading the log. Recording the reasons separately keeps the event vocabulary small
+    (a row is still classified by exactly one event) while making the log answer "why".
+
+    A reason is **machine-readable and low-cardinality**, so it can be filtered on like an event type. Anything
+    specific to one request (which policy denied it, which serial failed for which reason) goes in the row's
+    ``other_info`` instead; see :data:`AUTH_EVENT_REASON_DETAIL_KEY`.
+
+    An entry carries **every** reason its request produced - a user's tokens can fail differently within one request,
+    and each of those is a separate piece of advice, filterable on its own. They are listed in the order declared
+    below (see :func:`order_request_reasons`), which is for determinism rather than importance: no reason outranks
+    another, and none is dropped in favour of one. Not every event has one: ``LOGIN_SUCCESS`` needs none, and a
+    request nobody classified simply has an empty list, which is why the reasons are rows of their own and no code
+    path is obliged to add any.
+
+    The order the members are declared in therefore *is* the order they are recorded in: keep the groups below
+    together when adding one.
+
+    ``str``/``Enum`` (not ``StrEnum``) for Python 3.10, like :class:`AuthEventType`.
+    """
+    # --- the token's own state (see TokenClass.check_all and the filters ahead of it) -----------------------------
+    # The token is disabled.
+    TOKEN_DISABLED = "TOKEN_DISABLED"
+    # The token is revoked, which is permanent - unlike being disabled.
+    TOKEN_REVOKED = "TOKEN_REVOKED"
+    # The token's failcounter is at or past its maximum.
+    TOKEN_FAILCOUNT_EXCEEDED = "TOKEN_FAILCOUNT_EXCEEDED"
+    # The token's own success/failure auth counter is exhausted (count_auth_max / count_auth_success_max).
+    TOKEN_AUTH_COUNTER_EXCEEDED = "TOKEN_AUTH_COUNTER_EXCEEDED"
+    # Now is outside the token's validity period.
+    TOKEN_OUTSIDE_VALIDITY_PERIOD = "TOKEN_OUTSIDE_VALIDITY_PERIOD"
+    # The token's enrollment was never completed (rollout state clientwait / verify_pending).
+    TOKEN_NOT_YET_ENROLLED = "TOKEN_NOT_YET_ENROLLED"
+    # A policy disabled this token's whole type for the request (PolicyAction.DISABLED_TOKEN_TYPES).
+    TOKEN_TYPE_DISABLED = "TOKEN_TYPE_DISABLED"
+    # The token type excluded itself from *this* request (TokenClass.use_for_authentication) - e.g. an
+    # application-specific password whose service_id does not match the one the request names.
+    TOKEN_NOT_APPLICABLE = "TOKEN_NOT_APPLICABLE"
+
+    # --- authorization, i.e. a policy refusing an otherwise valid authentication ---------------------------------
+    # An authorization policy denied the request outright (PolicyAction.AUTHORIZED = deny). The three below are
+    # authorization decisions too, each naming the specific limit that was hit; this one is the plain deny.
+    AUTHORIZATION_DENIED = "AUTHORIZATION_DENIED"
+    # The user made too many failed attempts inside the policy's time limit (auth_max_fail).
+    AUTH_MAX_FAIL = "AUTH_MAX_FAIL"
+    # The user made too many *successful* authentications inside the policy's time limit (auth_max_success).
+    AUTH_MAX_SUCCESS = "AUTH_MAX_SUCCESS"
+    # The token's last successful authentication is too long ago (last_auth).
+    LAST_AUTH_TOO_OLD = "LAST_AUTH_TOO_OLD"
+
+    # --- the credentials themselves ------------------------------------------------------------------------------
+    # The first factor was right (or not required) but the OTP was not. There is deliberately no reason for a wrong
+    # first factor: the event type already says which credential failed (PASSWORD_FAIL, PIN_FAIL), so a reason
+    # repeating it would add nothing. WRONG_OTP earns its place because MFA_FAIL is also what a token in a state the
+    # request never got to check looks like.
+    WRONG_OTP = "WRONG_OTP"
+
+    # --- challenge-response --------------------------------------------------------------------------------------
+    # The response did not match the challenge.
+    CHALLENGE_WRONG_RESPONSE = "CHALLENGE_WRONG_RESPONSE"
+    # The transaction the response names holds no challenge for this token: already consumed, belonging to another
+    # token, never issued - or expired and no longer stored (see CHALLENGE_EXPIRED).
+    CHALLENGE_UNKNOWN_TRANSACTION = "CHALLENGE_UNKNOWN_TRANSACTION"
+    # The challenge was still stored but had lapsed when the response arrived. Worth telling apart from a wrong
+    # response: the user answered correctly, only too late, which is a timeout to raise rather than an attack.
+    #
+    # Best-effort, since it depends on the lapsed challenge still being readable: the database backend keeps the row
+    # until a janitor removes it, while the Redis backend gives the key a TTL of the challenge validity plus a small
+    # buffer (``_TTL_BUFFER_SECONDS``), so an answer arriving well after the expiry finds nothing and is recorded as
+    # CHALLENGE_UNKNOWN_TRANSACTION instead.
+    CHALLENGE_EXPIRED = "CHALLENGE_EXPIRED"
+    # The response matched, but the token may not complete a challenge (its state changed since the trigger).
+    TOKEN_NOT_FIT_FOR_CHALLENGE = "TOKEN_NOT_FIT_FOR_CHALLENGE"
+    # The challenge was explicitly rejected on the device.
+    CHALLENGE_DECLINED_ON_DEVICE = "CHALLENGE_DECLINED_ON_DEVICE"
+
+    def __str__(self) -> str:
+        return self.value
+
+
+def order_request_reasons(reasons) -> list[AuthEventReason]:
+    """
+    Order the per-token reasons of one request into the list that goes in the entry's reason rows, in the order
+    :class:`AuthEventReason` declares them (token state, then authorization, then the credentials, then
+    challenge-response), with duplicates removed. A request rarely fails for one reason - a user with three tokens can
+    have one revoked, one past its failcount and one that simply got the wrong OTP - and every one of them is
+    recorded, so a filter on any of them finds the request. Which token failed for which reason stays in
+    ``other_info`` (see :data:`AUTH_EVENT_REASON_DETAIL_KEY`).
+
+    The order is the vocabulary's own, deliberately, and says nothing about which reason matters more: they are all
+    recorded and all filterable, so ranking them would be a judgement nobody needs made - and a second list to keep in
+    step with this enum, which a new member could be forgotten from. What the order does buy is determinism: the same
+    findings always read the same way, in the log and in the WebUI.
+
+    Values that are not a member are logged and dropped, so a caller that recorded a bare string on
+    ``token.auth_details`` degrades the classification rather than breaking the authentication (mirrors
+    :func:`reduce_request_events`). Accepting plain strings is what keeps that promise: converting them in the
+    *caller's* generator would raise ``ValueError`` past this guard and turn a mislabelled reason into a failed
+    authentication.
+
+    :param reasons: an iterable of :class:`AuthEventReason` members or of their values
+    :return: the known reasons, in vocabulary order and deduplicated; empty if *reasons* holds none
+    """
+    known: set[AuthEventReason] = set()
+    for reason in reasons:
+        try:
+            known.add(AuthEventReason(reason))
+        except ValueError:
+            log.debug(f"Ignoring authentication reason {reason!r}, which is not an AuthEventReason.")
+    return [reason for reason in AuthEventReason if reason in known]
+
+
+def build_reason_detail(reasons: dict | None = None, policies: list | None = None) -> dict | None:
+    """
+    Build the reason-detail dict recorded under :data:`REASON_DETAIL_INFO_KEY`, or ``None`` when there is nothing to
+    record.
+
+    The one place its structure is defined, so every layer that adds to it - the token layer with its per-serial
+    findings, a policy layer with the rules that decided - writes the same shape. The detail is *merged* on the way
+    into the row (see :meth:`ConditionalAccessContext.reclassify`), so each layer only passes its own half.
+
+    :param reasons: what each token was found to be, keyed by serial
+    :param policies: the names of the policies that decided the request
+    :return: the detail dict, or ``None`` if both parts are empty
+    """
+    detail = {}
+    if reasons:
+        detail["reasons"] = {serial: str(reason) for serial, reason in reasons.items()}
+    if policies:
+        detail["policies"] = policies
+    return detail or None
+
+
+class AuthEventOutcome(str, Enum):
+    """
+    Outcome class of an :class:`AuthEventType`: did the authentication ``SUCCESS`` (succeed), ``FAILURE`` (fail/get
+    denied), or is it ``PENDING`` (still in flight -- a challenge was sent/continued/approved out of band, or an
+    enrollment was triggered).
+
+    This is a domain classification, not a presentation/severity choice: it lets callers group events by result --
+    e.g. a conditional-access policy condition selecting all failed events, or the WebUI coloring a row -- without
+    enumerating each event type. ``str``/``Enum`` (not ``StrEnum``) for 3.10 compatibility, like :class:`AuthEventType`.
+    """
+    SUCCESS = "success"
+    FAILURE = "failure"
+    PENDING = "pending"
+
+    def __str__(self) -> str:
+        return self.value
+
+
+# Outcome of each event type. Every AuthEventType must be classified here; EventTypeOutcomeTestCase asserts
+# completeness so a new event type cannot be added without giving it an outcome.
+EVENT_TYPE_OUTCOME: dict[AuthEventType, AuthEventOutcome] = {
+    AuthEventType.LOGIN_SUCCESS: AuthEventOutcome.SUCCESS,
+    AuthEventType.CHALLENGE_TRIGGERED: AuthEventOutcome.PENDING,
+    AuthEventType.CHALLENGE_CONTINUED: AuthEventOutcome.PENDING,
+    AuthEventType.CHALLENGE_ANSWERED_OUT_OF_BAND: AuthEventOutcome.PENDING,
+    AuthEventType.ENROLLMENT_TRIGGERED: AuthEventOutcome.PENDING,
+    AuthEventType.NOT_AUTHORIZED: AuthEventOutcome.FAILURE,
+    AuthEventType.PASSWORD_FAIL: AuthEventOutcome.FAILURE,
+    AuthEventType.PIN_FAIL: AuthEventOutcome.FAILURE,
+    AuthEventType.TOKEN_ONLY_FAIL: AuthEventOutcome.FAILURE,
+    AuthEventType.MFA_FAIL: AuthEventOutcome.FAILURE,
+    AuthEventType.USER_UNKNOWN: AuthEventOutcome.FAILURE,
+    AuthEventType.NO_TOKEN: AuthEventOutcome.FAILURE,
+    AuthEventType.NO_USABLE_TOKEN: AuthEventOutcome.FAILURE,
+    AuthEventType.INVALID_TOKEN_TYPE: AuthEventOutcome.FAILURE,
+    AuthEventType.CHALLENGE_ANSWERED_FAIL: AuthEventOutcome.FAILURE,
+    AuthEventType.CHALLENGE_TRIGGER_FAIL: AuthEventOutcome.FAILURE,
+    AuthEventType.CHALLENGE_DECLINED: AuthEventOutcome.FAILURE,
+    AuthEventType.ENROLLMENT_CANCELED_FAIL: AuthEventOutcome.FAILURE,
+    AuthEventType.UNKNOWN_FAIL_REASON: AuthEventOutcome.FAILURE,
+    AuthEventType.USER_LOCKED: AuthEventOutcome.FAILURE,
+    AuthEventType.IP_BLOCKED: AuthEventOutcome.FAILURE,
+    AuthEventType.ACCESS_DENIED: AuthEventOutcome.FAILURE,
+}
+
+
+# The event types conditional access writes itself, when its pre-check rejects a request before any credential check.
+#
+# They are deliberately **not trackable** by a policy. Counting them would let a lock feed itself: a locked user's
+# rejected requests would keep the count at or above the threshold, so a timed LOCK_USER with
+# retrigger_above_threshold would refresh itself on every rejection and never expire. A successful login cannot clear
+# it either (since_last_success is unreachable for a locked user, so the count only ever grows), and a DENY policy
+# tracking ACCESS_DENIED would be judging its own prior denials. The legitimate use case - escalate to an IP block
+# after repeated attempts - is a second, higher-threshold stage on the underlying failure events.
+#
+# Excluding them from the vocabulary makes that structural rather than a warning: the policy-selection join in
+# evaluate_conditional_access_policies can then never match one.
+CA_ENFORCEMENT_EVENT_TYPES: frozenset[AuthEventType] = frozenset({
+    AuthEventType.USER_LOCKED,
+    AuthEventType.IP_BLOCKED,
+    AuthEventType.ACCESS_DENIED,
+})
+
+# The event types a conditional-access policy may count, i.e. everything an authentication attempt itself can produce.
+# This is what the policy CRUD validates against and what the policy editor offers; the authentication log's own
+# event-type endpoint still lists *all* types, because an admin must be able to filter for a rejection.
+TRACKABLE_EVENT_TYPES: list[AuthEventType] = [event_type for event_type in AuthEventType
+                                              if event_type not in CA_ENFORCEMENT_EVENT_TYPES]
+
+
+def outcome_of(event_type: AuthEventType) -> AuthEventOutcome:
+    """Return the :class:`AuthEventOutcome` of *event_type* (see :data:`EVENT_TYPE_OUTCOME`)."""
+    return EVENT_TYPE_OUTCOME[event_type]
+
+
+class CountMode(str, Enum):
+    """
+    How a conditional-access policy counts the tracked :class:`AuthEventType`\\ s against its stage thresholds. The
+    valid modes depend on the policy target (see ``_COUNT_MODES_BY_TARGET`` in the CRUD layer): both targets support the
+    volume modes; :attr:`DISTINCT_USERS` is additionally available for a ``source_ip`` target (and its default).
+
+    :attr:`PER_REQUEST` counts individual ``authentication_log`` rows. :attr:`PER_ATTEMPT` counts whole
+    authentication *attempts*: the rows sharing one ``attempt_id`` are collapsed into a single attempt, so a
+    multi-request challenge / multichallenge login counts once. Both are volume modes and track the same vocabulary
+    (:class:`AuthEventType` names); the mode only changes the unit that is counted. For a ``source_ip`` target they
+    give plain per-IP rate limiting (raw request / attempt volume from one IP).
+
+    :attr:`DISTINCT_USERS` counts the number of distinct accounts a subject targeted rather than the volume of events
+    -- the password-spraying / enumeration signal for a ``source_ip`` policy (one IP hitting many accounts). It is
+    specific to the ``source_ip`` target (there is no distinct-accounts notion for a single-user policy).
+
+    ``str``/``Enum`` (not ``StrEnum``) for Python 3.10, like :class:`AuthEventType`.
+    """
+    PER_REQUEST = "PER_REQUEST"
+    PER_ATTEMPT = "PER_ATTEMPT"
+    DISTINCT_USERS = "DISTINCT_USERS"
+
+    def __str__(self) -> str:
+        return self.value
+
+
+class RestrictionCause(str, Enum):
+    """
+    Who imposed a live conditional-access restriction: the engine acting on a policy (:attr:`POLICY`) or an
+    administrator by hand (:attr:`MANUAL`).
+
+    It is stored on the state row itself because a manual restriction has nowhere else to live. What a policy
+    did is recorded as a
+    :class:`~privacyidea.models.conditional_access_outcome.ConditionalAccessOutcome` hanging off the
+    ``authentication_log`` row of the request that triggered it - and a manual lock has no such request. The
+    cause is written together with the expiry, so it always describes the restriction now in force rather than
+    the first one ever written.
+
+    ``str``/``Enum`` (not ``StrEnum``) for Python 3.10, like :class:`AuthEventType`.
+    """
+    POLICY = "POLICY"
+    MANUAL = "MANUAL"
+
+    def __str__(self) -> str:
+        return self.value
+
+
+# Request-level precedence, highest signal first. Only the event types a token flow can produce appear here: the
+# CA_ENFORCEMENT_EVENT_TYPES classify a request the pre-check rejected before any token logic ran, so they never reach
+# reduce_request_events.
+REQUEST_EVENT_PRECEDENCE: list[AuthEventType] = [
+    AuthEventType.NOT_AUTHORIZED,
+    AuthEventType.ENROLLMENT_TRIGGERED,
+    AuthEventType.LOGIN_SUCCESS,
+    AuthEventType.CHALLENGE_ANSWERED_OUT_OF_BAND,
+    AuthEventType.CHALLENGE_CONTINUED,
+    AuthEventType.CHALLENGE_TRIGGERED,
+    AuthEventType.CHALLENGE_ANSWERED_FAIL,
+    AuthEventType.CHALLENGE_DECLINED,
+    AuthEventType.ENROLLMENT_CANCELED_FAIL,
+    AuthEventType.MFA_FAIL,
+    AuthEventType.TOKEN_ONLY_FAIL,
+    AuthEventType.PASSWORD_FAIL,
+    AuthEventType.PIN_FAIL,
+    AuthEventType.NO_USABLE_TOKEN,
+    AuthEventType.NO_TOKEN,
+    AuthEventType.USER_UNKNOWN,
+    # Ranked lowest of the real failures, above the UNKNOWN_FAIL_REASON fallback: both describe the *request* the
+    # endpoint refused rather than an outcome one of the request's tokens reached, so whenever a token did reach one it
+    # is the better classification. In practice neither reduces against anything - the endpoints that emit them
+    # classify a request with a single event - and they are listed here because every non-enforcement type must be.
+    AuthEventType.CHALLENGE_TRIGGER_FAIL,
+    AuthEventType.INVALID_TOKEN_TYPE,
+    AuthEventType.UNKNOWN_FAIL_REASON
+]
+
+# Precedence rank of each event.
+_EVENT_RANK: dict[AuthEventType, int] = {event: rank for rank, event in enumerate(REQUEST_EVENT_PRECEDENCE)}
+
+
+def reduce_request_events(events: list[AuthEventType]) -> AuthEventType | None:
+    """
+    Reduce the per-token outcomes of one authentication request to the single event that classifies the whole request,
+    by the fixed :data:`REQUEST_EVENT_PRECEDENCE`.
+
+    Events without a defined precedence (e.g. a new :class:`AuthEventType` member that was not added to
+    :data:`REQUEST_EVENT_PRECEDENCE`) are logged and ignored, so an oversight degrades the classification rather than
+    breaking the authentication.
+
+    :param events: an iterable of :class:`AuthEventType` members
+    :return: the highest-precedence known event, or ``None`` if *events* holds no known event
+    """
+    winner = None
+    winner_rank: int | None = None
+    for event in events:
+        rank = _EVENT_RANK.get(event)
+        if rank is None:
+            log.debug(
+                f"Ignoring authentication event {event!r} without a defined precedence in REQUEST_EVENT_PRECEDENCE.")
+            continue
+        if winner_rank is None or rank < winner_rank:
+            winner = event
+            winner_rank = rank
+    return winner

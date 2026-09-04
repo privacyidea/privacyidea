@@ -1,0 +1,32 @@
+@use "../info-list";
+
+// One outcome collapsed to its one visible line: the expand toggle and the policy that acted.
+.outcome-summary {
+  display: flex;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+// Reveals the rest of one outcome. Sized down to the line it sits on so a cell of outcomes stays as compact as the
+// other cells, and kept a real button (not a clickable icon) so it is reachable and operable by keyboard.
+.outcome-toggle {
+  flex: 0 0 auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--mat-sys-primary);
+  cursor: pointer;
+  line-height: 1;
+
+  .mat-icon {
+    width: 18px;
+    height: 18px;
+    font-size: 18px;
+  }
+}
+
+// The revealed fields of one outcome, indented past the expand toggle so they line up with the policy they explain
+// rather than with the icon.
+.outcome-details {
+  padding-left: 20px;
+}

@@ -12,6 +12,8 @@ from privacyidea.lib.realm import set_realm
 from privacyidea.lib.user import User
 from privacyidea.lib.auth import create_db_admin
 from privacyidea.lib.auditmodules.base import Audit
+from privacyidea.lib.conditional_access.request_context import reset_ca_context
+from privacyidea.lib.conditional_access.session import close_ca_session
 from privacyidea.lib.lifecycle import call_finalizers
 
 
@@ -185,6 +187,11 @@ class MyTestCase(unittest.TestCase):
             self.app.config[f"PI_REDIS_CACHE_{feature.upper()}"] = False
 
     def tearDown(self):
+        # Closes the conditional-access session, mirroring what a real request does at teardown: with one app
+        # context shared across a whole test class, an unclosed session would outlive its test and serve stale
+        # rows next time (SQLite reuses deleted rows' primary keys); staged events are cleared for the same reason.
+        close_ca_session()
+        reset_ca_context()
         # Rollback uncommitted changes to the DB and close the session to
         # avoid breaking following tests due to unfinished transactions
         try:

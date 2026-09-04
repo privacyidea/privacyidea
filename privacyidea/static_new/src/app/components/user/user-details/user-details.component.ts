@@ -55,6 +55,14 @@ import { UserDetailsEditComponent } from "@components/user/user-details-edit/use
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { AuditService, AuditServiceInterface } from "@services/audit/audit.service";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import {
+  ConditionalAccessStateService,
+  ConditionalAccessStateServiceInterface
+} from "@services/conditional-access-state/conditional-access-state.service";
+import {
+  AuthenticationLogService,
+  AuthenticationLogServiceInterface
+} from "@services/authentication-log/authentication-log.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
@@ -62,8 +70,10 @@ import { TokenDetails, TokenService, TokenServiceInterface } from "@services/tok
 import { EditUserData, UserService, UserServiceInterface } from "@services/user/user.service";
 import { filter, firstValueFrom } from "rxjs";
 import { UserDetailsContainerTableComponent } from "./user-details-container-table/user-details-container-table.component";
+import { UserDetailsLockDialogComponent } from "./user-details-lock-dialog/user-details-lock-dialog.component";
 import { UserDetailsPinDialogComponent } from "./user-details-pin-dialog/user-details-pin-dialog.component";
 import { UserDetailsTokenTableComponent } from "./user-details-token-table/user-details-token-table.component";
+import { formatLocalDateTime } from "@utils/date-format.utils";
 
 @Component({
   selector: "app-user-details",
@@ -102,6 +112,9 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
   protected readonly userService: UserServiceInterface = inject(UserService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   private readonly auditService: AuditServiceInterface = inject(AuditService);
+  private readonly authenticationLogService: AuthenticationLogServiceInterface = inject(AuthenticationLogService);
+  protected readonly conditionalAccessStateService: ConditionalAccessStateServiceInterface =
+    inject(ConditionalAccessStateService);
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   private router = inject(Router);
@@ -144,7 +157,8 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
     () =>
       this.canSetCustomAttribute() ||
       this.userService.userAttributesList().length > 0 ||
-      this.authService.actionAllowed("get_user_internal_attributes")
+      this.authService.actionAllowed("get_user_internal_attributes") ||
+      this.authService.actionAllowed("user_lock_read")
   );
   expandedKeys = signal<Set<string>>(new Set<string>());
   addKeyInput = signal<string>("");
@@ -196,6 +210,36 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
     const entries = this.detailsEntries();
     const half = Math.ceil(entries.length / 2);
     return [entries.slice(0, half), entries.slice(half)];
+  });
+  lockStatus = this.conditionalAccessStateService.userLockStatus;
+  isUserLocked = computed(() => this.lockStatus() !== null);
+  isPermanentLocked = computed(() => this.lockStatus()?.permanent ?? false);
+  lockStateClass = computed(() =>
+    this.isPermanentLocked() ? "highlight-false" : this.isUserLocked() ? "highlight-warning" : "highlight-true"
+  );
+  // Whether an administrator imposed the lock now in force rather than a conditional-access policy. Shown as
+  // a second line in the card so the four lockStatusText wordings stay about the lock itself.
+  lockCauseLabel = computed(() => {
+    const status = this.lockStatus();
+    if (!status) {
+      return "";
+    }
+    return status.lock_cause === "MANUAL"
+      ? $localize`Locked by an administrator`
+      : $localize`Locked by a conditional-access policy`;
+  });
+  lockStatusText = computed(() => {
+    const status = this.lockStatus();
+    if (!status) {
+      return $localize`Unlocked`;
+    }
+    if (status.permanent) {
+      return $localize`Locked permanently`;
+    }
+    if (status.lock_expires_at) {
+      return $localize`Locked until ${formatLocalDateTime(status.lock_expires_at)}`;
+    }
+    return $localize`Locked`;
   });
 
   ngOnInit(): void {
@@ -335,8 +379,89 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
       .then();
   }
 
-  showUserAuditLog() {
+  public showUserAuditLog() {
     this.auditService.setFilter(new FilterValue({ value: `user: ${this.userService.detailsUser().username}` }));
+  }
+
+  public showUserAuthenticationLog() {
+    const user = this.userService.detailsUser();
+    const authLogFilter = new FilterValue().addEntry("username", user.username).addEntry("realm", user.realm);
+    this.authenticationLogService.authenticationLogFilter.set(authLogFilter);
+  }
+
+  lockUser() {
+    const detailsUser = this.userService.detailsUser();
+    this.dialogService
+      .openDialog({
+        component: UserDetailsLockDialogComponent,
+        data: { username: detailsUser.username, realm: detailsUser.realm }
+      })
+      .afterClosed()
+      .subscribe({
+        next: (result) => {
+          if (!result) {
+            return;
+          }
+          this.conditionalAccessStateService
+            .setUserLock({
+              login: detailsUser.username,
+              realm: detailsUser.realm,
+              resolver: this.userData().resolver,
+              duration_seconds: result.durationSeconds ?? undefined
+            })
+            .subscribe({
+              next: (lock) => {
+                if (lock) {
+                  this.conditionalAccessStateService.userLockResource.reload();
+                }
+              }
+            });
+        }
+      });
+  }
+
+  resetUserLock() {
+    const lockStatus = this.lockStatus();
+    if (!lockStatus) {
+      return;
+    }
+    this.dialogService
+      .openDialog({
+        component: SimpleConfirmationDialogComponent,
+        data: {
+          title: $localize`Reset User Lock`,
+          items: [`${lockStatus.username}@${lockStatus.realm}`],
+          itemType: "user",
+          confirmAction: { label: $localize`Reset lock`, value: true, type: "confirm" }
+        }
+      })
+      .afterClosed()
+      .subscribe({
+        next: (result) => {
+          if (!result) {
+            return;
+          }
+          this.conditionalAccessStateService
+            .resetUserLock({
+              resolver: lockStatus.resolver,
+              uid: lockStatus.uid,
+              realm: lockStatus.realm
+            })
+            .subscribe({
+              next: (success) => {
+                if (success) {
+                  this.conditionalAccessStateService.userLockResource.reload();
+                  return;
+                }
+                // The request succeeded but removed nothing, because the lock was already gone or sits outside this
+                // admin's visibility scope; the service only reports transport errors, so without this the button would
+                // look like it did nothing.
+                this.notificationService.error($localize`No lock was reset for this user.`);
+                this.conditionalAccessStateService.userLockResource.reload();
+              }
+            });
+        }
+      });
   }
 
   editMode = signal(false);

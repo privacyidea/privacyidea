@@ -1,0 +1,169 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<div class="ca-stage-item">
+  <div class="ca-stage-header margin-left-8">
+    <span
+      class="ca-stage-number"
+      i18n
+      >Stage {{ stageNumber() }}</span
+    >
+    <div class="ca-stage-name">
+      @if (!stage().id || editingName()) {
+        <mat-form-field
+          appearance="fill"
+          subscriptSizing="dynamic"
+          class="ca-stage-name-field input-width-m margin-bottom-16">
+          <mat-label i18n>Stage name</mat-label>
+          <input
+            matInput
+            type="text"
+            maxlength="255"
+            [value]="stage().name ?? ''"
+            (input)="onNameInput($any($event.target).value)"
+            (keydown.enter)="stopEditingName()" />
+        </mat-form-field>
+        @if (stage().id) {
+          <button
+            mat-icon-button
+            class="ca-stage-name-action"
+            aria-label="Done editing name"
+            i18n-aria-label
+            (click)="stopEditingName()">
+            <mat-icon>check</mat-icon>
+          </button>
+        }
+      } @else {
+        @if (stage().name) {
+          <span class="ca-stage-title-name">{{ stage().name }}</span>
+        } @else {
+          <span
+            class="ca-stage-title-name ca-stage-title-name--empty"
+            i18n
+            >Unnamed stage</span
+          >
+        }
+        <button
+          mat-icon-button
+          class="ca-stage-name-action"
+          aria-label="Edit stage name"
+          i18n-aria-label
+          (click)="startEditingName()">
+          <mat-icon>edit</mat-icon>
+        </button>
+      }
+    </div>
+    <button
+      mat-icon-button
+      aria-label="Remove stage"
+      i18n-aria-label
+      (click)="onRemoveStage()">
+      <mat-icon>delete</mat-icon>
+    </button>
+  </div>
+  <p
+    class="ca-stage-hint"
+    i18n>
+    Runs the actions below once this many tracked events occur within the policy's time window.
+  </p>
+
+  <div class="ca-stage-fields margin-left-8">
+    <mat-form-field
+      appearance="fill"
+      subscriptSizing="dynamic"
+      class="input-width-m">
+      <mat-label i18n>Failure threshold</mat-label>
+      <input
+        matInput
+        type="number"
+        required
+        [appErrorState]="zeroThresholdInvalid()"
+        [min]="minThreshold()"
+        [value]="stage().failure_threshold"
+        (input)="onFailureThresholdInput($any($event.target).value)" />
+      @if (zeroThresholdInvalid()) {
+        <mat-error i18n> A threshold of 0 means "always" and needs a stage carrying only DENY. </mat-error>
+      } @else if (zeroThresholdAllowed()) {
+        <mat-hint i18n>Number of tracked events that trigger this stage. 0 means always, for this DENY rule.</mat-hint>
+      } @else {
+        <mat-hint i18n
+          >Number of tracked events that trigger this stage. At least 1, since it counts failures.</mat-hint
+        >
+      }
+    </mat-form-field>
+
+    <div class="ca-stage-error-message">
+      <div class="ca-stage-error-message-toggle padding-top-8">
+        <mat-checkbox
+          [checked]="hasCustomErrorMessage()"
+          (change)="toggleErrorMessage($event.checked)"
+          i18n>
+          Show specific error message
+        </mat-checkbox>
+        <app-info-hint
+          [text]="errorMessageHint"
+          ariaLabel="About the specific error message"
+          i18n-ariaLabel />
+      </div>
+
+      <div class="ca-stage-error-message-row">
+        <mat-form-field
+          appearance="fill"
+          subscriptSizing="dynamic"
+          class="input-width-xl">
+          <mat-label i18n>Error Message</mat-label>
+          <textarea
+            matInput
+            rows="1"
+            [attr.maxlength]="maxErrorMessageLength"
+            [disabled]="!hasCustomErrorMessage()"
+            [value]="stage().error_message ?? ''"
+            (input)="onErrorMessageInput($any($event.target).value)"></textarea>
+          <mat-hint>
+            <span i18n>{{ durationTag }} is replaced with the remaining time for temporary lock/block actions.</span>
+            @if (unknownTags().length) {
+              <span
+                class="ca-stage-message-warning"
+                i18n>
+                {{ unknownTags().join(", ") }} is an unknown tag and will be shown as written.
+              </span>
+            }
+            @if (durationTagUnusable()) {
+              <span class="ca-stage-message-warning">{{ durationTagUnusableHint }}</span>
+            }
+          </mat-hint>
+          <mat-hint align="end">{{ errorMessageLength() }}/{{ maxErrorMessageLength }}</mat-hint>
+        </mat-form-field>
+        <button
+          class="margin-top-8"
+          mat-icon-button
+          [disabled]="!canResetErrorMessage() || !hasCustomErrorMessage()"
+          [matTooltip]="resetErrorMessageLabel"
+          [attr.aria-label]="resetErrorMessageLabel"
+          (click)="resetErrorMessageToSuggestion()">
+          <mat-icon>refresh</mat-icon>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <app-conditional-access-actions-list
+    [actions]="stage().actions"
+    [target]="target()"
+    (actionsChange)="onActionsChange($event)" />
+</div>

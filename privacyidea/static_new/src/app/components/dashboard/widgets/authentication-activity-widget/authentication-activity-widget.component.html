@@ -1,0 +1,146 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+
+<app-widget-state [state]="state()">
+  <div class="ranges">
+    <app-info-hint
+      [text]="info"
+      ariaLabel="About this widget"
+      i18n-ariaLabel />
+    <mat-button-toggle-group
+      [hideSingleSelectionIndicator]="true"
+      [value]="selectedRange().hours"
+      (change)="selectRange($event.value)"
+      aria-label="Time range"
+      i18n-aria-label>
+      @for (range of ranges; track range.hours) {
+        <mat-button-toggle [value]="range.hours">{{ range.label }}</mat-button-toggle>
+      }
+    </mat-button-toggle-group>
+  </div>
+
+  <div class="chart">
+    @for (row of summary().rows; track row.outcome) {
+      <div class="chart-row">
+        <span class="chart-label">{{ row.label }}</span>
+        <span class="chart-value">
+          <span class="total">{{ row.total }}</span>
+          <span class="share">{{ shareLabel(row) }}</span>
+        </span>
+        <div class="plot">
+          <div
+            class="bars"
+            [class.bars-success]="row.outcome === 'success'"
+            [class.bars-failure]="row.outcome === 'failure'"
+            [class.bars-pending]="row.outcome === 'pending'"
+            aria-hidden="true">
+            @for (count of row.counts; track $index) {
+              <span
+                class="bar"
+                [style.height.%]="barHeight(count)"
+                [matTooltip]="binTooltip($index)"></span>
+            }
+          </div>
+          <!-- One tick per bin, laid out exactly like the bars above it, so a tick begins and ends where its bin
+               does. A repeating background could not stay aligned: the bars lose a pixel per gap. -->
+          <span
+            class="axis-line"
+            aria-hidden="true">
+            @for (count of row.counts; track $index) {
+              <span class="axis-tick"></span>
+            }
+          </span>
+        </div>
+      </div>
+    }
+    <!-- The chart's text alternative. The bars carry no text of their own and are hidden from assistive tech, so
+         without this a screen reader would get nothing but the row totals - the shape over time, which is the point
+         of the chart, would have no equivalent. Every bucket appears here with its time span and its count. -->
+    <div class="visually-hidden">
+      <table>
+        <caption i18n>
+          Attempts per time bucket
+        </caption>
+        <thead>
+          <tr>
+            <th
+              scope="col"
+              i18n>
+              Time
+            </th>
+            @for (row of summary().rows; track row.outcome) {
+              <th scope="col">{{ row.label }}</th>
+            }
+          </tr>
+        </thead>
+        <tbody>
+          <!-- The bin index is aliased: inside the inner loop $index would be the row's, not the bucket's. -->
+          @for (start of binStarts(); track $index; let bin = $index) {
+            <tr>
+              <th scope="row">{{ binTooltip(bin) }}</th>
+              @for (row of summary().rows; track row.outcome) {
+                <td>{{ row.counts[bin] }}</td>
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <div class="axis-row">
+      <span class="chart-label"></span>
+      <span class="chart-value"></span>
+      <span class="axis-labels">
+        <span>{{ windowStart() }}</span>
+        <span i18n>now</span>
+      </span>
+    </div>
+  </div>
+
+  <p
+    class="section-title"
+    i18n>
+    Failure Reasons
+  </p>
+  <table class="reasons-table">
+    <tbody>
+      @for (reason of summary().reasons; track reason.eventType) {
+        <tr>
+          <td>
+            <a
+              [routerLink]="routePaths.AUTHENTICATION_LOG"
+              (click)="showEventType(reason.eventType)">
+              {{ reason.eventType }}
+            </a>
+          </td>
+          <td>{{ reason.count }}</td>
+        </tr>
+      } @empty {
+        <tr>
+          <td
+            colspan="2"
+            class="empty">
+            <mat-icon class="empty-icon">check_circle</mat-icon>
+            <span i18n>No attempt failed in this range.</span>
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</app-widget-state>

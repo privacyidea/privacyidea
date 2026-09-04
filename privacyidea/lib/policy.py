@@ -249,6 +249,7 @@ class SCOPE:
     CONTAINER = "container"
     TOKEN = "token"
     HARDENING = "hardening"
+    CONDITIONAL_ACCESS = "conditional_access"
 
     @classmethod
     def get_all_scopes(cls) -> list[str]:
@@ -256,7 +257,7 @@ class SCOPE:
         Return all valid scopes as a list
         """
         valid_scopes = [cls.AUTHZ, cls.ADMIN, cls.AUTH, cls.AUDIT, cls.USER, cls.ENROLL, cls.WEBUI, cls.REGISTER,
-                        cls.CONTAINER, cls.TOKEN, cls.HARDENING]
+                        cls.CONTAINER, cls.TOKEN, cls.HARDENING, cls.CONDITIONAL_ACCESS]
         return valid_scopes
 
 
@@ -1984,6 +1985,42 @@ def get_static_policy_definitions(scope=None):
                                  "desc": _("Admin is allowed to view the Audit log."),
                                  "group": GROUP.SYSTEM,
                                  'mainmenu': [MAIN_MENU.AUDIT]},
+            PolicyAction.AUTHENTICATION_LOG_READ: {'type': 'bool',
+                                                   "desc": _("Admin is allowed to read the authentication log. If the "
+                                                             "policy is scoped to realms, resolvers or users, the "
+                                                             "admin only sees entries matching that scope."),
+                                                   "group": GROUP.SYSTEM},
+            PolicyAction.CONDITIONAL_ACCESS_POLICY_READ: {
+                'type': 'bool',
+                "desc": _("Admin is allowed to read the conditional-access policies."),
+                "group": GROUP.SYSTEM},
+            PolicyAction.CONDITIONAL_ACCESS_POLICY_WRITE: {
+                'type': 'bool',
+                "desc": _("Admin is allowed to create, edit and delete the conditional-access policies."),
+                "group": GROUP.SYSTEM},
+            PolicyAction.USER_LOCK_READ: {
+                'type': 'bool',
+                "desc": _("Admin is allowed to read the conditional-access user lock state: view a user's "
+                          "lock and list the locked users."),
+                "group": GROUP.SYSTEM},
+            PolicyAction.USER_LOCK_RESET: {
+                'type': 'bool',
+                "desc": _("Admin is allowed to reset (unlock) a conditional-access user lock."),
+                "group": GROUP.SYSTEM},
+            PolicyAction.USER_LOCK_SET: {
+                'type': 'bool',
+                "desc": _("Admin is allowed to lock a user manually, independently of the conditional-access "
+                          "policies."),
+                "group": GROUP.SYSTEM},
+            PolicyAction.BLOCKLIST_READ: {'type': 'bool',
+                                          "desc": _("Admin is allowed to read the blocklist."),
+                                          "group": GROUP.SYSTEM},
+            PolicyAction.BLOCKLIST_RESET: {'type': 'bool',
+                                           "desc": _("Admin is allowed to remove entries from the blocklist."),
+                                           "group": GROUP.SYSTEM},
+            PolicyAction.BLOCKLIST_SET: {'type': 'bool',
+                                         "desc": _("Admin is allowed to add an IP address to the blocklist manually."),
+                                         "group": GROUP.SYSTEM},
             PolicyAction.AUDIT_AGE: {'type': 'str',
                                      "desc": _("The admin will only see audit "
                                                "entries of the last 10d, 3m or 2y."),
@@ -2297,6 +2334,10 @@ def get_static_policy_definitions(scope=None):
                           " using the token serial number."),
                 'mainmenu': [MAIN_MENU.TOKENS],
                 'group': GROUP.TOKEN},
+            PolicyAction.AUTHENTICATION_LOG_READ: {
+                'type': 'bool',
+                'desc': _("The user is allowed to read their own entries from the authentication log."),
+                'group': GROUP.SYSTEM},
             PolicyAction.DISABLE: {'type': 'bool',
                                    'desc': _('The user is allowed to disable his own tokens.'),
                                    'mainmenu': [MAIN_MENU.TOKENS],
@@ -3225,6 +3266,18 @@ def get_static_policy_definitions(scope=None):
                           'the impact on your integrations. This policy is evaluated without '
                           'user/realm/resolver/time conditions (client IP and user agent matching still apply).'),
                 'group': GROUP.SYSTEM,
+            }
+        },
+        SCOPE.CONDITIONAL_ACCESS: {
+            PolicyAction.SHOW_DEFAULT_CA_ERROR_MESSAGE: {
+                'type': 'bool',
+                'desc': _('Tell the user why conditional access turned their request away, using the default '
+                          'wording for the action that did it. Without this, a rejection says only what a stage '
+                          'was given its own error message to say, and the generic "Authentication failed." '
+                          'where none was written. A stage\'s own error message always takes precedence over '
+                          'this. Note: this is independent of "hide_specific_error_message" (in the '
+                          'authentication scope), which never applies to conditional-access wording.'),
+                'group': GROUP.GENERAL,
             }
         }
 

@@ -486,6 +486,30 @@
         <span i18n="@@common.create">Create</span>
       </a>
     }
+    <a
+        [ngClass]="contentService.routeUrl() === ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS ? 'sub-nav-active' : ''"
+        [routerLink]="[ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS]">
+        <mat-icon>security</mat-icon>
+        <span i18n>Conditional Access</span>
+      </a>
+      @if (contentService.routeUrl().startsWith(ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS_DETAILS)) {
+        <a class="sub-nav-active">
+        <span class="icon-badge">
+          <mat-icon class="margin-right-5">security</mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-gear">settings</mat-icon>
+        </span>
+          <span i18n>Conditional Access Details</span>
+        </a>
+      }
+      @if (contentService.routeUrl() === ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS_NEW) {
+        <a class="sub-nav-active">
+          <span class="icon-badge">
+            <mat-icon class="margin-right-2">security</mat-icon>
+            <mat-icon class="icon-badge-overlay icon-badge-add">add</mat-icon>
+          </span>
+          <span i18n>New Conditional Access</span>
+        </a>
+      }
     @if (authService.actionAllowed("api_client_list")) {
       <a
         [ngClass]="contentService.routePath() === ROUTE_PATHS.POLICIES_API_CLIENTS ? 'sub-nav-active' : ''"
@@ -531,7 +555,7 @@
   </mat-toolbar>
 }
 
-@if (activeSection() === "audit") {
+@if (activeSection() === "logs") {
   <mat-toolbar
     class="secondary-toolbar"
     appOverflowNav>
@@ -544,12 +568,41 @@
         <span i18n="@@nav.log">Log</span>
       </a>
     }
+    @if (authService.actionAllowed("authentication_log_read")) {
+      <a
+        [ngClass]="contentService.routeUrl() === ROUTE_PATHS.AUTHENTICATION_LOG ? 'sub-nav-active' : ''"
+        [routerLink]="[ROUTE_PATHS.AUTHENTICATION_LOG]">
+        <mat-icon class="mdi--list-lock"></mat-icon>
+        <span i18n>Authentication Log</span>
+      </a>
+    }
     @if (authService.actionAllowed("clienttype")) {
       <a
         [ngClass]="contentService.onClients() ? 'sub-nav-active' : ''"
         [routerLink]="[ROUTE_PATHS.CLIENTS]">
         <mat-icon>recent_actors</mat-icon>
         <span i18n="@@common.knownClients">Known Clients</span>
+      </a>
+    }
+    @if (authService.actionAllowed("user_lock_read")) {
+      <a
+        [ngClass]="contentService.routeUrl() === ROUTE_PATHS.LOCKED_USERS ? 'sub-nav-active' : ''"
+        [routerLink]="[ROUTE_PATHS.LOCKED_USERS]">
+        <mat-icon>lock_person</mat-icon>
+        <span i18n>Locked Users</span>
+      </a>
+    }
+    @if (authService.actionAllowed("blocklist_read")) {
+      <a
+        [ngClass]="contentService.routeUrl() === ROUTE_PATHS.BLOCKLIST ? 'sub-nav-active' : ''"
+        [routerLink]="[ROUTE_PATHS.BLOCKLIST]">
+        <span class="icon-block-ip">
+          <span
+            class="icon-block-ip-text"
+            aria-hidden="true">IP</span>
+          <mat-icon>block</mat-icon>
+        </span>
+        <span i18n>IP Blocklist</span>
       </a>
     }
     <ng-container *ngTemplateOutlet="supportDocs"></ng-container>

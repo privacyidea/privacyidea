@@ -1,0 +1,41 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+
+<ul class="info-list">
+  @for (entry of entries(); track entry.key) {
+    <li class="info-group">
+      @if (entry.children) {
+        <span class="info-key">{{ entry.key }}</span>
+        <ul class="info-list info-sublist">
+          <!-- Tracked by position: an element of a list has no key, so keys are not unique here. -->
+          @for (child of entry.children; track $index) {
+            <li>
+              @if (child.key) {
+                <span class="info-key">{{ child.key }}:</span>
+              }
+              {{ child.value }}
+            </li>
+          }
+        </ul>
+      } @else {
+        <span class="info-key">{{ entry.key }}:</span> {{ entry.value }}
+      }
+    </li>
+  }
+</ul>
