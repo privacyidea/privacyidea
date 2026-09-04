@@ -26,6 +26,7 @@ import { MatInput } from "@angular/material/input";
 import { MatOption, MatSelect } from "@angular/material/select";
 import { ErrorStateDirective } from "@components/shared/directives/error-state.directive";
 import { ActionOptionDetails, EventService } from "@services/event/event.service";
+import { valueDisplayLabel } from "@utils/value-label.utils";
 
 /**
  * Value type for a single action option. The eventhandler backend supports
@@ -88,6 +89,16 @@ export class EventActionTabComponent {
       return this.eventService.moduleActions()[this.action()] || {};
     }
     return {};
+  });
+
+  optionValueOptions = computed<Record<string, { value: string; label: string }[]>>(() => {
+    const optionMap: Record<string, { value: string; label: string }[]> = {};
+    for (const [name, definition] of Object.entries(this.actionOptions())) {
+      const values = definition.value;
+      if (!values) continue;
+      optionMap[name] = values.map((value) => ({ value, label: valueDisplayLabel(value, values) }));
+    }
+    return optionMap;
   });
 
   optionsAreValid = computed(() => {

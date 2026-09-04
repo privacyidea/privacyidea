@@ -35,6 +35,7 @@
               i18n-placeholder="@@policy.selectOptions"
               placeholder="Select options..."
               [items]="actionValues"
+              [itemLabel]="valueLabelOf"
               [selectedItems]="selectedItems()"
               (selectionChange)="handleUpdateAction($event)">
             </app-multi-select-only>
@@ -44,6 +45,7 @@
             <app-selector-buttons
               class="flex-1"
               [values]="actionValues"
+              [labels]="valueLabels()"
               [initialValue]="action().value"
               (selected)="handleUpdateAction($event)" />
           } @else {
@@ -54,8 +56,8 @@
               <mat-select
                 [value]="isNumber(action().value) ? +action().value : action().value"
                 (selectionChange)="handleUpdateAction($event.value)">
-                @for (option of actionValues; track option) {
-                  <mat-option [value]="option">{{ option }}</mat-option>
+                @for (option of valueOptions(); track option.value) {
+                  <mat-option [value]="option.value">{{ option.label }}</mat-option>
                 }
               </mat-select>
             </mat-form-field>

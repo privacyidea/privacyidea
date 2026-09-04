@@ -20,6 +20,7 @@
 import { Component, computed, inject, input } from "@angular/core";
 import { HighlightPipe } from "@components/shared/pipes/highlight.pipe";
 import { PolicyService, PolicyServiceInterface } from "@services/policies/policies.service";
+import { POLICY_VOCABULARY_ACTIONS, valueDisplayLabel } from "@utils/value-label.utils";
 
 @Component({
   selector: "app-view-action-column",
@@ -47,21 +48,28 @@ export class ViewActionColumnComponent {
    * preserved within both the matched and the unmatched group.
    */
   readonly actionsList = computed(() => {
-    const list = Object.entries(this.actions()).map(([name, value]) => ({
-      name,
-      value,
-      isBoolean: this.policyService.getDetailsOfAction(name, this.scope())?.type === "bool"
-    }));
+    const list = Object.entries(this.actions()).map(([name, value]) => {
+      const detail = this.policyService.getDetailsOfAction(name, this.scope());
+      return {
+        name,
+        value,
+        displayValue: valueDisplayLabel(value, detail?.value, { vocabulary: POLICY_VOCABULARY_ACTIONS.has(name) }),
+        isBoolean: detail?.type === "bool"
+      };
+    });
 
     const terms = this.highlightTerms()
       .map((term) => term.toLowerCase())
       .filter((term) => term.length > 0);
     if (terms.length === 0) return list;
 
-    // Match only the text that is actually rendered: the name always, the value only when shown.
+    // Match the name always and the value only when shown, against both the raw value and the
+    // display label it may be mapped to (e.g. "1" shown as "On").
     const matchesTerm = (entry: (typeof list)[number]): boolean => {
       if (terms.some((term) => entry.name.toLowerCase().includes(term))) return true;
-      return !entry.isBoolean && terms.some((term) => String(entry.value).toLowerCase().includes(term));
+      if (entry.isBoolean) return false;
+      const haystack = [String(entry.value).toLowerCase(), entry.displayValue.toLowerCase()];
+      return terms.some((term) => haystack.some((text) => text.includes(term)));
     };
 
     const matched: typeof list = [];

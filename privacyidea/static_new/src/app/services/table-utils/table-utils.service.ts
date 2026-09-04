@@ -21,15 +21,26 @@ import { Sort } from "@angular/material/sort";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContainerDetailToken } from "@services/container/container.service";
-import { TokenService, TokenServiceInterface } from "@services/token/token.service";
+import {
+  cellDisplayText,
+  cellTooltip,
+  childClassForColumnKey,
+  classForColumnKey,
+  divClassForKey,
+  isLinkColumn,
+  sortIcon,
+  spanClassForKey,
+  spanClassForState,
+  TableCellValue,
+  TableRow,
+  tdClassForKey
+} from "@utils/table-cell.utils";
+import { containerStateLabel } from "@utils/value-label.utils";
 
 export interface FilterPair {
   key: string;
   value: string;
 }
-
-export type TableRow = Record<string, unknown>;
-export type TableCellValue = string | number | boolean | null | undefined;
 
 export type ColumnKey =
   | "select"
@@ -110,8 +121,6 @@ export interface TableUtilsServiceInterface {
 
   getChildClassForColumnKey(columnKey: string): string;
 
-  getDisplayTextForKeyAndRevoked(key: string, value: TableCellValue, revoked: boolean): string;
-
   getTdClassForKey(key: string): string[];
 
   getSpanClassForState(state: string, clickable: boolean): string;
@@ -132,7 +141,6 @@ export interface TableUtilsServiceInterface {
 @Injectable()
 export class TableUtilsService implements TableUtilsServiceInterface {
   private readonly authService: AuthServiceInterface = inject(AuthService);
-  private readonly tokenService: TokenServiceInterface = inject(TokenService);
   pageSizeOptions = signal([5, 10, 25, 50]);
 
   // A keyword such as "machineid & resolver" is a label for two keys that are filtered together.
@@ -147,13 +155,7 @@ export class TableUtilsService implements TableUtilsServiceInterface {
   }
 
   isLink(columnKey: string): boolean {
-    return (
-      columnKey === "container_serial" //||
-      //columnKey === 'username' ||
-      //columnKey === 'user_realm' ||
-      //columnKey === 'users' ||
-      //columnKey === 'realms'
-    );
+    return isLinkColumn(columnKey);
   }
 
   getClassForColumn(columnKey: string, element: TableRow): string {
@@ -191,159 +193,39 @@ export class TableUtilsService implements TableUtilsServiceInterface {
   }
 
   getTooltipForColumn(columnKey: string, element: TableRow): string {
-    if (element["locked"]) return "Locked";
-    if (element["revoked"]) return "Revoked";
-
-    switch (columnKey) {
-      case "active":
-        if (element["active"] === "") return "";
-        return element["active"] ? "Deactivate Token" : "Activate Token";
-
-      case "failcount":
-        return element["failcount"] ? "Reset Fail Counter" : "";
-    }
-    return "";
+    return cellTooltip(columnKey, element);
   }
 
   getDisplayText(columnKey: string, element: TableRow): string {
-    switch (columnKey) {
-      case "active":
-        if (element["active"] === "") return "";
-        if (element["revoked"]) return "revoked";
-        if (element["locked"]) return "locked";
-        if (element["active"]) return "active";
-        if (element["active"] === false) return "deactivated";
-        break;
-    }
-    const cell = element[columnKey];
-    return cell == null ? "" : String(cell);
+    return cellDisplayText(columnKey, element);
   }
 
   getSpanClassForKey(args: { key: string; value?: TableCellValue; maxfail?: number }): string {
-    const { key, value, maxfail } = args;
-    if (key === "success") {
-      if (value === "" || value === null || value === undefined) {
-        return "";
-      }
-      if (value) return "highlight-true";
-      return "highlight-false";
-    }
-    if (key === "description") {
-      return "details-table-item details-description";
-    }
-    if (key === "active") {
-      if (value === "") {
-        return "";
-      }
-      return value === true ? "highlight-true" : "highlight-false";
-    }
-    if (key === "authentication" && typeof value === "string") {
-      if (value.toLowerCase() === "accept") {
-        return "highlight-true";
-      } else if (value.toLowerCase() === "challenge") {
-        return "highlight-warning";
-      } else if (value.toLowerCase() === "reject") {
-        return "highlight-false";
-      }
-    }
-    if (key === "failcount") {
-      if (value === "") {
-        return "";
-      } else if (value === 0) {
-        return "highlight-true";
-      } else if (typeof value === "number" && value >= 1 && maxfail !== undefined && value < maxfail) {
-        return "highlight-warning";
-      } else {
-        return "highlight-false";
-      }
-    }
-    return "details-table-item";
+    return spanClassForKey(args);
   }
 
   getDivClassForKey(key: string) {
-    if (key === "description") {
-      return "details-scrollable-container";
-    } else if (key === "maxfail" || key === "count_window" || key === "sync_window") {
-      return "details-value";
-    }
-
-    return "";
+    return divClassForKey(key);
   }
 
   getClassForColumnKey(columnKey: string): string {
-    switch (columnKey) {
-      case "failcount":
-      case "active":
-      case "revoke":
-      case "maxfail":
-      case "delete":
-        return "flex-center";
-      case "realms":
-      case "description":
-        return "table-scroll-container";
-      default:
-        return "flex-center-vertical";
-    }
+    return classForColumnKey(columnKey);
   }
 
   getChildClassForColumnKey(columnKey: string): string {
-    if (this.getClassForColumnKey(columnKey).includes("table-scroll-container")) {
-      return "scroll-item";
-    }
-    return "";
-  }
-
-  getDisplayTextForKeyAndRevoked(key: string, value: TableCellValue, revoked: boolean): string {
-    if (value === "") {
-      return "";
-    }
-    if (key === "active") {
-      return revoked ? "revoked" : value ? "active" : "deactivated";
-    }
-    return value == null ? "" : String(value);
+    return childClassForColumnKey(columnKey);
   }
 
   getTdClassForKey(key: string) {
-    const classes = ["width-241"];
-    if (key === "description") {
-      classes.push("height-127");
-    } else if (["realms", "tokengroup"].includes(key)) {
-      classes.push("height-78");
-    } else {
-      classes.push("height-53");
-    }
-    return classes;
+    return tdClassForKey(key);
   }
 
   getSpanClassForState(state: string, clickable: boolean): string {
-    switch (clickable) {
-      case false:
-        if (state === "active") {
-          return "highlight-true";
-        } else if (state === "disabled" || state === "damaged" || state === "lost") {
-          return "highlight-false";
-        } else {
-          return "";
-        }
-      case true:
-        if (state === "active") {
-          return "highlight-true-clickable";
-        } else if (state === "disabled" || state === "damaged" || state === "lost") {
-          return "highlight-false-clickable";
-        } else {
-          return "";
-        }
-    }
+    return spanClassForState(state, clickable);
   }
 
   getDisplayTextForState(state: string) {
-    if (state === "active") {
-      return "active";
-    } else if (state === "disabled") {
-      return "deactivated";
-    } else {
-      return state;
-    }
+    return containerStateLabel(state);
   }
 
   pickColumns<const K extends readonly ColumnKey[]>(...keys: K) {
@@ -359,10 +241,7 @@ export class TableUtilsService implements TableUtilsServiceInterface {
   }
 
   getSortIcon(columnKey: string, sort: Sort): string {
-    if (sort.active !== columnKey || !sort.direction) {
-      return "unfold_more";
-    }
-    return sort.direction === "asc" ? "keyboard_arrow_upward" : "keyboard_arrow_downward";
+    return sortIcon(columnKey, sort);
   }
 
   onSortButtonClick(

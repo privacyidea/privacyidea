@@ -20,6 +20,7 @@
 import { ElementRef, OutputEmitterRef, QueryList } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MatSelect } from "@angular/material/select";
+import { By } from "@angular/platform-browser";
 
 import { EventService } from "@services/event/event.service";
 import { MockEventService } from "@testing/mock-services/mock-event-service";
@@ -121,6 +122,65 @@ describe("EventConditionListComponent", () => {
       condC: ["1", "2", "3"],
       condD: ["option1", "option2"]
     });
+  });
+
+  it("should label condition values with yes/no and keep the raw values of result conditions", () => {
+    const eventService = TestBed.inject(EventService) as unknown as MockEventService;
+    eventService.moduleConditions.set({
+      otppin: { type: "str", desc: "descPin", value: ["0", "1"] },
+      token_locked: { type: "str", desc: "descLocked", value: ["True", "False"] },
+      result_value: { type: "str", desc: "descResult", value: ["True", "False"] },
+      tokentype: { type: "multi", desc: "descTypes", value: [{ name: "hotp" }, { name: "totp" }] }
+    });
+    fixture.componentRef.setInput("conditions", {});
+    fixture.detectChanges();
+
+    expect(component.conditionValueOptions()).toEqual({
+      otppin: [
+        { value: "0", label: "No" },
+        { value: "1", label: "Yes" }
+      ],
+      token_locked: [
+        { value: "True", label: "Yes" },
+        { value: "False", label: "No" }
+      ],
+      result_value: [
+        { value: "True", label: "True" },
+        { value: "False", label: "False" }
+      ],
+      tokentype: [
+        { value: "hotp", label: "HOTP" },
+        { value: "totp", label: "TOTP" }
+      ]
+    });
+  });
+
+  it("should emit the raw condition value when a labelled option is picked", () => {
+    const eventService = TestBed.inject(EventService) as unknown as MockEventService;
+    eventService.moduleConditions.set({
+      token_locked: { type: "str", desc: "descLocked", value: ["True", "False"] }
+    });
+    fixture.componentRef.setInput("conditions", { token_locked: "" });
+    fixture.componentRef.setInput("emitOnConditionValueChange", true);
+    const emitted: ConditionEvent[] = [];
+    component.newConditionValue.subscribe((event) => emitted.push(event));
+    fixture.detectChanges();
+
+    const select = fixture.debugElement.query(By.directive(MatSelect));
+    select.componentInstance.open();
+    fixture.detectChanges();
+
+    const options = fixture.debugElement.queryAll(By.css("mat-option"));
+    expect(options.map((option) => [option.componentInstance.value, option.nativeElement.textContent.trim()])).toEqual([
+      ["True", "Yes"],
+      ["False", "No"]
+    ]);
+
+    options[0].nativeElement.click();
+    fixture.detectChanges();
+
+    expect(emitted).toEqual([{ conditionName: "token_locked", conditionValue: "True" }]);
+    expect(component.editConditions()["token_locked"]).toBe("True");
   });
 
   it("clearConditionValue should reset the value and emit when emitOnConditionValueChange is true", () => {
