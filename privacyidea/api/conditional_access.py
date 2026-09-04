@@ -33,6 +33,7 @@ import logging
 from flask import Blueprint, request, g
 
 from privacyidea.api.auth import admin_required
+from privacyidea.api.authentication_log import get_authentication_log_visibility_scopes
 from privacyidea.api.lib.prepolicy import prepolicy, check_base_action
 from privacyidea.api.lib.utils import send_result, to_list_param
 from privacyidea.lib.conditional_access.authentication_event_types import TRACKABLE_EVENT_TYPES
@@ -45,6 +46,8 @@ from privacyidea.lib.conditional_access.policy import (list_conditional_access_p
                                                                reorder_conditional_access_policies,
                                                                get_target_constraints,
                                                                get_default_error_messages)
+from privacyidea.lib.conditional_access.authentication_log import (DEFAULT_STATISTICS_BINS,
+                                                                   get_conditional_access_outcome_statistics)
 from privacyidea.lib.conditional_access.conditions import get_condition_types
 from privacyidea.lib.conditional_access.policy_template import list_conditional_access_policy_templates
 from privacyidea.lib.conditional_access.state import (list_locked_users_paginate, DEFAULT_PAGE_SIZE,
@@ -55,7 +58,7 @@ from privacyidea.lib.conditional_access.state import (list_locked_users_paginate
                                                               remove_blocklist_entry)
 from privacyidea.lib.error import ParameterError, PolicyError
 from privacyidea.lib.log import log_with
-from privacyidea.lib.params import get_optional, get_required, get_required_one_of
+from privacyidea.lib.params import get_optional, get_required, get_required_one_of, get_required_timestamp
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policies.helper import get_policy_visibility_scopes
 from privacyidea.lib.user import User
@@ -165,6 +168,59 @@ def list_action_types():
     action_types = [action.value for action in ConditionalAccessAction]
     g.audit_object.log({"success": True, "info": f"{len(action_types)} action types"})
     return send_result(action_types)
+
+
+@conditional_access_blueprint.route('outcomes/statistics', methods=['GET'])
+@prepolicy(check_base_action, request, PolicyAction.AUTHENTICATION_LOG_READ)
+@log_with(log)
+def get_outcome_statistics():
+    """
+    Return the history of what conditional access **did** over a time window: counts of recorded outcomes, grouped by
+    action type and bucketed over the window.
+
+    This is what answers "when were users locked and IPs blocked". ``user_lock_state`` and ``block_list`` hold the
+    restriction currently in force and forget it once it lapses; the outcome history keeps a row per action the engine
+    executed, so a lock that has since expired, been reset or been purged is still counted.
+
+    Requires the policy action :ref:`policy_authentication_log_read` -- the same right the log listing needs, which
+    already hands out these outcomes alongside the entries they belong to -- and is restricted to the same entries
+    that listing shows the caller, so an admin scoped to a realm counts only that realm's locks.
+
+    An outcome is **not** an authentication event type. :attr:`AuthEventType.USER_LOCKED` is a request *turned away*
+    by a lock already in force, so :http:get:`/authenticationlog/statistics` filtered to it counts retries against one
+    lock; the lock itself is a ``LOCK_USER`` outcome, which is what this counts. Counting is per outcome, so a request
+    that locked the user and blocked the source IP contributes one to each of the two series.
+
+    :query start_time: start of the window, an ISO 8601 timestamp (required).
+    :query end_time: end of the window, an ISO 8601 timestamp (required). Both ends are inclusive.
+    :query bins: how many equal-width buckets to split the window into, between 1 and 100 (default 48), rejected with
+        a 400 naming the limit rather than quietly reduced -- as on the log's own summary.
+    :query action_types: only outcomes of these ``ConditionalAccessAction`` values (e.g.
+        ``LOCK_USER,PERMANENT_LOCK_USER``). Takes a comma-separated list and a ``*`` wildcard like the other filters,
+        so ``action_types=*`` means "everything conditional access did".
+    :query policy_names: only outcomes recorded for these conditional-access policy names.
+    :query dry_run: ``false`` for only enforced outcomes, ``true`` for only the dry-run rows recording what *would*
+        have happened; omit it for both -- note that both together count restrictions that never existed.
+    :query case_insensitive: if set, plain (non-wildcard) filter values match case-insensitively.
+    :status 200: ``result.value`` holds ``window`` (``start_time``, ``end_time``, ``total``), ``bins`` (``count`` and
+        the ``starts`` of each bucket) and ``outcomes``, one entry per action type present in the window with its
+        ``action_type``, per-bucket ``counts`` and window ``total``, most frequent first.
+    """
+    params = request.all_data
+    dry_run = get_optional(params, "dry_run")
+
+    result = get_conditional_access_outcome_statistics(
+        start_time=get_required_timestamp(params, "start_time"),
+        end_time=get_required_timestamp(params, "end_time"),
+        bins=_int_param(get_optional(params, "bins"), default=DEFAULT_STATISTICS_BINS),
+        action_types=to_list_param(get_optional(params, "action_types")),
+        policy_names=to_list_param(get_optional(params, "policy_names")),
+        dry_run=None if dry_run is None else is_true(dry_run),
+        visibility_scopes=get_authentication_log_visibility_scopes(),
+        case_insensitive=is_true(get_optional(params, "case_insensitive")))
+
+    g.audit_object.log({"success": True})
+    return send_result(result.to_dict())
 
 
 @conditional_access_blueprint.route('defaulterrormessages', methods=['GET'])

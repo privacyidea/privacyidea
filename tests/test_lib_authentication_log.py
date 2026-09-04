@@ -33,13 +33,14 @@ from privacyidea.lib.conditional_access.authentication_log import (
     get_authentication_log_event,
     MAX_STATISTICS_BINS,
     get_authentication_log_statistics,
+    get_conditional_access_outcome_statistics,
     get_authentication_logs,
     get_authentication_logs_paginate,
     log_authentication_event,
     update_authentication_events,
     write_authentication_events,
 )
-from privacyidea.lib.conditional_access.engine import count_user_attempts, count_user_events
+from privacyidea.lib.conditional_access.engine import ConditionalAccessAction, count_user_attempts, count_user_events
 from privacyidea.lib.conditional_access.outcome_log import get_outcomes, record_outcomes
 from privacyidea.lib.conditional_access.session import get_ca_session
 from privacyidea.lib.error import ParameterError
@@ -1268,3 +1269,160 @@ class AuthenticationLogStatisticsTestCase(MyTestCase):
 
         self.assertDictEqual({str(AuthEventType.PIN_FAIL): 1, str(AuthEventType.MFA_FAIL): 2},
                              self._totals(self._statistics()))
+
+
+class ConditionalAccessOutcomeStatisticsTestCase(MyTestCase):
+    """
+    The history of what conditional access did: that a lock is counted once where it was imposed rather than once per
+    request it later turned away, and the filtering and bucketing around that.
+    """
+
+    window_start = datetime(2026, 3, 1, 0, 0, 0)
+    window_end = window_start + timedelta(hours=24)
+
+    def tearDown(self):
+        db.session.query(ConditionalAccessOutcome).delete()
+        db.session.query(AuthenticationLog).delete()
+        db.session.commit()
+        super().tearDown()
+
+    def _entry(self, event_type=AuthEventType.MFA_FAIL, at=None, actions=(), dry_run=False, **kwargs):
+        """Write one entry at a fixed timestamp, with one conditional-access outcome per action in *actions*."""
+        kwargs.setdefault("resolver", "res1")
+        kwargs.setdefault("uid", "u1")
+        kwargs.setdefault("realm", "r1")
+        event_id = log_authentication_event(event_type=event_type, **kwargs)
+        if actions:
+            record_outcomes([ConditionalAccessOutcome(action_type=str(action), policy_name="p", threshold=3,
+                                                      event_count=3, dry_run=dry_run) for action in actions],
+                            event_id)
+        session = get_ca_session()
+        session.get(AuthenticationLog, event_id).timestamp = at or (self.window_start + timedelta(hours=1))
+        session.commit()
+        return event_id
+
+    def _statistics(self, **kwargs):
+        kwargs.setdefault("start_time", self.window_start)
+        kwargs.setdefault("end_time", self.window_end)
+        kwargs.setdefault("bins", 4)
+        return get_conditional_access_outcome_statistics(**kwargs)
+
+    def _totals(self, statistics):
+        return {series.action_type: series.total for series in statistics.outcomes}
+
+    def test_counts_the_lock_and_not_the_requests_it_turns_away(self):
+        # The whole point of reading the outcomes rather than the event types: USER_LOCKED is a request the lock
+        # rejected, so counting those would count retries against one lock instead of the lock itself.
+        self._entry(actions=[ConditionalAccessAction.LOCK_USER])
+        for _ in range(5):
+            self._entry(event_type=AuthEventType.USER_LOCKED)
+
+        self.assertDictEqual({str(ConditionalAccessAction.LOCK_USER): 1}, self._totals(self._statistics()))
+
+    def test_a_request_that_locked_and_blocked_counts_in_both_series(self):
+        # One row per outcome, unlike the listing's EXISTS: this request imposed two restrictions, and each series
+        # answers for its own.
+        self._entry(actions=[ConditionalAccessAction.LOCK_USER, ConditionalAccessAction.BLOCK_IP])
+
+        self.assertDictEqual({str(ConditionalAccessAction.LOCK_USER): 1, str(ConditionalAccessAction.BLOCK_IP): 1},
+                             self._totals(self._statistics()))
+
+    def test_buckets_by_the_timestamp_of_the_request(self):
+        # An outcome carries no timestamp of its own; the parent's is what it happened at.
+        self._entry(at=self.window_start + timedelta(hours=1), actions=[ConditionalAccessAction.LOCK_USER])
+        self._entry(at=self.window_start + timedelta(hours=13), actions=[ConditionalAccessAction.LOCK_USER])
+        self._entry(at=self.window_start + timedelta(hours=14), actions=[ConditionalAccessAction.LOCK_USER])
+
+        series = self._statistics().outcomes[0]
+        self.assertListEqual([1, 0, 2, 0], series.counts)
+        self.assertEqual(3, series.total)
+
+    def test_the_last_bucket_closes_inclusively(self):
+        self._entry(at=self.window_end, actions=[ConditionalAccessAction.LOCK_USER])
+
+        self.assertListEqual([0, 0, 0, 1], self._statistics().outcomes[0].counts)
+
+    def test_outcomes_outside_the_window_are_ignored(self):
+        self._entry(at=self.window_start - timedelta(minutes=1), actions=[ConditionalAccessAction.LOCK_USER])
+        self._entry(at=self.window_end + timedelta(minutes=1), actions=[ConditionalAccessAction.LOCK_USER])
+
+        self.assertListEqual([], self._statistics().outcomes)
+
+    def test_filters_by_action_type(self):
+        self._entry(actions=[ConditionalAccessAction.LOCK_USER, ConditionalAccessAction.EMAIL_ADMIN])
+
+        totals = self._totals(self._statistics(action_types=[str(ConditionalAccessAction.LOCK_USER)]))
+        self.assertDictEqual({str(ConditionalAccessAction.LOCK_USER): 1}, totals)
+
+    def test_a_wildcard_action_type_counts_everything_conditional_access_did(self):
+        self._entry(actions=[ConditionalAccessAction.LOCK_USER, ConditionalAccessAction.EMAIL_ADMIN])
+
+        self.assertEqual(2, self._statistics(action_types="*").total)
+
+    def test_dry_runs_are_separable_from_what_actually_happened(self):
+        self._entry(actions=[ConditionalAccessAction.LOCK_USER])
+        self._entry(actions=[ConditionalAccessAction.LOCK_USER], dry_run=True)
+
+        # Both by default, which counts restrictions that never existed - so a caller charting locks asks for
+        # enforced ones.
+        self.assertEqual(2, self._statistics().total)
+        self.assertEqual(1, self._statistics(dry_run=False).total)
+        self.assertEqual(1, self._statistics(dry_run=True).total)
+
+    def test_filters_by_policy_name(self):
+        self._entry(actions=[ConditionalAccessAction.LOCK_USER])
+        event_id = log_authentication_event(event_type=AuthEventType.MFA_FAIL, resolver="res1", uid="u1", realm="r1")
+        record_outcomes([ConditionalAccessOutcome(action_type=str(ConditionalAccessAction.LOCK_USER),
+                                                  policy_name="Other", threshold=3, event_count=3)], event_id)
+        session = get_ca_session()
+        session.get(AuthenticationLog, event_id).timestamp = self.window_start + timedelta(hours=1)
+        session.commit()
+
+        self.assertEqual(1, self._statistics(policy_names=["Other"]).total)
+
+    def test_a_visibility_scope_restricts_the_counts(self):
+        # The scope applies to the request, an outcome carrying no subject of its own; without it a realm-scoped
+        # admin would count every realm's locks.
+        self._entry(actions=[ConditionalAccessAction.LOCK_USER], realm="r1")
+        self._entry(actions=[ConditionalAccessAction.LOCK_USER], realm="other")
+
+        scopes = [AuthenticationLogVisibilityScope(realms=["r1"], resolvers=[], usernames=[])]
+        self.assertEqual(1, self._statistics(visibility_scopes=scopes).total)
+
+    def test_an_action_nothing_triggered_has_no_series(self):
+        self._entry(actions=[ConditionalAccessAction.LOCK_USER])
+
+        self.assertListEqual([str(ConditionalAccessAction.LOCK_USER)],
+                             [series.action_type for series in self._statistics().outcomes])
+
+    def test_series_are_ordered_by_descending_total(self):
+        self._entry(actions=[ConditionalAccessAction.BLOCK_IP])
+        self._entry(actions=[ConditionalAccessAction.LOCK_USER])
+        self._entry(actions=[ConditionalAccessAction.LOCK_USER])
+
+        self.assertListEqual([str(ConditionalAccessAction.LOCK_USER), str(ConditionalAccessAction.BLOCK_IP)],
+                             [series.action_type for series in self._statistics().outcomes])
+
+    def test_rejects_an_empty_window(self):
+        self.assertRaises(ParameterError, self._statistics, end_time=self.window_start)
+
+    def test_rejects_an_out_of_range_bin_count(self):
+        self.assertRaises(ParameterError, self._statistics, bins=MAX_STATISTICS_BINS + 1)
+        self.assertRaises(ParameterError, self._statistics, bins=0)
+
+    def test_to_dict_shape(self):
+        # window and bins are shaped exactly as the attempt summary shapes them, so a client can share the code that
+        # reads them; only the series key differs.
+        self._entry(actions=[ConditionalAccessAction.LOCK_USER])
+
+        result = self._statistics().to_dict()
+
+        self.assertEqual("2026-03-01T00:00:00+00:00", result["window"]["start_time"])
+        self.assertEqual("2026-03-02T00:00:00+00:00", result["window"]["end_time"])
+        self.assertEqual(1, result["window"]["total"])
+        self.assertEqual(4, result["bins"]["count"])
+        self.assertListEqual(["2026-03-01T00:00:00+00:00", "2026-03-01T06:00:00+00:00",
+                              "2026-03-01T12:00:00+00:00", "2026-03-01T18:00:00+00:00"],
+                             result["bins"]["starts"])
+        self.assertListEqual([{"action_type": str(ConditionalAccessAction.LOCK_USER), "counts": [1, 0, 0, 0],
+                               "total": 1}], result["outcomes"])

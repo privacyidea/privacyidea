@@ -84,12 +84,14 @@ def _positive_int(value: int | str, default: int) -> int:
     return parsed if parsed >= 1 else default
 
 
-def _get_visibility_scopes() -> list[AuthenticationLogVisibilityScope] | None:
+def get_authentication_log_visibility_scopes() -> list[AuthenticationLogVisibilityScope] | None:
     """
     Return the visibility scopes restricting what the logged-in caller may read, or ``None`` for no restriction.
 
-    Shared by every endpoint reading the log: a divergence here would not fail loudly, it would quietly show one
-    endpoint entries the other hides, so the aggregate and the listing must derive the restriction the same way.
+    Shared by every endpoint reading the log -- the listing, the attempt summary and the conditional-access outcome
+    history, which reads the log's timestamps and subjects through the outcomes' parent rows. A divergence here would
+    not fail loudly, it would quietly show one endpoint entries the other hides, so every one of them must derive the
+    restriction the same way. Public for that reason: it is imported across the API layer rather than reimplemented.
 
     A scoped admin always also sees their own entries, added to the policy scope as an extra OR alternative. A local
     admin has no realm, so their own entries are matched by username plus the internal-admin role instead.
@@ -168,7 +170,7 @@ def get_authentication_log():
     start_time = get_optional_timestamp(params, "start_time")
     end_time = get_optional_timestamp(params, "end_time")
 
-    visibility_scopes = _get_visibility_scopes()
+    visibility_scopes = get_authentication_log_visibility_scopes()
 
     result = get_authentication_logs_paginate(
         **filters,
@@ -270,7 +272,7 @@ def get_authentication_log_statistics_endpoint():
         end_time=get_required_timestamp(params, "end_time"),
         bins=_positive_int(get_optional(params, "bins"), default=DEFAULT_STATISTICS_BINS),
         case_insensitive=is_true(get_optional(params, "case_insensitive")),
-        visibility_scopes=_get_visibility_scopes())
+        visibility_scopes=get_authentication_log_visibility_scopes())
 
     g.audit_object.log({"success": True})
     return send_result(result.to_dict())

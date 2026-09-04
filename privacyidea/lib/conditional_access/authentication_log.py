@@ -918,6 +918,74 @@ class AuthenticationLogStatistics:
         }
 
 
+@dataclass
+class ConditionalAccessOutcomeSeries:
+    """
+    One action type of an outcome-history result: how many times conditional access did that thing, bucketed over the
+    window's bins.
+
+    *action_type* is a :class:`~privacyidea.lib.conditional_access.engine.ConditionalAccessAction` value -- the action
+    the engine executed (``LOCK_USER``, ``BLOCK_IP``, ``EMAIL_ADMIN``, ...) or the ``DENY`` decision.
+
+    *counts* holds one count per bin, in bin order, always as many entries as the result has bins: a bucket where
+    nothing happened is a ``0`` rather than a gap, so the series can be charted without being re-aligned. The bins'
+    start times are not repeated here -- every series shares them, so they live on the enclosing
+    :class:`ConditionalAccessOutcomeStatistics`.
+    """
+    action_type: str
+    counts: list[int]
+
+    @property
+    def total(self) -> int:
+        """How many outcomes of this action type the window holds."""
+        return sum(self.counts)
+
+    def to_dict(self) -> dict:
+        """Serialize the series for the API response, including the window total a caller would otherwise re-sum."""
+        return {"action_type": self.action_type, "counts": self.counts, "total": self.total}
+
+
+@dataclass
+class ConditionalAccessOutcomeStatistics:
+    """
+    The history of what conditional access did over one time window: one :class:`ConditionalAccessOutcomeSeries` per
+    action type, all sharing the same bins.
+
+    The window and the bins mean exactly what they do on :class:`AuthenticationLogStatistics` -- normalized to naive
+    UTC, inclusive at both ends, one *bin_starts* entry per bucket in the same order as every series' counts -- so a
+    caller charting both reads them the same way.
+
+    *outcomes* holds one series per action type **present in the window**, ordered by descending window total with
+    ties broken by action type. An action nothing triggered has no series at all rather than an all-zero one, so a
+    missing entry reads as zero.
+    """
+    start_time: datetime
+    end_time: datetime
+    bin_starts: list[datetime]
+    outcomes: list[ConditionalAccessOutcomeSeries]
+
+    @property
+    def total(self) -> int:
+        """How many outcomes the window holds across all action types."""
+        return sum(series.total for series in self.outcomes)
+
+    def to_dict(self) -> dict:
+        """
+        Serialize the statistics for the API response, timestamps as ISO-8601 UTC strings like
+        :meth:`AuthenticationLog.to_dict`.
+
+        ``window`` and ``bins`` are shaped exactly as :meth:`AuthenticationLogStatistics.to_dict` shapes them, so a
+        client charting either can share the code that reads them; only the series key differs, naming what these
+        series are grouped by.
+        """
+        return {
+            "window": {"start_time": _utc_iso(self.start_time), "end_time": _utc_iso(self.end_time),
+                       "total": self.total},
+            "bins": {"count": len(self.bin_starts), "starts": [_utc_iso(start) for start in self.bin_starts]},
+            "outcomes": [series.to_dict() for series in self.outcomes],
+        }
+
+
 def _bin_edges(start_time: datetime, end_time: datetime, bins: int) -> list[datetime]:
     """Return the *bins* + 1 boundaries of equal-width buckets spanning ``[start_time, end_time]``."""
     span = end_time - start_time
@@ -1062,6 +1130,91 @@ def get_authentication_log_statistics(start_time: datetime,
     series.sort(key=lambda item: (-item.total, item.event_type))
     return AuthenticationLogStatistics(start_time=window_start, end_time=window_end, bin_starts=edges[:-1],
                                        events=series)
+
+
+def get_conditional_access_outcome_statistics(start_time: datetime,
+                                              end_time: datetime,
+                                              bins: int = DEFAULT_STATISTICS_BINS,
+                                              action_types: str | list[str] | None = None,
+                                              policy_names: str | list[str] | None = None,
+                                              dry_run: bool | None = None,
+                                              visibility_scopes: list[AuthenticationLogVisibilityScope] | None = None,
+                                              case_insensitive: bool = False
+                                              ) -> ConditionalAccessOutcomeStatistics:
+    """
+    Summarize what conditional access **did** over ``[start_time, end_time]``, as counts of recorded outcomes bucketed
+    into *bins* equal-width buckets and grouped by action type.
+
+    This answers "when were users locked and IPs blocked", which no other table can: ``user_lock_state`` and
+    ``block_list`` hold the restriction currently in force and forget it once it lapses, while
+    :class:`~privacyidea.models.conditional_access_outcome.ConditionalAccessOutcome` keeps one row per action the
+    engine executed. A lock that has since expired, been reset or been purged from the live state is still counted
+    here.
+
+    **Counted per outcome, not per request or per attempt**, which is what makes the numbers mean what they say:
+    one row is one restriction imposed. A request that locked the user *and* blocked the source IP created two
+    restrictions and contributes to both series, once each. This is the opposite of the listing's filter, which uses
+    an ``EXISTS`` precisely to avoid multiplying an entry by its outcomes (see :func:`_outcome_condition`); here the
+    multiplication *is* the count.
+
+    Not to be confused with the enforcement event types of
+    :func:`get_authentication_log_statistics`: :attr:`AuthEventType.USER_LOCKED` is a request *turned away* by a lock
+    already in force, so counting those would count retries against one lock rather than the lock. The lock itself is
+    a :attr:`ConditionalAccessAction.LOCK_USER` outcome, which is what this counts.
+
+    The window is filtered on the parent row's ``timestamp``, since an outcome deliberately does not repeat it, and
+    the parent is joined for that. Filtering by *action_types* is what makes the query cheap: it is served by
+    ``ix_ca_outcome_action`` and highly selective, so the work scales with how many restrictions were imposed rather
+    than with how many requests the window holds.
+
+    *visibility_scopes* likewise applies to the parent row, an outcome carrying no subject of its own. Omitting it
+    would let a realm-scoped admin count every realm's locks, so it is threaded through exactly as the two log
+    endpoints do.
+
+    :param start_time: start of the window, inclusive (naive values are read as UTC)
+    :param end_time: end of the window, inclusive
+    :param bins: how many equal-width buckets to split the window into, at most :data:`MAX_STATISTICS_BINS`
+    :param action_types: only outcomes of these ``ConditionalAccessAction`` values; takes a list and a ``*`` wildcard
+        like every other filter on the log, so ``"*"`` reads as "everything conditional access did"
+    :param policy_names: only outcomes recorded for these policy names (the denormalized copy, so a deleted policy is
+        still matchable)
+    :param dry_run: ``False`` for only enforced outcomes, ``True`` for only the dry-run rows recording what *would*
+        have happened, ``None`` for both -- note that counting both together charts restrictions that never existed
+    :param visibility_scopes: restrict the counted outcomes to those whose request matches any of these scopes
+        (see :func:`_visibility_condition`); ``None`` means no restriction
+    :param case_insensitive: if set, plain (non-wildcard) filter values match case-insensitively
+    :return: a :class:`ConditionalAccessOutcomeStatistics` holding one series per action type
+    :raises ParameterError: if the window does not end after it starts, or *bins* is out of range
+    """
+    window_start = _naive_utc(start_time)
+    window_end = _naive_utc(end_time)
+    if window_end <= window_start:
+        raise ParameterError("The statistics window must end after it starts.")
+    if not 1 <= bins <= MAX_STATISTICS_BINS:
+        raise ParameterError(f"The number of bins must be between 1 and {MAX_STATISTICS_BINS}.")
+    edges = _bin_edges(window_start, window_end, bins)
+
+    conditions = [AuthenticationLog.timestamp >= window_start, AuthenticationLog.timestamp <= window_end]
+    conditions += [condition for column, value in ((ConditionalAccessOutcome.action_type, action_types),
+                                                   (ConditionalAccessOutcome.policy_name, policy_names))
+                   if (condition := match_condition(column, value, case_insensitive)) is not None]
+    if dry_run is not None:
+        conditions.append(ConditionalAccessOutcome.dry_run.is_(dry_run))
+    if visibility_scopes is not None:
+        conditions.append(_visibility_condition(visibility_scopes))
+
+    stmt = (select(ConditionalAccessOutcome.action_type,
+                   *[_bin_column(edges, index).label(f"bin_{index}") for index in range(bins)])
+            .select_from(ConditionalAccessOutcome)
+            .join(AuthenticationLog, AuthenticationLog.id == ConditionalAccessOutcome.auth_log_id)
+            .where(*conditions)
+            .group_by(ConditionalAccessOutcome.action_type))
+
+    series = [ConditionalAccessOutcomeSeries(action_type=row[0], counts=[int(count or 0) for count in row[1:]])
+              for row in get_ca_session().execute(stmt).all()]
+    series.sort(key=lambda item: (-item.total, item.action_type))
+    return ConditionalAccessOutcomeStatistics(start_time=window_start, end_time=window_end, bin_starts=edges[:-1],
+                                              outcomes=series)
 
 
 def _delete_outcomes_of(criterion: ColumnElement[bool], chunk_size: int | None = None) -> int:
