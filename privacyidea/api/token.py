@@ -95,6 +95,7 @@ from privacyidea.lib.importotp import (parseOATHcsv, parseSafeNetXML,
 from privacyidea.lib.subscriptions import CheckSubscription
 from privacyidea.lib.tokenrolloutstate import RolloutState
 from .lib.utils import send_result, send_csv_result, get_optional, get_required
+from privacyidea.lib.params import get_pagination_params
 from ..lib.container import find_container_by_serial, add_token_to_container
 from ..lib.fido2.util import get_credential_ids_for_user
 from ..lib.log import log_with
@@ -424,8 +425,8 @@ def get_challenges_api(serial=None):
     :query realm: optional realm for the user lookup.
     :query sortby: sort column, default ``timestamp`` (paginated mode only).
     :query sortdir: ``asc`` (default) or ``desc``.
-    :query page: 1-indexed page number.
-    :query pagesize: page size (default ``15``).
+    :query page: 1-indexed page number; values below 1 are treated as 1.
+    :query pagesize: page size (default ``15``), capped at ``1000``.
     :query transaction_id: restrict to challenges with this transaction id.
     :status 200: challenge list in ``result.value``.
     """
@@ -460,10 +461,9 @@ def get_challenges_api(serial=None):
         g.audit_object.log({"success": True})
         return send_result(payload)
 
-    page = int(get_optional(param, "page", default=1))
+    page, psize = get_pagination_params(param)
     sort = get_optional(param, "sortby", default="timestamp")
     sdir = get_optional(param, "sortdir", default="asc")
-    psize = int(get_optional(param, "pagesize", default=15))
     transaction_id = get_optional(param, "transaction_id")
     g.audit_object.log({"serial": serial})
     # Realm-scope check when a specific serial is targeted, so a realm-
@@ -552,9 +552,9 @@ def cancel_challenge_api(transaction_id):
                                             "cancel challenges for")
     result = cancel_challenge(transaction_id)
     # Build a single audit entry now that the realm check passed and the
-    # cancel result is known. The `serial` column is 40 chars by default -
+    # cancel result is known. The `serial` column is 200 chars by default -
     # plenty for the common case (one transaction -> one token, with
-    # default 8-char serials, 4-5 still fit comma-joined). Pack whole
+    # default 8-char serials, over 20 still fit comma-joined). Pack whole
     # serials in arrival order up to the column budget; if some had to be
     # dropped, also record the list in `info` (500 chars) so the forensic
     # detail isn't lost. `info` is hard-cut by the audit module, so pack it
@@ -689,8 +689,8 @@ def list_api():
         active.
     :query sortby: sort column, default ``serial``.
     :query sortdir: ``asc`` (default) or ``desc``.
-    :query page: 1-indexed page number, default ``1``.
-    :query pagesize: page size, default ``15``.
+    :query page: 1-indexed page number, default ``1``; values below 1 are treated as 1.
+    :query pagesize: page size, default ``15``, capped at ``1000``.
     :query outform: ``csv`` to return ``text/csv`` instead of JSON.
         Pagination still applies.
     :status 200: paginated token list in ``result.value`` (or as a
@@ -698,7 +698,7 @@ def list_api():
     """
     param = request.all_data
     serial = get_optional(param, "serial")
-    page = int(get_optional(param, "page", default=1))
+    page, psize = get_pagination_params(param)
     tokentype = get_optional(param, "type")
     token_type_list = get_optional(param, "type_list")
     if token_type_list:
@@ -706,7 +706,6 @@ def list_api():
     description = get_optional(param, "description")
     sort = get_optional(param, "sortby", default="serial")
     sdir = get_optional(param, "sortdir", default="asc")
-    psize = int(get_optional(param, "pagesize", default=15))
     realm = get_optional(param, "tokenrealm")
     userid = get_optional(param, "userid")
     resolver = get_optional(param, "resolver")
