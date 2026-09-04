@@ -805,4 +805,13 @@ describe("AuthenticationLog", () => {
     service.filterParams.set({ username: "alice" });
     expect(component.noDataText()).toContain("matching the filter");
   });
+
+  describe("client derivation", () => {
+    it("names where a client label came from, and says nothing for an entry that does not record it", () => {
+      expect(component.clientLabelBadge("client_id")?.label).toBe("client id");
+      expect(component.clientLabelBadge("user_agent")?.label).toBe("user agent");
+      expect(component.clientLabelBadge(null)).toBeNull();
+      expect(component.clientLabelBadge("something_new")).toBeNull();
+    });
+  });
 });

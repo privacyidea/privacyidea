@@ -52,8 +52,12 @@ _ENTRY_FILTER_PARAMS = ["resolvers", "uids", "realms", "usernames", "user_roles"
 # The ca_* filters match the entry's conditional-access outcomes rather than the entry itself, so only the listing
 # offers them; ca_dry_run is parsed separately because it is a boolean, not a list of values.
 _OUTCOME_FILTER_PARAMS = ["ca_action_types", "ca_policy_names"]
+# peer_ips, source_ip_sources and client_label_sources describe how an entry's client was derived rather than
+# classifying the entry itself, so - like the ca_* outcome filters - the statistics summary (grouped by attempt
+# outcome, not by derivation) does not offer them.
+_DERIVATION_FILTER_PARAMS = ["peer_ips", "source_ip_sources", "client_label_sources"]
 # Each filter parameter maps 1:1 to a get_authentication_logs_paginate keyword argument.
-_FILTER_PARAMS = _ENTRY_FILTER_PARAMS + _OUTCOME_FILTER_PARAMS
+_FILTER_PARAMS = _ENTRY_FILTER_PARAMS + _OUTCOME_FILTER_PARAMS + _DERIVATION_FILTER_PARAMS
 
 
 def _split_csv(value: str | None) -> list[str] | None:
@@ -118,17 +122,17 @@ def get_authentication_log():
     scope are returned. A **user** with the action set in the user scope may read only their own entries.
 
     Each of ``resolvers``, ``uids``, ``realms``, ``usernames``, ``user_roles``, ``event_types``, ``reasons``,
-    ``source_ips``, ``serials``, ``transaction_ids``, ``attempt_ids``, ``client_labels`` and ``endpoints`` may be
-    passed as a query
+    ``source_ips``, ``peer_ips``, ``source_ip_sources``, ``serials``, ``transaction_ids``, ``attempt_ids``,
+    ``client_labels``, ``client_label_sources`` and ``endpoints`` may be passed as a query
     parameter to filter on it. A value may be a comma-separated list (e.g. ``event_types=MFA_FAIL,PIN_FAIL``), matching
     entries that equal any of the values. A value may contain a ``*`` wildcard (e.g. ``serials=TOTP*``) to match by
     prefix/pattern instead of exactly. Note, using wildcards filtering is always case-insensitive.
 
     :query page: page number, 1-indexed (default 1).
     :query page_size: entries per page (default 15).
-    :query sort_column: column to sort by (id, timestamp, event_type, resolver, uid, realm, username,
-        source_ip, client_label, endpoint, serial, transaction_id, attempt_id). An entry's reasons are a list, so
-        they are not sortable.
+    :query sort_column: column to sort by (id, timestamp, event_type, resolver, uid, realm, username, source_ip,
+        peer_ip, source_ip_source, client_label, client_label_source, endpoint, serial, transaction_id,
+        attempt_id). An entry's reasons are a list, so they are not sortable.
     :query sort_order: ``asc`` or ``desc`` (default ``desc``).
     :query start_time: only entries at/after this ISO 8601 timestamp.
     :query end_time: only entries at/before this ISO 8601 timestamp.
@@ -141,6 +145,18 @@ def get_authentication_log():
     :query ca_dry_run: ``true`` for only entries with a dry-run outcome, ``false`` for only entries with an enforced
         one; omit it to get both. The three ``ca_*`` filters apply to the *same* outcome, so an entry matches when one
         of its outcomes satisfies all of them.
+    Each entry records **how** its client was determined as well as what it was determined to be. ``source_ip``
+    is the effective address - the one authorization and conditional access act on - while ``peer_ip`` is the TCP
+    peer the request arrived from, ``source_ip_source`` names where the effective address was taken from
+    (``REMOTE_ADDR``, ``REMOTE_ADDR_UNMAPPED`` when an ``OverrideAuthorizationClient`` is configured but this peer
+    may not map any further, ``X_FORWARDED_FOR`` or ``CLIENT_PARAM``), and ``ip_chain`` is the whole path that was
+    considered, peer first, with the chosen hop marked ``"effective": true``. The chain is recorded even when no
+    override is configured and the header is therefore ignored. ``client_label_source`` says whether the label is
+    the ``client_id`` the client chose (``client_id``) or its User-Agent (``user_agent``).
+
+    ``null`` in any of these means the entry predates the recording, and nothing may be inferred from it - in
+    particular a null ``source_ip_source`` does not mean "direct connection".
+
     :status 200: paginated result in ``result.value`` with ``auth_logs``, ``count``, ``current``, ``prev``, ``next``.
     """
     params = request.all_data

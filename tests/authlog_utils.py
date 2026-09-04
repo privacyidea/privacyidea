@@ -186,9 +186,12 @@ def assert_authentication_log(event_types, transaction_id=None, same_attempt=Tru
 
 def assert_authentication_log_entry(entry: AuthenticationLog, user: User = None,
                                     serials: set[str] = None,
-                                    client_label: str = None, endpoint: str = None, other_info: dict = None,
+                                    client_label: str = None, client_label_source: str = None,
+                                    endpoint: str = None, other_info: dict = None,
                                     transaction_id: str = None,
-                                    source_ip: str = None, user_role: AuthLogUserRole = AuthLogUserRole.USER,
+                                    source_ip: str = None, peer_ip: str = None,
+                                    source_ip_source: str = None, ip_chain: list = None,
+                                    user_role: AuthLogUserRole = AuthLogUserRole.USER,
                                     reason: AuthEventReason = None, reasons: dict = None,
                                     policies: list = None):
     """
@@ -213,6 +216,9 @@ def assert_authentication_log_entry(entry: AuthenticationLog, user: User = None,
         expected (e.g. userless challenges or local-admin logins).
     :param serials: the entry must carry a comma separated list of these serials (default None: no serial)
     :param client_label: the entry must carry this client_label (default None: no client_label)
+    :param client_label_source: where the label came from. Defaults to ``"user_agent"`` whenever a client_label is
+        expected, since the test client always sends a User-Agent; pass ``"client_id"`` for a request that named
+        itself.
     :param endpoint: the entry must carry this endpoint (default None: no endpoint, i.e. a row staged outside a view)
     :param reason: the entry's reasons must be exactly these, in this order (the order AuthEventReason declares
         them): one AuthEventReason or a list of them (default None: no reason at all)
@@ -221,6 +227,10 @@ def assert_authentication_log_entry(entry: AuthenticationLog, user: User = None,
     :param other_info: the entry must carry this other_info (default None: no other_info)
     :param transaction_id: the entry must carry this transaction_id (default None: no transaction_id)
     :param source_ip: the entry must carry this source_ip (default None: no source_ip)
+    :param peer_ip: the TCP peer the request arrived from (default None, which is what the Flask test client
+        reports unless the call sets ``REMOTE_ADDR``)
+    :param source_ip_source: where source_ip was taken from (default None: the derivation was not recorded)
+    :param ip_chain: the recorded path to the client (default None: the path was exactly ``[peer_ip]``)
     :param user_role: the entry must carry this user_role (default ``"user"``, the role of a regular user)
     """
     expected_resolver = (user.resolver or None) if user is not None else None
@@ -231,6 +241,9 @@ def assert_authentication_log_entry(entry: AuthenticationLog, user: User = None,
     assert entry.username == expected_username
     assert entry.user_role == user_role
     assert entry.client_label == client_label
+    if client_label_source is None and client_label:
+        client_label_source = "user_agent"
+    assert entry.client_label_source == client_label_source
     assert entry.endpoint == endpoint
     expected_reasons = [] if reason is None else [str(value) for value in
                                                  (reason if isinstance(reason, list) else [reason])]
@@ -248,6 +261,9 @@ def assert_authentication_log_entry(entry: AuthenticationLog, user: User = None,
     assert stored_info == (other_info or {})
     assert entry.transaction_id == transaction_id
     assert entry.source_ip == source_ip
+    assert entry.peer_ip == peer_ip
+    assert entry.source_ip_source == source_ip_source
+    assert entry.ip_chain == ip_chain
     entry_serials = entry.serial
     if entry_serials is not None:
         entry_serials = set(entry_serials.split(","))

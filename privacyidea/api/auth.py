@@ -105,7 +105,7 @@ from privacyidea.lib.policydecorators import reset_all_user_tokens_active, reset
 from privacyidea.lib.realm import get_default_realm, realm_is_defined
 from privacyidea.lib.token import get_tokens
 from privacyidea.lib.user import User, split_user, log_used_user
-from privacyidea.lib.utils import (get_client_ip, hexlify_and_unicode, to_unicode, get_plugin_info_from_useragent,
+from privacyidea.lib.utils import (get_client_ip_info, hexlify_and_unicode, to_unicode, get_plugin_info_from_useragent,
                                    AUTH_RESPONSE)
 
 log = logging.getLogger(__name__)
@@ -132,8 +132,9 @@ def before_request():
     g.audit_object = getAudit(current_app.config)
     g.event_config = EventConfiguration()
     # access_route contains the ip addresses of all clients, hops and proxies.
-    g.client_ip = get_client_ip(request,
-                                get_from_config(SYSCONF.OVERRIDECLIENT))
+    g.client_ip_info = get_client_ip_info(request,
+                                          get_from_config(SYSCONF.OVERRIDECLIENT))
+    g.client_ip = g.client_ip_info.ip
     # Save the HTTP header in the localproxy object
     g.request_headers = request.headers
     g.serial = get_optional(request.all_data, "serial")

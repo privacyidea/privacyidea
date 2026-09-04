@@ -629,8 +629,9 @@ class PasskeyAPITest(PasskeyAPITestBase):
         assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_TRIGGERED],
                                         transaction_id=transaction_id, endpoint='/validate/initialize')
         assert_authentication_log_entry(auth_log_entries[AuthEventType.LOGIN_SUCCESS], user=self.user, serials={serial},
-                                        client_label=user_agent, transaction_id=transaction_id, source_ip="10.0.0.17",
-                                        endpoint='/validate/check')
+                                        client_label=user_agent, transaction_id=transaction_id,
+                                        source_ip="10.0.0.17", peer_ip="10.0.0.17",
+                                        source_ip_source="REMOTE_ADDR", endpoint='/validate/check')
 
         # Refill without machine name will fail with parameter error 905
         data = {"serial": serial, "refilltoken": refill_token, "pass": ""}

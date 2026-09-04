@@ -415,6 +415,35 @@
                     </app-copyable>
                   }
                 }
+                @case ("source_ip") {
+                  <app-source-ip-cell
+                    [cellId]="element.id + '-source-ip'"
+                    [sourceIp]="element.source_ip"
+                    [peerIp]="element.peer_ip"
+                    [sourceIpSource]="element.source_ip_source"
+                    [ipChain]="element.ip_chain"
+                    [showFilter]="showInlineCellFilter('source_ip')"
+                    (filterValue)="addFilterValue($event.key, $event.value)" />
+                }
+                @case ("client_label") {
+                  @if (element.client_label) {
+                    @let clientTruncateClass = truncatedClass("client_label");
+                    <app-copyable [copyText]="element.client_label">
+                      <span
+                        class="cell-truncate {{ clientTruncateClass }}"
+                        [appTruncationTooltip]="element.client_label">
+                        {{ element.client_label }}
+                      </span>
+                    </app-copyable>
+                    @if (clientLabelBadge(element.client_label_source); as labelBadge) {
+                      <span
+                        class="client-label-source-badge"
+                        [matTooltip]="labelBadge.tooltip">
+                        {{ labelBadge.label }}
+                      </span>
+                    }
+                  }
+                }
                 @case ("conditional_access_outcomes") {
                   <app-conditional-access-cell
                     [entryId]="element.id"

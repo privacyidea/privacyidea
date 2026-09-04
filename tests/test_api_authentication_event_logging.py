@@ -35,6 +35,7 @@ from privacyidea.lib.conditional_access.authentication_event_types import (AuthE
                                                                           AuthEventReason)
 from privacyidea.lib.auth import create_db_admin, delete_db_admin
 from privacyidea.lib.challenge import get_challenges
+from privacyidea.lib.config import SYSCONF, delete_privacyidea_config, set_privacyidea_config
 from privacyidea.lib.conditional_access.authentication_log import get_authentication_logs, AuthLogUserRole
 from privacyidea.lib.conditional_access.request_context import ATTEMPT_ID_CHALLENGE_KEY
 from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction
@@ -97,13 +98,15 @@ class _AuthLogContractTests(_ContractHost):
         logs = get_authentication_logs()
         self.assertEqual(1, len(logs), logs)
         self.assertEqual("pytest-UA", logs[0].client_label)
+        self.assertEqual("user_agent", logs[0].client_label_source)
 
     def test_client_id_sets_client_label(self):
         # An explicit client_id is recorded as the client label on the log row.
         self._assert_succeeded(self._authenticate(f"{self.pin}755224", client_id="myapp"))
         entries = assert_authentication_log([AuthEventType.LOGIN_SUCCESS])
-        assert_authentication_log_entry(entries[AuthEventType.LOGIN_SUCCESS], user=self.user, serials={self.serial},
-                                        client_label="myapp", endpoint=self.endpoint_path)
+        assert_authentication_log_entry(entries[AuthEventType.LOGIN_SUCCESS], user=self.user,
+                                        serials={self.serial}, client_label="myapp",
+                                        client_label_source="client_id", endpoint=self.endpoint_path)
 
     def test_endpoint_records_the_request_path(self):
         # Which endpoint authenticated is a column of its own, so a row can be read (and filtered) by it.
@@ -1074,6 +1077,60 @@ class ValidateCheckAuthLogTestCase(_AuthLogContractTests, AuthLogTestCase):
         assert_authentication_log_entry(entries[AuthEventType.MFA_FAIL], user=self.user, serials={self.serial},
                                         endpoint=self.endpoint_path, reason=AuthEventReason.WRONG_OTP,
                                         reasons={self.serial: AuthEventReason.WRONG_OTP})
+
+    # --- Client derivation ---
+
+    def _check_from(self, remote_addr: str, headers: dict | None = None):
+        """A /validate/check arriving from *remote_addr*, so the recorded peer is a real address."""
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": self.username, "pass": f"{self.pin}755224"},
+                                           headers=headers or {},
+                                           environ_base={"REMOTE_ADDR": remote_addr}):
+            return self.app.full_dispatch_request()
+
+    def test_client_derivation_records_an_unhonoured_forwarded_header(self):
+        # With no OverrideAuthorizationClient the header is not honoured - the peer is the client - but what the
+        # request claimed is still on the record.
+        self._assert_succeeded(self._check_from("10.0.0.17", {"X-Forwarded-For": "203.0.113.5"}))
+        entry = assert_authentication_log([AuthEventType.LOGIN_SUCCESS])[AuthEventType.LOGIN_SUCCESS]
+        self.assertEqual("10.0.0.17", entry.source_ip)
+        self.assertEqual("10.0.0.17", entry.peer_ip)
+        self.assertEqual("REMOTE_ADDR", entry.source_ip_source)
+        self.assertEqual([{"ip": "10.0.0.17", "source": "REMOTE_ADDR", "effective": True},
+                          {"ip": "203.0.113.5", "source": "X_FORWARDED_FOR"}], entry.ip_chain)
+
+    def test_client_derivation_records_the_admitted_proxy_hop(self):
+        # With the peer allowed to map, the header hop becomes the effective client and says so.
+        set_privacyidea_config(SYSCONF.OVERRIDECLIENT, "10.0.0.17")
+        try:
+            self._assert_succeeded(self._check_from("10.0.0.17", {"X-Forwarded-For": "203.0.113.5"}))
+        finally:
+            delete_privacyidea_config(SYSCONF.OVERRIDECLIENT)
+        entry = assert_authentication_log([AuthEventType.LOGIN_SUCCESS])[AuthEventType.LOGIN_SUCCESS]
+        self.assertEqual("203.0.113.5", entry.source_ip)
+        self.assertEqual("10.0.0.17", entry.peer_ip)
+        self.assertEqual("X_FORWARDED_FOR", entry.source_ip_source)
+        self.assertEqual([{"ip": "10.0.0.17", "source": "REMOTE_ADDR"},
+                          {"ip": "203.0.113.5", "source": "X_FORWARDED_FOR", "effective": True}], entry.ip_chain)
+
+    def test_client_derivation_distinguishes_an_unmapped_peer(self):
+        # An override is configured but this peer may not map any further. That is a different fact from "no
+        # override configured", and the row must not read as a plain direct connection.
+        set_privacyidea_config(SYSCONF.OVERRIDECLIENT, "203.0.113.99")
+        try:
+            self._assert_succeeded(self._check_from("10.0.0.17", {"X-Forwarded-For": "203.0.113.5"}))
+        finally:
+            delete_privacyidea_config(SYSCONF.OVERRIDECLIENT)
+        entry = assert_authentication_log([AuthEventType.LOGIN_SUCCESS])[AuthEventType.LOGIN_SUCCESS]
+        self.assertEqual("10.0.0.17", entry.source_ip)
+        self.assertEqual("REMOTE_ADDR_UNMAPPED", entry.source_ip_source)
+
+    def test_client_derivation_leaves_a_single_hop_chain_empty(self):
+        # One hop is exactly peer_ip, which the row already carries, so nothing is stored twice.
+        self._assert_succeeded(self._check_from("10.0.0.17"))
+        entry = assert_authentication_log([AuthEventType.LOGIN_SUCCESS])[AuthEventType.LOGIN_SUCCESS]
+        self.assertIsNone(entry.ip_chain)
+        self.assertEqual("REMOTE_ADDR", entry.source_ip_source)
 
     # --- Authorization policies (NOT_AUTHORIZED) — /validate/check-only; the shared authz cases live in the mixin ---
 

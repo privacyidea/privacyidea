@@ -47,7 +47,10 @@ SORTABLE_COLUMNS: dict[str, InstrumentedAttribute] = {
     "realm": AuthenticationLog.realm,
     "username": AuthenticationLog.username,
     "source_ip": AuthenticationLog.source_ip,
+    "peer_ip": AuthenticationLog.peer_ip,
+    "source_ip_source": AuthenticationLog.source_ip_source,
     "client_label": AuthenticationLog.client_label,
+    "client_label_source": AuthenticationLog.client_label_source,
     "endpoint": AuthenticationLog.endpoint,
     "serial": AuthenticationLog.serial,
     "transaction_id": AuthenticationLog.transaction_id,
@@ -75,6 +78,21 @@ class AuthLogUserRole(str, Enum):
     USER = "user"
     ADMIN_INTERNAL = "admin-internal"
     ADMIN_EXTERNAL = "admin-external"
+
+    def __str__(self) -> str:
+        return self.value
+
+
+class ClientLabelSource(str, Enum):
+    """
+    Where a row's ``client_label`` came from: the ``client_id`` request parameter the client chose for itself, or
+    the User-Agent header it sent. Recorded because the two are worth very different amounts - one is a name an
+    integration deliberately gives itself, the other is a string any browser sends.
+
+    ``str``/``Enum`` (not ``StrEnum``) for Python 3.10, like :class:`AuthLogUserRole`.
+    """
+    CLIENT_ID = "client_id"
+    USER_AGENT = "user_agent"
 
     def __str__(self) -> str:
         return self.value
@@ -212,7 +230,14 @@ class PendingAuthEvent:
     username: str | None = None
     user_role: str | None = None
     source_ip: str | None = None
+    # How source_ip was derived: the TCP peer it arrived from, which hop it was taken from, and the whole path
+    # that was considered (see the AuthenticationLog model). None throughout for an event staged outside a
+    # request context, where there is no request to derive anything from.
+    peer_ip: str | None = None
+    source_ip_source: str | None = None
     client_label: str | None = None
+    client_label_source: str | None = None
+    ip_chain: list | None = None
     endpoint: str | None = None
     serial: str | None = None
     attempt_id: str | None = None
@@ -261,7 +286,10 @@ _TRUNCATED_COLUMNS = {
     "username": None,
     "user_role": None,
     "source_ip": None,
+    "peer_ip": None,
+    "source_ip_source": None,
     "client_label": None,
+    "client_label_source": None,
     "endpoint": None,
     # A comma-joined serial list: cut on the last whole serial that fits.
     "serial": ",",
@@ -282,7 +310,9 @@ def _row_values(event: PendingAuthEvent) -> dict:
         stored[column] = result.stored
         if result.overflow is not None:
             overflow[column] = result.overflow
-    return {**stored, "other_info": _store_overflow(event.other_info, overflow)}
+    # ip_chain is JSON rather than a truncated string, but still a column of the row, so it belongs in the
+    # dict that both the insert and the update path treat as the authoritative column set.
+    return {**stored, "ip_chain": event.ip_chain, "other_info": _store_overflow(event.other_info, overflow)}
 
 
 def _reason_rows(event: PendingAuthEvent) -> list[AuthenticationLogReason]:
@@ -400,7 +430,11 @@ def log_authentication_event(event_type: AuthEventType,
                              username: str | None = None,
                              user_role: str | None = None,
                              source_ip: str | None = None,
+                             peer_ip: str | None = None,
+                             source_ip_source: str | None = None,
                              client_label: str | None = None,
+                             client_label_source: str | None = None,
+                             ip_chain: list | None = None,
                              endpoint: str | None = None,
                              serial: str | None = None,
                              attempt_id: str | None = None,
@@ -414,7 +448,9 @@ def log_authentication_event(event_type: AuthEventType,
     """
     event = PendingAuthEvent(event_type=event_type, reasons=list(reasons or []), transaction_id=transaction_id,
                              resolver=resolver, uid=uid, realm=realm, username=username, user_role=user_role,
-                             source_ip=source_ip, client_label=client_label, endpoint=endpoint, serial=serial,
+                             source_ip=source_ip, peer_ip=peer_ip, source_ip_source=source_ip_source,
+                             client_label=client_label, client_label_source=client_label_source, ip_chain=ip_chain,
+                             endpoint=endpoint, serial=serial,
                              attempt_id=attempt_id, other_info=other_info)
     write_authentication_events([event])
     return event.row_id
@@ -521,6 +557,9 @@ def _filter_conditions(resolvers: str | list[str] | None = None,
                        transaction_ids: str | list[str] | None = None,
                        attempt_ids: str | list[str] | None = None,
                        client_labels: str | list[str] | None = None,
+                       client_label_sources: str | list[str] | None = None,
+                       peer_ips: str | list[str] | None = None,
+                       source_ip_sources: str | list[str] | None = None,
                        endpoints: str | list[str] | None = None,
                        start_time: datetime | None = None,
                        end_time: datetime | None = None,
@@ -549,6 +588,9 @@ def _filter_conditions(resolvers: str | list[str] | None = None,
         AuthenticationLog.transaction_id: transaction_ids,
         AuthenticationLog.attempt_id: attempt_ids,
         AuthenticationLog.client_label: client_labels,
+        AuthenticationLog.client_label_source: client_label_sources,
+        AuthenticationLog.peer_ip: peer_ips,
+        AuthenticationLog.source_ip_source: source_ip_sources,
         AuthenticationLog.endpoint: endpoints,
     }
     conditions = [condition for column, value in match_filters.items()
@@ -660,6 +702,9 @@ def get_authentication_logs(resolvers: str | list[str] | None = None,
                             transaction_ids: str | list[str] | None = None,
                             attempt_ids: str | list[str] | None = None,
                             client_labels: str | list[str] | None = None,
+                            client_label_sources: str | list[str] | None = None,
+                            peer_ips: str | list[str] | None = None,
+                            source_ip_sources: str | list[str] | None = None,
                             endpoints: str | list[str] | None = None,
                             start_time: datetime | None = None,
                             end_time: datetime | None = None) -> Sequence[AuthenticationLog]:
@@ -678,7 +723,10 @@ def get_authentication_logs(resolvers: str | list[str] | None = None,
                                     event_types=event_types, reasons=reasons,
                                     source_ips=source_ips, serials=serials, transaction_ids=transaction_ids,
                                     attempt_ids=attempt_ids,
-                                    client_labels=client_labels, endpoints=endpoints,
+                                    client_labels=client_labels,
+                                    client_label_sources=client_label_sources,
+                                    peer_ips=peer_ips, source_ip_sources=source_ip_sources,
+                                    endpoints=endpoints,
                                     start_time=start_time, end_time=end_time)
     stmt = (select(AuthenticationLog).where(*conditions).order_by(AuthenticationLog.id)
             .options(selectinload(AuthenticationLog.reasons)))
@@ -697,6 +745,9 @@ def get_authentication_logs_paginate(resolvers: str | list[str] | None = None,
                                      transaction_ids: str | list[str] | None = None,
                                      attempt_ids: str | list[str] | None = None,
                                      client_labels: str | list[str] | None = None,
+                                     client_label_sources: str | list[str] | None = None,
+                                     peer_ips: str | list[str] | None = None,
+                                     source_ip_sources: str | list[str] | None = None,
                                      endpoints: str | list[str] | None = None,
                                      ca_action_types: str | list[str] | None = None,
                                      ca_policy_names: str | list[str] | None = None,
@@ -714,7 +765,8 @@ def get_authentication_logs_paginate(resolvers: str | list[str] | None = None,
 
     The filter parameters -- ``resolvers``, ``uids``, ``realms``, ``usernames``, ``user_roles``, ``event_types``,
     ``reasons``, ``source_ips``, ``serials``, ``transaction_ids``, ``attempt_ids``, ``client_labels``,
-    ``endpoints``, ``start_time`` and ``end_time`` -- behave exactly like :func:`get_authentication_logs`. The
+    ``client_label_sources``, ``peer_ips``, ``source_ip_sources``, ``endpoints``, ``start_time`` and ``end_time`` --
+    behave exactly like :func:`get_authentication_logs`. The
     ``ca_*`` parameters filter on what conditional access *did* to the request and are only offered here, since this
     is the endpoint that reads the outcomes:
 
@@ -739,7 +791,10 @@ def get_authentication_logs_paginate(resolvers: str | list[str] | None = None,
                                     event_types=event_types, reasons=reasons,
                                     source_ips=source_ips, serials=serials, transaction_ids=transaction_ids,
                                     attempt_ids=attempt_ids,
-                                    client_labels=client_labels, endpoints=endpoints,
+                                    client_labels=client_labels,
+                                    client_label_sources=client_label_sources,
+                                    peer_ips=peer_ips, source_ip_sources=source_ip_sources,
+                                    endpoints=endpoints,
                                     start_time=start_time, end_time=end_time,
                                     case_insensitive=case_insensitive)
     # An EXISTS over the outcome table, kept out of _filter_conditions because those conditions also apply to DELETE
@@ -1088,6 +1143,9 @@ def delete_authentication_logs(resolvers: str | list[str] | None = None,
                                transaction_ids: str | list[str] | None = None,
                                attempt_ids: str | list[str] | None = None,
                                client_labels: str | list[str] | None = None,
+                               client_label_sources: str | list[str] | None = None,
+                               peer_ips: str | list[str] | None = None,
+                               source_ip_sources: str | list[str] | None = None,
                                endpoints: str | list[str] | None = None,
                                start_time: datetime | None = None,
                                end_time: datetime | None = None,
@@ -1098,7 +1156,8 @@ def delete_authentication_logs(resolvers: str | list[str] | None = None,
 
     The filter parameters -- ``resolvers``, ``uids``, ``realms``, ``usernames``, ``user_roles``, ``event_types``,
     ``reasons``, ``source_ips``, ``serials``, ``transaction_ids``, ``attempt_ids``, ``client_labels``,
-    ``endpoints``, ``start_time`` and ``end_time`` -- behave exactly like :func:`get_authentication_logs` (to delete
+    ``client_label_sources``, ``peer_ips``, ``source_ip_sources``, ``endpoints``, ``start_time`` and ``end_time`` --
+    behave exactly like :func:`get_authentication_logs` (to delete
     entries older than a point in time, pass ``end_time``). The caller must pass at least one filter: with no filter
     this would delete the entire log, which this function refuses.
 
@@ -1112,7 +1171,10 @@ def delete_authentication_logs(resolvers: str | list[str] | None = None,
                                     event_types=event_types, reasons=reasons,
                                     source_ips=source_ips, serials=serials, transaction_ids=transaction_ids,
                                     attempt_ids=attempt_ids,
-                                    client_labels=client_labels, endpoints=endpoints,
+                                    client_labels=client_labels,
+                                    client_label_sources=client_label_sources,
+                                    peer_ips=peer_ips, source_ip_sources=source_ip_sources,
+                                    endpoints=endpoints,
                                     start_time=start_time, end_time=end_time)
     # Guard on the caller's filters before adding the visibility restriction, so a scoped admin also cannot wipe a
     # whole scope with an unfiltered request.

@@ -57,6 +57,7 @@ import { RouterLink } from "@angular/router";
 import { ConditionalAccessCell } from "./cells/conditional-access-cell/conditional-access-cell";
 import { InfoCell } from "./cells/info-cell/info-cell";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { SourceIpCell } from "./cells/source-ip-cell/source-ip-cell";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { FilterValueButtonComponent } from "@components/shared/filter-value-button/filter-value-button.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
@@ -227,6 +228,20 @@ function parseFilterTimestamp(value: string | null | undefined): string | null {
   return null;
 }
 
+// What the Client column's provenance badge says. Mirrors
+// privacyidea.lib.conditional_access.authentication_log.ClientLabelSource; an unknown or absent value gets no
+// badge, since an entry written before the recording says nothing about where its label came from.
+const CLIENT_LABEL_SOURCE_META: Record<string, { label: string; tooltip: string }> = {
+  client_id: {
+    label: $localize`client id`,
+    tooltip: $localize`The name the client gave itself in the request's client_id parameter.`
+  },
+  user_agent: {
+    label: $localize`user agent`,
+    tooltip: $localize`The User-Agent header the client sent; it names no particular integration.`
+  }
+};
+
 // Full, independently-translatable tooltip per column with an inline filter button, kept as complete sentences (not
 // noun-interpolated) so each language can phrase its grammar correctly; a column with no entry falls back to the
 // button's generic default.
@@ -271,6 +286,7 @@ const TRUNCATED_COLUMN_CLASSES: Record<string, string> = {
     MatLabel,
     CopyableComponent,
     FilterValueButtonComponent,
+    SourceIpCell,
     RouterLink,
     ScrollToTopDirective,
     ScrollEdgesDirective,
@@ -750,13 +766,20 @@ export class AuthenticationLog {
     this.authenticationLogService.authenticationLogFilter.set(newFilter);
   }
 
-  // Whether a @default cell shows the inline "filter by this value" button. Columns whose header already offers a
-  // value picker don't need it, which is dynamic for the client_label. (event_type and realm never reach this: they
-  // render through their own @case blocks.)
+  // Whether a @default cell shows the inline "filter by this value" button: columns whose header already offers a
+  // reliable value picker don't need it. client_label, reason and endpoint never need it - each has its own menu,
+  // unconditionally rendered from an authoritative vocabulary. source_ip always needs it: its header menu
+  // (showSourceIpMenu) lists known-client addresses, not the log's actual values, so it may be showing while
+  // still not offering this row's IP.
   showInlineCellFilter(columnKey: string): boolean {
-    if (columnKey === "client_label" || columnKey === "reason" || columnKey === "endpoint") return false;
-    if (columnKey === "source_ip") return !this.showSourceIpMenu();
-    return true;
+    return columnKey !== "client_label" && columnKey !== "reason" && columnKey !== "endpoint";
+  }
+
+  // What the Client column's badge says about where the label came from, or null when the entry predates the
+  // recording. The two are worth very different amounts: a client_id is a name an integration gave itself, a
+  // User-Agent is a string any browser sends.
+  clientLabelBadge(source: string | null | undefined): { label: string; tooltip: string } | null {
+    return source ? (CLIENT_LABEL_SOURCE_META[source] ?? null) : null;
   }
 
   // Localized tooltip for a cell's inline filter button, falling back to the generic phrasing.

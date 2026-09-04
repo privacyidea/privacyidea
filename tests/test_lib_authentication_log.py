@@ -291,6 +291,43 @@ class AuthenticationLogTestCase(MyTestCase):
         self.assertEqual(1, len(results))
         self.assertEqual("vpn", results[0].client_label)
 
+    def test_get_authentication_logs_filter_by_peer_ip(self):
+        # The peer is the second pivot: "what came from this machine", whatever it claimed to forward for.
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1",
+                                 source_ip="203.0.113.5", peer_ip="10.0.0.17")
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1",
+                                 source_ip="203.0.113.6", peer_ip="10.0.0.18")
+        # Outside the "10.0.0.*" wildcard, so it must not appear in that result.
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1",
+                                 source_ip="203.0.113.7", peer_ip="192.168.1.1")
+
+        results = get_authentication_logs(peer_ips="10.0.0.17")
+        self.assertEqual(1, len(results))
+        self.assertEqual("203.0.113.5", results[0].source_ip)
+        self.assertSetEqual({"203.0.113.5", "203.0.113.6"},
+                            {entry.source_ip for entry in get_authentication_logs(peer_ips="10.0.0.*")})
+
+    def test_get_authentication_logs_filter_by_source_ip_source(self):
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1",
+                                 source_ip_source="X_FORWARDED_FOR")
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1",
+                                 source_ip_source="REMOTE_ADDR")
+
+        results = get_authentication_logs(source_ip_sources="X_FORWARDED_FOR")
+        self.assertEqual(1, len(results))
+        self.assertEqual(2, len(get_authentication_logs(
+            source_ip_sources=["X_FORWARDED_FOR", "REMOTE_ADDR"])))
+
+    def test_get_authentication_logs_filter_by_client_label_source(self):
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1",
+                                 client_label="myapp", client_label_source="client_id")
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1",
+                                 client_label="Mozilla/5.0", client_label_source="user_agent")
+
+        results = get_authentication_logs(client_label_sources="client_id")
+        self.assertEqual(1, len(results))
+        self.assertEqual("myapp", results[0].client_label)
+
     def test_get_authentication_logs_filter_by_transaction_id(self):
         log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, transaction_id="txn-a",
                                  resolver="res1", uid="u1", realm="r1")
@@ -649,7 +686,11 @@ class AuthenticationLogDBTestCase(MyTestCase):
             event_id = log_authentication_event(
                 event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="user1", realm="realm1",
                 username="testuser", user_role=AuthLogUserRole.ADMIN_EXTERNAL, source_ip="192.168.1.1",
-                client_label="vpn", endpoint="/validate/check", reasons=["TOKEN_DISABLED", "WRONG_OTP"],
+                peer_ip="10.0.0.5", source_ip_source="X_FORWARDED_FOR",
+                client_label="vpn", client_label_source="client_id",
+                ip_chain=[{"ip": "10.0.0.5", "source": "REMOTE_ADDR"},
+                          {"ip": "192.168.1.1", "source": "X_FORWARDED_FOR", "effective": True}],
+                endpoint="/validate/check", reasons=["TOKEN_DISABLED", "WRONG_OTP"],
                 serial="TOK001", transaction_id="txn-123",
                 attempt_id="attempt-123",
                 other_info={"key": "value"}
@@ -659,7 +700,8 @@ class AuthenticationLogDBTestCase(MyTestCase):
         auth_log_dict = entry.to_dict(include_reasons=True)
 
         expected_keys = {"id", "resolver", "uid", "realm", "username", "user_role", "event_type", "timestamp",
-                         "reasons", "source_ip", "client_label", "endpoint", "serial", "transaction_id",
+                         "reasons", "source_ip", "peer_ip", "source_ip_source", "client_label",
+                         "client_label_source", "ip_chain", "endpoint", "serial", "transaction_id",
                          "attempt_id", "other_info"}
         self.assertSetEqual(expected_keys, set(auth_log_dict.keys()))
         self.assertEqual(event_id, auth_log_dict["id"])
@@ -672,7 +714,13 @@ class AuthenticationLogDBTestCase(MyTestCase):
         log_time_tz_aware = log_time_utc_naive.replace(tzinfo=timezone.utc)
         self.assertEqual(log_time_tz_aware.isoformat(), auth_log_dict["timestamp"])
         self.assertEqual("192.168.1.1", auth_log_dict["source_ip"])
+        self.assertEqual("10.0.0.5", auth_log_dict["peer_ip"])
+        self.assertEqual("X_FORWARDED_FOR", auth_log_dict["source_ip_source"])
         self.assertEqual("vpn", auth_log_dict["client_label"])
+        self.assertEqual("client_id", auth_log_dict["client_label_source"])
+        self.assertEqual([{"ip": "10.0.0.5", "source": "REMOTE_ADDR"},
+                          {"ip": "192.168.1.1", "source": "X_FORWARDED_FOR", "effective": True}],
+                         auth_log_dict["ip_chain"])
         self.assertEqual("/validate/check", auth_log_dict["endpoint"])
         self.assertEqual(["TOKEN_DISABLED", "WRONG_OTP"], auth_log_dict["reasons"])
         self.assertEqual("TOK001", auth_log_dict["serial"])

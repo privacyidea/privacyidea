@@ -240,6 +240,20 @@ td.cell-info {
   }
 }
 
+// Names where a row's client label came from, next to the label itself. Rendered only when the row records it.
+.client-label-source-badge {
+  display: inline-block;
+  margin-left: 4px;
+  padding: 0 6px;
+  border-radius: var(--border-radius);
+  font-size: 0.75rem;
+  line-height: 1.6;
+  white-space: nowrap;
+  vertical-align: middle;
+  background: var(--mat-sys-surface-container-highest);
+  color: var(--mat-sys-on-surface-variant);
+}
+
 // The reasons of one entry: stacked, since a request that failed for several reasons lists them all and they read as
 // separate findings rather than one wrapped value.
 .reason-list {

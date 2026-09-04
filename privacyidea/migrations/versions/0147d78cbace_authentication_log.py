@@ -54,7 +54,11 @@ def upgrade():
             sa.Column('event_type', _unicode_case_sensitive(40), nullable=False),
             sa.Column('timestamp', sa.DateTime(), nullable=False),
             sa.Column('source_ip', _unicode_case_sensitive(50), nullable=True),
+            sa.Column('peer_ip', _unicode_case_sensitive(50), nullable=True),
+            sa.Column('source_ip_source', _unicode_case_sensitive(40), nullable=True),
             sa.Column('client_label', _unicode_case_sensitive(1024), nullable=True),
+            sa.Column('client_label_source', _unicode_case_sensitive(40), nullable=True),
+            sa.Column('ip_chain', sa.JSON(), nullable=True),
             sa.Column('endpoint', _unicode_case_sensitive(255), nullable=True),
             sa.Column('serial', _unicode_case_sensitive(1024), nullable=True),
             sa.Column('transaction_id', _unicode_case_sensitive(64), nullable=True),
@@ -72,9 +76,12 @@ def upgrade():
                         ['resolver', 'uid', 'realm', 'timestamp'])
         op.create_index('ix_authlog_ip_time', 'authentication_log',
                         ['source_ip', 'timestamp'])
-        # Serves the deployment-wide reads that carry no subject predicate: the authentication-log statistics query
-        # behind the dashboard's activity widget, and the retention delete in `pi-manage authlog cleanup`. The four
-        # indexes above cannot, since each leads with a subject column that such a query leaves unconstrained.
+        # The TCP peer is the second pivot a forensic query starts from - "what came from this machine",
+        # whatever it claimed to be forwarding for.
+        op.create_index('ix_authlog_peer_ip_time', 'authentication_log',
+                        ['peer_ip', 'timestamp'])
+        # The one index not scoped to a subject: the statistics query and the retention delete both range over
+        # timestamp alone, and the indexes above cannot serve that.
         op.create_index('ix_authlog_time', 'authentication_log', ['timestamp'])
 
     except (OperationalError, ProgrammingError) as ex:
@@ -129,6 +136,7 @@ def downgrade():
             batch_op.drop_index('ix_authlog_ip_event_time')
             batch_op.drop_index('ix_authlog_user_time')
             batch_op.drop_index('ix_authlog_ip_time')
+            batch_op.drop_index('ix_authlog_peer_ip_time')
             batch_op.drop_index('ix_authlog_time')
 
         op.drop_table('authentication_log')

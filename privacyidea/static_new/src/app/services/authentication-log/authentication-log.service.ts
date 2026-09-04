@@ -42,7 +42,15 @@ export interface AuthenticationLogEntry {
   reasons?: string[] | null;
   timestamp: string;
   source_ip?: string | null;
+  // TCP peer the request arrived from (REMOTE_ADDR), regardless of whether source_ip was derived from a proxy hop.
+  peer_ip?: string | null;
+  // How source_ip was derived. Null means the entry predates the recording - never that the connection was
+  // direct. See the AuthenticationLog model.
+  source_ip_source?: string | null;
+  // Recorded chain of claimed hops (peer first), with the chosen hop marked effective.
+  ip_chain?: { ip: string; source: string; effective?: boolean }[] | null;
   client_label?: string | null;
+  client_label_source?: string | null;
   endpoint?: string | null;
   serial?: string | null;
   transaction_id?: string | null;
@@ -110,11 +118,24 @@ const apiFilter = [
   "endpoint"
 ];
 
-// Filters not tied to a table column, reached via the "more filters" control: the three ca_* ones filter on the entry's
-// conditional-access outcomes (see _FILTER_PARAMS in api/authentication_log.py) and are also offered in the Conditional
-// access column's menu; resolver and uid have no column either - they identify the same user the username column
-// already names - but stay filterable by hand.
-const advancedApiFilter: string[] = ["user_role", "resolver", "uid", "ca_action_type", "ca_policy_name", "ca_dry_run"];
+// Filters not tied to a table column, reached via the "more filters" control instead of a column header. The three
+// ca_* ones filter on the entry's conditional-access outcomes (see _FILTER_PARAMS in api/authentication_log.py): they
+// are offered in the Conditional access column's menu, and listed here so they can also be typed in the main filter.
+// resolver and uid have no column either - they identify the same user the username column already names - but stay
+// filterable by hand.
+// peer_ip, source_ip_source and client_label_source describe how the client of a row was derived. They are
+// reachable from the Source IP and Client columns rather than owning a column of their own, so they live here.
+const advancedApiFilter: string[] = [
+  "user_role",
+  "resolver",
+  "uid",
+  "peer_ip",
+  "source_ip_source",
+  "client_label_source",
+  "ca_action_type",
+  "ca_policy_name",
+  "ca_dry_run"
+];
 
 // The query parameter each filter key is sent as. Every one of these filters takes a comma-separated list of values, so
 // the API names them in the plural while a filter key names the single column it matches. ca_dry_run is the exception:
