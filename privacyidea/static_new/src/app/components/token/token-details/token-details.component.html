@@ -89,7 +89,11 @@
           <span i18n="@@token.lostToken">Lost This Token?</span>
         </button>
       }
-      @if (authService.tokenRollover().indexOf(tokenType()) >= 0 && rolloverTokenTypes().indexOf(tokenTypeKey()) >= 0) {
+      @if (
+        authService.actionAllowed("token_rollover") &&
+        authService.tokenRollover().indexOf(tokenType()) >= 0 &&
+        rolloverTokenTypes().indexOf(tokenTypeKey()) >= 0
+      ) {
         <button
           (click)="rolloverToken()"
           class="action-button-secondary button-width-l"
@@ -205,6 +209,9 @@
       [infoData]="infoData"
       [isAnyEditingOrRevoked]="isAnyEditingOrRevoked"
       [isEditingInfo]="isEditingInfo"
-      [isEditingUser]="isEditingUser"></app-token-details-info>
+      [isEditingUser]="isEditingUser"
+      [readonlyInfoKeys]="readonlyInfoKeys"
+      [settableInfoKeys]="settableInfoKeys"
+      [undeletableInfoKeys]="undeletableInfoKeys"></app-token-details-info>
   </div>
 </div>

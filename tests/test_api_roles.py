@@ -952,7 +952,7 @@ class APISelfserviceTestCase(MyApiTestCase):
         selfservice_token = init_token({"type": "spass", "pin": "somepin"},
                                        user=User("selfservice", "realm1"))
         # Last authentication was too long ago.
-        selfservice_token.add_tokeninfo(PolicyAction.LASTAUTH, "2016-10-10 10:10:10.000")
+        selfservice_token.write_tokeninfo(PolicyAction.LASTAUTH, "2016-10-10 10:10:10.000")
         with self.app.test_request_context('/auth',
                                            method='POST',
                                            data={"username": "selfservice@realm1",
@@ -964,7 +964,7 @@ class APISelfserviceTestCase(MyApiTestCase):
             self.assertFalse(result.get("status"), content)
             self.assertIn("long ago", content["detail"]["message"], content)
 
-        selfservice_token.add_tokeninfo(PolicyAction.LASTAUTH, datetime.datetime.now().strftime(AUTH_DATE_FORMAT))
+        selfservice_token.write_tokeninfo(PolicyAction.LASTAUTH, datetime.datetime.now().strftime(AUTH_DATE_FORMAT))
 
         # But now it works
         with self.app.test_request_context('/auth',

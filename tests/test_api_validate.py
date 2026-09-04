@@ -414,7 +414,7 @@ class ValidateAPITestCase(MyApiTestCase):
         token.set_maxfail(5)
         token.set_failcount(5)
         past = datetime.datetime.now(tzlocal()) - datetime.timedelta(minutes=10)
-        token.add_tokeninfo(FAILCOUNTER_EXCEEDED, past.strftime(DATE_FORMAT))
+        token.write_tokeninfo(FAILCOUNTER_EXCEEDED, past.strftime(DATE_FORMAT))
         # a valid authentication will fail
         with self.app.test_request_context('/validate/check',
                                            method='POST',
@@ -484,7 +484,7 @@ class ValidateAPITestCase(MyApiTestCase):
         self.assertEqual(0, token.get_failcount())
         # an invalid auth also resets the failcount and increase it directly to one due to the invalid auth
         token.set_failcount(5)
-        token.add_tokeninfo(FAILCOUNTER_EXCEEDED, past.strftime(DATE_FORMAT))
+        token.write_tokeninfo(FAILCOUNTER_EXCEEDED, past.strftime(DATE_FORMAT))
         with self.app.test_request_context('/validate/check',
                                            method='POST',
                                            data={"serial": "pass2",
@@ -3147,7 +3147,7 @@ class ValidateAPITestCase(MyApiTestCase):
         # lastauth: currently 200, should be 401
         now = datetime.datetime.now(datetime.timezone.utc)
         thirty_days_ago = now - datetime.timedelta(days=30)
-        token.add_tokeninfo(PolicyAction.LASTAUTH, thirty_days_ago.strftime(AUTH_DATE_FORMAT))
+        token.write_tokeninfo(PolicyAction.LASTAUTH, thirty_days_ago.strftime(AUTH_DATE_FORMAT))
         set_policy("lastauth", scope=SCOPE.AUTHZ, action=f"{PolicyAction.LASTAUTH}=7d")
         with self.app.test_request_context('/validate/check', method="POST",
                                            data={

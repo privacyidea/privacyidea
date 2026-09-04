@@ -5012,18 +5012,22 @@ class APISSHKeyReadTestCase(MyApiTestCase):
             self.assertIn("integrity", res.json["result"]["error"]["message"].lower())
         remove_token(serial)
 
-    def test_08_legitimate_tokeninfo_change_keeps_integrity(self):
+    def test_08_tokeninfo_change_keeps_integrity(self):
         serial = "SSHREAD8"
-        self._init_sshkey_token(serial)
-        # A legitimate change of the SSH comment through the generic
-        # settokeninfo endpoint must keep the integrity checksum in sync, so
-        # the key can still be read afterwards.
+        token = self._init_sshkey_token(serial)
+        # The SSH key data is covered by the integrity checksum and is owned by the token class, so it cannot be
+        # changed through the generic token info endpoint.
         with self.app.test_request_context(f'/token/info/{serial}/ssh_comment',
                                            method="POST",
                                            data={"value": "new-comment"},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
-            self.assertTrue(res.json["result"]["status"])
+            self.assertEqual(403, res.status_code, res)
+            self.assertFalse(res.json["result"]["status"])
+
+        # A server side change goes through the writer, which keeps the checksum in sync, so the key can still
+        # be read afterwards
+        token.write_tokeninfo("ssh_comment", "new-comment")
         with self.app.test_request_context(f'/token/sshkey/{serial}',
                                            method="GET",
                                            headers={'Authorization': self.at}):
@@ -5033,30 +5037,38 @@ class APISSHKeyReadTestCase(MyApiTestCase):
             self.assertTrue(res.json["result"]["value"]["sshkey"].endswith("new-comment"))
         remove_token(serial)
 
-    def test_09_settokeninfo_keeps_the_key_encrypted(self):
+    def test_09_settokeninfo_cannot_replace_the_key(self):
         serial = "SSHREAD9"
         token = self._init_sshkey_token(serial)
         key_part = self.sshkey.split()[1]
         other_key_part = key_part[:-4] + "AAAA"
-        # The generic settokeninfo endpoint does not pass a value type. The
-        # token class enforces it, so the key stays encrypted at rest.
+        # The public key is what the token authenticates with, so it is owned by the token class and the generic
+        # token info endpoint cannot replace it with a different key.
         with self.app.test_request_context(f'/token/info/{serial}/ssh_key',
                                            method="POST",
                                            data={"value": other_key_part},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
-            self.assertTrue(res.json["result"]["status"])
+            self.assertEqual(403, res.status_code, res)
+            self.assertFalse(res.json["result"]["status"])
+
+        # Deleting it is refused for the same reason
+        with self.app.test_request_context(f'/token/info/{serial}/ssh_key',
+                                           method="DELETE",
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(403, res.status_code, res)
+            self.assertFalse(res.json["result"]["status"])
+
+        # The original key is untouched and still readable
         info = token.get_tokeninfo()
         self.assertEqual("password", info.get("ssh_key.type"))
-        self.assertNotEqual(other_key_part, info.get("ssh_key"))
-        # The key is still readable, so the checksum was kept in sync as well
         with self.app.test_request_context(f'/token/sshkey/{serial}',
                                            method="GET",
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertEqual(200, res.status_code, res)
-            self.assertEqual(f"ssh-ed25519 {other_key_part} cornelius@puck",
-                             res.json["result"]["value"]["sshkey"])
+            self.assertEqual(self.sshkey, res.json["result"]["value"]["sshkey"])
         remove_token(serial)
 
     def test_10_disabled_token_does_not_hand_out_the_key(self):
@@ -5076,4 +5088,397 @@ class APISSHKeyReadTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertEqual(200, res.status_code, res)
             self.assertEqual(self.sshkey, res.json["result"]["value"]["sshkey"])
+        remove_token(serial)
+
+
+class APITokenRolloverRightTestCase(MyApiTestCase):
+    """
+    POST /token/init updates a token when it is called with a serial that already exists. While the enrollment
+    of that token is under way that is part of the enrollment, but once the token is in use the same request
+    gives it a new secret, which needs the token_rollover action on top of the enrollment action.
+    """
+    serial = "ROLLOVER001"
+    original_key = "31323334353637383930313233343536373839dd"
+    chosen_key = "dddddddddddddddddddddddddddddddddddddddd"
+
+    def _init_owned_token(self, serial: str = None) -> "TokenClass":
+        return init_token({"serial": serial or self.serial, "type": "hotp", "otpkey": self.original_key,
+                           "pin": "ownerpin"}, user=User("cornelius", self.realm1))
+
+    def _init_request(self, data: dict) -> "Response":
+        with self.app.test_request_context('/token/init',
+                                           method="POST",
+                                           data=data,
+                                           headers={'Authorization': self.at}):
+            return self.app.full_dispatch_request()
+
+    def test_01_the_enrollment_action_alone_cannot_rekey_a_token(self):
+        self.setUp_user_realms()
+        self._init_owned_token()
+        set_policy("rollover_enroll_only", scope=SCOPE.ADMIN, action="enrollHOTP")
+
+        # Neither with a chosen key, nor by asking for a new one, nor by naming it a rollover
+        for data in [{"serial": self.serial, "type": "hotp", "otpkey": self.chosen_key},
+                     {"serial": self.serial, "type": "hotp", "genkey": 1},
+                     {"serial": self.serial, "type": "hotp", "rollover": 1, "otpkey": self.chosen_key},
+                     {"serial": self.serial, "type": "hotp", "pin": "adminpin"}]:
+            res = self._init_request(data)
+            self.assertEqual(403, res.status_code, f"{data} -> {res.json}")
+
+        # The secret and the PIN of the owner are untouched
+        token = get_one_token(serial=self.serial)
+        self.assertEqual(self.original_key, token.token.get_otpkey().getKey().decode("utf-8"))
+        self.assertTrue(token.check_pin("ownerpin"))
+
+        delete_policy("rollover_enroll_only")
+        remove_token(self.serial)
+
+    def test_02_enrolling_a_new_token_only_needs_the_enrollment_action(self):
+        self.setUp_user_realms()
+        set_policy("rollover_enroll_only", scope=SCOPE.ADMIN, action="enrollHOTP")
+
+        res = self._init_request({"serial": "ROLLOVER002", "type": "hotp", "genkey": 1})
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertTrue(token_exist("ROLLOVER002"))
+
+        delete_policy("rollover_enroll_only")
+        remove_token("ROLLOVER002")
+
+    def test_03_the_rollover_action_allows_the_rekey(self):
+        self.setUp_user_realms()
+        self._init_owned_token()
+        set_policy("rollover_allowed", scope=SCOPE.ADMIN, action="enrollHOTP, token_rollover")
+
+        res = self._init_request({"serial": self.serial, "type": "hotp", "otpkey": self.chosen_key})
+        self.assertEqual(200, res.status_code, res.json)
+        token = get_one_token(serial=self.serial)
+        self.assertEqual(self.chosen_key, token.token.get_otpkey().getKey().decode("utf-8"))
+
+        delete_policy("rollover_allowed")
+        remove_token(self.serial)
+
+    def test_04_an_enrollment_still_being_finished_is_not_a_rollover(self):
+        self.setUp_user_realms()
+        set_policy("rollover_two_step", scope=SCOPE.ADMIN, action="enrollHOTP, hotp_2step=allow")
+        serial = "ROLLOVER004"
+
+        # The first request leaves the token waiting for the client
+        res = self._init_request({"serial": serial, "type": "hotp", "2stepinit": 1, "genkey": 1})
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertEqual(RolloutState.CLIENTWAIT, get_one_token(serial=serial).token.rollout_state)
+
+        # The second request comes back to the same serial and completes the enrollment, with no rollover action
+        res = self._init_request({"serial": serial, "type": "hotp", "otpkey": "aaaaaaaaaaaaaaaa"})
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertEqual(RolloutState.ENROLLED, get_one_token(serial=serial).token.rollout_state)
+
+        delete_policy("rollover_two_step")
+        remove_token(serial)
+
+    def test_05_the_rollover_is_matched_against_the_realm_of_the_token(self):
+        self.setUp_user_realms()
+        self.setUp_user_realm2()
+        self._init_owned_token()
+
+        # The admin may roll over tokens of realm2, the token belongs to realm1
+        set_policy("rollover_realm2", scope=SCOPE.ADMIN, action="enrollHOTP, token_rollover", realm=self.realm2)
+        res = self._init_request({"serial": self.serial, "type": "hotp", "otpkey": self.chosen_key})
+        self.assertEqual(403, res.status_code, res.json)
+        self.assertEqual(self.original_key,
+                         get_one_token(serial=self.serial).token.get_otpkey().getKey().decode("utf-8"))
+
+        # The realm of the token is what counts, not a realm passed in the request
+        res = self._init_request({"serial": self.serial, "type": "hotp", "otpkey": self.chosen_key,
+                                  "realm": self.realm2})
+        self.assertEqual(403, res.status_code, res.json)
+
+        delete_policy("rollover_realm2")
+        remove_token(self.serial)
+
+
+class APITokenInfoWriteTestCase(MyApiTestCase):
+    """
+    The generic token info endpoints let an administrator write and delete arbitrary token info keys. Callers of
+    those endpoints do not know the value type of a key, so a write must not change how the stored value is
+    interpreted.
+    """
+
+    def test_01_overwriting_an_encrypted_value_keeps_it_encrypted(self):
+        serial = "TINFO001"
+        init_token({"serial": serial, "type": "hotp", "genkey": 1})
+        add_tokeninfo(serial, "radius.secret", "firstSecret", value_type="password")
+        token = get_one_token(serial=serial)
+        self.assertEqual("password", token.get_tokeninfo().get("radius.secret.type"))
+
+        with self.app.test_request_context(f'/token/info/{serial}/radius.secret',
+                                           method="POST",
+                                           data={"value": "secondSecret"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            self.assertTrue(res.json["result"]["value"])
+
+        token = get_one_token(serial=serial)
+        raw_info = token.get_tokeninfo()
+        self.assertEqual("password", raw_info.get("radius.secret.type"), raw_info)
+        self.assertNotEqual("secondSecret", raw_info.get("radius.secret"), raw_info)
+        self.assertEqual("secondSecret", token.get_tokeninfo("radius.secret"))
+        remove_token(serial)
+
+    def test_02_the_type_suffix_is_reserved(self):
+        serial = "TINFO002"
+        init_token({"serial": serial, "type": "hotp", "genkey": 1})
+        add_tokeninfo(serial, "radius.secret", "theSecret", value_type="password")
+
+        # A stored key with the ".type" suffix would shadow the synthetic entry that carries the value type of
+        # "radius.secret", so writing it is refused.
+        with self.app.test_request_context(f'/token/info/{serial}/radius.secret.type',
+                                           method="POST",
+                                           data={"value": "text"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(400, res.status_code, res)
+            self.assertFalse(res.json["result"]["status"])
+
+        token = get_one_token(serial=serial)
+        self.assertEqual("password", token.get_tokeninfo().get("radius.secret.type"))
+        self.assertEqual("theSecret", token.get_tokeninfo("radius.secret"))
+        remove_token(serial)
+
+    def test_02b_a_key_owned_by_the_token_class_is_refused(self):
+        serial = "TINFO002B"
+        init_token({"serial": serial, "type": "hotp", "genkey": 1})
+
+        # "hashlib" decides how the OTP values of the token are calculated, so it is owned by the token class
+        # and has its own endpoint (POST /token/set) instead
+        for method in ("POST", "DELETE"):
+            with self.app.test_request_context(f'/token/info/{serial}/hashlib',
+                                               method=method,
+                                               data={"value": "sha512"},
+                                               headers={'Authorization': self.at}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(403, res.status_code, res)
+                self.assertFalse(res.json["result"]["status"])
+        self.assertEqual("sha1", get_one_token(serial=serial).get_tokeninfo("hashlib"))
+
+        # The dedicated endpoint still writes it
+        with self.app.test_request_context('/token/set',
+                                           method="POST",
+                                           data={"serial": serial, "hashlib": "sha512"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+        self.assertEqual("sha512", get_one_token(serial=serial).get_tokeninfo("hashlib"))
+        remove_token(serial)
+
+    def test_02c_a_refill_token_can_be_deleted_but_not_changed(self):
+        serial = "TINFO002C"
+        token = init_token({"serial": serial, "type": "hotp", "genkey": 1})
+        token.write_tokeninfo("refilltoken", "theRefillToken")
+
+        # Choosing the value of a refill token would allow refilling offline OTP material with it
+        with self.app.test_request_context(f'/token/info/{serial}/refilltoken',
+                                           method="POST",
+                                           data={"value": "chosenValue"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(403, res.status_code, res)
+        self.assertEqual("theRefillToken", get_one_token(serial=serial).get_tokeninfo("refilltoken"))
+
+        # Deleting it only revokes the ability to refill, so an administrator may do it
+        with self.app.test_request_context(f'/token/info/{serial}/refilltoken',
+                                           method="DELETE",
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+        self.assertIsNone(get_one_token(serial=serial).get_tokeninfo("refilltoken"))
+        remove_token(serial)
+
+    def test_02d_the_token_list_marks_the_restricted_info_keys(self):
+        serial = "TINFO002D"
+        token = init_token({"serial": serial, "type": "hotp", "genkey": 1})
+        token.write_tokeninfo("refilltoken", "theRefillToken")
+        token.write_tokeninfo("radius.secret", "theSecret", value_type="password")
+        token.add_tokeninfo("a note", "some text")
+
+        with self.app.test_request_context('/token/',
+                                           method="GET",
+                                           data={"serial": serial},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            token_data = res.json["result"]["value"]["tokens"][0]
+
+        readonly = token_data["readonly_info_keys"]
+        undeletable = token_data["undeletable_info_keys"]
+        settable = token_data["settable_info_keys"]
+
+        # A key the token class maintains cannot be changed
+        self.assertIn("hashlib", readonly, readonly)
+        self.assertIn("tokenkind", readonly, readonly)
+        self.assertIn("hashlib", undeletable, undeletable)
+        # A refill token cannot be changed, but revoking it by deleting it is allowed
+        self.assertIn("refilltoken", readonly, readonly)
+        self.assertNotIn("refilltoken", undeletable, undeletable)
+        # The value type of an entry is synthesized from the entry, not stored on its own
+        self.assertIn("radius.secret.type", readonly, readonly)
+        self.assertIn("radius.secret.type", undeletable, undeletable)
+        # Free-form metadata is unrestricted. On a HOTP token "radius.secret" is free-form as well, only the
+        # radius token class owns that namespace.
+        self.assertNotIn("a note", readonly, readonly)
+        self.assertNotIn("a note", undeletable, undeletable)
+        self.assertNotIn("radius.secret", readonly, readonly)
+
+        # An entry with its own endpoint is read-only for the token info endpoint but still settable
+        self.assertIn("hashlib", settable, settable)
+        self.assertNotIn("refilltoken", settable, settable)
+        self.assertNotIn("tokenkind", settable, settable)
+
+        # Every listed key is really part of the returned token info
+        for key in readonly + undeletable + settable:
+            self.assertIn(key, token_data["info"], key)
+        # The two subsets are subsets of the read-only entries
+        for key in undeletable + settable:
+            self.assertIn(key, readonly, key)
+        remove_token(serial)
+
+    def test_02e_token_type_entries_are_written_through_token_set(self):
+        serial = "TINFO002E"
+        init_token({"serial": serial, "type": "remote", "remote.server": "https://first",
+                    "remote.user": "firstuser"})
+
+        # The token info endpoint refuses the namespace of the token type
+        with self.app.test_request_context(f'/token/info/{serial}/remote.user',
+                                           method="POST",
+                                           data={"value": "seconduser"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(403, res.status_code, res)
+        self.assertEqual("firstuser", get_one_token(serial=serial).get_tokeninfo("remote.user"))
+
+        # /token/set writes it, gated by its own action and audited per field. The response counts one per
+        # entry written, the way the other fields of the endpoint count.
+        with self.app.test_request_context('/token/set',
+                                           method="POST",
+                                           data={"serial": serial, "remote.user": "seconduser",
+                                                 "remote.path": "/path"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            self.assertEqual(2, res.json["result"]["value"])
+        token = get_one_token(serial=serial)
+        self.assertEqual("seconduser", token.get_tokeninfo("remote.user"))
+        self.assertEqual("/path", token.get_tokeninfo("remote.path"))
+        # The other entries of the namespace are untouched
+        self.assertEqual("https://first", token.get_tokeninfo("remote.server"))
+
+        # A key another token type declares settable is not written to this token
+        with self.app.test_request_context('/token/set',
+                                           method="POST",
+                                           data={"serial": serial, "radius.user": "someuser"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            self.assertEqual(0, res.json["result"]["value"])
+        self.assertIsNone(get_one_token(serial=serial).get_tokeninfo("radius.user"))
+
+        # A key no token type declares settable is refused
+        with self.app.test_request_context('/token/set',
+                                           method="POST",
+                                           data={"serial": serial, "remotee.user": "someuser"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+        self.assertIsNone(get_one_token(serial=serial).get_tokeninfo("remotee.user"))
+        remove_token(serial)
+
+    def test_02e2_the_secret_of_a_token_is_not_settable(self):
+        # A TAN is stored in the "tan." namespace of a TAN token and is what the token authenticates with, so
+        # it is not among the entries POST /token/set may write
+        tan_serial = "TINFO002E2"
+        init_token({"serial": tan_serial, "type": "tan", "genkey": 1})
+        tan_token = get_one_token(serial=tan_serial)
+        stored_tan = [key for key in tan_token.get_tokeninfo() if key.startswith("tan.tan")][0]
+
+        with self.app.test_request_context('/token/set',
+                                           method="POST",
+                                           data={"serial": tan_serial, stored_tan: "somesalt:somehash"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            self.assertEqual(0, res.json["result"]["value"])
+        self.assertNotEqual("somesalt:somehash", get_one_token(serial=tan_serial).get_tokeninfo(stored_tan))
+        remove_token(tan_serial)
+
+        # The same for the public id a yubikey is recognized by
+        yubi_serial = "TINFO002E3"
+        init_token({"serial": yubi_serial, "type": "yubikey", "otpkey": "31323334353637383930313233343536",
+                    "otplen": 44})
+        yubi_token = get_one_token(serial=yubi_serial)
+        yubi_token.write_tokeninfo("yubikey.prefix", "ccccccorigin")
+
+        with self.app.test_request_context('/token/set',
+                                           method="POST",
+                                           data={"serial": yubi_serial, "yubikey.prefix": "ccccccattacker"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            self.assertEqual(0, res.json["result"]["value"])
+        self.assertEqual("ccccccorigin", get_one_token(serial=yubi_serial).get_tokeninfo("yubikey.prefix"))
+        remove_token(yubi_serial)
+
+    def test_02e3_an_operator_switch_stays_free_form(self):
+        # Nothing in the server writes these, they are switches an administrator sets on a single token, so
+        # they stay writable through the token info endpoint
+        for token_type, key, value in [("indexedsecret", "multichallenge", "1"),
+                                       ("push", "polling_allowed", "False")]:
+            serial = f"TINFO_FREE_{token_type}"
+            init_token({"serial": serial, "type": token_type, "genkey": 1})
+            with self.app.test_request_context(f'/token/info/{serial}/{key}',
+                                               method="POST",
+                                               data={"value": value},
+                                               headers={'Authorization': self.at}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, f"{token_type}/{key}: {res.json}")
+            self.assertEqual(value, get_one_token(serial=serial).get_tokeninfo(key))
+            remove_token(serial)
+
+    def test_02f_a_type_entry_is_only_set_while_the_token_is_enrolled(self):
+        serial = "TINFO002F"
+        init_token({"serial": serial, "type": "remote", "remote.server": "https://first"})
+        self.assertEqual(RolloutState.ENROLLED, get_one_token(serial=serial).token.rollout_state)
+
+        # The entries of the type's namespace belong to the enrollment, so calling init again for a token that
+        # is already enrolled leaves them alone. A later change goes through POST /token/set.
+        with self.app.test_request_context('/token/init',
+                                           method="POST",
+                                           data={"serial": serial, "type": "remote",
+                                                 "remote.server": "https://second"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+        token = get_one_token(serial=serial)
+        self.assertEqual("https://first", token.get_tokeninfo("remote.server"))
+        # The kind of the token is not changed to the default of the parent class either
+        self.assertEqual("virtual", token.get_tokeninfo("tokenkind"))
+        remove_token(serial)
+
+    def test_03_a_free_form_key_can_still_be_written_and_deleted(self):
+        serial = "TINFO003"
+        init_token({"serial": serial, "type": "hotp", "genkey": 1})
+
+        with self.app.test_request_context(f'/token/info/{serial}/mynote',
+                                           method="POST",
+                                           data={"value": "some note"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+        self.assertEqual("some note", get_one_token(serial=serial).get_tokeninfo("mynote"))
+
+        with self.app.test_request_context(f'/token/info/{serial}/mynote',
+                                           method="DELETE",
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+        self.assertIsNone(get_one_token(serial=serial).get_tokeninfo("mynote"))
         remove_token(serial)

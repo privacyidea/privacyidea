@@ -55,6 +55,10 @@ class DeprecatedTokenClass(TokenClass):
 
     mode = []
 
+    # What the token was before its type was retired. The migration writes these when it retires a type and
+    # reads them back when it is reverted, so rewriting one would make a downgrade restore the wrong token.
+    owned_tokeninfo_keys = frozenset({"deprecated_in", "original_active", "original_tokentype"})
+
     @staticmethod
     def get_class_type():
         return "deprecated"

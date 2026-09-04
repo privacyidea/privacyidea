@@ -8,7 +8,7 @@ from typing import Any, TYPE_CHECKING
 from sqlalchemy.sql.expression import delete
 
 from privacyidea.lib import _
-from privacyidea.lib.config import (get_from_config)
+from privacyidea.lib.config import (get_from_config, get_token_class_dict)
 from privacyidea.lib.decorators import (check_user_or_serial)
 from privacyidea.lib.error import (TokenAdminError,
                                    ParameterError)
@@ -510,7 +510,7 @@ def add_tokeninfo(serial: str, info: str, value: Any = None, value_type: str | N
     tokenobject_list = get_tokens_from_serial_or_user(serial=serial, user=user)
 
     for tokenobject in tokenobject_list:
-        tokenobject.add_tokeninfo(info, value)
+        tokenobject.add_tokeninfo(info, value, value_type=value_type)
         tokenobject.save()
 
     return len(tokenobject_list)
@@ -537,6 +537,55 @@ def delete_tokeninfo(serial: str, key: str, user: "User | None" = None) -> int:
         tokenobject.save()
 
     return len(tokenobject_list)
+
+
+def is_settable_tokeninfo_key(key: str) -> bool:
+    """
+    Whether any token type declares the given token info key as settable through POST /token/set, see
+    TokenClass.settable_tokeninfo_keys. Used to tell such a parameter apart from an unrelated one.
+
+    :param key: The token info key to check
+    :return: True if some token type allows the key to be set
+    """
+    return any(token_class.is_settable_tokeninfo_key(key)
+               for token_class in get_token_class_dict()[0].values())
+
+
+@log_with(log)
+@check_user_or_serial
+def set_token_type_info(serial: str | None, info: dict, user: "User | None" = None) -> int:
+    """
+    Write token info entries that a token class maintains but that change over the lifetime of a token, e.g.
+    "remote.user" on a remote token or "phone" on an SMS token. They cannot be written through the generic
+    token info endpoints, but an administrator who may modify the token may change them.
+
+    Only a key a token class declares as settable is written, see TokenClass.settable_tokeninfo_keys. The keys
+    that carry the secret of a token are not settable, so a parameter cannot reach them, and neither can it
+    reach a key of a different token type. A key that no token class declares settable is rejected.
+
+    :param serial: The serial number of the token
+    :param info: The entries to write, as {key: value}
+    :param user: The owner of the tokens that should be modified
+    :return: The number of entries written, counted per token, the way the other setters of POST /token/set
+        count the tokens they modified
+    """
+    for key in info:
+        if not is_settable_tokeninfo_key(key):
+            raise ParameterError(f"The token info key '{key}' can not be set on any token type.")
+
+    tokenobject_list = get_tokens_from_serial_or_user(serial=serial, user=user)
+    written_entries = 0
+    for tokenobject in tokenobject_list:
+        # A user can own tokens of several types, only the keys this token declares settable are touched
+        own_info = {key: value for key, value in info.items()
+                    if tokenobject.is_settable_tokeninfo_key(key)}
+        if not own_info:
+            continue
+        for key, value in own_info.items():
+            tokenobject.write_tokeninfo(key, value)
+        tokenobject.save()
+        written_entries += len(own_info)
+    return written_entries
 
 
 @log_with(log)

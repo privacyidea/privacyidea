@@ -114,6 +114,14 @@ to set those token properties like ``description``, ``max_failcount``
 or ``validity_period_start`` at the ``/token/set`` endpoints
 (see :ref:`rest_token`).
 
+The endpoint also takes the token info entries that a token type maintains but
+declares settable, e.g. ``timeWindow`` and ``timeStep`` of a TOTP token,
+``phone`` of an SMS token, ``email`` of an email token, or ``remote.user`` and
+``radius.server``. Such an entry is only written to a token of a type that
+declares it, so a parameter cannot reach a different token type, and the
+entries that carry what a token authenticates with are not settable at all.
+These entries are otherwise written during the enrollment of the token.
+
 setdescription
 ~~~~~~~~~~~~~~
 
@@ -140,12 +148,58 @@ type: ``bool``
 If the ``setrandompin`` action is defined, the administrator
 is allowed to call the endpoint that sets a random token PIN.
 
+token_rollover
+~~~~~~~~~~~~~~
+
+type: ``bool``
+
+The administrator is allowed to roll over a token that is already enrolled,
+which gives it a new secret.
+
+``POST /token/init`` updates a token when it is called with the serial of a
+token that already exists. While the enrollment of that token is still under
+way — the second request of a two-step or a FIDO2 enrollment, a token waiting
+to be verified — that is part of the enrollment and only needs the
+``enroll<TOKENTYPE>`` action. Once the token is in use, the same request gives
+it a new secret, so it additionally requires this action, and the policy is
+matched against the realm of the existing token rather than against a realm
+passed in the request.
+
+Enrolling a new token is unaffected and needs only the enrollment action of
+its token type.
+
+.. note:: There is an action of the same name in the :ref:`webui_policies`
+   scope. That one only decides for which token types the WebUI offers a
+   rollover button; this one decides whether the request is carried out.
+
 settokeninfo
 ~~~~~~~~~~~~
 
 type: ``bool``
 
 The administrator is allowed to manually set and delete token info.
+
+This covers the free-form entries of the token info. Every token type also
+keeps entries of its own there, e.g. the public key of a passkey, the server a
+RADIUS token forwards to or the questions of a questionnaire token. Those are
+written by the token itself and are rejected by this action, because their
+value decides how the token authenticates. They remain readable and can still
+be used in policy conditions, and the WebUI shows them without an edit field.
+
+A per-token switch that privacyIDEA never writes itself, e.g. ``multichallenge``
+of an indexed secret token or ``polling_allowed`` of a push token, is free-form
+and is set with this action as before.
+
+The entries that do change over the lifetime of a token are set through the
+``set`` action instead, see :http:post:`/token/set`: the generic ones like
+``hashlib`` or ``validity_period_end``, and every entry a token type declares
+settable, e.g. ``timeWindow`` of a TOTP token, ``phone`` of an SMS token or
+``remote.user`` of a remote token.
+
+An offline refill token can be deleted with this action, which revokes the
+ability to refill offline OTP values, but it cannot be set to a given value.
+Only the token types the offline machine application supports have one, namely
+HOTP, WebAuthn and passkey tokens.
 
 enrollpin
 ~~~~~~~~~

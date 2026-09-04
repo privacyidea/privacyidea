@@ -128,6 +128,17 @@ $description-width: 18rem;
       min-width: 0;
     }
 
+    // An entry the token maintains itself has no input, its value keeps the display look while editing so the
+    // row still reads as a value rather than as an empty field.
+    .info-value-readonly {
+      flex: 1 1 auto;
+      min-width: 0;
+      padding: 8px 16px;
+      overflow-wrap: anywhere;
+      background: var(--mat-sys-surface-container);
+      border-radius: var(--border-radius);
+    }
+
     button {
       flex: 0 0 auto;
     }

@@ -108,7 +108,7 @@ class FourEyesTokenTestCase(MyTestCase):
         })
 
         foureyetoken.set_description("this is a four-eye token export test")
-        foureyetoken.add_tokeninfo("hashlib", "sha256")
+        foureyetoken.write_tokeninfo("hashlib", "sha256")
 
         # Test that all expected keys are present in the exported dictionary
         exported_data = foureyetoken.export_token()

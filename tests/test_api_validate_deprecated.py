@@ -41,8 +41,8 @@ class DeprecatedTokenValidateTestCase(MyApiTestCase):
         db_token = Token(depr_serial, tokentype="deprecated")
         db_token.save()
         depr_token = DeprecatedTokenClass(db_token)
-        depr_token.add_tokeninfo("original_tokentype", "u2f")
-        depr_token.add_tokeninfo("deprecated_in", "3.14")
+        depr_token.write_tokeninfo("original_tokentype", "u2f")
+        depr_token.write_tokeninfo("deprecated_in", "3.14")
         depr_token.add_user(user)
         depr_token.token.active = True
         depr_token.token.save()
@@ -103,7 +103,7 @@ class DeprecatedTokenValidateTestCase(MyApiTestCase):
         db_token = Token(depr_serial, tokentype="deprecated")
         db_token.save()
         depr_token = DeprecatedTokenClass(db_token)
-        depr_token.add_tokeninfo("original_tokentype", "u2f")
+        depr_token.write_tokeninfo("original_tokentype", "u2f")
         depr_token.add_user(user)
         depr_token.token.active = True
         depr_token.token.save()
@@ -134,7 +134,7 @@ class DeprecatedTokenValidateTestCase(MyApiTestCase):
         db_token = Token(depr_serial, tokentype="deprecated")
         db_token.save()
         depr_token = DeprecatedTokenClass(db_token)
-        depr_token.add_tokeninfo("original_tokentype", "u2f")
+        depr_token.write_tokeninfo("original_tokentype", "u2f")
         depr_token.add_user(user)
         depr_token.token.active = True
         depr_token.token.save()

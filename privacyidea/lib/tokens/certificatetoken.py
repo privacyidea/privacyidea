@@ -254,6 +254,8 @@ class CertificateTokenClass(TokenClass):
     using_pin = False
     hKeyRequired = False
 
+    owned_tokeninfo_keys = frozenset({"CA", "certificate", "pkcs12", "pkcs12_password", "privatekey", REQUEST_ID})
+
     def __init__(self, aToken):
         TokenClass.__init__(self, aToken)
         self.set_type("certificate")
@@ -412,7 +414,7 @@ class CertificateTokenClass(TokenClass):
                     certificate = cacon.get_issued_certificate(request_id)
                     # Update the rollout state
                     self.token.rollout_state = RolloutState.ENROLLED
-                    self.add_tokeninfo("certificate", certificate)
+                    self.write_tokeninfo("certificate", certificate)
                 elif status == 2:  # denied
                     log.warning(f"The certificate {self.token.serial!s} has been denied by the CA.")
                     self.token.rollout_state = RolloutState.DENIED
@@ -452,7 +454,7 @@ class CertificateTokenClass(TokenClass):
             # If we do not upload a user certificate, then we need a CA do
             # sign the uploaded request or generated certificate.
             ca = get_required(param, "ca")
-            self.add_tokeninfo("CA", ca)
+            self.write_tokeninfo("CA", ca)
             ca_connector = get_caconnector_object(ca)
         if request:
             if not spkac:
@@ -562,16 +564,16 @@ class CertificateTokenClass(TokenClass):
             # will be no certificate in the container, just the private key.
             pkcs12_password, pkcs12_container = self._create_pkcs12_bin(certificate, key_pem)
             pkcs12_container_encoded = b64encode_and_unicode(pkcs12_container)
-            self.add_tokeninfo("pkcs12", pkcs12_container_encoded)
+            self.write_tokeninfo("pkcs12", pkcs12_container_encoded)
             self.add_init_details("pkcs12", pkcs12_container_encoded)
             if pkcs12_password:
                 self.add_init_details("pkcs12_password", pkcs12_password)
 
         if certificate:
-            self.add_tokeninfo("certificate", certificate)
+            self.write_tokeninfo("certificate", certificate)
 
         if request_id:
-            self.add_tokeninfo(REQUEST_ID, request_id)
+            self.write_tokeninfo(REQUEST_ID, request_id)
 
     @log_with(log)
     def get_init_detail(self, params=None, user=None):

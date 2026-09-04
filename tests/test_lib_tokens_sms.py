@@ -512,7 +512,7 @@ class SMSTokenTestCase(MyTestCase):
         smstoken = init_token(
             param={'serial': "SMS12345678", 'type': 'sms', 'otpkey': '12345', "phone": "+49123456789"})
         smstoken.set_description("this is a sms token export test")
-        smstoken.add_tokeninfo("hashlib", "sha256")
+        smstoken.write_tokeninfo("hashlib", "sha256")
 
         # Test that all expected keys are present in the exported dictionary
         exported_data = smstoken.export_token()

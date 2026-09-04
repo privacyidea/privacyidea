@@ -522,7 +522,7 @@ class EmailTokenTestCase(MyTestCase):
         # set it to the token instead of changing the global config
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = EmailTokenClass(db_token)
-        token.add_tokeninfo("email.identifier", "myServer")
+        token.write_tokeninfo("email.identifier", "myServer")
         self.assertTrue(token.check_otp("123456", 1, 10) == -1)
         c = token.create_challenge(transactionid)
         self.assertTrue(c[0], c)
@@ -539,7 +539,7 @@ class EmailTokenTestCase(MyTestCase):
         emailtoken = init_token(param={'serial': "PIEM12345678", 'type': 'email', 'otpkey': '12345',
                                        "email": "test@example.com"})
         emailtoken.set_description("this is a email token export test")
-        emailtoken.add_tokeninfo("hashlib", "sha512")
+        emailtoken.write_tokeninfo("hashlib", "sha512")
 
         # Test that all expected keys are present in the exported dictionary
         exported_data = emailtoken.export_token()

@@ -676,7 +676,7 @@ class DayPasswordTokenTestCase(MyTestCase):
         # Set up the DayPasswordTokenClass for testing
         daypasswordtoken = init_token(param={'serial': "DAYPASS12345678", 'type': 'daypassword', 'otpkey': '12345'})
         daypasswordtoken.set_description("this is a day password token export test")
-        daypasswordtoken.add_tokeninfo("hashlib", "sha256")
+        daypasswordtoken.write_tokeninfo("hashlib", "sha256")
 
         # Test that all expected keys are present in the exported dictionary
         exported_data = daypasswordtoken.export_token()

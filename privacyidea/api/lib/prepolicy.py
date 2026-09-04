@@ -1721,6 +1721,13 @@ def check_token_init(request=None, action=None):
     if the requested tokentype is allowed to be enrolled in the SCOPE ADMIN
     or the SCOPE USER.
 
+    If the request carries the serial of a token that already exists, init_token() updates that token instead
+    of creating one. As long as the enrollment of that token is still under way, e.g. the second request of a
+    two-step or a FIDO2 enrollment, that is part of the enrollment. Once the token is in use, the same request
+    gives it a new secret, which is a modification of a token somebody may already authenticate with, so it
+    additionally requires the token_rollover action and is matched against the realm of that token rather than
+    against the realm passed in the request.
+
     :param request:
     :param action:
     :return: True or an Exception is raised
@@ -1729,6 +1736,8 @@ def check_token_init(request=None, action=None):
                      "enroll this token type!",
              "admin": "Admin actions are defined, but you are not allowed to "
                       "enroll this token type!"}
+    ROLLOVER_ERROR = {"user": "You are not allowed to roll over this token!",
+                      "admin": "You are not allowed to roll over this token!"}
     params = request.all_data
     resolver = request.User.resolver if request.User else None
     (role, username, userrealm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user, params)
@@ -1744,6 +1753,22 @@ def check_token_init(request=None, action=None):
                                  user_object=request.User).allowed()
     if not init_allowed:
         raise PolicyError(ERROR.get(role))
+
+    serial = get_optional(params, "serial")
+    existing_token = get_one_token(serial=serial, silent_fail=True) if serial else None
+    if existing_token and existing_token.token.rollout_state not in RolloutState.enrollment_pending_states():
+        token_owner = existing_token.user
+        rollover_allowed = Match.generic(g, action=PolicyAction.TOKENROLLOVER,
+                                         user=token_owner.login if token_owner else None,
+                                         resolver=token_owner.resolver if token_owner else None,
+                                         realm=token_owner.realm if token_owner else None,
+                                         scope=role,
+                                         adminrealm=adminrealm,
+                                         adminuser=adminuser,
+                                         user_object=token_owner or None).allowed()
+        if not rollover_allowed:
+            log.info(f"The {role} is not allowed to roll over the token {serial}, which is already enrolled.")
+            raise PolicyError(ROLLOVER_ERROR.get(role))
     return True
 
 

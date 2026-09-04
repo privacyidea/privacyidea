@@ -10,16 +10,20 @@ from dateutil.tz import tzlocal
 from mock import mock
 from sqlalchemy import select
 
+import privacyidea
 from privacyidea.lib.challenge import get_challenges
-from privacyidea.lib.config import set_privacyidea_config
+from privacyidea.lib.config import set_privacyidea_config, get_token_class_dict
 from privacyidea.lib.container import init_container, add_token_to_container
 from privacyidea.lib.crypto import geturandom
-from privacyidea.lib.error import TokenAdminError
+from privacyidea.lib.error import TokenAdminError, ParameterError, PolicyError
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.realm import (set_realm)
 from privacyidea.lib.resolver import save_resolver
-from privacyidea.lib.token import init_token, assign_tokengroup
+from privacyidea.lib.token import init_token, assign_tokengroup, remove_token
 from privacyidea.lib.tokenclass import (TokenClass, DATE_FORMAT, AUTH_DATE_FORMAT)
+from privacyidea.lib.tokens.questionnairetoken import QuestionnaireTokenClass
+from privacyidea.lib.tokens.radiustoken import RadiusTokenClass
+from privacyidea.lib.tokens.totptoken import TotpTokenClass
 from privacyidea.lib.tokengroup import set_tokengroup
 from privacyidea.lib.user import (User)
 from privacyidea.lib.utils import hexlify_and_unicode, to_unicode
@@ -460,8 +464,8 @@ class TokenBaseTestCase(MyTestCase):
         old_time_2 = "24/04/17 22:00"  # April 24th
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = TokenClass(db_token)
-        token.add_tokeninfo("validity_period_start", old_time_1)
-        token.add_tokeninfo("validity_period_end", old_time_2)
+        token.write_tokeninfo("validity_period_start", old_time_1)
+        token.write_tokeninfo("validity_period_end", old_time_2)
         info = token.get_tokeninfo()
         self.assertEqual(info.get("validity_period_start"), old_time_1)
         self.assertEqual(info.get("validity_period_end"), old_time_2)
@@ -476,8 +480,8 @@ class TokenBaseTestCase(MyTestCase):
         start = start_date.strftime("%d/%m/%Y")
         end = end_date.strftime("%d/%m/%Y")
         # Need to write the old format to the database
-        token.add_tokeninfo("validity_period_start", start)
-        token.add_tokeninfo("validity_period_end", end)
+        token.write_tokeninfo("validity_period_start", start)
+        token.write_tokeninfo("validity_period_end", end)
         r = token.check_validity_period()
         self.assertTrue(r)
 
@@ -529,6 +533,285 @@ class TokenBaseTestCase(MyTestCase):
         # get_tokeninfo with parameter does decrypt!
         info = token.get_tokeninfo("radius.secret")
         self.assertEqual(info, "otherSecret", info)
+
+    def test_11_tokeninfo_type_is_kept_on_overwrite(self):
+        db_token = Token.query.filter_by(serial=self.serial1).first()
+        token = TokenClass(db_token)
+
+        token.add_tokeninfo("radius.secret", "firstSecret", value_type="password")
+        # A caller that does not know about the type of the key overwrites only the value. The entry stays
+        # encrypted, so the value is not readable from the raw token info and decrypts to the new plaintext.
+        token.add_tokeninfo("radius.secret", "secondSecret")
+
+        raw_info = token.get_tokeninfo()
+        self.assertEqual("password", raw_info.get("radius.secret.type"), raw_info)
+        self.assertNotEqual("secondSecret", raw_info.get("radius.secret"), raw_info)
+        self.assertEqual("secondSecret", token.get_tokeninfo("radius.secret"))
+
+        # A key that has no type keeps having none
+        token.add_tokeninfo("plainkey", "one")
+        token.add_tokeninfo("plainkey", "two")
+        raw_info = token.get_tokeninfo()
+        self.assertNotIn("plainkey.type", raw_info, raw_info)
+        self.assertEqual("two", raw_info.get("plainkey"), raw_info)
+
+    def test_11_tokeninfo_type_suffix_is_reserved(self):
+        db_token = Token.query.filter_by(serial=self.serial1).first()
+        token = TokenClass(db_token)
+
+        # The ".type" entries of the token info are synthesized from the Type column, a stored key of that name
+        # would shadow them and make the value be read with the wrong type.
+        self.assertRaises(ParameterError, token.add_tokeninfo, "somekey.type", "password")
+
+        token.add_tokeninfo("somekey", "somevalue")
+        raw_info = token.get_tokeninfo()
+        self.assertNotIn("somekey.type", raw_info, raw_info)
+        self.assertEqual("somevalue", token.get_tokeninfo("somekey"))
+
+    # Token info keys the server writes that are deliberately not owned by a token class. Each one is a switch
+    # an administrator sets on a single token, so it stays free-form and can be written through the token info
+    # endpoints. A new key must be classified rather than silently end up on either side, which is what the
+    # test below enforces.
+    FREE_FORM_WRITTEN_KEYS = frozenset()
+
+    # Token info keys that are declared although the running server never writes them, with the reason:
+    #   original_tokentype, original_active, deprecated_in: a database migration writes them when it retires a
+    #     token type and reads them back when it is reverted, so an administrator must not be able to rewrite
+    #     the recorded origin of a token. Note that the scan below skips the migrations, so a key that only a
+    #     migration writes has to be listed here.
+    #   privatekey, pkcs12_password: a certificate token enrolled before the private key stopped being stored
+    #     in the token info can still carry them, and they are read to keep such a token working. They are the
+    #     private key of the token and the password of its container, so they are not writable either.
+    DECLARED_WITHOUT_A_WRITER = frozenset({"original_tokentype", "original_active", "deprecated_in",
+                                           "privatekey", "pkcs12_password"})
+
+    def test_11_every_tokeninfo_key_the_server_writes_is_declared(self):
+        """
+        A token info key the server writes itself belongs to a token class and must appear in some class'
+        declaration, otherwise it stays writable through the generic token info endpoints. A key the server only
+        ever reads is configuration an administrator sets, and must not be declared, otherwise there is no way
+        left to set it.
+
+        This walks the source of the whole package, collects the keys passed to the writers and to
+        get_tokeninfo, and checks both directions. A key that is written and is meant to stay free-form has to
+        be listed in FREE_FORM_WRITTEN_KEYS, so that adding one is a decision and not an oversight.
+
+        Keys that are built at runtime (the questions of a questionnaire token, the TANs of a TAN token, the
+        refill token of a FIDO2 token) cannot be read from the source and are covered by a declared prefix or by
+        a class that overrides is_owned_tokeninfo_key.
+        """
+        import ast
+        import importlib
+        import pathlib
+
+        writers = {"write_tokeninfo", "remove_tokeninfo", "add_tokeninfo", "delete_tokeninfo", "set_tokeninfo"}
+        readers = {"get_tokeninfo"}
+        package_root = pathlib.Path(privacyidea.__file__).parent
+
+        declared_keys = set()
+        declared_prefixes = set()
+        for token_class in get_token_class_dict()[0].values():
+            keys, prefixes = token_class._collect_tokeninfo_declaration("owned_tokeninfo_keys",
+                                                                       "owned_tokeninfo_prefixes")
+            declared_keys.update(keys)
+            declared_prefixes.update(prefixes)
+
+        def resolve(node: ast.expr, module_globals: dict, local_strings: dict) -> str | None:
+            """Resolve a call argument to a string, if it is a literal or a constant reference."""
+            if isinstance(node, ast.Constant):
+                return node.value if isinstance(node.value, str) else None
+            if isinstance(node, ast.Name):
+                value = module_globals.get(node.id, local_strings.get(node.id))
+                return value if isinstance(value, str) else None
+            if isinstance(node, ast.Attribute):
+                if isinstance(node.value, ast.Name):
+                    if node.value.id == "self":
+                        # A key held in a class attribute, e.g. self.EMAIL_ADDRESS_KEY
+                        return local_strings.get(node.attr)
+                    base = module_globals.get(node.value.id)
+                    value = getattr(base, node.attr, None) if base is not None else None
+                    return value if isinstance(value, str) else None
+            return None
+
+        def collect_module_strings(tree: ast.AST, module_globals: dict) -> tuple:
+            """
+            Return the names that hold a string literal, and the set of keys the module writes without naming
+            them at the call site.
+
+            A key reaches a writer through a name, a class attribute, a loop over a list of keys, or a dict
+            that is built first and handed to add_tokeninfo_dict afterwards. None of those show the key at the
+            call site, so they are collected separately. This over-approximates what is written, which is the
+            safe direction: it can only make the check that a read-only key is not declared more forgiving,
+            never wrong.
+            """
+            names, indirect = {}, set()
+            takes_a_dict = any(isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute)
+                               and n.func.attr in ("add_tokeninfo_dict", "set_tokeninfo")
+                               for n in ast.walk(tree))
+            for node in ast.walk(tree):
+                if isinstance(node, (ast.Assign, ast.AnnAssign)):
+                    targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+                    if isinstance(node.value, ast.Constant) and isinstance(node.value.value, str):
+                        for target in targets:
+                            if isinstance(target, ast.Name):
+                                names[target.id] = node.value.value
+                            elif isinstance(target, ast.Attribute):
+                                names[target.attr] = node.value.value
+                if isinstance(node, ast.For):
+                    # for key in ["a", "b"] and for key, default in [("a", 1), ("b", 2)]
+                    elements = node.iter.elts if isinstance(node.iter, (ast.List, ast.Tuple)) else []
+                    for element in elements:
+                        candidates = element.elts if isinstance(element, ast.Tuple) else [element]
+                        for candidate in candidates[:1]:
+                            if isinstance(candidate, ast.Constant) and isinstance(candidate.value, str):
+                                indirect.add(candidate.value)
+                if takes_a_dict and isinstance(node, ast.Dict):
+                    # The dict is written as a whole, so every key of it is written
+                    for key in node.keys:
+                        resolved = resolve(key, module_globals, {}) if key is not None else None
+                        if resolved:
+                            indirect.add(resolved)
+            return names, indirect
+
+        # "written" holds the keys a writer is called with and names the call site, which is what the check
+        # that every written key is declared reports. "possibly_written" additionally holds the keys that
+        # reach a writer indirectly, which cannot be pinned to a call site and is only used to keep the check
+        # that a read-only key is not declared from reporting a key that is in fact written.
+        written, only_read, possibly_written = {}, {}, set()
+        for source_path in sorted(package_root.rglob("*.py")):
+            if "migrations" in source_path.parts:
+                continue
+            tree = ast.parse(source_path.read_text(encoding="utf-8"))
+            module_name = ".".join(
+                ("privacyidea",) + source_path.relative_to(package_root).with_suffix("").parts)
+            try:
+                module_globals = vars(importlib.import_module(module_name))
+            except Exception:
+                # A module that cannot be imported here contributes no resolvable keys
+                module_globals = {}
+            local_strings, indirect_writes = collect_module_strings(tree, module_globals)
+            location = str(source_path.relative_to(package_root.parent))
+            possibly_written.update(indirect_writes)
+            for node in ast.walk(tree):
+                if not isinstance(node, ast.Call):
+                    continue
+                is_method_call = isinstance(node.func, ast.Attribute)
+                name = node.func.attr if is_method_call else getattr(node.func, "id", None)
+                if name not in writers | readers:
+                    continue
+                # The module level helpers in lib/token/attributes.py take the serial before the key
+                key_index = 0 if is_method_call else 1
+                if len(node.args) <= key_index:
+                    continue
+                key = resolve(node.args[key_index], module_globals, local_strings)
+                if key is None:
+                    continue
+                bucket = written if name in writers else only_read
+                bucket.setdefault(key, []).append(f"{location}:{node.lineno}")
+
+        def is_declared(key: str) -> bool:
+            return key in declared_keys or any(key.startswith(prefix) for prefix in declared_prefixes)
+
+        # A key the server writes belongs to a token class, unless it is knowingly kept free-form
+        undeclared = {key: locations[0] for key, locations in written.items()
+                      if not is_declared(key) and key not in self.FREE_FORM_WRITTEN_KEYS}
+        self.assertEqual({}, undeclared,
+                         "Token info keys the server writes but no token class declares. Declare them, or add "
+                         f"them to FREE_FORM_WRITTEN_KEYS if an administrator is meant to set them: {undeclared}")
+
+        # A key the server only reads is set by an administrator, so declaring it would leave no way to set it.
+        # A key covered by a declared prefix is exempt: a prefix stands for the keys of a namespace that are
+        # generated at runtime and can therefore not be seen at a call site at all.
+        wrongly_declared = {key: locations[0] for key, locations in only_read.items()
+                            if key not in written
+                            and key not in possibly_written
+                            and key not in self.DECLARED_WITHOUT_A_WRITER
+                            and key in declared_keys
+                            and not any(key.startswith(prefix) for prefix in declared_prefixes)}
+        self.assertEqual({}, wrongly_declared,
+                         "Token info keys the server only reads but a token class declares, which leaves no "
+                         f"way to set them: {wrongly_declared}")
+
+    def test_11_owned_tokeninfo_key_lookup(self):
+        db_token = Token.query.filter_by(serial=self.serial1).first()
+        token = TokenClass(db_token)
+
+        # Declared on the base class, so every token class owns it
+        self.assertTrue(token.is_owned_tokeninfo_key("tokenkind"))
+        # Free-form metadata is not owned
+        self.assertFalse(token.is_owned_tokeninfo_key("mynote"))
+
+        # A class declares only its own keys, the effective set is the union over the hierarchy
+        self.assertTrue(TotpTokenClass.is_owned_tokeninfo_key("timeStep"))
+        self.assertTrue(TotpTokenClass.is_owned_tokeninfo_key("2step_difficulty"))
+        self.assertTrue(TotpTokenClass.is_owned_tokeninfo_key("tokenkind"))
+        self.assertFalse(TotpTokenClass.is_owned_tokeninfo_key("timeStep_of_something_else"))
+
+        # A whole namespace can be declared as a prefix
+        self.assertTrue(RadiusTokenClass.is_owned_tokeninfo_key("radius.server"))
+        self.assertTrue(RadiusTokenClass.is_owned_tokeninfo_key("radius.anything_added_later"))
+        self.assertFalse(TotpTokenClass.is_owned_tokeninfo_key("radius.server"))
+
+        # A questionnaire token owns every key, its questions are the keys and are chosen at enrollment
+        self.assertTrue(QuestionnaireTokenClass.is_owned_tokeninfo_key("What is your favourite colour?"))
+        self.assertTrue(QuestionnaireTokenClass.is_owned_tokeninfo_key("mynote"))
+
+    def test_11_owned_tokeninfo_keys_are_not_writable_from_a_request(self):
+        db_token = Token.query.filter_by(serial=self.serial1).first()
+        token = TokenClass(db_token)
+        token.write_tokeninfo("tokenkind", "software")
+
+        # A generic write, the way the token info endpoints and the token event handler do it, cannot touch a
+        # key the token class owns, neither to change it nor to remove it
+        self.assertRaises(PolicyError, token.add_tokeninfo, "tokenkind", "hardware")
+        self.assertRaises(PolicyError, token.delete_tokeninfo, "tokenkind")
+        self.assertEqual("software", token.get_tokeninfo("tokenkind"))
+
+        # Deleting the whole token info would take the owned keys with it
+        self.assertRaises(PolicyError, token.delete_tokeninfo)
+        self.assertEqual("software", token.get_tokeninfo("tokenkind"))
+
+        # Server side code writes the same key through the writer
+        token.write_tokeninfo("tokenkind", "hardware")
+        self.assertEqual("hardware", token.get_tokeninfo("tokenkind"))
+
+        # Free-form metadata stays writable and removable through the generic write
+        token.add_tokeninfo("a note", "some text")
+        self.assertEqual("some text", token.get_tokeninfo("a note"))
+        token.delete_tokeninfo("a note")
+        self.assertIsNone(token.get_tokeninfo("a note"))
+
+    def test_11_a_refill_token_can_be_deleted_but_not_changed(self):
+        # The offline machine application supports HOTP, WebAuthn and passkey tokens, so only those carry a
+        # refill token. An HOTP token has one entry, a FIDO2 token one per machine it is offline on.
+        hotp_token = init_token({"serial": "REFILL001", "type": "hotp", "genkey": 1})
+        hotp_token.write_tokeninfo("refilltoken", "theRefillToken")
+        hotp_token.write_tokeninfo("offline_counter", "100")
+
+        # The value of a refill token is issued by the server, so a request cannot set it
+        self.assertRaises(PolicyError, hotp_token.add_tokeninfo, "refilltoken", "chosenValue")
+        self.assertEqual("theRefillToken", hotp_token.get_tokeninfo("refilltoken"))
+
+        # Removing it only takes the refill capability away, which an administrator may do
+        hotp_token.delete_tokeninfo("refilltoken")
+        self.assertIsNone(hotp_token.get_tokeninfo("refilltoken"))
+
+        # Every other owned key stays undeletable
+        self.assertRaises(PolicyError, hotp_token.delete_tokeninfo, "offline_counter")
+
+        passkey_token = init_token({"serial": "REFILL002", "type": "passkey"})
+        passkey_token.write_tokeninfo("refilltoken_somemachine", "theOtherRefillToken")
+        self.assertRaises(PolicyError, passkey_token.add_tokeninfo, "refilltoken_somemachine", "chosen")
+        passkey_token.delete_tokeninfo("refilltoken_somemachine")
+        self.assertIsNone(passkey_token.get_tokeninfo("refilltoken_somemachine"))
+
+        # A token type that cannot be offline has no refill token, so the key is free-form there
+        spass_token = init_token({"serial": "REFILL003", "type": "spass"})
+        spass_token.add_tokeninfo("refilltoken", "just a note")
+        self.assertEqual("just a note", spass_token.get_tokeninfo("refilltoken"))
+
+        for serial in ("REFILL001", "REFILL002", "REFILL003"):
+            remove_token(serial)
 
     def test_12_inc_otp_counter(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
@@ -807,7 +1090,7 @@ class TokenBaseTestCase(MyTestCase):
         self.assertFalse(r)
 
         datestring = "03/04/01 10:00"
-        token.add_tokeninfo("next_pin_change", datestring)
+        token.write_tokeninfo("next_pin_change", datestring)
         r = token.is_pin_change()
         self.assertTrue(r)
 
@@ -901,16 +1184,16 @@ class TokenBaseTestCase(MyTestCase):
         # set last auth and check correct format
         last_auth = datetime(year=2025, month=3, day=21, hour=7, minute=24, second=12, microsecond=164578,
                              tzinfo=timezone.utc)
-        token.add_tokeninfo(PolicyAction.LASTAUTH, last_auth.strftime(AUTH_DATE_FORMAT))
+        token.write_tokeninfo(PolicyAction.LASTAUTH, last_auth.strftime(AUTH_DATE_FORMAT))
         self.assertEqual("2025-03-21 07:24:12.164578+0000", token.get_tokeninfo(PolicyAction.LASTAUTH))
         # microseconds are also included if they are 0
         last_auth = datetime(year=2025, month=3, day=21, hour=16, minute=3, second=8, microsecond=0,
                              tzinfo=timezone.utc)
-        token.add_tokeninfo(PolicyAction.LASTAUTH, last_auth.strftime(AUTH_DATE_FORMAT))
+        token.write_tokeninfo(PolicyAction.LASTAUTH, last_auth.strftime(AUTH_DATE_FORMAT))
         self.assertEqual("2025-03-21 16:03:08.000000+0000", token.get_tokeninfo(PolicyAction.LASTAUTH))
 
         tdelta = timedelta(days=1)
-        token.add_tokeninfo(PolicyAction.LASTAUTH, datetime.now(tzlocal()) - tdelta)
+        token.write_tokeninfo(PolicyAction.LASTAUTH, datetime.now(tzlocal()) - tdelta)
         r = token.check_last_auth_newer("10h")
         self.assertFalse(r)
         r = token.check_last_auth_newer("2d")
@@ -918,14 +1201,14 @@ class TokenBaseTestCase(MyTestCase):
 
         # Old time format
         # lastauth_alt = datetime.utcnow().isoformat()
-        token.add_tokeninfo(PolicyAction.LASTAUTH, datetime.now(timezone.utc) - tdelta)
+        token.write_tokeninfo(PolicyAction.LASTAUTH, datetime.now(timezone.utc) - tdelta)
         r = token.check_last_auth_newer("10h")
         self.assertFalse(r)
         r = token.check_last_auth_newer("2d")
         self.assertTrue(r)
 
         # Test a fault last_auth entry does not compute to True
-        token.add_tokeninfo(PolicyAction.LASTAUTH, "faulty format")
+        token.write_tokeninfo(PolicyAction.LASTAUTH, "faulty format")
         r = token.check_last_auth_newer("10h")
         self.assertFalse(r)
 
@@ -992,7 +1275,7 @@ class TokenBaseTestCase(MyTestCase):
         token_obj.set_failcount(10)
         failed_recently = (datetime.now(tzlocal()) -
                            timedelta(minutes=3)).strftime(DATE_FORMAT)
-        token_obj.add_tokeninfo(FAILCOUNTER_EXCEEDED, failed_recently)
+        token_obj.write_tokeninfo(FAILCOUNTER_EXCEEDED, failed_recently)
 
         r = token_obj.check_reset_failcount()
         # the fail is only 3 minutes ago, so we will not reset and check will

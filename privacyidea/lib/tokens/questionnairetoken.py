@@ -58,6 +58,20 @@ class QuestionnaireTokenClass(TokenClass):
     The user has to remember and pass the right answer.
     """
 
+    @classmethod
+    def is_owned_tokeninfo_key(cls, key: str) -> bool:
+        """
+        Every token info key of a questionnaire token is owned by the token class. The questions are the keys and
+        the answers are the values, both are chosen during enrollment, so the keys are not known up front and
+        cannot be declared. A key that is not a question would be indistinguishable from one that is, and the
+        answers are the shared secret of this token type, so the whole token info is written during the
+        enrollment only. Free-form notes belong in the description of the token.
+
+        :param key: The token info key to check
+        :return: Always True
+        """
+        return True
+
     @staticmethod
     def get_class_type():
         """
@@ -162,9 +176,16 @@ class QuestionnaireTokenClass(TokenClass):
         if len(questions) < int(num_answers):
             raise TokenAdminError(_("You need to provide at least %s "
                                     "answers.") % num_answers)
+        # Replace the questions of the token instead of adding to them. create_challenge() asks any question
+        # that is stored, so a question of a previous set would stay answerable and its answer would keep
+        # authenticating, even though it is not part of the questions the token was enrolled with.
+        previous_questions = [tokeninfo.Key for tokeninfo in self.token.info_list if tokeninfo.Type == "password"]
+        for question in previous_questions:
+            if question not in questions:
+                self.remove_tokeninfo(question)
         # Save all questions and answers and encrypt them
         for question, answer in questions.items():
-            self.add_tokeninfo(question, answer, value_type="password")
+            self.write_tokeninfo(question, answer, value_type="password")
         TokenClass.update(self, param)
 
     def is_challenge_request(self, passw, user=None, options=None):

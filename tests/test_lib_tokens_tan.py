@@ -148,7 +148,7 @@ class TanTokenTestCase(MyTestCase):
         # Set up the TANTokenClass for testing
         token = init_token(param={'serial': "PITN0000B9CE", 'type': 'tan'})
         token.set_description("this is a tan token export test")
-        token.add_tokeninfo("hashlib", "sha256")
+        token.write_tokeninfo("hashlib", "sha256")
 
         # Test that all expected keys are present in the exported dictionary
         exported_data = token.export_token()

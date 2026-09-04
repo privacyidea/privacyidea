@@ -112,7 +112,7 @@ from ..lib.token import (init_token, get_tokens_paginate, assign_token,
                          copy_token_user, copy_token_pin, lost_token,
                          get_serial_by_otp, get_tokens,
                          set_validity_period_end, set_validity_period_start, add_tokeninfo,
-                         delete_tokeninfo, import_token,
+                         delete_tokeninfo, import_token, set_token_type_info, is_settable_tokeninfo_key,
                          assign_tokengroup, unassign_tokengroup, set_tokengroups, get_one_token)
 from ..lib.tokens.passkeytoken import PasskeyTokenClass
 from ..lib.tokens.webauthntoken import WebAuthnTokenClass
@@ -121,6 +121,12 @@ from ..lib.user import get_user_from_param, User
 
 token_blueprint = Blueprint('token_blueprint', __name__)
 log = logging.getLogger(__name__)
+
+# The fields POST /token/set writes through their own setter. Some of them are token info entries a token class
+# maintains, so they would otherwise be written a second time as a settable token info entry.
+HANDLED_SET_FIELDS = frozenset({"serial", "user", "realm", "resolver", "description", "count_window",
+                                "sync_window", "hashlib", "max_failcount", "count_auth_max",
+                                "count_auth_success_max", "validity_period_start", "validity_period_end"})
 
 __doc__ = """
 The token REST API manages the lifecycle of authentication tokens -
@@ -694,7 +700,12 @@ def list_api():
     :query outform: ``csv`` to return ``text/csv`` instead of JSON.
         Pagination still applies.
     :status 200: paginated token list in ``result.value`` (or as a
-        CSV body when ``outform=csv``).
+        CSV body when ``outform=csv``). Each token carries
+        ``readonly_info_keys`` and ``undeletable_info_keys``, the
+        subsets of its ``info`` entries that the token info
+        endpoints refuse to change respectively to remove because
+        the token itself maintains them, and ``settable_info_keys``,
+        the subset of those that :http:post:`/token/set` accepts.
     """
     param = request.all_data
     serial = get_optional(param, "serial")
@@ -1264,6 +1275,13 @@ def set_api(serial=None):
     :jsonparam validity_period_start: ISO 8601 start of validity
         (``YYYY-MM-DDThh:mm+oooo``).
     :jsonparam validity_period_end: ISO 8601 end of validity.
+    :jsonparam <tokentype>.<key>: a token type specific token-info
+        entry, e.g. ``remote.user`` on a remote token. The prefix
+        has to name a known token type and the entry is only
+        written to tokens of that type, so a parameter cannot
+        reach the namespace of another token type. These entries
+        are maintained by the token, so the generic token-info
+        endpoints refuse them.
     :status 200: number of attribute updates applied in
         ``result.value``.
     """
@@ -1323,6 +1341,17 @@ def set_api(serial=None):
         g.audit_object.add_to_log({'action_detail':
                                        f"validity_period_start={validity_period_start!r}, "})
         res += set_validity_period_start(serial, user, validity_period_start)
+
+    # Token info entries a token class maintains but that change over the lifetime of a token, e.g.
+    # "remote.user" or "phone". A parameter counts as one when some token class declares it settable, so the
+    # fixed fields above and any framework parameter are unaffected.
+    settable_info = {key: value for key, value in request.all_data.items()
+                     if key not in HANDLED_SET_FIELDS and is_settable_tokeninfo_key(key)}
+    if settable_info:
+        for key, value in sorted(settable_info.items()):
+            # The value can be a secret, e.g. the shared secret of a RADIUS server, so only the key is audited
+            g.audit_object.add_to_log({'action_detail': f"{key!s} set, "})
+        res += set_token_type_info(serial, settable_info, user=user)
 
     g.audit_object.log({"success": True})
     return send_result(res)

@@ -1759,6 +1759,12 @@ def get_static_policy_definitions(scope=None):
                                         'desc': _('Admin is allowed to manually set and delete token info.'),
                                         'mainmenu': [MAIN_MENU.TOKENS],
                                         'group': GROUP.TOKEN},
+            PolicyAction.TOKENROLLOVER: {'type': 'bool',
+                                         'desc': _('Admin is allowed to roll over a token that is already '
+                                                   'enrolled, which gives it a new secret. Enrolling a new token '
+                                                   'only needs the enrollment action of its token type.'),
+                                         'mainmenu': [MAIN_MENU.TOKENS],
+                                         'group': GROUP.TOKEN},
             PolicyAction.ENROLLPIN: {'type': 'bool',
                                      "desc": _("Admin is allowed to set the OTP "
                                                "PIN during enrollment."),
@@ -2309,6 +2315,13 @@ def get_static_policy_definitions(scope=None):
                                   "desc": _('The user is allowed to delete his own tokens.'),
                                   'mainmenu': [MAIN_MENU.TOKENS],
                                   'group': GROUP.TOKEN},
+            PolicyAction.TOKENROLLOVER: {'type': 'bool',
+                                         'desc': _('The user is allowed to roll over one of his own tokens that '
+                                                   'is already enrolled, which gives it a new secret. Enrolling '
+                                                   'a new token only needs the enrollment action of its token '
+                                                   'type.'),
+                                         'mainmenu': [MAIN_MENU.TOKENS],
+                                         'group': GROUP.TOKEN},
             PolicyAction.SSHKEY_READ: {'type': 'bool',
                                        'desc': _('The user is allowed to read the public SSH key '
                                                  'of his own SSH key token.'),
