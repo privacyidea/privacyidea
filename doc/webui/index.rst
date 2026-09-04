@@ -53,6 +53,63 @@ assets for their selected language; the settings above apply equally to all
 languages.
 
 
+.. _new_webui_session_mode:
+
+Session mode
+~~~~~~~~~~~~
+
+.. index:: session mode, single-tab, multi-tab-ephemeral, multi-tab-persistent
+
+The new WebUI keeps the bearer token in web storage, so a page reload does not end
+the session. The session mode sets where it is kept and whether the tabs of one
+browser share it:
+
+* ``single-tab`` - ``sessionStorage``, not shared. Each tab authenticates for itself
+  and loses its session when it closes, so two tabs can hold different users. The
+  default.
+* ``multi-tab-ephemeral`` - ``sessionStorage``, but a starting tab asks the running
+  tabs to hand the session over. Gone once the last tab closes. Needs
+  ``BroadcastChannel``, otherwise the mode is not offered.
+* ``multi-tab-persistent`` - ``localStorage``, shared by all tabs, survives a browser
+  restart. The behaviour of earlier releases.
+
+The deployment default is ``defaultAuthSessionMode`` in
+``privacyidea/static_new/src/environments/environment.ts`` and needs a rebuild.
+Signed-in administrators override it per browser under
+*Config -> UI Settings -> Session Mode*; widening the mode asks for confirmation. The
+override lives in that browser, not on the server -- the mode must be known before
+anyone logs in. A change reaches all open tabs at once and signs in those waiting on
+the login screen, as does a login in a shared mode.
+
+A session left in the storage the active mode does not use is discarded at startup.
+Under the default this drops sessions written by earlier releases, so users log in
+once more after the upgrade.
+
+.. _new_webui_hardening:
+
+Hardening the shared session modes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. index:: X-Frame-Options, frame-ancestors, clickjacking
+
+``multi-tab-persistent`` leaves a usable token on disk until it expires: whoever opens
+the browser next is signed in. Use it only on devices that are not shared.
+
+Both shared modes hand the session to any same-origin context that asks for it, without
+inspecting where the request came from. Set ``X-Frame-Options: DENY`` (or
+``Content-Security-Policy: frame-ancestors 'none'``) on the reverse proxy: a framed
+WebUI is handed the session and can be overlaid with the attacker's own elements. The
+header stops the frame but not a window opened through ``window.open``, which is
+same-origin as well and is handed the session too -- it can neither be read nor
+overlaid by the page that opened it.
+
+Logging out discards the stored token but does not withdraw it: privacyIDEA checks a
+JWT by signature and ``exp`` only, so a copied token stays usable until it expires.
+That expiry is set by the :ref:`policy_jwt_validity` policy, which is the only real
+upper bound in every mode. ``logout_time`` is an idle timer in the browser and does
+not limit a token that has left it.
+
+
 .. _dashboard:
 
 Dashboard

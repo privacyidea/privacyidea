@@ -16,8 +16,12 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Injectable } from "@angular/core";
+import { inject, Injectable } from "@angular/core";
 import { environment } from "@env/environment";
+import {
+  AuthSessionModeService,
+  AuthSessionModeServiceInterface
+} from "@services/auth-session-mode/auth-session-mode.service";
 import * as CryptoJS from "crypto-js";
 
 export interface LocalServiceInterface {
@@ -36,17 +40,23 @@ export interface LocalServiceInterface {
 export class LocalService implements LocalServiceInterface {
   key = environment.secretAESKey;
 
+  private readonly authSessionModeService: AuthSessionModeServiceInterface = inject(AuthSessionModeService);
+
   public saveData(key: string, value: string) {
-    localStorage.setItem(key, this.encrypt(value));
+    this.storage().setItem(key, this.encrypt(value));
   }
 
   public getData(key: string) {
-    const data = localStorage.getItem(key) || "";
+    const data = this.storage().getItem(key) || "";
     return this.decrypt(data);
   }
 
   public removeData(key: string) {
-    localStorage.removeItem(key);
+    this.storage().removeItem(key);
+  }
+
+  private storage(): Storage {
+    return this.authSessionModeService.storage();
   }
 
   private encrypt(txt: string): string {

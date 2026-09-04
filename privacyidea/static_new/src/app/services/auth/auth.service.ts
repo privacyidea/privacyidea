@@ -22,8 +22,14 @@ import { computed, inject, Injectable, Injector, Signal, signal, WritableSignal 
 import { MatDialog } from "@angular/material/dialog";
 import { Router } from "@angular/router";
 import { PiResponse } from "@app/app.component";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { resolveLandingPath } from "@app/guards/auth.guard";
 import { AUTH_DATA_STORAGE_KEY, BEARER_TOKEN_STORAGE_KEY } from "@core/constants";
 import { environment } from "@env/environment";
+import {
+  AuthSessionSyncService,
+  AuthSessionSyncServiceInterface
+} from "@services/auth-session-sync/auth-session-sync.service";
 import { PolicyAction } from "@services/auth/policy-actions";
 import { DashboardDataStore } from "@services/dashboard/dashboard-data-store.service";
 import { LocalService, LocalServiceInterface } from "@services/local/local.service";
@@ -177,13 +183,13 @@ export type AuthenticateParams =
   | PasswordLoginParams
   | WebAuthnLoginParams
   | {
-  transaction_id: string;
-  credential_id: string;
-  authenticatorData: string;
-  clientDataJSON: string;
-  signature: string;
-  userHandle: string;
-};
+      transaction_id: string;
+      credential_id: string;
+      authenticatorData: string;
+      clientDataJSON: string;
+      signature: string;
+      userHandle: string;
+    };
 
 export interface AuthServiceInterface {
   // Properties
@@ -357,6 +363,10 @@ export class AuthService implements AuthServiceInterface {
   readonly isSelfServiceUser = computed(() => this.role() === "user");
 
   constructor() {
+    this.authSessionSyncService.setHandler({
+      endSession: () => this.endSession(),
+      adoptStoredSession: () => this.adoptStoredSession()
+    });
     this.restoreSession();
   }
 
@@ -384,6 +394,7 @@ export class AuthService implements AuthServiceInterface {
             this.jwtData.set(this.decodeJwtPayload(value.token));
             this.localService.saveData(BEARER_TOKEN_STORAGE_KEY, value.token);
             this.localService.saveData(AUTH_DATA_STORAGE_KEY, JSON.stringify(this.persistableAuthData(value)));
+            this.authSessionSyncService.broadcastLogin();
             // Update version after login — the hide_version policy strips the
             // version from pre-login responses, but the /auth response includes
             // it because g.logged_in_user is set during authentication.
@@ -403,6 +414,18 @@ export class AuthService implements AuthServiceInterface {
   }
 
   logout(): void {
+    this.authSessionSyncService.broadcastLogout();
+    this.endSession();
+  }
+
+  private adoptStoredSession(): void {
+    this.restoreSession();
+    if (this.isAuthenticated() && this.router.url.startsWith(ROUTE_PATHS.LOGIN)) {
+      this.router.navigateByUrl(resolveLandingPath(this));
+    }
+  }
+
+  private endSession(): void {
     this.dialog.closeAll();
     this.authData.set(null);
     this.jwtData.set(null);
@@ -463,6 +486,7 @@ export class AuthService implements AuthServiceInterface {
   private readonly router = inject(Router);
   private readonly dialog = inject(MatDialog);
   private readonly localService: LocalServiceInterface = inject(LocalService);
+  private readonly authSessionSyncService: AuthSessionSyncServiceInterface = inject(AuthSessionSyncService);
   private readonly http = inject(HttpClient);
   private readonly versioningService: VersioningServiceInterface = inject(VersioningService);
   private readonly dashboardDataStore = inject(DashboardDataStore);
@@ -504,7 +528,7 @@ export class AuthService implements AuthServiceInterface {
    * The token and the auth data are restored only while the JWT is still valid; an
    * expired or corrupt session is cleared instead.
    */
-  private restoreSession(): void {
+  restoreSession(): void {
     const token = this.localService.getData(BEARER_TOKEN_STORAGE_KEY);
     if (!token) {
       return;

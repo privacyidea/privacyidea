@@ -17,7 +17,6 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, inject } from "@angular/core";
-import { forkJoin } from "rxjs";
 import { MatButtonModule } from "@angular/material/button";
 import { MatButtonToggleModule } from "@angular/material/button-toggle";
 import { MatExpansionModule } from "@angular/material/expansion";
@@ -26,13 +25,13 @@ import { MatIconModule } from "@angular/material/icon";
 import { MatSelectModule } from "@angular/material/select";
 import { MatSlideToggleModule } from "@angular/material/slide-toggle";
 import { MatTooltipModule } from "@angular/material/tooltip";
-import { UI_LOCALES } from "@core/locale";
 import { DetailsCardComponent } from "@components/shared/details-shared/details-card/details-card.component";
 import {
   LightSourceDialComponent,
   LightSourceDialItem
 } from "@components/shared/light-source-dial/light-source-dial.component";
 import { ThemeToggleComponent } from "@components/shared/theme-toggle/theme-toggle.component";
+import { UI_LOCALES } from "@core/locale";
 import {
   AppearanceService,
   CornerLevel,
@@ -41,8 +40,14 @@ import {
   LIGHT_SOURCE_STEP_ANGLE,
   LightSourceLevel
 } from "@services/appearance/appearance.service";
+import {
+  AuthSessionModeService,
+  AuthSessionModeServiceInterface
+} from "@services/auth-session-mode/auth-session-mode.service";
 import { ThemeService } from "@services/theme/theme.service";
 import { UiPreferencesService, UiPreferencesServiceInterface } from "@services/user-settings/ui-preferences.service";
+import { forkJoin } from "rxjs";
+import { AuthSessionModeCardComponent } from "./auth-session-mode-card/auth-session-mode-card.component";
 
 @Component({
   selector: "app-ui-settings",
@@ -57,6 +62,7 @@ import { UiPreferencesService, UiPreferencesServiceInterface } from "@services/u
     MatSelectModule,
     MatSlideToggleModule,
     MatTooltipModule,
+    AuthSessionModeCardComponent,
     ThemeToggleComponent
   ],
   templateUrl: "./ui-settings.component.html",
@@ -66,6 +72,7 @@ export class UISettingsComponent {
   private readonly themeService = inject(ThemeService);
   private readonly appearanceService = inject(AppearanceService);
   private readonly uiPreferencesService: UiPreferencesServiceInterface = inject(UiPreferencesService);
+  private readonly authSessionModeService: AuthSessionModeServiceInterface = inject(AuthSessionModeService);
   protected readonly locales = UI_LOCALES;
   protected readonly preferredLocale = this.uiPreferencesService.preferredLocale;
   protected readonly showLoadingUrls = this.uiPreferencesService.showLoadingUrls;
@@ -95,6 +102,7 @@ export class UISettingsComponent {
   protected readonly appearanceHint = $localize`:@@uiSettings.changesHowTheInterfaceLooks:Changes how the interface looks: corner rounding, shadow depth and the direction the light comes from. Saved for your account.`;
 
   protected resetSettings(): void {
+    this.authSessionModeService.setDefaultMode();
     // Switching locale is a full-page navigation, which would abort the other writes if they
     // were still in flight, so it only runs once they have all settled.
     forkJoin([

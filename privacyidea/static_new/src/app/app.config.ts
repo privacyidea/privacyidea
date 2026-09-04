@@ -28,14 +28,15 @@ import {
 import { MatPaginatorIntl } from "@angular/material/paginator";
 import { provideRouter } from "@angular/router";
 import { localeBaseHref, scriptRoot } from "@core/locale";
+import { AuthSessionSyncService } from "@services/auth-session-sync/auth-session-sync.service";
 import { UiPreferencesService } from "@services/user-settings/ui-preferences.service";
 import { routes } from "./app.routes";
-import { createPaginatorIntl } from "./paginator-intl";
 import { loadingInterceptor } from "./interceptor/loading/loading.interceptor";
 import { userAgentInterceptor } from "./interceptor/user-agent/user-agent.interceptor";
+import { createPaginatorIntl } from "./paginator-intl";
+import { AppearanceService } from "./services/appearance/appearance.service";
 import { AuthService } from "./services/auth/auth.service";
 import { ConfigService } from "./services/config/config.service";
-import { AppearanceService } from "./services/appearance/appearance.service";
 import { ThemeService } from "./services/theme/theme.service";
 
 export function baseHrefFactory(): string {
@@ -51,8 +52,13 @@ export const appConfig: ApplicationConfig = {
       uiPreferencesService.normalizeLocaleUrl();
     }),
     provideAppInitializer(() => {
+      const sessionSyncService = inject(AuthSessionSyncService);
+      const authService = inject(AuthService);
       const configService = inject(ConfigService);
-      configService.loadConfig();
+      return sessionSyncService.adoptSessionFromOpenTabs().then(() => {
+        authService.restoreSession();
+        configService.loadConfig();
+      });
     }),
     provideZonelessChangeDetection(),
     provideRouter(routes),
