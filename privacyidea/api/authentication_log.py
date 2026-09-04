@@ -25,12 +25,12 @@ from privacyidea.api.lib.utils import send_result
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType, AuthEventReason,
                                                                            outcome_of)
-from privacyidea.lib.conditional_access.authentication_log import (get_authentication_log_statistics,
-                                                                   get_authentication_logs_paginate,
+from privacyidea.lib.conditional_access.authentication_log import (get_authentication_logs_paginate,
                                                                    AuthenticationLogVisibilityScope,
                                                                    AuthLogUserRole,
-                                                                   DEFAULT_PAGE_SIZE,
-                                                                   DEFAULT_STATISTICS_BINS)
+                                                                   DEFAULT_PAGE_SIZE)
+from privacyidea.lib.conditional_access.authentication_log_statistics import (DEFAULT_STATISTICS_BINS,
+                                                                              get_authentication_log_statistics)
 from privacyidea.lib.conditional_access.conditions import AUTHENTICATING_ENDPOINTS
 from privacyidea.lib.log import log_with
 from privacyidea.lib.params import get_optional, get_optional_timestamp, get_required_timestamp

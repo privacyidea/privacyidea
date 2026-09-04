@@ -31,14 +31,16 @@ from privacyidea.lib.conditional_access.authentication_log import (
     delete_authentication_log_event,
     delete_authentication_logs,
     get_authentication_log_event,
-    MAX_STATISTICS_BINS,
-    get_authentication_log_statistics,
-    get_conditional_access_outcome_statistics,
     get_authentication_logs,
     get_authentication_logs_paginate,
     log_authentication_event,
     update_authentication_events,
     write_authentication_events,
+)
+from privacyidea.lib.conditional_access.authentication_log_statistics import (
+    MAX_STATISTICS_BINS,
+    get_authentication_log_statistics,
+    get_conditional_access_outcome_statistics,
 )
 from privacyidea.lib.conditional_access.engine import ConditionalAccessAction, count_user_attempts, count_user_events
 from privacyidea.lib.conditional_access.outcome_log import get_outcomes, record_outcomes

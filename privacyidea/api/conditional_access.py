@@ -46,8 +46,8 @@ from privacyidea.lib.conditional_access.policy import (list_conditional_access_p
                                                                reorder_conditional_access_policies,
                                                                get_target_constraints,
                                                                get_default_error_messages)
-from privacyidea.lib.conditional_access.authentication_log import (DEFAULT_STATISTICS_BINS,
-                                                                   get_conditional_access_outcome_statistics)
+from privacyidea.lib.conditional_access.authentication_log_statistics import (
+    DEFAULT_STATISTICS_BINS, get_conditional_access_outcome_statistics)
 from privacyidea.lib.conditional_access.conditions import get_condition_types
 from privacyidea.lib.conditional_access.policy_template import list_conditional_access_policy_templates
 from privacyidea.lib.conditional_access.state import (list_locked_users_paginate, DEFAULT_PAGE_SIZE,
