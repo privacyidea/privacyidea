@@ -33,10 +33,14 @@ import { MatButtonModule } from "@angular/material/button";
 import { MatButtonToggleModule } from "@angular/material/button-toggle";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatIconModule } from "@angular/material/icon";
-import { MatTooltipModule } from "@angular/material/tooltip";
 import { SelectorButtonsComponent } from "@components/policies/policy-edit-page/policy-panels/edit-action-tab/selector-buttons/selector-buttons.component";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
-import { PolicyDetail, PolicyService, PolicyServiceInterface } from "@services/policies/policies.service";
+import {
+  policyActionMatchesFilter,
+  PolicyDetail,
+  PolicyService,
+  PolicyServiceInterface
+} from "@services/policies/policies.service";
 import { PolicyActionItemComponent, SelectableAction } from "./policy-action-item/policy-action-item-new.component";
 
 @Component({
@@ -48,7 +52,6 @@ import { PolicyActionItemComponent, SelectableAction } from "./policy-action-ite
     MatButtonModule,
     MatExpansionModule,
     SelectorButtonsComponent,
-    MatTooltipModule,
     PolicyActionItemComponent,
     ClearableInputComponent,
     MatButtonToggleModule
@@ -108,7 +111,10 @@ export class ActionSelectorComponent {
     if (scope) {
       const actions = this.policyService.getActionsOf(scope, group);
       for (const actionName in actions) {
-        if (!this.addedActionNames().includes(actionName) && actionName.toLowerCase().includes(filterText)) {
+        if (
+          !this.addedActionNames().includes(actionName) &&
+          policyActionMatchesFilter(actionName, actions[actionName], filterText)
+        ) {
           result.push({ label: actionName, actionName, scope: scope, detail: actions[actionName] });
         }
       }
@@ -118,7 +124,10 @@ export class ActionSelectorComponent {
     for (const scopeName in policyActions) {
       const actions = policyActions[scopeName];
       for (const actionName in actions) {
-        if (!this.addedActionNames().includes(actionName) && actionName.toLowerCase().includes(filterText)) {
+        if (
+          !this.addedActionNames().includes(actionName) &&
+          policyActionMatchesFilter(actionName, actions[actionName], filterText)
+        ) {
           result.push({
             label: `[${scopeName}] ${actionName}`,
             actionName,

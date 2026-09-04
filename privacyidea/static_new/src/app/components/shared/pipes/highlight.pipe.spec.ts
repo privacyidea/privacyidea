@@ -107,4 +107,57 @@ describe("HighlightPipe", () => {
     const result = pipe.transform("x < y", "<");
     expect(result).toBe('x <span class="highlight">&lt;</span> y');
   });
+
+  it("should ignore the padding of an untrimmed term", () => {
+    expect(pipe.transform("Hello World", "world ")).toBe('Hello <span class="highlight">World</span>');
+    expect(pipe.transform("Hello World", ["  hello", "world  "])).toBe(
+      '<span class="highlight">Hello</span> <span class="highlight">World</span>'
+    );
+  });
+
+  it("should treat a term of only whitespace as no term", () => {
+    expect(pipe.transform("Hello World", " ")).toBe("Hello World");
+    expect(pipe.transform("Hello <b>World</b>", "\t", true)).toBe("Hello <b>World</b>");
+  });
+
+  describe("containsMarkup", () => {
+    it("should hand tags through and highlight only the text between them", () => {
+      const result = pipe.transform("Set it to <code>CUSTOM</code> here", "custom", true);
+      expect(result).toBe('Set it to <code><span class="highlight">CUSTOM</span></code> here');
+    });
+
+    it("should not match tag names", () => {
+      const result = pipe.transform("Set it to <code>value</code>", "code", true);
+      expect(result).toBe("Set it to <code>value</code>");
+    });
+
+    it("should hand entities through without matching inside them", () => {
+      expect(pipe.transform("key/&lt;regexp&gt;/", "lt", true)).toBe("key/&lt;regexp&gt;/");
+      expect(pipe.transform("key/&lt;regexp&gt;/", "regexp", true)).toBe(
+        'key/&lt;<span class="highlight">regexp</span>&gt;/'
+      );
+    });
+
+    it("should return the markup unchanged when no search term is given", () => {
+      expect(pipe.transform("Does apply if <em>push_require_presence</em> is set.", "", true)).toBe(
+        "Does apply if <em>push_require_presence</em> is set."
+      );
+    });
+
+    it("should keep a tag whose attribute value contains a '>' intact", () => {
+      const result = pipe.transform('See <a title="a > b">docs</a>', "b", true);
+      expect(result).toBe('See <a title="a > b">docs</a>');
+    });
+
+    it("should search across a '<' that starts no tag", () => {
+      const result = pipe.transform("a < b and c > d", "and", true);
+      expect(result).toBe('a < b <span class="highlight">and</span> c > d');
+    });
+
+    it("should still escape the same value in the default mode", () => {
+      expect(pipe.transform("Set it to <code>CUSTOM</code>", "custom")).toBe(
+        'Set it to &lt;code&gt;<span class="highlight">CUSTOM</span>&lt;/code&gt;'
+      );
+    });
+  });
 });
