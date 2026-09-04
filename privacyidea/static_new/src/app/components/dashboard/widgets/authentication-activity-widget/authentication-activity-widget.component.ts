@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { formatDate } from "@angular/common";
-import { Component, computed, effect, inject, signal } from "@angular/core";
+import { Component, computed, effect, inject, signal, TemplateRef, viewChild } from "@angular/core";
 import { MatButtonToggleModule } from "@angular/material/button-toggle";
 import { MatIcon } from "@angular/material/icon";
 import { MatTooltip } from "@angular/material/tooltip";
@@ -98,6 +98,9 @@ export class AuthenticationActivityWidgetComponent extends DashboardWidget {
   static override readonly defaultSize: WidgetSize = { cols: 5, rows: 8 };
   static override readonly minSize: WidgetSize = { cols: 4, rows: 7 };
   static override readonly maxSize: WidgetSize = { cols: 12, rows: 12 };
+
+  // Read by the widget frame, which renders these in its header.
+  override readonly headerActions = viewChild<TemplateRef<unknown>>("headerActions");
 
   protected readonly routePaths = ROUTE_PATHS;
   protected readonly ranges = ACTIVITY_RANGES;

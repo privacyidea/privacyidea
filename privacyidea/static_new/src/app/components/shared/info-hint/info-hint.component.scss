@@ -1,3 +1,18 @@
 .info-hint-button {
   color: var(--mat-sys-on-surface-variant);
+
+  // Sizing hooks: a parent can shrink the hint for a denser surface - a dashboard widget header, say - by setting
+  // these on the app-info-hint element (custom properties cross the component boundary, as --copy-icon-size does in
+  // copy-button). The fallbacks are Material's own defaults for these tokens, so an unset parent keeps today's button.
+  --mat-icon-button-state-layer-size: var(--info-hint-size, 40px);
+  --mat-icon-button-icon-size: var(--info-hint-icon-size, 24px);
+
+  // Material sizes the button itself from the tokens above, but mat-icon's box is a fixed 24px of its own, so the
+  // glyph has to be told as well or it would keep spilling out of a smaller button.
+  mat-icon {
+    width: var(--info-hint-icon-size, 24px);
+    height: var(--info-hint-icon-size, 24px);
+    font-size: var(--info-hint-icon-size, 24px);
+    line-height: var(--info-hint-icon-size, 24px);
+  }
 }

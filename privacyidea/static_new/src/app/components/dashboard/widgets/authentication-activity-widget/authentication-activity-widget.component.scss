@@ -28,9 +28,18 @@
 .ranges {
   display: flex;
   align-items: center;
-  gap: 4px;
   justify-content: flex-end;
   padding: 0 16px 8px;
+}
+
+// The frame renders this in its header, but it is declared here, so view encapsulation keeps the frame's own
+// .widget-action sizing from reaching it. The hint's sizing hooks bring it to the same box as the reload button
+// beside it; they inherit into the component, which a rule for its button could not do.
+.widget-header-action {
+  flex: none;
+  display: flex;
+  --info-hint-size: 28px;
+  --info-hint-icon-size: 18px;
 }
 
 mat-button-toggle-group {

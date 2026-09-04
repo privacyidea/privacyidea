@@ -17,12 +17,18 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 
+<!-- Handed to the widget frame, which renders it in the header next to the reload button. Declared outside
+     app-widget-state so the frame can read it whatever state the data is in. -->
+<ng-template #headerActions>
+  <app-info-hint
+    class="widget-header-action"
+    [text]="info"
+    ariaLabel="About this widget"
+    i18n-ariaLabel />
+</ng-template>
+
 <app-widget-state [state]="state()">
   <div class="ranges">
-    <app-info-hint
-      [text]="info"
-      ariaLabel="About this widget"
-      i18n-ariaLabel />
     <mat-button-toggle-group
       [hideSingleSelectionIndicator]="true"
       [value]="selectedRange().hours"
