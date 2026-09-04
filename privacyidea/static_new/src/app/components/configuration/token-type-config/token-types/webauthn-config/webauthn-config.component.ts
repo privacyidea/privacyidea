@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, input, output } from "@angular/core";
+import { Component, computed, input, output } from "@angular/core";
 
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatFormFieldModule } from "@angular/material/form-field";
@@ -33,8 +33,10 @@ import { WEBAUTHN_TRUST_ANCHOR_DIR } from "@constants/token.constants";
 export class WebauthnConfigComponent {
   protected readonly WEBAUTHN_TRUST_ANCHOR_DIR = WEBAUTHN_TRUST_ANCHOR_DIR;
 
-  formData = input.required<Record<string, string>>();
-  formDataChange = output<Record<string, string>>();
+  formData = input.required<Record<string, string | undefined>>();
+  formDataChange = output<Record<string, string | undefined>>();
+
+  trustAnchorDir = computed(() => this.formData()[WEBAUTHN_TRUST_ANCHOR_DIR] ?? "");
 
   updateFormData(fieldName: string, value: string): void {
     const newValue = { ...this.formData(), [fieldName]: value };

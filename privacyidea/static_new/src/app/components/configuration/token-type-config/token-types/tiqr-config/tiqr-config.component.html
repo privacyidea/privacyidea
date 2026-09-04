@@ -32,7 +32,7 @@
         <mat-label i18n="@@tokenTypeConfig.tiqrRegistration">TiQR Registration Server</mat-label>
         <input
           #regServerInput
-          [value]="formData()[TIQR_REG_SERVER]"
+          [value]="formData()[TIQR_REG_SERVER] ?? ''"
           (input)="updateFormData(TIQR_REG_SERVER, $any($event.target).value)"
           matInput
           placeholder="http://pi.server/ttype/tiqr"
@@ -56,7 +56,7 @@
         class="input-width-xl">
         <mat-label i18n="@@tokenTypeConfig.tiqrAuthentication">TiQR Authentication Server</mat-label>
         <input
-          [value]="formData()[TIQR_AUTH_SERVER]"
+          [value]="formData()[TIQR_AUTH_SERVER] ?? ''"
           (input)="updateFormData(TIQR_AUTH_SERVER, $any($event.target).value)"
           matInput
           type="url" />
@@ -71,7 +71,7 @@
         class="input-width-xl">
         <mat-label i18n="@@tokenTypeConfig.tiqrServiceDisplayname">TiQR Service Displayname</mat-label>
         <input
-          [value]="formData()[TIQR_SERVICE_DISPLAYNAME]"
+          [value]="formData()[TIQR_SERVICE_DISPLAYNAME] ?? ''"
           (input)="updateFormData(TIQR_SERVICE_DISPLAYNAME, $any($event.target).value)"
           matInput />
         <mat-hint i18n="@@tokenTypeConfig.displayNameYour"
@@ -86,7 +86,7 @@
         class="input-width-xl">
         <mat-label i18n="@@tokenTypeConfig.tiqrServiceIdentifier">TiQR Service Identifier</mat-label>
         <input
-          [value]="formData()[TIQR_SERVICE_IDENTIFIER]"
+          [value]="formData()[TIQR_SERVICE_IDENTIFIER] ?? ''"
           (input)="updateFormData(TIQR_SERVICE_IDENTIFIER, $any($event.target).value)"
           matInput />
         <mat-hint i18n="@@tokenTypeConfig.serviceIdentifier"
@@ -101,7 +101,7 @@
         <mat-label i18n="@@tokenTypeConfig.tiqrLogoUrl">TiQR Logo URL</mat-label>
         <input
           #logoUrlInput
-          [value]="formData()[TIQR_LOGO_URL]"
+          [value]="formData()[TIQR_LOGO_URL] ?? ''"
           (input)="updateFormData(TIQR_LOGO_URL, $any($event.target).value)"
           matInput
           placeholder="https://pi.server/static/css/privacyIDEA1.png"
@@ -120,7 +120,7 @@
         class="input-width-xl">
         <mat-label i18n="@@tokenTypeConfig.ocraSuite">OCRA Suite</mat-label>
         <input
-          [value]="formData()[TIQR_OCRASUITE]"
+          [value]="formData()[TIQR_OCRASUITE] ?? ''"
           (input)="updateFormData(TIQR_OCRASUITE, $any($event.target).value)"
           matInput />
         <mat-hint i18n="@@tokenTypeConfig.ocraSuiteUsed"
@@ -140,7 +140,7 @@
         <mat-label i18n="@@tokenTypeConfig.tiqrInfoUrl">TiQR Info URL</mat-label>
         <input
           #infoUrlInput
-          [value]="formData()[TIQR_INFO_URL]"
+          [value]="formData()[TIQR_INFO_URL] ?? ''"
           (input)="updateFormData(TIQR_INFO_URL, $any($event.target).value)"
           matInput
           placeholder="https://www.privacyidea.org"

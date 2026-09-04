@@ -35,8 +35,8 @@
         <mat-label i18n="@@tokenTypeConfig.appid">AppID</mat-label>
         <input
           #appIdInput
-          (input)="updateFormData('u2f.appId', $any($event.target).value)"
-          [value]="formData()['u2f.appId']"
+          (input)="updateFormData(U2F_APP_ID, $any($event.target).value)"
+          [value]="appId()"
           matInput
           placeholder="https://pi.server.com"
           required
@@ -54,14 +54,14 @@
       Request).<br
     /></span>
 
-    @if (formData()["u2f.appId"] && !formData()["u2f.appId"].startsWith("https:")) {
+    @if (appId() && !appId().startsWith("https:")) {
       <div
         class="alert alert-warning"
         i18n="@@tokenTypeConfig.appidNeedsStart"
         >The AppID needs to start with "https".</div
       >
     }
-    @if (formData()["u2f.appId"] && formData()["u2f.appId"].endsWith("/")) {
+    @if (appId() && appId().endsWith("/")) {
       <div
         class="alert alert-warning"
         i18n="@@tokenTypeConfig.appidMustNotEnd"

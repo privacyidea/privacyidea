@@ -47,7 +47,7 @@
         <mat-label i18n="@@tokenTypeConfig.apiKey">API Key</mat-label>
         <input
           #apiKeyInput
-          [value]="formData()[YUBICO_SECRET]"
+          [value]="formData()[YUBICO_SECRET] ?? ''"
           (input)="updateFormData(YUBICO_SECRET, $any($event.target).value)"
           matInput
           i18n-placeholder="@@tokenTypeConfig.apiKey"
@@ -64,7 +64,7 @@
         <mat-label i18n="@@tokenTypeConfig.apiClientId">API Client ID</mat-label>
         <input
           #clientIdInput
-          [value]="formData()[YUBICO_ID]"
+          [value]="formData()[YUBICO_ID] ?? ''"
           (input)="updateFormData(YUBICO_ID, $any($event.target).value)"
           matInput
           i18n-placeholder="@@tokenTypeConfig.clientIdPlaceholderLong"
@@ -83,7 +83,7 @@
         <mat-label i18n="@@tokenTypeConfig.yubicoUrl">Yubico URL</mat-label>
         <input
           #urlInput
-          [value]="formData()[YUBICO_URL]"
+          [value]="formData()[YUBICO_URL] ?? ''"
           (input)="updateFormData(YUBICO_URL, $any($event.target).value)"
           matInput
           placeholder="https://api.yubico.com/wsapi/2.0/verify"

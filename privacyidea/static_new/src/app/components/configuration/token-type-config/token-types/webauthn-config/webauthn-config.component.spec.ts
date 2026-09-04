@@ -64,4 +64,24 @@ describe("WebauthnConfigComponent", () => {
     component.updateFormData(WEBAUTHN_TRUST_ANCHOR_DIR, newValue);
     expect(component.formDataChange.emit).toHaveBeenCalledWith({ [WEBAUTHN_TRUST_ANCHOR_DIR]: "" });
   });
+
+  it("renders an empty input and no warning when the key is missing", () => {
+    const input: HTMLInputElement = fixture.nativeElement.querySelector("input");
+    expect(input.value).toBe("");
+    expect(fixture.nativeElement.querySelectorAll(".alert-warning").length).toBe(0);
+  });
+
+  it("warns about a relative path and about a trailing slash", () => {
+    fixture.componentRef.setInput("formData", { [WEBAUTHN_TRUST_ANCHOR_DIR]: "relative/path/" });
+    fixture.detectChanges();
+
+    const warnings = Array.from(
+      fixture.nativeElement.querySelectorAll(".alert-warning") as NodeListOf<HTMLElement>
+    ).map((warning) => warning.textContent?.trim());
+
+    expect(warnings).toEqual([
+      "The trust_anchor_dir must be an absolute path.",
+      'The trust_anchor_dir must not end with a "/".'
+    ]);
+  });
 });

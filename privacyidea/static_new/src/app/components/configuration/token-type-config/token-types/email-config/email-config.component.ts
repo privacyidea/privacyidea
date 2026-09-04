@@ -36,8 +36,8 @@ import { EMAIL_SMTP_SERVER_KEY, EMAIL_VALIDITY_TIME_KEY } from "@constants/token
 })
 export class EmailConfigComponent {
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
-  formData = input.required<Record<string, string | number>>();
-  formDataChange = output<Record<string, string | number>>();
+  formData = input.required<Record<string, string | number | undefined>>();
+  formDataChange = output<Record<string, string | number | undefined>>();
   smtpServers = input.required<string[]>();
   expanded = input<boolean>(false);
 

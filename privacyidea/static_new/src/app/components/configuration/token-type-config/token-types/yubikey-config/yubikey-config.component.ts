@@ -48,7 +48,7 @@ export interface ApiKeyData {
   styleUrl: "./yubikey-config.component.scss"
 })
 export class YubikeyConfigComponent {
-  formData = input.required<Record<string, string>>();
+  formData = input.required<Record<string, string | undefined>>();
   yubikeyApiIds = input.required<string[]>();
 
   yubikeyCreateNewKey = output<ApiKeyData>();
