@@ -15,7 +15,7 @@ import os
 
 import pytest
 
-from tests.migration_test_utils import MigrationTestBase, is_postgres
+from tests.migration_test_utils import MigrationTestBase
 
 pytestmark = [
     pytest.mark.migration,
@@ -24,10 +24,6 @@ pytestmark = [
         reason="TEST_DATABASE_URL environment variable is not set",
     ),
 ]
-
-
-def _q(col: str) -> str:
-    return f'"{col}"' if is_postgres() else f"`{col}`"
 
 
 class TestMigrationC3d4e5f6a7b8(MigrationTestBase):

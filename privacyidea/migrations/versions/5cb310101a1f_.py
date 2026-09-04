@@ -9,11 +9,12 @@ Create Date: 2023-09-08 15:59:01.374626
 """
 from alembic import op, context
 from sqlalchemy import inspect
-from sqlalchemy.schema import Sequence, CreateSequence, DropSequence
+from sqlalchemy.schema import Sequence, DropSequence
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.sql.expression import func
 from sqlalchemy.exc import DatabaseError
 from privacyidea.models import db
+from privacyidea.models.db import create_sequence_if_supported
 
 # revision identifiers, used by Alembic.
 revision = '5cb310101a1f'
@@ -49,8 +50,7 @@ def upgrade():
                 # Create the sequence with the correct next_id!
                 current_id = session.query(func.max(tbl.c.id)).one()[0] or 0
                 try:
-                    seq = Sequence(seq_name, start=(current_id + 1))
-                    op.execute(CreateSequence(seq, if_not_exists=True))
+                    create_sequence_if_supported(op, seq_name, start=current_id + 1)
                     print(f" +++ Created Sequence '{seq_name}' for table '{tbl.name}' "
                           f"with current id={current_id + 1}")
                 except DatabaseError as e:

@@ -75,8 +75,8 @@ def test_migrations_do_not_emit_raw_create_sequence_sql():
     static check is the guard against the gap.
 
     ALTER SEQUENCE ... RESTART hits the same constraint and is guarded by
-    test_migrations_do_not_emit_raw_alter_sequence_sql. DROP SEQUENCE carries no
-    Galera constraint and may stay a raw string.
+    test_migrations_do_not_emit_raw_alter_sequence_sql, DROP SEQUENCE IF EXISTS by
+    test_migrations_do_not_emit_raw_drop_sequence_if_exists_sql.
     """
     offenders = [loc for loc, sql in _iter_op_execute_sql_literals() if "CREATE SEQUENCE" in sql]
     assert not offenders, (
@@ -114,6 +114,72 @@ def test_migrations_do_not_emit_raw_alter_sequence_sql():
         + "\n\nUse op.execute(build_restart_sequence_sql(name, restart_with, bind.dialect.name)) "
         "(privacyidea.models.db) for the correct per-dialect syntax."
     )
+
+
+def test_migrations_do_not_emit_raw_drop_sequence_if_exists_sql():
+    """
+    Migrations must not drop a sequence with a raw "DROP SEQUENCE IF EXISTS ..."
+    string. The IF EXISTS guard is a MariaDB/PostgreSQL spelling; Oracle accepts it
+    from 23c on only, so on the supported 19c+ baseline the statement fails with
+    "ORA-00933: SQL command not properly ended" and takes the whole downgrade with
+    it.
+
+    Use privacyidea.models.db.drop_sequence_if_supported(op, name), which reflects
+    the sequence on Oracle and uses the guard everywhere else. A raw DROP SEQUENCE
+    without IF EXISTS is valid on every backend and stays allowed.
+    """
+    offenders = [
+        loc for loc, sql in _iter_op_execute_sql_literals()
+        if "DROP SEQUENCE" in sql and "IF EXISTS" in sql
+    ]
+    assert not offenders, (
+        "The following migrations drop a sequence with a raw 'DROP SEQUENCE IF EXISTS' "
+        "string, which Oracle 19c+ rejects:\n"
+        + "\n".join(f"  {o}" for o in offenders)
+        + "\n\nUse drop_sequence_if_supported(op, name) (privacyidea.models.db) instead."
+    )
+
+
+def test_sequence_ddl_guards_are_omitted_on_oracle():
+    """
+    build_create_sequence_ddl / build_drop_sequence_ddl (privacyidea.models.db) must
+    emit the IF NOT EXISTS / IF EXISTS guard on MariaDB and PostgreSQL but never on
+    Oracle, where both spellings are 23c-only and fail on the supported 19c+
+    baseline with "ORA-00933: SQL command not properly ended".
+
+    This is the guard on the decision itself; that a sequence which already exists
+    is then skipped on Oracle by reflecting it is exercised by the migration tests
+    running against a real Oracle database.
+    """
+    from sqlalchemy.dialects import mysql, oracle, postgresql
+    from privacyidea.models.db import build_create_sequence_ddl, build_drop_sequence_ddl
+
+    dialects = {
+        "oracle": oracle.dialect(),
+        "postgresql": postgresql.dialect(),
+        "mariadb": mysql.dialect(is_mariadb=True),
+    }
+    for name, dialect in dialects.items():
+        create_sql = str(build_create_sequence_ddl("dummy_guard_seq", name).compile(dialect=dialect)).upper()
+        drop_sql = str(build_drop_sequence_ddl("dummy_guard_seq", name).compile(dialect=dialect)).upper()
+        if name == "oracle":
+            assert "IF NOT EXISTS" not in create_sql, (
+                f"CREATE SEQUENCE on Oracle must not carry the 23c-only IF NOT EXISTS guard, "
+                f"got: {create_sql!r}"
+            )
+            assert "IF EXISTS" not in drop_sql, (
+                f"DROP SEQUENCE on Oracle must not carry the 23c-only IF EXISTS guard, "
+                f"got: {drop_sql!r}"
+            )
+        else:
+            assert "IF NOT EXISTS" in create_sql, (
+                f"CREATE SEQUENCE on {name} must be guarded with IF NOT EXISTS so the "
+                f"migration can be re-run, got: {create_sql!r}"
+            )
+            assert "IF EXISTS" in drop_sql, (
+                f"DROP SEQUENCE on {name} must be guarded with IF EXISTS so the downgrade "
+                f"can be re-run, got: {drop_sql!r}"
+            )
 
 
 def test_create_sequence_is_galera_safe_on_mariadb():
