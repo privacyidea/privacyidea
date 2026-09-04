@@ -516,6 +516,30 @@ describe("AuthenticationActivityWidgetComponent", () => {
     expect(component.rangeStart()).toBe(BINS - 1);
   });
 
+  it("keeps the chart up while a new window is being fetched", () => {
+    seed([series("LOGIN_SUCCESS", "success", [1, 2, 4, 8])]);
+    create();
+    expect(text(".chart-row .total")).toBe("15");
+
+    // The next window's response is held back, which is the moment a store entry for a fresh key has nothing in it.
+    const pending = new Subject<PiResponse<AuthenticationLogStatistics>>();
+    logMock.fetchStatistics.mockReturnValue(pending.asObservable());
+    component.selectRange("7d");
+    fixture.detectChanges();
+
+    // The previous window stays on the chart rather than the widget turning into a spinner; the frame says a request
+    // is in flight through its own header instead.
+    expect(component.state()).toBe("ready");
+    expect(component.partialLoading()).toBe(true);
+    expect(fixture.nativeElement.querySelectorAll(".chart-row")).toHaveLength(2);
+    expect(text(".chart-row .total")).toBe("15");
+
+    pending.next(MockPiResponse.fromValue(statistics([series("LOGIN_SUCCESS", "success", [1, 0, 0, 0])])));
+    fixture.detectChanges();
+
+    expect(text(".chart-row .total")).toBe("1");
+  });
+
   it("opens the brush again when a new window arrives", () => {
     seed([series("LOGIN_SUCCESS", "success", [1, 2, 4, 8])]);
     create();

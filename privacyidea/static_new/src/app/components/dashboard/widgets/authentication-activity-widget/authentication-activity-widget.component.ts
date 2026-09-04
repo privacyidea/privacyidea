@@ -101,7 +101,7 @@ export class AuthenticationActivityWidgetComponent extends DashboardWidget {
   static override readonly icon = "lock";
   static override readonly titleLink = ROUTE_PATHS.AUTHENTICATION_LOG;
   static override readonly titleLinkAction = LOG_READ;
-  static override readonly defaultSize: WidgetSize = { cols: 5, rows: 8 };
+  static override readonly defaultSize: WidgetSize = { cols: 6, rows: 8 };
   static override readonly minSize: WidgetSize = { cols: 4, rows: 7 };
   static override readonly maxSize: WidgetSize = { cols: 12, rows: 12 };
 
@@ -123,14 +123,21 @@ challenge-response login count once, classified by how the attempt ended.`;
   // The store key currently in use, so the previous range's entry can be dropped when the range changes.
   private storeKey: string | null = null;
   override readonly partialLoading = computed(() => this.dataRef()?.revalidating() ?? false);
+  // A failure that left something on screen: either the entry kept its previous value, or the chart is still showing
+  // the last window's response. Both are stale data the frame should mark rather than blank.
   override readonly refreshFailed = computed(() => {
     const ref = this.dataRef();
-    return !!ref && ref.error() && ref.value() !== undefined;
+    return !!ref && ref.error() && (ref.value() !== undefined || this.statistics() !== null);
   });
 
-  private readonly statistics = computed<AuthenticationLogStatistics | null>(
-    () => this.dataRef()?.value()?.result?.value ?? null
-  );
+  // The response on screen, which is the newest one that arrived rather than the one being fetched. A window change
+  // starts a fresh store entry with nothing in it, and dropping the chart for the moment that takes would replace the
+  // whole widget with a spinner; keeping the last response leaves a chart whose bars and axis still belong to each
+  // other - the previous window, fully labelled - while the frame's own spinner says a request is in flight.
+  private readonly statistics = linkedSignal<AuthenticationLogStatistics | null, AuthenticationLogStatistics | null>({
+    source: () => this.dataRef()?.value()?.result?.value ?? null,
+    computation: (incoming, previous) => incoming ?? previous?.value ?? null
+  });
 
   readonly binStarts = computed<string[]>(() => this.statistics()?.bins?.starts ?? []);
 
@@ -277,7 +284,11 @@ challenge-response login count once, classified by how the attempt ended.`;
       }
       const value = ref.value();
       if (value === undefined) {
-        this.state.set(ref.error() ? "error" : "loading");
+        // Nothing has arrived for this window yet. Only a widget with nothing to show is "loading": once a chart is
+        // up, a later window change keeps it and the frame spins its header instead.
+        if (this.statistics() === null) {
+          this.state.set(ref.error() ? "error" : "loading");
+        }
         return;
       }
       this.state.set(value.result?.status === true ? "ready" : "error");
