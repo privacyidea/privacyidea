@@ -33,7 +33,6 @@ import { MatButtonModule } from "@angular/material/button";
 import { MatButtonToggleModule } from "@angular/material/button-toggle";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatIconModule } from "@angular/material/icon";
-import { MatTooltipModule } from "@angular/material/tooltip";
 import { SelectorButtonsComponent } from "@components/policies/policy-edit-page/policy-panels/edit-action-tab/selector-buttons/selector-buttons.component";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import {
@@ -53,7 +52,6 @@ import { PolicyActionItemComponent, SelectableAction } from "./policy-action-ite
     MatButtonModule,
     MatExpansionModule,
     SelectorButtonsComponent,
-    MatTooltipModule,
     PolicyActionItemComponent,
     ClearableInputComponent,
     MatButtonToggleModule

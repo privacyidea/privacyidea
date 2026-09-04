@@ -20,7 +20,6 @@
   <div class="detail-text">
     <span
       class="detail-label"
-      [matTooltip]="selectableAction().actionName"
       [innerHTML]="selectableAction().label | highlight: highlight()"></span>
     @if (selectableAction().detail.desc; as description) {
       <span

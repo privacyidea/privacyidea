@@ -24,6 +24,7 @@ import { environment } from "@env/environment";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
+import { splitMarkupSegments } from "@utils/markup.utils";
 import { lastValueFrom, Observable } from "rxjs";
 
 export type ActionType = "bool" | "int" | "str" | "text";
@@ -51,10 +52,11 @@ export function policyActionMatchesFilter(
   const searchTerm = filter.toLowerCase().trim();
   if (!searchTerm) return true;
   if (actionName.toLowerCase().includes(searchTerm)) return true;
-  return (detail?.desc ?? "")
-    .replace(/<[^>]*>/g, "") // Remove html tags
-    .toLowerCase()
-    .includes(searchTerm);
+  // Searched per text part of the description, which is exactly what the highlight pipe can mark,
+  // so an action in the list always shows the user why it is there.
+  return splitMarkupSegments(detail?.desc ?? "").some(
+    (segment) => !segment.isMarkup && segment.text.toLowerCase().includes(searchTerm)
+  );
 }
 
 export interface PolicyDetail {

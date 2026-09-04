@@ -108,6 +108,18 @@ describe("HighlightPipe", () => {
     expect(result).toBe('x <span class="highlight">&lt;</span> y');
   });
 
+  it("should ignore the padding of an untrimmed term", () => {
+    expect(pipe.transform("Hello World", "world ")).toBe('Hello <span class="highlight">World</span>');
+    expect(pipe.transform("Hello World", ["  hello", "world  "])).toBe(
+      '<span class="highlight">Hello</span> <span class="highlight">World</span>'
+    );
+  });
+
+  it("should treat a term of only whitespace as no term", () => {
+    expect(pipe.transform("Hello World", " ")).toBe("Hello World");
+    expect(pipe.transform("Hello <b>World</b>", "\t", true)).toBe("Hello <b>World</b>");
+  });
+
   describe("containsMarkup", () => {
     it("should hand tags through and highlight only the text between them", () => {
       const result = pipe.transform("Set it to <code>CUSTOM</code> here", "custom", true);
@@ -130,6 +142,16 @@ describe("HighlightPipe", () => {
       expect(pipe.transform("Does apply if <em>push_require_presence</em> is set.", "", true)).toBe(
         "Does apply if <em>push_require_presence</em> is set."
       );
+    });
+
+    it("should keep a tag whose attribute value contains a '>' intact", () => {
+      const result = pipe.transform('See <a title="a > b">docs</a>', "b", true);
+      expect(result).toBe('See <a title="a > b">docs</a>');
+    });
+
+    it("should search across a '<' that starts no tag", () => {
+      const result = pipe.transform("a < b and c > d", "and", true);
+      expect(result).toBe('a < b <span class="highlight">and</span> c > d');
     });
 
     it("should still escape the same value in the default mode", () => {

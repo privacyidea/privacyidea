@@ -625,6 +625,23 @@ describe("policyActionMatchesFilter", () => {
     expect(policyActionMatchesFilter("push_text_on_mobile", detail, "code")).toBe(false);
   });
 
+  it("should not match an entity name in the description", () => {
+    const tokeninfoDetail: PolicyActionDetail = {
+      type: "str",
+      desc: "Only authenticate if the tokeninfo field matches the regexp (key/&lt;regexp&gt;/)."
+    };
+    expect(policyActionMatchesFilter("tokeninfo", tokeninfoDetail, "lt")).toBe(false);
+    expect(policyActionMatchesFilter("tokeninfo", tokeninfoDetail, "regexp")).toBe(true);
+  });
+
+  it("should not match a term spanning a tag of the description", () => {
+    expect(policyActionMatchesFilter("push_text_on_mobile", detail, "above the OTP")).toBe(false);
+  });
+
+  it("should ignore the padding of an untrimmed filter", () => {
+    expect(policyActionMatchesFilter("push_text_on_mobile", detail, "  smartphone ")).toBe(true);
+  });
+
   it("should not match a term that appears in neither", () => {
     expect(policyActionMatchesFilter("push_text_on_mobile", detail, "webauthn")).toBe(false);
   });

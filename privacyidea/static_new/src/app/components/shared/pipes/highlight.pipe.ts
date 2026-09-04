@@ -19,6 +19,7 @@
 
 import { inject, Pipe, PipeTransform, SecurityContext } from "@angular/core";
 import { DomSanitizer } from "@angular/platform-browser";
+import { splitMarkupSegments } from "@utils/markup.utils";
 
 @Pipe({
   name: "highlight",
@@ -28,7 +29,11 @@ export class HighlightPipe implements PipeTransform {
   private sanitizer = inject(DomSanitizer);
 
   transform(value: string, searchTerm: string | string[], containsMarkup = false): string {
-    const terms = (Array.isArray(searchTerm) ? searchTerm : [searchTerm]).filter((term) => !!term);
+    // Trimmed because the filter inputs the terms come from are matched trimmed as well, so an
+    // untrimmed term would highlight the padding (a lone space matching every space) or nothing.
+    const terms = (Array.isArray(searchTerm) ? searchTerm : [searchTerm])
+      .map((term) => term?.trim() ?? "")
+      .filter((term) => !!term);
     if (terms.length === 0 || !value) {
       return containsMarkup ? (this.sanitizer.sanitize(SecurityContext.HTML, value) ?? "") : this.escapeHtml(value);
     }
@@ -62,15 +67,9 @@ export class HighlightPipe implements PipeTransform {
   // between them is searched. Escaping would show the markup as literal text; sanitizing the result
   // still strips everything active.
   private highlightAroundMarkup(value: string, regex: RegExp): string {
-    let highlighted = "";
-    let lastIndex = 0;
-    for (const markup of value.matchAll(/<[^>]*>|&[a-zA-Z#][a-zA-Z0-9]*;/g)) {
-      const start = markup.index!;
-      highlighted += this.highlightPlain(value.slice(lastIndex, start), regex);
-      highlighted += markup[0];
-      lastIndex = start + markup[0].length;
-    }
-    return highlighted + this.highlightPlain(value.slice(lastIndex), regex);
+    return splitMarkupSegments(value)
+      .map((segment) => (segment.isMarkup ? segment.text : this.highlightPlain(segment.text, regex)))
+      .join("");
   }
 
   private highlightPlain(text: string, regex: RegExp): string {
