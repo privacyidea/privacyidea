@@ -11,6 +11,7 @@ import traceback
 
 from dateutil.tz import tzlocal
 from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
 
 from privacyidea.lib import _
 from privacyidea.lib.config import (get_token_prefix,
@@ -30,11 +31,11 @@ from privacyidea.lib.user import User
 from privacyidea.lib.utils import (BASE58, hexlify_and_unicode, check_serial_valid)
 from privacyidea.models import (db, Token, TokenOwner)
 
-from privacyidea.lib.token.const import PI_TOKEN_SERIAL_RANDOM, B32_ALPHABET
+from privacyidea.lib.token.const import PI_TOKEN_SERIAL_RANDOM, B32_ALPHABET, LOST_TOKEN_FOR
 
-from privacyidea.lib.token.attributes import enable_token, unassign_token
+from privacyidea.lib.token.attributes import add_tokeninfo, enable_token, unassign_token
 from privacyidea.lib.token.query import (create_tokenclass_object, get_one_token, get_token_owner, get_tokens,
-                                         get_tokens_from_serial_or_user)
+                                         get_tokens_from_serial_or_user, token_exist)
 
 log = logging.getLogger(__name__)
 
@@ -388,6 +389,59 @@ def copy_token_realms(serial_from: str, serial_to: str) -> None:
     tokenobject_to.set_realms(realm_list)
 
 
+def _unused_lost_serial(serial: str) -> str:
+    """
+    Return the serial for the replacement token of the given token.
+
+    The replacement is always a newly created token, so a serial that is already taken gets a
+    counted suffix. Without that, ``init_token`` would update the existing token instead of
+    creating one, and the replacement would adopt a token that may well belong to someone else.
+
+    :param serial: Serial number of the lost token
+    :return: An unused serial number
+    """
+    max_length = Token.__table__.c.serial.type.length
+    base = f"lost{serial!s}"[:max_length]
+    if not token_exist(base):
+        return base
+    counter = 2
+    while True:
+        suffix = f"_{counter}"
+        candidate = f"{base[:max_length - len(suffix)]}{suffix}"
+        if not token_exist(candidate):
+            return candidate
+        counter += 1
+
+
+def _reserve_lost_serial(serial: str) -> str:
+    """
+    Reserve the serial of the replacement token by inserting its still inactive database row.
+
+    ``init_token`` updates an existing token of the given serial instead of creating one, so
+    checking that a serial is free is not enough: a concurrent run of the process could pick the
+    same serial in between and the second one would then take over the token of the first. The
+    unique constraint on the serial decides between the two instead, and the loser tries the next
+    free serial. The row is inserted inactive, so that a failure between the reservation and the
+    initialization does not leave a usable token behind.
+
+    :param serial: Serial number of the lost token
+    :return: The serial of the reserved token
+    """
+    for _attempt in range(10):
+        candidate = _unused_lost_serial(serial)
+        try:
+            # A savepoint, so that losing the insert does not roll back the whole transaction.
+            with db.session.begin_nested():
+                db.session.add(Token(candidate, tokentype="pw", isactive=False))
+            db.session.commit()
+            return candidate
+        except IntegrityError:
+            log.info(f"The serial {candidate} for the replacement of the token {serial} was "
+                     "taken by a concurrent request.")
+    raise TokenAdminError(_("Could not reserve a serial for the replacement of the token "
+                            "{0!s}.").format(serial))
+
+
 @log_with(log)
 @libpolicy(config_lost_token)
 def lost_token(serial: str, new_serial: str | None = None, password: str | None = None,
@@ -423,7 +477,6 @@ def lost_token(serial: str, new_serial: str | None = None, password: str | None 
     :rtype: dict
     """
     res = {}
-    new_serial = new_serial or f"lost{serial!s}"
     user = get_token_owner(serial)
 
     log.debug(f"doing lost token for serial {serial!r} and user {user!r}")
@@ -450,15 +503,34 @@ def lost_token(serial: str, new_serial: str | None = None, password: str | None 
     if password is None:
         password = generate_password(size=pw_len, characters=character_pool)
 
+    # Only now that nothing can reject the request anymore, so that a rejected one does not
+    # leave the reserved token behind.
+    reserved = not new_serial
+    new_serial = new_serial or _reserve_lost_serial(serial)
     res['serial'] = new_serial
 
-    tokenobject = init_token({"otpkey": password, "serial": new_serial,
-                              "type": "pw",
-                              "description": _("temporary replacement for {0!s}").format(
-                                  serial)})
+    try:
+        tokenobject = init_token({"otpkey": password, "serial": new_serial,
+                                  "type": "pw",
+                                  "description": _("temporary replacement for {0!s}").format(
+                                      serial)})
+    except Exception:
+        if reserved:
+            remove_token(new_serial)
+        raise
 
     res['init'] = tokenobject is not None
     if res['init']:
+        if reserved:
+            # The reservation inserted the row inactive. Now that it is a complete token, it can
+            # be used, and the replacements issued before it can not.
+            for previous in get_tokens(tokeninfo={LOST_TOKEN_FOR: serial}):
+                if previous.get_serial() != new_serial:
+                    log.info(f"Disabling the earlier replacement {previous.get_serial()} of the "
+                             f"token {serial}.")
+                    enable_token(previous.get_serial(), enable=False)
+            add_tokeninfo(new_serial, LOST_TOKEN_FOR, serial)
+            enable_token(new_serial, enable=True)
         res['user'] = copy_token_user(serial, new_serial)
         res['pin'] = copy_token_pin(serial, new_serial)
 

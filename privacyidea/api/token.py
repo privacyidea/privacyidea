@@ -1585,20 +1585,25 @@ def copyuser_api():
 
 
 @token_blueprint.route('/lost/<serial>', methods=['POST'])
+@admin_required
 @prepolicy(check_token_action, request, action=PolicyAction.LOSTTOKEN)
 @event("token_lost", request, g)
 @log_with(log)
 def lost_api(serial=None):
     """
     Mark a token as lost and issue a temporary replacement. The
-    replacement carries a derived serial (``lost<original-serial>``),
-    a generated password, the original token's PIN, and a limited
-    validity period. The original token is disabled.
+    replacement is a newly created password token carrying a derived
+    serial (``lost<original-serial>``, with a counted suffix if that
+    serial is already taken), a generated password, the original
+    token's PIN, and a limited validity period. The original token is
+    disabled.
 
-    Callable by both admins and users; user-role callers may only
-    operate on their own tokens (the view enforces ownership).
+    The PIN is copied as a hash, so the replacement keeps the PIN the
+    user already knows without the calling admin learning it.
 
-    Requires authentication and the policy action ``losttoken``.
+    Requires admin authentication and the policy action ``losttoken``,
+    which is checked against the realms of the lost token. If a ``user``
+    is passed as well, it has to be the owner of the token.
 
     :param serial: path component, the serial of the lost token.
     :status 200: dict carrying the new serial, the temporary

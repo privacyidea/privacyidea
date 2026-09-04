@@ -556,6 +556,9 @@ type: ``bool``
 If the ``losttoken`` action is defined, the administrator is
 allowed to perform the lost token process.
 
+The action is checked against the realms of the lost token, so an administrator
+restricted to certain realms can only run the process for tokens of those realms.
+
 To only perform the lost token process the actions ``copytokenuser``
 and ``copytokenpin`` are not necessary!
 
