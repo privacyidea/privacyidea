@@ -855,20 +855,18 @@ User Settings
 -------------
 
 The Web UI can store per-user settings (UI preferences) on the server via the
-``/user/settings`` endpoint. These settings are not interpreted by the backend;
-they are only stored and served back to the Web UI of the logged-in user.
+``/user/settings`` endpoint. The values are not interpreted by the backend; they
+are only stored and served back to the Web UI of the logged-in user.
 
-The set of accepted setting keys can be extended without a code change::
+Only the setting keys known to the Web UI are accepted. Storing any other key
+returns an error that names the rejected key. Further keys, for example for a
+customized Web UI, can be allowed without a code change::
 
     PI_USER_SETTINGS_ALLOWED_KEYS = ["my_custom_key", "another_key"]
 
 The value is a list of additional allowed keys (a comma-separated string is also
-accepted when set via an environment variable).
-
-.. note:: Key enforcement is not active yet. Currently any key is accepted (only
-   the document structure and a size limit are enforced) so the Web UI can evolve
-   its settings freely. ``PI_USER_SETTINGS_ALLOWED_KEYS`` will take effect once
-   key enforcement is enabled.
+accepted when set via an environment variable). Removing a key from the list does
+not delete settings already stored under it.
 
 .. _ini_remember_device_grace:
 
