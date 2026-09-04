@@ -99,6 +99,22 @@ describe("widget data retention across a failed refresh", () => {
       expect(fixture.nativeElement.textContent).not.toContain("Could not load data.");
     });
 
+    it("clears the failure marker once a later refresh succeeds", () => {
+      tokenMock.getTokenCount.mockImplementation(() => throwError(() => new Error("boom")));
+      store.refreshAll();
+      fixture.detectChanges();
+      expect(fixture.componentInstance.refreshFailed()).toBe(true);
+
+      tokenMock.getTokenCount.mockImplementation(() => of(MockPiResponse.fromValue<TokenCount>({ count: 99 })));
+      store.refreshAll();
+      fixture.detectChanges();
+
+      // Otherwise the frame keeps warning about data that is no longer stale.
+      expect(fixture.componentInstance.refreshFailed()).toBe(false);
+      expect(fixture.componentInstance.state()).toBe("ready");
+      expect(fixture.componentInstance.counts().total).toBe(99);
+    });
+
     it("still reports error when the very first load fails", () => {
       store.invalidate();
       tokenMock.getTokenCount.mockImplementation(() => throwError(() => new Error("boom")));
