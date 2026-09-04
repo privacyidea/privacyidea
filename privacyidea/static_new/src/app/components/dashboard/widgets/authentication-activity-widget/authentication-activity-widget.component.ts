@@ -17,9 +17,10 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { formatDate } from "@angular/common";
-import { Component, computed, effect, inject, signal, TemplateRef, viewChild } from "@angular/core";
+import { Component, computed, effect, inject, linkedSignal, signal, TemplateRef, viewChild } from "@angular/core";
 import { MatButtonToggleModule } from "@angular/material/button-toggle";
 import { MatIcon } from "@angular/material/icon";
+import { MatSliderModule } from "@angular/material/slider";
 import { MatTooltip } from "@angular/material/tooltip";
 import { RouterLink } from "@angular/router";
 import { PiResponse } from "@app/app.component";
@@ -62,9 +63,13 @@ export const ACTIVITY_RANGES: readonly ActivityRange[] = [
 export interface ActivityRow {
   label: string;
   outcome: string;
+  // Every bucket of the window, selected or not: the bars keep charting the whole window, so its shape stays put
+  // while the brush moves over it.
   counts: number[];
+  // Only the buckets the brush selects, in contrast, so the number beside a row answers for the span the reader
+  // picked rather than for the preset window behind it.
   total: number;
-  // This outcome's share of every attempt in the window, pending included; null when the window holds none.
+  // This outcome's share of every attempt in the selected span, pending included; null when that span holds none.
   share: number | null;
 }
 
@@ -84,7 +89,15 @@ export interface ActivitySummary {
 @Component({
   selector: "app-authentication-activity-widget",
   standalone: true,
-  imports: [InfoHintComponent, MatButtonToggleModule, MatIcon, MatTooltip, RouterLink, WidgetStateComponent],
+  imports: [
+    InfoHintComponent,
+    MatButtonToggleModule,
+    MatIcon,
+    MatSliderModule,
+    MatTooltip,
+    RouterLink,
+    WidgetStateComponent
+  ],
   templateUrl: "./authentication-activity-widget.component.html",
   styleUrl: "./authentication-activity-widget.component.scss"
 })
@@ -128,16 +141,52 @@ challenge-response login count once, classified by how the attempt ended.`;
 
   readonly binStarts = computed<string[]>(() => this.statistics()?.bins?.starts ?? []);
 
-  // The window's own start, so the axis labels what was actually queried rather than recomputing it. The time is
-  // always shown, for the same reason binTooltip shows it: the window is measured back from now rather than snapped
-  // to midnight, so a date on its own would claim a calendar day the window only partly covers.
-  readonly windowStart = computed<string>(() => {
-    const start = this.statistics()?.window?.start_time;
-    if (!start) {
-      return "";
-    }
-    return formatDate(start, "yyyy-MM-dd HH:mm", "en-US");
+  // --- The brush under the chart ---
+  //
+  // The toggle group picks the window and how finely the endpoint buckets it; the brush then selects a span *within*
+  // that window, so a range finer than the four presets needs no second request. Its positions are bucket edges
+  // rather than free time: whole buckets are the finest cut the fetched counts can answer for, and a thumb on an edge
+  // is a thumb over the bar it selects.
+  readonly binCount = computed<number>(() => this.statistics()?.bins?.count ?? 0);
+
+  // What makes a brush stale: the window it was drawn over, and the buckets its thumbs step through. Deliberately not
+  // the response itself - a refresh of the same window keeps the reader's span instead of snapping it open, while a
+  // new preset, whose window the old positions would name a different span of, opens it.
+  private readonly brushBasis = computed(() => `${this.selectedRange().hours}:${this.binCount()}`);
+
+  // The selection as a half-open span of edges: the buckets rangeStart .. rangeEnd - 1.
+  readonly rangeStart = linkedSignal<string, number>({
+    source: this.brushBasis,
+    computation: () => 0
   });
+  readonly rangeEnd = linkedSignal<string, number>({
+    source: this.brushBasis,
+    computation: () => this.binCount()
+  });
+
+  // The selected span's own bounds, which is what the drill-down has to carry: the bucket edges the thumbs sit on,
+  // falling back to the window's ends for the edges past the last bucket start.
+  private readonly selectedFrom = computed<string | null>(
+    () => this.binStarts()[this.rangeStart()] ?? this.statistics()?.window?.start_time ?? null
+  );
+  private readonly selectedTo = computed<string | null>(
+    () => this.binStarts()[this.rangeEnd()] ?? this.statistics()?.window?.end_time ?? null
+  );
+
+  // The labels under the brush. The time is always shown, for the same reason binTooltip shows it: the window is
+  // measured back from now rather than snapped to midnight, so a date on its own would claim a calendar day the span
+  // only partly covers. An unbrushed upper end reads "now", the present the window was measured back from.
+  readonly rangeFromLabel = computed<string>(() => this.edgeLabel(this.rangeStart(), "yyyy-MM-dd HH:mm"));
+  readonly rangeToLabel = computed<string>(() =>
+    this.rangeEnd() >= this.binCount() ? $localize`now` : this.edgeLabel(this.rangeEnd(), "yyyy-MM-dd HH:mm")
+  );
+
+  // What each thumb announces, bound to the inputs *and* handed to Material as displayWith: that is what makes the
+  // two writers of aria-valuetext agree - see the note in the template.
+  readonly brushStartValueText = computed<string>(() => this.edgeLabel(this.rangeStart(), "yyyy-MM-dd HH:mm"));
+  readonly brushEndValueText = computed<string>(() => this.edgeLabel(this.rangeEnd(), "yyyy-MM-dd HH:mm"));
+
+  formatSliderThumb = (edge: number): string => this.edgeLabel(edge, "yyyy-MM-dd HH:mm");
 
   // The tallest bin across both rows. The rows share it so their heights stay comparable: a failure row scaled to its
   // own peak would make a handful of failures look like an outage.
@@ -150,18 +199,26 @@ challenge-response login count once, classified by how the attempt ended.`;
     // than locks - the conditional-access widget is where locks themselves are counted.
     const series = this.statistics()?.events ?? [];
     const binCount = this.statistics()?.bins?.count ?? 0;
+    // Counted from the buckets the brush selects rather than from the endpoint's window totals, so every number here
+    // answers for the span on screen. The two agree while the brush spans the whole window: a series' total is the
+    // sum of its own buckets.
     const totalOf = (outcome: string) =>
-      series.filter((entry) => entry.outcome === outcome).reduce((sum, entry) => sum + entry.total, 0);
+      series.filter((entry) => entry.outcome === outcome).reduce((sum, entry) => sum + this.selectedSum(entry), 0);
     const success = totalOf("success");
     const failure = totalOf("failure");
     const pending = totalOf("pending");
-    // Every attempt in the window, pending included: the three shares then add up to the whole, so a row's percentage
-    // reads as "this much of what happened" rather than shifting with how many attempts have resolved so far.
+    // Every attempt in the selected span, pending included: the three shares then add up to the whole, so a row's
+    // percentage reads as "this much of what happened" rather than shifting with how many attempts have resolved so
+    // far.
     const attempts = success + failure + pending;
     const share = (count: number) => (attempts ? count / attempts : null);
+    // Re-ranked, and stripped of the reasons the brush leaves behind: the endpoint ordered the series by their window
+    // totals, which is not the order - nor the set - the selected span has.
     const reasons = series
       .filter((entry) => entry.outcome === "failure")
-      .map((entry) => ({ eventType: entry.event_type, count: entry.total }));
+      .map((entry) => ({ eventType: entry.event_type, count: this.selectedSum(entry) }))
+      .filter((reason) => reason.count > 0)
+      .sort((a, b) => b.count - a.count || a.eventType.localeCompare(b.eventType));
 
     return {
       success,
@@ -192,9 +249,8 @@ challenge-response login count once, classified by how the attempt ended.`;
           share: share(pending)
         }
       ],
-      // Already ordered by descending total from the endpoint, so the most common reason leads. The widget body
-      // scrolls, so the list is not capped: a cap would need a control to lift it, which costs more room than the
-      // rows it saves.
+      // Most common reason first. The widget body scrolls, so the list is not capped: a cap would need a control to
+      // lift it, which costs more room than the rows it saves.
       reasons
     };
   });
@@ -227,6 +283,36 @@ challenge-response login count once, classified by how the attempt ended.`;
     if (range) {
       this.selectedRange.set(range);
     }
+  }
+
+  // The thumbs keep one bucket between them rather than being allowed to meet. A closed brush would select nothing:
+  // every count would read zero and the chart would look like an outage instead of like an empty selection.
+  onRangeStartInput(edge: number): void {
+    this.rangeStart.set(Math.min(edge, this.rangeEnd() - 1));
+  }
+
+  onRangeEndInput(edge: number): void {
+    this.rangeEnd.set(Math.max(edge, this.rangeStart() + 1));
+  }
+
+  // Whether a bucket is one the brush selects. Drives the bars' muting, so the chart shows which part of the shape
+  // the numbers beside it are counting.
+  inSelection(bin: number): boolean {
+    return bin >= this.rangeStart() && bin < this.rangeEnd();
+  }
+
+  // The time a bucket edge sits at. Only one edge has no bucket start of its own - the one past the last bucket -
+  // and that is the window's end, the "now" it was measured back from; an edge with no start and nothing after it
+  // falls back to the end of the window it belongs to, never across to the other one.
+  private edgeLabel(edge: number, format: string): string {
+    const window = this.statistics()?.window;
+    const iso = this.binStarts()[edge] ?? (edge > 0 ? window?.end_time : window?.start_time);
+    return iso ? formatDate(iso, format, "en-US") : "";
+  }
+
+  // One series' attempts inside the selected span.
+  private selectedSum(entry: AuthenticationEventSeries): number {
+    return entry.counts.slice(this.rangeStart(), this.rangeEnd()).reduce((sum, count) => sum + count, 0);
   }
 
   private load(range: ActivityRange): void {
@@ -298,24 +384,24 @@ challenge-response login count once, classified by how the attempt ended.`;
     return row.share === null ? "" : `(${Math.round(row.share * 100)}%)`;
   }
 
-  // Opens the log on the attempts behind a row of the reasons table, carrying the window with the filter: the log
-  // keeps whatever timestamps it was last left with, so without this the count shown here and the rows listed there
-  // could describe different periods.
+  // Opens the log on the attempts behind a row of the reasons table, carrying the selected span with the filter: the
+  // log keeps whatever timestamps it was last left with, so without this the count shown here and the rows listed
+  // there could describe different periods. The brushed span, not the window, because the count in the row is the
+  // brushed one.
   //
-  // The window goes into the filter *chips* as well as the signals. The log derives its time filter from the chip
-  // text and clears a bound whose chip is missing, so setting the signals alone would be undone the moment the page
-  // loads. toFilterDisplay is the form the page itself writes, which is what keeps it from reading the chip as an
-  // edit and reparsing it.
+  // The span goes into the filter *chips* as well as the signals. The log derives its time filter from the chip text
+  // and clears a bound whose chip is missing, so setting the signals alone would be undone the moment the page loads.
+  // toFilterDisplay is the form the page itself writes, which is what keeps it from reading the chip as an edit and
+  // reparsing it.
   showEventType(eventType: string): void {
-    const window = this.statistics()?.window;
+    const from = this.selectedFrom();
+    const to = this.selectedTo();
     let filter = new FilterValue().addEntry("event_type", eventType);
-    if (window) {
-      filter = filter
-        .addEntry("start_time", toFilterDisplay(window.start_time))
-        .addEntry("end_time", toFilterDisplay(window.end_time));
+    if (from && to) {
+      filter = filter.addEntry("start_time", toFilterDisplay(from)).addEntry("end_time", toFilterDisplay(to));
     }
     this.authenticationLogService.authenticationLogFilter.set(filter);
-    this.authenticationLogService.timestampFrom.set(window?.start_time ?? null);
-    this.authenticationLogService.timestampTo.set(window?.end_time ?? null);
+    this.authenticationLogService.timestampFrom.set(from);
+    this.authenticationLogService.timestampTo.set(to);
   }
 }

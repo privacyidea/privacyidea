@@ -16,9 +16,11 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { formatDate } from "@angular/common";
 import { provideZonelessChangeDetection } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { provideRouter } from "@angular/router";
+import { PiResponse } from "@app/app.component";
 import { WidgetInstance } from "@models/dashboard";
 import {
   AuthenticationEventSeries,
@@ -31,7 +33,7 @@ import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockAuthenticationLogService } from "@testing/mock-services/mock-authentication-log-service";
 import { MockPiResponse } from "@testing/mock-services/mock-utils";
 import { toFilterDisplay } from "@utils/date-format.utils";
-import { of, throwError } from "rxjs";
+import { of, Subject, throwError } from "rxjs";
 import { ACTIVITY_RANGES, AuthenticationActivityWidgetComponent } from "./authentication-activity-widget.component";
 
 const instance: WidgetInstance = { id: "activity-1", type: "authentication-activity", x: 0, y: 0, cols: 8, rows: 9 };
@@ -251,9 +253,11 @@ describe("AuthenticationActivityWidgetComponent", () => {
       expect(row.querySelectorAll(".bar")).toHaveLength(row.querySelectorAll(".axis-tick").length);
     }
 
-    // The time scale belongs to the chart as a whole, so it appears once at the bottom.
-    expect(fixture.nativeElement.querySelectorAll(".axis-labels")).toHaveLength(1);
-    expect(text(".axis-labels")).toContain("now");
+    // The time scale belongs to the chart as a whole, so it appears once at the bottom, under one brush shared by
+    // every row.
+    expect(fixture.nativeElement.querySelectorAll(".range-labels")).toHaveLength(1);
+    expect(fixture.nativeElement.querySelectorAll("mat-slider")).toHaveLength(1);
+    expect(text(".range-labels")).toContain("now");
   });
 
   it("shows an empty state when nothing failed", () => {
@@ -261,6 +265,183 @@ describe("AuthenticationActivityWidgetComponent", () => {
     create();
 
     expect(text(".empty")).toContain("No attempt failed in this range.");
+  });
+
+  it("brushes the chart with one position per bucket edge, over all rows at once", () => {
+    seed([series("LOGIN_SUCCESS", "success", [1, 0, 0, 0])]);
+    create();
+
+    // Edges, not buckets: a span of BINS buckets has BINS + 1 places a thumb can sit, and the open brush covers all
+    // of them. Anything finer could not be answered from the counts the endpoint bucketed.
+    const thumbs = Array.from<HTMLInputElement>(fixture.nativeElement.querySelectorAll("mat-slider input"));
+    expect(thumbs).toHaveLength(2);
+    expect(thumbs.map((thumb) => thumb.max)).toEqual([String(BINS), String(BINS)]);
+    expect(thumbs.map((thumb) => thumb.value)).toEqual(["0", String(BINS)]);
+    // One brush for three rows, so the outcomes are always read over the same span.
+    expect(fixture.nativeElement.querySelectorAll(".chart-row mat-slider")).toHaveLength(0);
+  });
+
+  it("counts only the buckets the brush selects", () => {
+    seed([series("LOGIN_SUCCESS", "success", [1, 2, 4, 8]), series("PIN_FAIL", "failure", [0, 1, 0, 0])]);
+    create();
+
+    component.onRangeStartInput(1);
+    component.onRangeEndInput(3);
+    fixture.detectChanges();
+
+    const cells = Array.from<Element>(fixture.nativeElement.querySelectorAll(".chart-row .chart-value"));
+    expect(cells.map((cell) => cell.querySelector(".total")?.textContent?.trim())).toEqual(["6", "1", "0"]);
+    // The shares are of the selected span too, so they still add up to the whole of what it holds.
+    expect(cells.map((cell) => cell.querySelector(".share")?.textContent?.trim())).toEqual(["(86%)", "(14%)", "(0%)"]);
+  });
+
+  it("re-ranks the failure reasons over the selected span, dropping the ones outside it", () => {
+    // Over the window PIN_FAIL leads with 6 against MFA_FAIL's 4, which is the order the endpoint returns them in;
+    // the first bucket alone reverses that, and the last two hold neither.
+    seed([series("PIN_FAIL", "failure", [1, 5, 0, 0]), series("MFA_FAIL", "failure", [4, 0, 0, 0])]);
+    create();
+
+    function reasons(): string[][] {
+      return Array.from<Element>(fixture.nativeElement.querySelectorAll(".reasons-table tr")).map((row) =>
+        Array.from<Element>(row.querySelectorAll("td")).map((cell) => cell.textContent?.trim() ?? "")
+      );
+    }
+
+    expect(reasons()).toEqual([
+      ["PIN_FAIL", "6"],
+      ["MFA_FAIL", "4"]
+    ]);
+
+    component.onRangeEndInput(1);
+    fixture.detectChanges();
+
+    expect(reasons()).toEqual([
+      ["MFA_FAIL", "4"],
+      ["PIN_FAIL", "1"]
+    ]);
+
+    component.onRangeEndInput(4);
+    component.onRangeStartInput(2);
+    fixture.detectChanges();
+
+    // A quiet stretch reads as the empty state, which is what "in this range" in that message means.
+    expect(text(".reasons-table .empty")).toContain("No attempt failed in this range.");
+  });
+
+  it("keeps the bars on the window's peak while the brush moves", () => {
+    seed([series("LOGIN_SUCCESS", "success", [50, 2, 0, 0])]);
+    create();
+
+    component.onRangeStartInput(1);
+    component.onRangeEndInput(2);
+    fixture.detectChanges();
+
+    // Scaling to the selection's own peak would redraw the shape under the reader's hands, making two attempts in a
+    // quiet bucket look like the busiest moment of the window.
+    expect(component.peak()).toBe(50);
+    expect(component.barHeight(2)).toBeCloseTo(4);
+  });
+
+  it("fades the buckets the brush leaves out, in every row", () => {
+    seed([series("LOGIN_SUCCESS", "success", [1, 1, 1, 1])]);
+    create();
+
+    component.onRangeStartInput(1);
+    component.onRangeEndInput(3);
+    fixture.detectChanges();
+
+    for (const row of fixture.nativeElement.querySelectorAll(".chart-row")) {
+      const muted = Array.from<Element>(row.querySelectorAll(".bar")).map((bar) => bar.classList.contains("bar-muted"));
+      expect(muted).toEqual([true, false, false, true]);
+    }
+  });
+
+  it("never lets the thumbs close the span", () => {
+    seed([series("LOGIN_SUCCESS", "success", [1, 2, 4, 8])]);
+    create();
+
+    // A closed brush would count nothing, so the chart would read as an outage rather than as an empty selection.
+    component.onRangeEndInput(0);
+    expect(component.rangeEnd()).toBe(1);
+
+    component.onRangeStartInput(BINS);
+    expect(component.rangeStart()).toBe(0);
+
+    component.onRangeEndInput(BINS);
+    component.onRangeStartInput(BINS);
+    expect(component.rangeStart()).toBe(BINS - 1);
+  });
+
+  it("opens the brush again when a new window arrives", () => {
+    seed([series("LOGIN_SUCCESS", "success", [1, 2, 4, 8])]);
+    create();
+    component.onRangeStartInput(2);
+    component.onRangeEndInput(3);
+
+    component.selectRange(ACTIVITY_RANGES[2].hours);
+    fixture.detectChanges();
+
+    // The window has moved under the old positions, so keeping them would silently rename the selected span.
+    expect(component.rangeStart()).toBe(0);
+    expect(component.rangeEnd()).toBe(component.binCount());
+  });
+
+  it("carries the brushed span into the log, not the whole window", () => {
+    seed([series("PIN_FAIL", "failure", [0, 1, 0, 0])]);
+    create();
+    component.onRangeStartInput(1);
+    component.onRangeEndInput(3);
+    fixture.detectChanges();
+
+    fixture.nativeElement.querySelector(".reasons-table a").click();
+
+    // The count in the clicked row is the brushed one, so the log has to open on the same span rather than on the
+    // preset window around it.
+    expect(logMock.timestampFrom()).toBe("2026-03-01T06:00:00+00:00");
+    expect(logMock.timestampTo()).toBe("2026-03-01T18:00:00+00:00");
+    const chips = logMock.authenticationLogFilter().filterMap;
+    expect(chips.get("start_time")).toBe(toFilterDisplay("2026-03-01T06:00:00+00:00"));
+    expect(chips.get("end_time")).toBe(toFilterDisplay("2026-03-01T18:00:00+00:00"));
+  });
+
+  it("names the brushed span's ends, reading now only at the window's own end", () => {
+    seed([series("LOGIN_SUCCESS", "success", [1, 2, 4, 8])]);
+    create();
+
+    // Formatted here as the widget does, in the runner's own zone: the WebUI names local times throughout.
+    const label = (iso: string) => formatDate(iso, "yyyy-MM-dd HH:mm", "en-US");
+
+    expect(component.rangeFromLabel()).toBe(label("2026-03-01T00:00:00+00:00"));
+    expect(component.rangeToLabel()).toBe("now");
+    // These labels are the only timestamps on the brush: the thumbs carry no floating value bubble.
+    expect(fixture.nativeElement.querySelectorAll(".mdc-slider__value-indicator-text")).toHaveLength(0);
+
+    component.onRangeEndInput(2);
+    fixture.detectChanges();
+
+    // A thumb short of the window's end names that bucket edge instead, so a brushed span never claims to run up to
+    // the present.
+    expect(component.rangeToLabel()).toBe(label("2026-03-01T12:00:00+00:00"));
+    expect(text(".range-labels")).toContain(label("2026-03-01T12:00:00+00:00"));
+  });
+
+  it("names both thumbs even though only one of them ever changed value", () => {
+    // The response has to land *after* the first render, as it does over a network: Material writes a thumb's value
+    // text once as a plain attribute and thereafter from a signal only a value change fills, so the thumb that keeps
+    // its starting value - the left one, always at bucket 0 - was left announcing a bare bucket number.
+    const response = new Subject<PiResponse<AuthenticationLogStatistics>>();
+    logMock.fetchStatistics.mockReturnValue(response.asObservable());
+    create();
+    expect(fixture.nativeElement.querySelectorAll("mat-slider")).toHaveLength(0);
+
+    response.next(MockPiResponse.fromValue(statistics([series("LOGIN_SUCCESS", "success", [1, 2, 4, 8])])));
+    fixture.detectChanges();
+
+    const thumbs = Array.from<HTMLInputElement>(fixture.nativeElement.querySelectorAll("mat-slider input"));
+    expect(thumbs.map((thumb) => thumb.getAttribute("aria-valuetext"))).toEqual([
+      formatDate("2026-03-01T00:00:00+00:00", "yyyy-MM-dd HH:mm", "en-US"),
+      formatDate("2026-03-02T00:00:00+00:00", "yyyy-MM-dd HH:mm", "en-US")
+    ]);
   });
 
   it("refetches with the selected range and keeps only that range in the store", () => {
@@ -297,6 +478,10 @@ describe("AuthenticationActivityWidgetComponent", () => {
 
     const toggles = fixture.nativeElement.querySelectorAll("mat-button-toggle button");
     expect(toggles).toHaveLength(ACTIVITY_RANGES.length);
+    // They set the window the brush spans, so they sit in the brush's own row, ahead of the track: the group and the
+    // brush are one control between them, not a header and a chart.
+    const presets = fixture.nativeElement.querySelector(".range-row > .activity-range-presets");
+    expect(presets.nextElementSibling).toBe(fixture.nativeElement.querySelector(".range"));
     toggles[2].click();
     fixture.detectChanges();
 
@@ -358,7 +543,7 @@ describe("AuthenticationActivityWidgetComponent", () => {
     }
   });
 
-  it("names a time on the axis label, whatever the range", () => {
+  it("names a time on the range label, whatever the range", () => {
     // Same reason as a bucket label: the window is measured back from now rather than snapped to midnight, so a bare
     // date would claim a calendar day the chart only partly covers.
     const starts = Array.from({ length: 4 }, (_, index) => new Date(Date.UTC(2026, 2, 1, 8 + index, 37)).toISOString());
@@ -368,10 +553,10 @@ describe("AuthenticationActivityWidgetComponent", () => {
     for (const range of ACTIVITY_RANGES) {
       component.selectRange(range.hours);
       fixture.detectChanges();
-      expect(component.windowStart()).toMatch(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/);
+      expect(component.rangeFromLabel()).toMatch(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/);
       // Every zone offset is a whole quarter hour, so a label reading midnight would mean the time was dropped.
-      expect(component.windowStart()).not.toMatch(/00:00$/);
-      expect(text(".axis-labels")).toContain(component.windowStart());
+      expect(component.rangeFromLabel()).not.toMatch(/00:00$/);
+      expect(text(".range-labels")).toContain(component.rangeFromLabel());
     }
   });
 

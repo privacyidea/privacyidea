@@ -18,6 +18,19 @@
  **/
 @use "../widget";
 
+// Every row of the chart is laid out on these: the outcome's name, its count, then the plot. The brush row reuses the
+// two leading columns for the presets, so they are named here rather than repeated - the track only lines up with the
+// bars for as long as both rows agree on them.
+$row-gap: 8px;
+$label-column: 60px;
+$value-column: 76px;
+$leading-columns: $label-column + $row-gap + $value-column;
+
+// The presets' own height, and the height Material fixes a slider's box at, which together say how far down the
+// group has to sit to be level with the track.
+$toggle-height: 30px;
+$slider-height: 48px;
+
 :host {
   @include widget.host;
   flex-direction: column;
@@ -25,11 +38,16 @@
   justify-content: flex-start;
 }
 
-.ranges {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  padding: 0 16px 8px;
+// The presets occupy the brush row's leading columns, so the track beside them still starts where the bars do.
+// Right-aligned within that, to sit against the slider, and level with its track.
+.activity-range-presets {
+  flex: 0 0 $leading-columns;
+  align-self: flex-start;
+  margin-top: ($slider-height - $toggle-height) * 0.5;
+  // Denser than a form's toggle group, because those two columns are all there is. The label padding that the rest of
+  // the difference comes out of is Material's own, with no token to set it by, so styles/buttons.scss overrides it
+  // for this class - a component stylesheet cannot reach inside mat-button-toggle.
+  --mat-button-toggle-label-text-size: 0.75rem;
 }
 
 // The frame renders this in its header, but it is declared here, so view encapsulation keeps the frame's own
@@ -45,7 +63,7 @@
 mat-button-toggle-group {
   --mat-button-toggle-shape: var(--border-radius);
   // A widget is a denser surface than a form page, so the group is shorter than the default.
-  --mat-button-toggle-height: 30px;
+  --mat-button-toggle-height: #{$toggle-height};
 }
 
 // Material's default checked tone is the M3 secondary container, which reads as a different accent from the rest of
@@ -74,10 +92,10 @@ mat-button-toggle-group {
 }
 
 .chart-row,
-.axis-row {
+.range-row {
   display: flex;
   align-items: flex-end;
-  gap: 8px;
+  gap: $row-gap;
   padding: 0 16px;
 }
 
@@ -87,9 +105,9 @@ mat-button-toggle-group {
 
 .chart-label {
   flex: 0 0 auto;
-  width: 60px;
+  width: $label-column;
   color: var(--mat-sys-on-surface-variant);
-  text-align: right;
+  text-align: left;
   padding-bottom: 2px;
 }
 
@@ -105,7 +123,7 @@ mat-button-toggle-group {
   align-items: baseline;
   justify-content: flex-end;
   gap: 3px;
-  width: 76px;
+  width: $value-column;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
@@ -139,22 +157,51 @@ mat-button-toggle-group {
   border-top: 1px solid var(--mat-sys-outline-variant);
 }
 
-.axis-labels {
+// The brush occupies the plot column, so its track runs edge to edge with the bars above and a thumb sits over the
+// bucket it selects.
+.range {
   flex: 1 1 auto;
   min-width: 0;
+}
+
+.range-slider {
+  width: 100%;
+  // No side margin, so the track spans the plot column exactly rather than Material's default inset.
+  margin: 0;
+  // Material keeps a slider at least 112px wide, which a narrow widget's plot column is not: the track would then
+  // reach past the column instead of ending where the bars do. The bars set the width here.
+  min-width: 0;
+}
+
+// The two timestamps sit at the ends of the track, and a widget can be narrower than the pair of them. They give way
+// rather than widening the row: whatever the column cannot hold is clipped here.
+.range-labels {
   display: flex;
   justify-content: space-between;
-  padding-top: 2px;
+  gap: 8px;
+  overflow: hidden;
   font-size: 0.75rem;
   font-variant-numeric: tabular-nums;
   color: var(--mat-sys-on-surface-variant);
   white-space: nowrap;
+
+  span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 }
 
 .bar {
   flex: 1 1 0;
   min-width: 0;
   border-radius: 2px 2px 0 0;
+}
+
+// A bucket the brush leaves out. It keeps its full height - the shape of the window is what the chart is for - but
+// fades back, so the part of it the numbers are counting is the part that reads as solid.
+.bar-muted {
+  opacity: 0.25;
 }
 
 // The outcome colours the whole row, so the modifier sits on the container and the bars inherit it.

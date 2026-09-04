@@ -28,19 +28,6 @@
 </ng-template>
 
 <app-widget-state [state]="state()">
-  <div class="ranges">
-    <mat-button-toggle-group
-      [hideSingleSelectionIndicator]="true"
-      [value]="selectedRange().hours"
-      (change)="selectRange($event.value)"
-      aria-label="Time range"
-      i18n-aria-label>
-      @for (range of ranges; track range.hours) {
-        <mat-button-toggle [value]="range.hours">{{ range.label }}</mat-button-toggle>
-      }
-    </mat-button-toggle-group>
-  </div>
-
   <div class="chart">
     @for (row of summary().rows; track row.outcome) {
       <div class="chart-row">
@@ -59,6 +46,7 @@
             @for (count of row.counts; track $index) {
               <span
                 class="bar"
+                [class.bar-muted]="!inSelection($index)"
                 [style.height.%]="barHeight(count)"
                 [matTooltip]="binTooltip($index)"></span>
             }
@@ -109,13 +97,62 @@
       </table>
     </div>
 
-    <div class="axis-row">
-      <span class="chart-label"></span>
-      <span class="chart-value"></span>
-      <span class="axis-labels">
-        <span>{{ windowStart() }}</span>
-        <span i18n>now</span>
-      </span>
+    <!-- One brush for all three rows, so the same span is read across the outcomes rather than each row carrying its
+         own selection. It sits in the plot column, and steps from bucket edge to bucket edge, so a thumb lands over
+         the bar it selects. -->
+    <div class="range-row">
+      <!-- The presets stand in the two columns the bars keep for their label and their count, hard against the brush
+           whose window they set, so the pair reads as one control and costs the chart no row of its own. -->
+      <div class="activity-range-presets">
+        <mat-button-toggle-group
+          [hideSingleSelectionIndicator]="true"
+          [value]="selectedRange().hours"
+          (change)="selectRange($event.value)"
+          aria-label="Time range"
+          i18n-aria-label>
+          @for (range of ranges; track range.hours) {
+            <mat-button-toggle [value]="range.hours">{{ range.label }}</mat-button-toggle>
+          }
+        </mat-button-toggle-group>
+      </div>
+      <div class="range">
+        <!-- No `discrete`: the thumbs carry no floating value bubble, the labels below name the two ends.
+
+             aria-valuetext is written twice over, by displayWith and by the binding below, because neither covers
+             both thumbs on its own: Material fills a thumb's text from a signal that only a value change ever sets,
+             having already written the initial text as a plain attribute that the empty signal then overwrites - so
+             the thumb that keeps its starting value, the left one, would announce a bare bucket number. The two
+             writers race, and it does not matter which of them lands last: both name the same edge the same way. -->
+        <mat-slider
+          class="range-slider"
+          [min]="0"
+          [max]="binCount()"
+          step="1"
+          [displayWith]="formatSliderThumb">
+          <input
+            matSliderStartThumb
+            aria-label="Start of the counted span"
+            i18n-aria-label
+            [attr.aria-valuetext]="brushStartValueText()"
+            [value]="rangeStart()"
+            (valueChange)="onRangeStartInput($event)" />
+          <input
+            matSliderEndThumb
+            aria-label="End of the counted span"
+            i18n-aria-label
+            [attr.aria-valuetext]="brushEndValueText()"
+            [value]="rangeEnd()"
+            (valueChange)="onRangeEndInput($event)" />
+        </mat-slider>
+        <!-- The selected span's own ends. Hidden from assistive tech, where two bare timestamps carry no context:
+             the thumbs announce the same two values, each under a name that says which end it is. -->
+        <span
+          class="range-labels"
+          aria-hidden="true">
+          <span>{{ rangeFromLabel() }}</span>
+          <span>{{ rangeToLabel() }}</span>
+        </span>
+      </div>
     </div>
   </div>
 
