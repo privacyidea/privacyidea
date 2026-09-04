@@ -614,6 +614,12 @@ This functionality is also used during the lost token process.
 But you only need to define this action, if the administrator
 should be able to perform this task manually.
 
+.. deprecated:: 3.14
+   The endpoint this action guards, ``POST /token/copyuser``, is
+   deprecated and will be removed in a future release, and this action
+   with it. Use the lost token process (:ref:`lost_token`) instead,
+   which does not require this action.
+
 .. _policy_copytokenpin:
 
 copytokenpin
@@ -628,6 +634,12 @@ knowing the PIN.
 This functionality is also used during the lost token process.
 But you only need to define this action, if the administrator
 should be able to perform this task manually.
+
+.. deprecated:: 3.14
+   The endpoint this action guards, ``POST /token/copypin``, is
+   deprecated and will be removed in a future release, and this action
+   with it. Use the lost token process (:ref:`lost_token`) instead,
+   which does not require this action.
 
 .. _policy_smtpserver_write:
 

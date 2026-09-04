@@ -691,6 +691,113 @@ class API000TokenAdminRealmList(MyApiTestCase):
         delete_policy("policy")
         remove_token(token1.get_serial())
 
+    def test_08_helpdesk_copy_token_realm_scope(self):
+        """
+        A helpdesk admin restricted to realm1 can only copy between tokens of realm1. Both the
+        source and the destination token have to be in an allowed realm.
+        """
+        set_policy(name="policy", scope=SCOPE.ADMIN,
+                   action=f"{PolicyAction.COPYTOKENUSER},{PolicyAction.COPYTOKENPIN}", realm=self.realm1)
+
+        own_realm_source = init_token({"type": "hotp"}, user=User("cornelius", self.realm1))
+        own_realm_target = init_token({"type": "hotp"}, tokenrealms=[self.realm1])
+        other_realm = init_token({"type": "hotp"}, user=User("hans", self.realm2))
+
+        # Reading the owner of a token in realm2 is not allowed
+        self.request_denied_assert_403("/token/copyuser", {"from": other_realm.get_serial(),
+                                                           "to": own_realm_target.get_serial()}, self.at)
+        self.assertIsNone(own_realm_target.user)
+
+        # Writing the owner onto a token in realm2 is not allowed either
+        self.request_denied_assert_403("/token/copyuser", {"from": own_realm_source.get_serial(),
+                                                           "to": other_realm.get_serial()}, self.at)
+        self.assertEqual("hans", other_realm.user.login)
+
+        # The same applies to the PIN
+        self.request_denied_assert_403("/token/copypin", {"from": other_realm.get_serial(),
+                                                          "to": own_realm_target.get_serial()}, self.at)
+        self.request_denied_assert_403("/token/copypin", {"from": own_realm_source.get_serial(),
+                                                          "to": other_realm.get_serial()}, self.at)
+
+        # Both tokens in realm1 are copied
+        self.request_assert_200("/token/copypin", {"from": own_realm_source.get_serial(),
+                                                   "to": own_realm_target.get_serial()}, self.at)
+        self.request_assert_200("/token/copyuser", {"from": own_realm_source.get_serial(),
+                                                    "to": own_realm_target.get_serial()}, self.at)
+        self.assertEqual("cornelius", get_one_token(serial=own_realm_target.get_serial()).user.login)
+
+        delete_policy("policy")
+        for token in (own_realm_source, own_realm_target, other_realm):
+            remove_token(token.get_serial())
+
+    def test_08b_copy_onto_a_token_of_the_unassigned_pool(self):
+        """
+        A token without an owner and without realms belongs to no realm yet, so a realm
+        restricted admin may copy onto it, just as they may assign a user to it.
+        """
+        set_policy(name="policy", scope=SCOPE.ADMIN, realm=self.realm1,
+                   action=f"{PolicyAction.COPYTOKENUSER},{PolicyAction.COPYTOKENPIN}")
+
+        source = init_token({"type": "hotp"}, user=User("cornelius", self.realm1))
+        for action in ["copypin", "copyuser"]:
+            unassigned = init_token({"type": "hotp"})
+            self.request_assert_200(f"/token/{action}", {"from": source.get_serial(),
+                                                         "to": unassigned.get_serial()}, self.at)
+            remove_token(unassigned.get_serial())
+
+        # A token that carries a realm of its own is still checked against it
+        other_realm = init_token({"type": "hotp"}, tokenrealms=[self.realm2])
+        self.request_denied_assert_403("/token/copyuser", {"from": source.get_serial(),
+                                                           "to": other_realm.get_serial()}, self.at)
+
+        delete_policy("policy")
+        remove_token(source.get_serial())
+        remove_token(other_realm.get_serial())
+
+    def test_08c_copy_user_of_a_token_without_owner(self):
+        """
+        A source token without an owner has nothing to copy and is rejected instead of
+        failing while the owner is read.
+        """
+        source = init_token({"type": "hotp"})
+        target = init_token({"type": "hotp"})
+        with self.app.test_request_context("/token/copyuser", method="POST",
+                                           data={"from": source.get_serial(),
+                                                 "to": target.get_serial()},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(400, res.status_code, res.json)
+            self.assertIn("no owner", res.json["result"]["error"]["message"])
+        remove_token(source.get_serial())
+        remove_token(target.get_serial())
+
+    def test_09_copy_token_unknown_serial_keeps_token_error(self):
+        """
+        A serial that does not resolve to exactly one token is reported by the copy function
+        itself, not by the policy check.
+        """
+        source = init_token({"type": "hotp"}, user=User("cornelius", self.realm1))
+
+        for url, data, error_code in [("/token/copypin", {"from": "DOESNOTEXIST", "to": source.get_serial()}, 1016),
+                                      ("/token/copypin", {"from": source.get_serial(), "to": "DOESNOTEXIST"}, 1017),
+                                      ("/token/copyuser", {"from": "DOESNOTEXIST", "to": source.get_serial()}, 1016),
+                                      ("/token/copyuser", {"from": source.get_serial(), "to": "DOESNOTEXIST"}, 1017)]:
+            with self.app.test_request_context(url, method="POST", data=data,
+                                               headers={'Authorization': self.at}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(400, res.status_code, res.json)
+                self.assertEqual(error_code, res.json["result"]["error"]["code"], res.json)
+
+        # A missing serial parameter is rejected before the copy is attempted
+        for url in ["/token/copypin", "/token/copyuser"]:
+            with self.app.test_request_context(url, method="POST", data={"from": source.get_serial()},
+                                               headers={'Authorization': self.at}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(400, res.status_code, res.json)
+                self.assertIn("'to'", res.json["result"]["error"]["message"])
+
+        remove_token(source.get_serial())
+
 
 class APIAttestationTestCase(MyApiTestCase):
     @pytest.mark.usefixtures("setup_local_ca")

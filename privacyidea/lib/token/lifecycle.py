@@ -357,14 +357,17 @@ def copy_token_user(serial_from: str, serial_to: str) -> bool:
     """
     tokenobject_from = get_one_token(serial=serial_from)
     tokenobject_to = get_one_token(serial=serial_to)
+    owner = tokenobject_from.token.first_owner
+    if not owner:
+        raise TokenAdminError(_("The token {0!s} has no owner that could be copied.").format(serial_from))
 
     # For backward compatibility we remove the potentially old users from the token.
     # TODO: Later we probably want to be able to "add" new users to a token.
     unassign_token(serial_to)
     TokenOwner(token_id=tokenobject_to.token.id,
-               user_id=tokenobject_from.token.first_owner.user_id,
-               realm_id=tokenobject_from.token.first_owner.realm_id,
-               resolver=tokenobject_from.token.first_owner.resolver).save()
+               user_id=owner.user_id,
+               realm_id=owner.realm_id,
+               resolver=owner.resolver).save()
     # Also copy other assigned realms of the token.
     copy_token_realms(serial_from, serial_to)
     return True
