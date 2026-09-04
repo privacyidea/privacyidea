@@ -50,6 +50,29 @@ def _script_directory() -> ScriptDirectory:
     return ScriptDirectory.from_config(cfg)
 
 
+def test_migration_chain_has_a_single_head():
+    """
+    The revision graph must end in exactly one head.
+
+    Two heads mean two migrations share a down_revision, which Alembic refuses
+    to upgrade ("Multiple heads are present"). It happens whenever a branch adds
+    a migration on top of the head it forked from while another migration lands
+    on the target branch in the meantime -- the merge itself stays conflict-free
+    (the two migrations are separate files), so nothing flags it until the
+    combined graph is walked.
+
+    This check comes first because the tests below resolve "head" and would
+    otherwise fail with a MultipleHeads traceback instead of naming the cause.
+    """
+    heads = _script_directory().get_heads()
+
+    assert len(heads) == 1, (
+        "The migration chain has more than one head: " + ", ".join(sorted(heads))
+        + "\n\nRe-point the down_revision of the migration that forked off so the "
+        "chain is linear again."
+    )
+
+
 def test_migrations_since_start_revision_have_version_prefixed_messages():
     """
     Every migration from START_REVISION to head must start its docstring with a

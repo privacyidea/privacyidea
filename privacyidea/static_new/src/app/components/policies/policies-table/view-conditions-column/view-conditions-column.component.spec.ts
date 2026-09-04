@@ -19,12 +19,14 @@
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MatIconModule } from "@angular/material/icon";
+import { IntegrationsService } from "@services/integrations/integrations.service";
 import {
   ComparatorOptionKey,
   HandleMissingDataOptionKey,
   PolicyDetail,
   SectionOptionKey
 } from "@services/policies/policies.service";
+import { MockIntegrationsService } from "@testing/mock-services";
 import { ViewConditionSectionComponent } from "./view-condition-section/view-condition-section.component";
 import { ViewConditionsColumnComponent } from "./view-conditions-column.component";
 
@@ -55,7 +57,8 @@ describe("ConditionsTabComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ViewConditionsColumnComponent, MatIconModule, ViewConditionSectionComponent]
+      imports: [ViewConditionsColumnComponent, MatIconModule, ViewConditionSectionComponent],
+      providers: [{ provide: IntegrationsService, useClass: MockIntegrationsService }]
     }).compileComponents();
 
     fixture = TestBed.createComponent(ViewConditionsColumnComponent);
@@ -107,7 +110,7 @@ describe("ConditionsTabComponent", () => {
   it("should map a known user agent key to its display label", () => {
     fixture.componentRef.setInput("policy", { ...mockPolicy, user_agents: ["privacyidea-cp"] });
     fixture.detectChanges();
-    expect(component.selectedUserAgents()).toEqual(["Credential Provider"]);
+    expect(component.selectedUserAgents()).toEqual(["Windows Credential Provider"]);
   });
 
   it("should fall back to the raw identifier for an unknown/legacy user agent key", () => {
@@ -137,14 +140,12 @@ describe("ConditionsTabComponent", () => {
   });
 
   it("should return key if comparator label not found", () => {
-    expect(component.getComparatorLabel("nonExistentKey" as unknown as ComparatorOptionKey)).toBe(
-      "nonExistentKey"
-    );
+    expect(component.getComparatorLabel("nonExistentKey" as unknown as ComparatorOptionKey)).toBe("nonExistentKey");
   });
 
   it("should return key if missing data label not found", () => {
-    expect(
-      component.getMissingDataLabel("nonExistentKey" as unknown as HandleMissingDataOptionKey)
-    ).toBe("nonExistentKey");
+    expect(component.getMissingDataLabel("nonExistentKey" as unknown as HandleMissingDataOptionKey)).toBe(
+      "nonExistentKey"
+    );
   });
 });

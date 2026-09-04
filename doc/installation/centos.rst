@@ -111,7 +111,6 @@ In order to setup privacyIDEA a configuration file must be added in
     # This is used to sign the audit log
     PI_AUDIT_KEY_PRIVATE = '/etc/privacyidea/private.pem'
     PI_AUDIT_KEY_PUBLIC = '/etc/privacyidea/public.pem'
-    PI_AUDIT_SQL_TRUNCATE = True
     # The Class for managing the SQL connection pool
     PI_ENGINE_REGISTRY_CLASS = "shared"
     PI_AUDIT_POOL_SIZE = 20

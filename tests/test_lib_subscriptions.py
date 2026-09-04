@@ -30,8 +30,8 @@ from privacyidea.lib.subscriptions import (save_subscription,
                                            SubscriptionState,
                                            EXPIRING_THRESHOLD_DAYS,
                                            APPLICATIONS,
-                                           METERED_APPLICATIONS,
                                            DASHBOARD_PLUGINS)
+from privacyidea.lib.integrations import AGENT_TO_INTEGRATION
 from privacyidea.lib import subscriptions as subscriptions_module
 from privacyidea.lib.token import init_token
 from privacyidea.lib.user import User
@@ -231,9 +231,11 @@ class SubscriptionApplicationTestCase(MyTestCase):
     def test_06_authenticator_app_is_never_metered(self):
         # The Authenticator App is free to use: its authentications must not be counted
         # against any subscription, however many users have tokens, and it must not be
-        # able to raise a SubscriptionError.
-        self.assertNotIn("privacyidea-app", METERED_APPLICATIONS)
-        self.assertEqual("privacyidea-app", get_metered_application("privacyIDEA-App"))
+        # able to raise a SubscriptionError. It resolves to a real product - unlike a
+        # name with no product of its own, e.g. "" - but that product's free_users is
+        # None, which is what actually turns enforcement off, see check_subscription().
+        self.assertEqual("privacyidea authenticator", get_metered_application("privacyIDEA-App"))
+        self.assertIsNone(APPLICATIONS["privacyidea authenticator"])
         # The dashboard still reports it under the authenticator subscription.
         self.assertEqual("privacyidea authenticator", get_subscription_owner("privacyIDEA-App"))
 
@@ -259,6 +261,57 @@ class SubscriptionApplicationTestCase(MyTestCase):
                             return_value=[]) as mock_get_subscription:
                 self.assertTrue(check_subscription("FreeRADIUS"))
         mock_get_subscription.assert_called_once_with("privacyidea")
+
+    def test_08_simplesamlphp_checks_the_legacy_application_name_too(self):
+        # "simplesamlphp" and "privacyidea-simplesamlphp" were merged into one product
+        # for the UI, but a subscription file signed under the pre-merge name must still
+        # validate, so check_subscription looks up both names.
+        self.assertEqual("privacyidea-simplesamlphp", get_metered_application("simpleSAMLphp"))
+
+        with mock.patch("privacyidea.lib.subscriptions.get_users_with_active_tokens",
+                        return_value=0):
+            with mock.patch("privacyidea.lib.subscriptions.get_subscription",
+                            return_value=[]) as mock_get_subscription:
+                self.assertTrue(check_subscription("simpleSAMLphp"))
+        mock_get_subscription.assert_any_call("privacyidea-simplesamlphp")
+        mock_get_subscription.assert_any_call("simplesamlphp")
+        self.assertEqual(2, mock_get_subscription.call_count)
+
+    def test_10_valid_legacy_subscription_wins_over_an_expired_canonical_one(self):
+        # A product's subscription may be filed under any of its names, so the records
+        # found across those names have to be ranked by date_till: the valid one decides,
+        # regardless of which name it carries.
+        now = datetime.now()
+        expired_canonical = {"application": "privacyidea-simplesamlphp",
+                             "date_till": now - timedelta(days=30),
+                             "num_tokens": 10000}
+        valid_legacy = {"application": "simplesamlphp",
+                        "date_till": now + timedelta(days=30),
+                        "num_tokens": 10000}
+
+        def _by_name(name=None):
+            return {"privacyidea-simplesamlphp": [expired_canonical],
+                    "simplesamlphp": [valid_legacy]}.get(name, [])
+
+        with mock.patch("privacyidea.lib.subscriptions.get_users_with_active_tokens",
+                        return_value=0):
+            with mock.patch("privacyidea.lib.subscriptions.get_subscription", side_effect=_by_name):
+                with mock.patch("privacyidea.lib.subscriptions.check_signature",
+                                return_value=True) as mock_check_signature:
+                    self.assertTrue(check_subscription("simpleSAMLphp"))
+
+        # Only a subscription that is still valid gets its signature checked, so this
+        # having run at all shows the valid record was the one selected.
+        mock_check_signature.assert_called_once_with(valid_legacy)
+
+    def test_09_subscription_status_never_enforced_product(self):
+        # subscription_status() must honor free_users=None (the Authenticator App's
+        # "never counted or enforced" state) the same way check_subscription() does,
+        # without even counting tokens.
+        self.assertIsNone(APPLICATIONS["privacyidea authenticator"])
+        with mock.patch("privacyidea.lib.subscriptions.get_tokens") as mock_get_tokens:
+            self.assertEqual(0, subscription_status("privacyIDEA-App"))
+        mock_get_tokens.assert_not_called()
 
 
 class PluginSubscriptionStatusTestCase(MyTestCase):
@@ -636,6 +689,26 @@ class PluginSubscriptionStatusTestCase(MyTestCase):
         self.assertTrue(pam["in_use"])
         self.assertListEqual(["1.1.0"], pam["versions"])
         self.assertEqual("valid", pam["subscription"])
+
+    def test_19_secondary_agent_name_marks_its_integration_row(self):
+        # An integration can be known by more than one wire name (the PAM row answers to
+        # both "PAM" and "privacyidea-pam"). The dashboard rows are keyed by integration
+        # id, so an observation under a secondary name has to resolve to the same row
+        # instead of keying itself and matching nothing.
+        self.assertIn("pam-privacyidea", AGENT_TO_INTEGRATION)
+        self.assertEqual("pam", AGENT_TO_INTEGRATION["pam-privacyidea"])
+        self._add_clientapp("pam-privacyidea", version="1.2.0")
+
+        with mock.patch(
+                "privacyidea.lib.subscriptions.get_users_with_active_tokens",
+                return_value=0):
+            overview = {e["application"]: e
+                        for e in get_plugin_subscription_status()}
+
+        pam = overview["pam"]
+        self.assertTrue(pam["in_use"])
+        self.assertIsNotNone(pam["last_seen"])
+        self.assertListEqual(["1.2.0"], pam["versions"])
 
     def test_13_nextcloud_row_matches_the_user_agent_the_app_sends(self):
         # The Nextcloud app identifies itself as "privacyidea-nextcloud/<version>", which
