@@ -474,7 +474,9 @@ def _activate_replacement(serial: str, new_serial: str) -> None:
     :param serial: Serial number of the lost token
     :param new_serial: Serial number of the reserved replacement token
     """
-    db.session.execute(select(Token).where(Token.serial == serial).with_for_update()).first()
+    # Only the id is selected, because the eagerly loaded realms of the whole entity would turn
+    # the statement into an outer join, which PostgreSQL refuses to lock.
+    db.session.execute(select(Token.id).where(Token.serial == serial).with_for_update()).first()
 
     replacement = db.session.scalars(select(Token).where(Token.serial == new_serial)).unique().one()
     predecessors = select(Token).join(TokenInfo, TokenInfo.token_id == Token.id).where(
