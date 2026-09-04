@@ -197,6 +197,7 @@ describe("PolicyActionItemComponent", () => {
   it("adds the raw value when a labelled option is picked from the select", () => {
     fixture.componentRef.setInput("selectableAction", {
       ...defaultAction,
+      actionName: "otppin",
       detail: { type: "str", desc: "otppin", value: ["tokenpin", "userstore", "disable", "none"] }
     });
     fixture.detectChanges();
@@ -221,7 +222,7 @@ describe("PolicyActionItemComponent", () => {
 
     fixture.debugElement.query(By.css("button[mat-icon-button]")).nativeElement.click();
 
-    expect(spy).toHaveBeenCalledWith({ name: "testAction", value: "userstore" });
+    expect(spy).toHaveBeenCalledWith({ name: "otppin", value: "userstore" });
   });
 
   it("passes raw values and display labels to the selector buttons in separate inputs", () => {

@@ -94,6 +94,24 @@ const VALUE_VOCABULARY: Record<string, string> = {
   yubikey: "Yubikey"
 };
 
+/**
+ * Policy actions whose allowed values the backend spells out as constants, so the vocabulary may be
+ * applied to them. Every other action is left alone: realms, resolvers, RADIUS and SMTP identifiers
+ * reach the same dropdowns (see get_static_policy_definitions), and a name the installation chose
+ * must stay readable. A missing entry here only costs a nicer label, a wrong one renames a name.
+ */
+export const POLICY_VOCABULARY_ACTIONS: ReadonlySet<string> = new Set([
+  "autoassignment",
+  "daypassword_hashlib",
+  "hashlib",
+  "hotp_hashlib",
+  "login_mode",
+  "otppin",
+  "remote_user",
+  "timeout_action",
+  "totp_hashlib"
+]);
+
 export const TOKEN_STATE_VALUES = ["active", "deactivated", "revoked", "locked"] as const;
 
 export const CONTAINER_STATE_VALUES = ["active", "disabled", "lost", "damaged"] as const;
@@ -134,10 +152,22 @@ function holdsTokenTypes(values: readonly DisplayableValue[] | undefined): boole
   return tokenTypeCount >= 2;
 }
 
+export interface ValueLabelOptions {
+  preset?: BooleanValueLabelPreset;
+  /**
+   * Consult the value vocabulary. Off by default, because a list of allowed values alone does not
+   * say where it comes from: realms, resolvers, token groups, SMS gateway and server identifiers
+   * reach the same dropdowns and are named by the installation, so a token group called "offline"
+   * or a realm called "admin" would be renamed. Only a caller that knows its list is a fixed
+   * backend enum may turn this on.
+   */
+  vocabulary?: boolean;
+}
+
 export function valueDisplayLabel(
   value: DisplayableValue | undefined | null,
   values: readonly DisplayableValue[] | undefined,
-  preset: BooleanValueLabelPreset = "switch"
+  options: ValueLabelOptions = {}
 ): string {
   if (value === undefined || value === null) return "";
   const raw = String(value);
@@ -147,7 +177,7 @@ export function valueDisplayLabel(
   const booleanPair = matchingBooleanPair(values);
   if (booleanPair) {
     const index = booleanPair.indexOf(normalized);
-    if (index >= 0) return BOOLEAN_PRESET_LABELS[preset][index];
+    if (index >= 0) return BOOLEAN_PRESET_LABELS[options.preset ?? "switch"][index];
     return raw;
   }
 
@@ -156,18 +186,18 @@ export function valueDisplayLabel(
     if (tokenLabel) return tokenLabel;
   }
 
-  if (isClosedVocabulary(values)) return VALUE_VOCABULARY[normalized];
+  if (options.vocabulary && isClosedVocabulary(values)) return VALUE_VOCABULARY[normalized];
   return raw;
 }
 
 /** Display label of a token state ("active", "deactivated", "revoked", "locked"). */
 export function tokenStateLabel(state: string): string {
-  return valueDisplayLabel(state, TOKEN_STATE_VALUES);
+  return valueDisplayLabel(state, TOKEN_STATE_VALUES, { vocabulary: true });
 }
 
 /** Display label of a container state ("active", "disabled", "lost", "damaged"). */
 export function containerStateLabel(state: string | undefined | null): string {
-  return valueDisplayLabel(state, CONTAINER_STATE_VALUES);
+  return valueDisplayLabel(state, CONTAINER_STATE_VALUES, { vocabulary: true });
 }
 
 export function booleanDisplayLabel(
@@ -181,11 +211,28 @@ export function booleanDisplayLabel(
   return BOOLEAN_PRESET_LABELS[preset][pair.indexOf(normalized)];
 }
 
+/**
+ * Labels of the whole list, or undefined when no value maps to a label of its own. Consumers read
+ * that as "render the raw values" - see the `labels` input of the selector buttons.
+ */
 export function valueDisplayLabels(
   values: readonly DisplayableValue[] | undefined,
-  preset: BooleanValueLabelPreset = "switch"
+  options: ValueLabelOptions = {}
 ): string[] | undefined {
   if (!values || values.length === 0) return undefined;
-  const labels = values.map((value) => valueDisplayLabel(value, values, preset));
+  const labels = values.map((value) => valueDisplayLabel(value, values, options));
   return labels.some((label, index) => label !== String(values[index])) ? labels : undefined;
+}
+
+export interface LabeledValue<T extends DisplayableValue = DisplayableValue> {
+  value: T;
+  label: string;
+}
+
+/** Pairs every value with its label, for option lists that bind the value and the text separately. */
+export function labeledOptions<T extends DisplayableValue>(
+  values: readonly T[] | undefined,
+  options: ValueLabelOptions = {}
+): LabeledValue<T>[] {
+  return (values ?? []).map((value) => ({ value, label: valueDisplayLabel(value, values, options) }));
 }

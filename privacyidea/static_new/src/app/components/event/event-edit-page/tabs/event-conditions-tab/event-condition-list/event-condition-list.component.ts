@@ -37,8 +37,9 @@ import { MatOption, MatSelect } from "@angular/material/select";
 import { MatTooltip } from "@angular/material/tooltip";
 import { ClearButtonComponent } from "@components/shared/clear-button/clear-button.component";
 import { EventConditionMultiValue, EventService } from "@services/event/event.service";
-import { valueDisplayLabel } from "@utils/value-label.utils";
+import { labeledOptions, LabeledValue } from "@utils/value-label.utils";
 
+// These conditions keep their raw values: they are literally "True"/"False", not a yes/no or on/off.
 const RAW_VALUE_CONDITIONS: readonly string[] = ["result_value", "result_status"];
 
 @Component({
@@ -86,28 +87,24 @@ export class EventConditionListComponent {
   });
   showDescription: Record<string, boolean> = {};
   @ViewChildren("selectedConditionInput") selectedConditionInput!: QueryList<ElementRef | MatSelect>;
-  availableConditionValues = computed(() => {
-    const valueMap: Record<string, string[] | EventConditionMultiValue[]> = {};
+  availableConditionValues = computed<Record<string, string[]>>(() => {
+    const valueMap: Record<string, string[]> = {};
     for (const [name, details] of Object.entries(this.eventService.moduleConditions())) {
       if (details.type == "multi") {
-        const multiValues = (details.value ?? []) as { name: string }[];
+        const multiValues = (details.value ?? []) as EventConditionMultiValue[];
         valueMap[name] = multiValues.map((entry) => entry.name);
       } else if (details.value) {
-        valueMap[name] = details.value;
+        valueMap[name] = details.value as string[];
       }
     }
     return valueMap;
   });
-  conditionValueOptions = computed<Record<string, { value: string; label: string }[]>>(() => {
-    const optionMap: Record<string, { value: string; label: string }[]> = {};
+  conditionValueOptions = computed<Record<string, LabeledValue<string>[]>>(() => {
+    const optionMap: Record<string, LabeledValue<string>[]> = {};
     for (const [name, values] of Object.entries(this.availableConditionValues())) {
-      const stringValues = (values as (string | EventConditionMultiValue)[]).map((value) =>
-        typeof value === "string" ? value : value.name
-      );
-      optionMap[name] = stringValues.map((value) => ({
-        value,
-        label: RAW_VALUE_CONDITIONS.includes(name) ? value : valueDisplayLabel(value, stringValues, "predicate")
-      }));
+      optionMap[name] = RAW_VALUE_CONDITIONS.includes(name)
+        ? values.map((value) => ({ value, label: value }))
+        : labeledOptions(values, { preset: "predicate" });
     }
     return optionMap;
   });

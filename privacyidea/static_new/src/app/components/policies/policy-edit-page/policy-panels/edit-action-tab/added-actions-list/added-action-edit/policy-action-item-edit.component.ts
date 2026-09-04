@@ -29,7 +29,13 @@ import { MatSlideToggleModule } from "@angular/material/slide-toggle";
 import { SelectorButtonsComponent } from "@components/policies/policy-edit-page/policy-panels/edit-action-tab/selector-buttons/selector-buttons.component";
 import { MultiSelectOnlyComponent } from "@components/shared/multi-select-only/multi-select-only.component";
 import { PolicyActionDetail, PolicyService, PolicyServiceInterface } from "@services/policies/policies.service";
-import { valueDisplayLabel, valueDisplayLabels } from "@utils/value-label.utils";
+import {
+  labeledOptions,
+  POLICY_VOCABULARY_ACTIONS,
+  valueDisplayLabel,
+  valueDisplayLabels,
+  ValueLabelOptions
+} from "@utils/value-label.utils";
 
 @Component({
   selector: "app-policy-action-item-edit",
@@ -64,16 +70,19 @@ export class PolicyActionItemEditComponent<T extends string | number | boolean =
     return this.policyService.actionValueIsValid(actionDetail, actionValue);
   });
 
-  readonly valueLabels = computed<string[] | undefined>(() => valueDisplayLabels(this.actionDetail()?.value));
+  private readonly labelOptions = computed<ValueLabelOptions>(() => ({
+    vocabulary: POLICY_VOCABULARY_ACTIONS.has(this.action().name)
+  }));
+
+  readonly valueLabels = computed<string[] | undefined>(() =>
+    valueDisplayLabels(this.actionDetail()?.value, this.labelOptions())
+  );
 
   /** Label of a single value, for the multi select which sorts its items itself. */
-  readonly valueLabelOf = (value: T): string => valueDisplayLabel(value, this.actionDetail()?.value);
+  readonly valueLabelOf = (value: T): string =>
+    valueDisplayLabel(value, this.actionDetail()?.value, this.labelOptions());
 
-  readonly valueOptions = computed<{ value: T; label: string }[]>(() => {
-    const values = this.actionDetail()?.value ?? [];
-    const labels = this.valueLabels();
-    return values.map((value, index) => ({ value, label: labels?.[index] ?? String(value) }));
-  });
+  readonly valueOptions = computed(() => labeledOptions(this.actionDetail()?.value, this.labelOptions()));
 
   selectedItems = computed<T[]>(() => {
     const value = this.action()?.value;

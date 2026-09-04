@@ -23,7 +23,7 @@ import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatSelectModule } from "@angular/material/select";
 import { ClearButtonComponent } from "@components/shared/clear-button/clear-button.component";
 import { HOTP_HASHLIB, HOTP_OTP_LENGTH } from "@constants/token.constants";
-import { valueDisplayLabel } from "@utils/value-label.utils";
+import { labeledOptions } from "@utils/value-label.utils";
 
 @Component({
   selector: "app-hotp-config",
@@ -35,9 +35,7 @@ import { valueDisplayLabel } from "@utils/value-label.utils";
 export class HotpConfigComponent {
   formData = input.required<Record<string, string>>();
   hashLibs = input.required<string[]>();
-  readonly hashLibOptions = computed<{ value: string; label: string }[]>(() =>
-    this.hashLibs().map((hashLib) => ({ value: hashLib, label: valueDisplayLabel(hashLib, this.hashLibs()) }))
-  );
+  readonly hashLibOptions = computed(() => labeledOptions(this.hashLibs(), { vocabulary: true }));
   formDataChange = output<Record<string, string>>();
 
   updateFormData(fieldName: string, value: string): void {

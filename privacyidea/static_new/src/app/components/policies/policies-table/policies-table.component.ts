@@ -42,7 +42,7 @@ import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.s
 import { PolicyDetail, PolicyService, PolicyServiceInterface } from "@services/policies/policies.service";
 import { RowSelector } from "@services/table-utils/row-selector";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
-import { valueDisplayLabel } from "@utils/value-label.utils";
+import { POLICY_VOCABULARY_ACTIONS, valueDisplayLabel } from "@utils/value-label.utils";
 import { PoliciesTableActionsComponent } from "./policies-table-actions/policies-table-actions.component";
 import { PolicyFilterComponent } from "./policy-filter/policy-filter.component";
 import { ViewActionColumnComponent } from "./view-action-column/view-action-column.component";
@@ -98,7 +98,9 @@ export class PoliciesTableComponent {
 
   readonly sort = signal<Sort>({ active: "priority", direction: "asc" });
   readonly filterOptions: FilterOption<PolicyDetail>[] = createPolicyFilterOptions((name, scope, value) =>
-    valueDisplayLabel(value, this.policyService.getDetailsOfAction(name, scope)?.value)
+    valueDisplayLabel(value, this.policyService.getDetailsOfAction(name, scope)?.value, {
+      vocabulary: POLICY_VOCABULARY_ACTIONS.has(name)
+    })
   );
   readonly filter = linkedSignal<string, FilterValueGeneric<PolicyDetail>>({
     source: () => (this.contentService.queryParams()["filter"] ?? "").replace(/^"(.*)"$/s, "$1"),

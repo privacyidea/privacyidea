@@ -55,11 +55,15 @@ const CELL_FORMATTERS = new Map<string, (element: TableRow) => string | undefine
     "rollout_state",
     (element) => {
       const state = element["rollout_state"];
-      return typeof state === "string" ? valueDisplayLabel(state, ROLLOUT_STATE_VALUES) : "";
+      return typeof state === "string" ? valueDisplayLabel(state, ROLLOUT_STATE_VALUES, { vocabulary: true }) : "";
     }
   ],
   ["success", (element) => booleanDisplayLabel(displayableCell(element["success"]), "predicate")],
-  ["authentication", (element) => valueDisplayLabel(displayableCell(element["authentication"]), AUTHENTICATION_VALUES)]
+  [
+    "authentication",
+    (element) =>
+      valueDisplayLabel(displayableCell(element["authentication"]), AUTHENTICATION_VALUES, { vocabulary: true })
+  ]
 ]);
 
 export function cellDisplayText(columnKey: string, element: TableRow): string {

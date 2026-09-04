@@ -24,7 +24,7 @@ import { MatInputModule } from "@angular/material/input";
 import { MatSelectModule } from "@angular/material/select";
 import { ClearButtonComponent } from "@components/shared/clear-button/clear-button.component";
 import { DAYPASSWORD_HASHLIB, DAYPASSWORD_TIME_STEP } from "@constants/token.constants";
-import { valueDisplayLabel } from "@utils/value-label.utils";
+import { labeledOptions } from "@utils/value-label.utils";
 
 @Component({
   selector: "app-daypassword-config",
@@ -37,9 +37,7 @@ export class DaypasswordConfigComponent {
   formData = input.required<Record<string, string | number | boolean>>();
   formDataChange = output<Record<string, string | number | boolean>>();
   hashLibs = input.required<string[]>();
-  readonly hashLibOptions = computed<{ value: string; label: string }[]>(() =>
-    this.hashLibs().map((hashLib) => ({ value: hashLib, label: valueDisplayLabel(hashLib, this.hashLibs()) }))
-  );
+  readonly hashLibOptions = computed(() => labeledOptions(this.hashLibs(), { vocabulary: true }));
 
   updateFormData(fieldName: string, value: string | number | boolean): void {
     const newValue = { ...this.formData(), [fieldName]: value };

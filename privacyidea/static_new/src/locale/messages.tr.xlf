@@ -255,7 +255,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/table-utils/table-utils.service.ts</context>
-          <context context-type="linenumber">70</context>
+          <context context-type="linenumber">73</context>
         </context-group>
       </trans-unit>
       <trans-unit id="common.containerSerial" datatype="html">
@@ -343,7 +343,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/table-utils/table-utils.service.ts</context>
-          <context context-type="linenumber">75</context>
+          <context context-type="linenumber">78</context>
         </context-group>
       </trans-unit>
       <trans-unit id="common.administrator" datatype="html">
@@ -747,7 +747,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/table-utils/table-utils.service.ts</context>
-          <context context-type="linenumber">85</context>
+          <context context-type="linenumber">88</context>
         </context-group>
       </trans-unit>
       <trans-unit id="machine.noEditableOptions" datatype="html">
@@ -1447,7 +1447,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policies-table/policies-table.component.ts</context>
-          <context context-type="linenumber">282</context>
+          <context context-type="linenumber">284</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policy-edit-page/policy-panels/edit-conditions-tab/edit-additional-conditions/edit-additional-conditions.component.html</context>
@@ -1467,7 +1467,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/table-utils/table-utils.service.ts</context>
-          <context context-type="linenumber">78</context>
+          <context context-type="linenumber">81</context>
         </context-group>
       </trans-unit>
       <trans-unit id="periodicTask.noPeriodicTasks" datatype="html">
@@ -3919,7 +3919,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/table-utils/table-utils.service.ts</context>
-          <context context-type="linenumber">72</context>
+          <context context-type="linenumber">75</context>
         </context-group>
       </trans-unit>
       <trans-unit id="common.realms" datatype="html">
@@ -4867,7 +4867,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policies-table/policies-table.component.ts</context>
-          <context context-type="linenumber">337</context>
+          <context context-type="linenumber">339</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policy-edit-page/policy-panels/policy-panel-edit/policy-panel-edit.component.ts</context>
@@ -4987,11 +4987,11 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/table-utils/table-utils.service.ts</context>
-          <context context-type="linenumber">71</context>
+          <context context-type="linenumber">74</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/table-utils/table-utils.service.ts</context>
-          <context context-type="linenumber">77</context>
+          <context context-type="linenumber">80</context>
         </context-group>
       </trans-unit>
       <trans-unit id="caConnector.deleteCaConnectors" datatype="html">
@@ -5623,7 +5623,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policies-table/policies-table.component.ts</context>
-          <context context-type="linenumber">319</context>
+          <context context-type="linenumber">321</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policy-edit-page/policy-panels/policy-panel-edit/policy-description/policy-description-edit.component.html</context>
@@ -5679,7 +5679,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/table-utils/table-utils.service.ts</context>
-          <context context-type="linenumber">73</context>
+          <context context-type="linenumber">76</context>
         </context-group>
       </trans-unit>
       <trans-unit id="piServer.deletePrivacyideaServers" datatype="html">
@@ -6971,7 +6971,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/table-utils/table-utils.service.ts</context>
-          <context context-type="linenumber">82</context>
+          <context context-type="linenumber">85</context>
         </context-group>
       </trans-unit>
       <trans-unit id="nav.users" datatype="html">
@@ -7462,7 +7462,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policies-table/policies-table.component.ts</context>
-          <context context-type="linenumber">273</context>
+          <context context-type="linenumber">275</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policy-edit-page/policy-panels/policy-panel-edit/policy-priority-edit/policy-priority-edit.component.html</context>
@@ -7478,7 +7478,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policies-table/policies-table.component.ts</context>
-          <context context-type="linenumber">310</context>
+          <context context-type="linenumber">312</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/ldap-resolver/ldap-resolver.component.html</context>
@@ -7514,7 +7514,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policies-table/policies-table.component.ts</context>
-          <context context-type="linenumber">328</context>
+          <context context-type="linenumber">330</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policy-edit-page/policy-panels/edit-conditions-tab/edit-additional-conditions/edit-additional-conditions.component.html</context>
@@ -7534,7 +7534,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/table-utils/table-utils.service.ts</context>
-          <context context-type="linenumber">87</context>
+          <context context-type="linenumber">90</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.policyName" datatype="html">
@@ -7542,7 +7542,7 @@
         <target>Politika Adı</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policies-table/policies-table.component.ts</context>
-          <context context-type="linenumber">301</context>
+          <context context-type="linenumber">303</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policy-edit-page/policy-panels/policy-panel-edit/policy-name-edit/policy-name-edit.component.html</context>
@@ -9038,11 +9038,11 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/table-utils/table-utils.service.ts</context>
-          <context context-type="linenumber">74</context>
+          <context context-type="linenumber">77</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/table-utils/table-utils.service.ts</context>
-          <context context-type="linenumber">79</context>
+          <context context-type="linenumber">82</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.enterContainer" datatype="html">
@@ -9110,7 +9110,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details-status/token-details-status.component.html</context>
-          <context context-type="linenumber">106</context>
+          <context context-type="linenumber">104</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details.constants.ts</context>
@@ -9130,7 +9130,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details-status/token-details-status.component.html</context>
-          <context context-type="linenumber">111</context>
+          <context context-type="linenumber">109</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details.constants.ts</context>
@@ -9166,7 +9166,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/table-utils/table-utils.service.ts</context>
-          <context context-type="linenumber">83</context>
+          <context context-type="linenumber">86</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.tokenRealms" datatype="html">
@@ -9326,7 +9326,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/table-utils/table-utils.service.ts</context>
-          <context context-type="linenumber">84</context>
+          <context context-type="linenumber">87</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.roundsMustPositive" datatype="html">
@@ -11532,10 +11532,6 @@
           <context context-type="sourcefile">src/app/components/user/user-details/user-details.component.html</context>
           <context context-type="linenumber">338</context>
         </context-group>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/services/container/container.service.ts</context>
-          <context context-type="linenumber">64</context>
-        </context-group>
       </trans-unit>
       <trans-unit id="token.activate" datatype="html">
         <source>Activate</source>
@@ -11579,10 +11575,6 @@
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-details/user-details.component.html</context>
           <context context-type="linenumber">340</context>
-        </context-group>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/services/container/container.service.ts</context>
-          <context context-type="linenumber">65</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.errorOccurredWhileToggling" datatype="html">
@@ -11830,7 +11822,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/table-utils/table-utils.service.ts</context>
-          <context context-type="linenumber">80</context>
+          <context context-type="linenumber">83</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.tokenRealm" datatype="html">
@@ -14177,22 +14169,6 @@
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/ca-connector/ca-connector.service.ts</context>
           <context context-type="linenumber">153</context>
-        </context-group>
-      </trans-unit>
-      <trans-unit id="container.lost" datatype="html">
-        <source>lost</source>
-        <target>kayıp</target>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/services/container/container.service.ts</context>
-          <context context-type="linenumber">66</context>
-        </context-group>
-      </trans-unit>
-      <trans-unit id="container.damaged" datatype="html">
-        <source>damaged</source>
-        <target>hasarlı</target>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/services/container/container.service.ts</context>
-          <context context-type="linenumber">67</context>
         </context-group>
       </trans-unit>
       <trans-unit id="event.eventHandler" datatype="html">
@@ -16728,7 +16704,7 @@
         <target state="new">Reset Fail Count</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details-status/token-details-status.component.html</context>
-          <context context-type="linenumber">96</context>
+          <context context-type="linenumber">94</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.offline" datatype="html">
@@ -16996,7 +16972,7 @@
         <target state="new">Container rollover completed successfully.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/container/container.service.ts</context>
-          <context context-type="linenumber">361</context>
+          <context context-type="linenumber">360</context>
         </context-group>
       </trans-unit>
       <trans-unit id="container.containerRegisteredSuccessfully" datatype="html">
@@ -17004,7 +16980,7 @@
         <target state="new">Container registered successfully.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/container/container.service.ts</context>
-          <context context-type="linenumber">365</context>
+          <context context-type="linenumber">364</context>
         </context-group>
       </trans-unit>
       <trans-unit id="container.failedToAssignContainer" datatype="html">
@@ -17012,7 +16988,7 @@
         <target state="new">Failed to assign container. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/container/container.service.ts</context>
-          <context context-type="linenumber">658</context>
+          <context context-type="linenumber">657</context>
         </context-group>
       </trans-unit>
       <trans-unit id="container.failedToUnassignContainer" datatype="html">
@@ -17020,7 +16996,7 @@
         <target state="new">Failed to unassign container. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/container/container.service.ts</context>
-          <context context-type="linenumber">676</context>
+          <context context-type="linenumber">675</context>
         </context-group>
       </trans-unit>
       <trans-unit id="container.failedToSetContainerRealm" datatype="html">
@@ -17028,7 +17004,7 @@
         <target state="new">Failed to set container realm. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/container/container.service.ts</context>
-          <context context-type="linenumber">695</context>
+          <context context-type="linenumber">694</context>
         </context-group>
       </trans-unit>
       <trans-unit id="container.failedToSetContainerDescription" datatype="html">
@@ -17036,7 +17012,7 @@
         <target state="new">Failed to set container description. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/container/container.service.ts</context>
-          <context context-type="linenumber">713</context>
+          <context context-type="linenumber">712</context>
         </context-group>
       </trans-unit>
       <trans-unit id="container.cannotSaveContainerStatesAt" datatype="html">
@@ -17044,7 +17020,7 @@
         <target state="new">Cannot save container states: at least one state must be selected.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/container/container.service.ts</context>
-          <context context-type="linenumber">758</context>
+          <context context-type="linenumber">757</context>
         </context-group>
       </trans-unit>
       <trans-unit id="container.failedToSetContainerStates" datatype="html">
@@ -17052,7 +17028,7 @@
         <target state="new">Failed to set container states. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/container/container.service.ts</context>
-          <context context-type="linenumber">772</context>
+          <context context-type="linenumber">771</context>
         </context-group>
       </trans-unit>
       <trans-unit id="container.failedToSaveContainerInfos" datatype="html">
@@ -17060,7 +17036,7 @@
         <target state="new">Failed to save container infos. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/container/container.service.ts</context>
-          <context context-type="linenumber">837</context>
+          <context context-type="linenumber">836</context>
         </context-group>
       </trans-unit>
       <trans-unit id="container.failedToDeleteInfo" datatype="html">
@@ -17068,7 +17044,7 @@
         <target state="new">Failed to delete info. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/container/container.service.ts</context>
-          <context context-type="linenumber">856</context>
+          <context context-type="linenumber">855</context>
         </context-group>
       </trans-unit>
       <trans-unit id="container.failedToAddTokenTo" datatype="html">
@@ -17076,7 +17052,7 @@
         <target state="new">Failed to add token to container. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/container/container.service.ts</context>
-          <context context-type="linenumber">874</context>
+          <context context-type="linenumber">873</context>
         </context-group>
       </trans-unit>
       <trans-unit id="container.failedToRemoveTokenFrom" datatype="html">
@@ -17084,7 +17060,7 @@
         <target state="new">Failed to remove token from container. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/container/container.service.ts</context>
-          <context context-type="linenumber">892</context>
+          <context context-type="linenumber">891</context>
         </context-group>
       </trans-unit>
       <trans-unit id="container.noValidTokensArrayFound" datatype="html">
@@ -17092,11 +17068,11 @@
         <target state="new">No valid tokens array found in data.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/container/container.service.ts</context>
-          <context context-type="linenumber">904</context>
+          <context context-type="linenumber">903</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/container/container.service.ts</context>
-          <context context-type="linenumber">940</context>
+          <context context-type="linenumber">939</context>
         </context-group>
       </trans-unit>
       <trans-unit id="container.noTokensForAction" datatype="html">
@@ -17104,7 +17080,7 @@
         <target state="new">No tokens for action.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/container/container.service.ts</context>
-          <context context-type="linenumber">915</context>
+          <context context-type="linenumber">914</context>
         </context-group>
       </trans-unit>
       <trans-unit id="container.failedToToggleAll" datatype="html">
@@ -17112,7 +17088,7 @@
         <target state="new">Failed to toggle all. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/container/container.service.ts</context>
-          <context context-type="linenumber">927</context>
+          <context context-type="linenumber">926</context>
         </context-group>
       </trans-unit>
       <trans-unit id="container.noTokensToRemove" datatype="html">
@@ -17120,7 +17096,7 @@
         <target state="new">No tokens to remove.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/container/container.service.ts</context>
-          <context context-type="linenumber">949</context>
+          <context context-type="linenumber">948</context>
         </context-group>
       </trans-unit>
       <trans-unit id="container.failedToRemoveAll" datatype="html">
@@ -17128,7 +17104,7 @@
         <target state="new">Failed to remove all. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/container/container.service.ts</context>
-          <context context-type="linenumber">964</context>
+          <context context-type="linenumber">963</context>
         </context-group>
       </trans-unit>
       <trans-unit id="container.failedToDeleteContainer" datatype="html">
@@ -17136,7 +17112,7 @@
         <target state="new">Failed to delete container. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/container/container.service.ts</context>
-          <context context-type="linenumber">980</context>
+          <context context-type="linenumber">979</context>
         </context-group>
       </trans-unit>
       <trans-unit id="container.failedToDeleteAllTokens" datatype="html">
@@ -17144,7 +17120,7 @@
         <target state="new">Failed to delete all tokens. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/container/container.service.ts</context>
-          <context context-type="linenumber">998</context>
+          <context context-type="linenumber">997</context>
         </context-group>
       </trans-unit>
       <trans-unit id="container.failedToRegisterContainer" datatype="html">
@@ -17152,7 +17128,7 @@
         <target state="new">Failed to register container. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/container/container.service.ts</context>
-          <context context-type="linenumber">1020</context>
+          <context context-type="linenumber">1019</context>
         </context-group>
       </trans-unit>
       <trans-unit id="container.failedToUnregisterContainer" datatype="html">
@@ -17160,7 +17136,7 @@
         <target state="new">Failed to unregister container. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/container/container.service.ts</context>
-          <context context-type="linenumber">1039</context>
+          <context context-type="linenumber">1038</context>
         </context-group>
       </trans-unit>
       <trans-unit id="container.failedToCreateContainer" datatype="html">
@@ -17168,7 +17144,7 @@
         <target state="new">Failed to create container. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/container/container.service.ts</context>
-          <context context-type="linenumber">1070</context>
+          <context context-type="linenumber">1069</context>
         </context-group>
       </trans-unit>
       <trans-unit id="container.failedToCompare" datatype="html">
@@ -17176,7 +17152,7 @@
         <target state="new">Failed to compare: <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/container/container.service.ts</context>
-          <context context-type="linenumber">1108</context>
+          <context context-type="linenumber">1107</context>
         </context-group>
       </trans-unit>
       <trans-unit id="event.failedToSaveEventHandler" datatype="html">
@@ -17448,7 +17424,7 @@
         <target state="new">Failed to toggle active. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/container/container.service.ts</context>
-          <context context-type="linenumber">748</context>
+          <context context-type="linenumber">747</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
@@ -17516,7 +17492,7 @@
         <target state="new">Failed to unassign user. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/container/container.service.ts</context>
-          <context context-type="linenumber">795</context>
+          <context context-type="linenumber">794</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
@@ -17536,7 +17512,7 @@
         <target state="new">Failed to assign user. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/container/container.service.ts</context>
-          <context context-type="linenumber">818</context>
+          <context context-type="linenumber">817</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
@@ -17648,7 +17624,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/audit/audit.self-service.component.html</context>
-          <context context-type="linenumber">240</context>
+          <context context-type="linenumber">195</context>
         </context-group>
       </trans-unit>
       <trans-unit id="audit.everyActionPerformed" datatype="html">
@@ -17664,7 +17640,7 @@
         <target state="new">Your authentications and token actions are recorded in the audit log.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/audit/audit.self-service.component.html</context>
-          <context context-type="linenumber">241</context>
+          <context context-type="linenumber">196</context>
         </context-group>
       </trans-unit>
       <trans-unit id="audit.noKnownClients" datatype="html">
@@ -18356,7 +18332,7 @@
         <target state="new">Create a policy to control what users and administrators are allowed to do and how the system behaves.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policies-table/policies-table.component.ts</context>
-          <context context-type="linenumber">120</context>
+          <context context-type="linenumber">122</context>
         </context-group>
       </trans-unit>
       <trans-unit id="news.noNewsWithinTheLast" datatype="html">
@@ -18804,7 +18780,7 @@
         <target state="new">Container Realms</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/table-utils/table-utils.service.ts</context>
-          <context context-type="linenumber">76</context>
+          <context context-type="linenumber">79</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.maxfail" datatype="html">
@@ -18812,7 +18788,7 @@
         <target state="new">Maxfail</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/table-utils/table-utils.service.ts</context>
-          <context context-type="linenumber">81</context>
+          <context context-type="linenumber">84</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.sshUser" datatype="html">
@@ -18820,7 +18796,7 @@
         <target state="new">SSH User</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/table-utils/table-utils.service.ts</context>
-          <context context-type="linenumber">86</context>
+          <context context-type="linenumber">89</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.deleteSelectedTokens" datatype="html">
@@ -19679,24 +19655,24 @@
         <source>Deactivate Token</source>
         <target state="new">Deactivate Token</target>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/services/table-utils/table-utils.service.ts</context>
-          <context context-type="linenumber">215</context>
+          <context context-type="sourcefile">src/app/utils/table-cell.utils.ts</context>
+          <context context-type="linenumber">85</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.activateToken" datatype="html">
         <source>Activate Token</source>
         <target state="new">Activate Token</target>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/services/table-utils/table-utils.service.ts</context>
-          <context context-type="linenumber">216</context>
+          <context context-type="sourcefile">src/app/utils/table-cell.utils.ts</context>
+          <context context-type="linenumber">86</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.resetFailCounter" datatype="html">
         <source>Reset Fail Counter</source>
         <target state="new">Reset Fail Counter</target>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/services/table-utils/table-utils.service.ts</context>
-          <context context-type="linenumber">219</context>
+          <context context-type="sourcefile">src/app/utils/table-cell.utils.ts</context>
+          <context context-type="linenumber">89</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.successfullyDeletedFew" datatype="html">
@@ -19865,7 +19841,7 @@
       </trans-unit>
       <trans-unit id="valueLabelDamaged" datatype="html">
         <source>Damaged</source>
-        <target state="new">Damaged</target>
+        <target>hasarlı</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/utils/value-label.utils.ts</context>
           <context context-type="linenumber">50</context>
@@ -20021,7 +19997,7 @@
       </trans-unit>
       <trans-unit id="valueLabelLost" datatype="html">
         <source>Lost</source>
-        <target state="new">Lost</target>
+        <target>kayıp</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/utils/value-label.utils.ts</context>
           <context context-type="linenumber">71</context>

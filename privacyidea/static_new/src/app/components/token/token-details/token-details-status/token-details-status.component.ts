@@ -55,7 +55,7 @@ export class TokenDetailsStatusComponent {
     () => formatTokenTimestamp(this.tokenDetails().info?.["last_auth"]) ?? ""
   );
   protected readonly rolloutStateDisplay = computed(() =>
-    valueDisplayLabel(this.tokenDetails().rollout_state, ROLLOUT_STATE_VALUES)
+    valueDisplayLabel(this.tokenDetails().rollout_state, ROLLOUT_STATE_VALUES, { vocabulary: true })
   );
   protected readonly activeDisplay = computed(() =>
     this.tokenIsRevoked()

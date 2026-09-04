@@ -20,7 +20,7 @@
 import { Component, computed, inject, input } from "@angular/core";
 import { HighlightPipe } from "@components/shared/pipes/highlight.pipe";
 import { PolicyService, PolicyServiceInterface } from "@services/policies/policies.service";
-import { valueDisplayLabel } from "@utils/value-label.utils";
+import { POLICY_VOCABULARY_ACTIONS, valueDisplayLabel } from "@utils/value-label.utils";
 
 @Component({
   selector: "app-view-action-column",
@@ -53,7 +53,7 @@ export class ViewActionColumnComponent {
       return {
         name,
         value,
-        displayValue: valueDisplayLabel(value, detail?.value),
+        displayValue: valueDisplayLabel(value, detail?.value, { vocabulary: POLICY_VOCABULARY_ACTIONS.has(name) }),
         isBoolean: detail?.type === "bool"
       };
     });
