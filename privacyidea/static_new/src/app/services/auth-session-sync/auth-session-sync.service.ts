@@ -22,22 +22,14 @@ import {
   AuthSessionMode,
   AuthSessionModeService,
   AuthSessionModeServiceInterface,
-  isMultiTabMode
+  isAuthSessionMode,
+  isCrossTabSyncSupported,
+  isMultiTabMode,
+  isSharedStorageMode
 } from "@services/auth-session-mode/auth-session-mode.service";
 
 const AUTH_SESSION_CHANNEL_NAME = "privacyidea_session";
 const HANDSHAKE_TIMEOUT_MS = 250;
-
-export function isCrossTabSyncSupported(): boolean {
-  return typeof BroadcastChannel !== "undefined";
-}
-
-export function isModeAvailable(mode: AuthSessionMode): boolean {
-  if (mode === "multi-tab-ephemeral") {
-    return isCrossTabSyncSupported();
-  }
-  return true;
-}
 
 interface SessionPayload {
   token: string;
@@ -55,6 +47,8 @@ export interface AuthSessionSyncHandler {
   endSession(): void;
 
   adoptStoredSession(): void;
+
+  hasSession(): boolean;
 }
 
 export interface AuthSessionSyncServiceInterface {
@@ -64,7 +58,7 @@ export interface AuthSessionSyncServiceInterface {
 
   broadcastLogin(): void;
 
-  setHandler(handler: AuthSessionSyncHandler): void;
+  addHandler(handler: AuthSessionSyncHandler): () => void;
 }
 
 @Injectable({
@@ -73,24 +67,24 @@ export interface AuthSessionSyncServiceInterface {
 export class AuthSessionSyncService implements AuthSessionSyncServiceInterface {
   private readonly authSessionModeService: AuthSessionModeServiceInterface = inject(AuthSessionModeService);
   private readonly channel = AuthSessionSyncService.openChannel();
-  private handler: AuthSessionSyncHandler | null = null;
+  private readonly handlers = new Set<AuthSessionSyncHandler>();
   private pendingAdoption: ((message: AuthSessionSyncMessage) => void) | null = null;
 
   constructor() {
     this.channel?.addEventListener("message", (event: MessageEvent<AuthSessionSyncMessage>) =>
       this.handleMessage(event.data)
     );
-    this.authSessionModeService.setModeChangeListener((mode) => this.broadcastModeChange(mode));
+    this.authSessionModeService.addModeChangeListener((mode) => this.broadcastModeChange(mode));
   }
 
   adoptSessionFromOpenTabs(): Promise<void> {
     if (!this.channel || this.authSessionModeService.mode() !== "multi-tab-ephemeral") {
       return Promise.resolve();
     }
-    const storage = this.authSessionModeService.storage();
-    if (storage.getItem(BEARER_TOKEN_STORAGE_KEY) !== null) {
+    if (this.hasStoredSession()) {
       return Promise.resolve();
     }
+    const storage = this.authSessionModeService.storage();
     return new Promise<void>((resolve) => {
       const timer = setTimeout(() => {
         this.pendingAdoption = null;
@@ -125,8 +119,11 @@ export class AuthSessionSyncService implements AuthSessionSyncServiceInterface {
     }
   }
 
-  setHandler(handler: AuthSessionSyncHandler): void {
-    this.handler = handler;
+  addHandler(handler: AuthSessionSyncHandler): () => void {
+    this.handlers.add(handler);
+    return () => {
+      this.handlers.delete(handler);
+    };
   }
 
   private broadcastModeChange(mode: AuthSessionMode): void {
@@ -157,21 +154,36 @@ export class AuthSessionSyncService implements AuthSessionSyncServiceInterface {
   }
 
   private acceptRemoteLogin(message: SessionPayload): void {
-    if (!isMultiTabMode(this.authSessionModeService.mode())) {
+    if (!isMultiTabMode(this.authSessionModeService.mode()) || this.handlers.size === 0 || this.hasAdoptedSession()) {
       return;
     }
-    const storage = this.authSessionModeService.storage();
-    if (storage.getItem(BEARER_TOKEN_STORAGE_KEY) !== null) {
-      return;
-    }
-    this.writeSession(storage, message);
-    this.handler?.adoptStoredSession();
+    this.writeSession(this.authSessionModeService.storage(), message);
+    this.adoptStoredSession();
   }
 
   private acceptModeChange(message: { mode: AuthSessionMode } & SessionPayload): void {
+    if (!isAuthSessionMode(message.mode)) {
+      return;
+    }
+    const keepsOwnSession = !isMultiTabMode(message.mode) && !isSharedStorageMode(this.authSessionModeService.mode());
     this.authSessionModeService.adoptMode(message.mode);
+    if (keepsOwnSession) {
+      return;
+    }
     this.writeSession(this.authSessionModeService.storage(), message);
-    this.handler?.adoptStoredSession();
+    this.adoptStoredSession();
+  }
+
+  private hasStoredSession(): boolean {
+    return this.readSession() !== null;
+  }
+
+  private hasAdoptedSession(): boolean {
+    return [...this.handlers].some((handler) => handler.hasSession());
+  }
+
+  private adoptStoredSession(): void {
+    this.handlers.forEach((handler) => handler.adoptStoredSession());
   }
 
   private readSession(): SessionPayload | null {
@@ -200,13 +212,7 @@ export class AuthSessionSyncService implements AuthSessionSyncServiceInterface {
     if (!isMultiTabMode(this.authSessionModeService.mode())) {
       return;
     }
-    if (this.handler) {
-      this.handler.endSession();
-      return;
-    }
-    const storage = this.authSessionModeService.storage();
-    storage.removeItem(BEARER_TOKEN_STORAGE_KEY);
-    storage.removeItem(AUTH_DATA_STORAGE_KEY);
+    this.handlers.forEach((handler) => handler.endSession());
   }
 
   private post(message: AuthSessionSyncMessage): void {

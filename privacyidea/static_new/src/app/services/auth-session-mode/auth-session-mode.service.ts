@@ -33,6 +33,21 @@ export function isMultiTabMode(mode: AuthSessionMode): boolean {
   return mode !== "single-tab";
 }
 
+export function isSharedStorageMode(mode: AuthSessionMode): boolean {
+  return mode === "multi-tab-persistent";
+}
+
+export function isCrossTabSyncSupported(): boolean {
+  return typeof BroadcastChannel !== "undefined";
+}
+
+export function isModeAvailable(mode: AuthSessionMode): boolean {
+  if (mode === "multi-tab-ephemeral") {
+    return isCrossTabSyncSupported();
+  }
+  return true;
+}
+
 const SESSION_KEYS = [BEARER_TOKEN_STORAGE_KEY, AUTH_DATA_STORAGE_KEY];
 
 export interface AuthSessionModeServiceInterface {
@@ -44,7 +59,7 @@ export interface AuthSessionModeServiceInterface {
 
   setDefaultMode(): void;
 
-  setModeChangeListener(listener: (mode: AuthSessionMode) => void): void;
+  addModeChangeListener(listener: (mode: AuthSessionMode) => void): () => void;
 
   adoptMode(mode: AuthSessionMode): void;
 }
@@ -57,35 +72,41 @@ export class AuthSessionModeService implements AuthSessionModeServiceInterface {
 
   private readonly storedMode = signal<AuthSessionMode | null>(AuthSessionModeService.readStoredMode());
 
-  private modeChangeListener: ((mode: AuthSessionMode) => void) | null = null;
+  private readonly modeChangeListeners = new Set<(mode: AuthSessionMode) => void>();
 
   // Resolved lazily: the auth service reaches this one through the sync service, so an
   // eager inject() here would be a circular dependency.
   private readonly injector = inject(Injector);
 
-  readonly mode: Signal<AuthSessionMode> = computed(() => this.storedMode() ?? this.defaultMode);
+  readonly mode: Signal<AuthSessionMode> = computed(() => {
+    const mode = this.storedMode() ?? this.defaultMode;
+    return isModeAvailable(mode) ? mode : "single-tab";
+  });
 
   readonly storage: Signal<Storage> = computed(() =>
-    this.mode() === "multi-tab-persistent" ? localStorage : sessionStorage
+    isSharedStorageMode(this.mode()) ? localStorage : sessionStorage
   );
 
   constructor() {
-    this.discardSessionOutsideActiveStorage();
+    this.claimSessionFromInactiveStorage();
   }
 
   setMode(mode: AuthSessionMode): void {
-    if (!this.changeAllowed()) {
+    if (mode === this.mode() || !isModeAvailable(mode) || !this.changeAllowed()) {
       return;
     }
     const previousStorage = this.storage();
     localStorage.setItem(AUTH_SESSION_MODE_STORAGE_KEY, mode);
     this.storedMode.set(mode);
     this.moveSession(previousStorage, this.storage());
-    this.modeChangeListener?.(mode);
+    this.modeChangeListeners.forEach((listener) => listener(mode));
   }
 
-  setModeChangeListener(listener: (mode: AuthSessionMode) => void): void {
-    this.modeChangeListener = listener;
+  addModeChangeListener(listener: (mode: AuthSessionMode) => void): () => void {
+    this.modeChangeListeners.add(listener);
+    return () => {
+      this.modeChangeListeners.delete(listener);
+    };
   }
 
   private changeAllowed(): boolean {
@@ -95,8 +116,13 @@ export class AuthSessionModeService implements AuthSessionModeServiceInterface {
 
   adoptMode(mode: AuthSessionMode): void {
     const previousStorage = this.storage();
+    const previousStorageWasShared = isSharedStorageMode(this.mode());
     this.storedMode.set(mode);
-    SESSION_KEYS.forEach((key) => previousStorage.removeItem(key));
+    if (previousStorageWasShared) {
+      SESSION_KEYS.forEach((key) => previousStorage.removeItem(key));
+      return;
+    }
+    this.moveSession(previousStorage, this.storage());
   }
 
   setDefaultMode(): void {
@@ -116,9 +142,17 @@ export class AuthSessionModeService implements AuthSessionModeServiceInterface {
     });
   }
 
-  private discardSessionOutsideActiveStorage(): void {
-    const inactive = this.storage() === localStorage ? sessionStorage : localStorage;
-    SESSION_KEYS.forEach((key) => inactive.removeItem(key));
+  private claimSessionFromInactiveStorage(): void {
+    const active = this.storage();
+    const inactive = active === localStorage ? sessionStorage : localStorage;
+    const claimable = active.getItem(BEARER_TOKEN_STORAGE_KEY) === null;
+    SESSION_KEYS.forEach((key) => {
+      const value = inactive.getItem(key);
+      if (claimable && value !== null) {
+        active.setItem(key, value);
+      }
+      inactive.removeItem(key);
+    });
   }
 
   private static readStoredMode(): AuthSessionMode | null {

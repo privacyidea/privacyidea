@@ -149,7 +149,7 @@ describe("AuthSessionModeService", () => {
     it("notifies the registered listener", () => {
       const service = createService("single-tab");
       const listener = jest.fn();
-      service.setModeChangeListener(listener);
+      service.addModeChangeListener(listener);
       service.setMode("multi-tab-ephemeral");
       expect(listener).toHaveBeenCalledWith("multi-tab-ephemeral");
     });
@@ -157,7 +157,7 @@ describe("AuthSessionModeService", () => {
     it("does not notify the listener when the change is rejected", () => {
       const service = createService("single-tab");
       const listener = jest.fn();
-      service.setModeChangeListener(listener);
+      service.addModeChangeListener(listener);
       authService.isAuthenticated.set(false);
       service.setMode("multi-tab-ephemeral");
       expect(listener).not.toHaveBeenCalled();
@@ -178,7 +178,7 @@ describe("AuthSessionModeService", () => {
     it("takes over the mode without notifying the listener", () => {
       const service = createService("single-tab");
       const listener = jest.fn();
-      service.setModeChangeListener(listener);
+      service.addModeChangeListener(listener);
       service.adoptMode("multi-tab-persistent");
       expect(service.mode()).toBe("multi-tab-persistent");
       expect(listener).not.toHaveBeenCalled();

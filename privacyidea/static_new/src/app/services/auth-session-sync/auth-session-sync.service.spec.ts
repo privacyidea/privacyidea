@@ -19,14 +19,13 @@
 import { Type } from "@angular/core";
 import { TestBed } from "@angular/core/testing";
 import { AUTH_DATA_STORAGE_KEY, BEARER_TOKEN_STORAGE_KEY } from "@core/constants";
-import { AuthSessionModeService } from "@services/auth-session-mode/auth-session-mode.service";
-import { MockAuthSessionModeService } from "@testing/mock-services/mock-auth-session-mode-service";
 import {
-  AuthSessionSyncHandler,
-  AuthSessionSyncService,
+  AuthSessionModeService,
   isCrossTabSyncSupported,
   isModeAvailable
-} from "./auth-session-sync.service";
+} from "@services/auth-session-mode/auth-session-mode.service";
+import { MockAuthSessionModeService } from "@testing/mock-services/mock-auth-session-mode-service";
+import { AuthSessionSyncHandler, AuthSessionSyncService } from "./auth-session-sync.service";
 
 interface Envelope {
   type: string;
@@ -81,8 +80,8 @@ describe("AuthSessionSyncService", () => {
       providers: [{ provide: AuthSessionModeService as Type<unknown>, useValue: modeService }]
     });
     const service = TestBed.inject(AuthSessionSyncService);
-    handler = { endSession: jest.fn(), adoptStoredSession: jest.fn() };
-    service.setHandler(handler);
+    handler = { endSession: jest.fn(), adoptStoredSession: jest.fn(), hasSession: jest.fn().mockReturnValue(false) };
+    service.addHandler(handler);
     return service;
   }
 
@@ -281,7 +280,7 @@ describe("AuthSessionSyncService", () => {
       sessionStorage.setItem(BEARER_TOKEN_STORAGE_KEY, "token");
       sessionStorage.setItem(AUTH_DATA_STORAGE_KEY, "data");
       createService();
-      const listener = modeService.setModeChangeListener.mock.calls[0][0] as (mode: string) => void;
+      const listener = modeService.addModeChangeListener.mock.calls[0][0] as (mode: string) => void;
       listener("multi-tab-persistent");
       expect(otherTab.received).toContainEqual({
         type: "mode-changed",

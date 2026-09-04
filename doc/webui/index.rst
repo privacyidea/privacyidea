@@ -81,9 +81,11 @@ override lives in that browser, not on the server -- the mode must be known befo
 anyone logs in. A change reaches all open tabs at once and signs in those waiting on
 the login screen, as does a login in a shared mode.
 
-A session left in the storage the active mode does not use is discarded at startup.
-Under the default this drops sessions written by earlier releases, so users log in
-once more after the upgrade.
+At startup a tab looks in the storage its mode does not use. A session found there is
+moved into the active storage, unless that one already holds a session, and the unused
+storage is cleared either way. Under the default this carries a session written by an
+earlier release from ``localStorage`` into ``sessionStorage``, so nobody has to sign in
+again after the upgrade.
 
 .. _new_webui_hardening:
 
@@ -96,12 +98,13 @@ Hardening the shared session modes
 the browser next is signed in. Use it only on devices that are not shared.
 
 Both shared modes hand the session to any same-origin context that asks for it, without
-inspecting where the request came from. Set ``X-Frame-Options: DENY`` (or
-``Content-Security-Policy: frame-ancestors 'none'``) on the reverse proxy: a framed
-WebUI is handed the session and can be overlaid with the attacker's own elements. The
-header stops the frame but not a window opened through ``window.open``, which is
-same-origin as well and is handed the session too -- it can neither be read nor
-overlaid by the page that opened it.
+inspecting where the request came from. It is also sent unasked whenever someone signs
+in or changes the mode, so a context that only listens receives it too. Set
+``X-Frame-Options: DENY`` (or ``Content-Security-Policy: frame-ancestors 'none'``) on
+the reverse proxy: a framed WebUI is handed the session and can be overlaid with the
+attacker's own elements. The header stops the frame but not a window opened through
+``window.open``, which is same-origin as well and is handed the session too -- it can
+neither be read nor overlaid by the page that opened it.
 
 Logging out discards the stored token but does not withdraw it: privacyIDEA checks a
 JWT by signature and ``exp`` only, so a copied token stays usable until it expires.

@@ -360,11 +360,15 @@ export class AuthService implements AuthServiceInterface {
   readonly isSelfServiceUser = computed(() => this.role() === "user");
 
   constructor() {
-    this.authSessionSyncService.setHandler({
+    this.authSessionSyncService.addHandler({
       endSession: () => this.endSession(),
-      adoptStoredSession: () => this.adoptStoredSession()
+      adoptStoredSession: () => this.adoptStoredSession(),
+      hasSession: () => this.isAuthenticated()
     });
-    this.restoreSession();
+  }
+
+  bootstrapSession(): Promise<void> {
+    return this.authSessionSyncService.adoptSessionFromOpenTabs().then(() => this.restoreSession());
   }
 
   getHeaders(): HttpHeaders {
@@ -416,6 +420,7 @@ export class AuthService implements AuthServiceInterface {
   }
 
   private adoptStoredSession(): void {
+    this.clearUserScopedCaches();
     this.restoreSession();
     if (this.isAuthenticated() && this.router.url.startsWith(ROUTE_PATHS.LOGIN)) {
       this.router.navigateByUrl(resolveLandingPath(this));
@@ -428,9 +433,13 @@ export class AuthService implements AuthServiceInterface {
     this.jwtData.set(null);
     this.clearStoredSession();
     this.authenticationAccepted.set(false);
+    this.clearUserScopedCaches();
+    this.router.navigate(["login"]);
+  }
+
+  private clearUserScopedCaches(): void {
     this.dashboardDataStore.invalidate();
     this.injector.get(UserSettingsService).clearCache();
-    this.router.navigate(["login"]);
   }
 
   actionAllowed(action: PolicyAction): boolean {
@@ -525,7 +534,7 @@ export class AuthService implements AuthServiceInterface {
    * The token and the auth data are restored only while the JWT is still valid; an
    * expired or corrupt session is cleared instead.
    */
-  restoreSession(): void {
+  private restoreSession(): void {
     const token = this.localService.getData(BEARER_TOKEN_STORAGE_KEY);
     if (!token) {
       return;

@@ -16,11 +16,9 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, inject } from "@angular/core";
+import { Component, computed, inject, linkedSignal } from "@angular/core";
 import { MatFormFieldModule } from "@angular/material/form-field";
-import { MatIconModule } from "@angular/material/icon";
 import { MatSelectChange, MatSelectModule } from "@angular/material/select";
-import { MatTooltipModule } from "@angular/material/tooltip";
 import { DetailsCardComponent } from "@components/shared/details-shared/details-card/details-card.component";
 import {
   MessageConfirmationDialogComponent,
@@ -30,9 +28,9 @@ import {
   AUTH_SESSION_MODES,
   AuthSessionMode,
   AuthSessionModeService,
-  AuthSessionModeServiceInterface
+  AuthSessionModeServiceInterface,
+  isModeAvailable
 } from "@services/auth-session-mode/auth-session-mode.service";
-import { isModeAvailable } from "@services/auth-session-sync/auth-session-sync.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 
 const MODE_EXPOSURE: Record<AuthSessionMode, number> = {
@@ -58,7 +56,7 @@ const MODE_HINTS: Record<AuthSessionMode, { title: string; message: string }> = 
 
 @Component({
   selector: "app-auth-session-mode-card",
-  imports: [DetailsCardComponent, MatFormFieldModule, MatIconModule, MatSelectModule, MatTooltipModule],
+  imports: [DetailsCardComponent, MatFormFieldModule, MatSelectModule],
   templateUrl: "./auth-session-mode-card.component.html",
   styleUrl: "./auth-session-mode-card.component.scss"
 })
@@ -73,18 +71,21 @@ export class AuthSessionModeCardComponent {
       label: MODE_HINTS[mode].title
     }));
   });
-  protected readonly modeHint = computed(() => MODE_HINTS[this.mode()].message);
+  protected readonly selectedMode = linkedSignal(() => this.mode());
+  protected readonly modeHint = computed(() => MODE_HINTS[this.selectedMode()].message);
 
   protected async selectAuthSessionMode(event: MatSelectChange): Promise<void> {
     const target = event.value as AuthSessionMode;
-    if (target !== "single-tab" && MODE_EXPOSURE[target] > MODE_EXPOSURE[this.authSessionModeService.mode()]) {
+    this.selectedMode.set(target);
+    if (MODE_EXPOSURE[target] > MODE_EXPOSURE[this.mode()]) {
       const confirmed = await this.confirmModeChange(MODE_HINTS[target]);
       if (!confirmed) {
-        event.source.value = this.mode();
+        this.selectedMode.set(this.mode());
         return;
       }
     }
     this.authSessionModeService.setMode(target);
+    this.selectedMode.set(this.mode());
   }
 
   private async confirmModeChange(args: { title: string; message: string }): Promise<boolean> {

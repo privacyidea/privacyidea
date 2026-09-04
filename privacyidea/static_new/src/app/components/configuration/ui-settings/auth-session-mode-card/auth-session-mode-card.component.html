@@ -22,11 +22,11 @@
   title="Session Mode">
   <div class="mode-row">
     <mat-form-field
-      class="input-width-m"
+      class="input-width-l"
       subscriptSizing="dynamic">
       <mat-select
         (selectionChange)="selectAuthSessionMode($event)"
-        [value]="mode()"
+        [value]="selectedMode()"
         aria-label="Session Mode"
         i18n-aria-label="@@uiSettings.sessionMode">
         @for (option of modeOptions(); track option.value) {
@@ -35,12 +35,7 @@
           </mat-option>
         }
       </mat-select>
+      <mat-hint>{{ modeHint() }}</mat-hint>
     </mat-form-field>
-    <mat-icon
-      [attr.aria-label]="modeHint()"
-      [matTooltip]="modeHint()"
-      class="mode-hint"
-      >info_outline</mat-icon
-    >
   </div>
 </app-details-card>

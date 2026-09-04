@@ -22,5 +22,5 @@ export class MockAuthSessionSyncService implements AuthSessionSyncServiceInterfa
   adoptSessionFromOpenTabs = jest.fn().mockResolvedValue(undefined);
   broadcastLogout = jest.fn();
   broadcastLogin = jest.fn();
-  setHandler = jest.fn();
+  addHandler = jest.fn().mockReturnValue(jest.fn());
 }

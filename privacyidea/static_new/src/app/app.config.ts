@@ -28,7 +28,6 @@ import {
 import { MatPaginatorIntl } from "@angular/material/paginator";
 import { provideRouter } from "@angular/router";
 import { localeBaseHref, scriptRoot } from "@core/locale";
-import { AuthSessionSyncService } from "@services/auth-session-sync/auth-session-sync.service";
 import { UiPreferencesService } from "@services/user-settings/ui-preferences.service";
 import { routes } from "./app.routes";
 import { loadingInterceptor } from "./interceptor/loading/loading.interceptor";
@@ -52,13 +51,9 @@ export const appConfig: ApplicationConfig = {
       uiPreferencesService.normalizeLocaleUrl();
     }),
     provideAppInitializer(() => {
-      const sessionSyncService = inject(AuthSessionSyncService);
       const authService = inject(AuthService);
       const configService = inject(ConfigService);
-      return sessionSyncService.adoptSessionFromOpenTabs().then(() => {
-        authService.restoreSession();
-        configService.loadConfig();
-      });
+      return authService.bootstrapSession().then(() => configService.loadConfig());
     }),
     provideZonelessChangeDetection(),
     provideRouter(routes),
