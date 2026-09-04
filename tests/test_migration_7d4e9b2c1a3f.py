@@ -24,7 +24,7 @@ import os
 
 import pytest
 
-from tests.migration_test_utils import MigrationTestBase, is_postgres
+from tests.migration_test_utils import MigrationTestBase, quote_identifier
 
 pytestmark = [
     pytest.mark.migration,
@@ -33,10 +33,6 @@ pytestmark = [
         reason="TEST_DATABASE_URL environment variable is not set",
     ),
 ]
-
-
-def _q(col: str) -> str:
-    return f'"{col}"' if is_postgres() else f"`{col}`"
 
 
 PI_INTERNAL = "pi_internal"  # value the pre-migration code wrote into customuserattribute.Type
@@ -66,8 +62,8 @@ class TestMigration7d4e9b2c1a3f(MigrationTestBase):
     def _fetch_custom_value(self, engine, user_id: str, key: str) -> str | None:
         return self._fetch_scalar(
             engine,
-            f"SELECT {_q('Value')} FROM customuserattribute "
-            f"WHERE user_id = :uid AND {_q('Key')} = :key",
+            f"SELECT {quote_identifier('Value')} FROM customuserattribute "
+            f"WHERE user_id = :uid AND {quote_identifier('Key')} = :key",
             {"uid": user_id, "key": key},
         )
 
@@ -75,7 +71,7 @@ class TestMigration7d4e9b2c1a3f(MigrationTestBase):
         return self._fetch_scalar(
             engine,
             f"SELECT COUNT(*) FROM customuserattribute "
-            f"WHERE user_id = :uid AND {_q('Key')} = :key",
+            f"WHERE user_id = :uid AND {quote_identifier('Key')} = :key",
             {"uid": user_id, "key": key},
         )
 
@@ -83,8 +79,8 @@ class TestMigration7d4e9b2c1a3f(MigrationTestBase):
         """Return the parsed JSON value of an internaluserattribute row."""
         raw = self._fetch_scalar(
             engine,
-            f"SELECT {_q('Value')} FROM internaluserattribute "
-            f"WHERE user_id = :uid AND {_q('Key')} = :key",
+            f"SELECT {quote_identifier('Value')} FROM internaluserattribute "
+            f"WHERE user_id = :uid AND {quote_identifier('Key')} = :key",
             {"uid": user_id, "key": key},
         )
         if raw is None:
@@ -102,7 +98,7 @@ class TestMigration7d4e9b2c1a3f(MigrationTestBase):
         return self._fetch_scalar(
             engine,
             f"SELECT COUNT(*) FROM internaluserattribute "
-            f"WHERE user_id = :uid AND {_q('Key')} = :key",
+            f"WHERE user_id = :uid AND {quote_identifier('Key')} = :key",
             {"uid": user_id, "key": key},
         )
 

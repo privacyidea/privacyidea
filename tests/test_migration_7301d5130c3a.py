@@ -17,7 +17,7 @@ import os
 
 import pytest
 
-from tests.migration_test_utils import MigrationTestBase, is_oracle, is_postgres
+from tests.migration_test_utils import MigrationTestBase, quote_identifier
 
 pytestmark = [
     pytest.mark.migration,
@@ -54,8 +54,8 @@ class TestMigration7301d5130c3a(MigrationTestBase):
     def _fetch_option(self, engine, eventhandler_id: int, key: str) -> str | None:
         # Mixed-case columns are quoted with double-quotes on Postgres/Oracle
         # and back-ticks on MariaDB/MySQL.
-        key_col = "`Key`" if (not is_postgres() and not is_oracle()) else '"Key"'
-        val_col = "`Value`" if (not is_postgres() and not is_oracle()) else '"Value"'
+        key_col = quote_identifier("Key")
+        val_col = quote_identifier("Value")
         return self._fetch_scalar(
             engine,
             f"SELECT {val_col} FROM eventhandleroption "

@@ -20,6 +20,7 @@ from alembic import op
 import sqlalchemy as sa
 from sqlalchemy import Boolean, Integer, Unicode, UnicodeText, case, func, select
 from sqlalchemy.sql import column, insert, table
+from sqlalchemy.sql.elements import BinaryExpression
 
 
 # revision identifiers, used by Alembic.
@@ -50,6 +51,20 @@ _tokeninfo = table(
     column("Type", Unicode(100)),
     column("Description", Unicode(2000)),
 )
+
+
+def _marker_value_is(marker_value: str) -> BinaryExpression:
+    """
+    Return a predicate matching tokeninfo rows whose ``Value`` is
+    ``marker_value``.
+
+    ``Value`` is a ``UnicodeText`` column, which is a CLOB on Oracle, and Oracle
+    rejects ``=`` between a CLOB and a string with "ORA-00932: inconsistent
+    datatypes". LIKE is the comparison operator it does accept for LOBs, and the
+    marker values this migration writes are fixed literals without LIKE
+    wildcards ('u2f', '1', '0'), so the same rows match on every backend.
+    """
+    return _tokeninfo.c.Value.like(marker_value)
 
 
 def _stash_marker(bind, marker_key: str, marker_value_expr) -> None:
@@ -98,7 +113,11 @@ def upgrade():
     _stash_marker(
         bind,
         "original_active",
-        case((_token.c.active.is_(True), sa.literal("1")), else_=sa.literal("0")),
+        # "= true()" rather than "is_(True)": Oracle has no boolean type, and the
+        # IS operator only accepts NULL/TRUE/FALSE keywords there, so is_(True)
+        # renders as "active IS 1" and fails with ORA-00908. Equality renders as
+        # "active = 1" on Oracle and "active = true" everywhere else.
+        case((_token.c.active == sa.true(), sa.literal("1")), else_=sa.literal("0")),
     )
     _stash_marker(bind, "deprecated_in", sa.literal("3.14"))
 
@@ -119,12 +138,12 @@ def downgrade():
         token_ids_with_original_active = (
             select(_tokeninfo.c.token_id)
             .where(_tokeninfo.c.Key == "original_active")
-            .where(_tokeninfo.c.Value == stashed_value)
+            .where(_marker_value_is(stashed_value))
         )
         token_ids_with_original_type_u2f = (
             select(_tokeninfo.c.token_id)
             .where(_tokeninfo.c.Key == "original_tokentype")
-            .where(_tokeninfo.c.Value == "u2f")
+            .where(_marker_value_is("u2f"))
         )
         bind.execute(
             _token.update()
@@ -137,7 +156,7 @@ def downgrade():
     u2f_origin_ids = (
         select(_tokeninfo.c.token_id)
         .where(_tokeninfo.c.Key == "original_tokentype")
-        .where(_tokeninfo.c.Value == "u2f")
+        .where(_marker_value_is("u2f"))
     )
     bind.execute(
         _token.update()

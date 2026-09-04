@@ -13,6 +13,7 @@ import pytest
 from alembic import command
 from alembic.config import Config as AlembicConfig
 from sqlalchemy import create_engine, inspect as sa_inspect, text
+from sqlalchemy.sql.compiler import IdentifierPreparer
 
 DB_URL = os.environ.get("TEST_DATABASE_URL", "")
 
@@ -45,6 +46,49 @@ def is_mariadb(db_url: str = DB_URL) -> bool:
             return bool(conn.dialect.is_mariadb)
     finally:
         engine.dispose()
+
+
+@functools.cache
+def _identifier_preparer(db_url: str = DB_URL) -> IdentifierPreparer:
+    """Return the active dialect's identifier preparer. No connection needed."""
+    return create_engine(db_url).dialect.identifier_preparer
+
+
+@functools.cache
+def _model_identifiers() -> dict[str, str]:
+    """
+    Map every table and column name the models declare to the name object
+    SQLAlchemy created the schema with.
+
+    Plain strings lose the ``quote=True`` flag that ``Challenge.session`` carries
+    (``session`` is an Oracle keyword, so the column only exists there because it
+    was created quoted, in lower case). Looking the name up here recovers the
+    flag, which is what tells the preparer to quote it.
+    """
+    from privacyidea.models import db
+    names: dict[str, str] = {}
+    for table in db.metadata.sorted_tables:
+        names.setdefault(str(table.name), table.name)
+        for col in table.c:
+            names.setdefault(str(col.name), col.name)
+    return names
+
+
+def quote_identifier(name: str) -> str:
+    """
+    Quote *name* for use in raw SQL against the active dialect.
+
+    Delegates to the dialect's own identifier preparer, which quotes exactly when
+    the schema was created quoted — the only way raw SQL and the schema can agree:
+
+    * Mixed case (``Key``, ``Value``) is quoted on Postgres and Oracle, which fold
+      unquoted names to lower/upper case respectively.
+    * A name the model forces to be quoted (``Challenge.session``) is quoted.
+    * An all-lower-case, unforced name stays unquoted. Quoting one on Oracle would
+      look for a lower-case object that does not exist (ORA-00904 for a column,
+      ORA-00942 for a table).
+    """
+    return _identifier_preparer().quote(_model_identifiers().get(name, name))
 
 
 def get_alembic_cfg(db_url: str = DB_URL) -> AlembicConfig:
@@ -231,30 +275,21 @@ class MigrationTestBase:
 
     def _insert_rows(self, engine, table: str, rows: list[dict]) -> None:
         """
-        Insert *rows* into *table* using dialect-aware quoting.
+        Insert *rows* into *table*, quoting the column names (e.g. ``Key``,
+        ``Value``) for the active dialect via :func:`quote_identifier`.
 
-        Column names that need quoting (e.g. ``Key``, ``Value``) are quoted
-        with double-quotes on Postgres/Oracle and back-ticks on MariaDB/MySQL.
-
-        Oracle is special: it folds unquoted identifiers to upper case, so an
-        all-lower-case column (created unquoted) must be referenced unquoted to
-        match, while a mixed-case column like ``Key`` (created quoted) must be
-        quoted exactly. Quoting an all-lower-case name would look for a
-        lower-case column that does not exist (ORA-00904).
+        Bind parameters are numbered rather than named after their column: a bind
+        variable may not be a reserved word either, and ``:session`` (a real
+        column of ``challenge``) fails on Oracle with "ORA-01745: invalid
+        host/bind variable name".
         """
         if not rows:
             return
-        if is_postgres():
-            quote = lambda c: f'"{c}"'
-        elif is_oracle():
-            quote = lambda c: f'"{c}"' if any(ch.isupper() for ch in c) else c
-        else:
-            quote = lambda c: f"`{c}`"
         cols = list(rows[0].keys())
-        col_list = ", ".join(quote(c) for c in cols)
-        placeholders = ", ".join(f":{c}" for c in cols)
+        col_list = ", ".join(quote_identifier(c) for c in cols)
+        placeholders = ", ".join(f":p{i}" for i, _ in enumerate(cols))
         stmt = text(f"INSERT INTO {table} ({col_list}) VALUES ({placeholders})")
         with engine.connect() as conn:
             for row in rows:
-                conn.execute(stmt, row)
+                conn.execute(stmt, {f"p{i}": row[col] for i, col in enumerate(cols)})
             conn.commit()
