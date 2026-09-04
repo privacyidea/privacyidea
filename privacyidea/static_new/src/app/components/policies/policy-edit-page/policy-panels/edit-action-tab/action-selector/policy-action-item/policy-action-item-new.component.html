@@ -38,6 +38,7 @@
             i18n-placeholder="@@policy.selectOptions"
             placeholder="Select options..."
             [items]="actionValues"
+            [itemLabel]="valueLabelOf"
             [selectedItems]="selectedItems()"
             (selectionChange)="updateSelectedActionValue($event)">
           </app-multi-select-only>

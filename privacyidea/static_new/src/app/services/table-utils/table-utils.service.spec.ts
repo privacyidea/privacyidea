@@ -23,7 +23,7 @@ import { TestBed } from "@angular/core/testing";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { AuthService, JwtData } from "@services/auth/auth.service";
 import { ContainerDetailToken } from "@services/container/container.service";
-import { TableCellValue, TableUtilsService } from "./table-utils.service";
+import { TableUtilsService } from "./table-utils.service";
 import { TokenService } from "@services/token/token.service";
 import { MockTokenService } from "@testing/mock-services";
 
@@ -107,15 +107,6 @@ describe("TableUtilsService", () => {
     });
   });
 
-  it.each([
-    // TODO should be true once these links are reachable
-    ["username", false],
-    ["realms", false],
-    ["unknown", false]
-  ])('isLink("%s") → %s', (key, expected) => {
-    expect(service.isLink(key)).toBe(expected);
-  });
-
   describe("getClassForColumn", () => {
     it("returns highlight-disabled when locked", () => {
       expect(service.getClassForColumn("any", { locked: true })).toBe("highlight-disabled");
@@ -169,153 +160,19 @@ describe("TableUtilsService", () => {
     });
   });
 
-  describe("getTooltipForColumn", () => {
-    it("returns tooltip for active column", () => {
-      expect(service.getTooltipForColumn("active", { active: true })).toBe("Deactivate Token");
-      expect(service.getTooltipForColumn("active", { active: false })).toBe("Activate Token");
-    });
-
-    it("returns Locked / Revoked first", () => {
-      expect(service.getTooltipForColumn("active", { locked: true })).toBe("Locked");
-      expect(service.getTooltipForColumn("failcount", { revoked: true })).toBe("Revoked");
-    });
-
-    it('returns empty string when active = ""', () => {
-      expect(service.getTooltipForColumn("active", { active: "" })).toBe("");
-    });
-
-    it("returns Reset Fail Counter only when failcount > 0", () => {
-      expect(service.getTooltipForColumn("failcount", { failcount: 3 })).toBe("Reset Fail Counter");
-      expect(service.getTooltipForColumn("failcount", { failcount: 0 })).toBe("");
-    });
-  });
-
-  describe("getDisplayText", () => {
-    it.each([
-      [{ active: true }, "Active"],
-      [{ active: false }, "Deactivated"],
-      [{ active: true, locked: true }, "Locked"],
-      [{ active: false, revoked: true }, "Revoked"],
-      [{ active: "" }, ""]
-    ])('maps element → "%s"', (element, expected) => {
-      expect(service.getDisplayText("active", element)).toBe(expected);
-    });
-
-    const rolloutStateCases: [string, string][] = [
-      ["clientwait", "Client wait"],
-      ["pending", "Pending"],
-      ["enrolled", "Enrolled"],
-      ["mystery", "mystery"]
-    ];
-    it.each(rolloutStateCases)('maps rollout_state "%s" → "%s"', (state, expected) => {
-      expect(service.getDisplayText("rollout_state", { rollout_state: state })).toBe(expected);
-    });
-
-    it("returns an empty string for a rollout_state that is not a string", () => {
-      expect(service.getDisplayText("rollout_state", {})).toBe("");
-    });
-
-    it("returns raw value for non‑special column", () => {
-      expect(service.getDisplayText("name", { name: "bob" })).toBe("bob");
-    });
-  });
-
-  describe("getSpanClassForKey", () => {
-    it.each([
-      [{ key: "success", value: "" }, ""],
-      [{ key: "success", value: true }, "highlight-true"],
-      [{ key: "success", value: false }, "highlight-false"],
-      [{ key: "description", value: "x" }, "details-table-item details-description"],
-      [{ key: "active", value: "" }, ""],
-      [{ key: "active", value: true }, "highlight-true"],
-      [{ key: "active", value: false }, "highlight-false"],
-      [{ key: "failcount", value: "", maxfail: 5 }, ""],
-      [{ key: "failcount", value: 0, maxfail: 5 }, "highlight-true"],
-      [{ key: "failcount", value: 2, maxfail: 5 }, "highlight-warning"],
-      [{ key: "failcount", value: 5, maxfail: 5 }, "highlight-false"],
-      [{ key: "other", value: null }, "details-table-item"]
-    ])("maps %o → %s", (args, expected) => {
-      expect(service.getSpanClassForKey(args)).toBe(expected);
-    });
-  });
-
-  it.each([
-    ["description", "details-scrollable-container"],
-    ["maxfail", "details-value"],
-    ["count_window", "details-value"],
-    ["sync_window", "details-value"],
-    ["other", ""]
-  ])('getDivClassForKey("%s") → "%s"', (key, expected) => {
-    expect(service.getDivClassForKey(key)).toBe(expected);
-  });
-
-  it.each([
-    ["active", "flex-center"],
-    ["failcount", "flex-center"],
-    ["realms", "table-scroll-container"],
-    ["description", "table-scroll-container"],
-    ["xyz", "flex-center-vertical"]
-  ])('getClassForColumnKey("%s") → "%s"', (col, expected) => {
-    expect(service.getClassForColumnKey(col)).toBe(expected);
-  });
-
-  it('getChildClassForColumnKey returns "scroll-item" only for scroll containers', () => {
+  // The cell formatting itself lives in table-cell.utils and is covered by its own spec; these
+  // only pin that the template-facing facade forwards to it.
+  it("forwards cell rendering to the table cell utils", () => {
+    expect(service.getDisplayText("active", { active: true })).toBe("Active");
+    expect(service.getTooltipForColumn("active", { active: true })).toBe("Deactivate Token");
+    expect(service.getSpanClassForKey({ key: "success", value: true })).toBe("highlight-true");
+    expect(service.getClassForColumnKey("realms")).toBe("table-scroll-container");
     expect(service.getChildClassForColumnKey("realms")).toBe("scroll-item");
-    expect(service.getChildClassForColumnKey("active")).toBe("");
-  });
-
-  it.each([
-    ["active", "", false, ""],
-    ["active", true, false, "Active"],
-    ["active", false, false, "Deactivated"],
-    ["active", true, true, "Revoked"],
-    ["title", "hello", false, "hello"]
-  ])("getDisplayTextForKeyAndRevoked(%s, %s, %s) → %s", (k, v, r, expected) => {
-    expect(service.getDisplayTextForKeyAndRevoked(k, v, r)).toBe(expected);
-  });
-
-  const displayTextForKeyCases: [string, TableCellValue, string][] = [
-    ["success", true, "Yes"],
-    ["success", false, "No"],
-    ["success", 1, "Yes"],
-    ["success", 0, "No"],
-    ["authentication", "accept", "Accept"],
-    ["authentication", "challenge", "Challenge"],
-    ["authentication", "reject", "Reject"],
-    ["authentication", "declined", "Declined"],
-    ["authentication", "DECLINED", "Declined"],
-    ["authentication", "mystery", "mystery"],
-    ["action", "/auth", "/auth"],
-    ["success", "", ""],
-    ["success", null, ""],
-    ["success", undefined, ""]
-  ];
-  it.each(displayTextForKeyCases)('getDisplayTextForKey("%s", %s) → "%s"', (key, value, expected) => {
-    expect(service.getDisplayTextForKey(key, value)).toBe(expected);
-  });
-
-  it.each([
-    ["description", "height-127"],
-    ["realms", "height-78"],
-    ["tokengroup", "height-78"],
-    ["id", "height-53"]
-  ])('getTdClassForKey("%s") includes %s', (key, expectedPart) => {
-    expect(service.getTdClassForKey(key)).toContain(expectedPart);
-  });
-
-  it.each([
-    ["active", false, "highlight-true"],
-    ["disabled", false, "highlight-false"],
-    ["damaged", false, "highlight-false"],
-    ["lost", false, "highlight-false"],
-    ["other", false, ""],
-    ["active", true, "highlight-true-clickable"],
-    ["disabled", true, "highlight-false-clickable"],
-    ["damaged", true, "highlight-false-clickable"],
-    ["lost", true, "highlight-false-clickable"],
-    ["other", true, ""]
-  ])('getSpanClassForState("%s", %s) → %s', (state, clickable, expected) => {
-    expect(service.getSpanClassForState(state, clickable)).toBe(expected);
+    expect(service.getDivClassForKey("description")).toBe("details-scrollable-container");
+    expect(service.getTdClassForKey("description")).toContain("height-127");
+    expect(service.getSpanClassForState("active", false)).toBe("highlight-true");
+    expect(service.getSortIcon("serial", { active: "serial", direction: "asc" })).toBe("keyboard_arrow_upward");
+    expect(service.isLink("container_serial")).toBe(true);
   });
 
   it.each([

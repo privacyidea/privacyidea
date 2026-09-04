@@ -39,6 +39,9 @@ export class MultiSelectOnlyComponent<T = string | number> {
   readonly selectedItems = input<T[]>([]);
   readonly tooltipText = input<string>("");
 
+  /** Maps an item onto the text shown for it. Defaults to the item itself. */
+  readonly itemLabel = input<(item: T) => string>((item: T) => String(item));
+
   readonly subscriptSizing = input<"dynamic" | "fixed">("fixed");
 
   /** Width utility class applied to the form field (e.g. "input-width-xl"). Defaults to filling the host. */
@@ -80,7 +83,12 @@ export class MultiSelectOnlyComponent<T = string | number> {
   /**
    * Pre-formats the string for the mat-select-trigger to keep the template clean.
    */
-  readonly triggerValue = computed(() => this.selectedItems().join(", "));
+  readonly triggerValue = computed(() => {
+    const label = this.itemLabel();
+    return this.selectedItems()
+      .map((item) => label(item))
+      .join(", ");
+  });
 
   /**
    * Standard selection handler.

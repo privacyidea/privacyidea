@@ -51,7 +51,7 @@
     @for (item of uniqueItems(); track item) {
       <mat-option [value]="item">
         <div class="option-row-layout">
-          <span class="item-text">{{ item }}</span>
+          <span class="item-text">{{ itemLabel()(item) }}</span>
           <button
             mat-button
             class="only-button"

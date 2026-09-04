@@ -29,7 +29,7 @@ import { MatSlideToggleModule } from "@angular/material/slide-toggle";
 import { SelectorButtonsComponent } from "@components/policies/policy-edit-page/policy-panels/edit-action-tab/selector-buttons/selector-buttons.component";
 import { MultiSelectOnlyComponent } from "@components/shared/multi-select-only/multi-select-only.component";
 import { PolicyActionDetail, PolicyService, PolicyServiceInterface } from "@services/policies/policies.service";
-import { valueDisplayLabels } from "@utils/value-label.utils";
+import { valueDisplayLabel, valueDisplayLabels } from "@utils/value-label.utils";
 
 @Component({
   selector: "app-policy-action-item-edit",
@@ -65,6 +65,9 @@ export class PolicyActionItemEditComponent<T extends string | number | boolean =
   });
 
   readonly valueLabels = computed<string[] | undefined>(() => valueDisplayLabels(this.actionDetail()?.value));
+
+  /** Label of a single value, for the multi select which sorts its items itself. */
+  readonly valueLabelOf = (value: T): string => valueDisplayLabel(value, this.actionDetail()?.value);
 
   readonly valueOptions = computed<{ value: T; label: string }[]>(() => {
     const values = this.actionDetail()?.value ?? [];

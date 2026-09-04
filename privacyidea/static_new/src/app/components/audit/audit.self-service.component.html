@@ -93,7 +93,7 @@
               mat-cell>
               <div>
                 @switch (column.key) {
-                  @case ("success") {
+                  @case (column.key === "success" || column.key === "authentication" ? column.key : "") {
                     <div class="flex just-center">
                       <span
                         [ngClass]="
@@ -102,7 +102,7 @@
                             value: element[column.key]
                           })
                         ">
-                        {{ tableUtilsService.getDisplayTextForKey(column.key, element[column.key]) }}
+                        {{ tableUtilsService.getDisplayText(column.key, element) }}
                       </span>
                     </div>
                   }

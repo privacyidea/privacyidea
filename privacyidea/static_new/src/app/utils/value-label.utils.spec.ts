@@ -74,13 +74,23 @@ describe("valueDisplayLabel", () => {
     expect(valueDisplayLabel("disabled", ["active", "disabled", "lost", "damaged"])).toBe("Deactivated");
   });
 
-  it("capitalizes a lower-case value when a sibling value carries a vocabulary label", () => {
+  it("labels a value of a list the vocabulary covers completely", () => {
     expect(valueDisplayLabel("pending", ["clientwait", "pending", "enrolled"])).toBe("Pending");
     expect(valueDisplayLabel("none", ["tokenpin", "userstore", "none"])).toBe("None");
   });
 
-  it("keeps a lower-case value when no sibling value carries a vocabulary label", () => {
+  it("keeps every value of a list the vocabulary does not cover completely", () => {
     expect(valueDisplayLabel("pending", ["pending", "queued", "gone"])).toBe("pending");
+    expect(valueDisplayLabel("clientwait", ["clientwait", "queued"])).toBe("clientwait");
+  });
+
+  it("keeps the names of a list the installation defines itself", () => {
+    // Realm, resolver and server-configuration lists reach the value dropdowns as plain strings and
+    // must never be relabeled - the admin has to recognize the name they created.
+    expect(valueDisplayLabel("admin", ["admin", "defrealm"])).toBe("admin");
+    expect(valueDisplayLabel("defrealm", ["admin", "defrealm"])).toBe("defrealm");
+    expect(valueDisplayLabel("userstore", ["userstore", "myRadius"])).toBe("userstore");
+    expect(valueDisplayLabels(["admin", "defrealm"])).toBeUndefined();
   });
 
   it("keeps a value that is not plain lower-case", () => {
@@ -182,7 +192,7 @@ describe("valueDisplayLabels", () => {
     expect(valueDisplayLabels(["hotp", "totp", "webauthn"])).toEqual(["HOTP", "TOTP", "WebAuthn"]);
   });
 
-  it("labels the whole list as soon as a single value maps", () => {
+  it("labels a list whose values differ in casing", () => {
     expect(valueDisplayLabels(["clientwait", "Pending"])).toEqual(["Client wait", "Pending"]);
   });
 

@@ -36,8 +36,6 @@ export class MockTableUtilsService implements TableUtilsServiceInterface {
   getDivClassForKey = jest.fn().mockReturnValue("");
   getClassForColumnKey = jest.fn();
   getChildClassForColumnKey = jest.fn().mockReturnValue("");
-  getDisplayTextForKey = jest.fn().mockReturnValue("");
-  getDisplayTextForKeyAndRevoked = jest.fn().mockReturnValue("");
   getTdClassForKey = jest.fn().mockReturnValue("");
   getSpanClassForState = jest.fn().mockReturnValue("");
   getDisplayTextForState = jest.fn().mockReturnValue("");

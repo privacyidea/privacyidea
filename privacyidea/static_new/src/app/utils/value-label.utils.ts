@@ -37,30 +37,45 @@ const VALUE_VOCABULARY: Record<string, string> = {
   accept: $localize`:@@valueLabelAccept:Accept`,
   active: $localize`:@@valueLabelActive:Active`,
   admin: $localize`:@@valueLabelAdministrator:Administrator`,
+  "admin realm": $localize`:@@valueLabelAdminRealm:Admin realm`,
+  allow: $localize`:@@valueLabelAllowed:Allowed`,
   allowed: $localize`:@@valueLabelAllowed:Allowed`,
+  any: $localize`:@@valueLabelAny:Any`,
   any_pin: $localize`:@@valueLabelAnyPin:Any PIN`,
   background: $localize`:@@valueLabelInBackground:In background`,
+  biometric: $localize`:@@valueLabelBiometric:Biometric`,
+  broken: $localize`:@@valueLabelBroken:Broken`,
   challenge: $localize`:@@valueLabelChallenge:Challenge`,
   clientwait: $localize`:@@valueLabelClientWait:Client wait`,
   damaged: $localize`:@@valueLabelDamaged:Damaged`,
   deactivated: $localize`:@@valueLabelDeactivated:Deactivated`,
   declined: $localize`:@@valueLabelDeclined:Declined`,
+  denied: $localize`:@@valueLabelDenied:Denied`,
   deny_access: $localize`:@@valueLabelDenyAccess:Deny access`,
   disable: $localize`:@@valueLabelDisabled:Disabled`,
   disabled: $localize`:@@valueLabelDeactivated:Deactivated`,
+  email: $localize`:@@valueLabelEmail:Email`,
+  enrolled: $localize`:@@valueLabelEnrolled:Enrolled`,
+  failed: $localize`:@@valueLabelFailed:Failed`,
   force: $localize`:@@valueLabelForced:Forced`,
   generic: $localize`:@@valueLabelGeneric:Generic`,
   grant_access: $localize`:@@valueLabelGrantAccess:Grant access`,
   hide: $localize`:@@valueLabelHide:Hide`,
   html: "HTML",
+  ignore: $localize`:@@valueLabelIgnore:Ignore`,
+  "internal admin": $localize`:@@valueLabelInternalAdmin:Internal admin`,
   locked: $localize`:@@valueLabelLocked:Locked`,
   lockscreen: $localize`:@@valueLabelLockScreen:Lock screen`,
   logged_in_user: $localize`:@@valueLabelLoggedInUser:Logged-in user`,
+  logout: $localize`:@@valueLabelLogout:Logout`,
   lost: $localize`:@@valueLabelLost:Lost`,
   luks: "LUKS",
+  none: $localize`:@@valueLabelNone:None`,
   offline: $localize`:@@valueLabelOffline:Offline`,
+  pending: $localize`:@@valueLabelPending:Pending`,
   pin: $localize`:@@valueLabelPin:PIN`,
   plain: $localize`:@@valueLabelPlainText:Plain text`,
+  privacyidea: "privacyIDEA",
   reject: $localize`:@@valueLabelReject:Reject`,
   require_and_verify: $localize`:@@valueLabelRequireAndVerify:Require and verify`,
   revoked: $localize`:@@valueLabelRevoked:Revoked`,
@@ -74,6 +89,7 @@ const VALUE_VOCABULARY: Record<string, string> = {
   tokenpin: $localize`:@@valueLabelTokenPin:Token PIN`,
   user: $localize`:@@valueLabelUser:User`,
   userstore: $localize`:@@valueLabelUserStore:User store`,
+  verify: $localize`:@@valueLabelVerify:Verify`,
   wait: $localize`:@@valueLabelWait:Wait`,
   yubikey: "Yubikey"
 };
@@ -104,17 +120,18 @@ function matchingBooleanPair(values: readonly DisplayableValue[] | undefined): r
   return BOOLEAN_VALUE_PAIRS.find((pair) => pair.every((value) => normalized.includes(value)));
 }
 
-function hasVocabularyEntry(values: readonly DisplayableValue[] | undefined): boolean {
-  return !!values?.some((value) => normalizeValue(value) in VALUE_VOCABULARY);
+/**
+ * True when every value of the list carries a vocabulary label. Only then is the list a closed
+ * vocabulary the backend spells out, and not a list of names the installation defines itself
+ * (realms, resolvers, server configurations, template names) which must be shown verbatim.
+ */
+function isClosedVocabulary(values: readonly DisplayableValue[] | undefined): boolean {
+  return !!values?.length && values.every((value) => normalizeValue(value) in VALUE_VOCABULARY);
 }
 
 function holdsTokenTypes(values: readonly DisplayableValue[] | undefined): boolean {
   const tokenTypeCount = values?.filter((value) => !!tokenTypeLabel(normalizeValue(value))).length ?? 0;
   return tokenTypeCount >= 2;
-}
-
-function capitalize(value: string): string {
-  return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
 export function valueDisplayLabel(
@@ -139,10 +156,18 @@ export function valueDisplayLabel(
     if (tokenLabel) return tokenLabel;
   }
 
-  const vocabularyLabel = VALUE_VOCABULARY[normalized];
-  if (vocabularyLabel) return vocabularyLabel;
-  if (raw === normalized && hasVocabularyEntry(values)) return capitalize(raw);
+  if (isClosedVocabulary(values)) return VALUE_VOCABULARY[normalized];
   return raw;
+}
+
+/** Display label of a token state ("active", "deactivated", "revoked", "locked"). */
+export function tokenStateLabel(state: string): string {
+  return valueDisplayLabel(state, TOKEN_STATE_VALUES);
+}
+
+/** Display label of a container state ("active", "disabled", "lost", "damaged"). */
+export function containerStateLabel(state: string | undefined | null): string {
+  return valueDisplayLabel(state, CONTAINER_STATE_VALUES);
 }
 
 export function booleanDisplayLabel(
