@@ -29,6 +29,7 @@ It also contains the error handlers.
 """
 
 import copy
+import json
 
 from flask_babel import _
 
@@ -43,7 +44,7 @@ from ..models import ClientStatus, db
 from ..lib.policies.actions import PolicyAction
 from ..lib.user import get_user_from_param
 import logging
-from flask import request, g
+from flask import request, g, make_response
 from privacyidea.lib.policy import Match, SCOPE
 from privacyidea.lib.lifecycle import call_finalizers
 from privacyidea.lib.log import redact_url
@@ -527,12 +528,120 @@ def after_request(response):
     This function is called after a request
     :return: The response
     """
-    # No caching!
-    response.headers['Cache-Control'] = 'no-cache'
+    # Re-apply the two /validate post-policies that the error path bypasses
+    # (see shape_validate_error_response). after_request is the single point
+    # every response - including error-handler responses - flows through.
+    # This may replace the response object (e.g. the RADIUS empty-body shape),
+    # so it must run before the common response headers are applied below.
+    response = shape_validate_error_response(request, response)
 
     # Strip version information before signing if the hide_version policy
     # is active and no user is logged in.
     response = hide_version(request, response)
+
+    # No caching! Applied last, to the final response object, so a shaped
+    # replacement response still carries the no-cache guarantee.
+    response.headers['Cache-Control'] = 'no-cache'
+
+    return response
+
+
+def shape_validate_error_response(request, response):
+    """
+    Re-apply the two ``@postpolicy`` decorators of ``/validate/check`` and its
+    ``/validate/radiuscheck`` alias that the error path would otherwise bypass.
+
+    The ``@postpolicy`` chain of the ``check()`` view only runs when the view
+    *returns* a response. When it *raises*, the exception is turned into an
+    error response by the error handlers in this module, which never pass it
+    through the chain. Rather than repeating the two relevant post-policies in
+    every error handler, they are applied here once: ``after_request`` is the
+    single choke point every response flows through (this is also how
+    ``sign_response`` manages to sign error responses).
+
+    * ``hide_specific_error_message`` (AUTH scope): mask the specific failure
+      reason (unknown serial, serial/user mismatch, revoked token, FIDO2
+      argument checks, ...) so it does not leak despite the policy being active.
+    * ``construct_radius_response``: ``/validate/radiuscheck`` must answer with
+      an empty body; on an error path this is always the failure case, so an
+      empty ``400``.
+
+    Only *error* responses are touched, but the two routes are told apart
+    differently:
+
+    * ``/validate/radiuscheck`` answers with an empty body by contract, so any
+      response reaching here *with* a body bypassed the ``@postpolicy`` chain
+      (a raised view producing a JSON error body, or a failure before the view
+      such as malformed JSON producing Flask's HTML 400) and is collapsed to an
+      empty ``400``. An already-empty ``204``/``400`` from the real chain is
+      left untouched.
+    * ``/validate/check`` masking only applies to a JSON error body, identified
+      by ``result.status`` being ``False`` (``send_error``) rather than ``True``
+      (``send_result``).
+
+    The original, specific message stays in the audit log because the error
+    handlers log it before this runs, so the administrator still sees the real
+    reason.
+
+    :param request: the request object
+    :param response: the response object
+    :return: the (possibly replaced) response
+    """
+    url_rule = getattr(request, "url_rule", None)
+    rule = url_rule.rule if url_rule is not None else None
+    if rule not in ("/validate/check", "/validate/radiuscheck"):
+        return response
+
+    # construct_radius_response: /validate/radiuscheck always answers with an
+    # empty body. A normal response already went through the real @postpolicy
+    # chain and is an empty 204/400 - preserve it. Anything else reaching here
+    # carries a body the chain never shaped: a raised view (JSON error body) or
+    # a failure before the view (e.g. malformed JSON, which makes Flask produce
+    # an HTML 400). An error is always the failure case, so collapse any such
+    # body to the documented empty 400. This runs before the (pointless here)
+    # message masking, since the RADIUS shape never leaks a specific message.
+    if rule == "/validate/radiuscheck":
+        if response.get_data():
+            resp = make_response("", 400)
+            # tell other handlers (e.g. sign_response) there is no JSON content
+            resp.mimetype = "text/plain"
+            return resp
+        return response
+
+    # rule == "/validate/check": mask the specific failure reason on JSON error
+    # bodies (hide_specific_error_message). A non-JSON or non-error response has
+    # nothing to mask.
+    if not response.is_json:
+        return response
+    content = response.json
+    if not isinstance(content, dict):
+        return response
+    result = content.get("result") or {}
+    # send_result() sets status True, send_error() sets it False. Only the
+    # error path (a raised view) reaches here with an unshaped JSON body.
+    if result.get("status") is not False:
+        return response
+
+    # hide_specific_error_message
+    user_object = request.User if hasattr(request, "User") else None
+    hide_message = Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE,
+                              user_object=user_object).any()
+    if hide_message:
+        message = str(_("Authentication failed."))
+        error = result.get("error")
+        if isinstance(error, dict):
+            error["message"] = message
+            # Remap to the generic AUTHENTICATE id, so a masked failure is
+            # indistinguishable from any other unspecified auth failure.
+            error["code"] = Error.AUTHENTICATE
+        # Replace the whole detail object, so it always has the same content
+        # and future additions cannot accidentally leak information either.
+        detail = {"message": message}
+        threadid = (content.get("detail") or {}).get("threadid")
+        if threadid:
+            detail["threadid"] = threadid
+        content["detail"] = detail
+        response.set_data(json.dumps(content))
 
     return response
 
