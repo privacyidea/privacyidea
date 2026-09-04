@@ -132,6 +132,8 @@ for this user will always be true.
 .. warning:: Only use this if you know exactly what
    you are doing.
 
+.. _passonnouser:
+
 passOnNoUser
 ~~~~~~~~~~~~
 
@@ -575,8 +577,33 @@ auth_cache
 type: ``string``
 
 The Authentication Cache caches the credentials of a successful authentication
-and allows using the same credentials (inluding the OTP value) for the specified
-amount of time and optionally for a specified number of authentications.
+and allows using the same credentials (including the OTP value) for the specified
+amount of time and optionally for a specified number of authentications. It is
+meant for clients that authenticate again at short intervals - a VPN gateway that
+reconnects every hour, for example - which would otherwise need a new OTP each
+time.
+
+Only a complete credential that was verified against a token or a user store is
+cached, which means the credential of a single ``/validate/check`` request. The
+following successful authentications are therefore neither stored in the cache nor
+answered from it:
+
+* **Requests that answer a challenge**, i.e. requests carrying a ``transaction_id``.
+  Such a request contains only the response to the challenge and not the whole
+  credential: the PIN was sent in the request that triggered the challenge, and a
+  push token is confirmed on the phone and sends no credential at all. Users of a
+  challenge-response token therefore authenticate against the token on every login.
+* **Requests without a credential**, i.e. with an empty or absent ``pass``.
+* Authentications that succeeded **without checking the presented credential**,
+  namely through :ref:`passonnotoken` and :ref:`passonnouser`. Those decisions
+  follow from the absence of a token or of a user, so they last only as long as
+  that condition and the policy do.
+
+.. warning:: With ``passthru`` pointing to a RADIUS server, the cached credential is
+   whatever that server accepted, and for the duration of the policy privacyIDEA
+   answers from its own cache instead of asking again. The replay protection and the
+   counters of the remote system do not apply during that time. Keep the interval
+   short, or do not combine the two.
 
 The time to cache the credentials can be specified like "4h", "5m", "2d", "3s"
 (hours, minutes, days, seconds). The number of allowed authentications can be
