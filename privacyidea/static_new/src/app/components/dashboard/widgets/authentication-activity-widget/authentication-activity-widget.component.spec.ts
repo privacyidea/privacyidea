@@ -16,9 +16,11 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { formatDate } from "@angular/common";
 import { provideZonelessChangeDetection } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { provideRouter } from "@angular/router";
+import { PiResponse } from "@app/app.component";
 import { WidgetInstance } from "@models/dashboard";
 import {
   AuthenticationEventSeries,
@@ -31,12 +33,15 @@ import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockAuthenticationLogService } from "@testing/mock-services/mock-authentication-log-service";
 import { MockPiResponse } from "@testing/mock-services/mock-utils";
 import { toFilterDisplay } from "@utils/date-format.utils";
-import { of, throwError } from "rxjs";
-import { ACTIVITY_RANGES, AuthenticationActivityWidgetComponent } from "./authentication-activity-widget.component";
+import { of, Subject, throwError } from "rxjs";
+import { ACTIVITY_RANGES } from "@components/dashboard/widgets/activity-range";
+import { AuthenticationActivityWidgetComponent } from "./authentication-activity-widget.component";
 
 const instance: WidgetInstance = { id: "activity-1", type: "authentication-activity", x: 0, y: 0, cols: 8, rows: 9 };
 
 const BINS = 4;
+const SIX_HOURS = 6 * 3_600_000;
+const DAY = 24 * 3_600_000;
 
 function series(event_type: string, outcome: string | null, counts: number[]): AuthenticationEventSeries {
   return { event_type, outcome, counts, total: counts.reduce((a, b) => a + b, 0) };
@@ -77,6 +82,18 @@ describe("AuthenticationActivityWidgetComponent", () => {
 
   function text(selector: string): string {
     return (fixture.nativeElement.querySelector(selector)?.textContent ?? "").trim();
+  }
+
+  // The bucket columns of one chart row, which are what carry the hover and the click.
+  function bars(row: number): HTMLElement[] {
+    const rows = fixture.nativeElement.querySelectorAll(".chart-row");
+    return Array.from<HTMLElement>(rows[row].querySelectorAll(".bar-slot"));
+  }
+
+  // The window of the last request, as dates: the endpoint takes ISO strings.
+  function requestedWindow(): [Date, Date, number] {
+    const [start, end, bins] = logMock.fetchStatistics.mock.calls.at(-1) as [string, string, number];
+    return [new Date(start), new Date(end), bins];
   }
 
   beforeEach(async () => {
@@ -146,8 +163,9 @@ describe("AuthenticationActivityWidgetComponent", () => {
     ]);
     create();
 
-    const shares = Object.fromEntries(component.summary().rows.map((row) => [row.outcome, component.shareLabel(row)]));
-    expect(shares).toEqual({ success: "(15%)", failure: "(5%)", pending: "(80%)" });
+    const shares = Object.fromEntries(component.summary().rows.map((row) => [row.key, component.shareLabel(row)]));
+    // The aggregate row carries no share: a percentage of the whole would say 100% at best.
+    expect(shares).toEqual({ overall: "", success: "(15%)", failure: "(5%)", pending: "(80%)" });
   });
 
   it("shows no share when the window holds no attempt", () => {
@@ -167,23 +185,148 @@ describe("AuthenticationActivityWidgetComponent", () => {
     // The count and the share are separate spans set apart by a gap, so each is asserted on its own rather than
     // through whitespace that only exists visually.
     const cells = Array.from<Element>(fixture.nativeElement.querySelectorAll(".chart-row .chart-value"));
-    expect(cells.map((cell) => cell.querySelector(".total")?.textContent?.trim())).toEqual(["3", "1", "0"]);
-    expect(cells.map((cell) => cell.querySelector(".share")?.textContent?.trim())).toEqual(["(75%)", "(25%)", "(0%)"]);
+    expect(cells.map((cell) => cell.querySelector(".total")?.textContent?.trim())).toEqual(["3", "1"]);
+    expect(cells.map((cell) => cell.querySelector(".share")?.textContent?.trim())).toEqual(["(75%)", "(25%)"]);
   });
 
-  it("renders one bar row per outcome, each with a bar per bin", () => {
+  it("opens on succeeded against failed, one bar row each", () => {
     seed([series("LOGIN_SUCCESS", "success", [1, 0, 0, 0]), series("PIN_FAIL", "failure", [0, 2, 0, 0])]);
     create();
 
     const rows = Array.from<Element>(fixture.nativeElement.querySelectorAll(".chart-row"));
-    expect(rows).toHaveLength(3);
+    expect(rows).toHaveLength(2);
     expect(rows[0].querySelectorAll(".bar")).toHaveLength(BINS);
     // The row label is what identifies the series, so the chart never relies on telling the colours apart.
-    expect(rows.map((row) => row.querySelector(".chart-label")?.textContent?.trim())).toEqual([
-      "Successful",
-      "Failed",
-      "Pending"
+    expect(rows.map((row) => row.querySelector(".chart-label")?.textContent?.trim())).toEqual(["Successful", "Failed"]);
+    // The other two are a menu entry away, and the summary holds them either way.
+    expect(component.summary().rows.map((row) => row.key)).toEqual(["overall", "success", "failure", "pending"]);
+  });
+
+  it("charts all activity in one row, counting what no classification claims", () => {
+    seed([
+      series("LOGIN_SUCCESS", "success", [1, 0, 0, 0]),
+      series("PIN_FAIL", "failure", [0, 2, 0, 0]),
+      // An event type the endpoint does not classify: it belongs to no outcome row, so only the aggregate holds it.
+      series("SOMETHING_NEW", null, [0, 0, 5, 0])
     ]);
+    create();
+
+    component.toggleRow("overall");
+    fixture.detectChanges();
+
+    const overall = component.summary().rows.find((row) => row.key === "overall")!;
+    expect(overall.counts).toEqual([1, 2, 5, 0]);
+    expect(overall.total).toBe(8);
+    // Which is more than the three classifications add up to, and why the row is the activity rather than their sum.
+    expect(component.summary().success + component.summary().failure + component.summary().pending).toBe(3);
+    // It leads the chart: the whole first, its breakdown under it.
+    const labels = Array.from<Element>(fixture.nativeElement.querySelectorAll(".chart-row .chart-label")).map((label) =>
+      label.textContent?.trim()
+    );
+    expect(labels).toEqual(["Overall", "Successful", "Failed"]);
+  });
+
+  it("keeps the aggregate row off the chart until it is asked for", () => {
+    seed([series("LOGIN_SUCCESS", "success", [4, 0, 0, 0])]);
+    create();
+
+    // It is the sum of the others, so on the shared scale it would flatten them; it is worth showing once a reader
+    // turns the others off, which is what the menu is for.
+    expect(component.isShown("overall")).toBe(false);
+    expect(fixture.nativeElement.querySelectorAll(".chart-row")).toHaveLength(2);
+    expect(component.peak()).toBe(4);
+
+    component.toggleRow("overall");
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelectorAll(".chart-row")).toHaveLength(3);
+  });
+
+  it("hands the outcome menu to the frame's header rather than spending a row on it", () => {
+    seed([]);
+    create();
+
+    // The frame renders this template in its header, beside the reload button; the body is dense enough already. The
+    // frame's own spec covers the rendering, so what matters here is that the widget contributes the template and
+    // keeps no toolbar of its own.
+    expect(component.headerActions()).toBeTruthy();
+    expect(fixture.nativeElement.querySelector("button[mat-icon-button]")).toBeNull();
+  });
+
+  it("takes a row off the chart and out of the table with it", () => {
+    seed([series("LOGIN_SUCCESS", "success", [1, 0, 0, 0]), series("PIN_FAIL", "failure", [0, 2, 0, 0])]);
+    create();
+
+    component.toggleRow("success");
+    fixture.detectChanges();
+
+    const labels = Array.from<Element>(fixture.nativeElement.querySelectorAll(".chart-row .chart-label")).map((label) =>
+      label.textContent?.trim()
+    );
+    expect(labels).toEqual(["Failed"]);
+    // The table is the chart's text alternative, so it holds a column for each row the chart draws and no others.
+    const columns = Array.from<Element>(fixture.nativeElement.querySelectorAll(".visually-hidden th[scope='col']")).map(
+      (column) => column.textContent?.trim()
+    );
+    expect(columns).toEqual(["Time", "Failed"]);
+  });
+
+  it("brings a row back", () => {
+    seed([series("LOGIN_SUCCESS", "success", [1, 0, 0, 0])]);
+    create();
+
+    component.toggleRow("success");
+    component.toggleRow("success");
+    fixture.detectChanges();
+
+    expect(component.isShown("success")).toBe(true);
+    expect(fixture.nativeElement.querySelectorAll(".chart-row")).toHaveLength(2);
+  });
+
+  it("rescales the rows that are left", () => {
+    seed([series("LOGIN_SUCCESS", "success", [50, 0, 0, 0]), series("PIN_FAIL", "failure", [0, 2, 0, 0])]);
+    create();
+    expect(component.peak()).toBe(50);
+
+    component.toggleRow("success");
+    fixture.detectChanges();
+
+    // Taking the loudest row off is generally what someone does to see the quiet ones, so the scale follows.
+    expect(component.peak()).toBe(2);
+    expect(component.barHeight(2)).toBe(100);
+  });
+
+  it("keeps a share of every attempt in the span, charted or not", () => {
+    seed([
+      series("LOGIN_SUCCESS", "success", [3, 0, 0, 0]),
+      series("PIN_FAIL", "failure", [1, 0, 0, 0]),
+      series("CHALLENGE_TRIGGERED", "pending", [16, 0, 0, 0])
+    ]);
+    create();
+
+    // Pending is off to begin with, so the shares on screen are of attempts most of which are not: what is drawn
+    // changes, what happened does not. A percentage that grew as rows came off would mean something different in
+    // every view of the same window - and would call this window 75% failed.
+    const shares = Array.from<Element>(fixture.nativeElement.querySelectorAll(".chart-row .share")).map((share) =>
+      share.textContent?.trim()
+    );
+    expect(shares).toEqual(["(15%)", "(5%)"]);
+  });
+
+  it("keeps the last row on the chart", () => {
+    seed([series("LOGIN_SUCCESS", "success", [1, 0, 0, 0])]);
+    create();
+
+    component.toggleRow("success");
+    fixture.detectChanges();
+
+    // An empty plot with a live brush under it is not a view of anything, so the row that is left cannot go.
+    expect(component.canHide("failure")).toBe(false);
+    component.toggleRow("failure");
+    fixture.detectChanges();
+
+    expect(component.visibleRows().map((row) => row.key)).toEqual(["failure"]);
+    expect(fixture.nativeElement.querySelectorAll(".chart-row")).toHaveLength(1);
   });
 
   it("charts unanswered attempts at the time they were started", () => {
@@ -195,7 +338,7 @@ describe("AuthenticationActivityWidgetComponent", () => {
     ]);
     create();
 
-    const pending = component.summary().rows.find((row) => row.outcome === "pending")!;
+    const pending = component.summary().rows.find((row) => row.key === "pending")!;
     // Every pending series folds into the one row, so it is the outcome's whole volume.
     expect(pending.counts).toEqual([3, 0, 0, 1]);
     expect(pending.total).toBe(4);
@@ -204,6 +347,9 @@ describe("AuthenticationActivityWidgetComponent", () => {
   it("keeps the unanswered row on the shared scale so it cannot overstate itself", () => {
     seed([series("LOGIN_SUCCESS", "success", [50, 0, 0, 0]), series("CHALLENGE_TRIGGERED", "pending", [0, 2, 0, 0])]);
     create();
+    // Brought onto the chart, where it starts off, since the scale it shares is what this is about.
+    component.toggleRow("pending");
+    fixture.detectChanges();
 
     expect(component.peak()).toBe(50);
     // Still visible despite being 4% of the peak, so a quiet bucket and an empty one never look the same.
@@ -244,16 +390,18 @@ describe("AuthenticationActivityWidgetComponent", () => {
     create();
 
     const axes = fixture.nativeElement.querySelectorAll(".axis-line");
-    expect(axes).toHaveLength(3);
+    expect(axes).toHaveLength(2);
     // A tick per bin, laid out like the bars above it, so the two stay aligned however wide the widget is.
     axes.forEach((axis: Element) => expect(axis.querySelectorAll(".axis-tick")).toHaveLength(BINS));
     for (const row of fixture.nativeElement.querySelectorAll(".chart-row")) {
       expect(row.querySelectorAll(".bar")).toHaveLength(row.querySelectorAll(".axis-tick").length);
     }
 
-    // The time scale belongs to the chart as a whole, so it appears once at the bottom.
-    expect(fixture.nativeElement.querySelectorAll(".axis-labels")).toHaveLength(1);
-    expect(text(".axis-labels")).toContain("now");
+    // The time scale belongs to the chart as a whole, so it appears once at the bottom, under one brush shared by
+    // every row.
+    expect(fixture.nativeElement.querySelectorAll(".range-labels")).toHaveLength(1);
+    expect(fixture.nativeElement.querySelectorAll("mat-slider")).toHaveLength(1);
+    expect(text(".range-labels")).toContain("now");
   });
 
   it("shows an empty state when nothing failed", () => {
@@ -263,32 +411,254 @@ describe("AuthenticationActivityWidgetComponent", () => {
     expect(text(".empty")).toContain("No attempt failed in this range.");
   });
 
+  it("brushes the chart with one position per bucket edge, over all rows at once", () => {
+    seed([series("LOGIN_SUCCESS", "success", [1, 0, 0, 0])]);
+    create();
+
+    // Edges, not buckets: a span of BINS buckets has BINS + 1 places a thumb can sit, and the open brush covers all
+    // of them. Anything finer could not be answered from the counts the endpoint bucketed.
+    const thumbs = Array.from<HTMLInputElement>(fixture.nativeElement.querySelectorAll("mat-slider input"));
+    expect(thumbs).toHaveLength(2);
+    expect(thumbs.map((thumb) => thumb.max)).toEqual([String(BINS), String(BINS)]);
+    expect(thumbs.map((thumb) => thumb.value)).toEqual(["0", String(BINS)]);
+    // One brush for three rows, so the outcomes are always read over the same span.
+    expect(fixture.nativeElement.querySelectorAll(".chart-row mat-slider")).toHaveLength(0);
+  });
+
+  it("counts only the buckets the brush selects", () => {
+    seed([series("LOGIN_SUCCESS", "success", [1, 2, 4, 8]), series("PIN_FAIL", "failure", [0, 1, 0, 0])]);
+    create();
+
+    component.onRangeStartInput(1);
+    component.onRangeEndInput(3);
+    fixture.detectChanges();
+
+    const cells = Array.from<Element>(fixture.nativeElement.querySelectorAll(".chart-row .chart-value"));
+    expect(cells.map((cell) => cell.querySelector(".total")?.textContent?.trim())).toEqual(["6", "1"]);
+    // The shares are of the selected span too, so they still add up to the whole of what it holds.
+    expect(cells.map((cell) => cell.querySelector(".share")?.textContent?.trim())).toEqual(["(86%)", "(14%)"]);
+  });
+
+  it("re-ranks the failure reasons over the selected span, dropping the ones outside it", () => {
+    // Over the window PIN_FAIL leads with 6 against MFA_FAIL's 4, which is the order the endpoint returns them in;
+    // the first bucket alone reverses that, and the last two hold neither.
+    seed([series("PIN_FAIL", "failure", [1, 5, 0, 0]), series("MFA_FAIL", "failure", [4, 0, 0, 0])]);
+    create();
+
+    function reasons(): string[][] {
+      return Array.from<Element>(fixture.nativeElement.querySelectorAll(".reasons-table tr")).map((row) =>
+        Array.from<Element>(row.querySelectorAll("td")).map((cell) => cell.textContent?.trim() ?? "")
+      );
+    }
+
+    expect(reasons()).toEqual([
+      ["PIN_FAIL", "6"],
+      ["MFA_FAIL", "4"]
+    ]);
+
+    component.onRangeEndInput(1);
+    fixture.detectChanges();
+
+    expect(reasons()).toEqual([
+      ["MFA_FAIL", "4"],
+      ["PIN_FAIL", "1"]
+    ]);
+
+    component.onRangeEndInput(4);
+    component.onRangeStartInput(2);
+    fixture.detectChanges();
+
+    // A quiet stretch reads as the empty state, which is what "in this range" in that message means.
+    expect(text(".reasons-table .empty")).toContain("No attempt failed in this range.");
+  });
+
+  it("keeps the bars on the window's peak while the brush moves", () => {
+    seed([series("LOGIN_SUCCESS", "success", [50, 2, 0, 0])]);
+    create();
+
+    component.onRangeStartInput(1);
+    component.onRangeEndInput(2);
+    fixture.detectChanges();
+
+    // Scaling to the selection's own peak would redraw the shape under the reader's hands, making two attempts in a
+    // quiet bucket look like the busiest moment of the window.
+    expect(component.peak()).toBe(50);
+    expect(component.barHeight(2)).toBeCloseTo(4);
+  });
+
+  it("fades the buckets the brush leaves out, in every row", () => {
+    seed([series("LOGIN_SUCCESS", "success", [1, 1, 1, 1])]);
+    create();
+
+    component.onRangeStartInput(1);
+    component.onRangeEndInput(3);
+    fixture.detectChanges();
+
+    for (const row of fixture.nativeElement.querySelectorAll(".chart-row")) {
+      const muted = Array.from<Element>(row.querySelectorAll(".bar")).map((bar) => bar.classList.contains("bar-muted"));
+      expect(muted).toEqual([true, false, false, true]);
+    }
+  });
+
+  it("never lets the thumbs close the span", () => {
+    seed([series("LOGIN_SUCCESS", "success", [1, 2, 4, 8])]);
+    create();
+
+    // A closed brush would count nothing, so the chart would read as an outage rather than as an empty selection.
+    component.onRangeEndInput(0);
+    expect(component.rangeEnd()).toBe(1);
+
+    component.onRangeStartInput(BINS);
+    expect(component.rangeStart()).toBe(0);
+
+    component.onRangeEndInput(BINS);
+    component.onRangeStartInput(BINS);
+    expect(component.rangeStart()).toBe(BINS - 1);
+  });
+
+  it("keeps the chart up while a new window is being fetched", () => {
+    seed([series("LOGIN_SUCCESS", "success", [1, 2, 4, 8])]);
+    create();
+    expect(text(".chart-row .total")).toBe("15");
+
+    // The next window's response is held back, which is the moment a store entry for a fresh key has nothing in it.
+    const pending = new Subject<PiResponse<AuthenticationLogStatistics>>();
+    logMock.fetchStatistics.mockReturnValue(pending.asObservable());
+    component.selectRange("7d");
+    fixture.detectChanges();
+
+    // The previous window stays on the chart rather than the widget turning into a spinner; the frame says a request
+    // is in flight through its own header instead.
+    expect(component.state()).toBe("ready");
+    expect(component.partialLoading()).toBe(true);
+    expect(fixture.nativeElement.querySelectorAll(".chart-row")).toHaveLength(2);
+    expect(text(".chart-row .total")).toBe("15");
+
+    pending.next(MockPiResponse.fromValue(statistics([series("LOGIN_SUCCESS", "success", [1, 0, 0, 0])])));
+    fixture.detectChanges();
+
+    expect(text(".chart-row .total")).toBe("1");
+  });
+
+  it("opens the brush again when a new window arrives", () => {
+    seed([series("LOGIN_SUCCESS", "success", [1, 2, 4, 8])]);
+    create();
+    component.onRangeStartInput(2);
+    component.onRangeEndInput(3);
+
+    component.selectRange(ACTIVITY_RANGES[2].id);
+    fixture.detectChanges();
+
+    // The window has moved under the old positions, so keeping them would silently rename the selected span.
+    expect(component.rangeStart()).toBe(0);
+    expect(component.rangeEnd()).toBe(component.binCount());
+  });
+
+  it("carries the brushed span into the log, not the whole window", () => {
+    seed([series("PIN_FAIL", "failure", [0, 1, 0, 0])]);
+    create();
+    component.onRangeStartInput(1);
+    component.onRangeEndInput(3);
+    fixture.detectChanges();
+
+    fixture.nativeElement.querySelector(".reasons-table a").click();
+
+    // The count in the clicked row is the brushed one, so the log has to open on the same span rather than on the
+    // preset window around it.
+    expect(logMock.timestampFrom()).toBe("2026-03-01T06:00:00+00:00");
+    expect(logMock.timestampTo()).toBe("2026-03-01T18:00:00+00:00");
+    const chips = logMock.authenticationLogFilter().filterMap;
+    expect(chips.get("start_time")).toBe(toFilterDisplay("2026-03-01T06:00:00+00:00"));
+    expect(chips.get("end_time")).toBe(toFilterDisplay("2026-03-01T18:00:00+00:00"));
+  });
+
+  it("names the brushed span's ends, reading now only at the window's own end", () => {
+    seed([series("LOGIN_SUCCESS", "success", [1, 2, 4, 8])]);
+    create();
+
+    // Formatted here as the widget does, in the runner's own zone: the WebUI names local times throughout.
+    const label = (iso: string) => formatDate(iso, "yyyy-MM-dd HH:mm", "en-US");
+
+    expect(component.rangeFromLabel()).toBe(label("2026-03-01T00:00:00+00:00"));
+    expect(component.rangeToLabel()).toBe("now");
+    // These labels are the only timestamps on the brush: the thumbs carry no floating value bubble.
+    expect(fixture.nativeElement.querySelectorAll(".mdc-slider__value-indicator-text")).toHaveLength(0);
+
+    component.onRangeEndInput(2);
+    fixture.detectChanges();
+
+    // A thumb short of the window's end names that bucket edge instead, so a brushed span never claims to run up to
+    // the present.
+    expect(component.rangeToLabel()).toBe(label("2026-03-01T12:00:00+00:00"));
+    expect(text(".range-labels")).toContain(label("2026-03-01T12:00:00+00:00"));
+  });
+
+  it("moves the labels with the thumb rather than when it is let go", () => {
+    seed([series("LOGIN_SUCCESS", "success", [1, 2, 4, 8])]);
+    create();
+
+    // The event a drag fires all the way along. Material's own valueChange output waits for the change event, which a
+    // range input only fires on release - the labels would then name the bucket the thumb has left, not the one it is
+    // over.
+    const [, endThumb] = Array.from<HTMLInputElement>(fixture.nativeElement.querySelectorAll("mat-slider input"));
+    endThumb.value = "2";
+    endThumb.dispatchEvent(new Event("input"));
+    fixture.detectChanges();
+
+    expect(component.rangeEnd()).toBe(2);
+    expect(text(".range-labels")).toContain(formatDate("2026-03-01T12:00:00+00:00", "yyyy-MM-dd HH:mm", "en-US"));
+  });
+
+  it("names both thumbs even though only one of them ever changed value", () => {
+    // The response has to land *after* the first render, as it does over a network: Material writes a thumb's value
+    // text once as a plain attribute and thereafter from a signal only a value change fills, so the thumb that keeps
+    // its starting value - the left one, always at bucket 0 - was left announcing a bare bucket number.
+    const response = new Subject<PiResponse<AuthenticationLogStatistics>>();
+    logMock.fetchStatistics.mockReturnValue(response.asObservable());
+    create();
+    expect(fixture.nativeElement.querySelectorAll("mat-slider")).toHaveLength(0);
+
+    response.next(MockPiResponse.fromValue(statistics([series("LOGIN_SUCCESS", "success", [1, 2, 4, 8])])));
+    fixture.detectChanges();
+
+    // Each thumb announces its own edge, in the same words the label below it uses.
+    const thumbs = Array.from<HTMLInputElement>(fixture.nativeElement.querySelectorAll("mat-slider input"));
+    expect(thumbs.map((thumb) => thumb.getAttribute("aria-valuetext"))).toEqual([
+      formatDate("2026-03-01T00:00:00+00:00", "yyyy-MM-dd HH:mm", "en-US"),
+      "now"
+    ]);
+  });
+
   it("refetches with the selected range and keeps only that range in the store", () => {
     seed([]);
     create();
     expect(logMock.fetchStatistics).toHaveBeenLastCalledWith(expect.any(String), expect.any(String), 24);
 
-    component.selectRange(ACTIVITY_RANGES[3].hours);
+    component.selectRange(ACTIVITY_RANGES[3].id);
     fixture.detectChanges();
 
-    expect(logMock.fetchStatistics).toHaveBeenLastCalledWith(expect.any(String), expect.any(String), 30);
+    expect(logMock.fetchStatistics).toHaveBeenLastCalledWith(
+      expect.any(String),
+      expect.any(String),
+      expect.any(Number)
+    );
     // The range being shown is cached under its own key; the one left behind is dropped, because refreshAll()
     // refetches every entry the store holds and would otherwise keep re-querying an unseen window.
-    expect(store.peek("dashboard:auth-activity:720")).not.toBeNull();
-    expect(store.peek("dashboard:auth-activity:24")).toBeNull();
+    expect(store.peek("dashboard:auth-activity:30d")).not.toBeNull();
+    expect(store.peek("dashboard:auth-activity:24h")).toBeNull();
   });
 
   it("issues one request per dashboard refresh, not one per range ever selected", () => {
     seed([]);
     create();
-    component.selectRange(ACTIVITY_RANGES[3].hours);
+    component.selectRange(ACTIVITY_RANGES[3].id);
     fixture.detectChanges();
     logMock.fetchStatistics.mockClear();
 
     store.refreshAll();
 
     expect(logMock.fetchStatistics).toHaveBeenCalledTimes(1);
-    expect(logMock.fetchStatistics).toHaveBeenCalledWith(expect.any(String), expect.any(String), 30);
+    expect(logMock.fetchStatistics).toHaveBeenCalledWith(expect.any(String), expect.any(String), expect.any(Number));
   });
 
   it("changes the range from the button toggle group", () => {
@@ -297,14 +667,18 @@ describe("AuthenticationActivityWidgetComponent", () => {
 
     const toggles = fixture.nativeElement.querySelectorAll("mat-button-toggle button");
     expect(toggles).toHaveLength(ACTIVITY_RANGES.length);
+    // They set the window the brush spans, so they sit in the brush's own row, ahead of the track: the group and the
+    // brush are one control between them, not a header and a chart.
+    const presets = fixture.nativeElement.querySelector(".range-row > .chart-range-presets");
+    expect(presets.nextElementSibling).toBe(fixture.nativeElement.querySelector(".range"));
     toggles[2].click();
     fixture.detectChanges();
 
-    expect(component.selectedRange().hours).toBe(ACTIVITY_RANGES[2].hours);
+    expect(component.selectedRange().id).toBe(ACTIVITY_RANGES[2].id);
     expect(logMock.fetchStatistics).toHaveBeenLastCalledWith(
       expect.any(String),
       expect.any(String),
-      ACTIVITY_RANGES[2].bins
+      expect.any(Number)
     );
   });
 
@@ -312,10 +686,67 @@ describe("AuthenticationActivityWidgetComponent", () => {
     seed([]);
     create();
 
+    // The default range is the rolling one: it ends at the present, so every bucket in it is a bucket that has fully
+    // happened.
     const [start, end] = logMock.fetchStatistics.mock.calls.at(-1)!;
     const spanHours = (Date.parse(end as string) - Date.parse(start as string)) / 3_600_000;
     expect(spanHours).toBeCloseTo(24, 3);
     expect(Date.parse(end as string)).toBeLessThanOrEqual(Date.now());
+  });
+
+  it("covers whole days for a range counted in them, four buckets to a day", () => {
+    seed([]);
+    create();
+
+    component.selectRange("7d");
+    fixture.detectChanges();
+
+    const [start, end, bins] = requestedWindow();
+    // Midnight, seven days back: a bucket then never straddles two calendar days, so a day's bars are that day's
+    // attempts and no one else's. Stepped by calendar date, so the assertion holds across a daylight-saving change.
+    const midnightSevenDaysBack = new Date();
+    midnightSevenDaysBack.setHours(0, 0, 0, 0);
+    midnightSevenDaysBack.setDate(midnightSevenDaysBack.getDate() - 7);
+    expect(start).toEqual(midnightSevenDaysBack);
+    // Six-hourly buckets, so the window is a whole number of them and a day is four.
+    expect((end.getTime() - start.getTime()) % SIX_HOURS).toBe(0);
+    expect(bins).toBe((end.getTime() - start.getTime()) / SIX_HOURS);
+    expect(bins).toBeGreaterThanOrEqual(7 * 4);
+    expect(bins).toBeLessThanOrEqual(8 * 4);
+  });
+
+  it("gives the month range a bucket a day", () => {
+    seed([]);
+    create();
+
+    component.selectRange("30d");
+    fixture.detectChanges();
+
+    const [start, end, bins] = requestedWindow();
+    const midnightThirtyDaysBack = new Date();
+    midnightThirtyDaysBack.setHours(0, 0, 0, 0);
+    midnightThirtyDaysBack.setDate(midnightThirtyDaysBack.getDate() - 30);
+    expect(start).toEqual(midnightThirtyDaysBack);
+    expect(bins).toBe((end.getTime() - start.getTime()) / DAY);
+    // Thirty whole days, and today as the thirty-first as soon as any of it has passed.
+    expect(bins).toBeGreaterThanOrEqual(30);
+    expect(bins).toBeLessThanOrEqual(31);
+  });
+
+  it("carries today only as far as it has got", () => {
+    seed([]);
+    create();
+
+    for (const id of ["7d", "30d"]) {
+      component.selectRange(id);
+      fixture.detectChanges();
+
+      // The window runs past the present only to the end of the bucket now falls in: that bucket is where the newest
+      // attempts are, and closing the window before it would leave them out until it filled.
+      const [, end] = requestedWindow();
+      expect(end.getTime()).toBeGreaterThanOrEqual(Date.now());
+      expect(end.getTime() - Date.now()).toBeLessThan(id === "7d" ? SIX_HOURS : DAY);
+    }
   });
 
   it("advances the window on every refresh instead of replaying the first one", () => {
@@ -358,20 +789,26 @@ describe("AuthenticationActivityWidgetComponent", () => {
     }
   });
 
-  it("names a time on the axis label, whatever the range", () => {
-    // Same reason as a bucket label: the window is measured back from now rather than snapped to midnight, so a bare
-    // date would claim a calendar day the chart only partly covers.
+  it("names a time on the range label unless the range is cut into whole days", () => {
     const starts = Array.from({ length: 4 }, (_, index) => new Date(Date.UTC(2026, 2, 1, 8 + index, 37)).toISOString());
     seedBuckets(starts, new Date(Date.UTC(2026, 2, 1, 12, 37)).toISOString());
     create();
 
     for (const range of ACTIVITY_RANGES) {
-      component.selectRange(range.hours);
+      component.selectRange(range.id);
       fixture.detectChanges();
-      expect(component.windowStart()).toMatch(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/);
-      // Every zone offset is a whole quarter hour, so a label reading midnight would mean the time was dropped.
-      expect(component.windowStart()).not.toMatch(/00:00$/);
-      expect(text(".axis-labels")).toContain(component.windowStart());
+
+      if (range.wholeDayBuckets) {
+        // Every edge of such a range is a midnight, so the day is the whole answer.
+        expect(component.rangeFromLabel()).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      } else {
+        // Same reason as a bucket label: the window is measured back from now rather than snapped to midnight, so a
+        // bare date would claim a calendar day the chart only partly covers.
+        expect(component.rangeFromLabel()).toMatch(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/);
+        // Every zone offset is a whole quarter hour, so a label reading midnight would mean the time was dropped.
+        expect(component.rangeFromLabel()).not.toMatch(/00:00$/);
+      }
+      expect(text(".range-labels")).toContain(component.rangeFromLabel());
     }
   });
 
@@ -387,13 +824,31 @@ describe("AuthenticationActivityWidgetComponent", () => {
     expect(labels.every((label) => /^\d{4}-\d{2}-\d{2} \d{2}:\d{2} – /.test(label))).toBe(true);
   });
 
-  it("names both dates for every day-wide bucket", () => {
+  it("names both dates for a day-wide bucket that is not a calendar day", () => {
+    // A range measured back from now, where a bucket a day wide runs from some time of day to the same time the next
+    // day. Only the ranges whose buckets are whole days get to drop the times.
     const starts = Array.from({ length: 4 }, (_, index) => new Date(Date.UTC(2026, 2, 1 + index)).toISOString());
     seedBuckets(starts, new Date(Date.UTC(2026, 2, 5)).toISOString());
     create();
 
+    expect(component.selectedRange().wholeDayBuckets).toBe(false);
     for (let index = 0; index < starts.length; index++) {
       expect(component.binTooltip(index)).toMatch(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2} – \d{4}-\d{2}-\d{2} \d{2}:\d{2}$/);
+    }
+  });
+
+  it("names the day alone for a bucket that is a whole day", () => {
+    const starts = Array.from({ length: 4 }, (_, index) => new Date(Date.UTC(2026, 2, 1 + index)).toISOString());
+    seedBuckets(starts, new Date(Date.UTC(2026, 2, 5)).toISOString());
+    create();
+
+    component.selectRange("30d");
+    fixture.detectChanges();
+
+    // The month range cuts the window at midnight, one bucket to a day, so the span a bar covers is that day: naming
+    // both of its ends would print the same midnight twice over.
+    for (let index = 0; index < starts.length; index++) {
+      expect(component.binTooltip(index)).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     }
   });
 
@@ -407,11 +862,12 @@ describe("AuthenticationActivityWidgetComponent", () => {
     }
     const rows = Array.from<Element>(fixture.nativeElement.querySelectorAll(".visually-hidden tbody tr"));
     expect(rows).toHaveLength(BINS);
+    // A column per row on the chart, in the same order.
     expect(rows.map((row) => Array.from(row.querySelectorAll("td")).map((cell) => cell.textContent?.trim()))).toEqual([
-      ["2", "0", "0"],
-      ["0", "3", "0"],
-      ["1", "0", "0"],
-      ["0", "0", "0"]
+      ["2", "0"],
+      ["0", "3"],
+      ["1", "0"],
+      ["0", "0"]
     ]);
   });
 
@@ -431,6 +887,51 @@ describe("AuthenticationActivityWidgetComponent", () => {
     const chips = logMock.authenticationLogFilter().filterMap;
     expect(chips.get("start_time")).toBe(toFilterDisplay("2026-03-01T00:00:00+00:00"));
     expect(chips.get("end_time")).toBe(toFilterDisplay("2026-03-02T00:00:00+00:00"));
+  });
+
+  it("opens the log on the bucket a bar stands over, on time alone", () => {
+    seed([
+      series("LOGIN_SUCCESS", "success", [1, 0, 0, 0]),
+      series("PIN_FAIL", "failure", [0, 3, 0, 0]),
+      series("MFA_FAIL", "failure", [0, 1, 0, 0])
+    ]);
+    create();
+
+    bars(1)[1].click();
+
+    // The bucket's own span, not the brushed one: the bar answers for its column.
+    expect(logMock.timestampFrom()).toBe("2026-03-01T06:00:00+00:00");
+    expect(logMock.timestampTo()).toBe("2026-03-01T12:00:00+00:00");
+    const chips = logMock.authenticationLogFilter().filterMap;
+    expect(chips.get("start_time")).toBe(toFilterDisplay("2026-03-01T06:00:00+00:00"));
+    expect(chips.get("end_time")).toBe(toFilterDisplay("2026-03-01T12:00:00+00:00"));
+    // No event-type filter, though the row has event types to offer. This chart counts attempts, each reduced to the
+    // event that classified it, while the log lists the entries an attempt is made of: an attempt that ended in
+    // success can hold a PIN_FAIL entry on the way, so filtering the log to the failure event types would list
+    // entries of attempts this chart counts as successful.
+    expect(chips.get("event_type")).toBeUndefined();
+  });
+
+  it("closes the last bucket at the window's end, which is where its bar stops", () => {
+    seed([series("LOGIN_SUCCESS", "success", [0, 0, 0, 4])]);
+    create();
+
+    bars(0)[BINS - 1].click();
+
+    // The last bucket has no successor to take an end from.
+    expect(logMock.timestampTo()).toBe("2026-03-02T00:00:00+00:00");
+  });
+
+  it("makes the whole column the target rather than the bar in it", () => {
+    seed([series("LOGIN_SUCCESS", "success", [1, 0, 0, 0])]);
+    create();
+
+    // A bucket holding one attempt against a busy peak draws a bar a pixel or two tall; hover and click belong to the
+    // column, which is always the full height.
+    const slots = bars(0);
+    expect(slots).toHaveLength(BINS);
+    expect(slots[0].classList).toContain("mat-mdc-tooltip-trigger");
+    expect(slots[0].querySelector(".bar")!.classList).not.toContain("mat-mdc-tooltip-trigger");
   });
 
   it("pre-seeds the log filter when a failure reason is clicked", () => {

@@ -94,7 +94,8 @@ $button-low-contrast-variant: linear-gradient(
 
   @include hover-or-active(
     var(--background-blue-inset),
-    inset var(--depth-x-3) var(--depth-y-3) var(--depth-blur-3) var(--mat-sys-primary-dark)#{","} inset calc(-1 * var(--depth-x-3)) calc(-1 * var(--depth-y-3)) var(--depth-blur-3) var(--mat-sys-primary-light-active),
+    inset var(--depth-x-3) var(--depth-y-3) var(--depth-blur-3) var(--mat-sys-primary-dark) #{","} inset
+      calc(-1 * var(--depth-x-3)) calc(-1 * var(--depth-y-3)) var(--depth-blur-3) var(--mat-sys-primary-light-active),
     true
   );
 }
@@ -543,4 +544,13 @@ $button-low-contrast-variant: linear-gradient(
 .button-width-xl {
   width: var(--button-width-xl);
   min-width: var(--button-width-xl);
+}
+
+// The dashboard's time-range presets sit beside a chart rather than in a form row - the authentication-activity
+// widget seats them in the narrow column it keeps for its row labels (144px, where four form-sized buttons would need
+// about 180px), and the conditional-access widget beside its slider. The label's own padding is where the difference
+// comes from, and Material hardcodes it (`padding: 0 12px`) with no token to set it by - so it is overridden here,
+// a widget's own stylesheet having no way through the component boundary.
+.chart-range-presets .mat-button-toggle-appearance-standard .mat-button-toggle-label-content {
+  padding: 0 4px;
 }

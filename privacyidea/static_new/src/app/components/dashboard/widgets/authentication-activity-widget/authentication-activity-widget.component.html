@@ -17,26 +17,50 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 
-<app-widget-state [state]="state()">
-  <div class="ranges">
-    <app-info-hint
-      [text]="info"
-      ariaLabel="About this widget"
-      i18n-ariaLabel />
-    <mat-button-toggle-group
-      [hideSingleSelectionIndicator]="true"
-      [value]="selectedRange().hours"
-      (change)="selectRange($event.value)"
-      aria-label="Time range"
-      i18n-aria-label>
-      @for (range of ranges; track range.hours) {
-        <mat-button-toggle [value]="range.hours">{{ range.label }}</mat-button-toggle>
-      }
-    </mat-button-toggle-group>
-  </div>
+<!-- Handed to the widget frame, which renders these in the header next to the reload button. Declared outside
+     app-widget-state so the frame can read them whatever state the data is in. -->
+<ng-template #headerActions>
+  <!-- Which outcomes the chart draws. In the header because the body has no row to spare, and as one menu rather than
+       a button per row: a row taken off the chart has to leave something behind to come back by, and a menu is that
+       something for all three at once. -->
+  <button
+    mat-icon-button
+    class="widget-header-action"
+    [matMenuTriggerFor]="outcomeMenu"
+    matTooltip="Choose which outcomes to chart"
+    i18n-matTooltip
+    aria-label="Choose which outcomes to chart"
+    i18n-aria-label
+    type="button">
+    <mat-icon>bar_chart</mat-icon>
+  </button>
+  <mat-menu #outcomeMenu>
+    <!-- Every outcome, not only the shown ones, so the menu is where a row comes back from. stopPropagation keeps it
+         open, the way the WebUI's other multi-select menus do, so all three can be set in one pass. -->
+    @for (row of summary().rows; track row.key) {
+      <button
+        mat-menu-item
+        type="button"
+        [disabled]="!canHide(row.key)"
+        [attr.aria-checked]="isShown(row.key)"
+        role="menuitemcheckbox"
+        (click)="$event.stopPropagation(); toggleRow(row.key)">
+        <mat-icon>{{ isShown(row.key) ? "check_box" : "check_box_outline_blank" }}</mat-icon>
+        <span>{{ row.label }}</span>
+      </button>
+    }
+  </mat-menu>
 
+  <app-info-hint
+    class="widget-header-action"
+    [text]="info"
+    ariaLabel="About this widget"
+    i18n-ariaLabel />
+</ng-template>
+
+<app-widget-state [state]="state()">
   <div class="chart">
-    @for (row of summary().rows; track row.outcome) {
+    @for (row of visibleRows(); track row.key) {
       <div class="chart-row">
         <span class="chart-label">{{ row.label }}</span>
         <span class="chart-value">
@@ -44,17 +68,26 @@
           <span class="share">{{ shareLabel(row) }}</span>
         </span>
         <div class="plot">
+          <!-- The outcome colours the whole row, so the modifier goes on the container and the bars inherit it. -->
           <div
             class="bars"
-            [class.bars-success]="row.outcome === 'success'"
-            [class.bars-failure]="row.outcome === 'failure'"
-            [class.bars-pending]="row.outcome === 'pending'"
+            [class]="'bars-' + row.key"
             aria-hidden="true">
+            <!-- The whole column carries the hover and the click, not the bar standing in it: one attempt against a
+                 busy peak is a bar a pixel or two tall, which is no target for either. routerLink on a span rather
+                 than an anchor, as the reasons table does with the anchor it has: it navigates on click and adds
+                 nothing focusable to a subtree that is hidden from assistive tech. -->
             @for (count of row.counts; track $index) {
               <span
-                class="bar"
-                [style.height.%]="barHeight(count)"
-                [matTooltip]="binTooltip($index)"></span>
+                class="bar-slot"
+                [routerLink]="routePaths.AUTHENTICATION_LOG"
+                (click)="showBucket($index)"
+                [matTooltip]="binTooltip($index)">
+                <span
+                  class="bar"
+                  [class.bar-muted]="!inSelection($index)"
+                  [style.height.%]="barHeight(count)"></span>
+              </span>
             }
           </div>
           <!-- One tick per bin, laid out exactly like the bars above it, so a tick begins and ends where its bin
@@ -84,7 +117,7 @@
               i18n>
               Time
             </th>
-            @for (row of summary().rows; track row.outcome) {
+            @for (row of visibleRows(); track row.key) {
               <th scope="col">{{ row.label }}</th>
             }
           </tr>
@@ -94,7 +127,7 @@
           @for (start of binStarts(); track $index; let bin = $index) {
             <tr>
               <th scope="row">{{ binTooltip(bin) }}</th>
-              @for (row of summary().rows; track row.outcome) {
+              @for (row of visibleRows(); track row.key) {
                 <td>{{ row.counts[bin] }}</td>
               }
             </tr>
@@ -103,13 +136,68 @@
       </table>
     </div>
 
-    <div class="axis-row">
-      <span class="chart-label"></span>
-      <span class="chart-value"></span>
-      <span class="axis-labels">
-        <span>{{ windowStart() }}</span>
-        <span i18n>now</span>
-      </span>
+    <!-- One brush for all three rows, so the same span is read across the outcomes rather than each row carrying its
+         own selection. It sits in the plot column, and steps from bucket edge to bucket edge, so a thumb lands over
+         the bar it selects. -->
+    <div class="range-row">
+      <!-- The presets stand in the two columns the bars keep for their label and their count, hard against the brush
+           whose window they set, so the pair reads as one control and costs the chart no row of its own. -->
+      <div class="chart-range-presets">
+        <mat-button-toggle-group
+          [hideSingleSelectionIndicator]="true"
+          [value]="selectedRange().id"
+          (change)="selectRange($event.value)"
+          aria-label="Time range"
+          i18n-aria-label>
+          @for (range of ranges; track range.id) {
+            <mat-button-toggle [value]="range.id">{{ range.label }}</mat-button-toggle>
+          }
+        </mat-button-toggle-group>
+      </div>
+      <div class="range">
+        <!-- No `discrete`: the thumbs carry no floating value bubble, the labels below name the two ends.
+
+             aria-valuetext is written twice over, by displayWith and by the binding below, because neither covers
+             both thumbs on its own: Material fills a thumb's text from a signal that only a value change ever sets,
+             having already written the initial text as a plain attribute that the empty signal then overwrites - so
+             the thumb that keeps its starting value, the left one, would announce a bare bucket number. The two
+             writers race, and it does not matter which of them lands last: both name the same edge the same way. -->
+        <mat-slider
+          class="range-slider"
+          [min]="0"
+          [max]="binCount()"
+          step="1"
+          [displayWith]="formatSliderThumb">
+          <!-- The native input event, not Material's valueChange output: that one is emitted from the thumb's
+               `change` handler, which a range input only fires when the drag is let go, and the labels would sit a
+               whole drag behind the thumb. `input` fires all the way along, and the thumb's own value getter reads
+               the element, so it is the moved-to bucket either way round the two listeners run. -->
+          <input
+            matSliderStartThumb
+            #startThumb="matSliderRangeThumb"
+            aria-label="Start of the counted span"
+            i18n-aria-label
+            [attr.aria-valuetext]="rangeFromLabel()"
+            [value]="rangeStart()"
+            (input)="onRangeStartInput(startThumb.value)" />
+          <input
+            matSliderEndThumb
+            #endThumb="matSliderRangeThumb"
+            aria-label="End of the counted span"
+            i18n-aria-label
+            [attr.aria-valuetext]="rangeToLabel()"
+            [value]="rangeEnd()"
+            (input)="onRangeEndInput(endThumb.value)" />
+        </mat-slider>
+        <!-- The selected span's own ends. Hidden from assistive tech, where two bare timestamps carry no context:
+             the thumbs announce the same two values, each under a name that says which end it is. -->
+        <span
+          class="range-labels"
+          aria-hidden="true">
+          <span>{{ rangeFromLabel() }}</span>
+          <span>{{ rangeToLabel() }}</span>
+        </span>
+      </div>
     </div>
   </div>
 
