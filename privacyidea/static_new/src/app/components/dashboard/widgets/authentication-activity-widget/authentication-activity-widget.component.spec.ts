@@ -39,6 +39,8 @@ import { ACTIVITY_RANGES, AuthenticationActivityWidgetComponent } from "./authen
 const instance: WidgetInstance = { id: "activity-1", type: "authentication-activity", x: 0, y: 0, cols: 8, rows: 9 };
 
 const BINS = 4;
+const SIX_HOURS = 6 * 3_600_000;
+const DAY = 24 * 3_600_000;
 
 function series(event_type: string, outcome: string | null, counts: number[]): AuthenticationEventSeries {
   return { event_type, outcome, counts, total: counts.reduce((a, b) => a + b, 0) };
@@ -79,6 +81,12 @@ describe("AuthenticationActivityWidgetComponent", () => {
 
   function text(selector: string): string {
     return (fixture.nativeElement.querySelector(selector)?.textContent ?? "").trim();
+  }
+
+  // The window of the last request, as dates: the endpoint takes ISO strings.
+  function requestedWindow(): [Date, Date, number] {
+    const [start, end, bins] = logMock.fetchStatistics.mock.calls.at(-1) as [string, string, number];
+    return [new Date(start), new Date(end), bins];
   }
 
   beforeEach(async () => {
@@ -378,7 +386,7 @@ describe("AuthenticationActivityWidgetComponent", () => {
     component.onRangeStartInput(2);
     component.onRangeEndInput(3);
 
-    component.selectRange(ACTIVITY_RANGES[2].hours);
+    component.selectRange(ACTIVITY_RANGES[2].id);
     fixture.detectChanges();
 
     // The window has moved under the old positions, so keeping them would silently rename the selected span.
@@ -425,6 +433,22 @@ describe("AuthenticationActivityWidgetComponent", () => {
     expect(text(".range-labels")).toContain(label("2026-03-01T12:00:00+00:00"));
   });
 
+  it("moves the labels with the thumb rather than when it is let go", () => {
+    seed([series("LOGIN_SUCCESS", "success", [1, 2, 4, 8])]);
+    create();
+
+    // The event a drag fires all the way along. Material's own valueChange output waits for the change event, which a
+    // range input only fires on release - the labels would then name the bucket the thumb has left, not the one it is
+    // over.
+    const [, endThumb] = Array.from<HTMLInputElement>(fixture.nativeElement.querySelectorAll("mat-slider input"));
+    endThumb.value = "2";
+    endThumb.dispatchEvent(new Event("input"));
+    fixture.detectChanges();
+
+    expect(component.rangeEnd()).toBe(2);
+    expect(text(".range-labels")).toContain(formatDate("2026-03-01T12:00:00+00:00", "yyyy-MM-dd HH:mm", "en-US"));
+  });
+
   it("names both thumbs even though only one of them ever changed value", () => {
     // The response has to land *after* the first render, as it does over a network: Material writes a thumb's value
     // text once as a plain attribute and thereafter from a signal only a value change fills, so the thumb that keeps
@@ -437,10 +461,11 @@ describe("AuthenticationActivityWidgetComponent", () => {
     response.next(MockPiResponse.fromValue(statistics([series("LOGIN_SUCCESS", "success", [1, 2, 4, 8])])));
     fixture.detectChanges();
 
+    // Each thumb announces its own edge, in the same words the label below it uses.
     const thumbs = Array.from<HTMLInputElement>(fixture.nativeElement.querySelectorAll("mat-slider input"));
     expect(thumbs.map((thumb) => thumb.getAttribute("aria-valuetext"))).toEqual([
       formatDate("2026-03-01T00:00:00+00:00", "yyyy-MM-dd HH:mm", "en-US"),
-      formatDate("2026-03-02T00:00:00+00:00", "yyyy-MM-dd HH:mm", "en-US")
+      "now"
     ]);
   });
 
@@ -449,27 +474,31 @@ describe("AuthenticationActivityWidgetComponent", () => {
     create();
     expect(logMock.fetchStatistics).toHaveBeenLastCalledWith(expect.any(String), expect.any(String), 24);
 
-    component.selectRange(ACTIVITY_RANGES[3].hours);
+    component.selectRange(ACTIVITY_RANGES[3].id);
     fixture.detectChanges();
 
-    expect(logMock.fetchStatistics).toHaveBeenLastCalledWith(expect.any(String), expect.any(String), 30);
+    expect(logMock.fetchStatistics).toHaveBeenLastCalledWith(
+      expect.any(String),
+      expect.any(String),
+      expect.any(Number)
+    );
     // The range being shown is cached under its own key; the one left behind is dropped, because refreshAll()
     // refetches every entry the store holds and would otherwise keep re-querying an unseen window.
-    expect(store.peek("dashboard:auth-activity:720")).not.toBeNull();
-    expect(store.peek("dashboard:auth-activity:24")).toBeNull();
+    expect(store.peek("dashboard:auth-activity:30d")).not.toBeNull();
+    expect(store.peek("dashboard:auth-activity:24h")).toBeNull();
   });
 
   it("issues one request per dashboard refresh, not one per range ever selected", () => {
     seed([]);
     create();
-    component.selectRange(ACTIVITY_RANGES[3].hours);
+    component.selectRange(ACTIVITY_RANGES[3].id);
     fixture.detectChanges();
     logMock.fetchStatistics.mockClear();
 
     store.refreshAll();
 
     expect(logMock.fetchStatistics).toHaveBeenCalledTimes(1);
-    expect(logMock.fetchStatistics).toHaveBeenCalledWith(expect.any(String), expect.any(String), 30);
+    expect(logMock.fetchStatistics).toHaveBeenCalledWith(expect.any(String), expect.any(String), expect.any(Number));
   });
 
   it("changes the range from the button toggle group", () => {
@@ -485,11 +514,11 @@ describe("AuthenticationActivityWidgetComponent", () => {
     toggles[2].click();
     fixture.detectChanges();
 
-    expect(component.selectedRange().hours).toBe(ACTIVITY_RANGES[2].hours);
+    expect(component.selectedRange().id).toBe(ACTIVITY_RANGES[2].id);
     expect(logMock.fetchStatistics).toHaveBeenLastCalledWith(
       expect.any(String),
       expect.any(String),
-      ACTIVITY_RANGES[2].bins
+      expect.any(Number)
     );
   });
 
@@ -497,10 +526,67 @@ describe("AuthenticationActivityWidgetComponent", () => {
     seed([]);
     create();
 
+    // The default range is the rolling one: it ends at the present, so every bucket in it is a bucket that has fully
+    // happened.
     const [start, end] = logMock.fetchStatistics.mock.calls.at(-1)!;
     const spanHours = (Date.parse(end as string) - Date.parse(start as string)) / 3_600_000;
     expect(spanHours).toBeCloseTo(24, 3);
     expect(Date.parse(end as string)).toBeLessThanOrEqual(Date.now());
+  });
+
+  it("covers whole days for a range counted in them, four buckets to a day", () => {
+    seed([]);
+    create();
+
+    component.selectRange("7d");
+    fixture.detectChanges();
+
+    const [start, end, bins] = requestedWindow();
+    // Midnight, seven days back: a bucket then never straddles two calendar days, so a day's bars are that day's
+    // attempts and no one else's. Stepped by calendar date, so the assertion holds across a daylight-saving change.
+    const midnightSevenDaysBack = new Date();
+    midnightSevenDaysBack.setHours(0, 0, 0, 0);
+    midnightSevenDaysBack.setDate(midnightSevenDaysBack.getDate() - 7);
+    expect(start).toEqual(midnightSevenDaysBack);
+    // Six-hourly buckets, so the window is a whole number of them and a day is four.
+    expect((end.getTime() - start.getTime()) % SIX_HOURS).toBe(0);
+    expect(bins).toBe((end.getTime() - start.getTime()) / SIX_HOURS);
+    expect(bins).toBeGreaterThanOrEqual(7 * 4);
+    expect(bins).toBeLessThanOrEqual(8 * 4);
+  });
+
+  it("gives the month range a bucket a day", () => {
+    seed([]);
+    create();
+
+    component.selectRange("30d");
+    fixture.detectChanges();
+
+    const [start, end, bins] = requestedWindow();
+    const midnightThirtyDaysBack = new Date();
+    midnightThirtyDaysBack.setHours(0, 0, 0, 0);
+    midnightThirtyDaysBack.setDate(midnightThirtyDaysBack.getDate() - 30);
+    expect(start).toEqual(midnightThirtyDaysBack);
+    expect(bins).toBe((end.getTime() - start.getTime()) / DAY);
+    // Thirty whole days, and today as the thirty-first as soon as any of it has passed.
+    expect(bins).toBeGreaterThanOrEqual(30);
+    expect(bins).toBeLessThanOrEqual(31);
+  });
+
+  it("carries today only as far as it has got", () => {
+    seed([]);
+    create();
+
+    for (const id of ["7d", "30d"]) {
+      component.selectRange(id);
+      fixture.detectChanges();
+
+      // The window runs past the present only to the end of the bucket now falls in: that bucket is where the newest
+      // attempts are, and closing the window before it would leave them out until it filled.
+      const [, end] = requestedWindow();
+      expect(end.getTime()).toBeGreaterThanOrEqual(Date.now());
+      expect(end.getTime() - Date.now()).toBeLessThan(id === "7d" ? SIX_HOURS : DAY);
+    }
   });
 
   it("advances the window on every refresh instead of replaying the first one", () => {
@@ -543,19 +629,25 @@ describe("AuthenticationActivityWidgetComponent", () => {
     }
   });
 
-  it("names a time on the range label, whatever the range", () => {
-    // Same reason as a bucket label: the window is measured back from now rather than snapped to midnight, so a bare
-    // date would claim a calendar day the chart only partly covers.
+  it("names a time on the range label unless the range is cut into whole days", () => {
     const starts = Array.from({ length: 4 }, (_, index) => new Date(Date.UTC(2026, 2, 1, 8 + index, 37)).toISOString());
     seedBuckets(starts, new Date(Date.UTC(2026, 2, 1, 12, 37)).toISOString());
     create();
 
     for (const range of ACTIVITY_RANGES) {
-      component.selectRange(range.hours);
+      component.selectRange(range.id);
       fixture.detectChanges();
-      expect(component.rangeFromLabel()).toMatch(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/);
-      // Every zone offset is a whole quarter hour, so a label reading midnight would mean the time was dropped.
-      expect(component.rangeFromLabel()).not.toMatch(/00:00$/);
+
+      if (range.wholeDayBuckets) {
+        // Every edge of such a range is a midnight, so the day is the whole answer.
+        expect(component.rangeFromLabel()).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      } else {
+        // Same reason as a bucket label: the window is measured back from now rather than snapped to midnight, so a
+        // bare date would claim a calendar day the chart only partly covers.
+        expect(component.rangeFromLabel()).toMatch(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/);
+        // Every zone offset is a whole quarter hour, so a label reading midnight would mean the time was dropped.
+        expect(component.rangeFromLabel()).not.toMatch(/00:00$/);
+      }
       expect(text(".range-labels")).toContain(component.rangeFromLabel());
     }
   });
@@ -572,13 +664,31 @@ describe("AuthenticationActivityWidgetComponent", () => {
     expect(labels.every((label) => /^\d{4}-\d{2}-\d{2} \d{2}:\d{2} – /.test(label))).toBe(true);
   });
 
-  it("names both dates for every day-wide bucket", () => {
+  it("names both dates for a day-wide bucket that is not a calendar day", () => {
+    // A range measured back from now, where a bucket a day wide runs from some time of day to the same time the next
+    // day. Only the ranges whose buckets are whole days get to drop the times.
     const starts = Array.from({ length: 4 }, (_, index) => new Date(Date.UTC(2026, 2, 1 + index)).toISOString());
     seedBuckets(starts, new Date(Date.UTC(2026, 2, 5)).toISOString());
     create();
 
+    expect(component.selectedRange().wholeDayBuckets).toBe(false);
     for (let index = 0; index < starts.length; index++) {
       expect(component.binTooltip(index)).toMatch(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2} – \d{4}-\d{2}-\d{2} \d{2}:\d{2}$/);
+    }
+  });
+
+  it("names the day alone for a bucket that is a whole day", () => {
+    const starts = Array.from({ length: 4 }, (_, index) => new Date(Date.UTC(2026, 2, 1 + index)).toISOString());
+    seedBuckets(starts, new Date(Date.UTC(2026, 2, 5)).toISOString());
+    create();
+
+    component.selectRange("30d");
+    fixture.detectChanges();
+
+    // The month range cuts the window at midnight, one bucket to a day, so the span a bar covers is that day: naming
+    // both of its ends would print the same midnight twice over.
+    for (let index = 0; index < starts.length; index++) {
+      expect(component.binTooltip(index)).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     }
   });
 

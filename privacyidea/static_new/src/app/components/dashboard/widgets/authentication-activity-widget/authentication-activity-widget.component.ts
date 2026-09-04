@@ -42,19 +42,70 @@ import { toFilterDisplay } from "@utils/date-format.utils";
 
 const LOG_READ: PolicyAction = "authentication_log_read";
 
-// Bins are chosen per range so a bucket is a round unit of time - hourly for a day, six-hourly for a week, daily for a
-// month - rather than an arbitrary slice.
-export interface ActivityRange {
-  label: string;
-  hours: number;
+const MS_PER_MINUTE = 60_000;
+const MS_PER_HOUR = 60 * MS_PER_MINUTE;
+const MS_PER_DAY = 24 * MS_PER_HOUR;
+
+// The window one preset asks the endpoint for, and how many buckets it wants it cut into.
+export interface ActivityWindow {
+  start: Date;
+  end: Date;
   bins: number;
 }
 
+export interface ActivityRange {
+  // Names the range in the toggle group and in the store key, so neither depends on the translated label.
+  id: string;
+  label: string;
+  // The window to ask for, given the present. Every range cuts it into buckets of a round unit of time - five
+  // minutes, an hour, six hours, a day - rather than into an arbitrary slice of itself.
+  window: (now: Date) => ActivityWindow;
+  // Whether a bucket is one whole calendar day, which is what lets a bar be named by its date rather than by the
+  // span it runs over.
+  wholeDayBuckets: boolean;
+}
+
+// Local midnight, `days` days back. Stepped by calendar date rather than by 24-hour blocks, so a daylight-saving
+// change in between does not leave the window opening at 23:00 or 01:00.
+function midnightDaysAgo(now: Date, days: number): Date {
+  const start = new Date(now);
+  start.setHours(0, 0, 0, 0);
+  start.setDate(start.getDate() - days);
+  return start;
+}
+
+// A window that simply runs back from now. This is how "the last hour" and "the last 24 hours" are read: the window's
+// own edges are the round thing about it, and every bucket in it is a bucket that has fully happened.
+function rollingWindow(spanMs: number, bucketMs: number): (now: Date) => ActivityWindow {
+  return (now) => ({
+    start: new Date(now.getTime() - spanMs),
+    end: now,
+    bins: spanMs / bucketMs
+  });
+}
+
+// A window over whole calendar days: it opens at midnight `days` days back and closes at the end of the bucket now
+// falls in, so a bucket never straddles two days and a day is always the same number of buckets - four for the week,
+// one for the month. Today is in the window as far as it has got, its last bucket still filling, which is what makes
+// the newest attempts show up without waiting for the day to end.
+//
+// The buckets are an even division of the window, which is all the endpoint offers, so a daylight-saving change
+// inside one shifts the buckets after it an hour off the midnights they started on.
+function dailyWindow(days: number, bucketMs: number): (now: Date) => ActivityWindow {
+  return (now) => {
+    const start = midnightDaysAgo(now, days);
+    // Rounded up rather than down: the bucket now falls in is the one holding the most recent attempts, and ending
+    // the window at the last closed bucket would leave them out until it closed.
+    const bins = Math.max(1, Math.ceil((now.getTime() - start.getTime()) / bucketMs));
+    return { start, end: new Date(start.getTime() + bins * bucketMs), bins };
+  };
+}
+
 export const ACTIVITY_RANGES: readonly ActivityRange[] = [
-  { label: $localize`1 h`, hours: 1, bins: 12 },
-  { label: $localize`24 h`, hours: 24, bins: 24 },
-  { label: $localize`7 d`, hours: 168, bins: 28 },
-  { label: $localize`30 d`, hours: 720, bins: 30 }
+  { id: "1h", label: $localize`1 h`, window: rollingWindow(MS_PER_HOUR, 5 * MS_PER_MINUTE), wholeDayBuckets: false },
+  { id: "24h", label: $localize`24 h`, window: rollingWindow(MS_PER_DAY, MS_PER_HOUR), wholeDayBuckets: false },
+  { id: "7d", label: $localize`7 d`, window: dailyWindow(7, 6 * MS_PER_HOUR), wholeDayBuckets: false },
+  { id: "30d", label: $localize`30 d`, window: dailyWindow(30, MS_PER_DAY), wholeDayBuckets: true }
 ];
 
 // One row of the activity chart: a single outcome's attempts per bin. Kept as separate rows rather than one stacked
@@ -152,7 +203,7 @@ challenge-response login count once, classified by how the attempt ended.`;
   // What makes a brush stale: the window it was drawn over, and the buckets its thumbs step through. Deliberately not
   // the response itself - a refresh of the same window keeps the reader's span instead of snapping it open, while a
   // new preset, whose window the old positions would name a different span of, opens it.
-  private readonly brushBasis = computed(() => `${this.selectedRange().hours}:${this.binCount()}`);
+  private readonly brushBasis = computed(() => `${this.selectedRange().id}:${this.binCount()}`);
 
   // The selection as a half-open span of edges: the buckets rangeStart .. rangeEnd - 1.
   readonly rangeStart = linkedSignal<string, number>({
@@ -173,20 +224,13 @@ challenge-response login count once, classified by how the attempt ended.`;
     () => this.binStarts()[this.rangeEnd()] ?? this.statistics()?.window?.end_time ?? null
   );
 
-  // The labels under the brush. The time is always shown, for the same reason binTooltip shows it: the window is
-  // measured back from now rather than snapped to midnight, so a date on its own would claim a calendar day the span
-  // only partly covers. An unbrushed upper end reads "now", the present the window was measured back from.
-  readonly rangeFromLabel = computed<string>(() => this.edgeLabel(this.rangeStart(), "yyyy-MM-dd HH:mm"));
-  readonly rangeToLabel = computed<string>(() =>
-    this.rangeEnd() >= this.binCount() ? $localize`now` : this.edgeLabel(this.rangeEnd(), "yyyy-MM-dd HH:mm")
-  );
+  // The labels under the brush, which are also what each thumb announces - the same edge, so the same words for it.
+  readonly rangeFromLabel = computed<string>(() => this.edgeLabel(this.rangeStart()));
+  readonly rangeToLabel = computed<string>(() => this.edgeLabel(this.rangeEnd()));
 
-  // What each thumb announces, bound to the inputs *and* handed to Material as displayWith: that is what makes the
-  // two writers of aria-valuetext agree - see the note in the template.
-  readonly brushStartValueText = computed<string>(() => this.edgeLabel(this.rangeStart(), "yyyy-MM-dd HH:mm"));
-  readonly brushEndValueText = computed<string>(() => this.edgeLabel(this.rangeEnd(), "yyyy-MM-dd HH:mm"));
-
-  formatSliderThumb = (edge: number): string => this.edgeLabel(edge, "yyyy-MM-dd HH:mm");
+  // Handed to Material as displayWith as well, which is what makes the two writers of aria-valuetext agree - see the
+  // note in the template.
+  formatSliderThumb = (edge: number): string => this.edgeLabel(edge);
 
   // The tallest bin across both rows. The rows share it so their heights stay comparable: a failure row scaled to its
   // own peak would make a handful of failures look like an outage.
@@ -278,8 +322,8 @@ challenge-response login count once, classified by how the attempt ended.`;
     this.load(this.selectedRange());
   }
 
-  selectRange(hours: number): void {
-    const range = ACTIVITY_RANGES.find((candidate) => candidate.hours === hours);
+  selectRange(id: string): void {
+    const range = ACTIVITY_RANGES.find((candidate) => candidate.id === id);
     if (range) {
       this.selectedRange.set(range);
     }
@@ -301,13 +345,22 @@ challenge-response login count once, classified by how the attempt ended.`;
     return bin >= this.rangeStart() && bin < this.rangeEnd();
   }
 
-  // The time a bucket edge sits at. Only one edge has no bucket start of its own - the one past the last bucket -
-  // and that is the window's end, the "now" it was measured back from; an edge with no start and nothing after it
-  // falls back to the end of the window it belongs to, never across to the other one.
-  private edgeLabel(edge: number, format: string): string {
-    const window = this.statistics()?.window;
-    const iso = this.binStarts()[edge] ?? (edge > 0 ? window?.end_time : window?.start_time);
-    return iso ? formatDate(iso, format, "en-US") : "";
+  // What a bucket edge is called. The edge past the last bucket is the end of the window, which for a day range lies
+  // in the future - the bucket there is still filling - so it is named for what it means rather than for when it is:
+  // "now", the present the window was measured back from.
+  //
+  // Otherwise the day and the time, or the day alone where a bucket is a whole day and every edge is a midnight. The
+  // time earns its place on the other ranges, whose windows are measured back from now rather than snapped to it: an
+  // edge there falls at something like 08:37, and the day on its own would name a day the span only partly covers.
+  private edgeLabel(edge: number): string {
+    if (edge >= this.binCount()) {
+      return $localize`now`;
+    }
+    const iso = this.binStarts()[edge] ?? this.statistics()?.window?.start_time;
+    if (!iso) {
+      return "";
+    }
+    return formatDate(iso, this.selectedRange().wholeDayBuckets ? "yyyy-MM-dd" : "yyyy-MM-dd HH:mm", "en-US");
   }
 
   // One series' attempts inside the selected span.
@@ -320,7 +373,7 @@ challenge-response login count once, classified by how the attempt ended.`;
       this.state.set("denied");
       return;
     }
-    const key = `dashboard:auth-activity:${range.hours}`;
+    const key = `dashboard:auth-activity:${range.id}`;
     // Each range needs a key of its own, so switching shows a loading state rather than the previous range's numbers.
     // The entry left behind has to go, though: DashboardDataStore.refreshAll() refetches every entry it holds, so a
     // stale key would keep re-querying a window nobody is looking at on each dashboard refresh.
@@ -332,9 +385,12 @@ challenge-response login count once, classified by how the attempt ended.`;
       this.store.load(key, () => {
         // Computed per invocation, not once when the factory is registered: DashboardDataStore.refreshAll() replays
         // the stored factory, and a captured window would make every later refresh ask for the same stale range.
-        const end = new Date();
-        const start = new Date(end.getTime() - range.hours * 3_600_000);
-        return this.authenticationLogService.fetchStatistics(start.toISOString(), end.toISOString(), range.bins);
+        const window = range.window(new Date());
+        return this.authenticationLogService.fetchStatistics(
+          window.start.toISOString(),
+          window.end.toISOString(),
+          window.bins
+        );
       })
     );
   }
@@ -357,15 +413,18 @@ challenge-response login count once, classified by how the attempt ended.`;
   // The span a column covers. The counts are not repeated here: the row already prints its total and the bar heights
   // compare against it, so the tooltip only has to answer "when is this".
   //
-  // The time is always shown. Buckets are measured back from now rather than snapped to midnight, so even a bucket a
-  // whole day wide runs from something like 08:37 to 08:37 the next day - a date on its own would claim a calendar
-  // day the bucket does not cover. The date is printed once when both ends fall on it and twice when the bucket
-  // crosses into the next.
+  // A bucket that is one calendar day is named by that day. Otherwise the time is part of the answer: such a bucket
+  // is measured back from now rather than snapped to midnight, so even one a whole day wide runs from something like
+  // 08:37 to 08:37 the next day, and a date on its own would claim a day it does not cover. The date is then printed
+  // once when both ends fall on it and twice when the bucket crosses into the next.
   binTooltip(index: number): string {
     const starts = this.binStarts();
     const from = starts[index];
     if (!from) {
       return "";
+    }
+    if (this.selectedRange().wholeDayBuckets) {
+      return formatDate(from, "yyyy-MM-dd", "en-US");
     }
     const fromDate = formatDate(from, "yyyy-MM-dd", "en-US");
     const fromTime = formatDate(from, "HH:mm", "en-US");
