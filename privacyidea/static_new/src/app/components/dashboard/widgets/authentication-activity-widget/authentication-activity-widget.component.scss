@@ -204,7 +204,12 @@ mat-button-toggle-group {
   opacity: 0.25;
 }
 
-// The outcome colours the whole row, so the modifier sits on the container and the bars inherit it.
+// Colourless on purpose: the aggregate row stands for no classification, so it takes none of the three colours that
+// mean one. Row position and the row's own label carry the identity here as everywhere in this chart.
+.bars-overall .bar {
+  background-color: var(--grey-light);
+}
+
 .bars-success .bar {
   background-color: var(--green-light);
 }

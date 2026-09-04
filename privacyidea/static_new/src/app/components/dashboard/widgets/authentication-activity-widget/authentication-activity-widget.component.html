@@ -17,9 +17,40 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 
-<!-- Handed to the widget frame, which renders it in the header next to the reload button. Declared outside
-     app-widget-state so the frame can read it whatever state the data is in. -->
+<!-- Handed to the widget frame, which renders these in the header next to the reload button. Declared outside
+     app-widget-state so the frame can read them whatever state the data is in. -->
 <ng-template #headerActions>
+  <!-- Which outcomes the chart draws. In the header because the body has no row to spare, and as one menu rather than
+       a button per row: a row taken off the chart has to leave something behind to come back by, and a menu is that
+       something for all three at once. -->
+  <button
+    mat-icon-button
+    class="widget-header-action"
+    [matMenuTriggerFor]="outcomeMenu"
+    matTooltip="Choose which outcomes to chart"
+    i18n-matTooltip
+    aria-label="Choose which outcomes to chart"
+    i18n-aria-label
+    type="button">
+    <mat-icon>bar_chart</mat-icon>
+  </button>
+  <mat-menu #outcomeMenu>
+    <!-- Every outcome, not only the shown ones, so the menu is where a row comes back from. stopPropagation keeps it
+         open, the way the WebUI's other multi-select menus do, so all three can be set in one pass. -->
+    @for (row of summary().rows; track row.key) {
+      <button
+        mat-menu-item
+        type="button"
+        [disabled]="!canHide(row.key)"
+        [attr.aria-checked]="isShown(row.key)"
+        role="menuitemcheckbox"
+        (click)="$event.stopPropagation(); toggleRow(row.key)">
+        <mat-icon>{{ isShown(row.key) ? "check_box" : "check_box_outline_blank" }}</mat-icon>
+        <span>{{ row.label }}</span>
+      </button>
+    }
+  </mat-menu>
+
   <app-info-hint
     class="widget-header-action"
     [text]="info"
@@ -29,7 +60,7 @@
 
 <app-widget-state [state]="state()">
   <div class="chart">
-    @for (row of summary().rows; track row.outcome) {
+    @for (row of visibleRows(); track row.key) {
       <div class="chart-row">
         <span class="chart-label">{{ row.label }}</span>
         <span class="chart-value">
@@ -37,11 +68,10 @@
           <span class="share">{{ shareLabel(row) }}</span>
         </span>
         <div class="plot">
+          <!-- The outcome colours the whole row, so the modifier goes on the container and the bars inherit it. -->
           <div
             class="bars"
-            [class.bars-success]="row.outcome === 'success'"
-            [class.bars-failure]="row.outcome === 'failure'"
-            [class.bars-pending]="row.outcome === 'pending'"
+            [class]="'bars-' + row.key"
             aria-hidden="true">
             @for (count of row.counts; track $index) {
               <span
@@ -78,7 +108,7 @@
               i18n>
               Time
             </th>
-            @for (row of summary().rows; track row.outcome) {
+            @for (row of visibleRows(); track row.key) {
               <th scope="col">{{ row.label }}</th>
             }
           </tr>
@@ -88,7 +118,7 @@
           @for (start of binStarts(); track $index; let bin = $index) {
             <tr>
               <th scope="row">{{ binTooltip(bin) }}</th>
-              @for (row of summary().rows; track row.outcome) {
+              @for (row of visibleRows(); track row.key) {
                 <td>{{ row.counts[bin] }}</td>
               }
             </tr>

@@ -156,8 +156,9 @@ describe("AuthenticationActivityWidgetComponent", () => {
     ]);
     create();
 
-    const shares = Object.fromEntries(component.summary().rows.map((row) => [row.outcome, component.shareLabel(row)]));
-    expect(shares).toEqual({ success: "(15%)", failure: "(5%)", pending: "(80%)" });
+    const shares = Object.fromEntries(component.summary().rows.map((row) => [row.key, component.shareLabel(row)]));
+    // The aggregate row carries no share: a percentage of the whole would say 100% at best.
+    expect(shares).toEqual({ overall: "", success: "(15%)", failure: "(5%)", pending: "(80%)" });
   });
 
   it("shows no share when the window holds no attempt", () => {
@@ -177,23 +178,148 @@ describe("AuthenticationActivityWidgetComponent", () => {
     // The count and the share are separate spans set apart by a gap, so each is asserted on its own rather than
     // through whitespace that only exists visually.
     const cells = Array.from<Element>(fixture.nativeElement.querySelectorAll(".chart-row .chart-value"));
-    expect(cells.map((cell) => cell.querySelector(".total")?.textContent?.trim())).toEqual(["3", "1", "0"]);
-    expect(cells.map((cell) => cell.querySelector(".share")?.textContent?.trim())).toEqual(["(75%)", "(25%)", "(0%)"]);
+    expect(cells.map((cell) => cell.querySelector(".total")?.textContent?.trim())).toEqual(["3", "1"]);
+    expect(cells.map((cell) => cell.querySelector(".share")?.textContent?.trim())).toEqual(["(75%)", "(25%)"]);
   });
 
-  it("renders one bar row per outcome, each with a bar per bin", () => {
+  it("opens on succeeded against failed, one bar row each", () => {
     seed([series("LOGIN_SUCCESS", "success", [1, 0, 0, 0]), series("PIN_FAIL", "failure", [0, 2, 0, 0])]);
     create();
 
     const rows = Array.from<Element>(fixture.nativeElement.querySelectorAll(".chart-row"));
-    expect(rows).toHaveLength(3);
+    expect(rows).toHaveLength(2);
     expect(rows[0].querySelectorAll(".bar")).toHaveLength(BINS);
     // The row label is what identifies the series, so the chart never relies on telling the colours apart.
-    expect(rows.map((row) => row.querySelector(".chart-label")?.textContent?.trim())).toEqual([
-      "Successful",
-      "Failed",
-      "Pending"
+    expect(rows.map((row) => row.querySelector(".chart-label")?.textContent?.trim())).toEqual(["Successful", "Failed"]);
+    // The other two are a menu entry away, and the summary holds them either way.
+    expect(component.summary().rows.map((row) => row.key)).toEqual(["overall", "success", "failure", "pending"]);
+  });
+
+  it("charts all activity in one row, counting what no classification claims", () => {
+    seed([
+      series("LOGIN_SUCCESS", "success", [1, 0, 0, 0]),
+      series("PIN_FAIL", "failure", [0, 2, 0, 0]),
+      // An event type the endpoint does not classify: it belongs to no outcome row, so only the aggregate holds it.
+      series("SOMETHING_NEW", null, [0, 0, 5, 0])
     ]);
+    create();
+
+    component.toggleRow("overall");
+    fixture.detectChanges();
+
+    const overall = component.summary().rows.find((row) => row.key === "overall")!;
+    expect(overall.counts).toEqual([1, 2, 5, 0]);
+    expect(overall.total).toBe(8);
+    // Which is more than the three classifications add up to, and why the row is the activity rather than their sum.
+    expect(component.summary().success + component.summary().failure + component.summary().pending).toBe(3);
+    // It leads the chart: the whole first, its breakdown under it.
+    const labels = Array.from<Element>(fixture.nativeElement.querySelectorAll(".chart-row .chart-label")).map((label) =>
+      label.textContent?.trim()
+    );
+    expect(labels).toEqual(["Overall", "Successful", "Failed"]);
+  });
+
+  it("keeps the aggregate row off the chart until it is asked for", () => {
+    seed([series("LOGIN_SUCCESS", "success", [4, 0, 0, 0])]);
+    create();
+
+    // It is the sum of the others, so on the shared scale it would flatten them; it is worth showing once a reader
+    // turns the others off, which is what the menu is for.
+    expect(component.isShown("overall")).toBe(false);
+    expect(fixture.nativeElement.querySelectorAll(".chart-row")).toHaveLength(2);
+    expect(component.peak()).toBe(4);
+
+    component.toggleRow("overall");
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelectorAll(".chart-row")).toHaveLength(3);
+  });
+
+  it("hands the outcome menu to the frame's header rather than spending a row on it", () => {
+    seed([]);
+    create();
+
+    // The frame renders this template in its header, beside the reload button; the body is dense enough already. The
+    // frame's own spec covers the rendering, so what matters here is that the widget contributes the template and
+    // keeps no toolbar of its own.
+    expect(component.headerActions()).toBeTruthy();
+    expect(fixture.nativeElement.querySelector("button[mat-icon-button]")).toBeNull();
+  });
+
+  it("takes a row off the chart and out of the table with it", () => {
+    seed([series("LOGIN_SUCCESS", "success", [1, 0, 0, 0]), series("PIN_FAIL", "failure", [0, 2, 0, 0])]);
+    create();
+
+    component.toggleRow("success");
+    fixture.detectChanges();
+
+    const labels = Array.from<Element>(fixture.nativeElement.querySelectorAll(".chart-row .chart-label")).map((label) =>
+      label.textContent?.trim()
+    );
+    expect(labels).toEqual(["Failed"]);
+    // The table is the chart's text alternative, so it holds a column for each row the chart draws and no others.
+    const columns = Array.from<Element>(fixture.nativeElement.querySelectorAll(".visually-hidden th[scope='col']")).map(
+      (column) => column.textContent?.trim()
+    );
+    expect(columns).toEqual(["Time", "Failed"]);
+  });
+
+  it("brings a row back", () => {
+    seed([series("LOGIN_SUCCESS", "success", [1, 0, 0, 0])]);
+    create();
+
+    component.toggleRow("success");
+    component.toggleRow("success");
+    fixture.detectChanges();
+
+    expect(component.isShown("success")).toBe(true);
+    expect(fixture.nativeElement.querySelectorAll(".chart-row")).toHaveLength(2);
+  });
+
+  it("rescales the rows that are left", () => {
+    seed([series("LOGIN_SUCCESS", "success", [50, 0, 0, 0]), series("PIN_FAIL", "failure", [0, 2, 0, 0])]);
+    create();
+    expect(component.peak()).toBe(50);
+
+    component.toggleRow("success");
+    fixture.detectChanges();
+
+    // Taking the loudest row off is generally what someone does to see the quiet ones, so the scale follows.
+    expect(component.peak()).toBe(2);
+    expect(component.barHeight(2)).toBe(100);
+  });
+
+  it("keeps a share of every attempt in the span, charted or not", () => {
+    seed([
+      series("LOGIN_SUCCESS", "success", [3, 0, 0, 0]),
+      series("PIN_FAIL", "failure", [1, 0, 0, 0]),
+      series("CHALLENGE_TRIGGERED", "pending", [16, 0, 0, 0])
+    ]);
+    create();
+
+    // Pending is off to begin with, so the shares on screen are of attempts most of which are not: what is drawn
+    // changes, what happened does not. A percentage that grew as rows came off would mean something different in
+    // every view of the same window - and would call this window 75% failed.
+    const shares = Array.from<Element>(fixture.nativeElement.querySelectorAll(".chart-row .share")).map((share) =>
+      share.textContent?.trim()
+    );
+    expect(shares).toEqual(["(15%)", "(5%)"]);
+  });
+
+  it("keeps the last row on the chart", () => {
+    seed([series("LOGIN_SUCCESS", "success", [1, 0, 0, 0])]);
+    create();
+
+    component.toggleRow("success");
+    fixture.detectChanges();
+
+    // An empty plot with a live brush under it is not a view of anything, so the row that is left cannot go.
+    expect(component.canHide("failure")).toBe(false);
+    component.toggleRow("failure");
+    fixture.detectChanges();
+
+    expect(component.visibleRows().map((row) => row.key)).toEqual(["failure"]);
+    expect(fixture.nativeElement.querySelectorAll(".chart-row")).toHaveLength(1);
   });
 
   it("charts unanswered attempts at the time they were started", () => {
@@ -205,7 +331,7 @@ describe("AuthenticationActivityWidgetComponent", () => {
     ]);
     create();
 
-    const pending = component.summary().rows.find((row) => row.outcome === "pending")!;
+    const pending = component.summary().rows.find((row) => row.key === "pending")!;
     // Every pending series folds into the one row, so it is the outcome's whole volume.
     expect(pending.counts).toEqual([3, 0, 0, 1]);
     expect(pending.total).toBe(4);
@@ -214,6 +340,9 @@ describe("AuthenticationActivityWidgetComponent", () => {
   it("keeps the unanswered row on the shared scale so it cannot overstate itself", () => {
     seed([series("LOGIN_SUCCESS", "success", [50, 0, 0, 0]), series("CHALLENGE_TRIGGERED", "pending", [0, 2, 0, 0])]);
     create();
+    // Brought onto the chart, where it starts off, since the scale it shares is what this is about.
+    component.toggleRow("pending");
+    fixture.detectChanges();
 
     expect(component.peak()).toBe(50);
     // Still visible despite being 4% of the peak, so a quiet bucket and an empty one never look the same.
@@ -254,7 +383,7 @@ describe("AuthenticationActivityWidgetComponent", () => {
     create();
 
     const axes = fixture.nativeElement.querySelectorAll(".axis-line");
-    expect(axes).toHaveLength(3);
+    expect(axes).toHaveLength(2);
     // A tick per bin, laid out like the bars above it, so the two stay aligned however wide the widget is.
     axes.forEach((axis: Element) => expect(axis.querySelectorAll(".axis-tick")).toHaveLength(BINS));
     for (const row of fixture.nativeElement.querySelectorAll(".chart-row")) {
@@ -298,9 +427,9 @@ describe("AuthenticationActivityWidgetComponent", () => {
     fixture.detectChanges();
 
     const cells = Array.from<Element>(fixture.nativeElement.querySelectorAll(".chart-row .chart-value"));
-    expect(cells.map((cell) => cell.querySelector(".total")?.textContent?.trim())).toEqual(["6", "1", "0"]);
+    expect(cells.map((cell) => cell.querySelector(".total")?.textContent?.trim())).toEqual(["6", "1"]);
     // The shares are of the selected span too, so they still add up to the whole of what it holds.
-    expect(cells.map((cell) => cell.querySelector(".share")?.textContent?.trim())).toEqual(["(86%)", "(14%)", "(0%)"]);
+    expect(cells.map((cell) => cell.querySelector(".share")?.textContent?.trim())).toEqual(["(86%)", "(14%)"]);
   });
 
   it("re-ranks the failure reasons over the selected span, dropping the ones outside it", () => {
@@ -702,11 +831,12 @@ describe("AuthenticationActivityWidgetComponent", () => {
     }
     const rows = Array.from<Element>(fixture.nativeElement.querySelectorAll(".visually-hidden tbody tr"));
     expect(rows).toHaveLength(BINS);
+    // A column per row on the chart, in the same order.
     expect(rows.map((row) => Array.from(row.querySelectorAll("td")).map((cell) => cell.textContent?.trim()))).toEqual([
-      ["2", "0", "0"],
-      ["0", "3", "0"],
-      ["1", "0", "0"],
-      ["0", "0", "0"]
+      ["2", "0"],
+      ["0", "3"],
+      ["1", "0"],
+      ["0", "0"]
     ]);
   });
 

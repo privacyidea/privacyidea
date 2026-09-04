@@ -18,8 +18,10 @@
  **/
 import { formatDate } from "@angular/common";
 import { Component, computed, effect, inject, linkedSignal, signal, TemplateRef, viewChild } from "@angular/core";
+import { MatIconButton } from "@angular/material/button";
 import { MatButtonToggleModule } from "@angular/material/button-toggle";
 import { MatIcon } from "@angular/material/icon";
+import { MatMenuModule } from "@angular/material/menu";
 import { MatSliderModule } from "@angular/material/slider";
 import { MatTooltip } from "@angular/material/tooltip";
 import { RouterLink } from "@angular/router";
@@ -108,12 +110,15 @@ export const ACTIVITY_RANGES: readonly ActivityRange[] = [
   { id: "30d", label: $localize`30 d`, window: dailyWindow(30, MS_PER_DAY), wholeDayBuckets: true }
 ];
 
-// One row of the activity chart: a single outcome's attempts per bin. Kept as separate rows rather than one stacked
-// bar because the theme's success and failure colours are indistinguishable under deuteranopia in dark mode - row
-// position and the row's own label carry the identity, and the colour only reinforces it.
+// One row of the activity chart: the attempts per bin of a single outcome, or of all of them at once. Kept as
+// separate rows rather than one stacked bar because the theme's success and failure colours are indistinguishable
+// under deuteranopia in dark mode - row position and the row's own label carry the identity, and the colour only
+// reinforces it.
 export interface ActivityRow {
   label: string;
-  outcome: string;
+  // What the row stands for, and its key throughout: an AuthEventOutcome for the three classifications, or "overall"
+  // for the row that aggregates them. Names the bars' colour class and the entry in the chart's own menu.
+  key: string;
   // Every bucket of the window, selected or not: the bars keep charting the whole window, so its shape stays put
   // while the brush moves over it.
   counts: number[];
@@ -144,6 +149,8 @@ export interface ActivitySummary {
     InfoHintComponent,
     MatButtonToggleModule,
     MatIcon,
+    MatIconButton,
+    MatMenuModule,
     MatSliderModule,
     MatTooltip,
     RouterLink,
@@ -232,9 +239,26 @@ challenge-response login count once, classified by how the attempt ended.`;
   // note in the template.
   formatSliderThumb = (edge: number): string => this.edgeLabel(edge);
 
-  // The tallest bin across both rows. The rows share it so their heights stay comparable: a failure row scaled to its
-  // own peak would make a handful of failures look like an outage.
-  readonly peak = computed<number>(() => Math.max(1, ...this.summary().rows.flatMap((row) => row.counts)));
+  // Rows off the chart. View state, like the range and the brush: it is a way of looking at the window rather than
+  // anything about it, so it lives here and starts over with the page.
+  //
+  // Succeeded against failed is the question the widget opens on, so the other two start off. Overall is the tallest
+  // row there can be, being the sum of them all, and on the shared scale it flattens whatever it is shown beside;
+  // pending answers a different question - what is still in flight - and the reasons table below is about failures.
+  // Both are one entry away in the chart's menu.
+  private readonly hiddenRows = signal<readonly string[]>(["overall", "pending"]);
+
+  // The rows the chart draws, and the only ones the screen reader's table holds columns for. The summary keeps all
+  // three: what an outcome's share is of does not change with what is on screen, so the percentages stay percentages
+  // of every attempt in the span.
+  readonly visibleRows = computed<ActivityRow[]>(() =>
+    this.summary().rows.filter((row) => !this.hiddenRows().includes(row.key))
+  );
+
+  // The tallest bin across the rows on screen. They share it so their heights stay comparable: a failure row scaled
+  // to its own peak would make a handful of failures look like an outage. Taking a row off the chart does rescale the
+  // rest, which is generally the point of taking the loudest one off.
+  readonly peak = computed<number>(() => Math.max(1, ...this.visibleRows().flatMap((row) => row.counts)));
 
   readonly summary = computed<ActivitySummary>(() => {
     // Every classification the endpoint returns, the ones conditional access writes for its own rejections
@@ -246,8 +270,8 @@ challenge-response login count once, classified by how the attempt ended.`;
     // Counted from the buckets the brush selects rather than from the endpoint's window totals, so every number here
     // answers for the span on screen. The two agree while the brush spans the whole window: a series' total is the
     // sum of its own buckets.
-    const totalOf = (outcome: string) =>
-      series.filter((entry) => entry.outcome === outcome).reduce((sum, entry) => sum + this.selectedSum(entry), 0);
+    const seriesOf = (outcome: string) => series.filter((entry) => entry.outcome === outcome);
+    const totalOf = (outcome: string) => seriesOf(outcome).reduce((sum, entry) => sum + this.selectedSum(entry), 0);
     const success = totalOf("success");
     const failure = totalOf("failure");
     const pending = totalOf("pending");
@@ -258,8 +282,7 @@ challenge-response login count once, classified by how the attempt ended.`;
     const share = (count: number) => (attempts ? count / attempts : null);
     // Re-ranked, and stripped of the reasons the brush leaves behind: the endpoint ordered the series by their window
     // totals, which is not the order - nor the set - the selected span has.
-    const reasons = series
-      .filter((entry) => entry.outcome === "failure")
+    const reasons = seriesOf("failure")
       .map((entry) => ({ eventType: entry.event_type, count: this.selectedSum(entry) }))
       .filter((reason) => reason.count > 0)
       .sort((a, b) => b.count - a.count || a.eventType.localeCompare(b.eventType));
@@ -270,16 +293,27 @@ challenge-response login count once, classified by how the attempt ended.`;
       pending,
       rows: [
         {
+          // Every attempt in a bucket, whatever it ended as, so this row is the activity itself rather than the sum
+          // of the three below it: an event type the endpoint could not classify counts here and in none of them.
+          label: $localize`Overall`,
+          key: "overall",
+          counts: this.binsOf(series, binCount),
+          total: series.reduce((sum, entry) => sum + this.selectedSum(entry), 0),
+          // No percentage. A share of the whole would read 100% at best, and above it wherever an unclassified event
+          // type is in the window, since the shares below divide by the three classifications alone.
+          share: null
+        },
+        {
           label: $localize`Successful`,
-          outcome: "success",
-          counts: this.binsOf(series, "success", binCount),
+          key: "success",
+          counts: this.binsOf(seriesOf("success"), binCount),
           total: success,
           share: share(success)
         },
         {
           label: $localize`Failed`,
-          outcome: "failure",
-          counts: this.binsOf(series, "failure", binCount),
+          key: "failure",
+          counts: this.binsOf(seriesOf("failure"), binCount),
           total: failure,
           share: share(failure)
         },
@@ -287,8 +321,8 @@ challenge-response login count once, classified by how the attempt ended.`;
           // An attempt counts here when its latest event is a challenge or enrolment with no answer logged after
           // it, so a bucket dates when the attempt *started*.
           label: $localize`Pending`,
-          outcome: "pending",
-          counts: this.binsOf(series, "pending", binCount),
+          key: "pending",
+          counts: this.binsOf(seriesOf("pending"), binCount),
           total: pending,
           share: share(pending)
         }
@@ -345,6 +379,24 @@ challenge-response login count once, classified by how the attempt ended.`;
     return bin >= this.rangeStart() && bin < this.rangeEnd();
   }
 
+  isShown(key: string): boolean {
+    return !this.hiddenRows().includes(key);
+  }
+
+  // The last row on the chart stays: an empty plot with a live brush under it is not a view of anything, so the menu
+  // holds that one entry rather than letting the chart be emptied.
+  canHide(key: string): boolean {
+    return !this.isShown(key) || this.visibleRows().length > 1;
+  }
+
+  toggleRow(key: string): void {
+    if (!this.canHide(key)) {
+      return;
+    }
+    const hidden = this.hiddenRows();
+    this.hiddenRows.set(hidden.includes(key) ? hidden.filter((entry) => entry !== key) : [...hidden, key]);
+  }
+
   // What a bucket edge is called. The edge past the last bucket is the end of the window, which for a day range lies
   // in the future - the bucket there is still filling - so it is named for what it means rather than for when it is:
   // "now", the present the window was measured back from.
@@ -395,11 +447,11 @@ challenge-response login count once, classified by how the attempt ended.`;
     );
   }
 
-  // Sums the per-bin counts of every series sharing an outcome, so a row is that outcome's whole volume rather than
-  // its most common event type.
-  private binsOf(series: AuthenticationEventSeries[], outcome: string, binCount: number): number[] {
+  // Sums the per-bin counts of the given series into one row, so a row is the whole volume of what it stands for
+  // rather than its most common event type. The caller picks what goes in: one outcome's series, or all of them.
+  private binsOf(series: AuthenticationEventSeries[], binCount: number): number[] {
     const totals = new Array<number>(binCount).fill(0);
-    for (const entry of series.filter((candidate) => candidate.outcome === outcome)) {
+    for (const entry of series) {
       entry.counts.forEach((count, index) => (totals[index] += count));
     }
     return totals;
