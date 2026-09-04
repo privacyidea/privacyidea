@@ -161,7 +161,7 @@ def import_token(serial: str, token_dict: dict, tokenrealms: list | None = None)
     if token_dict.get("counter"):
         token.set_otp_count(token_dict.get("counter"))
     if token_dict.get("timeShift"):
-        token.add_tokeninfo("timeShift", token_dict.get("timeShift"))
+        token.write_tokeninfo("timeShift", token_dict.get("timeShift"))
     return token
 
 
@@ -269,7 +269,7 @@ def init_token(param: dict, user: User = None, tokenrealms: list[str] = None, to
     # We only set the tokenkind here if it was explicitly set in the init_token call.
     # In all other cases it is set in the update method of the tokenclass.
     if tokenkind:
-        token.add_tokeninfo("tokenkind", tokenkind)
+        token.write_tokeninfo("tokenkind", tokenkind)
 
     # Set the validity period
     validity_period_start = param.get("validity_period_start")
@@ -280,7 +280,7 @@ def init_token(param: dict, user: User = None, tokenrealms: list[str] = None, to
         token.set_validity_period_start(validity_period_start)
 
     # Creation Date
-    token.add_tokeninfo("creation_date", datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"))
+    token.write_tokeninfo("creation_date", datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"))
 
     # If the token has no rollout_state, we set it to "enrolled"
     if not token.rollout_state:

@@ -117,12 +117,12 @@ class PushTokenTestCase(MyTestCase):
         token_param = {"type": "push", "genkey": 1}
         token_param.update(FB_CONFIG_VALS)
         token = init_token(param=token_param)
-        token.add_tokeninfo(PushAction.FIREBASE_CONFIG, self.firebase_config_name)
-        token.add_tokeninfo(PUBLIC_KEY_SMARTPHONE, self.smartphone_public_key_pem_urlsafe)
-        token.add_tokeninfo("firebase_token", "firebaseT")
-        token.add_tokeninfo(PUBLIC_KEY_SERVER, self.server_public_key_pem)
-        token.add_tokeninfo(PRIVATE_KEY_SERVER, self.server_private_key_pem, "password")
-        token.delete_tokeninfo("enrollment_credential")
+        token.write_tokeninfo(PushAction.FIREBASE_CONFIG, self.firebase_config_name)
+        token.write_tokeninfo(PUBLIC_KEY_SMARTPHONE, self.smartphone_public_key_pem_urlsafe)
+        token.write_tokeninfo("firebase_token", "firebaseT")
+        token.write_tokeninfo(PUBLIC_KEY_SERVER, self.server_public_key_pem)
+        token.write_tokeninfo(PRIVATE_KEY_SERVER, self.server_private_key_pem, "password")
+        token.remove_tokeninfo("enrollment_credential")
         token.token.rollout_state = "enrolled"
         token.token.active = True
         return token
@@ -342,7 +342,7 @@ class PushTokenTestCase(MyTestCase):
             # disallow polling the specific token through a policy
             set_policy("push_poll", SCOPE.AUTH,
                        action=f"{PushAction.ALLOW_POLLING}={PushAllowPolling.TOKEN}")
-            token.add_tokeninfo(POLLING_ALLOWED, False)
+            token.write_tokeninfo(POLLING_ALLOWED, False)
             with mock.patch("logging.Logger.warning") as mock_log:
                 with self.app.test_request_context("/validate/check",
                                                    method="POST",
@@ -1399,7 +1399,7 @@ class PushTokenTestCase(MyTestCase):
 
         self.setUp_user_realms()
         token = self._create_push_token()
-        token.add_tokeninfo(PushAction.FIREBASE_CONFIG, POLL_ONLY)
+        token.write_tokeninfo(PushAction.FIREBASE_CONFIG, POLL_ONLY)
         token.set_pin("pushpin")
         token.add_user(User("cornelius", self.realm1))
         with self.app.test_request_context('/auth',
@@ -1720,7 +1720,7 @@ class PushTokenTestCase(MyTestCase):
         self.assertEqual(res[1]['result']['value'], [], res[1]['result']['value'])
 
         # now set the tokeninfo POLLING_ALLOWED to 'False'
-        token.add_tokeninfo(POLLING_ALLOWED, 'False')
+        token.write_tokeninfo(POLLING_ALLOWED, 'False')
         with mock.patch('privacyidea.models.utils.utc_now',
                         return_value=timestamp_polling), mock.patch(
                 'privacyidea.lib.tokens.pushtoken.datetime') as mock_dt2:
@@ -1728,7 +1728,7 @@ class PushTokenTestCase(MyTestCase):
             self.assertRaisesRegex(PolicyError, r'Polling not allowed!', PushTokenClass.api_endpoint, request, g)
 
         # Explicitly allow polling for this token
-        token.add_tokeninfo(POLLING_ALLOWED, 'True')
+        token.write_tokeninfo(POLLING_ALLOWED, 'True')
         with mock.patch('privacyidea.models.utils.utc_now',
                         return_value=timestamp_polling), mock.patch(
                 'privacyidea.lib.tokens.pushtoken.datetime') as mock_dt2:
@@ -1739,7 +1739,7 @@ class PushTokenTestCase(MyTestCase):
 
         # If polling for this token is denied but the overall configuration
         # allows polling, the tokeninfo is ignored
-        token.add_tokeninfo(POLLING_ALLOWED, 'False')
+        token.write_tokeninfo(POLLING_ALLOWED, 'False')
         set_policy('push_poll', SCOPE.AUTH,
                    action=f'{PushAction.ALLOW_POLLING}={PushAllowPolling.ALLOW}')
         with mock.patch('privacyidea.models.utils.utc_now',
@@ -1819,7 +1819,7 @@ class PushTokenTestCase(MyTestCase):
                                PushTokenClass.api_endpoint, request, g)
 
         # wrongly configured push token (no firebase config)
-        token.delete_tokeninfo(PushAction.FIREBASE_CONFIG)
+        token.remove_tokeninfo(PushAction.FIREBASE_CONFIG)
         # We are missing a registration URL, thus polling of challenges fails
         delete_policy("push1")
         request.all_data = {'serial': serial,
@@ -1835,7 +1835,7 @@ class PushTokenTestCase(MyTestCase):
                                    PushTokenClass.api_endpoint, request, g)
 
         # unknown firebase configuration
-        token.add_tokeninfo(PushAction.FIREBASE_CONFIG, 'my unknown firebase config')
+        token.write_tokeninfo(PushAction.FIREBASE_CONFIG, 'my unknown firebase config')
         request.all_data = {'serial': serial,
                             'timestamp': timestamp_str,
                             'signature': b32encode(signature)}

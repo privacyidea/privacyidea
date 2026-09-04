@@ -1352,7 +1352,7 @@ class UserNotificationTestCase(PristineSqliteFixtures, MyTestCase):
                           "otppin": "spass"},
                          user=user)
         # Add last authentication
-        tok.add_tokeninfo(PolicyAction.LASTAUTH, "2016-10-10 10:10:10.000")
+        tok.write_tokeninfo(PolicyAction.LASTAUTH, "2016-10-10 10:10:10.000")
         env = builder.get_environ()
         req = Request(env)
         req.all_data = {"user": "cornelius@realm1",

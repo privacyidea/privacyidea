@@ -861,7 +861,7 @@ class HOTPTokenTestCase(MyTestCase):
         # Set up the HOTP token for testing
         hotptoken = init_token(param={'serial': "OATH12345678", 'type': 'hotp', 'otpkey': '12345'})
         hotptoken.set_description("this is a hotp token export test")
-        hotptoken.add_tokeninfo("hashlib", "sha256")
+        hotptoken.write_tokeninfo("hashlib", "sha256")
 
         # Test that all expected keys are present in the exported dictionary
         exported_data = hotptoken.export_token()

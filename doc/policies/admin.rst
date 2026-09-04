@@ -114,6 +114,12 @@ to set those token properties like ``description``, ``max_failcount``
 or ``validity_period_start`` at the ``/token/set`` endpoints
 (see :ref:`rest_token`).
 
+The endpoint also takes the token type specific token info entries as
+``<tokentype>.<key>``, e.g. ``remote.user`` on a remote token or
+``radius.user`` on a RADIUS token. The prefix has to name a known token type
+and the entry is only written to tokens of that type. These entries are
+otherwise written during the enrollment of the token.
+
 setdescription
 ~~~~~~~~~~~~~~
 
@@ -146,6 +152,25 @@ settokeninfo
 type: ``bool``
 
 The administrator is allowed to manually set and delete token info.
+
+This covers the free-form entries of the token info. Every token type also
+keeps entries of its own there, e.g. the public key of a passkey, the server a
+RADIUS token forwards to or the questions of a questionnaire token. Those are
+written by the token itself and are rejected by this action, because their
+value decides how the token authenticates. They remain readable and can still
+be used in policy conditions, and the WebUI shows them without an edit field.
+
+The entries that do change over the lifetime of a token have their own way to
+be set:
+
+* ``count_auth_max``, ``count_auth_success_max``, ``hashlib``,
+  ``validity_period_start`` and ``validity_period_end`` through the ``set``
+  action.
+* the type specific entries, e.g. ``remote.user`` or ``radius.user``, also
+  through the ``set`` action, by passing them as ``<tokentype>.<key>``.
+
+An offline refill token can be deleted with this action, which revokes the
+ability to refill offline OTP values, but it cannot be set to a given value.
 
 enrollpin
 ~~~~~~~~~

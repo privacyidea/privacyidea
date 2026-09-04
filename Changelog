@@ -37,6 +37,11 @@ Version 3.14dev1
     recording completely with `PI_NO_INTERNAL_METRICS` in `pi.cfg` (#5270)
   * Event handler conditions can now check the userinfo of the user, like the additional conditions of a
     policy (#5023, #4201)
+  * Every token type now declares which token info entries it maintains itself, e.g. the public key of a passkey
+    or the server a RADIUS token forwards to. Those entries stay readable and usable in policy conditions, but
+    the generic token info endpoints no longer write them, so the value that decides how a token authenticates
+    is only set by the token. The entries that do change over the lifetime of a token are set through
+    `POST /token/set`, which now also accepts the type specific ones as `<tokentype>.<key>`
   * Event handlers can be renamed (#5591)
   * `GET /token/` accepts a comma-separated list of realms, so the tokens of a user in several realms can be fetched
     with a single request (#4845)

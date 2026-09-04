@@ -206,6 +206,10 @@ export class TokenDetailsComponent implements OnInit, AfterViewInit, OnDestroy {
         .filter((detail) => detail.value !== undefined);
     }
   });
+  /** Info entries the token maintains itself, so the token info endpoint refuses to change them */
+  readonlyInfoKeys = computed(() => this.tokenDetails()?.readonly_info_keys ?? []);
+  /** Info entries the token info endpoint refuses to remove, a subset of readonlyInfoKeys */
+  undeletableInfoKeys = computed(() => this.tokenDetails()?.undeletable_info_keys ?? []);
   infoData = linkedSignal({
     source: this.tokenDetails,
     computation: (details) => {

@@ -192,7 +192,7 @@ class TokenFailCounterTestCase(MyTestCase):
         tok.set_pin("hotppin")
         tok.set_failcount(10)
         exceeded_timestamp = datetime.datetime.now(tzlocal()) - datetime.timedelta(minutes=1)
-        tok.add_tokeninfo(FAILCOUNTER_EXCEEDED, exceeded_timestamp.strftime(DATE_FORMAT))
+        tok.write_tokeninfo(FAILCOUNTER_EXCEEDED, exceeded_timestamp.strftime(DATE_FORMAT))
 
         # OTP value #11
         res, reply = check_token_list([tok], "hotppin481090")
@@ -220,7 +220,7 @@ class TokenFailCounterTestCase(MyTestCase):
         # Now we set the failoucnter and the exceeded time.
         tok.set_failcount(10)
         exceeded_timestamp = datetime.datetime.now(tzlocal()) - datetime.timedelta(minutes=1)
-        tok.add_tokeninfo(FAILCOUNTER_EXCEEDED, exceeded_timestamp.strftime(DATE_FORMAT))
+        tok.write_tokeninfo(FAILCOUNTER_EXCEEDED, exceeded_timestamp.strftime(DATE_FORMAT))
         set_privacyidea_config(FAILCOUNTER_CLEAR_TIMEOUT, 1)
 
         # authentication with otp value #3 will fail
@@ -247,7 +247,7 @@ class TokenFailCounterTestCase(MyTestCase):
         tok.set_pin("hotppin")
         tok.set_failcount(10)
         exceeded_timestamp = datetime.datetime.now(tzlocal()) - datetime.timedelta(minutes=1)
-        tok.add_tokeninfo(FAILCOUNTER_EXCEEDED, exceeded_timestamp.strftime(DATE_FORMAT))
+        tok.write_tokeninfo(FAILCOUNTER_EXCEEDED, exceeded_timestamp.strftime(DATE_FORMAT))
 
         # correct PIN + wrong OTP value resets the failcounter
         res, _ = check_token_list([tok], "hotppin123456")
@@ -257,7 +257,7 @@ class TokenFailCounterTestCase(MyTestCase):
 
         # also completely invalid auth resets the failcounter
         tok.set_failcount(10)
-        tok.add_tokeninfo(FAILCOUNTER_EXCEEDED, exceeded_timestamp.strftime(DATE_FORMAT))
+        tok.write_tokeninfo(FAILCOUNTER_EXCEEDED, exceeded_timestamp.strftime(DATE_FORMAT))
         res, _ = check_token_list([tok], "hotppin123456")
         self.assertFalse(res)
         self.assertEqual(1, tok.get_failcount())

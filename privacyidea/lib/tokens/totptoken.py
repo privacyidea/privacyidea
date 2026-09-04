@@ -55,6 +55,8 @@ class TotpTokenClass(HotpTokenClass):
     # but the last used OTP value, so we need to set this to 0.
     previous_otp_offset = 0
 
+    owned_tokeninfo_keys = frozenset({"timeShift", "timeStep", "timeWindow"})
+
     desc_timestep = lazy_gettext('Specify the time step of the time-based OTP token.')
 
     @log_with(log)
@@ -211,10 +213,10 @@ class TotpTokenClass(HotpTokenClass):
         # which is effectively set in the update
         hashlibStr = param.get("hashlib", self.hashlib)
 
-        self.add_tokeninfo("timeWindow", timeWindow)
-        self.add_tokeninfo("timeShift", timeShift)
-        self.add_tokeninfo("timeStep", timeStep)
-        self.add_tokeninfo("hashlib", hashlibStr)
+        self.write_tokeninfo("timeWindow", timeWindow)
+        self.write_tokeninfo("timeShift", timeShift)
+        self.write_tokeninfo("timeStep", timeStep)
+        self.write_tokeninfo("hashlib", hashlibStr)
 
     @property
     def timestep(self):
@@ -379,7 +381,7 @@ class TotpTokenClass(HotpTokenClass):
 
             new_shift = (tokentime - inow)
             log.debug(f"the counter {res!r} matched. New shift: {new_shift!r}")
-            self.add_tokeninfo('timeShift', new_shift)
+            self.write_tokeninfo('timeShift', new_shift)
         return res
 
     @log_with(log)
@@ -518,7 +520,7 @@ class TotpTokenClass(HotpTokenClass):
             currenttime = server_time - self.timeshift
             new_shift = (tokentime - currenttime)
             log.debug(f"the counters {res1!r} and {res2!r} matched. New shift: {new_shift!r}")
-            self.add_tokeninfo('timeShift', new_shift)
+            self.write_tokeninfo('timeShift', new_shift)
 
             # The OTP value that was used for resync must not be used again!
             self.set_otp_count(res2 + 1)

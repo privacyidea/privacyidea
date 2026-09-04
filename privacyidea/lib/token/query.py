@@ -22,6 +22,7 @@ from privacyidea.lib.realm import get_realms
 from privacyidea.lib.resolver import get_resolver_object
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.utils import SQL_LIKE_ESCAPE, convert_wildcard_to_sql_like
+from privacyidea.models.token import TOKENINFO_TYPE_SUFFIX
 from privacyidea.lib.user import User
 from privacyidea.models import (db, Token, Realm, TokenRealm, TokenInfo, TokenOwner, TokenContainer,
                                 TokenContainerToken)
@@ -567,6 +568,24 @@ def _build_token_dicts(tokens: list[TokenClass], hidden_token_info: list[str] | 
             for key in list(token_dict['info']):
                 if key in hidden_token_info:
                     token_dict['info'].pop(key)
+
+        # Tell the caller which of the returned token info entries it may not change or remove, so a client does
+        # not offer an edit or a delete that the token info endpoints would refuse. The value of an entry is
+        # readable either way, only writing it is restricted. A "<key>.type" entry is synthesized from the value
+        # type of "<key>" and is not a stored entry of its own, so it can be neither changed nor removed.
+        readonly_info_keys = []
+        undeletable_info_keys = []
+        for key in token_dict["info"]:
+            if key.endswith(TOKENINFO_TYPE_SUFFIX):
+                readonly_info_keys.append(key)
+                undeletable_info_keys.append(key)
+                continue
+            if token.is_owned_tokeninfo_key(key):
+                readonly_info_keys.append(key)
+                if not token.is_deletable_tokeninfo_key(key):
+                    undeletable_info_keys.append(key)
+        token_dict["readonly_info_keys"] = readonly_info_keys
+        token_dict["undeletable_info_keys"] = undeletable_info_keys
 
         token_dict["container_serial"] = container_serial_by_token_id.get(token.token.id, "")
 

@@ -1966,7 +1966,7 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
         self._enroll_push_token()
         # Remove the firebase config so create_challenge does not persist a challenge
         # and returns transaction_id=None.
-        get_one_token(serial=self.serial_push).delete_tokeninfo(PushAction.FIREBASE_CONFIG)
+        get_one_token(serial=self.serial_push).remove_tokeninfo(PushAction.FIREBASE_CONFIG)
         # An unrelated, concurrent challenge for the same token that must survive.
         Challenge(self.serial_push, transaction_id="unrelated-tx", challenge="abc").save()
 

@@ -88,6 +88,7 @@ class FourEyesTokenClass(TokenClass):
            4eyes=realm1:2,realm2:1
            separator=%20
     """
+    owned_tokeninfo_keys = frozenset({"4eyes", "separator"})
 
     def __init__(self, db_token):
         """
@@ -243,9 +244,9 @@ class FourEyesTokenClass(TokenClass):
                                  "character")
         realms = self.realms_dict_to_string(realms)
         self.convert_realms(realms)
-        self.add_tokeninfo("separator", separator)
-        self.add_tokeninfo("4eyes", realms)
-        self.add_tokeninfo("tokenkind", Tokenkind.VIRTUAL)
+        self.write_tokeninfo("separator", separator)
+        self.write_tokeninfo("4eyes", realms)
+        self.write_tokeninfo("tokenkind", Tokenkind.VIRTUAL)
 
     def _authenticate_in_realm(self, realm, password):
         """

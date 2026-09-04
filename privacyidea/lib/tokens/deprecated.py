@@ -55,6 +55,8 @@ class DeprecatedTokenClass(TokenClass):
 
     mode = []
 
+    owned_tokeninfo_keys = frozenset({"deprecated_in", "original_tokentype"})
+
     @staticmethod
     def get_class_type():
         return "deprecated"

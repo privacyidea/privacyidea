@@ -103,6 +103,9 @@ class EmailTokenClass(HotpTokenClass):
 
     EMAIL_ADDRESS_KEY = "email"
     DYNAMIC_EMAIL_KEY = "dynamic_email"
+
+    owned_tokeninfo_keys = frozenset({EMAIL_ADDRESS_KEY, DYNAMIC_EMAIL_KEY, "email.identifier"})
+
     # The HOTP token provides means to verify the enrollment
     can_verify_enrollment = True
     mode = [AuthenticationMode.CHALLENGE]
@@ -129,7 +132,7 @@ class EmailTokenClass(HotpTokenClass):
 
     @_email_address.setter
     def _email_address(self, value):
-        self.add_tokeninfo(self.EMAIL_ADDRESS_KEY, value)
+        self.write_tokeninfo(self.EMAIL_ADDRESS_KEY, value)
 
     @staticmethod
     def get_class_type():
@@ -228,14 +231,14 @@ class EmailTokenClass(HotpTokenClass):
         verify = get_optional(param, "verify")
         if not verify:
             if get_optional(param, self.DYNAMIC_EMAIL_KEY):
-                self.add_tokeninfo(self.DYNAMIC_EMAIL_KEY, True)
-                self.delete_tokeninfo(self.EMAIL_ADDRESS_KEY)
+                self.write_tokeninfo(self.DYNAMIC_EMAIL_KEY, True)
+                self.remove_tokeninfo(self.EMAIL_ADDRESS_KEY)
             else:
                 # specific - e-mail
                 self._email_address = get_required(param,
                                                self.EMAIL_ADDRESS_KEY,
                                                allow_empty=True)
-                self.delete_tokeninfo(self.DYNAMIC_EMAIL_KEY)
+                self.remove_tokeninfo(self.DYNAMIC_EMAIL_KEY)
 
             # in case of the e-mail token, only the server must know the otpkey
             # thus if none is provided, we let create one (in the TokenClass)
@@ -599,8 +602,8 @@ class EmailTokenClass(HotpTokenClass):
         validate_email = get_email_validators().get(validate_module)
         if validate_email(passw):
             # TODO: If anything special happens, we could leave it as a dynamic email
-            self.delete_tokeninfo(self.DYNAMIC_EMAIL_KEY)
-            self.add_tokeninfo(self.EMAIL_ADDRESS_KEY, passw)
+            self.remove_tokeninfo(self.DYNAMIC_EMAIL_KEY)
+            self.write_tokeninfo(self.EMAIL_ADDRESS_KEY, passw)
             # Dynamically we remember that we need to do another challenge
             self.currently_in_challenge = True
         else:

@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, inject, Input, linkedSignal, Signal, WritableSignal } from "@angular/core";
+import { Component, inject, Input, linkedSignal, Signal, signal, WritableSignal } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { MatIconButton } from "@angular/material/button";
 import { MatDivider } from "@angular/material/divider";
@@ -26,7 +26,11 @@ import { MatInput } from "@angular/material/input";
 import { DetailsCardComponent } from "@components/shared/details-shared/details-card/details-card.component";
 import { EditableElement, EditButtonsComponent } from "@components/shared/edit-buttons/edit-buttons.component";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
-import { TokenService, TokenServiceInterface } from "@services/token/token.service";
+import {
+  isTokenInfoKeyWritable,
+  TokenService,
+  TokenServiceInterface
+} from "@services/token/token.service";
 import { Observable, switchMap } from "rxjs";
 import { TIMESTAMP_INFO_KEYS } from "../token-details.constants";
 
@@ -56,6 +60,10 @@ export class TokenDetailsInfoComponent {
   @Input() isAnyEditingOrRevoked!: Signal<boolean>;
   @Input() isEditingInfo!: WritableSignal<boolean>;
   @Input() isEditingUser!: WritableSignal<boolean>;
+  /** Info entries the token maintains itself, see TokenDetails.readonly_info_keys */
+  @Input() readonlyInfoKeys: Signal<string[]> = signal<string[]>([]);
+  /** Info entries that may not be removed, see TokenDetails.undeletable_info_keys */
+  @Input() undeletableInfoKeys: Signal<string[]> = signal<string[]>([]);
   newInfo: WritableSignal<{ key: string; value: string }> = linkedSignal({
     source: () => this.isEditingInfo(),
     computation: () => {
@@ -76,6 +84,22 @@ export class TokenDetailsInfoComponent {
     return element as EditableElement<Record<string, string>>;
   }
 
+  /**
+   * Whether the value of an info entry can be changed. Entries the token maintains itself are shown, but read
+   * only, unless they have their own endpoint the value can be written through.
+   */
+  isInfoKeyEditable(key: string): boolean {
+    return isTokenInfoKeyWritable(key, this.readonlyInfoKeys());
+  }
+
+  /**
+   * Whether an info entry can be removed. Removing an entry the token maintains would take away something it
+   * needs, except where dropping it only revokes a capability, e.g. an offline refill token.
+   */
+  isInfoKeyDeletable(key: string): boolean {
+    return !this.undeletableInfoKeys().includes(key);
+  }
+
   toggleInfoEdit(): void {
     if (this.isEditingInfo()) {
       this.tokenService.tokenDetailResource.reload();
@@ -87,7 +111,7 @@ export class TokenDetailsInfoComponent {
     if (this.newInfo().key.trim() !== "" && this.newInfo().value.trim() !== "") {
       element.value[this.newInfo().key] = this.newInfo().value;
     }
-    this.tokenService.setTokenInfos(this.tokenSerial(), element.value).subscribe({
+    this.tokenService.setTokenInfos(this.tokenSerial(), element.value, this.readonlyInfoKeys()).subscribe({
       next: () => {
         this.newInfo.set({ key: "", value: "" });
         this.tokenService.tokenDetailResource.reload();

@@ -107,13 +107,14 @@ from .challenge_types import (  # noqa: F401
 from .config import (get_from_config, get_prepend_pin)
 from .decorators import check_token_locked
 from .error import (TokenAdminError,
-                    ParameterError, ResourceNotFoundError)
+                    ParameterError, PolicyError, ResourceNotFoundError)
 from .log import log_with, redacted_attributes
 from .policies.actions import PolicyAction
 from .policydecorators import libpolicy, auth_otppin, challenge_response_allowed
 from .user import (User)
 from ..models import (TokenOwner, TokenTokengroup, cleanup_challenges, TokenInfo, db, TokenRealm, Realm,
                       Tokengroup, TokenCredentialIdHash)
+from ..models.token import TOKENINFO_TYPE_SUFFIX
 
 DATE_FORMAT = '%Y-%m-%dT%H:%M%z'
 AUTH_DATE_FORMAT = "%Y-%m-%d %H:%M:%S.%f%z"
@@ -158,6 +159,107 @@ class TokenClass:
     can_verify_enrollment = False
 
     desc_key_gen = lazy_gettext("Force the key to be generated on the server.")
+
+    # Token info keys that this token class owns: they are written by the token class itself or by an endpoint
+    # that has its own dedicated action, and their value decides how the token authenticates or whether it may
+    # authenticate at all. They are not free-form metadata an administrator may edit, so a generic token info
+    # write must not reach them.
+    #
+    # A class only declares the keys it introduces itself, the effective set is the union over the class
+    # hierarchy. Use owned_tokeninfo_prefixes for a whole namespace such as "radius.". A class whose keys are
+    # not known up front (the questions of a questionnaire token) overrides is_owned_tokeninfo_key instead.
+    owned_tokeninfo_keys = frozenset({
+        "assignment_date",
+        "count_auth",
+        "count_auth_max",
+        "count_auth_success",
+        "count_auth_success_max",
+        "creation_date",
+        FAILCOUNTER_EXCEEDED,
+        "hashlib",
+        "import_date",
+        PolicyAction.LASTAUTH,
+        "next_password_change",
+        "next_pin_change",
+        # The offline machine application attaches these to any offline capable token, so they are declared here
+        # rather than on a single token class. The refill token authorizes fetching further offline OTP material.
+        "offline_counter",
+        "refilltoken",
+        "tokenkind",
+        "validity_period_end",
+        "validity_period_start",
+    })
+    # A FIDO2 token can be offline on several machines, so its refill token is stored per machine name
+    owned_tokeninfo_prefixes = frozenset({"refilltoken_"})
+
+    # Owned keys that may still be removed through a generic token info write, declared the same way. The value
+    # of an owned key is issued by the server and is not written from a request, but removing the entry only
+    # drops the capability it carries, which is a legitimate administrative action.
+    deletable_tokeninfo_keys = frozenset({"refilltoken"})
+    deletable_tokeninfo_prefixes = frozenset({"refilltoken_"})
+
+    @classmethod
+    def _collect_tokeninfo_declaration(cls, keys_attribute: str, prefixes_attribute: str) -> tuple:
+        """
+        Return the effective (keys, prefixes) of one token info declaration, as the union of everything declared
+        along the class hierarchy. The result is cached per class, the declarations do not change at runtime.
+
+        :param keys_attribute: Name of the class attribute holding the exact keys
+        :param prefixes_attribute: Name of the class attribute holding the key prefixes
+        :return: Tuple of a frozenset of keys and a frozenset of prefixes
+        """
+        cache_attribute = f"_collected_{keys_attribute}"
+        collected = cls.__dict__.get(cache_attribute)
+        if collected is None:
+            keys = set()
+            prefixes = set()
+            for klass in cls.__mro__:
+                keys.update(vars(klass).get(keys_attribute, ()))
+                prefixes.update(vars(klass).get(prefixes_attribute, ()))
+            collected = (frozenset(keys), frozenset(prefixes))
+            setattr(cls, cache_attribute, collected)
+        return collected
+
+    @classmethod
+    def is_owned_tokeninfo_key(cls, key: str) -> bool:
+        """
+        Whether the given token info key is owned by this token class, see owned_tokeninfo_keys.
+
+        :param key: The token info key to check
+        :return: True if the key is owned by the token class
+        """
+        keys, prefixes = cls._collect_tokeninfo_declaration("owned_tokeninfo_keys", "owned_tokeninfo_prefixes")
+        return key in keys or any(key.startswith(prefix) for prefix in prefixes)
+
+    def is_being_enrolled(self) -> bool:
+        """
+        Whether the token is still going through its enrollment, which includes a token that was just created,
+        one waiting for the client and one waiting to be verified.
+
+        init_token() updates an existing token when it is called with a serial that already exists, so update()
+        runs both for an enrollment and for a request against a token that is already in use. The token info a
+        token class writes from the enrollment parameters describes what the token authenticates against, so
+        those entries belong to the enrollment and are only written while this returns True. They are changed
+        later through POST /token/set.
+
+        :return: True while the token is being enrolled
+        """
+        return self.token.rollout_state != RolloutState.ENROLLED
+
+    @classmethod
+    def is_deletable_tokeninfo_key(cls, key: str) -> bool:
+        """
+        Whether the given token info key may be removed through a generic token info write. Every key the token
+        class does not own may be, and of the owned ones those declared in deletable_tokeninfo_keys.
+
+        :param key: The token info key to check
+        :return: True if the key may be deleted
+        """
+        if not cls.is_owned_tokeninfo_key(key):
+            return True
+        keys, prefixes = cls._collect_tokeninfo_declaration("deletable_tokeninfo_keys",
+                                                            "deletable_tokeninfo_prefixes")
+        return key in keys or any(key.startswith(prefix) for prefix in prefixes)
 
     @log_with(log)
     def __init__(self, db_token):
@@ -229,7 +331,7 @@ class TokenClass:
             db.session.add(new_owner)
             # Add users realm to token realms
             self.set_realms([user.realm], add=True, commit_db_session=False)
-            self.add_tokeninfo("assignment_date", datetime.now(timezone.utc).isoformat(timespec="seconds"),
+            self.write_tokeninfo("assignment_date", datetime.now(timezone.utc).isoformat(timespec="seconds"),
                                commit_db_session=False)
             db.session.commit()
         elif token_owner != user:
@@ -407,31 +509,69 @@ class TokenClass:
     @check_token_locked
     def set_tokeninfo(self, info: dict):
         """
-        Set the tokeninfo field in the DB. Old values will be deleted.
+        Set the tokeninfo field in the DB. Old values will be deleted. This replaces the whole token info of the
+        token, including the keys the token class owns, so it is server side only.
 
         :param info: dictionary with key and value
         :return:
         """
-        self.delete_tokeninfo()
+        self.remove_tokeninfo()
         self.add_tokeninfo_dict(info)
 
     @check_token_locked
     def add_tokeninfo(self, key: str, value: str, value_type: str = None, commit_db_session: bool = True):
         """
-        Add a key and a value to the DB tokeninfo
+        Add a key and a value to the DB tokeninfo on behalf of a request, e.g. the token info endpoints or the
+        token event handler. A key the token class owns is refused, see owned_tokeninfo_keys: its value decides
+        how the token authenticates, so it is maintained by the server and is not free-form metadata.
+
+        Server side code that maintains such a key writes it with write_tokeninfo() instead.
 
         :param key:
         :param value:
-        :param value_type: If type is "password", the value will be encrypted
+        :param value_type: See write_tokeninfo()
+        :param commit_db_session: See write_tokeninfo()
+        :raises PolicyError: If the key is owned by the token class.
+        :raises ParameterError: If the key uses the reserved ".type" suffix.
+        """
+        if self.is_owned_tokeninfo_key(key):
+            log.info(f"Refusing to set the token info '{key}' of token {self.token.serial} through a generic "
+                     f"token info write, the key is managed by the token.")
+            raise PolicyError(f"The token info key '{key}' is managed by the token and can not be modified.")
+        self.write_tokeninfo(key, value, value_type=value_type, commit_db_session=commit_db_session)
+
+    @check_token_locked
+    def write_tokeninfo(self, key: str, value: str, value_type: str = None, commit_db_session: bool = True) -> None:
+        """
+        Add a key and a value to the DB tokeninfo without checking whether the token class owns the key. This is
+        the writer for server side code that maintains the token info of a token, a write that comes from a
+        request has to go through add_tokeninfo() so that the owned keys stay under the control of the server.
+
+        :param key:
+        :param value:
+        :param value_type: If type is "password", the value will be encrypted. If it is None and an entry for this
+            key already exists, the type of that entry is kept. Callers that do not know about the type of a key
+            must not silently turn an encrypted entry into a plaintext one, so clearing the type requires deleting
+            the entry and adding it again.
         :param commit_db_session: Whether the database changes should be committed to be persistent. Only use false if
             you are doing multiple database changes with a final single commit.
+        :raises ParameterError: If the key uses the reserved ".type" suffix.
         """
-
-        if value_type == "password":
-            value = encryptPassword(value)
+        # A "<key>.type" entry is not stored as a row, it is synthesized from the Type column of "<key>" when the
+        # token info is read. A real row with that name would shadow the synthetic one and make the value of
+        # "<key>" be read with the wrong type, so the suffix is reserved.
+        if key.endswith(TOKENINFO_TYPE_SUFFIX):
+            raise ParameterError(f"The token info key '{key}' uses the reserved "
+                                 f"'{TOKENINFO_TYPE_SUFFIX}' suffix.")
 
         statement = select(TokenInfo).where(TokenInfo.token_id == self.token.id, TokenInfo.Key == key)
         token_info = db.session.execute(statement).scalar_one_or_none()
+
+        if token_info is not None and value_type is None:
+            value_type = token_info.Type
+
+        if value_type == "password":
+            value = encryptPassword(value)
 
         if token_info is None:
             # Create new info entry
@@ -446,11 +586,17 @@ class TokenClass:
 
     @check_token_locked
     def add_tokeninfo_dict(self, info: dict):
+        """
+        Write several token info entries at once. Used server side, e.g. during enrollment and token import, so
+        it writes the keys the token class owns as well.
+
+        :param info: dictionary with key and value, optionally with "<key>.type" entries carrying the value type
+        """
         for key, value in info.items():
-            if key.endswith(".type"):
+            if key.endswith(TOKENINFO_TYPE_SUFFIX):
                 continue
-            value_type = info.get(f"{key}.type", None)
-            self.add_tokeninfo(key, value, value_type, commit_db_session=False)
+            value_type = info.get(f"{key}{TOKENINFO_TYPE_SUFFIX}", None)
+            self.write_tokeninfo(key, value, value_type, commit_db_session=False)
         db.session.commit()
 
     @check_token_locked
@@ -693,13 +839,21 @@ class TokenClass:
         if otplen is not None:
             self.set_otplen(otplen)
 
-        # Add parameters starting with the tokentype-name to the tokeninfo:
-        for p in param.keys():
-            if p.startswith(self.type + "."):
-                self.add_tokeninfo(p, get_optional(param, p))
+        # Add parameters starting with the tokentype-name to the tokeninfo. These are keys the token class owns,
+        # e.g. the server a radius token forwards to, so they are only accepted while the token is being
+        # enrolled, see is_being_enrolled().
+        if self.is_being_enrolled():
+            for p in param.keys():
+                if p.startswith(self.type + "."):
+                    self.write_tokeninfo(p, get_optional(param, p))
+        else:
+            ignored = [p for p in param.keys() if p.startswith(self.type + ".")]
+            if ignored:
+                log.info(f"Ignoring the parameters {ignored!s} for the already enrolled token "
+                         f"{self.token.serial}, they are only set during the enrollment.")
 
         # The base class will be a software tokenkind
-        self.add_tokeninfo("tokenkind", Tokenkind.SOFTWARE)
+        self.write_tokeninfo("tokenkind", Tokenkind.SOFTWARE)
 
         return
 
@@ -842,7 +996,7 @@ class TokenClass:
         """
         self.token.failcount = failcount
         if failcount == 0:
-            self.delete_tokeninfo(FAILCOUNTER_EXCEEDED)
+            self.remove_tokeninfo(FAILCOUNTER_EXCEEDED)
 
     def get_max_failcount(self):
         return self.token.maxfail
@@ -1032,14 +1186,14 @@ class TokenClass:
 
     @check_token_locked
     def set_hashlib(self, hashlib):
-        self.add_tokeninfo("hashlib", hashlib)
+        self.write_tokeninfo("hashlib", hashlib)
 
     @check_token_locked
     def inc_failcount(self):
         if self.token.failcount < self.token.maxfail:
             self.token.failcount = (self.token.failcount + 1)
             if self.token.failcount == self.token.maxfail:
-                self.add_tokeninfo(FAILCOUNTER_EXCEEDED,
+                self.write_tokeninfo(FAILCOUNTER_EXCEEDED,
                                    datetime.now(tzlocal()).strftime(
                                        DATE_FORMAT))
         try:
@@ -1118,20 +1272,43 @@ class TokenClass:
 
         if key:
             ret = tokeninfo.get(key, default)
-            key_type = tokeninfo.get(key + ".type")
+            key_type = tokeninfo.get(key + TOKENINFO_TYPE_SUFFIX)
             if key_type == "password":
                 ret = decryptPassword(ret)
         elif decrypted:
-            ret = {x: (decryptPassword(y) if tokeninfo.get(x + ".type") == "password" else y)
+            ret = {x: (decryptPassword(y) if tokeninfo.get(x + TOKENINFO_TYPE_SUFFIX) == "password" else y)
                    for x, y in tokeninfo.items()}
 
         return ret
 
     def delete_tokeninfo(self, key: str = None):
         """
-        Deletes the token info for the given key. If no key is given, all info entries from this token are deleted.
+        Deletes the token info for the given key on behalf of a request, e.g. the token info endpoints or the
+        token event handler. A key the token class owns is refused unless it is declared deletable, and so is
+        deleting the whole token info, because that would remove the owned keys along with the free-form ones.
+
+        Server side code that maintains such a key removes it with remove_tokeninfo() instead.
 
         :param key: The key to delete
+        :raises PolicyError: If the key may not be deleted, or if no key is given.
+        """
+        if key is None:
+            raise PolicyError("Deleting the whole token info of a token is not supported, the token would lose "
+                              "the entries it needs to function.")
+        if not self.is_deletable_tokeninfo_key(key):
+            log.info(f"Refusing to delete the token info '{key}' of token {self.token.serial} through a generic "
+                     f"token info write, the key is managed by the token.")
+            raise PolicyError(f"The token info key '{key}' is managed by the token and can not be deleted.")
+        self.remove_tokeninfo(key)
+
+    def remove_tokeninfo(self, key: str = None) -> None:
+        """
+        Deletes the token info for the given key without checking whether the token class owns the key. If no key
+        is given, all info entries from this token are deleted. This is the remover for server side code that
+        maintains the token info of a token, a delete that comes from a request has to go through
+        delete_tokeninfo().
+
+        :param key: The key to delete, or None to delete every entry
         """
         statement = delete(TokenInfo).where(TokenInfo.token_id == self.token.id)
         if key:
@@ -1173,7 +1350,7 @@ class TokenClass:
         :param count: a number
         :type count: int
         """
-        self.add_tokeninfo("count_auth_success_max", int(count))
+        self.write_tokeninfo("count_auth_success_max", int(count))
 
     @check_token_locked
     def set_count_auth_success(self, count):
@@ -1184,7 +1361,7 @@ class TokenClass:
         :param count: a number
         :type count: int
         """
-        self.add_tokeninfo("count_auth_success", int(count))
+        self.write_tokeninfo("count_auth_success", int(count))
 
     @check_token_locked
     def set_count_auth_max(self, count):
@@ -1195,7 +1372,7 @@ class TokenClass:
         :param count: a number
         :type count: int
         """
-        self.add_tokeninfo("count_auth_max", int(count))
+        self.write_tokeninfo("count_auth_max", int(count))
 
     @check_token_locked
     def set_count_auth(self, count):
@@ -1206,7 +1383,7 @@ class TokenClass:
         :param count: a number
         :type count: int
         """
-        self.add_tokeninfo("count_auth", int(count))
+        self.write_tokeninfo("count_auth", int(count))
 
     def get_count_auth_success_max(self):
         """
@@ -1260,7 +1437,7 @@ class TokenClass:
         :type end_date: str
         """
         if not end_date:
-            self.delete_tokeninfo("validity_period_end")
+            self.remove_tokeninfo("validity_period_end")
         else:
             #  upper layer will catch. we just try to verify the date format
             try:
@@ -1268,7 +1445,7 @@ class TokenClass:
             except ValueError as _e:
                 log.debug(f'{traceback.format_exc()!s}')
                 raise TokenAdminError('Could not parse validity period end date!')
-            self.add_tokeninfo("validity_period_end", d.strftime(DATE_FORMAT))
+            self.write_tokeninfo("validity_period_end", d.strftime(DATE_FORMAT))
 
     def get_validity_period_start(self):
         """
@@ -1294,7 +1471,7 @@ class TokenClass:
         :type start_date: str
         """
         if not start_date:
-            self.delete_tokeninfo("validity_period_start")
+            self.remove_tokeninfo("validity_period_start")
         else:
             try:
                 d = parse_date_string(start_date)
@@ -1302,7 +1479,7 @@ class TokenClass:
                 log.debug(f'{traceback.format_exc()!s}')
                 raise TokenAdminError('Could not parse validity period start date!')
 
-            self.add_tokeninfo("validity_period_start", d.strftime(DATE_FORMAT))
+            self.write_tokeninfo("validity_period_start", d.strftime(DATE_FORMAT))
 
     @check_token_locked
     def set_next_pin_change(self, diff=None, password=False):
@@ -1320,7 +1497,7 @@ class TokenClass:
         if password:
             key = "next_password_change"
         new_date = datetime.now(tzlocal()) + timedelta(days=days)
-        self.add_tokeninfo(key, new_date.strftime(DATE_FORMAT))
+        self.write_tokeninfo(key, new_date.strftime(DATE_FORMAT))
 
     def is_pin_change(self, password=False):
         """
@@ -2172,5 +2349,5 @@ class TokenClass:
         self.token.description = token_information.setdefault("description", '')
         self.token.pin_hash = token_information.setdefault("_hashed_pin", None)
         self.add_tokeninfo_dict(token_information.setdefault("info_list", {}))
-        self.add_tokeninfo("import_date", datetime.now(timezone.utc).isoformat(timespec="seconds"))
+        self.write_tokeninfo("import_date", datetime.now(timezone.utc).isoformat(timespec="seconds"))
         self.save()

@@ -65,6 +65,8 @@ class IndexedSecretTokenClass(TokenClass):
     """
     mode = [AuthenticationMode.CHALLENGE]
 
+    owned_tokeninfo_keys = frozenset({"multichallenge"})
+
     # The token type provides means to verify the enrollment
     can_verify_enrollment = True
 

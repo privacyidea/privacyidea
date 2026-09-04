@@ -614,6 +614,12 @@ class WebAuthnTokenClass(TokenClass):
 
     client_mode = ClientMode.WEBAUTHN
 
+    owned_tokeninfo_keys = frozenset({FIDO2TokenInfo.AAGUID, FIDO2TokenInfo.ATTESTATION_ISSUER,
+                                      FIDO2TokenInfo.ATTESTATION_LEVEL, FIDO2TokenInfo.ATTESTATION_SERIAL,
+                                      FIDO2TokenInfo.ATTESTATION_SUBJECT, FIDO2TokenInfo.CREDENTIAL_ID_HASH,
+                                      FIDO2TokenInfo.ORIGIN, FIDO2TokenInfo.PUB_KEY,
+                                      FIDO2TokenInfo.RELYING_PARTY_ID, FIDO2TokenInfo.RELYING_PARTY_NAME})
+
     @staticmethod
     def _get_challenge_validity_time():
         return int(get_from_config(FIDO2ConfigOptions.CHALLENGE_VALIDITY_TIME,

@@ -73,6 +73,8 @@ log = logging.getLogger(__name__)
 class RadiusTokenClass(RemoteTokenClass):
     mode = [AuthenticationMode.AUTHENTICATE, AuthenticationMode.CHALLENGE]
 
+    owned_tokeninfo_prefixes = frozenset({"radius."})
+
     def __init__(self, db_token):
         RemoteTokenClass.__init__(self, db_token)
         self.set_type("radius")
@@ -132,18 +134,25 @@ class RadiusTokenClass(RemoteTokenClass):
 
     @log_with(log)
     def update(self, param):
+        # What this token forwards to is written from the enrollment parameters, so it is only taken while the
+        # token is being enrolled. Changing it later goes through POST /token/set.
+        if not self.is_being_enrolled():
+            self.set_otplen(6)
+            TokenClass.update(self, param)
+            return
+
         # New value
         radius_identifier = get_optional(param, "radius.identifier")
-        self.add_tokeninfo("radius.identifier", radius_identifier)
+        self.write_tokeninfo("radius.identifier", radius_identifier)
 
         # old values
         if not radius_identifier:
             radiusServer = get_optional(param, "radius.server")
-            self.add_tokeninfo("radius.server", radiusServer)
+            self.write_tokeninfo("radius.server", radiusServer)
             radius_secret = get_optional(param, "radius.secret")
             self.token.set_otpkey(hexlify_and_unicode(radius_secret or ""))
             system_settings = get_optional(param, "radius.system_settings")
-            self.add_tokeninfo("radius.system_settings", system_settings)
+            self.write_tokeninfo("radius.system_settings", system_settings)
 
             if not (radiusServer or radius_secret) and not is_true(system_settings):
                 raise ParameterError("Missing parameter: radius.identifier", id=905)
@@ -153,10 +162,10 @@ class RadiusTokenClass(RemoteTokenClass):
         self.set_otplen(6)
         TokenClass.update(self, param)
         val = get_optional(param, "radius.local_checkpin") or 0
-        self.add_tokeninfo("radius.local_checkpin", val)
+        self.write_tokeninfo("radius.local_checkpin", val)
         val = get_required(param, "radius.user")
-        self.add_tokeninfo("radius.user", val)
-        self.add_tokeninfo("tokenkind", Tokenkind.VIRTUAL)
+        self.write_tokeninfo("radius.user", val)
+        self.write_tokeninfo("tokenkind", Tokenkind.VIRTUAL)
 
     @log_with(log, hide_args=[1])
     @challenge_response_allowed

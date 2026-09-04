@@ -58,6 +58,20 @@ class QuestionnaireTokenClass(TokenClass):
     The user has to remember and pass the right answer.
     """
 
+    @classmethod
+    def is_owned_tokeninfo_key(cls, key: str) -> bool:
+        """
+        Every token info key of a questionnaire token is owned by the token class. The questions are the keys and
+        the answers are the values, both are chosen during enrollment, so the keys are not known up front and
+        cannot be declared. A key that is not a question would be indistinguishable from one that is, and the
+        answers are the shared secret of this token type, so the whole token info is written during the
+        enrollment only. Free-form notes belong in the description of the token.
+
+        :param key: The token info key to check
+        :return: Always True
+        """
+        return True
+
     @staticmethod
     def get_class_type():
         """
@@ -164,7 +178,7 @@ class QuestionnaireTokenClass(TokenClass):
                                     "answers.") % num_answers)
         # Save all questions and answers and encrypt them
         for question, answer in questions.items():
-            self.add_tokeninfo(question, answer, value_type="password")
+            self.write_tokeninfo(question, answer, value_type="password")
         TokenClass.update(self, param)
 
     def is_challenge_request(self, passw, user=None, options=None):

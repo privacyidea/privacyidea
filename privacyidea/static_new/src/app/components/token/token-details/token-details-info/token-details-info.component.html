@@ -39,23 +39,29 @@
       @for (key of visibleInfoKeys(info); track key) {
         <dt class="info-key">{{ key }}:</dt>
         <dd class="info-value">
-          @if (isEditingInfo()) {
+          @if (isEditingInfo() && (isInfoKeyEditable(key) || isInfoKeyDeletable(key))) {
             <div class="info-edit-row">
-              <mat-form-field
-                class="info-edit-field input-width-l"
-                subscriptSizing="dynamic">
-                <textarea
-                  [(ngModel)]="info[key]"
-                  matInput
-                  rows="1"></textarea>
-              </mat-form-field>
-              <button
-                (click)="deleteInfo(key)"
-                aria-label="Delete Information"
-                i18n-aria-label="@@container.deleteInformation"
-                mat-icon-button>
-                <mat-icon>delete_outlined</mat-icon>
-              </button>
+              @if (isInfoKeyEditable(key)) {
+                <mat-form-field
+                  class="info-edit-field input-width-l"
+                  subscriptSizing="dynamic">
+                  <textarea
+                    [(ngModel)]="info[key]"
+                    matInput
+                    rows="1"></textarea>
+                </mat-form-field>
+              } @else {
+                <span class="info-value-readonly">{{ info[key] }}</span>
+              }
+              @if (isInfoKeyDeletable(key)) {
+                <button
+                  (click)="deleteInfo(key)"
+                  aria-label="Delete Information"
+                  i18n-aria-label="@@container.deleteInformation"
+                  mat-icon-button>
+                  <mat-icon>delete_outlined</mat-icon>
+                </button>
+              }
             </div>
           } @else {
             <span>{{ info[key] }}</span>

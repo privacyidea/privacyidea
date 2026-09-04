@@ -72,6 +72,9 @@ class RemoteTokenClass(TokenClass):
     """
     mode = [AuthenticationMode.AUTHENTICATE, AuthenticationMode.CHALLENGE]
 
+    owned_tokeninfo_keys = frozenset({"last_matching_remote_serial"})
+    owned_tokeninfo_prefixes = frozenset({"remote."})
+
     def __init__(self, db_token):
         """
         constructor - create a token class object with it's db token binding
@@ -149,26 +152,31 @@ class RemoteTokenClass(TokenClass):
         self.set_otplen(6)
         TokenClass.update(self, param)
 
+        # What this token forwards to is written from the enrollment parameters, so it is only taken while the
+        # token is being enrolled. Changing it later goes through POST /token/set.
+        if not self.is_being_enrolled():
+            return
+
         remote_server_id = get_optional(param, "remote.server_id")
 
         if remote_server_id is not None:
             if get_privacyideaserver(id=remote_server_id):
-                self.add_tokeninfo("remote.server_id", remote_server_id)
+                self.write_tokeninfo("remote.server_id", remote_server_id)
         else:
             remoteServer = get_required(param, "remote.server")
-            self.add_tokeninfo("remote.server", remoteServer)
+            self.write_tokeninfo("remote.server", remoteServer)
             log.warning("Using remote.server for remote tokens is deprecated. Use remote.server_id!")
 
         val = get_optional(param, "remote.local_checkpin") or 0
-        self.add_tokeninfo("remote.local_checkpin", val)
+        self.write_tokeninfo("remote.local_checkpin", val)
 
         for key in ["remote.serial", "remote.user", "remote.path",
                     "remote.realm", "remote.resolver"]:
             val = get_optional(param, key)
             if val is not None:
-                self.add_tokeninfo(key, val)
+                self.write_tokeninfo(key, val)
 
-        self.add_tokeninfo("tokenkind", Tokenkind.VIRTUAL)
+        self.write_tokeninfo("tokenkind", Tokenkind.VIRTUAL)
 
     @property
     def check_pin_local(self):
@@ -295,7 +303,7 @@ class RemoteTokenClass(TokenClass):
                 if result.get("value"):
                     otp_count = 1
                     # Add the serial of the used remote token in the tokeninfo parameters
-                    self.add_tokeninfo("last_matching_remote_serial", response.get("detail", {}).get("serial"))
+                    self.write_tokeninfo("last_matching_remote_serial", response.get("detail", {}).get("serial"))
 
         except Exception as exx:  # pragma: no cover
             log.error("Error getting response from "

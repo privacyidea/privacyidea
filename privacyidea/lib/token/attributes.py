@@ -8,7 +8,7 @@ from typing import Any, TYPE_CHECKING
 from sqlalchemy.sql.expression import delete
 
 from privacyidea.lib import _
-from privacyidea.lib.config import (get_from_config)
+from privacyidea.lib.config import (get_from_config, get_token_types)
 from privacyidea.lib.decorators import (check_user_or_serial)
 from privacyidea.lib.error import (TokenAdminError,
                                    ParameterError)
@@ -510,7 +510,7 @@ def add_tokeninfo(serial: str, info: str, value: Any = None, value_type: str | N
     tokenobject_list = get_tokens_from_serial_or_user(serial=serial, user=user)
 
     for tokenobject in tokenobject_list:
-        tokenobject.add_tokeninfo(info, value)
+        tokenobject.add_tokeninfo(info, value, value_type=value_type)
         tokenobject.save()
 
     return len(tokenobject_list)
@@ -537,6 +537,43 @@ def delete_tokeninfo(serial: str, key: str, user: "User | None" = None) -> int:
         tokenobject.save()
 
     return len(tokenobject_list)
+
+
+@log_with(log)
+@check_user_or_serial
+def set_token_type_info(serial: str | None, info: dict, user: "User | None" = None) -> int:
+    """
+    Write token type specific token info entries, e.g. "remote.user" on a remote token. These entries are owned
+    by the token class, so they can not be written through the generic token info endpoints, but they do change
+    over the lifetime of a token and an administrator who may modify the token may change them.
+
+    Every key has to be prefixed with a known token type, and it is only written to tokens of that type, so a
+    parameter can never reach the namespace of a different token type. A key naming an unknown type is a
+    typo rather than a namespace, and is rejected.
+
+    :param serial: The serial number of the token
+    :param info: The entries to write, as {"<tokentype>.<key>": value}
+    :param user: The owner of the tokens that should be modified
+    :return: The number of modified tokens
+    """
+    token_types = get_token_types()
+    for key in info:
+        token_type = key.split(".", 1)[0]
+        if token_type not in token_types:
+            raise ParameterError(f"The token info key '{key}' is not prefixed with a known token type.")
+
+    tokenobject_list = get_tokens_from_serial_or_user(serial=serial, user=user)
+    modified_tokens = 0
+    for tokenobject in tokenobject_list:
+        # A user can own tokens of several types, only the ones the key belongs to are touched
+        own_info = {key: value for key, value in info.items() if key.startswith(f"{tokenobject.type}.")}
+        if not own_info:
+            continue
+        for key, value in own_info.items():
+            tokenobject.write_tokeninfo(key, value)
+        tokenobject.save()
+        modified_tokens += 1
+    return modified_tokens
 
 
 @log_with(log)

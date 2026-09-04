@@ -406,7 +406,8 @@ def export_user_data(token_list, attributes=None):
 
 @find_cli.command("find")
 @click.option('--set-description', help='set a new description')
-@click.option('--set-tokeninfo-key', help='set a new tokeninfo-key')
+@click.option('--set-tokeninfo-key', help='set a new tokeninfo-key. Only a free-form key can be set, an entry '
+                                          'a token type maintains itself is written by the token and is skipped')
 @click.option('--set-tokeninfo-value', help='set a new tokeninfo-value')
 @click.option('--tokeninfo-value-before', metavar='DATETIME',
               help='Interpret tokeninfo values as datetimes,'

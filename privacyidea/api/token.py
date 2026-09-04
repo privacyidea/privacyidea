@@ -87,6 +87,7 @@ from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action, check_t
                                            force_server_generate_key)
 from privacyidea.lib.challenge import (cancel_challenge, get_challenges, get_challenges_for_user,
                                        get_challenges_paginate, cleanup_expired_challenges)
+from privacyidea.lib.config import get_token_types
 from privacyidea.lib.error import (ParameterError, TokenAdminError,
                                    ResourceNotFoundError, PolicyError, Error)
 from privacyidea.lib.event import event
@@ -112,7 +113,7 @@ from ..lib.token import (init_token, get_tokens_paginate, assign_token,
                          copy_token_user, copy_token_pin, lost_token,
                          get_serial_by_otp, get_tokens,
                          set_validity_period_end, set_validity_period_start, add_tokeninfo,
-                         delete_tokeninfo, import_token,
+                         delete_tokeninfo, import_token, set_token_type_info,
                          assign_tokengroup, unassign_tokengroup, set_tokengroups, get_one_token)
 from ..lib.tokens.passkeytoken import PasskeyTokenClass
 from ..lib.tokens.webauthntoken import WebAuthnTokenClass
@@ -694,7 +695,11 @@ def list_api():
     :query outform: ``csv`` to return ``text/csv`` instead of JSON.
         Pagination still applies.
     :status 200: paginated token list in ``result.value`` (or as a
-        CSV body when ``outform=csv``).
+        CSV body when ``outform=csv``). Each token carries
+        ``readonly_info_keys`` and ``undeletable_info_keys``, the
+        subsets of its ``info`` entries that the token info
+        endpoints refuse to change respectively to remove because
+        the token itself maintains them.
     """
     param = request.all_data
     serial = get_optional(param, "serial")
@@ -1264,6 +1269,13 @@ def set_api(serial=None):
     :jsonparam validity_period_start: ISO 8601 start of validity
         (``YYYY-MM-DDThh:mm+oooo``).
     :jsonparam validity_period_end: ISO 8601 end of validity.
+    :jsonparam <tokentype>.<key>: a token type specific token-info
+        entry, e.g. ``remote.user`` on a remote token. The prefix
+        has to name a known token type and the entry is only
+        written to tokens of that type, so a parameter cannot
+        reach the namespace of another token type. These entries
+        are maintained by the token, so the generic token-info
+        endpoints refuse them.
     :status 200: number of attribute updates applied in
         ``result.value``.
     """
@@ -1323,6 +1335,16 @@ def set_api(serial=None):
         g.audit_object.add_to_log({'action_detail':
                                        f"validity_period_start={validity_period_start!r}, "})
         res += set_validity_period_start(serial, user, validity_period_start)
+
+    # Token type specific entries, e.g. "remote.user" on a remote token. A parameter counts as one when it is
+    # prefixed with a known token type, so the fixed fields above and any framework parameter are unaffected.
+    token_types = get_token_types()
+    type_info = {key: value for key, value in request.all_data.items()
+                 if "." in key and key.split(".", 1)[0] in token_types}
+    if type_info:
+        for key, value in sorted(type_info.items()):
+            g.audit_object.add_to_log({'action_detail': f"{key!s}={value!r}, "})
+        res += set_token_type_info(serial, type_info, user=user)
 
     g.audit_object.log({"success": True})
     return send_result(res)
