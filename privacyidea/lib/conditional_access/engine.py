@@ -1162,9 +1162,18 @@ def _policy_access_decision(policy: ConditionalAccessPolicy, context: CAContext,
     the range its stage owns, which is what makes it a self-healing reject. An
     admin can switch it to fire-once, in which case it only refuses the request at
     the exact threshold count. The stage with the highest threshold whose ``DENY``
-    action is met supplies the decision - and because a re-triggering ``DENY``
-    stops at the next threshold, a more severe stage that does not itself deny
-    lifts the refusal rather than inheriting it.
+    action is met supplies the decision.
+
+    A re-triggering ``DENY`` is bounded like any other action: it stops once a
+    more severe stage's threshold is reached. That escalation is rarely something
+    live traffic reaches on its own, though: once the ``DENY`` is enforced, every
+    further request is refused here, pre-auth, and logged as ``ACCESS_DENIED`` -
+    one of the :data:`~privacyidea.lib.conditional_access.authentication_event_types.CA_ENFORCEMENT_EVENT_TYPES`
+    no policy can count. So the very count that would carry this stage's ``DENY``
+    past the next threshold stops advancing while the refusal holds, and only
+    resumes moving (in either direction) once something outside this policy's own
+    refusal changes it - the window sliding the triggering events out, or a
+    successful login where ``reset_on_success`` applies.
     """
     # Applicability is checked first: a policy whose conditions exclude this request contributes no decision and
     # costs no counting query.
@@ -1358,9 +1367,13 @@ def _action_fires(action: ConditionalAccessStageAction, threshold: int, count: i
     Default (``retrigger_above_threshold`` unset): the action fires only when the count equals the threshold
     exactly, so it triggers once as the count climbs into the stage's range. With ``retrigger_above_threshold`` the
     action fires on every request for as long as the count stays in that range, so one stage can e.g. email once at
-    its threshold while keeping the user locked for every further failure up to the next one. Escalation therefore
-    hands over for good: once a more severe stage owns the count, :func:`_stage_in_range` no longer returns this
-    stage at all, so its actions stop firing - not even on the requests the more severe stage itself sits out.
+    its threshold while keeping the user locked for every further failure up to the next one.
+
+    This is a live classification of the *current* count, not a state the policy remembers: once a more severe
+    stage owns the count, :func:`_stage_in_range` stops returning this stage and its actions stop firing - but
+    nothing here stops the count from moving back down again (the time window sliding old events out, or a
+    ``reset_on_success`` floor), at which point this stage owns the count once more and a re-triggering action
+    fires again. There is no one-way hand-over; escalation and de-escalation follow the count symmetrically.
     """
     return action.retrigger_above_threshold or count == threshold
 
@@ -1439,8 +1452,10 @@ def _evaluate_policy(policy: ConditionalAccessPolicy, context: CAContext, event_
     # reached yet. One stage per policy per request, therefore, with no severity search needed; contrast the
     # pre-auth DENY decision in _policy_access_decision, which asks the same owner a narrower question.
     # By default, an action fires once, exactly at the threshold (a threshold-8 email sends on the 8th failure, not
-    # again at 9); retrigger_above_threshold keeps it firing for as long as this stage owns the count, so
-    # escalation is a hand-over and the milder stage never resumes.
+    # again at 9); retrigger_above_threshold keeps it firing for as long as this stage owns the count. Ownership is
+    # recomputed fresh from the current count on every request, not remembered, so a milder stage's re-triggering
+    # action stops once a more severe stage takes over and fires again if the count later drops back into its own
+    # range (the window sliding old events out, or a reset_on_success floor) - there is no permanent hand-over.
     triggered_stage = _stage_in_range(policy, count)
     pending_actions = _pending_actions(triggered_stage, count) if triggered_stage else []
     if not pending_actions:
