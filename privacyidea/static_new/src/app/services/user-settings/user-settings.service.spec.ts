@@ -24,7 +24,7 @@ import { PiResponse } from "@app/app.component";
 import { AuthService } from "@services/auth/auth.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { MockAuthService, MockNotificationService } from "@testing/mock-services";
-import { UserSettings, UserSettingsService } from "./user-settings.service";
+import { UserSettingKey, UserSettings, UserSettingsService } from "./user-settings.service";
 
 describe("UserSettingsService", () => {
   let service: UserSettingsService;
@@ -168,7 +168,21 @@ describe("UserSettingsService", () => {
     httpMock.expectOne("/user/settings").flush("nope", { status: 500, statusText: "Server Error" });
 
     expect(failed).toBe(true);
-    expect(notificationService.error).toHaveBeenCalled();
+    expect(notificationService.error).toHaveBeenCalledWith("Failed to load the user settings.");
+  });
+
+  it("should append the backend error message to the notification", () => {
+    service.setSetting("unknown_key" as UserSettingKey, []).subscribe({ error: () => undefined });
+    httpMock
+      .expectOne("/user/settings")
+      .flush(
+        { result: { status: false, error: { code: 905, message: "Unknown setting key: unknown_key." } } },
+        { status: 400, statusText: "Bad Request" }
+      );
+
+    expect(notificationService.error).toHaveBeenCalledWith(
+      "Failed to save the user settings. Unknown setting key: unknown_key."
+    );
   });
 
   it("should retry after a failed request instead of replaying the error", () => {
