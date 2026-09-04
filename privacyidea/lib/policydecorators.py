@@ -186,11 +186,15 @@ def auth_cache(wrapped_function, user_object, passw, options=None):
 
     * A request that answers a challenge. Such a request carries only the response to the
       challenge, not the whole credential - the PIN was sent in the preceding request and
-      a push token confirms out of band and sends nothing at all. Those requests are
-      neither served from the cache nor stored in it.
-    * A success without any credential, i.e. an empty or absent ``pass``.
+      a push token confirms out of band and sends nothing at all.
+    * A request without any credential, i.e. an empty or absent ``pass``.
     * A success that did not verify the presented credential at all, which the deciding
       decorator marks with ``AUTH_CACHE_EXCLUDE`` in its reply.
+
+    The first two are decided from the request alone, so such a request is neither served
+    from the cache nor stored in it. Answering one from the cache would accept an entry
+    written by an earlier version, and looking one up without a credential also reaches
+    ``argon2.verify`` with ``None``, which raises.
 
     :param wrapped_function: usually "check_user_pass"
     :param user_object: User who tries to authenticate
@@ -203,7 +207,7 @@ def auth_cache(wrapped_function, user_object, passw, options=None):
     auth_cache_policy = None
     answers_challenge = bool(options.get("transaction_id") or options.get("state"))
 
-    if g and not answers_challenge:
+    if g and passw and not answers_challenge:
         auth_cache_policy = (Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.AUTH_CACHE, user_object=user_object)
                              .action_values(unique=True, write_to_audit_log=False))
         if auth_cache_policy:
@@ -239,7 +243,8 @@ def auth_cache(wrapped_function, user_object, passw, options=None):
     # The marker is meant for this decorator only and the reply dictionary is handed to the
     # client, so it is removed in any case, whether the policy applies or not.
     credential_unverified = reply_dict.pop(AUTH_CACHE_EXCLUDE, False)
-    if auth_cache_policy and res and passw and not credential_unverified:
+    # A request excluded above never matched a policy, so it cannot reach this either.
+    if auth_cache_policy and res and not credential_unverified:
         # If authentication is successful, we store the password in auth_cache.
         # The first interval of the policy is how long the entry can be used at
         # the most, so a cache that can expire entries by itself is told to drop

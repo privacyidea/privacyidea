@@ -17,6 +17,7 @@ from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding, rsa
 from passlib.hash import argon2
 
+from privacyidea.lib.authcache import add_to_cache
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.error import ResourceNotFoundError
 from privacyidea.lib.policies.actions import PolicyAction
@@ -167,6 +168,29 @@ class AuthCacheCredentialTestCase(MyApiTestCase):
 
         remove_token("AC_CR2")
 
+    def test_02a_a_challenge_answered_with_state_is_not_cached(self):
+        """``state`` is the alias of ``transaction_id`` for legacy clients and marks the
+        request as the answer to a challenge just the same."""
+        self._drop_tokens("cornelius")
+        init_token({"serial": "AC_CR3", "otpkey": self.otpkey, "pin": "pin"},
+                   user=User("cornelius", self.realm1))
+        set_policy("chalresp", scope=SCOPE.AUTH, action=f"{PolicyAction.CHALLENGERESPONSE}=hotp")
+        set_policy("authcache", scope=SCOPE.AUTH, action=f"{PolicyAction.AUTH_CACHE}=4m")
+
+        first = self._validate({"user": "cornelius", "realm": self.realm1, "pass": "pin"})
+        self.assertFalse(first["result"]["value"], first)
+        state = first["detail"]["transaction_id"]
+
+        second = self._validate({"user": "cornelius", "realm": self.realm1,
+                                 "pass": "755224", "state": state})
+        self.assertTrue(second["result"]["value"], second)
+        self.assertFalse(self._cache_holds("cornelius", "755224"))
+
+        replay = self._validate({"user": "cornelius", "realm": self.realm1, "pass": "755224"})
+        self.assertFalse(replay["result"]["value"], replay)
+
+        remove_token("AC_CR3")
+
     def test_03_push_confirmation_is_not_cached(self):
         """A push token is confirmed out of band and its final request carries no
         credential at all, so there is nothing to cache."""
@@ -193,6 +217,28 @@ class AuthCacheCredentialTestCase(MyApiTestCase):
         self.assertFalse(replay["result"]["value"], replay)
 
         remove_token(serial)
+
+    def test_03a_an_entry_for_an_empty_credential_is_never_served(self):
+        """An entry holding the empty string - written by a version that cached the
+        confirmation of a push token - does not authenticate anybody."""
+        self._drop_tokens("cornelius")
+        init_token({"serial": "AC_EMPTY", "otpkey": self.otpkey, "pin": "pin"},
+                   user=User("cornelius", self.realm1))
+        add_to_cache("cornelius", self.realm1, self.resolvername1, "")
+        self.assertTrue(self._cache_holds("cornelius", ""))
+        set_policy("authcache", scope=SCOPE.AUTH, action=f"{PolicyAction.AUTH_CACHE}=4m")
+
+        result = self._validate({"user": "cornelius", "realm": self.realm1, "pass": ""})
+        self.assertFalse(result["result"]["value"], result)
+
+        # Control: a complete credential is still served, so the entry above is refused
+        # for being empty and not because the cache was bypassed altogether.
+        add_to_cache("cornelius", self.realm1, self.resolvername1, "pin755224")
+        control = self._validate({"user": "cornelius", "realm": self.realm1, "pass": "pin755224"})
+        self.assertTrue(control["result"]["value"], control)
+        self.assertEqual("Authenticated by AuthCache.", control["detail"]["message"])
+
+        remove_token("AC_EMPTY")
 
     def test_04_push_confirmation_without_a_pass_parameter(self):
         """A client may omit ``pass`` instead of sending an empty one. The request

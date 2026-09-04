@@ -583,13 +583,14 @@ meant for clients that authenticate again at short intervals - a VPN gateway tha
 reconnects every hour, for example - which would otherwise need a new OTP each
 time.
 
-Only a complete credential that was verified against a token or a user store is
-cached, which means the credential of a single ``/validate/check`` request. The
-following successful authentications are therefore neither stored in the cache nor
-answered from it:
+Only a complete credential that was verified - against a token, a user store, or the
+RADIUS server of a ``passthru`` policy - is cached, which means the credential of a
+single ``/validate/check`` request. The following successful authentications are
+therefore neither stored in the cache nor answered from it:
 
-* **Requests that answer a challenge**, i.e. requests carrying a ``transaction_id``.
-  Such a request contains only the response to the challenge and not the whole
+* **Requests that answer a challenge**, i.e. requests carrying a ``transaction_id`` or
+  its legacy alias ``state``. Such a request contains only the response to the
+  challenge and not the whole
   credential: the PIN was sent in the request that triggered the challenge, and a
   push token is confirmed on the phone and sends no credential at all. Users of a
   challenge-response token therefore authenticate against the token on every login.

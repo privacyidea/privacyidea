@@ -88,15 +88,23 @@
       their token on every login.** Expect the corresponding load — LDAP binds, SMS and email dispatch — to return to
       one per authentication. The combination cannot be made to work: the PIN and the response arrive in two separate
       requests, so a complete credential to cache never exists.
-    * **Requests with an empty or absent `pass`.** Besides the push case above, this also removes a `TypeError` (an HTTP
-      500 on an otherwise successful authentication) when a client omitted the `pass` parameter entirely.
+    * **Requests with an empty or absent `pass`.** This also removes a `TypeError` (an HTTP 500 on an authentication
+      that had already succeeded) when a client confirmed a push token and then omitted the `pass` parameter instead of
+      sending an empty one.
     * **Authentications decided by `passOnNoToken` or `passOnNoUser`.** These succeed because the user has no token or
       does not exist, not because the credential was checked, so an entry kept authenticating after the policy was
       withdrawn or the user was given a token.
 
-  Existing rows in the `authcache` table are not touched by the update and keep working until they expire or are
-  cleaned up. If you want the previous entries gone immediately, run
-  `pi-manage config authcache cleanup --minutes 0` (with `PI_REDIS_CACHE_AUTH` the entries expire on their own).
+  **Clear the cache after the update if you used any of these combinations.** Entries written by the previous version
+  are not touched by the update, and an entry holding the response to a challenge keeps authenticating on its own until
+  it expires — the new rules decide what is written and what is looked up, they do not remove what is already there.
+  Empty credentials are refused outright, so the push case is closed either way, but the remaining entries are only
+  gone once you run:
+
+      pi-manage config authcache cleanup --minutes 0
+
+  With `PI_REDIS_CACHE_AUTH` the entries carry the policy's interval as their TTL and expire on their own, at the
+  latest after the first interval of the policy that wrote them.
 
   `passthru` against a RADIUS server is unchanged and still caches what the remote server accepted, which means the
   remote system's replay protection does not apply for the duration of the policy. Keep the interval short if you
