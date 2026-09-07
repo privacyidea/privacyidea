@@ -101,10 +101,9 @@ from privacyidea.api.lib.postpolicy import (postpolicy,
                                             no_detail_on_fail,
                                             no_detail_on_success, autoassign,
                                             offline_info,
-                                            add_user_detail_to_response, construct_radius_response,
+                                            add_user_detail_to_response,
                                             mangle_challenge_response, is_authorized,
-                                            multichallenge_enroll_via_validate, preferred_client_mode,
-                                            hide_specific_error_message)
+                                            multichallenge_enroll_via_validate, preferred_client_mode)
 from privacyidea.api.lib.prepolicy import (prepolicy, set_realm,
                                            api_key_required, mangle,
                                            save_client_application_type,
@@ -117,8 +116,8 @@ from privacyidea.api.lib.utils import (get_all_params, get_before_request_config
                                        INTERNAL_OPTION_KEYS)
 from privacyidea.api.recover import recover_blueprint
 from privacyidea.lib.remembered_device import (create_remembered_device, consume_remember_device_cookie,
-                                         user_identity, count_user_devices, apply_cookie_action,
-                                         CookieAction, PERSISTENT_COOKIE_NAME, RememberStatus)
+                                               user_identity, count_user_devices, apply_cookie_action,
+                                               CookieAction, PERSISTENT_COOKIE_NAME, RememberStatus)
 from privacyidea.api.register import register_blueprint
 from privacyidea.lib.applications.offline import MachineApplication
 from privacyidea.lib.challenge import get_challenges, extract_answered_challenges, cancel_enrollment_via_multichallenge
@@ -304,8 +303,6 @@ def offlinerefill():
 
 @validate_blueprint.route('/check', methods=['POST', 'GET'])
 @validate_blueprint.route('/radiuscheck', methods=['POST', 'GET'])
-@postpolicy(hide_specific_error_message, request=request)
-@postpolicy(construct_radius_response, request=request)
 @postpolicy(is_authorized, request=request)
 @postpolicy(multichallenge_enroll_via_validate, request=request)
 @postpolicy(mangle_challenge_response, request=request)
@@ -820,7 +817,7 @@ def _resolve_persistent_cookie(user: User, success: bool) -> CookieAction | None
         except (ValueError, TypeError):
             max_devices = 0
         if max_devices > 0 and count_user_devices(g.client_id, identity.resolver, identity.user_id,
-                                                   identity.realm_id) >= max_devices:
+                                                  identity.realm_id) >= max_devices:
             return None
     # The cookie lifetime is a policy value so it can differ per realm/user/client
     # (e.g. a shorter lifetime for admins). Unset / invalid -> the model default.
