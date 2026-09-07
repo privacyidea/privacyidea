@@ -4104,6 +4104,65 @@ class TokenEventTestCase(MyTestCase):
         )
         remove_token(serial="SPASS01")
 
+    def test_17_set_description_and_tokeninfo_tags(self):
+        # The tags of "set description" and "set tokeninfo" are built with
+        # create_tag_dict(), but {username} and {realm} keep referring to the user
+        # of the request for backwards compatibility.
+        self.setUp_user_realms()
+        init_token({"serial": "SPASS03", "type": "spass"},
+                   User("cornelius", self.realm1))
+        g = FakeFlaskG()
+        g.logged_in_user = {"username": "admin", "role": "admin", "realm": "super"}
+        builder = EnvironBuilder(method='POST', headers={})
+        env = builder.get_environ()
+        env["REMOTE_ADDR"] = "10.0.0.7"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.all_data = {"serial": "SPASS03"}
+        req.User = User("cornelius", self.realm1)
+        resp = Response()
+        resp.data = """{"result": {"value": true}}"""
+
+        # {username} and {realm} must still be the user of the request, not the admin
+        options = {"g": g, "request": req, "response": resp,
+                   "handler_def": {"options": {
+                       "key": "who",
+                       "value": "{username}@{realm} ip={client_ip} "
+                                "serial={serial} type={tokentype} owner={userrealm}"},
+                       "conditions": {}}}
+        t_handler = TokenEventHandler()
+        self.assertTrue(t_handler.check_condition(options))
+        self.assertTrue(t_handler.do(ACTION_TYPE.SET_TOKENINFO, options=options))
+        who = get_tokens(serial="SPASS03")[0].get_tokeninfo("who")
+        self.assertEqual(f"cornelius@{self.realm1} ip=10.0.0.7 "
+                         f"serial=SPASS03 type=spass owner={self.realm1}", who)
+
+        # The description supports the same tags, including {now} with an offset
+        options["handler_def"]["options"] = {
+            "description": "enrolled by {username} at {now}+5d via {ua_browser}"}
+        self.assertTrue(t_handler.check_condition(options))
+        self.assertTrue(t_handler.do(ACTION_TYPE.SET_DESCRIPTION, options=options))
+        desc = get_tokens(serial="SPASS03")[0].token.description
+        self.assertTrue(desc.startswith("enrolled by cornelius at 20"), desc)
+        self.assertNotIn("{now}", desc)
+
+        # An unknown tag must not fail the event handling, the text is kept as is
+        options["handler_def"]["options"] = {"description": "{does_not_exist}"}
+        self.assertTrue(t_handler.check_condition(options))
+        self.assertTrue(t_handler.do(ACTION_TYPE.SET_DESCRIPTION, options=options))
+        self.assertEqual("{does_not_exist}",
+                         get_tokens(serial="SPASS03")[0].token.description)
+
+        # Without a user in the request, {username} and {realm} fall back to "N/A"
+        req.User = User()
+        options["handler_def"]["options"] = {"key": "who2", "value": "{username}/{realm}"}
+        self.assertTrue(t_handler.check_condition(options))
+        self.assertTrue(t_handler.do(ACTION_TYPE.SET_TOKENINFO, options=options))
+        self.assertEqual("N/A/N/A",
+                         get_tokens(serial="SPASS03")[0].get_tokeninfo("who2"))
+
+        remove_token(serial="SPASS03")
+
 
 class CustomUserAttributesTestCase(MyTestCase):
 

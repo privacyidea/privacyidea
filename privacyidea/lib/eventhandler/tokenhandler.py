@@ -51,17 +51,16 @@ from privacyidea.lib.token import (set_realms, remove_token, enable_token,
                                    get_one_token, set_max_failcount,
                                    assign_tokengroup, unassign_tokengroup)
 from privacyidea.lib.utils import (parse_date, is_true,
-                                   parse_time_offset_from_now)
-from privacyidea.lib.tokenclass import DATE_FORMAT, AUTH_DATE_FORMAT
+                                   parse_time_offset_from_now,
+                                   create_tag_dict)
+from privacyidea.lib.tokenclass import DATE_FORMAT
 from privacyidea.lib.smtpserver import get_smtpservers
 from privacyidea.lib.smsprovider.SMSProvider import get_smsgateway
 from privacyidea.lib.tokengroup import get_tokengroups
 from privacyidea.lib import _
 import logging
-import datetime
 import yaml
 import json
-from dateutil.tz import tzlocal
 
 log = logging.getLogger(__name__)
 
@@ -250,7 +249,12 @@ class TokenEventHandler(BaseEventHandler):
                         {
                             "type": "str",
                             "description": _("The new description of the "
-                                             "token.")
+                                             "token. It may contain tags like "
+                                             "{now} (with offsets such as "
+                                             "{now}+5d), {client_ip}, "
+                                             "{ua_browser}, {ua_string}, "
+                                             "{serial}, {tokentype}, {username} "
+                                             "and {userrealm}.")
                         }
                 },
             ACTION_TYPE.SET_VALIDITY:
@@ -325,7 +329,12 @@ class TokenEventHandler(BaseEventHandler):
                         {
                             "type": "str",
                             "description": _("Set the above key to this "
-                                             "value.")
+                                             "value. It may contain tags like "
+                                             "{now} (with offsets such as "
+                                             "{now}+5d), {client_ip}, "
+                                             "{ua_browser}, {ua_string}, "
+                                             "{serial}, {tokentype}, {username} "
+                                             "and {userrealm}.")
                         }
                 },
             ACTION_TYPE.INCREASE_TOKENINFO:
@@ -441,6 +450,66 @@ class TokenEventHandler(BaseEventHandler):
         }
         return actions
 
+    def _get_tags(self, g, request, serial, text):
+        """
+        Create the tag dictionary for the text of the "set description" and
+        "set tokeninfo" actions.
+
+        A possible time offset (like ``{now}+5d``) is parsed from the text and
+        removed from it. The returned text must be formatted with the returned
+        tags.
+
+        :param g: The flask g object
+        :param request: The request object
+        :param serial: The serial number of the token that is handled
+        :param text: The description or tokeninfo value, may contain tags
+        :return: tuple of the text without the offset and the tag dictionary
+        """
+        text, time_delta = parse_time_offset_from_now(text)
+        tokenowner = self._get_tokenowner(request)
+        serial, tokentype, tokendescription = self._get_token_data(serial, tokenowner)
+        logged_in_user = g.logged_in_user if hasattr(g, "logged_in_user") else None
+        tags = create_tag_dict(logged_in_user=logged_in_user,
+                               request=request,
+                               client_ip=getattr(g, "client_ip", None),
+                               serial=serial,
+                               tokenowner=tokenowner,
+                               tokentype=tokentype,
+                               tokendescription=tokendescription,
+                               time_offset=time_delta)
+        # For backwards compatibility, {username} and {realm} keep referring to the
+        # user of the request and not to the acting administrator. The realm of the
+        # token owner is additionally available as {userrealm}.
+        # Note: this used to read request.User.loginname, which does not exist, so
+        # both tags always rendered the literal string "N/A".
+        try:
+            tags["username"] = request.User.login or "N/A"
+            tags["realm"] = request.User.realm or "N/A"
+        except Exception:
+            tags["username"] = "N/A"
+            tags["realm"] = "N/A"
+        return text, tags
+
+    @staticmethod
+    def _format_with_tags(text, tags):
+        """
+        Format the given text with the given tags.
+
+        A text that can not be formatted must not fail the event handling. Besides
+        an unknown tag, this also happens for a positional field, an unbalanced
+        brace or an index into a tag that is not set. In this case the unformatted
+        text is returned.
+
+        :param text: The text containing the tags
+        :param tags: The tag dictionary
+        :return: The formatted text
+        """
+        try:
+            return text.format(**tags)
+        except Exception as e:
+            log.warning(f"Could not format the text: {e!r}. Using the unformatted text.")
+            return text
+
     def do(self, action, options=None):
         """
         This method executes the defined action in the given event.
@@ -505,40 +574,18 @@ class TokenEventHandler(BaseEventHandler):
                         unassign_token(serial)
                     elif action.lower() == ACTION_TYPE.SET_DESCRIPTION:
                         description = handler_options.get("description") or ""
-                        description, td = parse_time_offset_from_now(description)
-                        s_now = (datetime.datetime.now(tzlocal()) + td).strftime(
-                            AUTH_DATE_FORMAT)
+                        description, tags = self._get_tags(g, request, serial, description)
                         set_description(serial,
-                                        description.format(
-                                            current_time=s_now,
-                                            now=s_now,
-                                            client_ip=g.client_ip,
-                                            ua_browser=request.user_agent.browser,
-                                            ua_string=request.user_agent.string))
+                                        self._format_with_tags(description, tags))
                     elif action.lower() == ACTION_TYPE.SET_COUNTWINDOW:
                         set_count_window(serial,
                                          int(handler_options.get("count window",
                                                                  50)))
                     elif action.lower() == ACTION_TYPE.SET_TOKENINFO:
                         tokeninfo = handler_options.get("value") or ""
-                        tokeninfo, td = parse_time_offset_from_now(tokeninfo)
-                        s_now = (datetime.datetime.now(tzlocal()) + td).strftime(
-                            AUTH_DATE_FORMAT)
-                        try:
-                            username = request.User.loginname
-                            realm = request.User.realm
-                        except Exception:
-                            username = "N/A"
-                            realm = "N/A"
+                        tokeninfo, tags = self._get_tags(g, request, serial, tokeninfo)
                         add_tokeninfo(serial, handler_options.get("key"),
-                                      tokeninfo.format(
-                                          current_time=s_now,
-                                          now=s_now,
-                                          client_ip=g.client_ip,
-                                          username=username,
-                                          realm=realm,
-                                          ua_browser=request.user_agent.browser,
-                                          ua_string=request.user_agent.string))
+                                      self._format_with_tags(tokeninfo, tags))
                     elif action.lower() == ACTION_TYPE.INCREASE_TOKENINFO:
                         try:
                             # We assume that the tokeninfo is an integer
