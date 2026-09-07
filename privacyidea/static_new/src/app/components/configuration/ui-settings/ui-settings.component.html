@@ -39,13 +39,13 @@
 
   <div class="settings-group">
     <div class="settings-item settings-item-s">
-      <span
-        class="settings-item-label"
+      <h4
+        class="settings-item-label margin-8"
         i18n="@@uiSettings.language"
-        >Language</span
+        >Language</h4
       >
       <mat-form-field
-        class="input-width-m language-field"
+        class="input-width-m language-field margin-left-16"
         subscriptSizing="dynamic">
         <mat-select
           (selectionChange)="selectLocale($event.value)"
@@ -61,23 +61,23 @@
       </mat-form-field>
     </div>
 
-    <div class="settings-item settings-item-xs">
-      <span
-        class="settings-item-label"
+    <div class="settings-item settings-item-xs settings-item-center">
+      <h4
+        class="settings-item-label margin-8"
         i18n="@@uiSettings.theme"
-        >Theme</span
+        >Theme</h4
       >
       <app-theme-toggle />
     </div>
 
     <div class="settings-item settings-item-s">
-      <span
-        class="settings-item-label"
+      <h4
+        class="settings-item-label margin-8"
         i18n="@@uiSettings.landingPage"
-        >Landing Page</span
+        >Landing Page</h4
       >
       <mat-form-field
-        class="input-width-m"
+        class="input-width-m margin-left-16"
         subscriptSizing="dynamic">
         <mat-select
           (selectionChange)="selectLandingPage($event.value)"
@@ -93,13 +93,14 @@
       </mat-form-field>
     </div>
 
-    <div class="settings-item settings-item-s">
-      <span
-        class="settings-item-label"
+    <div class="settings-item settings-item-s settings-item-vcenter">
+      <h4
+        class="settings-item-label margin-8"
         i18n="@@uiSettings.pendingRequests"
-        >Pending Requests</span
+        >Pending Requests</h4
       >
       <mat-slide-toggle
+        class="margin-left-16"
         (change)="setShowLoadingUrls($event.checked)"
         [checked]="showLoadingUrls()"
         i18n="@@uiSettings.showEndpointsBeingRequested"
@@ -122,11 +123,11 @@
     </mat-expansion-panel-header>
 
     <div class="settings-group">
-      <div class="settings-item settings-item-m">
-        <span
-          class="settings-item-label"
+      <div class="settings-item settings-item-m settings-item-center">
+        <h4
+          class="settings-item-label margin-8"
           i18n="@@uiSettings.corners"
-          >Corners</span
+          >Corners</h4
         >
         <mat-button-toggle-group
           (change)="selectCorners($event.value)"
@@ -140,11 +141,11 @@
         </mat-button-toggle-group>
       </div>
 
-      <div class="settings-item settings-item-m">
-        <span
-          class="settings-item-label"
+      <div class="settings-item settings-item-m settings-item-center">
+        <h4
+          class="settings-item-label margin-8"
           i18n="@@uiSettings.depth"
-          >Depth</span
+          >Depth</h4
         >
         <mat-button-toggle-group
           (change)="selectDepth($event.value)"
@@ -158,11 +159,11 @@
         </mat-button-toggle-group>
       </div>
 
-      <div class="settings-item settings-item-m">
-        <span
-          class="settings-item-label"
+      <div class="settings-item settings-item-m settings-item-center">
+        <h4
+          class="settings-item-label margin-8"
           i18n="@@uiSettings.lightSource"
-          >Light Source</span
+          >Light Source</h4
         >
         <app-light-source-dial
           [items]="lightSourceDialItems"

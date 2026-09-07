@@ -70,11 +70,25 @@
   @include table.card-width(m);
 }
 
-.settings-item-label {
-  font-size: 13px;
+h4.settings-item-label {
+  color: var(--mat-sys-on-surface);
   font-weight: 500;
-  line-height: 16px;
-  color: var(--mat-sys-on-surface-variant);
+  // The parent switches to align-items: center for the Appearance controls below; the label stays
+  // put at the item's start rather than being centered along with them.
+  align-self: flex-start;
+}
+
+// Appearance's button groups and the light source dial read as controls on their own, not as a
+// label-led field, so they are centered under their (still left-aligned) title.
+.settings-item-center {
+  align-items: center;
+}
+
+// Pending Requests shares a row with the taller Landing Page field; settings-group's
+// align-items: flex-start otherwise sticks it to the row's top, leaving dead space below it.
+// align-self overrides that for this one item, centering it in the row's full height instead.
+.settings-item-vcenter {
+  align-self: center;
 }
 
 .settings-appearance-hint {
