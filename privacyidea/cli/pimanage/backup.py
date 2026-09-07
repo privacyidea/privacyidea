@@ -63,12 +63,14 @@ DUMP_SUFFIXES = {SQLITE: ".sqlite", MYSQL: ".sql", POSTGRESQL: ".pgsql"}
 DUMP_FAMILIES = {suffix: family for family, suffix in DUMP_SUFFIXES.items()}
 DUMP_FILE_PATTERN = re.compile(r"dbdump-\d{8}-\d{4}(?P<suffix>\.sqlite|\.pgsql|\.sql)$")
 
-# libpq environment variables for the connection parameters that can appear in
-# the query part of a PostgreSQL URI. Parameters outside this mapping are
-# reported as ignored instead of being dropped silently.
+# The connection parameters that pg_dump and psql take as a command line
+# option; everything else has to reach them through the environment.
+POSTGRESQL_COMMAND_LINE_PARAMS = frozenset(["host", "port", "user", "password", "dbname"])
+
+# libpq environment variables for the connection parameters that have no
+# command line option. Parameters outside this mapping are reported as ignored
+# instead of being dropped silently.
 POSTGRESQL_ENV_PARAMS = {
-    "host": "PGHOST",
-    "port": "PGPORT",
     "sslmode": "PGSSLMODE",
     "sslrootcert": "PGSSLROOTCERT",
     "sslcert": "PGSSLCERT",
@@ -464,47 +466,58 @@ def _restore_mysql(url: URL, sqlfile: pathlib.Path) -> None:
     os.unlink(sqlfile)
 
 
-def _postgresql_connection_args(url: URL) -> list[str]:
+def _postgresql_driver_parameters(url: URL) -> dict:
+    """The connection parameters psycopg2 would use for this URI.
+
+    Asking the dialect instead of reading the fields of the URI keeps the client
+    on the database privacyIDEA itself talks to, whatever shape the URI has: the
+    query part can override the host and the port of the URI, and a host given
+    more than once turns into the comma separated multi-host list of libpq,
+    together with the matching list of ports. Both are assembled here by the
+    same code that builds the connection of the application.
+
+    The keys are libpq connection keywords; host, port, user, password and
+    dbname become command line options, the rest are passed in the environment.
+    """
+    return url.get_dialect()().create_connect_args(url)[1]
+
+
+def _postgresql_connection_args(parameters: dict) -> list[str]:
     """Connection options shared by pg_dump and psql.
 
-    Host and port are omitted for a URI without them, which connects via the
-    local socket. They are omitted as well when the query part of the URI
-    carries them: SQLAlchemy lets those override the host and port of the URI,
-    so that is where privacyIDEA itself connects, and the backup has to follow.
-    They reach the client through PGHOST/PGPORT instead, which a command line
-    option would take precedence over.
+    Host and port are omitted for a URI that has neither, which connects over
+    the local socket.
 
     --no-password makes libpq fail instead of asking for a password, so a
     missing or wrong password cannot leave a scheduled backup waiting on a
     prompt forever.
     """
     args = []
-    if url.host and not url.query.get("host"):
-        args.extend(["--host", url.host])
-    if url.port and not url.query.get("port"):
-        args.extend(["--port", str(url.port)])
-    if url.username:
-        args.extend(["--username", url.username])
+    if parameters.get("host"):
+        args.extend(["--host", str(parameters["host"])])
+    if parameters.get("port"):
+        args.extend(["--port", str(parameters["port"])])
+    if parameters.get("user"):
+        args.extend(["--username", str(parameters["user"])])
     args.append("--no-password")
     return args
 
 
-def _postgresql_env(url: URL) -> dict[str, str]:
+def _postgresql_env(parameters: dict) -> dict[str, str]:
     """Environment for pg_dump and psql.
 
     The password is passed in the environment rather than on the command line,
     where it would be visible in the process list, and rather than in a file in
-    the config directory, which would end up inside the backup archive.
+    the config directory, which would end up inside the backup archive. The
+    remaining connection parameters have no command line option and reach the
+    client as the libpq variable of the same meaning.
     """
     env = dict(os.environ)
-    if url.password:
-        env["PGPASSWORD"] = str(url.password)
+    if parameters.get("password"):
+        env["PGPASSWORD"] = str(parameters["password"])
     ignored = []
-    for parameter, value in url.query.items():
-        if isinstance(value, tuple):
-            # A parameter given more than once; libpq uses the last occurrence.
-            value = value[-1] if value else None
-        if value is None:
+    for parameter, value in parameters.items():
+        if parameter in POSTGRESQL_COMMAND_LINE_PARAMS or value is None:
             continue
         env_name = POSTGRESQL_ENV_PARAMS.get(parameter)
         if env_name:
@@ -528,11 +541,12 @@ def _dump_postgresql(url: URL, sqlfile: pathlib.Path) -> None:
     # particular is dumped whenever it differs from the server default, and
     # applying it as a role that does not own the schema fails - which would
     # abort the whole restore.
+    parameters = _postgresql_driver_parameters(url)
     cmd = ["pg_dump", "--format=plain", "--clean", "--if-exists",
            "--no-owner", "--no-privileges", "--no-comments"]
-    cmd.extend(_postgresql_connection_args(url))
-    cmd.extend(["--dbname", url.database, "--file", str(sqlfile)])
-    result = _run_client(cmd, POSTGRESQL, env=_postgresql_env(url))
+    cmd.extend(_postgresql_connection_args(parameters))
+    cmd.extend(["--dbname", str(parameters["dbname"]), "--file", str(sqlfile)])
+    result = _run_client(cmd, POSTGRESQL, env=_postgresql_env(parameters))
     if result.returncode != 0:
         _dump_failed("pg_dump", result.returncode, sqlfile,
                      hint="pg_dump has to be at least as new as the PostgreSQL server it dumps.")
@@ -547,11 +561,12 @@ def _restore_postgresql(url: URL, sqlfile: pathlib.Path) -> None:
     # The query results psql would print are the return values of the set_config
     # and setval calls in the dump, one table per sequence; they are discarded,
     # while errors and warnings still reach the terminal on stderr.
+    parameters = _postgresql_driver_parameters(url)
     cmd = ["psql", "--quiet", "--no-psqlrc", "--set", "ON_ERROR_STOP=on", "--single-transaction",
            f"--output={os.devnull}"]
-    cmd.extend(_postgresql_connection_args(url))
-    cmd.extend(["--dbname", url.database, "--file", str(sqlfile)])
-    result = _run_client(cmd, POSTGRESQL, env=_postgresql_env(url))
+    cmd.extend(_postgresql_connection_args(parameters))
+    cmd.extend(["--dbname", str(parameters["dbname"]), "--file", str(sqlfile)])
+    result = _run_client(cmd, POSTGRESQL, env=_postgresql_env(parameters))
     if result.returncode != 0:
         _restore_failed("psql", result.returncode, sqlfile)
     os.unlink(sqlfile)
@@ -596,9 +611,11 @@ def _quote_mysql_option(value: str) -> str:
 
     An unquoted value ends at a '#', which would silently truncate a password
     containing one, and the option file parser expands backslash escapes inside
-    the value, so a literal backslash has to be doubled.
+    the value, so a literal backslash has to be doubled. A '"' has to be escaped
+    as well: it would end the quoted part of the value, and a '#' behind it
+    would start a comment again.
     """
-    escaped = str(value).replace("\\", "\\\\")
+    escaped = str(value).replace("\\", "\\\\").replace('"', '\\"')
     return f'"{escaped}"'
 
 

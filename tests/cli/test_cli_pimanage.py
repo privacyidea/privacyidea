@@ -356,9 +356,11 @@ class PIManageBackupTestCase(CliTestCase):
 
     def test_07a_mysql_defaults_quotes_values_for_the_option_file_parser(self):
         """
-        Values in a MySQL option file are quoted and their backslashes doubled:
-        an unquoted value ends at a '#', which would truncate the password, and
-        the option file parser expands backslash escapes inside the value.
+        Values in a MySQL option file are quoted, their backslashes doubled and
+        their double quotes escaped: an unquoted value ends at a '#', which
+        would truncate the password, the option file parser expands backslash
+        escapes inside the value, and an unescaped '"' ends the quoted part, so
+        that a '#' behind it starts a comment again.
         """
         import configparser
         from sqlalchemy.engine.url import make_url
@@ -366,6 +368,8 @@ class PIManageBackupTestCase(CliTestCase):
 
         for encoded, quoted in [("ab%23cd", '"ab#cd"'),
                                 ("ab%5Ccd", '"ab\\\\cd"'),
+                                ("ab%22cd", '"ab\\"cd"'),
+                                ("ab%22%23cd", '"ab\\"#cd"'),
                                 ("ab cd", '"ab cd"')]:
             with tempfile.TemporaryDirectory() as tmp_dir:
                 defaults_file = pathlib.Path(tmp_dir) / "mysql.cnf"
@@ -557,33 +561,42 @@ class PIManageBackupTestCase(CliTestCase):
         # A successful restore consumes the extracted dump.
         self.assertFalse(sqlfile.exists())
 
-    def test_13_postgresql_connection_args_omit_unset_parts(self):
+    def test_13_postgresql_connection_args_follow_the_driver(self):
         """
-        A URI without host and port connects over the local socket, so neither
-        option may be passed. Connection parameters that cannot be applied are
-        reported instead of being dropped silently.
+        The client is pointed at the database the driver of privacyIDEA would
+        connect to: a URI without host and port connects over the local socket,
+        so neither option may be passed; a host in the query part replaces the
+        host of the URI; and a host given more than once - the failover syntax
+        of SQLAlchemy - reaches the client as the multi-host list of libpq,
+        instead of only its last entry. Connection parameters that cannot be
+        applied are reported instead of being dropped silently.
         """
         from privacyidea.cli.pimanage.backup import (_database_url, _postgresql_connection_args,
-                                                     _postgresql_env)
+                                                     _postgresql_driver_parameters, _postgresql_env)
 
-        url = _database_url("postgresql:///pi_test?host=/var/run/postgresql&keepalives=1")
-        args = _postgresql_connection_args(url)
+        def args_and_env(uri: str) -> tuple[list[str], dict[str, str]]:
+            parameters = _postgresql_driver_parameters(_database_url(uri))
+            return _postgresql_connection_args(parameters), _postgresql_env(parameters)
+
+        args, env = args_and_env("postgresql:///pi_test?keepalives=1")
         self.assertNotIn("--host", args)
         self.assertNotIn("--port", args)
         self.assertNotIn("--username", args)
-
-        env = _postgresql_env(url)
-        self.assertEqual("/var/run/postgresql", env["PGHOST"])
         self.assertNotIn("PGPASSWORD", env)
 
-        # A host in the query overrides the host of the URI for SQLAlchemy, so
-        # privacyIDEA connects to the socket -- passing --host would send the
-        # backup to the TCP host instead, because it beats PGHOST.
-        url = _database_url("postgresql://pi@dbhost:5432/pi_test?host=/var/run/postgresql")
-        args = _postgresql_connection_args(url)
-        self.assertNotIn("--host", args)
+        # A socket directory given in the query is where privacyIDEA connects.
+        args, _ = args_and_env("postgresql:///pi_test?host=/var/run/postgresql")
+        self.assertEqual("/var/run/postgresql", args[args.index("--host") + 1])
+
+        # ... and it replaces the host of the URI, rather than being ignored.
+        args, _ = args_and_env("postgresql://pi@dbhost:5432/pi_test?host=/var/run/postgresql")
+        self.assertEqual("/var/run/postgresql", args[args.index("--host") + 1])
         self.assertNotIn("dbhost", args)
-        self.assertEqual("/var/run/postgresql", _postgresql_env(url)["PGHOST"])
+
+        # A repeated host is a list of servers to try, not a single host.
+        args, _ = args_and_env("postgresql://pi@/pi_test?host=h1:5432&host=h2:5433")
+        self.assertEqual("h1,h2", args[args.index("--host") + 1])
+        self.assertEqual("5432,5433", args[args.index("--port") + 1])
 
     def test_14_postgresql_dump_failure_keeps_no_partial_dump(self):
         """
