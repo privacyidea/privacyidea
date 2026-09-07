@@ -31,11 +31,10 @@ migration does. Concretely, it verifies that:
     restores the original schema and does not destroy data in surviving
     tables (row-count survival, not just one realm row).
 
-Tests run against the dialect provided in TEST_DATABASE_URL — the project
-supports MariaDB and PostgreSQL — and use a pre-written seed file per
-dialect (tests/testdata/migrations/) as a complete, on-disk snapshot of the
-database state at START_REVISION. No runtime fixups; the seed is
-authoritative.
+Tests run against the dialect provided in TEST_DATABASE_URL — MariaDB, MySQL,
+PostgreSQL and Oracle — and use a pre-written seed file per dialect
+(tests/testdata/migrations/) as a complete, on-disk snapshot of the database
+state at START_REVISION. No runtime fixups; the seed is authoritative.
 
 Migrations older than START_REVISION are intentionally not covered: the pin
 exists because nothing in the supported window upgrades from older state,
@@ -45,6 +44,11 @@ real install hits anymore. Bump the pin when keeping it gets in the way.
 Data-transformation tests for specific migrations do NOT belong here. They
 live in tests/test_migration_<revision>.py and use MigrationTestBase. See
 tests/README.md for the full guide.
+
+Checks that need no database connection do not belong here either — this
+module is marked ``migration`` and therefore skipped in the regular unit-test
+run. The static guards on portable sequence DDL live in
+tests/test_sequence_ddl.py, which runs on every PR.
 """
 
 import os
@@ -65,6 +69,7 @@ from tests.migration_test_utils import (
     is_oracle,
     is_postgres,
     load_seed,
+    quote_identifier,
 )
 
 # Skip these tests if no database URL is provided
@@ -1020,13 +1025,6 @@ def test_each_migration_survives_round_trip(flask_app):
         # Leave the DB at rev.revision — the next iteration will upgrade from here.
 
 
-def _quote_ident(name: str) -> str:
-    """Dialect-aware identifier quoting for raw SQL."""
-    if is_postgres():
-        return f'"{name}"'
-    return f"`{name}`"
-
-
 def _row_counts(engine, tables: set[str]) -> dict[str, int]:
     """Return {table: row_count} for every table in *tables* that exists."""
     counts: dict[str, int] = {}
@@ -1037,103 +1035,9 @@ def _row_counts(engine, tables: set[str]) -> dict[str, int]:
             if table not in existing:
                 continue
             counts[table] = conn.execute(
-                text(f"SELECT COUNT(*) FROM {_quote_ident(table)}")
+                text(f"SELECT COUNT(*) FROM {quote_identifier(table)}")
             ).scalar()
     return counts
-
-
-def test_migrations_do_not_emit_raw_create_sequence_sql():
-    """
-    Migrations must create sequences via SQLAlchemy's CreateSequence construct,
-    never a raw "CREATE SEQUENCE ..." SQL string.
-
-    CreateSequence is rewritten by the increment_by_zero @compiles hook in
-    privacyidea.models.db, which appends INCREMENT BY 0 on MariaDB. A Galera
-    cluster only accepts a cached sequence defined that way; a raw string
-    bypasses the hook and fails with "CACHE without INCREMENT BY 0 in Galera
-    cluster". We cannot reproduce that rejection in CI — it needs a live wsrep
-    provider, and standalone MariaDB accepts the cached sequence — so this
-    static check is the guard against the gap.
-
-    Only CREATE is restricted: ALTER SEQUENCE / DROP SEQUENCE carry no such
-    Galera constraint and may stay as raw strings.
-
-    The check only inspects strings passed to op.execute(...) — docstrings,
-    comments and print() messages that merely mention "create sequence" are
-    ignored. Both plain strings and f-strings are covered (an f-string's
-    literal segments are ast.Constant nodes).
-    """
-    import ast
-
-    def _literal_sql(node) -> str:
-        """Concatenate the literal string content of a string, f-string, or text('...') argument."""
-        if isinstance(node, ast.Constant) and isinstance(node.value, str):
-            return node.value
-        if isinstance(node, ast.JoinedStr):
-            return "".join(
-                part.value for part in node.values
-                if isinstance(part, ast.Constant) and isinstance(part.value, str)
-            )
-        # Unwrap text("...") / sa.text("...") wrappers.
-        if isinstance(node, ast.Call) and node.args:
-            func = node.func
-            name = func.attr if isinstance(func, ast.Attribute) else getattr(func, "id", None)
-            if name == "text":
-                return _literal_sql(node.args[0])
-        return ""
-
-    def _is_op_execute(node) -> bool:
-        return (
-            isinstance(node, ast.Call)
-            and isinstance(node.func, ast.Attribute)
-            and node.func.attr == "execute"
-            and isinstance(node.func.value, ast.Name)
-            and node.func.value.id == "op"
-        )
-
-    versions_dir = pathlib.Path(__file__).parent.parent / "privacyidea" / "migrations" / "versions"
-    offenders: list[str] = []
-    for path in sorted(versions_dir.glob("*.py")):
-        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
-        for node in ast.walk(tree):
-            if _is_op_execute(node) and node.args:
-                if "CREATE SEQUENCE" in _literal_sql(node.args[0]).upper():
-                    offenders.append(f"{path.name}:{node.lineno}")
-
-    assert not offenders, (
-        "The following migrations build a sequence from a raw 'CREATE SEQUENCE' "
-        "string instead of SQLAlchemy's CreateSequence construct:\n"
-        + "\n".join(f"  {o}" for o in offenders)
-        + "\n\nUse op.execute(CreateSequence(Sequence(name, start=...), if_not_exists=...)) "
-        "so the increment_by_zero hook can make it Galera-safe."
-    )
-
-
-def test_create_sequence_is_galera_safe_on_mariadb():
-    """
-    The increment_by_zero hook (privacyidea.models.db) must render CREATE
-    SEQUENCE with INCREMENT BY 0 on MariaDB, and must NOT do so on PostgreSQL
-    (which rejects a zero increment). This guards the hook itself against being
-    removed or scoped to the wrong dialect — the thing every sequence migration
-    and db.create_all() rely on to work on a Galera cluster.
-    """
-    from sqlalchemy import Sequence
-    from sqlalchemy.schema import CreateSequence
-    from sqlalchemy.dialects import mysql, postgresql
-    import privacyidea.models.db  # noqa: F401 - importing registers the @compiles hook
-
-    seq = Sequence("dummy_galera_check_seq", start=1)
-
-    mariadb_sql = str(CreateSequence(seq).compile(dialect=mysql.dialect(is_mariadb=True))).upper()
-    assert "INCREMENT BY 0" in mariadb_sql, (
-        f"CREATE SEQUENCE on MariaDB must include INCREMENT BY 0 to work on Galera, got: {mariadb_sql!r}"
-    )
-
-    postgres_sql = str(CreateSequence(seq).compile(dialect=postgresql.dialect())).upper()
-    assert "INCREMENT BY 0" not in postgres_sql, (
-        f"CREATE SEQUENCE on PostgreSQL must NOT include INCREMENT BY 0 (zero increment is invalid), "
-        f"got: {postgres_sql!r}"
-    )
 
 
 def test_downgrade_does_not_destroy_data_in_surviving_tables(flask_app):

@@ -18,7 +18,7 @@ import os
 import pytest
 
 from privacyidea.lib.tokenrolloutstate import RolloutState
-from tests.migration_test_utils import MigrationTestBase
+from tests.migration_test_utils import MigrationTestBase, is_oracle
 
 # Every defined RolloutState except ENROLLED — these must round-trip unchanged.
 _NON_ENROLLED_STATES = [s for s in RolloutState.all_states() if s != RolloutState.ENROLLED]
@@ -32,6 +32,17 @@ pytestmark = [
 ]
 
 DB_URL = os.environ.get("TEST_DATABASE_URL", "")
+
+
+def _is_empty(rollout_state: str | None) -> bool:
+    """
+    Return True if *rollout_state* is the "empty" value this migration targets.
+
+    Oracle stores the empty string as NULL and hands it back as None, so there
+    both spellings are the same value; the migration covers both explicitly
+    (``rollout_state = '' OR rollout_state IS NULL``).
+    """
+    return rollout_state == "" or (is_oracle() and rollout_state is None)
 
 
 def _make_token(serial: str, rollout_state: str | None) -> dict:
@@ -68,7 +79,7 @@ class TestMigration3cafe2771cdd(MigrationTestBase):
         engine = self._engine()
         self._load_seed_and_upgrade_to_parent(engine)
         self._insert_rows(engine, "token", [_make_token("TOK001", "")])
-        assert self._fetch_rollout_state(engine, "TOK001") == ""
+        assert _is_empty(self._fetch_rollout_state(engine, "TOK001"))
         engine.dispose()
 
         self._upgrade()
@@ -136,7 +147,7 @@ class TestMigration3cafe2771cdd(MigrationTestBase):
         self._downgrade()
 
         engine = self._engine()
-        assert self._fetch_rollout_state(engine, "TOK005") == "", (
+        assert _is_empty(self._fetch_rollout_state(engine, "TOK005")), (
             "downgrade() must revert 'enrolled' back to '' in token.rollout_state"
         )
         engine.dispose()
@@ -155,7 +166,7 @@ class TestMigration3cafe2771cdd(MigrationTestBase):
         self._downgrade()
 
         engine = self._engine()
-        assert self._fetch_rollout_state(engine, "TOK006") == "", (
+        assert _is_empty(self._fetch_rollout_state(engine, "TOK006")), (
             "Round-trip must restore rows that started as '' back to ''"
         )
         for state in _NON_ENROLLED_STATES:
@@ -214,7 +225,7 @@ class TestMigration3cafe2771cdd(MigrationTestBase):
         self._downgrade()
 
         engine = self._engine()
-        assert self._fetch_rollout_state(engine, "TOK_LOSSY") == "", (
+        assert _is_empty(self._fetch_rollout_state(engine, "TOK_LOSSY")), (
             "downgrade() rewrites every 'enrolled' row to '' — including rows "
             "that were already 'enrolled' before the upgrade. If this assertion "
             "starts failing, the migration's downgrade strategy has changed."
