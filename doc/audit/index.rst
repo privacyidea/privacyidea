@@ -170,29 +170,33 @@ This will read the configuration (only the database URI) from the config file
 Table size
 ~~~~~~~~~~
 
-Sometimes the entries to be written to the database may be longer than the
-column in the database. You should set::
+The entries to be written to the database may be longer than the column in the
+database, since they contain data from the request. Such an entry is shortened
+to the length of the column, so that it is still written: a database rejects a
+value that is too long, which would lose the whole entry. Values that hold a
+list of items, like the serials of all tokens of a request, are shortened per
+item, so that every item stays recognizable.
 
-   PI_AUDIT_SQL_TRUNCATE = True
+The length of a column is read from the database, so a table whose columns are
+narrower than the ones privacyIDEA ships is handled without any configuration:
+its entries are shortened to what it really accepts instead of being rejected.
 
-in the :ref:`config file <cfgfile>`. This will truncate each entry to the
-defined column length.
+Reading the database can only shorten a value further, though, never lengthen
+it: a wider column is not used on its own. So if you increase a column length
+by the usual database means
+(i.e. :code:`ALTER TABLE pidea_audit MODIFY user varchar(1000);` for MariaDB),
+tell privacyIDEA about it in your :ref:`config file <cfgfile>`::
 
-However, if you sill want to add more information to the audit log, you can
-increase the column length directly in the database by the usual database means
-(i.e. :code:`ALTER TABLE pidea_audit MODIFY user varchar(100);` for MariaDB).
-However, privacyIDEA does not know about this and will still truncate the entries
-to the originally defined lengths.
-
-To avoid this, you need to tell privacyIDEA about the changes.
-In Your :ref:`config file <cfgfile>` add the setting like::
-
-    PI_AUDIT_SQL_COLUMN_LENGTH = {"user": 100,
+    PI_AUDIT_SQL_COLUMN_LENGTH = {"user": 1000,
                                   "policies": 1000}
 
-which will increase truncation of the user column to 100 and the policies
-column to 1000. Check the database schema for the available columns
-here: :class:`privacyidea.models.Audit`.
+which allows entries to use the additional space. Without this setting, values
+are still shortened to the length privacyIDEA ships and the space you added
+stays unused. Check the database schema for the available columns here:
+:class:`privacyidea.models.Audit`.
+
+.. note:: The setting ``PI_AUDIT_SQL_TRUNCATE`` is not needed any more and is
+   ignored. Entries are always shortened to what the audit table can hold.
 
 .. _logger_audit:
 

@@ -55,9 +55,14 @@ import logging
 import traceback
 
 from privacyidea.lib.log import log_with
+from privacyidea.lib.utils import truncate_comma_list
 import datetime
 
 log = logging.getLogger(__name__)
+
+# Audit keys whose value is a list of items, e.g. the serials of all tokens a request
+# used. They are shortened per item rather than cut at the end.
+COMMA_LIST_KEYS = frozenset(["policies", "serial", "container_serial"])
 
 
 class Paginate:
@@ -163,6 +168,41 @@ class Audit:  # pragma: no cover
         # We check if there is actually audit_data with an action.
         # Since the audit_data is initialized with the startdate.
         return bool(self.audit_data and "action" in self.audit_data)
+
+    @property
+    def column_length(self) -> dict:
+        """
+        The maximum length of the values this audit store can hold, by key. An empty
+        mapping means that the store has no limits, which is the default: only the SQL
+        audit has columns a value has to fit into.
+        """
+        return {}
+
+    def fit_to_store(self, key: str, value):
+        """
+        Shorten a value to the length the audit store can hold. Request data ends up in
+        the audit log, so it is of arbitrary length, while the store may not be: a value
+        that does not fit is shortened, never dropped, so that the entry survives.
+
+        This is applied when the entry is written, not when it is logged: ``audit_data`` is
+        shared request state that event handlers read from, e.g. to get the serials of the
+        tokens of the request, and they need the whole value.
+
+        Values of the keys in :data:`COMMA_LIST_KEYS` hold a list of items. They are
+        shortened per item, so that every item stays recognizable instead of cutting the
+        list somewhere in the middle of an item.
+
+        :param key: the audit key the value is logged under
+        :param value: the value to shorten. Values that are not strings are returned
+            unchanged, they can not exceed a column.
+        :return: the value, shortened if necessary
+        """
+        length = self.column_length.get(key)
+        if not length or not isinstance(value, str) or len(value) <= length:
+            return value
+        if key in COMMA_LIST_KEYS and "," in value:
+            return truncate_comma_list(value, length)
+        return value[:length]
 
     @log_with(log)
     def log(self, param):

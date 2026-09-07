@@ -1205,6 +1205,10 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self.assertEqual(AUTH_RESPONSE.REJECT, result["authentication"])
             self.assertFalse(result["value"])
 
+        # The response does not name the token, but the audit log does
+        audit_entry = self.find_most_recent_audit_entry(action='POST /validate/check')
+        self.assertEqual(serial, audit_entry.get("serial"), audit_entry)
+
         remove_token(serial)
 
     def test_20_disabled_passkey_auth(self):

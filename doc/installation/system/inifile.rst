@@ -40,8 +40,6 @@ The file should contain the following contents::
    # PI_AUDIT_SQL_URI = <special audit log DB uri>
    # Options passed to the Audit DB engine (supersedes SQLALCHEMY_ENGINE_OPTIONS)
    # PI_AUDIT_SQL_OPTIONS = {}
-   # Truncate Audit entries to fit into DB columns
-   PI_AUDIT_SQL_TRUNCATE = True
    # PI_LOGFILE = '....'
    # PI_LOGLEVEL = 20
    # PI_INIT_CHECK_HOOK = 'your.module.function'
@@ -239,8 +237,10 @@ With ``PI_AUDIT_SQL_OPTIONS`` You can pass a dictionary of options to the
 database engine. If ``PI_AUDIT_SQL_OPTIONS`` is not set,
 ``SQLALCHEMY_ENGINE_OPTIONS`` will be used.
 
-``PI_AUDIT_SQL_TRUNCATE = True`` lets you truncate audit entries to the length
-of the database fields (See :ref:`Audit table size <audit_table_size>`).
+Audit entries are always shortened to the length of the database fields, so that
+an entry with long request data is written instead of being rejected. The former
+setting ``PI_AUDIT_SQL_TRUNCATE`` is ignored (See
+:ref:`Audit table size <audit_table_size>`).
 
 In certain cases when you experiencing problems you may use the parameters
 ``PI_AUDIT_POOL_SIZE`` and ``PI_AUDIT_POOL_RECYCLE``. However, they are only
@@ -706,7 +706,7 @@ Two consequences worth knowing:
 
 Like the other workloads it degrades safely: if Redis cannot be reached the
 database takes over, and a lost entry costs one real authentication against the
-user store, nothing else.
+token or the user store, nothing else.
 
 .. _redis_health_cache:
 
@@ -855,20 +855,18 @@ User Settings
 -------------
 
 The Web UI can store per-user settings (UI preferences) on the server via the
-``/user/settings`` endpoint. These settings are not interpreted by the backend;
-they are only stored and served back to the Web UI of the logged-in user.
+``/user/settings`` endpoint. The values are not interpreted by the backend; they
+are only stored and served back to the Web UI of the logged-in user.
 
-The set of accepted setting keys can be extended without a code change::
+Only the setting keys known to the Web UI are accepted. Storing any other key
+returns an error that names the rejected key. Further keys, for example for a
+customized Web UI, can be allowed without a code change::
 
     PI_USER_SETTINGS_ALLOWED_KEYS = ["my_custom_key", "another_key"]
 
 The value is a list of additional allowed keys (a comma-separated string is also
-accepted when set via an environment variable).
-
-.. note:: Key enforcement is not active yet. Currently any key is accepted (only
-   the document structure and a size limit are enforced) so the Web UI can evolve
-   its settings freely. ``PI_USER_SETTINGS_ALLOWED_KEYS`` will take effect once
-   key enforcement is enabled.
+accepted when set via an environment variable). Removing a key from the list does
+not delete settings already stored under it.
 
 .. _ini_remember_device_grace:
 
