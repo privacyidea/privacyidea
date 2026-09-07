@@ -17,31 +17,27 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { CdkTextareaAutosize } from "@angular/cdk/text-field";
-import { AfterViewInit, Component, ElementRef, inject, ViewChild } from "@angular/core";
+import { AfterViewInit, Component, ElementRef, ViewChild } from "@angular/core";
 
-import { MatButton } from "@angular/material/button";
-import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from "@angular/material/dialog";
 import { MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
+import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
+import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
 
 @Component({
   selector: "app-system-documentation-dialog",
   templateUrl: "./system-documentation-dialog.component.html",
   styleUrls: ["./system-documentation-dialog.component.scss"],
   standalone: true,
-  imports: [MatDialogModule, MatFormField, MatLabel, MatInput, MatButton, CdkTextareaAutosize, CopyableComponent]
+  imports: [MatFormField, MatLabel, MatInput, CdkTextareaAutosize, CopyableComponent, DialogWrapperComponent]
 })
-export class SystemDocumentationDialogComponent implements AfterViewInit {
+export class SystemDocumentationDialogComponent
+  extends AbstractDialogComponent<{ documentation: string }>
+  implements AfterViewInit
+{
   @ViewChild("autosize", { read: ElementRef }) textareaElement!: ElementRef<HTMLTextAreaElement>;
-  documentation = "";
-
-  public dialogRef = inject(MatDialogRef<SystemDocumentationDialogComponent>);
-  public data: { documentation: string } = inject(MAT_DIALOG_DATA);
-
-  constructor() {
-    this.documentation = this.data.documentation || "";
-  }
+  documentation = this.data.documentation || "";
 
   ngAfterViewInit(): void {
     setTimeout(() => {
@@ -55,9 +51,5 @@ export class SystemDocumentationDialogComponent implements AfterViewInit {
         element.scrollTop = 0;
       }
     });
-  }
-
-  onClose(): void {
-    this.dialogRef.close();
   }
 }

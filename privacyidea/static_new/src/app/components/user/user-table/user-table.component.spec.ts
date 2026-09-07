@@ -150,6 +150,38 @@ describe("UserTableComponent", () => {
     });
   });
 
+  describe("the resolver column", () => {
+    const resolverCellLinks = (): HTMLAnchorElement[] =>
+      Array.from(fixture.nativeElement.querySelectorAll('td a[href^="/users/resolvers/details/"]'));
+
+    const showUser = (allowResolverRead: boolean) => {
+      const authService = TestBed.inject(AuthService) as unknown as MockAuthService;
+      authService.authData.set({
+        ...MockAuthService.MOCK_AUTH_DATA,
+        rights: allowResolverRead ? ["userlist", "resolverread"] : ["userlist"]
+      });
+      mockUserService.usersResource.set(
+        MockPiResponse.fromValue([{ username: "alice", resolver: "ldap1" }] as UserData[]) as never
+      );
+      fixture.detectChanges();
+    };
+
+    it("points the resolver at its configuration page", () => {
+      showUser(true);
+
+      expect(resolverCellLinks().map((link) => link.getAttribute("href"))).toEqual([
+        ROUTE_PATHS.USERS_RESOLVERS_DETAILS + "ldap1"
+      ]);
+    });
+
+    it("names the resolver as plain text where its configuration may not be read", () => {
+      showUser(false);
+
+      expect(resolverCellLinks()).toHaveLength(0);
+      expect(fixture.nativeElement.textContent).toContain("ldap1");
+    });
+  });
+
   it("should create", () => {
     expect(component).toBeTruthy();
   });

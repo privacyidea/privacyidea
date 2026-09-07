@@ -1,5 +1,8 @@
-<div class="expiry-container">
-  <h2 i18n="@@subscription.subscriptionExpires">Subscription expires soon</h2>
+<app-dialog-wrapper
+  cancelButtonLabel="Close"
+  i18n-cancelButtonLabel="@@common.close"
+  i18n-title="@@subscription.subscriptionExpires"
+  title="Subscription expires soon">
   <div class="content">
     <p i18n="@@subscription.oneMoreSubscriptions"
       >One or more subscriptions will expire within the next month. Please review your subscriptions.</p
@@ -27,13 +30,4 @@
       }
     </ul>
   </div>
-
-  <div class="actions">
-    <button
-      mat-stroked-button
-      matDialogClose
-      i18n="@@common.close"
-      >Close</button
-    >
-  </div>
-</div>
+</app-dialog-wrapper>

@@ -17,13 +17,12 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <app-dialog-wrapper
+  width="l"
   [title]="data.rollover ? 'Container Rollover' : 'Register Container'"
   [actions]="[getAction()]"
   [showCloseButton]="false"
   (actionTriggered)="onAction($event)">
-  <mat-dialog-content>
-    <app-container-registration-config
-      [containerHasOwner]="data.containerHasOwner"
-      (validInputChange)="onValidInputChange($event)"></app-container-registration-config>
-  </mat-dialog-content>
+  <app-container-registration-config
+    [containerHasOwner]="data.containerHasOwner"
+    (validInputChange)="onValidInputChange($event)"></app-container-registration-config>
 </app-dialog-wrapper>

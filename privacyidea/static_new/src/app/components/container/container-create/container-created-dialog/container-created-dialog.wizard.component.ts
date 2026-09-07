@@ -19,9 +19,9 @@
 import { AsyncPipe } from "@angular/common";
 import { HttpClient } from "@angular/common/http";
 import { Component, computed, inject, SecurityContext } from "@angular/core";
-import { MatButton } from "@angular/material/button";
-import { MatDialogActions, MatDialogClose, MatDialogContent } from "@angular/material/dialog";
 import { DomSanitizer } from "@angular/platform-browser";
+import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
+import { DialogAction } from "@models/dialog";
 import { environment } from "@env/environment";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContainerService, ContainerServiceInterface } from "@services/container/container.service";
@@ -31,11 +31,14 @@ import { ContainerCreatedDialogComponent } from "./container-created-dialog.comp
 
 @Component({
   selector: "app-container-created-wizard-dialog",
-  imports: [MatDialogContent, MatDialogActions, MatDialogClose, MatButton, AsyncPipe],
+  imports: [AsyncPipe, DialogWrapperComponent],
   templateUrl: "./container-created-dialog.wizard.component.html",
   styleUrl: "./container-created-dialog.component.scss"
 })
 export class ContainerCreatedDialogWizardComponent extends ContainerCreatedDialogComponent {
+  protected readonly actions: DialogAction<"logout">[] = [
+    { type: "confirm", label: $localize`:@@common.logout:Logout`, value: "logout", primary: true }
+  ];
   protected override readonly containerService: ContainerServiceInterface = inject(ContainerService);
   public readonly authService: AuthServiceInterface = inject(AuthService);
   private http = inject(HttpClient);
@@ -54,6 +57,11 @@ export class ContainerCreatedDialogWizardComponent extends ContainerCreatedDialo
   });
 
   customizationPath = "/static/public/customize/";
+
+  onAction(): void {
+    this.close();
+    this.authService.logout();
+  }
 
   readonly postTopHtml$ = this.http
     .get(environment.proxyUrl + this.customizationPath + "container-create.wizard.post.top.html", {

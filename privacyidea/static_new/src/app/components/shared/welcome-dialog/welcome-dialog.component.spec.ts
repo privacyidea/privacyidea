@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { TestBed } from "@angular/core/testing";
-import { MatDialogRef } from "@angular/material/dialog";
+import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { AuthService } from "@services/auth/auth.service";
 import { MockAuthService } from "@testing/mock-services";
 import { WelcomeDialogServiceMock } from "@testing/mock-services/mock-welcome-dialog-service";
@@ -36,6 +36,7 @@ describe("WelcomeDialogComponent", () => {
     TestBed.configureTestingModule({
       providers: [
         { provide: MatDialogRef, useValue: dialogRefMock },
+        { provide: MAT_DIALOG_DATA, useValue: null },
         { provide: AuthService, useClass: MockAuthService }
       ]
     });
@@ -79,6 +80,28 @@ describe("WelcomeDialogComponent", () => {
 
     component.nextWelcome();
     expect(dialogRefMock.close).toHaveBeenCalled();
+  });
+
+  it("renders the step heading and its buttons in the shared dialog wrapper", () => {
+    const fixture = TestBed.createComponent(WelcomeDialogComponent);
+    const heading = () => fixture.nativeElement.querySelector(".pi-dialog-header").textContent.trim();
+    const buttons = (): string[] =>
+      Array.from(fixture.nativeElement.querySelectorAll(".pi-dialog-footer button")).map((button) =>
+        (button as HTMLElement).textContent!.trim()
+      );
+    fixture.detectChanges();
+
+    expect(heading()).toBe("Welcome");
+    expect(buttons()).toHaveLength(1);
+    expect(buttons()[0]).toContain("Next");
+
+    fixture.componentInstance.step.set(3);
+    fixture.detectChanges();
+
+    expect(heading()).toBe("Thank you for improving your security!");
+    expect(buttons()).toHaveLength(2);
+    expect(buttons()[0]).toContain("Read again");
+    expect(buttons()[1]).toContain("Dive In!");
   });
 
   it("resetWelcome should set step back to 0", () => {

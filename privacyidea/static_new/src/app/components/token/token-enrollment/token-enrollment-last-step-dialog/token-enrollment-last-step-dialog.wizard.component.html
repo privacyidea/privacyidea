@@ -17,66 +17,65 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <app-dialog-wrapper
+  width="xl"
   (actionTriggered)="onAction($event)"
   [actions]="actions()"
   [showCloseButton]="false"
   i18n-title="@@token.tokenSuccessfully"
   title="Token Successfully Enrolled">
-  <mat-dialog-content>
-    @let postTopHtml = postTopHtml$ | async;
-    @if (postTopHtml?.hasContent) {
-      <div
-        [innerHTML]="postTopHtml?.sanitized"
-        class="margin-top-16"></div>
-    } @else {
-      <app-token-enrolled-text
-        (switchRoute)="onSwitchRoute()"
-        [rollover]="data.rollover ?? false"
-        [serial]="serial"></app-token-enrolled-text>
+  @let postTopHtml = postTopHtml$ | async;
+  @if (postTopHtml?.hasContent) {
+    <div
+      [innerHTML]="postTopHtml?.sanitized"
+      class="margin-top-16"></div>
+  } @else {
+    <app-token-enrolled-text
+      (switchRoute)="onSwitchRoute()"
+      [rollover]="data.rollover ?? false"
+      [serial]="serial"></app-token-enrolled-text>
+  }
+  <div class="flex-row gap-16">
+    @if (showQRCode() && qrCode) {
+      <img
+        alt="QR Code"
+        class="qr-code"
+        height="300px"
+        i18n-alt="@@common.qrCode"
+        src="{{ qrCode }}"
+        width="300px" />
     }
-    <div class="flex-row gap-16">
-      @if (showQRCode() && qrCode) {
-        <img
-          alt="QR Code"
-          class="qr-code"
-          height="300px"
-          i18n-alt="@@common.qrCode"
-          src="{{ qrCode }}"
-          width="300px" />
-      }
 
-      @if (data.showEnrollData !== false) {
-        <div class="flex-column gap-16">
-          @if (data.response?.detail?.["password"]) {
-            <p i18n="@@token.yourPassword"
-              >Your Password: <strong>{{ data.response?.detail?.["password"] }}</strong
-              >.</p
-            >
-          }
+    @if (data.showEnrollData !== false) {
+      <div class="flex-column gap-16">
+        @if (data.response?.detail?.["password"]) {
+          <p i18n="@@token.yourPassword"
+            >Your Password: <strong>{{ data.response?.detail?.["password"] }}</strong
+            >.</p
+          >
+        }
 
-          @if (data.response?.detail?.otpkey?.value && !data.response?.detail?.["otps"] && showQRCode()) {
-            <app-otp-key
-              [otpKeyBase32]="data.response?.detail?.otpkey?.value_b32 ?? ''"
-              [otpKeyHex]="data.response?.detail?.otpkey?.value ?? ''" />
-          }
+        @if (data.response?.detail?.otpkey?.value && !data.response?.detail?.["otps"] && showQRCode()) {
+          <app-otp-key
+            [otpKeyBase32]="data.response?.detail?.otpkey?.value_b32 ?? ''"
+            [otpKeyHex]="data.response?.detail?.otpkey?.value ?? ''" />
+        }
 
-          @if (data.tokenType === "tiqr") {
-            <app-tiqr-enroll-url [url]="data.response?.detail?.['tiqrenroll']?.value ?? ''" />
-          }
+        @if (data.tokenType === "tiqr") {
+          <app-tiqr-enroll-url [url]="data.response?.detail?.['tiqrenroll']?.value ?? ''" />
+        }
 
-          @if (data.tokenType === "registration") {
-            <app-registration-code [registrationCode]="data.response?.detail?.['registrationcode'] ?? ''" />
-          }
+        @if (data.tokenType === "registration") {
+          <app-registration-code [registrationCode]="data.response?.detail?.['registrationcode'] ?? ''" />
+        }
 
-          @if (data.response?.detail?.["otps"]) {
-            <app-otp-values [otpValues]="data.response?.detail?.['otps'] ?? []" />
-          }
-        </div>
-      }
+        @if (data.response?.detail?.["otps"]) {
+          <app-otp-values [otpValues]="data.response?.detail?.['otps'] ?? []" />
+        }
+      </div>
+    }
 
-      <div
-        [innerHTML]="postBottomHtml$ | async"
-        class="margin-bottom-16"></div>
-    </div>
-  </mat-dialog-content>
+    <div
+      [innerHTML]="postBottomHtml$ | async"
+      class="margin-bottom-16"></div>
+  </div>
 </app-dialog-wrapper>
