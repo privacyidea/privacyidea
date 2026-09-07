@@ -915,8 +915,8 @@ def parse_time_offset_from_now(s):
     This returns the string "New date {now}. Some {other} {tags}" and the
     timedelta of 5 days.
     Allowed tags are {now} and {current_time}. {now} is the canonical tag,
-    {current_time} is a deprecated alias for it. Only one tag of {now} or
-    {current_time} is allowed.
+    {current_time} is a deprecated alias for it. At most one offset expression
+    is parsed; if both are present, {current_time} takes precedence.
     Allowed offsets are "s": seconds, "m": minutes, "h": hours, "d": days.
 
     :param s: The string to be parsed.
