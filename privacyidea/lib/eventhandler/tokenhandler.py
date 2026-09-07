@@ -253,7 +253,7 @@ class TokenEventHandler(BaseEventHandler):
                                              "{now} (with offsets such as "
                                              "{now}+5d), {client_ip}, "
                                              "{ua_browser}, {ua_string}, "
-                                             "{serial}, {tokentype}, {username} "
+                                             "{serial}, {tokentype}, {username}, {realm} "
                                              "and {userrealm}.")
                         }
                 },
