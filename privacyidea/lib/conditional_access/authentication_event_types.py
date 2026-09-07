@@ -291,7 +291,8 @@ def build_reason_detail(reasons: dict | None = None, policies: list | None = Non
 
     The one place its structure is defined, so every layer that adds to it - the token layer with its per-serial
     findings, a policy layer with the rules that decided - writes the same shape. The detail is *merged* on the way
-    into the row (see :meth:`~privacyidea.lib.conditional_access.request_context.ConditionalAccessContext.reclassify`), so each layer only passes its own half.
+    into the row (see :meth:`~privacyidea.lib.conditional_access.request_context.ConditionalAccessContext.reclassify`),
+    so each layer only passes its own half.
 
     :param reasons: what each token was found to be, keyed by serial
     :param policies: the names of the policies that decided the request
