@@ -72,6 +72,19 @@
     border-color: #ddd;
 }
 
+.btn-outline-primary {
+    color: #337ab7;
+    background-color: transparent;
+    border-color: #337ab7;
+}
+
+.btn-outline-primary:hover,
+.btn-outline-primary:focus {
+    color: #ffffff;
+    background-color: #337ab7;
+    border-color: #337ab7;
+}
+
 .btn-transparent.disabled:hover,
 .btn-transparent[disabled]:hover,
 fieldset[disabled] .btn-transparent:hover,

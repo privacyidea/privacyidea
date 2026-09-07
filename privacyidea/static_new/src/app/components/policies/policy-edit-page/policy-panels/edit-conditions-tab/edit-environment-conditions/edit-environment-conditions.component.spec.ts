@@ -21,9 +21,15 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MatSelect, MatSelectChange } from "@angular/material/select";
 import { EditEnvironmentConditionsComponent } from "@components/policies/policy-edit-page/policy-panels/edit-conditions-tab/edit-environment-conditions/edit-environment-conditions.component";
 import { ClientsDict, ClientsService } from "@services/clients/clients.service";
+import { IntegrationsService } from "@services/integrations/integrations.service";
 import { PolicyService } from "@services/policies/policies.service";
 import { SystemService } from "@services/system/system.service";
-import { MockClientsService, MockPolicyService, MockSystemService } from "@testing/mock-services";
+import {
+  MockClientsService,
+  MockIntegrationsService,
+  MockPolicyService,
+  MockSystemService
+} from "@testing/mock-services";
 
 describe("EditEnvironmentConditionsComponent", () => {
   let component: EditEnvironmentConditionsComponent;
@@ -36,7 +42,8 @@ describe("EditEnvironmentConditionsComponent", () => {
       providers: [
         { provide: PolicyService, useClass: MockPolicyService },
         { provide: SystemService, useClass: MockSystemService },
-        { provide: ClientsService, useClass: MockClientsService }
+        { provide: ClientsService, useClass: MockClientsService },
+        { provide: IntegrationsService, useClass: MockIntegrationsService }
       ]
     }).compileComponents();
 
@@ -249,7 +256,7 @@ describe("EditEnvironmentConditionsComponent", () => {
     it("adds the first filtered preset, clears the search, and closes the select", () => {
       const spy = jest.spyOn(component.policyEdit, "emit");
       const select = makeSelect();
-      component.userAgentSearch.set("key");
+      component.userAgentSearch.set("cloak");
 
       component.handleEnterOnSearch(makeEvent(), select);
 
@@ -264,7 +271,7 @@ describe("EditEnvironmentConditionsComponent", () => {
 
       component.handleEnterOnSearch(makeEvent(), select);
 
-      expect(spy).toHaveBeenCalledWith({ user_agents: ["PAM", "privacyidea-cp"] });
+      expect(spy).toHaveBeenCalledWith({ user_agents: ["PAM", "privacyIDEA-App"] });
       expect(select.close).toHaveBeenCalled();
     });
 
@@ -283,7 +290,7 @@ describe("EditEnvironmentConditionsComponent", () => {
     it("does nothing when every preset is already selected", () => {
       fixture.componentRef.setInput("policy", {
         name: "test-policy",
-        user_agents: component.userAgentOptions.map((o) => o.key)
+        user_agents: component.userAgentOptions().map((o) => o.key)
       });
       fixture.detectChanges();
       const spy = jest.spyOn(component.policyEdit, "emit");

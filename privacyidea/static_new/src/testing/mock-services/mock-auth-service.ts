@@ -68,7 +68,6 @@ export class MockAuthService implements AuthServiceInterface {
   readonly showSeed = computed(() => this.authData()?.show_seed ?? false);
   readonly showNode = computed(() => this.authData()?.show_node ?? "");
   readonly subscriptionStatus = computed(() => this.authData()?.subscription_status ?? 0);
-  readonly subscriptionStatusPush = computed(() => this.authData()?.subscription_status_push ?? 0);
   readonly qrImageAndroid = computed(() => this.authData()?.qr_image_android ?? null);
   readonly qrImageIOS = computed(() => this.authData()?.qr_image_ios ?? null);
   readonly qrImageCustom = computed(() => this.authData()?.qr_image_custom ?? null);
@@ -131,7 +130,6 @@ export class MockAuthService implements AuthServiceInterface {
     show_seed: false,
     show_node: "",
     subscription_status: 0,
-    subscription_status_push: 0,
     qr_image_android: null,
     qr_image_ios: null,
     qr_image_custom: null,

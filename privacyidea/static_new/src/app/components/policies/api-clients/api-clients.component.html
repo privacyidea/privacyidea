@@ -1,0 +1,280 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<div
+  appScrollToTop
+  class="api-clients-container">
+  <app-api-client-issued-key-banner />
+
+  @if (tableState.showTable()) {
+    <div class="filter-paginator-container">
+      <mat-form-field
+        appearance="fill"
+        class="table-filter"
+        subscriptSizing="dynamic">
+        <mat-label i18n="@@apiClient.filterApiClients">Filter API Clients...</mat-label>
+        <app-clearable-input
+          (clearButtonClick)="resetFilter()"
+          [showClearButton]="filterString().length > 0">
+          <input
+            #filterHTMLInputElement
+            (input)="onFilterInput(filterHTMLInputElement.value)"
+            [value]="filterString()"
+            aria-label="Filter Input"
+            i18n-aria-label="@@common.filterInput"
+            i18n-placeholder="@@common.filterByNameType"
+            matInput
+            placeholder="Filter by name or type" />
+        </app-clearable-input>
+      </mat-form-field>
+      <mat-paginator
+        [pageSizeOptions]="pageSizeOptions()"
+        [pageSize]="pageSizeOptions()[1]"
+        showFirstLastButtons />
+    </div>
+    <div class="actions-container margin-bottom-16">
+      @if (authService.actionAllowed("api_client_add")) {
+        <button
+          (click)="onCreateNewApiClient()"
+          class="action-button-primary button-width-l"
+          mat-stroked-button>
+          <span class="icon-badge">
+            <mat-icon class="padding-right-3">vpn_key</mat-icon>
+            <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+          </span>
+          <span i18n="@@apiClient.createApiClient">Create API Client</span>
+        </button>
+      }
+      @if (authService.actionAllowed("api_client_delete")) {
+        <button
+          (click)="deleteSelected()"
+          [disabled]="!selector.hasSelection()"
+          class="action-button-delete-secondary button-width-l"
+          mat-stroked-button>
+          <mat-icon>delete_sweep</mat-icon>
+          <span i18n="@@common.delete">Delete</span>
+        </button>
+      }
+
+      <p
+        class="margin-bottom-0 margin-top-0"
+        i18n="@@apiClient.apiClientsIntro">
+        API clients authenticate against privacyIDEA with an API key sent in the
+        <code>X-API-Key</code> header. Click on a client to see its remembered devices and the users behind them.
+      </p>
+    </div>
+
+    <table
+      [dataSource]="apiClientDataSource()"
+      class="api-clients-table"
+      mat-table
+      matSort>
+      <ng-container matColumnDef="select">
+        <th
+          *matHeaderCellDef
+          class="table-checkbox"
+          mat-header-cell>
+          <mat-checkbox
+            (change)="$event.checked ? selector.selectAllRows() : selector.deselectAllRows()"
+            [checked]="selector.allRowsSelected()"
+            [disabled]="!selector.hasVisibleRows()"
+            [indeterminate]="selector.someRowsSelected()" />
+        </th>
+        <td
+          *matCellDef="let row"
+          class="table-checkbox"
+          mat-cell>
+          <mat-checkbox
+            (change)="selector.setRowSelected(row, $event.checked)"
+            (click)="$event.stopPropagation()"
+            [checked]="selector.isRowSelected(row)" />
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="display_name">
+        <th
+          *matHeaderCellDef
+          i18n="@@common.name"
+          mat-header-cell
+          mat-sort-header>
+          Name
+        </th>
+        <td
+          *matCellDef="let client"
+          mat-cell>
+          <app-copyable [copyText]="client.display_name">
+            <a
+              role="button"
+              tabindex="0"
+              (click)="onEditApiClient(client)"
+              (keydown.enter)="onEditApiClient(client)"
+              class="flex ali-center">
+              {{ client.display_name }}
+            </a>
+          </app-copyable>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="client_type">
+        <th
+          *matHeaderCellDef
+          i18n="@@common.type"
+          mat-header-cell
+          mat-sort-header>
+          Type
+        </th>
+        <td
+          *matCellDef="let client"
+          mat-cell>
+          {{ clientTypeLabel(client.client_type) }}
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="status">
+        <th
+          *matHeaderCellDef
+          i18n="@@common.status"
+          mat-header-cell
+          mat-sort-header>
+          Status
+        </th>
+        <td
+          *matCellDef="let client"
+          mat-cell>
+          <span
+            [class.status-active]="client.status === 'active'"
+            [class.status-suspended]="client.status === 'suspended'"
+            class="status-badge">
+            {{ client.status }}
+          </span>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="key_id">
+        <th
+          *matHeaderCellDef
+          i18n="@@apiClient.keyId"
+          mat-header-cell
+          mat-sort-header>
+          Key ID
+        </th>
+        <td
+          *matCellDef="let client"
+          mat-cell>
+          <code>pi_{{ client.key_id }}</code>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="created_at">
+        <th
+          *matHeaderCellDef
+          i18n="@@token.created"
+          mat-header-cell
+          mat-sort-header>
+          Created
+        </th>
+        <td
+          *matCellDef="let client"
+          mat-cell>
+          {{ client.created_at | date: "yyyy-MM-dd HH:mm" }}
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="last_used_at">
+        <th
+          *matHeaderCellDef
+          i18n="@@apiClient.lastUsed"
+          mat-header-cell
+          mat-sort-header>
+          Last used
+        </th>
+        <td
+          *matCellDef="let client"
+          mat-cell>
+          {{ (client.last_used_at | date: "yyyy-MM-dd HH:mm") || "-" }}
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="actions">
+        <th
+          *matHeaderCellDef
+          mat-header-cell></th>
+        <td
+          *matCellDef="let client"
+          mat-cell>
+          <div class="flex-row gap-0">
+            @if (authService.actionAllowed("api_client_rotate")) {
+              <button
+                (click)="rotateKey(client)"
+                matTooltip="Rotate key"
+                i18n-matTooltip="@@apiClient.rotateKey"
+                mat-icon-button>
+                <mat-icon>refresh</mat-icon>
+              </button>
+            }
+            @if (authService.actionAllowed("api_client_delete")) {
+              <button
+                (click)="deleteClient(client)"
+                matTooltip="Delete"
+                i18n-matTooltip="@@common.delete"
+                mat-icon-button>
+                <mat-icon>delete</mat-icon>
+              </button>
+            }
+          </div>
+        </td>
+      </ng-container>
+
+      <tr
+        *matHeaderRowDef="displayedColumns"
+        mat-header-row></tr>
+      <tr
+        *matRowDef="let row; columns: displayedColumns"
+        mat-row></tr>
+
+      <tr *matNoDataRow>
+        <td colspan="8">
+          <app-table-state
+            [status]="tableState.rowStatus()"
+            [table]="tableState" />
+        </td>
+      </tr>
+    </table>
+  } @else {
+    <app-table-state
+      [table]="tableState"
+      heading="No API clients yet"
+      hint="Create an API client to let external integrations authenticate with an API key."
+      i18n-heading="@@apiClient.noApiClientsYet"
+      i18n-hint="@@apiClient.noApiClientsHint"
+      icon="vpn_key">
+      @if (authService.actionAllowed("api_client_add")) {
+        <button
+          (click)="onCreateNewApiClient()"
+          class="action-button-primary button-width-l"
+          mat-stroked-button>
+          <span class="icon-badge">
+            <mat-icon class="padding-right-3">vpn_key</mat-icon>
+            <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+          </span>
+          <span i18n="@@apiClient.createApiClient">Create API Client</span>
+        </button>
+      }
+    </app-table-state>
+  }
+</div>

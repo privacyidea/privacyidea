@@ -79,7 +79,11 @@ const config: Config = {
   // globals: {},
 
   // The maximum amount of workers used to run your tests. Can be specified as % or a number. E.g. maxWorkers: 10% will use 10% of your CPU amount + 1 as the maximum worker number. maxWorkers: 2 will use a maximum of 2 workers.
-  maxWorkers: "100%",
+  // Capped well below 100%: each worker independently loads the full jest-preset-angular
+  // stack (ts-jest type-checking, zone.js, TestBed), so on a many-core machine "100%"
+  // spawns that many heavy processes at once - a multi-GB spike on top of whatever
+  // `ng serve`/the editor/the browser already hold, which can OOM a machine with no swap.
+  maxWorkers: "50%",
 
   // An array of directory names to be searched recursively up from the requiring module's location
   // moduleDirectories: [

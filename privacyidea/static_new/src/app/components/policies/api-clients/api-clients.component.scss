@@ -1,0 +1,30 @@
+@use "styles";
+@use "table";
+
+.api-clients-container {
+  @include styles.main-component-style;
+  @include table.base-table-structure(".api-clients-table", ".table-filter", ".table-scroll-container");
+  @include table.page-table-state-size;
+}
+
+.actions-container {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 16px;
+  width: 100%;
+}
+
+.status-badge {
+  border-radius: var(--border-radius);
+  padding: 2px 8px;
+  text-transform: capitalize;
+}
+
+.status-active {
+  background: var(--inline-hint-bg);
+}
+
+.status-suspended {
+  background: var(--inline-warning-bg);
+}

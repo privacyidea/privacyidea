@@ -46,14 +46,21 @@ def upgrade():
             # A device belongs to a realm; deleting the realm removes its devices.
             sa.ForeignKeyConstraint(['realm_id'], ['realm.id'], ondelete='CASCADE'),
             # Devices are looked up by (series_id, client_id) on the cookie path
-            # and by device_id on the management path (unique); the user-identity
-            # and realm columns are indexed for revoke-by-user / revoke-by-realm.
+            # and by device_id on the management path, which the unique constraint
+            # indexes on its own; the user-identity and realm columns are indexed
+            # for revoke-by-user / revoke-by-realm, which run without a client_id,
+            # and expires_at for the expiry cleanup.
             sa.UniqueConstraint('device_id', name='uq_remembered_devices_device_id'),
-            sa.Index('ix_remembered_devices_device_id', 'device_id'),
             sa.Index('ix_remembered_devices_client_id', 'client_id'),
             sa.Index('ix_remembered_devices_resolver', 'resolver'),
             sa.Index('ix_remembered_devices_user_id', 'user_id'),
             sa.Index('ix_remembered_devices_realm_id', 'realm_id'),
+            sa.Index('ix_remembered_devices_expires_at', 'expires_at'),
+            # The two composites serve the hot paths: cookie validation and the
+            # per-user device cap both filter on all four identity columns at once,
+            # and one client's device list is paginated newest-first.
+            sa.Index('ix_remembered_devices_identity', 'client_id', 'resolver', 'user_id', 'realm_id'),
+            sa.Index('ix_remembered_devices_client_created', 'client_id', 'created_at'),
         )
     except (OperationalError, ProgrammingError) as ex:
         if "already exists" in str(ex.orig).lower():

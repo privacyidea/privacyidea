@@ -61,6 +61,11 @@ Version 3.14dev1
     exist can be imported with `--skip-invalid` (#5516)
   * Removed the `/validate/samlcheck` endpoint, which was deprecated in 3.11. Use `/validate/check` with the
     authorization policies `add_user_in_response` and `add_resolver_in_response` instead (#5414)
+  * The endpoints `POST /token/copypin` and `POST /token/copyuser` are deprecated and will be removed in a
+    future release, together with the `copytokenpin` and `copytokenuser` admin actions. They expose single
+    steps of the lost token process, which can be run as a whole with `POST /token/lost/<serial>`
+  * The lost token process (`POST /token/lost/<serial>`) requires an administrator. The `losttoken` action is
+    defined in the admin scope only
   * Removed the u2f token type. Existing tokens are set to the type `deprecated` and disabled by the migration and can
     be removed with `pi-tokenjanitor deprecated delete u2f`.
   * Cancelling an active challenge requires the new admin action `cancelchallenge` instead of the read-only
@@ -77,6 +82,10 @@ Version 3.14dev1
   * Updated the pinned dependencies for the backend.
 
   Fixes:
+  * `POST /token/copypin` and `POST /token/copyuser` check the `copytokenpin` / `copytokenuser` right for the
+    source as well as for the destination token
+  * The lost token process always creates a new replacement token. An earlier replacement of the same token
+    is disabled when a new one is issued
   * Realms can be deleted again when a custom user attribute was set for one of their users (#5094)
   * Editing an inactive policy no longer activates it, because the `active` parameter is now honoured (#5411)
   * A realm administrator with the `userlist` right sees the users of all realms granted to them, instead of only the

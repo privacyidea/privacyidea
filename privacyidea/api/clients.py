@@ -36,7 +36,7 @@ from flask import Blueprint, request, g
 
 from .lib.utils import send_result
 from ..lib.error import ParameterError, PolicyError, ResourceNotFoundError
-from ..lib.params import get_optional, get_required
+from ..lib.params import get_optional, get_pagination_params, get_required
 from ..lib.log import log_with
 from ..lib.event import event
 from ..lib.policies.actions import PolicyAction
@@ -92,7 +92,8 @@ def create_client_api():
     Requires admin authentication and the policy action :ref:`policy_api_client_add`.
 
     :jsonparam display_name: a human readable name for the client.
-    :jsonparam client_type: the type of client, e.g. 'windows_cp', 'keycloak', 'entraid'.
+    :jsonparam client_type: one of the API-client integrations from ``GET /info/integrations``,
+        e.g. 'privacyidea-cp', 'privacyidea-keycloak', 'entraid-via-keycloak'.
     :jsonparam config: optional JSON object for future remote configuration.
     :status 200: the client (including ``api_key``) in ``result.value``.
     """
@@ -242,11 +243,19 @@ def list_client_remembered_devices_api(client_id):
     ``device_id`` (used to target revocation) and metadata (user, IP, user agent,
     created / last used / expiry).
 
+    The listing is paginated: a client shared across many browsers/devices per
+    user can accumulate a very large number of remembered devices.
+
     Requires admin authentication and the policy action :ref:`policy_remembered_device_list`.
 
     :param client_id: path component, the id of the client.
-    :status 200: a list of devices in ``result.value``.
-    :status 404: no client with that id exists.
+    :query page: 1-indexed page number, default ``1``; values below 1 are treated as 1.
+    :query pagesize: page size, default ``50``, capped at ``1000``.
+    :query realm: optional realm name to narrow the listing to.
+    :status 200: ``result.value`` is a dict with ``devices`` (this page),
+        ``count`` (total matching devices), ``prev`` and ``next`` (page numbers,
+        or ``null`` when there is no such page).
+    :status 404: no client with that id exists, or ``realm`` does not exist.
     """
     # Ensure the client exists (404 otherwise).
     get_client(client_id)
@@ -254,10 +263,24 @@ def list_client_remembered_devices_api(client_id):
     # it: restrict the listing to the admin's allowed realms so a realm-scoped
     # remembered_device_list admin does not see every realm's devices.
     allowed_realm_ids = _allowed_realm_ids(PolicyAction.REMEMBERED_DEVICE_LIST)
-    devices = get_client_devices(client_id, realm_ids=allowed_realm_ids)
+    page, page_size = get_pagination_params(request.all_data, default_page_size=50)
+    realm = get_optional(request.all_data, "realm")
+    realm_id = None
+    if realm:
+        realm_id = get_realm_id(realm)
+        if realm_id is None:
+            raise ParameterError(f"The realm {realm!r} does not exist.")
+
+    result = get_client_devices(client_id, realm_ids=allowed_realm_ids, realm_id=realm_id,
+                                page=page, page_size=page_size)
 
     g.audit_object.log({"success": True, "info": f"Client ID: {client_id}"})
-    return send_result(devices_to_dicts(devices))
+    return send_result({
+        "devices": devices_to_dicts(result["devices"]),
+        "count": result["count"],
+        "prev": result["prev"],
+        "next": result["next"]
+    })
 
 
 @clients_blueprint.route('/<client_id>/remembered_devices', methods=['DELETE'])

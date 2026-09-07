@@ -15,28 +15,32 @@
  *
  */
 myApp.controller("clientsController", ["$scope", "$stateParams", "inform",
-    "gettextCatalog", "$state", "$location", "ConfigFactory",
-    function ($scope, $stateParams, inform, gettextCatalog, $state, $location, ConfigFactory) {
+    "gettextCatalog", "$state", "$location", "ConfigFactory", "InfoFactory",
+    function ($scope, $stateParams, inform, gettextCatalog, $state, $location, ConfigFactory, InfoFactory) {
         // Set the default route
         if ($location.path() === "/config/clients") {
             $location.path("/config/clients/list");
         }
 
-        // The known client types offered in the creation form: the internal
-        // name stored on the client plus a polished label shown in the UI. The
-        // backend accepts any string, so this list is only presentation.
-        // TODO: serve this from the backend as part of a unified ecosystem
-        //       integration catalog (client types + policy user_agents +
-        //       subscriptions). See issue #5705.
-        $scope.clientTypes = [
-            {name: "windows_cp", label: "Windows Credential Provider"},
-            {name: "keycloak", label: "Keycloak"},
-            {name: "entraid", label: "Microsoft Entra ID"},
-            {name: "shibboleth", label: "Shibboleth"},
-            {name: "adfs", label: "AD FS"}
-        ];
+        // The client types offered in the creation form: the integrations from the
+        // shared backend catalog (privacyidea.lib.integrations) that are flagged as
+        // API clients. The backend accepts any string, but validates it against this
+        // same catalog.
+        $scope.clientTypes = [];
+        InfoFactory.getIntegrations(function (integrations) {
+            $scope.clientTypes = integrations
+                .filter(function (integration) {
+                    return integration.api_client;
+                })
+                .map(function (integration) {
+                    return {name: integration.id, label: integration.label};
+                });
+            // Preselect the first type so the creation form is never submitted with
+            // an empty selection.
+            $scope.params.client_type = $scope.clientTypes.length ? $scope.clientTypes[0].name : "";
+        });
         // Map a stored client type to its label, falling back to the raw value
-        // for types not (or no longer) in the list above.
+        // for types not (or no longer) in the catalog.
         $scope.clientTypeLabel = function (type) {
             for (var i = 0; i < $scope.clientTypes.length; i++) {
                 if ($scope.clientTypes[i].name === type) {
@@ -49,9 +53,9 @@ myApp.controller("clientsController", ["$scope", "$stateParams", "inform",
         // permanent removal is a delete, so there is no separate "revoked".
         $scope.clientStates = ["active", "suspended"];
 
-        // Preselect the first type so the creation form is never submitted with
-        // an empty selection.
-        $scope.params = {client_type: $scope.clientTypes[0].name};
+        // The catalog has not loaded yet when the controller is constructed; it is
+        // filled in above once InfoFactory.getIntegrations resolves.
+        $scope.params = {client_type: ""};
         // Holds a freshly generated API key so it can be shown to the admin
         // exactly once (after create or rotate). It is never fetched again.
         $scope.newApiKey = null;
@@ -93,27 +97,15 @@ myApp.controller("clientsController", ["$scope", "$stateParams", "inform",
         $scope.rememberedDevicesClientName = $scope.rememberedDevicesClientId;
         $scope.realmList = [];
         $scope.rememberedDevices = [];
-        $scope.rememberedDevicesFiltered = [];
+        $scope.rememberedDevicesCount = 0;
+        $scope.rememberedDevicesPageSize = 50;
         // This view renders in a *child* scope of the clients controller (the
         // child states render in a nested ui-view). Bare scope primitives set from
         // the template (ng-model / ng-click) would shadow a copy on that child
         // scope and never reach the controller. So all template-mutated view state
         // lives on this single object: a dotted model mutates the shared object.
         // ui.realm null = all realms (the ng-options empty option).
-        $scope.ui = {realm: null, revokeAllDialog: false, revokeRealmDialog: false};
-
-        // Filter in the controller rather than via an ng-repeat filter (the latter
-        // did not track the selection). Recomputed on load and on every
-        // realm-selector change (ng-change).
-        $scope.applyRealmFilter = function () {
-            if (!$scope.ui.realm) {
-                $scope.rememberedDevicesFiltered = $scope.rememberedDevices;
-            } else {
-                $scope.rememberedDevicesFiltered = $scope.rememberedDevices.filter(function (device) {
-                    return device.realm === $scope.ui.realm;
-                });
-            }
-        };
+        $scope.ui = {realm: null, revokeAllDialog: false, page: 1};
 
         $scope.getRealmList = function () {
             ConfigFactory.getRealms(function (data) {
@@ -121,12 +113,30 @@ myApp.controller("clientsController", ["$scope", "$stateParams", "inform",
             });
         };
 
+        // The listing is paginated and realm-filtered server-side (a client can
+        // accumulate a very large number of remembered devices), so both the page
+        // and the realm selection are sent as query params rather than filtered
+        // client-side over an already-loaded list.
         $scope.loadRememberedDevices = function (clientId) {
             $scope.rememberedDevicesClientId = clientId;
-            ConfigFactory.getClientRememberedDevices(clientId, function (data) {
-                $scope.rememberedDevices = data.result.value;
-                $scope.applyRealmFilter();
+            var params = {
+                page: $scope.ui.page,
+                pagesize: $scope.rememberedDevicesPageSize,
+                realm: $scope.ui.realm
+            };
+            ConfigFactory.getClientRememberedDevices(clientId, params, function (data) {
+                $scope.rememberedDevices = data.result.value.devices;
+                $scope.rememberedDevicesCount = data.result.value.count;
             });
+        };
+
+        $scope.devicesPageChanged = function () {
+            $scope.loadRememberedDevices($scope.rememberedDevicesClientId);
+        };
+
+        $scope.onRealmFilterChange = function () {
+            $scope.ui.page = 1;
+            $scope.loadRememberedDevices($scope.rememberedDevicesClientId);
         };
 
         $scope.showRememberedDevices = function (client) {
@@ -146,48 +156,66 @@ myApp.controller("clientsController", ["$scope", "$stateParams", "inform",
             });
         };
 
-        // Bulk revoke. "For this client" is scoped to the client being viewed;
-        // "for user" and "in realm" revoke across all clients (offboarding /
-        // realm-wide incident response), so they reload the current list after.
-        $scope.revokeAllForClient = function () {
-            $scope.ui.revokeAllDialog = false;
-            ConfigFactory.revokeAllClientRememberedDevices($scope.rememberedDevicesClientId, function (data) {
-                if (data.result.status === true) {
-                    inform.add(gettextCatalog.getString("Revoked {{count}} remembered device(s).",
-                        {count: data.result.value}), {type: "info"});
-                    $scope.loadRememberedDevices($scope.rememberedDevicesClientId);
-                }
-            });
+        $scope.revokeAllLabel = function () {
+            return $scope.ui.realm
+                ? gettextCatalog.getString("Revoke all in this realm")
+                : gettextCatalog.getString("Revoke all");
         };
 
+        // The trigger button keeps a short, fixed-width label (revokeAllLabel above),
+        // while the confirm step names the actual realm, so an admin sees exactly
+        // what is about to be revoked at the one place they can still back out.
+        $scope.revokeAllConfirmText = function () {
+            return $scope.ui.realm
+                ? gettextCatalog.getString("Revoke this client's remembered devices in realm {{realm}}",
+                    {realm: $scope.ui.realm})
+                : gettextCatalog.getString("Revoke all remembered devices for this client");
+        };
+
+        // Bulk revoke, always scoped to the client being viewed - this is that
+        // client's page, so the button cannot reach another client's devices. A
+        // selected realm narrows it further to that realm's devices on this client.
+        // Revoking one user everywhere is the per-row action instead (revokeAllForUser).
+        $scope.revokeAll = function () {
+            $scope.ui.revokeAllDialog = false;
+            var params = $scope.ui.realm ? {realm: $scope.ui.realm} : {};
+            ConfigFactory.revokeAllClientRememberedDevices($scope.rememberedDevicesClientId, params,
+                function (data) {
+                    if (data.result.status === true) {
+                        inform.add(gettextCatalog.getString("Revoked {{count}} remembered device(s).",
+                            {count: data.result.value}), {type: "info"});
+                        $scope.ui.page = 1;
+                        $scope.loadRememberedDevices($scope.rememberedDevicesClientId);
+                    }
+                });
+        };
+
+        // One user can hold several remembered devices on the same client (one per
+        // browser/device they logged in from), so this revokes every one of them -
+        // still only on the client being viewed.
         $scope.revokeAllForUser = function (device) {
             $scope.showRevokeDialog[device.device_id] = false;
-            ConfigFactory.revokeRememberedDevices({user: device.user, realm: device.realm}, function (data) {
-                if (data.result.status === true) {
-                    inform.add(gettextCatalog.getString("Revoked {{count}} remembered device(s) for the user.",
-                        {count: data.result.value}), {type: "info"});
-                    $scope.loadRememberedDevices($scope.rememberedDevicesClientId);
-                }
-            });
+            ConfigFactory.revokeAllClientRememberedDevices($scope.rememberedDevicesClientId,
+                {user: device.user, realm: device.realm}, function (data) {
+                    if (data.result.status === true) {
+                        inform.add(gettextCatalog.getString("Revoked {{count}} remembered device(s) for the user.",
+                            {count: data.result.value}), {type: "info"});
+                        $scope.loadRememberedDevices($scope.rememberedDevicesClientId);
+                    }
+                });
         };
 
-        $scope.revokeAllForSelectedRealm = function () {
-            $scope.ui.revokeRealmDialog = false;
-            ConfigFactory.revokeRememberedDevices({realm: $scope.ui.realm}, function (data) {
-                if (data.result.status === true) {
-                    inform.add(gettextCatalog.getString("Revoked {{count}} remembered device(s) in the realm.",
-                        {count: data.result.value}), {type: "info"});
-                    // Reset the confirm + the realm selection so the view returns to
-                    // "all realms" and the toolbar collapses after the revoke.
-                    $scope.ui.revokeRealmDialog = false;
-                    $scope.ui.realm = null;
-                    $scope.loadRememberedDevices($scope.rememberedDevicesClientId);
-                }
-            });
-        };
-
-        // Deep-link or page refresh directly onto the remembered-devices view.
+        // Deep-link or page refresh directly onto the remembered-devices view: the
+        // client's display name is not known yet (it is normally passed in by
+        // showRememberedDevices() when navigating from the list), so resolve it
+        // from the client itself instead of showing the raw client id.
         if ($stateParams.clientid) {
+            ConfigFactory.getClients($stateParams.clientid, function (data) {
+                var client = data.result.value[0];
+                if (client) {
+                    $scope.rememberedDevicesClientName = client.display_name;
+                }
+            });
             $scope.getRealmList();
             $scope.loadRememberedDevices($stateParams.clientid);
         }
@@ -280,7 +308,7 @@ myApp.controller("clientsController", ["$scope", "$stateParams", "inform",
         };
 
         $scope.deselectClient = function () {
-            $scope.params = {client_type: $scope.clientTypes[0].name};
+            $scope.params = {client_type: $scope.clientTypes.length ? $scope.clientTypes[0].name : ""};
         };
 
         // listen to the reload broadcast: refresh whichever view is active.

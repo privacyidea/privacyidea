@@ -5,6 +5,7 @@ Tests for the /user/settings API endpoints.
 """
 import json
 
+from privacyidea.lib.error import Error
 from privacyidea.lib.usersetting import MAX_SETTINGS_BYTES, SettingsSubject, get_user_settings
 from .base import MyApiTestCase
 
@@ -39,15 +40,24 @@ class UserSettingsAPITestCase(MyApiTestCase):
         # GET returns exactly the same shape
         self.assertEqual(post_value, self._get().json["result"]["value"])
 
-    def test_03_open_mode_accepts_unknown_key(self):
-        # Key enforcement is not active yet (see the TODO in validate_user_settings),
-        # so the frontend may store any key.
+    def test_03_post_rejects_unknown_key(self):
         res = self._post({"settings": {"frontend_key": "v"}})
+        self.assertEqual(400, res.status_code, res)
+        self.assertEqual(Error.PARAMETER, res.json["result"]["error"]["code"], res.json)
+        self.assertIn("frontend_key", res.json["result"]["error"]["message"])
+        self.assertNotIn("frontend_key", self._get().json["result"]["value"])
+
+    def test_03b_post_accepts_configured_extra_key(self):
+        self.app.config["PI_USER_SETTINGS_ALLOWED_KEYS"] = ["frontend_key"]
+        try:
+            res = self._post({"settings": {"frontend_key": "v"}})
+        finally:
+            del self.app.config["PI_USER_SETTINGS_ALLOWED_KEYS"]
         self.assertEqual(200, res.status_code, res)
         self.assertEqual("v", res.json["result"]["value"]["frontend_key"])
 
     def test_04_post_rejects_oversized_payload(self):
-        res = self._post({"settings": {"big": "x" * (MAX_SETTINGS_BYTES + 1000)}})
+        res = self._post({"settings": {"theme": "x" * (MAX_SETTINGS_BYTES + 1000)}})
         self.assertEqual(400, res.status_code, res)
 
     def test_04b_post_rejects_non_object_settings(self):
@@ -77,15 +87,15 @@ class UserSettingsAPITestCase(MyApiTestCase):
         self.assertEqual({}, get_user_settings(victim))
 
     def test_08_delete_single_key(self):
-        self._post({"settings": {"theme": "dark", "token_columns": ["serial"]}, "replace": 1})
+        self._post({"settings": {"theme": "dark", "locale": "de"}, "replace": 1})
         with self.app.test_request_context('/user/settings/theme', method='DELETE',
                                             headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertEqual(200, res.status_code, res)
             # Routed to the settings endpoint (not the user-delete route) and the
             # one key is gone.
-            self.assertEqual({"token_columns": ["serial"]}, res.json["result"]["value"])
-        self.assertEqual({"token_columns": ["serial"]}, self._get().json["result"]["value"])
+            self.assertEqual({"locale": "de"}, res.json["result"]["value"])
+        self.assertEqual({"locale": "de"}, self._get().json["result"]["value"])
 
     def test_09_delete_all_clears_document(self):
         self._post({"settings": {"theme": "dark"}, "replace": 1})

@@ -47,8 +47,8 @@ def _handler_failure_info(e_handler_def: dict, exception: Exception) -> str:
     system can contain the forwarded request parameters, including the password or OTP value, which must not be
     written to the audit database. The full exception and its traceback go to the log instead.
 
-    The result is bounded to the length of the ``info`` column: the SQL audit module only truncates its data if
-    PI_AUDIT_SQL_TRUNCATE is enabled, so an oversized value would otherwise make the audit entry fail to write.
+    The result is bounded to the length of the ``info`` column, so that the message says what happened rather than
+    being shortened by the audit module.
 
     :param e_handler_def: The definition of the event handler
     :param exception: The exception raised by the handler

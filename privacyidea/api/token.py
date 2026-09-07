@@ -64,6 +64,7 @@ from privacyidea.api.auth import admin_required
 from privacyidea.api.lib.postpolicy import (save_pin_change, check_verify_enrollment,
                                             postpolicy)
 from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action, check_token_action,
+                                           check_copy_token_action,
                                            check_token_init, check_token_upload,
                                            check_max_token_user,
                                            check_max_token_realm,
@@ -95,6 +96,7 @@ from privacyidea.lib.importotp import (parseOATHcsv, parseSafeNetXML,
 from privacyidea.lib.subscriptions import CheckSubscription
 from privacyidea.lib.tokenrolloutstate import RolloutState
 from .lib.utils import send_result, send_csv_result, get_optional, get_required
+from privacyidea.lib.params import get_pagination_params
 from ..lib.container import find_container_by_serial, add_token_to_container
 from ..lib.fido2.util import get_credential_ids_for_user
 from ..lib.log import log_with
@@ -424,8 +426,8 @@ def get_challenges_api(serial=None):
     :query realm: optional realm for the user lookup.
     :query sortby: sort column, default ``timestamp`` (paginated mode only).
     :query sortdir: ``asc`` (default) or ``desc``.
-    :query page: 1-indexed page number.
-    :query pagesize: page size (default ``15``).
+    :query page: 1-indexed page number; values below 1 are treated as 1.
+    :query pagesize: page size (default ``15``), capped at ``1000``.
     :query transaction_id: restrict to challenges with this transaction id.
     :status 200: challenge list in ``result.value``.
     """
@@ -460,10 +462,9 @@ def get_challenges_api(serial=None):
         g.audit_object.log({"success": True})
         return send_result(payload)
 
-    page = int(get_optional(param, "page", default=1))
+    page, psize = get_pagination_params(param)
     sort = get_optional(param, "sortby", default="timestamp")
     sdir = get_optional(param, "sortdir", default="asc")
-    psize = int(get_optional(param, "pagesize", default=15))
     transaction_id = get_optional(param, "transaction_id")
     g.audit_object.log({"serial": serial})
     # Realm-scope check when a specific serial is targeted, so a realm-
@@ -552,9 +553,9 @@ def cancel_challenge_api(transaction_id):
                                             "cancel challenges for")
     result = cancel_challenge(transaction_id)
     # Build a single audit entry now that the realm check passed and the
-    # cancel result is known. The `serial` column is 40 chars by default -
+    # cancel result is known. The `serial` column is 200 chars by default -
     # plenty for the common case (one transaction -> one token, with
-    # default 8-char serials, 4-5 still fit comma-joined). Pack whole
+    # default 8-char serials, over 20 still fit comma-joined). Pack whole
     # serials in arrival order up to the column budget; if some had to be
     # dropped, also record the list in `info` (500 chars) so the forensic
     # detail isn't lost. `info` is hard-cut by the audit module, so pack it
@@ -689,8 +690,8 @@ def list_api():
         active.
     :query sortby: sort column, default ``serial``.
     :query sortdir: ``asc`` (default) or ``desc``.
-    :query page: 1-indexed page number, default ``1``.
-    :query pagesize: page size, default ``15``.
+    :query page: 1-indexed page number, default ``1``; values below 1 are treated as 1.
+    :query pagesize: page size, default ``15``, capped at ``1000``.
     :query outform: ``csv`` to return ``text/csv`` instead of JSON.
         Pagination still applies.
     :status 200: paginated token list in ``result.value`` (or as a
@@ -698,7 +699,7 @@ def list_api():
     """
     param = request.all_data
     serial = get_optional(param, "serial")
-    page = int(get_optional(param, "page", default=1))
+    page, psize = get_pagination_params(param)
     tokentype = get_optional(param, "type")
     token_type_list = get_optional(param, "type_list")
     if token_type_list:
@@ -706,7 +707,6 @@ def list_api():
     description = get_optional(param, "description")
     sort = get_optional(param, "sortby", default="serial")
     sdir = get_optional(param, "sortdir", default="asc")
-    psize = int(get_optional(param, "pagesize", default=15))
     realm = get_optional(param, "tokenrealm")
     userid = get_optional(param, "userid")
     resolver = get_optional(param, "resolver")
@@ -1500,27 +1500,47 @@ def loadtokens_api(filename=None):
         {'n_imported': len(import_tokens), 'n_not_imported': len(not_imported_serials)})
 
 
+_copy_endpoint_deprecation_warned = set()
+
+
+def _warn_copy_endpoint_deprecated(endpoint: str):
+    """
+    Log the deprecation of a token copy endpoint once per process, so a deployment that still
+    calls it is nudged toward /token/lost without spamming the log on every request.
+    """
+    if endpoint not in _copy_endpoint_deprecation_warned:
+        _copy_endpoint_deprecation_warned.add(endpoint)
+        log.warning(f"The endpoint '{endpoint}' is deprecated and will be removed in a future release. "
+                    f"Use 'POST /token/lost/<serial>' to replace a token instead.")
+
+
 @token_blueprint.route('/copypin', methods=['POST'])
 @admin_required
 @log_with(log)
-@prepolicy(check_base_action, request, action=PolicyAction.COPYTOKENPIN)
+@prepolicy(check_copy_token_action, request, action=PolicyAction.COPYTOKENPIN)
 @event("token_copypin", request, g)
 def copypin_api():
     """
-    Copy the OTP PIN of one token onto another. Used by helpdesk
-    flows where a replacement token is issued without forcing the
-    user to set a new PIN.
+    Copy the OTP PIN of one token onto another.
 
     Requires admin authentication and the policy action
-    :ref:`policy_copytokenpin`. The check is global rather than
-    realm-scoped, so an admin holding ``copytokenpin`` can copy a
-    PIN between tokens regardless of which realms those tokens
-    belong to.
+    :ref:`policy_copytokenpin` for **both** tokens, so an admin
+    restricted to certain realms can only copy between tokens in
+    those realms.
+
+    .. deprecated:: 3.14
+        This endpoint is deprecated and will be removed in a future
+        release. It exposes one raw step of the lost-token workflow;
+        use :http:post:`/token/lost/(serial)`, which performs the
+        whole replacement, instead.
 
     :jsonparam from: serial of the source token (required).
     :jsonparam to: serial of the destination token (required).
     :status 200: ``True`` on success in ``result.value``.
+    :status 403: the calling admin is not authorized for one of the
+        two tokens.
     """
+    _warn_copy_endpoint_deprecated("POST /token/copypin")
     serial_from = get_required(request.all_data, "from")
     serial_to = get_required(request.all_data, "to")
     res = copy_token_pin(serial_from, serial_to)
@@ -1530,23 +1550,33 @@ def copypin_api():
 
 @token_blueprint.route('/copyuser', methods=['POST'])
 @admin_required
-@prepolicy(check_base_action, request, action=PolicyAction.COPYTOKENUSER)
+@prepolicy(check_copy_token_action, request, action=PolicyAction.COPYTOKENUSER)
 @event("token_copyuser", request, g)
 @log_with(log)
 def copyuser_api():
     """
-    Copy the user assignment of one token onto another. Used by
-    helpdesk flows where a replacement token must inherit the
-    original token's owner without re-running the assign workflow.
+    Copy the user assignment of one token onto another. The
+    destination token is unassigned first, and the source token's
+    realms are copied along with the owner.
 
     Requires admin authentication and the policy action
-    :ref:`policy_copytokenuser`. The check is global rather than
-    realm-scoped; see ``copypin`` above for the same caveat.
+    :ref:`policy_copytokenuser` for **both** tokens, so an admin
+    restricted to certain realms can only copy between tokens in
+    those realms.
+
+    .. deprecated:: 3.14
+        This endpoint is deprecated and will be removed in a future
+        release. It exposes one raw step of the lost-token workflow;
+        use :http:post:`/token/lost/(serial)`, which performs the
+        whole replacement, instead.
 
     :jsonparam from: serial of the source token (required).
     :jsonparam to: serial of the destination token (required).
     :status 200: ``True`` on success in ``result.value``.
+    :status 403: the calling admin is not authorized for one of the
+        two tokens.
     """
+    _warn_copy_endpoint_deprecated("POST /token/copyuser")
     serial_from = get_required(request.all_data, "from")
     serial_to = get_required(request.all_data, "to")
     res = copy_token_user(serial_from, serial_to)
@@ -1555,20 +1585,25 @@ def copyuser_api():
 
 
 @token_blueprint.route('/lost/<serial>', methods=['POST'])
+@admin_required
 @prepolicy(check_token_action, request, action=PolicyAction.LOSTTOKEN)
 @event("token_lost", request, g)
 @log_with(log)
 def lost_api(serial=None):
     """
     Mark a token as lost and issue a temporary replacement. The
-    replacement carries a derived serial (``lost<original-serial>``),
-    a generated password, the original token's PIN, and a limited
-    validity period. The original token is disabled.
+    replacement is a newly created password token carrying a derived
+    serial (``lost<original-serial>``, with a counted suffix if that
+    serial is already taken), a generated password, the original
+    token's PIN, and a limited validity period. The original token is
+    disabled.
 
-    Callable by both admins and users; user-role callers may only
-    operate on their own tokens (the view enforces ownership).
+    The PIN is copied as a hash, so the replacement keeps the PIN the
+    user already knows without the calling admin learning it.
 
-    Requires authentication and the policy action ``losttoken``.
+    Requires admin authentication and the policy action ``losttoken``,
+    which is checked against the realms of the lost token. If a ``user``
+    is passed as well, it has to be the owner of the token.
 
     :param serial: path component, the serial of the lost token.
     :status 200: dict carrying the new serial, the temporary

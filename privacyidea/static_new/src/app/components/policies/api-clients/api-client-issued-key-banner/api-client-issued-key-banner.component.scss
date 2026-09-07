@@ -1,0 +1,31 @@
+@use "styles";
+
+.issued-key-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.issued-key-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 600;
+}
+
+.issued-key-value {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  code {
+    overflow-wrap: anywhere;
+  }
+
+  // The copy button's default icon color is a low-contrast surface tone, meant
+  // for a plain page background; it is nearly invisible on this panel's tinted
+  // background, so give it a color that contrasts in both themes.
+  app-copy-button {
+    --copy-icon-color: var(--mat-sys-on-surface);
+  }
+}

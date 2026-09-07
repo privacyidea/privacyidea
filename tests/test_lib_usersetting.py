@@ -59,13 +59,13 @@ class UserSettingTestCase(MyTestCase):
         self.assertEqual({"theme": "dark"}, get_user_settings(subject))
 
         # A second partial write merges at the top level, not clobbering the first
-        set_user_settings(subject, {"token_columns": ["serial", "type"]})
-        self.assertEqual({"theme": "dark", "token_columns": ["serial", "type"]},
+        set_user_settings(subject, {"dashboard": {"widgets": ["tokens"]}})
+        self.assertEqual({"theme": "dark", "dashboard": {"widgets": ["tokens"]}},
                          get_user_settings(subject))
 
     def test_04_replace_overwrites_document(self):
         subject = self._admin_subject()
-        set_user_settings(subject, {"theme": "dark", "starting_page": "tokens"})
+        set_user_settings(subject, {"theme": "dark", "locale": "de"})
         stored = set_user_settings(subject, {"theme": "light"}, replace=True)
         self.assertEqual({"theme": "light"}, stored)
         # The dropped key is simply gone (the WebUI falls back to its default)
@@ -77,27 +77,90 @@ class UserSettingTestCase(MyTestCase):
         self.assertEqual("dark", get_user_settings(self._admin_subject())["theme"])
         self.assertEqual("light", get_user_settings(self._user_subject())["theme"])
 
-    def test_06_open_mode_always_enforces_structure(self):
-        # Structural checks hold regardless of key enforcement
+    def test_06_validation_enforces_structure(self):
         self.assertRaises(ParameterError, validate_user_settings, ["not", "a", "dict"])
         self.assertRaises(ParameterError, validate_user_settings,
                           {"theme": "x" * (MAX_SETTINGS_BYTES + 1)})
 
-    def test_07_open_mode_accepts_unknown_keys_and_types(self):
-        # Keys are not enforced yet: unknown keys and arbitrary value types pass
-        validate_user_settings({"unknown_key": 1, "whatever": "many"})
-        stored = set_user_settings(self._admin_subject(), {"frontend_only_key": {"nested": True}})
-        self.assertEqual({"nested": True}, stored["frontend_only_key"])
+    def test_07_unknown_keys_are_rejected_but_value_types_are_free(self):
+        self.assertRaises(ParameterError, validate_user_settings, {"unknown_key": 1})
+        self.assertRaises(ParameterError, validate_user_settings,
+                          {"theme": "dark", "frontend_only_key": True})
+        self.assertRaises(ParameterError, set_user_settings,
+                          self._admin_subject(), {"frontend_only_key": {"nested": True}})
+        self.assertNotIn("frontend_only_key", get_user_settings(self._admin_subject()))
 
-    def test_08_allowed_keys_placeholder_includes_config(self):
-        # get_allowed_keys() is wired up (for the later enforcement step) and
-        # already merges the admin-configured keys with the known keys.
+        stored = set_user_settings(self._admin_subject(), {"dashboard": {"widgets": [1, None, "x"]}})
+        self.assertEqual({"widgets": [1, None, "x"]}, stored["dashboard"])
+
+    def test_07b_rejection_names_the_offending_keys(self):
+        with self.assertRaises(ParameterError) as context:
+            validate_user_settings({"zulu": 1, "alpha": 2})
+        self.assertIn("alpha, zulu", context.exception.message)
+
+    def test_07c_rejection_message_stays_bounded(self):
+        # The message is written to the audit log, whose info column holds 500
+        # characters. Without PI_AUDIT_SQL_TRUNCATE an oversized entry is not
+        # cut but dropped, so a caller must not be able to inflate the message
+        # with the rejected document -- neither by many keys nor by one long one.
+        many = {f"bogus_key_{index:04d}": 1 for index in range(700)}
+        with self.assertRaises(ParameterError) as context:
+            validate_user_settings(many)
+        self.assertLess(len(context.exception.message), 500)
+        self.assertIn("700 keys in total", context.exception.message)
+        # Only whole keys are listed: a half key would read like a name the
+        # caller sent, sending whoever reads the audit entry after a phantom.
+        listed = context.exception.message.split(": ", 1)[1].split(", ... ")[0]
+        for key in listed.split(", "):
+            self.assertIn(key, many)
+
+        with self.assertRaises(ParameterError) as context:
+            validate_user_settings({"x" * 5000: 1})
+        self.assertLess(len(context.exception.message), 500)
+
+    def test_07d_rejection_message_neutralizes_control_characters(self):
+        # A JSON key may contain a line break, and the message is written to the
+        # audit log, whose CSV export is line-oriented. An echoed key must not be
+        # able to forge an entry there.
+        with self.assertRaises(ParameterError) as context:
+            validate_user_settings({"harmless\nforged entry": 1, "nul\x00byte": 1,
+                                    "esc\x1bsequence": 1})
+        message = context.exception.message
+        self.assertTrue(message.isprintable(), message)
+        # Escaped, not dropped: the reader can tell what was actually sent.
+        self.assertIn("harmless\\nforged entry", message)
+        self.assertIn("nul\\x00byte", message)
+        self.assertIn("esc\\x1bsequence", message)
+        # A legitimate non-ASCII key is printable and must survive unchanged
+        with self.assertRaises(ParameterError) as context:
+            validate_user_settings({"grüße": 1})
+        self.assertIn("grüße", context.exception.message)
+
+    def test_08_allowed_keys_include_config(self):
         self.assertTrue(KNOWN_SETTING_KEYS.issubset(get_allowed_keys()))
+        self.assertRaises(ParameterError, validate_user_settings, {"custom_admin_key": 1})
         self.app.config["PI_USER_SETTINGS_ALLOWED_KEYS"] = ["custom_admin_key"]
         try:
             self.assertIn("custom_admin_key", get_allowed_keys())
+            stored = set_user_settings(self._admin_subject(), {"custom_admin_key": "v"})
+            self.assertEqual("v", stored["custom_admin_key"])
         finally:
             del self.app.config["PI_USER_SETTINGS_ALLOWED_KEYS"]
+
+    def test_08b_stored_key_no_longer_allowed_does_not_block_writes(self):
+        # A key that was allowed when it was written stays in the document, and
+        # it must not block the principal from writing its other settings.
+        subject = self._admin_subject()
+        self.app.config["PI_USER_SETTINGS_ALLOWED_KEYS"] = ["legacy_key"]
+        try:
+            set_user_settings(subject, {"legacy_key": "old"}, replace=True)
+        finally:
+            del self.app.config["PI_USER_SETTINGS_ALLOWED_KEYS"]
+
+        stored = set_user_settings(subject, {"theme": "dark"})
+        self.assertEqual({"legacy_key": "old", "theme": "dark"}, stored)
+        self.assertRaises(ParameterError, set_user_settings, subject, {"legacy_key": "new"})
+        self.assertEqual({"theme": "dark"}, delete_user_settings(subject, "legacy_key"))
 
     def test_09_unidentified_user_is_not_shared(self):
         # An unresolvable user (no uid/realm_id) must not read or write a row:
@@ -117,14 +180,14 @@ class UserSettingTestCase(MyTestCase):
         # bounded by MAX_SETTINGS_BYTES.
         subject = self._admin_subject()
         chunk = "x" * (MAX_SETTINGS_BYTES // 2)
-        set_user_settings(subject, {"a": chunk})
+        set_user_settings(subject, {"theme": chunk}, replace=True)
         # Merging a second half-cap chunk would push the stored doc over the cap
-        self.assertRaises(ParameterError, set_user_settings, subject, {"b": chunk})
+        self.assertRaises(ParameterError, set_user_settings, subject, {"locale": chunk})
 
     def test_11_validation_rejects_non_serializable(self):
         # A non-JSON-serializable value yields a controlled ParameterError,
         # not an unhandled TypeError.
-        self.assertRaises(ParameterError, validate_user_settings, {"x": {1, 2, 3}})
+        self.assertRaises(ParameterError, validate_user_settings, {"theme": {1, 2, 3}})
 
     def test_12_non_ascii_counted_by_real_byte_size(self):
         # ensure_ascii=False: a non-ASCII string near the cap is measured by its
@@ -132,7 +195,7 @@ class UserSettingTestCase(MyTestCase):
         # "ä" is 2 UTF-8 bytes; MAX_SETTINGS_BYTES//2 of them ~= the cap in real
         # bytes but would be ~3x over if counted as escapes.
         value = "ä" * (MAX_SETTINGS_BYTES // 2 - 20)
-        validate_user_settings({"k": value})  # does not raise
+        validate_user_settings({"theme": value})  # does not raise
 
     def test_13_reuses_resolved_user_for_user_role(self):
         # When request.User is the JWT user, it is reused (no re-resolution)
@@ -160,12 +223,12 @@ class UserSettingTestCase(MyTestCase):
     def test_15_delete_key_resets_to_default(self):
         subject = self._admin_subject()
         # replace=True for a clean baseline independent of other tests' writes
-        set_user_settings(subject, {"theme": "dark", "starting_page": "tokens"}, replace=True)
+        set_user_settings(subject, {"theme": "dark", "locale": "de"}, replace=True)
         remaining = delete_user_settings(subject, "theme")
-        self.assertEqual({"starting_page": "tokens"}, remaining)
-        self.assertEqual({"starting_page": "tokens"}, get_user_settings(subject))
+        self.assertEqual({"locale": "de"}, remaining)
+        self.assertEqual({"locale": "de"}, get_user_settings(subject))
         # Deleting an absent key is a no-op
-        self.assertEqual({"starting_page": "tokens"}, delete_user_settings(subject, "theme"))
+        self.assertEqual({"locale": "de"}, delete_user_settings(subject, "theme"))
 
     def test_16_delete_last_key_removes_row(self):
         subject = self._admin_subject()
@@ -176,7 +239,7 @@ class UserSettingTestCase(MyTestCase):
 
     def test_17_delete_all_clears_document(self):
         subject = self._admin_subject()
-        set_user_settings(subject, {"theme": "dark", "starting_page": "tokens"})
+        set_user_settings(subject, {"theme": "dark", "locale": "de"})
         self.assertEqual({}, delete_user_settings(subject))
         self.assertEqual({}, get_user_settings(subject))
 
@@ -305,8 +368,7 @@ class UserSettingTestCase(MyTestCase):
             return real_select(subj)
 
         with patch("privacyidea.lib.usersetting._select_for_subject", side_effect=fake_select):
-            stored = set_user_settings(subject, {"token_columns": ["serial"]})
+            stored = set_user_settings(subject, {"locale": "de"})
 
-        self.assertEqual({"theme": "winner", "token_columns": ["serial"]}, stored)
-        self.assertEqual({"theme": "winner", "token_columns": ["serial"]},
-                         get_user_settings(subject))
+        self.assertEqual({"theme": "winner", "locale": "de"}, stored)
+        self.assertEqual({"theme": "winner", "locale": "de"}, get_user_settings(subject))

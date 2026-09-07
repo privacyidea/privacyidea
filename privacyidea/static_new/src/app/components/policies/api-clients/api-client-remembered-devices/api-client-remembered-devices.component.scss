@@ -1,0 +1,30 @@
+@use "table";
+
+.remembered-devices-container {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--mat-sys-outline-variant);
+}
+
+.actions-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 1rem;
+}
+
+.realm-filter {
+  min-width: 200px;
+}
+
+.remembered-devices-table {
+  @include table.details-key-value-table;
+  width: 100%;
+  border-collapse: collapse;
+
+  td,
+  th {
+    border: 1px solid var(--mat-sys-outline-variant);
+  }
+}

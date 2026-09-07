@@ -29,11 +29,13 @@ import { FilterValueGeneric } from "@core/models/filter_value_generic/filter-val
 import { AuthService } from "@services/auth/auth.service";
 import { ContentService } from "@services/content/content.service";
 import { DialogService } from "@services/dialog/dialog.service";
+import { IntegrationsService } from "@services/integrations/integrations.service";
 import { PolicyDetail, PolicyService } from "@services/policies/policies.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import {
   MockContentService,
   MockDialogService,
+  MockIntegrationsService,
   MockPolicyService,
   MockRouter,
   MockTableUtilsService
@@ -74,7 +76,8 @@ describe("PoliciesTableComponent", () => {
         { provide: TableUtilsService, useClass: MockTableUtilsService },
         { provide: PolicyFilterComponent, useClass: MockPolicyFilterComponent },
         { provide: ContentService, useClass: MockContentService },
-        { provide: Router, useClass: MockRouter }
+        { provide: Router, useClass: MockRouter },
+        { provide: IntegrationsService, useClass: MockIntegrationsService }
       ]
     })
       .overrideComponent(PoliciesTableComponent, {
@@ -173,7 +176,9 @@ describe("PoliciesTableComponent", () => {
 
     const noDataRow = fixture.debugElement.query(By.css("tr.mat-mdc-no-data-row"));
     expect(noDataRow).toBeTruthy();
-    expect(noDataRow.nativeElement.textContent).toContain($localize`No entries match the filter`);
+    expect(noDataRow.nativeElement.textContent).toContain(
+      $localize`:@@common.noEntriesMatchTheFilter:No entries match the filter`
+    );
   });
 
   it("should toggle filter keys when clicking header filter buttons", () => {

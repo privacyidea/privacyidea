@@ -260,6 +260,11 @@ describe("ContentService", () => {
           ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS_NEW,
           ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS_DETAILS + "service1"
         ]
+      },
+      {
+        name: "onApiClients",
+        read: (s) => s.onApiClients(),
+        urls: [ROUTE_PATHS.POLICIES_API_CLIENTS, ROUTE_PATHS.POLICIES_API_CLIENTS_NEW, ROUTE_PATHS.POLICIES_API_CLIENTS_DETAILS + "client1"]
       }
     ];
 

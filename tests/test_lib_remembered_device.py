@@ -27,7 +27,7 @@ class RememberedDeviceLibTestCase(MyTestCase):
         self.realm_id = User(login="cornelius", realm=self.realm1).realm_id
 
     def _client_id(self):
-        client, _key = create_client("device client", "windows_cp")
+        client, _key = create_client("device client", "privacyidea-cp")
         return client.id
 
     def _identity(self, user_id, resolver=None, realm_id=None):

@@ -1,0 +1,154 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<div class="api-client-page-layout">
+  <div class="api-client-page-container">
+    @if (isEditMode()) {
+      <h3
+        class="margin-8"
+        i18n="@@apiClient.apiClientNamed">
+        API Client "{{ apiClientModel().display_name }}"
+      </h3>
+    } @else {
+      <h3
+        class="margin-8"
+        i18n="@@apiClient.createApiClient">
+        Create API Client
+      </h3>
+    }
+
+    <div class="header-row">
+      <div class="action-buttons flex-row gap-8">
+        <button
+          (click)="onCancel()"
+          class="action-button-secondary button-width-s"
+          mat-stroked-button>
+          <span>{{ cancelLabel() }}</span>
+        </button>
+        @if (
+          (isEditMode() && authService.actionAllowed("api_client_edit")) ||
+          (!isEditMode() && authService.actionAllowed("api_client_add"))
+        ) {
+          <button
+            (click)="save()"
+            [disabled]="!apiClientForm().valid()"
+            class="action-button-primary button-width-s"
+            mat-stroked-button>
+            <mat-icon>save</mat-icon>
+            <span i18n="@@common.save">Save</span>
+          </button>
+        }
+        @if (isEditMode() && authService.actionAllowed("api_client_rotate")) {
+          <button
+            (click)="rotateKey()"
+            class="action-button-secondary button-width-s"
+            mat-stroked-button>
+            <mat-icon>refresh</mat-icon>
+            <span i18n="@@apiClient.rotateKey">Rotate key</span>
+          </button>
+        }
+      </div>
+    </div>
+
+    <app-api-client-issued-key-banner />
+
+    <div class="api-client-form">
+      <div class="flex-row gap-16">
+        <mat-form-field
+          appearance="fill"
+          class="input-width-l">
+          <mat-label i18n="@@apiClient.displayName">Display name</mat-label>
+          <app-clearable-input
+            (clearButtonClick)="apiClientModel.update(m => ({...m, display_name: ''}))"
+            [showClearButton]="!!apiClientModel().display_name">
+            <input
+              [formField]="apiClientForm.display_name"
+              matInput
+              placeholder="My Windows Credential Provider" />
+          </app-clearable-input>
+          @if (
+            apiClientForm.display_name().errors().some(e => e.kind === 'required') &&
+            apiClientForm.display_name().touched()
+          ) {
+            <mat-error i18n="@@apiClient.displayNameRequired">Display name is <strong>required</strong>.</mat-error>
+          }
+        </mat-form-field>
+
+        @if (isEditMode()) {
+          <!-- A disabled mat-select can lose its displayed value if the option list
+               (fetched from the integrations catalog) has not arrived yet on first
+               paint. Since this value is immutable in edit mode anyway, show it as
+               plain read-only text instead of a select. -->
+          <mat-form-field
+            appearance="fill"
+            class="input-width-l">
+            <mat-label i18n="@@apiClient.clientType">Client type</mat-label>
+            <input
+              [value]="integrationsService.labelFor(apiClientModel().client_type)"
+              disabled
+              matInput />
+          </mat-form-field>
+        } @else {
+          <mat-form-field
+            appearance="fill"
+            class="input-width-l">
+            <mat-label i18n="@@apiClient.clientType">Client type</mat-label>
+            <mat-select [formField]="apiClientForm.client_type">
+              @for (option of clientTypeOptions(); track option.id) {
+                <mat-option [value]="option.id">{{ option.label }}</mat-option>
+              }
+            </mat-select>
+            <mat-hint i18n="@@apiClient.clientTypeHint"
+              >The kind of integration this client represents. This cannot be changed later.</mat-hint
+            >
+            @if (
+              apiClientForm.client_type().errors().some(e => e.kind === 'required') &&
+              apiClientForm.client_type().touched()
+            ) {
+              <mat-error i18n="@@apiClient.clientTypeRequired">Client type is <strong>required</strong>.</mat-error>
+            }
+          </mat-form-field>
+        }
+
+        @if (isEditMode() && authService.actionAllowed("api_client_edit")) {
+          <mat-form-field
+            appearance="fill"
+            class="input-width-l">
+            <mat-label i18n="@@common.status">Status</mat-label>
+            <mat-select [formField]="apiClientForm.status">
+              <mat-option
+                value="active"
+                i18n="@@common.active"
+                >Active</mat-option
+              >
+              <mat-option
+                value="suspended"
+                i18n="@@apiClient.suspended"
+                >Suspended</mat-option
+              >
+            </mat-select>
+          </mat-form-field>
+        }
+      </div>
+    </div>
+
+    @if (isEditMode() && editClientId(); as clientId) {
+      <app-api-client-remembered-devices [clientId]="clientId" />
+    }
+  </div>
+</div>

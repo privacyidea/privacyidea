@@ -79,7 +79,6 @@ export interface AuthData {
   show_seed: boolean;
   show_node: string;
   subscription_status: number;
-  subscription_status_push: number;
   qr_image_android: string | null;
   qr_image_ios: string | null;
   qr_image_custom: string | null;
@@ -177,13 +176,13 @@ export type AuthenticateParams =
   | PasswordLoginParams
   | WebAuthnLoginParams
   | {
-  transaction_id: string;
-  credential_id: string;
-  authenticatorData: string;
-  clientDataJSON: string;
-  signature: string;
-  userHandle: string;
-};
+      transaction_id: string;
+      credential_id: string;
+      authenticatorData: string;
+      clientDataJSON: string;
+      signature: string;
+      userHandle: string;
+    };
 
 export interface AuthServiceInterface {
   // Properties
@@ -229,7 +228,6 @@ export interface AuthServiceInterface {
   readonly showSeed: Signal<boolean>;
   readonly showNode: Signal<string>;
   readonly subscriptionStatus: Signal<number>;
-  readonly subscriptionStatusPush: Signal<number>;
   readonly qrImageAndroid: Signal<string | null>;
   readonly qrImageIOS: Signal<string | null>;
   readonly qrImageCustom: Signal<string | null>;
@@ -338,7 +336,6 @@ export class AuthService implements AuthServiceInterface {
   readonly showSeed = computed(() => this.authData()?.show_seed || false);
   readonly showNode = computed(() => this.authData()?.show_node || "");
   readonly subscriptionStatus = computed(() => this.authData()?.subscription_status || 0);
-  readonly subscriptionStatusPush = computed(() => this.authData()?.subscription_status_push || 0);
   readonly qrImageAndroid = computed(() => this.authData()?.qr_image_android || null);
   readonly qrImageIOS = computed(() => this.authData()?.qr_image_ios || null);
   readonly qrImageCustom = computed(() => this.authData()?.qr_image_custom || null);

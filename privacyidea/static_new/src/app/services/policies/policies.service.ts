@@ -24,6 +24,7 @@ import { environment } from "@env/environment";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
+import { splitMarkupSegments } from "@utils/markup.utils";
 import { lastValueFrom, Observable } from "rxjs";
 
 export type ActionType = "bool" | "int" | "str" | "text";
@@ -42,6 +43,21 @@ export type ScopedPolicyActions = Record<string, Record<string, PolicyActionDeta
 export type PolicyActionGroups = Record<string, Record<string, Record<string, PolicyActionDetail>>>;
 
 export type PoliciesList = PolicyDetail[];
+
+export function policyActionMatchesFilter(
+  actionName: string,
+  detail: PolicyActionDetail | undefined,
+  filter: string
+): boolean {
+  const searchTerm = filter.toLowerCase().trim();
+  if (!searchTerm) return true;
+  if (actionName.toLowerCase().includes(searchTerm)) return true;
+  // Searched per text part of the description, which is exactly what the highlight pipe can mark,
+  // so an action in the list always shows the user why it is there.
+  return splitMarkupSegments(detail?.desc ?? "").some(
+    (segment) => !segment.isMarkup && segment.text.toLowerCase().includes(searchTerm)
+  );
+}
 
 export interface PolicyDetail {
   action: Record<string, string | boolean> | null;
@@ -155,33 +171,12 @@ export const HANDLE_MISSING_DATA_OPTIONS: HandleMissingDataOption[] = [
   { key: "condition_is_true", label: $localize`:@@policy.conditionTrue:Condition is true` }
 ];
 
-// 3. User Agent Options - key is the parsed application identifier (typically the prefix before "/") from the User-Agent header
+// 3. User Agent Options - the picker entries now come from the shared integration
+// catalog (see services/integrations/integrations.service.ts): Integration.policy_value
+// is the key, Integration.label is the label.
 export interface UserAgentOption {
   key: string;
   label: string;
-}
-
-export const USER_AGENT_OPTIONS: UserAgentOption[] = [
-  { key: "privacyidea-cp", label: "Credential Provider" },
-  { key: "privacyIDEA-Keycloak", label: "Keycloak" },
-  { key: "entraid-via-keycloak", label: "EntraID via Keycloak" },
-  { key: "PrivacyIDEA-ADFS", label: "AD FS" },
-  { key: "simpleSAMLphp", label: "SimpleSAMLphp" },
-  { key: "PAM", label: "PAM OTP & Push" },
-  { key: "pam-passkey", label: "PAM Passkey" },
-  { key: "privacyIDEA-Shibboleth", label: "Shibboleth" },
-  { key: "privacyidea-nextcloud", label: "Nextcloud" },
-  { key: "FreeRADIUS", label: "FreeRADIUS" },
-  { key: "privacyIDEA-LDAP-Proxy", label: "LDAP Proxy" },
-  { key: "privacyIDEA-App", label: "privacyIDEA Authenticator" },
-  { key: "privacyIDEA-WebUI", label: "privacyIDEA WebUI" }
-];
-
-export function getUserAgentLabel(identifier: string): string {
-  // The server matches user agents case-insensitively, so a hand-typed identifier
-  // still gets the label of the preset it means
-  const normalized = identifier.toLowerCase();
-  return USER_AGENT_OPTIONS.find((o) => o.key.toLowerCase() === normalized)?.label ?? identifier;
 }
 
 export interface PolicyServiceInterface {
@@ -371,7 +366,7 @@ export class PolicyService implements PolicyServiceInterface {
           continue;
         }
         const action = actions[actionName];
-        if (!actionName.toLowerCase().includes(filterValue)) {
+        if (!policyActionMatchesFilter(actionName, action, filterValue)) {
           continue;
         }
         const group = action.group || "Other";
