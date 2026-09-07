@@ -245,6 +245,10 @@ export class EventEditPageComponent implements OnDestroy {
     for (const [optionKey, optionValue] of Object.entries(options)) {
       eventParams["option." + optionKey] = optionValue;
     }
+    // The edit form always carries the complete option set of the selected action, so the stored
+    // options have to be replaced even when the action has none. Without this flag, a request
+    // without any "option.*" parameter leaves the stored options untouched.
+    eventParams.clear_options = true;
     if (eventParams.id != null) {
       eventParams.id = String(eventParams.id);
     }
