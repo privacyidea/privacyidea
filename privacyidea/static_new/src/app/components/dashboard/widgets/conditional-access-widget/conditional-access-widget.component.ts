@@ -31,6 +31,7 @@ import {
   ACTIVITY_RANGES,
   ActivityRange,
   activityRangeById,
+  bucketsAreCalendarDays,
   DEFAULT_ACTIVITY_RANGE
 } from "@components/dashboard/widgets/activity-range";
 import { FilterValue } from "@core/models/filter_value/filter_value";
@@ -360,7 +361,7 @@ export class ConditionalAccessWidgetComponent extends DashboardWidget implements
     if (from === undefined) {
       return "";
     }
-    return this.selectedRange().wholeDayBuckets
+    return this.dateOnlyLabels()
       ? this.summaryFormat(from)
       : `${this.summaryFormat(from)} – ${this.summaryFormat(this.bucketEndMs(bin))}`;
   }
@@ -454,9 +455,19 @@ export class ConditionalAccessWidgetComponent extends DashboardWidget implements
     return this.binStartsMs()[edge] ?? this.windowEndMs();
   }
 
+  // Whether a bar can be named by its date and nothing else, which takes the fetched window and not only the preset:
+  // a day-long bucket stops being a calendar day once the clocks change inside the window. The first bucket's start
+  // is the window's start, as everywhere else here.
+  private readonly dateOnlyLabels = computed<boolean>(() => {
+    const start = this.binStartsMs()[0];
+    return (
+      start !== undefined && bucketsAreCalendarDays(this.selectedRange(), new Date(start), new Date(this.windowEndMs()))
+    );
+  });
+
   private summaryFormat(ms: number): string {
     // Drop the time of day once a bucket is a whole day, where it is noise at this width.
-    const pattern = this.selectedRange().wholeDayBuckets ? "yyyy-MM-dd" : "yyyy-MM-dd HH:mm";
+    const pattern = this.dateOnlyLabels() ? "yyyy-MM-dd" : "yyyy-MM-dd HH:mm";
     return formatDate(ms, pattern, "en-US");
   }
 

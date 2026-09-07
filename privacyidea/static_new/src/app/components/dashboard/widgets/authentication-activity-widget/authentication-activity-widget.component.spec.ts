@@ -118,6 +118,8 @@ describe("AuthenticationActivityWidgetComponent", () => {
 
   afterEach(() => {
     jest.useRealTimers();
+    // clearMocks only forgets a spy's calls, so a spy on a shared prototype would otherwise outlive its test.
+    jest.restoreAllMocks();
   });
 
   it("sums every series of an outcome into that outcome's headline count", () => {
@@ -799,7 +801,7 @@ describe("AuthenticationActivityWidgetComponent", () => {
       component.selectRange(range.id);
       fixture.detectChanges();
 
-      if (range.wholeDayBuckets) {
+      if (range.dayBuckets) {
         // Every edge of such a range is a midnight, so the day is the whole answer.
         expect(component.rangeFromLabel()).toMatch(/^\d{4}-\d{2}-\d{2}$/);
       } else {
@@ -832,7 +834,7 @@ describe("AuthenticationActivityWidgetComponent", () => {
     seedBuckets(starts, new Date(Date.UTC(2026, 2, 5)).toISOString());
     create();
 
-    expect(component.selectedRange().wholeDayBuckets).toBe(false);
+    expect(component.selectedRange().dayBuckets).toBe(false);
     for (let index = 0; index < starts.length; index++) {
       expect(component.binTooltip(index)).toMatch(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2} – \d{4}-\d{2}-\d{2} \d{2}:\d{2}$/);
     }
@@ -851,6 +853,30 @@ describe("AuthenticationActivityWidgetComponent", () => {
     for (let index = 0; index < starts.length; index++) {
       expect(component.binTooltip(index)).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     }
+  });
+
+  it("names both ends of a day bucket once the clocks change inside the window", () => {
+    const starts = Array.from({ length: 4 }, (_, index) => new Date(Date.UTC(2026, 2, 1 + index)).toISOString());
+    seedBuckets(starts, new Date(Date.UTC(2026, 2, 5)).toISOString());
+    // A zone change between the ends of the window, which is what the labels ask about: the endpoint cuts the window
+    // into equal parts, so every bucket after such a change starts an hour off the midnight it would be named by -
+    // two bars would carry the same date, and the day between them none. Standing in for the offset keeps the test
+    // off any particular zone; Angular reads the clock through the date's own getters, so the times stay put.
+    // Installed before the first label is read, the value being computed once per window.
+    const changeAt = Date.UTC(2026, 2, 3);
+    jest.spyOn(Date.prototype, "getTimezoneOffset").mockImplementation(function (this: Date) {
+      return this.getTime() < changeAt ? -60 : -120;
+    });
+    create();
+
+    component.selectRange("30d");
+    fixture.detectChanges();
+
+    for (let index = 0; index < starts.length; index++) {
+      expect(component.binTooltip(index)).toMatch(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2} – \d{4}-\d{2}-\d{2} \d{2}:\d{2}$/);
+    }
+    // The brush's own labels name the same edges, so they give up the bare date with them.
+    expect(component.rangeFromLabel()).toMatch(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/);
   });
 
   it("exposes every bucket as a table rather than a one-number image label", () => {

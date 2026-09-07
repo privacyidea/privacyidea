@@ -173,7 +173,11 @@ describe("ConditionalAccessWidgetComponent", () => {
     ]);
   });
 
-  afterEach(() => fixture?.destroy());
+  afterEach(() => {
+    fixture?.destroy();
+    // clearMocks only forgets a spy's calls, so a spy on a shared prototype would otherwise outlive its test.
+    jest.restoreAllMocks();
+  });
 
   it("should create and extend the DashboardWidget base", () => {
     create();
@@ -672,6 +676,39 @@ describe("ConditionalAccessWidgetComponent", () => {
       component.onRangeEndInput(2);
       fixture.detectChanges();
       expect(component.rangeSummaryTo()).not.toBe("now");
+    });
+
+    it("should name a month range's bars by their date alone", () => {
+      stateMock.setOutcomeStatistics(history({ action_type: "LOCK_USER", counts: [1, 2, 3, 4] }));
+      create();
+
+      component.selectRange("30d");
+      fixture.detectChanges();
+
+      // A bucket a whole calendar day wide runs midnight to midnight, so naming both of its ends would print the same
+      // midnight twice over.
+      expect(component.bucketTooltip(0)).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    });
+
+    it("should name both ends of a day bucket once the clocks change inside the window", () => {
+      stateMock.setOutcomeStatistics(history({ action_type: "LOCK_USER", counts: [1, 2, 3, 4] }));
+      // A zone change between the ends of the window: the endpoint cuts it into equal parts, so every bucket after
+      // such a change starts an hour off the midnight it would be named by - two bars would carry the same date, and
+      // the day between them none. Standing in for the offset keeps the test off any particular zone, and Angular
+      // reads the clock through the date's own getters, so the times stay put. Installed before the first label is
+      // read, the value being computed once per window.
+      const changeAt = Date.now() - 2 * 24 * MS_PER_HOUR;
+      jest.spyOn(Date.prototype, "getTimezoneOffset").mockImplementation(function (this: Date) {
+        return this.getTime() < changeAt ? -60 : -120;
+      });
+      create();
+
+      component.selectRange("30d");
+      fixture.detectChanges();
+
+      expect(component.bucketTooltip(0)).toMatch(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2} – \d{4}-\d{2}-\d{2} \d{2}:\d{2}$/);
+      // The brush's own labels name the same edges, so they give up the bare date with them.
+      expect(component.rangeSummaryFrom()).toMatch(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/);
     });
 
     it("should label a thumb with the timestamp it stands for", () => {

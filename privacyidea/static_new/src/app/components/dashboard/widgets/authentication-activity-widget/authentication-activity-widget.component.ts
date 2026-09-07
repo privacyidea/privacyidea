@@ -34,6 +34,7 @@ import {
   ACTIVITY_RANGES,
   ActivityRange,
   activityRangeById,
+  bucketsAreCalendarDays,
   DEFAULT_ACTIVITY_RANGE
 } from "@components/dashboard/widgets/activity-range";
 import { DashboardWidget, WidgetSize } from "@models/dashboard";
@@ -146,6 +147,16 @@ challenge-response login count once, classified by how the attempt ended.`;
   });
 
   readonly binStarts = computed<string[]>(() => this.statistics()?.bins?.starts ?? []);
+
+  // Whether a bar can be named by its date and nothing else, which takes the fetched window and not only the preset:
+  // a day-long bucket stops being a calendar day once the clocks change inside the window. Read from the response's
+  // own window rather than from the preset's, so the labels describe the bars that are on screen.
+  private readonly dateOnlyLabels = computed<boolean>(() => {
+    const window = this.statistics()?.window;
+    return (
+      !!window && bucketsAreCalendarDays(this.selectedRange(), new Date(window.start_time), new Date(window.end_time))
+    );
+  });
 
   // --- The brush under the chart ---
   //
@@ -364,7 +375,7 @@ challenge-response login count once, classified by how the attempt ended.`;
     if (!iso) {
       return "";
     }
-    return formatDate(iso, this.selectedRange().wholeDayBuckets ? "yyyy-MM-dd" : "yyyy-MM-dd HH:mm", "en-US");
+    return formatDate(iso, this.dateOnlyLabels() ? "yyyy-MM-dd" : "yyyy-MM-dd HH:mm", "en-US");
   }
 
   // One series' attempts inside the selected span.
@@ -418,16 +429,17 @@ challenge-response login count once, classified by how the attempt ended.`;
   // compare against it, so the tooltip only has to answer "when is this".
   //
   // A bucket that is one calendar day is named by that day. Otherwise the time is part of the answer: such a bucket
-  // is measured back from now rather than snapped to midnight, so even one a whole day wide runs from something like
-  // 08:37 to 08:37 the next day, and a date on its own would claim a day it does not cover. The date is then printed
-  // once when both ends fall on it and twice when the bucket crosses into the next.
+  // is measured back from now rather than snapped to midnight - or is a day bucket the clocks have moved off its
+  // midnight - so it runs from something like 08:37 to 08:37 the next day, and a date on its own would claim a day it
+  // does not cover. The date is then printed once when both ends fall on it and twice when the bucket crosses into
+  // the next.
   binTooltip(index: number): string {
     const starts = this.binStarts();
     const from = starts[index];
     if (!from) {
       return "";
     }
-    if (this.selectedRange().wholeDayBuckets) {
+    if (this.dateOnlyLabels()) {
       return formatDate(from, "yyyy-MM-dd", "en-US");
     }
     const fromDate = formatDate(from, "yyyy-MM-dd", "en-US");

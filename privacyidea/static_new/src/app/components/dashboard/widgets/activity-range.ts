@@ -41,9 +41,9 @@ export interface ActivityRange {
   // The window to ask for, given the present. Every range cuts it into buckets of a round unit of time - five
   // minutes, an hour, six hours, a day - rather than into an arbitrary slice of itself.
   window: (now: Date) => ActivityWindow;
-  // Whether a bucket is one whole calendar day, which is what lets a bar be named by its date rather than by the
-  // span it runs over.
-  wholeDayBuckets: boolean;
+  // Whether a bucket is *meant* to be one whole calendar day. Whether it is one is a question about the window as
+  // well - see bucketsAreCalendarDays, which is what a label has to ask before naming a bar by its date alone.
+  dayBuckets: boolean;
 }
 
 // Local midnight, `days` days back. Stepped by calendar date rather than by 24-hour blocks, so a daylight-saving
@@ -71,7 +71,9 @@ function rollingWindow(spanMs: number, bucketMs: number): (now: Date) => Activit
 // the newest attempts show up without waiting for the day to end.
 //
 // The buckets are an even division of the window, which is all the endpoint offers, so a daylight-saving change
-// inside one shifts the buckets after it an hour off the midnights they started on.
+// inside the window shifts every bucket after it an hour off the midnight it should have started on. The window
+// stays whole days either way; what stops holding is that a bucket *is* one, which is why the labels ask
+// bucketsAreCalendarDays rather than trusting the flag on their own.
 function dailyWindow(days: number, bucketMs: number): (now: Date) => ActivityWindow {
   return (now) => {
     const start = midnightDaysAgo(now, days);
@@ -83,11 +85,23 @@ function dailyWindow(days: number, bucketMs: number): (now: Date) => ActivityWin
 }
 
 export const ACTIVITY_RANGES: readonly ActivityRange[] = [
-  { id: "1h", label: $localize`1 h`, window: rollingWindow(MS_PER_HOUR, 5 * MS_PER_MINUTE), wholeDayBuckets: false },
-  { id: "24h", label: $localize`24 h`, window: rollingWindow(MS_PER_DAY, MS_PER_HOUR), wholeDayBuckets: false },
-  { id: "7d", label: $localize`7 d`, window: dailyWindow(7, 6 * MS_PER_HOUR), wholeDayBuckets: false },
-  { id: "30d", label: $localize`30 d`, window: dailyWindow(30, MS_PER_DAY), wholeDayBuckets: true }
+  { id: "1h", label: $localize`1 h`, window: rollingWindow(MS_PER_HOUR, 5 * MS_PER_MINUTE), dayBuckets: false },
+  { id: "24h", label: $localize`24 h`, window: rollingWindow(MS_PER_DAY, MS_PER_HOUR), dayBuckets: false },
+  { id: "7d", label: $localize`7 d`, window: dailyWindow(7, 6 * MS_PER_HOUR), dayBuckets: false },
+  { id: "30d", label: $localize`30 d`, window: dailyWindow(30, MS_PER_DAY), dayBuckets: true }
 ];
+
+// Whether the buckets of the window between *windowStart* and *windowEnd* really are calendar days, which is what
+// lets a bar carry a date and no time. The endpoint cuts a window into equal parts, so a day bucket is 24 hours of
+// absolute time - a calendar day right up until the clocks change, after which every later bucket starts an hour off
+// the midnight whose date it would be named by. Two bars would then carry the same date and none the day between
+// them, so the labels fall back to naming the span a bucket actually runs over.
+//
+// The ends of the window answer for all of it: the two changes in a year are seven months apart, so a window this
+// chart can ask for holds at most one, and equal offsets at the ends mean no change in between.
+export function bucketsAreCalendarDays(range: ActivityRange, windowStart: Date, windowEnd: Date): boolean {
+  return range.dayBuckets && windowStart.getTimezoneOffset() === windowEnd.getTimezoneOffset();
+}
 
 // Looked up by id rather than by position, so reordering the table for the toggle group cannot silently change what a
 // widget opens on or what a stored id resolves to.
