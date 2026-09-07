@@ -16,7 +16,7 @@ import os
 import pytest
 from sqlalchemy import text
 
-from tests.migration_test_utils import MigrationTestBase, is_postgres
+from tests.migration_test_utils import MigrationTestBase, quote_identifier
 
 pytestmark = [
     pytest.mark.migration,
@@ -55,7 +55,7 @@ class TestMigrationD9e0f1a2b3c4(MigrationTestBase):
         ])
 
     def _column(self) -> str:
-        return '"abort_on_error"' if is_postgres() else "abort_on_error"
+        return quote_identifier("abort_on_error")
 
     def _abort_on_error(self, engine, handler_id: int):
         return self._fetch_scalar(engine, f"SELECT {self._column()} FROM eventhandler WHERE id = :id",
