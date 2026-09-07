@@ -5,9 +5,12 @@ $scrollable-padding-right: 16px;
 $realm-margin-top: 17px;
 $realm-list-margin-top: 7px;
 
-$table-bg: var(--table-color);
+// --surface-raised (the ancestor card background) is a depth-tinted gradient, not a flat color, so
+// no flat swatch can match it at every pixel once Depth is above "flat" - transparent is the only
+// value that stays seamless with the card at every depth level.
+$table-bg: transparent;
 $link-color: var(--mat-sys-primary);
-$paginator-bg: var(--table-color);
+$paginator-bg: transparent;
 $highlight-padding: 2px 6px;
 $icon-font-size: 22px;
 $fix-width: 20rem;
