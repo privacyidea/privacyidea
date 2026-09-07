@@ -21,6 +21,7 @@ import { ElementRef } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MatSelect, MatSelectModule } from "@angular/material/select";
 import { By } from "@angular/platform-browser";
+import { HighlightPipe } from "@components/shared/pipes/highlight.pipe";
 import { PolicyActionDetail, PolicyService } from "@services/policies/policies.service";
 import { MockSelectorButtonsComponent } from "@testing/mock-components/mock-selector-buttons.component";
 import { MockPolicyService } from "@testing/mock-services";
@@ -51,7 +52,7 @@ describe("PolicyActionItemComponent", () => {
     })
       .overrideComponent(PolicyActionItemComponent, {
         set: {
-          imports: [MockSelectorButtonsComponent, MatSelectModule]
+          imports: [MockSelectorButtonsComponent, MatSelectModule, HighlightPipe]
         }
       })
       .compileComponents();
