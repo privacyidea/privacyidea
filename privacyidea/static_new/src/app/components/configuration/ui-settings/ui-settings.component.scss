@@ -24,7 +24,7 @@
   @include styles.main-component-style;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 8px;
   // Widened from the old xs+s pair cap so General's four fields settle into a compact 2x2 instead
   // of stacking one per line: Language+Theme fill row 1 (518px), Landing Page+Pending Requests
   // fill row 2 (696px), both under this cap.
@@ -49,7 +49,7 @@
   flex-direction: row;
   flex-wrap: wrap;
   align-items: flex-start;
-  gap: 20px 16px;
+  gap: 8px;
 }
 
 .settings-item {
