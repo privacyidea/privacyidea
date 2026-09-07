@@ -22,6 +22,7 @@ import json
 import os
 import pathlib
 import tempfile
+import tarfile
 from collections.abc import Callable
 from typing import Any
 
@@ -683,6 +684,55 @@ class PIManageBackupTestCase(CliTestCase):
             self.assertIn("PostgreSQL", result.output, result.output)
             run_mock.assert_not_called()
 
+    def test_16a_mysql_defaults_file_stays_out_of_the_config_directory(self):
+        """
+        The option file holding the database password is written to a temporary
+        directory, not to the configuration directory: the latter is packed into
+        the archive, and a file left there would keep the password on disk after
+        the command has ended.
+        """
+        import unittest.mock as mock
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp = pathlib.Path(tmp_dir)
+            backup_dir = tmp / "backup"
+            config_dir = tmp / "config"
+            config_dir.mkdir()
+            enc_file = tmp / "enckey"
+            enc_file.write_bytes(b"x" * 96)
+            defaults_files = []
+
+            def record(cmd: list[str], **kwargs: Any) -> mock.MagicMock:
+                defaults_file = [a for a in cmd if a.startswith("--defaults-file=")][0]
+                path = pathlib.Path(defaults_file.split("=", 1)[1])
+                defaults_files.append(path)
+                # The file has to exist while the client runs, and hold the password.
+                self.assertIn("s3cret", path.read_text())
+                pathlib.Path(cmd[cmd.index("-r") + 1]).write_text("-- dump\n")
+                result = mock.MagicMock()
+                result.returncode = 0
+                return result
+
+            runner = self.app.test_cli_runner()
+            with mock.patch.dict(self.app.config, {
+                    "SQLALCHEMY_DATABASE_URI": "mysql+pymysql://u:s3cret@localhost/pi_test",
+                    "PI_ENCFILE": str(enc_file)}):
+                with mock.patch("privacyidea.cli.pimanage.backup.subprocess.run",
+                                side_effect=record):
+                    result = runner.invoke(pi_manage, [
+                        "backup", "create",
+                        "-d", str(backup_dir),
+                        "-c", str(config_dir)])
+
+            self.assertEqual(0, result.exit_code, result.output)
+            # Neither in the configuration directory nor in the archive ...
+            self.assertFalse((config_dir / "mysql.cnf").exists())
+            archive = list(backup_dir.glob("*.tgz"))[0]
+            with tarfile.open(archive, "r:gz") as tf:
+                self.assertEqual([], [m.name for m in tf if m.name.endswith("mysql.cnf")])
+            # ... and gone from the temporary directory once the command is done.
+            self.assertFalse(defaults_files[0].exists())
+
     def test_17_mysql_restore_streams_the_dump_without_decoding(self):
         """
         The dump is handed to the mysql client as an open binary file. It
@@ -709,7 +759,7 @@ class PIManageBackupTestCase(CliTestCase):
                 return result
 
             with mock.patch("privacyidea.cli.pimanage.backup.subprocess.run", side_effect=record):
-                _restore_mysql(_database_url("mysql+pymysql://u:p@localhost/pi_test"), tmp, sqlfile)
+                _restore_mysql(_database_url("mysql+pymysql://u:p@localhost/pi_test"), sqlfile)
 
             self.assertEqual(dump_bytes, seen["stdin"])
             # A successful restore consumes the extracted dump.

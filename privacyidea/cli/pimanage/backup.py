@@ -25,6 +25,7 @@ import shutil
 import subprocess
 import sys
 import tarfile
+import tempfile
 from datetime import datetime
 from typing import IO, NoReturn
 
@@ -147,7 +148,8 @@ def backup_create(backup_dir, config_dir, radius_dir, enckey):
     if family == SQLITE:
         _dump_sqlite(url, sqlfile)
     elif family == MYSQL:
-        _dump_mysql(url, conf_dir, sqlfile)
+        _report_obsolete_mysql_defaults(conf_dir)
+        _dump_mysql(url, sqlfile)
     else:
         _dump_postgresql(url, sqlfile)
 
@@ -303,7 +305,8 @@ def backup_restore(backup_file, keep_db_uri):
     if family == SQLITE:
         _restore_sqlite(url, sqlfile)
     elif family == MYSQL:
-        _restore_mysql(url, config_file.parent, sqlfile)
+        _report_obsolete_mysql_defaults(config_file.parent)
+        _restore_mysql(url, sqlfile)
     else:
         _restore_postgresql(url, sqlfile)
 
@@ -417,9 +420,7 @@ def _mysql_connection_args(url: URL) -> list[str]:
     return args
 
 
-def _dump_mysql(url: URL, conf_dir: pathlib.Path, sqlfile: pathlib.Path) -> None:
-    defaults_file = conf_dir.joinpath("mysql.cnf")
-    _write_mysql_defaults(defaults_file, url)
+def _dump_mysql(url: URL, sqlfile: pathlib.Path) -> None:
     # call mysqldump to get a copy of the database.
     # --single-transaction dumps a consistent InnoDB snapshot without taking
     # table locks. The default (LOCK TABLES) path fails on a MariaDB Galera
@@ -427,32 +428,37 @@ def _dump_mysql(url: URL, conf_dir: pathlib.Path, sqlfile: pathlib.Path) -> None
     # ("This version of MariaDB doesn't yet support 'LOCK TABLE on SEQUENCES
     # in Galera cluster'"). --skip-lock-tables is already implied by
     # --single-transaction and is passed only as an explicit safeguard.
-    cmd = ["mysqldump", f"--defaults-file={defaults_file!s}",
-           "--single-transaction", "--skip-lock-tables"]
-    cmd.extend(_mysql_connection_args(url))
-    # -B emits CREATE DATABASE IF NOT EXISTS and DROP TABLE IF EXISTS, which is
-    # what makes the dump replayable into a database that still holds the old
-    # schema. It also writes the name of the dumped database into the dump
-    # itself (CREATE DATABASE followed by USE), so a restore always writes into
-    # a database of that name, whatever the target URI says.
-    cmd.extend(["-B", url.database, "-r", str(sqlfile)])
-    result = _run_client(cmd, MYSQL)
+    with tempfile.TemporaryDirectory() as defaults_dir:
+        defaults_file = pathlib.Path(defaults_dir).joinpath("mysql.cnf")
+        _write_mysql_defaults(defaults_file, url)
+        cmd = ["mysqldump", f"--defaults-file={defaults_file!s}",
+               "--single-transaction", "--skip-lock-tables"]
+        cmd.extend(_mysql_connection_args(url))
+        # -B emits CREATE DATABASE IF NOT EXISTS and DROP TABLE IF EXISTS, which
+        # is what makes the dump replayable into a database that still holds the
+        # old schema. It also writes the name of the dumped database into the
+        # dump itself (CREATE DATABASE followed by USE), so a restore always
+        # writes into a database of that name, whatever the target URI says.
+        cmd.extend(["-B", url.database, "-r", str(sqlfile)])
+        result = _run_client(cmd, MYSQL)
     if result.returncode != 0:
         _dump_failed("mysqldump", result.returncode, sqlfile)
 
 
-def _restore_mysql(url: URL, conf_dir: pathlib.Path, sqlfile: pathlib.Path) -> None:
-    defaults_file = conf_dir.joinpath("mysql.cnf")
-    _write_mysql_defaults(defaults_file, url)
+def _restore_mysql(url: URL, sqlfile: pathlib.Path) -> None:
     # Rewriting database
     click.echo("Restoring database.")
-    cmd = ["mysql", f"--defaults-file={defaults_file!s}"]
-    cmd.extend(_mysql_connection_args(url))
-    # -B here is the client's --batch, not mysqldump's --databases. The database
-    # it selects is only a default: the dump's own USE statement takes over.
-    cmd.extend(["-B", url.database])
-    with open(sqlfile, "rb") as sql_file:
-        p = _run_client(cmd, MYSQL, stdin=sql_file)
+    with tempfile.TemporaryDirectory() as defaults_dir:
+        defaults_file = pathlib.Path(defaults_dir).joinpath("mysql.cnf")
+        _write_mysql_defaults(defaults_file, url)
+        cmd = ["mysql", f"--defaults-file={defaults_file!s}"]
+        cmd.extend(_mysql_connection_args(url))
+        # -B here is the client's --batch, not mysqldump's --databases. The
+        # database it selects is only a default: the dump's own USE statement
+        # takes over.
+        cmd.extend(["-B", url.database])
+        with open(sqlfile, "rb") as sql_file:
+            p = _run_client(cmd, MYSQL, stdin=sql_file)
     if p.returncode != 0:
         _restore_failed("mysql", p.returncode, sqlfile)
     os.unlink(sqlfile)
@@ -594,6 +600,19 @@ def _quote_mysql_option(value: str) -> str:
     """
     escaped = str(value).replace("\\", "\\\\")
     return f'"{escaped}"'
+
+
+def _report_obsolete_mysql_defaults(conf_dir: pathlib.Path) -> None:
+    """Point out the mysql.cnf earlier versions left in the config directory.
+
+    It holds the database password in cleartext and is not used any more, but
+    removing someone else's file in the config directory is not this command's
+    call to make.
+    """
+    obsolete = conf_dir.joinpath("mysql.cnf")
+    if obsolete.exists():
+        click.secho(f"{obsolete} was written by an earlier version, is not used any more and "
+                    "contains the database password in cleartext. You can delete it.", fg="yellow")
 
 
 def _write_mysql_defaults(defaults_file: pathlib.Path, url: URL) -> None:
