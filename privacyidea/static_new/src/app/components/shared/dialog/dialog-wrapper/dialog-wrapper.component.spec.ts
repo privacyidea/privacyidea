@@ -96,11 +96,11 @@ describe("DialogWrapperComponent", () => {
   it("caps its width at the m tier unless the caller picks another", () => {
     expect(nativeElement.querySelector(".pi-dialog")?.classList).toContain("pi-dialog-m");
 
-    fixture.componentRef.setInput("width", "xl");
+    fixture.componentRef.setInput("width", "l");
     fixture.detectChanges();
 
     const dialog = nativeElement.querySelector(".pi-dialog");
-    expect(dialog?.classList).toContain("pi-dialog-xl");
+    expect(dialog?.classList).toContain("pi-dialog-l");
     expect(dialog?.classList).not.toContain("pi-dialog-m");
   });
 

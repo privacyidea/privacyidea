@@ -199,10 +199,10 @@ body {
   --button-width-l: 240px;
   --button-width-xl: 300px;
 
-  --dialog-width-s: 280px;
-  --dialog-width-m: 552px;
-  --dialog-width-l: 648px;
-  --dialog-width-xl: 964px;
+  --dialog-prose-width: 616px; // the readable measure; coincides with --input-width-xl
+  --dialog-width-s: 280px; // a 2-button footer, = Material's panel min-width
+  --dialog-width-m: calc(var(--dialog-prose-width) + 32px); // + the wrapper's content padding
+  --dialog-width-l: calc(var(--dialog-width-m) + 300px + 16px); // a QR code and its gap beside it
 
   --light: #f3f3f3;
 
