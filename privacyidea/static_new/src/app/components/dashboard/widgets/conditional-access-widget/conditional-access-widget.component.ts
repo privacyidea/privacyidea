@@ -22,7 +22,7 @@ import { MatButtonToggleModule } from "@angular/material/button-toggle";
 import { MatIcon } from "@angular/material/icon";
 import { MatSliderModule } from "@angular/material/slider";
 import { MatTooltip } from "@angular/material/tooltip";
-import { RouterLink } from "@angular/router";
+import { Router, RouterLink } from "@angular/router";
 import { PiResponse } from "@app/app.component";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { WidgetStateComponent } from "@components/dashboard/widgets/widget-state/widget-state.component";
@@ -191,6 +191,7 @@ export class ConditionalAccessWidgetComponent extends DashboardWidget implements
   private readonly stateService: ConditionalAccessStateServiceInterface = inject(ConditionalAccessStateService);
   private readonly authenticationLogService: AuthenticationLogServiceInterface = inject(AuthenticationLogService);
   private readonly store = inject(DashboardDataStore);
+  private readonly router = inject(Router);
 
   private readonly dataRef = signal<DashboardDataRef<ConditionalAccessResponses> | null>(null);
 
@@ -366,6 +367,11 @@ export class ConditionalAccessWidgetComponent extends DashboardWidget implements
 
   // Opens the log on the bucket a bar stands over, on time alone.
   //
+  // Navigates itself rather than through a routerLink on the bar, which is what keeps the bars out of the tab order:
+  // RouterLink applies tabindex="0" to any host that is not an anchor, so a link here would put a focus stop with no
+  // accessible name inside a subtree hidden from assistive tech - focusable and hidden at once, which is a violation
+  // rather than a shortcut. The bars are a pointer affordance over a span the count beside the title already names.
+  //
   // Deliberately not filtered to the outcomes the bar counted, though it could be: an outcome row belongs to exactly
   // one entry, so `ca_action_types` would name precisely the requests that imposed those restrictions. It would also
   // hide the only rows that explain them. A lock is imposed by the request that trips the threshold, whose own entry
@@ -386,6 +392,7 @@ export class ConditionalAccessWidgetComponent extends DashboardWidget implements
     );
     this.authenticationLogService.timestampFrom.set(fromIso);
     this.authenticationLogService.timestampTo.set(toIso);
+    this.router.navigate([ROUTE_PATHS.AUTHENTICATION_LOG]).then();
   }
 
   // Where a bucket closes: the next one's start, or the window's end for the last, which has no successor.

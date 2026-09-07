@@ -74,13 +74,13 @@
             [class]="'bars-' + row.key"
             aria-hidden="true">
             <!-- The whole column carries the hover and the click, not the bar standing in it: one attempt against a
-                 busy peak is a bar a pixel or two tall, which is no target for either. routerLink on a span rather
-                 than an anchor, as the reasons table does with the anchor it has: it navigates on click and adds
-                 nothing focusable to a subtree that is hidden from assistive tech. -->
+                 busy peak is a bar a pixel or two tall, which is no target for either. No routerLink and no anchor:
+                 either would make the bar a focus stop with no accessible name inside this hidden subtree, so
+                 showBucket navigates itself and the bars stay what they look like - a pointer target on a chart
+                 whose data the table below carries in text. -->
             @for (count of row.counts; track $index) {
               <span
                 class="bar-slot"
-                [routerLink]="routePaths.AUTHENTICATION_LOG"
                 (click)="showBucket($index)"
                 [matTooltip]="binTooltip($index)">
                 <span

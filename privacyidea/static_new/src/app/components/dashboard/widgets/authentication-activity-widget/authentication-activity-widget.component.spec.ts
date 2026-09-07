@@ -19,8 +19,9 @@
 import { formatDate } from "@angular/common";
 import { provideZonelessChangeDetection } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { provideRouter } from "@angular/router";
+import { provideRouter, Router } from "@angular/router";
 import { PiResponse } from "@app/app.component";
+import { ROUTE_PATHS } from "@app/route_paths";
 import { WidgetInstance } from "@models/dashboard";
 import {
   AuthenticationEventSeries,
@@ -932,6 +933,23 @@ describe("AuthenticationActivityWidgetComponent", () => {
     expect(slots).toHaveLength(BINS);
     expect(slots[0].classList).toContain("mat-mdc-tooltip-trigger");
     expect(slots[0].querySelector(".bar")!.classList).not.toContain("mat-mdc-tooltip-trigger");
+  });
+
+  it("leaves the hidden bars out of the tab order and navigates to the log itself", () => {
+    seed([series("LOGIN_SUCCESS", "success", [1, 0, 0, 0])]);
+    create();
+    const navigate = jest.spyOn(TestBed.inject(Router), "navigate").mockResolvedValue(true);
+
+    // Why the bars navigate from their click handler instead of carrying a routerLink: RouterLink applies
+    // tabindex="0" to any host that is not an anchor, and these hosts sit in a subtree hidden from assistive tech -
+    // a link here would be a focus stop that a screen reader cannot see and that carries no name.
+    const slots = bars(0);
+    expect(fixture.nativeElement.querySelector(".bars").getAttribute("aria-hidden")).toBe("true");
+    expect(slots.map((slot) => slot.getAttribute("tabindex"))).toEqual(Array(BINS).fill(null));
+
+    slots[0].click();
+
+    expect(navigate).toHaveBeenCalledWith([ROUTE_PATHS.AUTHENTICATION_LOG]);
   });
 
   it("pre-seeds the log filter when a failure reason is clicked", () => {

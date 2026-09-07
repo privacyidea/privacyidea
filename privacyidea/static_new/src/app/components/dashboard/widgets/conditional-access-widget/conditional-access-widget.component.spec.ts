@@ -18,7 +18,7 @@
  **/
 import { provideZonelessChangeDetection } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { provideRouter } from "@angular/router";
+import { provideRouter, Router } from "@angular/router";
 import { PiResponse } from "@app/app.component";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { DashboardWidget, WidgetInstance } from "@models/dashboard";
@@ -565,6 +565,23 @@ describe("ConditionalAccessWidgetComponent", () => {
       expect(slots).toHaveLength(4);
       expect(slots[0].classList).toContain("mat-mdc-tooltip-trigger");
       expect(slots[0].querySelector(".ca-activity-bar")!.classList).not.toContain("mat-mdc-tooltip-trigger");
+    });
+
+    it("should leave the hidden bars out of the tab order and navigate to the log itself", () => {
+      stateMock.setOutcomeStatistics(history({ action_type: "LOCK_USER", counts: [1, 0, 0, 0] }));
+      create();
+      const navigate = jest.spyOn(TestBed.inject(Router), "navigate").mockResolvedValue(true);
+
+      // Why the bars navigate from their click handler instead of carrying a routerLink: RouterLink applies
+      // tabindex="0" to any host that is not an anchor, and these hosts sit in a subtree hidden from assistive tech -
+      // a link here would be a focus stop that a screen reader cannot see and that carries no name.
+      const slots = bars();
+      expect(fixture.nativeElement.querySelector(".ca-activity-histogram").getAttribute("aria-hidden")).toBe("true");
+      expect(slots.map((slot) => slot.getAttribute("tabindex"))).toEqual([null, null, null, null]);
+
+      slots[0].click();
+
+      expect(navigate).toHaveBeenCalledWith([ROUTE_PATHS.AUTHENTICATION_LOG]);
     });
 
     it("should keep the whole section up while a preset's window is being fetched", () => {

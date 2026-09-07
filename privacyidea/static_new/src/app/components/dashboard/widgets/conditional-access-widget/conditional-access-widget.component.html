@@ -168,15 +168,15 @@
              the count beside the section title is what says how many restrictions the selected span holds.
 
              The whole column carries the hover and the click, not the bar standing in it: one restriction against a
-             busy bucket is a bar a pixel or two tall, which is no target for either. routerLink on a span rather than
-             an anchor: it navigates on click and adds nothing focusable to a subtree hidden from assistive tech. -->
+             busy bucket is a bar a pixel or two tall, which is no target for either. No routerLink and no anchor:
+             either would make the bar a focus stop with no accessible name inside this hidden subtree, so showBucket
+             navigates itself and the bars stay what they look like - a pointer target on the shape of the span. -->
         <div
           class="ca-activity-histogram"
           [attr.aria-hidden]="true">
           @for (bar of activityHistogram(); track $index) {
             <span
               class="ca-bar-slot"
-              [routerLink]="routePaths.AUTHENTICATION_LOG"
               (click)="showBucket($index)"
               [matTooltip]="bucketTooltip($index)">
               <span

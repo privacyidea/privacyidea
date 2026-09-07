@@ -24,7 +24,7 @@ import { MatIcon } from "@angular/material/icon";
 import { MatMenuModule } from "@angular/material/menu";
 import { MatSliderModule } from "@angular/material/slider";
 import { MatTooltip } from "@angular/material/tooltip";
-import { RouterLink } from "@angular/router";
+import { Router, RouterLink } from "@angular/router";
 import { PiResponse } from "@app/app.component";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { WidgetStateComponent } from "@components/dashboard/widgets/widget-state/widget-state.component";
@@ -121,6 +121,7 @@ challenge-response login count once, classified by how the attempt ended.`;
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly authenticationLogService: AuthenticationLogServiceInterface = inject(AuthenticationLogService);
   private readonly store = inject(DashboardDataStore);
+  private readonly router = inject(Router);
 
   readonly selectedRange = signal<ActivityRange>(DEFAULT_ACTIVITY_RANGE);
 
@@ -454,6 +455,11 @@ challenge-response login count once, classified by how the attempt ended.`;
 
   // Opens the log on the bucket a bar stands over, on time alone - the row it was clicked in narrows nothing.
   //
+  // Navigates itself rather than through a routerLink on the bar, which is what keeps the bars out of the tab order:
+  // RouterLink applies tabindex="0" to any host that is not an anchor, so a link here would put a focus stop with no
+  // accessible name inside a subtree hidden from assistive tech - focusable and hidden at once, which is a violation
+  // rather than a shortcut. The bars are a pointer affordance over data the chart's own table already carries.
+  //
   // Deliberately not filtered by the row's event types, tempting as that is. This chart counts *attempts*, each one
   // reduced to the event that classified it; the log lists the entries those attempts are made of. An attempt that
   // ended in success can hold a PIN_FAIL entry on the way there, so a list filtered to the failure event types would
@@ -466,6 +472,7 @@ challenge-response login count once, classified by how the attempt ended.`;
       return;
     }
     this.openLog(null, from, this.binStarts()[bin + 1] ?? this.statistics()?.window?.end_time ?? null);
+    this.router.navigate([ROUTE_PATHS.AUTHENTICATION_LOG]).then();
   }
 
   // Carries a span, and at most one event type, into the log, which keeps whatever filter it was last left with:
