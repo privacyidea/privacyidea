@@ -460,11 +460,13 @@ $button-low-contrast-variant: linear-gradient(
 }
 
 // Compact icon buttons that sit inline with table text (column sorting, the
-// conditional-access priority arrows). The touch target is pinned to the visible
-// 24px box: Material's default 48px target would overhang the neighbouring cell
-// content and pull the ripple/hover layer out of line with the icon.
+// conditional-access priority arrows, the authentication log's reason detail).
+// The touch target is pinned to the visible 24px box: Material's default 48px
+// target would overhang the neighbouring cell content and pull the ripple/hover
+// layer out of line with the icon.
 .sort-button,
-.reorder-button {
+.reorder-button,
+.reason-detail-button {
   top: 0;
   right: 2px;
   height: 24px;
