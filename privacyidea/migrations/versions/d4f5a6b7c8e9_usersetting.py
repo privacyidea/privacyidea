@@ -9,8 +9,8 @@ import sqlalchemy as sa
 from alembic import op
 from sqlalchemy.exc import OperationalError, ProgrammingError
 
-from privacyidea.models.db import (create_sequence_if_supported, restart_sequence_past_max,
-                                   sequence_id_column)
+from privacyidea.models.db import (create_sequence_if_supported, drop_sequence_if_supported,
+                                   restart_sequence_past_max, sequence_id_column)
 
 # revision identifiers, used by Alembic.
 revision = 'd4f5a6b7c8e9'
@@ -71,8 +71,7 @@ def upgrade():
 def downgrade():
     try:
         op.drop_table('usersetting')
-        if op.get_bind().dialect.supports_sequences:
-            op.execute("DROP SEQUENCE IF EXISTS usersetting_seq")
+        drop_sequence_if_supported(op, SEQUENCE_NAME)
     except (OperationalError, ProgrammingError) as ex:
         msg = str(ex.orig).lower()
         if "no such table" in msg or "unknown table" in msg or "does not exist" in msg:
