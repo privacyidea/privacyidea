@@ -1358,10 +1358,11 @@ def create_tag_dict(logged_in_user=None,
         The ``now`` and ``current_time`` tags are aliases for the same timestamp;
         ``now`` is the canonical tag, ``current_time`` is kept as a deprecated alias.
     """
-    time = datetime.now().strftime("%H:%M:%S")
-    date = datetime.now().strftime("%Y-%m-%d")
+    base_dt = datetime.now(tzlocal())
+    time = base_dt.strftime("%H:%M:%S")
+    date = base_dt.strftime("%Y-%m-%d")
     from privacyidea.lib.tokenclass import AUTH_DATE_FORMAT
-    now = (datetime.now(tzlocal()) + (time_offset or timedelta())).strftime(AUTH_DATE_FORMAT)
+    now = (base_dt + (time_offset or timedelta())).strftime(AUTH_DATE_FORMAT)
     recipient = recipient or {}
     user_info = tokenowner.get_specific_info(["givenname", "surname"]) if tokenowner else {}
     tags = dict(admin=logged_in_user.get("username") if logged_in_user else "",
