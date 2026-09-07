@@ -28,7 +28,7 @@
   // Two input-width-l items + the row gap, plus the padding on both sides (border-box): matches
   // .settings-group-main's own width exactly, so the container hugs the 2x2 grid instead of a
   // wrapping flex container's intrinsic (unwrapped) width, which is always wider than any row.
-  width: calc(var(--input-width-l) * 2 + 8px + 2 * 16px);
+  width: calc(var(--input-width-l) * 2 + 16px + 2 * 16px);
 
   > * {
     flex: none;
