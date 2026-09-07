@@ -65,7 +65,8 @@ class ScriptSMSProvider(ISMSProvider):
             log.warning("Missing smsgateway definition!")
             raise SMSError(-1, "Missing smsgateway definition!")
 
-        phone = self._mangle_phone(phone, self.smsgateway.option_dict)
+        if not isinstance(message, dict):
+            phone = self._mangle_phone(phone, self.smsgateway.option_dict)
         log.debug(f"submitting message {message!s} to {phone!s}")
 
         script = self.smsgateway.option_dict.get("script")
@@ -88,8 +89,7 @@ class ScriptSMSProvider(ISMSProvider):
         except Exception as e:
             log.warning(f"Failed to execute script {script_name!r}: {e!r}")
             log.warning(traceback.format_exc())
-            if background == SCRIPT_WAIT:
-                raise SMSError(-1, "Failed to start script for sending SMS.")
+            raise SMSError(-1, "Failed to start script for sending SMS.")
 
         if rcode:
             log.warning(f"Script {script_name!r} failed to execute with error code {rcode!r}")

@@ -246,6 +246,13 @@ class PushTokenTestCase(MyTestCase):
             self.assertEqual([], _get_push_gateways())
         self.assertIn("Failed to load SMS provider", logs.output[0])
 
+        incompatible_provider = type("IncompatibleProvider", (), {})
+        with mock.patch("privacyidea.lib.tokens.pushtoken.get_smsgateway", return_value=[invalid_gateway]), \
+                mock.patch("privacyidea.lib.tokens.pushtoken.get_sms_provider_class",
+                           return_value=incompatible_provider), \
+                self.assertLogs("privacyidea.lib.tokens.pushtoken", logging.WARNING):
+            self.assertEqual([], _get_push_gateways())
+
         set_smsgateway(http_gateway,
                        "privacyidea.lib.smsprovider.HttpSMSProvider.HttpSMSProvider",
                        options={"URL": "https://push.example.com", "HTTP_METHOD": "POST",
@@ -337,6 +344,29 @@ class PushTokenTestCase(MyTestCase):
 
         with self.assertRaisesRegex(ValidateError, "Can not send via push gateway"):
             token.create_challenge(options={"g": g, "exception": True})
+
+    def test_02e_gateway_exception_uses_polling_fallback_and_records_metrics(self):
+        token = self._create_push_token()
+        self.addCleanup(remove_token, token.get_serial())
+        gateway = mock.MagicMock()
+        gateway.allows_push_messages.return_value = True
+        gateway.submit_message.side_effect = RuntimeError("gateway unavailable")
+        g = FakeFlaskG()
+        g.policy_object = PolicyClass()
+        g.audit_object = mock.MagicMock(audit_data={})
+
+        with mock.patch("privacyidea.lib.tokens.pushtoken.create_sms_instance", return_value=gateway), \
+                mock.patch("privacyidea.lib.tokens.pushtoken.observe") as observe_mock, \
+                mock.patch("privacyidea.lib.tokens.pushtoken.inc") as inc_mock:
+            success, message, transaction_id, _ = token.create_challenge(options={"g": g})
+
+        self.assertTrue(success)
+        self.assertTrue(transaction_id)
+        self.assertIn("Use the polling feature", message)
+        labels = {"gateway": self.firebase_config_name}
+        inc_mock.assert_any_call("push_delivery_total", {**labels, "result": "error"})
+        inc_mock.assert_any_call("sms_send_total", {**labels, "result": "failed"})
+        self.assertEqual(2, observe_mock.call_count)
 
     @responses.activate
     def test_03a_api_authenticate_fail(self):

@@ -58,10 +58,11 @@ class HttpSMSProvider(ISMSProvider):
 
     @staticmethod
     def _render_option_value(value, phone, message):
-        if value == "{phone}":
-            return phone
-        if value in ["{message}", "{otp}"]:
-            return message
+        if isinstance(message, dict):
+            if value == "{phone}":
+                return phone
+            if value in ["{message}", "{otp}"]:
+                return message
 
         serialized_message = message if isinstance(message, str) else json.dumps(message)
         value = value.replace("{message}", serialized_message)
@@ -86,7 +87,8 @@ class HttpSMSProvider(ISMSProvider):
         parameter = {}
         headers = {}
         if self.smsgateway:
-            phone = self._mangle_phone(phone, self.smsgateway.option_dict)
+            if not isinstance(message, dict):
+                phone = self._mangle_phone(phone, self.smsgateway.option_dict)
             url = self.smsgateway.option_dict.get("URL")
             method = self.smsgateway.option_dict.get("HTTP_METHOD", "GET")
             username = self.smsgateway.option_dict.get("USERNAME")
@@ -106,7 +108,8 @@ class HttpSMSProvider(ISMSProvider):
                     parameter[k] = self._render_option_value(v, phone, message)
             headers = self.smsgateway.header_dict
         else:
-            phone = self._mangle_phone(phone, self.config)
+            if not isinstance(message, dict):
+                phone = self._mangle_phone(phone, self.config)
             url = self.config.get('URL')
             method = self.config.get('HTTP_Method', 'GET')
             username = self.config.get('USERNAME')

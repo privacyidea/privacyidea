@@ -61,6 +61,7 @@ from privacyidea.lib.error import ParameterError
 from privacyidea.lib.error import (ResourceNotFoundError, ValidateError,
                                    PrivacyIDEAError, ConfigAdminError, PolicyError)
 from privacyidea.lib.log import log_with
+from privacyidea.lib.metrics import inc, observe
 from privacyidea.lib.params import get_optional, get_required
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import (SCOPE, GROUP, Match,
@@ -118,12 +119,27 @@ def _get_push_gateways(identifier=None):
         try:
             package_name, class_name = gateway.providermodule.rsplit(".", 1)
             provider_class = get_sms_provider_class(package_name, class_name)
+            if provider_class.allows_push_messages(gateway):
+                push_gateways.append(gateway)
         except Exception as ex:
             log.warning(f"Failed to load SMS provider {gateway.providermodule!r}: {ex!r}")
-            continue
-        if provider_class.allows_push_messages(gateway):
-            push_gateways.append(gateway)
     return push_gateways
+
+
+def _submit_push_message(gateway, identifier, device_token, payload):
+    labels = {"gateway": identifier}
+    start = time.monotonic()
+    result_label = "error"
+    try:
+        result = gateway.submit_message(device_token, payload)
+        result_label = "ok" if result else "failed"
+        return result
+    finally:
+        duration = time.monotonic() - start
+        observe("push_delivery_duration_seconds", duration, labels)
+        inc("push_delivery_total", {**labels, "result": result_label})
+        observe("sms_send_duration_seconds", duration, labels)
+        inc("sms_send_total", {**labels, "result": "ok" if result_label == "ok" else "failed"})
 
 # The optional push features this server advertises to the smartphone in every
 # challenge (see _build_smartphone_data). A newer app intersects these with its
@@ -1324,7 +1340,12 @@ class PushTokenClass(TokenClass):
                                                           private_key_pem, options, current_presence_options)
                     log.debug(f"Sending push payload: {push_payload}")
                     device_token = self.get_tokeninfo("firebase_token")
-                    res = push_gateway.submit_message(device_token, push_payload)
+                    try:
+                        res = _submit_push_message(push_gateway, push_gateway_identifier,
+                                                   device_token, push_payload)
+                    except Exception as ex:
+                        log.warning(f"Push gateway {push_gateway_identifier!r} raised an exception: {ex!r}")
+                        res = False
 
             # Create the challenge in the challenge table if either the message
             # was successfully submitted to the push gateway or if polling is

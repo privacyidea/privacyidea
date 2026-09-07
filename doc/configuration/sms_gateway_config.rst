@@ -134,6 +134,14 @@ for compatibility; prefer ``{message}`` in new PUSH gateway configurations.
 The gateway must forward the signed payload without modifying its fields, otherwise
 the authenticator cannot verify its signature.
 
+.. note:: With Firebase, privacyIDEA learns from the Firebase response whether a
+   notification was accepted for the device and adjusts the message shown to the
+   user when it was not. An HTTP gateway can only report that it accepted the
+   request; delivery to the push service happens afterwards and is not visible to
+   privacyIDEA. Configure ``RETURN_SUCCESS`` or ``RETURN_FAIL`` so the gateway can
+   report the final delivery result if you want this feedback. A Script gateway
+   running in ``background`` mode reports no result at all.
+
 .. todo:: Add description of additional headers
 
 Examples

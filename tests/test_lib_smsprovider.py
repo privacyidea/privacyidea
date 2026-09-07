@@ -28,7 +28,7 @@ from privacyidea.lib.smsprovider.SMSProvider import (SMSError,
                                                      delete_smsgateway_key_generic,
                                                      create_sms_instance,
                                                      _is_sensitive_key)
-from privacyidea.lib.smsprovider.ScriptSMSProvider import ScriptSMSProvider, SCRIPT_WAIT
+from privacyidea.lib.smsprovider.ScriptSMSProvider import ScriptSMSProvider, SCRIPT_BACKGROUND, SCRIPT_WAIT
 from privacyidea.lib.smsprovider.SipgateSMSProvider import SipgateSMSProvider
 from privacyidea.lib.smsprovider.SipgateSMSProvider import URL
 from privacyidea.lib.smsprovider.SmppSMSProvider import SmppSMSProvider
@@ -501,17 +501,30 @@ class ScriptSMSTestCase(MyTestCase):
         identifier = "myPushScript"
         provider_module = "privacyidea.lib.smsprovider.ScriptSMSProvider.ScriptSMSProvider"
         set_smsgateway(identifier, provider_module, description="test",
-                       options={"background": SCRIPT_WAIT, "script": "success.sh"})
+                       options={"background": SCRIPT_WAIT, "script": "success.sh", "REGEXP": "/-//"})
         provider = ScriptSMSProvider(smsgateway=get_smsgateway(identifier)[0], directory=self.directory)
         process = mock.MagicMock()
         process.wait.return_value = 0
         push_payload = {"nonce": "123", "question": "Confirm login?"}
 
-        with mock.patch("subprocess.Popen", return_value=process):
+        with mock.patch("subprocess.Popen", return_value=process) as popen:
             self.assertTrue(provider.submit_message("device-token", push_payload))
 
         process.communicate.assert_called_once_with(json.dumps(push_payload))
+        self.assertEqual("device-token", popen.call_args.args[0][1])
         delete_smsgateway(identifier)
+
+    def test_05_background_start_failure(self):
+        identifier = "myBackgroundScript"
+        provider_module = "privacyidea.lib.smsprovider.ScriptSMSProvider.ScriptSMSProvider"
+        set_smsgateway(identifier, provider_module, description="test",
+                       options={"background": SCRIPT_BACKGROUND, "script": "missing.sh"})
+        self.addCleanup(delete_smsgateway, identifier)
+        provider = ScriptSMSProvider(smsgateway=get_smsgateway(identifier)[0], directory=self.directory)
+
+        with mock.patch("subprocess.Popen", side_effect=OSError("not found")):
+            with self.assertRaisesRegex(SMSError, "Failed to start script"):
+                provider.submit_message("device-token", {"nonce": "123"})
 
 
 class HttpSMSTestCase(MyTestCase):
@@ -762,6 +775,7 @@ class HttpSMSTestCase(MyTestCase):
                        options={"HTTP_METHOD": "POST",
                                 "URL": "http://push.example.com/send",
                                 "SEND_DATA_AS_JSON": "yes",
+                                "REGEXP": "/-//",
                                 "device_token": "{phone}",
                                 "push_payload": "{message}"})
         provider = create_sms_instance(identifier)
@@ -774,6 +788,8 @@ class HttpSMSTestCase(MyTestCase):
         self.assertEqual({"device_token": "device-token", "push_payload": push_payload}, request_body)
         self.assertEqual('payload={"nonce": "123", "question": "Confirm login?"}',
                          provider._render_option_value("payload={message}", "device-token", push_payload))
+        self.assertEqual(123456, provider._render_option_value("{phone}", "123456", "SMS"))
+        self.assertEqual(42, provider._render_option_value("{otp}", "123456", "42"))
         delete_smsgateway(identifier)
 
 
