@@ -129,23 +129,23 @@ describe("DashboardComponent", () => {
 
   describe("layout geometry helpers", () => {
     it("should build the left offset for a column index", () => {
-      expect(component['leftCss'](2)).toBe("calc(2 * ((100% - 184px) / 24 + 8px))");
+      expect(component['leftCss'](2)).toBe("calc(2 * ((100% - 368px) / 24 + 16px))");
     });
 
     it("should build the width for a column span", () => {
-      expect(component['widthCss'](3)).toBe("calc(3 * (100% - 184px) / 24 + 16px)");
+      expect(component['widthCss'](3)).toBe("calc(3 * (100% - 368px) / 24 + 32px)");
     });
 
     it("should compute the top offset from the row pitch", () => {
-      expect(component['topPx'](3)).toBe(144);
+      expect(component['topPx'](3)).toBe(168);
     });
 
     it("should compute the height for a row span", () => {
-      expect(component['heightPx'](2)).toBe(88);
+      expect(component['heightPx'](2)).toBe(96);
     });
 
     it("should expose the dot-grid background size", () => {
-      expect(component['anchorBackgroundSize']()).toBe("calc((100% + 8px) / 24) 48px");
+      expect(component['anchorBackgroundSize']()).toBe("calc((100% + 16px) / 24) 56px");
     });
   });
 
@@ -164,7 +164,7 @@ describe("DashboardComponent", () => {
     it("should extend past the visible viewport while editing", () => {
       layoutService.editMode.set(true);
       component['viewportBottom'].set(440);
-      expect(component['rowCount']()).toBe(14);
+      expect(component['rowCount']()).toBe(12);
     });
   });
 
@@ -184,7 +184,7 @@ describe("DashboardComponent", () => {
     it("should track the top visible row as the preferred insert row", () => {
       stubScroll(440, 400, 2000);
       component['onFieldScroll']();
-      expect(layoutService.insertRow()).toBe(9);
+      expect(layoutService.insertRow()).toBe(7);
     });
   });
 
@@ -319,6 +319,28 @@ describe("DashboardComponent", () => {
       component['onResizeMove'](pointerEvent({ clientX: 100, clientY: 100 }));
       expect(component['resizePreview']()).toBeNull();
     });
+
+    it("should ignore a resize move once the resized widget is gone", () => {
+      const widget = firstWidget();
+      component['onResizeStart'](widget, "se", pointerEvent({ clientX: 0, clientY: 0 }));
+      layoutService.widgets.set(layoutService.widgets().filter((candidate) => candidate.id !== widget.id));
+
+      component['onResizeMove'](pointerEvent({ clientX: 100, clientY: 100 }));
+
+      expect(component['resizePreview']()).toBeNull();
+    });
+
+    it("should fall back to the floor minimum and an unbounded max for an unregistered widget type", () => {
+      const widget: WidgetInstance = { id: "unknown-1", type: "not-a-real-widget-type", x: 0, y: 0, cols: 6, rows: 4 };
+      layoutService.widgets.set([...layoutService.widgets(), widget]);
+
+      component['onResizeStart'](widget, "se", pointerEvent({ clientX: 0, clientY: 0 }));
+      component['onResizeMove'](pointerEvent({ clientX: -100000, clientY: 100000 }));
+
+      const preview = component['resizePreview']();
+      expect(preview?.cols).toBe(DashboardWidget.minSize.cols);
+      expect(preview?.rows).toBeGreaterThan(component['columns']);
+    });
   });
 
   describe("pinned widgets", () => {
@@ -328,6 +350,11 @@ describe("DashboardComponent", () => {
 
     it("should report a regular widget as not pinned", () => {
       expect(component['isPinned'](firstWidget())).toBe(false);
+    });
+
+    it("should report a widget of an unregistered type as not pinned", () => {
+      const widget: WidgetInstance = { id: "unknown-1", type: "not-a-real-widget-type", x: 0, y: 0, cols: 6, rows: 4 };
+      expect(component['isPinned'](widget)).toBe(false);
     });
   });
 
