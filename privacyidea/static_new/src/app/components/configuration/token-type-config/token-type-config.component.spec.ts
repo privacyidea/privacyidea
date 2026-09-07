@@ -108,7 +108,7 @@ describe("TokenTypeConfigComponent", () => {
     const notificationService = TestBed.inject(NotificationService);
     jest
       .spyOn(systemService, "saveSystemConfig")
-      .mockReturnValueOnce(of(new MockPiResponse<Record<string, string>>({ result: { status: false } })));
+      .mockReturnValueOnce(of(new MockPiResponse<Record<string, "insert" | "update">>({ result: { status: false } })));
 
     await component.save();
 

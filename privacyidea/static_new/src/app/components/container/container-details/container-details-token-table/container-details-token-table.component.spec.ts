@@ -29,7 +29,7 @@ import { ContentService } from "@services/content/content.service";
 import { DialogService } from "@services/dialog/dialog.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
-import { TokenService } from "@services/token/token.service";
+import { TokenDetails, TokenService } from "@services/token/token.service";
 import { UserService } from "@services/user/user.service";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
 import { expectsTableStateGating } from "@testing/table-state-gating";
@@ -290,7 +290,7 @@ describe("ContainerDetailsTokenTableComponent", () => {
     const notificationService = TestBed.inject(NotificationService);
     component.assignedUser.set({ user_name: "userA", user_realm: "realm1", user_resolver: "", user_id: "" });
 
-    component.assignUserToToken({ serial: "Mock serial", active: true } as ContainerDetailToken);
+    component.assignUserToToken({ serial: "Mock serial", active: true } as TokenDetails);
 
     expect(tokenServiceMock.assignUser).toHaveBeenCalledWith({
       tokenSerial: "Mock serial",

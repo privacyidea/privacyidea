@@ -31,12 +31,12 @@ import { RealmService } from "@services/realm/realm.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import { TokenDetails, Tokens, TokenService } from "@services/token/token.service";
 import {
-  MatDialogMock,
   MockAuditService,
   MockContainerService,
   MockContentService,
   MockDocumentationService,
   MockLocalService,
+  MockMatDialog,
   MockNotificationService,
   MockRealmService,
   MockTableUtilsService,
@@ -80,7 +80,7 @@ describe("TokenTableSelfServiceComponent", () => {
         { provide: AuditService, useClass: MockAuditService },
         { provide: AuthService, useClass: MockAuthService },
         { provide: ContainerService, useClass: MockContainerService },
-        { provide: MatDialog, useClass: MatDialogMock },
+        { provide: MatDialog, useClass: MockMatDialog },
         { provide: RealmService, useClass: MockRealmService },
         MockLocalService,
         MockNotificationService
