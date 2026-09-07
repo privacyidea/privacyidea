@@ -22,25 +22,22 @@ import { FilterValue } from "@core/models/filter_value/filter_value";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContainerDetailToken } from "@services/container/container.service";
 import {
-  cellDisplayText,
-  cellTooltip,
-  childClassForColumnKey,
-  classForColumnKey,
-  divClassForKey,
-  isLinkColumn,
-  sortIcon,
-  spanClassForKey,
-  spanClassForState,
-  TableCellValue,
-  TableRow,
-  tdClassForKey
-} from "@utils/table-cell.utils";
-import { containerStateLabel } from "@utils/value-label.utils";
+  AUTHENTICATION_VALUES,
+  booleanDisplayLabel,
+  containerStateLabel,
+  DisplayableValue,
+  ROLLOUT_STATE_VALUES,
+  tokenStateLabel,
+  valueDisplayLabel
+} from "@utils/value-label.utils";
 
 export interface FilterPair {
   key: string;
   value: string;
 }
+
+export type TableRow = Record<string, unknown>;
+export type TableCellValue = string | number | boolean | null | undefined;
 
 export type ColumnKey =
   | "select"
@@ -138,6 +135,42 @@ export interface TableUtilsServiceInterface {
   clientsideSortTokenData(data: ContainerDetailToken[], s: Sort): ContainerDetailToken[];
 }
 
+function displayableCell(value: unknown): DisplayableValue | undefined {
+  return typeof value === "string" || typeof value === "number" || typeof value === "boolean" ? value : undefined;
+}
+
+/**
+ * Columns whose cell text is more than the raw value. A formatter returning undefined leaves the
+ * cell to the raw rendering, so every column keeps working without an entry here.
+ */
+const CELL_FORMATTERS = new Map<string, (element: TableRow) => string | undefined>([
+  [
+    "active",
+    (element) => {
+      const active = element["active"];
+      if (active === "") return "";
+      if (element["revoked"]) return tokenStateLabel("revoked");
+      if (element["locked"]) return tokenStateLabel("locked");
+      if (active) return tokenStateLabel("active");
+      if (active === false) return tokenStateLabel("deactivated");
+      return undefined;
+    }
+  ],
+  [
+    "rollout_state",
+    (element) => {
+      const state = element["rollout_state"];
+      return typeof state === "string" ? valueDisplayLabel(state, ROLLOUT_STATE_VALUES, { vocabulary: true }) : "";
+    }
+  ],
+  ["success", (element) => booleanDisplayLabel(displayableCell(element["success"]), "predicate")],
+  [
+    "authentication",
+    (element) =>
+      valueDisplayLabel(displayableCell(element["authentication"]), AUTHENTICATION_VALUES, { vocabulary: true })
+  ]
+]);
+
 @Injectable()
 export class TableUtilsService implements TableUtilsServiceInterface {
   private readonly authService: AuthServiceInterface = inject(AuthService);
@@ -155,7 +188,13 @@ export class TableUtilsService implements TableUtilsServiceInterface {
   }
 
   isLink(columnKey: string): boolean {
-    return isLinkColumn(columnKey);
+    return (
+      columnKey === "container_serial" //||
+      //columnKey === 'username' ||
+      //columnKey === 'user_realm' ||
+      //columnKey === 'users' ||
+      //columnKey === 'realms'
+    );
   }
 
   getClassForColumn(columnKey: string, element: TableRow): string {
@@ -193,38 +232,137 @@ export class TableUtilsService implements TableUtilsServiceInterface {
   }
 
   getTooltipForColumn(columnKey: string, element: TableRow): string {
-    return cellTooltip(columnKey, element);
+    if (element["locked"]) return tokenStateLabel("locked");
+    if (element["revoked"]) return tokenStateLabel("revoked");
+
+    switch (columnKey) {
+      case "active":
+        if (element["active"] === "") return "";
+        return element["active"]
+          ? $localize`:@@token.deactivateToken:Deactivate Token`
+          : $localize`:@@token.activateToken:Activate Token`;
+
+      case "failcount":
+        return element["failcount"] ? $localize`:@@token.resetFailCounter:Reset Fail Counter` : "";
+    }
+    return "";
   }
 
   getDisplayText(columnKey: string, element: TableRow): string {
-    return cellDisplayText(columnKey, element);
+    const formatted = CELL_FORMATTERS.get(columnKey)?.(element);
+    if (formatted !== undefined) return formatted;
+    const cell = Object.hasOwn(element, columnKey) ? element[columnKey] : undefined;
+    return cell == null ? "" : String(cell);
   }
 
   getSpanClassForKey(args: { key: string; value?: TableCellValue; maxfail?: number }): string {
-    return spanClassForKey(args);
+    const { key, value, maxfail } = args;
+    if (key === "success") {
+      if (value === "" || value === null || value === undefined) {
+        return "";
+      }
+      if (value) return "highlight-true";
+      return "highlight-false";
+    }
+    if (key === "description") {
+      return "details-table-item details-description";
+    }
+    if (key === "active") {
+      if (value === "") {
+        return "";
+      }
+      return value === true ? "highlight-true" : "highlight-false";
+    }
+    if (key === "authentication" && typeof value === "string") {
+      if (value.toLowerCase() === "accept") {
+        return "highlight-true";
+      } else if (value.toLowerCase() === "challenge") {
+        return "highlight-warning";
+      } else if (value.toLowerCase() === "reject") {
+        return "highlight-false";
+      }
+    }
+    if (key === "failcount") {
+      if (value === "") {
+        return "";
+      } else if (value === 0) {
+        return "highlight-true";
+      } else if (typeof value === "number" && value >= 1 && maxfail !== undefined && value < maxfail) {
+        return "highlight-warning";
+      } else {
+        return "highlight-false";
+      }
+    }
+    return "details-table-item";
   }
 
-  getDivClassForKey(key: string) {
-    return divClassForKey(key);
+  getDivClassForKey(key: string): string {
+    if (key === "description") {
+      return "details-scrollable-container";
+    } else if (key === "maxfail" || key === "count_window" || key === "sync_window") {
+      return "details-value";
+    }
+
+    return "";
   }
 
   getClassForColumnKey(columnKey: string): string {
-    return classForColumnKey(columnKey);
+    switch (columnKey) {
+      case "failcount":
+      case "active":
+      case "revoke":
+      case "maxfail":
+      case "delete":
+        return "flex-center";
+      case "realms":
+      case "description":
+        return "table-scroll-container";
+      default:
+        return "flex-center-vertical";
+    }
   }
 
   getChildClassForColumnKey(columnKey: string): string {
-    return childClassForColumnKey(columnKey);
+    if (this.getClassForColumnKey(columnKey).includes("table-scroll-container")) {
+      return "scroll-item";
+    }
+    return "";
   }
 
-  getTdClassForKey(key: string) {
-    return tdClassForKey(key);
+  getTdClassForKey(key: string): string[] {
+    const classes = ["width-241"];
+    if (key === "description") {
+      classes.push("height-127");
+    } else if (["realms", "tokengroup"].includes(key)) {
+      classes.push("height-78");
+    } else {
+      classes.push("height-53");
+    }
+    return classes;
   }
 
   getSpanClassForState(state: string, clickable: boolean): string {
-    return spanClassForState(state, clickable);
+    switch (clickable) {
+      case false:
+        if (state === "active") {
+          return "highlight-true";
+        } else if (state === "disabled" || state === "damaged" || state === "lost") {
+          return "highlight-false";
+        } else {
+          return "";
+        }
+      case true:
+        if (state === "active") {
+          return "highlight-true-clickable";
+        } else if (state === "disabled" || state === "damaged" || state === "lost") {
+          return "highlight-false-clickable";
+        } else {
+          return "";
+        }
+    }
   }
 
-  getDisplayTextForState(state: string) {
+  getDisplayTextForState(state: string): string {
     return containerStateLabel(state);
   }
 
@@ -241,7 +379,10 @@ export class TableUtilsService implements TableUtilsServiceInterface {
   }
 
   getSortIcon(columnKey: string, sort: Sort): string {
-    return sortIcon(columnKey, sort);
+    if (sort.active !== columnKey || !sort.direction) {
+      return "unfold_more";
+    }
+    return sort.direction === "asc" ? "keyboard_arrow_upward" : "keyboard_arrow_downward";
   }
 
   onSortButtonClick(
