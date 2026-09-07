@@ -148,6 +148,28 @@ Policies
 
 You can use ``pi-manage config policy`` to enable, disable, create and delete policies.
 
+.. _pimanage_authlog:
+
+Clean up the authentication log
+-------------------------------
+
+.. index:: retention time
+
+The :ref:`authentication_log` records every authentication request and is not
+pruned automatically, so its retention period is enforced by a cron job running::
+
+   pi-manage authlog cleanup --age 365
+
+``--age`` is required and is given in days: the command deletes every entry
+older than that, together with the classified reasons and the conditional-access
+outcomes recorded on those entries. As with the challenge cleanup, ``--chunksize``
+deletes in batches to avoid long locks on a large table, and ``--dryrun`` only
+reports how many entries would be removed.
+
+Keep the retention period comfortably longer than the longest time window used
+by a conditional access policy - deleted entries no longer count towards its
+thresholds, see :ref:`authentication_log_cleanup`.
+
 Conditional Access
 ------------------
 
