@@ -19,8 +19,10 @@
 <div class="policy-action-item">
   <div class="detail-text">
     <span class="detail-label">{{ action().name }}</span>
-    @if (actionDetail()?.desc) {
-      <span class="detail-description">{{ actionDetail()?.desc }}</span>
+    @if (actionDetail()?.desc; as description) {
+      <span
+        class="detail-description"
+        [innerHTML]="description"></span>
     }
   </div>
 
