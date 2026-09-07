@@ -25,10 +25,10 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  // Widened from the old xs+s pair cap so General's four fields settle into a compact 2x2 instead
-  // of stacking one per line: Language+Theme fill row 1 (518px), Landing Page+Pending Requests
-  // fill row 2 (696px), both under this cap.
-  max-width: calc(var(--card-width-l) + 2 * 16px);
+  // Two input-width-l items + the row gap, plus the padding on both sides (border-box): matches
+  // .settings-group-main's own width exactly, so the container hugs the 2x2 grid instead of a
+  // wrapping flex container's intrinsic (unwrapped) width, which is always wider than any row.
+  width: calc(var(--input-width-l) * 2 + 8px + 2 * 16px);
 
   > * {
     flex: none;
@@ -52,6 +52,17 @@
   gap: 8px;
 }
 
+// A wrapping flex container's own intrinsic width is spec'd as if it never wrapped, so
+// width: fit-content can't shrink it to an actual wrapped row's width — it has to be given
+// explicitly per usage instead.
+.settings-group-main {
+  width: calc(var(--input-width-l) * 2 + 8px);
+}
+
+.settings-group-appearance {
+  width: var(--card-width-m);
+}
+
 .settings-item {
   display: flex;
   flex-direction: column;
@@ -63,7 +74,8 @@
 }
 
 .settings-item-s {
-  @include table.card-width(s);
+  flex: 0 0 var(--input-width-l);
+  max-width: var(--input-width-l);
 }
 
 .settings-item-m {
