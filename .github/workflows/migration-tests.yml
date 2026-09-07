@@ -27,6 +27,14 @@ on:
       - 'requirements.txt'
       - '.github/workflows/migration-tests.yml'
       - '.github/python-versions.env'
+  schedule:
+    # 03:00 UTC, after the 02:00 unit-test runs, so the two do not compete for
+    # runners. The path filter above only catches a pull request that touches
+    # the migrations or the backup command itself; a change anywhere else that
+    # breaks them - the app setup they go through, a dependency bump, a new
+    # model - would go unnoticed until the next such pull request. The nightly
+    # run is what turns these tests into a standing signal.
+    - cron: '0 3 * * *'
   workflow_dispatch:
 
 permissions:
@@ -303,3 +311,27 @@ jobs:
           PYTHONWARNINGS: "once::DeprecationWarning"
         run: |
           python -b -m pytest -v --tb=short -m backup tests/cli/test_backup_roundtrip.py
+
+  notify-failure:
+    needs: [ migration-tests, galera-migration-tests ]
+    # Surface nightly breakage as a GitHub issue. Scheduled runs only — pull
+    # request failures already show up as checks. Runs when any job failed.
+    if: ${{ failure() && github.event_name == 'schedule' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read # for actions/checkout to reach the local composite action
+      issues: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/notify-nightly-failure
+        with:
+          title: Nightly migration and backup tests failed on master
+          body: |
+            The nightly migration / backup round-trip run failed on master.
+
+            Commit: ${{ github.sha }}
+            Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          token: ${{ secrets.GITHUB_TOKEN }}

@@ -10,9 +10,10 @@
 # is independent of the Python version, so a per-version matrix would only add
 # redundant runs. The DB-only matrix lives in the MariaDB/Postgres workflows.
 # Migration tests are excluded - they have their own dedicated workflow. Backup
-# round-trip tests are excluded too: they dump the database via mysqldump and
-# exercise nothing on the Redis path, so they add no signal here (the DB-only
-# MariaDB job already covers them).
+# round-trip tests are excluded too: they dump the database with the client
+# commands of the respective engine and exercise nothing on the Redis path, so
+# they add no signal here (the migration workflow covers them, and it is the
+# only one that installs those clients).
 
 name: Unit Tests Redis
 
