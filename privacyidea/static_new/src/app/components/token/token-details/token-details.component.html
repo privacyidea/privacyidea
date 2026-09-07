@@ -199,6 +199,15 @@
         [toggleEdit]="toggleTokenEdit.bind(this)" />
     }
 
+    @if (tokenType() === "certificate") {
+      <app-certificate-data
+        class="details-certificate-area"
+        [certificate]="certificateInfo()"
+        [pkcs12]="pkcs12Info()"
+        [rolloutState]="tokenDetails().rollout_state"
+        [serial]="tokenDetails().serial" />
+    }
+
     <app-token-details-info
       class="details-info-area"
       [detailData]="tokenDetailData"

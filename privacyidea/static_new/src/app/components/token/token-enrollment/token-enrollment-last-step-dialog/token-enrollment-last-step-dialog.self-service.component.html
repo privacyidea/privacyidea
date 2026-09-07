@@ -17,6 +17,8 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <app-dialog-wrapper
+  [cancelButtonDisabled]="!!closeBlockedReason()"
+  [cancelButtonTooltip]="closeBlockedReason()"
   cancelButtonLabel="Close"
   i18n-cancelButtonLabel="@@common.close"
   i18n-title="@@token.tokenSuccessfully"
@@ -29,6 +31,7 @@
 
   @if (data.showEnrollData !== false && data.response) {
     <app-token-enrollment-data
+      (closeBlockedReasonChange)="onCloseBlockedReasonChange($event)"
       (enrollmentResponseChange)="onEnrollmentResponseChange($event)"
       [enrolledInputData]="data.response.detail"
       [enrollmentParameters]="data.enrollParameters"

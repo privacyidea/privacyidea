@@ -32,3 +32,11 @@
     margin-left: 16px;
   }
 }
+
+.cancel-button-host {
+  display: inline-flex;
+
+  button:disabled {
+    pointer-events: none;
+  }
+}

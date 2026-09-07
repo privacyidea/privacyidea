@@ -25,34 +25,56 @@ import {
   TokenEnrollmentPayload
 } from "./_token-api-payload.mapper";
 
+/**
+ * The three ways a certificate token can be enrolled. It decides which parameters the
+ * API call carries, so it has to travel with the enrollment data.
+ */
+export type CertificateIntention = "generate" | "uploadRequest" | "uploadCert";
+
 // Interface for Certificate Token-specific enrollment data
 export interface CertificateEnrollmentData extends TokenEnrollmentData {
   type: "certificate";
   caConnector?: string;
   certTemplate?: string;
+  intention?: CertificateIntention;
   pem?: string;
-  // genkey=1 is hardcoded in TokenService
 }
 
 export interface CertificateEnrollmentPayload extends TokenEnrollmentPayload {
-  genkey: 1;
+  // genkey is inherited from TokenEnrollmentPayload and is only sent for "generate".
   ca?: string;
   template?: string;
-  pem?: string;
+  request?: string;
+  certificate?: string;
 }
 
 @Injectable({ providedIn: "root" })
 export class CertificateApiPayloadMapper
   extends BaseApiPayloadMapper
-  implements TokenApiPayloadMapper<CertificateEnrollmentData> {
+  implements TokenApiPayloadMapper<CertificateEnrollmentData>
+{
   override toApiPayload(data: CertificateEnrollmentData): CertificateEnrollmentPayload {
-    const payload: CertificateEnrollmentPayload = {
-      ...super.toApiPayload(data),
-      genkey: 1, // As per switch statement
-      ...(data.caConnector != null && { ca: data.caConnector }),
-      ...(data.certTemplate != null && { template: data.certTemplate }),
-      ...(data.pem != null && { pem: data.pem })
-    };
+    const intention: CertificateIntention = data.intention ?? "generate";
+    const payload: CertificateEnrollmentPayload = { ...super.toApiPayload(data) };
+
+    if (intention === "uploadCert") {
+      if (data.pem != null) {
+        payload.certificate = data.pem;
+      }
+    } else {
+      if (data.caConnector != null) {
+        payload.ca = data.caConnector;
+      }
+      if (data.certTemplate) {
+        payload.template = data.certTemplate;
+      }
+      if (intention === "uploadRequest") {
+        payload.request = data.pem ?? "";
+      } else {
+        payload.genkey = 1;
+      }
+    }
+
     if (data.onlyAddToRealm) {
       payload.realm = data.realm;
       delete payload.user;
@@ -62,14 +84,29 @@ export class CertificateApiPayloadMapper
   }
 
   override fromApiPayload(payload: CertificateEnrollmentPayload): CertificateEnrollmentData {
-    // Placeholder: Implement transformation from API payload. We will replace this later.
-    return payload as CertificateEnrollmentData;
+    const data: CertificateEnrollmentData = {
+      ...super.fromApiPayload(payload),
+      type: "certificate",
+      ...(payload.ca != null && { caConnector: payload.ca }),
+      ...(payload.template != null && { certTemplate: payload.template })
+    };
+    if (payload.certificate != null) {
+      data.intention = "uploadCert";
+      data.pem = payload.certificate;
+    } else if (payload.request != null) {
+      data.intention = "uploadRequest";
+      data.pem = payload.request;
+    } else {
+      data.intention = "generate";
+    }
+    return data;
   }
 
   override fromTokenDetailsToEnrollmentData(details: TokenDetails): CertificateEnrollmentData {
     return {
       ...super.fromTokenDetailsToEnrollmentData(details),
       type: "certificate",
+      intention: "generate",
       ...(details.info?.CA != null && { caConnector: details.info?.CA })
     };
   }
