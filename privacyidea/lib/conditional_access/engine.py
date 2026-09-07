@@ -138,7 +138,7 @@ ACTION_SEVERITY: tuple[ConditionalAccessAction, ...] = (
 )
 
 #: Severity rank of each action, mirroring
-#: :data:`~privacyidea.lib.conditional_access.authentication_event_types._EVENT_RANK`.
+#: ``_EVENT_RANK`` in :mod:`~privacyidea.lib.conditional_access.authentication_event_types`.
 _ACTION_RANK: dict[ConditionalAccessAction, int] = {action: rank for rank, action in enumerate(ACTION_SEVERITY)}
 
 #: The actions that only report something, rather than restricting anything. Used to compose the default error message
@@ -576,7 +576,7 @@ def count_distinct_users_for_ip(source_ip: str, event_types: list[str], window_s
     :param window_end: the instant the window ends; defaults to :func:`utc_now`.
         The engine passes the single reference instant captured for the whole
         evaluation so this count shares it with the new block's expiry.
-:param extra_filters: extra SQLAlchemy predicates ANDed into the ``WHERE``, narrowing which
+    :param extra_filters: extra SQLAlchemy predicates ANDed into the ``WHERE``, narrowing which
         rows count to the ones a policy's conditions describe (see
         :func:`~privacyidea.lib.conditional_access.conditions.condition_sql_filters`). ``None`` or
         empty counts every row of the subject.
@@ -945,7 +945,7 @@ def is_user_locked(user: "User", now: datetime | None = None, *, clear_expired: 
 _DEFAULT_NEVER_BLOCK_NETWORKS = ("127.0.0.0/8", "::1/128")
 
 #: App-config key holding the never-block allowlist, set in pi.cfg or through the
-#: PRIVACYIDEA_-prefixed environment variable of the same name. This lives in the
+#: ``PRIVACYIDEA_``-prefixed environment variable of the same name. This lives in the
 #: server configuration and not in the system config on purpose: it is the safety
 #: net that keeps an admin from locking themselves out, so it must not be reachable
 #: through the very API an attacker (or a mistaken BLOCK_IP policy) could be attacking.

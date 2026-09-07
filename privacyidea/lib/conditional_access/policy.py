@@ -75,10 +75,10 @@ must be :class:`~privacyidea.lib.conditional_access.engine.ConditionalAccessActi
 matches or an action that never fires). Within one stage an action may appear only once - except
 ``EMAIL_ADMIN``/``EMAIL_USER`` (:data:`REPEATABLE_ACTIONS`), where a second copy is how one stage notifies a
 second set of recipients - and no stage may hold two actions of the same mutually exclusive group
-(:data:`_EXCLUSIVE_ACTION_GROUPS`: timed vs permanent lock, timed vs permanent block).
+(``_EXCLUSIVE_ACTION_GROUPS``: timed vs permanent lock, timed vs permanent block).
 
 ``action_value`` is validated under that same rule, against what the engine actually reads (see
-:data:`_ACTION_VALUE_VALIDATORS`):
+``_ACTION_VALUE_VALIDATORS``):
 
 * ``LOCK_USER`` / ``BLOCK_IP`` - a positive number of seconds: an integer, a numeric string, or an object with
   ``duration_seconds`` (``duration`` is an accepted alias). There is no default; without a duration the engine
@@ -142,6 +142,8 @@ MAX_ERROR_MESSAGE_LENGTH = 500
 # DENY is a standing pre-auth decision, so it defaults to re-triggering while the count stays at or above the
 # threshold; the post-response lock/email/block actions default to firing once. A set because both the threshold-0 rule
 # and the retrigger default ask "is this a standing verdict?".
+#: The actions that state a standing pre-auth verdict rather than reacting to a count. They default to
+#: re-triggering, and a stage carrying only these may use threshold 0.
 DECISION_ACTIONS = frozenset({ConditionalAccessAction.DENY})
 
 # The actions a stage may carry more than once. Only the notifications: repeating EMAIL_ADMIN with a
@@ -150,6 +152,8 @@ DECISION_ACTIONS = frozenset({ConditionalAccessAction.DENY})
 # :func:`~privacyidea.lib.conditional_access.engine._send_lockout_email`, which resolves its recipients per
 # action. Every other action writes one piece of state or one verdict, so a second copy either does nothing
 # or silently overwrites the first.
+#: The actions a stage may carry more than once - the notifications, where a second copy reaches a
+#: different set of recipients.
 REPEATABLE_ACTIONS = frozenset({ConditionalAccessAction.EMAIL_ADMIN, ConditionalAccessAction.EMAIL_USER})
 
 # Actions that contradict each other within one stage: the timed and permanent variants write the same
@@ -377,6 +381,8 @@ _ACTIONS_BY_TARGET = {
 # lazy_gettext, not _(): module-level constants are evaluated at import, long before a request and its
 # locale exist; ``str()`` at serialization resolves them per admin. That only decides what an admin starts
 # editing from - the stored message is a literal shown to the end user in whatever language it was written.
+#: The default user-facing wording per action: what the policy editor suggests, and what the
+#: ``show_default_ca_error_message`` policy falls back to for a stage that wrote none.
 DEFAULT_ERROR_MESSAGES: dict[str, object] = {
     ConditionalAccessAction.PERMANENT_LOCK_USER:
         lazy_gettext("Your account has been locked. Please contact your administrator."),
@@ -449,9 +455,9 @@ def get_target_constraints() -> dict[str, dict[str, list]]:
     """
     The per-target policy constraints, as ``{target_value: {"actions": [...], "count_modes": [...],
     "repeatable_actions": [...], "exclusive_action_groups": [[...], ...]}}``: for each target the stage actions it
-    allows (:data:`_ACTIONS_BY_TARGET`), the count modes it supports (:data:`_COUNT_MODES_BY_TARGET`), which of its
+    allows (``_ACTIONS_BY_TARGET``), the count modes it supports (``_COUNT_MODES_BY_TARGET``), which of its
     actions may appear more than once in one stage (:data:`REPEATABLE_ACTIONS`) and which of its actions contradict
-    each other within one stage (:data:`_EXCLUSIVE_ACTION_GROUPS`), all sorted.
+    each other within one stage (``_EXCLUSIVE_ACTION_GROUPS``), all sorted.
 
     The last two are served rather than left for the client to hard-code, for the same reason the condition-type
     registry is: a rule the editor enforces should come from the one place that defines it. They are filtered to
@@ -488,7 +494,7 @@ def _validate_target(target) -> "ConditionalAccessTarget":
 def _validate_target_actions(stage_defs: list["StageDefinition"], target: "ConditionalAccessTarget") -> None:
     """
     Reject any stage action that is not allowed for *target* (see
-    :data:`_ACTIONS_BY_TARGET`) - e.g. ``LOCK_USER`` on a ``source_ip`` policy.
+    ``_ACTIONS_BY_TARGET``) - e.g. ``LOCK_USER`` on a ``source_ip`` policy.
     """
     allowed = _ACTIONS_BY_TARGET[target]
     invalid = sorted(
@@ -517,9 +523,9 @@ def _validate_count_mode(count_mode, target: "ConditionalAccessTarget") -> str:
     """
     Validate the policy's :class:`CountMode` for *target* and return its canonical string value.
 
-    A ``None`` *count_mode* yields the target's default (see :data:`_DEFAULT_COUNT_MODE_BY_TARGET`), so a caller need
+    A ``None`` *count_mode* yields the target's default (see ``_DEFAULT_COUNT_MODE_BY_TARGET``), so a caller need
     not know which mode a target expects. Otherwise the mode must be a known :class:`CountMode` (accepted as either a
-    mode string from the API or a member) *and* allowed for *target* (see :data:`_COUNT_MODES_BY_TARGET`) - e.g.
+    mode string from the API or a member) *and* allowed for *target* (see ``_COUNT_MODES_BY_TARGET``) - e.g.
     ``DISTINCT_USERS`` on a ``user`` policy is rejected. Both accepted
     forms normalize to the plain string stored on the model, so the stored value's type does not depend on the caller.
     """
@@ -675,7 +681,7 @@ def _validate_no_action_value(action_type: str, action_value) -> None:
 
 # What each action type's ``action_value`` must look like, keyed by action type. Kept **total** over
 # :class:`~privacyidea.lib.conditional_access.engine.ConditionalAccessAction` (asserted in the tests, like
-# :data:`_ACTIONS_BY_TARGET`): a new action type has to declare what it accepts rather than inheriting
+# ``_ACTIONS_BY_TARGET``): a new action type has to declare what it accepts rather than inheriting
 # "anything goes" from a missing entry, which is the very state this table exists to end.
 _ACTION_VALUE_VALIDATORS = {
     str(ConditionalAccessAction.LOCK_USER): _validate_duration_action_value,
@@ -733,7 +739,7 @@ def _validate_stages(stages) -> list[StageDefinition]:
     action dict are rejected so typos fail loudly.
 
     ``action_value`` is validated per action type against what the engine reads
-    (:data:`_ACTION_VALUE_VALIDATORS`): a positive duration for the timed
+    (``_ACTION_VALUE_VALIDATORS``): a positive duration for the timed
     ``LOCK_USER``/``BLOCK_IP``, the SMTP settings object for the ``EMAIL_*``
     actions, and no value at all for the ``PERMANENT_*`` restrictions and the
     ``DENY`` decision. This is fail-closed for the same reason the
@@ -818,7 +824,7 @@ def _validate_stage_action_combination(actions: list[StageActionDefinition], thr
     """
     Reject an action set one stage cannot meaningfully hold: the same non-repeatable action twice (see
     :data:`REPEATABLE_ACTIONS`), or two actions from the same mutually exclusive group (see
-    :data:`_EXCLUSIVE_ACTION_GROUPS`).
+    ``_EXCLUSIVE_ACTION_GROUPS``).
 
     Both shapes are configuration that cannot do what it reads as. A stage carrying ``LOCK_USER`` twice locks
     for whichever of the two durations happens to be applied last; one carrying both the timed and the

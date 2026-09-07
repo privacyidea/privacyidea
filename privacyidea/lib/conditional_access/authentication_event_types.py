@@ -50,10 +50,12 @@ CHALLENGE_LAPSED_KEY = "challenge_lapsed"
 # reason, while the request-level classification is the list of them (see order_request_reasons); the api layer
 # accepts either and always records a list (see pop_auth_event_reason).
 AUTH_EVENT_REASON_KEY = "authentication_event_reason"
+#: Reply-dict key carrying the classified reason's detail from the lib layer to the api layer.
 AUTH_EVENT_REASON_DETAIL_KEY = "authentication_event_reason_detail"
 
 # The key the reason's detail dict is stored under inside the row's ``other_info``. One namespace of its own, so the
 # rest of other_info stays what a token reported about itself and neither has to know about the other.
+#: Key the reason's detail dict is stored under inside an entry's ``other_info``.
 REASON_DETAIL_INFO_KEY = "reason_detail"
 
 
@@ -70,6 +72,7 @@ LOG_TRANSACTION_ID_KEY = "log_transaction_id"
 # never reach the client. The keys a token only ever sets on its own ``auth_details`` (NO_FIRST_FACTOR_KEY,
 # CHALLENGE_LAPSED_KEY, SUPPRESS_TERMINAL_EVENT_KEY) are deliberately not here: that dict is the token layer's own
 # state and is never handed to a client - a key that starts travelling in a reply belongs in this set.
+#: The classification keys stripped at the lib/api boundary, so none of them can reach a client.
 INTERNAL_CLASSIFICATION_KEYS = frozenset({AUTH_EVENT_TYPE_KEY, AUTH_EVENT_REASON_KEY, AUTH_EVENT_REASON_DETAIL_KEY,
                                           LOG_TRANSACTION_ID_KEY})
 
@@ -288,7 +291,7 @@ def build_reason_detail(reasons: dict | None = None, policies: list | None = Non
 
     The one place its structure is defined, so every layer that adds to it - the token layer with its per-serial
     findings, a policy layer with the rules that decided - writes the same shape. The detail is *merged* on the way
-    into the row (see :meth:`ConditionalAccessContext.reclassify`), so each layer only passes its own half.
+    into the row (see :meth:`~privacyidea.lib.conditional_access.request_context.ConditionalAccessContext.reclassify`), so each layer only passes its own half.
 
     :param reasons: what each token was found to be, keyed by serial
     :param policies: the names of the policies that decided the request
@@ -322,6 +325,7 @@ class AuthEventOutcome(str, Enum):
 
 # Outcome of each event type. Every AuthEventType must be classified here; EventTypeOutcomeTestCase asserts
 # completeness so a new event type cannot be added without giving it an outcome.
+#: The :class:`AuthEventOutcome` of every :class:`AuthEventType`; read through :func:`outcome_of`.
 EVENT_TYPE_OUTCOME: dict[AuthEventType, AuthEventOutcome] = {
     AuthEventType.LOGIN_SUCCESS: AuthEventOutcome.SUCCESS,
     AuthEventType.CHALLENGE_TRIGGERED: AuthEventOutcome.PENDING,
@@ -359,6 +363,8 @@ EVENT_TYPE_OUTCOME: dict[AuthEventType, AuthEventOutcome] = {
 #
 # Excluding them from the vocabulary makes that structural rather than a warning: the policy-selection join in
 # evaluate_conditional_access_policies can then never match one.
+#: The event types conditional access writes for its own rejections, which no policy may count -
+#: otherwise a lock would keep refreshing itself on the requests it refuses.
 CA_ENFORCEMENT_EVENT_TYPES: frozenset[AuthEventType] = frozenset({
     AuthEventType.USER_LOCKED,
     AuthEventType.IP_BLOCKED,
@@ -427,6 +433,8 @@ class RestrictionCause(str, Enum):
 # Request-level precedence, highest signal first. Only the event types a token flow can produce appear here: the
 # CA_ENFORCEMENT_EVENT_TYPES classify a request the pre-check rejected before any token logic ran, so they never reach
 # reduce_request_events.
+#: Request-level precedence, highest signal first: which staged event classifies a request that
+#: produced several (see :func:`reduce_request_events`).
 REQUEST_EVENT_PRECEDENCE: list[AuthEventType] = [
     AuthEventType.NOT_AUTHORIZED,
     AuthEventType.ENROLLMENT_TRIGGERED,

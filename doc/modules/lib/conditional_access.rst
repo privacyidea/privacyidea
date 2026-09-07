@@ -71,3 +71,17 @@ Per-request context
 .. automodule:: privacyidea.lib.conditional_access.request_context
    :members:
    :undoc-members:
+
+Evaluation context
+~~~~~~~~~~~~~~~~~~~
+
+.. automodule:: privacyidea.lib.conditional_access.context
+   :members:
+   :undoc-members:
+
+Database session
+~~~~~~~~~~~~~~~~~
+
+.. automodule:: privacyidea.lib.conditional_access.session
+   :members:
+   :undoc-members:

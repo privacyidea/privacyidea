@@ -22,7 +22,7 @@ Each is a :class:`ConditionalAccessPolicyTemplate` constant referencing the :cla
 / :class:`ConditionalAccessAction` members directly (so a renamed event type or action
 fails at import, not silently at runtime); ``policy`` is a full payload for
 :func:`~privacyidea.lib.conditional_access.policy.create_conditional_access_policy`.
-The shipped set is the single :data:`_TEMPLATES` tuple - to add a template,
+The shipped set is the single ``_TEMPLATES`` tuple - to add a template,
 define a constant and add it there.
 
 The REST API returns the whole catalog in one call

@@ -150,6 +150,8 @@ class OperatorSpec:
     sql: Callable[[Any, list[str]], Any]
 
 
+#: The condition operators, keyed by :class:`ConditionOperator`: how each one matches in Python and
+#: in SQL, and whether it matches a request carrying no value.
 OPERATORS: dict[str, OperatorSpec] = {
     ConditionOperator.IN: OperatorSpec(
         name=ConditionOperator.IN,
@@ -271,6 +273,8 @@ def _realm_choices() -> list[str]:
     return sorted(get_realms())
 
 
+#: The condition types a policy may apply, keyed by :class:`ConditionType`: the request attribute each
+#: reads, the operators it permits and its currently valid values.
 CONDITION_TYPES: dict[str, ConditionTypeSpec] = {
     ConditionType.USER_REALM: ConditionTypeSpec(
         name=ConditionType.USER_REALM,
