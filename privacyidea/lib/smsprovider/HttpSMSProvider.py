@@ -44,6 +44,7 @@ The code is tested in tests/test_lib_smsprovider
 
 from privacyidea.lib.smsprovider.SMSProvider import ALLOW_PUSH, ISMSProvider, SMSError
 from privacyidea.lib import _
+from privacyidea.lib.error import ConfigAdminError
 import requests
 import json
 from urllib.parse import urlparse
@@ -122,6 +123,9 @@ class HttpSMSProvider(ISMSProvider):
             https_proxy = self.config.get('HTTPS_PROXY')
             parameter = self._get_parameters(message, phone)
             timeout = self.config.get("TIMEOUT") or 3
+
+        if isinstance(message, dict) and (method != "POST" or not json_data):
+            raise SMSError(-1, "Structured messages require HTTP_METHOD=POST and SEND_DATA_AS_JSON=yes.")
 
         log.debug(f"submitting message {message!r} to {phone!s}")
 
@@ -247,6 +251,14 @@ class HttpSMSProvider(ISMSProvider):
         else:
             ret = True
         return ret
+
+    def check_configuration(self):
+        if self.smsgateway and self.allows_push_messages(self.smsgateway):
+            options = self.smsgateway.option_dict
+            if options.get("HTTP_METHOD") != "POST" or options.get("SEND_DATA_AS_JSON") != "yes":
+                raise ConfigAdminError(
+                    "PUSH delivery requires HTTP_METHOD=POST and SEND_DATA_AS_JSON=yes."
+                )
 
     @classmethod
     def parameters(cls):

@@ -792,6 +792,27 @@ class HttpSMSTestCase(MyTestCase):
         self.assertEqual(42, provider._render_option_value("{otp}", "123456", "42"))
         delete_smsgateway(identifier)
 
+    def test_14_reject_push_message_without_json_post(self):
+        identifier = "invalidPushGateway"
+        provider_module = "privacyidea.lib.smsprovider.HttpSMSProvider.HttpSMSProvider"
+        set_smsgateway(identifier, provider_module, description="test",
+                       options={"HTTP_METHOD": "GET",
+                                "URL": "http://push.example.com/send",
+                                "device_token": "{phone}",
+                                "push_payload": "{message}"})
+        self.addCleanup(delete_smsgateway, identifier)
+        provider = create_sms_instance(identifier)
+
+        with self.assertRaisesRegex(SMSError, "Structured messages require"):
+            provider.submit_message("device-token", {"nonce": "123"})
+
+    def test_15_reject_invalid_push_configuration(self):
+        gateway = mock.MagicMock()
+        gateway.option_dict = {ALLOW_PUSH: "yes", "HTTP_METHOD": "GET", "SEND_DATA_AS_JSON": "no"}
+
+        with self.assertRaisesRegex(ConfigAdminError, "PUSH delivery requires"):
+            HttpSMSProvider(smsgateway=gateway).check_configuration()
+
 
 class SmppSMSTestCase(MyTestCase):
     config = {'SMSC_HOST': "192.168.1.1",
