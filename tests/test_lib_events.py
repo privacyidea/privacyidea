@@ -4321,6 +4321,49 @@ class CustomUserAttributesTestCase(MyTestCase):
         self.assertIn('test', a, user)
         self.assertEqual('new', a.get('test'), user)
 
+    def test_06_set_attribute_with_tags(self):
+        # The attribute value supports tags like {now}, {current_time} (with
+        # offsets), {client_ip} and {serial}
+        self.setUp_user_realms()
+        init_token({"serial": "SPASS02", "type": "spass"},
+                   User("cornelius", self.realm1))
+        g = FakeFlaskG()
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "SPASS02"},
+                                 headers={})
+        env = builder.get_environ()
+        env["REMOTE_ADDR"] = "10.0.0.5"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.all_data = {"serial": "SPASS02"}
+        req.User = User("cornelius", self.realm1)
+
+        # {now} with an offset must be replaced by a timestamp, not stored literally
+        options = {"g": g,
+                   "request": req,
+                   "handler_def": {"options": {"attrkey": "last_login",
+                                               "attrvalue": "{now}+2h from {client_ip} ({serial})",
+                                               "user": USER_TYPE.TOKENOWNER}}}
+        t_handler = CustomUserAttributesHandler()
+        res = t_handler.do(CUAH_ACTION_TYPE.SET_CUSTOM_USER_ATTRIBUTES, options=options)
+        self.assertTrue(res)
+
+        value = req.User.attributes.get("last_login")
+        self.assertNotIn("{now}", value, value)
+        self.assertNotIn("{client_ip}", value, value)
+        self.assertIn("from 10.0.0.5", value, value)
+        self.assertIn("(SPASS02)", value, value)
+        # The rendered value must contain the current year of the timestamp
+        self.assertIn(str(datetime.now().year), value, value)
+
+        # An unknown tag must not fail the handler, the raw value is kept
+        options["handler_def"]["options"]["attrvalue"] = "{does_not_exist}"
+        res = t_handler.do(CUAH_ACTION_TYPE.SET_CUSTOM_USER_ATTRIBUTES, options=options)
+        self.assertTrue(res)
+        self.assertEqual("{does_not_exist}", req.User.attributes.get("last_login"))
+
+        remove_token(serial="SPASS02")
+
 
 class WebhookTestCase(MyTestCase):
 

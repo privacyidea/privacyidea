@@ -27,6 +27,7 @@ from privacyidea.lib import _
 import logging
 
 from privacyidea.lib.user import User
+from privacyidea.lib.utils import create_tag_dict, parse_time_offset_from_now
 
 log = logging.getLogger(__name__)
 
@@ -87,7 +88,12 @@ class CustomUserAttributesHandler(BaseEventHandler):
                     'description': _('The key of the custom user attribute that should be set.')},
                 "attrvalue": {
                     'type': 'str',
-                    'description': _('The value of the custom user attribute.')}
+                    'description': _('The value of the custom user attribute. '
+                                     'It may contain tags like {now} (with offsets '
+                                     'such as {now}+2h), {client_ip}, {ua_browser}, '
+                                     '{ua_string}, {serial}, {username}, {userrealm} '
+                                     'and {tokentype}. {current_time} is a deprecated '
+                                     'alias for {now}.')}
             },
             ACTION_TYPE.DELETE_CUSTOM_USER_ATTRIBUTES: {
                 "user": {
@@ -133,6 +139,7 @@ class CustomUserAttributesHandler(BaseEventHandler):
         attrkey = handler_options.get("attrkey")
         attrvalue = handler_options.get("attrvalue")
         if action.lower() == "set_custom_user_attributes":
+            attrvalue = self._render_attrvalue(attrvalue, options, request, g, tokenowner)
             ret = user.set_attribute(attrkey, attrvalue)
         elif action.lower() == "delete_custom_user_attributes":
             ret = user.delete_attribute(attrkey)
@@ -141,3 +148,47 @@ class CustomUserAttributesHandler(BaseEventHandler):
             ret = False
 
         return ret
+
+    @staticmethod
+    def _render_attrvalue(attrvalue, options, request, g, tokenowner):
+        """
+        Substitute the supported tags in the attribute value.
+
+        Besides the tags provided by :func:`create_tag_dict` (like ``{client_ip}``,
+        ``{ua_browser}``, ``{ua_string}``, ``{serial}``, ``{username}`` ...) the
+        placeholders ``{now}`` and ``{current_time}`` are supported, including
+        offsets such as ``{now}+2h``.
+
+        :param attrvalue: The raw attribute value (may contain tags)
+        :return: The attribute value with all tags replaced
+        """
+        if not attrvalue or "{" not in attrvalue:
+            return attrvalue
+
+        # Resolve a possible time offset like {now}+2h and strip it from the string.
+        # The offset is passed to create_tag_dict, which renders {now}/{current_time}.
+        attrvalue, time_delta = parse_time_offset_from_now(attrvalue)
+
+        owner = tokenowner if tokenowner and not tokenowner.is_empty() else None
+        serial = request.all_data.get("serial") if hasattr(request, "all_data") else None
+        serial, tokentype, tokendescription = BaseEventHandler._get_token_data(serial, owner)
+        logged_in_user = g.logged_in_user if hasattr(g, "logged_in_user") else None
+
+        tags = create_tag_dict(logged_in_user=logged_in_user,
+                               request=request,
+                               client_ip=getattr(g, "client_ip", None),
+                               serial=serial,
+                               tokenowner=owner,
+                               tokentype=tokentype,
+                               tokendescription=tokendescription,
+                               time_offset=time_delta)
+
+        try:
+            attrvalue = attrvalue.format(**tags)
+        except Exception as e:
+            # An attribute value that can not be formatted (unknown tag, unbalanced
+            # brace, ...) must not fail the event handling. Keep the raw value.
+            log.warning(f"Could not format the custom user attribute value: {e!r}. "
+                        f"Using the unformatted value.")
+        return attrvalue
+
