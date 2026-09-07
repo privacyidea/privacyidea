@@ -1,4 +1,4 @@
-.. index:: ConditionalAccessNeverBlock
+.. index:: PI_CONDITIONAL_ACCESS_NEVER_BLOCK, never-block
 .. _conditional_access_locks_and_blocks:
 
 Locks and blocks
@@ -38,6 +38,7 @@ The same can be done on the command line with :ref:`pi-manage <pimanage>`::
 
    pi-manage conditionalaccess list-locked-users
    pi-manage conditionalaccess unlock-user <login> --realm <realm>
+   pi-manage conditionalaccess unlock-by-id --uid <uid> --realm <realm>
    pi-manage conditionalaccess clear-locks [--realm <realm>]
    pi-manage conditionalaccess purge-expired-locks
 
@@ -47,14 +48,50 @@ The same can be done on the command line with :ref:`pi-manage <pimanage>`::
    pi-manage conditionalaccess purge-expired-blocks
 
 ``unlock-user`` takes the login name as an argument and requires ``--realm``;
-add ``--resolver`` only if the login exists in more than one resolver. The two
+add ``--resolver`` only if the login exists in more than one resolver.
+``unlock-by-id`` does the same for a user that no longer resolves to a login,
+taking the stored ``--uid`` and ``--realm`` instead, again with ``--resolver``
+only to disambiguate a uid shared between resolvers. The two
 ``clear-`` commands remove everything and ask for confirmation first, so pass
 ``--yes`` when calling them from a script.
 
 .. note:: If you lock yourself out of the WebUI with a source IP policy, use
    ``pi-manage conditionalaccess clear-blocks`` on the server, or add your
-   address to *ConditionalAccessNeverBlock*, see
+   address to ``PI_CONDITIONAL_ACCESS_NEVER_BLOCK``, see
    :ref:`conditional_access_never_block`.
+
+.. _conditional_access_manual_restrictions:
+
+Locking or blocking by hand
+---------------------------
+
+.. index:: manual lock, manual block
+
+A restriction does not have to come from a policy. The *User Lock State* card on
+a user's details page offers a **Lock** action and the *Blocklist* page a **Block
+IP** action; both ask whether the restriction lasts until an administrator lifts
+it (the default) or for a chosen duration. On the command line::
+
+   pi-manage conditionalaccess lock-user <login> --realm <realm> [--duration <seconds>]
+   pi-manage conditionalaccess block-ip <ip> [--duration <seconds>]
+
+A manual restriction is written to the same place a policy writes to and is
+enforced by the same pre-check, so at authentication time it behaves exactly like
+a policy lock, is described by the same *Cause* column, and is lifted by the same
+actions.
+
+Unlike a policy action, a manual write is **authoritative**: an administrator may
+replace a permanent lock with a timed one, which the engine refuses to do to
+itself, since a policy never weakens a restriction - that rule exists so the
+order two policies happen to fire in cannot decide the outcome. An address on the
+never-block list is refused with an explanation rather than silently skipped,
+which is the other way round from the engine, see
+:ref:`conditional_access_never_block`.
+
+Imposing a restriction has rights of its own, ``user_lock_set`` and
+``blocklist_set``, kept apart from the ``*_reset`` rights because clearing a
+restriction is recoverable and imposing one is not.
+
 
 .. _conditional_access_never_block:
 
@@ -62,9 +99,19 @@ Never blocking an address
 -------------------------
 
 Blocking the wrong address can lock out everybody. ``127.0.0.0/8`` and
-``::1/128`` are therefore never blocked. Add further addresses in the
-**ConditionalAccessNeverBlock** entry of the :ref:`system_config` as a
-comma-separated list of IP addresses or CIDR networks.
+``::1/128`` are therefore never blocked. Add further addresses in
+``PI_CONDITIONAL_ACCESS_NEVER_BLOCK`` in the :ref:`configuration file <cfgfile>`,
+either as a list of entries or as one string separated by commas or whitespace;
+each entry is a CIDR network or a bare IP address. An entry that cannot be parsed
+is logged and ignored, so a typo falls back to the loopback defaults rather than
+breaking authentication.
+
+.. note:: This is deliberately a server-configuration setting rather than one in
+   the :ref:`system_config`: it is the safety net that keeps an administrator from
+   locking themselves out, so it must not be reachable through the very API a
+   mistaken ``BLOCK_IP`` policy - or an attacker - could be acting through.
+   Changing it needs file access to the server and takes effect when the service
+   is reloaded.
 
 The exemption is checked both when a block is created and when an existing one
 is enforced, so adding an address immediately stops a block already in force
@@ -79,4 +126,4 @@ block is sent as usual.
    ``OverrideAuthorizationClient`` in the :ref:`system_config`. Otherwise every
    request appears to come from the proxy, and a single ``BLOCK_IP`` action
    blocks all of them. List your proxies, load balancers and management
-   networks in *ConditionalAccessNeverBlock*.
+   networks in ``PI_CONDITIONAL_ACCESS_NEVER_BLOCK``.
