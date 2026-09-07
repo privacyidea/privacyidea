@@ -1259,28 +1259,55 @@ class PIManageConditionalAccessPolicyTestCase(CliTestCase):
     def test_05_disable_policy_by_id(self):
         runner = self.app.test_cli_runner()
         policy_id = self._create_policy()
-        res = runner.invoke(pi_manage, ["conditionalaccess", "disable-policy", str(policy_id)])
+        res = runner.invoke(pi_manage, ["conditionalaccess", "disable-policy", "--id", str(policy_id)])
         self.assertEqual(0, res.exit_code, res.output)
         self.assertFalse(db.session.get(ConditionalAccessPolicy, policy_id).enabled)
 
-    def test_06_numeric_name_wins_over_the_id(self):
-        # A policy may legitimately be named "1"; the name must not be shadowed by another policy's id.
+    def test_06_numeric_name_is_never_taken_for_an_id(self):
+        # A policy may legitimately be named "1" while another policy has the id 1. The argument is always a
+        # name and --id is always an id, so neither spelling can address the other's policy.
         runner = self.app.test_cli_runner()
         by_id = self._create_policy(name="by-id", priority=1)
         by_name = self._create_policy(name=str(by_id), priority=2)
+
         res = runner.invoke(pi_manage, ["conditionalaccess", "disable-policy", str(by_id)])
         self.assertEqual(0, res.exit_code, res.output)
         self.assertFalse(db.session.get(ConditionalAccessPolicy, by_name).enabled)
         self.assertTrue(db.session.get(ConditionalAccessPolicy, by_id).enabled)
 
+        res = runner.invoke(pi_manage, ["conditionalaccess", "disable-policy", "--id", str(by_id)])
+        self.assertEqual(0, res.exit_code, res.output)
+        self.assertFalse(db.session.get(ConditionalAccessPolicy, by_id).enabled)
+
     def test_07_unknown_policy_fails(self):
         runner = self.app.test_cli_runner()
-        for identifier in ("ghost", "4711"):
-            res = runner.invoke(pi_manage, ["conditionalaccess", "disable-policy", identifier])
-            self.assertEqual(1, res.exit_code, res.output)
-            self.assertIn(f"No conditional-access policy with the name or id '{identifier}'", res.output, res)
+        res = runner.invoke(pi_manage, ["conditionalaccess", "disable-policy", "ghost"])
+        self.assertEqual(1, res.exit_code, res.output)
+        self.assertIn("No conditional-access policy with the name 'ghost'.", res.output, res)
 
-    def test_08_toggle_dry_run(self):
+        res = runner.invoke(pi_manage, ["conditionalaccess", "disable-policy", "--id", "4711"])
+        self.assertEqual(1, res.exit_code, res.output)
+        self.assertIn("No conditional-access policy with the id 4711.", res.output, res)
+
+    def test_08_missing_name_points_at_the_id_option(self):
+        # A numeric argument is a name, not an id; the error says how to ask for the id instead.
+        runner = self.app.test_cli_runner()
+        res = runner.invoke(pi_manage, ["conditionalaccess", "disable-policy", "4711"])
+        self.assertEqual(1, res.exit_code, res.output)
+        self.assertIn("No conditional-access policy with the name '4711'.", res.output, res)
+        self.assertIn("If you meant the id, use '--id 4711'.", res.output, res)
+
+    def test_09_selector_must_be_unambiguous(self):
+        runner = self.app.test_cli_runner()
+        policy_id = self._create_policy()
+        for args in (["conditionalaccess", "disable-policy"],
+                     ["conditionalaccess", "disable-policy", "lockdown", "--id", str(policy_id)]):
+            res = runner.invoke(pi_manage, args)
+            self.assertEqual(2, res.exit_code, res.output)
+            self.assertIn("Give either the policy NAME or --id, not both.", res.output, res)
+        self.assertTrue(db.session.get(ConditionalAccessPolicy, policy_id).enabled)
+
+    def test_10_toggle_dry_run(self):
         runner = self.app.test_cli_runner()
         policy_id = self._create_policy()
 
@@ -1301,7 +1328,7 @@ class PIManageConditionalAccessPolicyTestCase(CliTestCase):
         res = runner.invoke(pi_manage, ["conditionalaccess", "disable-dry-run", "lockdown"])
         self.assertIn("is not in dry run", res.output, res)
 
-    def test_09_delete_policy(self):
+    def test_11_delete_policy(self):
         runner = self.app.test_cli_runner()
         policy_id = self._create_policy()
 
@@ -1315,11 +1342,11 @@ class PIManageConditionalAccessPolicyTestCase(CliTestCase):
         self.assertIn(f"Deleted conditional-access policy 'lockdown' (id {policy_id}).", res.output, res)
         self.assertIsNone(db.session.get(ConditionalAccessPolicy, policy_id))
 
-    def test_10_delete_policy_removes_stages_and_actions(self):
+    def test_12_delete_policy_removes_stages_and_actions(self):
         runner = self.app.test_cli_runner()
         policy_id = self._create_policy()
         stage_ids = [stage.id for stage in db.session.get(ConditionalAccessPolicy, policy_id).stages]
-        res = runner.invoke(pi_manage, ["conditionalaccess", "delete-policy", str(policy_id), "--yes"])
+        res = runner.invoke(pi_manage, ["conditionalaccess", "delete-policy", "--id", str(policy_id), "--yes"])
         self.assertEqual(0, res.exit_code, res.output)
         self.assertEqual(0, ConditionalAccessPolicyStage.query.filter(
             ConditionalAccessPolicyStage.id.in_(stage_ids)).count())

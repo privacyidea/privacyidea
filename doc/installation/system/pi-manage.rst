@@ -180,7 +180,7 @@ list the policies, disable one, put it into dry run or delete it, and lift the
 locks and blocks that are in force::
 
    pi-manage conditionalaccess list-policies
-   pi-manage conditionalaccess disable-policy <name|id>
+   pi-manage conditionalaccess disable-policy <name>
    pi-manage conditionalaccess list-locked-users
    pi-manage conditionalaccess clear-blocks
 

@@ -27,6 +27,9 @@ policy has already done - a policy that keeps refusing requests (a ``DENY`` at
 threshold 0, say) has to be disabled, put into dry run or deleted, which is what
 the ``*-policy`` and ``*-dry-run`` commands are for.
 """
+from collections.abc import Callable
+from typing import Any, TypeVar
+
 import click
 from flask.cli import AppGroup
 from sqlalchemy import select
@@ -51,6 +54,12 @@ conditional_access_cli = AppGroup("conditionalaccess",
                                        "blocks they produced")
 
 
+# The undecorated callback a command decorator is stacked on. click declares its own argument/option
+# decorators as Callable[[FC], FC] with FC private to click.decorators, so this mirrors that shape rather
+# than importing the internal name.
+_CommandCallback = TypeVar("_CommandCallback", bound=Callable[..., Any])
+
+
 def _format_expiry(expires_at):
     return expires_at.isoformat() if expires_at else "permanent"
 
@@ -59,19 +68,40 @@ def _yes_no(value) -> str:
     return "yes" if value else "no"
 
 
-def _resolve_policy(identifier: str) -> ConditionalAccessPolicy:
+def _policy_selector(command: _CommandCallback) -> _CommandCallback:
     """
-    Look a policy up by name, falling back to its id.
+    Add the policy selector every policy command shares: the ``NAME`` argument, or ``--id``.
 
-    The name is what an administrator reads off ``list-policies`` and is unique, so it
-    wins; the numeric id is tried only when no policy carries that name, which keeps a
-    policy whose name happens to be a number reachable by both.
+    The two spellings are kept strictly apart. A policy name may itself be a number, so a single
+    argument resolved by precedence would let ``delete-policy 7`` address a policy *named* "7"
+    while the caller meant the policy *with id* 7 - silently deleting the wrong one. Here the
+    argument is always a name and ``--id`` is always an id, so there is nothing to guess.
     """
-    policy = db.session.scalar(select(ConditionalAccessPolicy).where(ConditionalAccessPolicy.name == identifier))
-    if not policy and identifier.isdigit():
-        policy = db.session.get(ConditionalAccessPolicy, int(identifier))
+    command = click.option("--id", "policy_id", type=int,
+                           help="Address the policy by its numeric id instead of its name.")(command)
+    return click.argument("name", required=False)(command)
+
+
+def _select_policy(name: str | None, policy_id: int | None) -> ConditionalAccessPolicy:
+    """
+    Fetch the policy the selector addresses.
+
+    :raises click.UsageError: if both spellings, or neither, were given
+    :raises click.ClickException: if no such policy exists
+    """
+    if (name is None) == (policy_id is None):
+        raise click.UsageError("Give either the policy NAME or --id, not both.")
+    if policy_id is not None:
+        policy = db.session.get(ConditionalAccessPolicy, policy_id)
+        if not policy:
+            raise click.ClickException(f"No conditional-access policy with the id {policy_id}. "
+                                       f"Run 'pi-manage conditionalaccess list-policies' to see them.")
+        return policy
+    policy = db.session.scalar(select(ConditionalAccessPolicy).where(ConditionalAccessPolicy.name == name))
     if not policy:
-        raise click.ClickException(f"No conditional-access policy with the name or id '{identifier}'. "
+        # A name is never retried as an id, see _policy_selector; point at the explicit spelling instead.
+        hint = f" If you meant the id, use '--id {name}'." if name.isdigit() else ""
+        raise click.ClickException(f"No conditional-access policy with the name '{name}'.{hint} "
                                    f"Run 'pi-manage conditionalaccess list-policies' to see them.")
     return policy
 
@@ -98,31 +128,31 @@ def list_policies():
                    f"{_yes_no(policy['dry_run']):8} {policy['priority']:<9} {policy['target']}")
 
 
-@conditional_access_cli.command("enable-policy", help="Enable a single policy, given by its name or id.")
-@click.argument("policy")
-def enable_policy(policy):
-    row = _resolve_policy(policy)
-    label = _policy_label(row)
-    if row.enabled:
+@conditional_access_cli.command("enable-policy", help="Enable a single policy, given by its name or --id.")
+@_policy_selector
+def enable_policy(name: str | None, policy_id: int | None) -> None:
+    policy = _select_policy(name, policy_id)
+    label = _policy_label(policy)
+    if policy.enabled:
         click.echo(f"Conditional-access policy {label} is already enabled.")
         return
-    enable_conditional_access_policy(row.id, enable=True)
+    enable_conditional_access_policy(policy.id, enable=True)
     click.echo(f"Enabled conditional-access policy {label}.")
 
 
 @conditional_access_cli.command("disable-policy",
-                                help="Disable a single policy, given by its name or id. The policy stops being "
+                                help="Disable a single policy, given by its name or --id. The policy stops being "
                                      "evaluated; locks and blocks it already wrote stay in force.")
-@click.argument("policy")
-def disable_policy(policy):
+@_policy_selector
+def disable_policy(name: str | None, policy_id: int | None) -> None:
     # The way back in from an over-strict policy: it is no longer evaluated, so it cannot refuse
     # the next request. What it already wrote is separate state - clear that with clear-locks/clear-blocks.
-    row = _resolve_policy(policy)
-    label = _policy_label(row)
-    if not row.enabled:
+    policy = _select_policy(name, policy_id)
+    label = _policy_label(policy)
+    if not policy.enabled:
         click.echo(f"Conditional-access policy {label} is already disabled.")
         return
-    enable_conditional_access_policy(row.id, enable=False)
+    enable_conditional_access_policy(policy.id, enable=False)
     click.echo(f"Disabled conditional-access policy {label}. Locks and blocks it already wrote stay in "
                f"force; clear them with clear-locks / clear-blocks.")
 
@@ -130,42 +160,42 @@ def disable_policy(policy):
 @conditional_access_cli.command("enable-dry-run",
                                 help="Put a policy into dry run: it is still evaluated and logged, but nothing "
                                      "is enforced.")
-@click.argument("policy")
-def enable_dry_run(policy):
-    row = _resolve_policy(policy)
-    label = _policy_label(row)
-    if row.dry_run:
+@_policy_selector
+def enable_dry_run(name: str | None, policy_id: int | None) -> None:
+    policy = _select_policy(name, policy_id)
+    label = _policy_label(policy)
+    if policy.dry_run:
         click.echo(f"Conditional-access policy {label} is already in dry run.")
         return
-    update_conditional_access_policy(row.id, dry_run=True)
+    update_conditional_access_policy(policy.id, dry_run=True)
     click.echo(f"Conditional-access policy {label} is now in dry run: nothing it decides is enforced.")
 
 
 @conditional_access_cli.command("disable-dry-run",
                                 help="Take a policy out of dry run, so its actions are enforced again.")
-@click.argument("policy")
-def disable_dry_run(policy):
-    row = _resolve_policy(policy)
-    label = _policy_label(row)
-    if not row.dry_run:
+@_policy_selector
+def disable_dry_run(name: str | None, policy_id: int | None) -> None:
+    policy = _select_policy(name, policy_id)
+    label = _policy_label(policy)
+    if not policy.dry_run:
         click.echo(f"Conditional-access policy {label} is not in dry run.")
         return
-    update_conditional_access_policy(row.id, dry_run=False)
+    update_conditional_access_policy(policy.id, dry_run=False)
     click.echo(f"Conditional-access policy {label} is no longer in dry run: its actions are enforced again.")
 
 
 @conditional_access_cli.command("delete-policy",
-                                help="Delete a single policy, given by its name or id, with all its stages and "
+                                help="Delete a single policy, given by its name or --id, with all its stages and "
                                      "actions.")
-@click.argument("policy")
+@_policy_selector
 @click.option("--yes", is_flag=True, help="Do not ask for confirmation.")
-def delete_policy(policy, yes):
-    row = _resolve_policy(policy)
-    label = _policy_label(row)
+def delete_policy(name: str | None, policy_id: int | None, yes: bool) -> None:
+    policy = _select_policy(name, policy_id)
+    label = _policy_label(policy)
     # The configuration is gone for good, so confirm by default; --yes is there for scripts.
     if not yes:
         click.confirm(f"Delete conditional-access policy {label}?", abort=True)
-    delete_conditional_access_policy(row.id)
+    delete_conditional_access_policy(policy.id)
     click.echo(f"Deleted conditional-access policy {label}.")
 
 

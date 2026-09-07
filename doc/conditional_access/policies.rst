@@ -270,16 +270,22 @@ you need when a policy has locked you out of the WebUI itself - an unscoped
 ``DENY``, say::
 
    pi-manage conditionalaccess list-policies
-   pi-manage conditionalaccess disable-policy <name|id>
-   pi-manage conditionalaccess enable-policy <name|id>
-   pi-manage conditionalaccess enable-dry-run <name|id>
-   pi-manage conditionalaccess disable-dry-run <name|id>
-   pi-manage conditionalaccess delete-policy <name|id> [--yes]
+   pi-manage conditionalaccess disable-policy <name>
+   pi-manage conditionalaccess enable-policy <name>
+   pi-manage conditionalaccess enable-dry-run <name>
+   pi-manage conditionalaccess disable-dry-run <name>
+   pi-manage conditionalaccess delete-policy <name> [--yes]
 
 ``list-policies`` prints one line per policy - name, id, enabled and dry-run
 state, priority and target - lowest priority number first, which is the order
-the policies are evaluated in. Every other command takes either the name or the
-id, whichever is quicker to type.
+the policies are evaluated in.
+
+Every other command addresses one policy, either by the name given as its
+argument or by ``--id`` - which is the handier one for a name that contains
+spaces::
+
+   pi-manage conditionalaccess disable-policy --id 7
+
 
 ``disable-policy`` is the way back in: the policy is no longer evaluated, so it
 cannot refuse the next request. ``enable-dry-run`` is the gentler variant - the
