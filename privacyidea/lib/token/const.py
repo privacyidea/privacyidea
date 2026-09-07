@@ -8,3 +8,8 @@ ENCODING = "utf-8"
 PI_TOKEN_SERIAL_RANDOM = "PI_TOKEN_SERIAL_RANDOM"  # nosec B105
 
 B32_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567'
+
+# Token info key on a replacement token of the lost token process, holding the serial of the
+# token it replaces. It links the replacements of a token together, so that an earlier one can
+# be disabled when a new one is issued.
+LOST_TOKEN_FOR = "lost_token_for"  # nosec B105

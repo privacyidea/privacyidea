@@ -1457,6 +1457,47 @@ def check_token_action(request: Request = None, action: str = None):
     return True
 
 
+def check_copy_token_action(request: Request = None, action: str = None):
+    """
+    This decorator function takes the request and verifies the given action for both tokens of a copy operation.
+
+    The copy endpoints name their tokens ``from`` and ``to`` instead of ``serial``, so ``check_token_action`` does not
+    pick them up. Both ends are verified, because the operation reads the source token and writes to the destination
+    token. As in ``check_token_action``, the token realms are passed as additional_realms to the policy match, so an
+    admin restricted to certain realms only passes for tokens in those realms.
+
+    A serial that does not resolve to exactly one token is skipped here: the copy functions in the lib reject it with
+    a dedicated error, which stays the caller-visible result.
+
+    :param request: The request object
+    :param action: The action to check if the user is allowed to perform it
+    :return: True otherwise raises an Exception
+    """
+    params = request.all_data
+    user = request.User
+    resolver = user.resolver if user else None
+    (role, username, realm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user, params)
+    user_attributes = UserAttributes(role, username, realm, resolver, adminuser, adminrealm)
+    user_attributes.user = user if user else None
+
+    serials = []
+    for parameter_name in ["from", "to"]:
+        serial = params.get(parameter_name)
+        if not serial:
+            raise ParameterError(f"Missing parameter: '{parameter_name}'")
+        serials.append(serial)
+
+    for serial in serials:
+        try:
+            allowed = check_token_action_allowed(g, action, serial, replace(user_attributes))
+        except ResourceNotFoundError:
+            continue
+        if not allowed:
+            raise PolicyError(f"{role.capitalize()} actions are defined, but the action {action} is not allowed "
+                              f"for the token {serial}!")
+    return True
+
+
 def check_token_list_action(request: Request = None, action: str = None):
     """
     This decorator function takes the request and verifies the given action for the SCOPE ADMIN or USER.
@@ -1821,7 +1862,7 @@ def api_key_required(request=None, action=None):
     If so, the validate request will only be performed, if a JWT token is passed
     with role=validate.
 
-    .. deprecated::
+    .. deprecated:: 3.14
         The ``api_key_required`` policy and its ``Authorization`` JWT (minted by
         ``pi-manage api createtoken``) are deprecated and will be removed in a
         future release. The X-API-Key API clients feature is intended to replace

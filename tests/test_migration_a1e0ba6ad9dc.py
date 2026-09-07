@@ -23,7 +23,7 @@ import os
 
 import pytest
 
-from tests.migration_test_utils import MigrationTestBase, is_postgres
+from tests.migration_test_utils import MigrationTestBase, quote_identifier
 
 pytestmark = [
     pytest.mark.migration,
@@ -64,8 +64,8 @@ class TestMigrationA1e0ba6ad9dc(MigrationTestBase):
         )
 
     def _fetch_tokeninfo_value(self, engine, token_id: int, key: str) -> str | None:
-        key_col = '"Key"' if is_postgres() else "`Key`"
-        val_col = '"Value"' if is_postgres() else "`Value`"
+        key_col = quote_identifier("Key")
+        val_col = quote_identifier("Value")
         return self._fetch_scalar(
             engine,
             f"SELECT {val_col} FROM tokeninfo WHERE token_id = :tid AND {key_col} = :key",

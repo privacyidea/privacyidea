@@ -27,9 +27,10 @@ import { Component, input, output } from "@angular/core";
 export class MockSelectorButtonsComponent<T> {
   readonly initialValue = input.required<T | undefined>();
   readonly values = input.required<T[]>();
-  readonly labels = input<T[] | undefined>(undefined);
+  readonly labels = input<string[] | undefined>(undefined);
+  readonly icons = input<string[] | undefined>(undefined);
   readonly allowDeselect = input<boolean>(false);
   readonly disabled = input<boolean>(false);
-  readonly valueSelected = output<T | undefined>();
+  readonly selected = output<T | undefined>();
   focusFirst = jest.fn();
 }
