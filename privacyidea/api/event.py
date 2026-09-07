@@ -198,8 +198,9 @@ def set_eventhandling():
     .. warning::
        Updates are only partially incremental:
 
-       * ``action`` and ``position`` are silently reset to empty strings if
-         omitted, so always send them.
+       * ``position``, ``ordering`` and ``active`` fall back to their defaults
+         (``post``, ``0`` and ``True``) if omitted instead of keeping the stored
+         value, so an update should always send the complete binding.
        * ``conditions`` and ``options`` are only replaced when supplied.
          Omitting the ``conditions`` parameter and all ``option.*`` parameters
          keeps the stored values untouched.
