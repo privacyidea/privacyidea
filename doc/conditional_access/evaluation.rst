@@ -32,10 +32,13 @@ point, so they apply from the *next* request onwards.
 Rejection messages
 ------------------
 
-A refused ``/validate/`` request returns the same generic failure as a wrong
-password, so a client learns nothing about why it failed. The reason is in the
-authentication log and in the :ref:`audit` log.
+A refused request returns the same generic failure as a wrong password, so the
+client learns nothing about why it failed - the reason is in the
+:ref:`authentication_log` and in the :ref:`audit` log. That is the default and
+it applies to the WebUI login as well as to the ``/validate/`` endpoints.
 
-On the WebUI login the message names the restriction instead, so the user knows
-whether to wait or to call the help desk. Set the ``hide_specific_error_message``
-policy (see :ref:`authentication_policies`) to mask it there as well.
+An administrator can choose to say more, either by writing an error message on
+the stage that refuses, or by setting the ``show_default_ca_error_message``
+policy. What is then shown, and how it relates to
+``hide_specific_error_message`` and ``no_detail_on_fail``, is described in
+:ref:`conditional_access_error_messages`.

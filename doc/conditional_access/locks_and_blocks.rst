@@ -9,6 +9,21 @@ administrator lifts it. Both are listed in the WebUI, where they can also be
 lifted, and individual addresses or whole networks can be exempted from ever
 being blocked.
 
+A **Cause** column says whether a conditional access policy or an administrator imposed the
+restriction now in force - *Policy* or *Manual* - and can be filtered on. It
+describes the restriction on record rather than its history: an administrator who
+replaces a policy lock by hand turns it into a manual one, and a policy that
+strengthens a manual lock turns it back, because the cause is written together
+with the expiry it belongs to. A manual restriction is also the one that no
+threshold created, so it lifts only when someone lifts it or its own duration
+runs out.
+
+Each entry also shows the error message the restriction carries - what the
+affected user is being told, or nothing where the stage said nothing. It is a
+copy taken when the restriction was written, see
+:ref:`conditional_access_error_messages_snapshot`.
+
+
 .. _conditional_access_policies_lifting:
 
 Lifting locks and blocks

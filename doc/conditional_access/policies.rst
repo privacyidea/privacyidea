@@ -155,6 +155,11 @@ subject has done.
    the ``pi-manage conditionalaccess`` reset commands can lift it; undoing an
    unscoped one means disabling the policy in the database.
 
+Each stage also has an optional **error message**, the text an end user sees when
+a request is turned away by that stage. It is empty by default, which keeps a
+rejection indistinguishable from any other failed authentication, see
+:ref:`conditional_access_error_messages`.
+
 .. _conditional_access_policies_actions:
 
 Actions
