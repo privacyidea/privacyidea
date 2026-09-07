@@ -185,6 +185,20 @@ describe("TableUtilsService", () => {
       expect(service.getDisplayText("rollout_state", {})).toBe("");
     });
 
+    const tokenTypeCases: [string, string][] = [
+      ["hotp", "HOTP"],
+      ["applspec", "Application Specific Password"],
+      ["pw", "Static Password"],
+      ["mystery", "mystery"]
+    ];
+    it.each(tokenTypeCases)('maps tokentype "%s" → "%s"', (tokenType, expected) => {
+      expect(service.getDisplayText("tokentype", { tokentype: tokenType })).toBe(expected);
+    });
+
+    it("returns an empty string for a missing tokentype", () => {
+      expect(service.getDisplayText("tokentype", {})).toBe("");
+    });
+
     const auditCellCases: [string, TableCellValue, string][] = [
       ["success", true, "Yes"],
       ["success", false, "No"],

@@ -35,6 +35,12 @@ describe("tokenTypeLabel", () => {
     expect(tokenTypeLabel("")).toBeUndefined();
   });
 
+  it("returns undefined for the members of Object.prototype", () => {
+    expect(tokenTypeLabel("constructor")).toBeUndefined();
+    expect(tokenTypeLabel("__proto__")).toBeUndefined();
+    expect(tokenTypeLabel("toString")).toBeUndefined();
+  });
+
   it("returns display names for token types that are no longer offered for enrollment", () => {
     expect(tokenTypeLabel("pw")).toBe("Static Password");
     expect(tokenTypeLabel("ocra")).toBe("OCRA");

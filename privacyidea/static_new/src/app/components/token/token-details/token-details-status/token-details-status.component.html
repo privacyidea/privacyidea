@@ -24,7 +24,7 @@
     <app-detail-field
       label="Type"
       i18n-label="@@common.type"
-      [displayText]="str(tokenDetails().tokentype)" />
+      [displayText]="tokenTypeDisplay()" />
     @if (selfService()) {
       <app-detail-field
         label="Status"

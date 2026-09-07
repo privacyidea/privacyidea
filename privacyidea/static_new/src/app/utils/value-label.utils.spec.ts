@@ -97,16 +97,16 @@ describe("valueDisplayLabel", () => {
 
   it("keeps names that happen to be spelled like vocabulary values", () => {
     // The values alone do not say where a list comes from, so the vocabulary stays off unless the
-    // caller vouches for its list. Realms called "admin"/"user" or token groups called
-    // "offline"/"biometric" are ordinary names, not a closed vocabulary.
-    expect(valueDisplayLabels(["admin", "user"])).toBeUndefined();
-    expect(valueDisplayLabels(["offline", "biometric"])).toBeUndefined();
-    expect(valueDisplayLabels(["userstore", "email", "none"])).toBeUndefined();
-    expect(valueDisplayLabel("admin", ["admin", "user"])).toBe("admin");
+    // caller vouches for its list. Realms called "active"/"verify" or token groups called
+    // "locked"/"lost" are ordinary names, not a closed vocabulary.
+    expect(valueDisplayLabels(["active", "verify"])).toBeUndefined();
+    expect(valueDisplayLabels(["locked", "lost"])).toBeUndefined();
+    expect(valueDisplayLabels(["userstore", "none"])).toBeUndefined();
+    expect(valueDisplayLabel("active", ["active", "verify"])).toBe("active");
   });
 
   it("labels the same list once the caller vouches for it", () => {
-    expect(valueDisplayLabels(["admin", "user"], { vocabulary: true })).toEqual(["Administrator", "User"]);
+    expect(valueDisplayLabels(["active", "verify"], { vocabulary: true })).toEqual(["Active", "Verify"]);
   });
 
   it("keeps a value that is not plain lower-case", () => {
@@ -125,33 +125,48 @@ describe("valueDisplayLabel", () => {
     expect(valueDisplayLabel("hotp", ["hotp", "totp"])).toBe("HOTP");
   });
 
-  it("maps token type keys of a list that also holds unknown types", () => {
-    const backendValues = ["hotp", "totp", "pw", "ocra", "bogus"];
-    expect(valueDisplayLabel("hotp", backendValues)).toBe("HOTP");
+  it("maps the token types that are no longer offered for enrollment", () => {
+    const backendValues = ["hotp", "totp", "pw", "ocra"];
     expect(valueDisplayLabel("pw", backendValues)).toBe("Static Password");
     expect(valueDisplayLabel("ocra", backendValues)).toBe("OCRA");
-    expect(valueDisplayLabel("bogus", backendValues)).toBe("bogus");
+  });
+
+  it("keeps every value of a list that holds something else than token types", () => {
+    // One unknown value is enough: the list is then a list of names the installation chose, or a
+    // token type this frontend does not know, and either way renaming its neighbours is wrong.
+    const mixedValues = ["hotp", "totp", "bogus"];
+    expect(valueDisplayLabel("hotp", mixedValues)).toBe("hotp");
+    expect(valueDisplayLabel("bogus", mixedValues)).toBe("bogus");
+    expect(valueDisplayLabels(mixedValues)).toBeUndefined();
+  });
+
+  it("keeps the names of realms that are spelled like token types", () => {
+    // Two realms called "email" and "sms" are named by the installation, not a token type list.
+    expect(valueDisplayLabels(["email", "sms", "corporate"])).toBeUndefined();
+    expect(valueDisplayLabel("email", ["email", "sms", "corporate"])).toBe("email");
   });
 
   it("keeps values untouched when a single value is the only token type of the list", () => {
     expect(valueDisplayLabel("push", ["push", "poll"])).toBe("push");
   });
 
-  it("prefers the token type name over the vocabulary in a token type list", () => {
-    expect(valueDisplayLabel("yubikey", ["hotp", "totp", "yubikey"])).toBe("Yubikey AES Mode");
-    expect(valueDisplayLabel("yubikey", ["generic", "smartphone", "yubikey"], { vocabulary: true })).toBe("Yubikey");
+  it("keeps the members of Object.prototype out of both label sources", () => {
+    expect(valueDisplayLabel("constructor", ["constructor", "__proto__"], { vocabulary: true })).toBe("constructor");
+    expect(valueDisplayLabel("hotp", ["hotp", "constructor"])).toBe("hotp");
+    expect(valueDisplayLabels(["toString", "valueOf"], { vocabulary: true })).toBeUndefined();
   });
 
+  // Every list an opted-in call site can hand in: the four shared constant lists are covered in the
+  // valueDisplayLabels suite, these are the value lists of POLICY_VOCABULARY_ACTIONS and the audit
+  // authentication column. A value the vocabulary misses would leave its whole list unlabeled.
   const vocabularyLists: [string, string[], string[]][] = [
+    ["autoassignment", ["any_pin", "userstore"], ["Any PIN", "User store"]],
+    ["hashlib", ["sha1", "sha256", "sha512"], ["SHA-1", "SHA-256", "SHA-512"]],
+    ["login_mode", ["userstore", "privacyIDEA", "disable"], ["User store", "privacyIDEA", "Disabled"]],
+    ["otppin", ["tokenpin", "userstore", "none"], ["Token PIN", "User store", "None"]],
     ["remote_user", ["disable", "allowed", "force"], ["Disabled", "Allowed", "Forced"]],
-    ["passkey login button", ["show", "hide"], ["Show", "Hide"]],
-    ["logged in user", ["admin", "user"], ["Administrator", "User"]],
-    ["script mode", ["background", "wait"], ["In background", "Wait"]],
-    ["notification mimetype", ["plain", "html"], ["Plain text", "HTML"]],
-    ["token application", ["ssh", "offline", "luks"], ["SSH", "Offline", "LUKS"]],
-    ["container type", ["generic", "smartphone", "yubikey"], ["Generic", "Smartphone", "Yubikey"]],
-    ["authentication", ["ACCEPT", "REJECT", "CHALLENGE", "DECLINED"], ["Accept", "Reject", "Challenge", "Declined"]],
-    ["login mode", ["userstore", "privacyIDEA", "disable"], ["User store", "privacyIDEA", "Disabled"]]
+    ["timeout_action", ["logout", "lockscreen"], ["Logout", "Lock screen"]],
+    ["authentication", ["ACCEPT", "REJECT", "CHALLENGE", "DECLINED"], ["Accept", "Reject", "Challenge", "Declined"]]
   ];
   it.each(vocabularyLists)("labels every value of the %s list", (_name, values, expected) => {
     expect(values.map((value) => valueDisplayLabel(value, values, { vocabulary: true }))).toEqual(expected);

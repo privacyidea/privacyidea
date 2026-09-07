@@ -21,6 +21,7 @@ import { Sort } from "@angular/material/sort";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContainerDetailToken } from "@services/container/container.service";
+import { tokenTypeLabel } from "@utils/token.utils";
 import {
   AUTHENTICATION_VALUES,
   booleanDisplayLabel,
@@ -163,6 +164,13 @@ const CELL_FORMATTERS = new Map<string, (element: TableRow) => string | undefine
       return typeof state === "string" ? valueDisplayLabel(state, ROLLOUT_STATE_VALUES, { vocabulary: true }) : "";
     }
   ],
+  [
+    "tokentype",
+    (element) => {
+      const tokenType = element["tokentype"];
+      return typeof tokenType === "string" ? (tokenTypeLabel(tokenType) ?? tokenType) : undefined;
+    }
+  ],
   ["success", (element) => booleanDisplayLabel(displayableCell(element["success"]), "predicate")],
   [
     "authentication",
@@ -251,6 +259,7 @@ export class TableUtilsService implements TableUtilsServiceInterface {
   getDisplayText(columnKey: string, element: TableRow): string {
     const formatted = CELL_FORMATTERS.get(columnKey)?.(element);
     if (formatted !== undefined) return formatted;
+    // Own properties only - a column named "toString" must not render Object.prototype's member.
     const cell = Object.hasOwn(element, columnKey) ? element[columnKey] : undefined;
     return cell == null ? "" : String(cell);
   }

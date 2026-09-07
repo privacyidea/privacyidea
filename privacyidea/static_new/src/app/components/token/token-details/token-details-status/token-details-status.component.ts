@@ -26,6 +26,7 @@ import { DetailsCardComponent } from "@components/shared/details-shared/details-
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { TokenDetails, TokenService, TokenServiceInterface } from "@services/token/token.service";
+import { tokenTypeLabel } from "@utils/token.utils";
 import { ROLLOUT_STATE_VALUES, tokenStateLabel, valueDisplayLabel } from "@utils/value-label.utils";
 import { formatTokenTimestamp } from "../token-details.constants";
 
@@ -54,6 +55,10 @@ export class TokenDetailsStatusComponent {
   protected readonly lastAuthDisplay = computed(
     () => formatTokenTimestamp(this.tokenDetails().info?.["last_auth"]) ?? ""
   );
+  protected readonly tokenTypeDisplay = computed(() => {
+    const tokenType = this.tokenDetails().tokentype;
+    return tokenType ? (tokenTypeLabel(tokenType) ?? tokenType) : "";
+  });
   protected readonly rolloutStateDisplay = computed(() =>
     valueDisplayLabel(this.tokenDetails().rollout_state, ROLLOUT_STATE_VALUES, { vocabulary: true })
   );

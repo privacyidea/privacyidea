@@ -33,17 +33,16 @@ const BOOLEAN_PRESET_LABELS: Record<BooleanValueLabelPreset, readonly [string, s
   predicate: [$localize`:@@valueLabelNo:No`, $localize`:@@valueLabelYes:Yes`]
 };
 
+/**
+ * Labels for the values of a closed backend vocabulary. Every entry must be reachable from a call
+ * site that opts into the vocabulary (see `ValueLabelOptions.vocabulary`) - a label no dropdown can
+ * show is a string the translators pay for and nobody reads.
+ */
 const VALUE_VOCABULARY: Record<string, string> = {
   accept: $localize`:@@valueLabelAccept:Accept`,
   active: $localize`:@@valueLabelActive:Active`,
-  admin: $localize`:@@valueLabelAdministrator:Administrator`,
-  "admin realm": $localize`:@@valueLabelAdminRealm:Admin realm`,
-  allow: $localize`:@@valueLabelAllowed:Allowed`,
   allowed: $localize`:@@valueLabelAllowed:Allowed`,
-  any: $localize`:@@valueLabelAny:Any`,
   any_pin: $localize`:@@valueLabelAnyPin:Any PIN`,
-  background: $localize`:@@valueLabelInBackground:In background`,
-  biometric: $localize`:@@valueLabelBiometric:Biometric`,
   broken: $localize`:@@valueLabelBroken:Broken`,
   challenge: $localize`:@@valueLabelChallenge:Challenge`,
   clientwait: $localize`:@@valueLabelClientWait:Client wait`,
@@ -51,47 +50,26 @@ const VALUE_VOCABULARY: Record<string, string> = {
   deactivated: $localize`:@@valueLabelDeactivated:Deactivated`,
   declined: $localize`:@@valueLabelDeclined:Declined`,
   denied: $localize`:@@valueLabelDenied:Denied`,
-  deny_access: $localize`:@@valueLabelDenyAccess:Deny access`,
   disable: $localize`:@@valueLabelDisabled:Disabled`,
   disabled: $localize`:@@valueLabelDeactivated:Deactivated`,
-  email: $localize`:@@valueLabelEmail:Email`,
   enrolled: $localize`:@@valueLabelEnrolled:Enrolled`,
   failed: $localize`:@@valueLabelFailed:Failed`,
   force: $localize`:@@valueLabelForced:Forced`,
-  generic: $localize`:@@valueLabelGeneric:Generic`,
-  grant_access: $localize`:@@valueLabelGrantAccess:Grant access`,
-  hide: $localize`:@@valueLabelHide:Hide`,
-  html: "HTML",
-  ignore: $localize`:@@valueLabelIgnore:Ignore`,
-  "internal admin": $localize`:@@valueLabelInternalAdmin:Internal admin`,
   locked: $localize`:@@valueLabelLocked:Locked`,
   lockscreen: $localize`:@@valueLabelLockScreen:Lock screen`,
-  logged_in_user: $localize`:@@valueLabelLoggedInUser:Logged-in user`,
   logout: $localize`:@@valueLabelLogout:Logout`,
   lost: $localize`:@@valueLabelLost:Lost`,
-  luks: "LUKS",
   none: $localize`:@@valueLabelNone:None`,
-  offline: $localize`:@@valueLabelOffline:Offline`,
   pending: $localize`:@@valueLabelPending:Pending`,
-  pin: $localize`:@@valueLabelPin:PIN`,
-  plain: $localize`:@@valueLabelPlainText:Plain text`,
   privacyidea: "privacyIDEA",
   reject: $localize`:@@valueLabelReject:Reject`,
-  require_and_verify: $localize`:@@valueLabelRequireAndVerify:Require and verify`,
   revoked: $localize`:@@valueLabelRevoked:Revoked`,
   sha1: "SHA-1",
   sha256: "SHA-256",
   sha512: "SHA-512",
-  show: $localize`:@@valueLabelShow:Show`,
-  smartphone: $localize`:@@valueLabelSmartphone:Smartphone`,
-  ssh: "SSH",
-  tokenowner: $localize`:@@valueLabelTokenOwner:Token owner`,
   tokenpin: $localize`:@@valueLabelTokenPin:Token PIN`,
-  user: $localize`:@@valueLabelUser:User`,
   userstore: $localize`:@@valueLabelUserStore:User store`,
-  verify: $localize`:@@valueLabelVerify:Verify`,
-  wait: $localize`:@@valueLabelWait:Wait`,
-  yubikey: "Yubikey"
+  verify: $localize`:@@valueLabelVerify:Verify`
 };
 
 /**
@@ -144,12 +122,18 @@ function matchingBooleanPair(values: readonly DisplayableValue[] | undefined): r
  * (realms, resolvers, server configurations, template names) which must be shown verbatim.
  */
 function isClosedVocabulary(values: readonly DisplayableValue[] | undefined): boolean {
-  return !!values?.length && values.every((value) => normalizeValue(value) in VALUE_VOCABULARY);
+  // Own properties only - a value named "constructor" must not resolve Object.prototype's member.
+  return !!values?.length && values.every((value) => Object.hasOwn(VALUE_VOCABULARY, normalizeValue(value)));
 }
 
-function holdsTokenTypes(values: readonly DisplayableValue[] | undefined): boolean {
-  const tokenTypeCount = values?.filter((value) => !!tokenTypeLabel(normalizeValue(value))).length ?? 0;
-  return tokenTypeCount >= 2;
+/**
+ * True when the whole list is token types. A list that merely contains some is left alone: realms,
+ * resolvers and token groups are named by the installation, and two of them named "email" and "sms"
+ * would otherwise be renamed to their token type labels. The price is that one token type the
+ * frontend does not know - a third-party token module - costs the labels of its whole list.
+ */
+function isTokenTypeList(values: readonly DisplayableValue[] | undefined): boolean {
+  return !!values?.length && values.every((value) => !!tokenTypeLabel(normalizeValue(value)));
 }
 
 export interface ValueLabelOptions {
@@ -157,8 +141,8 @@ export interface ValueLabelOptions {
   /**
    * Consult the value vocabulary. Off by default, because a list of allowed values alone does not
    * say where it comes from: realms, resolvers, token groups, SMS gateway and server identifiers
-   * reach the same dropdowns and are named by the installation, so a token group called "offline"
-   * or a realm called "admin" would be renamed. Only a caller that knows its list is a fixed
+   * reach the same dropdowns and are named by the installation, so a token group called "verify"
+   * or a realm called "userstore" would be renamed. Only a caller that knows its list is a fixed
    * backend enum may turn this on.
    */
   vocabulary?: boolean;
@@ -181,7 +165,7 @@ export function valueDisplayLabel(
     return raw;
   }
 
-  if (holdsTokenTypes(values)) {
+  if (isTokenTypeList(values)) {
     const tokenLabel = tokenTypeLabel(normalized);
     if (tokenLabel) return tokenLabel;
   }

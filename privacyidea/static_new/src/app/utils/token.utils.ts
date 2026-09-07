@@ -216,5 +216,7 @@ const tokenTypeLabels: Record<string, string> = {
 };
 
 export function tokenTypeLabel(key: string): string | undefined {
-  return tokenTypeLabels[key.toLowerCase()];
+  // Own properties only - a value named "constructor" must not resolve Object.prototype's member.
+  const normalized = key.toLowerCase();
+  return Object.hasOwn(tokenTypeLabels, normalized) ? tokenTypeLabels[normalized] : undefined;
 }
