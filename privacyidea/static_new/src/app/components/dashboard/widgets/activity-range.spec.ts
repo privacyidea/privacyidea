@@ -16,7 +16,12 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { activityRangeById, bucketsAreCalendarDays } from "@components/dashboard/widgets/activity-range";
+import {
+  ACTIVITY_RANGES,
+  activityRangeById,
+  bucketsAreCalendarDays,
+  inclusiveBucketEnd
+} from "@components/dashboard/widgets/activity-range";
 
 const MONTH = activityRangeById("30d")!;
 const DAY = activityRangeById("24h")!;
@@ -27,6 +32,33 @@ const DAY = activityRangeById("24h")!;
 function moment(offsetMinutes: number): Date {
   return { getTimezoneOffset: () => offsetMinutes } as unknown as Date;
 }
+
+describe("ACTIVITY_RANGES", () => {
+  it("cuts every window on a whole second, the finest bound the log can be filtered on", () => {
+    // A moment with milliseconds in it, which is every moment a preset is actually clicked at. An edge that kept them
+    // could not be named by a filter that stops at seconds, so the span a drill-down opens would sit a fraction off
+    // the bar it came from and the boundary second would fall in two buckets or in neither.
+    const now = new Date("2026-03-01T12:34:56.789Z");
+
+    for (const range of ACTIVITY_RANGES) {
+      const window = range.window(now);
+      const bucketMs = (window.end.getTime() - window.start.getTime()) / window.bins;
+
+      expect(window.start.getMilliseconds()).toBe(0);
+      expect(window.end.getMilliseconds()).toBe(0);
+      // Every edge is start + n buckets, so a bucket measured in whole seconds keeps all of them there.
+      expect(bucketMs % 1000).toBe(0);
+    }
+  });
+});
+
+describe("inclusiveBucketEnd", () => {
+  it("names the last second a bucket holds", () => {
+    // The log takes both bounds inclusively; a bucket ends where the next begins. The second before that edge is the
+    // same span said the log's way.
+    expect(inclusiveBucketEnd(Date.UTC(2026, 2, 1, 12))).toBe(Date.UTC(2026, 2, 1, 11, 59, 59));
+  });
+});
 
 describe("bucketsAreCalendarDays", () => {
   it("lets a day bucket be named by its date while the window keeps one offset", () => {

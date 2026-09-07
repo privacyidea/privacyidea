@@ -23,7 +23,8 @@
  * A range is a *window plus a bucket size*, not merely a span: what a preset means is "these buckets over this
  * window", and both are what a caller has to send to the aggregating endpoints.
  */
-const MS_PER_MINUTE = 60_000;
+const MS_PER_SECOND = 1_000;
+const MS_PER_MINUTE = 60 * MS_PER_SECOND;
 const MS_PER_HOUR = 60 * MS_PER_MINUTE;
 const MS_PER_DAY = 24 * MS_PER_HOUR;
 
@@ -58,11 +59,13 @@ function midnightDaysAgo(now: Date, days: number): Date {
 // A window that simply runs back from now. This is how "the last hour" and "the last 24 hours" are read: the window's
 // own edges are the round thing about it, and every bucket in it is a bucket that has fully happened.
 function rollingWindow(spanMs: number, bucketMs: number): (now: Date) => ActivityWindow {
-  return (now) => ({
-    start: new Date(now.getTime() - spanMs),
-    end: now,
-    bins: spanMs / bucketMs
-  });
+  return (now) => {
+    // Cut to the second, so that every bucket edge is a whole one. The log's time filter names seconds and nothing
+    // finer, so an edge carrying milliseconds is an edge no drill-down can ask for: the span it opened the log on
+    // would be a fraction beside the bar that was clicked, and the boundary second would belong to both or neither.
+    const end = Math.floor(now.getTime() / MS_PER_SECOND) * MS_PER_SECOND;
+    return { start: new Date(end - spanMs), end: new Date(end), bins: spanMs / bucketMs };
+  };
 }
 
 // A window over whole calendar days: it opens at midnight `days` days back and closes at the end of the bucket now
@@ -90,6 +93,18 @@ export const ACTIVITY_RANGES: readonly ActivityRange[] = [
   { id: "7d", label: $localize`7 d`, window: dailyWindow(7, 6 * MS_PER_HOUR), dayBuckets: false },
   { id: "30d", label: $localize`30 d`, window: dailyWindow(30, MS_PER_DAY), dayBuckets: true }
 ];
+
+// A bucket's exclusive end, said the way the authentication log's own filter says it. The log takes both bounds
+// inclusively and names whole seconds, while a bucket ends where the next one begins, so the last second the bucket
+// still holds is the same span in that vocabulary. Without the step back, an entry timestamped exactly on the edge
+// would be listed under the bar that did not count it - and edges are whole seconds, which is where every entry sits
+// on a backend whose timestamp column keeps no fraction of one.
+//
+// Only for an edge that *is* the next bucket's start: the window's own end is not one, the endpoint closing the last
+// bucket on it rather than past it, so that bound is already inclusive and is passed as it stands.
+export function inclusiveBucketEnd(exclusiveEndMs: number): number {
+  return exclusiveEndMs - MS_PER_SECOND;
+}
 
 // Whether the buckets of the window between *windowStart* and *windowEnd* really are calendar days, which is what
 // lets a bar carry a date and no time. The endpoint cuts a window into equal parts, so a day bucket is 24 hours of

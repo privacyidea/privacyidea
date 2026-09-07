@@ -35,7 +35,8 @@ import {
   ActivityRange,
   activityRangeById,
   bucketsAreCalendarDays,
-  DEFAULT_ACTIVITY_RANGE
+  DEFAULT_ACTIVITY_RANGE,
+  inclusiveBucketEnd
 } from "@components/dashboard/widgets/activity-range";
 import { DashboardWidget, WidgetSize } from "@models/dashboard";
 import {
@@ -186,9 +187,7 @@ challenge-response login count once, classified by how the attempt ended.`;
   private readonly selectedFrom = computed<string | null>(
     () => this.binStarts()[this.rangeStart()] ?? this.statistics()?.window?.start_time ?? null
   );
-  private readonly selectedTo = computed<string | null>(
-    () => this.binStarts()[this.rangeEnd()] ?? this.statistics()?.window?.end_time ?? null
-  );
+  private readonly selectedTo = computed<string | null>(() => this.logEnd(this.rangeEnd()));
 
   // The labels under the brush, which are also what each thumb announces - the same edge, so the same words for it.
   readonly rangeFromLabel = computed<string>(() => this.edgeLabel(this.rangeStart()));
@@ -378,6 +377,18 @@ challenge-response login count once, classified by how the attempt ended.`;
     return formatDate(iso, this.dateOnlyLabels() ? "yyyy-MM-dd" : "yyyy-MM-dd HH:mm", "en-US");
   }
 
+  // The end bound to open the log with for the bucket edge at *edge*, which is the bucket's exclusive end brought
+  // into the log's inclusive, second-granular terms - see inclusiveBucketEnd. Past the last bucket there is no next
+  // edge to step back from: the window's end is already an inclusive bound, being where the endpoint closes the final
+  // bucket, so it is handed over untouched.
+  private logEnd(edge: number): string | null {
+    const next = this.binStarts()[edge];
+    if (!next) {
+      return this.statistics()?.window?.end_time ?? null;
+    }
+    return new Date(inclusiveBucketEnd(Date.parse(next))).toISOString();
+  }
+
   // One series' attempts inside the selected span.
   private selectedSum(entry: AuthenticationEventSeries): number {
     return entry.counts.slice(this.rangeStart(), this.rangeEnd()).reduce((sum, count) => sum + count, 0);
@@ -483,7 +494,7 @@ challenge-response login count once, classified by how the attempt ended.`;
     if (!from) {
       return;
     }
-    this.openLog(null, from, this.binStarts()[bin + 1] ?? this.statistics()?.window?.end_time ?? null);
+    this.openLog(null, from, this.logEnd(bin + 1));
     this.router.navigate([ROUTE_PATHS.AUTHENTICATION_LOG]).then();
   }
 

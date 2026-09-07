@@ -32,7 +32,8 @@ import {
   ActivityRange,
   activityRangeById,
   bucketsAreCalendarDays,
-  DEFAULT_ACTIVITY_RANGE
+  DEFAULT_ACTIVITY_RANGE,
+  inclusiveBucketEnd
 } from "@components/dashboard/widgets/activity-range";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { toFilterDisplay } from "@utils/date-format.utils";
@@ -341,6 +342,11 @@ export class ConditionalAccessWidgetComponent extends DashboardWidget implements
   readonly selectedFromMs = computed(() => this.edgeMs(this.rangeStart()));
   readonly selectedToMs = computed(() => this.edgeMs(this.rangeEnd()));
 
+  // Whether the brush reaches the window's own end. Every other position it can hold is a bucket's start, and a
+  // bucket ends where the next one begins; the window's end is where the endpoint closes the last bucket instead, so
+  // the span it stands for takes that moment in. It is also what makes the upper label read "now".
+  private readonly selectionAtWindowEnd = computed(() => this.rangeEnd() >= this.binCount());
+
   // Bars behind the slider. The bucketing is the server's, so this only normalizes them to the busiest bucket.
   readonly activityHistogram = computed<number[]>(() => {
     const counts = this.restrictionCounts();
@@ -385,7 +391,7 @@ export class ConditionalAccessWidgetComponent extends DashboardWidget implements
       return;
     }
     const fromIso = new Date(from).toISOString();
-    const toIso = new Date(this.bucketEndMs(bin)).toISOString();
+    const toIso = new Date(this.logEndMs(bin)).toISOString();
     // The span goes into the filter *chips* as well as the signals: the log derives its time filter from the chip
     // text and clears a bound whose chip is missing, so signals alone would be undone the moment the page loads.
     this.authenticationLogService.authenticationLogFilter.set(
@@ -399,6 +405,14 @@ export class ConditionalAccessWidgetComponent extends DashboardWidget implements
   // Where a bucket closes: the next one's start, or the window's end for the last, which has no successor.
   private bucketEndMs(bin: number): number {
     return this.binStartsMs()[bin + 1] ?? this.windowEndMs();
+  }
+
+  // The same edge as an end bound for the log, which takes it inclusively and to the second - see inclusiveBucketEnd.
+  // The last bucket is the exception: it closes on the window's end rather than past it, so that bound already means
+  // what the log will read it as.
+  private logEndMs(bin: number): number {
+    const next = this.binStartsMs()[bin + 1];
+    return next === undefined ? this.windowEndMs() : inclusiveBucketEnd(next);
   }
 
   // How many restrictions were imposed inside the selected range, so the histogram carries a number and not just a
@@ -419,7 +433,7 @@ export class ConditionalAccessWidgetComponent extends DashboardWidget implements
   // happened to carry.
   readonly rangeSummaryFrom = computed(() => this.summaryFormat(this.selectedFromMs()));
   readonly rangeSummaryTo = computed(() =>
-    this.rangeEnd() >= this.binCount() ? $localize`now` : this.summaryFormat(this.selectedToMs())
+    this.selectionAtWindowEnd() ? $localize`now` : this.summaryFormat(this.selectedToMs())
   );
 
   // The last kind stays on the chart: an empty plot with a live brush under it is not a view of anything. Material's
@@ -471,9 +485,25 @@ export class ConditionalAccessWidgetComponent extends DashboardWidget implements
     return formatDate(ms, pattern, "en-US");
   }
 
+  // Whether a restriction was imposed inside the brushed span, which is what narrows the list under the chart. The
+  // span is the one the count beside the title is summed over - half-open, a record on a bucket edge belonging to the
+  // bucket after it - so that the list and the number never disagree over the second the thumb stands on. Reaching
+  // the window's end is the exception, for the reason selectionAtWindowEnd gives.
+  //
+  // With no history there is no brush and no span to be in, so nothing is narrowed: an admin without the log's right,
+  // or one whose history request failed, keeps the whole list rather than an empty one.
   private inSelectedRange(isoTimestamp: string): boolean {
+    if (!this.hasHistory()) {
+      return true;
+    }
     const time = new Date(isoTimestamp).getTime();
-    return Number.isNaN(time) || (time >= this.selectedFromMs() && time <= this.selectedToMs());
+    if (Number.isNaN(time)) {
+      return true;
+    }
+    if (time < this.selectedFromMs()) {
+      return false;
+    }
+    return this.selectionAtWindowEnd() ? time <= this.selectedToMs() : time < this.selectedToMs();
   }
 
   // Stale rows across both areas restrict nobody, but they are what the locked-users and blocklist pages' purge actions

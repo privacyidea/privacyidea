@@ -91,6 +91,11 @@ describe("AuthenticationActivityWidgetComponent", () => {
     return Array.from<HTMLElement>(rows[row].querySelectorAll(".bar-slot"));
   }
 
+  // A bucket edge as the log's own end bound: inclusive and to the second, so the last second the bucket still holds.
+  function lastSecondBefore(iso: string): string {
+    return new Date(Date.parse(iso) - 1_000).toISOString();
+  }
+
   // The window of the last request, as dates: the endpoint takes ISO strings.
   function requestedWindow(): [Date, Date, number] {
     const [start, end, bins] = logMock.fetchStatistics.mock.calls.at(-1) as [string, string, number];
@@ -567,12 +572,14 @@ describe("AuthenticationActivityWidgetComponent", () => {
     fixture.nativeElement.querySelector(".reasons-table a").click();
 
     // The count in the clicked row is the brushed one, so the log has to open on the same span rather than on the
-    // preset window around it.
+    // preset window around it. The upper bound is the second before the edge the brush stands on: that edge belongs
+    // to the bucket after the span, and the log would take it inclusively.
+    const end = lastSecondBefore("2026-03-01T18:00:00+00:00");
     expect(logMock.timestampFrom()).toBe("2026-03-01T06:00:00+00:00");
-    expect(logMock.timestampTo()).toBe("2026-03-01T18:00:00+00:00");
+    expect(logMock.timestampTo()).toBe(end);
     const chips = logMock.authenticationLogFilter().filterMap;
     expect(chips.get("start_time")).toBe(toFilterDisplay("2026-03-01T06:00:00+00:00"));
-    expect(chips.get("end_time")).toBe(toFilterDisplay("2026-03-01T18:00:00+00:00"));
+    expect(chips.get("end_time")).toBe(toFilterDisplay(end));
   });
 
   it("names the brushed span's ends, reading now only at the window's own end", () => {
@@ -926,17 +933,34 @@ describe("AuthenticationActivityWidgetComponent", () => {
 
     bars(1)[1].click();
 
-    // The bucket's own span, not the brushed one: the bar answers for its column.
+    // The bucket's own span, not the brushed one: the bar answers for its column. It ends a second before the next
+    // bucket starts - the log takes its end bound inclusively, so passing that start would list the entry sitting on
+    // it under the bar that counted it in the *next* column.
+    const end = lastSecondBefore("2026-03-01T12:00:00+00:00");
     expect(logMock.timestampFrom()).toBe("2026-03-01T06:00:00+00:00");
-    expect(logMock.timestampTo()).toBe("2026-03-01T12:00:00+00:00");
+    expect(logMock.timestampTo()).toBe(end);
     const chips = logMock.authenticationLogFilter().filterMap;
     expect(chips.get("start_time")).toBe(toFilterDisplay("2026-03-01T06:00:00+00:00"));
-    expect(chips.get("end_time")).toBe(toFilterDisplay("2026-03-01T12:00:00+00:00"));
+    expect(chips.get("end_time")).toBe(toFilterDisplay(end));
     // No event-type filter, though the row has event types to offer. This chart counts attempts, each reduced to the
     // event that classified it, while the log lists the entries an attempt is made of: an attempt that ended in
     // success can hold a PIN_FAIL entry on the way, so filtering the log to the failure event types would list
     // entries of attempts this chart counts as successful.
     expect(chips.get("event_type")).toBeUndefined();
+  });
+
+  it("leaves no second in the drill-down of two bars at once", () => {
+    seed([series("LOGIN_SUCCESS", "success", [1, 2, 3, 4])]);
+    create();
+
+    bars(0)[1].click();
+    const firstEnd = logMock.timestampTo()!;
+    bars(0)[2].click();
+    const secondStart = logMock.timestampFrom()!;
+
+    // The bars count a half-open span each, the log lists a closed one, and the two have to describe the same
+    // entries: neighbouring bars therefore hand over from one second to the next rather than sharing an edge.
+    expect(Date.parse(secondStart) - Date.parse(firstEnd)).toBe(1_000);
   });
 
   it("closes the last bucket at the window's end, which is where its bar stops", () => {

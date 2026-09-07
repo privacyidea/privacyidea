@@ -27,7 +27,8 @@ import { AuthenticationLogService } from "@services/authentication-log/authentic
 import {
   BlocklistEntry,
   ConditionalAccessOutcomeStatistics,
-  ConditionalAccessStateService
+  ConditionalAccessStateService,
+  LockedUserEntry
 } from "@services/conditional-access-state/conditional-access-state.service";
 import {
   ConditionalAccessPolicyService,
@@ -70,7 +71,8 @@ function makePolicy(overrides: Partial<ConditionalAccessPolicy>): ConditionalAcc
   };
 }
 
-const MS_PER_HOUR = 3_600_000;
+const MS_PER_SECOND = 1_000;
+const MS_PER_HOUR = 3_600 * MS_PER_SECOND;
 
 // Timestamps are relative to the moment the test runs, since the widget's window ends at "now" and a future-dated
 // fixture would fall outside it.
@@ -93,6 +95,22 @@ function makeBlock(overrides: Partial<BlocklistEntry>): BlocklistEntry {
 
 // The outcome history as the endpoint hands it back: already bucketed, one series per action type. The buckets are a
 // day apart with the newest one today, so the window overlaps the lock and block fixtures above.
+// A locked user whose only interesting field is when it was locked, the list being narrowed by that alone.
+function lockedUser(username: string, lockedAt: string): LockedUserEntry {
+  return {
+    resolver: "resolver1",
+    uid: "1000",
+    realm: "defrealm",
+    username,
+    permanent: true,
+    lock_expires_at: null,
+    seconds_remaining: null,
+    lock_cause: "POLICY",
+    locked_at: lockedAt,
+    error_message: null
+  };
+}
+
 function history(...series: { action_type: string; counts: number[] }[]): ConditionalAccessOutcomeStatistics {
   const bucketCount = series[0].counts.length;
   const starts = Array.from({ length: bucketCount }, (_, index) => hoursAgo((bucketCount - index) * 24));
@@ -536,11 +554,14 @@ describe("ConditionalAccessWidgetComponent", () => {
 
       bars()[1].click();
 
+      // The bar's span ends a second before the next bucket starts: the log takes its end bound inclusively, so
+      // passing that start would list the entry sitting on it under the bar that counted it in the next column.
+      const end = new Date(Date.parse(starts[2]) - MS_PER_SECOND).toISOString();
       expect(logService.timestampFrom()).toBe(starts[1]);
-      expect(logService.timestampTo()).toBe(starts[2]);
+      expect(logService.timestampTo()).toBe(end);
       const chips = logService.authenticationLogFilter().filterMap;
       expect(chips.get("start_time")).toBe(toFilterDisplay(starts[1]));
-      expect(chips.get("end_time")).toBe(toFilterDisplay(starts[2]));
+      expect(chips.get("end_time")).toBe(toFilterDisplay(end));
       // No outcome filter, though the bar's own counted set could be named exactly with one: it would hide the run of
       // failures that explains the lock, which is what someone clicking a spike in this chart is after. The lock's
       // entry is in the span either way, marked by the log's conditional-access column.
@@ -711,6 +732,31 @@ describe("ConditionalAccessWidgetComponent", () => {
       expect(component.rangeSummaryFrom()).toMatch(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/);
     });
 
+    it("should leave a restriction on the brush's end edge to the bucket after the span", () => {
+      const edge = stateMock.outcomeStatistics.bins.starts[2];
+      stateMock.setLockedUsers([lockedUser("edgy", edge)]);
+      create();
+
+      // The open brush covers the whole window, edge included.
+      expect(component.summary().highlights.map((entry) => entry.label)).toContain("edgy@defrealm");
+
+      component.onRangeEndInput(2);
+      fixture.detectChanges();
+
+      // The thumb now stands where bucket 2 begins, and that bucket is outside the span the count beside the title is
+      // summed over: a restriction imposed at that very second belongs to it, not to the span.
+      expect(component.summary().highlights.map((entry) => entry.label)).not.toContain("edgy@defrealm");
+    });
+
+    it("should keep a restriction imposed at the very end of the window", () => {
+      stateMock.setLockedUsers([lockedUser("fresh", stateMock.outcomeStatistics.window.end_time)]);
+      create();
+
+      // The window's end is not a bucket's start: the endpoint closes the last bucket on it, so the newest
+      // restriction there can be is inside the span rather than in a bucket past it.
+      expect(component.summary().highlights.map((entry) => entry.label)).toContain("fresh@defrealm");
+    });
+
     it("should label a thumb with the timestamp it stands for", () => {
       create();
       expect(component.formatSliderThumb(0)).toMatch(/^\d{4}-\d{2}-\d{2}/);
@@ -726,6 +772,16 @@ describe("ConditionalAccessWidgetComponent", () => {
       expect(policyMock.getPolicies).not.toHaveBeenCalled();
       expect(stateMock.countLockedUsers).not.toHaveBeenCalled();
       expect(stateMock.fetchBlocklist).not.toHaveBeenCalled();
+    });
+
+    it("should keep the restrictions list when there is no history to brush over", () => {
+      // Without the log's right there is no histogram and so no span for a restriction to be inside of. Narrowing the
+      // list by one anyway left it empty while the counts above it went on reporting what the live state holds.
+      authMock.actionAllowed.mockImplementation((action: string) => action !== "authentication_log_read");
+      create();
+
+      expect(component.hasHistory()).toBe(false);
+      expect(component.summary().highlights.map((entry) => entry.label)).toContain("10.0.0.1");
     });
 
     it("should leave out the history when the authentication-log right is missing", () => {
