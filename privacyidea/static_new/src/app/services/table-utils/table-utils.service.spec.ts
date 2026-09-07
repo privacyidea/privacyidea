@@ -23,7 +23,7 @@ import { TestBed } from "@angular/core/testing";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { AuthService, JwtData } from "@services/auth/auth.service";
 import { ContainerDetailToken } from "@services/container/container.service";
-import { TableUtilsService } from "./table-utils.service";
+import { TableCellValue, TableUtilsService } from "./table-utils.service";
 import { TokenService } from "@services/token/token.service";
 import { MockTokenService } from "@testing/mock-services";
 
@@ -107,15 +107,6 @@ describe("TableUtilsService", () => {
     });
   });
 
-  it.each([
-    // TODO should be true once these links are reachable
-    ["username", false],
-    ["realms", false],
-    ["unknown", false]
-  ])('isLink("%s") → %s', (key, expected) => {
-    expect(service.isLink(key)).toBe(expected);
-  });
-
   describe("getClassForColumn", () => {
     it("returns highlight-disabled when locked", () => {
       expect(service.getClassForColumn("any", { locked: true })).toBe("highlight-disabled");
@@ -169,6 +160,75 @@ describe("TableUtilsService", () => {
     });
   });
 
+  describe("getDisplayText", () => {
+    it.each([
+      [{ active: true }, "Active"],
+      [{ active: false }, "Deactivated"],
+      [{ active: true, locked: true }, "Locked"],
+      [{ active: false, revoked: true }, "Revoked"],
+      [{ active: "" }, ""]
+    ])('maps element → "%s"', (element, expected) => {
+      expect(service.getDisplayText("active", element)).toBe(expected);
+    });
+
+    const rolloutStateCases: [string, string][] = [
+      ["clientwait", "Client wait"],
+      ["pending", "Pending"],
+      ["enrolled", "Enrolled"],
+      ["mystery", "mystery"]
+    ];
+    it.each(rolloutStateCases)('maps rollout_state "%s" → "%s"', (state, expected) => {
+      expect(service.getDisplayText("rollout_state", { rollout_state: state })).toBe(expected);
+    });
+
+    it("returns an empty string for a rollout_state that is not a string", () => {
+      expect(service.getDisplayText("rollout_state", {})).toBe("");
+    });
+
+    const tokenTypeCases: [string, string][] = [
+      ["hotp", "HOTP"],
+      ["applspec", "Application Specific Password"],
+      ["pw", "Static Password"],
+      ["mystery", "mystery"]
+    ];
+    it.each(tokenTypeCases)('maps tokentype "%s" → "%s"', (tokenType, expected) => {
+      expect(service.getDisplayText("tokentype", { tokentype: tokenType })).toBe(expected);
+    });
+
+    it("returns an empty string for a missing tokentype", () => {
+      expect(service.getDisplayText("tokentype", {})).toBe("");
+    });
+
+    const auditCellCases: [string, TableCellValue, string][] = [
+      ["success", true, "Yes"],
+      ["success", false, "No"],
+      ["success", 1, "Yes"],
+      ["success", 0, "No"],
+      ["authentication", "accept", "Accept"],
+      ["authentication", "challenge", "Challenge"],
+      ["authentication", "reject", "Reject"],
+      ["authentication", "declined", "Declined"],
+      ["authentication", "DECLINED", "Declined"],
+      ["authentication", "mystery", "mystery"],
+      ["action", "/auth", "/auth"],
+      ["success", "", ""],
+      ["success", null, ""],
+      ["success", undefined, ""]
+    ];
+    it.each(auditCellCases)('maps "%s" = %s → "%s"', (key, value, expected) => {
+      expect(service.getDisplayText(key, { [key]: value })).toBe(expected);
+    });
+
+    it("returns raw value for non‑special column", () => {
+      expect(service.getDisplayText("name", { name: "bob" })).toBe("bob");
+    });
+
+    it("renders a column named like an Object member as a raw cell", () => {
+      expect(service.getDisplayText("constructor", { constructor: "acme" })).toBe("acme");
+      expect(service.getDisplayText("toString", {})).toBe("");
+    });
+  });
+
   describe("getTooltipForColumn", () => {
     it("returns tooltip for active column", () => {
       expect(service.getTooltipForColumn("active", { active: true })).toBe("Deactivate Token");
@@ -187,22 +247,6 @@ describe("TableUtilsService", () => {
     it("returns Reset Fail Counter only when failcount > 0", () => {
       expect(service.getTooltipForColumn("failcount", { failcount: 3 })).toBe("Reset Fail Counter");
       expect(service.getTooltipForColumn("failcount", { failcount: 0 })).toBe("");
-    });
-  });
-
-  describe("getDisplayText", () => {
-    it.each([
-      [{ active: true }, "active"],
-      [{ active: false }, "deactivated"],
-      [{ active: true, locked: true }, "locked"],
-      [{ active: false, revoked: true }, "revoked"],
-      [{ active: "" }, ""]
-    ])('maps element → "%s"', (element, expected) => {
-      expect(service.getDisplayText("active", element)).toBe(expected);
-    });
-
-    it("returns raw value for non‑special column", () => {
-      expect(service.getDisplayText("name", { name: "bob" })).toBe("bob");
     });
   });
 
@@ -225,68 +269,86 @@ describe("TableUtilsService", () => {
     });
   });
 
-  it.each([
-    ["description", "details-scrollable-container"],
-    ["maxfail", "details-value"],
-    ["count_window", "details-value"],
-    ["sync_window", "details-value"],
-    ["other", ""]
-  ])('getDivClassForKey("%s") → "%s"', (key, expected) => {
-    expect(service.getDivClassForKey(key)).toBe(expected);
+  describe("column classes", () => {
+    it.each([
+      // TODO should be true once these links are reachable
+      ["username", false],
+      ["realms", false],
+      ["unknown", false]
+    ])('isLink("%s") → %s', (key, expected) => {
+      expect(service.isLink(key)).toBe(expected);
+    });
+
+    it('isLink("container_serial") → true', () => {
+      expect(service.isLink("container_serial")).toBe(true);
+    });
+
+    it.each([
+      ["description", "details-scrollable-container"],
+      ["maxfail", "details-value"],
+      ["count_window", "details-value"],
+      ["sync_window", "details-value"],
+      ["other", ""]
+    ])('getDivClassForKey("%s") → "%s"', (key, expected) => {
+      expect(service.getDivClassForKey(key)).toBe(expected);
+    });
+
+    it.each([
+      ["active", "flex-center"],
+      ["failcount", "flex-center"],
+      ["realms", "table-scroll-container"],
+      ["description", "table-scroll-container"],
+      ["xyz", "flex-center-vertical"]
+    ])('getClassForColumnKey("%s") → "%s"', (col, expected) => {
+      expect(service.getClassForColumnKey(col)).toBe(expected);
+    });
+
+    it('getChildClassForColumnKey returns "scroll-item" only for scroll containers', () => {
+      expect(service.getChildClassForColumnKey("realms")).toBe("scroll-item");
+      expect(service.getChildClassForColumnKey("active")).toBe("");
+    });
+
+    it.each([
+      ["description", "height-127"],
+      ["realms", "height-78"],
+      ["tokengroup", "height-78"],
+      ["id", "height-53"]
+    ])('getTdClassForKey("%s") includes %s', (key, expectedPart) => {
+      expect(service.getTdClassForKey(key)).toContain(expectedPart);
+    });
+
+    it.each([
+      ["active", false, "highlight-true"],
+      ["disabled", false, "highlight-false"],
+      ["damaged", false, "highlight-false"],
+      ["lost", false, "highlight-false"],
+      ["other", false, ""],
+      ["active", true, "highlight-true-clickable"],
+      ["disabled", true, "highlight-false-clickable"],
+      ["damaged", true, "highlight-false-clickable"],
+      ["lost", true, "highlight-false-clickable"],
+      ["other", true, ""]
+    ])('getSpanClassForState("%s", %s) → %s', (state, clickable, expected) => {
+      expect(service.getSpanClassForState(state, clickable)).toBe(expected);
+    });
+  });
+
+  describe("getSortIcon", () => {
+    it.each([
+      ["serial", { active: "serial", direction: "asc" as const }, "keyboard_arrow_upward"],
+      ["serial", { active: "serial", direction: "desc" as const }, "keyboard_arrow_downward"],
+      ["serial", { active: "serial", direction: "" as const }, "unfold_more"],
+      ["serial", { active: "other", direction: "asc" as const }, "unfold_more"]
+    ])('getSortIcon("%s", %o) → %s', (columnKey, sort, expected) => {
+      expect(service.getSortIcon(columnKey, sort)).toBe(expected);
+    });
   });
 
   it.each([
-    ["active", "flex-center"],
-    ["failcount", "flex-center"],
-    ["realms", "table-scroll-container"],
-    ["description", "table-scroll-container"],
-    ["xyz", "flex-center-vertical"]
-  ])('getClassForColumnKey("%s") → "%s"', (col, expected) => {
-    expect(service.getClassForColumnKey(col)).toBe(expected);
-  });
-
-  it('getChildClassForColumnKey returns "scroll-item" only for scroll containers', () => {
-    expect(service.getChildClassForColumnKey("realms")).toBe("scroll-item");
-    expect(service.getChildClassForColumnKey("active")).toBe("");
-  });
-
-  it.each([
-    ["active", "", false, ""],
-    ["active", true, false, "active"],
-    ["active", false, false, "deactivated"],
-    ["active", true, true, "revoked"],
-    ["title", "hello", false, "hello"]
-  ])("getDisplayTextForKeyAndRevoked(%s, %s, %s) → %s", (k, v, r, expected) => {
-    expect(service.getDisplayTextForKeyAndRevoked(k, v, r)).toBe(expected);
-  });
-
-  it.each([
-    ["description", "height-127"],
-    ["realms", "height-78"],
-    ["tokengroup", "height-78"],
-    ["id", "height-53"]
-  ])('getTdClassForKey("%s") includes %s', (key, expectedPart) => {
-    expect(service.getTdClassForKey(key)).toContain(expectedPart);
-  });
-
-  it.each([
-    ["active", false, "highlight-true"],
-    ["disabled", false, "highlight-false"],
-    ["damaged", false, "highlight-false"],
-    ["lost", false, "highlight-false"],
-    ["other", false, ""],
-    ["active", true, "highlight-true-clickable"],
-    ["disabled", true, "highlight-false-clickable"],
-    ["damaged", true, "highlight-false-clickable"],
-    ["lost", true, "highlight-false-clickable"],
-    ["other", true, ""]
-  ])('getSpanClassForState("%s", %s) → %s', (state, clickable, expected) => {
-    expect(service.getSpanClassForState(state, clickable)).toBe(expected);
-  });
-
-  it.each([
-    ["active", "active"],
-    ["disabled", "deactivated"],
+    ["active", "Active"],
+    ["disabled", "Deactivated"],
+    ["lost", "Lost"],
+    ["damaged", "Damaged"],
     ["mystery", "mystery"]
   ])('getDisplayTextForState("%s") → %s', (state, expected) => {
     expect(service.getDisplayTextForState(state)).toBe(expected);

@@ -19,7 +19,7 @@
 
 import { assert } from "./assert";
 
-export function parseBooleanValue(initialValue: string | number | boolean): boolean {
+export function parseBooleanValue(initialValue: string | number | boolean | null | undefined): boolean {
   if (initialValue === null || initialValue === undefined) return false;
   const typeofInitialValue = typeof initialValue;
   if (typeofInitialValue === "boolean") {
