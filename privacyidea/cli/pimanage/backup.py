@@ -21,21 +21,65 @@ import configparser
 import os
 import pathlib
 import re
-import shlex
 import shutil
 import subprocess
 import sys
 import tarfile
 from datetime import datetime
-from urllib.parse import urlparse
+from typing import IO, NoReturn
 
 import click
 from dateutil.tz import tzlocal
 from flask import current_app
 from flask.cli import AppGroup
 from flask.config import Config
+from sqlalchemy.engine.url import URL, make_url
+from sqlalchemy.exc import ArgumentError
 
-MYSQL_DIALECTS = ["mysql", "pymysql", "mysql+pymysql", "mariadb+pymysql"]
+SQLITE = "sqlite"
+MYSQL = "mysql"
+POSTGRESQL = "postgresql"
+
+# Backup implementation per SQLAlchemy backend name (the part of the URI before
+# the "+"), so every driver of a supported engine is recognised.
+BACKEND_FAMILIES = {
+    "sqlite": SQLITE,
+    "mysql": MYSQL,
+    "mariadb": MYSQL,
+    "postgresql": POSTGRESQL,
+    "postgres": POSTGRESQL,
+}
+
+FAMILY_NAMES = {SQLITE: "SQLite", MYSQL: "MySQL/MariaDB", POSTGRESQL: "PostgreSQL"}
+
+# The client packages providing the dump/restore commands, used in error messages.
+CLIENT_PACKAGES = {MYSQL: "mariadb-client (or mysql-client)", POSTGRESQL: "postgresql-client"}
+
+# Suffix of the database dump inside the backup archive. The suffix records which
+# engine wrote the dump, so a restore can refuse to feed it to a different one.
+# ".sql" and ".sqlite" are the names earlier versions wrote and stay unchanged.
+DUMP_SUFFIXES = {SQLITE: ".sqlite", MYSQL: ".sql", POSTGRESQL: ".pgsql"}
+DUMP_FAMILIES = {suffix: family for family, suffix in DUMP_SUFFIXES.items()}
+DUMP_FILE_PATTERN = re.compile(r"dbdump-\d{8}-\d{4}(?P<suffix>\.sqlite|\.pgsql|\.sql)$")
+
+# libpq environment variables for the connection parameters that can appear in
+# the query part of a PostgreSQL URI. Parameters outside this mapping are
+# reported as ignored instead of being dropped silently.
+POSTGRESQL_ENV_PARAMS = {
+    "host": "PGHOST",
+    "port": "PGPORT",
+    "sslmode": "PGSSLMODE",
+    "sslrootcert": "PGSSLROOTCERT",
+    "sslcert": "PGSSLCERT",
+    "sslkey": "PGSSLKEY",
+    "sslcrl": "PGSSLCRL",
+    "gssencmode": "PGGSSENCMODE",
+    "channel_binding": "PGCHANNELBINDING",
+    "application_name": "PGAPPNAME",
+    "connect_timeout": "PGCONNECT_TIMEOUT",
+    "options": "PGOPTIONS",
+    "target_session_attrs": "PGTARGETSESSIONATTRS",
+}
 
 backup_cli = AppGroup("backup", help="Create/Restore database backup of privacyIDEA installation")
 
@@ -67,6 +111,10 @@ def backup_create(backup_dir, config_dir, radius_dir, enckey):
 
     You can also include a given FreeRADIUS configuration into the backup.
     Just specify a directory using 'radius_dir'.
+
+    SQLite, MySQL/MariaDB and PostgreSQL databases are supported. Dumping a
+    MySQL/MariaDB or a PostgreSQL database requires the client commands of the
+    respective engine (mysqldump, or pg_dump) to be installed.
     """
     # TODO: Add requirement for the config file and remove app initialization.
     #  Currently, when calling this function, the Flask app gets initialized
@@ -90,46 +138,18 @@ def backup_create(backup_dir, config_dir, radius_dir, enckey):
         enc_file_stat = enc_file.stat()
         shutil.chown(directory, user=enc_file_stat.st_uid, group=enc_file_stat.st_gid)
 
-    sqlfile = directory.joinpath(f"dbdump-{cur_date}.sql")
+    url = _database_url(current_app.config.get("SQLALCHEMY_DATABASE_URI"))
+    family = _backend_family(url)
+
     backup_file = directory.joinpath(f"{base_name}-{cur_date}.tgz")
+    sqlfile = directory.joinpath(f"dbdump-{cur_date}{DUMP_SUFFIXES[family]}")
 
-    parsed_sqluri = urlparse(current_app.config.get("SQLALCHEMY_DATABASE_URI"))
-    sqltype = parsed_sqluri.scheme
-
-    if sqltype == "sqlite":
-        productive_file = parsed_sqluri.path
-        click.echo(f"Backup SQLite file {productive_file}")
-        sqlfile = directory.joinpath(f"dbdump-{cur_date}.sqlite")
-        shutil.copyfile(productive_file, sqlfile)
-    elif sqltype in MYSQL_DIALECTS:
-        database = parsed_sqluri.path[1:]
-        defaults_file = conf_dir.joinpath("mysql.cnf")
-        _write_mysql_defaults(defaults_file, parsed_sqluri)
-        # call mysqldump to get a copy of the database.
-        # --single-transaction dumps a consistent InnoDB snapshot without taking
-        # table locks. The default (LOCK TABLES) path fails on a MariaDB Galera
-        # cluster, which rejects locking the SEQUENCE objects privacyIDEA creates
-        # ("This version of MariaDB doesn't yet support 'LOCK TABLE on SEQUENCES
-        # in Galera cluster'"). --skip-lock-tables is already implied by
-        # --single-transaction and is passed only as an explicit safeguard.
-        cmd = ['mysqldump', f'--defaults-file={defaults_file!s}',
-               '--single-transaction', '--skip-lock-tables', '-h',
-               shlex.quote(parsed_sqluri.hostname)]
-        if parsed_sqluri.port:
-            cmd.extend(['-P', str(parsed_sqluri.port)])
-        cmd.extend(['-B', shlex.quote(database), '-r', sqlfile])
-        result = subprocess.run(cmd)  # nosec B603 - fixed argv, no shell
-        if result.returncode != 0:
-            # Never package a partial or empty dump as a successful backup.
-            if sqlfile.exists():
-                sqlfile.unlink()
-            click.secho(
-                f"Database dump failed (mysqldump exit code {result.returncode}); "
-                "no backup file was written.", fg="red")
-            sys.exit(2)
+    if family == SQLITE:
+        _dump_sqlite(url, sqlfile)
+    elif family == MYSQL:
+        _dump_mysql(url, conf_dir, sqlfile)
     else:
-        click.echo(f"unsupported SQL syntax: {sqltype}")
-        sys.exit(2)
+        _dump_postgresql(url, sqlfile)
 
     with tarfile.open(backup_file, "x:gz") as tf:
         tf.add(sqlfile)
@@ -161,7 +181,12 @@ def backup_create(backup_dir, config_dir, radius_dir, enckey):
               help="Keep the current SQLALCHEMY_DATABASE_URI from the live config "
                    "instead of overwriting it with the one stored in the backup.")
 def backup_restore(backup_file, keep_db_uri):
-    """Restore a previously made backup from the BACKUP_FILE"""
+    """Restore a previously made backup from the BACKUP_FILE
+
+    The contents of the target database are overwritten. The database itself is
+    not created: the database and the role connecting to it have to exist
+    already, as they do on a regular privacyIDEA installation.
+    """
     # TODO: Also allow to specify a target directory, otherwise it will always
     #  extract to the base /
     # TODO: extracting the SQLite file does not work if there are other SQLite
@@ -169,16 +194,19 @@ def backup_restore(backup_file, keep_db_uri):
 
     config_file = None
     sqlfile = None
+    dump_family = None
     enckey_contained = False
 
     try:
         with tarfile.open(backup_file, "r:gz") as tf:
             for member in tf:
                 member_name = member.name
+                dump_match = DUMP_FILE_PATTERN.search(member_name)
                 if re.search(r"/pi.cfg$", member_name):
                     config_file = f"/{member_name}"
-                elif re.search(r"dbdump-\d{8}-\d{4}\.sql", member_name):
+                elif dump_match:
                     sqlfile = f"/{member_name}"
+                    dump_family = DUMP_FAMILIES[dump_match.group("suffix")]
                 elif re.search(r"/enc[kK]ey", member_name):
                     enckey_contained = True
     except (tarfile.TarError, OSError) as e:
@@ -260,36 +288,267 @@ def backup_restore(backup_file, keep_db_uri):
         click.secho(f"No SQLALCHEMY_DATABASE_URI found in {config_file}",
                     fg="red")
         sys.exit(2)
-    parsed_sqluri = urlparse(sqluri)
-    sqltype = parsed_sqluri.scheme
-    if sqltype == "sqlite":
-        productive_file = parsed_sqluri.path
-        click.echo(f"Restore SQLite {productive_file}")
-        shutil.copyfile(sqlfile, productive_file)
-        os.unlink(sqlfile)
-    elif sqltype in MYSQL_DIALECTS:
-        database = parsed_sqluri.path[1:]
-        defaults_file = pathlib.Path(config_file).parent.joinpath("mysql.cnf")
-        _write_mysql_defaults(defaults_file, parsed_sqluri)
-        # Rewriting database
-        click.echo("Restoring database.")
-        cmd = ["mysql", f"--defaults-file={defaults_file}",
-               "-h", parsed_sqluri.hostname]
-        if parsed_sqluri.port:
-            cmd.extend(['-P', str(parsed_sqluri.port)])
-        cmd.extend(['-B', shlex.quote(database)])
-        with open(sqlfile) as sql_file:
-            p = subprocess.run(cmd, input=sql_file.read(), text=True)  # nosec B603 - fixed argv, no shell
-        if p.returncode != 0:
-            click.secho(
-                f"Database restore failed (mysql exit code {p.returncode}). "
+
+    url = _database_url(sqluri)
+    family = _backend_family(url)
+    if family != dump_family:
+        # A dump replayed against another engine fails with syntax errors at
+        # best and writes a partial schema at worst.
+        click.secho(f"The backup contains a {FAMILY_NAMES[dump_family]} dump, but the database URI "
+                    f"points to {FAMILY_NAMES[family]}. Restoring across database engines is not "
+                    f"supported. The configuration was restored and the dump was kept at {sqlfile}; "
+                    "the database was not touched.", fg="red")
+        sys.exit(2)
+
+    if family == SQLITE:
+        _restore_sqlite(url, sqlfile)
+    elif family == MYSQL:
+        _restore_mysql(url, config_file.parent, sqlfile)
+    else:
+        _restore_postgresql(url, sqlfile)
+
+
+def _database_url(sqluri: str | None) -> URL:
+    """Parse a database URI into a SQLAlchemy URL, or exit if it is unusable.
+
+    SQLAlchemy is used instead of ``urlparse`` because it knows the driver
+    syntax and percent-decodes username, password and database name.
+    """
+    if not sqluri:
+        click.secho("No database URI configured (SQLALCHEMY_DATABASE_URI).", fg="red")
+        sys.exit(2)
+    try:
+        url = make_url(sqluri)
+    except ArgumentError as e:
+        click.secho(f"Cannot parse the database URI: {e}", fg="red")
+        sys.exit(2)
+    if not url.database:
+        click.secho(f"The database URI contains no database: {url.render_as_string(hide_password=True)}",
+                    fg="red")
+        sys.exit(2)
+    if url.database == ":memory:":
+        click.secho("An in-memory database cannot be backed up or restored.", fg="red")
+        sys.exit(2)
+    return url
+
+
+def _backend_family(url: URL) -> str:
+    """Return the backup implementation to use for a database URL, or exit.
+
+    The backend name is the part of the URI scheme before the "+", so all
+    drivers of an engine (mysql+pymysql, postgresql+psycopg, ...) map to the
+    same family.
+    """
+    family = BACKEND_FAMILIES.get(url.get_backend_name())
+    if not family:
+        click.secho(f"Unsupported database: {url.get_backend_name()}. Backup and restore support "
+                    f"{', '.join(FAMILY_NAMES[f] for f in (SQLITE, MYSQL, POSTGRESQL))}.", fg="red")
+        sys.exit(2)
+    return family
+
+
+def _run_client(cmd: list[str], family: str, env: dict[str, str] | None = None,
+                stdin: IO[bytes] | None = None) -> subprocess.CompletedProcess:
+    """Run a database client command, turning a missing binary into a clear error.
+
+    Without this, an installation lacking the client package fails with a
+    FileNotFoundError traceback instead of telling the admin what to install.
+
+    ``stdin`` is an open binary file the client reads the dump from. Handing
+    over the file itself keeps the dump out of the memory of this process and
+    away from any text decoding, so the size of the database and the encoding
+    the dump was written in do not matter.
+    """
+    try:
+        return subprocess.run(cmd, env=env, stdin=stdin)  # nosec B603 - fixed argv, no shell
+    except FileNotFoundError:
+        click.secho(f"Could not find the '{cmd[0]}' command, which is needed to dump and restore a "
+                    f"{FAMILY_NAMES[family]} database. Install the {CLIENT_PACKAGES[family]} package.",
+                    fg="red")
+        sys.exit(2)
+
+
+def _dump_failed(binary: str, returncode: int, sqlfile: pathlib.Path, hint: str | None = None) -> NoReturn:
+    """Report a failed database dump and exit.
+
+    A partial dump is removed, so it can never be packaged and reported as a
+    successful backup.
+    """
+    if sqlfile.exists():
+        sqlfile.unlink()
+    message = (f"Database dump failed ({binary} exit code {returncode}); "
+               "no backup file was written.")
+    if hint:
+        message = f"{message} {hint}"
+    click.secho(message, fg="red")
+    sys.exit(2)
+
+
+def _restore_failed(binary: str, returncode: int, sqlfile: pathlib.Path) -> NoReturn:
+    """Report a failed database restore and exit, keeping the dump file."""
+    click.secho(f"Database restore failed ({binary} exit code {returncode}). "
                 f"The dump file was kept at {sqlfile} for inspection/retry.",
                 fg="red")
-            sys.exit(2)
-        os.unlink(sqlfile)
-    else:
-        print(f"unsupported SQL syntax: {sqltype}")
-        sys.exit(2)
+    sys.exit(2)
+
+
+def _dump_sqlite(url: URL, sqlfile: pathlib.Path) -> None:
+    click.echo(f"Backup SQLite file {url.database}")
+    shutil.copyfile(url.database, sqlfile)
+
+
+def _restore_sqlite(url: URL, sqlfile: pathlib.Path) -> None:
+    click.echo(f"Restore SQLite {url.database}")
+    shutil.copyfile(sqlfile, url.database)
+    os.unlink(sqlfile)
+
+
+def _mysql_connection_args(url: URL) -> list[str]:
+    """Host and port options shared by mysqldump and mysql.
+
+    Both are omitted for a URI without a host, which connects via the local
+    socket.
+    """
+    args = []
+    if url.host:
+        args.extend(["-h", url.host])
+    if url.port:
+        args.extend(["-P", str(url.port)])
+    return args
+
+
+def _dump_mysql(url: URL, conf_dir: pathlib.Path, sqlfile: pathlib.Path) -> None:
+    defaults_file = conf_dir.joinpath("mysql.cnf")
+    _write_mysql_defaults(defaults_file, url)
+    # call mysqldump to get a copy of the database.
+    # --single-transaction dumps a consistent InnoDB snapshot without taking
+    # table locks. The default (LOCK TABLES) path fails on a MariaDB Galera
+    # cluster, which rejects locking the SEQUENCE objects privacyIDEA creates
+    # ("This version of MariaDB doesn't yet support 'LOCK TABLE on SEQUENCES
+    # in Galera cluster'"). --skip-lock-tables is already implied by
+    # --single-transaction and is passed only as an explicit safeguard.
+    cmd = ["mysqldump", f"--defaults-file={defaults_file!s}",
+           "--single-transaction", "--skip-lock-tables"]
+    cmd.extend(_mysql_connection_args(url))
+    # -B emits CREATE DATABASE IF NOT EXISTS and DROP TABLE IF EXISTS, which is
+    # what makes the dump replayable into a database that still holds the old
+    # schema. It also writes the name of the dumped database into the dump
+    # itself (CREATE DATABASE followed by USE), so a restore always writes into
+    # a database of that name, whatever the target URI says.
+    cmd.extend(["-B", url.database, "-r", str(sqlfile)])
+    result = _run_client(cmd, MYSQL)
+    if result.returncode != 0:
+        _dump_failed("mysqldump", result.returncode, sqlfile)
+
+
+def _restore_mysql(url: URL, conf_dir: pathlib.Path, sqlfile: pathlib.Path) -> None:
+    defaults_file = conf_dir.joinpath("mysql.cnf")
+    _write_mysql_defaults(defaults_file, url)
+    # Rewriting database
+    click.echo("Restoring database.")
+    cmd = ["mysql", f"--defaults-file={defaults_file!s}"]
+    cmd.extend(_mysql_connection_args(url))
+    # -B here is the client's --batch, not mysqldump's --databases. The database
+    # it selects is only a default: the dump's own USE statement takes over.
+    cmd.extend(["-B", url.database])
+    with open(sqlfile, "rb") as sql_file:
+        p = _run_client(cmd, MYSQL, stdin=sql_file)
+    if p.returncode != 0:
+        _restore_failed("mysql", p.returncode, sqlfile)
+    os.unlink(sqlfile)
+
+
+def _postgresql_connection_args(url: URL) -> list[str]:
+    """Connection options shared by pg_dump and psql.
+
+    Host and port are omitted for a URI without them, which connects via the
+    local socket. They are omitted as well when the query part of the URI
+    carries them: SQLAlchemy lets those override the host and port of the URI,
+    so that is where privacyIDEA itself connects, and the backup has to follow.
+    They reach the client through PGHOST/PGPORT instead, which a command line
+    option would take precedence over.
+
+    --no-password makes libpq fail instead of asking for a password, so a
+    missing or wrong password cannot leave a scheduled backup waiting on a
+    prompt forever.
+    """
+    args = []
+    if url.host and not url.query.get("host"):
+        args.extend(["--host", url.host])
+    if url.port and not url.query.get("port"):
+        args.extend(["--port", str(url.port)])
+    if url.username:
+        args.extend(["--username", url.username])
+    args.append("--no-password")
+    return args
+
+
+def _postgresql_env(url: URL) -> dict[str, str]:
+    """Environment for pg_dump and psql.
+
+    The password is passed in the environment rather than on the command line,
+    where it would be visible in the process list, and rather than in a file in
+    the config directory, which would end up inside the backup archive.
+    """
+    env = dict(os.environ)
+    if url.password:
+        env["PGPASSWORD"] = str(url.password)
+    ignored = []
+    for parameter, value in url.query.items():
+        if isinstance(value, tuple):
+            # A parameter given more than once; libpq uses the last occurrence.
+            value = value[-1] if value else None
+        if value is None:
+            continue
+        env_name = POSTGRESQL_ENV_PARAMS.get(parameter)
+        if env_name:
+            env[env_name] = str(value)
+        else:
+            ignored.append(parameter)
+    if ignored:
+        click.secho("The following connection parameters of the database URI are not applied when "
+                    f"dumping or restoring the database: {', '.join(sorted(ignored))}", fg="yellow")
+    return env
+
+
+def _dump_postgresql(url: URL, sqlfile: pathlib.Path) -> None:
+    # --clean --if-exists drops every object before recreating it, which is what
+    # makes the dump replayable into a database that still holds the old schema.
+    # A plain dump without it only applies to an empty database.
+    # --no-owner/--no-privileges/--no-comments keep the restore working when the
+    # role running it differs from the one the backup was taken with: owners,
+    # privileges and comments are not part of what privacyIDEA manages, but
+    # restoring them requires ownership. A comment on the public schema in
+    # particular is dumped whenever it differs from the server default, and
+    # applying it as a role that does not own the schema fails - which would
+    # abort the whole restore.
+    cmd = ["pg_dump", "--format=plain", "--clean", "--if-exists",
+           "--no-owner", "--no-privileges", "--no-comments"]
+    cmd.extend(_postgresql_connection_args(url))
+    cmd.extend(["--dbname", url.database, "--file", str(sqlfile)])
+    result = _run_client(cmd, POSTGRESQL, env=_postgresql_env(url))
+    if result.returncode != 0:
+        _dump_failed("pg_dump", result.returncode, sqlfile,
+                     hint="pg_dump has to be at least as new as the PostgreSQL server it dumps.")
+
+
+def _restore_postgresql(url: URL, sqlfile: pathlib.Path) -> None:
+    click.echo("Restoring database.")
+    # ON_ERROR_STOP together with --single-transaction makes the restore
+    # all-or-nothing, instead of leaving a half-restored schema behind on the
+    # first failing statement. --no-psqlrc keeps a psqlrc file in the home
+    # directory of the calling user from changing settings mid-restore.
+    # The query results psql would print are the return values of the set_config
+    # and setval calls in the dump, one table per sequence; they are discarded,
+    # while errors and warnings still reach the terminal on stderr.
+    cmd = ["psql", "--quiet", "--no-psqlrc", "--set", "ON_ERROR_STOP=on", "--single-transaction",
+           f"--output={os.devnull}"]
+    cmd.extend(_postgresql_connection_args(url))
+    cmd.extend(["--dbname", url.database, "--file", str(sqlfile)])
+    result = _run_client(cmd, POSTGRESQL, env=_postgresql_env(url))
+    if result.returncode != 0:
+        _restore_failed("psql", result.returncode, sqlfile)
+    os.unlink(sqlfile)
 
 
 def _safe_members(tf, dest):
@@ -326,12 +585,23 @@ def _safe_members(tf, dest):
         yield member
 
 
-def _write_mysql_defaults(defaults_file, parsed_sqluri):
+def _quote_mysql_option(value: str) -> str:
+    """Quote a value for a MySQL option file.
+
+    An unquoted value ends at a '#', which would silently truncate a password
+    containing one, and the option file parser expands backslash escapes inside
+    the value, so a literal backslash has to be doubled.
+    """
+    escaped = str(value).replace("\\", "\\\\")
+    return f'"{escaped}"'
+
+
+def _write_mysql_defaults(defaults_file: pathlib.Path, url: URL) -> None:
     # create a mysql config file to avoid adding username and password to the command
     sql_defaults = configparser.ConfigParser(interpolation=None)
     sql_defaults['client'] = {
-        "user": str(parsed_sqluri.username or ""),
-        "password": str(parsed_sqluri.password or "")
+        "user": _quote_mysql_option(url.username or ""),
+        "password": _quote_mysql_option(url.password or "")
     }
     sql_defaults['mysqldump'] = {"no-tablespaces": "True"}
     with defaults_file.open(mode="w") as f:

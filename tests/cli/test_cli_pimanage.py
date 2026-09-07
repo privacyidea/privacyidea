@@ -22,6 +22,8 @@ import json
 import os
 import pathlib
 import tempfile
+from collections.abc import Callable
+from typing import Any
 
 import pytest
 import sqlalchemy as sa
@@ -75,8 +77,9 @@ class PIManageBackupTestCase(CliTestCase):
         self.assertIn("--keep-db-uri", result.output, result)
 
     @staticmethod
-    def _make_fake_tarfile(live_pi_cfg, backup_uri,
-                           include_cfg=True, include_sql=True, include_enckey=False):
+    def _make_fake_tarfile(live_pi_cfg: pathlib.Path, backup_uri: str, include_cfg: bool = True,
+                           include_sql: bool = True, include_enckey: bool = False,
+                           dump_suffix: str = ".sqlite") -> Callable:
         """
         Return a context manager that replaces ``tarfile.open`` with a fake
         that simulates:
@@ -92,10 +95,14 @@ class PIManageBackupTestCase(CliTestCase):
 
         The ``backup_restore`` command opens the archive twice (once to list,
         once to extract), so the fake supports both uses.
+
+        ``dump_suffix`` selects the database engine the archive claims to come
+        from, which has to match the engine of ``backup_uri``: ".sqlite" for
+        SQLite, ".sql" for MySQL/MariaDB, ".pgsql" for PostgreSQL.
         """
         import unittest.mock as mock
 
-        sql_file_path = live_pi_cfg.parent / "dbdump-20240101-1200.sql"
+        sql_file_path = live_pi_cfg.parent / f"dbdump-20240101-1200{dump_suffix}"
         cfg_rel = str(live_pi_cfg).lstrip("/")
         sql_rel = str(sql_file_path).lstrip("/")
         enckey_rel = str(live_pi_cfg.parent / "enckey").lstrip("/")
@@ -263,7 +270,7 @@ class PIManageBackupTestCase(CliTestCase):
             self.assertIn("Missing config file pi.cfg", result.output, result.output)
             # The fake's extractall would have created the SQL file; ensure we
             # bailed out before extraction.
-            self.assertFalse((tmp / "dbdump-20240101-1200.sql").exists())
+            self.assertFalse((tmp / "dbdump-20240101-1200.sqlite").exists())
 
     def test_05_missing_sql_file_exits(self):
         """
@@ -288,7 +295,7 @@ class PIManageBackupTestCase(CliTestCase):
 
             self.assertEqual(result.exit_code, 2, result.output)
             self.assertIn("Missing database dump", result.output, result.output)
-            self.assertFalse((tmp / "dbdump-20240101-1200.sql").exists())
+            self.assertFalse((tmp / "dbdump-20240101-1200.sqlite").exists())
 
     def test_06_unreadable_archive_exits(self):
         """
@@ -311,41 +318,63 @@ class PIManageBackupTestCase(CliTestCase):
     def test_07_write_mysql_defaults_handles_missing_password(self):
         """
         A SQLALCHEMY_DATABASE_URI without a password yields
-        parsed.password is None. _write_mysql_defaults must still produce a
+        url.password is None. _write_mysql_defaults must still produce a
         valid mysql defaults file (Python 3.12+ ConfigParser requires string
         values).
         """
         import configparser
-        from urllib.parse import urlparse
+        from sqlalchemy.engine.url import make_url
         from privacyidea.cli.pimanage.backup import _write_mysql_defaults
 
         with tempfile.TemporaryDirectory() as tmp_dir:
             defaults_file = pathlib.Path(tmp_dir) / "mysql.cnf"
-            # URI without password — parsed.password is None
-            parsed = urlparse("mysql+pymysql://privacyidea@127.0.0.1/privacyidea_test")
-            self.assertIsNone(parsed.password)
+            # URI without password — url.password is None
+            url = make_url("mysql+pymysql://privacyidea@127.0.0.1/privacyidea_test")
+            self.assertIsNone(url.password)
 
-            _write_mysql_defaults(defaults_file, parsed)
+            _write_mysql_defaults(defaults_file, url)
 
             cp = configparser.ConfigParser(interpolation=None)
             cp.read(defaults_file)
-            self.assertEqual(cp["client"]["user"], "privacyidea")
-            self.assertEqual(cp["client"]["password"], "")
+            self.assertEqual('"privacyidea"', cp["client"]["user"])
+            self.assertEqual('""', cp["client"]["password"])
 
-        # Passwords containing '%' must be written verbatim — the default
-        # ConfigParser BasicInterpolation would otherwise reject them.
+        # A percent-encoded password reaches the client decoded, and the '%' it
+        # decodes to must be written verbatim — the default ConfigParser
+        # BasicInterpolation would otherwise reject it.
         with tempfile.TemporaryDirectory() as tmp_dir:
             defaults_file = pathlib.Path(tmp_dir) / "mysql.cnf"
-            # urlparse keeps percent-encoding raw, so the value entering
-            # ConfigParser literally contains '%'.
-            parsed = urlparse("mysql+pymysql://privacyidea:ab%25cd@127.0.0.1/privacyidea_test")
-            self.assertEqual(parsed.password, "ab%25cd")
+            url = make_url("mysql+pymysql://privacyidea:ab%25cd@127.0.0.1/privacyidea_test")
+            self.assertEqual("ab%cd", url.password)
 
-            _write_mysql_defaults(defaults_file, parsed)
+            _write_mysql_defaults(defaults_file, url)
 
             cp = configparser.ConfigParser(interpolation=None)
             cp.read(defaults_file)
-            self.assertEqual(cp["client"]["password"], "ab%25cd")
+            self.assertEqual('"ab%cd"', cp["client"]["password"])
+
+    def test_07a_mysql_defaults_quotes_values_for_the_option_file_parser(self):
+        """
+        Values in a MySQL option file are quoted and their backslashes doubled:
+        an unquoted value ends at a '#', which would truncate the password, and
+        the option file parser expands backslash escapes inside the value.
+        """
+        import configparser
+        from sqlalchemy.engine.url import make_url
+        from privacyidea.cli.pimanage.backup import _write_mysql_defaults
+
+        for encoded, quoted in [("ab%23cd", '"ab#cd"'),
+                                ("ab%5Ccd", '"ab\\\\cd"'),
+                                ("ab cd", '"ab cd"')]:
+            with tempfile.TemporaryDirectory() as tmp_dir:
+                defaults_file = pathlib.Path(tmp_dir) / "mysql.cnf"
+                url = make_url(f"mysql+pymysql://privacyidea:{encoded}@127.0.0.1/privacyidea_test")
+
+                _write_mysql_defaults(defaults_file, url)
+
+                cp = configparser.ConfigParser(interpolation=None)
+                cp.read(defaults_file)
+                self.assertEqual(quoted, cp["client"]["password"], encoded)
 
     def test_08_backup_create_aborts_on_dump_failure(self):
         """
@@ -418,7 +447,8 @@ class PIManageBackupTestCase(CliTestCase):
 
             runner = self.app.test_cli_runner()
             with mock.patch("privacyidea.cli.pimanage.backup.tarfile.open",
-                            side_effect=self._make_fake_tarfile(live_pi_cfg, backup_uri)):
+                            side_effect=self._make_fake_tarfile(live_pi_cfg, backup_uri,
+                                                                dump_suffix=".sql")):
                 with mock.patch("privacyidea.cli.pimanage.backup.subprocess.run",
                                 side_effect=failing_mysql):
                     result = runner.invoke(pi_manage, [
@@ -429,6 +459,262 @@ class PIManageBackupTestCase(CliTestCase):
             # The dump must be kept for inspection, not unlinked.
             self.assertTrue(sqlfile.exists(),
                             "dump file was deleted despite the restore failing")
+
+    def test_10_backend_family_covers_all_drivers_of_an_engine(self):
+        """
+        The engine is derived from the SQLAlchemy backend name, so every driver
+        of a supported engine maps to the same backup implementation, and an
+        engine without backup support is rejected with a readable message.
+        """
+        from privacyidea.cli.pimanage.backup import (MYSQL, POSTGRESQL, SQLITE, _backend_family,
+                                                     _database_url)
+
+        for uri, expected in [
+                ("sqlite:////var/lib/privacyidea/data.sqlite", SQLITE),
+                ("mysql+pymysql://u:p@127.0.0.1/pi", MYSQL),
+                ("mysql+mysqldb://u:p@127.0.0.1/pi", MYSQL),
+                ("mariadb+pymysql://u:p@127.0.0.1/pi", MYSQL),
+                ("postgresql://u:p@127.0.0.1/pi", POSTGRESQL),
+                ("postgresql+psycopg2://u:p@127.0.0.1/pi", POSTGRESQL),
+                ("postgresql+psycopg://u:p@127.0.0.1/pi", POSTGRESQL)]:
+            self.assertEqual(expected, _backend_family(_database_url(uri)), uri)
+
+        with self.assertRaises(SystemExit) as cm:
+            _backend_family(_database_url("oracle+oracledb://u:p@127.0.0.1/pi"))
+        self.assertEqual(2, cm.exception.code)
+
+    def test_11_database_url_rejects_unusable_uris(self):
+        """
+        A missing, unparsable or database-less URI aborts with exit code 2
+        instead of running a client command against nothing, and the password is
+        not echoed while doing so.
+        """
+        from privacyidea.cli.pimanage.backup import _database_url
+
+        for uri in [None, "", "://nonsense", "mysql+pymysql://u:secret@127.0.0.1/"]:
+            with self.assertRaises(SystemExit) as cm:
+                _database_url(uri)
+            self.assertEqual(2, cm.exception.code, uri)
+
+    def test_12_postgresql_dump_and_restore_command(self):
+        """
+        The PostgreSQL dump is taken with pg_dump and replayed with psql. The
+        dump has to be replayable into a database that still holds the old
+        schema (--clean --if-exists) and by a role that owns neither the schema
+        nor its objects (--no-owner, --no-privileges, --no-comments), the
+        restore has to be all-or-nothing (--single-transaction with
+        ON_ERROR_STOP), and neither command may wait for a password prompt
+        (--no-password). The password is passed in the environment, never on the
+        command line.
+        """
+        import unittest.mock as mock
+        from privacyidea.cli.pimanage.backup import (_dump_postgresql, _restore_postgresql,
+                                                     _database_url)
+
+        url = _database_url("postgresql+psycopg2://pi:se%40cret@db.example.net:5433/pi_test?sslmode=require")
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            sqlfile = pathlib.Path(tmp_dir) / "dbdump-20240101-1200.pgsql"
+            sqlfile.write_text("-- dump\n")
+            calls = []
+
+            def record(cmd: list[str], **kwargs: Any) -> mock.MagicMock:
+                calls.append((cmd, kwargs))
+                result = mock.MagicMock()
+                result.returncode = 0
+                return result
+
+            with mock.patch("privacyidea.cli.pimanage.backup.subprocess.run", side_effect=record):
+                _dump_postgresql(url, sqlfile)
+                _restore_postgresql(url, sqlfile)
+
+        dump_cmd, dump_kwargs = calls[0]
+        restore_cmd, restore_kwargs = calls[1]
+
+        self.assertEqual("pg_dump", dump_cmd[0])
+        for option in ["--clean", "--if-exists", "--no-owner", "--no-privileges", "--no-comments",
+                       "--no-password"]:
+            self.assertIn(option, dump_cmd)
+        self.assertEqual("pi_test", dump_cmd[dump_cmd.index("--dbname") + 1])
+        self.assertEqual("db.example.net", dump_cmd[dump_cmd.index("--host") + 1])
+        self.assertEqual("5433", dump_cmd[dump_cmd.index("--port") + 1])
+        self.assertEqual("pi", dump_cmd[dump_cmd.index("--username") + 1])
+
+        self.assertEqual("psql", restore_cmd[0])
+        self.assertIn("--single-transaction", restore_cmd)
+        self.assertIn("--no-psqlrc", restore_cmd)
+        self.assertEqual("ON_ERROR_STOP=on", restore_cmd[restore_cmd.index("--set") + 1])
+        self.assertIn("--no-password", restore_cmd)
+
+        for cmd, kwargs in (calls[0], calls[1]):
+            # The decoded password goes into the environment, so it shows up
+            # neither in the process list nor in a file inside the backup.
+            self.assertEqual("se@cret", kwargs["env"]["PGPASSWORD"])
+            self.assertEqual("require", kwargs["env"]["PGSSLMODE"])
+            self.assertNotIn("se@cret", " ".join(cmd))
+
+        # A successful restore consumes the extracted dump.
+        self.assertFalse(sqlfile.exists())
+
+    def test_13_postgresql_connection_args_omit_unset_parts(self):
+        """
+        A URI without host and port connects over the local socket, so neither
+        option may be passed. Connection parameters that cannot be applied are
+        reported instead of being dropped silently.
+        """
+        from privacyidea.cli.pimanage.backup import (_database_url, _postgresql_connection_args,
+                                                     _postgresql_env)
+
+        url = _database_url("postgresql:///pi_test?host=/var/run/postgresql&keepalives=1")
+        args = _postgresql_connection_args(url)
+        self.assertNotIn("--host", args)
+        self.assertNotIn("--port", args)
+        self.assertNotIn("--username", args)
+
+        env = _postgresql_env(url)
+        self.assertEqual("/var/run/postgresql", env["PGHOST"])
+        self.assertNotIn("PGPASSWORD", env)
+
+        # A host in the query overrides the host of the URI for SQLAlchemy, so
+        # privacyIDEA connects to the socket -- passing --host would send the
+        # backup to the TCP host instead, because it beats PGHOST.
+        url = _database_url("postgresql://pi@dbhost:5432/pi_test?host=/var/run/postgresql")
+        args = _postgresql_connection_args(url)
+        self.assertNotIn("--host", args)
+        self.assertNotIn("dbhost", args)
+        self.assertEqual("/var/run/postgresql", _postgresql_env(url)["PGHOST"])
+
+    def test_14_postgresql_dump_failure_keeps_no_partial_dump(self):
+        """
+        A failed pg_dump must not be packaged as a successful backup: the
+        command exits non-zero, no archive is written and the partial dump is
+        removed.
+        """
+        import unittest.mock as mock
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp = pathlib.Path(tmp_dir)
+            backup_dir = tmp / "backup"
+            config_dir = tmp / "config"
+            config_dir.mkdir()
+            enc_file = tmp / "enckey"
+            enc_file.write_bytes(b"x" * 96)
+
+            def failing_run(cmd: list[str], **kwargs: Any) -> mock.MagicMock:
+                # pg_dump writes a partial dump and then exits non-zero, so the
+                # cleanup that removes the partial file runs.
+                pathlib.Path(cmd[cmd.index("--file") + 1]).write_text("-- partial\n")
+                result = mock.MagicMock()
+                result.returncode = 1
+                return result
+
+            runner = self.app.test_cli_runner()
+            with mock.patch.dict(self.app.config, {
+                    "SQLALCHEMY_DATABASE_URI": "postgresql+psycopg2://u:p@localhost/pi_test",
+                    "PI_ENCFILE": str(enc_file)}):
+                with mock.patch("privacyidea.cli.pimanage.backup.subprocess.run",
+                                side_effect=failing_run):
+                    result = runner.invoke(pi_manage, [
+                        "backup", "create",
+                        "-d", str(backup_dir),
+                        "-c", str(config_dir)])
+
+            self.assertNotEqual(result.exit_code, 0, result.output)
+            self.assertIn("Database dump failed", result.output, result.output)
+            written = list(backup_dir.glob("*.tgz")) if backup_dir.exists() else []
+            self.assertEqual([], written,
+                             f"a backup file was written despite the dump failing: {written}")
+            leftover = list(backup_dir.glob("*.pgsql")) if backup_dir.exists() else []
+            self.assertEqual([], leftover,
+                             f"a partial dump file was left behind: {leftover}")
+
+    def test_15_missing_client_command_names_the_package(self):
+        """
+        On an installation without the database client package, the command
+        names the missing binary and the package to install instead of failing
+        with a traceback.
+        """
+        import unittest.mock as mock
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp = pathlib.Path(tmp_dir)
+            config_dir = tmp / "config"
+            config_dir.mkdir()
+            enc_file = tmp / "enckey"
+            enc_file.write_bytes(b"x" * 96)
+
+            runner = self.app.test_cli_runner()
+            with mock.patch.dict(self.app.config, {
+                    "SQLALCHEMY_DATABASE_URI": "postgresql+psycopg2://u:p@localhost/pi_test",
+                    "PI_ENCFILE": str(enc_file)}):
+                with mock.patch("privacyidea.cli.pimanage.backup.subprocess.run",
+                                side_effect=FileNotFoundError("pg_dump")):
+                    result = runner.invoke(pi_manage, [
+                        "backup", "create",
+                        "-d", str(tmp / "backup"),
+                        "-c", str(config_dir)])
+
+            self.assertEqual(2, result.exit_code, result.output)
+            self.assertIn("Could not find the 'pg_dump' command", result.output, result.output)
+            self.assertIn("postgresql-client", result.output, result.output)
+
+    def test_16_restore_refuses_a_dump_from_another_engine(self):
+        """
+        A dump can only be replayed by the engine that wrote it. Restoring a
+        MySQL dump onto a PostgreSQL URI has to abort before any client command
+        runs, so the target database is left untouched.
+        """
+        import unittest.mock as mock
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp = pathlib.Path(tmp_dir)
+            live_pi_cfg = tmp / "pi.cfg"
+            backup_uri = "postgresql+psycopg2://u:p@localhost/pi_test"
+
+            runner = self.app.test_cli_runner()
+            with mock.patch("privacyidea.cli.pimanage.backup.tarfile.open",
+                            side_effect=self._make_fake_tarfile(live_pi_cfg, backup_uri,
+                                                                dump_suffix=".sql")):
+                with mock.patch("privacyidea.cli.pimanage.backup.subprocess.run") as run_mock:
+                    result = runner.invoke(pi_manage, ["backup", "restore", "ignored.tgz"])
+
+            self.assertEqual(2, result.exit_code, result.output)
+            self.assertIn("MySQL/MariaDB dump", result.output, result.output)
+            self.assertIn("PostgreSQL", result.output, result.output)
+            run_mock.assert_not_called()
+
+    def test_17_mysql_restore_streams_the_dump_without_decoding(self):
+        """
+        The dump is handed to the mysql client as an open binary file. It
+        therefore reaches the client byte for byte, whatever encoding it was
+        written in, and its size is bounded by the disk rather than by the
+        memory of the restoring process.
+        """
+        import unittest.mock as mock
+        from privacyidea.cli.pimanage.backup import _database_url, _restore_mysql
+
+        # Latin-1 encoded content, which cannot be decoded as UTF-8.
+        dump_bytes = "INSERT INTO t VALUES ('Müller');\n".encode("latin1")
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp = pathlib.Path(tmp_dir)
+            sqlfile = tmp / "dbdump-20240101-1200.sql"
+            sqlfile.write_bytes(dump_bytes)
+            seen = {}
+
+            def record(cmd: list[str], **kwargs: Any) -> mock.MagicMock:
+                seen["stdin"] = kwargs["stdin"].read()
+                result = mock.MagicMock()
+                result.returncode = 0
+                return result
+
+            with mock.patch("privacyidea.cli.pimanage.backup.subprocess.run", side_effect=record):
+                _restore_mysql(_database_url("mysql+pymysql://u:p@localhost/pi_test"), tmp, sqlfile)
+
+            self.assertEqual(dump_bytes, seen["stdin"])
+            # A successful restore consumes the extracted dump.
+            self.assertFalse(sqlfile.exists())
+
 
 class PIManageRealmTestCase(CliTestCase):
     def test_01_pimanage_realm_help(self):
