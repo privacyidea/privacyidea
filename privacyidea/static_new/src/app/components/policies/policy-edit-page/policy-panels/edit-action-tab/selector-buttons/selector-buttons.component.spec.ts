@@ -108,6 +108,30 @@ describe("SelectorButtonsComponent", () => {
     expect(emitSpy).toHaveBeenCalledWith(undefined);
   });
 
+  it("emits the raw value of a clicked button, not its display label", () => {
+    const emitted: (string | undefined)[] = [];
+    component.selected.subscribe((value) => emitted.push(value));
+    fixture.componentRef.setInput("values", ["0", "1"]);
+    fixture.componentRef.setInput("labels", ["Off", "On"]);
+    fixture.componentRef.setInput("initialValue", "0");
+    fixture.detectChanges();
+
+    const buttons = fixture.debugElement.queryAll(By.css("button"));
+    expect(buttons.map((button) => button.nativeElement.textContent.trim())).toEqual(["Off", "On"]);
+
+    const clicked = [buttons[1], buttons[0]].map((button) => {
+      button.nativeElement.click();
+      fixture.detectChanges();
+      return [button.nativeElement.textContent.trim(), emitted.at(-1)];
+    });
+
+    expect(clicked).toEqual([
+      ["On", "1"],
+      ["Off", "0"]
+    ]);
+    expect(component.selectedValue()).toBe("0");
+  });
+
   it("isOverflowing should be true only when scrollWidth exceeds clientWidth", () => {
     const overflowing = { scrollWidth: 120, clientWidth: 80 } as HTMLElement;
     const fitting = { scrollWidth: 80, clientWidth: 80 } as HTMLElement;
